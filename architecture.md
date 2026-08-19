@@ -167,6 +167,40 @@ Delivered in T3.5.6, closing **D1** — the oldest and highest-risk entry in the
     and a platform meant to outlast its dependencies should not need it for ~80 constants.
     A test parses the module's imports to enforce this.
 
+### 3.6b Registries and the Error Taxonomy (`src/core/registry.py`, `src/core/errors.py`)
+
+Delivered in T3.5.15 and T3.5.14, closing **D15** and **D14** (standards E1, E2, E6).
+
+`Registry` is a generic, decorator-based collection. An entry carries a description, a
+parameter schema, capability metadata and tags, which is what lets the discovery endpoints be
+**generated** rather than hand-maintained — a hand-written list goes stale exactly when
+someone adds something. Duplicate names raise rather than overwrite, because a silent
+overwrite makes behaviour depend on module import order.
+
+`errors.py` is the explanatory exception hierarchy. Three properties it enforces: an error
+says *what to do* (alternatives are listed, with a `did you mean` from edit distance); the
+**error kind** decides the HTTP status, so a user's typo is a 404 with a helpful message
+while a genuine fault stays an opaque 500; and every error carries structured context, so a
+failure inside a 20-run sweep names the step, the action and the parameter combination.
+
+Concrete registries built on it:
+
+*   `transform_engine/registry.py` — six transforms behind one dispatch point, replacing
+    **two parallel six-branch chains** in `engine.py` and `main.py` that had to be edited in
+    lockstep. Capabilities (`shift_invariant`, `oriented`, `parent_grid`, `complex`) are what
+    make T4B.2's wavelet bank selectable by property instead of by a hard-coded list.
+*   `experiment_engine/actions.py` — seven actions, each declaring its own lineage node type
+    and summary alongside its implementation. All three chains that listed the action names
+    are gone and `engine.py` fell from **562 to 295 lines**.
+*   `data_layer/sources.py` + `builtin_sources.py` — a priority-ordered fallback chain that
+    records every attempt, including sources that **declined** and why. A source can be
+    selected by capability (`SOURCES.with_capability("streaming")`), which is how T3.5.18's
+    Zarr adapter will slot in.
+
+`src/tests/plugin_example.py` is a worked example and an executable proof: it adds a data
+source and a pipeline action in one new file, and the acceptance test verifies both appear in
+the API *and* that `engine.py`, `adapters.py` and `main.py` are byte-identical afterwards.
+
 ### 3.8 Grid Geometry and Metric-Aware Operators (`src/physical_core/grid.py`, `operators.py`)
 
 Added in T3.5.13 (defect D13, standard E3). `GridSpec` is the physical metric attached to
@@ -230,7 +264,7 @@ Current status: **14 PASS, 0 FAIL, 3 NOT_YET_RUNNABLE**. See Section 7.2f.
 
 ## 3.12 HTTP API Surface
 
-Seventeen routes. Listed here because an undocumented endpoint is an untested contract.
+Twenty routes. Listed here because an undocumented endpoint is an untested contract.
 
 | Method | Route | Notes |
 |---|---|---|
@@ -239,6 +273,9 @@ Seventeen routes. Listed here because an undocumented endpoint is an untested co
 | POST | `/api/v1/synthetic/generate` | vortex, front, turbulence, wave |
 | POST | `/api/v1/synthetic/perturb` | rotate, translate, noise (now seedable, T3.5.12) |
 | POST | `/api/v1/boundary/analyze` | declares its pixel frame explicitly (D13) |
+| GET | `/api/v1/actions` | every registered pipeline action, generated from the registry (T3.5.15) |
+| GET | `/api/v1/transforms` | every registered transform with its params and capabilities (T3.5.15) |
+| GET | `/api/v1/data/sources` | the data-source fallback chain in priority order (E2) |
 | GET | `/api/v1/benchmarks` | the suite and its declared known answers (T3.5.17) |
 | POST | `/api/v1/benchmarks/run` | three outcomes reported separately; 404 on an unknown name (D31) |
 | GET | `/api/v1/data/datasets` | carries `source_kind` / `is_simulated` / `fallback_reason` (E2) |
@@ -337,7 +374,7 @@ See `VERIFICATION.md` for the captured command output behind every statement her
 | Item | Status |
 |---|---|
 | Python venv + dependencies | installed (torch 2.13.0, numpy 2.2.6, pydantic 1.10.26, SQLAlchemy 2.0.52, xarray 2025.6.1, FastAPI 0.110.3) |
-| Backend test suite | **351 passed, 1 xfailed** (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17) |
+| Backend test suite | **379 passed, 1 xfailed** (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17, 351 after T3.5.6) |
 | Ground-Truth Benchmark Suite | **14 PASS, 0 FAIL, 3 NOT_YET_RUNNABLE** (`python -m src.benchmarks`, exit 0) |
 | Frontend `npm install` + `npm run build` | passes, emits 1,378 modules + real JS/CSS assets (was: 1 module, no assets) |
 | Backend server | starts, serves OpenAPI, all smoke-tested endpoints return 200 |
@@ -347,7 +384,7 @@ See `VERIFICATION.md` for the captured command output behind every statement her
 Earlier revisions of this document and of `roadmap.md` claimed the platform was "validated"
 and "zero-error". It was not: the first real execution produced 8 test failures and a frontend
 that had never rendered. The ledger below grew from 18 entries to **31** as a direct result of
-running the code and of building the tests that check it — **25 of which are now fixed**.
+running the code and of building the tests that check it — **27 of which are now fixed**.
 
 Defects D26-D31 were all found *after* the code they concern was written and passing, by
 tests written against analytic answers rather than against the code's own behaviour. Six of
@@ -376,8 +413,8 @@ final acceptance criterion remains open. The frontend also does not yet consume
 | D11 | `.vscode/launch.json` | The Chrome configuration declares `"name"` twice; VS Code silently keeps the last, so the compound `Debug Platform (Both)` reference is fragile. | **FIXED** T3.5.4 |
 | D12 | `data_layer/adapters.py:79`, `synthetic_generator/perturbation.py:43,46,50` | **Unseeded RNG.** `np.random.randn` and `torch.randn_like`/`rand_like` are called with no seed and no seed capture. Every noise perturbation and the simulated GFS wind field are irreproducible, which **directly contradicts the provenance pillar** - a lineage graph that cannot reproduce its own run is a record, not provenance. | T3.5.12 |
 | D13 | `analysis_engine/diagnostics.py:68-69`, `boundary_lab/boundary.py:107` | **Metric-unaware differential operators.** `torch.gradient` is called with no `spacing`, so gradients are per-pixel, not per-metre. On a lat/lon grid the zonal spacing varies as `cos(lat)` and differs from the meridional spacing, so gradient magnitude, gradient angular error and boundary gradient decay are all systematically distorted, worsening toward the poles. Radial PSD likewise bins in pixel wavenumber and assumes isotropy that a lat/lon grid does not have - so the Charney/Kolmogorov regime classification is being made in the wrong space. | **FIXED** T3.5.13 |
-| D14 | `api/main.py` (10 sites) | Every `except` re-raises a generic 500 with a fixed string (`"An error occurred during ..."`), discarding the exception entirely. For a research tool this is the difference between a usable diagnostic and a dead end. | T3.5.14 |
-| D15 | `data_layer/adapters.py:150,162`, `experiment_engine/engine.py` | **The "seams" described in Section 5 are not extension points.** `_get_simulated_fallback` is a hard-coded if/elif over three dataset ids, `list_datasets` iterates a hard-coded literal list, and `_execute_action` is a 13-branch if/elif chain. Adding a data source or a pipeline action requires editing core engine files. | T3.5.15 |
+| D14 | `api/main.py` (10 sites) | Every `except` re-raises a generic 500 with a fixed string (`"An error occurred during ..."`), discarding the exception entirely. For a research tool this is the difference between a usable diagnostic and a dead end. | **FIXED** T3.5.14 |
+| D15 | `data_layer/adapters.py:150,162`, `experiment_engine/engine.py` | **The "seams" described in Section 5 are not extension points.** `_get_simulated_fallback` is a hard-coded if/elif over three dataset ids, `list_datasets` iterates a hard-coded literal list, and `_execute_action` is a 13-branch if/elif chain. Adding a data source or a pipeline action requires editing core engine files. | **FIXED** T3.5.15 |
 | D16 | `physical_core/field.py:20` | `PhysicalField.__init__` force-casts to float32 with no opt-out. Acceptable for visualisation; marginal for surrogate ensemble statistics, log-log power-law fits, and mutual-information/transfer-entropy estimation in Phase 4C. | **FIXED** T3.5.16 |
 | D17 | `analysis_engine/diagnostics.py:29,56`, `analysis_engine/decomposition.py:81`, `boundary_lab/boundary.py:31,123` | **Per-bin Python loops over full arrays.** Five functions bin values by radius or distance using `for k in range(...)` with a fresh boolean mask over the *entire* array each iteration - `O(bins x H x W)` where `O(H x W)` suffices via `bincount`/`scatter_add`. On a 512x512 field (`max_r = 256`) `compute_radial_psd` performs ~256 full passes, roughly 67M element visits instead of 262k. These are the innermost functions of the Phase 4C loop, called inside a surrogate ensemble; unfixed, they alone decide whether the platform is usable on a laptop. | T3.5.20 |
 | D18 | `experiment_engine/engine.py:18-22` | `get_execution_device` probes CUDA only. No Apple-silicon MPS branch and no explicit CPU-thread configuration, so a large class of development laptops silently runs the slowest available path. | T3.5.21 |
@@ -518,9 +555,10 @@ stale once already.
 | `test_experiments.py` | 3 | declarative sweeps and lineage |
 | `test_grid_operators.py` | 64 | grid metrics, metric-aware gradient/Laplacian, area weighting, physical-wavenumber spectra, D26 |
 | `test_hypothesis.py` | 3 | correlation and categorical hypothesis discovery |
+| `test_registries.py` | 28 | registries, error taxonomy, fallback chain, and the T3.5.15 plugin acceptance criterion |
 | `test_stationary.py` | 19 | undecimated SWT: shift invariance, perfect reconstruction, frame constant, PyWavelets oracle, R3 normalisation |
 | `test_transforms.py` | 13 | fft/dct/dwt/dtcwt/hybrid round trips; D1 recorded as a strict xfail |
-| **total** | **218** | |
+| **total** | **246** | |
 
 ### 7.3 Precision caveats (not defects, but do not overstate them)
 

@@ -1188,3 +1188,155 @@ oriented energy summary, both orientation conventions and the coefficient proven
 `dtcwt` branch as well), D17 (remaining per-bin loops), D18 (device policy); plus T3.5.8
 (Alembic), T3.5.18 (Zarr/ERA5), T3.5.19 (Executor seam), browser-based UI verification, and
 surfacing the benchmark suite and orientation output in the frontend.
+
+---
+
+## Slice 7 - T3.5.15 registries and T3.5.14 error taxonomy (D15, D14)
+
+**Date:** 2026-08-20. Suite after this slice: **379 passed, 1 xfailed** (up from 351).
+New modules `src/core/registry.py`, `src/core/errors.py`,
+`src/transform_engine/registry.py`, `src/experiment_engine/actions.py`,
+`src/data_layer/sources.py`, `src/data_layer/builtin_sources.py`, plus the worked example
+`src/tests/plugin_example.py`; 28 tests in `src/tests/test_registries.py`.
+
+### Captured output
+
+```
+### dispatch chains removed ###
+  src/api/main.py                    elif transform_type: 0   elif action ==: 0   lines: 1030
+  src/experiment_engine/engine.py    elif transform_type: 0   elif action ==: 1   lines: 295
+
+### registries ###
+  transforms: ['dct', 'dtcwt', 'dwt', 'fft', 'hybrid', 'swt']
+  actions   : ['analyze_boundary', 'apply_transform', 'compute_diagnostics', 'decompose_errors', 'generate_synthetic', 'perturb_field', 'slice_dataset']
+  sources   : [('netcdf_local', 10, False), ('simulated', 900, True)]
+  by capability -> shift_invariant: ['swt'] | oriented: ['dtcwt']
+
+### fallback chain provenance ###
+  netcdf_local  ok=False declined: no file at data\era5_reanalysis.nc - drop a NetCDF file 
+  simulated     ok=True  served
+  fallback_reason: declined: no file at data\era5_reanalysis.nc - drop a NetCDF file there to
+
+### error taxonomy through the API ###
+  unknown transform -> 404  Unknown transform 'dwt2'. Did you mean 'dwt' or 'dtcwt'? Available: dct, dtcwt
+  GET /api/v1/actions    -> 7 entries
+  GET /api/v1/transforms -> 6 entries
+  GET /api/v1/data/sources -> 2 entries
+  fft     200  MSE 2.73e-14
+  dct     200  MSE 5.33e-12
+  dwt     200  MSE 4.05e-14
+  swt     200  MSE 1.40e-13
+  dtcwt   200  MSE 1.04e-31
+  hybrid  200  MSE 7.17e-15
+```
+
+### The acceptance criterion, executed literally
+
+T3.5.15's acceptance is a claim about *files*: "a new data source and a new pipeline action
+are each added in a **new file only**, with zero edits to `engine.py`, `adapters.py` or
+`main.py`". A claim about not editing files is checkable, so `test_acceptance_new_plugin_
+needs_no_core_edits` **hashes all three before and after** importing the plugin, rather than
+asserting it in prose. Both halves pass.
+
+**And the acceptance test immediately found a real latent bug.** `list_datasets` computed
+`is_simulated` as `kind == "simulated"` - a literal string comparison. The demo source
+declares `kind="demo", is_simulated=True`, and was reported to the researcher as **real
+observational data**. Any future simulated source not labelled with that exact string would
+have been mislabelled the same way. It now reads the flag the source declared. This is
+precisely the failure mode D15 is about: behaviour keyed on hard-coded literals rather than
+on a declaration, invisible until a third case exists.
+
+### What was removed
+
+```
+                          before          after
+engine.py                 562 lines       295 lines
+  if/elif on action       3 chains        0
+  if/elif on transform    1 chain         0
+main.py
+  if/elif on transform    1 chain         0
+```
+
+The two transform chains mattered because they were *duplicates*: `engine.py` and `main.py`
+each had their own six-branch dispatch with independently written defaults, so the same
+config could mean two different things depending on which entry point ran it. There is now
+one definition, and a test asserts the API contains no such chain.
+
+Three separate chains listed the seven action names - dispatch, node type, and lineage
+summary - and all three had to be edited together by hand. Each action now declares all
+three facts in one registration.
+
+### A fallback is a scientific fact
+
+`resolve()` returns the whole attempt chain, and sources that **decline** are recorded with a
+reason, not only those that fail:
+
+```
+netcdf_local  ok=False  declined: no file at data/era5_reanalysis.nc - drop a NetCDF file there...
+simulated     ok=True   served
+```
+
+That distinction was found by a failing test. A source that merely declines - `can_serve`
+returns False because no file is on disk - leaves *no failed attempt behind*, so the first
+implementation recorded `fallback_reason: None` while still serving fabricated data. The
+`why_not()` hook lets a source explain its decline, which turns "simulated data was used"
+into "no file at `data/era5_reanalysis.nc` - drop a NetCDF file there". One states a fact;
+the other names the fix.
+
+### Errors: the kind decides the status
+
+Previously every failure became `500 An internal error occurred`, which tells a researcher
+nothing and reports their typo as our fault. Now:
+
+```
+POST /transforms/apply {"transform_type": "dwt2"}
+  -> 404  Unknown transform 'dwt2'. Did you mean 'dwt' or 'dtcwt'?
+          Available: dct, dtcwt, dwt, fft, hybrid, swt.
+```
+
+while a genuine fault stays opaque - asserted, including that a 500 raised from a path like
+`/secret/path/to/model.ckpt` does not echo it. `PipelineStepError` **inherits its cause's
+status code**, so a bad parameter inside a step is still a 4xx rather than being promoted to
+a platform fault by the wrapping.
+
+### Capability queries, which is the point for Phase 4
+
+Transforms declare properties, not just names:
+
+```
+shift_invariant -> ['swt']        oriented -> ['dtcwt']        tag wavelet_bank -> both
+```
+
+T4B.2's wavelet bank can therefore ask for "every shift-invariant multiscale transform"
+instead of hard-coding a list, and a transform joins the bank by being registered. The same
+mechanism selects data sources: `SOURCES.with_capability("streaming")` is how T3.5.18's Zarr
+adapter will slot in, at priority ~20 in the deliberately wide gap between `netcdf_local`
+(10) and `simulated` (900).
+
+### Method note
+
+The seven action bodies were moved by a script that split `engine.py` on the branch
+boundaries and dedented, rather than by hand - 267 lines of mechanical edit is exactly where
+hand-editing introduces a silent error. The dedent was wrong on the first run (8 spaces
+instead of 4) and failed loudly at parse time, which is the desired failure. The real check
+is that **all 350 pre-existing tests passed unchanged afterwards**: this slice changed
+dispatch, not behaviour, and that is what verifies it.
+
+Also, for the third time in three slices, a guard written with a substring search matched its
+own explanatory comment - here the `elif action ==` count found the phrase inside the
+docstring describing its removal. Grepping prose keeps having to become parsing code.
+
+### Suite after slice 7
+
+```
+379 passed, 1 xfailed
+246 test functions across 13 files
+```
+
+**Fixed: 27 of 31 defects**, adding **D14** and **D15**.
+
+**Still outstanding:** D8 (FDR), D17 (remaining per-bin loops in `decompose_by_boundary` and
+`analyze_boundary_artefacts`), D18 (device policy); plus T3.5.8 (Alembic), T3.5.18
+(Zarr/ERA5), T3.5.19 (Executor seam - which also completes D12's lineage half and T3.5.14's
+sweep-level failure reporting), browser-based UI verification, and surfacing the benchmark
+suite, orientation output and discovery endpoints in the frontend.

@@ -401,13 +401,42 @@ Evidence: global cell areas reproduce `4*pi*R^2` to 1.2e-16; the zonal gradient 
 
 **The mandated re-validation of regime classification found D26** - the classifier compared an S(k) exponent against E(k) reference values, mislabelling every field by one exponent. Also found D27, D28 and D29, and refuted two of my own stated hypotheses (see `architecture.md` 7.2e). Partially delivers **T3.5.20 (D17)**: the radial-PSD and coherence annulus reductions are now `torch.bincount`, asserted numerically identical to the reference Python loop.
 
-### T3.5.14 Explanatory error taxonomy *(D14, implements E6)*
+### T3.5.14 Explanatory error taxonomy *(D14, implements E6)* - **DONE**
 Structured exception hierarchy with step/action/shape/expectation context; API returns actionable detail (4xx for user error, 5xx only for genuine internal faults) while still not leaking stack traces to the client. Pipeline failures record the failing step and parameter combination.
 **Acceptance:** a deliberately malformed pipeline (shape mismatch between two steps) produces a message naming both steps, both shapes, and the fix. Sweep failure reporting is tested with a partially-failing 20-run sweep.
 
-### T3.5.15 Registries for sources, actions, transforms and detectors *(D15, implements E1, E2)*
+**Met for the taxonomy and the API surface.** `core/errors.py` defines the hierarchy;
+`ShapeMismatchError` names both sides and the fix, `PipelineStepError` names the step, action,
+parameter combination and run index and **inherits the cause's status code** (a bad parameter
+inside a step is still a 4xx, not a platform fault), and `ReferenceResolutionError` lists the
+resolvable references with a `did you mean`. The API classifies by error *kind*: an unknown
+transform is now a 404 quoting the valid names, while a genuine fault stays opaque - both
+asserted, including that a 500 does not leak a file path.
+
+**Outstanding:** wiring `PipelineStepError` into the sweep loop so a partially-failing 20-run
+sweep reports per-run causes. That lands with T3.5.19, which is where run-level failure
+handling belongs.
+
+### T3.5.15 Registries for sources, actions, transforms and detectors *(D15, implements E1, E2)* - **DONE**
 Decorator-based registries; refactor `_execute_action`'s 13 branches and the adapter's hard-coded dataset list onto them. Define the `DataSource` protocol with capability declaration and an explicit fallback chain, recording the resolved source in lineage.
 **Acceptance:** a new data source and a new pipeline action are each added in a **new file only**, with zero edits to `engine.py`, `adapters.py` or `main.py`, and both appear automatically in `GET /api/v1/actions` and `GET /api/v1/data/datasets`. A run served by the simulated fallback is visibly labelled as such in the API response and the UI.
+
+**Met, and verified literally.** `src/tests/plugin_example.py` adds a data source and a
+pipeline action in one new file; `test_acceptance_new_plugin_needs_no_core_edits` imports it,
+asserts both appear in `GET /api/v1/actions` and `GET /api/v1/data/datasets`, and **hashes
+the three core files before and after** - a claim about not editing files is checkable, so it
+is checked rather than asserted in prose.
+
+Delivered as `core/registry.py` + `core/errors.py`, with `transform_engine/registry.py`
+(6 transforms, one dispatch point replacing two parallel chains),
+`experiment_engine/actions.py` (7 actions; **engine.py 562 -> 315 lines**) and
+`data_layer/sources.py` + `builtin_sources.py` (priority-ordered fallback chain). Three new
+discovery endpoints. Suite 351 -> 375.
+
+**The acceptance test found a real latent bug the moment a third source existed:**
+`list_datasets` inferred `is_simulated` from `kind == "simulated"`, a literal string test, so
+any simulated source with a different `kind` label would have been reported to the researcher
+as **real observational data**. It now reads the flag the source declared.
 
 ### T3.5.16 Precision policy *(D16, implements E8)*
 `PhysicalField(dtype=...)` with float64 available; float64 by default for spectral accumulation, surrogate statistics and fitting; float32 retained for display paths.

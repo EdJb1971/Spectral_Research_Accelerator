@@ -15,6 +15,12 @@ from src.data_layer.adapters import MeteorologicalDataAdapter
 from src.analysis_engine.diagnostics import SpectralSpatialAnalysisEngine
 from src.analysis_engine.decomposition import ErrorDecompositionEngine
 from src.physical_core.field import PhysicalField
+from src.experiment_engine import actions
+from src.core.errors import (
+    PipelineStepError,
+    ReferenceResolutionError,
+    SpectralEarthError,
+)
 
 def get_execution_device(run_idx: int = 0) -> torch.device:
     if torch.cuda.is_available():
@@ -229,317 +235,34 @@ class DeclarativeExperimentEngine:
 
     @staticmethod
     def _execute_action(action: str, args: Dict[str, Any], device: torch.device) -> Dict[str, Any]:
-        if action == "generate_synthetic":
-            field_type = args.get("type", "sinusoid").lower()
-            height = args.get("height", 32)
-            width = args.get("width", 32)
-            params = args.get("params", {})
-            
-            if field_type == "sinusoid":
-                freqs = params.get("frequencies", [(2.0, 2.0)])
-                amps = params.get("amplitudes", [1.0])
-                phases = params.get("phases", [(0.0, 0.0)])
-                field = SyntheticFieldGenerator.generate_sinusoid(height, width, freqs, amps, phases)
-            elif field_type == "vortex":
-                centers = params.get("centers", [(0.5, 0.5)])
-                amps = params.get("amplitudes", [1.0])
-                radii = params.get("core_radii", [0.1])
-                field = SyntheticFieldGenerator.generate_vortex(height, width, centers, amps, radii)
-            elif field_type == "front":
-                angle = params.get("angle", 0.0)
-                offset = params.get("offset", 0.0)
-                width_param = params.get("width_param", 0.1)
-                amp = params.get("amplitude", 1.0)
-                field = SyntheticFieldGenerator.generate_front(height, width, angle, offset, width_param, amp)
-            else:
-                raise ValueError(f"Unsupported synthetic field type: {field_type}")
-                
-            return {
-                "field_data": field.data.tolist(),
-                "coords": {k: v.tolist() for k, v in field.coords.items()},
-                "metadata": field.metadata
-            }
+        """Dispatch one pipeline step through the action registry (T3.5.15, D15).
 
-        elif action == "apply_transform":
-            field_data = args.get("field_data")
-            transform_type = args.get("transform_type", "fft").lower()
-            config = args.get("config", {})
-            
-            data_tensor = torch.tensor(field_data, dtype=torch.float32, device=device)
-            field = PhysicalField(data_tensor)
-            
-            if transform_type == "fft":
-                magnitude, phase = SpectralTransformEngine.apply_fft2d(field)
-                reconstructed = SpectralTransformEngine.inverse_fft2d(magnitude, phase, field.data.shape)
-                coefficients = {
-                    "magnitude": magnitude.tolist(),
-                    "phase": phase.tolist()
-                }
-            elif transform_type == "dct":
-                coeffs = SpectralTransformEngine.apply_dct2d(field)
-                reconstructed = SpectralTransformEngine.inverse_dct2d(coeffs)
-                coefficients = {
-                    "coefficients": coeffs.tolist()
-                }
-            elif transform_type == "dwt":
-                levels = config.get("levels", 1)
-                coeffs = SpectralTransformEngine.apply_dwt2d(field, levels=levels)
-                reconstructed = SpectralTransformEngine.inverse_dwt2d(coeffs, levels=levels, target_shape=field.data.shape)
-                serialized_coeffs = {"LL": coeffs["LL"].tolist()}
-                for lvl in range(1, levels + 1):
-                    serialized_coeffs[f"level_{lvl}"] = {
-                        k: v.tolist() for k, v in coeffs[f"level_{lvl}"].items()
-                    }
-                coefficients = serialized_coeffs
-            elif transform_type == "dtcwt":
-                # T3.5.6 / D1: the real Kingsbury q-shift DTCWT. The previous
-                # `SpectralTransformEngine.apply_dtcwt2d` ran four copies of one Haar filter
-                # bank and is retained only as a documented artefact (see transforms.py).
-                # TODO(T3.5.15): this branch is registry debt.
-                levels = int(config.get("levels", 3))
-                coeffs = RealDTCWT.apply_dtcwt2d(
-                    field, levels=levels,
-                    level1=config.get("level1", "near_sym_b"),
-                    qshift=config.get("qshift", "qshift_b"))
-                reconstructed = RealDTCWT.inverse_dtcwt2d(coeffs)
-                orientation = RealDTCWT.subband_energies(coeffs)
-                serialized_coeffs = {"LL": coeffs["LL"].tolist()}
-                for lvl in range(1, levels + 1):
-                    serialized_coeffs[f"level_{lvl}"] = {
-                        "LH_real": coeffs[f"level_{lvl}"]["LH_real"].tolist(),
-                        "LH_imag": coeffs[f"level_{lvl}"]["LH_imag"].tolist(),
-                        "HL_real": coeffs[f"level_{lvl}"]["HL_real"].tolist(),
-                        "HL_imag": coeffs[f"level_{lvl}"]["HL_imag"].tolist(),
-                        "HH_real": coeffs[f"level_{lvl}"]["HH_real"].tolist(),
-                        "HH_imag": coeffs[f"level_{lvl}"]["HH_imag"].tolist()
-                    }
-                coefficients = serialized_coeffs
-            elif transform_type == "swt":
-                # Undecimated / stationary transform (T3.5.7). Unlike 'dwt' every band
-                # stays on the parent grid, which is what Phase 4 needs. NOTE: this is
-                # another branch on the if/elif chain that defect D15 is about; it moves
-                # onto @register_transform in T3.5.15.
-                levels = config.get("levels", 1)
-                wavelet = config.get("wavelet", "haar")
-                mode = config.get("mode", "periodic")
-                coeffs_swt = swt_engine.apply_swt2d(field, levels=levels, wavelet=wavelet, mode=mode)
-                if mode == "periodic":
-                    reconstructed = swt_engine.inverse_swt2d(coeffs_swt)
-                else:
-                    reconstructed = field  # reflect mode is analysis-only; report no recon error
-                serialized_coeffs = {"LL": coeffs_swt["LL"].tolist()}
-                for lvl in range(1, levels + 1):
-                    serialized_coeffs["level_%d" % lvl] = {
-                        k: v.tolist() for k, v in coeffs_swt["level_%d" % lvl].items()
-                    }
-                serialized_coeffs["energy_fractions"] = swt_engine.swt_energy_fractions(coeffs_swt)
-                serialized_coeffs["meta"] = coeffs_swt["meta"]
-                coefficients = serialized_coeffs
-            elif transform_type == "hybrid":
-                crossover_freq = config.get("crossover_freq", 0.5)
-                mixing_weight = config.get("mixing_weight", 0.5)
-                coeffs = SpectralTransformEngine.apply_hybrid(field, crossover_freq, mixing_weight)
-                reconstructed = SpectralTransformEngine.inverse_hybrid(coeffs, field.data.shape)
-                serialized_dwt = {"LL": coeffs["dwt_coeffs"]["LL"].tolist()}
-                for lvl in range(1, 2):
-                    serialized_dwt[f"level_{lvl}"] = {
-                        k: v.tolist() for k, v in coeffs["dwt_coeffs"][f"level_{lvl}"].items()
-                    }
-                coefficients = {
-                    "fft_mag": coeffs["fft_mag"].tolist(),
-                    "fft_phase": coeffs["fft_phase"].tolist(),
-                    "fft_mag_filtered": coeffs["fft_mag_filtered"].tolist(),
-                    "dwt_coeffs": serialized_dwt,
-                    "mixing_weight": coeffs["mixing_weight"],
-                    "crossover_freq": coeffs["crossover_freq"]
-                }
-            else:
-                raise ValueError(f"Unsupported transform type: {transform_type}")
-                
-            mse = torch.mean((field.data - reconstructed.data) ** 2).item()
-            max_err = torch.max(torch.abs(field.data - reconstructed.data)).item()
-            
-            return {
-                "reconstructed_field": reconstructed.data.tolist(),
-                "coefficients": coefficients,
-                "metrics": {
-                    "mean_squared_error": mse,
-                    "max_absolute_error": max_err
-                }
-            }
-
-        elif action == "perturb_field":
-            field_data = args.get("field_data")
-            perturbations = args.get("perturbations", [])
-            
-            original_tensor = torch.tensor(field_data, dtype=torch.float32, device=device)
-            original_field = PhysicalField(original_tensor)
-            
-            current_field = original_field
-            for pert in perturbations:
-                p_type = pert.get("type", "").lower()
-                if p_type == "rotation":
-                    angle = pert.get("angle")
-                    if angle is None:
-                        raise ValueError("Rotation perturbation requires an 'angle' parameter.")
-                    current_field = PerturbationEngine.rotate(current_field, angle)
-                elif p_type == "translation":
-                    shift_x = pert.get("shift_x")
-                    shift_y = pert.get("shift_y")
-                    if shift_x is None or shift_y is None:
-                        raise ValueError("Translation perturbation requires 'shift_x' and 'shift_y' parameters.")
-                    current_field = PerturbationEngine.translate(current_field, shift_x, shift_y)
-                elif p_type == "noise":
-                    noise_type = pert.get("noise_type", "gaussian")
-                    level = pert.get("level", 0.1)
-                    current_field = PerturbationEngine.add_noise(current_field, noise_type, level)
-                else:
-                    raise ValueError(f"Unsupported perturbation type: {p_type}")
-                    
-            metrics = PerturbationEngine.compute_sensitivity_metrics(original_field, current_field)
-            return {
-                "perturbed_field": current_field.data.tolist(),
-                "metrics": metrics
-            }
-
-        elif action == "analyze_boundary":
-            field_data = args.get("field_data")
-            treatment = args.get("treatment", "zero")
-            pad_width = args.get("pad_width", 4)
-            window_type = args.get("window_type")
-            window_alpha = args.get("window_alpha", 0.1)
-            ref_data = args.get("reference_field_data")
-            
-            data_tensor = torch.tensor(field_data, dtype=torch.float32, device=device)
-            field = PhysicalField(data_tensor)
-            
-            ref_field = None
-            if ref_data is not None:
-                ref_tensor = torch.tensor(ref_data, dtype=torch.float32, device=device)
-                ref_field = PhysicalField(ref_tensor)
-                
-            analysis = BoundaryConditionLab.analyze_boundary_artefacts(
-                field=field,
-                treatment=treatment,
-                pad_width=pad_width,
-                window_type=window_type,
-                window_alpha=window_alpha,
-                reference_field=ref_field
-            )
-            return analysis
-
-        elif action == "slice_dataset":
-            dataset_id = args.get("dataset_id")
-            variable = args.get("variable")
-            time = args.get("time")
-            level = args.get("level")
-            lat_range = args.get("lat_range")
-            lon_range = args.get("lon_range")
-            
-            field = MeteorologicalDataAdapter.slice_dataset(
-                dataset_id=dataset_id,
-                variable=variable,
-                time=time,
-                level=level,
-                lat_range=lat_range,
-                lon_range=lon_range
-            )
-            return {
-                "field_data": field.data.tolist(),
-                "coords": {k: v.tolist() for k, v in field.coords.items()},
-                "metadata": field.metadata
-            }
-
-        elif action == "compute_diagnostics":
-            forecast_data = args.get("forecast_data")
-            gt_data = args.get("ground_truth_data")
-            
-            f_tensor = torch.tensor(forecast_data, dtype=torch.float32, device=device)
-            g_tensor = torch.tensor(gt_data, dtype=torch.float32, device=device)
-            
-            f_field = PhysicalField(f_tensor)
-            g_field = PhysicalField(g_tensor)
-            
-            diagnostics = SpectralSpatialAnalysisEngine.compute_diagnostics(f_field, g_field)
-            return diagnostics
-
-        elif action == "decompose_errors":
-            f_data = args.get("forecast_data")
-            g_data = args.get("ground_truth_data")
-            f_series = args.get("forecast_series")
-            g_series = args.get("ground_truth_series")
-            lead_times = args.get("lead_times")
-            boundary_width = args.get("boundary_width", 8)
-            
-            scale_decomp = None
-            boundary_decomp = None
-            lead_time_decomp = None
-            
-            if f_data is not None and g_data is not None:
-                f_tensor = torch.tensor(f_data, dtype=torch.float32, device=device)
-                g_tensor = torch.tensor(g_data, dtype=torch.float32, device=device)
-                
-                scale_decomp = ErrorDecompositionEngine.decompose_by_scale(f_tensor, g_tensor)
-                boundary_decomp = ErrorDecompositionEngine.decompose_by_boundary(
-                    f_tensor, g_tensor, boundary_width=boundary_width
-                )
-                
-            if f_series is not None and g_series is not None and lead_times is not None:
-                f_tensors = [torch.tensor(f, dtype=torch.float32, device=device) for f in f_series]
-                g_tensors = [torch.tensor(g, dtype=torch.float32, device=device) for g in g_series]
-                
-                lead_time_decomp = ErrorDecompositionEngine.decompose_by_lead_time(
-                    f_tensors, g_tensors, lead_times
-                )
-                
-            return {
-                "scale_decomposition": scale_decomp,
-                "boundary_decomposition": boundary_decomp,
-                "lead_time_decomposition": lead_time_decomp
-            }
-
-        else:
-            raise ValueError(f"Unknown action: {action}")
+        This was a 270-line `if/elif` chain that had to be edited to add an action, with
+        the same action names repeated in two further chains below. Dispatch now goes
+        through `experiment_engine.actions.ACTIONS`, so a new action is a new file plus an
+        import - `engine.py` is not touched - and an unknown name raises
+        `UnknownNameError`, which lists the valid actions and offers a `did you mean`
+        instead of the old bare `ValueError`.
+        """
+        return actions.execute(action, args, device)
 
     @staticmethod
     def _get_node_type_for_action(action: str) -> str:
-        if action in ["generate_synthetic", "slice_dataset"]:
-            return "field"
-        elif action == "apply_transform":
-            return "coefficients"
-        elif action in ["compute_diagnostics", "decompose_errors", "perturb_field", "analyze_boundary"]:
-            return "metrics"
-        return "intermediate"
+        """Lineage node type, declared by the action itself rather than by a parallel chain."""
+        try:
+            return actions.node_type_for(action)
+        except Exception:
+            return "intermediate"
 
     @staticmethod
-    def _create_node_summary(action: str, step_result: Dict[str, Any], resolved_args: Dict[str, Any]) -> Dict[str, Any]:
-        summary = {"action": action}
-        if action == "generate_synthetic":
-            summary["type"] = resolved_args.get("type")
-            summary["shape"] = [len(step_result["field_data"]), len(step_result["field_data"][0])]
-            summary["metadata"] = step_result.get("metadata", {})
-        elif action == "slice_dataset":
-            summary["dataset_id"] = resolved_args.get("dataset_id")
-            summary["variable"] = resolved_args.get("variable")
-            summary["shape"] = [len(step_result["field_data"]), len(step_result["field_data"][0])]
-            summary["metadata"] = step_result.get("metadata", {})
-        elif action == "apply_transform":
-            summary["transform_type"] = resolved_args.get("transform_type")
-            summary["metrics"] = step_result.get("metrics", {})
-        elif action == "perturb_field":
-            summary["perturbations"] = resolved_args.get("perturbations")
-            summary["metrics"] = step_result.get("metrics", {})
-        elif action == "analyze_boundary":
-            summary["treatment"] = resolved_args.get("treatment")
-            summary["pad_width"] = resolved_args.get("pad_width")
-            summary["spectral_leakage"] = step_result.get("spectral_leakage")
-        elif action == "compute_diagnostics":
-            summary["spatial_metrics"] = step_result.get("spatial_metrics", {})
-            summary["gradient_errors"] = step_result.get("gradient_errors", {})
-        elif action == "decompose_errors":
-            summary["scale_decomposition"] = step_result.get("scale_decomposition")
-            summary["lead_time_decomposition"] = step_result.get("lead_time_decomposition")
-        return summary
+    def _create_node_summary(action: str, step_result: Dict[str, Any],
+                             resolved_args: Dict[str, Any]) -> Dict[str, Any]:
+        """Lineage summary, produced by the action itself (T3.5.15).
+
+        This was the last `elif action == ...` chain in this file, and the third place
+        the seven action names were listed. All three now come from one registration.
+        """
+        return actions.summarise(action, step_result, resolved_args)
 
     @staticmethod
     def _find_step_dependencies(args: Any) -> List[str]:

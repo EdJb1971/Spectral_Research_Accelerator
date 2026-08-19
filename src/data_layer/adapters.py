@@ -1,8 +1,13 @@
 import os
+import logging
 import torch
 import numpy as np
 import pandas as pd
 import xarray as xr
+from src.data_layer import sources as data_sources
+from src.data_layer import builtin_sources as _builtin  # noqa: F401
+
+logger = logging.getLogger(__name__)
 from typing import Dict, Any, List, Optional, Tuple
 from src.physical_core.field import PhysicalField
 
@@ -147,12 +152,18 @@ class MeteorologicalDataAdapter:
 
     @classmethod
     def get_dataset(cls, dataset_id: str) -> xr.Dataset:
+        """Resolve a dataset through the registered source chain (T3.5.15, standard E2).
+
+        Sources are tried in priority order and the full attempt record is kept, so a run
+        served by the simulated fallback is a visible provenance fact rather than something
+        inferable from a log line. The mtime-based cache invalidation of D9 is preserved:
+        dropping a new `.nc` file into `data/` is still picked up without a restart.
+        """
         dataset_id = dataset_id.lower()
         path = cls._resolve_path(dataset_id)
         mtime = os.path.getmtime(path) if path else None
 
         cached = cls._sources.get(dataset_id)
-        # Invalidate when the file appears, disappears, or changes on disk (D9).
         if cached is not None and dataset_id in cls._datasets:
             if cached.get("path") == path and cached.get("mtime") == mtime:
                 return cls._datasets[dataset_id]
@@ -161,28 +172,19 @@ class MeteorologicalDataAdapter:
             except Exception:
                 pass
 
-        if path is not None:
-            try:
-                cls._datasets[dataset_id] = xr.open_dataset(path)
-                cls._sources[dataset_id] = {
-                    "kind": "netcdf", "path": path, "mtime": mtime, "fallback_reason": None,
-                }
-                return cls._datasets[dataset_id]
-            except Exception as e:
-                # E2: a fallback is a provenance fact, not a silent convenience.
-                cls._datasets[dataset_id] = cls._get_simulated_fallback(dataset_id)
-                cls._sources[dataset_id] = {
-                    "kind": "simulated", "path": path, "mtime": mtime,
-                    "fallback_reason": f"{type(e).__name__} while opening {path}",
-                }
-                return cls._datasets[dataset_id]
-
-        cls._datasets[dataset_id] = cls._get_simulated_fallback(dataset_id)
+        resolution = data_sources.resolve(dataset_id)
+        cls._datasets[dataset_id] = resolution.dataset
         cls._sources[dataset_id] = {
-            "kind": "simulated", "path": None, "mtime": None,
-            "fallback_reason": f"no file at {os.path.join(cls.DATA_DIR, dataset_id + '.nc')}",
+            "kind": resolution.kind,
+            "path": path,
+            "mtime": mtime,
+            "fallback_reason": resolution.fallback_reason,
+            "source_name": resolution.source_name,
+            "is_simulated": resolution.is_simulated,
+            "provenance": resolution.to_provenance(),
         }
         return cls._datasets[dataset_id]
+
 
     @classmethod
     def get_source_info(cls, dataset_id: str) -> Dict[str, Any]:
@@ -220,9 +222,23 @@ class MeteorologicalDataAdapter:
             raise ValueError(f"Unknown dataset ID: {dataset_id}")
 
     @classmethod
+    def known_dataset_ids(cls) -> List[str]:
+        """Every dataset id any registered source declares it can serve."""
+        ids = set()
+        for entry in data_sources.SOURCES.entries():
+            ids.update(entry.capabilities.get("dataset_ids", []))
+        return sorted(ids)
+
+    @classmethod
     def list_datasets(cls) -> List[Dict[str, Any]]:
-        for d_id in ["era5_reanalysis", "gfs_forecast", "toy_climate_model"]:
-            cls.get_dataset(d_id)
+        # Dataset ids come from the registered sources' declared capabilities, not from a
+        # literal here. That is what makes the acceptance criterion of T3.5.15 achievable:
+        # a source added in a new file shows up in this listing with no edit to adapters.py.
+        for d_id in cls.known_dataset_ids():
+            try:
+                cls.get_dataset(d_id)
+            except Exception as exc:
+                logger.warning("dataset %s could not be resolved: %s", d_id, exc)
             
         result = []
         for d_id, ds in cls._datasets.items():
@@ -241,7 +257,13 @@ class MeteorologicalDataAdapter:
                 "source_kind": source.get("kind", "unknown"),
                 "source_path": source.get("path"),
                 "fallback_reason": source.get("fallback_reason"),
-                "is_simulated": source.get("kind") == "simulated",
+                # Read the flag the source *declared*, not a string comparison on `kind`.
+                # The literal `kind == "simulated"` test silently reported any simulated
+                # source with a different kind label (a demo source, a future model-output
+                # source) as real observational data - found by the T3.5.15 acceptance test
+                # the moment a third source existed.
+                "is_simulated": bool(source.get("is_simulated",
+                                                source.get("kind") == "simulated")),
                 "description": ds.attrs.get("description", ""),
                 "variables": list(ds.data_vars.keys()),
                 "variables_metadata": vars_info,

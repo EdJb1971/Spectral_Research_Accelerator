@@ -14,6 +14,11 @@ from sqlalchemy.orm import Session
 
 from src.physical_core.field import PhysicalField
 from src.transform_engine.transforms import SpectralTransformEngine
+from src.transform_engine import registry as transform_registry
+from src.experiment_engine import actions as pipeline_actions
+from src.data_layer import sources as data_sources
+from src.data_layer import builtin_sources as _builtin_sources  # noqa: F401
+from src.core.errors import classify
 from src.transform_engine import dtcwt as RealDTCWT
 from src.transform_engine import stationary as swt_engine
 from src.synthetic_generator.generator import SyntheticFieldGenerator
@@ -497,89 +502,17 @@ async def apply_transform(request: TransformRequest):
     config = request.config
     
     try:
-        if transform_type == "fft":
-            magnitude, phase = SpectralTransformEngine.apply_fft2d(field)
-            reconstructed = SpectralTransformEngine.inverse_fft2d(magnitude, phase, field.data.shape)
-            coefficients = {
-                "magnitude": magnitude.tolist(),
-                "phase": phase.tolist()
-            }
-        elif transform_type == "dct":
-            coeffs = SpectralTransformEngine.apply_dct2d(field)
-            reconstructed = SpectralTransformEngine.inverse_dct2d(coeffs)
-            coefficients = {
-                "coefficients": coeffs.tolist()
-            }
-        elif transform_type == "dwt":
-            levels = config.get("levels", 1)
-            coeffs = SpectralTransformEngine.apply_dwt2d(field, levels=levels)
-            reconstructed = SpectralTransformEngine.inverse_dwt2d(coeffs, levels=levels, target_shape=field.data.shape)
-        elif transform_type == "dtcwt":
-            # T3.5.6 / D1: real Kingsbury q-shift DTCWT with six oriented complex subbands.
-            # TODO(T3.5.15): registry debt, same as the other transform branches.
-            # Filter choice comes from `config` like every other transform, so a wavelet
-            # bank sweep (T4B.2) can vary it as an ordinary parameter-matrix entry; the
-            # top-level request fields are accepted as a convenience for direct API calls.
-            levels = config.get("levels", 3)
-            coeffs = RealDTCWT.apply_dtcwt2d(
-                field, levels=levels,
-                level1=config.get("level1", request.level1 or "near_sym_b"),
-                qshift=config.get("qshift", request.qshift or "qshift_b"))
-            reconstructed = RealDTCWT.inverse_dtcwt2d(coeffs)
-            summary = RealDTCWT.subband_energies(coeffs)
-            coefficients = {
-                "lowpass_shape": list(coeffs["lowpass"].shape),
-                "levels": coeffs["levels"],
-                "feature_orientations_deg": summary["feature_orientations_deg"],
-                "wavevector_orientations_deg": summary["wavevector_orientations_deg"],
-                "orientation_convention": summary["orientation_convention"],
-                "subband_energy": summary["levels"],
-                "level1": coeffs["level1"],
-                "qshift": coeffs["qshift"],
-                "coefficient_provenance": coeffs["coefficient_provenance"],
-            }
-        elif transform_type == "swt":
-            # Undecimated / stationary transform (T3.5.7): every band keeps the parent grid
-            # shape and the transform is shift-invariant, which is what Phase 4 requires.
-            # NOTE: another branch on the chain defect D15 is about; moves to a registry in T3.5.15.
-            levels = config.get("levels", 1)
-            wavelet = config.get("wavelet", "haar")
-            mode = config.get("mode", "periodic")
-            coeffs_swt = swt_engine.apply_swt2d(field, levels=levels, wavelet=wavelet, mode=mode)
-            reconstructed = (
-                swt_engine.inverse_swt2d(coeffs_swt) if mode == "periodic" else field
-            )
-            serialized = {"LL": coeffs_swt["LL"].tolist()}
-            for lvl in range(1, levels + 1):
-                serialized[f"level_{lvl}"] = {
-                    k: v.tolist() for k, v in coeffs_swt[f"level_{lvl}"].items()
-                }
-            serialized["energy_fractions"] = swt_engine.swt_energy_fractions(coeffs_swt)
-            serialized["meta"] = coeffs_swt["meta"]
-            coefficients = serialized
-        elif transform_type == "hybrid":
-            crossover_freq = config.get("crossover_freq", 0.5)
-            mixing_weight = config.get("mixing_weight", 0.5)
-            coeffs = SpectralTransformEngine.apply_hybrid(field, crossover_freq, mixing_weight)
-            reconstructed = SpectralTransformEngine.inverse_hybrid(coeffs, field.data.shape)
-            serialized_dwt = {"LL": coeffs["dwt_coeffs"]["LL"].tolist()}
-            for lvl in range(1, 2):
-                serialized_dwt[f"level_{lvl}"] = {
-                    k: v.tolist() for k, v in coeffs["dwt_coeffs"][f"level_{lvl}"].items()
-                }
-            coefficients = {
-                "fft_mag": coeffs["fft_mag"].tolist(),
-                "fft_phase": coeffs["fft_phase"].tolist(),
-                "fft_mag_filtered": coeffs["fft_mag_filtered"].tolist(),
-                "dwt_coeffs": serialized_dwt,
-                "mixing_weight": coeffs["mixing_weight"],
-                "crossover_freq": coeffs["crossover_freq"]
-            }
-        else:
-            raise HTTPException(status_code=400, detail=f"Unsupported transform type: {transform_type}")
-            
-        mse = torch.mean((field.data - reconstructed.data) ** 2).item()
-        max_err = torch.max(torch.abs(field.data - reconstructed.data)).item()
+        # T3.5.15 / D15: dispatch through the transform registry. This was a six-branch
+        # `if/elif` that duplicated the one in `engine.py`, so the two could - and did -
+        # drift apart on defaults. There is now a single definition of what each
+        # transform name means, and an unknown name produces a 404 listing the valid
+        # ones rather than a bare 400.
+        result = transform_registry.apply_transform(transform_type, field, config)
+        reconstructed = result["reconstructed"]
+        coefficients = result["summary"]
+        mse = result["reconstruction_mse"]
+        max_err = float(torch.max(torch.abs(field.data.to(reconstructed.data.dtype)
+                                            - reconstructed.data)))
         
         return TransformResponse(
             reconstructed_field=reconstructed.data.tolist(),
@@ -592,8 +525,15 @@ async def apply_transform(request: TransformRequest):
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Internal transform error: {str(e)}", exc_info=True)
-        raise HTTPException(status_code=500, detail="An internal error occurred while processing the transform.")
+        # T3.5.14 / D14: the error kind decides the status code, not this handler guessing.
+        # A bad transform name or parameter is the caller's, and they get told exactly what
+        # was wrong; a genuine internal fault stays opaque and is logged in full.
+        info = classify(e)
+        if info["status_code"] >= 500:
+            logger.error(f"Internal transform error: {str(e)}", exc_info=True)
+        else:
+            logger.info(f"Rejected transform request: {str(e)}")
+        raise HTTPException(status_code=info["status_code"], detail=info["detail"])
 
 @app.post("/api/v1/synthetic/generate", response_model=GenerateResponse)
 async def generate_synthetic_field(request: GenerateRequest):
@@ -703,6 +643,32 @@ async def analyze_boundary(request: BoundaryRequest):
     except Exception as e:
         logger.error(f"Boundary laboratory error: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail="An error occurred during boundary condition analysis.")
+
+@app.get("/api/v1/actions")
+async def list_actions():
+    """Every registered pipeline action, generated from the registry (T3.5.15).
+
+    Generated, never hand-maintained: a hand-written list is a document that goes stale, and
+    this one would go stale precisely when someone adds an action - the moment it matters.
+    """
+    return [
+        {**entry.to_dict(), "node_type": entry.value.node_type}
+        for entry in pipeline_actions.ACTIONS.entries()
+    ]
+
+@app.get("/api/v1/transforms")
+async def list_transforms():
+    """Every registered transform, with its parameters and declared capabilities.
+
+    `capabilities` is what makes the T4B.2 wavelet bank selectable by property rather than
+    by name - "every shift-invariant multiscale transform" instead of a hard-coded list.
+    """
+    return transform_registry.TRANSFORMS.describe()
+
+@app.get("/api/v1/data/sources")
+async def list_data_sources():
+    """The data-source fallback chain, in priority order (standard E2)."""
+    return data_sources.describe_sources()
 
 @app.get("/api/v1/benchmarks", response_model=List[BenchmarkResponse])
 async def list_benchmarks():
