@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session
 
 from src.physical_core.field import PhysicalField
 from src.transform_engine.transforms import SpectralTransformEngine
+from src.transform_engine import stationary as swt_engine
 from src.synthetic_generator.generator import SyntheticFieldGenerator
 from src.synthetic_generator.perturbation import PerturbationEngine
 from src.boundary_lab.boundary import BoundaryConditionLab
@@ -72,7 +73,7 @@ class HealthResponse(BaseModel):
 
 class TransformRequest(BaseModel):
     field_data: List[List[float]] = Field(..., description="2D array representing the physical field.")
-    transform_type: str = Field(..., description="Type of transform: 'fft', 'dct', 'dwt', 'dtcwt', or 'hybrid'.")
+    transform_type: str = Field(..., description="Type of transform: 'fft', 'dct', 'dwt', 'swt', 'dtcwt', or 'hybrid'.")
     config: Dict[str, Any] = Field(default_factory=dict, description="Configuration parameters for the transform.")
 
     @validator("field_data")
@@ -159,6 +160,13 @@ class BoundaryResponse(BaseModel):
     distance_profiles: List[Dict[str, Any]] = Field(..., description="Spatial error diagnostics as a function of distance.")
     spectral_leakage: float = Field(..., description="Spectral leakage ratio.")
     has_reference: bool = Field(..., description="Whether a reference field was used.")
+    # D13: the frame these numbers live in is part of the result, not an implementation
+    # detail. Boundary gradients are deliberately in pixel units (see boundary.py); saying
+    # so in the payload is what stops them being read as physical.
+    gradient_units: str = Field("value per pixel", description="Units of the profile gradients.")
+    distance_units: str = Field("pixel", description="Units of the distance axis.")
+    gradient_frame_note: Optional[str] = Field(None, description="Why this frame was chosen.")
+    grid: Optional[Dict[str, Any]] = Field(None, description="Grid geometry of the input field.")
 
 class DatasetMetadata(BaseModel):
     id: str
@@ -206,10 +214,16 @@ class DiagnosticsRequest(BaseModel):
         return v
 
 class DiagnosticsResponse(BaseModel):
-    spatial_metrics: Dict[str, float] = Field(..., description="Spatial error metrics.")
-    gradient_errors: Dict[str, float] = Field(..., description="Gradient-based error metrics.")
-    spectral_diagnostics: Dict[str, Any] = Field(..., description="Power Spectral Density and coherence diagnostics.")
+    # spatial_metrics and gradient_errors are Dict[str, Any] rather than Dict[str, float]
+    # because, since D13, every physical quantity travels with its units, its grid
+    # provenance and its weighting flags. Typing them as float silently dropped that
+    # context - a number whose units are not carried alongside it is exactly the failure
+    # mode D13 was about, so the schema now admits the metadata instead of discarding it.
+    spatial_metrics: Dict[str, Any] = Field(..., description="Spatial error metrics, area-weighted, with units.")
+    gradient_errors: Dict[str, Any] = Field(..., description="Metric-aware gradient error metrics, with units.")
+    spectral_diagnostics: Dict[str, Any] = Field(..., description="Power spectrum (physical wavenumber, E(k) convention) and coherence.")
     wavelet_energy: Dict[str, Any] = Field(..., description="Wavelet energy distribution across scales.")
+    grid: Optional[Dict[str, Any]] = Field(None, description="Grid geometry the diagnostics were computed on.")
 
 class ErrorDecompositionRequest(BaseModel):
     forecast_data: Optional[List[List[float]]] = Field(None, description="2D array representing a single forecast field.")
@@ -460,6 +474,25 @@ async def apply_transform(request: TransformRequest):
                     "HH_imag": coeffs[f"level_{lvl}"]["HH_imag"].tolist()
                 }
             coefficients = serialized_coeffs
+        elif transform_type == "swt":
+            # Undecimated / stationary transform (T3.5.7): every band keeps the parent grid
+            # shape and the transform is shift-invariant, which is what Phase 4 requires.
+            # NOTE: another branch on the chain defect D15 is about; moves to a registry in T3.5.15.
+            levels = config.get("levels", 1)
+            wavelet = config.get("wavelet", "haar")
+            mode = config.get("mode", "periodic")
+            coeffs_swt = swt_engine.apply_swt2d(field, levels=levels, wavelet=wavelet, mode=mode)
+            reconstructed = (
+                swt_engine.inverse_swt2d(coeffs_swt) if mode == "periodic" else field
+            )
+            serialized = {"LL": coeffs_swt["LL"].tolist()}
+            for lvl in range(1, levels + 1):
+                serialized[f"level_{lvl}"] = {
+                    k: v.tolist() for k, v in coeffs_swt[f"level_{lvl}"].items()
+                }
+            serialized["energy_fractions"] = swt_engine.swt_energy_fractions(coeffs_swt)
+            serialized["meta"] = coeffs_swt["meta"]
+            coefficients = serialized
         elif transform_type == "hybrid":
             crossover_freq = config.get("crossover_freq", 0.5)
             mixing_weight = config.get("mixing_weight", 0.5)
@@ -595,7 +628,11 @@ async def analyze_boundary(request: BoundaryRequest):
             padded_field=analysis["padded_field"],
             distance_profiles=analysis["distance_profiles"],
             spectral_leakage=analysis["spectral_leakage"],
-            has_reference=analysis["has_reference"]
+            has_reference=analysis["has_reference"],
+            gradient_units=analysis["gradient_units"],
+            distance_units=analysis["distance_units"],
+            gradient_frame_note=analysis["gradient_frame_note"],
+            grid=analysis["grid"],
         )
     except HTTPException:
         raise
@@ -646,6 +683,7 @@ async def compute_diagnostics(request: DiagnosticsRequest):
         return DiagnosticsResponse(
             spatial_metrics=diagnostics["spatial_metrics"],
             gradient_errors=diagnostics["gradient_errors"],
+            grid=diagnostics.get("grid"),
             spectral_diagnostics=diagnostics["spectral_diagnostics"],
             wavelet_energy=diagnostics["wavelet_energy"]
         )

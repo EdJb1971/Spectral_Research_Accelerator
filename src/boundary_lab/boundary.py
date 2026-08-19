@@ -108,7 +108,18 @@ class BoundaryConditionLab:
         
         dist_to_boundary = torch.where(dist_inside >= 0, dist_inside, dist_outside)
         
-        dy, dx = torch.gradient(padded_data)
+        # D13 note, and a deliberate exception to it. This gradient stays in *pixel* units
+        # and that is the correct frame here: a boundary artefact is a property of the
+        # padding operation and the grid, not of the atmosphere, and the distance profile
+        # it feeds is binned in cells from the padded edge. Converting to K/m would divide
+        # every profile by a constant (or, on a lat/lon grid, by a latitude-dependent
+        # factor) without changing which distances show elevated gradients - while making
+        # the artefact's magnitude harder to compare across treatments.
+        #
+        # What was wrong before was not the choice but its invisibility: the units are now
+        # stated in the returned record, so a reader cannot mistake these for physical
+        # gradients. `gradient_units` is asserted in test_boundary_synthetic.
+        dy, dx = torch.gradient(padded_data.to(torch.float64), edge_order=1)
         grad_mag = torch.sqrt(dx**2 + dy**2)
         
         has_ref = reference_field is not None
@@ -157,6 +168,15 @@ class BoundaryConditionLab:
         return {
             "padded_field": padded_data.tolist(),
             "distance_profiles": distance_profiles,
+            "gradient_units": "value per pixel",
+            "distance_units": "pixel",
+            "gradient_frame_note": (
+                "Boundary-artefact gradients are intentionally in pixel units: an artefact "
+                "is a property of the padding and the grid, so the pixel frame is the one "
+                "in which it is defined. Use physical_core.operators.gradient for "
+                "atmospheric gradients."
+            ),
+            "grid": field.grid.to_provenance(),
             "spectral_leakage": spectral_leakage,
             "has_reference": has_ref
         }

@@ -161,6 +161,20 @@ Regional analysis is the **primary scientific unit**, not merely a cost-saving c
 ### R14. A pattern that holds in only one region is a local quirk until shown otherwise.
 Orography, coastlines and land-sea contrast produce region-specific behaviour that is real but not general. Every mined pattern is therefore re-tested on **held-out regions** with similar and dissimilar physiography, and reports where it holds. This is the domain-level counterpart to R4E.2's translation invariance, and it is the difference between "we found a thing about the Alps" and "we found a thing about the atmosphere" - both valuable, but they are not the same claim and must not be reported as though they were.
 
+### R15. State the spectral convention next to every exponent.
+In two dimensions `E(k) = 2*pi*k*S(k)`, so the 1D isotropic energy spectrum and the 2D spectral density differ by exactly one exponent. The reference values everyone quotes - 5/3 for Kolmogorov, 3 for Charney/Kraichnan - are **E-convention**. This is not pedantry: defect D26 was exactly this confusion, and it caused a synthetic field built with a textbook Kolmogorov spectrum to be labelled *"Charney/Kraichnan enstrophy cascade"* - the opposite physical regime - for the entire history of the platform. Any function returning a spectral exponent must report which convention it is in **and** its value in the other, and any regime label must be derived from the E form.
+
+The same rule governs units. The label of a wavenumber axis is a property of the **grid**, not of the argument name the caller passed: reporting `k` in `rad m^-1` for a field that has no physical metric (D29) is the same error one layer out. Report the units of `k` and of the power, derive both from the grid, and refuse combinations that have no meaning rather than relabelling them.
+
+### R16. Set tolerances from the mathematics, not from what the code happens to pass.
+A test whose tolerance was chosen so that the current implementation passes cannot discover anything; it can only detect a change. Three defects in T3.5.13 were found solely because the bound came from theory rather than from observation:
+
+*   **D27** (float32 `fftfreq`) sits at 5.8e-8 and is invisible to any Parseval check with a tolerance looser than 1e-7. The identity is exact in exact arithmetic, so the tolerance must be machine epsilon and nothing else.
+*   The **Laplacian stencil** is validated by asserting the measured residual *equals the predicted truncation* `(k h)^2 / 12` to within 10%, not by asserting it is "small". An error of the right size for the wrong reason still fails.
+*   The **gradient** is validated by **convergence order**: halving the grid spacing must quarter the error. That distinguishes "correct scheme at finite resolution" from "subtly wrong scheme" in a way no single threshold can, and it is why the residual 3.2e-6 could be confidently attributed to truncation rather than to a metric error.
+
+Corollary, learned the hard way in this task: when a measurement contradicts the claim written in the docstring, the claim is what changes. Two such reversals are recorded in `architecture.md` section 7.2e.
+
 ---
 
 ## 3b. Cross-Cutting Engineering Standards
@@ -330,9 +344,15 @@ Add `alembic`, `scipy`, `ipywidgets`, `plotly`, `matplotlib`, and the estimator 
 Thread an explicit `torch.Generator` / `numpy.random.Generator` through `PerturbationEngine` and the simulated dataset builders. Store the seed on `ExperimentRun`.
 **Acceptance:** a test re-executes a completed run from its lineage record and reproduces every metric bit-for-bit; a second test asserts that two runs with *different* seeds actually differ, so the first test cannot pass trivially.
 
-### T3.5.13 Metric-aware differential operators and physical wavenumbers *(D13, implements E3)*
+### T3.5.13 Metric-aware differential operators and physical wavenumbers *(D13, implements E3)* - **DONE**
 Add units and grid metric to `PhysicalField`. Pass real spacing to every `torch.gradient` call. Area-weight domain statistics by `cos(lat)`. Report PSD in physical wavenumber, and state the isotropy assumption alongside every spectral slope.
 **Acceptance:** gradient magnitude of an analytic field on a lat/lon grid matches the analytic answer in physical units at multiple latitudes - a test the current code fails at high latitude. Regime classification is re-validated after the change, since `fit_spectral_slope` interpretations were previously computed in pixel space.
+
+**Met.** Delivered as `physical_core/grid.py` (`GridSpec`: pixel / cartesian / latlon, exact spherical cell areas, physical wavenumber axes, anisotropy reporting, provenance round-trip), `physical_core/operators.py` (metric-aware gradient, Laplace-Beltrami Laplacian, area-weighted statistics) and `analysis_engine/spectra.py` (physical-wavenumber radial spectra, count-weighted power-law fit with a standard error). 70 new tests in `test_grid_operators.py`; suite 152 -> 222 passing.
+
+Evidence: global cell areas reproduce `4*pi*R^2` to 1.2e-16; the zonal gradient matches `cos(lon)/(R cos(lat))` to 3.2e-6 at four latitudes while unit spacing errs by ~1e4 **and by a different factor at each latitude**; gradient accuracy confirmed second-order by grid refinement; the spherical Laplacian matches three harmonic eigenvalues (l=1, l=2 zonal, l=2 sectoral) to 1e-5..1e-8; Parseval exact to 1.0000000000; injected energy slopes 5/3, 2 and 3 recovered to within 0.05.
+
+**The mandated re-validation of regime classification found D26** - the classifier compared an S(k) exponent against E(k) reference values, mislabelling every field by one exponent. Also found D27, D28 and D29, and refuted two of my own stated hypotheses (see `architecture.md` 7.2e). Partially delivers **T3.5.20 (D17)**: the radial-PSD and coherence annulus reductions are now `torch.bincount`, asserted numerically identical to the reference Python loop.
 
 ### T3.5.14 Explanatory error taxonomy *(D14, implements E6)*
 Structured exception hierarchy with step/action/shape/expectation context; API returns actionable detail (4xx for user error, 5xx only for genuine internal faults) while still not leaking stack traces to the client. Pipeline failures record the failing step and parameter combination.

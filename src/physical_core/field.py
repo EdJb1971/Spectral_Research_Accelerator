@@ -2,6 +2,8 @@ import torch
 import numpy as np
 from typing import Tuple, Dict, Any, Optional
 
+from src.physical_core.grid import GridSpec
+
 class PhysicalField:
     """
     Domain-independent physical-field abstraction representing a 2D spatial grid.
@@ -12,12 +14,29 @@ class PhysicalField:
         data: torch.Tensor,  # Shape: (H, W)
         coords: Optional[Dict[str, torch.Tensor]] = None,  # e.g., {"lat": ..., "lon": ...} or {"x": ..., "y": ...}
         metadata: Optional[Dict[str, Any]] = None,
-        split: Optional[str] = None  # "train", "val", "test"
+        split: Optional[str] = None,  # "train", "val", "test"
+        dtype: Optional[torch.dtype] = None,
+        grid: Optional[GridSpec] = None,
+        units: Optional[str] = None
     ):
         if len(data.shape) != 2:
             raise ValueError(f"PhysicalField data must be 2D. Got shape {data.shape}")
-        
-        self.data = data.float()
+
+        # Defect D16: this previously called data.float() unconditionally, silently
+        # downcasting float64 input to float32. That is fine for display but it caps the
+        # precision of everything downstream - it limited a tight-frame validation to
+        # ~3e-7 relative error, which is float32 epsilon rather than any property of the
+        # transform under test. Phase 4C surrogate statistics, log-log power-law fits and
+        # mutual-information estimation all need float64 to be available.
+        #
+        # Policy: honour an explicit dtype; otherwise preserve a floating input dtype and
+        # promote non-floating input (int, bool) to float32.
+        if dtype is not None:
+            self.data = data.to(dtype)
+        elif data.is_floating_point():
+            self.data = data
+        else:
+            self.data = data.float()
         self.height, self.width = data.shape
         
         # Default coordinates if not provided
@@ -29,7 +48,31 @@ class PhysicalField:
             self.coords = coords
             
         self.metadata = metadata or {}
+        if units is not None:
+            self.metadata.setdefault("units", units)
         self.split = split  # Guardrail tracking
+
+        # Defect D13: physical geometry is now a first-class attribute rather than an
+        # unstated assumption. The default is a *pixel* grid, deliberately not None:
+        # "lengths here are array indices" then travels with the data and is printed in
+        # the units field of every derived quantity, instead of being rediscovered when
+        # someone wonders why a gradient is off by a factor of six million.
+        if grid is not None:
+            if tuple(grid.shape) != tuple(self.data.shape):
+                raise ValueError(
+                    "grid %s describes shape %r but the field data is %r. A GridSpec "
+                    "belongs to one specific array; use grid.subset(...) after a crop or "
+                    "grid.resampled(...) after an interpolation."
+                    % (grid.describe(), tuple(grid.shape), tuple(self.data.shape))
+                )
+            self.grid = grid
+        else:
+            self.grid = GridSpec.from_coords(self.coords, tuple(self.data.shape), self.metadata)
+
+    @property
+    def units(self) -> Optional[str]:
+        """Units of the field *values* (e.g. "K"), distinct from the grid's length units."""
+        return self.metadata.get("units", self.grid.variable_units)
 
     def scale_resolution(self, target_shape: Tuple[int, int], mode: str = "bilinear") -> "PhysicalField":
         """
@@ -59,7 +102,8 @@ class PhysicalField:
                 )
                 new_coords[key] = scaled_coord.squeeze(0).squeeze(0)
                 
-        return PhysicalField(scaled_data, coords=new_coords, metadata=self.metadata, split=self.split)
+        return PhysicalField(scaled_data, coords=new_coords, metadata=self.metadata,
+                             split=self.split, grid=self.grid.resampled(target_shape))
 
     def split_field(self, train_ratio: float = 0.6, val_ratio: float = 0.2) -> Dict[str, "PhysicalField"]:
         """
@@ -90,9 +134,15 @@ class PhysicalField:
             return sliced
 
         return {
-            "train": PhysicalField(train_data, coords=slice_coords(0, train_end), metadata=self.metadata, split="train"),
-            "val": PhysicalField(val_data, coords=slice_coords(train_end, val_end), metadata=self.metadata, split="val"),
-            "test": PhysicalField(test_data, coords=slice_coords(val_end, w), metadata=self.metadata, split="test")
+            "train": PhysicalField(train_data, coords=slice_coords(0, train_end),
+                                   metadata=self.metadata, split="train",
+                                   grid=self.grid.subset(col_start=0, col_stop=train_end)),
+            "val": PhysicalField(val_data, coords=slice_coords(train_end, val_end),
+                                 metadata=self.metadata, split="val",
+                                 grid=self.grid.subset(col_start=train_end, col_stop=val_end)),
+            "test": PhysicalField(test_data, coords=slice_coords(val_end, w),
+                                  metadata=self.metadata, split="test",
+                                  grid=self.grid.subset(col_start=val_end, col_stop=w))
         }
 
     def validate_split_guardrails(self, other: "PhysicalField") -> bool:

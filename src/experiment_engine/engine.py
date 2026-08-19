@@ -9,6 +9,7 @@ from src.synthetic_generator.generator import SyntheticFieldGenerator
 from src.synthetic_generator.perturbation import PerturbationEngine
 from src.boundary_lab.boundary import BoundaryConditionLab
 from src.transform_engine.transforms import SpectralTransformEngine
+from src.transform_engine import stationary as swt_engine
 from src.data_layer.adapters import MeteorologicalDataAdapter
 from src.analysis_engine.diagnostics import SpectralSpatialAnalysisEngine
 from src.analysis_engine.decomposition import ErrorDecompositionEngine
@@ -303,6 +304,27 @@ class DeclarativeExperimentEngine:
                         "HH_real": coeffs[f"level_{lvl}"]["HH_real"].tolist(),
                         "HH_imag": coeffs[f"level_{lvl}"]["HH_imag"].tolist()
                     }
+                coefficients = serialized_coeffs
+            elif transform_type == "swt":
+                # Undecimated / stationary transform (T3.5.7). Unlike 'dwt' every band
+                # stays on the parent grid, which is what Phase 4 needs. NOTE: this is
+                # another branch on the if/elif chain that defect D15 is about; it moves
+                # onto @register_transform in T3.5.15.
+                levels = config.get("levels", 1)
+                wavelet = config.get("wavelet", "haar")
+                mode = config.get("mode", "periodic")
+                coeffs_swt = swt_engine.apply_swt2d(field, levels=levels, wavelet=wavelet, mode=mode)
+                if mode == "periodic":
+                    reconstructed = swt_engine.inverse_swt2d(coeffs_swt)
+                else:
+                    reconstructed = field  # reflect mode is analysis-only; report no recon error
+                serialized_coeffs = {"LL": coeffs_swt["LL"].tolist()}
+                for lvl in range(1, levels + 1):
+                    serialized_coeffs["level_%d" % lvl] = {
+                        k: v.tolist() for k, v in coeffs_swt["level_%d" % lvl].items()
+                    }
+                serialized_coeffs["energy_fractions"] = swt_engine.swt_energy_fractions(coeffs_swt)
+                serialized_coeffs["meta"] = coeffs_swt["meta"]
                 coefficients = serialized_coeffs
             elif transform_type == "hybrid":
                 crossover_freq = config.get("crossover_freq", 0.5)
