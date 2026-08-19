@@ -1,0 +1,41 @@
+# SpectralEarth Scientific Backend Requirements
+# Optimized for Python 3.9+ and Pydantic v1 compatibility
+
+# Web API Framework
+fastapi>=0.100.0,<0.111.0
+uvicorn>=0.22.0
+
+# Data Validation (Compatible with Pydantic v1 validators used in main.py)
+pydantic>=1.10.0,<2.0.0
+
+# Relational Database Mapper
+sqlalchemy>=2.0.0
+
+# Deep Learning and Tensor Core
+torch>=2.0.0,<3.0.0
+
+# Scientific & Grid Computing
+numpy>=1.24.0,<3.0.0
+pandas>=2.0.0
+xarray>=2023.5.0
+
+# Testing and Mock Validation
+pytest>=7.3.0
+httpx>=0.24.0
+
+# Schema migrations (T3.5.7) - required before Phase 4 adds tables
+alembic>=1.13.0
+
+# Numerical utilities: Hungarian assignment (4D tracking), k-NN for the KSG
+# mutual-information estimator (E8), signal helpers
+scipy>=1.11.0
+
+# Notebook dashboard (research_playground.ipynb) - previously undeclared (D10)
+ipywidgets>=8.0.0
+plotly>=5.18.0
+matplotlib>=3.7.0
+
+# Test-only reference oracles for validating our own transforms (R8/T3.5.6).
+# Not imported by src/ - used to cross-check coefficients against a known-good
+# implementation rather than trusting our round-trip tests alone.
+PyWavelets>=1.4.0

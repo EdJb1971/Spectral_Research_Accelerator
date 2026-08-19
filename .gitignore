@@ -1,0 +1,22 @@
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Database
+*.db
+
+# Artifacts & caches (Phase 4A ArtifactStore, T3.5.21 Zarr cache)
+artifacts/
+.zarr_cache/
+
+# Node
+node_modules/
+frontend/dist/
+
+# Data (large binaries; see data/README.md)
+data/*.nc
+data/*.grib
+data/*.grib2
+data/*.zarr/
