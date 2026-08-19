@@ -739,3 +739,452 @@ D15 (registries), D17 (remaining per-bin loops in `decompose_by_boundary` and
 `analyze_boundary_artefacts`), D18 (device policy); plus T3.5.8 (Alembic), T3.5.17
 (benchmark suite), T3.5.18 (Zarr/ERA5), T3.5.19 (Executor seam), browser-based UI
 verification, and wiring health/list into the frontend.
+
+---
+
+## Slice 5 - T3.5.17 Ground-Truth Benchmark Suite, and T3.5.12 seed discipline
+
+**Date:** 2026-08-20. Suite after this slice: **271 passed, 1 xfailed** (up from 222).
+New package `src/benchmarks/` (registry, seeding, 9 datasets, runner, CLI) and
+`src/analysis_engine/climatology.py`; 46 new tests in `src/tests/test_benchmarks.py`.
+
+### What this is for
+
+A discovery tool without a false-positive floor is a machine for generating confident
+nonsense. Real atmospheric data can never tell you whether a reported pattern is real, so
+the platform is now measured against data whose answer is known *before* the analysis runs -
+and five of the nine entries have the answer **"there is nothing here"**.
+
+### Captured output
+
+```
+Ground-Truth Benchmark Suite
+==============================================================================
+
+advected_vortex_sequence
+  One vortex on a known trajectory with a known scale-doubling time.
+    PASS              4D.position                      worst centroid error 0.052 cells over 24 frames (mean 0.021); target < 1 px
+    PASS              4D.scale_evolution               scale centroid rose from level 4.366 to 4.915 (rank correlation with time 0.971) as sigma doubled every 16 steps
+    NOT_YET_RUNNABLE  4D.tracking                      4D.tracking: SpectralFeatureTrack linking (T4D) is not implemented; the known answer (1 track, 1 birth, 0 deaths, exact positions) is recorded
+
+coupled_cascade_sequence
+  Fine-scale activity drives coarse-scale amplitude at a known lag.
+    PASS              4C.cross_scale                   peak cross-correlation at lag 6 (true 6), r = 1.004; level 1 leads level 4
+
+fractional_brownian  [NULL - correct answer is 'nothing']
+  Scale-free fBm with a known Hurst exponent; exact alpha, NO organisation.
+    PASS              4C.alpha                         recovered E(k) exponent 2.3831 +/- 0.0093, true 2.4000 (H = 0.70), tolerance 0.060
+    NOT_YET_RUNNABLE  4C.surrogate_null                4C.surrogate_null: phase-randomised surrogate testing (T4C.5) is not implemented; the known answer 'zero findings on fBm' is recorded and will be enforced then
+
+planted_configuration
+  Three features in a known equilateral triangle; the 4E invariance target.
+    PASS              4E.feature_detection             all 3 planted features present at their stated positions: [True, True, True] (peak 1.082)
+    NOT_YET_RUNNABLE  4E.invariance                    4E.invariance: constellation matching with relative geometry (T4E) is not implemented; the transformed variants and their expected match are recorded
+
+pure_noise_sequence  [NULL - correct answer is 'nothing']
+  Independent white-noise frames. NOTHING is present; every stage must agree.
+    PASS              4C.cross_scale.null              best of 10 lags: p = 0.0847 at lag 10 (threshold 0.0050 after correcting for 10 tests); no cross-scale coupling claimed
+
+pure_sinusoid
+  A single spatial frequency; all energy belongs at one scale.
+    PASS              4C.scale_signature               spectral peak at 1.2954e-05 rad/m vs true 1.2668e-05 (2.3% off); wavelength 485 km vs 496 km
+    PASS              4C.scale_signature.wavelet       dominant SWT detail level 3 (expected 3); energy fractions {1: 0.0042, 2: 0.0578, 3: 0.469, 4: 0.469, 5: 0.0}
+
+red_noise_sequence  [NULL - correct answer is 'nothing']
+  Temporally autocorrelated but independent; catches R12 violations.
+    PASS              4C.r12_effective_sample_size     phi = 0.85, n = 200, ESS = 32.2. False-positive rate at alpha = 0.05: naive 40.0% (should be badly inflated), ESS-corrected 2.3% (should be near 5%)
+
+seasonal_diurnal_sequence  [NULL - correct answer is 'nothing']
+  Deterministic cycles, no weather. The most likely false discovery on ERA5.
+    PASS              4C.r11_anomaly                   residual variance after harmonic declimatology: 0.000171 of raw (target < 0.05). A time-of-day BIN climatology leaves 0.1552, because a 40-day record cannot form a day-of-year climatology and the annual cycle passes straight through.
+    PASS              4C.r11_split_aware               climatology fitted on 96 of 160 frames still removes the cycles on the held-out frames: residual 0.037306 of raw variance
+    PASS              4C.r11_raw_is_deceptive          raw (un-anomalised) scale energies correlate at r = 0.999, p = 2.02e-219 - a strong 'finding' that is purely the calendar. This is the trap R11 exists for.
+
+white_noise_field  [NULL - correct answer is 'nothing']
+  Spatially uncorrelated noise; the single-field false-positive floor.
+    PASS              4C.alpha                         E(k) exponent -0.9805 (expected -1.0 for white noise); label: Flat spectrum: E(k) exponent -0.98 +/- 0.01. Consistent with
+    PASS              4C.false_positive                no cascade regime claimed; reported as 'Flat spectrum: E(k) exponent -0.98 +/- 0.01. Consistent with'
+
+------------------------------------------------------------------------------
+PASS 14   FAIL 0   NOT_YET_RUNNABLE 3
+
+Gates defined but not yet enforceable (the stage does not exist yet):
+    advected_vortex_sequence / 4D.tracking
+    fractional_brownian / 4C.surrogate_null
+    planted_configuration / 4E.invariance
+```
+
+The three pending entries gate stages that do not exist yet. They report
+`NOT_YET_RUNNABLE` naming the missing stage rather than being skipped, because a skipped
+test is invisible in a summary line and would let "all green" mean "we never looked".
+
+### R12 measured: frames are not samples
+
+On 200-frame AR(1) sequences with `phi = 0.85` (effective sample size **32.2**, from 200
+frames), correlating *independent* series:
+
+| test | false-positive rate at alpha = 0.05 |
+|---|---|
+| naive, treating frames as independent | **40.0%** |
+| effective-sample-size corrected | **2.3%** |
+| nominal | 5% |
+
+An eight-fold inflation. Any 4C-4F result computed without this correction would be mostly
+false positives, and the benchmark measures the effect rather than asserting it.
+
+### R11 measured, and it forced a real module to be written
+
+The seasonal+diurnal benchmark contains *only* deterministic cycles plus 0.05-amplitude
+noise. The obvious anomaly step - average all frames sharing a time of day, subtract - left
+**15.5% of the original variance**, because a 40-day record cannot form a day-of-year
+climatology and the annual cycle passed straight through. That 15.5% is exactly what a
+pattern miner would report as weather.
+
+This was a benchmark failure that could not be fixed by adjusting the benchmark, so
+`analysis_engine/climatology.py` was written: harmonic regression on the diurnal and annual
+periods, which fits the cycles as continuous functions of time and therefore removes a
+*partial* annual cycle from a *partial* year.
+
+```
+residual variance as a fraction of raw:
+  time-of-day bin climatology : 0.155193
+  harmonic regression         : 0.000171     (a factor of ~900)
+```
+
+The suite also asserts the **trap itself**: the raw sequence's scale energies correlate at
+`r = 0.999, p = 2e-219`. Without that positive control the anomaly check would prove
+nothing, because a benchmark that never produced a spurious finding could not demonstrate
+one being removed.
+
+Climatology fitting is **split-aware** (R6): fitted on the first 60% of frames it still
+removes the cycles on the held-out 40% (residual 0.037 of raw), so anomalies can be produced
+without leaking test-period information into training.
+
+### D30 - a result that changed depending on what ran before it
+
+The most serious defect found this slice, and it surfaced only because the tests ran in a
+different order than the ad-hoc script had.
+
+`test_harmonic_declimatology...` passed alone and failed in the full module. Same data, same
+seed, no randomness involved. Bisecting showed that running *any other benchmark first*
+changed the answer:
+
+```
+residual variance ratio, identical inputs:
+  run alone                                      0.000172
+  after test_benchmarks_are_deterministic...     0.157639
+  after test_fbm_slope_follows_two_h_plus_one    0.157639
+```
+
+Cause: the harmonic design matrix for a short record is near rank-deficient - condition
+number **8.44e13**, smallest singular value **2.5e-13** - because the second annual harmonic
+over 40 days is numerically indistinguishable from a combination of the other columns.
+`torch.linalg.lstsq`'s default driver makes its own rank decision there, and that decision
+flipped with prior BLAS state.
+
+A climatology whose result depends on the order of unrelated work is not reproducible, and
+this would have been essentially undiagnosable had it first appeared in a Phase 4 result.
+Fixed by making the rank decision ours: columns normalised (condition number **8.44e13 ->
+1.85e4** from that alone), solved through an SVD pseudo-inverse with an explicit
+`rank_rtol`, with effective rank and condition number reported and a warning naming
+unidentifiable components. The regression test deliberately performs unrelated `svd` and
+`lstsq` work first.
+
+**Method note.** This is the second time this slice that ordering or context, not the
+mathematics, produced a wrong answer - and both were caught by an *incidental* difference in
+how the code was exercised. Reproducibility here means bit-identical under reordering, not
+merely "seeded".
+
+### D31 - a gate a typo could delete
+
+`POST /api/v1/benchmarks/run?name=<typo>` filtered the suite to nothing and returned HTTP
+200 with zero failures. Read as a summary, that is "everything passed". Now a 404 listing
+the available benchmarks.
+
+### T3.5.12 seed discipline
+
+`benchmarks/seeding.py` derives independent `torch` and `numpy` streams from a root seed via
+`SeedSequence.spawn`. Three specific traps are avoided and documented:
+
+*   **Python's `hash()` on a string is salted per process.** A label-derived seed using it
+    reproduces within one session and silently changes between sessions - the worst kind of
+    reproducibility bug, since every test passes. `zlib.crc32` is used instead, and the test
+    asserts a *literal* hash value so a regression fails on the second machine rather than
+    producing different data.
+*   **Sequential seeds are not independent seeds.** `SeedSequence.spawn` is what will make a
+    `process`-backend sweep (T3.5.19) agree with a serial one.
+*   **torch and numpy are separate streams**, so both are derived together.
+
+`PerturbationEngine.add_noise` previously used `torch.randn_like`, drawing from global state:
+a perturbation experiment could not be re-run to the same numbers from its lineage record,
+and sweep results would have depended on executor interleaving. It now takes `seed=` or a
+threaded `generator=`, refuses both at once, preserves the field's `GridSpec`, and labels an
+unseeded run `seeded: False` so it is visibly distinguishable from a reproducible one.
+
+Both halves of the acceptance criterion are asserted: same seed reproduces bit-for-bit, and
+*different* seeds actually differ - the second because the first passes trivially for a
+generator that ignores its seed entirely.
+
+### Suite after slice 5
+
+```
+271 passed, 1 xfailed, 1 warning
+
+  test_stationary.py         87
+  test_grid_operators.py     70
+  test_benchmarks.py         46   (new)
+  test_transforms.py         36
+  test_api_infrastructure.py 15
+  test_boundary_synthetic.py  7
+  test_analysis_data.py       6
+  test_experiments.py         3
+  test_hypothesis.py          3
+```
+
+**Fixed: 24 of 31 defects.** New this slice: **D30**, **D31**; **D12** closed for generation
+and perturbation.
+
+**Still outstanding:** D1 (T3.5.6, real DTCWT), D8 (FDR), D14 (error taxonomy), D15
+(registries), D17 (remaining per-bin loops in `decompose_by_boundary` and
+`analyze_boundary_artefacts`), D18 (device policy); plus T3.5.8 (Alembic), T3.5.18
+(Zarr/ERA5), T3.5.19 (Executor seam, which also completes D12's lineage half), browser-based
+UI verification, and surfacing the benchmark suite in the frontend.
+
+---
+
+## Slice 5b - Documentation audit: the docs had drifted, and now they cannot
+
+**Date:** 2026-08-20. Suite: **286 passed, 1 xfailed** (up from 271).
+New file `src/tests/test_documentation.py` (15 tests).
+
+### The question, and the honest answer
+
+Asked directly whether `architecture.md` and `roadmap.md` were fully up to date with what
+had actually been implemented, I audited them mechanically instead of answering from memory.
+They were **not**. Six concrete failures:
+
+| Document | Stale claim | Reality |
+|---|---|---|
+| `architecture.md` §7.1 | "**152 passed**, 1 xfailed" | 271 - stale by two slices |
+| `architecture.md` §6 | "the API declares no CORS middleware" | Added in T3.5.2 (D5). It also **contradicted a sentence two lines below it** |
+| `architecture.md` §6 | frontend "has never been installed or built" | Built in T3.5.0/T3.5.3 |
+| `architecture.md` §3 | module assessment 3.1-3.7 | **Five modules absent** (~1,800 lines): `grid.py`, `operators.py`, `spectra.py`, `climatology.py`, `benchmarks/` |
+| `architecture.md` | no endpoint inventory | **10 of 17 routes** unmentioned |
+| `roadmap.md` §1 | "Honest Technical Status" | The **pre-Phase-3.5 baseline snapshot** presented as current: "No CORS, no collection endpoint, no health endpoint", "Never installed or built", "19 tests written; at least one fails", "Anything ever executed here: **Nothing**", "ledger (D1-D11)" |
+
+The pattern is clear and worth naming: **the new material was accurate every time, and the
+old material was never re-audited.** Appending a correct section to a document does not make
+the document correct. Every slice added an honest new subsection while leaving contradicting
+older paragraphs in place, and nothing detected it because nothing tested the documents.
+Prose keeps "passing" no matter how wrong it gets.
+
+### What was fixed
+
+*   `architecture.md` gains §3.8 (grid + operators), §3.9 (spectra), §3.10 (climatology),
+    §3.11 (benchmarks) and **§3.12, a full 17-route API inventory**.
+*   §6's CORS and never-built claims corrected; the genuinely unverified part - the
+    frontend's *rendered appearance in a browser* - is now stated precisely rather than
+    being overstated in one direction and understated in the other.
+*   §7.1 execution status brought current, with the full trajectory (19 -> 65 -> 152 -> 222
+    -> 271) rather than a single number that goes stale on the next commit.
+*   §7.4 test inventory added, counted from the AST.
+*   `roadmap.md` §1 rewritten as current status, with the original baseline audit explicitly
+    relabelled as history rather than deleted.
+
+### The actual fix: the documents now fail like code
+
+`src/tests/test_documentation.py` derives facts from the source and asserts the docs match:
+
+*   every module under `src/` appears in `architecture.md`;
+*   every `@app.route` appears, and the stated route count matches the served count;
+*   the per-file test inventory matches an **AST count** of `def test_` (so it cannot be
+    fudged), including the total;
+*   every referenced defect ID is defined, IDs are contiguous (a gap means an entry was
+    deleted rather than resolved), and every `FIXED` entry names the task that fixed it;
+*   `T3.5.x` sections are in numeric order with no duplicates, and R-rules are contiguous -
+    both drifted repeatedly in earlier slices and needed a repair script each time;
+*   every task marked `DONE` carries an evidence block;
+*   the benchmark PASS/FAIL/PENDING triple in the docs matches a **live run**;
+*   the two specific contradictions found above cannot return.
+
+**Verified to have teeth**, by injecting each defect and confirming the failure:
+
+```
+inject a stale count   -> AssertionError: inventory is stale (documented, actual):
+                          {'test_benchmarks.py': (999, 45)}
+remove a module        -> AssertionError: these modules exist but are not mentioned
+                          in architecture.md: src/analysis_engine/spectra.py
+restore the CORS claim -> 1 failed
+```
+
+A guard that has never been seen to fail is not known to work - the same reasoning that
+made `test_swt_beats_dwt_shift_variance` a head-to-head measurement rather than an assertion.
+
+### One test of mine was wrong on its first run
+
+`test_no_unqualified_validated_claims` checked line by line and flagged the sentence
+*"Earlier revisions ... claimed the platform was 'validated' and 'zero-error'. It was not"* -
+a sentence explicitly disowning the claim - because the disqualifying context sat on the
+preceding line. Fixed to check per paragraph. Recorded because a documentation guard that
+cries wolf gets disabled, which would be worse than not having it.
+
+### Suite after slice 5b
+
+```
+286 passed, 1 xfailed
+190 test functions across 10 files (pytest reports more cases; several are parametrised)
+```
+
+---
+
+## Slice 6 - T3.5.6 real Kingsbury q-shift DTCWT (defect D1 closed)
+
+**Date:** 2026-08-20. Suite after this slice: **351 passed, 1 xfailed** (up from 286).
+New modules `src/transform_engine/dtcwt.py` and `kingsbury_coeffs.py`, generator
+`tools/gen_kingsbury_coeffs.py`; 65 tests in `src/tests/test_dtcwt.py`.
+
+**D1 is the oldest entry in the ledger and the roadmap's stated highest-risk item.** It
+survived six slices because the only test covering it was a round trip - and a round trip
+provably cannot see it.
+
+### Captured output
+
+```
+### shift invariance, level 2, sharp periodic front, 0-8 px ###
+  undecimated SWT (exact)      :     0.00%
+  NEW DTCWT (Kingsbury q-shift):     4.99%
+  OLD 'DTCWT' (D1 artefact)    :   236.11%
+  plain Haar DWT               :   236.11%
+  -> the old transform is numerically the DWT (difference 0.00%)
+
+### orientation: measured passband centres (impulse response) ###
+  subband  declared  measured(L3)  error
+     0        75.0        74.7     0.35
+     1        45.0        45.0     0.00
+     2        15.0        15.3     0.35
+     3       165.0       164.7     0.28
+     4       135.0       135.0     0.00
+     5       105.0       105.3     0.28
+
+### +45 vs -45 discrimination (why this module exists) ###
+  SWT single HH band: +45 energy 2.1722e+04, -45 energy 2.1722e+04  (differ by 0.00%)
+  DTCWT: +45 peaks in subband 1, -45 peaks in subband 4  -> separated
+
+### oracle agreement and reconstruction ###
+  worst elementwise disagreement vs dtcwt oracle : 2.19e-15  (20 shape/level combos)
+  worst reconstruction MSE                       : 1.20e-31
+```
+
+### The defect, finally quantified
+
+The old `apply_dtcwt2d` scores **236.11%**, and a plain Haar DWT on the identical field
+scores **236.11%** - a difference of 0.00%. The "dual-tree complex wavelet transform" was
+numerically indistinguishable from a single real Haar DWT. Every pair of its four "trees" is
+identical up to sign (`max|A - B| = 0` or `max|A + B| = 0` to 1e-16).
+
+It reconstructed perfectly the whole time, because four copies of one transform average back
+to the input. That is the cleanest illustration of rule **R8** the project is likely to
+produce: *an inverse test validates a transform against itself and can be satisfied by a
+transform that does nothing it claims to do.*
+
+### The adopt-vs-build decision, made explicitly
+
+Deferred two slices ago, now resolved as **build, vendor the coefficients, keep both
+packages as test-only oracles**:
+
+*   `pytorch_wavelets` imports `pkg_resources`, an API already past its announced removal
+    date. Taking a *runtime* dependency on a deprecated loader - for what are ultimately
+    ~80 constants - is poor stewardship for a platform meant to outlast its dependencies.
+*   Two independent oracles are worth far more as **validators** than one is as an
+    implementation. Vendoring is what keeps that check honest: importing the filters from an
+    oracle would make agreement partly circular.
+
+Coefficients are generated once by `tools/gen_kingsbury_coeffs.py` at full `repr()`
+precision, carry their provenance in the module, and a test **parses the imports** to assert
+neither oracle is reachable from the runtime.
+
+### Method: incremental validation against the reference
+
+The transform was built primitive by primitive, each checked against the reference before
+the next was written - `colfilter`, `coldfilt`, `colifilt`, `q2c`, `c2q`, all matching to
+1e-14 or exactly. Then the full forward transform matched **elementwise to 2.19e-15 across
+20 shape/level combinations**.
+
+That discipline paid off immediately: with the forward transform provably exact, the first
+reconstruction attempt still gave MSE ~0.5. Because the forward was already validated, the
+fault was necessarily in synthesis, and it was a **swapped `lh`/`hl` pairing**. Perfect
+reconstruction to **1.20e-31**. Note what would have happened otherwise: every shape was
+correct and the forward matched an oracle, so only a round trip could catch it - the exact
+mirror of D1, where only a *property* test could catch what the round trip missed. Neither
+test class subsumes the other.
+
+### Two of my own errors, both caught by measurement
+
+**The orientation table was in the wrong order.** The first draft declared the canonical
+angles ascending, `(15, 45, 75, 105, 135, 165)`. Those are the right six angles assigned to
+the wrong six subbands - it would have mislabelled every orientation Phase 4E ever reported
+while looking entirely reasonable. Caught by measuring each subband's passband centre
+directly (impulse response -> FFT -> energy-weighted axial mean); the true wavevector order
+is **(75, 45, 15, 165, 135, 105)**, now verified to within 0.35 degrees. Feature orientation
+and wavevector orientation are kept as two separately named constants, because silently
+mixing them is a 90-degree error that reads like a sign convention.
+
+**The acceptance criterion's own probe is too weak.** T3.5.6 specifies "translate a synthetic
+vortex 0-8 px". On a smooth vortex, total subband energy is flat at **0.00% for every
+transform tested** - including the broken one and a plain Haar DWT. A test built to that
+criterion would have passed against a transform with no shift invariance whatsoever. This is
+the *same trap* that appeared in T3.5.7, where an early test XPASSed against the defective
+transform for exactly this reason. A periodic sharp front is used instead, and the weak probe
+is now itself an executable test so it cannot quietly return.
+
+Also worth recording: a first "sharp front" probe used `torch.roll` on a non-periodic ramp,
+which puts a large step at the wrap point and gave 97.97%. The probe was wrong, not the
+transform.
+
+### Scope, stated honestly
+
+The DTCWT is **near** shift invariant (4.99%), not exact. The undecimated SWT is exact
+(0.00%) and remains the right tool for Phase 4D tracking. The DTCWT's distinct contribution
+is **orientation**, which a separable transform cannot supply: the SWT's single diagonal band
+gives *identical* energy for +45 and -45 degree gratings (differing by 0.00%), while the
+DTCWT places them in different subbands. That is what Phase 4E needs to describe a front's
+orientation, and it is why D1 was correctly downgraded from a Phase 4 blocker to a 4E
+requirement once the SWT landed - rather than being quietly forgotten.
+
+### The artefact is retained, and fenced
+
+The broken implementation stays in `transforms.py` so the head-to-head regression tests keep
+their comparison arm - a fix that cannot be demonstrated against the thing it fixed is a
+weaker fix. It carries an unmissable docstring, no runtime path calls it, and
+`test_no_runtime_code_uses_the_degenerate_dtcwt` **parses the AST** of every module under
+`src/` to enforce that. The strict `xfail` in `test_transforms.py` now guards the artefact:
+if it ever XPASSes, the artefact has been altered and the regression tests have stopped
+proving anything.
+
+That guard found a real leftover on its first run. Its first version used a substring search
+and flagged the *comment in `engine.py` explaining why the artefact is no longer used* - the
+same "the search matches its own explanation" failure the documentation guard hit in slice
+5b, and the second time in two slices that grepping prose had to become parsing code.
+
+### Reachable
+
+`dtcwt` is wired into the declarative engine and `POST /api/v1/transforms/apply`, with
+`level1` and `qshift` read from `config` so the filter family is an ordinary
+parameter-matrix entry - the mechanism T4B.2's wavelet bank needs. All four q-shift sets and
+all three level-1 sets reconstruct through the API. The stale serialiser that emitted
+`_real`/`_imag` arrays holding identical data was removed; the payload now carries the
+oriented energy summary, both orientation conventions and the coefficient provenance.
+
+### Suite after slice 6
+
+```
+351 passed, 1 xfailed
+218 test functions across 12 files
+```
+
+**Fixed: 25 of 31 defects**, including **D1**.
+
+**Still outstanding:** D8 (FDR), D14 (error taxonomy), D15 (registries - now carrying a
+`dtcwt` branch as well), D17 (remaining per-bin loops), D18 (device policy); plus T3.5.8
+(Alembic), T3.5.18 (Zarr/ERA5), T3.5.19 (Executor seam), browser-based UI verification, and
+surfacing the benchmark suite and orientation output in the frontend.

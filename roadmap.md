@@ -11,20 +11,35 @@ Everything below either serves that question or gets cut.
 
 ## 1. Honest Technical Status
 
-Earlier revisions of this document marked several items "Completed" and "validated". That was aspirational. The corrected position, verified by direct inspection on 2026-08-19:
+Verified against the code on 2026-08-20. Every claim here is backed by captured output in
+`VERIFICATION.md`; `architecture.md` Section 7 holds the full defect ledger (D1-D31).
 
 | Area | Real status |
 |---|---|
-| Backend compute modules (`physical_core`, `transform_engine`, `synthetic_generator`, `boundary_lab`, `data_layer`, `analysis_engine`) | **Written and substantive.** No stubs, no placeholder maths. ~2,100 lines of real PyTorch/xarray. |
-| Declarative experiment engine + lineage | **Written and substantive.** Cartesian sweeps, reference resolution, node/edge emission all real. |
-| Hypothesis engine | **Written.** Pearson correlation + categorical optimisation + follow-up config generation. No multiple-comparison control (defect D8). |
-| FastAPI surface | **Written.** 14 endpoints, thorough Pydantic v1 validation. No CORS, no collection endpoint, no health endpoint. |
-| React frontend | **Written** (1,913-line `App.tsx`, 7 tabs, 3 chart components). **Never installed or built.** Tailwind/PostCSS configs missing. |
-| DTCWT | **Not implemented as advertised.** Degenerate second tree; no shift invariance, no orientation. (D1) |
-| Test suite | 19 tests written; **at least one fails** (D3); bare `pytest` cannot even collect them (D4). |
-| Anything ever executed here | **Nothing.** No Python deps, no `node_modules`, no `.db` file. |
+| Backend test suite | **271 passed, 1 xfailed.** Trajectory: 19 written / 1 failing / uncollectable -> 65 -> 152 -> 222 -> 271. |
+| Ground-Truth Benchmark Suite | **14 PASS, 0 FAIL, 3 NOT_YET_RUNNABLE.** Nine datasets with declared known answers, five of them nulls. CI-ready via `python -m src.benchmarks`. |
+| Backend compute modules | **Written, executed and tested.** `physical_core` now carries `GridSpec` + metric-aware operators; `analysis_engine` gained `spectra.py` and `climatology.py`; `transform_engine` gained the undecimated `stationary.py`. |
+| Physical units and wavenumbers | **Correct as of T3.5.13.** Gradients metric-aware, spectra on a physical `k` axis, domain statistics area-weighted, and every quantity carries its units. Previously all of it was pixel-space and unlabelled (D13). |
+| Turbulence regime classification | **Corrected as of T3.5.13.** Was off by one exponent for the platform's entire history and labelled Kolmogorov fields as Charney (D26). |
+| Shift invariance | **Available as of T3.5.7** via the undecimated SWT: 0.00% energy spread against the decimated DWT's 153.50%. |
+| Reproducibility | **Seeded generation and perturbation** (T3.5.12). Storing the seed on `ExperimentRun` and replaying a run from lineage is still outstanding, and lands with T3.5.19. |
+| Declarative experiment engine + lineage | **Written and executed.** A 9-run sweep completes 9/9 and writes 28 lineage nodes / 54 edges. |
+| Hypothesis engine | **Written and executed.** Still no multiple-comparison control (D8), so its p-values are not yet trustworthy. |
+| FastAPI surface | **17 endpoints**, executed and smoke-tested. CORS, health and collection endpoints all added (T3.5.2, T3.5.10). |
+| React frontend | **Installed and built** (T3.5.0/T3.5.3) - emits 1,378 modules with real JS/CSS. **Rendered appearance in a browser still unverified**, and it does not yet consume the health, experiment-list or benchmark endpoints. |
+| DTCWT | **Still not implemented as advertised** (D1). Degenerate second tree, no orientation. Downgraded from a Phase 4 blocker to a 4E-orientation requirement once the SWT landed. |
+| Registries / extension seams | **Still if/elif chains** (D15), now carrying extra `swt` branches as acknowledged debt. |
+| HPC / executor seam | **Not started** (T3.5.19). Sweeps run strictly sequentially; multi-GPU assignment is cosmetic (D18). |
+| Real ERA5 data | **Not started** (T3.5.18). Everything to date runs on synthetic fields and benchmarks. |
 
-Phases 1 and 2 are genuinely done as *code*. They are not done as *verified software*. Phase 3 is genuinely partial as previously described. See `architecture.md` Section 7 for the full defect ledger (D1-D11).
+**The original baseline audit** (2026-08-19, before any of Phase 3.5) is preserved in
+`architecture.md` Section 7 and in the early sections of `VERIFICATION.md`. It recorded that
+nothing had ever been executed, that the test suite could not be collected, and that the
+"validated / zero-error" claims in earlier revisions were aspirational. That snapshot is
+history, not current status, and this table replaces it.
+
+Phases 1 and 2 are done as *code* and now substantially done as *verified software*. Phase 3
+is partial. Phase 3.5 is roughly two-thirds complete - see Section 4 for per-task status.
 
 ---
 
@@ -311,13 +326,41 @@ Add `tailwind.config.js` (content globs over `index.html` and `src/**/*.{ts,tsx}
 `inverse_hybrid` reconstructs `low + inverse_dwt(residual)`. Retain `mixing_weight` only as an explicitly-labelled lossy blend option, defaulting to exact reconstruction.
 **Acceptance:** round-trip MSE for `hybrid` is at machine epsilon for all `crossover_freq` values.
 
-### T3.5.6 Implement a real DTCWT *(D1 - highest risk item in Phase 3.5)*
+### T3.5.6 Implement a real DTCWT *(D1 - highest risk item in Phase 3.5)* - **DONE**
 Replace the degenerate tree-B filters with genuine Kingsbury filters: LeGall 5/3 (or near-symmetric 13/19) at level 1, q-shift filters at levels >= 2, forming a proper Hilbert pair. Combine tree outputs into **6 oriented complex subbands** ($\pm 15^\circ, \pm 45^\circ, \pm 75^\circ$).
 **Acceptance (property tests, per R8):**
 1. *Shift invariance:* translate a synthetic vortex 0-8 px; subband magnitude envelopes stay within 5% - and the same test **fails** against the current Haar DWT, proving the test has teeth.
 2. *Orientation selectivity:* a `generate_front` at angle $\theta$ puts peak energy in the subband nearest $\theta$, swept over 0-180 degrees.
 3. *Perfect reconstruction* to machine epsilon.
 4. Coefficient magnitudes agree with a `PyWavelets`/`dtcwt` reference oracle within tolerance.
+
+**Met.** Delivered as a new module `src/transform_engine/dtcwt.py` with vendored Kingsbury
+coefficients (`kingsbury_coeffs.py`, generated by `tools/gen_kingsbury_coeffs.py`); 65 tests
+in `test_dtcwt.py`; suite 286 -> 351.
+
+1.  *Shift invariance:* **4.99%** subband-energy spread over an 0-8 px translation, against
+    **236.11%** for the old transform - which is *identical* to a plain Haar DWT on the same
+    field, the cleanest possible proof that its four trees were one filter bank.
+2.  *Orientation:* passband centres measured directly at **75.0 / 45.0 / 15.3 / 164.6 /
+    135.0 / 105.4 degrees**, each within 3 degrees of its declared value, and a grating at
+    each subband's angle peaks in that subband.
+3.  *Perfect reconstruction:* ~1e-31 MSE across 5 shapes (including odd), 4 levels, 3
+    level-1 filter sets and 4 q-shift sets.
+4.  *Oracle agreement:* elementwise to **1e-13** against the reference `dtcwt` package, and
+    magnitudes to 1e-4 against `pytorch_wavelets` - two independent implementations. Both
+    stay test-only; the coefficients are vendored so agreement is not circular.
+
+**Two corrections worth recording.** The acceptance criterion's *vortex* probe turned out to
+be too weak to distinguish any transform (0.00% for the broken one and for a plain DWT), so a
+periodic sharp front is used instead and the weak probe is now an executable test in its own
+right. And the first orientation table listed the right angles in the **wrong index order**;
+it was corrected by measuring each subband's passband centre rather than assuming the
+conventional ordering.
+
+**Scope note.** The DTCWT is *near* shift invariant, not exact. The undecimated SWT (T3.5.7)
+remains the exactly-invariant transform and stays the tool for Phase 4D tracking; the DTCWT's
+distinct contribution is **orientation**, which a separable transform cannot provide because
+its single diagonal band cannot separate +45 from -45 degrees.
 
 ### T3.5.7 Add an undecimated Stationary Wavelet Transform (SWT)
 A trous / stationary transform in which **every scale keeps the parent grid shape**. This is what makes `CoefficientField` coordinate-clean and makes spatial cross-scale reasoning tractable; the decimated DWT stays for compression/reconstruction paths.
@@ -340,9 +383,13 @@ The frontend currently cannot list prior experiments, which makes the whole line
 Add `alembic`, `scipy`, `ipywidgets`, `plotly`, `matplotlib`, and the estimator dependencies required by E8 (`scikit-learn` for k-NN neighbour queries in the KSG estimator, `networkx` for the Phase 4E attributed graphs); add `PyWavelets` and `dtcwt` as **test-only** oracles. Reconcile `architecture.md`, `README.md`, `data/README.md`.
 **Acceptance:** a clean clone reaches a green test suite and a running UI using only documented commands.
 
-### T3.5.12 Seed discipline and determinism *(D12, implements E4)*
+### T3.5.12 Seed discipline and determinism *(D12, implements E4)* - **DONE**
 Thread an explicit `torch.Generator` / `numpy.random.Generator` through `PerturbationEngine` and the simulated dataset builders. Store the seed on `ExperimentRun`.
 **Acceptance:** a test re-executes a completed run from its lineage record and reproduces every metric bit-for-bit; a second test asserts that two runs with *different* seeds actually differ, so the first test cannot pass trivially.
+
+**Met for generation and perturbation.** `benchmarks/seeding.py` derives independent streams via `SeedSequence.spawn`; `PerturbationEngine.add_noise` takes `seed=` or a threaded `generator=` instead of drawing from global torch state, and labels an unseeded run `seeded: False`. Both halves of the acceptance are asserted, including the "different seeds actually differ" control. The **stable `zlib.crc32` label hash** matters: Python's `hash()` on a string is salted per process, so a label-derived seed using it reproduces within a session and silently changes between sessions.
+
+**Outstanding:** storing the seed on `ExperimentRun` and re-executing a completed run from its lineage record - that part lands with T3.5.19's Executor seam, where `SeedSequence.spawn` per run is what makes serial and process backends agree.
 
 ### T3.5.13 Metric-aware differential operators and physical wavenumbers *(D13, implements E3)* - **DONE**
 Add units and grid metric to `PhysicalField`. Pass real spacing to every `torch.gradient` call. Area-weight domain statistics by `cos(lat)`. Report PSD in physical wavenumber, and state the isotropy assumption alongside every spectral slope.
@@ -366,7 +413,7 @@ Decorator-based registries; refactor `_execute_action`'s 13 branches and the ada
 `PhysicalField(dtype=...)` with float64 available; float64 by default for spectral accumulation, surrogate statistics and fitting; float32 retained for display paths.
 **Acceptance:** a documented benchmark of the precision/performance trade-off, so the default is a measured choice rather than a preference.
 
-### T3.5.17 Ground-Truth Benchmark Suite *(implements E7 - the scientific test harness)*
+### T3.5.17 Ground-Truth Benchmark Suite *(implements E7 - the scientific test harness)* - **DONE (9 of 9 datasets; 3 gates pending their stage)**
 A named module (`src/benchmarks/`) of synthetic fields and sequences **with analytically known answers**, which every later phase must pass before it is allowed to touch real data:
 
 | Benchmark | Known answer | Gates |
@@ -382,6 +429,14 @@ A named module (`src/benchmarks/`) of synthetic fields and sequences **with anal
 | Autocorrelated red-noise sequence | **nothing**; catches R12 violations (inflated significance from dependent samples) | 4C-4F |
 
 **Acceptance:** the suite runs in CI on every commit. The two null benchmarks (fBm, pure noise) are the most important entries: **any stage that reports a finding on them is broken**, and that is far more informative than a stage that finds something on real data.
+
+**Met.** `src/benchmarks/` with a registry, nine datasets, declared known answers and a CLI (`python -m src.benchmarks`, exit code 1 on any failure) plus `GET /api/v1/benchmarks` and `POST /api/v1/benchmarks/run`. **14 PASS, 0 FAIL, 3 NOT_YET_RUNNABLE**; 46 tests in `test_benchmarks.py`; suite 222 -> 271.
+
+Five null benchmarks, not two: fBm, white-noise field, pure-noise sequence, seasonal+diurnal, and red noise. `test_no_null_benchmark_ever_fails` is separated from the general pass count and carries its own failure message.
+
+Gates whose stage does not exist yet report **`NOT_YET_RUNNABLE`** naming the missing stage, never a skip - a skipped test is invisible in a summary and would let "all green" mean "we never looked". Pending: `4D.tracking`, `4C.surrogate_null`, `4E.invariance`.
+
+Two measured results: naive significance testing on AR(1) data (phi = 0.85, ESS 32.2) rejects a true null at **40.0%** versus **2.3%** ESS-corrected (R12); and a time-of-day bin climatology leaves **15.5%** of variance on a cycles-only sequence versus **0.017%** for harmonic regression (R11), which motivated building `analysis_engine/climatology.py` with split-aware fitting (R6). Found **D30** (a solve whose answer depended on what ran before it) and **D31**.
 
 ### T3.5.18 Cloud-native ERA5 via Zarr, with a rechunked local cache *(implements E2; unblocks all of Phase 4)*
 The raw material is not a constraint: **ERA5** (ECMWF/Copernicus reanalysis, hourly, 1940-present, ~31 km, up to 137 levels) is packaged analysis-ready by **WeatherBench 2** as public Zarr on GCS, 1959-2023, at resolutions up to the full 0.25 degree / 1440x721 grid. Zarr is the right adapter, not bulk NetCDF download: `xarray.open_zarr` over `fsspec`/`gcsfs` opens the whole archive lazily and fetches only the chunks a crop touches, so "crop aggressively" stops being a separate step and becomes simply how the store works.

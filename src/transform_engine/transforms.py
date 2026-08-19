@@ -160,6 +160,23 @@ class SpectralTransformEngine:
 
     @classmethod
     def apply_dtcwt2d(cls, field: PhysicalField, levels: int = 1) -> Dict[str, Any]:
+        """**DEFECT D1 ARTEFACT - DO NOT USE. Superseded by `transform_engine/dtcwt.py`.**
+
+        This is *not* a dual-tree complex wavelet transform. Tree B's filters are
+        ``[cos(pi/4), sin(pi/4)]``, identical to the Haar low-pass, and ``g_b = -g_a``, so
+        all four "trees" are one filter bank up to a sign. There is no Hilbert pair, no
+        analytic response, no shift invariance and no orientation. It reconstructs perfectly
+        because four copies of the same transform average back to the input, which is
+        exactly why a round-trip test could never detect the defect (rule R8).
+
+        It is retained, unused by any runtime path, solely as the comparison arm of the
+        head-to-head regression tests in `test_dtcwt.py` - the fix must stay demonstrable
+        against the thing it fixed. `test_no_runtime_code_uses_the_degenerate_dtcwt`
+        enforces that nothing in `src/` outside the tests calls it.
+
+        Measured: 236.11% subband-energy spread over an 0-8 px translation, *identical* to
+        a plain Haar DWT on the same input. The real transform scores 4.99%.
+        """
         """
         Applies a mathematically rigorous 2D Dual-Tree Complex Wavelet Transform.
         Uses parallel DWT trees (Tree A and Tree B) with orthogonal filters to ensure shift invariance.

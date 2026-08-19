@@ -9,6 +9,7 @@ from src.synthetic_generator.generator import SyntheticFieldGenerator
 from src.synthetic_generator.perturbation import PerturbationEngine
 from src.boundary_lab.boundary import BoundaryConditionLab
 from src.transform_engine.transforms import SpectralTransformEngine
+from src.transform_engine import dtcwt as RealDTCWT
 from src.transform_engine import stationary as swt_engine
 from src.data_layer.adapters import MeteorologicalDataAdapter
 from src.analysis_engine.diagnostics import SpectralSpatialAnalysisEngine
@@ -291,9 +292,17 @@ class DeclarativeExperimentEngine:
                     }
                 coefficients = serialized_coeffs
             elif transform_type == "dtcwt":
-                levels = config.get("levels", 1)
-                coeffs = SpectralTransformEngine.apply_dtcwt2d(field, levels=levels)
-                reconstructed = SpectralTransformEngine.inverse_dtcwt2d(coeffs, levels=levels, target_shape=field.data.shape)
+                # T3.5.6 / D1: the real Kingsbury q-shift DTCWT. The previous
+                # `SpectralTransformEngine.apply_dtcwt2d` ran four copies of one Haar filter
+                # bank and is retained only as a documented artefact (see transforms.py).
+                # TODO(T3.5.15): this branch is registry debt.
+                levels = int(config.get("levels", 3))
+                coeffs = RealDTCWT.apply_dtcwt2d(
+                    field, levels=levels,
+                    level1=config.get("level1", "near_sym_b"),
+                    qshift=config.get("qshift", "qshift_b"))
+                reconstructed = RealDTCWT.inverse_dtcwt2d(coeffs)
+                orientation = RealDTCWT.subband_energies(coeffs)
                 serialized_coeffs = {"LL": coeffs["LL"].tolist()}
                 for lvl in range(1, levels + 1):
                     serialized_coeffs[f"level_{lvl}"] = {

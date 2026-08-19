@@ -120,8 +120,11 @@ def test_dtcwt_trees_are_degenerate():
 
 @pytest.mark.xfail(
     strict=True,
-    reason="D1: the current DTCWT is Haar in disguise and is NOT shift-invariant. "
-           "T3.5.6 must make this pass; when it does, remove this marker.",
+    reason="D1 is FIXED in transform_engine/dtcwt.py (T3.5.6). This xfail now guards the "
+           "retained *artefact* in transforms.py, which must stay broken so the "
+           "head-to-head regression tests in test_dtcwt.py keep their comparison arm. "
+           "If this ever XPASSes, the artefact has been altered and those tests are no "
+           "longer proving anything.",
 )
 def test_dtcwt_is_shift_invariant():
     """The property test a real DTCWT must satisfy (roadmap T3.5.6 acceptance 1).

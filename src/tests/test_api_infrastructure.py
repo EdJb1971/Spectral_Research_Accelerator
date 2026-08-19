@@ -157,3 +157,45 @@ def test_cache_invalidation_reresolves(tmp_path, monkeypatch):
     assert info["path"] == target
 
     MeteorologicalDataAdapter.invalidate_cache()
+
+
+def test_benchmark_listing_exposes_known_answers(client):
+    """Standard E7: what the platform is proved to get right must be visible in the API."""
+    resp = client.get("/api/v1/benchmarks")
+    assert resp.status_code == 200
+    items = resp.json()
+    assert len(items) >= 8
+    by_name = {b["name"]: b for b in items}
+    fbm = by_name["fractional_brownian"]
+    assert fbm["is_null"] is True
+    assert fbm["known_answer"]["beta_energy_1d"] == 2.4
+    assert "4C.alpha" in fbm["gates"]
+    assert any(b["is_null"] for b in items)
+
+
+def test_benchmark_run_separates_the_three_outcomes(client):
+    resp = client.post("/api/v1/benchmarks/run?name=white_noise_field")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["failed"] == 0
+    assert body["passed"] >= 2
+    assert body["null_failures"] == []
+    assert body["root_seed"] > 0
+    outcomes = {c["outcome"] for b in body["benchmarks"] for c in b["checks"]}
+    assert outcomes <= {"PASS", "FAIL", "NOT_YET_RUNNABLE"}
+
+
+def test_benchmark_run_reports_pending_gates(client):
+    resp = client.post("/api/v1/benchmarks/run?name=fractional_brownian")
+    body = resp.json()
+    assert body["not_yet_runnable"] >= 1
+    stages = [c["stage"] for b in body["benchmarks"] for c in b["checks"]
+              if c["outcome"] == "NOT_YET_RUNNABLE"]
+    assert "4C.surrogate_null" in stages
+
+
+def test_unknown_benchmark_name_is_a_404_not_a_silent_empty_pass(client):
+    """A gate that a typo can make vanish is not a gate."""
+    resp = client.post("/api/v1/benchmarks/run?name=not_a_benchmark")
+    assert resp.status_code == 404
+    assert "Available:" in resp.json()["detail"]

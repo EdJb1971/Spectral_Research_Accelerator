@@ -1,0 +1,380 @@
+"""Single-field benchmarks with analytically known answers (roadmap T3.5.17).
+
+Every generator here is built in a way that makes its answer derivable *independently of the
+analysis code*, which is the whole point: a field synthesised in the Fourier domain from
+``S(k) ~ k^-beta`` has that exponent by construction, so recovering it tests the estimator
+rather than testing the synthesiser against itself.
+"""
+
+from __future__ import annotations
+
+import math
+from typing import Any, Dict, Optional, Tuple
+
+import numpy as np
+import torch
+
+from src.analysis_engine import spectra
+from src.benchmarks.core import (
+    Benchmark,
+    CheckResult,
+    Outcome,
+    register_benchmark,
+    stage_check,
+    not_yet_runnable,
+)
+from src.benchmarks.seeding import SeedBundle
+from src.physical_core.field import PhysicalField
+from src.physical_core.grid import GridSpec
+from src.transform_engine import stationary
+
+DEFAULT_SPACING_M = 31000.0     # ~ERA5 0.25 degree at mid-latitude, in round numbers
+
+
+def _grid(n: int, spacing_m: float = DEFAULT_SPACING_M) -> GridSpec:
+    return GridSpec.cartesian((n, n), spacing_m, spacing_m)
+
+
+def _spectral_field(n: int, beta_density: float, bundle: SeedBundle,
+                    spacing_m: float = DEFAULT_SPACING_M) -> Tuple[torch.Tensor, GridSpec]:
+    """Field with 2D spectral density S(k) ~ k^-beta_density, random phases.
+
+    Amplitudes are deterministic and only the phases are random, so the *expected* spectrum
+    is exact rather than merely asymptotic - which is why the recovered slope has a spread
+    of ~0.015 across seeds instead of the ~0.1 a fully random-amplitude construction gives.
+    """
+    g = _grid(n, spacing_m)
+    k = g.wavenumber_magnitude("rad_per_m", shifted=False, dtype=torch.float64).clone()
+    k[0, 0] = 1.0
+    amp = k ** (-beta_density / 2.0)
+    amp[0, 0] = 0.0
+    phase = torch.rand(n, n, generator=bundle.torch_generator(),
+                       dtype=torch.float64) * 2 * math.pi
+    return torch.fft.ifft2(amp * torch.exp(1j * phase)).real, g
+
+
+# ------------------------------------------------------------------ 1. pure sinusoid
+
+def build_sinusoid(bundle: SeedBundle, n: int = 256, wavelength_cells: int = 16,
+                   orientation_deg: float = 0.0,
+                   spacing_m: float = DEFAULT_SPACING_M) -> PhysicalField:
+    """A single spatial frequency. No randomness at all - the seed is unused by design."""
+    g = _grid(n, spacing_m)
+    idx = torch.arange(n, dtype=torch.float64)
+    yy, xx = torch.meshgrid(idx, idx, indexing="ij")
+    theta = math.radians(orientation_deg)
+    projected = xx * math.cos(theta) + yy * math.sin(theta)
+    data = torch.sin(2 * math.pi * projected / wavelength_cells)
+    return PhysicalField(data, grid=g, units="dimensionless")
+
+
+def truth_sinusoid(n: int = 256, wavelength_cells: int = 16,
+                   orientation_deg: float = 0.0,
+                   spacing_m: float = DEFAULT_SPACING_M) -> Dict[str, Any]:
+    wavelength_m = wavelength_cells * spacing_m
+    return {
+        "wavelength_m": wavelength_m,
+        "wavenumber_rad_per_m": 2 * math.pi / wavelength_m,
+        "orientation_deg": orientation_deg,
+        # A wavelength of L cells sits in SWT detail level j where 2^j ~ L/2.
+        "dominant_swt_level": max(1, int(round(math.log2(wavelength_cells / 2.0)))),
+        "all_energy_at_one_scale": True,
+    }
+
+
+@stage_check("4C.scale_signature")
+def _check_sinusoid_peak(field: PhysicalField, truth: Dict[str, Any]) -> CheckResult:
+    rec = spectra.radial_power_spectrum(field, convention="density_2d")
+    k = np.array(rec["k"])
+    peak = float(k[np.array(rec["power"]).argmax()])
+    target = truth["wavenumber_rad_per_m"]
+    rel = abs(peak - target) / target
+    return CheckResult(
+        "4C.scale_signature",
+        Outcome.PASS if rel < 0.08 else Outcome.FAIL,
+        "spectral peak at %.4e rad/m vs true %.4e (%.1f%% off); wavelength %.0f km vs %.0f km"
+        % (peak, target, 100 * rel, 2 * math.pi / peak / 1000,
+           truth["wavelength_m"] / 1000),
+        {"peak_k": peak, "true_k": target, "relative_error": rel})
+
+
+@stage_check("4C.scale_signature.wavelet")
+def _check_sinusoid_swt_level(field: PhysicalField, truth: Dict[str, Any]) -> CheckResult:
+    levels = 5
+    coeffs = stationary.apply_swt2d(field, levels=levels, wavelet="db2")
+    fractions = stationary.swt_energy_fractions(coeffs)
+    detail = {int(kk.split("_")[1]): v for kk, v in fractions.items()
+              if kk.startswith("level_")}
+    dominant = max(detail, key=detail.get)
+    expected = truth["dominant_swt_level"]
+    return CheckResult(
+        "4C.scale_signature.wavelet",
+        Outcome.PASS if abs(dominant - expected) <= 1 else Outcome.FAIL,
+        "dominant SWT detail level %d (expected %d); energy fractions %s"
+        % (dominant, expected, {k: round(v, 4) for k, v in sorted(detail.items())}),
+        {"dominant_level": dominant, "expected_level": expected, "fractions": detail})
+
+
+register_benchmark(Benchmark(
+    name="pure_sinusoid",
+    kind="field",
+    description="A single spatial frequency; all energy belongs at one scale.",
+    gates=("4C.scale_signature", "4C.scale_signature.wavelet"),
+    build=build_sinusoid,
+    known_answer=truth_sinusoid,
+    checks=(_check_sinusoid_peak, _check_sinusoid_swt_level),
+    params={"n": 256, "wavelength_cells": 16},
+))
+
+
+# ------------------------------------------------------------------ 2. fBm, known H
+
+def build_fbm(bundle: SeedBundle, n: int = 256, hurst: float = 0.7,
+              spacing_m: float = DEFAULT_SPACING_M) -> PhysicalField:
+    """Fractional Brownian surface with Hurst exponent ``hurst``.
+
+    For a 2D fBm, ``S(k) ~ k^-(2H + 2)``; the extra ``+d`` is the dimension term, so the
+    1D energy spectrum is ``E(k) = 2 pi k S(k) ~ k^-(2H + 1)``. Verified empirically across
+    H = 0.3, 0.5, 0.7, 0.9 to within 1e-3.
+    """
+    if not 0.0 < hurst < 1.0:
+        raise ValueError("Hurst exponent must lie strictly in (0, 1); got %r" % (hurst,))
+    data, g = _spectral_field(n, 2.0 * hurst + 2.0, bundle, spacing_m)
+    return PhysicalField(data, grid=g, units="dimensionless")
+
+
+def truth_fbm(n: int = 256, hurst: float = 0.7,
+              spacing_m: float = DEFAULT_SPACING_M) -> Dict[str, Any]:
+    return {
+        "hurst": hurst,
+        "beta_energy_1d": 2.0 * hurst + 1.0,
+        "beta_density_2d": 2.0 * hurst + 2.0,
+        "has_organisation": False,
+        "expected_surrogate_finding_count": 0,
+        "note": ("Self-similar by construction: scale-free, with no localised structure and "
+                 "no preferred scale. A stage that reports coherent features here is "
+                 "reporting its own noise."),
+    }
+
+
+@stage_check("4C.alpha")
+def _check_fbm_slope(field: PhysicalField, truth: Dict[str, Any]) -> CheckResult:
+    fit = spectra.spectral_slope(field)
+    got = fit["beta_energy_1d"]
+    want = truth["beta_energy_1d"]
+    se = fit["slope_standard_error"]
+    # Tolerance from the fit's own uncertainty plus a small systematic allowance, rather
+    # than a hand-picked constant (rule R16).
+    tol = max(4.0 * se, 0.06)
+    return CheckResult(
+        "4C.alpha",
+        Outcome.PASS if abs(got - want) <= tol else Outcome.FAIL,
+        "recovered E(k) exponent %.4f +/- %.4f, true %.4f (H = %.2f), tolerance %.3f"
+        % (got, se, want, truth["hurst"], tol),
+        {"recovered": got, "true": want, "standard_error": se, "r_squared": fit["r_squared"]})
+
+
+@stage_check("4C.surrogate_null")
+def _check_fbm_no_organisation(field: PhysicalField, truth: Dict[str, Any]) -> CheckResult:
+    raise NotImplementedError(
+        "4C.surrogate_null: phase-randomised surrogate testing (T4C.5) is not implemented; "
+        "the known answer 'zero findings on fBm' is recorded and will be enforced then")
+
+
+register_benchmark(Benchmark(
+    name="fractional_brownian",
+    kind="field",
+    description="Scale-free fBm with a known Hurst exponent; exact alpha, NO organisation.",
+    gates=("4C.alpha", "4C.surrogate_null"),
+    build=build_fbm,
+    known_answer=truth_fbm,
+    checks=(_check_fbm_slope, _check_fbm_no_organisation),
+    params={"n": 256, "hurst": 0.7},
+    is_null=True,
+))
+
+
+# ------------------------------------------------------------------ 3. white noise field
+
+def build_white_noise(bundle: SeedBundle, n: int = 256,
+                      spacing_m: float = DEFAULT_SPACING_M) -> PhysicalField:
+    g = _grid(n, spacing_m)
+    data = torch.randn(n, n, generator=bundle.torch_generator(), dtype=torch.float64)
+    return PhysicalField(data, grid=g, units="dimensionless")
+
+
+def truth_white_noise(n: int = 256, spacing_m: float = DEFAULT_SPACING_M) -> Dict[str, Any]:
+    return {
+        # White noise has flat S(k), so E(k) = 2 pi k S(k) rises linearly: beta_E = -1.
+        # Stated explicitly because "flat spectrum" means beta = 0 in one convention and
+        # beta = -1 in the other, and conflating them is defect D26 in miniature (R15).
+        "beta_energy_1d": -1.0,
+        "beta_density_2d": 0.0,
+        "has_organisation": False,
+        "expected_regime_label": "Flat spectrum",
+        "expected_surrogate_finding_count": 0,
+    }
+
+
+@stage_check("4C.alpha")
+def _check_white_noise_flat(field: PhysicalField, truth: Dict[str, Any]) -> CheckResult:
+    fit = spectra.spectral_slope(field)
+    got = fit["beta_energy_1d"]
+    ok = abs(got - truth["beta_energy_1d"]) < 0.15
+    return CheckResult(
+        "4C.alpha",
+        Outcome.PASS if ok else Outcome.FAIL,
+        "E(k) exponent %.4f (expected %.1f for white noise); label: %s"
+        % (got, truth["beta_energy_1d"], fit["regime_interpretation"][:60]),
+        {"recovered": got, "label": fit["regime_interpretation"]})
+
+
+@stage_check("4C.false_positive")
+def _check_white_noise_names_no_cascade(field: PhysicalField,
+                                        truth: Dict[str, Any]) -> CheckResult:
+    """The false-positive floor: white noise must not be called a turbulent cascade."""
+    label = spectra.spectral_slope(field)["regime_interpretation"]
+    bad = ("Kolmogorov" in label) or ("Charney" in label)
+    return CheckResult(
+        "4C.false_positive",
+        Outcome.FAIL if bad else Outcome.PASS,
+        ("REPORTED A CASCADE ON WHITE NOISE: %s" % label) if bad
+        else "no cascade regime claimed; reported as %r" % label[:60],
+        {"label": label})
+
+
+register_benchmark(Benchmark(
+    name="white_noise_field",
+    kind="field",
+    description="Spatially uncorrelated noise; the single-field false-positive floor.",
+    gates=("4C.alpha", "4C.false_positive"),
+    build=build_white_noise,
+    known_answer=truth_white_noise,
+    checks=(_check_white_noise_flat, _check_white_noise_names_no_cascade),
+    params={"n": 256},
+    is_null=True,
+))
+
+
+# ------------------------------------------------------------------ 4. planted configuration
+
+def _gaussian_blob(n: int, cy: float, cx: float, sigma: float,
+                   amplitude: float = 1.0) -> torch.Tensor:
+    idx = torch.arange(n, dtype=torch.float64)
+    yy, xx = torch.meshgrid(idx, idx, indexing="ij")
+    return amplitude * torch.exp(-((yy - cy) ** 2 + (xx - cx) ** 2) / (2.0 * sigma ** 2))
+
+
+def build_planted_configuration(
+    bundle: SeedBundle,
+    n: int = 256,
+    triangle_side: float = 40.0,
+    centre: Optional[Tuple[float, float]] = None,
+    feature_sigma: float = 6.0,
+    rotation_deg: float = 0.0,
+    scale_factor: float = 1.0,
+    translation: Tuple[float, float] = (0.0, 0.0),
+    noise_amplitude: float = 0.05,
+    spacing_m: float = DEFAULT_SPACING_M,
+) -> PhysicalField:
+    """Three small features in an equilateral triangle - a known "constellation".
+
+    ``rotation_deg``, ``scale_factor`` and ``translation`` exist so the *same* configuration
+    can be presented transformed. A 4E matcher that is genuinely translation-, rotation- and
+    scale-invariant must return the same pattern for all of them; one that has merely
+    memorised pixel positions will not.
+    """
+    g = _grid(n, spacing_m)
+    cy, cx = centre if centre is not None else (n / 2.0, n / 2.0)
+    cy += translation[0]
+    cx += translation[1]
+    side = triangle_side * scale_factor
+    radius = side / math.sqrt(3.0)
+    sigma = feature_sigma * scale_factor
+
+    data = torch.zeros(n, n, dtype=torch.float64)
+    for i in range(3):
+        angle = math.radians(rotation_deg + 120.0 * i - 90.0)
+        data = data + _gaussian_blob(n, cy + radius * math.sin(angle),
+                                     cx + radius * math.cos(angle), sigma)
+    if noise_amplitude > 0:
+        data = data + noise_amplitude * torch.randn(
+            n, n, generator=bundle.torch_generator(), dtype=torch.float64)
+    return PhysicalField(data, grid=g, units="dimensionless")
+
+
+def truth_planted_configuration(
+    n: int = 256,
+    triangle_side: float = 40.0,
+    centre: Optional[Tuple[float, float]] = None,
+    feature_sigma: float = 6.0,
+    rotation_deg: float = 0.0,
+    scale_factor: float = 1.0,
+    translation: Tuple[float, float] = (0.0, 0.0),
+    noise_amplitude: float = 0.05,
+    spacing_m: float = DEFAULT_SPACING_M,
+) -> Dict[str, Any]:
+    cy, cx = centre if centre is not None else (n / 2.0, n / 2.0)
+    cy += translation[0]
+    cx += translation[1]
+    side = triangle_side * scale_factor
+    radius = side / math.sqrt(3.0)
+    positions = []
+    for i in range(3):
+        angle = math.radians(rotation_deg + 120.0 * i - 90.0)
+        positions.append((cy + radius * math.sin(angle), cx + radius * math.cos(angle)))
+    return {
+        "feature_count": 3,
+        "positions_rowcol": positions,
+        "pairwise_distance_cells": side,
+        "pairwise_distance_m": side * spacing_m,
+        "feature_sigma_cells": feature_sigma * scale_factor,
+        # Relative geometry is what a translation-invariant matcher should key on, and it
+        # is invariant to translation and rotation but NOT to scale - so the scale ratio is
+        # reported separately, which is exactly the toggle T4E needs.
+        "invariant_signature": "equilateral triangle, 3 features",
+        "scale_ratio_vs_reference": scale_factor,
+    }
+
+
+@stage_check("4E.feature_detection")
+def _check_planted_features_present(field: PhysicalField, truth: Dict[str, Any]) -> CheckResult:
+    """Validates the *generator*, which is a prerequisite for trusting the 4E gate.
+
+    The mining stage does not exist yet, but a benchmark that does not contain what it
+    claims to contain would silently invalidate that future gate, so the geometry is
+    verified here and now.
+    """
+    data = field.data
+    peak = float(data.max())
+    found = []
+    for (ry, rx) in truth["positions_rowcol"]:
+        iy, ix = int(round(ry)), int(round(rx))
+        window = data[max(0, iy - 3):iy + 4, max(0, ix - 3):ix + 4]
+        found.append(float(window.max()) > 0.6 * peak)
+    ok = all(found)
+    return CheckResult(
+        "4E.feature_detection",
+        Outcome.PASS if ok else Outcome.FAIL,
+        "all 3 planted features present at their stated positions: %s (peak %.3f)"
+        % (found, peak),
+        {"found": found, "positions": truth["positions_rowcol"]})
+
+
+@stage_check("4E.invariance")
+def _check_planted_invariance(field: PhysicalField, truth: Dict[str, Any]) -> CheckResult:
+    raise NotImplementedError(
+        "4E.invariance: constellation matching with relative geometry (T4E) is not "
+        "implemented; the transformed variants and their expected match are recorded")
+
+
+register_benchmark(Benchmark(
+    name="planted_configuration",
+    kind="field",
+    description="Three features in a known equilateral triangle; the 4E invariance target.",
+    gates=("4E.feature_detection", "4E.invariance"),
+    build=build_planted_configuration,
+    known_answer=truth_planted_configuration,
+    checks=(_check_planted_features_present, _check_planted_invariance),
+    params={"n": 256, "triangle_side": 40.0},
+))

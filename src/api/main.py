@@ -6,7 +6,7 @@ import uuid
 from contextlib import asynccontextmanager
 import os
 
-from fastapi import FastAPI, HTTPException, Depends, BackgroundTasks
+from fastapi import FastAPI, HTTPException, Depends, BackgroundTasks, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, validator, root_validator
 from typing import List, Dict, Any, Optional, Tuple
@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session
 
 from src.physical_core.field import PhysicalField
 from src.transform_engine.transforms import SpectralTransformEngine
+from src.transform_engine import dtcwt as RealDTCWT
 from src.transform_engine import stationary as swt_engine
 from src.synthetic_generator.generator import SyntheticFieldGenerator
 from src.synthetic_generator.perturbation import PerturbationEngine
@@ -74,6 +75,8 @@ class HealthResponse(BaseModel):
 class TransformRequest(BaseModel):
     field_data: List[List[float]] = Field(..., description="2D array representing the physical field.")
     transform_type: str = Field(..., description="Type of transform: 'fft', 'dct', 'dwt', 'swt', 'dtcwt', or 'hybrid'.")
+    level1: Optional[str] = Field(None, description="DTCWT level-1 filter set (near_sym_a/near_sym_b/legall).")
+    qshift: Optional[str] = Field(None, description="DTCWT q-shift filter set for levels >= 2 (qshift_a..d).")
     config: Dict[str, Any] = Field(default_factory=dict, description="Configuration parameters for the transform.")
 
     @validator("field_data")
@@ -167,6 +170,64 @@ class BoundaryResponse(BaseModel):
     distance_units: str = Field("pixel", description="Units of the distance axis.")
     gradient_frame_note: Optional[str] = Field(None, description="Why this frame was chosen.")
     grid: Optional[Dict[str, Any]] = Field(None, description="Grid geometry of the input field.")
+
+
+DEFAULT_BENCHMARK_SEED = 20260819
+
+
+def _jsonable(value):
+    """Make a known-answer dict JSON-serialisable without losing information.
+
+    Known answers contain tuples, numpy scalars and torch values. Converting them here
+    keeps the benchmark modules free of serialisation concerns, and refuses silently
+    dropping anything - an unrepresentable value becomes its repr rather than vanishing.
+    """
+    import numpy as _np
+    import torch as _torch
+
+    if isinstance(value, dict):
+        return {str(k): _jsonable(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_jsonable(v) for v in value]
+    if isinstance(value, (bool, int, float, str)) or value is None:
+        return value
+    if isinstance(value, (_np.integer,)):
+        return int(value)
+    if isinstance(value, (_np.floating,)):
+        return float(value)
+    if isinstance(value, _np.ndarray):
+        return _jsonable(value.tolist())
+    if isinstance(value, _torch.Tensor):
+        return _jsonable(value.tolist())
+    return repr(value)
+
+
+class BenchmarkCheckResponse(BaseModel):
+    stage: str = Field(..., description="Pipeline stage this check gates.")
+    outcome: str = Field(..., description="PASS, FAIL or NOT_YET_RUNNABLE.")
+    detail: str = Field(..., description="What was measured, in words.")
+    measured: Optional[Dict[str, Any]] = Field(None, description="Numbers behind the verdict.")
+
+class BenchmarkResponse(BaseModel):
+    name: str
+    kind: str
+    description: str
+    gates: List[str]
+    is_null: bool = Field(..., description="True when the correct answer is 'nothing here'.")
+    known_answer: Dict[str, Any] = Field(..., description="The analytic truth, declared up front.")
+    checks: List[BenchmarkCheckResponse] = Field(default_factory=list)
+
+class BenchmarkSuiteResponse(BaseModel):
+    root_seed: int
+    passed: int
+    failed: int
+    not_yet_runnable: int
+    null_failures: List[str] = Field(
+        default_factory=list,
+        description="Failures on null benchmarks. Non-empty means the platform is "
+                    "reporting structure in data that contains none; treat every finding "
+                    "it has produced as suspect.")
+    benchmarks: List[BenchmarkResponse]
 
 class DatasetMetadata(BaseModel):
     id: str
@@ -453,27 +514,30 @@ async def apply_transform(request: TransformRequest):
             levels = config.get("levels", 1)
             coeffs = SpectralTransformEngine.apply_dwt2d(field, levels=levels)
             reconstructed = SpectralTransformEngine.inverse_dwt2d(coeffs, levels=levels, target_shape=field.data.shape)
-            serialized_coeffs = {"LL": coeffs["LL"].tolist()}
-            for lvl in range(1, levels + 1):
-                serialized_coeffs[f"level_{lvl}"] = {
-                    k: v.tolist() for k, v in coeffs[f"level_{lvl}"].items()
-                }
-            coefficients = serialized_coeffs
         elif transform_type == "dtcwt":
-            levels = config.get("levels", 1)
-            coeffs = SpectralTransformEngine.apply_dtcwt2d(field, levels=levels)
-            reconstructed = SpectralTransformEngine.inverse_dtcwt2d(coeffs, levels=levels, target_shape=field.data.shape)
-            serialized_coeffs = {"LL": coeffs["LL"].tolist()}
-            for lvl in range(1, levels + 1):
-                serialized_coeffs[f"level_{lvl}"] = {
-                    "LH_real": coeffs[f"level_{lvl}"]["LH_real"].tolist(),
-                    "LH_imag": coeffs[f"level_{lvl}"]["LH_imag"].tolist(),
-                    "HL_real": coeffs[f"level_{lvl}"]["HL_real"].tolist(),
-                    "HL_imag": coeffs[f"level_{lvl}"]["HL_imag"].tolist(),
-                    "HH_real": coeffs[f"level_{lvl}"]["HH_real"].tolist(),
-                    "HH_imag": coeffs[f"level_{lvl}"]["HH_imag"].tolist()
-                }
-            coefficients = serialized_coeffs
+            # T3.5.6 / D1: real Kingsbury q-shift DTCWT with six oriented complex subbands.
+            # TODO(T3.5.15): registry debt, same as the other transform branches.
+            # Filter choice comes from `config` like every other transform, so a wavelet
+            # bank sweep (T4B.2) can vary it as an ordinary parameter-matrix entry; the
+            # top-level request fields are accepted as a convenience for direct API calls.
+            levels = config.get("levels", 3)
+            coeffs = RealDTCWT.apply_dtcwt2d(
+                field, levels=levels,
+                level1=config.get("level1", request.level1 or "near_sym_b"),
+                qshift=config.get("qshift", request.qshift or "qshift_b"))
+            reconstructed = RealDTCWT.inverse_dtcwt2d(coeffs)
+            summary = RealDTCWT.subband_energies(coeffs)
+            coefficients = {
+                "lowpass_shape": list(coeffs["lowpass"].shape),
+                "levels": coeffs["levels"],
+                "feature_orientations_deg": summary["feature_orientations_deg"],
+                "wavevector_orientations_deg": summary["wavevector_orientations_deg"],
+                "orientation_convention": summary["orientation_convention"],
+                "subband_energy": summary["levels"],
+                "level1": coeffs["level1"],
+                "qshift": coeffs["qshift"],
+                "coefficient_provenance": coeffs["coefficient_provenance"],
+            }
         elif transform_type == "swt":
             # Undecimated / stationary transform (T3.5.7): every band keeps the parent grid
             # shape and the transform is shift-invariant, which is what Phase 4 requires.
@@ -639,6 +703,76 @@ async def analyze_boundary(request: BoundaryRequest):
     except Exception as e:
         logger.error(f"Boundary laboratory error: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail="An error occurred during boundary condition analysis.")
+
+@app.get("/api/v1/benchmarks", response_model=List[BenchmarkResponse])
+async def list_benchmarks():
+    """The Ground-Truth Benchmark Suite: what is tested, and what the right answer is.
+
+    Exposed through the API deliberately (standard E7). A researcher must be able to see
+    what the platform has been proved to get right - and which gates are declared but not
+    yet enforceable - without reading the test suite.
+    """
+    from src.benchmarks import all_benchmarks
+    try:
+        return [
+            BenchmarkResponse(
+                name=b.name, kind=b.kind, description=b.description,
+                gates=list(b.gates), is_null=b.is_null,
+                known_answer=_jsonable(b.truth()), checks=[])
+            for b in all_benchmarks()
+        ]
+    except Exception as e:
+        logger.error(f"Benchmark listing error: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Could not list benchmarks.")
+
+@app.post("/api/v1/benchmarks/run", response_model=BenchmarkSuiteResponse)
+async def run_benchmarks(root_seed: int = DEFAULT_BENCHMARK_SEED,
+                         name: Optional[List[str]] = Query(None)):
+    """Run the suite and report the three outcomes separately.
+
+    NOT_YET_RUNNABLE is never folded into PASS: a summary that did so would let "all green"
+    mean "we never looked".
+    """
+    from src.benchmarks import all_benchmarks, run_all
+    from src.benchmarks.runner import null_failures, summarise
+    try:
+        known = {b.name for b in all_benchmarks()}
+        # An unknown name previously filtered to nothing and returned 200 with an empty
+        # suite - a silent no-op that reads as "everything passed". A gate that can be
+        # made to disappear by a typo is not a gate.
+        if name:
+            unknown = [n for n in name if n not in known]
+            if unknown:
+                raise HTTPException(
+                    status_code=404,
+                    detail="Unknown benchmark(s): %s. Available: %s"
+                           % (", ".join(sorted(unknown)), ", ".join(sorted(known))))
+        results = run_all(root_seed=root_seed, names=name)
+        by_name = {b.name: b for b in all_benchmarks()}
+        counts = summarise(results)
+        payload = []
+        for bench_name, checks in results.items():
+            b = by_name[bench_name]
+            payload.append(BenchmarkResponse(
+                name=b.name, kind=b.kind, description=b.description,
+                gates=list(b.gates), is_null=b.is_null,
+                known_answer=_jsonable(b.truth()),
+                checks=[BenchmarkCheckResponse(
+                    stage=c.stage, outcome=c.outcome.value, detail=c.detail,
+                    measured=_jsonable(c.measured) if c.measured else None)
+                    for c in checks]))
+        return BenchmarkSuiteResponse(
+            root_seed=root_seed,
+            passed=counts["PASS"], failed=counts["FAIL"],
+            not_yet_runnable=counts["NOT_YET_RUNNABLE"],
+            null_failures=["%s / %s: %s" % (n, c.stage, c.detail)
+                           for n, c in null_failures(results)],
+            benchmarks=payload)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Benchmark run error: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Benchmark suite failed to run.")
 
 @app.get("/api/v1/data/datasets", response_model=List[DatasetMetadata])
 async def list_datasets():

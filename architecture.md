@@ -72,7 +72,17 @@ Provides forward and inverse spectral transforms, working as a core mathematical
 *   **FFT (Fast Fourier Transform):** Computes 2D Fast Fourier Transform returning amplitude and phase matrices. Vectorized using `torch.fft.rfft2` and `torch.fft.irfft2`.
 *   **DCT (Discrete Cosine Transform):** Computes 2D DCT Type II and Type III (inverse) manually using pre-computed cosine coefficient matrices. Highly efficient.
 *   **DWT (Discrete Wavelet Transform):** Multi-level 2D DWT using Harr filters. Implemented using 2D convolutions with stride 2 and reflection padding to prevent edge artefacts.
-*   **DTCWT (Dual-Tree Complex Wavelet Transform) — NOT CURRENTLY A DTCWT:** The code in `apply_dtcwt2d` runs four parallel filter-bank trees (AA, AB, BA, BB) and labels their outputs `_real`/`_imag`, but tree B's filters are degenerate. At `transforms.py:148-151`, `h_b = [cos(pi/4), sin(pi/4)] = [0.7071, 0.7071]`, which is **identical** to the Haar low-pass `h_a`, and `g_b = [-sin(pi/4), cos(pi/4)] = -g_a`. All four trees are therefore the same filter bank up to a sign. There is **no Hilbert pair, no analytic complex response, no shift invariance, and no directional subbands** — the `_real` and `_imag` tensors hold identical or sign-flipped data. Reconstruction is still exact (the four trees average back to the input), so the round-trip test passes and masks the defect. Replacing this with genuine Kingsbury q-shift / near-symmetric filters is Task 3.5.6 of the roadmap and is a hard prerequisite for the Phase 4 spectral-feature layer, which depends on shift invariance.
+*   **DTCWT (Dual-Tree Complex Wavelet Transform) — implemented for real in T3.5.6, in a
+    new module `src/transform_engine/dtcwt.py`.** The original `apply_dtcwt2d` in this file
+    was not a DTCWT at all: tree B's filters were `[cos(pi/4), sin(pi/4)]`, identical to the
+    Haar low-pass, and `g_b = -g_a`, so all four "trees" were one filter bank up to a sign —
+    no Hilbert pair, no analytic response, no shift invariance, no orientation. It
+    reconstructed perfectly because four copies of one transform average back to the input,
+    which is precisely why the round-trip test never saw it (defect D1, rule R8). Measured
+    at **236.11%** subband-energy spread over an 0–8 px translation, *identical to a plain
+    Haar DWT on the same field*. The old function is retained, unused by any runtime path,
+    purely as the comparison arm of the head-to-head regression tests; a test asserts no
+    runtime code calls it.
 *   **Undecimated / Stationary Wavelet Transform (`src/transform_engine/stationary.py`, T3.5.7):** A trous 2D transform in which **every scale keeps the parent grid shape**, with exact perfect reconstruction (`mode="periodic"`) and **exact shift invariance**. Supports haar, db2 and db3 with full-double-precision vendored coefficients. Measured on a sharp front translated 0-7 px: subband energy spread **0.00%** and aligned envelope correlation **+1.0000**, against **153.50%** and **-0.11** for the decimated DWT on the identical field. Tight-frame constant 4.0 per 2D level (verified to 1e-11); coefficients agree with `pywt.swt2(..., norm=True)` times `2**level` to 1e-11.
     *   This is the transform the Phase 4 layer is built on: coefficients inherit the parent field's coordinates directly (making `CoefficientField` coordinate-clean and T4F.5 evidence projection exact), and shift invariance is what makes feature tracking possible at all. It supersedes the DTCWT as the Phase 4 prerequisite; D1 now matters for *orientation* (Phase 4E) rather than as a blocker.
     *   `valid_interior_halfwidth(wavelet, level)` reports the R13 contaminated margin per level, and `apply_swt2d` refuses a level whose support exceeds the field rather than returning meaningless coarse scales.
@@ -133,7 +143,116 @@ Mines database results to generate hypotheses:
 
 ---
 
-## 4. Database Schema and State Tracking
+### 3.7b Dual-Tree Complex Wavelet Transform (`src/transform_engine/dtcwt.py`, `kingsbury_coeffs.py`)
+
+Delivered in T3.5.6, closing **D1** — the oldest and highest-risk entry in the ledger.
+
+*   **Six oriented complex subbands.** Passband centres measured directly (impulse response,
+    FFT, energy-weighted axial mean) at **75.0, 45.0, 15.3, 164.6, 135.0, 105.4 degrees** for
+    the wavevector, i.e. 165/135/105/75/45/15 for the feature orientation. Both conventions
+    are named constants and both are reported, because conflating them is a silent 90-degree
+    error.
+*   **Near shift invariance:** 4.99% subband-energy spread over an 0–8 px translation,
+    against 236.11% for the retained artefact and for a plain Haar DWT. It is *approximate*,
+    not exact — the undecimated SWT (T3.5.7) remains the exactly shift-invariant transform
+    and stays the right tool for Phase 4D tracking. The DTCWT is for **orientation**, which
+    the SWT cannot supply: a separable transform has one diagonal band and cannot tell +45
+    from −45 degrees.
+*   **Perfect reconstruction** to ~1e-31 MSE across five shapes (including odd dimensions),
+    four levels, three level-1 filter sets and four q-shift sets.
+*   **Validated against two independent oracles** — the reference `dtcwt` package (agreement
+    to 1e-13 elementwise) and `pytorch_wavelets`. Both are **test-only**: the coefficients are
+    vendored in `kingsbury_coeffs.py`, generated by `tools/gen_kingsbury_coeffs.py`, so the
+    runtime depends on neither. `pytorch_wavelets` imports the deprecated `pkg_resources`,
+    and a platform meant to outlast its dependencies should not need it for ~80 constants.
+    A test parses the module's imports to enforce this.
+
+### 3.8 Grid Geometry and Metric-Aware Operators (`src/physical_core/grid.py`, `operators.py`)
+
+Added in T3.5.13 (defect D13, standard E3). `GridSpec` is the physical metric attached to
+every `PhysicalField` - `pixel`, `cartesian` or `latlon` - and the default is deliberately
+`pixel` rather than `None`, so "lengths here are array indices" is a recorded fact that
+travels with the data rather than an unexamined assumption.
+
+*   Exact spherical cell areas (`R^2 dlon (sin(lat_n) - sin(lat_s))`), validated by summing a
+    global grid to `4 pi R^2` to **1.2e-16**.
+*   Physical wavenumber axes in `rad_per_m` / `cycles_per_km` / etc., with `legacy_pixel`
+    retained so pre-D13 numbers stay reproducible and auditable.
+*   `anisotropy()` reports the aspect ratio and the spread of the zonal metric; a 32x32 ERA5
+    patch at 60 degrees north has aspect **1.79** with `dx` varying **20%** across it.
+*   `resampled()` / `subset()` propagate the grid through interpolation and crops, and a
+    grid that does not match its field's shape is refused.
+
+`operators.py` supplies the metric-aware `gradient` (validated against
+`cos(lon)/(R cos(lat))` to 3.2e-6 at four latitudes, and confirmed second-order by grid
+refinement), a **Laplace-Beltrami** spherical Laplacian in staggered flux form (validated
+against three harmonic eigenvalues), and area-weighted domain statistics that return both the
+weighted and unweighted values so the size of the weighting effect stays visible.
+
+### 3.9 Radial Spectra and Power-Law Fitting (`src/analysis_engine/spectra.py`)
+
+Added in T3.5.13. Isotropically-averaged spectra on a **physical** wavenumber axis, with the
+1D energy convention `E(k)` and the 2D density `S(k)` both computed and each labelled -
+`E = 2 pi k S` in 2D, and conflating them was defect **D26**. The Parseval identity holds to
+1.0000000000. `fit_power_law` performs count-weighted least squares and returns a **standard
+error** with every exponent (rule R2), naming a turbulence regime only when the fit is tight
+*and* the reference exponent is within tolerance. Annulus reduction is `torch.bincount`
+(part of D17), asserted numerically identical to a reference Python loop.
+
+### 3.10 Climatology Removal (`src/analysis_engine/climatology.py`)
+
+Added in T3.5.17 because a benchmark failure demanded it. Harmonic regression on the diurnal
+and annual periods, which removes a *partial* annual cycle from a *partial* year - a
+time-of-day bin climatology cannot, and left **15.5%** of the variance on a cycles-only
+sequence against **0.017%** for the harmonic fit. Fitting is split-aware (`fit_mask`, rule
+R6). The solve is deliberately deterministic: columns are normalised and an SVD pseudo-inverse
+with an explicit rank tolerance replaces `torch.linalg.lstsq`, whose driver made a rank
+decision that changed with prior BLAS state (defect **D30**).
+
+### 3.11 Ground-Truth Benchmark Suite (`src/benchmarks/`)
+
+Added in T3.5.17 (standard E7). Nine synthetic datasets whose correct answer is known
+*before* analysis, of which **five are null benchmarks** whose answer is "there is nothing
+here". This is distinct from `synthetic_generator/`, which exists to keep the UI alive
+offline and declares no truth.
+
+*   `core.py` - registry, `Benchmark` (build + known answer + gated stages + checks), and a
+    three-valued `Outcome`. `NOT_YET_RUNNABLE` is never folded into `PASS`, so "all green"
+    cannot come to mean "we never looked".
+*   `seeding.py` - `SeedSequence.spawn` derivation from a root seed and a **`zlib.crc32`**
+    label hash (Python's `hash()` on a string is salted per process and would break
+    cross-session reproducibility).
+*   `fields.py` / `sequences.py` - the nine datasets.
+*   `runner.py`, `__main__.py` - report and CLI (`python -m src.benchmarks`, exit 1 on any
+    failure, usable directly as a CI gate).
+
+Current status: **14 PASS, 0 FAIL, 3 NOT_YET_RUNNABLE**. See Section 7.2f.
+
+## 3.12 HTTP API Surface
+
+Seventeen routes. Listed here because an undocumented endpoint is an untested contract.
+
+| Method | Route | Notes |
+|---|---|---|
+| GET | `/api/v1/health` | DB reachability, backend scheme, dataset count, execution device (T3.5.10) |
+| POST | `/api/v1/transforms/apply` | fft, dct, dwt, hybrid, **swt**, **dtcwt** (real Kingsbury q-shift, T3.5.6; `level1`/`qshift` sweepable) |
+| POST | `/api/v1/synthetic/generate` | vortex, front, turbulence, wave |
+| POST | `/api/v1/synthetic/perturb` | rotate, translate, noise (now seedable, T3.5.12) |
+| POST | `/api/v1/boundary/analyze` | declares its pixel frame explicitly (D13) |
+| GET | `/api/v1/benchmarks` | the suite and its declared known answers (T3.5.17) |
+| POST | `/api/v1/benchmarks/run` | three outcomes reported separately; 404 on an unknown name (D31) |
+| GET | `/api/v1/data/datasets` | carries `source_kind` / `is_simulated` / `fallback_reason` (E2) |
+| POST | `/api/v1/data/slice` | region + variable crop |
+| POST | `/api/v1/analysis/diagnostics` | area-weighted metrics, physical wavenumbers, units and grid provenance |
+| POST | `/api/v1/analysis/error-decomposition` | by scale, by boundary distance, by lead time |
+| POST | `/api/v1/experiments` | creates and launches a sweep |
+| GET | `/api/v1/experiments` | paginated listing with `limit` / `offset` / `status` (T3.5.10) |
+| GET | `/api/v1/experiments/{id}` | one experiment with its runs |
+| GET | `/api/v1/experiments/{id}/lineage` | lineage nodes and edges |
+| POST | `/api/v1/hypothesis/discover` | correlation + categorical scan (no FDR yet - D8) |
+| GET | `/api/v1/hypothesis/proposals` | generated follow-up configurations |
+
+## 4. Database Schema and State Tracking (`src/database/models.py`, `session.py`)
 
 The database layer (`src/database/`) is fully configured using SQLAlchemy and targets a persistent or in-memory SQLite database (`spectral_earth.db`). 
 
@@ -197,11 +316,11 @@ The architecture is highly modular and maintains clean boundaries at several cri
 
 ## 6. Front-End Technical Implementation
 
-The React frontend is fully written and structurally complete, but **has never been installed or built in this workspace** (see Section 7).
+The React frontend is fully written and structurally complete. It was installed and built in T3.5.0/T3.5.3 (`npm run build` emits hashed JS and CSS into `dist/`); what remains unverified is its **rendered appearance in a browser** - no screenshot per tab has been captured, which is still an open acceptance criterion of T3.5.0.
 
 *   **Component Visualizations:** `Heatmap2D.tsx` and `LineChart.tsx` wrap `react-plotly.js`; `LineageGraph.tsx` is a hand-rolled SVG node-link renderer with a tooltip inspector and no external graph dependency. All three take reactive props and render spatial fields, PSD curves, coherence ratios, and provenance DAGs.
 *   **Main Application (`App.tsx`):** 1,913 lines covering state hooks for all seven tabs (Synthetic Generator, Meteorological Data, Boundary-Condition Lab, Spectral Transforms, Diagnostic & Analysis, Experiment Engine, Automated Hypotheses), loading indicators, dynamic sliders, and follow-up proposal adoption.
-*   **API Integration:** `src/services/api.ts` covers every backend endpoint via `fetch` against the relative base `/api/v1`. The offline fallback lives in `App.tsx`, not in the client service - each tab catches the network error and substitutes a local mock generator (`getMockDatasets`, `runMockFieldGenerator`, `applyMockPerturbation`, and the mock lineage fixture at `App.tsx:647`). The relative base URL means the frontend depends entirely on the Vite dev proxy (`vite.config.ts`), because the API declares no CORS middleware.
+*   **API Integration:** `src/services/api.ts` covers every backend endpoint via `fetch` against the relative base `/api/v1`. The offline fallback lives in `App.tsx`, not in the client service - each tab catches the network error and substitutes a local mock generator (`getMockDatasets`, `runMockFieldGenerator`, `applyMockPerturbation`, and the mock lineage fixture at `App.tsx:647`). The relative base URL means the frontend normally goes through the Vite dev proxy (`vite.config.ts`); since T3.5.2 the API also declares `CORSMiddleware` with an origin allowlist from `CORS_ALLOW_ORIGINS`, so a direct cross-origin call works too (defect D5).
 *   **Not yet verified:** the "zero-error strict TypeScript compile / clean production bundle" claim made in earlier revisions of this document is **not substantiated**. `frontend/node_modules` does not exist, `frontend/dist/` contains only `index.html` with no emitted JS or CSS assets, and `tailwind.config.js` / `postcss.config.js` are both **missing** while `src/index.css` uses `@tailwind` directives and `@apply`. A build would therefore either fail or emit an unstyled page. Fixed and actually verified in Tasks 3.5.3 and 3.5.11.
 
 ---
@@ -218,7 +337,8 @@ See `VERIFICATION.md` for the captured command output behind every statement her
 | Item | Status |
 |---|---|
 | Python venv + dependencies | installed (torch 2.13.0, numpy 2.2.6, pydantic 1.10.26, SQLAlchemy 2.0.52, xarray 2025.6.1, FastAPI 0.110.3) |
-| Backend test suite | **152 passed, 1 xfailed** (was 8 failed / 11 passed at first run) |
+| Backend test suite | **351 passed, 1 xfailed** (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17) |
+| Ground-Truth Benchmark Suite | **14 PASS, 0 FAIL, 3 NOT_YET_RUNNABLE** (`python -m src.benchmarks`, exit 0) |
 | Frontend `npm install` + `npm run build` | passes, emits 1,378 modules + real JS/CSS assets (was: 1 module, no assets) |
 | Backend server | starts, serves OpenAPI, all smoke-tested endpoints return 200 |
 | End-to-end experiment sweep | 9-run parameter sweep completes 9/9, writes 28 lineage nodes / 54 edges, hypothesis engine returns results |
@@ -226,14 +346,24 @@ See `VERIFICATION.md` for the captured command output behind every statement her
 
 Earlier revisions of this document and of `roadmap.md` claimed the platform was "validated"
 and "zero-error". It was not: the first real execution produced 8 test failures and a frontend
-that had never rendered. The ledger below grew from 18 entries to 25 as a direct result of
-running the code — **17 of which are now fixed**.
+that had never rendered. The ledger below grew from 18 entries to **31** as a direct result of
+running the code and of building the tests that check it — **25 of which are now fixed**.
+
+Defects D26-D31 were all found *after* the code they concern was written and passing, by
+tests written against analytic answers rather than against the code's own behaviour. Six of
+the thirty-one were found this way, which is the single strongest argument for the standing
+tolerance rule R16.
+
+**Still not verified:** the frontend's rendered appearance in a browser. `npm run build`
+succeeds and emits real assets, but no screenshot per tab has been captured, so T3.5.0's
+final acceptance criterion remains open. The frontend also does not yet consume
+`GET /api/v1/health`, `GET /api/v1/experiments` or the benchmark endpoints.
 
 ### 7.2 Confirmed defects
 
 | # | Location | Defect | Fixed by |
 |---|---|---|---|
-| D1 | `transform_engine/transforms.py:148-151` | DTCWT tree-B filters are identical to tree A up to sign - no Hilbert pair, no shift invariance, no directional subbands. Exact reconstruction hides it. | T3.5.6 |
+| D1 | `transform_engine/transforms.py:148-151` | DTCWT tree-B filters are identical to tree A up to sign - no Hilbert pair, no shift invariance, no directional subbands. Exact reconstruction hides it. | **FIXED** T3.5.6 |
 | D2 | `transform_engine/transforms.py` `inverse_hybrid` | Recombines `w*low + (1-w)*high` where the forward pass split `low + residual`; not an inverse for any `w`. | **FIXED** T3.5.5 |
 | D3 | `tests/test_experiments.py:49` | `test_experiment_engine_execution` **fails**. The test seeds an in-memory SQLite engine, but `execute_experiment` opens the file-backed `SessionLocal` from `database/session.py:11`, never finds the experiment, and returns early leaving status `PENDING`. | **FIXED** T3.5.1 |
 | D4 | repo root | No `conftest.py` and no `__init__.py` anywhere, so bare `pytest` cannot resolve `src.*` imports (only `python -m pytest` works, via implicit cwd insertion). | **FIXED** T3.5.1 |
@@ -270,6 +400,8 @@ code paths that `architecture.md` previously described as implemented and rigoro
 | D27 | `physical_core/grid.py` (introduced and fixed within T3.5.13) | `torch.fft.fftfreq` returns **float32** by default; a trailing `.to(float64)` preserves an already-rounded value. Capped the Parseval identity at a systematic 5.8e-8 - half of float32 epsilon - for every field. Same class as D16, found because the identity was checked to machine precision instead of to a plausible tolerance. | **FIXED** T3.5.13 |
 | D28 | `physical_core/operators.py` (found within T3.5.13) | The polar-degeneracy guard tested `dx_metres > 0`. `cos(90 degrees)` evaluates to 6.1e-17 in float64, not 0, so a polar row had a zonal spacing of ~1e-12 m: finite, passing the guard, and producing gradients of order 1e11 per metre with no NaN to flag them. Now guarded against a physical length threshold. | **FIXED** T3.5.13 |
 | D29 | `api/main.py` `DiagnosticsResponse` (found within T3.5.13) | The API reported `k_units = "rad m^-1"` for a field carrying no physical metric at all - a plot axis in metres over data that never had metres, which is D13's failure mode reappearing in the serialisation layer. Unit labels now derive from the grid kind, and kilometre-based units are refused on a pixel grid. | **FIXED** T3.5.13 |
+| D30 | `analysis_engine/climatology.py` (found and fixed within T3.5.17) | **A result that changed depending on what ran before it.** The harmonic climatology basis for a short record is near rank-deficient (condition number 8.4e13, smallest singular value 2.5e-13). `torch.linalg.lstsq`'s default driver made its own rank decision there, and that decision flipped with prior BLAS state: identical data and seed gave a residual variance ratio of 0.000172 in one test ordering and 0.157639 in another. Now solved via column normalisation plus an SVD pseudo-inverse with an explicit rank tolerance; conditioning improved to 1.9e4 and the effective rank is reported. | **FIXED** T3.5.17 |
+| D31 | `api/main.py` `/api/v1/benchmarks/run` (found within T3.5.17) | An unknown benchmark name filtered the suite to nothing and returned HTTP 200 with zero failures - a silent no-op that reads as "everything passed". A gate a typo can delete is not a gate. Now 404 with the list of available benchmarks. | **FIXED** T3.5.17 |
 
 **Root cause common to D20, D23, D25 and D2:** the transform engine — the mathematical core of
 the platform — had **no test file at all**. `src/tests/test_transforms.py` now exists (36 cases
@@ -329,6 +461,66 @@ against the code's own inverse, and both were found only because the tolerance w
 the level the mathematics predicts rather than at a level the code could comfortably pass.
 The Parseval check that exposed D27 is the clearest case: at a 1e-6 tolerance it passes and
 the float32 defect ships.
+
+### 7.2f The false-positive floor (T3.5.17)
+
+`src/benchmarks/` holds nine datasets whose correct answer is known before analysis. Five of
+them are **null benchmarks** - their answer is "there is nothing here". Current status:
+**14 PASS, 0 FAIL, 3 NOT_YET_RUNNABLE.**
+
+The three pending entries gate stages that do not exist yet (4D tracking, 4C surrogate
+nulls, 4E constellation matching). They report `NOT_YET_RUNNABLE` naming the missing stage
+rather than being skipped, because a skipped test is invisible in a summary line and would
+let "all green" mean "we never looked".
+
+Two results worth recording:
+
+*   **R12, measured.** On 200-frame AR(1) sequences with phi = 0.85 (effective sample size
+    32.2), correlating *independent* series rejects the true null at **40.0%** under naive
+    significance testing and **2.3%** with the effective-sample-size correction, against a
+    nominal 5%. Treating frames as independent samples inflates the false-positive rate
+    eight-fold.
+*   **R11, measured.** On a sequence containing only deterministic cycles and 0.05-amplitude
+    noise, a time-of-day bin climatology leaves **15.5%** of the original variance, because
+    a 40-day record cannot form a day-of-year climatology and the annual cycle passes
+    straight through. Harmonic regression leaves **0.017%** - a factor of ~900. That 15.5%
+    residual is exactly what a miner would report as weather. The suite also asserts the
+    *trap*: the raw sequence's scale energies correlate at r = 0.999, p = 2e-219, which is a
+    spectacular finding and is entirely the calendar.
+
+### 7.2g Reproducibility (T3.5.12)
+
+`src/benchmarks/seeding.py` derives independent streams via `SeedSequence.spawn` from a root
+seed and a **`zlib.crc32`** label hash. Python's built-in `hash()` on a string is salted per
+process, so a derivation using it reproduces within one session and silently changes between
+sessions - the worst kind of reproducibility bug, and the reason a literal hash value is
+asserted in the tests. `PerturbationEngine.add_noise` now accepts `seed=` or a threaded
+`generator=`; the previous `torch.randn_like` drew from global state, which would have made
+sweep results depend on executor interleaving once T3.5.19 lands. An unseeded run is
+labelled `seeded: False` in its metadata rather than being indistinguishable from a
+reproducible one.
+
+### 7.4 Test inventory
+
+Counted as **test functions** (pytest reports more cases, because several are
+parametrised). Checked automatically by `src/tests/test_documentation.py`, which fails
+if this table drifts from the source - the mechanism that stopped this document going
+stale once already.
+
+| File | Test functions | Covers |
+|---|---|---|
+| `test_analysis_data.py` | 6 | diagnostics and data-layer endpoints |
+| `test_api_infrastructure.py` | 15 | health, listing, pagination, CORS, data-source transparency, benchmark endpoints |
+| `test_benchmarks.py` | 45 | Ground-Truth Benchmark Suite, seed discipline, climatology removal, D30 determinism |
+| `test_boundary_synthetic.py` | 7 | boundary treatments, windowing, synthetic generators |
+| `test_documentation.py` | 15 | this document and roadmap.md against the code |
+| `test_dtcwt.py` | 28 | Kingsbury q-shift DTCWT: primitives vs reference, two oracles, orientation, shift invariance, D1 head-to-heads |
+| `test_experiments.py` | 3 | declarative sweeps and lineage |
+| `test_grid_operators.py` | 64 | grid metrics, metric-aware gradient/Laplacian, area weighting, physical-wavenumber spectra, D26 |
+| `test_hypothesis.py` | 3 | correlation and categorical hypothesis discovery |
+| `test_stationary.py` | 19 | undecimated SWT: shift invariance, perfect reconstruction, frame constant, PyWavelets oracle, R3 normalisation |
+| `test_transforms.py` | 13 | fft/dct/dwt/dtcwt/hybrid round trips; D1 recorded as a strict xfail |
+| **total** | **218** | |
 
 ### 7.3 Precision caveats (not defects, but do not overstate them)
 
