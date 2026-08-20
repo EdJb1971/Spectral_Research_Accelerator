@@ -18,7 +18,7 @@ from src.transform_engine import registry as transform_registry
 from src.experiment_engine import actions as pipeline_actions
 from src.data_layer import sources as data_sources
 from src.data_layer import builtin_sources as _builtin_sources  # noqa: F401
-from src.core.errors import classify
+from src.core.errors import SpectralEarthError, classify
 from src.transform_engine import dtcwt as RealDTCWT
 from src.transform_engine import stationary as swt_engine
 from src.synthetic_generator.generator import SyntheticFieldGenerator
@@ -738,6 +738,150 @@ async def list_transforms():
 async def list_data_sources():
     """The data-source fallback chain, in priority order (standard E2)."""
     return data_sources.describe_sources()
+
+class ZarrCropRequest(BaseModel):
+    """A regional crop of a cloud Zarr archive (T3.5.18)."""
+
+    store: str = Field("era5_0p25_6h",
+                       description="Catalogue id, or a raw Zarr URI (gs://... or a local path).")
+    variables: List[str] = Field(..., description="Variable names, e.g. ['temperature'].")
+    time_start: str = Field(..., description="ISO date or datetime, inclusive.")
+    time_end: str = Field(..., description="ISO date or datetime, inclusive.")
+    lat_min: float = Field(..., description="Southern edge, degrees north.")
+    lat_max: float = Field(..., description="Northern edge, degrees north.")
+    lon_min: float = Field(..., description="Western edge, degrees east.")
+    lon_max: float = Field(..., description="Eastern edge, degrees east.")
+    levels: List[int] = Field(default_factory=list, description="Pressure levels in hPa.")
+    n_levels_analysis: int = Field(4, ge=1, le=8,
+                                  description="Wavelet levels the crop must support (R13).")
+
+
+@app.get("/api/v1/data/zarr/catalogue")
+async def zarr_catalogue():
+    """Known cloud ERA5 stores, and whether this deployment may reach them (T3.5.18).
+
+    The catalogue carries a `note` per store saying what it is good and bad *for*, because
+    the difference between the 0.25 degree and 1.5 degree stores is not resolution alone: one
+    is chunked one timestep at a time and is hostile to regional crops, the other is not.
+    """
+    from src.data_layer import zarr_source as zarr_adapter
+
+    return {
+        "stores": zarr_adapter.CATALOGUE,
+        "network_enabled": zarr_adapter.network_enabled(),
+        "network_env_var": zarr_adapter.NETWORK_ENV_VAR,
+        "missing_dependencies": zarr_adapter.missing_dependencies(),
+        "cache_dir": zarr_adapter.DEFAULT_CACHE_DIR,
+        "r13_minimum_crop": {str(n): zarr_adapter.minimum_crop_size(n)
+                             for n in range(1, 7)},
+        "note": ("Network access is opt-in: reaching the internet must never be a side "
+                 "effect of running a sweep, and a mistyped bounding box against a 0.25 "
+                 "degree store can move tens of gigabytes."),
+    }
+
+
+@app.get("/api/v1/data/zarr/cached")
+async def zarr_cached_crops():
+    """Crops already materialised locally. Available with no network at all."""
+    from src.data_layer import zarr_source as zarr_adapter
+
+    crops = zarr_adapter.cached_crops()
+    return {
+        "count": len(crops),
+        "cache_dir": zarr_adapter.DEFAULT_CACHE_DIR,
+        "crops": [
+            {
+                "content_key": c.get("content_key"),
+                "content_hash": c.get("content_hash"),
+                "spec": c.get("spec"),
+                "shape": c.get("shape"),
+                "megabytes_transferred": c.get("megabytes_transferred"),
+                "elapsed_s": c.get("elapsed_s"),
+            }
+            for c in crops
+        ],
+    }
+
+
+@app.post("/api/v1/data/zarr/inspect")
+async def zarr_inspect(request: ZarrCropRequest):
+    """Report a store's chunk structure and whether this crop is chunk-hostile.
+
+    **Metadata only - nothing of the data is transferred.** This is deliberately a separate
+    endpoint from materialisation, because it is the call a researcher should make *first*:
+    against WeatherBench 2's 0.25 degree archive a one-year 256x256 four-level crop must move
+    79 GB to deliver 1.55 GB, and finding that out from a progress bar an hour in is not a
+    design. Materialisation is not exposed over HTTP at all yet: it is a minutes-to-hours job
+    that needs the Phase 4A artifact store and a job record, and a request that silently holds
+    a connection open for two hours would be a worse answer than no endpoint.
+    """
+    from src.data_layer import zarr_source as zarr_adapter
+
+    try:
+        spec = zarr_adapter.CropSpec(
+            store=request.store, variables=tuple(request.variables),
+            time_start=request.time_start, time_end=request.time_end,
+            lat_min=request.lat_min, lat_max=request.lat_max,
+            lon_min=request.lon_min, lon_max=request.lon_max,
+            levels=tuple(request.levels), n_levels_analysis=request.n_levels_analysis,
+        )
+    except SpectralEarthError as e:
+        # classify() also returns `error` and `context`, which HTTPException does not take;
+        # only the status and the client-safe detail cross the wire.
+        info = classify(e)
+        raise HTTPException(status_code=info["status_code"], detail=info["detail"])
+
+    remote = "://" in spec.uri
+    if remote and not zarr_adapter.network_enabled():
+        raise HTTPException(
+            status_code=409,
+            detail=("Inspecting %s requires network access, which is disabled. Set %s=1 to "
+                    "enable it. Reading store metadata costs a few hundred kilobytes, but "
+                    "enabling it is still a deliberate choice rather than a default."
+                    % (spec.uri, zarr_adapter.NETWORK_ENV_VAR)))
+
+    try:
+        dataset, _counter = zarr_adapter.open_dataset(spec.uri, chunks={})
+    except SpectralEarthError as e:
+        info = classify(e)
+        raise HTTPException(status_code=info["status_code"], detail=info["detail"])
+    try:
+        structure = zarr_adapter.describe_store(dataset, spec.variables)
+        assessment = zarr_adapter.assess_access_pattern(dataset, spec)
+        selection = assessment["selection"]
+        lat_key = "latitude" if "latitude" in selection else "lat"
+        lon_key = "longitude" if "longitude" in selection else "lon"
+        try:
+            geometry = zarr_adapter.check_crop_size(
+                int(selection.get(lat_key, 0)), int(selection.get(lon_key, 0)),
+                request.n_levels_analysis)
+        except SpectralEarthError as e:
+            # A crop below the R13 floor is reported, not raised: the caller asked what this
+            # crop *would* cost, and "too small for four levels, minimum 256x256" is the most
+            # useful answer to that question.
+            geometry = {"ok": False, "error": str(e),
+                        "minimum_size": zarr_adapter.minimum_crop_size(
+                            request.n_levels_analysis)}
+    except SpectralEarthError as e:
+        info = classify(e)
+        raise HTTPException(status_code=info["status_code"], detail=info["detail"])
+    finally:
+        dataset.close()
+
+    return {
+        "spec": spec.to_provenance(),
+        "cached": zarr_adapter.is_cached(spec),
+        "structure": structure,
+        "assessment": assessment,
+        "geometry": geometry,
+        "cli": ("python -m src.data_layer.zarr_source materialise --store %s --variables %s "
+                "--start %s --end %s --lat %g %g --lon %g %g --levels %s"
+                % (request.store, ",".join(request.variables), request.time_start,
+                   request.time_end, request.lat_min, request.lat_max,
+                   request.lon_min, request.lon_max,
+                   ",".join(str(v) for v in request.levels))),
+    }
+
 
 @app.get("/api/v1/benchmarks", response_model=List[BenchmarkResponse])
 async def list_benchmarks():

@@ -343,9 +343,84 @@ offline and declares no truth.
 
 Current status: **15 PASS, 0 FAIL, 2 NOT_YET_RUNNABLE**. See Section 7.2f.
 
+### 3.13 Cloud-Native ERA5 over Zarr (`src/data_layer/zarr_source.py`, T3.5.18)
+
+**Real observational data, verified against the live archive.** WeatherBench 2 publishes ERA5
+as public Zarr on Google Cloud Storage, readable anonymously — 24 stores enumerated at
+`gs://weatherbench2/datasets/era5` on 2026-08-20. Four are catalogued here with a note on what
+each is good and bad *for*, because the difference between them is not resolution alone.
+
+**The chunk-hostility trap, measured on the real store rather than predicted.** The 0.25 degree
+stores are chunked `(1, 13, 721, 1440)` — one timestep, all 13 pressure levels, the whole
+planet, **54.0 MB per chunk**. A 257x257 four-level crop wants 1.05 MB per timestep. Live
+measurement:
+
+| | value |
+|---|---|
+| Crop | 257x257, 4 levels, `temperature`, 8 days at 6 h (32 frames) |
+| Predicted transfer (from chunk metadata, before fetching) | 1,727.6 MB uncompressed |
+| Measured wire transfer | **951.3 MB** in 186.3 s |
+| Amplification | **51.1x** (79.0 GB would be needed for 1.55 GB over one year) |
+| Local cache size | 19.0 MB |
+| Cache read | **8 chunk reads, 0.05 s** — against 186 s remote |
+| Repeat request | **0 bytes, 0.006 s** |
+
+`assess_access_pattern` computes that 51.1x from chunk metadata alone, transferring nothing, so
+the warning arrives *before* the download rather than as an explanation afterwards. It also
+reports the non-obvious consequence: **selecting fewer levels does not reduce transfer**,
+because level sits inside the chunk. Only the variable and time axes actually narrow the wire.
+
+**Two stages, the second not optional.** Query the remote store lazily, then materialise once
+into a local Zarr cache **rechunked time-contiguous** for that region, content-hashed, with
+bytes transferred recorded. The inversion is the entire point: the remote layout is one
+timestep per chunk, the cache is all frames in one chunk, and a cross-scale read of a region
+becomes a single seek.
+
+**R13 enforced, not documented.** `edge_exclusion(j) = floor((L-1)·2^(j-1)/2)` reproduces R13's
+table exactly (6/13/26/52 px per side at levels 1–4 for a 14-tap filter), and
+`minimum_crop_size` returns R13's own figures — 256 for four levels, 512 for five. A crop below
+the floor is **refused**, naming the minimum and the measured valid interior, because a 64x64
+crop has *zero* valid interior at level 4: cross-scale analysis on it is not noisy but
+arithmetically impossible, and every edge coefficient looks exactly like a strong, localised,
+oriented feature — which is precisely what a discovery engine would report. The refusal also
+says which dimension to give up instead, since R13 is explicit that the grid is never it.
+
+**Provenance that is a reproduction recipe (E5).** A `CropSpec` is frozen, hashable and
+machine-independent: no local paths, no timestamps. Its `content_key` is order-independent, so
+two researchers typing the variables in a different order share one cache entry. The content
+hash covers the *data* and is independent of cache chunking — verified by materialising the same
+crop at two different chunk sizes and getting the same hash. `rematerialise_from_provenance`
+rebuilds a crop from the lineage record alone; verified against the real crop, key and hash both
+matching.
+
+**Network access is opt-in** (`SPECTRALEARTH_ALLOW_NETWORK=1`). Reaching the internet must never
+be a side effect of running a sweep or a test: it makes results depend on connectivity, and a
+mistyped bounding box against a 0.25 degree store moves tens of gigabytes. A **cached crop makes
+the source available offline**, which is the payoff of stage 2 — `can_serve` consults the cache,
+not the network.
+
+Registered in the fallback chain at priority 20, between `netcdf_local` (10) and `simulated`
+(900), exactly where `builtin_sources.py` anticipated it. `sources.py` had promised that
+`SOURCES.with_capability("streaming")` was how this adapter would be selected without editing a
+dispatch chain; until this slice that query returned an empty list, so the seam was a claim.
+It is now a fact, with a test asserting it.
+
+It declares `crop_dataset_ids` rather than `dataset_ids`, and the distinction is load-bearing:
+`list_datasets` promises that every id under `dataset_ids` appears with concrete variables, a
+time range, a bounding box and a resolution. A crop *family* has none of those until a crop is
+specified — the archive is 64 years of the whole planet — so listing it there would advertise a
+dataset `/api/v1/data/slice` cannot serve. Materialised crops, which do have concrete extents,
+are listed by `GET /api/v1/data/zarr/cached`.
+
+Operator interface: `python -m src.data_layer.zarr_source {catalogue|cached|inspect|materialise}`.
+`inspect` reads metadata only and is the command to run before committing to a download.
+Materialisation is deliberately **not** exposed over HTTP: it is a minutes-to-hours job needing
+the Phase 4A artifact store and a job record, and an endpoint that held a connection open for
+two hours would be a worse answer than no endpoint.
+
 ## 3.12 HTTP API Surface
 
-Twenty routes. Listed here because an undocumented endpoint is an untested contract.
+23 routes. Listed here because an undocumented endpoint is an untested contract.
 
 | Method | Route | Notes |
 |---|---|---|
@@ -357,6 +432,9 @@ Twenty routes. Listed here because an undocumented endpoint is an untested contr
 | GET | `/api/v1/actions` | every registered pipeline action, generated from the registry (T3.5.15) |
 | GET | `/api/v1/transforms` | every registered transform with its params and capabilities (T3.5.15) |
 | GET | `/api/v1/data/sources` | the data-source fallback chain in priority order (E2) |
+| GET | `/api/v1/data/zarr/catalogue` | known cloud ERA5 stores, the network gate, and the R13 crop floor (T3.5.18) |
+| GET | `/api/v1/data/zarr/cached` | crops already materialised locally; works with no network |
+| POST | `/api/v1/data/zarr/inspect` | chunk structure and chunk-hostility for a proposed crop - **metadata only** |
 | GET | `/api/v1/benchmarks` | the suite and its declared known answers (T3.5.17) |
 | POST | `/api/v1/benchmarks/run` | three outcomes reported separately; 404 on an unknown name (D31) |
 | GET | `/api/v1/data/datasets` | carries `source_kind` / `is_simulated` / `fallback_reason` (E2) |
@@ -510,10 +588,14 @@ The architecture is highly modular and maintains clean boundaries at several cri
 
 ## 6. Front-End Technical Implementation
 
-The React frontend is fully written and structurally complete. It was installed and built in T3.5.0/T3.5.3 (`npm run build` emits hashed JS and CSS into `dist/`); what remains unverified is its **rendered appearance in a browser** - no screenshot per tab has been captured, which is still an open acceptance criterion of T3.5.0.
+The React frontend is fully written and structurally complete. It was installed and built in T3.5.0/T3.5.3 (`npm run build` emits hashed JS and CSS into `dist/`) and wired to the previously unreachable endpoints in T3.5.22. What remains unverified is its **rendered appearance in a browser** - no screenshot per tab has been captured, which is still an open acceptance criterion of T3.5.0. The contract tests prove the nine tabs compile, call routes that exist and read fields that are present; they do not prove anything renders, and that distinction is kept explicit because a green suite plus a green build is exactly what makes people assume otherwise.
 
 *   **Component Visualizations:** `Heatmap2D.tsx` and `LineChart.tsx` wrap `react-plotly.js`; `LineageGraph.tsx` is a hand-rolled SVG node-link renderer with a tooltip inspector and no external graph dependency. All three take reactive props and render spatial fields, PSD curves, coherence ratios, and provenance DAGs.
-*   **Main Application (`App.tsx`):** 1,913 lines covering state hooks for all seven tabs (Synthetic Generator, Meteorological Data, Boundary-Condition Lab, Spectral Transforms, Diagnostic & Analysis, Experiment Engine, Automated Hypotheses), loading indicators, dynamic sliders, and follow-up proposal adoption.
+*   **Main Application (`App.tsx`):** ~2,400 lines covering state hooks for **nine** tabs (Synthetic Generator, Meteorological Data, Boundary-Condition Lab, Spectral Transforms, Diagnostic & Analysis, Experiment Engine, Automated Hypotheses, **Platform & Evidence**, **Real ERA5 (Zarr)**), loading indicators, dynamic sliders, and follow-up proposal adoption.
+*   **Platform & Evidence tab (T3.5.22):** the execution device, core and thread counts, executor backends with the measured rationale for the serial default, the SQLite pragmas actually in force, the stamped Alembic revision with an explicit warning when the schema is behind the code, the data-source fallback chain labelled observational/SIMULATED from each source's own declared flag, and the full Ground-Truth Benchmark Suite with its declared known answers and null benchmarks marked. All of this existed on the backend for several slices with no consumer.
+*   **Real ERA5 tab (T3.5.22):** a crop form driven by the store catalogue, the R13 minimum crop size for the chosen number of wavelet levels, and an **inspect** action that reports chunk structure, the predicted amplification, the chunk-hostility warning and the per-level valid interior — metadata only, no transfer — then hands back the CLI command that would materialise it. The network gate is shown when it is off, with the variable that enables it.
+*   **Statistics on every hypothesis (defect D8, presentation half):** the card labelled a bare `|r|` as "Confidence" and showed nothing else, which is what made nine noise correlations from a 9-run sweep read as nine discoveries. It now says **effect size**, and shows the q-value, the raw p-value, the family size, the correction procedure **with its dependence assumption**, and the R7 non-causality caveat. A finding with no correction gets an explicit warning rather than looking identical to a corrected one.
+*   **Frontend/backend contract, checked mechanically (`src/tests/test_frontend_contract.py`):** `npm run build` runs `tsc`, so the frontend's internal types are checked; nothing checked them against the backend, and the payloads that matter are `Record<string, any>` because their shape is nested. The tests parse `api.ts` for every path it fetches and assert each is served (distinguishing a path parameter from a query string), assert every service method is actually called from `App.tsx`, and assert every nested key the UI reads exists in a real response. It found a live bug on its first run: the hypothesis card rendered `statistics.correction`, which is an **object**, and would have thrown *"Objects are not valid as a React child"* while `tsc`, `vite build` and 547 backend tests all passed.
 *   **API Integration:** `src/services/api.ts` covers every backend endpoint via `fetch` against the relative base `/api/v1`. The offline fallback lives in `App.tsx`, not in the client service - each tab catches the network error and substitutes a local mock generator (`getMockDatasets`, `runMockFieldGenerator`, `applyMockPerturbation`, and the mock lineage fixture at `App.tsx:647`). The relative base URL means the frontend normally goes through the Vite dev proxy (`vite.config.ts`); since T3.5.2 the API also declares `CORSMiddleware` with an origin allowlist from `CORS_ALLOW_ORIGINS`, so a direct cross-origin call works too (defect D5).
 *   **Not yet verified:** the "zero-error strict TypeScript compile / clean production bundle" claim made in earlier revisions of this document is **not substantiated**. `frontend/node_modules` does not exist, `frontend/dist/` contains only `index.html` with no emitted JS or CSS assets, and `tailwind.config.js` / `postcss.config.js` are both **missing** while `src/index.css` uses `@tailwind` directives and `@apply`. A build would therefore either fail or emit an unstyled page. Fixed and actually verified in Tasks 3.5.3 and 3.5.11.
 
@@ -531,7 +613,7 @@ See `VERIFICATION.md` for the captured command output behind every statement her
 | Item | Status |
 |---|---|
 | Python venv + dependencies | installed (torch 2.13.0, numpy 2.2.6, pydantic 1.10.26, SQLAlchemy 2.0.52, xarray 2025.6.1, FastAPI 0.110.3) |
-| Backend test suite | **478 passed, 1 xfailed** (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17, 351 after T3.5.6, 379 after T3.5.15, 407 after T3.5.19, 449 after T4C.5) |
+| Backend test suite | **548 passed, 1 xfailed** (plus 1 skipped: the opt-in live-GCS check) (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17, 351 after T3.5.6, 379 after T3.5.15, 407 after T3.5.19, 449 after T4C.5) |
 | Ground-Truth Benchmark Suite | **15 PASS, 0 FAIL, 2 NOT_YET_RUNNABLE** (`python -m src.benchmarks`, exit 0) |
 | Frontend `npm install` + `npm run build` | passes, emits 1,378 modules + real JS/CSS assets (was: 1 module, no assets) |
 | Backend server | starts, serves OpenAPI, all smoke-tested endpoints return 200 |
@@ -597,6 +679,7 @@ code paths that `architecture.md` previously described as implemented and rigoro
 | D30 | `analysis_engine/climatology.py` (found and fixed within T3.5.17) | **A result that changed depending on what ran before it.** The harmonic climatology basis for a short record is near rank-deficient (condition number 8.4e13, smallest singular value 2.5e-13). `torch.linalg.lstsq`'s default driver made its own rank decision there, and that decision flipped with prior BLAS state: identical data and seed gave a residual variance ratio of 0.000172 in one test ordering and 0.157639 in another. Now solved via column normalisation plus an SVD pseudo-inverse with an explicit rank tolerance; conditioning improved to 1.9e4 and the effective rank is reported. | **FIXED** T3.5.17 |
 | D31 | `api/main.py` `/api/v1/benchmarks/run` (found within T3.5.17) | An unknown benchmark name filtered the suite to nothing and returned HTTP 200 with zero failures - a silent no-op that reads as "everything passed". A gate a typo can delete is not a gate. Now 404 with the list of available benchmarks. | **FIXED** T3.5.17 |
 | D32 | `api/main.py` lifespan / `database/session.py` (found within T3.5.8) | **A schema that startup reported as correct and could not be queried.** `Base.metadata.create_all` adds missing tables but never adds missing *columns*, and returns successfully either way. The checked-in `spectral_earth.db` predated the five columns added by T3.5.12 and T4C.5, so the ORM mapped columns the file did not contain: `no such column: experiment_runs.seed`, with no warning at any point before the query. Fixed by Alembic revisions 0001/0002 plus `ensure_schema`, which adopts a pre-Alembic database by *inspecting* it rather than assuming its revision. | **FIXED** T3.5.8 |
+| D33 | `requirements.txt` / `data_layer/builtin_sources.py` (found within T3.5.18) | **A documented feature that could not work.** `xarray` was declared but *no NetCDF engine* was, so a clean install had only `scipy` (NetCDF3 classic) and `zarr`. `data/README.md` invites the researcher to drop an ERA5 `.nc` file into `data/`, and `LocalNetCDFSource` is the highest-priority source - but modern ERA5 downloads are NetCDF4/HDF5, which failed with *"found the following matches ... but their dependencies may not be installed"*. Reproduced on this machine, then fixed: `h5netcdf` + `h5py` declared and installed, with a test that writes and reopens an HDF5-format file so dependency drift cannot silently undo it. | **FIXED** T3.5.18 |
 
 **Root cause common to D20, D23, D25 and D2:** the transform engine — the mathematical core of
 the platform — had **no test file at all**. `src/tests/test_transforms.py` now exists (36 cases
@@ -716,6 +799,7 @@ able to sit three slices out of date.
 | `test_dtcwt.py` | 28 | Kingsbury q-shift DTCWT: primitives vs reference, two oracles, orientation, shift invariance, D1 head-to-heads |
 | `test_executor.py` | 26 | Executor backends, seed derivation, ordering, device/thread policy, SQLite concurrency, byte-identical sweeps |
 | `test_experiments.py` | 3 | declarative sweeps and lineage |
+| `test_frontend_contract.py` | 13 | the frontend/backend contract: fetched paths vs served routes, payload keys the UI reads, D8 presentation |
 | `test_grid_operators.py` | 64 | grid metrics, metric-aware gradient/Laplacian, area weighting, physical-wavenumber spectra, D26 |
 | `test_hypothesis.py` | 3 | correlation and categorical hypothesis discovery |
 | `test_migrations.py` | 25 | Alembic history, ORM/schema drift, per-revision round trips, pre-Alembic adoption, auto-migrate refusal, PostgreSQL rendering |
@@ -723,7 +807,8 @@ able to sit three slices out of date.
 | `test_stationary.py` | 19 | undecimated SWT: shift invariance, perfect reconstruction, frame constant, PyWavelets oracle, R3 normalisation |
 | `test_statistics.py` | 36 | FDR procedures vs scipy, surrogate preservation properties, calibration on a true null, stationarity gate, screening |
 | `test_transforms.py` | 13 | fft/dct/dwt/dtcwt/hybrid round trips; D1 recorded as a strict xfail |
-| **total** | **337** | |
+| `test_zarr_source.py` | 58 | R13 crop geometry, chunk-hostility prediction, byte counting, cache and provenance round trip, the NetCDF engine (D33), zarr HTTP surface |
+| **total** | **408** | |
 
 ### 7.2h A surrogate null that was not the null it claimed (T4C.5)
 

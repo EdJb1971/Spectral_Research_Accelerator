@@ -12,7 +12,7 @@ Everything below either serves that question or gets cut.
 ## 1. Honest Technical Status
 
 Verified against the code on 2026-08-20. Every claim here is backed by captured output in
-`VERIFICATION.md`; `architecture.md` Section 7 holds the full defect ledger (D1-D32, of which **30 fixed, 1 partial (D18), 1 open (D17)**).
+`VERIFICATION.md`; `architecture.md` Section 7 holds the full defect ledger (D1-D33, of which **31 fixed, 1 partial (D18), 1 open (D17)**).
 
 The numbers in this table are checked by `src/tests/test_documentation.py`, which parses them
 out of this file and compares them against the source. That guard exists because this table
@@ -22,7 +22,7 @@ status section, it is a memory.
 
 | Area | Real status |
 |---|---|
-| Backend test suite | **478 passed, 1 xfailed.** Trajectory: 19 written / 1 failing / uncollectable -> 65 -> 152 -> 222 -> 271 -> 351 -> 407 -> 449 -> 478. |
+| Backend test suite | **548 passed, 1 xfailed.** Plus one skipped by design: the live-GCS check is opt-in. Trajectory: 19 written / 1 failing / uncollectable -> 65 -> 152 -> 222 -> 271 -> 351 -> 407 -> 449 -> 478 -> 535 -> 548. |
 | Ground-Truth Benchmark Suite | **15 PASS, 0 FAIL, 2 NOT_YET_RUNNABLE.** Nine datasets with declared known answers, five of them nulls. CI-ready via `python -m src.benchmarks` (exit 0). |
 | Backend compute modules | **Written, executed and tested.** `physical_core` carries `GridSpec` + metric-aware operators; `analysis_engine` gained `spectra.py` and `climatology.py`; `transform_engine` gained the undecimated `stationary.py` and a real `dtcwt.py`; `statistics/` and `core/` are new packages. |
 | Physical units and wavenumbers | **Correct as of T3.5.13.** Gradients metric-aware, spectra on a physical `k` axis, domain statistics area-weighted, and every quantity carries its units. Previously all of it was pixel-space and unlabelled (D13). |
@@ -35,9 +35,9 @@ status section, it is a memory.
 | Error reporting | **Taxonomy in place as of T3.5.14** (D14 closed). `SpectralEarthError` subclasses carry their own status code and client-safety, so an HTTP status follows from the error *kind* rather than from the call site. |
 | HPC / executor seam | **In place as of T3.5.19.** Serial / thread / process backends behind one interface, submission-order results, thread-budget control and SQLite WAL + `busy_timeout`. Measured honestly: on this workload **serial beat thread(4) and process(4)**, because PyTorch already parallelises the FFT across cores. Cross-device CPU/CUDA/MPS agreement is **not** verified — this machine is CPU-only (D18, partial). |
 | Schema migrations | **In place as of T3.5.8** (D32 closed). Two Alembic revisions, `ensure_schema` at startup, drift against the ORM checked by test. `create_all` had silently left the repository's own database unqueryable. PostgreSQL is verified only as *rendered* DDL, not executed. |
-| FastAPI surface | **17 endpoints**, executed and smoke-tested. CORS, health and collection endpoints all added (T3.5.2, T3.5.10). Health now reports device, executor, SQLite pragmas and schema revision. |
-| React frontend | **Installed and built** (T3.5.0/T3.5.3) - emits 1,378 modules with real JS/CSS. **Rendered appearance in a browser still unverified**, and it does not consume the health, experiment-list, benchmark, statistics or orientation endpoints. This is the largest single gap between what the backend can do and what a researcher can reach. |
-| Real ERA5 data | **Not started** (T3.5.18). Everything to date runs on synthetic fields and benchmarks. This is the last thing between the platform and real observations. |
+| FastAPI surface | **23 endpoints**, executed and smoke-tested. CORS, health and collection endpoints all added (T3.5.2, T3.5.10). Health now reports device, executor, SQLite pragmas and schema revision. |
+| React frontend | **Nine modules, wired to the backend** (T3.5.22). Health/device/executor/schema, the benchmark suite, the data-source chain with its simulated flags, the ERA5 crop inspector and per-hypothesis statistics are all reachable now; `tsc` is clean and the build emits 1,378 modules. A contract test asserts every fetched path is served and every field the UI reads exists. **Rendered appearance in a browser still unverified** - no browser is available here, so T3.5.0's screenshot-per-tab criterion remains open. |
+| Real ERA5 data | **Reading the live archive as of T3.5.18.** Regional crops stream from public WeatherBench 2 Zarr on GCS into a rechunked local cache: 257x257 x 4 levels x 8 days materialised in 186 s (951 MB wire, 19 MB cached, 51.1x chunk amplification measured against 51.1x predicted). Network access is opt-in; a cached crop works offline. **A one-year crop at the R13 floor is 79 GB and ~2 h - measured, not achievable at laptop tier, and stated as such.** |
 | Vectorisation | **Partial** (D17). The radial PSD and coherence paths are vectorised; per-bin Python loops remain in `decompose_by_boundary` and `analyze_boundary_artefacts`. |
 
 **The original baseline audit** (2026-08-19, before any of Phase 3.5) is preserved in
@@ -498,7 +498,7 @@ Gates whose stage does not exist yet report **`NOT_YET_RUNNABLE`** naming the mi
 
 Two measured results: naive significance testing on AR(1) data (phi = 0.85, ESS 32.2) rejects a true null at **40.0%** versus **2.3%** ESS-corrected (R12); and a time-of-day bin climatology leaves **15.5%** of variance on a cycles-only sequence versus **0.017%** for harmonic regression (R11), which motivated building `analysis_engine/climatology.py` with split-aware fitting (R6). Found **D30** (a solve whose answer depended on what ran before it) and **D31**.
 
-### T3.5.18 Cloud-native ERA5 via Zarr, with a rechunked local cache *(implements E2; unblocks all of Phase 4)*
+### T3.5.18 Cloud-native ERA5 via Zarr, with a rechunked local cache *(implements E2; unblocks all of Phase 4)* - **DONE**
 The raw material is not a constraint: **ERA5** (ECMWF/Copernicus reanalysis, hourly, 1940-present, ~31 km, up to 137 levels) is packaged analysis-ready by **WeatherBench 2** as public Zarr on GCS, 1959-2023, at resolutions up to the full 0.25 degree / 1440x721 grid. Zarr is the right adapter, not bulk NetCDF download: `xarray.open_zarr` over `fsspec`/`gcsfs` opens the whole archive lazily and fetches only the chunks a crop touches, so "crop aggressively" stops being a separate step and becomes simply how the store works.
 
 **The trap that decides whether this is fast or unusable: chunk alignment.** SpectralEarth's access pattern is *many timesteps over a small spatial region* - the exact opposite of a store chunked as one full global field per timestep. Against such a layout, every frame of a 64x64 crop drags a whole planet across the network. Reading a decade for one region could move terabytes to analyse megabytes.
@@ -510,6 +510,56 @@ The raw material is not a constraint: **ERA5** (ECMWF/Copernicus reanalysis, hou
 This is also excellent provenance (E5): a crop is *exactly* specifiable as `{store URI, dataset version, variable, time range, bbox, levels}` plus a content hash of the materialised snapshot - far stronger than "someone put a `.nc` in a folder", and it makes any finding reproducible by anyone with an internet connection.
 
 **Acceptance:** the adapter reports the remote store's chunk structure and **warns when the requested access pattern is chunk-hostile**; a 256x256 region (the R13 floor for four levels) over one year materialises within the `laptop` tier budget with recorded bytes-transferred; the adapter refuses a crop too small for the requested number of levels, naming the minimum; re-requesting an identical crop hits the cache with zero network traffic; the crop specification round-trips from the lineage record to an identical re-materialisation.
+
+**Met, with one criterion measured and found unachievable — reported rather than reworded.**
+
+Verified against the **live** WeatherBench 2 archive (24 ERA5 stores enumerated anonymously at
+`gs://weatherbench2/datasets/era5`), not against a mock.
+
+*   **Chunk structure reported, hostility warned.** The 0.25 degree stores are chunked
+    `(1, 13, 721, 1440)` — one timestep, all levels, whole planet, **54.0 MB/chunk**.
+    `assess_access_pattern` derives an amplification of **51.1x** for a 257x257 four-level crop
+    from chunk metadata alone, transferring nothing, and the live measurement came in at 51.1x.
+    It also reports the non-obvious part: selecting 4 of 13 levels saves nothing over the
+    network, because level is inside the chunk.
+*   **Recorded bytes transferred.** 257x257, 4 levels, 8 days at 6 h: predicted 1,727.6 MB
+    uncompressed, **measured 951.3 MB wire in 186.3 s**, cached to 19.0 MB.
+*   **The R13 floor is refused, not warned about.** `edge_exclusion` reproduces R13's table
+    exactly (6/13/26/52 px at levels 1–4) and `minimum_crop_size` returns R13's own 256 and 512.
+    A 64x64 crop at four levels raises, naming the minimum, the contaminated width and which
+    dimension to constrain instead.
+*   **A repeat request transfers zero bytes**, asserted as `== 0` rather than as "fast": the
+    same crop returned `cache_hit` in 0.006 s, and the cached read is 8 chunk reads in 0.05 s
+    against 186 s remote.
+*   **The crop specification round-trips.** `rematerialise_from_provenance` rebuilt the real
+    crop from its lineage record with identical content key *and* content hash. The hash is
+    also independent of cache chunking, verified by materialising at two chunk sizes.
+
+**Not met: "one year within the `laptop` tier budget".** Measured, the arithmetic forbids it —
+1,464 frames x 54.0 MB is **79.0 GB** to deliver 1.55 GB, about **2 hours** at the 11.6 MB/s this
+connection sustains even with 16 concurrent chunk fetches. This is a property of WeatherBench 2's
+chunk-1 layout and of consumer bandwidth, not of the adapter. R13 already says which dimension
+to give up: *"the `laptop` tier is constrained on frames, bank breadth and surrogate count,
+**never** by shrinking the grid below its valid-interior floor."* So the honest laptop-tier ERA5
+crop at 0.25 degree is 256x256 x 4 levels x days, not x a year, and the adapter now says so with
+numbers before any download starts.
+
+**Two defects found while doing it.**
+
+*   **D33** — `xarray` was declared in `requirements.txt` with **no NetCDF engine**, so the
+    documented "drop an ERA5 `.nc` into `data/`" path could not open a modern NetCDF4/HDF5 file
+    at all. Reproduced, then fixed and covered by a write-and-reopen test.
+*   **An unrechunked cache, caught by its own test.** `to_zarr` prefers each variable's
+    inherited `encoding["chunks"]` — copied from the *remote* store — so `.chunk()` set the dask
+    graph and the write ignored it. The cache came out with one timestep per chunk: the exact
+    layout it exists to escape. Nothing errored, and the manifest still recorded the *requested*
+    chunking. Measured on the real crop after the fix: cache reads fell from **39 chunks / 1.27 s
+    to 8 chunks / 0.05 s**, a 25x improvement in the operation the whole second stage exists for.
+
+58 tests in `src/tests/test_zarr_source.py`, all offline against synthetic Zarr stores built with
+the real archive's pathological layout, plus one opt-in live check that asserts the documented
+chunk shape still holds — so if WeatherBench 2 rechunks, the test says so rather than the
+documentation quietly becoming false.
 
 ### T3.5.19 Executor seam and concurrency-safe persistence *(implements E11)* - **DONE**
 Define the `Executor` protocol with `serial`/`thread`/`process` backends; route the sweep loop and surrogate ensemble generation through it. Enable SQLite WAL mode and a busy timeout; give each worker its own session; move seed derivation to `SeedSequence.spawn`.
@@ -557,6 +607,48 @@ nested structures, addressing the mixed CPU/device tensor construction D18 flagg
 cross-device agreement half of the acceptance cannot be executed here and is *not* claimed.
 The tests assert the selection logic, the refusal path and the thread budget; the CPU/CUDA/MPS
 comparison remains open and is the one part of this task still outstanding.
+
+### T3.5.22 Surface the backend in the UI *(closes the gap between capability and reach)* - **DONE**
+Wire the endpoints that had no consumer into the React workbench: health (device, executor,
+SQLite pragmas, schema revision), the Ground-Truth Benchmark Suite, the data-source fallback
+chain with its simulated/observational flags, the ERA5 Zarr crop tools, and the statistical
+fields on every mined hypothesis. Add a mechanical frontend/backend contract check.
+**Acceptance:** every service method is called from the UI; every path the frontend fetches is a
+route the API serves; every nested key the UI reads out of an untyped payload exists in the real
+response; `npm run build` passes.
+
+**Met.** Two new modules in the workbench — **8. Platform & Evidence** and **9. Real ERA5
+(Zarr)** — plus a statistics block on every hypothesis card. `tsc` clean, `vite build` emits 1,378
+modules. 13 tests in `src/tests/test_frontend_contract.py`.
+
+**Why a contract test and not just a build.** `npm run build` runs `tsc`, so the frontend's
+*internal* types are checked. Nothing checked them against the **backend**: the payloads are typed
+by hand, and the ones that matter are `Record<string, any>` because their shape is nested. A
+renamed route or a restructured payload compiles cleanly and fails in the browser. So the tests
+parse `api.ts` for the paths it fetches and assert each is served (distinguishing a path parameter
+from a query string), assert every service method is actually called from `App.tsx`, and assert
+each nested key the UI reads is present in a real response from the running app.
+
+**It found a runtime bug immediately.** The hypothesis card was written to render
+`statistics.correction` as a string. It is an **object** — `{method, assumption, n_tests,
+min_adjusted}` — so React would have thrown *"Objects are not valid as a React child"* on the first
+mined hypothesis. `tsc` passed, `vite build` passed, and 547 backend tests passed. Only a check of
+the payload's actual shape catches that class of defect.
+
+**D8 as a presentation problem, closed.** The card previously showed `Confidence: 96.0%` and
+nothing else — the presentation half of the defect that made nine noise correlations from a 9-run
+sweep read as nine discoveries. It now labels that number **effect size**, shows the q-value, the
+raw p-value, the family size, the correction procedure **with its dependence assumption**, and the
+R7 non-causality caveat. A finding with no correction is shown with an explicit warning rather
+than silently, because a card that looks the same either way is what made the original defect
+invisible.
+
+**Not met, and unchanged: the UI has still never been seen.** T3.5.0's acceptance criterion asks
+for a screenshot per tab. No browser is available in this environment, so the nine tabs are
+verified to compile, to call routes that exist, and to read fields that are present — and **not**
+to render. `test_browser_rendering_is_still_recorded_as_unverified` asserts that this sentence
+stays in this file for as long as it is true, because a green suite plus a green build is exactly
+the combination that makes people assume otherwise.
 
 ---
 

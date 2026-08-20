@@ -40,3 +40,20 @@ matplotlib>=3.7.0
 # Not imported by src/ - used to cross-check coefficients against a known-good
 # implementation rather than trusting our round-trip tests alone.
 PyWavelets>=1.4.0
+
+# Cloud-native ERA5 over Zarr (T3.5.18). `xarray.open_zarr` needs zarr; `dask` gives the
+# lazy chunked reads that make "fetch only the chunks the crop touches" true rather than
+# aspirational; `gcsfs` is the driver for the gs:// WeatherBench 2 buckets (public, no
+# credentials). Network access is still opt-in via SPECTRALEARTH_ALLOW_NETWORK.
+zarr>=2.16,<3.0
+dask[array]>=2023.5.0
+fsspec>=2023.5.0
+gcsfs>=2023.5.0
+
+# A NetCDF4/HDF5 engine, which was MISSING (defect D33). `xarray` was declared but no
+# engine was, and data/README.md invited the researcher to drop an ERA5 `.nc` file into
+# data/. Modern ERA5 downloads are NetCDF4/HDF5, so that path failed with "found the
+# following matches ... but their dependencies may not be installed" - a documented feature
+# that could not work. scipy alone reads only NetCDF3 classic.
+h5netcdf>=1.1.0
+h5py>=3.8.0

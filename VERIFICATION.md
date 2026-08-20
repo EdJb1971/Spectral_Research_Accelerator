@@ -1800,3 +1800,281 @@ not claimed); PostgreSQL migration *execution* (rendered only); plus **T3.5.18 (
 the last substantive thing between the platform and real observations)**, browser-based UI
 verification, and surfacing the statistics, benchmarks, orientation and execution controls in
 the frontend.
+
+---
+
+## Slice 11 - T3.5.18: real ERA5 over cloud Zarr (defects D33 and the unrechunked cache)
+
+**Captured 2026-08-20.** The platform reads real observational data for the first time. Every
+figure below came from a command run against the **live** WeatherBench 2 archive, not a mock.
+
+### The archive is reachable, anonymously
+
+```
+$ fsspec.filesystem("gs", token="anon").ls("weatherbench2/datasets/era5")
+24 stores, 1959-2023, resolutions from 64x32 to 1440x721
+```
+
+No account, no credentials, no download portal. `token="anon"` matters: without it `gcsfs` looks
+for default credentials and fails with an authentication error, which reads as "you need a Google
+account" when in fact nothing is needed at all.
+
+### The chunk-hostility trap, predicted then measured
+
+The roadmap predicted this qualitatively — "reading a decade for one region could move terabytes
+to analyse megabytes". The real numbers:
+
+| store | `temperature` chunks | MB/chunk |
+|---|---|---|
+| `full_37-1h-0p25deg-chunk-1` | `(1, 37, 721, 1440)` | 153.6 |
+| `wb13-6h-1440x721` | `(1, 13, 721, 1440)` | 54.0 |
+| `6h-240x121` | `(8, 13, 240, 121)` | 12.1 |
+| `6h-64x32` | `(100, 13, 64, 32)` | 10.6 |
+
+One timestep, every pressure level, the entire planet, per chunk. `assess_access_pattern` reads
+that metadata and predicts the amplification **before transferring anything**:
+
+```
+$ python -m src.data_layer.zarr_source inspect --start 2020-01-01 --end 2020-12-31 \
+      --lat -4 60 --lon 0 64 --levels 850,700,500,300
+bytes_wanted            1,547,131,776   (1.55 GB)
+bytes_fetched_estimate 79,039,134,720   (79.04 GB)
+amplification                    51.09
+chunk_hostile                     true
+advice: "temperature: the latitude, level, longitude dimension(s) cannot be narrowed by
+         selection because the chunk spans more than the request - subsetting them saves
+         nothing over the network, only memory."
+```
+
+An independent hand-timed read of the same crop shape moved 108 MB to deliver 2.11 MB — **51.1x
+measured against 51.09x predicted**. The predictor is calibrated against the thing it predicts.
+
+That `advice` line is the part a researcher could not have known: **asking for 4 of 13 levels
+saves nothing**, because level lives inside the chunk. Only the variable and time axes narrow the
+wire.
+
+### Real data, materialised end to end
+
+```
+MATERIALISE  content_key 7a2ce3b34e550a69   content_hash 692e7f4613ee5aaf...
+             shape {time: 32, level: 4, latitude: 257, longitude: 257}
+             predicted 1727.63 MB (uncompressed)  measured 951.34 MB wire  186.3 s
+             R13 interior by level {1: 245, 2: 231, 3: 205, 4: 153}
+CACHE_READ   8 chunk reads, 19.0 MB, 0.05 s   remote_bytes 0
+DATA         (32, 4, 257, 257)  chunks (32, 4, 257, 257)  all finite
+             mean 268.03 K   min 219.82 K   max 310.32 K
+REPEAT       cache_hit True   bytes 0   0.006 s
+REPLAY       key_match True   hash_match True
+```
+
+Real ERA5 temperature over 8 days, 4 pressure levels, a 64-degree box: 219.8–310.3 K, mean
+268.0 K. Physically sensible values, not a simulation.
+
+**951 MB across the network becomes 19 MB on disk, read in 0.05 s instead of 186 s.** That ratio
+is the entire argument for stage 2 existing.
+
+### The criterion that measurement refused
+
+The acceptance criterion asks for a 256x256 region **over one year** within the `laptop` tier
+budget ("minutes"). It cannot be done, and the reason is arithmetic rather than implementation:
+
+```
+1,464 frames x 54.0 MB/chunk = 79.0 GB to deliver 1.55 GB
+sustained throughput, 16 concurrent chunk fetches: 11.6 MB/s
+                                        => about 2 hours
+```
+
+Sequential reads gave 6.5 MB/s and 16-way concurrency only 11.6 MB/s, so this is bandwidth, not
+serialisation. **R13 already resolves the conflict**: the `laptop` tier is constrained on frames,
+bank breadth and surrogate count, *never* by shrinking the grid below its valid-interior floor.
+So the honest laptop-tier ERA5 crop at 0.25 degree is 256x256 x 4 levels x **days**, and 8 days
+took 3.1 minutes. The criterion is recorded as met except for that clause, with the clause
+quantified — rather than rewritten to match what happened to work.
+
+### A cache that was not rechunked, caught by its own test
+
+`test_cache_is_rechunked_time_contiguous` failed, and it was right to. `to_zarr` prefers each
+variable's inherited `encoding["chunks"]` — copied from the **remote** store — so `.chunk()` set
+the dask graph and the write ignored it. The cache came out with **one timestep per chunk: the
+exact layout it exists to escape.**
+
+Nothing errored. The manifest still recorded the *requested* chunking, so the provenance record
+asserted a property the data did not have. The only visible symptom was a cache read costing 32
+chunk fetches instead of 1 — indistinguishable from normal unless measured. Fixed by clearing the
+inherited encoding and passing target chunks explicitly. Measured on the real crop, before and
+after:
+
+| | chunk reads | MB | seconds |
+|---|---|---|---|
+| inherited encoding (broken) | 39 | 26.55 | 1.27 |
+| explicit encoding (fixed) | **8** | **19.03** | **0.05** |
+
+25x faster and 28% smaller — larger chunks compress better. The content hash was **identical
+before and after**, which is the property it was designed for: it describes the data, not the
+layout.
+
+**Generalisable lesson: a manifest that records intent is not evidence. It has to record
+measurement.** The chunking field said what was asked for; only the byte counter said what
+happened.
+
+### D33: a documented feature that could not work
+
+```
+$ xr.open_dataset("era5.nc")   # HDF5 magic bytes
+ValueError: found the following matches with the input file in xarray's IO backends:
+['netcdf4', 'h5netcdf']. But their dependencies may not be installed
+$ sorted(xr.backends.list_engines())
+['scipy', 'store', 'zarr']
+```
+
+`requirements.txt` declared `xarray` and **no NetCDF engine**. `data/README.md` invites the
+researcher to drop an ERA5 `.nc` file into `data/`, and `LocalNetCDFSource` is the
+highest-priority source in the fallback chain — but a modern ERA5 download is NetCDF4/HDF5, and
+`scipy` reads only NetCDF3 classic. The platform's primary documented real-data path had never
+been able to work. `h5netcdf` + `h5py` are now declared, and a test writes and reopens an
+HDF5-format file so dependency drift cannot silently undo it.
+
+### A capability key that mattered more than it looked
+
+The Zarr source first declared `capabilities={"dataset_ids": [...]}`, and T3.5.15's plugin
+acceptance test failed: it asserts that **every id declared under `dataset_ids` appears in
+`GET /api/v1/data/datasets`** with concrete variables, a time range, a bounding box and a
+resolution. A crop *family* has none of those — the archive is 64 years of the whole planet — so
+the invariant was right and the declaration was wrong. It now declares `crop_dataset_ids`;
+materialised crops, which do have concrete extents, are listed by `GET /api/v1/data/zarr/cached`.
+
+That change exposed a second, smaller wrong: `sources.py` checked the literal key `dataset_ids`
+when deciding whether a source had "declined" a dataset, so the Zarr source was recorded as
+declining `era5_reanalysis` — a dataset it has never heard of — in every provenance record. Now
+any capability key ending in `dataset_ids` counts as a claim.
+
+And a promise in `sources.py` became true: its docstring said
+`SOURCES.with_capability("streaming")` is how this adapter "will be selected without anyone
+editing a dispatch chain". Until this slice that query returned an empty list. There is now a
+test asserting it returns `["era5_zarr"]`.
+
+### Network access is opt-in, and that is a design position
+
+`SPECTRALEARTH_ALLOW_NETWORK` defaults to off. Reaching the internet must never be a side effect
+of running a test or a sweep: it makes results depend on connectivity, and a mistyped bounding
+box against a 0.25 degree store moves tens of gigabytes. All 57 non-live tests run offline
+against synthetic Zarr stores built with the real archive's pathological layout; the single live
+check is opt-in and asserts the documented chunk shape still holds, so if WeatherBench 2 rechunks
+its archive the test says so rather than this document quietly becoming false.
+
+### Suite after slice 11
+
+```
+535 passed, 1 skipped (the opt-in live check), 1 xfailed
+395 test functions across 16 files
+benchmark suite: 15 PASS, 0 FAIL, 2 NOT_YET_RUNNABLE (exit 0)
+tools/audit_docs.py: RESULT ok (exit 0)
+```
+
+**Fixed: 31 of 33 defects, with D18 partial.** D33 found and closed within this slice.
+
+**Still outstanding:** D17 (per-bin loops in `decompose_by_boundary` and
+`analyze_boundary_artefacts`), D18 (cross-device CPU/CUDA/MPS agreement - needs GPU hardware, not
+claimed); PostgreSQL migration *execution* (rendered only); a one-year 0.25 degree crop
+(quantified as infeasible at laptop tier rather than unimplemented); **browser-based UI
+verification and surfacing statistics, benchmarks, orientation, schema state and the Zarr crop
+tools in the frontend — now the largest gap between what the backend can do and what a researcher
+can reach.**
+
+---
+
+## Slice 12 - T3.5.22: surfacing the backend in the UI
+
+**Captured 2026-08-20.** The backend had grown capabilities faster than the workbench could
+reach them. Health, the benchmark suite, the data-source chain, the schema revision, the ERA5
+crop tools and every statistical field on a hypothesis were all served and all invisible.
+
+### What a researcher can now see
+
+Two new modules — **8. Platform & Evidence** and **9. Real ERA5 (Zarr)** — and a statistics
+block on every hypothesis card.
+
+| Previously invisible | Now shown |
+|---|---|
+| `torch_device`, cores, threads, executor backends | Platform tab, with the measured rationale for the serial default |
+| SQLite journal mode and busy timeout | Platform tab |
+| Alembic revision, head, pending migrations | Platform tab, with an explicit warning when the schema is behind the code |
+| The nine-dataset benchmark suite and its declared known answers | Platform tab, null benchmarks marked |
+| `is_simulated` / `observational` per data source | Platform tab, read from the source's own declared flag |
+| ERA5 store catalogue, chunk structure, amplification, R13 floor | ERA5 tab, metadata only |
+| `p_value`, `q_value`, `n_tests`, correction assumption, R7 caveat | Every hypothesis card |
+
+### D8's presentation half, closed
+
+The card showed `Confidence: 96.0%` and nothing else. That is an **effect size** wearing the word
+"confidence", and it is the presentation half of the defect that let a 9-run sweep read as nine
+discoveries — the statistics were computed and corrected in slice 9, and then displayed nowhere.
+
+The card now labels it *effect size* and shows the q-value, the raw p-value, the family size, the
+correction procedure **with its dependence assumption**, and the non-causality caveat. A pattern
+with no correction is shown with an explicit warning, because a card that looks identical either
+way is exactly what made the original defect invisible.
+
+### A runtime bug that three green checks missed
+
+`npm run build` runs `tsc`. It passed. `vite build` emitted 1,378 modules. It passed. 547 backend
+tests passed. And the hypothesis card would have crashed on the first mined hypothesis:
+
+```
+statistics.correction  is  {method, assumption, n_tests, min_adjusted}
+```
+
+The UI rendered `{h.statistics.correction}` directly — an object — which throws *"Objects are not
+valid as a React child"* in React. Nothing could catch it: the field is typed `Record<string, any>`
+precisely because its shape is nested and open-ended, so TypeScript had nothing to check.
+
+**Generalisable lesson: a type annotation the developer wrote is not a contract with the server.**
+`Record<string, any>` is an honest admission that the shape is unknown to the compiler, and every
+key read out of one is unverified until something compares it against a real response.
+
+### The contract tests
+
+`src/tests/test_frontend_contract.py`, 13 tests, which:
+
+*   parse `api.ts` for every path it fetches and assert each is a route the app serves —
+    distinguishing `/experiments/${id}` (a path parameter) from
+    `/proposals${params ? '?' + params : ''}` (a query string, not part of the route). **The first
+    version of the parser got that wrong and reported a false positive; the failure was in the
+    test, not in the frontend, and it is documented in the parser's docstring so the next reader
+    does not re-derive it.**
+*   assert every service method is actually called from `App.tsx` — a method nothing calls leaves
+    its endpoint just as unreachable as before.
+*   assert every nested key the UI reads exists in a real response from the running app:
+    `execution.default_backend_rationale`, `schema_state.pending`, `assessment.amplification`,
+    `structure.variables[].chunk_megabytes`, `geometry.error`, and the rest.
+*   assert every nav entry has a matching panel — a button that does nothing is worse than a
+    missing button.
+*   assert `roadmap.md` still says the UI has not been visually verified, for as long as that is
+    true.
+
+### What is still not verified, stated plainly
+
+**The nine tabs have never been seen.** No browser is available in this environment, so
+T3.5.0's screenshot-per-tab criterion remains open. What is now verified is that the UI compiles
+under `tsc`, calls routes that exist, and reads fields that are present. What is not verified is
+that any of it renders, lays out, or is usable. That distinction is kept explicit — and asserted by
+a test — because a green suite plus a green build is the exact combination that makes people
+assume otherwise.
+
+### Suite after slice 12
+
+```
+548 passed, 1 skipped (opt-in live GCS), 1 xfailed
+408 test functions across 17 files
+frontend: tsc clean; vite build 1,378 modules, 5.13 MB JS / 17.7 kB CSS
+benchmark suite: 15 PASS, 0 FAIL, 2 NOT_YET_RUNNABLE (exit 0)
+tools/audit_docs.py: RESULT ok (exit 0)
+```
+
+**Fixed: 31 of 33 defects, with D18 partial.** No new defect ID was raised this slice: the React
+child bug was introduced and fixed within it, and never existed outside this working tree.
+
+**Still outstanding:** browser-based visual verification of the nine tabs (T3.5.0); D17 (per-bin
+loops in `decompose_by_boundary` and `analyze_boundary_artefacts`); D18 (cross-device CPU/CUDA/MPS
+agreement — needs GPU hardware); PostgreSQL migration *execution* (rendered only); and a one-year
+0.25 degree ERA5 crop (quantified as infeasible at laptop tier rather than unimplemented).

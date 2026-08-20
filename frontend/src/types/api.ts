@@ -254,4 +254,131 @@ export interface HypothesisResponse {
   parameters_analyzed: string[];
   proposed_experiment_config?: Record<string, any> | null;
   created_at: string;
+  // Defect D8. `confidence` alone is an effect size, and displaying it alone is what let a
+  // 9-run sweep read as nine discoveries. A finding must arrive with its p-value, its
+  // multiplicity-corrected q-value, the family size, and the correction's dependence
+  // assumption - the UI cannot judge a result it was never sent.
+  p_value?: number | null;
+  q_value?: number | null;
+  n_tests?: number | null;
+  statistics?: Record<string, any> | null;
+}
+
+// ---------------------------------------------------------------- platform status
+// These endpoints existed on the backend for several slices with no consumer, which meant
+// the platform could report its own device, executor, schema revision and benchmark results
+// and a researcher had no way to see any of it (T3.5.22).
+
+export interface HealthResponse {
+  status: string;
+  api_version: string;
+  database: string;
+  database_url_scheme: string;
+  datasets_available: number;
+  torch_device: string;
+  execution: Record<string, any>;
+  database_settings: Record<string, any>;
+  schema_state: {
+    revision?: string | null;
+    head?: string;
+    pending?: string[] | null;
+    up_to_date?: boolean | null;
+    auto_migrate?: boolean;
+    error?: string | null;
+  };
+}
+
+export interface BenchmarkResponse {
+  name: string;
+  kind: string;
+  description: string;
+  gates: string[];
+  is_null: boolean;
+  known_answer: Record<string, any>;
+  checks: any[];
+}
+
+export interface DataSourceInfo {
+  name: string;
+  description: string;
+  capabilities: Record<string, any>;
+  tags: string[];
+  defined_in: string;
+}
+
+// ---------------------------------------------------------------- ERA5 over Zarr (T3.5.18)
+
+export interface ZarrCatalogueResponse {
+  stores: Record<string, {
+    uri: string;
+    resolution_deg: number;
+    cadence_hours: number;
+    grid: number[];
+    levels: number;
+    note: string;
+  }>;
+  network_enabled: boolean;
+  network_env_var: string;
+  missing_dependencies: string[];
+  cache_dir: string;
+  r13_minimum_crop: Record<string, number>;
+  note: string;
+}
+
+export interface ZarrCropRequest {
+  store: string;
+  variables: string[];
+  time_start: string;
+  time_end: string;
+  lat_min: number;
+  lat_max: number;
+  lon_min: number;
+  lon_max: number;
+  levels: number[];
+  n_levels_analysis: number;
+}
+
+export interface ZarrInspectResponse {
+  spec: Record<string, any>;
+  cached: boolean;
+  structure: {
+    dimensions: Record<string, number>;
+    n_data_vars: number;
+    variables: Record<string, {
+      dims: string[];
+      shape: number[];
+      dtype: string;
+      chunks: number[] | null;
+      chunk_bytes?: number;
+      chunk_megabytes?: number;
+      n_chunks?: number;
+    }>;
+  };
+  assessment: {
+    selection: Record<string, number>;
+    bytes_wanted: number;
+    bytes_fetched_estimate: number;
+    megabytes_fetched_estimate: number;
+    amplification: number;
+    chunk_hostile: boolean;
+    threshold: number;
+    byte_basis: string;
+    warning: string | null;
+    advice: string[];
+  };
+  geometry: Record<string, any>;
+  cli: string;
+}
+
+export interface ZarrCachedResponse {
+  count: number;
+  cache_dir: string;
+  crops: Array<{
+    content_key: string;
+    content_hash: string;
+    spec: Record<string, any>;
+    shape: Record<string, number>;
+    megabytes_transferred: number;
+    elapsed_s: number;
+  }>;
 }

@@ -183,8 +183,20 @@ def resolve(dataset_id: str, **kwargs: Any) -> Resolution:
                 reason = "declined: %s" % entry.value.why_not(dataset_id)
             except Exception:
                 pass
-        if entry.capabilities.get("dataset_ids") and                 dataset_id not in entry.capabilities["dataset_ids"]:
-            continue    # this source does not claim the dataset at all; not a decline
+        # A source that never claimed this dataset has not "declined" it, and recording it
+        # as a decline would fill the provenance of every request with irrelevant reasons.
+        # Any capability key ending in `dataset_ids` counts as a claim: the Zarr source
+        # (T3.5.18) declares `crop_dataset_ids` rather than `dataset_ids`, because a crop
+        # family is not a listable dataset - and with only the literal key checked here, it
+        # was recorded as declining `era5_reanalysis`, a dataset it has never heard of.
+        claimed = [
+            value
+            for key, values in entry.capabilities.items()
+            if key.endswith("dataset_ids") and isinstance(values, (list, tuple))
+            for value in values
+        ]
+        if claimed and dataset_id not in claimed:
+            continue
         attempts.append({"source": entry.name, "kind": entry.value.kind, "ok": False,
                          "declined": True, "reason": reason})
 

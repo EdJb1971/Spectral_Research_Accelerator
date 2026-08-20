@@ -24,12 +24,38 @@ import {
   TrendingUp,
   SlidersHorizontal,
   Server,
-  Code
+  Code,
+  ShieldCheck,
+  AlertTriangle,
+  Cloud,
+  HardDrive,
+  Search
 } from 'lucide-react';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('synthetic');
   const [backendConnected, setBackendConnected] = useState<boolean | null>(null);
+
+  // T3.5.22: platform status and the ERA5 crop tools. Every one of these endpoints existed
+  // and had no consumer, so the platform could report its device, executor, schema revision,
+  // benchmark results and data provenance and a researcher could see none of it.
+  const [health, setHealth] = useState<types.HealthResponse | null>(null);
+  const [benchmarks, setBenchmarks] = useState<types.BenchmarkResponse[]>([]);
+  const [dataSources, setDataSources] = useState<types.DataSourceInfo[]>([]);
+  const [zarrCatalogue, setZarrCatalogue] = useState<types.ZarrCatalogueResponse | null>(null);
+  const [zarrCached, setZarrCached] = useState<types.ZarrCachedResponse | null>(null);
+  const [zarrInspection, setZarrInspection] = useState<types.ZarrInspectResponse | null>(null);
+  const [zarrCrop, setZarrCrop] = useState<types.ZarrCropRequest>({
+    store: 'era5_0p25_6h',
+    variables: ['temperature'],
+    time_start: '2020-06-01',
+    time_end: '2020-06-08',
+    // A 64-degree box at 0.25 degrees is 257x257, which clears the R13 four-level floor of
+    // 256. The default is a crop that is actually analysable rather than a round number.
+    lat_min: -4, lat_max: 60, lon_min: 0, lon_max: 64,
+    levels: [850, 700, 500, 300],
+    n_levels_analysis: 4,
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -742,6 +768,64 @@ export default function App() {
   };
 
 
+  // ---------------------------------------------------------------- T3.5.22 handlers
+
+  const loadPlatformStatus = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const [h, b, srcs] = await Promise.all([
+        apiService.getHealth(),
+        apiService.listBenchmarks(),
+        apiService.listDataSources(),
+      ]);
+      setHealth(h);
+      setBenchmarks(b);
+      setDataSources(srcs);
+    } catch (e: any) {
+      setError(`Platform status unavailable: ${e.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadZarrCatalogue = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const [cat, cached] = await Promise.all([
+        apiService.zarrCatalogue(),
+        apiService.zarrCached(),
+      ]);
+      setZarrCatalogue(cat);
+      setZarrCached(cached);
+    } catch (e: any) {
+      setError(`Zarr catalogue unavailable: ${e.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleZarrInspect = async () => {
+    setLoading(true);
+    setError(null);
+    setZarrInspection(null);
+    try {
+      setZarrInspection(await apiService.zarrInspect(zarrCrop));
+    } catch (e: any) {
+      // A 409 here is the network gate, not a failure - it is reported verbatim because the
+      // message names the environment variable that turns it on.
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'platform' && !health) loadPlatformStatus();
+    if (activeTab === 'era5' && !zarrCatalogue) loadZarrCatalogue();
+  }, [activeTab]);
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
       {/* Top Banner / Navigation Header */}
@@ -779,7 +863,9 @@ export default function App() {
             { id: 'spectral', name: '4. Spectral Transforms', icon: Activity },
             { id: 'analysis', name: '5. Diagnostic & Analysis', icon: BarChart2 },
             { id: 'declarative', name: '6. Experiment Engine', icon: FileCode },
-            { id: 'hypothesis', name: '7. Automated Hypotheses', icon: Lightbulb }
+            { id: 'hypothesis', name: '7. Automated Hypotheses', icon: Lightbulb },
+            { id: 'platform', name: '8. Platform & Evidence', icon: ShieldCheck },
+            { id: 'era5', name: '9. Real ERA5 (Zarr)', icon: Cloud }
           ].map(tab => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -1875,13 +1961,70 @@ export default function App() {
                                 }`}>
                                   {h.pattern_type}
                                 </span>
-                                <span className="text-xs font-mono text-slate-500">Confidence: {(h.confidence * 100).toFixed(1)}%</span>
+                                <span className="text-xs font-mono text-slate-500">Effect size: {(h.confidence * 100).toFixed(1)}%</span>
                               </div>
                               <p className="text-xs text-slate-200 font-medium leading-relaxed mb-4">{h.description}</p>
                               <div className="text-[10px] font-mono bg-slate-950 p-2 border border-slate-850 rounded text-slate-400 space-y-1 mb-4">
                                 <div><strong className="text-slate-300">Metric:</strong> {h.metrics_analyzed.join(', ')}</div>
                                 <div><strong className="text-slate-300">Parameter:</strong> {h.parameters_analyzed.join(', ')}</div>
                               </div>
+
+                              {/* Defect D8 made visible. The label above says "effect size", not
+                                  "confidence", because that is what it is: |r| alone is what let a
+                                  9-run sweep read as nine discoveries. A finding is shown with its
+                                  q-value and the correction's dependence assumption, or it is shown
+                                  as uncorrected - never silently as though it had been tested. */}
+                              {h.q_value != null ? (
+                                <div className={`text-[10px] font-mono p-2 border rounded space-y-1 mb-4 ${
+                                  h.q_value <= 0.05
+                                    ? 'bg-emerald-500/5 border-emerald-500/25 text-emerald-300'
+                                    : 'bg-slate-950 border-slate-800 text-slate-400'
+                                }`}>
+                                  <div className="flex justify-between">
+                                    <span>q (corrected)</span>
+                                    <strong>{h.q_value < 1e-4 ? h.q_value.toExponential(2) : h.q_value.toFixed(4)}</strong>
+                                  </div>
+                                  {h.p_value != null && (
+                                    <div className="flex justify-between text-slate-500">
+                                      <span>p (raw)</span>
+                                      <span>{h.p_value < 1e-4 ? h.p_value.toExponential(2) : h.p_value.toFixed(4)}</span>
+                                    </div>
+                                  )}
+                                  {h.n_tests != null && (
+                                    <div className="flex justify-between text-slate-500">
+                                      <span>family size</span><span>{h.n_tests} tests</span>
+                                    </div>
+                                  )}
+                                  {/* `statistics.correction` is an OBJECT - {method, assumption,
+                                      n_tests, min_adjusted} - not a string. Rendering it directly
+                                      throws "Objects are not valid as a React child", and neither
+                                      `tsc` nor the build catches it because the field is typed
+                                      Record<string, any>. The keys are asserted by
+                                      test_frontend_contract.py against the real payload. */}
+                                  {h.statistics?.correction?.assumption && (
+                                    <div className="text-slate-500 pt-1 border-t border-slate-800 leading-relaxed">
+                                      {h.statistics.correction.method}: {h.statistics.correction.assumption}
+                                    </div>
+                                  )}
+                                  {Array.isArray(h.statistics?.assumptions) && h.statistics.assumptions.length > 0 && (
+                                    <div className="text-slate-500 leading-relaxed">
+                                      test assumes: {h.statistics.assumptions.join('; ')}
+                                    </div>
+                                  )}
+                                  {h.statistics?.caveat && (
+                                    <div className="text-amber-400/80 leading-relaxed">{h.statistics.caveat}</div>
+                                  )}
+                                </div>
+                              ) : (
+                                <div className="text-[10px] p-2 border rounded mb-4 bg-amber-500/5 border-amber-500/25 text-amber-400 leading-relaxed flex gap-2">
+                                  <AlertTriangle className="w-3 h-3 flex-shrink-0 mt-0.5" />
+                                  <span>
+                                    No multiplicity correction was reported for this pattern. An effect size
+                                    on its own is not evidence of anything: scanning enough parameter/metric
+                                    pairs produces strong correlations from noise by construction.
+                                  </span>
+                                </div>
+                              )}
                             </div>
 
                             {h.proposed_experiment_config && (
@@ -1901,6 +2044,376 @@ export default function App() {
                       <Lightbulb className="w-12 h-12 text-slate-750 mb-3" />
                       <p className="text-sm font-semibold text-slate-400">No hypotheses discovered yet</p>
                       <p className="text-xs text-slate-500 mt-1 max-w-sm">Deploy some experiment sweeps in Tab 6 first, then launch automated mining to run Pearson's r pattern discovery.</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 8: PLATFORM STATUS & EVIDENCE ------------------------------------------ */}
+          {activeTab === 'platform' && (
+            <div className="space-y-6 animate-fadeIn">
+              <div className="flex flex-col gap-1">
+                <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                  <ShieldCheck className="text-teal-400 w-5 h-5" /> Platform Status &amp; Evidence
+                </h2>
+                <p className="text-sm text-slate-400">
+                  What this deployment actually is, and what it has been proved to get right. A result
+                  is only interpretable alongside the device it ran on, the schema that stored it and
+                  the benchmarks the platform passes.
+                </p>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={loadPlatformStatus}
+                  className="bg-teal-600 hover:bg-teal-500 text-white text-sm font-semibold py-2 px-4 rounded-lg flex items-center gap-2"
+                >
+                  <RotateCcw className="w-4 h-4" /> Refresh
+                </button>
+              </div>
+
+              {health && (
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-5 space-y-3">
+                    <h3 className="text-sm font-semibold text-slate-200 border-b border-slate-800 pb-2">
+                      Execution Environment
+                    </h3>
+                    <dl className="text-xs space-y-1.5 text-slate-400 font-mono">
+                      <div className="flex justify-between"><dt>device</dt><dd className="text-teal-400">{health.torch_device}</dd></div>
+                      <div className="flex justify-between"><dt>cpu cores</dt><dd className="text-slate-300">{health.execution?.cpu_count ?? '-'}</dd></div>
+                      <div className="flex justify-between"><dt>torch threads</dt><dd className="text-slate-300">{health.execution?.torch_num_threads ?? '-'}</dd></div>
+                      <div className="flex justify-between"><dt>backends</dt><dd className="text-slate-300">{(health.execution?.backends || []).join(', ')}</dd></div>
+                      <div className="flex justify-between"><dt>default</dt><dd className="text-slate-300">{health.execution?.default_backend}</dd></div>
+                    </dl>
+                    {health.execution?.default_backend_rationale && (
+                      <p className="text-[11px] text-slate-500 leading-relaxed border-t border-slate-800 pt-2">
+                        {health.execution.default_backend_rationale}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-5 space-y-3">
+                    <h3 className="text-sm font-semibold text-slate-200 border-b border-slate-800 pb-2">
+                      Storage &amp; Schema
+                    </h3>
+                    <dl className="text-xs space-y-1.5 text-slate-400 font-mono">
+                      <div className="flex justify-between"><dt>backend</dt><dd className="text-slate-300">{health.database_url_scheme}</dd></div>
+                      <div className="flex justify-between"><dt>journal</dt><dd className="text-slate-300">{health.database_settings?.journal_mode ?? '-'}</dd></div>
+                      <div className="flex justify-between"><dt>busy timeout</dt><dd className="text-slate-300">{health.database_settings?.busy_timeout_ms ?? '-'} ms</dd></div>
+                      <div className="flex justify-between"><dt>revision</dt><dd className="text-slate-300">{health.schema_state?.revision ?? 'none'}</dd></div>
+                      <div className="flex justify-between"><dt>head</dt><dd className="text-slate-300">{health.schema_state?.head ?? '-'}</dd></div>
+                    </dl>
+                    {health.schema_state?.up_to_date === false && (
+                      <div className="text-[11px] bg-amber-500/10 border border-amber-500/20 text-amber-400 rounded p-2 flex gap-2">
+                        <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+                        <span>
+                          The database schema is behind the code: {(health.schema_state.pending || []).join(', ')} outstanding.
+                          Queries touching new columns will fail. Run <code>alembic upgrade head</code>.
+                        </span>
+                      </div>
+                    )}
+                    {health.schema_state?.error && (
+                      <div className="text-[11px] bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded p-2">
+                        {health.schema_state.error}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-5 space-y-3">
+                    <h3 className="text-sm font-semibold text-slate-200 border-b border-slate-800 pb-2">
+                      Data Sources (priority order)
+                    </h3>
+                    <div className="space-y-2">
+                      {dataSources.map(src => (
+                        <div key={src.name} className="text-[11px] border border-slate-800 rounded p-2 bg-slate-950">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="font-mono text-slate-200">{src.name}</span>
+                            {src.capabilities?.observational === true ? (
+                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">observational</span>
+                            ) : (
+                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">SIMULATED</span>
+                            )}
+                          </div>
+                          <p className="text-slate-500 leading-relaxed">{src.description}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {benchmarks.length > 0 && (
+                <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-5 space-y-3">
+                  <h3 className="text-sm font-semibold text-slate-200 border-b border-slate-800 pb-2 flex items-center justify-between">
+                    <span>Ground-Truth Benchmark Suite ({benchmarks.length} datasets)</span>
+                    <span className="text-[11px] font-normal text-slate-500">
+                      {benchmarks.filter(b => b.is_null).length} of them are NULL benchmarks - the correct answer is &quot;nothing&quot;
+                    </span>
+                  </h3>
+                  <p className="text-[11px] text-slate-500 leading-relaxed">
+                    Each dataset has a declared known answer derived from its construction, not from what
+                    the platform happens to produce. The null benchmarks are the false-positive floor: a
+                    discovery engine that reports a finding on spatially uncorrelated noise is broken, and
+                    these are what catch that.
+                  </p>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-[11px] font-mono">
+                      <thead className="text-slate-500 border-b border-slate-800">
+                        <tr>
+                          <th className="text-left py-1.5 pr-3">dataset</th>
+                          <th className="text-left py-1.5 pr-3">kind</th>
+                          <th className="text-left py-1.5 pr-3">gates</th>
+                          <th className="text-left py-1.5">known answer</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {benchmarks.map(b => (
+                          <tr key={b.name} className="border-b border-slate-850 align-top">
+                            <td className="py-1.5 pr-3 text-slate-200">
+                              {b.name}
+                              {b.is_null && (
+                                <span className="ml-2 text-[9px] px-1 py-0.5 rounded bg-sky-500/10 text-sky-400 border border-sky-500/20">NULL</span>
+                              )}
+                            </td>
+                            <td className="py-1.5 pr-3 text-slate-500">{b.kind}</td>
+                            <td className="py-1.5 pr-3 text-slate-400">{b.gates.join(', ')}</td>
+                            <td className="py-1.5 text-slate-500 max-w-md truncate" title={JSON.stringify(b.known_answer)}>
+                              {JSON.stringify(b.known_answer)}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* TAB 9: REAL ERA5 OVER ZARR ------------------------------------------------- */}
+          {activeTab === 'era5' && (
+            <div className="space-y-6 animate-fadeIn">
+              <div className="flex flex-col gap-1">
+                <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                  <Cloud className="text-teal-400 w-5 h-5" /> Real ERA5 via Cloud Zarr
+                </h2>
+                <p className="text-sm text-slate-400">
+                  Regional crops streamed from public WeatherBench 2 Zarr on GCS. Inspect first: it reads
+                  metadata only and tells you what the transfer will actually cost before you commit to it.
+                </p>
+              </div>
+
+              {zarrCatalogue && !zarrCatalogue.network_enabled && (
+                <div className="bg-slate-900/50 border border-slate-800 rounded-lg p-4 flex gap-3 text-xs text-slate-400">
+                  <Server className="w-4 h-4 text-slate-500 flex-shrink-0 mt-0.5" />
+                  <span>
+                    Network access is <strong className="text-slate-200">off</strong>. Set{' '}
+                    <code className="text-teal-400">{zarrCatalogue.network_env_var}=1</code> before starting the
+                    backend to reach the archive. Reaching the internet is never a side effect of running a
+                    sweep, and a mistyped bounding box against a 0.25&deg; store moves tens of gigabytes.
+                    Crops already in the cache work with no network at all.
+                  </span>
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+                <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-5 space-y-4">
+                  <h3 className="text-sm font-semibold text-slate-200 border-b border-slate-800 pb-2">
+                    Crop Specification
+                  </h3>
+
+                  <div>
+                    <label className="text-xs text-slate-400 block mb-1">Store</label>
+                    <select
+                      value={zarrCrop.store}
+                      onChange={(e) => setZarrCrop({ ...zarrCrop, store: e.target.value })}
+                      className="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1.5 text-xs text-slate-200"
+                    >
+                      {Object.keys(zarrCatalogue?.stores || { era5_0p25_6h: null }).map(id => (
+                        <option key={id} value={id}>{id}</option>
+                      ))}
+                    </select>
+                    {zarrCatalogue?.stores?.[zarrCrop.store] && (
+                      <p className="text-[10px] text-slate-500 mt-1.5 leading-relaxed">
+                        {zarrCatalogue.stores[zarrCrop.store].note}
+                      </p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="text-xs text-slate-400 block mb-1">Variables (comma separated)</label>
+                    <input
+                      type="text"
+                      value={zarrCrop.variables.join(',')}
+                      onChange={(e) => setZarrCrop({ ...zarrCrop, variables: e.target.value.split(',').map(v => v.trim()).filter(Boolean) })}
+                      className="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1.5 text-xs text-slate-200 font-mono"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-xs text-slate-400 block mb-1">Start</label>
+                      <input type="date" value={zarrCrop.time_start}
+                        onChange={(e) => setZarrCrop({ ...zarrCrop, time_start: e.target.value })}
+                        className="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1.5 text-xs text-slate-200" />
+                    </div>
+                    <div>
+                      <label className="text-xs text-slate-400 block mb-1">End</label>
+                      <input type="date" value={zarrCrop.time_end}
+                        onChange={(e) => setZarrCrop({ ...zarrCrop, time_end: e.target.value })}
+                        className="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1.5 text-xs text-slate-200" />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    {([['lat_min', 'Lat min'], ['lat_max', 'Lat max'], ['lon_min', 'Lon min'], ['lon_max', 'Lon max']] as const).map(([key, label]) => (
+                      <div key={key}>
+                        <label className="text-xs text-slate-400 block mb-1">{label}</label>
+                        <input type="number" value={zarrCrop[key]}
+                          onChange={(e) => setZarrCrop({ ...zarrCrop, [key]: parseFloat(e.target.value) })}
+                          className="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1.5 text-xs text-slate-200 font-mono" />
+                      </div>
+                    ))}
+                  </div>
+
+                  <div>
+                    <label className="text-xs text-slate-400 block mb-1">Pressure levels (hPa)</label>
+                    <input type="text" value={zarrCrop.levels.join(',')}
+                      onChange={(e) => setZarrCrop({ ...zarrCrop, levels: e.target.value.split(',').map(v => parseInt(v.trim(), 10)).filter(v => !isNaN(v)) })}
+                      className="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1.5 text-xs text-slate-200 font-mono" />
+                  </div>
+
+                  <div>
+                    <label className="text-xs text-slate-400 flex justify-between mb-1">
+                      <span>Wavelet levels to support (R13)</span>
+                      <span className="text-teal-400 font-mono">
+                        min {zarrCatalogue?.r13_minimum_crop?.[String(zarrCrop.n_levels_analysis)] ?? '?'} px
+                      </span>
+                    </label>
+                    <input type="range" min="1" max="6" step="1" value={zarrCrop.n_levels_analysis}
+                      onChange={(e) => setZarrCrop({ ...zarrCrop, n_levels_analysis: parseInt(e.target.value, 10) })}
+                      className="w-full accent-teal-500" />
+                    <p className="text-[10px] text-slate-500 mt-1 leading-relaxed">
+                      Coefficients within one filter support of an edge are contaminated, and they look
+                      exactly like strong oriented features. The crop must be large enough to leave a valid
+                      interior at the coarsest scale - constrain frames, never the grid.
+                    </p>
+                  </div>
+
+                  <button
+                    onClick={handleZarrInspect}
+                    disabled={loading}
+                    className="w-full bg-teal-600 hover:bg-teal-500 disabled:bg-slate-800 disabled:text-slate-500 text-white font-semibold py-2 px-4 rounded-lg flex items-center justify-center gap-2"
+                  >
+                    {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+                    Inspect (metadata only)
+                  </button>
+                </div>
+
+                <div className="xl:col-span-2 space-y-6">
+                  {zarrInspection ? (
+                    <>
+                      <div className={`rounded-xl p-5 border ${
+                        zarrInspection.assessment.chunk_hostile
+                          ? 'bg-amber-500/5 border-amber-500/25'
+                          : 'bg-emerald-500/5 border-emerald-500/25'
+                      }`}>
+                        <div className="flex items-start gap-3">
+                          {zarrInspection.assessment.chunk_hostile
+                            ? <AlertTriangle className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
+                            : <CheckCircle className="w-5 h-5 text-emerald-400 flex-shrink-0 mt-0.5" />}
+                          <div className="space-y-2 min-w-0">
+                            <div className="flex items-baseline gap-3 flex-wrap">
+                              <span className={`text-2xl font-bold font-mono ${zarrInspection.assessment.chunk_hostile ? 'text-amber-400' : 'text-emerald-400'}`}>
+                                {zarrInspection.assessment.amplification.toFixed(1)}&times;
+                              </span>
+                              <span className="text-xs text-slate-400">
+                                amplification &mdash; {(zarrInspection.assessment.bytes_fetched_estimate / 1e9).toFixed(2)} GB fetched
+                                to deliver {(zarrInspection.assessment.bytes_wanted / 1e9).toFixed(2)} GB
+                              </span>
+                            </div>
+                            {zarrInspection.assessment.warning && (
+                              <p className="text-[11px] text-amber-300/90 leading-relaxed">{zarrInspection.assessment.warning}</p>
+                            )}
+                            {zarrInspection.assessment.advice.map((a, i) => (
+                              <p key={i} className="text-[11px] text-slate-400 leading-relaxed">&bull; {a}</p>
+                            ))}
+                            <p className="text-[10px] text-slate-600">{zarrInspection.assessment.byte_basis}</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-5 space-y-2">
+                          <h3 className="text-sm font-semibold text-slate-200 border-b border-slate-800 pb-2">Remote chunk structure</h3>
+                          {Object.entries(zarrInspection.structure.variables).map(([name, v]) => (
+                            <div key={name} className="text-[11px] font-mono space-y-0.5">
+                              <div className="text-slate-200">{name}</div>
+                              <div className="text-slate-500">shape [{v.shape.join(', ')}]</div>
+                              <div className="text-slate-400">chunks [{(v.chunks || []).join(', ')}] = {v.chunk_megabytes} MB</div>
+                            </div>
+                          ))}
+                          <div className="text-[11px] font-mono text-slate-500 pt-2 border-t border-slate-800">
+                            selection: {Object.entries(zarrInspection.assessment.selection).map(([k, v]) => `${k}=${v}`).join('  ')}
+                          </div>
+                        </div>
+
+                        <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-5 space-y-2">
+                          <h3 className="text-sm font-semibold text-slate-200 border-b border-slate-800 pb-2">R13 crop geometry</h3>
+                          {zarrInspection.geometry?.ok === false ? (
+                            <div className="text-[11px] text-rose-400 leading-relaxed">
+                              {zarrInspection.geometry.error}
+                            </div>
+                          ) : (
+                            <div className="text-[11px] font-mono space-y-1">
+                              {Object.entries(zarrInspection.geometry?.valid_interior_by_level || {}).map(([lvl, px]) => (
+                                <div key={lvl} className="flex justify-between">
+                                  <span className="text-slate-500">level {lvl}</span>
+                                  <span className={Number(px) > 0 ? 'text-slate-300' : 'text-rose-400'}>{String(px)} px valid</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="bg-slate-950 border border-slate-800 rounded-xl p-4">
+                        <p className="text-[11px] text-slate-500 mb-2">
+                          Materialisation is a minutes-to-hours job, so it runs from the command line rather
+                          than holding an HTTP connection open:
+                        </p>
+                        <code className="text-[10px] text-teal-400 font-mono break-all block leading-relaxed">
+                          {zarrInspection.cli}
+                        </code>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="bg-slate-900 border border-slate-800 rounded-xl p-12 text-center text-slate-500 flex flex-col items-center justify-center min-h-[300px]">
+                      <Search className="w-12 h-12 text-slate-750 mb-3" />
+                      <p className="text-sm font-semibold text-slate-400">No crop inspected yet</p>
+                      <p className="text-xs text-slate-500 mt-1 max-w-sm">
+                        Inspect reads only the store&apos;s metadata. It is the call to make before committing
+                        to a download: the 0.25&deg; stores hand over 54 MB per chunk whatever you ask for.
+                      </p>
+                    </div>
+                  )}
+
+                  {zarrCached && zarrCached.count > 0 && (
+                    <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-5 space-y-2">
+                      <h3 className="text-sm font-semibold text-slate-200 border-b border-slate-800 pb-2 flex items-center gap-2">
+                        <HardDrive className="w-4 h-4 text-slate-400" /> Materialised crops ({zarrCached.count})
+                      </h3>
+                      {zarrCached.crops.map(c => (
+                        <div key={c.content_key} className="text-[11px] font-mono border border-slate-800 rounded p-2 bg-slate-950">
+                          <div className="text-slate-200">{c.content_key}</div>
+                          <div className="text-slate-500">
+                            {Object.entries(c.shape || {}).map(([k, v]) => `${k}=${v}`).join(' ')} &bull;{' '}
+                            {c.megabytes_transferred} MB transferred in {c.elapsed_s}s
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   )}
                 </div>

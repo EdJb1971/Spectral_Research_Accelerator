@@ -143,5 +143,43 @@ export const apiService = {
       method: 'GET',
     });
     return handleResponse<types.HypothesisResponse[]>(response);
+  },
+  // ---------------------------------------------------------------- platform status
+  // T3.5.22. Every call below hits an endpoint that already existed and had no consumer.
+
+  async getHealth(): Promise<types.HealthResponse> {
+    const response = await fetch(`${BASE_URL}/health`, { method: 'GET' });
+    return handleResponse<types.HealthResponse>(response);
+  },
+
+  async listBenchmarks(): Promise<types.BenchmarkResponse[]> {
+    const response = await fetch(`${BASE_URL}/benchmarks`, { method: 'GET' });
+    return handleResponse<types.BenchmarkResponse[]>(response);
+  },
+
+  async listDataSources(): Promise<types.DataSourceInfo[]> {
+    const response = await fetch(`${BASE_URL}/data/sources`, { method: 'GET' });
+    return handleResponse<types.DataSourceInfo[]>(response);
+  },
+
+  // ---------------------------------------------------------------- ERA5 over Zarr
+
+  async zarrCatalogue(): Promise<types.ZarrCatalogueResponse> {
+    const response = await fetch(`${BASE_URL}/data/zarr/catalogue`, { method: 'GET' });
+    return handleResponse<types.ZarrCatalogueResponse>(response);
+  },
+
+  async zarrCached(): Promise<types.ZarrCachedResponse> {
+    const response = await fetch(`${BASE_URL}/data/zarr/cached`, { method: 'GET' });
+    return handleResponse<types.ZarrCachedResponse>(response);
+  },
+
+  async zarrInspect(payload: types.ZarrCropRequest): Promise<types.ZarrInspectResponse> {
+    const response = await fetch(`${BASE_URL}/data/zarr/inspect`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    return handleResponse<types.ZarrInspectResponse>(response);
   }
 };
