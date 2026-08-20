@@ -2078,3 +2078,423 @@ child bug was introduced and fixed within it, and never existed outside this wor
 loops in `decompose_by_boundary` and `analyze_boundary_artefacts`); D18 (cross-device CPU/CUDA/MPS
 agreement — needs GPU hardware); PostgreSQL migration *execution* (rendered only); and a one-year
 0.25 degree ERA5 crop (quantified as infeasible at laptop tier rather than unimplemented).
+
+---
+
+## Slice 13 - T3.5.23: the UI stops fabricating, and starts exporting
+
+**Captured 2026-08-20.** Prompted by a direct question about whether the UI is actually a
+world-class scientific tool. It was not, and the audit is recorded here with the fixes.
+
+### The audit, before any changes
+
+| Question | Answer, with evidence |
+|---|---|
+| Export or import? | **None.** `grep -niE "download\|export\|Blob\|createObjectURL\|csv"` over `frontend/src` matched only the word `export` in `export default function App`. Nothing could leave the browser. |
+| Does it fabricate? | **Yes, in ~14 places.** Mock generator, perturbation, transform ("approximate reconstruction with tiny errors"), diagnostics, boundary, slicer, experiment IDs, lineage, hypotheses. |
+| Is fabrication labelled? | **Only in the header.** Individual results carried nothing. |
+| Is `is_simulated` shown? | **No.** The dataset selector rendered `d.name` only, though the payload carried `is_simulated`, `fallback_reason`, `source_kind` and `source_path`. |
+| Are units shown? | **No.** `k_units`, `power_units`, `convention`, `convention_note`, `grid` were returned and displayed nowhere - and absent from the frontend's own types, so it *could not* have shown them. |
+| Slope uncertainty? | **No.** `slope_standard_error` computed, returned, never displayed. |
+| Unqualified claims? | **Two**, as unconditional green ticks in the transform tab. |
+| Literal LaTeX? | **16 instances** rendering as raw dollar signs. |
+| Accessibility? | **0** `aria-*`/`role` attributes, **0** keyboard handlers. |
+
+### What changed
+
+**Every fabrication path deleted.** A brace-matching transform collapsed 8
+`if (backendConnected) { real } else { fabricated }` guards to the real branch and removed the
+three mock helpers; `App.tsx` lost 11,839 characters of code whose only purpose was to invent
+results. With no backend there is now no data, an explicit "Backend unreachable - no computation
+available" state, and the sentence *"No results are fabricated in its absence."*
+
+**Export, in six formats.** Four server-side, each asserted by reopening the file with the
+library a researcher would use:
+
+```
+csv     -> numpy.loadtxt(..., comments="#")   values match, header preserved
+json    -> nested provenance preserved, not flattened
+netcdf  -> magic bytes 89 48 44 46 (HDF5)  ->  xarray: values, coords, units, attrs
+zarr    -> zip -> xr.open_zarr             ->  values, coords, attrs
+```
+
+PNG and SVG render client-side from the live Plotly figure, deliberately: a server-side
+re-render would be a *different* picture from the one on screen, and a figure that does not match
+what the researcher saw is worse than no figure.
+
+**NetCDF4, not NetCDF3.** `to_netcdf()` with no path supports only the scipy engine, which writes
+NetCDF3 classic - no groups, no compression, 32-bit offsets. The exporter writes via `h5netcdf`
+to a temporary file and returns the bytes, and a test asserts the HDF5 magic number. "It produced
+a file" is not the same claim as "it produced the file the researcher meant".
+
+**Provenance inside the file.** NetCDF attributes cannot hold a nested dict, so nesting is
+flattened to dotted keys rather than dropped - dropping it would silently lose the crop spec, the
+correction and the seed. The two warnings are **derived** from the metadata rather than passed
+in, so no export path can omit them by forgetting:
+
+```
+# is_simulated: True
+# warnings.0: THIS DATA IS SIMULATED. ... is NOT an observation.
+# warnings.1: THIS DATA IS NOT REPRODUCIBLE. ...
+```
+
+### D34: reproducibility that existed only in Python
+
+`PerturbationEngine.add_noise` has taken a seed since T3.5.12. The endpoint never passed one, so
+every perturbation requested over HTTP came from the global RNG - and the engine dutifully
+recorded `seeded: False` in metadata nothing surfaced. The frontend compounded it, building its
+synthetic "forecast" in the browser with `Math.random()`: unseeded, and **uniform** despite the
+control being labelled "StDev".
+
+```
+seeded (42) twice   -> identical fields
+unseeded twice      -> different fields, reproducible: false
+```
+
+The seed is now threaded through, returned in `provenance`, and shown on screen next to the
+diagnostic it produced.
+
+### A defect I introduced and the compiler caught
+
+The LaTeX cleanup replaced `$...$` literals across `App.tsx` with a blanket substitution. Two
+template literals, `` `${k}=${v}` ``, match that pattern exactly and became `` `k ={v}` ``.
+`tsc` flagged it as an unused destructure; nothing else would have, and the rendered text would
+have been quietly wrong.
+
+**Generalisable lesson: a blanket text substitution over source is a refactor, not a formatting
+fix.** It should be reviewed as one.
+
+### Suite after slice 13
+
+```
+593 passed, 1 skipped (opt-in live GCS), 1 xfailed
+450 test functions across 19 files
+frontend: tsc clean; vite build 1,378 modules
+benchmark suite: 15 PASS, 0 FAIL, 2 NOT_YET_RUNNABLE (exit 0)
+tools/audit_docs.py: RESULT ok (exit 0)
+```
+
+**Fixed: 32 of 34 defects, with D18 partial.** D34 found and closed within this slice.
+
+### What is honestly still not world class
+
+*   **The UI has still never been rendered.** No browser here. Every export control is proved to
+    compile, to call a route that exists, and to produce a file that reopens correctly - and has
+    never been clicked.
+*   **No import.** NetCDF upload is not implemented; real files still have to be placed in
+    `data/` by hand or streamed via the Zarr adapter.
+*   **Accessibility is zero.** No ARIA roles, no keyboard handling, no focus management.
+*   **`App.tsx` is ~2,500 lines with 5 components.** Every tab is inline, so no panel can be
+    unit-tested in isolation.
+*   **Four endpoints remain unreachable from the UI:** `/benchmarks/run` (the gates can be *seen*
+    but not *run*), `/transforms` and `/actions` (capability discovery), `/hypothesis/proposals`.
+*   **No CSV/NetCDF ingest into the analysis path**, no session save/restore, no figure captions
+    burned into the image beyond the short provenance line.
+
+---
+
+## Slice 14 - T3.5.24: data in, evidence on demand, capabilities visible
+
+**Captured 2026-08-20.** The three things a researcher could not do: bring their own data, make
+the platform prove its claims, or see what it can do.
+
+### Import, closing the loop with export
+
+Every format the platform writes now reads back, and every test round-trips through
+`exporters` rather than a hand-written fixture - a fixture can encode the same misunderstanding
+twice.
+
+```
+csv     -> values, coords, units, provenance   round trip exact
+json    -> values, coords, units, provenance   round trip exact
+netcdf  -> values, coords, units, attrs        round trip exact
+zarr    -> values, coords, units, attrs        round trip exact
+```
+
+### The refusal that matters
+
+An ERA5 file is `(time, level, lat, lon)`. There is no single field in it.
+
+```
+$ read_field(era5.nc, variable="t")
+InvalidParameterError: expected an index for every non-spatial dimension
+  (time: 0..1, level: 0..2). 't' is 4D; taking index 0 without being asked would import
+  a field you did not choose, and every statistic computed from it would describe that
+  arbitrary slice.
+
+$ read_field(era5.nc, variable="t", selection={"time": 1, "level": 2})
+4 x 5, units K, selection recorded in provenance, values match xarray isel exactly
+```
+
+**Generalisable lesson: the dangerous defaults are the ones that produce a plausible answer.**
+A crash from `[0, 0]` would have been harmless. A field is not.
+
+### Two failure modes that look like success
+
+*   **Transposition.** Axes are matched by *name* before position. A file with dims
+    `(lat, lon, time)` read positionally comes back transposed - and a transposed field still
+    looks like a field. Every orientation and anisotropy statistic computed from it would be
+    wrong in a way nothing downstream can detect.
+*   **Laundering.** Export a simulated field, import it back: it must still say
+    `is_simulated: true`. Asserted for all four formats. Without it the platform would offer a
+    one-step path from fabricated data to apparently observational data, which is worse than
+    never having labelled it. A file of unknown origin reports **null**, not false - claiming
+    `False` would be the platform asserting something nobody told it, and the UI renders that
+    third state as "origin unknown".
+
+A zipped-Zarr upload is checked for `..` and absolute paths before extraction. This is the one
+place the platform accepts arbitrary bytes from outside itself.
+
+### Evidence a researcher can generate
+
+The Ground-Truth Benchmark Suite was **listable and not runnable** - you could see what the
+platform claims to get right and could not make it prove it. The Platform tab now runs it at a
+chosen root seed, shows each gate's outcome, and raises a distinct alarm when a **null**
+benchmark reports a discovery, because that is a false positive in the platform itself rather
+than a result. The three outcomes stay separate on screen for the same reason the runner keeps
+them separate: folding NOT_YET_RUNNABLE into PASS would let "all green" mean "we never looked".
+Verified over HTTP: same seed, same counts; an unknown benchmark name is a 404, not an empty
+pass (defect D31 staying closed).
+
+### No route left unreachable
+
+```
+served but unreachable from the UI: []
+```
+
+A test now asserts this, and any exemption must name its reason inside the test. Exactly one
+does: `/hypothesis/proposals`, because the discovery call returns the same records.
+
+### A test of mine that was wrong
+
+`test_a_1d_csv_is_refused` failed: `np.loadtxt(..., ndmin=2)` reads a single row as a genuine
+1xN field, and nothing raised. The test asserted a rule I had assumed rather than written. The
+right resolution was not to add a second size rule to the reader - the platform already has one
+where it belongs, `FieldTooSmallError` at transform time, which names the minimum for the
+requested number of levels. Two size rules in two places would diverge. The test now records the
+actual behaviour and points at the gate that does the work.
+
+### Suite after slice 14
+
+```
+642 passed, 1 skipped (opt-in live GCS), 1 xfailed
+490 test functions across 21 files
+27 API routes, 0 unreachable from the UI
+frontend: tsc clean; vite build 1,378 modules
+benchmark suite: 15 PASS, 0 FAIL, 2 NOT_YET_RUNNABLE (exit 0)
+tools/audit_docs.py: RESULT ok (exit 0)
+```
+
+**Fixed: 32 of 34 defects, with D18 partial.** No new defect ID this slice.
+
+### Still outstanding, unchanged and stated
+
+*   **The UI has never been rendered.** No browser here. The import panel, the benchmark runner
+    and the registry tables compile, call routes that exist, and exchange payloads whose every
+    field is present - and have never been seen.
+*   **Accessibility is zero.** No ARIA roles, no keyboard handling, no focus management.
+*   **`App.tsx` is ~2,900 lines** with 7 components; no tab panel can be unit-tested alone.
+*   D17 (per-bin loops), D18 (needs GPU hardware), PostgreSQL migration execution (rendered
+    only), and a one-year 0.25 degree ERA5 crop (measured as infeasible at laptop tier).
+
+---
+
+## Slice 15 - T3.5.25: starting the platform, and what that alone found
+
+**Captured 2026-08-20.** Backend on `127.0.0.1:8000`, Vite on `localhost:3000`. Three defects
+found in the first ten minutes of it actually running, none of which 642 passing tests had
+caught.
+
+### It starts
+
+```
+$ python -m uvicorn src.api.main:app --host 127.0.0.1 --port 8000
+backend ready in ~1s
+status ok | database ok (sqlite) | schema 0002 (head 0002) up_to_date True
+device cpu | cores 12 | torch threads 6 | datasets 3
+sqlite: journal_mode=wal busy_timeout=30000 synchronous=1
+
+$ npm run dev
+VITE v5.4.21 ready in 453 ms -> http://localhost:3000/
+```
+
+The **D32 adoption path ran for real** on the checked-in database, unprompted: it had no
+`alembic_version` and was missing the five slice-8/9 columns, and startup stamped it 0001,
+applied 0002 and left it queryable. Verified directly against the file afterwards.
+
+Every module transforms through Vite (`/src/App.tsx` -> HTTP 200, 655 kB), and the proxy path
+the browser actually uses works end to end.
+
+### D35: a fallback chain that depended on browsing order
+
+```
+GET /data/sources  (fresh process)          -> ['netcdf_local', 'simulated']
+GET /data/zarr/catalogue                    -> (registers era5_zarr as a side effect)
+GET /data/sources  (same process)           -> ['netcdf_local', 'era5_zarr', 'simulated']
+```
+
+Source registration is an import side effect, and `zarr_source` was imported only lazily inside
+its own handlers. So **which sources `resolve()` searched depended on which endpoint the
+researcher happened to call first** - two identical machines could serve the same request from
+different sources. Now imported at the composition root. The guard is a **subprocess** test,
+because asserting it in-process would pass on whatever the other tests in that module left
+behind - the exact order-dependence being tested for.
+
+### D36: the double-precision core was discarded at the HTTP boundary
+
+The transform tab's unconditional green ticks were replaced last slice by a measured round-trip
+error judged against a stated tolerance. On its first live run it went amber:
+
+```
+fft    max_abs_err 1.937e-07  -> amber (>1e-9, not expected for fft/dct/swt)
+swt    max_abs_err 4.172e-07  -> amber
+dtcwt  max_abs_err 1.221e-15  -> PASS
+```
+
+`dtcwt` at machine epsilon while `fft` sat at 1.9e-07 is the signature of float32. Confirmed on
+the identical field:
+
+```
+fft  float32  1.937e-07
+fft  float64  2.776e-16
+```
+
+**Ten sites in `api/main.py` cast every incoming field to `torch.float32`.** The platform's
+double-precision discipline - Parseval verified to machine epsilon, tight-frame constants to
+1e-11, benchmarks in float64 - was thrown away the moment a request arrived, so every number a
+researcher saw through the UI carried nine orders of magnitude more error than the same
+computation in a notebook. D27 had been fixed *precisely because* a float32 `fftfreq` capped
+Parseval at 5.8e-8; casting the data itself gave all of it back.
+
+After the fix, through the same HTTP path:
+
+```
+fft   2.776e-16     dct   3.553e-15     swt   5.872e-16
+dwt   3.331e-16     dtcwt 1.221e-15        all PASS <= 1e-9
+```
+
+Promoting the boundary to float64 immediately raised
+`RuntimeError: expected scalar type Double but found Float` in `apply_affine`, whose rotation
+matrix was a hard-coded float32 literal. Its dtype now follows the data.
+
+**Generalisable lesson: a check is only worth what it is judged against.** The green ticks that
+said "verified perfect reconstruct limits" had been there all along, above a number that was
+seven orders of magnitude off. Replacing an unconditional claim with a measurement against a
+stated tolerance found a defect the same afternoon.
+
+### D37: CSV export was lossy, found by a round trip and nothing else
+
+```
+export -> import, over HTTP:
+  csv      59281 bytes   reimported identical = False
+  json    117090 bytes   reimported identical = True
+  netcdf   44544 bytes   reimported identical = True
+  zarr     12293 bytes   reimported identical = True
+```
+
+`%.10g`. IEEE-754 double needs **17** significant digits to round-trip; seven were being
+discarded silently. The same precision D36 had just been fixed to stop throwing away, thrown
+away again one layer out in the file format. Now `%.17g`:
+
+```
+  csv      87833 bytes   identical = True
+  json    117075 bytes   identical = True
+  netcdf   41984 bytes   identical = True
+  zarr     12283 bytes   identical = True
+```
+
+About 50% more bytes, which is the cheapest correctness anywhere in the module. A bit-exactness
+test now covers all four formats using values chosen to expose it (`0.1234567890123456`, `1e300`,
+`-0.0`).
+
+### The rest of the live exercise
+
+```
+benchmark suite via the UI's own path:  PASS 15  FAIL 0  NOT_YET_RUNNABLE 2
+null-benchmark false positives:         none
+seeded perturbation, repeated:          identical fields, reproducible: true, seed 20260820
+diagnostics:  k rad pixel^-1 | E(k) energy_1d convention | beta -0.886 +/- 0.098 (R2 0.754)
+registries:   6 transforms, 7 actions
+data sources: netcdf_local (observational) -> era5_zarr (observational, streaming) -> simulated
+datasets:     all three SIMULATED, each naming the missing file
+ERA5:         4 stores, network gate off, R13 floor 256 / 512 px
+```
+
+The diagnostics line is worth reading: it reports the wavenumber units, **states the E(k)
+convention**, gives the slope **with its uncertainty**, and declines to name a regime because
+R² = 0.75 means there is no single power law - all four of which were invisible two slices ago.
+
+### Suite after slice 15
+
+```
+647 passed, 1 skipped (opt-in live GCS), 1 xfailed
+492 test functions across 21 files
+benchmark suite: 15 PASS, 0 FAIL, 2 NOT_YET_RUNNABLE (exit 0)
+tools/audit_docs.py: RESULT ok (exit 0)
+```
+
+**Fixed: 35 of 37 defects, with D18 partial.** Three defects found and closed in this slice, all
+three by *running the thing* rather than by testing it.
+
+### Still outstanding
+
+Browser rendering remains unverified **by me** - the servers are up and the pages have never
+been looked at by a human. That is now a matter of opening `http://localhost:3000`, not of
+missing capability. Accessibility is still zero, `App.tsx` is still monolithic, D17 and D18
+unchanged.
+
+---
+
+## Slice 15 addendum - the UI, confirmed working by the user
+
+**2026-08-20.** The user started the platform, exercised the workbench and reported the nine
+tabs working. Both servers were then stopped cleanly (ports 8000 and 3000 confirmed closed).
+
+**What that establishes, and what it does not.** T3.5.0's final acceptance criterion asks for a
+`VERIFICATION.md` recording actual command output *and a screenshot per tab*. Every other clause
+is met and captured. The rendering clause is now **attested** - a person ran it and said it
+works - but not **evidenced**: no screenshot exists in this repository, so nobody can
+re-examine that claim the way they can re-examine the round-trip errors, the benchmark counts or
+the transfer measurements recorded above.
+
+That distinction is worth keeping sharp precisely because it is the easy one to let slide. "It
+worked when I ran it" is how the original "validated / zero-error" claims in this repository came
+to exist, and the audit that opened this whole effort found them to be aspirational. So the
+documents now say the rendering was confirmed by the user, name the date, and state plainly that
+no screenshot was captured.
+
+`test_browser_rendering_is_still_recorded_as_unverified` had asserted that `roadmap.md` kept
+saying the UI had never been seen. That sentence is now false, and a guard that forces a false
+statement to remain is worse than no guard - so it was replaced by
+`test_browser_rendering_evidence_is_described_accurately`, which asserts the documents record
+*who* confirmed it and *that no screenshot exists*, and which **fails if screenshots are ever
+added** so the claim gets tightened rather than left stale.
+
+### Servers stopped
+
+```
+stopped port 8000 (pid 25476)
+stopped port 3000 (pid 18164)
+port 8000 down
+port 3000 down
+```
+
+### And one I broke while writing that down
+
+Replacing `test_browser_rendering_is_still_recorded_as_unverified` was done by slicing the test
+file from that function to EOF and substituting. The function was **not** the last one - fifteen
+tests written in slices 13 and 14 sat after it, and all fifteen were deleted. The suite went
+647 -> 631 and the documentation guard caught it within a minute:
+
+```
+architecture.md test inventory is stale (documented, actual): {'test_frontend_contract.py': (28, 13)}
+```
+
+Restored, verified back at 28. **Second instance this week of the same mistake**: after the
+blanket LaTeX substitution that corrupted two template literals, this is another whole-file text
+operation applied on an assumption about structure that was never checked. The lesson is the
+same one, and it earned repeating: **editing source by text position is a refactor and needs the
+same care as one.** The reason both were caught in under a minute is that the counts are
+asserted rather than remembered - which is exactly what `tools/audit_docs.py` and the inventory
+test exist for.
+

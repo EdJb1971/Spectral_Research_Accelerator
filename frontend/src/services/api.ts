@@ -22,6 +22,27 @@ async function handleResponse<T>(response: Response): Promise<T> {
   return response.json() as Promise<T>;
 }
 
+/**
+ * Read a file response. The filename comes from `Content-Disposition`, which the API sets and
+ * exposes via `Access-Control-Expose-Headers` - without that a cross-origin browser cannot read
+ * the header at all and every download would be named "download".
+ */
+async function downloadResponse(response: Response): Promise<types.ExportResult> {
+  if (!response.ok) {
+    let message = `HTTP Error ${response.status}: ${response.statusText}`;
+    try {
+      const body = await response.json();
+      if (typeof body?.detail === 'string') message = body.detail;
+    } catch {
+      // the error body was not JSON; keep the status line
+    }
+    throw new Error(message);
+  }
+  const disposition = response.headers.get('Content-Disposition') || '';
+  const match = disposition.match(/filename="?([^";]+)"?/);
+  return { blob: await response.blob(), filename: match ? match[1] : 'spectralearth-export' };
+}
+
 export const apiService = {
   // Spectral Transform Engine
   async applyTransform(payload: types.TransformRequest): Promise<types.TransformResponse> {
@@ -181,5 +202,65 @@ export const apiService = {
       body: JSON.stringify(payload),
     });
     return handleResponse<types.ZarrInspectResponse>(response);
+  },
+  // ---------------------------------------------------------------- export (T3.5.23)
+
+  async exportField(payload: types.ExportFieldRequest): Promise<types.ExportResult> {
+    return downloadResponse(await fetch(`${BASE_URL}/export/field`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }));
+  },
+
+  async exportTable(payload: types.ExportTableRequest): Promise<types.ExportResult> {
+    return downloadResponse(await fetch(`${BASE_URL}/export/table`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }));
+  },
+  // ---------------------------------------------------------------- import (T3.5.24)
+
+  async importInspect(file: File): Promise<types.ImportInspectResponse> {
+    const form = new FormData();
+    form.append('file', file);
+    // No Content-Type header: the browser must set it, because it alone knows the multipart
+    // boundary. Setting it by hand produces a body the server cannot parse.
+    return handleResponse<types.ImportInspectResponse>(
+      await fetch(`${BASE_URL}/import/inspect`, { method: 'POST', body: form }));
+  },
+
+  async importField(file: File, variable?: string,
+                    selection?: Record<string, number>): Promise<types.ImportFieldResponse> {
+    const form = new FormData();
+    form.append('file', file);
+    if (variable) form.append('variable', variable);
+    if (selection && Object.keys(selection).length) {
+      form.append('selection', JSON.stringify(selection));
+    }
+    return handleResponse<types.ImportFieldResponse>(
+      await fetch(`${BASE_URL}/import/field`, { method: 'POST', body: form }));
+  },
+
+  // ---------------------------------------------------------------- evidence & registries
+
+  async runBenchmarks(rootSeed?: number, names?: string[]): Promise<types.BenchmarkSuiteResponse> {
+    const params = new URLSearchParams();
+    if (rootSeed !== undefined) params.append('root_seed', String(rootSeed));
+    (names || []).forEach(n => params.append('name', n));
+    const query = params.toString() ? `?${params.toString()}` : '';
+    return handleResponse<types.BenchmarkSuiteResponse>(
+      await fetch(`${BASE_URL}/benchmarks/run${query}`, { method: 'POST' }));
+  },
+
+  async listTransforms(): Promise<types.RegistryEntry[]> {
+    return handleResponse<types.RegistryEntry[]>(
+      await fetch(`${BASE_URL}/transforms`, { method: 'GET' }));
+  },
+
+  async listActions(): Promise<types.RegistryEntry[]> {
+    return handleResponse<types.RegistryEntry[]>(
+      await fetch(`${BASE_URL}/actions`, { method: 'GET' }));
   }
 };

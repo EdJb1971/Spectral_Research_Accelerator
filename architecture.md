@@ -418,9 +418,148 @@ Materialisation is deliberately **not** exposed over HTTP: it is a minutes-to-ho
 the Phase 4A artifact store and a job record, and an endpoint that held a connection open for
 two hours would be a worse answer than no endpoint.
 
+### 3.14 Export (`src/data_layer/exporters.py`, T3.5.23)
+
+Before this module the platform **could not emit a single file**. Every field, spectrum, metric,
+hypothesis and benchmark result lived and died inside a browser tab. A tool whose output cannot
+leave it is not a research tool, whatever the quality of its mathematics.
+
+Four data formats, each earning its place:
+
+| Format | Why it is here |
+|---|---|
+| `csv` | Opens anywhere, no dependencies. Provenance in `#`-commented header lines, which `numpy.loadtxt`, `pandas.read_csv(comment="#")` and every spreadsheet importer skip — so the record costs the reader nothing. |
+| `json` | The only format that round-trips *nested* provenance without flattening it. |
+| `netcdf` | **NetCDF4/HDF5**, what an atmospheric scientist actually loads: coords, units and attrs straight into `xarray`. |
+| `zarr` | Chunked store, delivered as a zip, for fields too large to want as one blob. |
+
+**NetCDF4 rather than NetCDF3, and the distinction is not pedantic.** `Dataset.to_netcdf()` with
+no path only supports the `scipy` engine, which writes NetCDF3 classic — no groups, no
+compression, 32-bit offsets. The exporter therefore writes with `h5netcdf` to a temporary file
+and returns the bytes; a test asserts the HDF5 magic number, because "it produced a file" is not
+the same claim as "it produced the file the researcher meant".
+
+**Provenance travels *inside* the file, never beside it.** A CSV in a downloads folder six months
+later, with no record of the seed, the units, the grid or whether the data was simulated, is
+indistinguishable from any other CSV — and that is exactly when it matters. NetCDF attributes
+cannot hold a nested dict, so nesting is *flattened with dotted keys* rather than dropped;
+dropping it would silently lose the crop spec, the correction and the seed.
+
+**The two warnings are derived, not supplied**, so no export path can omit them by forgetting:
+`is_simulated` produces `THIS DATA IS SIMULATED … is NOT an observation`, and
+`reproducible: false` produces `THIS DATA IS NOT REPRODUCIBLE`. Both are written in words, in
+the file, because a flag a reader has to know to look for is not a warning.
+
+**PNG and SVG are deliberately client-side** (`frontend/src/components/FigureExport.tsx`), not
+server endpoints. A server-side re-render would be a *different* picture from the one on
+screen — different colour limits, aspect ratio, tick choices — and a figure that does not match
+what the researcher saw is worse than no figure.
+
+**An empty table still exports.** "Nothing survived correction" is a real result — it is the
+answer the null benchmarks exist to produce — and refusing to save it would make the honest
+outcome the one you cannot record.
+
+### 3.15 UI scientific integrity (T3.5.23)
+
+The frontend used to **fabricate results** whenever the backend was unreachable: fields,
+perturbations, transforms ("approximate reconstruction with tiny errors"), diagnostics, boundary
+analyses and experiment IDs, across roughly fourteen code paths. One badge in the header read
+"Offline Sandbox Mock Mode"; the individual results said nothing, so a spectral slope computed
+from `Math.random()` was indistinguishable from one computed from ERA5. That is precisely the
+defect class the backend's `is_simulated` provenance chain exists to prevent, committed one layer
+up. **Every one of those paths has been deleted.** With no backend there is no data, the controls
+say so, and a test asserts no `if (backendConnected)` branch survives.
+
+Four further presentation defects closed in the same pass:
+
+*   **`is_simulated` was fetched and shown nowhere it mattered.** The dataset selector rendered
+    `d.name` only, so choosing "Era5 Reanalysis" and receiving fabricated data looked identical
+    to receiving observations. The tab now carries a banner reading the flag the source
+    *declared*, with the fallback reason and source kind.
+*   **The physical-units work was invisible.** `k_units`, `power_units`, `convention`,
+    `convention_note`, `warnings` and `grid` had been returned since T3.5.13 and were absent from
+    the frontend's own type definitions, so the UI could not have shown them. R15 requires the
+    convention wherever a slope appears: the same field has different exponents under E(k) and
+    S(k).
+*   **A spectral slope was shown with no uncertainty**, though `slope_standard_error` was
+    computed and returned. A β that cannot be compared against −5/3 or −3 is not a measurement.
+*   **Two unconditional green ticks** — "Mathematically rigorous floating point calculations",
+    "Verified perfect reconstruct limits" — appeared whatever the measured error was. Replaced by
+    the measured round-trip error judged against a stated 1e-9 tolerance, with amber and red
+    states.
+
+The synthetic "forecast" on the diagnostics tab is now drawn by the backend's **seeded**
+perturbation engine with the seed on screen and recorded in the result (defect D34), rather than
+by an unseeded `Math.random()` in the browser.
+
+### 3.16 Import (`src/data_layer/importers.py`, T3.5.24)
+
+The counterpart to `exporters.py`, and the half that makes the platform usable on data it did
+not produce. Until this existed, real data could arrive exactly two ways: a file placed in
+`data/` by hand under one of three fixed names, or a Zarr crop streamed from WeatherBench 2. A
+researcher with a NetCDF from their own model, a colleague, a CDS download, or a previous export
+of this platform had **no way in**.
+
+Reads `.nc`/`.nc4`/`.netcdf` (NetCDF3 and NetCDF4/HDF5), `.zarr.zip`, `.csv` and `.json` —
+including everything `export_field` writes. Every test round-trips through the exporter rather
+than through a hand-written fixture, because a fixture can encode the same misunderstanding
+twice.
+
+**The hard part is the one that looks trivial: is it 2D?** An ERA5 file is
+`(time, level, lat, lon)`. Taking `[0, 0]` silently would import *a* field and never say which,
+and every statistic computed afterwards would describe an arbitrary timestep the researcher did
+not choose — a wrong answer indistinguishable from a right one. So the flow is **two calls**:
+`inspect` reports the variables and which axes still need pinning, then `read_field` refuses
+until every non-spatial dimension has an explicit index, and records those indices in the
+provenance.
+
+**Axes are identified by name before position.** Falling back to "the last two dimensions" is
+right for every convention met so far, but only *after* the name check: a file with dims
+`(lat, lon, time)` read positionally comes back **transposed**, and a transposed field still
+looks like a field — every anisotropy and orientation statistic derived from it would be wrong
+in a way nothing downstream can detect.
+
+**A round trip cannot launder simulated data.** Export a synthetic field, import it back, and it
+still says `is_simulated: true` — asserted for all four formats. Without that the platform would
+offer a one-step way to turn fabricated data into apparently observational data, which is worse
+than never having labelled it.
+
+**Unknown origin reports `null`, not `false`.** A file the platform did not write carries no
+claim about whether it is real; recording a confident `False` would be the platform asserting
+something nobody told it. The UI renders that third state as *"Origin unknown … the platform
+makes no claim about whether this is real data."*
+
+**Uploaded archives are checked for path traversal.** `extractall` follows `..` and absolute
+paths, so a zipped-Zarr upload could otherwise write outside its temporary directory. This is
+the one place the platform accepts arbitrary bytes from outside itself, and the check is cheap.
+
+A single-row CSV is accepted as a 1×N field rather than refused: the size rule that protects the
+science lives with the transforms (`FieldTooSmallError`, which names the minimum for the
+requested number of levels), and duplicating that judgement in the reader would put two rules in
+two places to diverge.
+
+### 3.17 Evidence and capability discovery in the UI (T3.5.24)
+
+Four endpoints were served and unreachable from the workbench. All four are now wired, and a
+test asserts that **no served route is unreachable**, with any exemption having to name its
+reason in the test itself.
+
+*   **`POST /benchmarks/run`** — the gates could be *listed* but not *run*, so a researcher
+    could see what the platform claims to get right and could not make it prove it. The Platform
+    tab now runs the suite at a chosen root seed, shows PASS/FAIL/NOT-YET-RUNNABLE per gate, and
+    raises a distinct alarm when a **null** benchmark reports a discovery — that is a false
+    positive in the platform itself, not a result. The three outcomes stay separate on screen for
+    the same reason they do in the runner: folding NOT_YET_RUNNABLE into PASS would let "all
+    green" mean "we never looked". Results export as a table.
+*   **`GET /transforms` and `GET /actions`** — the registries, rendered with their declared
+    capability flags. Generated, never hand-listed: a hand-written list goes stale precisely
+    when someone adds an entry.
+*   **`GET /hypothesis/proposals`** — the only exemption, recorded in the test: the discovery
+    call returns the same records, so a separate listing adds no capability.
+
 ## 3.12 HTTP API Surface
 
-23 routes. Listed here because an undocumented endpoint is an untested contract.
+27 routes. Listed here because an undocumented endpoint is an untested contract.
 
 | Method | Route | Notes |
 |---|---|---|
@@ -432,6 +571,10 @@ two hours would be a worse answer than no endpoint.
 | GET | `/api/v1/actions` | every registered pipeline action, generated from the registry (T3.5.15) |
 | GET | `/api/v1/transforms` | every registered transform with its params and capabilities (T3.5.15) |
 | GET | `/api/v1/data/sources` | the data-source fallback chain in priority order (E2) |
+| POST | `/api/v1/import/inspect` | describe an uploaded file without committing to a 2D slice of it (T3.5.24) |
+| POST | `/api/v1/import/field` | read one pinned 2D field out of an upload, with reconstructed provenance |
+| POST | `/api/v1/export/field` | a 2D field as CSV, JSON, NetCDF4 or a zipped Zarr store, provenance embedded (T3.5.23) |
+| POST | `/api/v1/export/table` | hypotheses, benchmarks or metrics as CSV or JSON, provenance embedded |
 | GET | `/api/v1/data/zarr/catalogue` | known cloud ERA5 stores, the network gate, and the R13 crop floor (T3.5.18) |
 | GET | `/api/v1/data/zarr/cached` | crops already materialised locally; works with no network |
 | POST | `/api/v1/data/zarr/inspect` | chunk structure and chunk-hostility for a proposed crop - **metadata only** |
@@ -588,7 +731,7 @@ The architecture is highly modular and maintains clean boundaries at several cri
 
 ## 6. Front-End Technical Implementation
 
-The React frontend is fully written and structurally complete. It was installed and built in T3.5.0/T3.5.3 (`npm run build` emits hashed JS and CSS into `dist/`) and wired to the previously unreachable endpoints in T3.5.22. What remains unverified is its **rendered appearance in a browser** - no screenshot per tab has been captured, which is still an open acceptance criterion of T3.5.0. The contract tests prove the nine tabs compile, call routes that exist and read fields that are present; they do not prove anything renders, and that distinction is kept explicit because a green suite plus a green build is exactly what makes people assume otherwise.
+The React frontend is fully written and structurally complete. It was installed and built in T3.5.0/T3.5.3 (`npm run build` emits hashed JS and CSS into `dist/`) and wired to the previously unreachable endpoints in T3.5.22. Its **rendered appearance was confirmed by the user on 2026-08-20** (T3.5.25): the platform was started, both servers came up, and the nine tabs were reported working. That confirmation is a user report, not an artefact - **no screenshot per tab exists in this repository**, so T3.5.0's literal evidence clause is still outstanding. The contract tests prove the nine tabs compile, call routes that exist and read fields that are present; they still do not prove anything renders, and the distinction is kept explicit because a green suite plus a green build is exactly what makes people assume otherwise.
 
 *   **Component Visualizations:** `Heatmap2D.tsx` and `LineChart.tsx` wrap `react-plotly.js`; `LineageGraph.tsx` is a hand-rolled SVG node-link renderer with a tooltip inspector and no external graph dependency. All three take reactive props and render spatial fields, PSD curves, coherence ratios, and provenance DAGs.
 *   **Main Application (`App.tsx`):** ~2,400 lines covering state hooks for **nine** tabs (Synthetic Generator, Meteorological Data, Boundary-Condition Lab, Spectral Transforms, Diagnostic & Analysis, Experiment Engine, Automated Hypotheses, **Platform & Evidence**, **Real ERA5 (Zarr)**), loading indicators, dynamic sliders, and follow-up proposal adoption.
@@ -613,7 +756,7 @@ See `VERIFICATION.md` for the captured command output behind every statement her
 | Item | Status |
 |---|---|
 | Python venv + dependencies | installed (torch 2.13.0, numpy 2.2.6, pydantic 1.10.26, SQLAlchemy 2.0.52, xarray 2025.6.1, FastAPI 0.110.3) |
-| Backend test suite | **548 passed, 1 xfailed** (plus 1 skipped: the opt-in live-GCS check) (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17, 351 after T3.5.6, 379 after T3.5.15, 407 after T3.5.19, 449 after T4C.5) |
+| Backend test suite | **647 passed, 1 xfailed** (plus 1 skipped: the opt-in live-GCS check) (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17, 351 after T3.5.6, 379 after T3.5.15, 407 after T3.5.19, 449 after T4C.5) |
 | Ground-Truth Benchmark Suite | **15 PASS, 0 FAIL, 2 NOT_YET_RUNNABLE** (`python -m src.benchmarks`, exit 0) |
 | Frontend `npm install` + `npm run build` | passes, emits 1,378 modules + real JS/CSS assets (was: 1 module, no assets) |
 | Backend server | starts, serves OpenAPI, all smoke-tested endpoints return 200 |
@@ -630,10 +773,14 @@ tests written against analytic answers rather than against the code's own behavi
 the thirty-one were found this way, which is the single strongest argument for the standing
 tolerance rule R16.
 
-**Still not verified:** the frontend's rendered appearance in a browser. `npm run build`
-succeeds and emits real assets, but no screenshot per tab has been captured, so T3.5.0's
-final acceptance criterion remains open. The frontend also does not yet consume
-`GET /api/v1/health`, `GET /api/v1/experiments` or the benchmark endpoints.
+~~**Still not verified:** the frontend's rendered appearance in a browser ... The frontend also
+does not yet consume `GET /api/v1/health`, `GET /api/v1/experiments` or the benchmark
+endpoints.~~ **Superseded.** The health, experiment-listing, benchmark, statistics, registry,
+export, import and ERA5 endpoints are all consumed as of T3.5.22-T3.5.24, and a test asserts no
+served route is unreachable from the UI. The platform was started and the nine tabs confirmed
+working by the user on 2026-08-20 (T3.5.25). **No screenshot per tab has been captured**, so
+that clause of T3.5.0 remains open: the rendering is attested by a user, not evidenced by an
+artefact in this repository.
 
 ### 7.2 Confirmed defects
 
@@ -680,6 +827,10 @@ code paths that `architecture.md` previously described as implemented and rigoro
 | D31 | `api/main.py` `/api/v1/benchmarks/run` (found within T3.5.17) | An unknown benchmark name filtered the suite to nothing and returned HTTP 200 with zero failures - a silent no-op that reads as "everything passed". A gate a typo can delete is not a gate. Now 404 with the list of available benchmarks. | **FIXED** T3.5.17 |
 | D32 | `api/main.py` lifespan / `database/session.py` (found within T3.5.8) | **A schema that startup reported as correct and could not be queried.** `Base.metadata.create_all` adds missing tables but never adds missing *columns*, and returns successfully either way. The checked-in `spectral_earth.db` predated the five columns added by T3.5.12 and T4C.5, so the ORM mapped columns the file did not contain: `no such column: experiment_runs.seed`, with no warning at any point before the query. Fixed by Alembic revisions 0001/0002 plus `ensure_schema`, which adopts a pre-Alembic database by *inspecting* it rather than assuming its revision. | **FIXED** T3.5.8 |
 | D33 | `requirements.txt` / `data_layer/builtin_sources.py` (found within T3.5.18) | **A documented feature that could not work.** `xarray` was declared but *no NetCDF engine* was, so a clean install had only `scipy` (NetCDF3 classic) and `zarr`. `data/README.md` invites the researcher to drop an ERA5 `.nc` file into `data/`, and `LocalNetCDFSource` is the highest-priority source - but modern ERA5 downloads are NetCDF4/HDF5, which failed with *"found the following matches ... but their dependencies may not be installed"*. Reproduced on this machine, then fixed: `h5netcdf` + `h5py` declared and installed, with a test that writes and reopens an HDF5-format file so dependency drift cannot silently undo it. | **FIXED** T3.5.18 |
+| D34 | `api/main.py` `/api/v1/synthetic/perturb` (found within T3.5.23) | **Reproducibility that existed only in the Python API.** `PerturbationEngine.add_noise` has accepted a seed since T3.5.12 and this endpoint never passed one, so every perturbation requested over HTTP was drawn from the global RNG. The engine recorded `seeded: False` in its own metadata and nothing surfaced it. The frontend then compounded it, building its synthetic "forecast" in the browser with `Math.random()` - unseeded, and *uniform* despite the control being labelled StDev - so no diagnostic computed from it could ever be reproduced. Seed now threaded through, with `provenance` and a `reproducible` flag on the response. | **FIXED** T3.5.23 |
+| D35 | `api/main.py` imports (found by starting the platform, T3.5.25) | **A fallback chain that depended on browsing order.** Source registration is an import side effect, and `zarr_source` was imported only lazily inside its own handlers. Measured on the running server: `GET /data/sources` returned `['netcdf_local', 'simulated']` on a fresh process and `['netcdf_local', 'era5_zarr', 'simulated']` after the ERA5 tab had been visited - so which sources `resolve()` searched depended on which endpoint the researcher happened to call first. Now imported at the composition root, with a subprocess test asserting a fresh interpreter registers all three. | **FIXED** T3.5.25 |
+| D36 | `api/main.py`, `analysis_engine/decomposition.py`, `boundary_lab/boundary.py` (found by starting the platform, T3.5.25) | **The double-precision core was discarded at the HTTP boundary.** Ten sites cast every incoming field to `torch.float32`. Measured on the identical field: an FFT round trip is **2.8e-16 in float64 and 1.9e-07 in float32** - nine orders of magnitude. Every number a researcher saw through the UI carried float32 error, while the benchmarks, the Parseval checks and the tight-frame constants were all verified in float64. D27 had been fixed precisely because a float32 `fftfreq` capped Parseval at 5.8e-8; casting the data itself gave all of that back. Found on the first live run by the measured round-trip tolerance that replaced the transform tab's unconditional green ticks. | **FIXED** T3.5.25 |
+| D37 | `data_layer/exporters.py` (found by starting the platform, T3.5.25) | **CSV export was lossy and nothing said so.** Fields were written with `%.10g`; IEEE-754 double needs **17** significant digits to round-trip, so seven were silently discarded. Found on a live export/import loop through the running server - CSV was the only format that came back changed, and only comparing the arrays revealed it. This is the same precision D36 was fixed to stop throwing away at the HTTP boundary, discarded again one layer out in the file format. Now `%.17g`, with a bit-exactness test across all four formats; the cost is about 50% more bytes. | **FIXED** T3.5.25 |
 
 **Root cause common to D20, D23, D25 and D2:** the transform engine — the mathematical core of
 the platform — had **no test file at all**. `src/tests/test_transforms.py` now exists (36 cases
@@ -799,16 +950,18 @@ able to sit three slices out of date.
 | `test_dtcwt.py` | 28 | Kingsbury q-shift DTCWT: primitives vs reference, two oracles, orientation, shift invariance, D1 head-to-heads |
 | `test_executor.py` | 26 | Executor backends, seed derivation, ordering, device/thread policy, SQLite concurrency, byte-identical sweeps |
 | `test_experiments.py` | 3 | declarative sweeps and lineage |
-| `test_frontend_contract.py` | 13 | the frontend/backend contract: fetched paths vs served routes, payload keys the UI reads, D8 presentation |
+| `test_exports.py` | 32 | CSV/JSON/NetCDF4/Zarr round trips, embedded provenance, seeded perturbation (D34) |
+| `test_frontend_contract.py` | 28 | the frontend/backend contract, plus the UI integrity guards: no fabricated results, no unqualified validation claims, units and slope uncertainty displayed |
 | `test_grid_operators.py` | 64 | grid metrics, metric-aware gradient/Laplacian, area weighting, physical-wavenumber spectra, D26 |
 | `test_hypothesis.py` | 3 | correlation and categorical hypothesis discovery |
+| `test_imports.py` | 36 | NetCDF/Zarr/CSV/JSON import, dimension pinning, axis identification, laundering guard, benchmark runs over HTTP |
 | `test_migrations.py` | 25 | Alembic history, ORM/schema drift, per-revision round trips, pre-Alembic adoption, auto-migrate refusal, PostgreSQL rendering |
-| `test_registries.py` | 28 | registries, error taxonomy, fallback chain, and the T3.5.15 plugin acceptance criterion |
+| `test_registries.py` | 29 | registries, error taxonomy, fallback chain, and the T3.5.15 plugin acceptance criterion |
 | `test_stationary.py` | 19 | undecimated SWT: shift invariance, perfect reconstruction, frame constant, PyWavelets oracle, R3 normalisation |
 | `test_statistics.py` | 36 | FDR procedures vs scipy, surrogate preservation properties, calibration on a true null, stationarity gate, screening |
 | `test_transforms.py` | 13 | fft/dct/dwt/dtcwt/hybrid round trips; D1 recorded as a strict xfail |
 | `test_zarr_source.py` | 58 | R13 crop geometry, chunk-hostility prediction, byte counting, cache and provenance round trip, the NetCDF engine (D33), zarr HTTP surface |
-| **total** | **408** | |
+| **total** | **492** | |
 
 ### 7.2h A surrogate null that was not the null it claimed (T4C.5)
 

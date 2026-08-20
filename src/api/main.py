@@ -1,12 +1,13 @@
 import torch
 import numpy as np
+import json
 import logging
 import datetime
 import uuid
 from contextlib import asynccontextmanager
 import os
 
-from fastapi import FastAPI, HTTPException, Depends, BackgroundTasks, Query
+from fastapi import FastAPI, HTTPException, Depends, BackgroundTasks, Query, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, validator, root_validator
 from typing import List, Dict, Any, Optional, Tuple
@@ -18,7 +19,14 @@ from src.transform_engine import registry as transform_registry
 from src.experiment_engine import actions as pipeline_actions
 from src.data_layer import sources as data_sources
 from src.data_layer import builtin_sources as _builtin_sources  # noqa: F401
-from src.core.errors import SpectralEarthError, classify
+# Defect D35: registration is an import side effect, so a source module that is only
+# imported lazily inside a handler is **absent from the fallback chain** until some
+# unrelated request happens to import it. Measured on the running platform:
+# GET /data/sources returned ['netcdf_local', 'simulated'] on a fresh process and
+# ['netcdf_local', 'era5_zarr', 'simulated'] after visiting the ERA5 tab - so which
+# sources `resolve()` considered depended on the order the researcher clicked.
+from src.data_layer import zarr_source as _zarr_source  # noqa: F401
+from src.core.errors import InvalidParameterError, SpectralEarthError, classify
 from src.transform_engine import dtcwt as RealDTCWT
 from src.transform_engine import stationary as swt_engine
 from src.synthetic_generator.generator import SyntheticFieldGenerator
@@ -28,6 +36,13 @@ from src.data_layer.adapters import MeteorologicalDataAdapter
 from src.analysis_engine.diagnostics import SpectralSpatialAnalysisEngine
 from src.analysis_engine.decomposition import ErrorDecompositionEngine
 
+# Defect D36: every incoming field was cast to float32 at this boundary, so the platform's
+# double-precision core was discarded the moment a request arrived. Measured on the running
+# platform: an FFT round trip is 2.8e-16 in float64 and 1.9e-07 in float32 - nine orders of
+# magnitude, on the identical field. D27 was fixed precisely because a float32 `fftfreq` capped
+# Parseval at 5.8e-8; casting the data itself to float32 gave all of that back. The whole API
+# now works in float64, which is what `PhysicalField`, the grid metrics, the spectra and the
+# benchmarks have always assumed.
 from src.database.session import engine, get_db, SessionLocal
 from src.database import migrate as schema_migrate
 from src.database.models import Experiment, ExperimentRun, LineageNode, LineageEdge, Hypothesis
@@ -148,6 +163,12 @@ class PerturbationItem(BaseModel):
     shift_y: Optional[float] = Field(None, description="Translation along Y-axis (normalized [-1, 1]).")
     noise_type: Optional[str] = Field("gaussian", description="Type of noise: 'gaussian', 'uniform', or 'salt_pepper'.")
     level: Optional[float] = Field(0.1, description="Noise level or perturbation magnitude.")
+    # Defect D34. `PerturbationEngine.add_noise` has taken a seed since T3.5.12, and this
+    # endpoint never passed one - so every perturbation requested over HTTP was drawn from
+    # the global RNG and could not be reproduced. The engine even recorded `seeded: False`
+    # in its own metadata, and nothing surfaced it. Reproducibility that exists only in the
+    # Python API is reproducibility the platform does not have.
+    seed: Optional[int] = Field(None, description="Seed for a reproducible noise draw. Omit for an unseeded (irreproducible) draw.")
 
 class PerturbRequest(BaseModel):
     field_data: List[List[float]] = Field(..., description="2D array representing the physical field.")
@@ -167,8 +188,13 @@ class PerturbRequest(BaseModel):
         return v
 
 class PerturbResponse(BaseModel):
+    # Declared before the existing fields so it reads first in the OpenAPI schema: a
+    # perturbed field without its provenance is not a scientific object.
     perturbed_field: List[List[float]] = Field(..., description="Perturbed 2D field.")
     metrics: Dict[str, float] = Field(..., description="Sensitivity and error metrics comparing perturbed to original.")
+    provenance: List[Dict[str, Any]] = Field(default_factory=list,
+                                             description="Per-perturbation record: type, seed, and whether it was seeded at all.")
+    reproducible: bool = Field(True, description="False when any stochastic step ran unseeded, so this field cannot be regenerated.")
 
 class BoundaryRequest(BaseModel):
     field_data: List[List[float]] = Field(..., description="2D array representing the physical field.")
@@ -562,7 +588,7 @@ async def health(db: Session = Depends(get_db)):
 @app.post("/api/v1/transforms/apply", response_model=TransformResponse)
 async def apply_transform(request: TransformRequest):
     try:
-        data_tensor = torch.tensor(request.field_data, dtype=torch.float32)
+        data_tensor = torch.tensor(request.field_data, dtype=torch.float64)
         field = PhysicalField(data_tensor)
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid input field data format.")
@@ -643,7 +669,7 @@ async def generate_synthetic_field(request: GenerateRequest):
 @app.post("/api/v1/synthetic/perturb", response_model=PerturbResponse)
 async def perturb_field(request: PerturbRequest):
     try:
-        original_tensor = torch.tensor(request.field_data, dtype=torch.float32)
+        original_tensor = torch.tensor(request.field_data, dtype=torch.float64)
         original_field = PhysicalField(original_tensor)
         
         current_field = original_field
@@ -659,17 +685,33 @@ async def perturb_field(request: PerturbRequest):
                 current_field = PerturbationEngine.translate(current_field, pert.shift_x, pert.shift_y)
             elif p_type == "noise":
                 current_field = PerturbationEngine.add_noise(
-                    current_field, 
-                    pert.noise_type if pert.noise_type is not None else "gaussian", 
-                    pert.level if pert.level is not None else 0.1
+                    current_field,
+                    pert.noise_type if pert.noise_type is not None else "gaussian",
+                    pert.level if pert.level is not None else 0.1,
+                    seed=pert.seed,
                 )
             else:
                 raise HTTPException(status_code=400, detail=f"Unsupported perturbation type: {p_type}")
                 
         metrics = PerturbationEngine.compute_sensitivity_metrics(original_field, current_field)
+        # The provenance travels with the field. `seeded: false` is reported rather than
+        # hidden, because an unseeded draw is a real property of the result: nobody, including
+        # the person who ran it, can reproduce it.
+        provenance = [
+            {"type": p.type.lower(),
+             "seed": p.seed,
+             "seeded": p.seed is not None,
+             **({"noise_type": p.noise_type, "level": p.level}
+                if p.type.lower() == "noise" else {})}
+            for p in request.perturbations
+        ]
         return PerturbResponse(
             perturbed_field=current_field.data.tolist(),
-            metrics=metrics
+            metrics=metrics,
+            provenance=provenance,
+            reproducible=all(p["seeded"] for p in provenance
+                             if p["type"] == "noise") or not any(
+                                 p["type"] == "noise" for p in provenance),
         )
     except HTTPException:
         raise
@@ -680,12 +722,12 @@ async def perturb_field(request: PerturbRequest):
 @app.post("/api/v1/boundary/analyze", response_model=BoundaryResponse)
 async def analyze_boundary(request: BoundaryRequest):
     try:
-        data_tensor = torch.tensor(request.field_data, dtype=torch.float32)
+        data_tensor = torch.tensor(request.field_data, dtype=torch.float64)
         field = PhysicalField(data_tensor)
         
         ref_field = None
         if request.reference_field_data is not None:
-            ref_tensor = torch.tensor(request.reference_field_data, dtype=torch.float32)
+            ref_tensor = torch.tensor(request.reference_field_data, dtype=torch.float64)
             ref_field = PhysicalField(ref_tensor)
             
         analysis = BoundaryConditionLab.analyze_boundary_artefacts(
@@ -754,6 +796,160 @@ class ZarrCropRequest(BaseModel):
     levels: List[int] = Field(default_factory=list, description="Pressure levels in hPa.")
     n_levels_analysis: int = Field(4, ge=1, le=8,
                                   description="Wavelet levels the crop must support (R13).")
+
+
+class ExportFieldRequest(BaseModel):
+    """Export a 2D field with its coordinates and provenance (T3.5.23)."""
+
+    field_data: List[List[float]] = Field(..., description="2D array to export.")
+    format: str = Field("csv", description="csv, json, netcdf or zarr.")
+    coords: Dict[str, List[float]] = Field(default_factory=dict,
+                                           description="Coordinate vectors, e.g. {'lat': [...], 'lon': [...]}.")
+    metadata: Dict[str, Any] = Field(default_factory=dict,
+                                     description="Provenance to embed IN the file: source, seed, is_simulated, grid, units.")
+    variable: str = Field("field", description="Variable name used inside NetCDF/Zarr.")
+    units: Optional[str] = Field(None, description="Physical units of the values.")
+    name: str = Field("field", description="Filename stem; a UTC timestamp is appended.")
+
+
+class ExportTableRequest(BaseModel):
+    """Export a list of records - hypotheses, benchmarks, metrics, a spectrum."""
+
+    rows: List[Dict[str, Any]] = Field(..., description="Records to export.")
+    format: str = Field("csv", description="csv or json.")
+    columns: Optional[List[str]] = Field(None, description="Column order; inferred from the rows if omitted.")
+    metadata: Dict[str, Any] = Field(default_factory=dict, description="Provenance to embed in the file.")
+    name: str = Field("table", description="Filename stem; a UTC timestamp is appended.")
+
+
+@app.post("/api/v1/import/inspect")
+async def import_inspect(file: UploadFile = File(...)):
+    """Describe an uploaded file **without** committing to a 2D slice of it (T3.5.24).
+
+    Two calls on purpose. An ERA5 NetCDF is `(time, level, lat, lon)`; there is no single field
+    in it, and picking `[0, 0]` on the researcher's behalf would import a slice they did not
+    choose while every statistic downstream described that arbitrary timestep. This reports the
+    variables and which dimensions still need an index; `/import/field` then reads the one
+    they name.
+    """
+    from src.data_layer import importers
+
+    payload = await file.read()
+    try:
+        return importers.inspect(payload, file.filename or "upload")
+    except SpectralEarthError as e:
+        info = classify(e)
+        raise HTTPException(status_code=info["status_code"], detail=info["detail"])
+    except Exception as e:
+        logger.error("Import inspection failed: %s", e, exc_info=True)
+        raise HTTPException(status_code=400,
+                            detail="Could not read this file: %s" % type(e).__name__)
+
+
+@app.post("/api/v1/import/field")
+async def import_field(
+    file: UploadFile = File(...),
+    variable: Optional[str] = Form(None),
+    selection: Optional[str] = Form(None),
+):
+    """Read one 2D field out of an uploaded file, with reconstructed provenance.
+
+    `selection` is a JSON object pinning every non-spatial dimension by index, e.g.
+    `{"time": 0, "level": 2}`. The returned provenance records the filename, a content hash of
+    the exact bytes, the variable and the selection - so a finding can name the file it came
+    from rather than "a NetCDF someone uploaded".
+
+    `is_simulated` comes back **null** for a file of unknown origin rather than false: the
+    platform did not produce this data and asserting it is observational would be inventing a
+    fact. Where the file carries our own provenance block, the flag is inherited from it, so a
+    round trip cannot launder a simulated field into an apparently real one.
+    """
+    from src.data_layer import importers
+
+    payload = await file.read()
+    try:
+        parsed = json.loads(selection) if selection else None
+        if parsed is not None and not isinstance(parsed, dict):
+            raise InvalidParameterError("selection", parsed,
+                                        'a JSON object such as {"time": 0, "level": 2}')
+        return importers.read_field(payload, file.filename or "upload",
+                                    variable=variable, selection=parsed)
+    except json.JSONDecodeError:
+        raise HTTPException(
+            status_code=400,
+            detail='`selection` must be a JSON object such as {"time": 0, "level": 2}.')
+    except SpectralEarthError as e:
+        info = classify(e)
+        raise HTTPException(status_code=info["status_code"], detail=info["detail"])
+    except Exception as e:
+        logger.error("Import failed: %s", e, exc_info=True)
+        raise HTTPException(status_code=400,
+                            detail="Could not read this file: %s" % type(e).__name__)
+
+
+@app.post("/api/v1/export/field")
+async def export_field_endpoint(request: ExportFieldRequest):
+    """Serialise a field to CSV, JSON, NetCDF4 or a zipped Zarr store.
+
+    **Why the server does this rather than the browser.** CSV and JSON a browser could build;
+    NetCDF4 and Zarr it cannot - both need real binary writers, and a hand-rolled approximation
+    would produce files that open in some tools and not others, which is worse than none. Doing
+    all four here also means one code path decides what provenance is embedded, so a CSV and a
+    NetCDF of the same field carry the same record.
+
+    PNG and SVG are deliberately **not** here: those are rendered client-side from the live
+    plot, because a server-side re-render would be a different picture from the one on screen.
+    """
+    from fastapi.responses import Response
+
+    from src.data_layer import exporters
+
+    try:
+        payload = exporters.export_field(
+            request.field_data, request.format, coords=request.coords or None,
+            metadata=request.metadata, variable=request.variable, units=request.units)
+        name = exporters.filename(request.name, request.format.strip().lower())
+    except SpectralEarthError as e:
+        info = classify(e)
+        raise HTTPException(status_code=info["status_code"], detail=info["detail"])
+    except Exception as e:
+        logger.error("Export failed: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail="Export failed: %s" % type(e).__name__)
+
+    return Response(
+        content=payload,
+        media_type=exporters.MEDIA_TYPES[request.format.strip().lower()],
+        headers={"Content-Disposition": 'attachment; filename="%s"' % name,
+                 # Without this the browser cannot read the header it needs to name the file.
+                 "Access-Control-Expose-Headers": "Content-Disposition"},
+    )
+
+
+@app.post("/api/v1/export/table")
+async def export_table_endpoint(request: ExportTableRequest):
+    """Serialise a table of records to CSV or JSON, provenance embedded."""
+    from fastapi.responses import Response
+
+    from src.data_layer import exporters
+
+    try:
+        payload = exporters.export_table(
+            request.rows, request.format, columns=request.columns,
+            metadata=request.metadata)
+        name = exporters.filename(request.name, request.format.strip().lower())
+    except SpectralEarthError as e:
+        info = classify(e)
+        raise HTTPException(status_code=info["status_code"], detail=info["detail"])
+    except Exception as e:
+        logger.error("Table export failed: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail="Export failed: %s" % type(e).__name__)
+
+    return Response(
+        content=payload,
+        media_type=exporters.MEDIA_TYPES[request.format.strip().lower()],
+        headers={"Content-Disposition": 'attachment; filename="%s"' % name,
+                 "Access-Control-Expose-Headers": "Content-Disposition"},
+    )
 
 
 @app.get("/api/v1/data/zarr/catalogue")
@@ -986,8 +1182,8 @@ async def slice_dataset(request: SliceRequest):
 @app.post("/api/v1/analysis/diagnostics", response_model=DiagnosticsResponse)
 async def compute_diagnostics(request: DiagnosticsRequest):
     try:
-        forecast_tensor = torch.tensor(request.forecast_data, dtype=torch.float32)
-        gt_tensor = torch.tensor(request.ground_truth_data, dtype=torch.float32)
+        forecast_tensor = torch.tensor(request.forecast_data, dtype=torch.float64)
+        gt_tensor = torch.tensor(request.ground_truth_data, dtype=torch.float64)
         
         forecast_field = PhysicalField(forecast_tensor)
         gt_field = PhysicalField(gt_tensor)
@@ -1014,8 +1210,8 @@ async def decompose_errors(request: ErrorDecompositionRequest):
         lead_time_decomp = None
         
         if request.forecast_data is not None and request.ground_truth_data is not None:
-            f_tensor = torch.tensor(request.forecast_data, dtype=torch.float32)
-            g_tensor = torch.tensor(request.ground_truth_data, dtype=torch.float32)
+            f_tensor = torch.tensor(request.forecast_data, dtype=torch.float64)
+            g_tensor = torch.tensor(request.ground_truth_data, dtype=torch.float64)
             
             scale_decomp = ErrorDecompositionEngine.decompose_by_scale(f_tensor, g_tensor)
             boundary_decomp = ErrorDecompositionEngine.decompose_by_boundary(
@@ -1023,8 +1219,8 @@ async def decompose_errors(request: ErrorDecompositionRequest):
             )
             
         if request.forecast_series is not None and request.ground_truth_series is not None and request.lead_times is not None:
-            f_series = [torch.tensor(f, dtype=torch.float32) for f in request.forecast_series]
-            g_series = [torch.tensor(g, dtype=torch.float32) for g in request.ground_truth_series]
+            f_series = [torch.tensor(f, dtype=torch.float64) for f in request.forecast_series]
+            g_series = [torch.tensor(g, dtype=torch.float64) for g in request.ground_truth_series]
             
             lead_time_decomp = ErrorDecompositionEngine.decompose_by_lead_time(
                 f_series, g_series, request.lead_times

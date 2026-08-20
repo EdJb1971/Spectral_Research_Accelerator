@@ -57,3 +57,7 @@ gcsfs>=2023.5.0
 # that could not work. scipy alone reads only NetCDF3 classic.
 h5netcdf>=1.1.0
 h5py>=3.8.0
+
+# Multipart form parsing, required by FastAPI's UploadFile (T3.5.24). Without it the import
+# endpoints raise at import time, not at request time - a startup failure rather than a 500.
+python-multipart>=0.0.6

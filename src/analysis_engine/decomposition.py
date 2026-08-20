@@ -20,8 +20,8 @@ class ErrorDecompositionEngine:
         err_fft = torch.fft.fft2(error)
         err_fft_shifted = torch.fft.fftshift(err_fft)
         
-        y = torch.arange(H, dtype=torch.float32, device=forecast.device) - H // 2
-        x = torch.arange(W, dtype=torch.float32, device=forecast.device) - W // 2
+        y = torch.arange(H, dtype=torch.float64, device=forecast.device) - H // 2
+        x = torch.arange(W, dtype=torch.float64, device=forecast.device) - W // 2
         grid_y, grid_x = torch.meshgrid(y, x, indexing="ij")
         r = torch.sqrt(grid_y**2 + grid_x**2)
         
@@ -66,8 +66,8 @@ class ErrorDecompositionEngine:
         H, W = forecast.shape
         error = forecast - ground_truth
         
-        y_indices = torch.arange(H, dtype=torch.float32, device=forecast.device)
-        x_indices = torch.arange(W, dtype=torch.float32, device=forecast.device)
+        y_indices = torch.arange(H, dtype=torch.float64, device=forecast.device)
+        x_indices = torch.arange(W, dtype=torch.float64, device=forecast.device)
         grid_y, grid_x = torch.meshgrid(y_indices, x_indices, indexing="ij")
         
         dist_left = grid_x

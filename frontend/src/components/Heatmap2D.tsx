@@ -6,6 +6,14 @@ interface Heatmap2DProps {
   title?: string;
   colormap?: 'viridis' | 'coolwarm' | 'jet';
   coords?: Record<string, number[]>;
+  /** Physical units of the values. Shown on the colour bar - an unlabelled colour bar is a
+   *  number without a meaning, and the backend has carried units since T3.5.13. */
+  units?: string | null;
+  /** Axis labels including their own units, e.g. "longitude (degrees east)". */
+  xLabel?: string;
+  yLabel?: string;
+  /** DOM id, so FigureExport can find this exact plot to render to PNG/SVG. */
+  divId?: string;
 }
 
 export const Heatmap2D: React.FC<Heatmap2DProps> = ({
@@ -13,6 +21,10 @@ export const Heatmap2D: React.FC<Heatmap2DProps> = ({
   title,
   colormap = 'viridis',
   coords,
+  units,
+  xLabel,
+  yLabel,
+  divId,
 }) => {
   let colorscale: string | any[][] = 'Viridis';
   if (colormap === 'coolwarm') {
@@ -41,6 +53,10 @@ export const Heatmap2D: React.FC<Heatmap2DProps> = ({
               type: 'heatmap',
               colorscale: colorscale,
               showscale: true,
+              colorbar: units ? { title: { text: units, side: 'right' } } : undefined,
+              hovertemplate: units
+                ? `%{x}, %{y}<br>%{z:.6g} ${units}<extra></extra>`
+                : '%{x}, %{y}<br>%{z:.6g}<extra></extra>',
             },
           ]}
           layout={{
@@ -49,9 +65,14 @@ export const Heatmap2D: React.FC<Heatmap2DProps> = ({
             paper_bgcolor: 'rgba(0,0,0,0)',
             plot_bgcolor: 'rgba(0,0,0,0)',
             font: { color: '#94a3b8', size: 10 },
-            xaxis: { gridcolor: '#1e293b', zeroline: false },
-            yaxis: { gridcolor: '#1e293b', zeroline: false },
+            xaxis: { title: xLabel ? { text: xLabel } : undefined, gridcolor: '#1e293b', zeroline: false },
+            yaxis: { title: yLabel ? { text: yLabel } : undefined, gridcolor: '#1e293b', zeroline: false },
           }}
+          config={{
+            displaylogo: false,
+            toImageButtonOptions: { format: 'png', filename: title || 'field', scale: 2 },
+          }}
+          divId={divId}
           useResizeHandler={true}
           className="w-full h-80"
         />

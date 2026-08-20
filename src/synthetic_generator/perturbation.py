@@ -14,10 +14,15 @@ class PerturbationEngine:
         cos_t = np.cos(angle_rad)
         sin_t = np.sin(angle_rad)
 
+        # dtype follows the *data*, not a literal. A hard-coded float32 theta raised
+        # "expected scalar type Double but found Float" the moment the API stopped
+        # downcasting incoming fields (D36) - `grid_sample` requires both to match. Deriving
+        # it from the input is also the only version that keeps working on a float16 or
+        # bfloat16 device later.
         theta = torch.tensor([
             [cos_t, -sin_t, tx],
             [sin_t,  cos_t, ty]
-        ], dtype=torch.float32, device=data.device).unsqueeze(0)
+        ], dtype=data.dtype, device=data.device).unsqueeze(0)
 
         x = data.unsqueeze(0).unsqueeze(0)
         grid = torch.nn.functional.affine_grid(theta, x.size(), align_corners=True)

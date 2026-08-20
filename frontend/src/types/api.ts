@@ -33,6 +33,10 @@ export interface PerturbationItem {
   shift_y?: number;
   noise_type?: string;
   level?: number;
+  /** Defect D34: the engine has taken a seed since T3.5.12, but the API never passed one, so
+   *  every perturbation requested over HTTP was irreproducible. Omit for an unseeded draw -
+   *  which the response then reports as `reproducible: false`. */
+  seed?: number | null;
 }
 
 export interface PerturbRequest {
@@ -49,6 +53,8 @@ export interface PerturbResponse {
     structural_similarity_index: number;
     spectral_energy_shift: number;
   };
+  provenance?: Array<Record<string, any>>;
+  reproducible?: boolean;
 }
 
 export interface BoundaryRequest {
@@ -79,6 +85,13 @@ export interface DatasetMetadata {
   id: string;
   name: string;
   description: string;
+  // The backend has returned these since T3.5.15 and the frontend type omitted all four, so
+  // the UI could not have shown them even if it had tried. `is_simulated` is the one fact
+  // that changes what every number derived from this dataset means.
+  is_simulated?: boolean;
+  fallback_reason?: string | null;
+  source_kind?: string;
+  source_path?: string | null;
   variables: string[];
   variables_metadata?: Record<string, any>;
   pressure_levels: number[] | null;
@@ -112,6 +125,25 @@ export interface DiagnosticsRequest {
   ground_truth_data: number[][];
 }
 
+/** A power-law fit. `slope_standard_error` is not optional decoration: a slope quoted without
+ *  its uncertainty cannot be compared against Kolmogorov -5/3 or Charney -3, which is the only
+ *  reason to measure it. */
+export interface SlopeAnalysis {
+  slope_beta: number;
+  slope_standard_error?: number;
+  intercept_ln_c: number;
+  r_squared: number;
+  regime_interpretation: string;
+  convention?: string;
+  beta_energy_1d?: number;
+  beta_density_2d?: number;
+  n_points?: number;
+  k_min?: number;
+  k_max?: number;
+  weighting?: string;
+  assumptions?: string[];
+}
+
 export interface DiagnosticsResponse {
   spatial_metrics: {
     mean_squared_error: number;
@@ -126,23 +158,31 @@ export interface DiagnosticsResponse {
     gradient_direction_mae_rad: number;
     gradient_direction_mae_deg: number;
   };
+  // Physical units and the spectral convention, returned by the backend since T3.5.13 and
+  // absent from this type until T3.5.23 - so the UI could not have displayed them. R15: the
+  // same field has different exponents under E(k) and S(k), and an unlabelled slope is not an
+  // interpretable number.
+  grid?: {
+    kind: string;
+    shape: number[];
+    dx: number;
+    dy: number;
+    length_units: string;
+    variable_units?: string | null;
+    description: string;
+  };
   spectral_diagnostics: {
+    k_units?: string;
+    power_units?: string;
+    convention?: string;
+    convention_note?: string;
+    warnings?: string[];
     wavenumbers: number[];
     forecast_psd: number[];
     ground_truth_psd: number[];
     spectral_coherence: number[];
-    forecast_slope_analysis?: {
-      slope_beta: number;
-      intercept_ln_c: number;
-      r_squared: number;
-      regime_interpretation: string;
-    };
-    ground_truth_slope_analysis?: {
-      slope_beta: number;
-      intercept_ln_c: number;
-      r_squared: number;
-      regime_interpretation: string;
-    };
+    forecast_slope_analysis?: SlopeAnalysis;
+    ground_truth_slope_analysis?: SlopeAnalysis;
   };
   wavelet_energy: {
     levels: number;
@@ -295,7 +335,7 @@ export interface BenchmarkResponse {
   gates: string[];
   is_null: boolean;
   known_answer: Record<string, any>;
-  checks: any[];
+  checks: BenchmarkCheckResponse[];
 }
 
 export interface DataSourceInfo {
@@ -381,4 +421,88 @@ export interface ZarrCachedResponse {
     megabytes_transferred: number;
     elapsed_s: number;
   }>;
+}
+
+// ---------------------------------------------------------------- export (T3.5.23)
+
+export interface ExportFieldRequest {
+  field_data: number[][];
+  format: string;
+  coords: Record<string, number[]>;
+  metadata: Record<string, any>;
+  variable: string;
+  units: string | null;
+  name: string;
+}
+
+export interface ExportTableRequest {
+  rows: Record<string, any>[];
+  format: string;
+  columns: string[] | null;
+  metadata: Record<string, any>;
+  name: string;
+}
+
+export interface ExportResult {
+  blob: Blob;
+  filename: string;
+}
+
+// ---------------------------------------------------------------- import (T3.5.24)
+
+export interface ImportInspectResponse {
+  filename: string;
+  format: string;
+  bytes: number;
+  content_hash: string;
+  variables: Record<string, {
+    dims: string[];
+    shape: number[];
+    dtype?: string;
+    units?: string | null;
+    spatial_dims?: string[] | null;
+    extra_dims: Record<string, number>;
+  }>;
+  default_variable: string;
+  embedded_provenance: Record<string, any>;
+  needs_selection: boolean;
+  coords: Record<string, number[]>;
+}
+
+export interface ImportFieldResponse {
+  field_data: number[][];
+  coords: Record<string, number[]>;
+  units: string | null;
+  variable: string;
+  provenance: Record<string, any>;
+}
+
+// ---------------------------------------------------------------- benchmark runs
+
+export interface BenchmarkCheckResponse {
+  stage: string;
+  outcome: string;
+  detail: string;
+  measured?: Record<string, any> | null;
+}
+
+export interface BenchmarkSuiteResponse {
+  root_seed: number;
+  passed: number;
+  failed: number;
+  not_yet_runnable: number;
+  null_failures: string[];
+  benchmarks: BenchmarkResponse[];
+}
+
+// ---------------------------------------------------------------- registries
+
+export interface RegistryEntry {
+  name: string;
+  description: string;
+  params?: Record<string, any>;
+  capabilities?: Record<string, any>;
+  tags?: string[];
+  defined_in?: string;
+  node_type?: string;
 }

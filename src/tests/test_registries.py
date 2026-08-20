@@ -34,6 +34,10 @@ from src.experiment_engine import actions as pipeline_actions
 from src.physical_core.field import PhysicalField
 from src.transform_engine import registry as transform_registry
 
+#: Repo root, for the subprocess check at the end of this module. Paths elsewhere here are
+#: relative because pytest is run from the root; the subprocess needs it explicitly.
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 CORE_FILES = ("src/experiment_engine/engine.py",
               "src/data_layer/adapters.py",
               "src/api/main.py")
@@ -396,3 +400,38 @@ def test_api_does_not_leak_internals_on_a_genuine_fault(client, monkeypatch):
                              "transform_type": "fft"})
     assert resp.status_code == 500
     assert "/secret/path" not in resp.json()["detail"]
+
+
+def test_every_shipped_source_is_registered_at_import_time():
+    """Defect D35: registration by import side effect is order-dependent.
+
+    `src/api/main.py` must import every source module at load, not leave one to be imported
+    lazily inside a handler. Measured on the running platform before the fix:
+    `GET /data/sources` returned two sources on a fresh process and three after the ERA5 tab
+    had been visited - so the fallback chain `resolve()` searched depended on the order the
+    researcher had clicked through the UI. A source that is sometimes in the chain is worse
+    than one that never is: the same request can be served by different sources on two
+    identical machines.
+
+    Checked in a **subprocess**, because that is the claim: a fresh interpreter that imports
+    only the API must end up with every source registered. Asserting it in-process would pass
+    on whatever this module's other tests happened to leave behind, which is the exact class
+    of order-dependence being tested for.
+    """
+    import subprocess
+    import sys
+
+    script = (
+        "import src.api.main;"
+        "from src.data_layer.sources import SOURCES;"
+        "print(','.join(sorted(SOURCES.names())))"
+    )
+    completed = subprocess.run(
+        [sys.executable, "-c", script], cwd=REPO_ROOT, capture_output=True, text=True)
+    assert completed.returncode == 0, completed.stderr[-2000:]
+    registered = set(completed.stdout.strip().splitlines()[-1].split(","))
+    expected = {"netcdf_local", "simulated", "era5_zarr"}
+    assert expected <= registered, (
+        "importing the API is not enough to register %s - they are being imported lazily "
+        "inside a handler, so the fallback chain depends on which endpoint was called first"
+        % sorted(expected - registered))

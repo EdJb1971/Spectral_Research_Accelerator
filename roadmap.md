@@ -12,7 +12,7 @@ Everything below either serves that question or gets cut.
 ## 1. Honest Technical Status
 
 Verified against the code on 2026-08-20. Every claim here is backed by captured output in
-`VERIFICATION.md`; `architecture.md` Section 7 holds the full defect ledger (D1-D33, of which **31 fixed, 1 partial (D18), 1 open (D17)**).
+`VERIFICATION.md`; `architecture.md` Section 7 holds the full defect ledger (D1-D37, of which **35 fixed, 1 partial (D18), 1 open (D17)**).
 
 The numbers in this table are checked by `src/tests/test_documentation.py`, which parses them
 out of this file and compares them against the source. That guard exists because this table
@@ -22,7 +22,7 @@ status section, it is a memory.
 
 | Area | Real status |
 |---|---|
-| Backend test suite | **548 passed, 1 xfailed.** Plus one skipped by design: the live-GCS check is opt-in. Trajectory: 19 written / 1 failing / uncollectable -> 65 -> 152 -> 222 -> 271 -> 351 -> 407 -> 449 -> 478 -> 535 -> 548. |
+| Backend test suite | **647 passed, 1 xfailed.** Plus one skipped by design: the live-GCS check is opt-in. Trajectory: 19 written / 1 failing / uncollectable -> 65 -> 152 -> 222 -> 271 -> 351 -> 407 -> 449 -> 478 -> 535 -> 548 -> 593 -> 642 -> 647. |
 | Ground-Truth Benchmark Suite | **15 PASS, 0 FAIL, 2 NOT_YET_RUNNABLE.** Nine datasets with declared known answers, five of them nulls. CI-ready via `python -m src.benchmarks` (exit 0). |
 | Backend compute modules | **Written, executed and tested.** `physical_core` carries `GridSpec` + metric-aware operators; `analysis_engine` gained `spectra.py` and `climatology.py`; `transform_engine` gained the undecimated `stationary.py` and a real `dtcwt.py`; `statistics/` and `core/` are new packages. |
 | Physical units and wavenumbers | **Correct as of T3.5.13.** Gradients metric-aware, spectra on a physical `k` axis, domain statistics area-weighted, and every quantity carries its units. Previously all of it was pixel-space and unlabelled (D13). |
@@ -35,8 +35,8 @@ status section, it is a memory.
 | Error reporting | **Taxonomy in place as of T3.5.14** (D14 closed). `SpectralEarthError` subclasses carry their own status code and client-safety, so an HTTP status follows from the error *kind* rather than from the call site. |
 | HPC / executor seam | **In place as of T3.5.19.** Serial / thread / process backends behind one interface, submission-order results, thread-budget control and SQLite WAL + `busy_timeout`. Measured honestly: on this workload **serial beat thread(4) and process(4)**, because PyTorch already parallelises the FFT across cores. Cross-device CPU/CUDA/MPS agreement is **not** verified — this machine is CPU-only (D18, partial). |
 | Schema migrations | **In place as of T3.5.8** (D32 closed). Two Alembic revisions, `ensure_schema` at startup, drift against the ORM checked by test. `create_all` had silently left the repository's own database unqueryable. PostgreSQL is verified only as *rendered* DDL, not executed. |
-| FastAPI surface | **23 endpoints**, executed and smoke-tested. CORS, health and collection endpoints all added (T3.5.2, T3.5.10). Health now reports device, executor, SQLite pragmas and schema revision. |
-| React frontend | **Nine modules, wired to the backend** (T3.5.22). Health/device/executor/schema, the benchmark suite, the data-source chain with its simulated flags, the ERA5 crop inspector and per-hypothesis statistics are all reachable now; `tsc` is clean and the build emits 1,378 modules. A contract test asserts every fetched path is served and every field the UI reads exists. **Rendered appearance in a browser still unverified** - no browser is available here, so T3.5.0's screenshot-per-tab criterion remains open. |
+| FastAPI surface | **27 endpoints**, executed and smoke-tested. CORS, health and collection endpoints all added (T3.5.2, T3.5.10). Health now reports device, executor, SQLite pragmas and schema revision. |
+| React frontend | **Nine modules, wired to the backend, and no longer able to fabricate a result** (T3.5.22/T3.5.23). Export in CSV/JSON/NetCDF4/Zarr/PNG/SVG with provenance embedded in the file; units, spectral convention and slope uncertainty displayed; simulated data labelled where it is used. Health/device/executor/schema, the benchmark suite, the data-source chain with its simulated flags, the ERA5 crop inspector and per-hypothesis statistics are all reachable now; `tsc` is clean and the build emits 1,378 modules. A contract test asserts every fetched path is served and every field the UI reads exists. **Rendered in a browser and confirmed working by the user on 2026-08-20** (T3.5.25) - the platform was started, both servers came up, and the nine tabs were reported working. No screenshots were captured, so that confirmation is a **user report rather than an artefact in the repository**; T3.5.0 asked for a screenshot per tab and that literal evidence is still absent. |
 | Real ERA5 data | **Reading the live archive as of T3.5.18.** Regional crops stream from public WeatherBench 2 Zarr on GCS into a rechunked local cache: 257x257 x 4 levels x 8 days materialised in 186 s (951 MB wire, 19 MB cached, 51.1x chunk amplification measured against 51.1x predicted). Network access is opt-in; a cached crop works offline. **A one-year crop at the R13 floor is 79 GB and ~2 h - measured, not achievable at laptop tier, and stated as such.** |
 | Vectorisation | **Partial** (D17). The radial PSD and coherence paths are vectorised; per-bin Python loops remain in `decompose_by_boundary` and `analyze_boundary_artefacts`. |
 
@@ -313,6 +313,8 @@ The data spine running through all of it: `PhysicalField` -> `FieldSequence` (4A
 ### T3.5.0 Establish a verified baseline *(blocks all)*
 Create a venv, `pip install -r requirements.txt`, `npm install` in `frontend/`, run the full test suite, run both servers, load the UI, exercise all seven tabs.
 **Acceptance:** a `VERIFICATION.md` recording actual command output - test pass/fail counts, `npm run build` output with emitted asset names and sizes, and a screenshot per tab. No claim of "validated" appears anywhere in the repo without corresponding output in this file.
+
+**Met except for the screenshots.** `VERIFICATION.md` records captured output for every slice; `npm run build` output with asset names and sizes is recorded; both servers were started and the nine tabs confirmed working by the user on 2026-08-20 (T3.5.25). **No screenshot per tab has been captured**, so that one clause is outstanding - the rendering is attested, not evidenced.
 
 ### T3.5.1 Fix the failing test and test collection *(D3, D4)*
 Give `execute_experiment` an injectable session factory: `execute_experiment(experiment_id, session_factory=None)` defaulting to `SessionLocal`. Pass the test's factory in `test_experiments.py`. Add `src/tests/conftest.py` inserting the repo root on `sys.path`.
@@ -643,12 +645,86 @@ R7 non-causality caveat. A finding with no correction is shown with an explicit 
 than silently, because a card that looks the same either way is what made the original defect
 invisible.
 
-**Not met, and unchanged: the UI has still never been seen.** T3.5.0's acceptance criterion asks
-for a screenshot per tab. No browser is available in this environment, so the nine tabs are
-verified to compile, to call routes that exist, and to read fields that are present — and **not**
-to render. `test_browser_rendering_is_still_recorded_as_unverified` asserts that this sentence
-stays in this file for as long as it is true, because a green suite plus a green build is exactly
-the combination that makes people assume otherwise.
+**Since met, in part, and the part matters.** At the time of writing this task the UI had never
+been seen: no browser was available here, so the nine tabs were verified to compile, to call
+routes that exist and to read fields that are present — and **not** to render. On 2026-08-20 the
+platform was started (T3.5.25) and the user confirmed the nine tabs render and work. What is
+still absent is the *captured* evidence T3.5.0 asked for: no screenshot per tab exists in this
+repository, so the rendering claim rests on a user's report rather than on an artefact anyone can
+re-examine. `test_browser_rendering_evidence_is_described_accurately` keeps that distinction in
+this file, because "someone said it looked fine" and "here is the image" are not the same claim.
+
+### T3.5.23 Scientific integrity and export in the UI - **DONE**
+Delete every browser-side fabrication path; label simulated data where it is used; display the
+units, the spectral convention and the slope uncertainty the backend already returns; export
+fields and tables in the formats a researcher opens.
+**Acceptance:** no code path computes a result without the backend; `is_simulated` is visible on
+the tab that uses the data; CSV/JSON/NetCDF4/Zarr/PNG/SVG all round-trip with provenance embedded
+in the file.
+
+**Met.** 55 new tests (32 export round trips, 23 contract and integrity guards); suite 548 -> 593.
+
+*   **~14 fabrication paths deleted.** An unreachable backend used to make the UI invent fields,
+    transforms, diagnostics, boundary analyses and experiment IDs. A header badge said "Offline
+    Sandbox Mock Mode"; individual results said nothing, so a spectral slope from `Math.random()`
+    looked exactly like one from ERA5. A test now asserts no `if (backendConnected)` branch
+    survives - with no backend there is no data, and the UI says so.
+*   **Export, which did not exist at all.** `grep` for `download|export|Blob|csv` across the
+    frontend previously returned nothing. Four data formats now round-trip through the library a
+    researcher would use, asserted by reopening each file; PNG/SVG render client-side because a
+    server re-render would be a different picture from the one on screen.
+*   **Provenance inside the file**, flattened with dotted keys for NetCDF attributes rather than
+    dropped, with the simulated and unreproducible warnings *derived* so no export path can omit
+    them.
+*   **D34, found while doing it:** the perturbation endpoint never passed a seed, so every
+    perturbation over HTTP was irreproducible; the frontend then built its synthetic forecast
+    with unseeded `Math.random()`, uniform despite the control being labelled StDev.
+*   **Two unconditional validation badges removed** from the transform tab - green ticks shown
+    whatever the measured error was - replaced by the measurement judged against a stated 1e-9
+    tolerance.
+
+**A self-inflicted defect worth recording.** The LaTeX cleanup replaced `$...$` literals across
+App.tsx with a blanket substitution, and `${k}=${v}` in two template literals matched the
+pattern. `tsc` caught it as an unused destructure; nothing else would have. Blanket text
+substitution over source is a refactor, not a formatting fix, and should be treated as one.
+
+**Still not met:** browser rendering. No browser is available here, so T3.5.0's screenshot-per-tab
+criterion remains open, and the export controls have never been *clicked* - only proved to compile,
+to call routes that exist, and to produce files that reopen correctly on the server side.
+### T3.5.24 Import, evidence on demand, and capability discovery - **DONE**
+Read user-supplied fields back in; make the benchmark suite runnable from the UI; surface the
+registries. Close the last four served-but-unreachable endpoints.
+**Acceptance:** every format the platform exports imports back with values, coords, units and
+provenance intact; a multidimensional file refuses to guess which slice; no served route is
+unreachable from the UI.
+
+**Met.** 40 new tests (35 import, 5 UI contract); suite 593 -> 642. `tsc` clean, build passes.
+
+*   **Import in four formats**, every test round-tripping through `exporters` rather than a
+    hand-written fixture - a fixture can encode the same misunderstanding twice.
+*   **A 4D file refuses to guess.** An ERA5 `(time, level, lat, lon)` file has no single field
+    in it; taking `[0, 0]` silently would import a slice the researcher did not choose while
+    every statistic described that arbitrary timestep. `inspect` reports the axes, `read_field`
+    refuses until each is pinned, and the indices go into the provenance.
+*   **Axes identified by name before position.** `(lat, lon, time)` read positionally comes back
+    **transposed**, and a transposed field still looks like a field - every orientation and
+    anisotropy statistic derived from it would be wrong undetectably.
+*   **A round trip cannot launder simulated data**, asserted for all four formats. Unknown-origin
+    files report `is_simulated: null` rather than `false`, and the UI renders that third state as
+    "origin unknown" rather than as observational.
+*   **Zip path traversal refused.** `extractall` follows `..`; this is the one place the platform
+    accepts arbitrary bytes from outside itself.
+*   **The benchmark suite is runnable from the UI** at a chosen root seed, with the three
+    outcomes kept separate on screen and a distinct alarm when a *null* benchmark reports a
+    discovery. Results export as a table.
+*   **The registries are browsable** with their capability flags, generated rather than listed.
+*   **A test now asserts no served route is unreachable from the UI**, and any exemption must
+    name its reason inside the test.
+
+**Still not met:** browser rendering (T3.5.0), accessibility, and the decomposition of
+`App.tsx`. The import panel, the benchmark runner and the registry tables are proved to compile,
+to call routes that exist and to exchange payloads whose every field is present - and have never
+been seen on screen.
 
 ---
 

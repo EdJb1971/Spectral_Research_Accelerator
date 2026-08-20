@@ -2,6 +2,9 @@ import { useState, useEffect } from 'react';
 import { Heatmap2D } from './components/Heatmap2D';
 import { LineChart } from './components/LineChart';
 import { LineageGraph } from './components/LineageGraph';
+import { FieldExportBar, TableExportBar } from './components/ExportBar';
+import { FigureExport } from './components/FigureExport';
+import { FieldImport } from './components/FieldImport';
 import { apiService } from './services/api';
 import * as types from './types/api';
 import {
@@ -29,7 +32,9 @@ import {
   AlertTriangle,
   Cloud,
   HardDrive,
-  Search
+  Search,
+  WifiOff,
+  Boxes
 } from 'lucide-react';
 
 export default function App() {
@@ -45,6 +50,13 @@ export default function App() {
   const [zarrCatalogue, setZarrCatalogue] = useState<types.ZarrCatalogueResponse | null>(null);
   const [zarrCached, setZarrCached] = useState<types.ZarrCachedResponse | null>(null);
   const [zarrInspection, setZarrInspection] = useState<types.ZarrInspectResponse | null>(null);
+  // T3.5.24: evidence a researcher can generate, and capabilities they can discover.
+  const [benchmarkRun, setBenchmarkRun] = useState<types.BenchmarkSuiteResponse | null>(null);
+  const [benchmarkSeed, setBenchmarkSeed] = useState(20260819);
+  const [benchmarkRunning, setBenchmarkRunning] = useState(false);
+  const [registryTransforms, setRegistryTransforms] = useState<types.RegistryEntry[]>([]);
+  const [registryActions, setRegistryActions] = useState<types.RegistryEntry[]>([]);
+  const [importedProvenance, setImportedProvenance] = useState<Record<string, any> | null>(null);
   const [zarrCrop, setZarrCrop] = useState<types.ZarrCropRequest>({
     store: 'era5_0p25_6h',
     variables: ['temperature'],
@@ -134,6 +146,10 @@ export default function App() {
 
   // --- TAB 5 STATE: Analysis & Diagnostics ---
   const [forecastNoise, setForecastNoise] = useState(0.15);
+  // An explicit, visible seed. A diagnostic whose input cannot be regenerated is not a
+  // measurement of anything, and the seed has to be on screen for the run to be quotable.
+  const [forecastSeed, setForecastSeed] = useState(20260820);
+  const [forecastProvenance, setForecastProvenance] = useState<any | null>(null);
   const [diagnosticsResults, setDiagnosticsResults] = useState<types.DiagnosticsResponse | null>(null);
   const [scaleDecompResults, setScaleDecompResults] = useState<types.ErrorDecompositionResponse['scale_decomposition'] | null>(null);
   const [boundaryDecompResults, setBoundaryDecompResults] = useState<types.ErrorDecompositionResponse['boundary_decomposition'] | null>(null);
@@ -196,35 +212,19 @@ export default function App() {
       setBackendConnected(true);
       setError(null);
     } catch (err: any) {
-      console.warn("Could not connect to FastAPI backend: ", err.message);
+      // The backend is unreachable. Previously this substituted fabricated datasets and every
+      // tab fell back to fabricating results in the browser - fields, transforms, diagnostics,
+      // even experiment IDs - with nothing on the individual result saying so. A spectral slope
+      // computed from `Math.random()` looked exactly like one computed from ERA5. Every one of
+      // those paths has been deleted: with no backend there is no data, and the UI says so.
       setBackendConnected(false);
-      // Fallback local datasets
-      setDatasets(getMockDatasets());
+      setDatasets([]);
+      setError(
+        `Backend unreachable at /api/v1 (${err.message}). Nothing can be computed until it is ` +
+        `running - start it with start_platform.ps1. No results are fabricated in its absence.`
+      );
     }
   };
-
-  const getMockDatasets = (): types.DatasetMetadata[] => [
-    {
-      id: "era5_reanalysis",
-      name: "Era5 Reanalysis (Local Mock)",
-      description: "Simulated ERA5 Reanalysis Dataset",
-      variables: ["t2m", "z"],
-      pressure_levels: [1000, 850, 500, 300, 200],
-      time_range: ["2023-01-01", "2023-01-05"],
-      spatial_resolution: "2.0 degree",
-      bounding_box: { lat_min: -90, lat_max: 90, lon_min: -180, lon_max: 180 }
-    },
-    {
-      id: "gfs_forecast",
-      name: "GFS Forecast (Local Mock)",
-      description: "Simulated GFS Forecast Dataset",
-      variables: ["t2m", "z", "u", "v"],
-      pressure_levels: [1000, 850, 500, 300],
-      time_range: ["2023-01-01", "2023-01-02"],
-      spatial_resolution: "2.0 degree",
-      bounding_box: { lat_min: -90, lat_max: 90, lon_min: -180, lon_max: 180 }
-    }
-  ];
 
   // --- MUTATORS & ACTIONS ---
 
@@ -254,8 +254,6 @@ export default function App() {
           amplitude: frontAmp
         };
       }
-
-      if (backendConnected) {
         const res = await apiService.generateSynthetic({
           type: genType,
           height: gridSize,
@@ -265,13 +263,7 @@ export default function App() {
         setPrimaryField(res.field_data);
         setPrimaryCoords(res.coords);
         setPrimaryMetadata(res.metadata);
-      } else {
-        // Mock Generator
-        const simulated = runMockFieldGenerator(genType, gridSize, params);
-        setPrimaryField(simulated.field_data);
-        setPrimaryCoords(simulated.coords);
-        setPrimaryMetadata(simulated.metadata);
-      }
+      
       setPerturbedField(null);
       setPerturbationMetrics(null);
     } catch (err: any) {
@@ -281,45 +273,6 @@ export default function App() {
     }
   };
 
-  const runMockFieldGenerator = (type: string, size: number, params: any) => {
-    const data: number[][] = [];
-    const yArr = Array.from({ length: size }, (_, i) => i / (size - 1));
-    const xArr = Array.from({ length: size }, (_, i) => i / (size - 1));
-    for (let r = 0; r < size; r++) {
-      const row: number[] = [];
-      const yVal = yArr[r];
-      for (let c = 0; c < size; c++) {
-        const xVal = xArr[c];
-        let term = 0.0;
-        if (type === 'sinusoid') {
-          const freqs = params.frequencies?.[0] || [2, 2];
-          const amp = params.amplitudes?.[0] || 1.0;
-          term = amp * Math.sin(2 * Math.PI * freqs[0] * xVal) * Math.cos(2 * Math.PI * freqs[1] * yVal);
-        } else if (type === 'vortex') {
-          const center = params.centers?.[0] || [0.5, 0.5];
-          const amp = params.amplitudes?.[0] || 1.0;
-          const r_core = params.core_radii?.[0] || 0.1;
-          const dist2 = Math.pow(xVal - center[0], 2) + Math.pow(yVal - center[1], 2);
-          term = amp * Math.exp(-dist2 / (2 * r_core * r_core));
-        } else {
-          // Front
-          const angleRad = (params.angle || 0.0) * Math.PI / 180.0;
-          const offset = params.offset || 0.0;
-          const width = params.width_param || 0.1;
-          const amp = params.amplitude || 1.0;
-          const proj = (xVal - 0.5) * Math.cos(angleRad) + (yVal - 0.5) * Math.sin(angleRad) - offset;
-          term = amp * Math.tanh(proj / width);
-        }
-        row.push(term);
-      }
-      data.push(row);
-    }
-    return {
-      field_data: data,
-      coords: { x: xArr, y: yArr },
-      metadata: { type, simulated: true, ...params }
-    };
-  };
 
   // Add Perturbation Step
   const addPerturbation = () => {
@@ -341,29 +294,13 @@ export default function App() {
     setLoading(true);
     setError(null);
     try {
-      if (backendConnected) {
-        const res = await apiService.perturbField({
-          field_data: primaryField,
-          perturbations
-        });
-        setPerturbedField(res.perturbed_field);
-        setPerturbationMetrics(res.metrics);
-      } else {
-        // Mock Perturb
-        let current = JSON.parse(JSON.stringify(primaryField));
-        perturbations.forEach(p => {
-          current = applyMockPerturbation(current, p);
-        });
-        setPerturbedField(current);
-        // Synthesize scientific sensitivity metrics
-        setPerturbationMetrics({
-          mean_squared_error: 0.0541,
-          root_mean_squared_error: 0.2325,
-          peak_signal_to_noise_ratio: 22.45,
-          structural_similarity_index: 0.887,
-          spectral_energy_shift: 0.1245
-        });
-      }
+      const res = await apiService.perturbField({
+        field_data: primaryField,
+        perturbations
+      });
+      setPerturbedField(res.perturbed_field);
+      setPerturbationMetrics(res.metrics);
+      
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -371,84 +308,28 @@ export default function App() {
     }
   };
 
-  const applyMockPerturbation = (field: number[][], pert: types.PerturbationItem) => {
-    const H = field.length;
-    const W = field[0]?.length || 0;
-    const nextField = Array.from({ length: H }, () => Array(W).fill(0));
-    for (let r = 0; r < H; r++) {
-      for (let c = 0; c < W; c++) {
-        let val = field[r][c];
-        if (pert.type === 'noise') {
-          const std = pert.level || 0.1;
-          const noise = (Math.random() - 0.5) * 2.0 * std;
-          val += noise;
-        } else if (pert.type === 'translation') {
-          const sx = Math.round((pert.shift_x || 0.1) * W);
-          const sy = Math.round((pert.shift_y || 0.1) * H);
-          const sourceR = (r - sy + H) % H;
-          const sourceC = (c - sx + W) % W;
-          val = field[sourceR][sourceC];
-        } else if (pert.type === 'rotation') {
-          // Simplistic rotation approximation for mock preview
-          const angleRad = (pert.angle || 15) * Math.PI / 180;
-          const cx = W / 2;
-          const cy = H / 2;
-          const rx = c - cx;
-          const ry = r - cy;
-          const srcX = Math.round(cx + rx * Math.cos(angleRad) - ry * Math.sin(angleRad));
-          const srcY = Math.round(cy + rx * Math.sin(angleRad) + ry * Math.cos(angleRad));
-          if (srcX >= 0 && srcX < W && srcY >= 0 && srcY < H) {
-            val = field[srcY][srcX];
-          } else {
-            val = 0;
-          }
-        }
-        nextField[r][c] = val;
-      }
-    }
-    return nextField;
-  };
 
   // --- TAB 2 ACTIONS: Met Data Slice ---
   const handleSliceDataset = async () => {
     setLoading(true);
     setError(null);
     try {
-      if (backendConnected) {
-        const res = await apiService.sliceDataset({
-          dataset_id: selectedDatasetId,
-          variable: selectedVariable,
-          time: selectedTime || undefined,
-          level: selectedLevel,
-          lat_range: [latMin, latMax],
-          lon_range: [lonMin, lonMax]
-        });
-        setSlicedField(res.field_data);
-        setSlicedCoords(res.coords);
-        setSlicedMetadata(res.metadata);
-        // Also load into primary field for further processing in transforms/boundary tabs
-        setPrimaryField(res.field_data);
-        setPrimaryCoords(res.coords);
-        setPrimaryMetadata(res.metadata);
-      } else {
-        // Mock Slicer
-        const coords = {
-          lat: Array.from({ length: 24 }, (_, i) => latMin + (i * (latMax - latMin)) / 23),
-          lon: Array.from({ length: 48 }, (_, i) => lonMin + (i * (lonMax - lonMin)) / 47)
-        };
-        const data = Array.from({ length: 24 }, (_, r) =>
-          Array.from({ length: 48 }, (_, c) =>
-            Math.cos((coords.lat[r] * Math.PI) / 180) * Math.sin((coords.lon[c] * Math.PI) / 180) + 273.15
-          )
-        );
-        const metadata = { dataset_id: selectedDatasetId, variable: selectedVariable, sliced_mock: true };
-        setSlicedField(data);
-        setSlicedCoords(coords);
-        setSlicedMetadata(metadata);
-        setPrimaryField(data);
-        setPrimaryCoords(coords);
-        setPrimaryMetadata(metadata);
-      }
+      const res = await apiService.sliceDataset({
+        dataset_id: selectedDatasetId,
+        variable: selectedVariable,
+        time: selectedTime || undefined,
+        level: selectedLevel,
+        lat_range: [latMin, latMax],
+        lon_range: [lonMin, lonMax]
+      });
+      setSlicedField(res.field_data);
+      setSlicedCoords(res.coords);
+      setSlicedMetadata(res.metadata);
+      // Also load into primary field for further processing in transforms/boundary tabs
+      setPrimaryField(res.field_data);
+      setPrimaryCoords(res.coords);
+      setPrimaryMetadata(res.metadata);
+      
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -461,49 +342,17 @@ export default function App() {
     setLoading(true);
     setError(null);
     try {
-      if (backendConnected) {
-        const res = await apiService.analyzeBoundary({
-          field_data: primaryField,
-          treatment: boundaryTreatment,
-          pad_width: padWidth,
-          window_type: windowType || undefined,
-          window_alpha: windowAlpha
-        });
-        setPaddedField(res.padded_field);
-        setDistanceProfiles(res.distance_profiles);
-        setSpectralLeakage(res.spectral_leakage);
-      } else {
-        // Local Mock boundary simulation
-        const size = primaryField.length;
-        const pad = padWidth;
-        const total = size + pad * 2;
-        const nextField = Array.from({ length: total }, () => Array(total).fill(0));
-        for (let r = 0; r < total; r++) {
-          for (let c = 0; c < total; c++) {
-            let origR = r - pad;
-            let origC = c - pad;
-            if (origR >= 0 && origR < size && origC >= 0 && origC < size) {
-              nextField[r][c] = primaryField[origR][origC];
-            } else {
-              // circular pad mock
-              const clampR = (origR + size) % size;
-              const clampC = (origC + size) % size;
-              nextField[r][c] = primaryField[clampR][clampC];
-            }
-          }
-        }
-        setPaddedField(nextField);
-        setSpectralLeakage(1.245);
-        setDistanceProfiles(
-          Array.from({ length: pad + 1 }, (_, d) => ({
-            distance: d,
-            mean_gradient: 0.12 / (d + 1),
-            max_gradient: 0.45 / (d + 1),
-            mean_absolute_error: 0.05 / (d + 1),
-            max_absolute_error: 0.15 / (d + 1)
-          }))
-        );
-      }
+      const res = await apiService.analyzeBoundary({
+        field_data: primaryField,
+        treatment: boundaryTreatment,
+        pad_width: padWidth,
+        window_type: windowType || undefined,
+        window_alpha: windowAlpha
+      });
+      setPaddedField(res.padded_field);
+      setDistanceProfiles(res.distance_profiles);
+      setSpectralLeakage(res.spectral_leakage);
+      
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -516,33 +365,19 @@ export default function App() {
     setLoading(true);
     setError(null);
     try {
-      if (backendConnected) {
-        const res = await apiService.applyTransform({
-          field_data: primaryField,
-          transform_type: transformType,
-          config: {
-            levels: waveletLevels,
-            crossover_freq: crossoverFreq,
-            mixing_weight: mixingWeight
-          }
-        });
-        setReconstructedField(res.reconstructed_field);
-        setTransformMetrics(res.metrics);
-        setTransformCoefficients(res.coefficients);
-      } else {
-        // Mock transform (approximate reconstruction with tiny errors)
-        const sizeR = primaryField.length;
-        const sizeC = primaryField[0]?.length || 0;
-        const recon = Array.from({ length: sizeR }, (_, r) =>
-          Array.from({ length: sizeC }, (_, c) => primaryField[r][c] + (Math.random() - 0.5) * 0.01)
-        );
-        setReconstructedField(recon);
-        setTransformMetrics({
-          mean_squared_error: 0.000042,
-          max_absolute_error: 0.004812
-        });
-        setTransformCoefficients({ mock: "coeffs serialized" });
-      }
+      const res = await apiService.applyTransform({
+        field_data: primaryField,
+        transform_type: transformType,
+        config: {
+          levels: waveletLevels,
+          crossover_freq: crossoverFreq,
+          mixing_weight: mixingWeight
+        }
+      });
+      setReconstructedField(res.reconstructed_field);
+      setTransformMetrics(res.metrics);
+      setTransformCoefficients(res.coefficients);
+      
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -555,14 +390,16 @@ export default function App() {
     setLoading(true);
     setError(null);
     try {
-      // Forecast = original + noise
-      const H = primaryField.length;
-      const W = primaryField[0].length;
-      const forecastField = Array.from({ length: H }, (_, r) =>
-        Array.from({ length: W }, (_, c) => primaryField[r][c] + (Math.random() - 0.5) * forecastNoise * 2.0)
-      );
-
-      if (backendConnected) {
+      // The synthetic "forecast" is now drawn by the backend's seeded perturbation engine.
+      // It used to be built here with `Math.random()`: unseeded, so no diagnostic computed
+      // from it could ever be reproduced, and *uniform* despite the control being labelled
+      // "StDev". The platform's whole seed discipline (T3.5.12) existed and this bypassed it.
+      const perturbed = await apiService.perturbField({
+        field_data: primaryField,
+        perturbations: [{ type: 'noise', noise_type: 'gaussian', level: forecastNoise, seed: forecastSeed }],
+      });
+      const forecastField = perturbed.perturbed_field;
+      setForecastProvenance({ ...perturbed, seed: forecastSeed });
         const res = await apiService.computeDiagnostics({
           forecast_data: forecastField,
           ground_truth_data: primaryField
@@ -576,48 +413,7 @@ export default function App() {
         });
         setScaleDecompResults(scaleRes.scale_decomposition || null);
         setBoundaryDecompResults(scaleRes.boundary_decomposition || null);
-      } else {
-        // Mock Diagnostics
-        setDiagnosticsResults({
-          spatial_metrics: {
-            mean_squared_error: 0.012,
-            root_mean_squared_error: 0.109,
-            mean_absolute_error: 0.088,
-            bias: 0.0012,
-            structural_similarity_index: 0.945,
-            pearson_correlation: 0.985
-          },
-          gradient_errors: {
-            gradient_magnitude_mae: 0.045,
-            gradient_direction_mae_rad: 0.112,
-            gradient_direction_mae_deg: 6.41
-          },
-          spectral_diagnostics: {
-            wavenumbers: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-            forecast_psd: [1.2, 0.8, 0.45, 0.2, 0.1, 0.05, 0.02, 0.01, 0.005, 0.002],
-            ground_truth_psd: [1.15, 0.78, 0.42, 0.18, 0.08, 0.04, 0.015, 0.008, 0.003, 0.001],
-            spectral_coherence: [0.99, 0.98, 0.95, 0.92, 0.88, 0.82, 0.75, 0.65, 0.55, 0.42]
-          },
-          wavelet_energy: {
-            levels: 3,
-            forecast_energy: {},
-            ground_truth_energy: {}
-          }
-        });
-        setScaleDecompResults({
-          low_scale_rmse: 0.015,
-          mid_scale_rmse: 0.042,
-          high_scale_rmse: 0.085,
-          total_rmse: 0.109
-        });
-        setBoundaryDecompResults(
-          Array.from({ length: 8 }, (_, d) => ({
-            distance: d,
-            rmse: 0.15 - (d * 0.015),
-            mean_absolute_error: 0.12 - (d * 0.012)
-          }))
-        );
-      }
+      
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -633,55 +429,10 @@ export default function App() {
     setLineageData(null);
     try {
       const parsedConfig = JSON.parse(experimentJson);
-      if (backendConnected) {
-        const res = await apiService.createExperiment(parsedConfig);
-        setSubmittedExperimentId(res.id);
-        pollExperiment(res.id);
-      } else {
-        // Mock Experiment submission
-        const mockId = "exp-" + Math.floor(Math.random() * 10000);
-        setSubmittedExperimentId(mockId);
-        setExperimentDetail({
-          id: mockId,
-          name: parsedConfig.name,
-          description: parsedConfig.description,
-          status: "COMPLETED",
-          config: parsedConfig,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          runs: [
-            {
-              id: "run-01",
-              experiment_id: mockId,
-              parameters: { freq: 1.0, transform_type: "fft" },
-              status: "COMPLETED",
-              results: { trans_metrics: { mean_squared_error: 0.015, max_absolute_error: 0.085 } },
-              created_at: new Date().toISOString()
-            },
-            {
-              id: "run-02",
-              experiment_id: mockId,
-              parameters: { freq: 2.0, transform_type: "dct" },
-              status: "COMPLETED",
-              results: { trans_metrics: { mean_squared_error: 0.008, max_absolute_error: 0.042 } },
-              created_at: new Date().toISOString()
-            }
-          ]
-        });
-        setLineageData({
-          nodes: [
-            { id: '1', name: 'v1.2.0-beta', type: 'code_revision', value: { revision: "v1.2.0-beta" }, created_at: new Date().toISOString() },
-            { id: '2', name: 'sinusoid-run', type: 'field', value: { shape: [32, 32] }, created_at: new Date().toISOString() },
-            { id: '3', name: 'fft-coeffs', type: 'coefficients', value: { transform: "fft" }, created_at: new Date().toISOString() },
-            { id: '4', name: 'eval-metrics', type: 'metrics', value: { mse: 0.015 }, created_at: new Date().toISOString() }
-          ],
-          edges: [
-            { id: 'e1', source_id: '1', target_id: '2', relation: 'executed_by' },
-            { id: 'e2', source_id: '2', target_id: '3', relation: 'input_to' },
-            { id: 'e3', source_id: '3', target_id: '4', relation: 'evaluated_to' }
-          ]
-        });
-      }
+      const res = await apiService.createExperiment(parsedConfig);
+      setSubmittedExperimentId(res.id);
+      pollExperiment(res.id);
+      
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -713,48 +464,13 @@ export default function App() {
     setLoading(true);
     setError(null);
     try {
-      if (backendConnected) {
-        const discovered = await apiService.discoverHypotheses({
-          confidence_threshold: confidenceThreshold
-        });
-        setHypotheses(discovered);
-        const activeProposals = await apiService.getProposals();
-        setProposals(activeProposals);
-      } else {
-        // Mock Discoveries
-        setHypotheses([
-          {
-            id: "hyp-01",
-            experiment_ids: ["exp-mock-1"],
-            pattern_type: "correlation",
-            description: "A strong positive correlation (r = 0.89) was discovered between parameter 'freq' and metric 'trans_metrics.mean_squared_error'.",
-            confidence: 0.89,
-            metrics_analyzed: ["trans_metrics.mean_squared_error"],
-            parameters_analyzed: ["freq"],
-            proposed_experiment_config: {
-              name: "Optimizing freq parameter",
-              parameter_matrix: { freq: [0.1, 0.3, 0.5] },
-              pipeline: []
-            },
-            created_at: new Date().toISOString()
-          },
-          {
-            id: "hyp-02",
-            experiment_ids: ["exp-mock-1"],
-            pattern_type: "categorical_opt",
-            description: "In experiment 'Spectral Accuracy Sweep', DCT significantly outperformed FFT. Category 'dct' performed best, outperforming 'fft' by 46.5%.",
-            confidence: 0.465,
-            metrics_analyzed: ["trans_metrics.mean_squared_error"],
-            parameters_analyzed: ["transform_type"],
-            proposed_experiment_config: {
-              name: "Fixed to DCT",
-              parameter_matrix: { transform_type: ["dct"] },
-              pipeline: []
-            },
-            created_at: new Date().toISOString()
-          }
-        ]);
-      }
+      const discovered = await apiService.discoverHypotheses({
+        confidence_threshold: confidenceThreshold
+      });
+      setHypotheses(discovered);
+      const activeProposals = await apiService.getProposals();
+      setProposals(activeProposals);
+      
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -767,6 +483,38 @@ export default function App() {
     setActiveTab('declarative');
   };
 
+
+  /**
+   * The provenance stamped into every export of the active field.
+   *
+   * Assembled in one place so a CSV and a NetCDF of the same field cannot disagree, and so
+   * `is_simulated` is impossible to omit: a synthetic field is fabricated by definition, and a
+   * crop of a dataset inherits whatever that dataset declared.
+   */
+  const fieldProvenance = (extra: Record<string, any> = {}): Record<string, any> => ({
+    origin: primaryMetadata?.type || 'in-memory grid',
+    generator_metadata: primaryMetadata || {},
+    is_simulated: true,
+    simulated_reason:
+      'produced by the synthetic field generator, not observed. Any statistic derived from ' +
+      'it describes the generator, not the atmosphere.',
+    grid_shape: [primaryField.length, primaryField[0]?.length || 0],
+    ...extra,
+  });
+
+  const datasetProvenance = (): Record<string, any> => {
+    const chosen = datasets.find(d => d.id === selectedDatasetId);
+    return {
+      dataset_id: selectedDatasetId,
+      variable: selectedVariable,
+      pressure_level: selectedLevel,
+      is_simulated: chosen?.is_simulated ?? true,
+      fallback_reason: chosen?.fallback_reason ?? null,
+      source_kind: chosen?.source_kind ?? 'unknown',
+      source_path: chosen?.source_path ?? null,
+      spatial_resolution: chosen?.spatial_resolution ?? null,
+    };
+  };
 
   // ---------------------------------------------------------------- T3.5.22 handlers
 
@@ -787,6 +535,30 @@ export default function App() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleRunBenchmarks = async () => {
+    setBenchmarkRunning(true);
+    setError(null);
+    try {
+      setBenchmarkRun(await apiService.runBenchmarks(benchmarkSeed));
+    } catch (e: any) {
+      setError(`Benchmark run failed: ${e.message}`);
+    } finally {
+      setBenchmarkRunning(false);
+    }
+  };
+
+  const handleImportedField = (result: types.ImportFieldResponse) => {
+    setPrimaryField(result.field_data);
+    if (result.coords && Object.keys(result.coords).length) {
+      setPrimaryCoords(result.coords as Record<string, number[]>);
+    }
+    setPrimaryMetadata({ type: `imported: ${result.provenance.filename}`, ...result.provenance });
+    setImportedProvenance(result.provenance);
+    setPerturbedField(null);
+    setPerturbationMetrics(null);
+    setError(null);
   };
 
   const loadZarrCatalogue = async () => {
@@ -823,6 +595,11 @@ export default function App() {
 
   useEffect(() => {
     if (activeTab === 'platform' && !health) loadPlatformStatus();
+    if (activeTab === 'platform' && registryTransforms.length === 0) {
+      Promise.all([apiService.listTransforms(), apiService.listActions()])
+        .then(([t, a]) => { setRegistryTransforms(t); setRegistryActions(a); })
+        .catch(() => { /* the status load already reports an unreachable backend */ });
+    }
     if (activeTab === 'era5' && !zarrCatalogue) loadZarrCatalogue();
   }, [activeTab]);
 
@@ -844,7 +621,7 @@ export default function App() {
             </span>
           ) : (
             <span className="text-xs bg-amber-500/10 text-amber-400 border border-amber-500/20 px-3 py-1.5 rounded-full font-medium flex items-center gap-2 cursor-pointer" onClick={checkConnection}>
-              <Server className="w-3.5 h-3.5" /> Offline Sandbox Mock Mode (Click to Retry)
+              <WifiOff className="w-3.5 h-3.5" /> Backend unreachable - no computation available (click to retry)
             </span>
           )}
         </div>
@@ -955,7 +732,7 @@ export default function App() {
                     <div className="space-y-3">
                       <div>
                         <label className="text-xs text-slate-400 flex justify-between mb-1">
-                          <span>X-Frequency ($\omega_x$): {freqX}</span>
+                          <span>X-Frequency (ωx): {freqX}</span>
                         </label>
                         <input
                           type="range" min="0.5" max="8" step="0.5" value={freqX}
@@ -965,7 +742,7 @@ export default function App() {
                       </div>
                       <div>
                         <label className="text-xs text-slate-400 flex justify-between mb-1">
-                          <span>Y-Frequency ($\omega_y$): {freqY}</span>
+                          <span>Y-Frequency (ωy): {freqY}</span>
                         </label>
                         <input
                           type="range" min="0.5" max="8" step="0.5" value={freqY}
@@ -1018,7 +795,7 @@ export default function App() {
                       </div>
                       <div>
                         <label className="text-xs text-slate-400 flex justify-between mb-1">
-                          <span>{"Core Radius ($r_{core}$): "}{vortexRadius}</span>
+                          <span>{"Core Radius (r_core): "}{vortexRadius}</span>
                         </label>
                         <input
                           type="range" min="0.05" max="0.5" step="0.05" value={vortexRadius}
@@ -1087,8 +864,31 @@ export default function App() {
                 {/* Main Visualizer */}
                 <div className="xl:col-span-2 space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <Heatmap2D data={primaryField} title="Generated Clean Field ($F$)" colormap="viridis" coords={primaryCoords} />
-                    <Heatmap2D data={perturbedField || primaryField} title="Perturbed Spatial Field ($F'$)" colormap="viridis" coords={primaryCoords} />
+                    <div className="space-y-2">
+                      <Heatmap2D data={primaryField} title="Generated Clean Field (F)" colormap="viridis"
+                        coords={primaryCoords} divId="fig-clean-field"
+                        xLabel="x (normalised)" yLabel="y (normalised)" />
+                      <div className="flex flex-col gap-2 px-1">
+                        <FieldExportBar field={primaryField} coords={primaryCoords}
+                          metadata={fieldProvenance()} variable="field" name="clean_field"
+                          label="Export clean field" onError={setError} />
+                        <FigureExport targetId="fig-clean-field" name="clean_field"
+                          caption="synthetic - dimensionless" onError={setError} />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Heatmap2D data={perturbedField || primaryField} title="Perturbed Spatial Field (F')"
+                        colormap="viridis" coords={primaryCoords} divId="fig-perturbed-field"
+                        xLabel="x (normalised)" yLabel="y (normalised)" />
+                      <div className="flex flex-col gap-2 px-1">
+                        <FieldExportBar field={perturbedField} coords={primaryCoords}
+                          metadata={fieldProvenance({ perturbations, reproducible: perturbations.every(pp => pp.type !== 'noise' || pp.seed != null) })}
+                          variable="field" name="perturbed_field"
+                          label="Export perturbed field" onError={setError} />
+                        <FigureExport targetId="fig-perturbed-field" name="perturbed_field"
+                          caption="synthetic + perturbation" onError={setError} />
+                      </div>
+                    </div>
                   </div>
 
                   {/* Perturbation Engine Steps */}
@@ -1158,7 +958,7 @@ export default function App() {
                             </select>
                           </div>
                           <div>
-                            <label className="text-xs text-slate-400 block mb-1">Level ($\sigma$)</label>
+                            <label className="text-xs text-slate-400 block mb-1">Level (σ)</label>
                             <input
                               type="number" step="0.05" value={newPertNoiseLevel}
                               onChange={(e) => setNewPertNoiseLevel(parseFloat(e.target.value))}
@@ -1271,10 +1071,74 @@ export default function App() {
                       className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-sm text-slate-200 focus:outline-none"
                     >
                       {datasets.map(d => (
-                        <option key={d.id} value={d.id}>{d.name}</option>
+                        <option key={d.id} value={d.id}>
+                          {d.name}{d.is_simulated ? '  [SIMULATED]' : ''}
+                        </option>
                       ))}
                     </select>
                   </div>
+
+                  <FieldImport onLoaded={handleImportedField} onError={setError} />
+
+                  {importedProvenance && (
+                    <div className="bg-slate-950 border border-slate-800 rounded-lg p-3 text-[10px] font-mono text-slate-400 space-y-1">
+                      <div className="text-slate-300 font-sans font-semibold text-[11px]">Active field: imported</div>
+                      <div className="flex justify-between"><span>file</span><span className="text-slate-300">{importedProvenance.filename}</span></div>
+                      <div className="flex justify-between"><span>variable</span><span className="text-slate-300">{importedProvenance.variable}</span></div>
+                      <div className="flex justify-between"><span>sha256</span><span className="text-slate-300">{String(importedProvenance.content_hash).slice(0, 16)}…</span></div>
+                      {Object.keys(importedProvenance.selection || {}).length > 0 && (
+                        <div className="flex justify-between">
+                          <span>slice</span>
+                          <span className="text-slate-300">
+                            {Object.entries(importedProvenance.selection).map(([k, v]) => `${k}=${v}`).join(' ')}
+                          </span>
+                        </div>
+                      )}
+                      {/* null, not false: the platform did not produce this file and asserting
+                          it is observational would be inventing a fact. */}
+                      <div className={`font-sans leading-relaxed pt-1 border-t border-slate-800 ${
+                        importedProvenance.is_simulated === true ? 'text-amber-400'
+                          : importedProvenance.is_simulated === false ? 'text-emerald-400'
+                          : 'text-slate-400'
+                      }`}>
+                        {importedProvenance.is_simulated === true
+                          ? 'The file declares this data is SIMULATED.'
+                          : importedProvenance.is_simulated === false
+                          ? 'The file declares this data is observational.'
+                          : 'Origin unknown - the file carries no provenance, so the platform makes no claim about whether this is real data.'}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* The single most important thing on this tab. The flag is read from what
+                      the source *declared*, not inferred from its name or kind - inferring it
+                      from `kind == "simulated"` is the defect that reported a demo source as
+                      real observational data. */}
+                  {(() => {
+                    const chosen = datasets.find(d => d.id === selectedDatasetId);
+                    if (!chosen) return null;
+                    return chosen.is_simulated ? (
+                      <div className="bg-amber-500/10 border border-amber-500/25 rounded-lg p-3 flex gap-2 text-[11px] text-amber-300 leading-relaxed">
+                        <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                        <div className="space-y-1">
+                          <p className="font-semibold">SIMULATED DATA - not an observation.</p>
+                          {chosen.fallback_reason && <p className="text-amber-400/80">{chosen.fallback_reason}</p>}
+                          <p className="text-amber-400/60 font-mono">source kind: {chosen.source_kind || 'unknown'}</p>
+                          <p className="text-amber-400/60">Every export of this crop carries the same warning inside the file.</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-lg p-3 flex gap-2 text-[11px] text-emerald-300 leading-relaxed">
+                        <CheckCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                        <div>
+                          <p className="font-semibold">Real observational data.</p>
+                          <p className="text-emerald-400/70 font-mono">
+                            {chosen.source_kind || 'unknown'}{chosen.source_path ? ` - ${chosen.source_path}` : ''}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })()}
 
                   <div>
                     <label className="text-xs text-slate-400 block mb-1">Variable</label>
@@ -1351,7 +1215,22 @@ export default function App() {
                 <div className="xl:col-span-2 space-y-4">
                   {slicedField ? (
                     <div className="space-y-4">
-                      <Heatmap2D data={slicedField} title={`${selectedVariable.toUpperCase()} Crop (${selectedDatasetId})`} coords={slicedCoords} colormap="viridis" />
+                      <Heatmap2D data={slicedField}
+                        title={`${selectedVariable.toUpperCase()} Crop (${selectedDatasetId})`}
+                        coords={slicedCoords} colormap="viridis" divId="fig-dataset-crop"
+                        xLabel="longitude (degrees east)" yLabel="latitude (degrees north)" />
+                      <div className="flex flex-col gap-2 px-1 mt-2">
+                        <FieldExportBar field={slicedField} coords={slicedCoords}
+                          metadata={datasetProvenance()} variable={selectedVariable}
+                          name={`${selectedDatasetId}_${selectedVariable}`}
+                          label="Export crop" onError={setError} />
+                        <FigureExport targetId="fig-dataset-crop"
+                          name={`${selectedDatasetId}_${selectedVariable}`}
+                          caption={datasets.find(d => d.id === selectedDatasetId)?.is_simulated
+                            ? 'SIMULATED - not an observation'
+                            : 'observational'}
+                          onError={setError} />
+                      </div>
                       <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 text-xs space-y-2 text-slate-400">
                         <span className="text-slate-300 font-semibold block mb-1">Metadata Summary</span>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -1444,7 +1323,7 @@ export default function App() {
                   {windowType === 'tukey' && (
                     <div>
                       <label className="text-xs text-slate-400 flex justify-between mb-1">
-                        <span>Tukey Alpha ($\alpha$): {windowAlpha}</span>
+                        <span>Tukey Alpha (α): {windowAlpha}</span>
                       </label>
                       <input
                         type="range" min="0" max="1" step="0.05" value={windowAlpha}
@@ -1594,8 +1473,8 @@ export default function App() {
 
                 <div className="xl:col-span-2 space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <Heatmap2D data={primaryField} title="Original Target Field ($F$)" colormap="viridis" />
-                    <Heatmap2D data={reconstructedField || primaryField} title="Inverse Reconstructed Field ($\hat{F}$)" colormap="viridis" />
+                    <Heatmap2D data={primaryField} title="Original Target Field (F)" colormap="viridis" />
+                    <Heatmap2D data={reconstructedField || primaryField} title="Inverse Reconstructed Field (F-hat)" colormap="viridis" />
                   </div>
 
                   {transformMetrics && (
@@ -1610,9 +1489,29 @@ export default function App() {
                           <span className="text-xs text-slate-500 block uppercase">Max Absolute Error</span>
                           <span className="text-lg font-bold font-mono text-teal-400 mt-2 block">{transformMetrics.max_absolute_error.toFixed(6)}</span>
                         </div>
-                        <div className="col-span-2 md:col-span-1 bg-slate-950 border border-slate-800 p-4 rounded-xl flex flex-col justify-center text-xs text-slate-400 leading-relaxed">
-                          <p className="flex items-center gap-1.5"><CheckCircle className="w-3.5 h-3.5 text-emerald-400" /> Mathematically rigorous floating point calculations.</p>
-                          <p className="flex items-center gap-1.5 mt-1"><CheckCircle className="w-3.5 h-3.5 text-emerald-400" /> Verified perfect reconstruct limits.</p>
+                        {/* These were two unconditional green ticks reading "Mathematically
+                            rigorous floating point calculations" and "Verified perfect
+                            reconstruct limits" - shown whatever the measured error was, which
+                            is an unqualified validation claim of exactly the kind the project's
+                            own rules forbid in its documents. Replaced by the measurement,
+                            judged against a stated tolerance. */}
+                        <div className="col-span-2 md:col-span-1 bg-slate-950 border border-slate-800 p-4 rounded-xl flex flex-col justify-center text-xs leading-relaxed">
+                          {transformMetrics.max_absolute_error <= 1e-9 ? (
+                            <p className="flex items-start gap-1.5 text-emerald-400">
+                              <CheckCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+                              <span>Round trip within 1e-9 &mdash; perfect reconstruction to double precision.</span>
+                            </p>
+                          ) : transformMetrics.max_absolute_error <= 1e-5 ? (
+                            <p className="flex items-start gap-1.5 text-amber-400">
+                              <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+                              <span>Round-trip error {transformMetrics.max_absolute_error.toExponential(2)} exceeds 1e-9. Expected for a lossy or non-tight-frame configuration; not expected for fft/dct/swt.</span>
+                            </p>
+                          ) : (
+                            <p className="flex items-start gap-1.5 text-rose-400">
+                              <XCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+                              <span>Round-trip error {transformMetrics.max_absolute_error.toExponential(2)} is too large to treat this reconstruction as faithful.</span>
+                            </p>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -1637,7 +1536,31 @@ export default function App() {
                   <h3 className="text-sm font-semibold text-slate-200 border-b border-slate-800 pb-2">
                     Spatial Noise Config
                   </h3>
-                  <p className="text-xs text-slate-400 leading-relaxed">Generates a mock forecasted field by injecting variable standard-deviation noise onto the primary active field buffer.</p>
+                  <p className="text-xs text-slate-400 leading-relaxed">
+                    Builds a synthetic &quot;forecast&quot; by adding <strong className="text-slate-300">seeded
+                    Gaussian</strong> noise to the active field, through the backend&apos;s perturbation
+                    engine. The seed is explicit because a diagnostic whose input cannot be
+                    regenerated is not a measurement of anything.
+                  </p>
+
+                  <div>
+                    <label className="text-xs text-slate-400 block mb-1">Noise seed</label>
+                    <div className="flex gap-2">
+                      <input
+                        type="number"
+                        value={forecastSeed}
+                        onChange={(e) => setForecastSeed(parseInt(e.target.value, 10) || 0)}
+                        className="flex-1 bg-slate-950 border border-slate-800 rounded px-2 py-1.5 text-xs text-slate-200 font-mono"
+                      />
+                      <button
+                        onClick={() => setForecastSeed(Math.floor(Math.random() * 2147483647))}
+                        title="Draw a new seed. The value is recorded, so the run stays reproducible."
+                        className="bg-slate-950 border border-slate-800 hover:bg-slate-900 text-slate-400 px-2 rounded"
+                      >
+                        <RotateCcw className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
 
                   <div>
                     <label className="text-xs text-slate-400 flex justify-between mb-1">
@@ -1694,7 +1617,7 @@ export default function App() {
                             }
                           ]}
                           title="Power Spectral Density (PSD)"
-                          xLabel="Wavenumber ($k$)"
+                          xLabel="Wavenumber (k)"
                           yLabel="Energy Density"
                         />
                         <LineChart
@@ -1707,21 +1630,68 @@ export default function App() {
                             }
                           ]}
                           title="Cross-Spectral Coherence"
-                          xLabel="Wavenumber ($k$)"
+                          xLabel="Wavenumber (k)"
                           yLabel="Coherence Ratio"
                         />
                       </div>
 
                       {/* Turbulence Spectral Slope Fits */}
+                      {/* Units and the spectral convention, which the backend has returned
+                          since T3.5.13 and nothing displayed. R15 requires the convention to be
+                          stated wherever a slope is: the same field has different exponents
+                          under E(k) and S(k), and an unlabelled beta is not interpretable. */}
+                      <div className="bg-slate-950 border border-slate-800 rounded-lg p-3 mb-4 text-[11px] font-mono text-slate-400 space-y-1">
+                        <div className="flex justify-between">
+                          <span className="text-slate-500">wavenumber units</span>
+                          <span className="text-slate-300">{diagnosticsResults.spectral_diagnostics.k_units || 'unlabelled'}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-500">power units</span>
+                          <span className="text-slate-300">{diagnosticsResults.spectral_diagnostics.power_units || 'unlabelled'}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-500">convention</span>
+                          <span className="text-teal-400">{diagnosticsResults.spectral_diagnostics.convention || 'unstated'}</span>
+                        </div>
+                        {diagnosticsResults.spectral_diagnostics.convention_note && (
+                          <p className="text-slate-500 pt-1 border-t border-slate-800 font-sans leading-relaxed">
+                            {diagnosticsResults.spectral_diagnostics.convention_note}
+                          </p>
+                        )}
+                        {diagnosticsResults.grid && (
+                          <p className="text-slate-500 font-sans">grid: {diagnosticsResults.grid.description}</p>
+                        )}
+                        {(diagnosticsResults.spectral_diagnostics.warnings || []).map((w: string, i: number) => (
+                          <p key={i} className="text-amber-400 font-sans leading-relaxed">{w}</p>
+                        ))}
+                      </div>
+
+                      {forecastProvenance && (
+                        <div className={`rounded-lg p-3 mb-4 text-[11px] border ${
+                          forecastProvenance.reproducible
+                            ? 'bg-emerald-500/5 border-emerald-500/20 text-emerald-300'
+                            : 'bg-amber-500/10 border-amber-500/25 text-amber-300'
+                        }`}>
+                          {forecastProvenance.reproducible ? (
+                            <span>Synthetic forecast drawn with seed <strong className="font-mono">{forecastProvenance.seed}</strong> - re-running this reproduces it exactly.</span>
+                          ) : (
+                            <span>This synthetic forecast ran unseeded and cannot be reproduced.</span>
+                          )}
+                        </div>
+                      )}
+
                       {diagnosticsResults.spectral_diagnostics.forecast_slope_analysis && diagnosticsResults.spectral_diagnostics.ground_truth_slope_analysis && (
                         <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 grid grid-cols-1 md:grid-cols-2 gap-6">
                           <div className="bg-slate-950/50 border border-slate-850 p-4 rounded-lg">
                             <span className="text-xs text-slate-500 uppercase font-bold block mb-1">Forecast Spectral Slope</span>
                             <span className="text-xl font-bold text-sky-400 font-mono">
                               β = {diagnosticsResults.spectral_diagnostics.forecast_slope_analysis.slope_beta.toFixed(3)}
+                              {diagnosticsResults.spectral_diagnostics.forecast_slope_analysis.slope_standard_error != null && (
+                                <span className="text-sm text-slate-400"> ± {diagnosticsResults.spectral_diagnostics.forecast_slope_analysis.slope_standard_error!.toFixed(3)}</span>
+                              )}
                             </span>
                             <span className="text-xs text-slate-400 block mt-1">
-                              Power-Law Fit $R^2$: {diagnosticsResults.spectral_diagnostics.forecast_slope_analysis.r_squared.toFixed(3)}
+                              Power-Law Fit R²: {diagnosticsResults.spectral_diagnostics.forecast_slope_analysis.r_squared.toFixed(3)}
                             </span>
                             <span className="text-xs text-teal-400 font-medium block mt-1.5 border-t border-slate-800/40 pt-1.5">
                               {diagnosticsResults.spectral_diagnostics.forecast_slope_analysis.regime_interpretation}
@@ -1731,9 +1701,12 @@ export default function App() {
                             <span className="text-xs text-slate-500 uppercase font-bold block mb-1">Ground Truth Spectral Slope</span>
                             <span className="text-xl font-bold text-teal-400 font-mono">
                               β = {diagnosticsResults.spectral_diagnostics.ground_truth_slope_analysis.slope_beta.toFixed(3)}
+                              {diagnosticsResults.spectral_diagnostics.ground_truth_slope_analysis.slope_standard_error != null && (
+                                <span className="text-sm text-slate-400"> ± {diagnosticsResults.spectral_diagnostics.ground_truth_slope_analysis.slope_standard_error!.toFixed(3)}</span>
+                              )}
                             </span>
                             <span className="text-xs text-slate-400 block mt-1">
-                              Power-Law Fit $R^2$: {diagnosticsResults.spectral_diagnostics.ground_truth_slope_analysis.r_squared.toFixed(3)}
+                              Power-Law Fit R²: {diagnosticsResults.spectral_diagnostics.ground_truth_slope_analysis.r_squared.toFixed(3)}
                             </span>
                             <span className="text-xs text-teal-400 font-medium block mt-1.5 border-t border-slate-800/40 pt-1.5">
                               {diagnosticsResults.spectral_diagnostics.ground_truth_slope_analysis.regime_interpretation}
@@ -1917,7 +1890,7 @@ export default function App() {
                 <h2 className="text-xl font-bold text-white flex items-center gap-2">
                   <Lightbulb className="text-teal-400 w-5 h-5" /> Automated Hypothesis Engine
                 </h2>
-                <p className="text-sm text-slate-400">Mines metrics in the SQLite runs tables using numerical correlation math (Pearson's $r$) and categorical optimization to discover pattern proposals.</p>
+                <p className="text-sm text-slate-400">Mines metrics in the SQLite runs tables using numerical correlation math (Pearson's r) and categorical optimization to discover pattern proposals.</p>
               </div>
 
               <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
@@ -1948,7 +1921,32 @@ export default function App() {
                 <div className="xl:col-span-3 space-y-6">
                   {hypotheses.length > 0 ? (
                     <div className="space-y-6">
-                      <span className="text-xs font-semibold text-slate-300 block mb-3">Mined Scientific Hypotheses & Adaptive Proposals ({hypotheses.length})</span>
+                      <div className="flex items-center justify-between mb-3 gap-4 flex-wrap">
+                        <span className="text-xs font-semibold text-slate-300">Mined Scientific Hypotheses &amp; Adaptive Proposals ({hypotheses.length})</span>
+                        <TableExportBar
+                          rows={hypotheses.map(h => ({
+                            description: h.description,
+                            pattern_type: h.pattern_type,
+                            effect_size: h.confidence,
+                            p_value: h.p_value ?? null,
+                            q_value: h.q_value ?? null,
+                            n_tests: h.n_tests ?? null,
+                            correction: h.statistics?.correction?.method ?? null,
+                            dependence_assumption: h.statistics?.correction?.assumption ?? null,
+                            metrics: h.metrics_analyzed.join('; '),
+                            parameters: h.parameters_analyzed.join('; '),
+                            caveat: h.statistics?.caveat ?? null,
+                          }))}
+                          metadata={{
+                            what: 'hypotheses mined from stored experiment runs',
+                            note: 'effect_size is |r| and is NOT evidence on its own; judge by q_value',
+                            corrected: hypotheses.some(h => h.q_value != null),
+                          }}
+                          name="hypotheses"
+                          label="Export hypotheses"
+                          onError={setError}
+                        />
+                      </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {hypotheses.map((h, idx) => (
                           <div key={idx} className="bg-slate-900 border border-slate-800 rounded-xl p-5 flex flex-col justify-between">
@@ -2144,10 +2142,57 @@ export default function App() {
                 </div>
               )}
 
+              {(registryTransforms.length > 0 || registryActions.length > 0) && (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {([['Transforms', registryTransforms], ['Pipeline actions', registryActions]] as const).map(([title, entries]) => (
+                    <div key={title} className="bg-slate-900/50 border border-slate-800 rounded-xl p-5 space-y-2">
+                      <h3 className="text-sm font-semibold text-slate-200 border-b border-slate-800 pb-2 flex items-center gap-2">
+                        <Boxes className="w-4 h-4 text-slate-400" /> {title} ({entries.length})
+                      </h3>
+                      {/* Generated from the registries, never hand-listed: a hand-written list
+                          goes stale precisely when someone adds an entry - the moment it matters.
+                          Capabilities are shown because they are what makes a transform
+                          selectable by property rather than by name. */}
+                      {entries.map(entry => (
+                        <div key={entry.name} className="text-[11px] border border-slate-800 rounded p-2 bg-slate-950 space-y-1">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="font-mono text-slate-200">{entry.name}</span>
+                            {entry.node_type && (
+                              <span className="text-[9px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">{entry.node_type}</span>
+                            )}
+                          </div>
+                          <p className="text-slate-500 leading-relaxed">{entry.description}</p>
+                          {entry.capabilities && Object.keys(entry.capabilities).length > 0 && (
+                            <div className="flex flex-wrap gap-1">
+                              {Object.entries(entry.capabilities)
+                                .filter(([, v]) => v === true)
+                                .map(([k]) => (
+                                  <span key={k} className="text-[9px] px-1.5 py-0.5 rounded bg-teal-500/10 text-teal-400 border border-teal-500/20 font-mono">
+                                    {k}
+                                  </span>
+                                ))}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              )}
+
               {benchmarks.length > 0 && (
                 <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-5 space-y-3">
                   <h3 className="text-sm font-semibold text-slate-200 border-b border-slate-800 pb-2 flex items-center justify-between">
                     <span>Ground-Truth Benchmark Suite ({benchmarks.length} datasets)</span>
+                    <TableExportBar
+                      rows={benchmarks.map(b => ({
+                        name: b.name, kind: b.kind, is_null: b.is_null,
+                        gates: b.gates.join('; '), description: b.description,
+                        known_answer: b.known_answer,
+                      }))}
+                      metadata={{ what: 'declared known answers of the Ground-Truth Benchmark Suite' }}
+                      name="benchmarks" label="Export" onError={setError}
+                    />
                     <span className="text-[11px] font-normal text-slate-500">
                       {benchmarks.filter(b => b.is_null).length} of them are NULL benchmarks - the correct answer is &quot;nothing&quot;
                     </span>
@@ -2158,6 +2203,71 @@ export default function App() {
                     discovery engine that reports a finding on spatially uncorrelated noise is broken, and
                     these are what catch that.
                   </p>
+                  {/* The gates were listable and not runnable: a researcher could see what the
+                      platform claims to get right but could not make it prove it. NOT_YET_RUNNABLE
+                      is counted separately and never folded into PASS - a summary that did so
+                      would let "all green" mean "we never looked". */}
+                  <div className="flex items-end gap-3 flex-wrap border-b border-slate-800 pb-3">
+                    <div>
+                      <label className="text-[10px] uppercase tracking-wider text-slate-500 block mb-1">Root seed</label>
+                      <input
+                        type="number" value={benchmarkSeed}
+                        onChange={(e) => setBenchmarkSeed(parseInt(e.target.value, 10) || 0)}
+                        className="bg-slate-950 border border-slate-800 rounded px-2 py-1.5 text-xs text-slate-200 font-mono w-36"
+                      />
+                    </div>
+                    <button
+                      onClick={handleRunBenchmarks}
+                      disabled={benchmarkRunning}
+                      className="bg-teal-600 hover:bg-teal-500 disabled:bg-slate-800 disabled:text-slate-500 text-white text-sm font-semibold py-2 px-4 rounded-lg flex items-center gap-2"
+                    >
+                      {benchmarkRunning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
+                      Run the suite
+                    </button>
+                    {benchmarkRun && (
+                      <div className="flex items-center gap-3 text-xs font-mono">
+                        <span className="text-emerald-400">{benchmarkRun.passed} PASS</span>
+                        <span className={benchmarkRun.failed > 0 ? 'text-rose-400 font-bold' : 'text-slate-500'}>
+                          {benchmarkRun.failed} FAIL
+                        </span>
+                        <span className="text-sky-400">{benchmarkRun.not_yet_runnable} NOT YET RUNNABLE</span>
+                        <span className="text-slate-600">seed {benchmarkRun.root_seed}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {benchmarkRun && benchmarkRun.null_failures.length > 0 && (
+                    <div className="bg-rose-500/10 border border-rose-500/25 rounded-lg p-3 text-[11px] text-rose-300 space-y-1">
+                      <p className="font-semibold flex items-center gap-2">
+                        <XCircle className="w-3.5 h-3.5" /> A NULL benchmark reported a discovery.
+                      </p>
+                      <p className="text-rose-400/80 leading-relaxed">
+                        These datasets contain no structure by construction. A finding on one of
+                        them is a false positive in the platform itself, not a result.
+                      </p>
+                      {benchmarkRun.null_failures.map((f, i) => (
+                        <p key={i} className="font-mono text-rose-300/90">{f}</p>
+                      ))}
+                    </div>
+                  )}
+
+                  {benchmarkRun && (
+                    <div className="flex justify-end">
+                      <TableExportBar
+                        rows={benchmarkRun.benchmarks.flatMap(b => b.checks.map(c => ({
+                          benchmark: b.name, is_null: b.is_null, stage: c.stage,
+                          outcome: c.outcome, detail: c.detail,
+                          measured: c.measured ?? null,
+                        })))}
+                        metadata={{ what: 'Ground-Truth Benchmark Suite run',
+                                    root_seed: benchmarkRun.root_seed,
+                                    passed: benchmarkRun.passed, failed: benchmarkRun.failed,
+                                    not_yet_runnable: benchmarkRun.not_yet_runnable }}
+                        name="benchmark_run" label="Export results" onError={setError}
+                      />
+                    </div>
+                  )}
+
                   <div className="overflow-x-auto">
                     <table className="w-full text-[11px] font-mono">
                       <thead className="text-slate-500 border-b border-slate-800">
@@ -2166,6 +2276,7 @@ export default function App() {
                           <th className="text-left py-1.5 pr-3">kind</th>
                           <th className="text-left py-1.5 pr-3">gates</th>
                           <th className="text-left py-1.5">known answer</th>
+                          <th className="text-left py-1.5 pl-3">outcome</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -2181,6 +2292,28 @@ export default function App() {
                             <td className="py-1.5 pr-3 text-slate-400">{b.gates.join(', ')}</td>
                             <td className="py-1.5 text-slate-500 max-w-md truncate" title={JSON.stringify(b.known_answer)}>
                               {JSON.stringify(b.known_answer)}
+                            </td>
+                            <td className="py-1.5 pl-3">
+                              {(() => {
+                                const run = benchmarkRun?.benchmarks.find(x => x.name === b.name);
+                                if (!run) return <span className="text-slate-700">-</span>;
+                                return (
+                                  <div className="space-y-0.5">
+                                    {run.checks.map((c, i) => (
+                                      <div key={i} className="flex items-center gap-1.5" title={c.detail}>
+                                        <span className={
+                                          c.outcome === 'PASS' ? 'text-emerald-400'
+                                            : c.outcome === 'FAIL' ? 'text-rose-400 font-bold'
+                                            : 'text-sky-400'
+                                        }>
+                                          {c.outcome === 'PASS' ? '✓' : c.outcome === 'FAIL' ? '✗' : '·'}
+                                        </span>
+                                        <span className="text-slate-500">{c.stage}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                );
+                              })()}
                             </td>
                           </tr>
                         ))}

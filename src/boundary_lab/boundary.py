@@ -14,14 +14,14 @@ class BoundaryConditionLab:
         
         def get_1d_window(N: int) -> torch.Tensor:
             if N <= 1:
-                return torch.ones(N, dtype=torch.float32)
-            n = torch.arange(N, dtype=torch.float32)
+                return torch.ones(N, dtype=torch.float64)
+            n = torch.arange(N, dtype=torch.float64)
             if window_type == "hann":
                 return 0.5 * (1.0 - torch.cos(2 * np.pi * n / (N - 1)))
             elif window_type == "hamming":
                 return 0.54 - 0.46 * torch.cos(2 * np.pi * n / (N - 1))
             elif window_type == "tukey":
-                w = torch.ones(N, dtype=torch.float32)
+                w = torch.ones(N, dtype=torch.float64)
                 if alpha <= 0:
                     return w
                 if alpha >= 1:
@@ -30,15 +30,15 @@ class BoundaryConditionLab:
                 # Vectorised, and uses numpy for the scalar taper: torch.cos()
                 # rejects Python floats (the previous per-element loop raised TypeError).
                 limit = int(alpha * (N - 1) / 2)
-                idx = torch.arange(limit + 1, dtype=torch.float32)
+                idx = torch.arange(limit + 1, dtype=torch.float64)
                 taper = 0.5 * (1.0 + torch.cos(
-                    torch.tensor(np.pi, dtype=torch.float32) * (2.0 * idx / (alpha * (N - 1)) - 1.0)
+                    torch.tensor(np.pi, dtype=torch.float64) * (2.0 * idx / (alpha * (N - 1)) - 1.0)
                 ))
                 w[: limit + 1] = taper
                 w[N - 1 - limit:] = torch.flip(taper, dims=[0])
                 return w
             else:
-                return torch.ones(N, dtype=torch.float32)
+                return torch.ones(N, dtype=torch.float64)
                 
         w_y = get_1d_window(H).to(data.device)
         w_x = get_1d_window(W).to(data.device)
@@ -89,8 +89,8 @@ class BoundaryConditionLab:
         H, W = field.data.shape
         padded_H, padded_W = padded_data.shape
         
-        y_indices = torch.arange(padded_H, dtype=torch.float32, device=padded_data.device)
-        x_indices = torch.arange(padded_W, dtype=torch.float32, device=padded_data.device)
+        y_indices = torch.arange(padded_H, dtype=torch.float64, device=padded_data.device)
+        x_indices = torch.arange(padded_W, dtype=torch.float64, device=padded_data.device)
         grid_y, grid_x = torch.meshgrid(y_indices, x_indices, indexing="ij")
         
         y_min, y_max = pad_width, pad_width + H - 1

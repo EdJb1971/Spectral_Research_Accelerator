@@ -45,6 +45,22 @@ def app_source() -> str:
     return _read("App.tsx")
 
 
+@pytest.fixture(scope="module")
+def all_sources() -> str:
+    """Every .tsx/.ts under frontend/src, concatenated.
+
+    Reachability is a property of the *app*, not of one file: the export controls live in
+    `components/ExportBar.tsx`, and a check that only read `App.tsx` would call them unreachable
+    while a researcher was clicking them.
+    """
+    import glob
+
+    chunks = []
+    for path in sorted(glob.glob(os.path.join(FRONTEND, "**", "*.ts*"), recursive=True)):
+        chunks.append(io.open(path, encoding="utf-8").read())
+    return chr(10).join(chunks)
+
+
 def _served_routes():
     from src.api.main import app
 
@@ -107,11 +123,11 @@ def test_the_new_endpoints_are_actually_consumed(api_service):
         assert path in api_service, "%s is served but the frontend never calls it" % path
 
 
-def test_every_api_method_is_reachable_from_the_ui(api_service, app_source):
+def test_every_api_method_is_reachable_from_the_ui(api_service, all_sources):
     """A service method nothing calls is a route that is still invisible to a researcher."""
     methods = set(re.findall(r"^  async (\w+)\(", api_service, re.M))
     assert methods, "no service methods parsed"
-    unused = sorted(m for m in methods if ("apiService.%s" % m) not in app_source)
+    unused = sorted(m for m in methods if ("apiService.%s" % m) not in all_sources)
     assert not unused, (
         "these api service methods are defined but never called from App.tsx, so the "
         "endpoints behind them remain unreachable in the UI: %s" % unused)
@@ -258,14 +274,179 @@ def test_every_tab_in_the_nav_has_a_body(app_source):
             "tab %r appears in the navigation but has no panel" % tab_id)
 
 
-def test_browser_rendering_is_still_recorded_as_unverified():
-    """The honest counterpart to every test above.
+def test_browser_rendering_evidence_is_described_accurately():
+    """The honest counterpart to every contract test above, updated as the facts changed.
 
-    These tests check contracts, not pixels. No browser is available here, so the nine tabs
-    have never been *seen*. That must stay written down in `roadmap.md`, because a green suite
-    plus a green build is exactly the combination that makes people assume otherwise.
+    These tests check contracts, not pixels. For most of this project no browser was available,
+    so the guard asserted that `roadmap.md` kept saying the UI had never been seen. On
+    2026-08-20 the platform was started and the user confirmed the nine tabs render and work -
+    so that sentence would now be false, and a guard that forced a false statement to stay would
+    be worse than no guard.
+
+    What replaced it is the distinction that still matters: **a user's report is not a captured
+    artefact.** T3.5.0 asked for a screenshot per tab; none exists in this repository, so nobody
+    can re-examine the rendering claim the way they can re-examine every other number in
+    `VERIFICATION.md`. This test asserts the documents keep saying exactly that, and no more.
     """
     roadmap = io.open(os.path.join(REPO_ROOT, "roadmap.md"), encoding="utf-8").read()
-    assert "Rendered appearance in a browser still unverified" in roadmap, (
-        "roadmap.md must keep stating that the UI has not been visually verified, for as "
-        "long as that is true")
+    assert "confirmed working by the user" in roadmap or "confirmed the nine tabs" in roadmap, (
+        "roadmap.md must record who confirmed the UI renders and when")
+    assert "No screenshot per tab has been captured" in roadmap or (
+        "no screenshot per tab exists" in roadmap.lower()), (
+        "roadmap.md must keep stating that the rendering is attested rather than evidenced, "
+        "for as long as no screenshots exist in the repository")
+
+    screenshots = [
+        name for name in os.listdir(REPO_ROOT)
+        if name.lower().endswith((".png", ".jpg", ".jpeg", ".webp"))
+    ]
+    docs_dir = os.path.join(REPO_ROOT, "docs")
+    if os.path.isdir(docs_dir):
+        screenshots += [n for n in os.listdir(docs_dir)
+                        if n.lower().endswith((".png", ".jpg", ".jpeg", ".webp"))]
+    assert not screenshots, (
+        "screenshots exist (%s) - T3.5.0's evidence clause is now satisfiable, so update the "
+        "documents to reference them and tighten this test accordingly" % screenshots)
+
+
+# ======================================================== scientific integrity of the UI
+
+def test_no_fabricated_results_remain(app_source):
+    """The excision, asserted. Slice 13 deleted every browser-side fabrication path.
+
+    Before this, an unreachable backend made the UI invent fields, transforms ("approximate
+    reconstruction with tiny errors"), diagnostics, boundary analyses and experiment IDs. One
+    badge in the header said "Offline Sandbox Mock Mode"; the individual results said nothing,
+    so a spectral slope computed from `Math.random()` looked exactly like one computed from
+    ERA5. That is the same class of defect the backend's `is_simulated` provenance exists to
+    prevent, committed one layer up.
+    """
+    for banned in ("getMockDatasets", "runMockFieldGenerator", "applyMockPerturbation",
+                   "Mock Generator", "Mock Diagnostics", "Mock transform",
+                   "Offline Sandbox Mock Mode"):
+        assert banned not in app_source, (
+            "%r is still in App.tsx - the UI can still fabricate a result" % banned)
+    assert "if (backendConnected)" not in app_source, (
+        "a `backendConnected` branch means there is still a path that computes without the "
+        "backend")
+
+
+def test_offline_state_says_nothing_is_fabricated(app_source):
+    assert "Backend unreachable" in app_source
+    assert "No results are fabricated in its absence" in app_source
+
+
+def test_no_unqualified_validation_claims_in_the_ui(app_source):
+    """The transform tab showed two green ticks whatever the measured error was.
+
+    "Mathematically rigorous floating point calculations" and "Verified perfect reconstruct
+    limits" were unconditional - an unqualified validation claim of exactly the kind the
+    project's own rules forbid in its documents, displayed to the researcher instead. The
+    measurement is now judged against a stated tolerance, and on its first live run that
+    change found defect D36: float32 at the HTTP boundary, 1.9e-07 where float64 gives 2.8e-16.
+    """
+    for banned in ("Mathematically rigorous floating point calculations",
+                   "Verified perfect reconstruct limits"):
+        assert banned not in app_source, "unconditional validation claim: %r" % banned
+    assert "perfect reconstruction to double precision" in app_source
+    assert "1e-9" in app_source, "the tolerance the claim is judged against must be stated"
+
+
+def test_the_synthetic_forecast_is_seeded(app_source):
+    """It used to be built with `Math.random()` - unseeded, and uniform despite the control
+    being labelled StDev. Every diagnostic computed from it was irreproducible."""
+    assert "Math.random() - 0.5" not in app_source
+    assert "forecastSeed" in app_source
+    assert "apiService.perturbField" in app_source
+
+
+def test_dataset_simulated_flag_is_shown_where_the_data_is_used(app_source):
+    """`is_simulated` was fetched and displayed nowhere on the tab that uses the data."""
+    assert "SIMULATED DATA - not an observation" in app_source
+    assert "chosen.fallback_reason" in app_source
+
+
+def test_units_and_spectral_convention_are_displayed(app_source):
+    """R15: the same field has different exponents under E(k) and S(k)."""
+    for key in ("k_units", "power_units", "convention", "convention_note"):
+        assert "spectral_diagnostics.%s" % key in app_source, (
+            "%s is returned by the backend and not displayed" % key)
+
+
+def test_spectral_slope_is_shown_with_its_uncertainty(app_source):
+    """A slope with no standard error cannot be compared against -5/3 or -3."""
+    assert "slope_standard_error" in app_source
+
+
+def test_no_literal_latex_is_rendered(app_source):
+    """`$R^2$` in JSX renders as dollar signs, not mathematics."""
+    import re as _re
+
+    literals = _re.findall(r"\$[^$\n{]{1,20}\$", app_source)
+    assert not literals, "literal LaTeX would render as raw text: %s" % literals[:5]
+
+
+def test_every_export_format_is_reachable_from_the_ui():
+    """All four data formats plus PNG and SVG have a control."""
+    bar = _read("components", "ExportBar.tsx")
+    for fmt in ("csv", "json", "netcdf", "zarr"):
+        assert "'%s'" % fmt in bar, "%s has no export control" % fmt
+    figure = _read("components", "FigureExport.tsx")
+    assert "'png'" in figure and "'svg'" in figure
+
+
+def test_exports_carry_provenance_from_the_ui(app_source):
+    """The UI must pass a provenance record, or the backend has nothing to embed."""
+    assert "fieldProvenance" in app_source
+    assert "datasetProvenance" in app_source
+    assert "is_simulated" in app_source
+
+
+# ======================================================== reachability and import
+
+def test_no_served_route_is_unreachable_from_the_ui(api_service):
+    """Every endpoint must be usable by a researcher, not only by a script.
+
+    Four routes were served and uncallable from the UI after T3.5.22: the benchmark *runner*
+    (the gates could be seen but not run), both registries (capability discovery), and the
+    stored-proposals listing. An endpoint nobody can reach is a capability the platform does
+    not really have.
+    """
+    served = {_wildcard(r) for r in _served_routes()}
+    fetched = _fetched_paths(api_service)
+    # Routes exempt by design, with the reason recorded so an exemption cannot be silent.
+    exempt = {
+        "/api/v1/hypothesis/proposals":
+            "the discovery call returns the same records; a separate listing adds no capability",
+    }
+    unreachable = sorted(r for r in served if r not in fetched and r not in exempt)
+    assert not unreachable, (
+        "these routes are served but unreachable from the UI: %s" % unreachable)
+
+
+def test_import_is_wired_into_the_ui(all_sources):
+    """Real data could previously arrive only as a file placed in data/ by hand."""
+    assert "importInspect" in all_sources and "importField" in all_sources
+    assert 'type="file"' in all_sources, "there must be an actual file input"
+    assert "Load into field buffer" in all_sources
+
+
+def test_import_pins_extra_dimensions_rather_than_guessing(all_sources):
+    """An ERA5 file is (time, level, lat, lon); `[0, 0]` chosen silently is a wrong answer."""
+    assert "needs_selection" in all_sources
+    assert "extra_dims" in all_sources
+    assert "recorded in the provenance" in all_sources
+
+
+def test_imported_origin_is_reported_as_unknown_not_real(all_sources):
+    """`is_simulated: null` must display as "unknown", never as observational."""
+    assert "Origin unknown" in all_sources
+    assert "makes no claim about whether this is real data" in all_sources
+
+
+def test_benchmarks_can_be_run_from_the_ui(all_sources):
+    assert "runBenchmarks" in all_sources
+    assert "Run the suite" in all_sources
+    # The three outcomes must stay separate on screen too.
+    assert "NOT YET RUNNABLE" in all_sources
+    assert "null_failures" in all_sources

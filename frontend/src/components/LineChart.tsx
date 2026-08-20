@@ -13,6 +13,12 @@ interface LineChartProps {
   title?: string;
   xLabel?: string;
   yLabel?: string;
+  /** DOM id, so FigureExport can render this exact plot to PNG/SVG. */
+  divId?: string;
+  /** Log axes: a power-law spectrum is a straight line only on log-log, and reading a slope
+   *  off linear axes is how a Kolmogorov cascade gets mistaken for something else. */
+  logX?: boolean;
+  logY?: boolean;
 }
 
 export const LineChart: React.FC<LineChartProps> = ({
@@ -20,6 +26,9 @@ export const LineChart: React.FC<LineChartProps> = ({
   title,
   xLabel,
   yLabel,
+  divId,
+  logX,
+  logY,
 }) => {
   if (!series || series.length === 0 || series.every(s => s.x.length === 0)) {
     return (
@@ -58,11 +67,13 @@ export const LineChart: React.FC<LineChartProps> = ({
             font: { color: '#94a3b8', size: 10 },
             xaxis: {
               title: xLabel ? { text: xLabel } : undefined,
+              type: logX ? 'log' : undefined,
               gridcolor: '#1e293b',
               zeroline: false,
             },
             yaxis: {
               title: yLabel ? { text: yLabel } : undefined,
+              type: logY ? 'log' : undefined,
               gridcolor: '#1e293b',
               zeroline: false,
             },
@@ -74,6 +85,11 @@ export const LineChart: React.FC<LineChartProps> = ({
               font: { color: '#cbd5e1' },
             },
           }}
+          config={{
+            displaylogo: false,
+            toImageButtonOptions: { format: 'png', filename: title || 'figure', scale: 2 },
+          }}
+          divId={divId}
           useResizeHandler={true}
           className="w-full h-80"
         />
