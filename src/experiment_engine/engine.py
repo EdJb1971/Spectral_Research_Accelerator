@@ -45,8 +45,17 @@ def _resolvable_names(params: Dict[str, Any], step_outputs: Dict[str, Any]) -> L
     return names
 
 
+from src.artifact_store import store as artifact_store
+
+
 def resolve_value(val: Any, params: Dict[str, Any], step_outputs: Dict[str, Any],
                   step_name: Optional[str] = None) -> Any:
+    # Checked before the string branch, not after: a bare "artifact://..." is a plain string
+    # and the `{placeholder}` handling below would return it unchanged, so an `elif` further
+    # down is unreachable. Found immediately by the smoke test - the branch was written and
+    # could never run.
+    if artifact_store.is_ref(val):
+        return artifact_store.get_store().load(val)
     if isinstance(val, str):
         if val.startswith("{") and val.endswith("}") and val.count("{") == 1 and val.count("}") == 1:
             ref = val[1:-1]
@@ -79,6 +88,13 @@ def resolve_value(val: Any, params: Dict[str, Any], step_outputs: Dict[str, Any]
     elif isinstance(val, list):
         return [resolve_value(item, params, step_outputs) for item in val]
     elif isinstance(val, dict):
+        # T4A.3: a step output may be an artifact *handle* rather than a payload. A
+        # `CoefficientField` over 10 frames x 64x64 x 4 scales x 6 orientations is ~10M
+        # floats; passing that between steps as nested lists is the scaling wall this store
+        # exists to remove. Dereferencing here means an action written before the store
+        # existed still receives an array, and no action needs to know the store exists.
+        if artifact_store.is_ref(val.get("ref")):
+            return artifact_store.get_store().load(val["ref"])
         return {k: resolve_value(v, params, step_outputs) for k, v in val.items()}
     return val
 

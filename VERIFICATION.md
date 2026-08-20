@@ -2498,3 +2498,277 @@ same care as one.** The reason both were caught in under a minute is that the co
 asserted rather than remembered - which is exactly what `tools/audit_docs.py` and the inventory
 test exist for.
 
+---
+
+## Slice 16 - Phase 4A: the time axis and the artifact store
+
+**Captured 2026-08-21.** The first slice of the scientific core. Everything before this was the
+instrument; this is the substrate the discovery machinery stands on.
+
+### The gap it closes
+
+`PhysicalField` is strictly 2D and raises on anything else. Every transform, statistic and
+benchmark in fifteen slices of work operated on **one snapshot**. The question the whole project
+exists to answer - *which small configurations at t precede which large structures at t+delta* -
+could not be **stated**, because nothing represented "t". `decompose_by_lead_time` only appeared
+to handle time because the caller assembled the list itself, so the axis lived in a local
+variable and vanished on return.
+
+### The validation that produces numbers instead of errors
+
+Three consistency rules, each guarding a failure that would otherwise be silent:
+
+```
+different shapes  -> refused   (a ragged sequence cannot be stacked or transformed as a block)
+different grids   -> refused   (frames on different grids are not one region; a mean across
+                                them averages different PLACES together and nothing downstream
+                                can detect it)
+unsorted times    -> refused   (NOT sorted: a sequence silently reordered is worse than one
+                                that errors)
+duplicate times   -> refused   ("the next frame" becomes ambiguous and every lag is wrong by
+                                an unknown amount)
+```
+
+Grid equality is on the **metric, not object identity**. Two frames cropped from the same archive
+are separate `GridSpec` instances describing the same region; refusing those would make the class
+unusable on real data, and accepting genuinely different ones is the defect above. Both cases are
+tested.
+
+Irregular cadence is *reported*, not refused - a concatenation of two crops is legitimate - but
+`lag_to_seconds` refuses on it, because "3 frames" is not a fixed duration across a gap.
+
+### R6, and the half that looks clean and leaks
+
+```
+overlapping windows                      -> ValueError "they overlap ... measuring memorisation"
+disjoint windows, embargo 1, lag 4       -> ValueError "clean-looking and leaks"
+gap EXACTLY equal to the lag             -> ValueError (last training target lands on the
+                                            first test frame)
+embargo 5, lag 3                         -> passes
+```
+
+The second row is the one that matters. The windows are disjoint, so an overlap check passes -
+and a training example near the boundary still has its *target* inside the test window. That is
+the failure R6 exists for, and it has to be checked explicitly rather than assumed away by "they
+do not overlap".
+
+The embargo frames are **returned**, not dropped, so a lineage record shows what was excluded and
+a reader can verify the gap was real. Refusing an over-long embargo says the wrong fix out loud:
+*"do NOT shrink the embargo below the longest lag under test."*
+
+### The artifact store, against its stated criteria
+
+| T4A.3 acceptance criterion | Result |
+|---|---|
+| 100-frame 64x64 sequence round-trips | **exact**, 3.15 MB on disk |
+| Every lineage row under 4 KB | **1,338 bytes** for the `slice_sequence` node |
+| `analyze_boundary` no longer embeds a padded field | **already true** via the summariser - now asserted so it cannot regress |
+
+The third is worth stating plainly rather than claiming as new work: it had been fixed earlier by
+the summariser layer, and the test exists so a later change cannot quietly reintroduce the
+payload.
+
+Beyond the criteria: identical content deduplicates to one file; a tampered artifact **raises**
+rather than returning a subtly wrong array; a handle that smuggled a payload into its summary is
+refused by its own size budget; arbitrary objects are refused rather than pickled, because an
+artifact only the writing code can read is not reproducible data.
+
+### Two bugs, both found by the tests written for them
+
+**An unreachable branch.** `resolve_value` gained artifact dereferencing as an `elif` *after* the
+string branch - and a bare `artifact://...` is a string, so the generic `{placeholder}` handling
+returned it unchanged and the new branch could never run. The smoke test caught it on the first
+call. Moved to the top of the function.
+
+**A tamper test that proved nothing.** `test_a_tampered_artifact_fails_its_checksum` overwrote
+the last four bytes of the artifact with zeros. The last bytes of a zip are the
+end-of-central-directory comment length, which is **already zero** - so the file was rewritten
+byte-identically, the checksum matched, and the test failed for the right reason but would have
+*passed* for entirely the wrong one had the assertion been inverted. Now it flips a bit in the
+middle and asserts the bytes actually changed first.
+
+**Generalisable lesson: a test of a corruption check has to corrupt something.** Verifying that
+the tamper took effect is part of the test, not a nicety.
+
+### Suite after slice 16
+
+```
+709 passed, 1 skipped (opt-in live GCS), 1 xfailed
+554 test functions across 23 files
+tools/audit_docs.py: RESULT ok (exit 0)
+```
+
+Phase 4A complete: **4 of 4 tasks**, all four acceptance criteria met and measured.
+
+### Next
+
+**Phase 4B** - `CoefficientField` (time x scale x orientation x y x x), the wavelet bank as a
+sweepable parameter, and pressure level as a bank dimension. The store built here is what makes
+it possible: a bank over 10 frames x 4 scales x 6 orientations is ~10M floats, which is exactly
+the payload the lineage seam could not carry an hour ago.
+
+---
+
+## Slice 17 - Phase 4B: `CoefficientField`, the wavelet bank, and the vertical axis
+
+T4B.1, T4B.2, T4B.3, T4B.4. Four of four.
+
+### T4B.1 acceptance criteria, measured
+
+```
+swt    shape=(5, 3, 3, 64, 64) complex=False resampled=False recon_max_err=2e-15
+dtcwt  shape=(5, 3, 6, 64, 64) complex=True  resampled=True  recon_max_err=2.22e-15
+native shapes    : {1: (32, 32), 2: (16, 16), 3: (8, 8)}
+summary bytes    : 2008 for 983040 complex coefficients
+```
+
+All three stated criteria met: every scale of both families returns a band on the parent grid;
+reconstruction is exact to float64; the summary fits a database row against a payload of nearly
+a million complex numbers.
+
+### The claim in T4B.1 that was not true as written
+
+"Backed by SWT/DTCWT so all scales share the parent grid." True of SWT, which is undecimated.
+**False of DTCWT**, whose level-*j* subband is about `H/2**j` - the `native shapes` line above is
+that fact measured. The alignment is nearest-neighbour **upsampling**, and the field says so:
+`resampled_to_parent=True`, every native shape recorded, and the summary stating in words that
+the effective resolution of scale *j* remains `2**j` pixels.
+
+Nearest neighbour rather than interpolation, because the aligned view is a *labelling* of parent
+pixels by the coefficient covering them - not a smooth field. Bilinear would blend phases from
+different spatial positions into values no filter ever produced. Asserted directly: an 8x8
+native band spread over 64x64 yields **at most 64 distinct complex values**.
+
+**Reconstruction never uses the aligned array.** The native coefficients are retained and
+inverted; a field without them refuses rather than approximating. This is the important one -
+inverting the upsampled view returns a field a few percent wrong that is indistinguishable from
+a real reconstruction by inspection. Silent, small, and therefore the worst available failure.
+
+### What SWT bands are not allowed to claim
+
+`LH`, `HL`, `HH` - and no angles. A separable real wavelet's `HH` responds to **both** diagonal
+signs and cannot distinguish them. Labelling it "45 deg" would assert selectivity the transform
+has not got, and that claim would then propagate into every figure drawn from it. The ambiguity
+is the classical motivation for the dual tree, and it is recorded as such rather than smoothed
+over for the sake of a tidier axis label.
+
+### T4B.2 - the "no engine changes" claim, tested rather than asserted
+
+`combinations()` expands by calling the engine's own `expand_parameter_matrix`, and a test
+requires the two to produce identical output. `engine.py` was not touched in this slice.
+
+**An asymmetry in the task's own wording, corrected.** `families` and `scales` are sweep axes;
+**`orientations` is not.** A wavelet transform computes every orientation in one pass, so
+sweeping them would run the identical decomposition six times and discard five sixths of each
+result - the same coefficients at six times the cost. They travel as a selector applied within
+each run.
+
+Closed on the way: `int(2.5) == 2`, so a config asking for 2.5 levels ran two and reported two.
+There is no half dyadic level; fractional scales are now refused. Found by a test I wrote
+expecting a refusal that was not there.
+
+### T4B.3 - the payload stays out of the database
+
+```
+bank             : 4 combinations, 921600 coefficients, lineage row 2415 bytes
+signature row    : 473 bytes; dominant scale per frame [2, 2, 2, 2, 1]
+```
+
+Both actions refuse a **dereferenced payload** by name. `resolve_value` turns a literal
+`artifact://...` into a bare array before an action sees it, and an array has no time axis, no
+grid and no scale labels - accepting one would mean inventing a cadence. The refusal names
+`{step.sequence_ref}` as the fix.
+
+`extract_scale_signature` states its own scope in its result payload: this is the energy half of
+R3, and participation ratio, Gini and threshold counts are T4C.1. Written where a reader
+actually looks rather than only in the roadmap.
+
+### T4B.4 - two silent failures, both found by building it
+
+**A vertical bank with one sequence.** `decompose_bank` originally ignored `levels_hpa`
+entirely. It would have decomposed the same frames once per level and labelled the results
+850 hPa and 500 hPa - **identical coefficient arrays under different labels**. Every cross-level
+statistic downstream would then have measured a vertical structure created by the labelling. A
+bank declaring `levels_hpa` now requires one sequence per level and refuses to guess.
+
+**Levels that collapse onto one stored level.** `sel(method="nearest")` maps a level a dataset
+does not carry onto its neighbour, so two requests can return the same data. The guard compares
+the arrays and refuses:
+
+```
+IDENTICAL: levels 850.0 and 500.0 hPa returned identical data. The dataset does not carry
+both, and nearest-level selection has mapped them onto one stored level; a cross-level
+statistic computed from this would be correlating a field with itself.
+```
+
+It fired immediately on `t2m`, which has no vertical axis at all. A correlation of 1.0 that
+means nothing and looks like a discovery is exactly the failure mode this project cannot afford.
+
+`vertical_offsets()` is signed and names its direction: 500 relative to 850 is `-350`, *upward*,
+because pressure decreases with height. A reader who got that backwards would invert every
+precursor relationship the bank exists to find.
+
+**Scope discipline is asserted, not just written.** `LevelBank.summary()` states that this is 2D
+per level and not a 3D wavelet transform, and a test requires that sentence to be present.
+
+### Two defects closed in the artifact store on the way
+
+**D38 - a complex summary that silently described only the real part.**
+
+```
+D38 complex : {'n_elements': 2, ..., 'is_complex': True, 'statistic_of': 'magnitude',
+               'min': 2.23606797749979, 'max': 3.1622776601683795,
+               'mean_real': 2.0, 'mean_imag': 0.5}
+```
+
+`summarise` called `float(values.min())` unconditionally. For a complex array that does **not**
+raise - numpy casts to real, discards the imaginary part, and warns where nobody reads it.
+`[1+2j, 3-1j]` reported `min = 1.0`. Every DTCWT coefficient field is complex, so the lineage
+rows of an entire phase would have carried real-part statistics labelled as statistics of the
+array.
+
+**D39 - the store dropped the time axis.**
+
+```
+sequence reload : times preserved True | values exact True
+```
+
+`put(sequence)` stored the `(T, H, W)` tensor and the grid but not the timestamps. `load`
+returned an array that was not a sequence, and any caller rebuilding one would have assumed a
+regular cadence - silently mis-dating every frame of an irregular record. The irony is exact:
+Phase 4A existed to give the platform a time axis, and the store built in the same slice threw
+it away. Artifacts now carry their own axes inside the `.npz`, `allow_pickle=False` throughout,
+and the 4 KB handle budget is unaffected because the axes went into the archive rather than the
+database row. Verified on a deliberately irregular record.
+
+The store's docstring also claimed a `.pt` format that was never implemented. It now states the
+single format and the reason: a torch checkpoint is a pickle readable only by the version that
+wrote it, which is not a property reproducible data should have.
+
+### Two of my own mistakes, caught by the tests I wrote
+
+*   `assert record["min"] == abs(3 - 1j)` - I had the magnitudes the wrong way round.
+    `|1+2j| = sqrt(5)` is the smaller. The code was right; the assertion was not.
+*   `assert total_floats > 1_000_000` - the real figure is 921,600. The test now asserts the
+    exact count, so a change in what the bank computes shows up here instead of passing.
+
+### Suite after slice 17
+
+```
+781 passed, 1 skipped (opt-in live GCS), 1 xfailed
+624 test functions across 25 files
+tools/audit_docs.py: RESULT ok (exit 0)
+```
+
+The documentation guard failed first on both new modules and both new test files, which is what
+it is for.
+
+Phase 4B complete: **4 of 4 tasks**, every stated acceptance criterion met and measured.
+
+### Next
+
+**Phase 4C - the gate.** `ScaleSignature` (R3 in full: participation ratio, Gini, threshold
+counts with the threshold recorded), `SurrogateNull` integration, and cross-scale lagged
+dependency. It is self-contained - it needs nothing from 4D-4G - and it is where the project
+finds out whether the central idea is real. Everything built so far exists to make that
+question askable honestly; 4C is where it gets asked.

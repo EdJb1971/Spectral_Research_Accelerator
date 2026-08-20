@@ -591,6 +591,285 @@ reason in the test itself.
 | POST | `/api/v1/hypothesis/discover` | correlation + categorical scan (no FDR yet - D8) |
 | GET | `/api/v1/hypothesis/proposals` | generated follow-up configurations |
 
+## 3A. Phase 4A - The Time Axis and the Artifact Store
+
+### 3A.1 `FieldSequence` (`src/physical_core/sequence.py`, T4A.1/T4A.2)
+
+**What was missing, and why nothing above it could exist.** `PhysicalField` is strictly 2D and
+raises on any other rank. Every transform, statistic and benchmark in the platform operated on
+one snapshot. The research question the project exists to answer — *which small configurations
+at t precede which large structures at t+Δ* — could not be **stated**, because nothing
+represented "t". `decompose_by_lead_time` only appeared to work because the caller assembled the
+list itself, so the time axis lived in a local variable and vanished on return.
+
+A `FieldSequence` is ordered `PhysicalField`s plus a real time coordinate, with the consistency
+everything above it will assume checked **once, here**:
+
+*   **Same shape**, or refused — a ragged sequence cannot be stacked or transformed as a block.
+*   **Same grid**, or refused — and this is the one that matters. Frames on different grids are
+    not observations of one region; a mean or a spectrum across them averages *different places
+    together*, which is arithmetic that succeeds and means nothing. Equality is on the **metric,
+    not object identity**, because two frames cropped from the same archive are separate
+    `GridSpec` instances describing the same region.
+*   **Strictly increasing times**, or refused. Unsorted input is *not* sorted silently: a
+    sequence whose order was corrected without anyone noticing is worse than one that errors.
+    Duplicate timestamps make "the next frame" ambiguous and would make every lag wrong by an
+    unknown amount.
+
+**Irregular sampling is reported, never silently accepted.** `cadence_seconds` gives the modal
+spacing and `is_regular` says whether every step matches. `lag_to_seconds` **refuses** on an
+irregular record, because "3 frames" is not a fixed duration when the record has gaps.
+
+`at_time` refuses an inexact match by default rather than returning the nearest frame: a caller
+who asked for 06:00 and silently received 12:00 has a six-hour error in a lag calculation with
+nothing to indicate it. Slicing returns a `FieldSequence`, not a list — a list would drop the
+time axis, which is the exact failure this class exists to prevent.
+
+### 3A.2 The temporal split (rule R6)
+
+`split_temporal(train, val, embargo_frames)` mirrors the existing *spatial* guardrail
+(`PhysicalField.split_field` / `validate_split_guardrails`) deliberately, so the discipline reads
+the same on both axes.
+
+**Why an embargo and not just a boundary.** Atmospheric fields are strongly autocorrelated: the
+frame immediately after a train/test boundary is nearly a copy of the one before it. Testing on
+it measures persistence, not prediction. The embargo is the number of frames *discarded* at each
+boundary and must be at least as long as the longest lag under test — otherwise the target of a
+training example lies inside the test window.
+
+The discarded frames are **returned** under `embargo_train_val` / `embargo_val_test` rather than
+dropped, so a lineage record shows what was excluded and a reader can check the gap was real.
+
+`validate_temporal_guardrails(a, b, max_lag_frames)` raises on two distinct failures, because
+they have different causes and different fixes:
+
+| Failure | Why it needs its own check |
+|---|---|
+| **Overlap** | The windows share timestamps. An ordinary bug. |
+| **Insufficient embargo** | The windows are disjoint — *an overlap check passes* — but a training example near the boundary has its target inside the test window. **The split looks clean and leaks.** |
+
+The second is T4A.2's acceptance criterion and the reason the function takes a lag argument at
+all. A gap of *exactly* one lag still raises: it puts the last training target on the first test
+frame.
+
+### 3A.3 `ArtifactStore` (`src/artifact_store/store.py`, T4A.3)
+
+Lineage `value` columns and inter-step `step_outputs` carried full payloads as nested Python
+lists — `architecture.md` has listed that as a hard scaling limit since the first audit, and
+Phase 4B is where it stops being theoretical: a `CoefficientField` over 10 frames × 64×64 ×
+4 scales × 6 orientations is ~10 million floats, roughly **200 MB of JSON in a database column,
+per step, per run**.
+
+Steps now exchange an `ArtifactHandle` — reference, shape, dtype, SHA-256, and a small
+*statistical* summary — while the bytes live under `artifacts/` keyed by their own content hash.
+
+Measured against T4A.3's stated acceptance criteria:
+
+| Criterion | Result |
+|---|---|
+| 100-frame 64×64 sequence round-trips | **exact**, 3.15 MB on disk |
+| Every lineage row under 4 KB | **1,338 bytes** for the `slice_sequence` node |
+| `analyze_boundary` no longer embeds a padded field | **already true** via the summariser layer — now asserted so it cannot regress |
+
+**Content addressing is the deduplication and the integrity check at once.** Two steps producing
+identical output write one file (verified). A handle names the exact bytes it was made from, so a
+corrupted artifact is an **error** rather than a subtly wrong array — the failure it catches is
+silent, and every number derived from a tampered artifact would be wrong with nothing to
+indicate it.
+
+**NaN and infinity counts are first-class in the summary**, not diagnostics: an array that is 3%
+NaN poisons every downstream mean, and one that is *entirely* NaN is indistinguishable from a
+good one by shape and dtype alone.
+
+**Arbitrary objects are refused rather than pickled.** An artifact only the exact code that wrote
+it can read is not reproducible data, whatever the lineage row says. Writes are atomic
+(temp-file-then-rename), because a store that can hold a half-written artifact is one whose
+checksums start failing for reasons nobody can reconstruct.
+
+`resolve_value` dereferences handles, so an action written before the store existed still
+receives an array and no action needs to know the store exists.
+
+### 3A.4 Sequence slicing (`slice_sequence`, T4A.4)
+
+`MeteorologicalDataAdapter.slice_sequence(...)` and a matching pipeline action are the entry
+point through which every Phase 4 stage gets its data. The action stores the frames and returns
+a **reference**, not a payload.
+
+Two guards worth naming: a `max_frames` limit (a whole ERA5 record at 6-hourly cadence is
+~93,000 frames, and the failure mode without it is a killed process rather than an error), and a
+**count of non-finite values replaced**. A zero is a value, not an absence — a spectrum of a
+field with zeroed gaps has structure the atmosphere does not — so the substitution is recorded
+in the provenance rather than being invisible.
+
+---
+
+## 3B. Phase 4B - `CoefficientField` and the Wavelet Bank
+
+### 3B.1 The five-dimensional array (`src/transform_engine/coefficient_field.py`, T4B.1)
+
+Phase 4A gave the platform a time axis. Everything above 4B needs two more: **scale** and
+**orientation**. The research question - *which small configurations at t precede which large
+structures at t+delta* - is a statement about a five-dimensional array, and until this slice
+that array had no representation. `apply_transform` returned a per-frame dict keyed
+`"level_1"`, `"level_2"`, ..., so "the energy at scale 3 over time" had to be reassembled from
+strings by whoever wanted it - the same way the time axis went missing before `FieldSequence`
+existed.
+
+`CoefficientField` is `(time, scale, orientation, y, x)` plus the parent `GridSpec`, with the
+invariants checked once: rank five, every axis labelled, and a grid whose shape matches the
+spatial axes. That last check is not a formality - a grid of the wrong shape means the
+coordinates attached to these coefficients describe *different pixels* than the ones they
+label, and every position reported downstream would be wrong by a fixed offset nobody would
+look for.
+
+**The parent-grid claim, stated honestly.** The roadmap says "backed by SWT/DTCWT so all scales
+share the parent grid". That is true of SWT and **not** true of DTCWT:
+
+| | SWT | DTCWT |
+|---|---|---|
+| Native band shape at level *j* | `H x W` (undecimated) | about `H/2**j x W/2**j` |
+| Aligned to the parent grid by | nothing - it already is | **nearest-neighbour upsampling** |
+| `resampled_to_parent` | `False` | `True`, with every native shape recorded |
+
+Nearest neighbour rather than interpolation is deliberate. The aligned view is a *labelling* of
+parent pixels by the coefficient covering them, not a smooth field to be interpolated, and
+bilinear blending of complex coefficients mixes phases belonging to different spatial
+positions - producing values no filter ever computed. **Upsampling invents no information**:
+the effective resolution of scale *j* is still `2**j` pixels, which the summary states in those
+words, because treating an aligned DTCWT band as if it resolved parent-grid detail would be a
+false claim about the data. A test asserts the replication directly - an 8x8 native band cannot
+produce more than 64 distinct values once spread over 64x64.
+
+**Reconstruction therefore never uses the aligned array.** The native per-frame coefficients are
+retained and `reconstruct()` inverts *those*; both families return the source sequence to about
+2e-15, which is what float64 exactness looks like. A field built with `keep_native=False`, or
+one restored from an artifact, **refuses** to reconstruct rather than inverting the upsampled
+view. That refusal is the point: inverting the aligned view would return a field a few percent
+wrong that is indistinguishable from a real reconstruction by inspection - silent, small, and
+therefore the worst available failure.
+
+**Orientation labels say only what the transform can support.** DTCWT carries the six feature
+orientations in degrees, with the convention named and a pointer to the wavevector convention
+that differs from it by 90 degrees. SWT carries `LH`, `HL`, `HH` and *no angles*, because a
+separable real wavelet's `HH` band responds to both diagonal signs and cannot distinguish them.
+Writing "45 deg" on it would assert a directional selectivity the transform has not got - and
+that claim would then propagate into every figure drawn from it. The ambiguity is the classical
+motivation for the dual tree, and it is recorded as such.
+
+**Physical scale is reported as a band, or not at all.** A dyadic level *j* covers wavelengths
+of roughly `2**j` to `2**(j+1)` samples, so `scale_wavelength_bands()` returns that interval in
+metres rather than a single number, which would imply a selectivity the filter does not have. On
+a grid with no physical spacing it returns `None` rather than a guess: a wavelength in metres
+derived from a pixel grid would be fabricated.
+
+`summary()` is lineage-safe by construction - labels, provenance and per-`(scale, orientation)`
+mean energy fraction. A ten-frame four-level DTCWT bank summarises to **2,008 bytes** while the
+payload it describes is **983,040 complex coefficients**.
+
+### 3B.2 The bank as an ordinary parameter matrix (`src/transform_engine/bank.py`, T4B.2)
+
+The roadmap calls this "one of the genuinely free wins in this plan": a `wavelet_bank` block
+needs no engine changes because its entries are ordinary parameter-matrix entries.
+`WaveletBank.to_parameter_matrix()` returns a plain `Dict[str, List]`, and `combinations()`
+expands it by calling the engine's **own** `expand_parameter_matrix` - so a bank cannot expand
+differently from an ordinary matrix, because it *is* one. The test asserts the two produce
+identical output; reimplementing the product would have tested the reimplementation.
+
+The families come from the registry, filtered to those `coefficient_field` can arrange into
+(scale, orientation) axes. `fft`, `dct` and `hybrid` are registered transforms but are **not**
+banks - they have no such factorisation, and giving them one would invent axes that do not
+exist. They are refused at *configuration* time, so a long sweep does not die on its last
+combination.
+
+**One asymmetry, stated rather than papered over.** The roadmap lists `families`, `scales` and
+`orientations` together as though all three were sweep axes. Two of them are. `orientations` is
+not: a wavelet transform computes every orientation in a single pass, so sweeping them would run
+the identical decomposition once per orientation and discard five sixths of each result - the
+same coefficients at six times the cost. Orientations therefore travel as a **selector** applied
+within each run, and `summary()` says so under `orientation_role`.
+
+The 1,000-combination guard is kept and duplicated in the bank so the refusal names the bank and
+quantifies the cost, rather than arriving from deep inside the engine. A test asserts the two
+ceilings are the same number.
+
+### 3B.3 The two pipeline actions (T4B.3)
+
+`decompose_bank` runs every combination and stores each `CoefficientField` as an artifact,
+returning **references**. A four-combination bank over five 64x64 frames is 921,600
+coefficients; its lineage row is 2,415 bytes. `extract_scale_signature` collapses a field to
+per-`(time, scale)` energy and energy fraction.
+
+**Scope, so the roadmap is not over-claimed:** `extract_scale_signature` is the *energy half* of
+rule R3. Participation ratio, the Gini coefficient and threshold counts are T4C.1; the action
+says so in its own result payload, at the point a reader actually looks. Energy *fractions*
+rather than raw energy are what make signatures comparable at all - raw energy scales with the
+amplitude of the field, so the same structure recorded in different units would produce two
+different signatures.
+
+Both actions refuse a **dereferenced payload** by name. `resolve_value` turns a literal
+`artifact://...` into a bare array before an action sees it, and an array has neither a time
+axis nor a grid nor scale labels; accepting one would mean inventing a cadence. The refusal
+names the fix (`{step.sequence_ref}`, which passes the reference rather than the payload).
+
+### 3B.4 Pressure level as a bank dimension (T4B.4)
+
+ERA5 is `time x level x lat x lon x variable`, and until this slice the vertical axis was only a
+*selector*: analyse 500 hPa. That made the most famous precursor relationship in synoptic
+meteorology - an upper-level trough preceding surface cyclogenesis - impossible to express,
+because two levels were two unrelated runs with nothing tying their time axes together.
+
+`MeteorologicalDataAdapter.slice_level_sequences` returns one `FieldSequence` per level in a
+single pass, so the shared time axis is a property of the construction rather than something a
+caller must remember to arrange. `LevelBank` validates that the levels agree on shape, family
+and **timestamps** - a vertical lead-lag measured across levels sampled at different times
+measures the sampling, not the atmosphere. `vertical_offsets()` produces the 4E edge attribute:
+signed, in hPa, with its direction named, because pressure decreases upward and a reader who got
+that backwards would invert every precursor relationship the bank exists to find.
+
+**Two silent failures closed here, both found by building the thing rather than by review:**
+
+*   **A vertical bank with one sequence.** `decompose_bank` originally ignored `levels_hpa`. It
+    would have decomposed the same frames once per level and labelled the results 850 hPa and
+    500 hPa - **identical coefficient arrays under different labels**, and every cross-level
+    statistic downstream would then have measured that fiction. A bank declaring `levels_hpa`
+    now requires one sequence per level and refuses to guess.
+*   **Levels that collapse onto one stored level.** `sel(method="nearest")` means a requested
+    level a dataset does not carry silently becomes its neighbour, so two requests can land on
+    the same data. `slice_level_sequences` compares the returned arrays and refuses when they
+    are identical: a cross-level correlation computed from them is a field correlated with
+    itself - a coefficient of 1.0 that means nothing and looks like a discovery. The guard
+    fired immediately on `t2m`, which has no vertical axis at all.
+
+**Scope discipline, as the roadmap requires: this is 2D-per-level, not 3D wavelets.** Nothing
+here resolves vertical structure *within* a decomposition. Each level is decomposed
+independently and the vertical relationship is carried as a cross-level edge attribute by 4E.
+`LevelBank.summary()` states that in those words, so a later reader cannot mistake what was
+computed.
+
+### 3B.5 Two defects closed in the store on the way (D38, and the missing time axis)
+
+Neither was in the plan; both were found by Phase 4B walking into them.
+
+**D38 - a complex summary that silently described only the real part.** `summarise` called
+`float(values.min())` unconditionally. For a complex array that does *not* raise: numpy casts to
+real, discards the imaginary part, and emits a warning nobody reads. `[1+2j, 3-1j]` reported
+`min = 1.0`. Every DTCWT coefficient field is complex, so the lineage rows of an entire phase
+would have carried statistics of the real part alone, labelled as statistics of the array.
+Complex arrays are now summarised on their **magnitude** and say so under `statistic_of`.
+
+**A store that dropped the time axis.** `put(sequence)` stored the `(T, H, W)` tensor and the
+grid, but not the timestamps - so `load` returned an array that was not a sequence, and any
+caller rebuilding one would have had to assume a regular cadence, silently mis-dating every
+frame of an irregular record. Artifacts now **carry their own axes**: the time coordinate as an
+array member and the labels, grid and metadata as one JSON member inside the same `.npz`, with
+`load_sequence` and `load_coefficient_field` rebuilding the real object. `allow_pickle=False`
+throughout - the axes are data, not a pickle. The handle is unaffected: a 200-frame sequence
+still fits the 4 KB budget, because the axes went into the archive rather than the database row.
+
+The module docstring also claimed a `.pt` format that was never implemented. It now states the
+single format and why: a torch checkpoint is a pickle readable only by the version that wrote
+it, which is not a property reproducible data should have.
+
 ## 4. Database Schema and State Tracking (`src/database/models.py`, `session.py`, `migrate.py`)
 
 The database layer (`src/database/`) is fully configured using SQLAlchemy and targets a persistent or in-memory SQLite database (`spectral_earth.db`). 
@@ -756,7 +1035,7 @@ See `VERIFICATION.md` for the captured command output behind every statement her
 | Item | Status |
 |---|---|
 | Python venv + dependencies | installed (torch 2.13.0, numpy 2.2.6, pydantic 1.10.26, SQLAlchemy 2.0.52, xarray 2025.6.1, FastAPI 0.110.3) |
-| Backend test suite | **647 passed, 1 xfailed** (plus 1 skipped: the opt-in live-GCS check) (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17, 351 after T3.5.6, 379 after T3.5.15, 407 after T3.5.19, 449 after T4C.5) |
+| Backend test suite | **781 passed, 1 xfailed** (plus 1 skipped: the opt-in live-GCS check) (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17, 351 after T3.5.6, 379 after T3.5.15, 407 after T3.5.19, 449 after T4C.5, 709 after T4A.4) |
 | Ground-Truth Benchmark Suite | **15 PASS, 0 FAIL, 2 NOT_YET_RUNNABLE** (`python -m src.benchmarks`, exit 0) |
 | Frontend `npm install` + `npm run build` | passes, emits 1,378 modules + real JS/CSS assets (was: 1 module, no assets) |
 | Backend server | starts, serves OpenAPI, all smoke-tested endpoints return 200 |
@@ -831,6 +1110,8 @@ code paths that `architecture.md` previously described as implemented and rigoro
 | D35 | `api/main.py` imports (found by starting the platform, T3.5.25) | **A fallback chain that depended on browsing order.** Source registration is an import side effect, and `zarr_source` was imported only lazily inside its own handlers. Measured on the running server: `GET /data/sources` returned `['netcdf_local', 'simulated']` on a fresh process and `['netcdf_local', 'era5_zarr', 'simulated']` after the ERA5 tab had been visited - so which sources `resolve()` searched depended on which endpoint the researcher happened to call first. Now imported at the composition root, with a subprocess test asserting a fresh interpreter registers all three. | **FIXED** T3.5.25 |
 | D36 | `api/main.py`, `analysis_engine/decomposition.py`, `boundary_lab/boundary.py` (found by starting the platform, T3.5.25) | **The double-precision core was discarded at the HTTP boundary.** Ten sites cast every incoming field to `torch.float32`. Measured on the identical field: an FFT round trip is **2.8e-16 in float64 and 1.9e-07 in float32** - nine orders of magnitude. Every number a researcher saw through the UI carried float32 error, while the benchmarks, the Parseval checks and the tight-frame constants were all verified in float64. D27 had been fixed precisely because a float32 `fftfreq` capped Parseval at 5.8e-8; casting the data itself gave all of that back. Found on the first live run by the measured round-trip tolerance that replaced the transform tab's unconditional green ticks. | **FIXED** T3.5.25 |
 | D37 | `data_layer/exporters.py` (found by starting the platform, T3.5.25) | **CSV export was lossy and nothing said so.** Fields were written with `%.10g`; IEEE-754 double needs **17** significant digits to round-trip, so seven were silently discarded. Found on a live export/import loop through the running server - CSV was the only format that came back changed, and only comparing the arrays revealed it. This is the same precision D36 was fixed to stop throwing away at the HTTP boundary, discarded again one layer out in the file format. Now `%.17g`, with a bit-exactness test across all four formats; the cost is about 50% more bytes. | **FIXED** T3.5.25 |
+| D38 | `artifact_store/store.py` (found while building T4B.1) | **A complex summary that silently described only the real part.** `summarise` called `float(values.min())` unconditionally. For a complex array that does not raise: numpy casts to real, discards the imaginary part, and warns where nobody reads it - `[1+2j, 3-1j]` reported `min = 1.0`. Every DTCWT coefficient field is complex, so the lineage rows of an entire phase would have carried real-part statistics labelled as statistics of the array. Complex arrays are now summarised on their **magnitude** and say so under `statistic_of`. | **FIXED** T4B.1 |
+| D39 | `artifact_store/store.py` (found while building T4B.3) | **The store dropped the time axis of a `FieldSequence`.** `put` stored the `(T, H, W)` tensor and the grid but not the timestamps, so `load` returned an array that was not a sequence - and any caller rebuilding one would have assumed a regular cadence, silently mis-dating every frame of an irregular record. The irony is exact: 4A existed to give the platform a time axis, and the store built in the same slice discarded it. Artifacts now carry their own axes inside the `.npz` (times as an array member, labels and grid as one JSON member, `allow_pickle=False`), with `load_sequence` / `load_coefficient_field` rebuilding the real object. The 4 KB handle budget is unaffected: the axes went into the archive, not the database row. | **FIXED** T4B.3 |
 
 **Root cause common to D20, D23, D25 and D2:** the transform engine — the mathematical core of
 the platform — had **no test file at all**. `src/tests/test_transforms.py` now exists (36 cases
@@ -943,9 +1224,11 @@ able to sit three slices out of date.
 | File | Test functions | Covers |
 |---|---|---|
 | `test_analysis_data.py` | 6 | diagnostics and data-layer endpoints |
+| `test_artifact_store.py` | 33 | content addressing, checksum verification, handle budget, T4A.3 acceptance |
 | `test_api_infrastructure.py` | 16 | health, listing, pagination, CORS, data-source transparency, benchmark endpoints |
 | `test_benchmarks.py` | 45 | Ground-Truth Benchmark Suite, seed discipline, climatology removal, D30 determinism |
 | `test_boundary_synthetic.py` | 7 | boundary treatments, windowing, synthetic generators |
+| `test_coefficient_field.py` | 35 | T4B.1 acceptance: parent-grid alignment, perfect reconstruction per family, lineage-safe summary; DTCWT upsampling declared; LevelBank and level slicing (T4B.4) |
 | `test_documentation.py` | 18 | this document and roadmap.md against the code |
 | `test_dtcwt.py` | 28 | Kingsbury q-shift DTCWT: primitives vs reference, two oracles, orientation, shift invariance, D1 head-to-heads |
 | `test_executor.py` | 26 | Executor backends, seed derivation, ordering, device/thread policy, SQLite concurrency, byte-identical sweeps |
@@ -956,12 +1239,14 @@ able to sit three slices out of date.
 | `test_hypothesis.py` | 3 | correlation and categorical hypothesis discovery |
 | `test_imports.py` | 36 | NetCDF/Zarr/CSV/JSON import, dimension pinning, axis identification, laundering guard, benchmark runs over HTTP |
 | `test_migrations.py` | 25 | Alembic history, ORM/schema drift, per-revision round trips, pre-Alembic adoption, auto-migrate refusal, PostgreSQL rendering |
+| `test_sequence.py` | 37 | FieldSequence validation, cadence, R6 temporal split and leakage guardrails, slice_sequence |
 | `test_registries.py` | 29 | registries, error taxonomy, fallback chain, and the T3.5.15 plugin acceptance criterion |
 | `test_stationary.py` | 19 | undecimated SWT: shift invariance, perfect reconstruction, frame constant, PyWavelets oracle, R3 normalisation |
 | `test_statistics.py` | 36 | FDR procedures vs scipy, surrogate preservation properties, calibration on a true null, stationarity gate, screening |
+| `test_wavelet_bank.py` | 27 | T4B.2 expansion through the engine's own parameter matrix, the 1,000-combination guard, decompose_bank / extract_scale_signature, the vertical-bank refusals |
 | `test_transforms.py` | 13 | fft/dct/dwt/dtcwt/hybrid round trips; D1 recorded as a strict xfail |
 | `test_zarr_source.py` | 58 | R13 crop geometry, chunk-hostility prediction, byte counting, cache and provenance round trip, the NetCDF engine (D33), zarr HTTP surface |
-| **total** | **492** | |
+| **total** | **624** | |
 
 ### 7.2h A surrogate null that was not the null it claimed (T4C.5)
 

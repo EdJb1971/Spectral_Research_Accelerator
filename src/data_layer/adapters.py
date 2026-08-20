@@ -8,7 +8,7 @@ from src.data_layer import sources as data_sources
 from src.data_layer import builtin_sources as _builtin  # noqa: F401
 
 logger = logging.getLogger(__name__)
-from typing import Dict, Any, List, Optional, Tuple
+from typing import Dict, Any, List, Optional, Sequence, Tuple
 from src.physical_core.field import PhysicalField
 
 def create_simulated_era5() -> xr.Dataset:
@@ -344,3 +344,180 @@ class MeteorologicalDataAdapter:
             metadata["time"] = str(time)
             
         return PhysicalField(data_tensor, coords=coords, metadata=metadata)
+
+    @classmethod
+    def slice_sequence(
+        cls,
+        dataset_id: str,
+        variable: str,
+        time_range: Optional[Tuple[Any, Any]] = None,
+        level: Optional[float] = None,
+        lat_range: Optional[Tuple[float, float]] = None,
+        lon_range: Optional[Tuple[float, float]] = None,
+        max_frames: int = 2000,
+    ) -> "FieldSequence":
+        """Crop a dataset over **time** rather than at one instant (roadmap T4A.4).
+
+        The counterpart of `slice_dataset`, and the entry point through which every Phase 4
+        stage gets its data. `slice_dataset` picks one timestep and throws the time axis away;
+        everything above 4A needs that axis kept.
+
+        ``max_frames`` is a guard, not a preference. A whole ERA5 record at 6-hourly cadence is
+        ~93,000 frames; materialising that as a list of `PhysicalField`s is tens of gigabytes
+        of Python objects, and the failure mode is a killed process rather than an error
+        message. The limit refuses with the count and the fix instead.
+        """
+        from src.physical_core.sequence import FieldSequence
+
+        ds = cls.get_dataset(dataset_id)
+        if variable not in ds.data_vars:
+            raise ValueError(
+                f"Variable '{variable}' not found in dataset '{dataset_id}'. "
+                f"Available: {list(ds.data_vars.keys())}")
+
+        da = ds[variable]
+        if "time" not in da.dims:
+            raise ValueError(
+                f"'{variable}' in '{dataset_id}' has no time dimension (dims {list(da.dims)}), "
+                f"so it cannot be sliced as a sequence. Use slice_dataset for a single field.")
+
+        if time_range is not None:
+            start, end = time_range
+            da = da.sel(time=slice(start, end))
+            if da.sizes.get("time", 0) == 0:
+                coverage = ds["time"].values
+                raise ValueError(
+                    f"time_range {time_range} selects no frames. '{dataset_id}' covers "
+                    f"{str(coverage[0])[:19]} to {str(coverage[-1])[:19]}.")
+
+        if "level" in da.dims:
+            if level is not None:
+                da = da.sel(level=level, method="nearest")
+            elif 500.0 in da.coords["level"].values:
+                da = da.sel(level=500.0)
+            else:
+                da = da.isel(level=len(da.coords["level"]) // 2)
+
+        if lat_range is not None:
+            lat_min, lat_max = sorted(lat_range)
+            da = da.sel(lat=slice(lat_min, lat_max))
+        if lon_range is not None:
+            lon_min, lon_max = sorted(lon_range)
+            da = da.sel(lon=slice(lon_min, lon_max))
+
+        n_frames = int(da.sizes["time"])
+        if n_frames > max_frames:
+            raise ValueError(
+                f"this crop selects {n_frames} frames, over the {max_frames}-frame limit. "
+                f"Materialising them as PhysicalField objects would use roughly "
+                f"{n_frames * da.sizes.get('lat', 1) * da.sizes.get('lon', 1) * 8 / 1e9:.1f} GB "
+                f"before any analysis runs. Narrow time_range, or raise max_frames "
+                f"deliberately if the memory is genuinely available.")
+
+        values = da.values
+        if values.ndim != 3:
+            raise ValueError(
+                f"slicing produced a {values.ndim}D array with dims {list(da.dims)}; a "
+                f"sequence needs exactly (time, lat, lon) after level selection.")
+
+        # nan_to_num is applied per frame *and counted*, because silently replacing missing
+        # data with zeros changes every statistic computed afterwards - a zero is a value, not
+        # an absence, and a spectrum of a field with zeroed gaps has structure the atmosphere
+        # does not.
+        n_nonfinite = int(np.count_nonzero(~np.isfinite(values)))
+
+        lat_coords = torch.tensor(da.coords["lat"].values, dtype=torch.float64)
+        lon_coords = torch.tensor(da.coords["lon"].values, dtype=torch.float64)
+        coords = {"lat": lat_coords, "lon": lon_coords}
+
+        base_metadata = {
+            "dataset_id": dataset_id,
+            "variable": variable,
+            "units": da.attrs.get("units", "unknown"),
+            "long_name": da.attrs.get("long_name", variable),
+        }
+        if level is not None:
+            base_metadata["level"] = float(level)
+
+        fields = []
+        for index in range(n_frames):
+            frame = torch.tensor(values[index], dtype=torch.float64)
+            if not torch.isfinite(frame).all():
+                frame = torch.nan_to_num(frame, nan=0.0, posinf=0.0, neginf=0.0)
+            fields.append(PhysicalField(
+                frame, coords=coords,
+                metadata={**base_metadata, "frame_index": index}))
+
+        source = cls._sources.get(dataset_id, {})
+        metadata = {
+            **base_metadata,
+            "n_nonfinite_replaced": n_nonfinite,
+            "nonfinite_policy": (
+                "non-finite values replaced with 0.0 and counted. A zero is a value, not an "
+                "absence: any spectrum or gradient computed here includes structure the "
+                "replacement introduced." if n_nonfinite else "no non-finite values present"),
+            "is_simulated": bool(source.get("is_simulated", True)),
+            "source_kind": source.get("kind", "unknown"),
+            "fallback_reason": source.get("fallback_reason"),
+        }
+        return FieldSequence(fields, da.coords["time"].values, metadata=metadata)
+
+    @classmethod
+    def slice_level_sequences(
+        cls,
+        dataset_id: str,
+        variable: str,
+        levels: Sequence[float],
+        time_range: Optional[Tuple[Any, Any]] = None,
+        lat_range: Optional[Tuple[float, float]] = None,
+        lon_range: Optional[Tuple[float, float]] = None,
+        max_frames: int = 2000,
+    ) -> Dict[float, "FieldSequence"]:
+        """One `FieldSequence` per pressure level, sharing a grid and a time axis (T4B.4).
+
+        The vertical axis has until now been a *selector* - "analyse 500 hPa" - which makes the
+        canonical atmospheric precursor relationship, an upper-level trough preceding surface
+        cyclogenesis, impossible to express: two levels were two unrelated runs with nothing
+        tying their time axes together.
+
+        The levels are sliced in one pass here rather than by repeated calls so the shared time
+        axis is a property of the construction rather than something a caller has to remember
+        to arrange. A duplicate level is refused rather than deduplicated: it almost always
+        means a typo in a config, and quietly collapsing it would make the returned bank a
+        different shape than the one that was asked for.
+        """
+        if not levels:
+            raise ValueError(
+                "at least one pressure level is required; pass a single value to "
+                "slice_sequence instead if the vertical axis is not part of the analysis.")
+        requested = [float(level) for level in levels]
+        duplicates = sorted({lev for lev in requested if requested.count(lev) > 1})
+        if duplicates:
+            raise ValueError(
+                f"duplicate pressure levels {duplicates}. A level bank indexed by pressure "
+                f"cannot hold the same level twice, and silently deduplicating would return "
+                f"a bank of a different size than the config asked for.")
+
+        sequences: Dict[float, "FieldSequence"] = {}
+        for level in requested:
+            sequences[level] = cls.slice_sequence(
+                dataset_id=dataset_id, variable=variable, time_range=time_range,
+                level=level, lat_range=lat_range, lon_range=lon_range,
+                max_frames=max_frames)
+
+        # `sel(method="nearest")` inside slice_sequence means a requested level that the
+        # dataset does not carry silently becomes its neighbour. Two requested levels can
+        # therefore land on the *same* stored level, which would make a cross-level lead-lag
+        # a comparison of a field with itself - a correlation of 1.0 that means nothing.
+        reference = sequences[requested[0]]
+        for level, sequence in sequences.items():
+            if level is requested[0]:
+                continue
+            if torch.equal(sequence.to_tensor(), reference.to_tensor()):
+                raise ValueError(
+                    f"levels {requested[0]} and {level} hPa returned identical data. The "
+                    f"dataset does not carry both, and nearest-level selection has mapped "
+                    f"them onto one stored level; a cross-level statistic computed from this "
+                    f"would be correlating a field with itself. Check which levels "
+                    f"'{dataset_id}' actually provides.")
+        return sequences

@@ -12,7 +12,7 @@ Everything below either serves that question or gets cut.
 ## 1. Honest Technical Status
 
 Verified against the code on 2026-08-20. Every claim here is backed by captured output in
-`VERIFICATION.md`; `architecture.md` Section 7 holds the full defect ledger (D1-D37, of which **35 fixed, 1 partial (D18), 1 open (D17)**).
+`VERIFICATION.md`; `architecture.md` Section 7 holds the full defect ledger (D1-D39, of which **37 fixed, 1 partial (D18), 1 open (D17)**).
 
 The numbers in this table are checked by `src/tests/test_documentation.py`, which parses them
 out of this file and compares them against the source. That guard exists because this table
@@ -22,7 +22,7 @@ status section, it is a memory.
 
 | Area | Real status |
 |---|---|
-| Backend test suite | **647 passed, 1 xfailed.** Plus one skipped by design: the live-GCS check is opt-in. Trajectory: 19 written / 1 failing / uncollectable -> 65 -> 152 -> 222 -> 271 -> 351 -> 407 -> 449 -> 478 -> 535 -> 548 -> 593 -> 642 -> 647. |
+| Backend test suite | **781 passed, 1 xfailed.** Plus one skipped by design: the live-GCS check is opt-in. Trajectory: 19 written / 1 failing / uncollectable -> 65 -> 152 -> 222 -> 271 -> 351 -> 407 -> 449 -> 478 -> 535 -> 548 -> 593 -> 642 -> 647 -> 709 -> 781. |
 | Ground-Truth Benchmark Suite | **15 PASS, 0 FAIL, 2 NOT_YET_RUNNABLE.** Nine datasets with declared known answers, five of them nulls. CI-ready via `python -m src.benchmarks` (exit 0). |
 | Backend compute modules | **Written, executed and tested.** `physical_core` carries `GridSpec` + metric-aware operators; `analysis_engine` gained `spectra.py` and `climatology.py`; `transform_engine` gained the undecimated `stationary.py` and a real `dtcwt.py`; `statistics/` and `core/` are new packages. |
 | Physical units and wavenumbers | **Correct as of T3.5.13.** Gradients metric-aware, spectra on a physical `k` axis, domain statistics area-weighted, and every quantity carries its units. Previously all of it was pixel-space and unlabelled (D13). |
@@ -763,34 +763,134 @@ Every stage is gated by the Section 3 rules.
 
 ### Phase 4A - `FieldSequence` and `ArtifactStore`
 
-**T4A.1 `FieldSequence` (`src/physical_core/sequence.py`)**
+**T4A.1 `FieldSequence` (`src/physical_core/sequence.py`)** - **DONE**
 Ordered `PhysicalField`s plus a time coordinate; validates shape and coordinate consistency across frames. Methods: `.at(t)`, `.map(fn)`, `.to_tensor()` -> `(T, H, W)`.
 
-**T4A.2 `split_temporal(train, val, embargo)` *(implements R6)***
+**Met.** Grid equality checked on the **metric, not object identity** - two frames cropped from
+the same archive are distinct `GridSpec` instances, and refusing those would make the class
+unusable on real data, while accepting genuinely different grids would let a mean average
+different places together and produce numbers rather than an error. Unsorted times are refused
+rather than sorted: a sequence silently reordered is worse than one that errors. Irregular
+cadence is *reported*, and `lag_to_seconds` refuses on it, because N frames is not a fixed
+duration across a gap.
+
+**T4A.2 `split_temporal(train, val, embargo)` *(implements R6)*** - **DONE**
 Mirrors the existing spatial guardrail API deliberately: `validate_temporal_guardrails(other)` raises on any time overlap **or** on an embargo gap shorter than the longest lag under test.
 **Acceptance:** a deliberate leakage attempt (overlapping windows, or embargo < max lag) raises `ValueError`, with a test asserting the raise.
 
-**T4A.3 `ArtifactStore` (`src/artifact_store/store.py`)**
+**Met, both halves.** Overlap raises; and the subtler one - windows that are *disjoint* so an
+overlap check passes, while a training example near the boundary has its target inside the test
+window - raises too, with a message naming the gap in frames and the lag it fails against. A gap
+of **exactly** one lag also raises: it puts the last training target on the first test frame. The
+embargo frames are returned rather than dropped, so a lineage record shows what was excluded.
+
+**T4A.3 `ArtifactStore` (`src/artifact_store/store.py`)** - **DONE**
 Content-addressed on-disk store (`.npz`/`.pt` under `artifacts/`, SHA-256 keyed). Steps exchange `ArtifactHandle {ref, shape, dtype, sha256, summary}`. `resolve_value` learns to dereference handles. Lineage `value` columns store the **handle plus summary**, never the payload.
 **Rationale:** a `CoefficientField` over 10 frames x 64x64 x 4 scales x 6 orientations is ~10M floats; the current `.tolist()` JSON seam cannot carry it.
 **Acceptance:** a 100-frame 64x64 sequence round-trips; every lineage row stays under 4 KB; `analyze_boundary` no longer embeds a full padded field in its node.
 
-**T4A.4 Adapter sequence slicing**
+**Met, measured.** 100 x 64 x 64 round-trips **exactly** (3.15 MB on disk); the `slice_sequence`
+lineage node is **1,338 bytes** against the 4 KB budget; `analyze_boundary` was *already* clean
+via the summariser layer, now asserted so it cannot regress. Content addressing deduplicates
+(identical output -> one file, verified) and verifies: a tampered artifact raises rather than
+returning a subtly wrong array. Arbitrary objects are refused rather than pickled - an artifact
+only the writing code can read is not reproducible data. Writes are atomic.
+
+**T4A.4 Adapter sequence slicing** - **DONE**
 `slice_sequence(dataset_id, variable, time_range, level, lat_range, lon_range) -> FieldSequence`, plus a `slice_sequence` pipeline action.
+
+**Met.** The action stores the frames and returns a *reference*; `resolve_value` dereferences it,
+so an action written before the store existed still receives an array. Two guards: a
+`max_frames` limit quantifying the memory it prevents (a whole ERA5 record is ~93,000 frames and
+the failure mode is a killed process), and a **count of non-finite values replaced** - a zero is
+a value, not an absence, and a spectrum of a field with zeroed gaps has structure the atmosphere
+does not.
 
 ### Phase 4B - `CoefficientField` and the Wavelet Bank
 
-**T4B.1 `CoefficientField` (`src/transform_engine/coefficient_field.py`)**
+**T4B.1 `CoefficientField` (`src/transform_engine/coefficient_field.py`)** - **DONE**
 Axes `(time, scale, orientation, y, x)` with `wavelet_family`, `source_variable`, and phase where the transform is complex. Backed by SWT/DTCWT so all scales share the parent grid, inheriting coords from the source `PhysicalField`. Deliberately mirrors `PhysicalField`'s API so it can flow through analysis the same way.
 **Acceptance:** coordinate alignment test across all scales; perfect reconstruction per family; `.summary()` produces a lineage-safe dict.
 
-**T4B.2 `WaveletBank` config and sweepability**
+**Met, with one claim corrected.** All three criteria measured: every scale of both families
+returns a `(64, 64)` band on the parent grid; reconstruction error is **2.0e-15 (swt)** and
+**2.2e-15 (dtcwt)**; a ten-frame four-level DTCWT bank summarises to **2,008 bytes** against a
+payload of **983,040 complex coefficients**. The byte counts vary by a few percent with the
+data, because float repr lengths do; the assertion in the tests is the 4 KB budget, not the
+figure quoted here.
+
+The corrected claim is "backed by SWT/DTCWT so all scales share the parent grid". That is true
+of SWT, which is undecimated, and **false of DTCWT**, whose level-*j* subband is about
+`H/2**j`. The alignment for DTCWT is nearest-neighbour **upsampling**, and the field records
+`resampled_to_parent=True` with every native shape (`{1: (32,32), 2: (16,16), 3: (8,8)}` for a
+64x64 field), because treating an aligned band as if it resolved parent-grid detail would be a
+false claim about the data. Nearest neighbour rather than interpolation: the aligned view is a
+labelling of parent pixels, and bilinear blending of complex coefficients mixes phases from
+different positions, producing values no filter computed.
+
+**Reconstruction therefore never uses the aligned array** - the native coefficients are retained
+and inverted. A field without them **refuses** rather than approximating: inverting the
+upsampled view returns something a few percent wrong that is indistinguishable from a real
+reconstruction, which is a silent failure of the worst kind.
+
+SWT bands are labelled `LH`/`HL`/`HH` and **not** in degrees, because a separable real wavelet's
+`HH` responds to both diagonal signs and cannot distinguish them; writing "45 deg" would assert
+selectivity the transform has not got, and that claim would propagate into every figure.
+
+**T4B.2 `WaveletBank` config and sweepability** - **DONE**
 Declarative `wavelet_bank: {families: [...], scales: [...], orientations: [...]}`. Because these are ordinary parameter-matrix entries, `expand_parameter_matrix` picks them up with **no engine changes** - one of the genuinely free wins in this plan. Keep the 1,000-combination guard.
 
-**T4B.3 New pipeline actions:** `decompose_bank`, `extract_scale_signature`.
+**Met, and the "no engine changes" claim is asserted rather than asserted-about.**
+`combinations()` expands by calling the engine's *own* `expand_parameter_matrix`, and a test
+requires the two to produce identical output - so a bank cannot expand differently from an
+ordinary matrix, because it is one. `engine.py` was not touched. The 1,000-combination guard is
+kept, duplicated in the bank so the refusal names the bank and quantifies the cost, with a test
+asserting the two ceilings are the same number.
 
-**T4B.4 Pressure level as a bank dimension.** ERA5 is `time x level x lat x lon x variable`, and the vertical axis is currently only a *selector* (pick 500 hPa). But the canonical atmospheric precursor relationship is inherently vertical: an upper-level trough preceding surface cyclogenesis. Treat level as a first-class bank dimension alongside scale and orientation - decompose per level, and let 4E constellations span levels with **vertical offset as an edge attribute**.
+**One asymmetry in this task's own wording, corrected.** `families` and `scales` are sweep axes;
+**`orientations` is not**. A wavelet transform computes every orientation in one pass, so
+sweeping them would run the identical decomposition six times and discard five sixths of each
+result. Orientations travel as a *selector* applied within each run, and `summary()` says so.
+
+Also closed here: `int(2.5)` is `2`, so a config asking for 2.5 levels ran two and reported two.
+Fractional scales are now refused - there is no half dyadic level.
+
+**T4B.3 New pipeline actions:** `decompose_bank`, `extract_scale_signature`. - **DONE**
+
+**Met.** A four-combination bank over five 64x64 frames is **921,600 coefficients** and its
+lineage row is **2,415 bytes**; the signature row is **473 bytes**. Both actions refuse a
+*dereferenced payload* by name - `resolve_value` turns a literal `artifact://...` into a bare
+array, which has no time axis, no grid and no scale labels, so accepting one would mean
+inventing a cadence. The refusal names `{step.sequence_ref}` as the fix.
+
+**Scope stated in the result payload, not just here:** `extract_scale_signature` is the *energy
+half* of R3. Participation ratio, Gini and threshold counts are T4C.1, and the action says so
+under its own `scope` key, at the point a reader actually looks.
+
+**T4B.4 Pressure level as a bank dimension.** ERA5 is `time x level x lat x lon x variable`, and the vertical axis is currently only a *selector* (pick 500 hPa). But the canonical atmospheric precursor relationship is inherently vertical: an upper-level trough preceding surface cyclogenesis. Treat level as a first-class bank dimension alongside scale and orientation - decompose per level, and let 4E constellations span levels with **vertical offset as an edge attribute**. - **DONE**
 **Scope discipline:** this is *2D-per-level*, not 3D wavelets. Full 3D transforms are deliberately out of scope for Phase 4 on cost and complexity grounds; per-level decomposition with cross-level edges unlocks the most physically famous precursor structure at a fraction of the price, and is the natural target for T4F.6's known-phenomenon gate.
+
+**Met.** `slice_level_sequences` returns one sequence per level in a single pass, so the shared
+time axis is a property of the construction. `LevelBank` validates shape, family and
+**timestamps** across levels - a vertical lead-lag across levels sampled at different times
+measures the sampling, not the atmosphere. `vertical_offsets()` is the 4E edge attribute:
+signed, in hPa, with direction named, because pressure decreases upward and a reader who got
+that backwards would invert every precursor relationship the bank exists to find.
+
+**Two silent failures closed, both found by building it:**
+
+*   `decompose_bank` originally ignored `levels_hpa` - it would have decomposed one sequence
+    repeatedly and labelled **identical arrays** 850 hPa and 500 hPa, and every cross-level
+    statistic downstream would have measured that fiction. A vertical bank now requires one
+    sequence per level and refuses to guess.
+*   `sel(method="nearest")` maps a level a dataset lacks onto its neighbour, so two requests can
+    return the same data. `slice_level_sequences` compares the arrays and refuses when they are
+    identical: a cross-level correlation computed from them is a field correlated with itself, a
+    coefficient of 1.0 that means nothing and looks like a discovery. The guard fired
+    immediately on `t2m`, which has no vertical axis at all.
+
+The scope discipline is asserted, not just written: `LevelBank.summary()` states that it is 2D
+per level and not a 3D transform, and a test requires that sentence to be there.
 
 ### Phase 4C - `ScaleSignature`, `SurrogateNull`, Cross-Scale Dependency <<< THE GATE >>>
 
