@@ -370,7 +370,7 @@ Twenty routes. Listed here because an undocumented endpoint is an untested contr
 | POST | `/api/v1/hypothesis/discover` | correlation + categorical scan (no FDR yet - D8) |
 | GET | `/api/v1/hypothesis/proposals` | generated follow-up configurations |
 
-## 4. Database Schema and State Tracking (`src/database/models.py`, `session.py`)
+## 4. Database Schema and State Tracking (`src/database/models.py`, `session.py`, `migrate.py`)
 
 The database layer (`src/database/`) is fully configured using SQLAlchemy and targets a persistent or in-memory SQLite database (`spectral_earth.db`). 
 
@@ -411,6 +411,82 @@ The database layer (`src/database/`) is fully configured using SQLAlchemy and ta
 *   **`LineageNode`:** Represents an execution node (dataset, code revision, field, coefficients, or metrics).
 *   **`LineageEdge`:** Logs how nodes link together to form a provenance tree.
 *   **`Hypothesis`:** Holds automatically discovered scientific relations.
+
+### 4.1 Schema Migrations (`src/database/migrate.py`, `migrations/`, T3.5.8)
+
+The schema is now managed by **Alembic**, not by `Base.metadata.create_all`. This is a
+correctness fix, not housekeeping.
+
+**The defect (D32), measured on the repository's own database.** `create_all` adds missing
+*tables*. It does not alter existing ones, and it reports success either way. Slice T3.5.12
+added `experiment_runs.seed` and `execution`; T4C.5 added `p_value`, `q_value`, `n_tests` and
+`statistics` to `hypotheses`. The checked-in `spectral_earth.db` predates both, so the ORM
+mapped five columns the file did not contain. Querying it raised
+`sqlite3.OperationalError: no such column: experiment_runs.seed` — while startup logged
+nothing at all. A platform whose results are meant to be defendable cannot have a storage
+layer whose only upgrade path is deleting the file and losing the runs.
+
+**Two revisions, and the baseline is deliberately *not* the current schema.**
+
+| Revision | Contents |
+|---|---|
+| `0001_initial_schema` | The five tables as they existed before migration control — **without** the five later columns |
+| `0002_reproducibility_and_statistics` | `experiment_runs.seed`, `execution`; `hypotheses.p_value`, `q_value`, `n_tests`, `statistics` |
+
+Making 0001 match today's `models.py` would have been the natural shortcut and would have
+broken the one job a baseline exists for. Adopting a pre-Alembic database means stamping the
+revision it *is*; if 0001 already claimed the five columns, stamping it would assert columns
+that are absent, 0002 would be skipped permanently, and the result is a database Alembic
+believes is current and the ORM cannot query — the original defect, now with a version
+number on it. `detect_legacy_revision` therefore **probes for `experiment_runs.seed`** and
+stamps 0001 or 0002 by observation. Verified against the real file: detected `0001`, applied
+`0002`, then zero drift against the ORM.
+
+**`ensure_schema` — the startup path.** Four states, four different correct actions: empty
+(migrate), populated but unstamped (adopt by inspection, then upgrade), stamped and behind
+(upgrade), stamped and current (do nothing, and say so). A stamped revision that does not
+exist in `migrations/versions/` is an **error**, not an empty upgrade list: it means the
+database was migrated by a newer checkout, and running an older ORM against a newer schema
+reads and writes the wrong columns silently.
+
+**Auto-upgrade is on by default and can be switched off.** `SPECTRALEARTH_AUTO_MIGRATE=0`
+makes `ensure_schema` refuse and name the outstanding revisions instead of applying them —
+the right behaviour for a shared deployment, where a schema change should be a reviewed step.
+Refusing to start beats serving requests against a stale schema and failing on the first
+query that touches a new column.
+
+**All five new columns are nullable, and that is a scientific statement.** A run recorded
+before seed capture genuinely has no seed. `NULL` says so; a default of `0` would claim a
+reproducibility that does not exist.
+
+**How the migration history is kept honest.** `alembic upgrade head` from empty is the stated
+acceptance criterion, but it passes for a history that has quietly drifted from `models.py` —
+the exact failure this layer exists to prevent. So `test_migrations.py` asks Alembic's own
+`compare_metadata` whether the migrated schema and the ORM disagree, with `compare_type` and
+`compare_server_default` enabled, and fails on any difference in tables, columns, types,
+nullability or indexes. Adding a column to a model without writing a migration now fails a
+test instead of surfacing in production. Each revision is also round-tripped individually
+(`upgrade` then `downgrade`), because a history is only reversible if every step is, and the
+broken step would be discovered exactly when a rollback was needed. `test_downgrade_0002_*`
+checks that batch-mode `DROP COLUMN` — which rebuilds the table on SQLite — keeps both the
+other columns and the rows.
+
+**PostgreSQL: rendered, not run.** `render_as_batch=True` makes one script work on both
+backends, and the migrations are asserted to render valid DDL for the `postgresql` dialect in
+Alembic's offline mode. That proves they *compile* there — no SQLite-only construct, no
+unrenderable type. It does not prove they execute, because no PostgreSQL server was
+available. The roadmap's acceptance criterion names both backends and only one has actually
+been run; this is stated rather than glossed.
+
+The stamped revision is reported by `GET /api/v1/health` as `schema_state`, recomputed per
+request rather than cached from startup — a cached `"up_to_date": true` is the one kind of
+health output worse than none. A stored result is only reproducible if the schema that stored
+it is identifiable, so the revision belongs in provenance beside the seed and the code
+revision.
+
+`python -m src.database.migrate {status|upgrade|adopt|downgrade <rev>}` is the operator
+interface; `alembic upgrade head` works unchanged, taking its URL from
+`src.database.session.DATABASE_URL` so there is exactly one place the database is named.
 
 ---
 
@@ -455,7 +531,7 @@ See `VERIFICATION.md` for the captured command output behind every statement her
 | Item | Status |
 |---|---|
 | Python venv + dependencies | installed (torch 2.13.0, numpy 2.2.6, pydantic 1.10.26, SQLAlchemy 2.0.52, xarray 2025.6.1, FastAPI 0.110.3) |
-| Backend test suite | **446 passed, 1 xfailed** (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17, 351 after T3.5.6, 379 after T3.5.15, 407 after T3.5.19) |
+| Backend test suite | **478 passed, 1 xfailed** (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17, 351 after T3.5.6, 379 after T3.5.15, 407 after T3.5.19, 449 after T4C.5) |
 | Ground-Truth Benchmark Suite | **15 PASS, 0 FAIL, 2 NOT_YET_RUNNABLE** (`python -m src.benchmarks`, exit 0) |
 | Frontend `npm install` + `npm run build` | passes, emits 1,378 modules + real JS/CSS assets (was: 1 module, no assets) |
 | Backend server | starts, serves OpenAPI, all smoke-tested endpoints return 200 |
@@ -520,6 +596,7 @@ code paths that `architecture.md` previously described as implemented and rigoro
 | D29 | `api/main.py` `DiagnosticsResponse` (found within T3.5.13) | The API reported `k_units = "rad m^-1"` for a field carrying no physical metric at all - a plot axis in metres over data that never had metres, which is D13's failure mode reappearing in the serialisation layer. Unit labels now derive from the grid kind, and kilometre-based units are refused on a pixel grid. | **FIXED** T3.5.13 |
 | D30 | `analysis_engine/climatology.py` (found and fixed within T3.5.17) | **A result that changed depending on what ran before it.** The harmonic climatology basis for a short record is near rank-deficient (condition number 8.4e13, smallest singular value 2.5e-13). `torch.linalg.lstsq`'s default driver made its own rank decision there, and that decision flipped with prior BLAS state: identical data and seed gave a residual variance ratio of 0.000172 in one test ordering and 0.157639 in another. Now solved via column normalisation plus an SVD pseudo-inverse with an explicit rank tolerance; conditioning improved to 1.9e4 and the effective rank is reported. | **FIXED** T3.5.17 |
 | D31 | `api/main.py` `/api/v1/benchmarks/run` (found within T3.5.17) | An unknown benchmark name filtered the suite to nothing and returned HTTP 200 with zero failures - a silent no-op that reads as "everything passed". A gate a typo can delete is not a gate. Now 404 with the list of available benchmarks. | **FIXED** T3.5.17 |
+| D32 | `api/main.py` lifespan / `database/session.py` (found within T3.5.8) | **A schema that startup reported as correct and could not be queried.** `Base.metadata.create_all` adds missing tables but never adds missing *columns*, and returns successfully either way. The checked-in `spectral_earth.db` predated the five columns added by T3.5.12 and T4C.5, so the ORM mapped columns the file did not contain: `no such column: experiment_runs.seed`, with no warning at any point before the query. Fixed by Alembic revisions 0001/0002 plus `ensure_schema`, which adopts a pre-Alembic database by *inspecting* it rather than assuming its revision. | **FIXED** T3.5.8 |
 
 **Root cause common to D20, D23, D25 and D2:** the transform engine — the mathematical core of
 the platform — had **no test file at all**. `src/tests/test_transforms.py` now exists (36 cases
@@ -624,7 +701,10 @@ reproducible one.
 Counted as **test functions** (pytest reports more cases, because several are
 parametrised). Checked automatically by `src/tests/test_documentation.py`, which fails
 if this table drifts from the source - the mechanism that stopped this document going
-stale once already.
+stale once already. `python tools/audit_docs.py` reports the same facts outside a test
+run and exits non-zero on any inconsistency; it was made a committed tool in T3.5.8 after
+being retyped from memory once per slice, which is how the roadmap's own status table was
+able to sit three slices out of date.
 
 | File | Test functions | Covers |
 |---|---|---|
@@ -632,17 +712,18 @@ stale once already.
 | `test_api_infrastructure.py` | 16 | health, listing, pagination, CORS, data-source transparency, benchmark endpoints |
 | `test_benchmarks.py` | 45 | Ground-Truth Benchmark Suite, seed discipline, climatology removal, D30 determinism |
 | `test_boundary_synthetic.py` | 7 | boundary treatments, windowing, synthetic generators |
-| `test_documentation.py` | 15 | this document and roadmap.md against the code |
+| `test_documentation.py` | 18 | this document and roadmap.md against the code |
 | `test_dtcwt.py` | 28 | Kingsbury q-shift DTCWT: primitives vs reference, two oracles, orientation, shift invariance, D1 head-to-heads |
 | `test_executor.py` | 26 | Executor backends, seed derivation, ordering, device/thread policy, SQLite concurrency, byte-identical sweeps |
 | `test_experiments.py` | 3 | declarative sweeps and lineage |
 | `test_grid_operators.py` | 64 | grid metrics, metric-aware gradient/Laplacian, area weighting, physical-wavenumber spectra, D26 |
 | `test_hypothesis.py` | 3 | correlation and categorical hypothesis discovery |
+| `test_migrations.py` | 25 | Alembic history, ORM/schema drift, per-revision round trips, pre-Alembic adoption, auto-migrate refusal, PostgreSQL rendering |
 | `test_registries.py` | 28 | registries, error taxonomy, fallback chain, and the T3.5.15 plugin acceptance criterion |
 | `test_stationary.py` | 19 | undecimated SWT: shift invariance, perfect reconstruction, frame constant, PyWavelets oracle, R3 normalisation |
 | `test_statistics.py` | 36 | FDR procedures vs scipy, surrogate preservation properties, calibration on a true null, stationarity gate, screening |
 | `test_transforms.py` | 13 | fft/dct/dwt/dtcwt/hybrid round trips; D1 recorded as a strict xfail |
-| **total** | **309** | |
+| **total** | **337** | |
 
 ### 7.2h A surrogate null that was not the null it claimed (T4C.5)
 
@@ -686,4 +767,4 @@ Two further consequences worth recording:
 *   `PhysicalField` is **strictly 2D** and raises on any other rank (`field.py:19`). There is no time axis anywhere in the compute layer: the adapter returns a single timestep, and `decompose_by_lead_time` only works because the caller assembles the list itself. Phase 4A introduces `FieldSequence`.
 *   Lineage `value` columns and inter-step `step_outputs` carry **full payloads** as nested Python lists (`analyze_boundary` returns an entire padded field this way). This is a hard scaling wall for coefficient fields, addressed by the `ArtifactStore` in Phase 4A.
 *   ~~No `GET /api/v1/experiments` collection endpoint and no health endpoint.~~ **Both added (T3.5.10):** paginated listing with `limit`/`offset`/`status`, and `GET /api/v1/health` reporting database reachability, backend scheme, dataset count and execution device. The frontend does not yet consume either — wiring them into the Experiment Engine tab is outstanding.
-*   Alembic is absent - the schema is created by `Base.metadata.create_all` in the FastAPI lifespan, so there is no migration path for the seven tables Phase 4 adds.
+*   ~~Alembic is absent - the schema is created by `Base.metadata.create_all` in the FastAPI lifespan, so there is no migration path for the seven tables Phase 4 adds.~~ **Fixed in T3.5.8** (Section 4.1). `create_all` was not merely missing a migration path: it silently failed to add columns to tables that already existed, which had already broken the real `spectral_earth.db` (defect D32).

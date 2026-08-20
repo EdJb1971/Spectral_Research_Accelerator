@@ -28,7 +28,8 @@ from src.data_layer.adapters import MeteorologicalDataAdapter
 from src.analysis_engine.diagnostics import SpectralSpatialAnalysisEngine
 from src.analysis_engine.decomposition import ErrorDecompositionEngine
 
-from src.database.session import engine, Base, get_db, SessionLocal
+from src.database.session import engine, get_db, SessionLocal
+from src.database import migrate as schema_migrate
 from src.database.models import Experiment, ExperimentRun, LineageNode, LineageEdge, Hypothesis
 from src.experiment_engine.engine import DeclarativeExperimentEngine
 
@@ -36,8 +37,20 @@ logger = logging.getLogger("api")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Initialize database tables safely within the lifespan context to avoid race conditions
-    Base.metadata.create_all(bind=engine)
+    # Schema management is Alembic's, not create_all's (T3.5.8). create_all adds missing
+    # *tables* and silently ignores missing *columns*, so every database created before a
+    # slice that added a column stayed broken while startup reported success - measured:
+    # `no such column: experiment_runs.seed` on the real spectral_earth.db.
+    # `ensure_schema` adopts such a database by inspection and upgrades it.
+    #
+    # Bound to whichever engine this app is actually using: the test suite rebinds
+    # session_factory to an in-memory database, and migrating the module-level engine
+    # while serving a different one is exactly the mistake env.py's single-source-of-truth
+    # URL exists to prevent.
+    bound_engine = engine
+    if getattr(app.state, "session_factory", None) is not None:
+        bound_engine = app.state.session_factory.kw.get("bind", engine)
+    app.state.schema = schema_migrate.ensure_schema(bound_engine)
     # Background tasks outlive the request-scoped session, so they need their own factory.
     # Held on app.state so tests (and later worker processes) can rebind it (D24).
     if not getattr(app.state, "session_factory", None):
@@ -82,6 +95,14 @@ class HealthResponse(BaseModel):
                                       description="Devices, thread budget and executor backends available.")
     database_settings: Dict[str, Any] = Field(default_factory=dict,
                                               description="SQLite pragmas actually in force (WAL, busy_timeout).")
+    # T3.5.8: the stamped schema revision. A stored result is only reproducible if the
+    # schema that stored it is identifiable, and "the schema is behind the code" is a
+    # readiness fact a probe must be able to report rather than a surprise at query time.
+    # Named `schema_state` rather than `schema`: pydantic v1 refuses a field that shadows
+    # `BaseModel.schema()`, and an alias would leave the JSON key colliding with OpenAPI's
+    # own `schema` in anything that walks the response generically.
+    schema_state: Dict[str, Any] = Field(default_factory=dict,
+                                         description="Alembic revision, head, and any pending migrations.")
 
 
 class TransformRequest(BaseModel):
@@ -506,6 +527,14 @@ async def health(db: Session = Depends(get_db)):
     except Exception:  # pragma: no cover - only on a database that cannot be queried
         db_settings = {}
 
+    # Reported per request rather than cached from startup: a migration applied by another
+    # process while this one is running should show up here, and a cached "up_to_date": true
+    # would be a stale reassurance - the one kind of health output that is worse than none.
+    try:
+        schema_state = schema_migrate.describe(db.get_bind())
+    except Exception as e:  # pragma: no cover - only on a database that cannot be queried
+        schema_state = {"error": "%s: %s" % (type(e).__name__, e)}
+
     return HealthResponse(
         status="ok" if db_status == "ok" else "degraded",
         api_version=app.version,
@@ -526,6 +555,7 @@ async def health(db: Session = Depends(get_db)):
             "torch_num_threads": __import__("torch").get_num_threads(),
         },
         database_settings=db_settings,
+        schema_state=schema_state,
     )
 
 

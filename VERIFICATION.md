@@ -1642,3 +1642,161 @@ T3.5.8 (Alembic - now genuinely needed, since this slice and the last added five
 only exist via `create_all`), T3.5.18 (Zarr/ERA5 - the last thing between the platform and real
 data), browser-based UI verification, and surfacing the statistics, benchmarks, orientation and
 execution controls in the frontend.
+
+---
+
+## Slice 10 - T3.5.8: schema migrations (defect D32)
+
+**Captured 2026-08-20.** Every figure below is output from a command in this section.
+
+### The defect, reproduced on the repository's own database before fixing it
+
+`Base.metadata.create_all` adds missing *tables*. It does not add missing *columns*, and it
+returns successfully either way. T3.5.12 added `experiment_runs.seed` and `execution`; T4C.5
+added `p_value`, `q_value`, `n_tests` and `statistics` to `hypotheses`. The checked-in
+`spectral_earth.db` predates both:
+
+```
+LEGACY before : OperationalError (sqlite3.OperationalError) no such column: experiment_runs.seed
+LEGACY detect : 0001
+LEGACY ensure : {"action": "upgrade", "from": "0001", "to": "0002", "applied": ["0002"],
+                 "adopted_as": "0001", "case": "adopted_pre_alembic_database"}
+LEGACY drift  : []
+```
+
+Startup had reported success every time. Nothing logged, nothing failed, until a query touched
+one of the five columns. Recorded as **D32**.
+
+### The trap in adopting a pre-Alembic database
+
+The conventional move is `alembic stamp head`, and here it is wrong. Stamping head asserts the
+five columns exist; for a pre-slice-8 file they do not, `0002` is then skipped permanently, and
+the result is a database Alembic believes is current and the ORM cannot query - the original
+defect with a version number attached. So revision `0001` deliberately describes the schema
+*without* those columns, and `detect_legacy_revision` **probes for `experiment_runs.seed`** and
+stamps 0001 or 0002 by observation. The measured `detect -> 0001, applied 0002, drift []` above
+is that path working on the real file.
+
+### SQLite: the acceptance criterion, and more than it asked for
+
+```
+FRESH ensure  : {"action": "upgrade", "from": null, "to": "0002", "applied": ["0001", "0002"], "case": "empty_database"}
+FRESH drift   : []
+DOWN base     : {"action": "downgrade", "from": "0002", "to": null}
+  tables left : ['alembic_version']
+RE-UP         : {"action": "upgrade", "from": null, "to": "0002", "applied": ["0001", "0002"]}
+  drift again : []
+```
+
+And through the CLI the criterion actually names:
+
+```
+$ DATABASE_URL=sqlite:///.../cli.db python -m alembic upgrade head
+exit=0
+$ python -m src.database.migrate status
+{"revision": "0002", "head": "0002", "pending": [], "up_to_date": true,
+ "auto_migrate": true, "error": null}
+$ python -m alembic current
+0002 (head)
+```
+
+`drift: []` is Alembic's own `compare_metadata` with `compare_type` and
+`compare_server_default` enabled, asked whether the migrated schema and `models.py` disagree
+about any table, column, type, nullability or index. That check - not `upgrade head` - is what
+keeps the history honest, because `upgrade head` passes perfectly well for a migration history
+that has silently drifted from the ORM, which is the exact failure this layer exists to
+prevent.
+
+### PostgreSQL: rendered, not run
+
+The acceptance criterion names both backends. Only one was run. The migrations are asserted to
+render valid DDL for the `postgresql` dialect in Alembic's offline mode, which proves they
+*compile* there - no SQLite-only construct, no unrenderable type - and does **not** prove they
+execute, because no PostgreSQL server was available on this machine. Half of this criterion is
+demonstrated and half is asserted; it is written down that way rather than rounded up.
+
+### What the tests actually guard
+
+25 tests in `src/tests/test_migrations.py`. The ones carrying weight:
+
+*   `test_no_drift_against_orm` - adding a column to a model without writing a migration now
+    fails a test instead of surfacing as `no such column` in production.
+*   `test_create_all_ignores_missing_columns` - asserts the defect itself, so the reason this
+    layer exists cannot be lost to a later cleanup.
+*   `test_each_revision_round_trips` - every revision up and down individually. A history is
+    only reversible if each step is, and the broken step would otherwise be found exactly when
+    a rollback was needed.
+*   `test_downgrade_0002_preserves_rows` - batch-mode `DROP COLUMN` rebuilds the table on
+    SQLite; a mistake there drops data silently rather than erroring.
+*   `test_unknown_stamped_revision_is_an_error` - a database migrated by a newer checkout must
+    stop us. An older ORM against a newer schema reads and writes the wrong columns without
+    complaint.
+
+### One design decision worth stating
+
+All five columns are **nullable**, and that is a scientific choice rather than a convenience.
+A run recorded before seed capture genuinely has no seed; `NULL` says exactly that, whereas a
+default of `0` would claim a reproducibility that does not exist. Verified: the adopted legacy
+run reads back as `('r1', None)`.
+
+`SPECTRALEARTH_AUTO_MIGRATE=0` makes `ensure_schema` refuse and name the outstanding revisions
+instead of applying them - the right behaviour for a shared deployment. Refusing to start beats
+serving requests against a stale schema and failing on the first query that touches a new
+column.
+
+### A staleness audit that the guards had not covered
+
+While marking T3.5.8 done I checked Section 1 of `roadmap.md` against the code. It was wrong in
+six places, some of them badly:
+
+| Claim in roadmap.md Section 1 | Reality |
+|---|---|
+| "271 passed, 1 xfailed" | 478 |
+| "14 PASS, 0 FAIL, 3 NOT_YET_RUNNABLE" | 15 / 0 / 2 |
+| "DTCWT **still not implemented as advertised** (D1)" | closed in T3.5.6, three slices earlier |
+| "Registries / extension seams: **still if/elif chains** (D15)" | closed in T3.5.15 |
+| "Hypothesis engine ... **still no multiple-comparison control** (D8)" | closed in T4C.5, the previous slice |
+| "HPC / executor seam: **not started**" | landed in T3.5.19 |
+
+`architecture.md` was separately claiming 446 passing tests. None of this failed anything,
+because the documentation guards checked the *module inventory*, the *route list*, the *test
+inventory table* and the *defect ledger* - but nothing checked the prose status tables, which
+are the part a reader looks at first. That is the same class of gap the guards were written to
+close, one level up.
+
+Fixed, and then made unable to recur: three new guards in `test_documentation.py` assert that
+the two documents agree with each other on the suite total, that the claimed total is at least
+the statically countable number of test functions, and that the roadmap's summary of the defect
+ledger (`D1-D32, of which 30 fixed, 1 partial (D18), 1 open (D17)`) matches the ledger itself.
+The audit script became a committed tool, `tools/audit_docs.py`, exiting non-zero on any
+inconsistency - it had been retyped from memory once per slice, and a check that must be
+remembered is one that gets skipped exactly when it matters.
+
+```
+$ python tools/audit_docs.py
+undocumented modules : none
+undocumented routes  : none
+defects              : 32 defined, 30 fixed, partial ['D18'], open ['D17']
+test functions       : 337
+stale inventory rows : none
+claimed suite totals : architecture (478, 1) / roadmap (478, 1)
+RESULT               : ok
+audit exit: 0
+```
+
+### Suite after slice 10
+
+```
+478 passed, 1 xfailed
+337 test functions across 16 files
+benchmark suite: 15 PASS, 0 FAIL, 2 NOT_YET_RUNNABLE (exit 0)
+```
+
+**Fixed: 30 of 32 defects, with D18 partial.** D32 was found and closed within this slice.
+
+**Still outstanding:** D17 (per-bin loops in `decompose_by_boundary` and
+`analyze_boundary_artefacts`), D18 (cross-device CPU/CUDA/MPS agreement - needs GPU hardware,
+not claimed); PostgreSQL migration *execution* (rendered only); plus **T3.5.18 (Zarr/ERA5 - now
+the last substantive thing between the platform and real observations)**, browser-based UI
+verification, and surfacing the statistics, benchmarks, orientation and execution controls in
+the frontend.

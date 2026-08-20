@@ -23,7 +23,8 @@ xarray>=2023.5.0
 pytest>=7.3.0
 httpx>=0.24.0
 
-# Schema migrations (T3.5.7) - required before Phase 4 adds tables
+# Schema migrations (T3.5.8). Not optional and not deferrable: `create_all` never adds a
+# column to an existing table, which had already left spectral_earth.db unqueryable (D32).
 alembic>=1.13.0
 
 # Numerical utilities: Hungarian assignment (4D tracking), k-NN for the KSG

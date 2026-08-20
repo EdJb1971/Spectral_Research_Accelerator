@@ -249,3 +249,58 @@ def test_architecture_does_not_claim_the_frontend_was_never_built(architecture):
     assert "has never been installed or built" not in architecture
     # ...but the genuinely unverified part must still be stated.
     assert "rendered appearance" in architecture.lower()
+
+# ============================================================== status-section drift
+
+def _claimed_test_count(doc):
+    match = re.search(r"Backend test suite \| \*\*(\d+) passed, (\d+) xfailed", doc)
+    assert match, "the status table must state the passing test count"
+    return int(match.group(1)), int(match.group(2))
+
+
+def test_status_sections_agree_on_the_test_count(architecture, roadmap):
+    """The two status tables must not disagree with each other.
+
+    This guard was added because `roadmap.md` Section 1 was found claiming **271 passed**
+    and "DTCWT still not implemented as advertised" several slices after both had changed,
+    while `architecture.md` said 446. Neither number was current and nothing failed. The
+    exact pytest total cannot be derived without running pytest, but two documents
+    disagreeing about it is decisive evidence that at least one is stale - and it is the
+    cheap half of the check that would have caught this.
+    """
+    assert _claimed_test_count(architecture) == _claimed_test_count(roadmap), (
+        "architecture.md claims %s and roadmap.md claims %s"
+        % (_claimed_test_count(architecture), _claimed_test_count(roadmap)))
+
+
+def test_claimed_test_count_is_at_least_the_function_count(architecture):
+    """A necessary condition that is checkable statically: parametrisation only adds cases."""
+    claimed, _ = _claimed_test_count(architecture)
+    total = 0
+    for name in _test_files():
+        tree = ast.parse(_read("src/tests/" + name))
+        total += sum(1 for node in ast.walk(tree)
+                     if isinstance(node, ast.FunctionDef) and node.name.startswith("test_"))
+    assert claimed >= total, (
+        "the status table claims %d passing tests but %d test functions exist; pytest "
+        "cannot report fewer cases than there are functions unless tests are failing, "
+        "skipped or uncollected" % (claimed, total))
+
+
+def test_status_sections_agree_on_the_defect_ledger(architecture, roadmap):
+    """roadmap.md summarises the ledger; the summary must match the ledger itself."""
+    rows = re.findall(r"^\| (D\d+) \|(.*)$", architecture, re.M)
+    fixed = [d for d, body in rows if "**FIXED**" in body]
+    partial = [d for d, body in rows if "PARTIAL" in body]
+    open_ids = [d for d, body in rows
+                if "**FIXED**" not in body and "PARTIAL" not in body]
+
+    claim = re.search(
+        r"\(D1-D(\d+),\s+of which\s+\*\*(\d+) fixed,\s+(\d+) partial \((D\d+)\),\s+"
+        r"(\d+) open \((D\d+)\)\*\*\)", roadmap)
+    assert claim, ("roadmap.md Section 1 must state the ledger range and counts in the "
+                   "form '(D1-D32, of which **30 fixed, 1 partial (D18), 1 open (D17)**)'")
+    assert int(claim.group(1)) == len(rows)
+    assert int(claim.group(2)) == len(fixed)
+    assert [claim.group(4)] == partial
+    assert [claim.group(6)] == open_ids

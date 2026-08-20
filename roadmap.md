@@ -12,25 +12,33 @@ Everything below either serves that question or gets cut.
 ## 1. Honest Technical Status
 
 Verified against the code on 2026-08-20. Every claim here is backed by captured output in
-`VERIFICATION.md`; `architecture.md` Section 7 holds the full defect ledger (D1-D31).
+`VERIFICATION.md`; `architecture.md` Section 7 holds the full defect ledger (D1-D32, of which **30 fixed, 1 partial (D18), 1 open (D17)**).
+
+The numbers in this table are checked by `src/tests/test_documentation.py`, which parses them
+out of this file and compares them against the source. That guard exists because this table
+had itself gone stale — it claimed 271 passing tests and "DTCWT still not implemented as
+advertised" several slices after both had changed. A status section that cannot fail is not a
+status section, it is a memory.
 
 | Area | Real status |
 |---|---|
-| Backend test suite | **271 passed, 1 xfailed.** Trajectory: 19 written / 1 failing / uncollectable -> 65 -> 152 -> 222 -> 271. |
-| Ground-Truth Benchmark Suite | **14 PASS, 0 FAIL, 3 NOT_YET_RUNNABLE.** Nine datasets with declared known answers, five of them nulls. CI-ready via `python -m src.benchmarks`. |
-| Backend compute modules | **Written, executed and tested.** `physical_core` now carries `GridSpec` + metric-aware operators; `analysis_engine` gained `spectra.py` and `climatology.py`; `transform_engine` gained the undecimated `stationary.py`. |
+| Backend test suite | **478 passed, 1 xfailed.** Trajectory: 19 written / 1 failing / uncollectable -> 65 -> 152 -> 222 -> 271 -> 351 -> 407 -> 449 -> 478. |
+| Ground-Truth Benchmark Suite | **15 PASS, 0 FAIL, 2 NOT_YET_RUNNABLE.** Nine datasets with declared known answers, five of them nulls. CI-ready via `python -m src.benchmarks` (exit 0). |
+| Backend compute modules | **Written, executed and tested.** `physical_core` carries `GridSpec` + metric-aware operators; `analysis_engine` gained `spectra.py` and `climatology.py`; `transform_engine` gained the undecimated `stationary.py` and a real `dtcwt.py`; `statistics/` and `core/` are new packages. |
 | Physical units and wavenumbers | **Correct as of T3.5.13.** Gradients metric-aware, spectra on a physical `k` axis, domain statistics area-weighted, and every quantity carries its units. Previously all of it was pixel-space and unlabelled (D13). |
 | Turbulence regime classification | **Corrected as of T3.5.13.** Was off by one exponent for the platform's entire history and labelled Kolmogorov fields as Charney (D26). |
 | Shift invariance | **Available as of T3.5.7** via the undecimated SWT: 0.00% energy spread against the decimated DWT's 153.50%. |
-| Reproducibility | **Seeded generation and perturbation** (T3.5.12). Storing the seed on `ExperimentRun` and replaying a run from lineage is still outstanding, and lands with T3.5.19. |
-| Declarative experiment engine + lineage | **Written and executed.** A 9-run sweep completes 9/9 and writes 28 lineage nodes / 54 edges. |
-| Hypothesis engine | **Written and executed.** Still no multiple-comparison control (D8), so its p-values are not yet trustworthy. |
-| FastAPI surface | **17 endpoints**, executed and smoke-tested. CORS, health and collection endpoints all added (T3.5.2, T3.5.10). |
-| React frontend | **Installed and built** (T3.5.0/T3.5.3) - emits 1,378 modules with real JS/CSS. **Rendered appearance in a browser still unverified**, and it does not yet consume the health, experiment-list or benchmark endpoints. |
-| DTCWT | **Still not implemented as advertised** (D1). Degenerate second tree, no orientation. Downgraded from a Phase 4 blocker to a 4E-orientation requirement once the SWT landed. |
-| Registries / extension seams | **Still if/elif chains** (D15), now carrying extra `swt` branches as acknowledged debt. |
-| HPC / executor seam | **Not started** (T3.5.19). Sweeps run strictly sequentially; multi-GPU assignment is cosmetic (D18). |
-| Real ERA5 data | **Not started** (T3.5.18). Everything to date runs on synthetic fields and benchmarks. |
+| DTCWT | **Implemented as advertised as of T3.5.6** (D1 closed). Real Kingsbury q-shift dual tree, six oriented complex subbands with *measured* passband centres, vendored full-precision coefficients, cross-checked against two independent oracles. Near shift invariant, not exact — the SWT remains the exactly shift-invariant transform. |
+| Reproducibility | **Seeded generation, perturbation and run-level seed capture** (T3.5.12/T3.5.19). `ExperimentRun.seed` and `execution` are persisted, and a sweep is byte-identical across executor backends. Replaying a run from lineage alone is still outstanding. |
+| Statistical validity | **Controlled as of T4C.5** (D8 closed). Bonferroni / Holm / BH / BY with the dependence assumption reported alongside every q-value, five surrogate null models, an ESS correction, a calibrated stationarity gate and an explicit power check. The D8 scenario went from 3 reported "discoveries" on 9-sample noise to 0, while a real effect among 19 nulls at n=40 is still recovered. |
+| Registries / extension seams | **Registry-based as of T3.5.15** (D15 closed). Transforms, pipeline actions and data sources are decorator-registered with capability metadata; the plugin acceptance test registers a third-party transform without editing `src/`. |
+| Error reporting | **Taxonomy in place as of T3.5.14** (D14 closed). `SpectralEarthError` subclasses carry their own status code and client-safety, so an HTTP status follows from the error *kind* rather than from the call site. |
+| HPC / executor seam | **In place as of T3.5.19.** Serial / thread / process backends behind one interface, submission-order results, thread-budget control and SQLite WAL + `busy_timeout`. Measured honestly: on this workload **serial beat thread(4) and process(4)**, because PyTorch already parallelises the FFT across cores. Cross-device CPU/CUDA/MPS agreement is **not** verified — this machine is CPU-only (D18, partial). |
+| Schema migrations | **In place as of T3.5.8** (D32 closed). Two Alembic revisions, `ensure_schema` at startup, drift against the ORM checked by test. `create_all` had silently left the repository's own database unqueryable. PostgreSQL is verified only as *rendered* DDL, not executed. |
+| FastAPI surface | **17 endpoints**, executed and smoke-tested. CORS, health and collection endpoints all added (T3.5.2, T3.5.10). Health now reports device, executor, SQLite pragmas and schema revision. |
+| React frontend | **Installed and built** (T3.5.0/T3.5.3) - emits 1,378 modules with real JS/CSS. **Rendered appearance in a browser still unverified**, and it does not consume the health, experiment-list, benchmark, statistics or orientation endpoints. This is the largest single gap between what the backend can do and what a researcher can reach. |
+| Real ERA5 data | **Not started** (T3.5.18). Everything to date runs on synthetic fields and benchmarks. This is the last thing between the platform and real observations. |
+| Vectorisation | **Partial** (D17). The radial PSD and coherence paths are vectorised; per-bin Python loops remain in `decompose_by_boundary` and `analyze_boundary_artefacts`. |
 
 **The original baseline audit** (2026-08-19, before any of Phase 3.5) is preserved in
 `architecture.md` Section 7 and in the early sections of `VERIFICATION.md`. It recorded that
@@ -39,7 +47,7 @@ nothing had ever been executed, that the test suite could not be collected, and 
 history, not current status, and this table replaces it.
 
 Phases 1 and 2 are done as *code* and now substantially done as *verified software*. Phase 3
-is partial. Phase 3.5 is roughly two-thirds complete - see Section 4 for per-task status.
+is partial. Phase 3.5 is nearly complete - T3.5.18 (real ERA5) and the browser verification of the frontend are the substantive gaps. See Section 4 for per-task status.
 
 ---
 
@@ -367,9 +375,32 @@ A trous / stationary transform in which **every scale keeps the parent grid shap
 **Rationale:** at scale 8 a decimated transform has 1/64 the samples, so a precursor *configuration* cannot be localised relative to an emergent coarse structure with useful precision.
 **Acceptance:** for all scales, `swt_coeffs[s].shape == field.data.shape`; perfect reconstruction; coefficient energy sums correctly across scales.
 
-### T3.5.8 Alembic migrations
+### T3.5.8 Alembic migrations - **DONE**
 Initialise Alembic, autogenerate the baseline migration for the five existing tables, stop relying on `create_all` in the lifespan.
 **Acceptance:** `alembic upgrade head` builds the schema from empty on both SQLite and PostgreSQL.
+
+**Met, with one criterion met only partially and said so.** Two revisions: `0001` the
+pre-migration five tables, `0002` the five columns added by T3.5.12 and T4C.5. On SQLite,
+`upgrade head` from empty builds the schema and `compare_metadata` against the ORM reports
+**zero differences** with type and server-default comparison enabled; each revision
+round-trips up and down individually; `downgrade base` leaves no application table. On
+**PostgreSQL the migrations are verified only as rendered DDL** in Alembic's offline mode -
+they compile for that dialect, but no server was available to execute them, so half of this
+acceptance criterion is asserted and half is demonstrated. That distinction is recorded
+rather than smoothed over.
+
+**Why it stopped being bookkeeping.** `create_all` adds missing tables and silently ignores
+missing columns. The repository's own `spectral_earth.db` predated both column-adding slices,
+so it raised `no such column: experiment_runs.seed` on the first query while startup reported
+success - defect **D32**. Reproduced on that file, then fixed: `ensure_schema` detected it as
+revision `0001`, applied `0002`, and left zero drift against the ORM.
+
+**The trap avoided.** Adopting a pre-Alembic database by `stamp head` - the conventional move -
+would have asserted the five columns exist, skipped `0002` permanently, and produced a
+database Alembic believed was current and the ORM could not query. `detect_legacy_revision`
+probes for `experiment_runs.seed` and stamps **by observation**. 25 tests
+(`src/tests/test_migrations.py`), including one that asserts the `create_all` defect itself so
+the reason for this layer cannot be lost.
 
 ### T3.5.9 Data-layer honesty and hygiene *(D9)*
 Add a cache-invalidation path (mtime check or explicit reload endpoint). Either implement `cfgrib` GRIB ingestion or delete the misleading comment - no third option.
