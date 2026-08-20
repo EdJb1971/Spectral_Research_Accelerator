@@ -75,6 +75,13 @@ class HealthResponse(BaseModel):
     database_url_scheme: str = Field(..., description="Backend in use, e.g. 'sqlite'.")
     datasets_available: int = Field(..., description="Number of datasets the adapter can resolve.")
     torch_device: str = Field(..., description="Execution device selected for this process.")
+    # T3.5.19 / D18: what this deployment can actually do. A researcher choosing an
+    # execution backend needs to know how many cores are available and whether the database
+    # is configured for concurrent writes; both were previously invisible.
+    execution: Dict[str, Any] = Field(default_factory=dict,
+                                      description="Devices, thread budget and executor backends available.")
+    database_settings: Dict[str, Any] = Field(default_factory=dict,
+                                              description="SQLite pragmas actually in force (WAL, busy_timeout).")
 
 
 class TransformRequest(BaseModel):
@@ -457,6 +464,16 @@ class HypothesisResponse(BaseModel):
     parameters_analyzed: List[str]
     proposed_experiment_config: Optional[Dict[str, Any]] = None
     created_at: str
+    # Defect D8. `confidence` is an effect size; on its own it is what produced 9 spurious
+    # "discoveries" from a 9-run sweep. A reported pattern must travel with its p-value, its
+    # multiplicity-corrected q-value, the size of the family the correction covered, and the
+    # dependence assumption of the procedure used - otherwise the client cannot tell a
+    # finding from an artefact, and neither can the researcher.
+    p_value: Optional[float] = Field(None, description="Uncorrected p-value for this test.")
+    q_value: Optional[float] = Field(None, description="Multiplicity-corrected p-value (FDR).")
+    n_tests: Optional[int] = Field(None, description="Family size the correction covered.")
+    statistics: Optional[Dict[str, Any]] = Field(
+        None, description="Test used, correction procedure, its assumption, and caveats.")
 
 @app.get("/api/v1/health", response_model=HealthResponse)
 async def health(db: Session = Depends(get_db)):
@@ -480,13 +497,35 @@ async def health(db: Session = Depends(get_db)):
     except Exception:
         n_datasets = 0
 
+    from src.core import device as device_policy
+    from src.core.executor import BACKENDS
+    from src.database.session import sqlite_settings
+
+    try:
+        db_settings = sqlite_settings()
+    except Exception:  # pragma: no cover - only on a database that cannot be queried
+        db_settings = {}
+
     return HealthResponse(
         status="ok" if db_status == "ok" else "degraded",
         api_version=app.version,
         database=db_status,
         database_url_scheme=str(engine.url).split(":", 1)[0],
         datasets_available=n_datasets,
-        torch_device=str(get_execution_device(0)),
+        torch_device=str(device_policy.select_device()),
+        execution={
+            "backends": list(BACKENDS),
+            "default_backend": "serial",
+            "default_backend_rationale": (
+                "PyTorch already parallelises FFT and BLAS across cores, so run-level "
+                "workers compete for cores it is using. Measured on this class of workload: "
+                "serial beat thread(4) and process(4). Raise n_workers only when tasks are "
+                "small and numerous, or set threads_per_worker to divide the cores."),
+            "devices": device_policy.available_devices(),
+            "cpu_count": __import__("os").cpu_count(),
+            "torch_num_threads": __import__("torch").get_num_threads(),
+        },
+        database_settings=db_settings,
     )
 
 
@@ -990,8 +1029,12 @@ async def discover_hypotheses(request: DiscoverRequest, db: Session = Depends(ge
                 metrics_analyzed=h.metrics_analyzed,
                 parameters_analyzed=h.parameters_analyzed,
                 proposed_experiment_config=h.proposed_experiment_config,
-                created_at=h.created_at.isoformat()
-            ) for h in hypotheses
+                created_at=h.created_at.isoformat(),
+            p_value=h.p_value,
+            q_value=h.q_value,
+            n_tests=h.n_tests,
+            statistics=h.statistics,
+        ) for h in hypotheses
         ]
     except Exception as e:
         logger.error(f"Error in hypothesis discovery: {str(e)}", exc_info=True)
@@ -1021,8 +1064,12 @@ async def get_proposals(
                 metrics_analyzed=h.metrics_analyzed,
                 parameters_analyzed=h.parameters_analyzed,
                 proposed_experiment_config=h.proposed_experiment_config,
-                created_at=h.created_at.isoformat()
-            ) for h in hypotheses
+                created_at=h.created_at.isoformat(),
+            p_value=h.p_value,
+            q_value=h.q_value,
+            n_tests=h.n_tests,
+            statistics=h.statistics,
+        ) for h in hypotheses
         ]
     except Exception as e:
         logger.error(f"Error retrieving proposals: {str(e)}", exc_info=True)

@@ -186,12 +186,27 @@ def test_benchmark_run_separates_the_three_outcomes(client):
 
 
 def test_benchmark_run_reports_pending_gates(client):
-    resp = client.post("/api/v1/benchmarks/run?name=fractional_brownian")
+    """A gate whose stage does not exist yet must be visible in the API, not absent.
+
+    Uses `planted_configuration`, whose 4E matcher is still unbuilt. It previously used
+    `fractional_brownian`, but that benchmark's surrogate-null gate graduated to a real PASS
+    once T4C.5 landed - which is exactly the transition this outcome exists to make visible.
+    """
+    resp = client.post("/api/v1/benchmarks/run?name=planted_configuration")
     body = resp.json()
     assert body["not_yet_runnable"] >= 1
     stages = [c["stage"] for b in body["benchmarks"] for c in b["checks"]
               if c["outcome"] == "NOT_YET_RUNNABLE"]
-    assert "4C.surrogate_null" in stages
+    assert "4E.invariance" in stages
+
+
+def test_benchmark_run_reports_an_enforced_surrogate_null(client):
+    """The fBm surrogate-null gate is now enforced; assert it passes rather than pends."""
+    resp = client.post("/api/v1/benchmarks/run?name=fractional_brownian")
+    body = resp.json()
+    assert body["failed"] == 0
+    outcomes = {c["stage"]: c["outcome"] for b in body["benchmarks"] for c in b["checks"]}
+    assert outcomes["4C.surrogate_null"] == "PASS"
 
 
 def test_unknown_benchmark_name_is_a_404_not_a_silent_empty_pass(client):

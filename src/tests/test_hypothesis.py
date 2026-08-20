@@ -138,15 +138,20 @@ def test_hypothesis_api_endpoints(client, db_session):
     )
     db_session.add(experiment)
     
-    for freq in [1.0, 2.0, 3.0]:
+    # 12 runs with a strong real effect. The original version of this test used **3** runs
+    # and asserted a discovery; after defect D8 was fixed that correctly returns nothing,
+    # because a correlation from three points is not defendable at any q-value. The test now
+    # supplies enough evidence to make a genuine finding, which is the stronger check: it
+    # confirms the FDR gate was not "fixed" by making the engine permanently silent.
+    for i in range(12):
         run = ExperimentRun(
             id=str(uuid.uuid4()),
             experiment_id=exp_id,
-            parameters={"freq": freq},
+            parameters={"freq": float(i)},
             status="COMPLETED",
             results={
                 "metrics": {
-                    "mean_squared_error": freq * 0.1
+                    "mean_squared_error": 0.1 * i + 0.002 * ((i * 7) % 5)
                 }
             }
         )
@@ -162,7 +167,14 @@ def test_hypothesis_api_endpoints(client, db_session):
     data = resp.json()
     assert len(data) == 1
     assert data[0]["pattern_type"] == "correlation"
-    assert data[0]["confidence"] == pytest.approx(1.0)
+    # Defect D8: a reported pattern must carry its statistical validity, not just an r.
+    assert data[0]["q_value"] is not None and data[0]["q_value"] < 0.05
+    assert data[0]["p_value"] <= data[0]["q_value"]
+    assert data[0]["n_tests"] >= 1
+    assert "q = " in data[0]["description"]
+    # Not exactly 1.0: the run values carry a small deterministic jitter so the fit is
+    # strong-but-not-degenerate, which is a more realistic thing for the engine to face.
+    assert data[0]["confidence"] > 0.99
 
     # Test Proposals Endpoint
     resp = client.get("/api/v1/hypothesis/proposals")

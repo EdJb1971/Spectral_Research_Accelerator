@@ -1,5 +1,5 @@
 import datetime
-from sqlalchemy import Column, String, DateTime, JSON, ForeignKey, Float
+from sqlalchemy import Integer, Column, String, DateTime, JSON, ForeignKey, Float
 from sqlalchemy.orm import relationship
 from src.database.session import Base
 
@@ -28,6 +28,14 @@ class ExperimentRun(Base):
     error_message = Column(String, nullable=True)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.datetime.now(datetime.timezone.utc))
     completed_at = Column(DateTime(timezone=True), nullable=True)
+
+    # Reproducibility (T3.5.12 / D12, standard E4). `seed` is the substream derived for this
+    # run by `SeedSequence.spawn`, so re-running it reproduces the same draws regardless of
+    # which worker executed it or in what order. `execution` records the backend, worker
+    # count, thread budget and device - a result that cannot be reproduced can at least be
+    # explained.
+    seed = Column(Integer, nullable=True)
+    execution = Column(JSON, nullable=True)
 
     experiment = relationship("Experiment", back_populates="runs")
     lineage_nodes = relationship("LineageNode", back_populates="run", cascade="all, delete-orphan")
@@ -65,4 +73,14 @@ class Hypothesis(Base):
     metrics_analyzed = Column(JSON, nullable=False)
     parameters_analyzed = Column(JSON, nullable=False)
     proposed_experiment_config = Column(JSON, nullable=True)
+
+    # Statistical validity (defect D8, rules R5/R12). `confidence` alone is an effect size;
+    # without these a reported pattern is not defendable. `statistics` carries the raw and
+    # ESS-corrected p-values, the q-value, the correction procedure, its dependence
+    # assumption and the family size the correction was computed over.
+    p_value = Column(Float, nullable=True)
+    q_value = Column(Float, nullable=True)
+    n_tests = Column(Integer, nullable=True)
+    statistics = Column(JSON, nullable=True)
+
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.datetime.now(datetime.timezone.utc))

@@ -16,6 +16,13 @@ from src.analysis_engine.diagnostics import SpectralSpatialAnalysisEngine
 from src.analysis_engine.decomposition import ErrorDecompositionEngine
 from src.physical_core.field import PhysicalField
 from src.experiment_engine import actions
+from src.core.executor import (
+    derive_seeds,
+    describe as executor_describe,
+    get_executor,
+)
+from src.core import device as device_policy
+from src.benchmarks.seeding import DEFAULT_ROOT_SEED
 from src.core.errors import (
     PipelineStepError,
     ReferenceResolutionError,
@@ -29,16 +36,32 @@ def get_execution_device(run_idx: int = 0) -> torch.device:
         return torch.device(f"cuda:{device_id}")
     return torch.device("cpu")
 
-def resolve_value(val: Any, params: Dict[str, Any], step_outputs: Dict[str, Any]) -> Any:
+def _resolvable_names(params: Dict[str, Any], step_outputs: Dict[str, Any]) -> List[str]:
+    """Everything a `{...}` reference could legitimately name right now."""
+    names = list(params)
+    for step, out in step_outputs.items():
+        if isinstance(out, dict):
+            names.extend("%s.%s" % (step, k) for k in out)
+    return names
+
+
+def resolve_value(val: Any, params: Dict[str, Any], step_outputs: Dict[str, Any],
+                  step_name: Optional[str] = None) -> Any:
     if isinstance(val, str):
         if val.startswith("{") and val.endswith("}") and val.count("{") == 1 and val.count("}") == 1:
             ref = val[1:-1]
             if "." in ref:
-                step_name, key = ref.split(".", 1)
-                if step_name in step_outputs and isinstance(step_outputs[step_name], dict) and key in step_outputs[step_name]:
-                    return step_outputs[step_name][key]
+                src_step, key = ref.split(".", 1)
+                if src_step in step_outputs and isinstance(step_outputs[src_step], dict) and key in step_outputs[src_step]:
+                    return step_outputs[src_step][key]
             elif ref in params:
                 return params[ref]
+            # An unresolvable reference used to fall through and stay a literal string, so
+            # the failure surfaced much later as something like
+            # `torch.tensor("{gen.field}") -> must be real number, not NoneType`. Naming the
+            # reference and listing what *is* resolvable turns that into a one-line fix.
+            raise ReferenceResolutionError(
+                val, _resolvable_names(params, step_outputs), step=step_name)
         
         def replacer(match):
             placeholder = match.group(1)
@@ -58,6 +81,88 @@ def resolve_value(val: Any, params: Dict[str, Any], step_outputs: Dict[str, Any]
     elif isinstance(val, dict):
         return {k: resolve_value(v, params, step_outputs) for k, v in val.items()}
     return val
+
+def execute_run_payload(item, seed=None):
+    """Compute one sweep run. **Pure with respect to the database** (T3.5.19).
+
+    This is the unit the Executor distributes, so it must be a module-level function (the
+    `process` backend pickles it) and it must not touch a session: a SQLAlchemy connection
+    cannot cross a process boundary. It returns everything the parent needs in order to
+    persist the run, and the parent - which owns the one session - writes it.
+
+    That split is what makes parallel and serial byte-identical. Workers do arithmetic;
+    ordering, identity and persistence stay in one place.
+    """
+    from src.core import device as device_policy
+    from src.experiment_engine import actions
+
+    pipeline = item["pipeline"]
+    run_params = item["run_params"]
+    run_idx = item["run_idx"]
+    dataset_version = item.get("dataset_version", "unknown")
+
+    dev = device_policy.select_device(item.get("device"), run_idx=run_idx)
+    if seed is not None:
+        device_policy.enable_determinism(seed)
+
+    step_outputs = {}
+    steps = []
+    # Tracked outside the loop so a failure names the step that *failed*, not the last one
+    # that succeeded. The first version used `steps[-1]`, which is the last **appended**
+    # step - so a failure in step 2 was reported against step 1. A misattributed error is
+    # worse than a vague one: it sends the reader to the wrong place with confidence.
+    current_step = "<none>"
+    current_action = "<none>"
+    try:
+        for step in pipeline:
+            step_name = step.get("name")
+            action = step.get("action")
+            args = step.get("args", {})
+            current_step, current_action = step_name, action
+            resolved_args = resolve_value(args, run_params, step_outputs,
+                                          step_name=step_name)
+            step_result = actions.execute(action, resolved_args, dev)
+            step_outputs[step_name] = step_result
+            steps.append({
+                "step_name": step_name,
+                "action": action,
+                "resolved_args": resolved_args,
+                "node_type": actions.node_type_for(action),
+                "node_value": actions.summarise(action, step_result, resolved_args),
+                "dependencies": DeclarativeExperimentEngine._find_step_dependencies(args),
+                "dataset_id": resolved_args.get("dataset_id") if action == "slice_dataset" else None,
+                "variable": resolved_args.get("variable") if action == "slice_dataset" else None,
+                "dataset_version": dataset_version,
+            })
+        return {
+            "ok": True,
+            "run_idx": run_idx,
+            "seed": seed,
+            "steps": steps,
+            "results": DeclarativeExperimentEngine._summarize_run_results(step_outputs),
+            "device": str(dev),
+        }
+    except Exception as exc:
+        # Returned rather than raised: one failing run in a 20-run sweep must not discard
+        # the other 19, and the failing step has to be named (T3.5.14 / D14).
+        failing, failing_action = current_step, current_action
+        return {
+            "ok": False,
+            "run_idx": run_idx,
+            "seed": seed,
+            "steps": steps,
+            "error": "Step %r (action %r) failed in run %d: %s: %s" % (
+                failing, failing_action, run_idx, type(exc).__name__, exc),
+            "error_type": type(exc).__name__,
+            "failing_step": failing,
+            "failing_action": failing_action,
+            # The traceback is kept on the payload (not persisted to the API response) so a
+            # sweep failure can be diagnosed without re-running it - which for a long sweep
+            # may not be cheap.
+            "traceback": __import__("traceback").format_exc(),
+            "device": str(dev),
+        }
+
 
 class DeclarativeExperimentEngine:
     @staticmethod
@@ -123,110 +228,91 @@ class DeclarativeExperimentEngine:
 
             all_runs_successful = True
 
-            for idx, run_params in enumerate(expanded_runs):
+            # --- compute: distributed through the Executor seam (T3.5.19) -------------
+            exec_cfg = config.get("execution", {}) or {}
+            backend = exec_cfg.get("backend", "serial")
+            n_workers = int(exec_cfg.get("n_workers", 1))
+            root_seed = int(exec_cfg.get("seed", DEFAULT_ROOT_SEED))
+            executor = get_executor(backend, n_workers,
+                                    threads_per_worker=exec_cfg.get("threads_per_worker"))
+            seeds = derive_seeds(root_seed, len(expanded_runs))
+            exec_record = executor_describe(executor)
+            exec_record["root_seed"] = root_seed
+            exec_record.update(device_policy.describe(n_workers=n_workers))
+
+            items = [{"pipeline": pipeline, "run_params": params, "run_idx": i,
+                      "dataset_version": dataset_version,
+                      "device": exec_cfg.get("device")}
+                     for i, params in enumerate(expanded_runs)]
+            task_results = executor.map(execute_run_payload, items, seeds)
+
+            # --- persist: serial, one session, submission order ----------------------
+            for idx, task in enumerate(task_results):
+                run_params = expanded_runs[idx]
+                payload = task.value if task.ok else {
+                    "ok": False, "run_idx": idx, "seed": task.seed, "steps": [],
+                    "error": "%s: %s" % (task.error_type, task.error),
+                    "error_type": task.error_type,
+                }
                 run_id = str(uuid.uuid4())
                 run = ExperimentRun(
                     id=run_id,
                     experiment_id=experiment_id,
                     parameters=run_params,
                     status="RUNNING",
+                    seed=payload.get("seed"),
+                    execution=exec_record,
                     created_at=datetime.datetime.now(datetime.timezone.utc)
                 )
                 db.add(run)
                 db.commit()
 
-                device = get_execution_device(idx)
-                step_outputs = {}
                 step_nodes = {}
-                run_successful = True
+                for step in payload.get("steps", []):
+                    node_id = str(uuid.uuid4())
+                    node = LineageNode(
+                        id=node_id,
+                        experiment_id=experiment_id,
+                        run_id=run_id,
+                        name=step["step_name"],
+                        type=step["node_type"],
+                        value=step["node_value"]
+                    )
+                    db.add(node)
+                    db.commit()
+                    step_nodes[step["step_name"]] = node_id
 
-                try:
-                    for step in pipeline:
-                        step_name = step.get("name")
-                        action = step.get("action")
-                        args = step.get("args", {})
+                    db.add(LineageEdge(id=str(uuid.uuid4()), source_id=code_node_id,
+                                       target_id=node_id, relation="executed_by"))
+                    for inp_step in step["dependencies"]:
+                        if inp_step in step_nodes:
+                            db.add(LineageEdge(id=str(uuid.uuid4()),
+                                               source_id=step_nodes[inp_step],
+                                               target_id=node_id, relation="input_to"))
 
-                        resolved_args = resolve_value(args, run_params, step_outputs)
-                        step_result = cls._execute_action(action, resolved_args, device)
-                        step_outputs[step_name] = step_result
-
-                        node_id = str(uuid.uuid4())
-                        node_type = cls._get_node_type_for_action(action)
-                        node_value = cls._create_node_summary(action, step_result, resolved_args)
-                        
-                        node = LineageNode(
-                            id=node_id,
-                            experiment_id=experiment_id,
-                            run_id=run_id,
-                            name=step_name,
-                            type=node_type,
-                            value=node_value
-                        )
-                        db.add(node)
+                    if step.get("dataset_id"):
+                        ds_node_id = str(uuid.uuid4())
+                        db.add(LineageNode(
+                            id=ds_node_id, experiment_id=experiment_id, run_id=run_id,
+                            name="dataset_%s" % step["dataset_id"], type="dataset",
+                            value={"dataset_id": step["dataset_id"],
+                                   "variable": step.get("variable"),
+                                   "version": step.get("dataset_version")}))
                         db.commit()
-                        step_nodes[step_name] = node_id
-
-                        edge_id = str(uuid.uuid4())
-                        edge = LineageEdge(
-                            id=edge_id,
-                            source_id=code_node_id,
-                            target_id=node_id,
-                            relation="executed_by"
-                        )
-                        db.add(edge)
-
-                        inputs = cls._find_step_dependencies(args)
-                        for inp_step in inputs:
-                            if inp_step in step_nodes:
-                                edge_id = str(uuid.uuid4())
-                                edge = LineageEdge(
-                                    id=edge_id,
-                                    source_id=step_nodes[inp_step],
-                                    target_id=node_id,
-                                    relation="input_to"
-                                )
-                                db.add(edge)
-
-                        if action == "slice_dataset":
-                            ds_node_id = str(uuid.uuid4())
-                            ds_node = LineageNode(
-                                id=ds_node_id,
-                                experiment_id=experiment_id,
-                                run_id=run_id,
-                                name=f"dataset_{resolved_args.get('dataset_id')}",
-                                type="dataset",
-                                value={
-                                    "dataset_id": resolved_args.get("dataset_id"),
-                                    "variable": resolved_args.get("variable"),
-                                    "version": dataset_version
-                                }
-                            )
-                            db.add(ds_node)
-                            db.commit()
-
-                            edge_id = str(uuid.uuid4())
-                            edge = LineageEdge(
-                                id=edge_id,
-                                source_id=ds_node_id,
-                                target_id=node_id,
-                                relation="sliced_from"
-                            )
-                            db.add(edge)
-
-                        db.commit()
-
-                    run.status = "COMPLETED"
-                    run.results = cls._summarize_run_results(step_outputs)
-                    run.completed_at = datetime.datetime.now(datetime.timezone.utc)
+                        db.add(LineageEdge(id=str(uuid.uuid4()), source_id=ds_node_id,
+                                           target_id=node_id, relation="sliced_from"))
                     db.commit()
 
-                except Exception as e:
-                    run_successful = False
+                if payload.get("ok"):
+                    run.status = "COMPLETED"
+                    run.results = payload["results"]
+                else:
                     all_runs_successful = False
                     run.status = "FAILED"
-                    run.error_message = str(e)
-                    run.completed_at = datetime.datetime.now(datetime.timezone.utc)
-                    db.commit()
+                    run.error_message = payload.get("error")
+                run.completed_at = datetime.datetime.now(datetime.timezone.utc)
+                db.commit()
+
 
             experiment.status = "COMPLETED" if all_runs_successful else "FAILED"
             db.commit()

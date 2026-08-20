@@ -48,9 +48,25 @@ def _spectral_field(n: int, beta_density: float, bundle: SeedBundle,
     k[0, 0] = 1.0
     amp = k ** (-beta_density / 2.0)
     amp[0, 0] = 0.0
-    phase = torch.rand(n, n, generator=bundle.torch_generator(),
-                       dtype=torch.float64) * 2 * math.pi
-    return torch.fft.ifft2(amp * torch.exp(1j * phase)).real, g
+
+    # Phases are taken from the FFT of a real white-noise field, so they are Hermitian by
+    # construction and the inverse transform is exactly real. The first version drew
+    # independent uniform phases and took `.real` of a non-Hermitian inverse, which is *not*
+    # a Gaussian random field: `.real` averages each mode with its conjugate mirror, so the
+    # realised amplitude at k is modulated by the random phase difference between +k and -k
+    # and the field's true spectrum is no longer `amp`. That left a residual phase structure
+    # detectable at z = 2.1 against a correct phase-randomised null - a benchmark that did
+    # not quite contain what it claimed, which is fatal for a null benchmark specifically.
+    noise = torch.randn(n, n, generator=bundle.torch_generator(), dtype=torch.float64)
+    phase = torch.angle(torch.fft.fft2(noise))
+    field = torch.fft.ifft2(amp * torch.exp(1j * phase))
+    residual = float(torch.abs(field.imag).max())
+    scale = float(torch.abs(field.real).max()) or 1.0
+    if residual / scale > 1e-9:
+        raise ValueError(
+            "synthetic field has a residual imaginary part of %.2e; the phase field was not "
+            "Hermitian and the realised spectrum is not the requested one" % (residual / scale))
+    return field.real, g
 
 
 # ------------------------------------------------------------------ 1. pure sinusoid
@@ -176,9 +192,45 @@ def _check_fbm_slope(field: PhysicalField, truth: Dict[str, Any]) -> CheckResult
 
 @stage_check("4C.surrogate_null")
 def _check_fbm_no_organisation(field: PhysicalField, truth: Dict[str, Any]) -> CheckResult:
-    raise NotImplementedError(
-        "4C.surrogate_null: phase-randomised surrogate testing (T4C.5) is not implemented; "
-        "the known answer 'zero findings on fBm' is recorded and will be enforced then")
+    """**The false-positive floor for surrogate testing** (defect D8, rule R1).
+
+    fBm is scale-free by construction: no preferred scale, no localised structure, nothing to
+    find. A surrogate test that reports organisation here is reporting its own noise.
+
+    The statistic is deliberately one that *would* detect real organisation - the excess
+    kurtosis of the level-2 wavelet detail coefficients, which rises when energy concentrates
+    into localised structures rather than spreading evenly. Against a phase-randomised null,
+    which preserves the power spectrum exactly, a rejection could only come from phase
+    organisation. There is none, so the test must not reject.
+    """
+    from src.statistics.significance import surrogate_test
+    from src.transform_engine import stationary as swt
+
+    def concentration(data) -> float:
+        f = PhysicalField(torch.as_tensor(np.asarray(data), dtype=torch.float64))
+        coeffs = swt.apply_swt2d(f, levels=2, wavelet="db2")
+        detail = torch.cat([coeffs["level_2"][b].flatten() for b in ("LH", "HL", "HH")])
+        centred = detail - detail.mean()
+        variance = float(torch.mean(centred ** 2))
+        if variance <= 0:
+            return 0.0
+        return float(torch.mean(centred ** 4)) / (variance ** 2) - 3.0
+
+    result = surrogate_test(field.data.numpy(), concentration,
+                            method="phase_randomise", n_surrogates=199,
+                            seed=4242, alternative="two_sided")
+    rejected = result["p_value"] <= 0.05
+    return CheckResult(
+        "4C.surrogate_null",
+        Outcome.FAIL if rejected else Outcome.PASS,
+        ("REPORTED ORGANISATION IN SCALE-FREE fBm: p = %.4f, z = %.2f" if rejected else
+         "no organisation claimed on scale-free fBm: p = %.4f (z = %.2f), floor %.4f, "
+         "%d phase-randomised surrogates")
+        % ((result["p_value"], result["z_score"]) if rejected else
+           (result["p_value"], result["z_score"], result["p_value_floor"],
+            result["n_surrogates"])),
+        {"p_value": result["p_value"], "z_score": result["z_score"],
+         "n_surrogates": result["n_surrogates"], "null_preserves": result["null_preserves"]})
 
 
 register_benchmark(Benchmark(

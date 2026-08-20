@@ -19,6 +19,7 @@ from typing import Any, Callable, Dict, NamedTuple, Optional
 
 import torch
 
+from src.core.errors import MissingParameterError
 from src.core.registry import Registry
 from src.analysis_engine.decomposition import ErrorDecompositionEngine
 from src.analysis_engine.diagnostics import SpectralSpatialAnalysisEngine
@@ -116,113 +117,41 @@ def generate_synthetic(args: Dict[str, Any], device: torch.device) -> Dict[str, 
     node_type='coefficients',
 )
 def apply_transform(args: Dict[str, Any], device: torch.device) -> Dict[str, Any]:
-    """Apply a registered spectral transform and reconstruct."""
-    field_data = args.get("field_data")
-    transform_type = args.get("transform_type", "fft").lower()
-    config = args.get("config", {})
-    
-    data_tensor = torch.tensor(field_data, dtype=torch.float32, device=device)
+    """Apply a registered spectral transform and reconstruct.
+
+    Dispatch goes through `transform_engine.registry`, which is the single definition of
+    what each transform name means. This body previously carried its own six-branch
+    `if/elif` - a third copy of the same chain, inherited when the action was moved out of
+    `engine.py` and easy to miss precisely because the move was mechanical.
+    """
+    from src.transform_engine import registry as transform_registry
+
+    field_data = args.get("field_data", args.get("field"))
+    if field_data is None:
+        raise MissingParameterError(
+            "field_data", action="apply_transform",
+            required=["field_data", "transform_type"])
+    transform_type = str(args.get("transform_type", "fft")).lower()
+    config = args.get("config", {}) or {}
+
+    data_tensor = torch.as_tensor(field_data, dtype=torch.float32, device=device)
     field = PhysicalField(data_tensor)
-    
-    if transform_type == "fft":
-        magnitude, phase = SpectralTransformEngine.apply_fft2d(field)
-        reconstructed = SpectralTransformEngine.inverse_fft2d(magnitude, phase, field.data.shape)
-        coefficients = {
-            "magnitude": magnitude.tolist(),
-            "phase": phase.tolist()
-        }
-    elif transform_type == "dct":
-        coeffs = SpectralTransformEngine.apply_dct2d(field)
-        reconstructed = SpectralTransformEngine.inverse_dct2d(coeffs)
-        coefficients = {
-            "coefficients": coeffs.tolist()
-        }
-    elif transform_type == "dwt":
-        levels = config.get("levels", 1)
-        coeffs = SpectralTransformEngine.apply_dwt2d(field, levels=levels)
-        reconstructed = SpectralTransformEngine.inverse_dwt2d(coeffs, levels=levels, target_shape=field.data.shape)
-        serialized_coeffs = {"LL": coeffs["LL"].tolist()}
-        for lvl in range(1, levels + 1):
-            serialized_coeffs[f"level_{lvl}"] = {
-                k: v.tolist() for k, v in coeffs[f"level_{lvl}"].items()
-            }
-        coefficients = serialized_coeffs
-    elif transform_type == "dtcwt":
-        # T3.5.6 / D1: the real Kingsbury q-shift DTCWT. The previous
-        # `SpectralTransformEngine.apply_dtcwt2d` ran four copies of one Haar filter
-        # bank and is retained only as a documented artefact (see transforms.py).
-        # TODO(T3.5.15): this branch is registry debt.
-        levels = int(config.get("levels", 3))
-        coeffs = RealDTCWT.apply_dtcwt2d(
-            field, levels=levels,
-            level1=config.get("level1", "near_sym_b"),
-            qshift=config.get("qshift", "qshift_b"))
-        reconstructed = RealDTCWT.inverse_dtcwt2d(coeffs)
-        orientation = RealDTCWT.subband_energies(coeffs)
-        serialized_coeffs = {"LL": coeffs["LL"].tolist()}
-        for lvl in range(1, levels + 1):
-            serialized_coeffs[f"level_{lvl}"] = {
-                "LH_real": coeffs[f"level_{lvl}"]["LH_real"].tolist(),
-                "LH_imag": coeffs[f"level_{lvl}"]["LH_imag"].tolist(),
-                "HL_real": coeffs[f"level_{lvl}"]["HL_real"].tolist(),
-                "HL_imag": coeffs[f"level_{lvl}"]["HL_imag"].tolist(),
-                "HH_real": coeffs[f"level_{lvl}"]["HH_real"].tolist(),
-                "HH_imag": coeffs[f"level_{lvl}"]["HH_imag"].tolist()
-            }
-        coefficients = serialized_coeffs
-    elif transform_type == "swt":
-        # Undecimated / stationary transform (T3.5.7). Unlike 'dwt' every band
-        # stays on the parent grid, which is what Phase 4 needs. NOTE: this is
-        # another branch on the if/elif chain that defect D15 is about; it moves
-        # onto @register_transform in T3.5.15.
-        levels = config.get("levels", 1)
-        wavelet = config.get("wavelet", "haar")
-        mode = config.get("mode", "periodic")
-        coeffs_swt = swt_engine.apply_swt2d(field, levels=levels, wavelet=wavelet, mode=mode)
-        if mode == "periodic":
-            reconstructed = swt_engine.inverse_swt2d(coeffs_swt)
-        else:
-            reconstructed = field  # reflect mode is analysis-only; report no recon error
-        serialized_coeffs = {"LL": coeffs_swt["LL"].tolist()}
-        for lvl in range(1, levels + 1):
-            serialized_coeffs["level_%d" % lvl] = {
-                k: v.tolist() for k, v in coeffs_swt["level_%d" % lvl].items()
-            }
-        serialized_coeffs["energy_fractions"] = swt_engine.swt_energy_fractions(coeffs_swt)
-        serialized_coeffs["meta"] = coeffs_swt["meta"]
-        coefficients = serialized_coeffs
-    elif transform_type == "hybrid":
-        crossover_freq = config.get("crossover_freq", 0.5)
-        mixing_weight = config.get("mixing_weight", 0.5)
-        coeffs = SpectralTransformEngine.apply_hybrid(field, crossover_freq, mixing_weight)
-        reconstructed = SpectralTransformEngine.inverse_hybrid(coeffs, field.data.shape)
-        serialized_dwt = {"LL": coeffs["dwt_coeffs"]["LL"].tolist()}
-        for lvl in range(1, 2):
-            serialized_dwt[f"level_{lvl}"] = {
-                k: v.tolist() for k, v in coeffs["dwt_coeffs"][f"level_{lvl}"].items()
-            }
-        coefficients = {
-            "fft_mag": coeffs["fft_mag"].tolist(),
-            "fft_phase": coeffs["fft_phase"].tolist(),
-            "fft_mag_filtered": coeffs["fft_mag_filtered"].tolist(),
-            "dwt_coeffs": serialized_dwt,
-            "mixing_weight": coeffs["mixing_weight"],
-            "crossover_freq": coeffs["crossover_freq"]
-        }
-    else:
-        raise ValueError(f"Unsupported transform type: {transform_type}")
-        
-    mse = torch.mean((field.data - reconstructed.data) ** 2).item()
-    max_err = torch.max(torch.abs(field.data - reconstructed.data)).item()
-    
+
+    result = transform_registry.apply_transform(transform_type, field, config)
+    reconstructed = result["reconstructed"]
+    max_err = float(torch.max(torch.abs(
+        field.data.to(reconstructed.data.dtype) - reconstructed.data)))
+
     return {
-        "reconstructed_field": reconstructed.data.tolist(),
-        "coefficients": coefficients,
+        "field_data": reconstructed.data.tolist(),
+        "coefficients": result["summary"],
+        "transform_type": transform_type,
         "metrics": {
-            "mean_squared_error": mse,
-            "max_absolute_error": max_err
-        }
+            "mean_squared_error": result["reconstruction_mse"],
+            "max_absolute_error": max_err,
+        },
     }
+
 
 
 @register_action(

@@ -480,17 +480,52 @@ This is also excellent provenance (E5): a crop is *exactly* specifiable as `{sto
 
 **Acceptance:** the adapter reports the remote store's chunk structure and **warns when the requested access pattern is chunk-hostile**; a 256x256 region (the R13 floor for four levels) over one year materialises within the `laptop` tier budget with recorded bytes-transferred; the adapter refuses a crop too small for the requested number of levels, naming the minimum; re-requesting an identical crop hits the cache with zero network traffic; the crop specification round-trips from the lineage record to an identical re-materialisation.
 
-### T3.5.19 Executor seam and concurrency-safe persistence *(implements E11)*
+### T3.5.19 Executor seam and concurrency-safe persistence *(implements E11)* - **DONE**
 Define the `Executor` protocol with `serial`/`thread`/`process` backends; route the sweep loop and surrogate ensemble generation through it. Enable SQLite WAL mode and a busy timeout; give each worker its own session; move seed derivation to `SeedSequence.spawn`.
 **Acceptance:** a 20-run sweep produces byte-identical results under `serial` and under `process` with 2, 4 and 8 workers; a concurrency stress test drives parallel writes without a single `database is locked`; measured speed-up recorded per tier in `VERIFICATION.md`, including the deliberately-misconfigured oversubscribed case to demonstrate the thread-budget knob matters.
+
+**Met.** `core/executor.py` (serial/thread/process, submission-order results,
+`SeedSequence.spawn` seeding, per-worker thread budget) and `core/device.py`
+(CUDA -> MPS -> CPU with an explicit override). The sweep is split into
+`execute_run_payload` - which computes a run with **no database access**, so it can cross a
+process boundary - and serial persistence in the parent. 28 tests in `test_executor.py`;
+suite 379 -> 407.
+
+*   **Byte-identical** across `serial`, `thread(2)`, `thread(4)`, `process(2)`, `process(4)`
+    and `process(8)`, compared on the persisted parameters, status, seed and results of every
+    run rather than on a summary.
+*   **Concurrency stress:** 8 threads x 25 commits = 200 rows with zero `database is locked`,
+    with SQLite in WAL mode and a 30 s `busy_timeout` applied per connection.
+*   **Speed-up measured, and the honest answer is that parallelism does not help this
+    workload.** PyTorch already parallelises FFT/BLAS across cores: at 1 intra-op thread
+    `thread(4)` gives **1.40x**, but at 12 threads it gives **0.56x** - slower than serial.
+    The `process` backend costs **~6.3 s** of fixed startup on this platform. `serial` is
+    therefore the measured default, and `GET /api/v1/health` reports why.
+
+**Also completes D12's remaining half:** every `ExperimentRun` now records its derived `seed`
+and an `execution` provenance block (backend, workers, thread budget, device, torch version),
+so a run can be re-executed to the same numbers. And **T3.5.14's sweep-level acceptance**: a
+partially-failing sweep completes its good runs and names the failing step - a test asserts 3
+of 4 runs COMPLETED with the fourth naming its bad parameter.
 
 ### T3.5.20 Vectorise the radial and distance binning *(D17, implements E10)*
 Replace all five per-bin loops with `torch.bincount` / `scatter_add` single-pass reductions (`compute_radial_psd`, `compute_spectral_coherence`, `decompose_by_boundary`, `analyze_boundary_artefacts`, and the Tukey window construction). Batch the transform over `(time, scale, orientation)` as tensor dimensions rather than Python iteration.
 **Acceptance:** bit-comparable results to the current implementation (within float tolerance) on the benchmark suite, plus a recorded speed-up on a 512x512 field. This is a prerequisite for the `laptop` tier being honest rather than aspirational.
 
-### T3.5.21 Device and thread policy *(D18, implements E9)*
+### T3.5.21 Device and thread policy *(D18, implements E9)* - **PARTIAL** (CPU verified; the CPU/CUDA/MPS agreement half cannot be run on this machine)
 Extend `get_execution_device` to CUDA -> MPS -> CPU with an explicit override; configure CPU thread counts; make every kernel device-agnostic (the current code mixes CPU-constructed tensors with a selected device in places).
 **Acceptance:** the `smoke` tier passes identically on CPU, CUDA and MPS, with results agreeing within float tolerance across all three.
+
+**Partially met, and the gap is stated rather than papered over.** `core/device.py` implements
+the CUDA -> MPS -> CPU chain with a `SPECTRAL_DEVICE` override, configures CPU/BLAS thread
+counts, and **refuses** a requested device that is not present instead of silently falling
+back to CPU - a run that claims a GPU must have used one. `to_device` centralises moving
+nested structures, addressing the mixed CPU/device tensor construction D18 flagged.
+
+**Not verified on CUDA or MPS:** this machine is CPU-only (`torch 2.13.0+cpu`). The
+cross-device agreement half of the acceptance cannot be executed here and is *not* claimed.
+The tests assert the selection logic, the refusal path and the thread budget; the CPU/CUDA/MPS
+comparison remains open and is the one part of this task still outstanding.
 
 ---
 
@@ -578,7 +613,50 @@ Lagged mutual information and transfer entropy over the $A_t(s)$ matrix, for all
 Factor the log-log least-squares core out of `fit_spectral_slope` into a reusable `fit_power_law(x, y, x_min, x_max)`; keep the Charney/Kolmogorov interpretation as a thin turbulence-specific wrapper so existing behaviour is unchanged. Apply it to $N(s)$ / energy vs scale, normalised per R3, always reported against $\alpha_{\text{surrogate}}$.
 **Acceptance:** existing `fit_spectral_slope` tests still pass unchanged; recovers a known exponent from a synthetic multifractal.
 
-**T4C.5 FDR control utility *(implements R5, fixes D8)***
+**T4C.5 FDR control utility *(implements R5, fixes D8)*** - **DONE**
+
+**Met, and it went further than the task asked.** `src/statistics/` delivers three modules:
+`multiple_comparisons.py` (Bonferroni, Holm, BH, BY - the FDR pair validated against
+`scipy.stats.false_discovery_control` to **1e-16**), `surrogates.py` (phase randomisation,
+AAFT, IAAFT, circular shift, block bootstrap) and `significance.py` (surrogate tests,
+ESS-corrected correlation, stationarity gate). 41 tests in `test_statistics.py`; suite
+407 -> 446.
+
+**The D8 scenario, before and after.** 20 tests on 9-sample noise - the exact shape of the
+smoke sweep that produced 9 spurious "discoveries":
+
+| rule | reported |
+|---|---|
+| `abs(r) >= 0.5` (the pre-D8 engine) | 3 of 20 |
+| raw `p <= 0.05` | 1 of 20 |
+| **after Benjamini-Yekutieli FDR** | **0 of 20** |
+
+**And power is retained**, which matters as much: one real effect hidden among 19 nulls at
+n = 40 is recovered, and only it. A correction that rejects everything would have "closed" D8
+by making the platform mute. The engine is silent when underpowered (12 points, weak effect ->
+nothing) and speaks when the evidence is there (40 points, same effect -> found).
+
+**Three additions the task did not specify but defendability required:**
+
+1.  **Surrogate nulls** (rule R1). A threshold is not a null model. Wavelet scales are
+    algebraically coupled by the transform, so a cross-scale correlation must be compared
+    against data with the same second-order structure and no genuine coupling.
+2.  **A stationarity gate.** FT surrogates assume stationarity; without it the test is
+    anti-conservative at measured rates of 0.11 / 0.16 / 0.39 / 0.78 (AR(1) phi = 0.80, 0.85,
+    0.95, random walk) against a nominal 0.05. Atmospheric series are routinely strongly red,
+    so this is the default situation rather than a corner case. The threshold is **calibrated
+    against those measured rates**, not chosen (rule R16).
+3.  **A power check.** A surrogate p-value floors at `1/(1+n)`, so 99 surrogates cannot reject
+    one of 500 tests after correction - such a study reports nothing while looking like a clean
+    negative. It now says so.
+
+Every reported `Hypothesis` carries `p_value`, `q_value`, `n_tests` and a `statistics` block
+naming the test, the correction, its dependence assumption and the R7 non-causality caveat -
+all surfaced through the API, because a finding that travels without them cannot be judged.
+
+**This work made the fBm benchmark's `4C.surrogate_null` gate enforceable, and that gate
+immediately caught a real defect in the surrogate machinery** - see `architecture.md` 7.2h.
+The suite is now **15 PASS, 0 FAIL, 2 NOT_YET_RUNNABLE**.
 Benjamini-Hochberg helper; retrofit it onto the **existing** hypothesis engine as well as all new mining. Every `Hypothesis` row gains `n_tests_in_family`, `p_value`, `q_value`, `surrogate_effect_size`.
 
 **T4C.6 GATE REVIEW.** Written verdict: does cross-scale organisation exceed the surrogate ensemble at $q < 0.05$, at lags above the support floor, on real ERA5 data?

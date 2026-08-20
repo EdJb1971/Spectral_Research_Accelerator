@@ -1340,3 +1340,305 @@ docstring describing its removal. Grepping prose keeps having to become parsing 
 (Zarr/ERA5), T3.5.19 (Executor seam - which also completes D12's lineage half and T3.5.14's
 sweep-level failure reporting), browser-based UI verification, and surfacing the benchmark
 suite, orientation output and discovery endpoints in the frontend.
+
+---
+
+## Slice 8 - T3.5.19 Executor seam, T3.5.21 device policy (D12 completed, D18 partial)
+
+**Date:** 2026-08-20. Suite after this slice: **407 passed, 1 xfailed** (up from 379).
+New modules `src/core/executor.py`, `src/core/device.py`; 28 tests in
+`src/tests/test_executor.py`.
+
+### Captured output
+
+```
+### machine ###
+  cpus: 12   torch: 2.13.0+cpu   device: cpu   sqlite: wal
+
+### T3.5.19 acceptance: 8-run sweep, byte-identical across backends ###
+  serial   w=1   1.60s   8 runs, all COMPLETED=True   (reference)
+  thread   w=2   0.24s   identical to serial: True
+  thread   w=4   0.22s   identical to serial: True
+  process  w=2   5.55s   identical to serial: True
+  process  w=4   8.05s   identical to serial: True
+  process  w=8  10.47s   identical to serial: True
+
+### why serial is the default: intra-op threading already fills the cores ###
+  torch threads   serial    thread(4)      process(4)
+  1               2.06s     1.47s  1.40x    6.11s  0.34x
+  12              0.78s     1.39s  0.56x    5.77s  0.14x
+
+### fixed cost of the process backend on this platform (spawn) ###
+  8 trivial tasks: serial 0.009s   process(4) 6.32s   -> ~6.3s worker startup
+```
+
+### The acceptance criterion, met
+
+Byte-identical results across **six** backend configurations, compared on the persisted
+parameters, status, seed and results of **every** run - not on a summary statistic, which
+could agree while individual runs differed. Plus the concurrency stress: 8 threads x 25
+commits = 200 rows, **zero** `database is locked`, with SQLite in WAL mode and a 30 s
+`busy_timeout` applied per connection.
+
+What makes the identity hold is a structural split, not a tolerance. `execute_run_payload`
+computes a run with **no database access at all** - which is what lets it cross a process
+boundary, since a SQLAlchemy session cannot - and returns a payload the parent persists in
+submission order. Workers do arithmetic; ordering, identity and persistence stay in one place.
+
+### The honest answer on speed-up: parallelism does not help this workload
+
+The roadmap asked for a measured speed-up per tier. The measurement says the naive
+expectation is wrong, and that is more useful than a favourable number would have been:
+
+```
+torch intra-op threads    serial     thread(4)        process(4)
+1                         2.06s      1.47s  1.40x     6.11s  0.34x
+12                        0.78s      1.39s  0.56x     5.77s  0.14x
+```
+
+**PyTorch already parallelises FFT and BLAS across cores.** Serial with 12 intra-op threads
+(0.78 s) beats every parallel configuration. Run-level workers do not add parallelism to this
+workload - they compete for cores PyTorch is already using. Constrain intra-op threading to 1
+and run-level parallelism starts working (1.40x), which confirms the mechanism rather than
+just observing the outcome.
+
+The `process` backend additionally costs **~6.3 s of fixed startup** on this platform: `spawn`
+re-imports torch in every worker. 8 trivial tasks take 0.009 s serially and 6.32 s in
+processes.
+
+So `serial` is the **measured** default, and `GET /api/v1/health` returns that rationale
+alongside the available backends. The seam still matters - it is what makes a cluster backend
+additive in Phase 6, and `thread`/`process` are the right choice for the small-and-numerous or
+genuinely GIL-bound work Phase 4's surrogate ensembles will involve - but claiming a speed-up
+here would have been false.
+
+### Three defects found in my own new code, all by tests
+
+*   **Failure attributed to the wrong step.** `execute_run_payload` reported
+    `steps[-1]` - the last *appended* step - so a failure in step 2 was blamed on step 1. A
+    misattributed error is worse than a vague one: it sends the reader somewhere confidently
+    wrong. Now tracked in a variable set before each step executes.
+*   **An unresolvable `{step.key}` reference stayed a literal string.** It then failed far
+    downstream as `torch.tensor("{gen.field}") -> must be real number, not NoneType`.
+    `ReferenceResolutionError` existed in the taxonomy from T3.5.14 but had never been wired;
+    it now fires at the reference and suggests the right key
+    (`Did you mean 'gen.field_data'?`).
+*   **A fourth transform if/elif chain survived the registry slice.** Moving the action
+    bodies out of `engine.py` mechanically carried the six-branch chain into `actions.py`,
+    where the previous slice's check did not look. `apply_transform` now dispatches through
+    the registry like the other two call sites. Worth recording as the cost of a mechanical
+    refactor: the move was correct, but "the chain is gone" was verified only where it was
+    expected to be.
+
+### The documentation guard caught me overclaiming
+
+I marked **T3.5.21 as DONE** while its own evidence block said *"Partially met"*.
+`test_tasks_marked_done_record_their_evidence` failed on the mismatch. It is correct: this
+machine is CPU-only (`torch 2.13.0+cpu`), so the acceptance criterion's
+*"passes identically on CPU, CUDA and MPS"* **cannot be executed here and is not claimed**.
+T3.5.21 is now labelled **PARTIAL** and D18 likewise. The selection chain, the `SPECTRAL_DEVICE`
+override, the refusal path and the thread budget are implemented and tested; cross-device
+agreement is outstanding.
+
+That refusal path is worth its own note: requesting an unavailable device **raises** rather
+than falling back to CPU. A run that claims to have used a GPU must have used one, and a
+silent fallback would make that claim untrue in exactly the situation where nobody checks.
+
+### D12 completed
+
+Every `ExperimentRun` now records its derived `seed` and an `execution` provenance block -
+backend, worker count, thread budget, device, torch version, root seed and the
+`result_order: submission` contract. Combined with `SeedSequence.spawn` derivation, a run
+reproduces to the same numbers regardless of which worker executed it or in what order. That
+was the outstanding half of D12 noted in slice 5.
+
+### T3.5.14 completed
+
+The sweep-level acceptance from the error-taxonomy task also lands here, because run-level
+failure handling belongs in the run loop. A partially-failing sweep completes its good runs:
+a test with `wname` in `{haar, db2, not_a_wavelet, db3}` asserts 3 COMPLETED and 1 FAILED,
+with the failure naming its bad parameter.
+
+### Suite after slice 8
+
+```
+407 passed, 1 xfailed
+272 test functions across 14 files
+```
+
+**Fixed: 28 of 31 defects, with D18 partial.** D12 closed this slice.
+
+**Still outstanding:** D8 (FDR), D17 (remaining per-bin loops in `decompose_by_boundary` and
+`analyze_boundary_artefacts`), D18 (cross-device verification only); plus T3.5.8 (Alembic),
+T3.5.18 (Zarr/ERA5 - the last thing standing between the platform and real data),
+browser-based UI verification, and surfacing the benchmark suite, orientation output,
+discovery endpoints and execution controls in the frontend.
+
+---
+
+## Slice 9 - T4C.5 statistical validity (defect D8 closed)
+
+**Date:** 2026-08-20. Suite after this slice: **449 passed, 1 xfailed** (up from 407).
+New package `src/statistics/` (`multiple_comparisons.py`, `surrogates.py`,
+`significance.py`); 41 tests in `src/tests/test_statistics.py`. Benchmark suite:
+**15 PASS, 0 FAIL, 2 NOT_YET_RUNNABLE** (was 14/0/3).
+
+**This is the slice that decides whether any reported finding is defendable.** Before it, the
+hypothesis engine reported every parameter-metric pair whose `abs(r)` exceeded a threshold,
+with no p-value at all. On the 9-run smoke sweep that produced 9 "discoveries", including
+*"strong positive correlation (r = 0.96) between grid size and floating-point reconstruction
+error"*.
+
+### Captured output
+
+```
+### 1. calibration of the surrogate test on a TRUE null (white noise) ###
+  FPR@0.05 = 0.045   FPR@0.10 = 0.095   (nominal 0.05 / 0.10)
+  before the phase-uniformity fix this was 0.765
+
+### 2. the stationarity gate, against measured surrogate FPR ###
+  phi    true FPR   gate flags   verdict
+  0.00   0.050        0.0%       pass
+  0.50   0.045        6.5%       pass
+  0.70   0.060       15.5%       pass
+  0.80   0.110       86.0%       flag
+  0.85   0.155       99.5%       flag
+  0.95   0.390      100.0%       flag
+
+### 3. the D8 scenario: 20 tests on 9-sample noise (the smoke sweep's shape) ###
+  |r| >= 0.5  (the pre-D8 rule)     :  3 of 20 'discoveries'
+  raw p <= 0.05                     :  1 of 20
+  after Benjamini-Yekutieli FDR     :  0 of 20   <- correct answer is 0
+
+### 4. power is retained: 1 real effect hidden among 19 nulls, n=40 ###
+  recovered: ['real']   (n_significant=1 of 20)
+
+### 5. BH/BY validated against scipy ###
+  n=  5  BH max|diff| 0.00e+00   BY max|diff| 0.00e+00
+  n= 20  BH max|diff| 1.11e-16   BY max|diff| 0.00e+00
+  n=100  BH max|diff| 1.11e-16   BY max|diff| 0.00e+00
+
+### 6. the power trap ###
+  99 surrogates, 500 tests -> p floor 0.0100, need 67928, capable: False
+```
+
+### The defect, closed and measured both ways
+
+An automated discovery engine's purpose is to test many hypotheses, so it will *always* find
+some at a fixed effect-size threshold - on any data, including noise. The fix has to remove
+the false positives **without** removing the true ones, and both halves are asserted:
+
+| | reported |
+|---|---|
+| `abs(r) >= 0.5`, the pre-D8 rule, on 9-sample noise | 3 of 20 |
+| raw `p <= 0.05` | 1 of 20 |
+| **after Benjamini-Yekutieli FDR** | **0 of 20** |
+| one real effect among 19 nulls, n = 40 | **1 of 20, and it is the real one** |
+
+The engine is now silent when underpowered (12 points, weak effect: nothing; best q = 0.58)
+and speaks when the evidence is there (40 points, same effect: found, q = 1.9e-11). A
+correction that rejected everything would have "closed" D8 by making the platform mute, which
+is why the power case is asserted alongside the null case.
+
+**BY rather than BH by default.** BH controls FDR under independence or positive regression
+dependence; BY controls it under *arbitrary* dependence at the cost of a `sum(1/i)` penalty.
+Parameter-metric pairs drawn from the same runs are dependent in ways not guaranteed to be
+positive, so assuming PRDS because it is more convenient would trade validity for power. Both
+are validated against `scipy.stats.false_discovery_control` to **1e-16**.
+
+### A surrogate null that was not the null it claimed - the most instructive defect yet
+
+Phase-randomised surrogates were built by drawing independent uniform phases and
+antisymmetrising them by averaging, `phi = (phi_k - phi_-k) / 2`. That *is* antisymmetric, so
+the surrogate was real-valued and its power spectrum was preserved **exactly to 1e-16** - the
+one property the method is defined by, and the only one being tested.
+
+But the difference of two independent uniform angles, halved, has a **triangular density peaked
+at zero**. Every surrogate was biased toward the phase-aligned configuration: energy
+concentrated rather than spread.
+
+```
+excess kurtosis of level-2 wavelet detail
+  the fBm field itself     0.75
+  its "surrogates"        90.0 +/- 7.5      -> z = -12
+false-positive rate on a true null
+  before                   0.765            (nominal 0.05)
+  after                    0.045
+```
+
+**Nothing in the codebase would have caught this.** The tests checked what the method is
+*specified* to preserve, and it preserved it perfectly. It was found by making the fBm
+benchmark's `4C.surrogate_null` gate runnable: the null benchmark reported a false discovery
+within seconds of first execution, which is exactly the job those benchmarks exist to do.
+Fixed by taking phases from the FFT of a real white-noise field - Hermitian *and* marginally
+uniform by construction rather than by imposition.
+
+The **fBm generator had the same flaw**: it too took `.real` of a non-Hermitian inverse, which
+averages each mode with its conjugate mirror and modulates the realised amplitude by the random
+phase difference between +k and -k. The field's true spectrum was therefore not the requested
+one, leaving residual phase structure at z = 2.1. A null benchmark that does not quite contain
+what it claims is worse than no benchmark, so the generator now builds a genuine Gaussian
+random field.
+
+**The generalisable lesson: preserving a spectrum is necessary but not sufficient.** A
+surrogate must match the null's *distribution*, not only the summary statistic the method is
+named after.
+
+### The stationarity gate, calibrated rather than chosen
+
+FT surrogates assume stationarity. Without that, the test is not conservative - it is broken:
+
+```
+series                     FPR@0.05   inflation
+white noise                0.050      1.0x
+AR(1) phi = 0.70           0.060      1.2x
+AR(1) phi = 0.80           0.110      2.2x
+AR(1) phi = 0.85           0.155      3.1x
+AR(1) phi = 0.95           0.390      7.8x
+random walk                0.775      15.5x
+```
+
+IAAFT reduces but does not remove the inflation, so choosing a better surrogate is not a fix.
+**Atmospheric series are routinely strongly red, so this is the default situation, not a corner
+case.**
+
+The gate's threshold is set from these measurements: the test is well behaved to
+`rho1 ~ 0.69` and unusable beyond `~0.79`, so the boundary sits at **0.75**. A first draft used
+0.90, which would have passed AR(1) phi = 0.85 - true FPR 3.1x nominal - as trustworthy.
+Measured gate behaviour: flags 0-15% of reliable series and 86-100% of unreliable ones.
+
+Its trend sub-test is itself ESS-corrected. Plain OLS reported a "significant trend" at
+p = 1.7e-14 on an AR(1) series with no trend - the spurious-regression effect. The series would
+still have been flagged, but for the wrong reason, and **a diagnostic that misdiagnoses is worse
+than one that abstains.**
+
+### The power trap
+
+A surrogate p-value floors at `1/(1+n)`. So 99 surrogates cannot reject one of 500 tests after
+correction - it would need **67,928**. Such a study reports nothing while looking exactly like
+a clean negative result, and is indistinguishable from one. `check_power` now says so
+explicitly, and `screen` attaches the warning to any family whose ensemble is too small.
+
+### What a finding now carries
+
+Every `Hypothesis` row and API response carries `p_value`, `q_value`, `n_tests`, and a
+`statistics` block naming the test, the correction procedure, **its dependence assumption**, and
+the rule-R7 caveat that a designed-grid association is not causal. A finding that travels
+without those cannot be judged by the person receiving it.
+
+### Suite after slice 9
+
+```
+449 passed, 1 xfailed
+309 test functions across 16 files
+benchmark suite: 15 PASS, 0 FAIL, 2 NOT_YET_RUNNABLE
+```
+
+**Fixed: 29 of 31 defects, with D18 partial.** D8 closed this slice.
+
+**Still outstanding:** D17 (per-bin loops in `decompose_by_boundary` and
+`analyze_boundary_artefacts`), D18 (cross-device verification only, needs GPU hardware); plus
+T3.5.8 (Alembic - now genuinely needed, since this slice and the last added five columns that
+only exist via `create_all`), T3.5.18 (Zarr/ERA5 - the last thing between the platform and real
+data), browser-based UI verification, and surfacing the statistics, benchmarks, orientation and
+execution controls in the frontend.

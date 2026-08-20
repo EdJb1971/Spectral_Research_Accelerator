@@ -135,6 +135,41 @@ Executes workflows described by JSON configurations:
 *   **Dynamic Reference Resolution:** Dynamically resolves inter-step references such as `"{step_name.field_data}"` or parameters `"{freq}"` at runtime.
 *   **Provenance Lineage Tracking:** Logs every step execution as a `LineageNode` (representing data, code, coefficients, or metrics) and `LineageEdge` (with relations like `executed_by`, `input_to`, `sliced_from`).
 
+### 3.6d Statistical Validity (`src/statistics/`)
+
+Delivered in T4C.5, closing **D8** - the defect that decided whether any reported finding is
+defendable. Three modules, because the three ways to get a p-value wrong are independent and a
+result needs all three handled at once.
+
+**`multiple_comparisons.py`** - Bonferroni, Holm, Benjamini-Hochberg and Benjamini-Yekutieli.
+BH and BY are validated against `scipy.stats.false_discovery_control` to **1e-16**. The default
+is **BY**, which controls FDR under *arbitrary* dependence: parameter-metric pairs from the same
+runs are dependent in ways not guaranteed to be positive, and assuming PRDS because it is more
+convenient would trade validity for power. Every result carries the procedure's dependence
+assumption, so a q-value cannot be quoted without it. `n_tests` lets a caller declare the true
+family size - correcting only the survivors of a selection is not a correction.
+
+It also polices the **power trap**: a surrogate p-value has a floor of `1/(1+n)`, so a
+99-surrogate study cannot reject one of 500 tests after correction. Such a study reports
+nothing and looks like a clean negative result. `check_power` says so instead.
+
+**`surrogates.py`** - phase randomisation, AAFT, IAAFT, circular shift and block bootstrap.
+Each destroys something specific and the choice *is* the hypothesis: phase randomisation
+preserves the power spectrum exactly (measured to 1e-16), so a rejection can only come from
+phase organisation, while a circular shift preserves every autocorrelation and destroys only
+alignment - the correct null for a lagged claim. p-values use `(1+k)/(1+n)`, never `k/n`.
+
+**`significance.py`** - surrogate tests, ESS-corrected correlation, and a **stationarity gate**.
+The gate exists because FT surrogates assume stationarity, and without it the test is wildly
+anti-conservative: measured false-positive rates of 0.11 (AR(1) phi=0.80), 0.16 (0.85), 0.39
+(0.95) and 0.78 (random walk) against a nominal 0.05. Its threshold is **calibrated against
+those measurements** rather than chosen - the test is well behaved to rho1 ~ 0.69 and unusable
+beyond ~0.79, so the boundary sits at 0.75. The gate flags 0-15% of reliable series and 86-100%
+of unreliable ones.
+
+Calibration on a true null is now **0.045 at a nominal 0.05**. It was **0.765** until a bug in
+the phase construction was found - see Section 7.2h.
+
 ### 3.7 Automated Hypothesis Engine (`src/hypothesis_engine/engine.py`)
 Mines database results to generate hypotheses:
 *   **Numerical Correlations:** Runs Pearson correlation coefficient calculations between experiment input parameters and numeric metrics, producing a `Hypothesis` for strong correlations ($|r| \ge \text{threshold}$).
@@ -142,6 +177,52 @@ Mines database results to generate hypotheses:
 *   **Adaptive Follow-Up Proposals:** Generates a new `proposed_experiment_config` targeting the optimal parameters (either expanding the range of numerical parameters in the correct correlation direction or fixing a categorical parameter to its best-performing category).
 
 ---
+
+### 3.6c Execution: the Executor seam and device policy (`src/core/executor.py`, `device.py`)
+
+Delivered in T3.5.19 and T3.5.21, closing the parallelism half of **D12** and **D18**
+(standard E11, E9).
+
+`Executor` is the seam: science code calls `executor.map(fn, items)` and the backend -
+`serial`, `thread` or `process` - is configuration. Phase 6's Celery backend is meant to be
+additive rather than a rewrite, and this is what makes that possible.
+
+Three traps it exists to handle, each of which produces *wrong* science rather than merely
+slow science:
+
+*   **Result order.** Every backend returns results in **submission order**, never completion
+    order. A sweep that aggregated in completion order would give different output on every
+    execution from identical inputs.
+*   **Seeding.** Seeds are derived up front with `SeedSequence.spawn`, one substream per run,
+    so a run's randomness depends on its index and the root seed and on nothing else - not on
+    which worker happened to pick it up.
+*   **Thread oversubscription.** `n_workers` processes each defaulting to one BLAS thread per
+    core gives `n_workers x n_cores` threads on `n_cores` cores; throughput *falls*.
+    `device.thread_budget` divides the cores and the executor applies it inside each worker.
+
+A fourth, specific to this codebase: a SQLAlchemy session cannot cross a process boundary. The
+sweep is therefore split - `execute_run_payload` computes a run with **no database access** and
+returns a payload; the parent, which owns the one session, persists in submission order. That
+split is what makes serial and parallel byte-identical.
+
+**The measured default is `serial`, and the reason is counter-intuitive enough to record.**
+PyTorch already parallelises FFT and BLAS across cores, so run-level workers compete for cores
+it is already using. With one intra-op thread, `thread(4)` gives a 1.40x speed-up; with all 12,
+it gives **0.56x** - slower than serial. The `process` backend costs **~6.3 s** of fixed worker
+startup on this platform (`spawn` re-imports torch per worker), so it only pays off for long
+tasks or genuinely GIL-bound work. `GET /api/v1/health` reports this rationale alongside the
+available backends, so the choice is informed rather than guessed.
+
+`device.py` selects CUDA -> MPS -> CPU with an explicit `SPECTRAL_DEVICE` override, and
+**refuses** a device that is not present rather than silently falling back - a run that claims
+to have used a GPU must have used one. `describe()` records the device, thread counts and
+determinism mode into every run's `execution` column.
+
+SQLite is configured per-connection for concurrency: **WAL** journal mode (so readers and one
+writer proceed together) and a 30 s **busy_timeout** (without which contention raises
+`database is locked` immediately). Both are applied on a `connect` event, because pragmas are
+connection-scoped and setting them once on the engine would leave every pooled connection
+after the first with the defaults.
 
 ### 3.7b Dual-Tree Complex Wavelet Transform (`src/transform_engine/dtcwt.py`, `kingsbury_coeffs.py`)
 
@@ -260,7 +341,7 @@ offline and declares no truth.
 *   `runner.py`, `__main__.py` - report and CLI (`python -m src.benchmarks`, exit 1 on any
     failure, usable directly as a CI gate).
 
-Current status: **14 PASS, 0 FAIL, 3 NOT_YET_RUNNABLE**. See Section 7.2f.
+Current status: **15 PASS, 0 FAIL, 2 NOT_YET_RUNNABLE**. See Section 7.2f.
 
 ## 3.12 HTTP API Surface
 
@@ -374,8 +455,8 @@ See `VERIFICATION.md` for the captured command output behind every statement her
 | Item | Status |
 |---|---|
 | Python venv + dependencies | installed (torch 2.13.0, numpy 2.2.6, pydantic 1.10.26, SQLAlchemy 2.0.52, xarray 2025.6.1, FastAPI 0.110.3) |
-| Backend test suite | **379 passed, 1 xfailed** (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17, 351 after T3.5.6) |
-| Ground-Truth Benchmark Suite | **14 PASS, 0 FAIL, 3 NOT_YET_RUNNABLE** (`python -m src.benchmarks`, exit 0) |
+| Backend test suite | **446 passed, 1 xfailed** (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17, 351 after T3.5.6, 379 after T3.5.15, 407 after T3.5.19) |
+| Ground-Truth Benchmark Suite | **15 PASS, 0 FAIL, 2 NOT_YET_RUNNABLE** (`python -m src.benchmarks`, exit 0) |
 | Frontend `npm install` + `npm run build` | passes, emits 1,378 modules + real JS/CSS assets (was: 1 module, no assets) |
 | Backend server | starts, serves OpenAPI, all smoke-tested endpoints return 200 |
 | End-to-end experiment sweep | 9-run parameter sweep completes 9/9, writes 28 lineage nodes / 54 edges, hypothesis engine returns results |
@@ -384,7 +465,7 @@ See `VERIFICATION.md` for the captured command output behind every statement her
 Earlier revisions of this document and of `roadmap.md` claimed the platform was "validated"
 and "zero-error". It was not: the first real execution produced 8 test failures and a frontend
 that had never rendered. The ledger below grew from 18 entries to **31** as a direct result of
-running the code and of building the tests that check it — **27 of which are now fixed**.
+running the code and of building the tests that check it — **29 of which are now fixed, and one partially**.
 
 Defects D26-D31 were all found *after* the code they concern was written and passing, by
 tests written against analytic answers rather than against the code's own behaviour. Six of
@@ -407,17 +488,17 @@ final acceptance criterion remains open. The frontend also does not yet consume
 | D5 | `api/main.py` | No `CORSMiddleware`. The API is reachable only through the Vite dev proxy; any separate-origin or static-hosted deployment breaks. | **FIXED** T3.5.2 |
 | D6 | `frontend/` | `tailwind.config.js` and `postcss.config.js` absent while `index.css` uses `@tailwind` and `@apply`. Build fails or emits unstyled output. | **FIXED** T3.5.3 |
 | D7 | `start_platform.ps1:48-50` | uvicorn is launched inside `Start-Job`, which gets a fresh runspace rooted at the user home directory, so `src.api.main` is not importable and the backend dies silently while the frontend appears to start fine. | **FIXED** T3.5.4 |
-| D8 | `hypothesis_engine/engine.py:110-143` | Emits a hypothesis for every parameter x metric pair exceeding `abs(r) >= 0.3` with **no multiple-comparison control**. Tolerable at current scale; becomes a false-discovery generator the moment Phase 4 adds scales, lags and constellations to the search space. | T4C.5 |
+| D8 | `hypothesis_engine/engine.py:110-143` | Emits a hypothesis for every parameter x metric pair exceeding `abs(r) >= 0.3` with **no multiple-comparison control**. Tolerable at current scale; becomes a false-discovery generator the moment Phase 4 adds scales, lags and constellations to the search space. | **FIXED** T4C.5 |
 | D9 | `data_layer/adapters.py` | Class-level `_datasets` cache is never invalidated; a newly added `.nc` file is ignored until process restart. GRIB is advertised in a code comment but unimplemented. | **FIXED** T3.5.9 |
 | D10 | `requirements.txt` | Missing `ipywidgets`, `plotly` and `matplotlib`, which `research_playground.ipynb` requires per the README. `alembic` also absent. | **FIXED** T3.5.11 |
 | D11 | `.vscode/launch.json` | The Chrome configuration declares `"name"` twice; VS Code silently keeps the last, so the compound `Debug Platform (Both)` reference is fragile. | **FIXED** T3.5.4 |
-| D12 | `data_layer/adapters.py:79`, `synthetic_generator/perturbation.py:43,46,50` | **Unseeded RNG.** `np.random.randn` and `torch.randn_like`/`rand_like` are called with no seed and no seed capture. Every noise perturbation and the simulated GFS wind field are irreproducible, which **directly contradicts the provenance pillar** - a lineage graph that cannot reproduce its own run is a record, not provenance. | T3.5.12 |
+| D12 | `data_layer/adapters.py:79`, `synthetic_generator/perturbation.py:43,46,50` | **Unseeded RNG.** `np.random.randn` and `torch.randn_like`/`rand_like` are called with no seed and no seed capture. Every noise perturbation and the simulated GFS wind field are irreproducible, which **directly contradicts the provenance pillar** - a lineage graph that cannot reproduce its own run is a record, not provenance. | **FIXED** T3.5.19 |
 | D13 | `analysis_engine/diagnostics.py:68-69`, `boundary_lab/boundary.py:107` | **Metric-unaware differential operators.** `torch.gradient` is called with no `spacing`, so gradients are per-pixel, not per-metre. On a lat/lon grid the zonal spacing varies as `cos(lat)` and differs from the meridional spacing, so gradient magnitude, gradient angular error and boundary gradient decay are all systematically distorted, worsening toward the poles. Radial PSD likewise bins in pixel wavenumber and assumes isotropy that a lat/lon grid does not have - so the Charney/Kolmogorov regime classification is being made in the wrong space. | **FIXED** T3.5.13 |
 | D14 | `api/main.py` (10 sites) | Every `except` re-raises a generic 500 with a fixed string (`"An error occurred during ..."`), discarding the exception entirely. For a research tool this is the difference between a usable diagnostic and a dead end. | **FIXED** T3.5.14 |
 | D15 | `data_layer/adapters.py:150,162`, `experiment_engine/engine.py` | **The "seams" described in Section 5 are not extension points.** `_get_simulated_fallback` is a hard-coded if/elif over three dataset ids, `list_datasets` iterates a hard-coded literal list, and `_execute_action` is a 13-branch if/elif chain. Adding a data source or a pipeline action requires editing core engine files. | **FIXED** T3.5.15 |
 | D16 | `physical_core/field.py:20` | `PhysicalField.__init__` force-casts to float32 with no opt-out. Acceptable for visualisation; marginal for surrogate ensemble statistics, log-log power-law fits, and mutual-information/transfer-entropy estimation in Phase 4C. | **FIXED** T3.5.16 |
 | D17 | `analysis_engine/diagnostics.py:29,56`, `analysis_engine/decomposition.py:81`, `boundary_lab/boundary.py:31,123` | **Per-bin Python loops over full arrays.** Five functions bin values by radius or distance using `for k in range(...)` with a fresh boolean mask over the *entire* array each iteration - `O(bins x H x W)` where `O(H x W)` suffices via `bincount`/`scatter_add`. On a 512x512 field (`max_r = 256`) `compute_radial_psd` performs ~256 full passes, roughly 67M element visits instead of 262k. These are the innermost functions of the Phase 4C loop, called inside a surrogate ensemble; unfixed, they alone decide whether the platform is usable on a laptop. | T3.5.20 |
-| D18 | `experiment_engine/engine.py:18-22` | `get_execution_device` probes CUDA only. No Apple-silicon MPS branch and no explicit CPU-thread configuration, so a large class of development laptops silently runs the slowest available path. | T3.5.21 |
+| D18 | `experiment_engine/engine.py:18-22` | `get_execution_device` probes CUDA only. No Apple-silicon MPS branch and no explicit CPU-thread configuration, so a large class of development laptops silently runs the slowest available path. | **PARTIAL** T3.5.21 - selection chain, override, refusal path and thread budget implemented and tested on CPU; the CPU/CUDA/MPS agreement check cannot be run on this CPU-only machine and is not claimed |
 
 ### 7.2b Defects found by executing the code (T3.5.0)
 
@@ -503,10 +584,11 @@ the float32 defect ships.
 
 `src/benchmarks/` holds nine datasets whose correct answer is known before analysis. Five of
 them are **null benchmarks** - their answer is "there is nothing here". Current status:
-**14 PASS, 0 FAIL, 3 NOT_YET_RUNNABLE.**
+**15 PASS, 0 FAIL, 2 NOT_YET_RUNNABLE.**
 
-The three pending entries gate stages that do not exist yet (4D tracking, 4C surrogate
-nulls, 4E constellation matching). They report `NOT_YET_RUNNABLE` naming the missing stage
+The two pending entries gate stages that do not exist yet (4D tracking, 4E constellation
+matching). A third, `4C.surrogate_null`, **graduated to an enforced PASS** in T4C.5 - and in
+doing so immediately caught a real defect in the surrogate machinery (Section 7.2h). They report `NOT_YET_RUNNABLE` naming the missing stage
 rather than being skipped, because a skipped test is invisible in a summary line and would
 let "all green" mean "we never looked".
 
@@ -547,23 +629,59 @@ stale once already.
 | File | Test functions | Covers |
 |---|---|---|
 | `test_analysis_data.py` | 6 | diagnostics and data-layer endpoints |
-| `test_api_infrastructure.py` | 15 | health, listing, pagination, CORS, data-source transparency, benchmark endpoints |
+| `test_api_infrastructure.py` | 16 | health, listing, pagination, CORS, data-source transparency, benchmark endpoints |
 | `test_benchmarks.py` | 45 | Ground-Truth Benchmark Suite, seed discipline, climatology removal, D30 determinism |
 | `test_boundary_synthetic.py` | 7 | boundary treatments, windowing, synthetic generators |
 | `test_documentation.py` | 15 | this document and roadmap.md against the code |
 | `test_dtcwt.py` | 28 | Kingsbury q-shift DTCWT: primitives vs reference, two oracles, orientation, shift invariance, D1 head-to-heads |
+| `test_executor.py` | 26 | Executor backends, seed derivation, ordering, device/thread policy, SQLite concurrency, byte-identical sweeps |
 | `test_experiments.py` | 3 | declarative sweeps and lineage |
 | `test_grid_operators.py` | 64 | grid metrics, metric-aware gradient/Laplacian, area weighting, physical-wavenumber spectra, D26 |
 | `test_hypothesis.py` | 3 | correlation and categorical hypothesis discovery |
 | `test_registries.py` | 28 | registries, error taxonomy, fallback chain, and the T3.5.15 plugin acceptance criterion |
 | `test_stationary.py` | 19 | undecimated SWT: shift invariance, perfect reconstruction, frame constant, PyWavelets oracle, R3 normalisation |
+| `test_statistics.py` | 36 | FDR procedures vs scipy, surrogate preservation properties, calibration on a true null, stationarity gate, screening |
 | `test_transforms.py` | 13 | fft/dct/dwt/dtcwt/hybrid round trips; D1 recorded as a strict xfail |
-| **total** | **246** | |
+| **total** | **309** | |
+
+### 7.2h A surrogate null that was not the null it claimed (T4C.5)
+
+The most instructive defect of the project so far, because it passed every structural check.
+
+Phase-randomised surrogates were built by drawing independent uniform phases and
+antisymmetrising them by averaging, `phi = (phi_k - phi_-k) / 2`. That *is* antisymmetric, so
+the surrogate was real-valued and its power spectrum was preserved **exactly to 1e-16** - which
+is the one property the method is defined by, and the only one being asserted.
+
+But the difference of two independent uniform angles, halved, has a **triangular density peaked
+at zero**. Every surrogate was therefore biased toward the phase-aligned configuration - a field
+with its energy concentrated rather than spread. Measured consequences:
+
+*   The excess kurtosis of level-2 wavelet detail was **90.0 +/- 7.5** for the surrogates
+    against **0.75** for the field itself: z = -12.
+*   The false-positive rate on a true null was **0.765** against a nominal 0.05.
+
+**Nothing in the codebase would have caught this**, because the tests checked what the method
+is *specified* to preserve. It was found by making the fBm benchmark's `4C.surrogate_null` gate
+runnable: the null benchmark immediately reported a false discovery, which is precisely the job
+the null benchmarks exist to do. Fixed by taking the phases from the FFT of a real white-noise
+field, which is Hermitian *and* marginally uniform by construction rather than by imposition.
+
+Two further consequences worth recording:
+
+*   **The fBm generator had the same flaw.** It also took `.real` of a non-Hermitian inverse,
+    which averages each mode with its conjugate mirror and so modulates the realised amplitude
+    by the random phase difference between +k and -k. The field's true spectrum was therefore
+    not the requested one, leaving residual phase structure detectable at z = 2.1. A null
+    benchmark that does not quite contain what it claims is worse than no benchmark.
+*   **Preserving a spectrum is necessary but not sufficient.** The lesson generalises: a
+    surrogate must match the null's *distribution*, not only the summary statistic the method
+    is named after.
 
 ### 7.3 Precision caveats (not defects, but do not overstate them)
 
 *   `compute_ssim` is single-window global SSIM, not locally-windowed SSIM (Section 3.2).
-*   `get_execution_device` round-robins `run_idx % num_gpus`, but `execute_experiment` runs sweeps strictly sequentially, so multi-GPU assignment is currently cosmetic.
+*   ~~`get_execution_device` round-robins `run_idx % num_gpus`, but sweeps run strictly sequentially, so multi-GPU assignment is cosmetic.~~ **Addressed in T3.5.19/T3.5.21:** runs are distributed through the Executor seam and `device.select_device(run_idx=...)` spreads them across CUDA devices. Untested on real multi-GPU hardware - this machine is CPU-only, and that is stated rather than implied.
 *   The DWT is **decimated**: each level halves resolution, so scale *n* lives on a different grid from the parent field. This is correct for compression and reconstruction, but it makes cross-scale spatial reasoning awkward - the reason Phase 3.5 adds an undecimated SWT alongside it.
 *   `PhysicalField` is **strictly 2D** and raises on any other rank (`field.py:19`). There is no time axis anywhere in the compute layer: the adapter returns a single timestep, and `decompose_by_lead_time` only works because the caller assembles the list itself. Phase 4A introduces `FieldSequence`.
 *   Lineage `value` columns and inter-step `step_outputs` carry **full payloads** as nested Python lists (`analyze_boundary` returns an entire padded field this way). This is a hard scaling wall for coefficient fields, addressed by the `ArtifactStore` in Phase 4A.

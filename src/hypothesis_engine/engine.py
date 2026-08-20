@@ -3,6 +3,7 @@ import datetime
 import numpy as np
 from typing import List, Dict, Any, Optional, Tuple
 from sqlalchemy.orm import Session
+from src.statistics.significance import correlation_test, screen
 from src.database.models import Experiment, ExperimentRun, Hypothesis
 
 def flatten_dict(d: Dict[str, Any], parent_key: str = '', sep: str = '.') -> Dict[str, Any]:
@@ -22,8 +23,31 @@ class PatternDiscoveryEngine:
         db: Session,
         experiment_ids: Optional[List[str]] = None,
         target_metrics: Optional[List[str]] = None,
-        confidence_threshold: float = 0.3
+        confidence_threshold: float = 0.3,
+        alpha: float = 0.05,
+        correction: str = "benjamini_yekutieli",
+        require_significance: bool = True
     ) -> List[Hypothesis]:
+        """Scan for patterns, then apply multiplicity control before reporting any.
+
+        **Defect D8.** This method previously reported every parameter-metric pair whose
+        |r| exceeded `confidence_threshold`, with no p-value at all. On the 9-run smoke sweep
+        that produced 9 "discoveries", including *"strong positive correlation (r = 0.96)
+        between grid size and floating-point reconstruction error"*. An engine whose purpose
+        is to test many hypotheses will always find some at a fixed effect-size threshold -
+        on any data, including noise.
+
+        Now every candidate is tested, the **whole family** is corrected together, and only
+        survivors are returned. `require_significance=False` returns the failures too, marked
+        `significant=False`, which is useful for auditing a scan but must never be used to
+        report a finding.
+
+        The default correction is Benjamini-Yekutieli, which controls FDR under *arbitrary*
+        dependence. Parameter-metric pairs drawn from the same runs are dependent in ways
+        that are not guaranteed to be positive, and BY is the procedure that stays valid
+        without assuming otherwise. It costs power; assuming PRDS because it is more
+        convenient would cost validity.
+        """
         # Query completed runs
         query = db.query(ExperimentRun).filter(ExperimentRun.status == "COMPLETED")
         if experiment_ids:
@@ -106,7 +130,9 @@ class PatternDiscoveryEngine:
                 if is_num and len(set(values)) > 1:
                     numerical_metrics.append(mk)
                     
-            # 1. Numerical Parameter vs. Numerical Metric Correlation
+            # 1. Numerical parameter vs numerical metric: collect every test first, so the
+            #    correction sees the true family size rather than a post-hoc selection.
+            candidates = []
             for pk in numerical_params:
                 for mk in numerical_metrics:
                     p_vals = []
@@ -127,14 +153,45 @@ class PatternDiscoveryEngine:
                     if np.isnan(r):
                         continue
                         
-                    if abs(r) >= confidence_threshold:
+                    test = correlation_test(p_arr, m_arr,
+                                            account_for_autocorrelation=False)
+                    candidates.append({
+                        "kind": "correlation",
+                        "label": "corr:%s~%s" % (pk, mk),
+                        "p_value": test["p_value"],
+                        "r": r,
+                        "pk": pk,
+                        "mk": mk,
+                        "p_vals": p_vals,
+                        "m_vals": m_vals,
+                        "n": test["n"],
+                        "test": test,
+                    })
+
+            # --- multiplicity control over the WHOLE family, before anything is reported ---
+            screening = screen(candidates, alpha=alpha, method=correction,
+                               n_tests=len(candidates))
+            by_label = {c["label"]: c for c in screening["results"]}
+
+            for cand in screening["results"]:
+                if cand["kind"] != "correlation":
+                    continue
+                r = cand["r"]
+                pk, mk = cand["pk"], cand["mk"]
+                p_vals, m_vals = cand["p_vals"], cand["m_vals"]
+                if require_significance and not cand["significant"]:
+                    continue
+                if abs(r) >= confidence_threshold:
                         pattern_type = "correlation"
                         direction = "positive" if r > 0 else "negative"
                         strength = "strong" if abs(r) >= 0.5 else "moderate"
                         
                         desc = (
                             f"In experiment '{experiment.name}', a {strength} {direction} correlation "
-                            f"(r = {r:.2f}) was discovered between parameter '{pk}' and metric '{mk}'."
+                            f"(r = {r:.2f}, p = {cand['p_value']:.3g}, q = {cand['q_value']:.3g} "
+                            f"after {correction} over {screening['n_tests']} tests) "
+                            f"between parameter '{pk}' and metric '{mk}'. "
+                            f"n = {cand['n']} runs."
                         )
                         
                         proposed_config = cls._propose_numerical_followup(
@@ -149,12 +206,57 @@ class PatternDiscoveryEngine:
                             confidence=float(abs(r)),
                             metrics_analyzed=[mk],
                             parameters_analyzed=[pk],
-                            proposed_experiment_config=proposed_config
+                            proposed_experiment_config=proposed_config,
+                            p_value=float(cand["p_value"]),
+                            q_value=float(cand["q_value"]),
+                            n_tests=int(screening["n_tests"]),
+                            statistics={
+                                "test": "pearson_correlation",
+                                "r": float(r),
+                                "n": int(cand["n"]),
+                                "p_value": float(cand["p_value"]),
+                                "q_value": float(cand["q_value"]),
+                                "significant": bool(cand["significant"]),
+                                "correction": screening["correction"],
+                                "alpha": alpha,
+                                "assumptions": cand["test"]["assumptions"],
+                                "caveat": (
+                                    "Sweep parameters are chosen, not sampled, so this is an "
+                                    "association across a designed grid rather than an "
+                                    "estimate of a population correlation. It is not causal "
+                                    "(rule R7)."),
+                            }
                         )
                         db.add(hypothesis)
                         discovered_hypotheses.append(hypothesis)
                         
             # 2. Categorical Parameter vs. Numerical Metric
+            # --- categorical: an ANOVA per pair, screened in its own family ---------
+            categorical_tests = []
+            for pk in categorical_params:
+                for mk in numerical_metrics:
+                    groups = {}
+                    for prm, res in zip(parameters_list, flat_results_list):
+                        groups.setdefault(str(prm[pk]), []).append(float(res[mk]))
+                    usable = [v for v in groups.values() if len(v) >= 2]
+                    if len(usable) < 2:
+                        continue
+                    try:
+                        from scipy import stats as _st
+                        f_stat, p_val = _st.f_oneway(*usable)
+                        if not np.isfinite(p_val):
+                            continue
+                    except Exception:
+                        continue
+                    categorical_tests.append({
+                        "kind": "categorical", "label": "anova:%s~%s" % (pk, mk),
+                        "p_value": float(p_val), "f": float(f_stat), "pk": pk, "mk": mk})
+
+            cat_screening = screen(categorical_tests, alpha=alpha, method=correction,
+                                   n_tests=len(categorical_tests)) if categorical_tests else None
+            cat_lookup = ({c["label"]: c for c in cat_screening["results"]}
+                          if cat_screening else {})
+
             for pk in categorical_params:
                 for mk in numerical_metrics:
                     cat_groups = {}
@@ -180,12 +282,22 @@ class PatternDiscoveryEngine:
                         
                     rel_diff = abs(best_val - worst_val) / abs(overall_mean)
                     
+                    screened = cat_lookup.get("anova:%s~%s" % (pk, mk))
+                    cat_p = float(screened["p_value"]) if screened else None
+                    cat_q = float(screened["q_value"]) if screened else None
+                    cat_significant = bool(screened["significant"]) if screened else False
+                    if require_significance and not cat_significant:
+                        continue
+
                     if rel_diff >= 0.1:
                         pattern_type = "categorical_opt"
                         desc = (
-                            f"In experiment '{experiment.name}', categorical parameter '{pk}' significantly impacts '{mk}'. "
+                            f"In experiment '{experiment.name}', categorical parameter '{pk}' is associated with '{mk}'. "
                             f"Category '{best_cat}' performed best with a mean of {best_val:.4f}, "
-                            f"outperforming '{worst_cat}' (mean of {worst_val:.4f}) by {rel_diff*100:.1f}%."
+                            f"outperforming '{worst_cat}' (mean of {worst_val:.4f}) by {rel_diff*100:.1f}%. "
+                            + (f"ANOVA p = {cat_p:.3g}, q = {cat_q:.3g} after {correction} "
+                               f"over {len(categorical_tests)} tests."
+                               if cat_p is not None else "")
                         )
                         
                         proposed_config = cls._propose_categorical_followup(
@@ -200,7 +312,23 @@ class PatternDiscoveryEngine:
                             confidence=float(min(1.0, rel_diff)),
                             metrics_analyzed=[mk],
                             parameters_analyzed=[pk],
-                            proposed_experiment_config=proposed_config
+                            proposed_experiment_config=proposed_config,
+                            p_value=cat_p,
+                            q_value=cat_q,
+                            n_tests=int(screening["n_tests"]) + len(categorical_tests),
+                            statistics={
+                                "test": "one_way_anova",
+                                "relative_difference": float(rel_diff),
+                                "p_value": cat_p,
+                                "q_value": cat_q,
+                                "significant": cat_significant,
+                                "correction": correction,
+                                "alpha": alpha,
+                                "caveat": (
+                                    "A group-mean difference across a designed grid. Not "
+                                    "causal (R7), and the groups are the levels the sweep "
+                                    "happened to include."),
+                            }
                         )
                         db.add(hypothesis)
                         discovered_hypotheses.append(hypothesis)
