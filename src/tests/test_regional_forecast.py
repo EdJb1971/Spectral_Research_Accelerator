@@ -112,7 +112,7 @@ def test_normalisation_is_fit_on_training_frames_only_and_reused_unchanged():
     assert bundle.normalisation.fitted_split == "train"
     assert bundle.train.normalisation is bundle.val.normalisation is bundle.test.normalisation
     assert bundle.provenance["normalisation"]["ddof"] == 0
-    assert len(bundle.provenance["normalisation"]["artifact_hash"]) == 32
+    assert len(bundle.provenance["normalisation"]["artifact_hash"]) == 64
 
 
 def test_provenance_fingerprints_source_crop_grid_time_split_and_normalisation():
@@ -124,8 +124,10 @@ def test_provenance_fingerprints_source_crop_grid_time_split_and_normalisation()
     assert record["source"]["cache_chunking"] == {"time": 50}
     assert record["level_hpa"] == 850
     assert record["config"]["variables"] == ["t", "q", "u", "v", "z"]
-    assert len(record["timestamps"]["sha256"]) == 32
-    assert len(record["grid"]["sha256"]) == 32
+    assert len(record["timestamps"]["sha256"]) == 64
+    assert len(record["grid"]["sha256"]) == 64
+    assert record["timestamps"]["timezone"] == "UTC"
+    assert record["normalisation_contract"]["fitted_split"] == "train"
     assert record["construction_order"].startswith("split and embargo")
     assert "CUDA, ROCm or MPS" in record["device_policy"]
 

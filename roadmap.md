@@ -65,9 +65,9 @@ status section, it is a memory.
 
 | Area | Real status |
 |---|---|
-| **Phase progress** | **Phase 3.5 complete** (25 tasks). **Phase 4A, 4B and 4C complete** as implementable work: T4A.1-4, T4B.1-4, T4C.1-5. **T5.1 is partial:** T5.1a-e accepts raw/FFT/DCT/Haar/db2/SWT/DTCWT training representations, optimized and exposed with truthful UI readiness; mixed precision and remaining cross-device acceptance remain. **T5.2 is partial:** T5.2a-d implements the aligned, leakage-safe, train-normalised PyTorch dataset, bounded-memory worker-safe cache, offline-accepted CDS acquisition contract, exact calendar splits and verified physical-time leads; the live CDS run, independent overlap and viable multi-year NZ crop remain blocked by D43. **T5.3 is partial:** T5.3a-b supplies the forecaster seam, persistence baseline, deterministic represented smoke run, verified model-artifact contract and persistence-relative evaluator; T5.3c and the actual laboratory model remain open. **Not done:** T4C.6, the real-ERA5 gate review; 4D-4H; T5.0 and T5.4-7. Per-task evidence blocks sit under each task below; a task without a **DONE** or **PARTIAL** label has not been started. |
+| **Phase progress** | **Phase 3.5 complete** (25 tasks). **Phase 4A, 4B and 4C complete** as implementable work: T4A.1-4, T4B.1-4, T4C.1-5. **T5.0 is partial:** T5.0a-b supplies the strict versioned/hashable protocol and runtime-binding gate, but the actual laboratory evidence/config has not been supplied or frozen. **T5.1 is partial:** T5.1a-e accepts raw/FFT/DCT/Haar/db2/SWT/DTCWT training representations, optimized and exposed with truthful UI readiness; mixed precision and remaining cross-device acceptance remain. **T5.2 is partial:** T5.2a-d implements the aligned, leakage-safe, train-normalised PyTorch dataset, bounded-memory worker-safe cache, offline-accepted CDS acquisition contract, exact calendar splits and verified physical-time leads; the live CDS run, independent overlap and viable multi-year NZ crop remain blocked by D43. **T5.3 is partial:** T5.3a-b supplies the forecaster seam, persistence baseline, deterministic represented smoke run, verified model-artifact contract and persistence-relative evaluator; T5.3c and the actual laboratory model remain open. **Not done:** T4C.6, the real-ERA5 gate review; 4D-4H; T5.4-7. Per-task evidence blocks sit under each task below; a task without a **DONE** or **PARTIAL** label has not been started. |
 | **Accessibility** | **Zero, measured.** `0` `aria-*` or `role` attributes and `0` keyboard handlers across `frontend/src`. No focus management. The UI is usable with a mouse and by nobody else. Not scheduled; recorded so it cannot be mistaken for an oversight. |
-| Backend test suite | **985 passed, 1 xfailed.** Plus one explicit skip: the opt-in live-GCS check. Trajectory: 19 written / 1 failing / uncollectable -> 65 -> 152 -> 222 -> 271 -> 351 -> 407 -> 449 -> 478 -> 535 -> 548 -> 593 -> 642 -> 647 -> 709 -> 781 -> 855 -> 859 -> 882 -> 883 -> 890 -> 911 -> 917 -> 933 -> 946 -> 955 -> 957 -> 962 -> 969 -> 981 -> 985. |
+| Backend test suite | **1008 passed, 1 xfailed.** Plus one explicit skip: the opt-in live-GCS check. Trajectory: 19 written / 1 failing / uncollectable -> 65 -> 152 -> 222 -> 271 -> 351 -> 407 -> 449 -> 478 -> 535 -> 548 -> 593 -> 642 -> 647 -> 709 -> 781 -> 855 -> 859 -> 882 -> 883 -> 890 -> 911 -> 917 -> 933 -> 946 -> 955 -> 957 -> 962 -> 969 -> 981 -> 985 -> 1000 -> 1008. |
 | Ground-Truth Benchmark Suite | **15 PASS, 0 FAIL, 2 NOT_YET_RUNNABLE.** Nine datasets with declared known answers, five of them nulls. CI-ready via `python -m src.benchmarks` (exit 0). |
 | Backend compute modules | **Written, executed and tested.** `physical_core` carries `GridSpec` + metric-aware operators; `analysis_engine` gained `spectra.py` and `climatology.py`; `transform_engine` gained the undecimated `stationary.py` and a real `dtcwt.py`; `statistics/` and `core/` are new packages. |
 | Physical units and wavenumbers | **Correct as of T3.5.13.** Gradients metric-aware, spectra on a physical `k` axis, domain statistics area-weighted, and every quantity carries its units. Previously all of it was pixel-space and unlabelled (D13). |
@@ -1243,21 +1243,49 @@ There are two ways to answer "which little graphs predict which bigger graphs", 
 
 **Reframing:** the downstream model is a judge, not the product. The first judge is the
 laboratory's existing lightweight New Zealand model because that produces immediate research
-value and the sharpest falsifiable question. GraphCast, FourCastNet and ClimaX are later
-adapters for generalisation, not prerequisites.
+value and the sharpest falsifiable question. External global models are later adapters for
+generalisation, not prerequisites. FourCastNet 3 is now the first specified external target
+because its 850-hPa outputs, probabilistic ensembles and published spectral-fidelity claims are
+directly relevant to the NZ study; that prioritisation does not make it implemented.
 
 **Fast-track dependency:** T5.0--T5.4 depend on the verified transform core and a resolution of
 D43, not on completion of feature tracking/mining in 4D--4F. They may proceed as a useful
 vertical slice while the broader discovery engine continues. Nothing in this section is
 implemented unless its acceptance evidence appears in `VERIFICATION.md`.
 
-*   **T5.0 Freeze the motivating experiment contract.** Obtain the actual repository/config or
+*   **T5.0 Freeze the motivating experiment contract -- PARTIAL (T5.0a-b contracts accepted; real protocol not supplied).** Obtain the actual repository/config or
     an exported manifest for the laboratory model: domain coordinates and tensor shape,
     variables/levels, cadence, input history, lead times, transform package/version, filters,
     decomposition depth, boundary mode, coefficient packing, normalisation, split dates,
     optimiser, rollout and parameter counts. Poster-derived estimates are not substitutes.
     **Acceptance:** a versioned, hashable protocol object can reproduce the declared design and
     rejects an incomplete configuration.
+    **Delivered T5.0a:** `src/forecasting/protocol.py` defines schema
+    `motivating-forecast-protocol/v1` with exact nested sections for evidence identity, domain,
+    dataset/cadence, history and physical leads, transform semantics, train-only normalisation,
+    calendar splits/embargo, optimiser and schedule, rollout semantics and model parameter
+    counts. Parsing rejects missing and unknown keys, placeholders, unsupported schema versions,
+    invalid hashes, temporal/rollout contradictions and an embargo shorter than the maximum
+    lead. Free-form optimiser/model JSON is recursively frozen. Canonical serialization gives a
+    full SHA-256; persisted envelopes refuse overwrite and detect tampering. Fourteen executed
+    acceptance cases prove completeness across every scientific section, deterministic identity,
+    immutability and drift detection.
+    **Outstanding:** no genuine laboratory repository/config, coordinate/statistics hashes or
+    evidence SHA-256 has been supplied. The test fixture is deliberately synthetic and is not
+    Emily's/Adam's protocol. T5.0 remains partial and T5.3c cannot select model semantics from
+    poster estimates.
+    **Delivered T5.0b:** `src/forecasting/binding.py` compares prepared dataset provenance to
+    every observable frozen field: source/version, variables/level, cadence, histories/leads,
+    grid geometry plus a recomputed coordinate SHA-256, exact split instants, embargo and a
+    recomputed train-statistics SHA-256. A checkpoint binds only when model class/config/counts,
+    transform semantics, optimiser, rollout, model version and training provenance all name the
+    same protocol and dataset hashes. Bound evaluation schema v3 refuses substituted dataset,
+    checkpoint, variables or leads and refuses batch timestamps outside the declared held-out
+    split. Dataset coordinate/time/statistics identities are now full 64-hex SHA-256 values;
+    ambiguous regional longitude convention must be declared rather than inferred. Eight
+    executed acceptance cases cover the valid chain and intentional drift/refusal classes.
+    This closes runtime identity mixing, not T5.0 itself: all evidence remains synthetic until
+    the real laboratory manifest is supplied, and no UI status is promoted without one.
 *   **T5.1 Build `RepresentationModule` -- PARTIAL (T5.1a-e raw/FFT/DCT/Haar/db2/SWT/DTCWT accepted).** Provide raw, FFT, DCT, Haar, db2, SWT and DTCWT
     modules over `(B,C,H,W)` with forward/inverse operations, stable structured outputs,
     explicit complex packing and boundary/support metadata. Filters or cosine matrices are
@@ -1426,9 +1454,60 @@ implemented unless its acceptance evidence appears in `VERIFICATION.md`.
     `RepresentationScore`. Treat a null or contradiction as an outcome to diagnose -- score
     misspecification, low power, dataset shift, forecaster interaction and a genuinely absent
     relationship remain distinct explanations.
-*   **T5.6 External forecaster adapters.** Add pre-trained GraphCast, FourCastNet or ClimaX only
-    after their data/weights/licensing and grid contracts are verified. WeatherBench catalogue
-    presence does not mean the current regional training data path is built or laptop-feasible.
+*   **T5.6 External forecaster adapters -- NOT STARTED (FCN3 first target).** Add an external
+    global model only after its data, weights, licence, grid, variables, normalisation, rollout
+    and runtime contracts are frozen. WeatherBench catalogue presence does not mean the current
+    regional training path can supply the model or that inference is laptop-feasible.
+
+    **Why FourCastNet 3:** NVIDIA's July 2025 model card declares a 710,867,670-parameter
+    probabilistic spherical neural operator over 72 variables on a 721x1440, 0.25-degree global
+    grid, with six-hour steps and outputs including `t850`, `q850`, `u850`, `v850` and `z850`.
+    Its paper reports calibrated ensembles, stable long rollouts and preserved atmospheric
+    spectra. Those are unusually relevant external hypotheses for this workbench: compare an
+    FCN3 ensemble mean and distribution with persistence and the laboratory regional model over
+    identical NZ variables/dates/leads, then independently analyse error by scale, orientation,
+    location and boundary distance. These are **authors'/publisher claims to test**, not
+    SpectralEarth findings. FCN3's learned spherical Morlet kernels are not the same intervention
+    as inserting Haar/db2/SWT/DTCWT representations into Adam's regional model.
+
+    **T5.6a FCN3/Earth2Studio inference contract -- PLANNED:**
+
+    1. Define a versioned, hashable `ExternalForecastRun` request for the exact Earth2Studio,
+       FCN3 package/checkpoint, 72-channel order, global coordinate grid, normalisation, initial
+       condition source, six-hour steps, ensemble size/seeds/noise process, output variables,
+       precision and requested device profile. Planning and validation must be network-free.
+    2. Keep Earth2Studio/`torch-harmonics` in an optional isolated worker environment. The main
+       app exchanges a request and a content-addressed NetCDF/Zarr result; importing or opening
+       the workbench must never require CUDA, Earth2Studio, an NGC account or the FCN3 weights.
+    3. Run FCN3 on the required **global** state and crop the physical forecast to NZ only after
+       inference. Refuse a regional crop presented as an FCN3 initial condition: spherical/global
+       operators, channel order and learned normalisation cannot be preserved by relabelling it.
+    4. Bind output to checkpoint/config/data hashes and record ensemble member, initialization,
+       lead times, units, grid, precision, device/runtime and worker logs. Import through one
+       canonical forecast-cube adapter before common evaluation.
+    5. Extend held-out evaluation with ensemble mean/member metrics, CRPS, spread-skill ratio and
+       rank diagnostics, plus the existing persistence comparison and multiscale error analysis.
+       Freeze dates, NZ crop, variables and correction families before comparing with Adam's
+       model. Never use FCN3 evaluation years as a fresh test set without accounting for its
+       published 1980-2015 train, 2016-2017 test and 2018-2019 evaluation partitions.
+
+    **Portability/acceptance boundary:** the official model card lists Linux on NVIDIA Turing,
+    Ampere and Hopper, recommends bf16 AMP, names A100/H100/L40S test hardware and publishes a
+    2.65-GB compressed package. It does not publish a minimum VRAM figure or claim AMD support.
+    Therefore the RTX 5050 8-GB run is `NOT RUN`, not presumed feasible; AMD GPU inference is
+    unsupported until independently demonstrated; CPU-only `torch-harmonics` availability is
+    not evidence that full FCN3 inference is practical. The first real acceptance run belongs on
+    suitable allocated HPC hardware, while request preparation, result analysis and the rest of
+    the app remain laptop-capable. Record peak VRAM/RAM, download size, initialization latency,
+    per-step time and numerical repeatability. An unavailable backend is `NOT RUN`, never PASS.
+
+    **Reviewed primary sources (2026-08-22):** [FCN3 paper](https://arxiv.org/abs/2507.12144),
+    [official NGC model card](https://catalog.ngc.nvidia.com/orgs/nvidia/earth-2/models/fourcastnet3),
+    [Earth2Studio](https://github.com/NVIDIA/earth2studio),
+    [Makani research/training code](https://github.com/NVIDIA/makani), and
+    [`torch-harmonics`](https://github.com/NVIDIA/torch-harmonics). The checkpoint/model card and
+    Earth2Studio are Apache-2.0 according to their published records, but every pinned asset's
+    licence and redistribution terms must still be captured at acquisition time.
 *   **T5.7 Sensitivity and error-field analysis.** Perturb initial fields through the existing
     `PerturbationEngine`, then analyse forecast errors by scale, orientation, location, lead and
     boundary distance rather than as a single scalar.

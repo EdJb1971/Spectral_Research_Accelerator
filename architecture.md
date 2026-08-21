@@ -66,12 +66,13 @@ The present implementation is relevant to that research because it can:
 * measure boundary artefacts, reconstruction, scale activity and directional structure; and
 * evaluate statistical claims against declared surrogate nulls and corrected test families.
 
-It cannot yet answer the poster's forecasting question. There is no matched spectral neural
-network, model-training loop, autoregressive rollout or representation-controlled forecast
-skill experiment in the current source tree. Phase 5 proposes a `Forecaster` seam, but future
-roadmap text is not implemented capability. Until that work is built and tested, statements
-about one representation improving learned regional forecast skill must cite external results,
-not SpectralEarth.
+It cannot yet answer the poster's forecasting question. The source tree now has an accepted
+generic forecaster seam, persistence baseline, autoregressive integration fixture and held-out
+evaluator, but it has no supplied laboratory model, real training run or representation-
+controlled forecast-skill experiment. Those integration contracts are not evidence that the
+poster result was reproduced. Until the actual protocol/model/data are bound and the frozen
+experiment is run, statements about one representation improving learned regional forecast
+skill must cite external results, not SpectralEarth.
 
 ### 1.2 Immediate research target: a training-native regional bridge *(partially implemented)*
 
@@ -177,6 +178,52 @@ resolution and dates, not inferred from filter length alone. The frozen design m
 Boundary-dependent coefficients are not automatically useless to a predictor. The scientific
 claim is narrower: a representation mechanism is supported only if its ranking survives the
 declared controls, and either a surviving or disappearing db2 deficit is a reportable result.
+
+### 1.4 FourCastNet 3 external-judge boundary *(planned, not implemented)*
+
+FourCastNet 3 (FCN3) is the first concrete T5.6 external target, not part of the motivating
+regional model. The official July 2025 NGC model card declares a 710,867,670-parameter
+probabilistic spherical neural operator accepting 72 variables on a global 721x1440,
+0.25-degree grid at six-hour steps. Its outputs include the five 850-hPa variables selected for
+the regional bridge: temperature, specific humidity, zonal/meridional wind and geopotential.
+The accompanying paper reports probabilistic calibration, spectral fidelity and rollout
+stability to subseasonal leads. These statements motivate independent tests; they are not
+verified facts about a run in this repository. Sources reviewed 2026-08-22: the
+[paper](https://arxiv.org/abs/2507.12144), [NGC model card](https://catalog.ngc.nvidia.com/orgs/nvidia/earth-2/models/fourcastnet3),
+[Earth2Studio](https://github.com/NVIDIA/earth2studio), [Makani](https://github.com/NVIDIA/makani)
+and [`torch-harmonics`](https://github.com/NVIDIA/torch-harmonics).
+
+The scientific role is an external global ensemble judge. FCN3 must ingest its complete global
+state through its own pinned channel/grid/normalisation contract; only physical outputs may then
+be cropped to the same NZ window, dates, variables and lead times used by persistence and the
+regional model. Supplying the NZ five-channel crop directly would be a hard refusal, not an
+optimization: it changes both the input contract and the spherical/global operator. FCN3's
+learned spherical Morlet-wavelet convolution kernels must not be described as the same
+experimental treatment as the explicit Haar/db2/SWT/DTCWT representations around Adam's model.
+
+The proposed boundary is file-oriented and vendor-isolated:
+
+```text
+portable app -> hashed ExternalForecastRun request
+             -> optional Earth2Studio/FCN3 worker on suitable allocated hardware
+             -> hashed global NetCDF/Zarr ensemble forecast
+             -> canonical forecast-cube import -> NZ crop -> common evaluation/analysis
+```
+
+The app must start, prepare requests and analyse existing outputs without Earth2Studio, an NGC
+account, CUDA or the checkpoint. The worker records checkpoint/package/config/data hashes,
+initial condition, member identity/noise process, six-hour leads, precision, device/runtime,
+units, coordinates and resource measurements. Evaluation will require persistence and the same
+truth samples, then add ensemble-member/mean errors, CRPS, spread-skill and rank diagnostics.
+Multiscale analysis tests FCN3's published spectral claims rather than assuming them.
+
+Portability is deliberately asymmetric. The official model card lists Linux/NVIDIA Turing,
+Ampere and Hopper; it recommends bf16 and reports A100/H100/L40S testing, but no minimum VRAM or
+AMD support. Its 2.65-GB compressed package and 711M parameters do not establish that an 8-GB
+RTX can execute it. RTX 5050, AMD GPU and CPU inference are all **NOT RUN**. HPC may enable the
+worker, but FCN3 is never a dependency for the regional workflow or ordinary workbench use.
+No FCN3 source, dependency, checkpoint, global initial condition or forecast artefact currently
+exists in this repository.
 
 ---
 
@@ -290,7 +337,45 @@ and 35.87/65.91 ms RTX; encoded storage is 1.465 MiB and maximum round-trip erro
 This is **T5.1a-e, not all of T5.1**. Non-NVIDIA hardware evidence, mixed
 precision and compilation acceptance remain outstanding.
 
-### 3.1f Forecasting integration (`src/forecasting/`, T5.3a-b)
+### 3.1f Motivating-experiment protocol (`src/forecasting/protocol.py`, `binding.py`, T5.0a-b)
+
+`MotivatingExperimentProtocol` is the strict hand-off between laboratory evidence and platform
+execution. Schema `motivating-forecast-protocol/v1` requires an evidence reference plus SHA-256,
+exact domain bounds/shape/coordinate hash, source/version/variables/levels/cadence, input history,
+frame and physical leads, transform package/version/filters/depth/boundary/packing/normalisation,
+train-only data normalisation, fully dated splits and embargo, optimiser/scheduler/training budget,
+rollout/history semantics, model identity and total/trainable parameter counts. Exact-key parsing
+rejects both omissions and silently ignored additions; placeholder strings such as `unknown`,
+`TBD` and `N/A` are invalid.
+
+Cross-section validation proves physical durations equal cadence times frame offsets, embargo is
+at least the longest lead, loss leads belong to the declared lead family and rollout feedback is
+semantically consistent. Caller-owned free-form JSON is recursively frozen, canonical JSON gives
+a stable full SHA-256 and the Python object has a stable content-derived hash. Save refuses
+overwrite; load checks both schema and envelope hash. This proves a supplied declaration is
+complete and unchanged. It does **not** prove that the declaration matches the professor's
+experiment: that requires the actual referenced repository/config and its evidence hash, which
+have not been supplied. Consequently T5.0 is partial and no T5.3c adapter has been selected.
+
+`binding.py` closes the gap between a complete declaration and the objects actually executed.
+It checks prepared dataset provenance against the protocol's source/version, variables/level,
+cadence, history/leads, embargo, exact UTC split instants, grid shape/bounds/spacing/order and
+explicit longitude convention. Coordinate SHA-256 is recomputed from the recorded coordinate
+arrays; train-normalisation SHA-256 is recomputed from the recorded statistics. Dataset time,
+grid and statistics hashes are full 64-hex SHA-256 values (the earlier 32-hex truncation was not
+truthful under a `sha256` label). A model artefact binds only if its class, configuration,
+parameter counts and transform configuration match and its training provenance names the exact
+protocol, dataset, model version, optimiser and rollout.
+
+The resulting content-addressed `ExperimentProtocolBinding` is accepted by evaluation schema v3,
+which refuses a different dataset hash, checkpoint, variable/lead family, or batch timestamp
+outside the declared held-out split. Unbound evaluation schema v2 remains available for generic
+integration fixtures and is explicitly not protocol-conformant evidence. Binding proves identity
+and declared conformance, not that the source evidence is genuine, the implementation is correct,
+or the model has forecast skill. No real binding or UI-ready status exists until Adam's actual
+laboratory evidence is supplied.
+
+### 3.1g Forecasting integration (`src/forecasting/`, T5.3a-b)
 
 `Forecaster` is the physical-space contract shared by learned adapters and baselines:
 `predict(history, lead_count)` accepts `(B,history,C,H,W)` and returns
@@ -1584,7 +1669,7 @@ See `VERIFICATION.md` for the captured command output behind every statement her
 | Item | Status |
 |---|---|
 | Python venv + dependencies | installed (torch 2.13.0+cu130, numpy 2.2.6, pydantic 1.10.26, SQLAlchemy 2.0.52, xarray 2025.6.1, FastAPI 0.110.3) |
-| Backend test suite | **985 passed, 1 xfailed** (plus 1 skipped: opt-in live GCS) (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17, 351 after T3.5.6, 379 after T3.5.15, 407 after T3.5.19, 449 after T4C.5, 709 after T4A.4, 781 after T4B.4, 855 after T4C.5, 859 after T4C.5c, 882 after T5.1a CPU acceptance, 883 after RTX acceptance, 890 after portable profiles, 911 after T5.1b/D44, 917 after T5.1c, 933 after T5.1d/D45, 946 after T5.1e, 955 after T5.2a, 957 after T5.2b, 962 after T5.3a, 969 after T5.3b, 981 after T5.2c offline acceptance, 985 after T5.2d) |
+| Backend test suite | **1008 passed, 1 xfailed** (plus 1 skipped: opt-in live GCS) (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17, 351 after T3.5.6, 379 after T3.5.15, 407 after T3.5.19, 449 after T4C.5, 709 after T4A.4, 781 after T4B.4, 855 after T4C.5, 859 after T4C.5c, 882 after T5.1a CPU acceptance, 883 after RTX acceptance, 890 after portable profiles, 911 after T5.1b/D44, 917 after T5.1c, 933 after T5.1d/D45, 946 after T5.1e, 955 after T5.2a, 957 after T5.2b, 962 after T5.3a, 969 after T5.3b, 981 after T5.2c offline acceptance, 985 after T5.2d, 1000 after T5.0a, 1008 after T5.0b) |
 | Ground-Truth Benchmark Suite | **15 PASS, 0 FAIL, 2 NOT_YET_RUNNABLE** (`python -m src.benchmarks`, exit 0) |
 | Frontend `npm install` + `npm run build` | passes, emits 1,385 modules + real JS/CSS assets (was: 1 module, no assets) |
 | Backend server | starts, serves OpenAPI, all smoke-tested endpoints return 200 |
@@ -1792,6 +1877,8 @@ able to sit three slices out of date.
 | `test_exports.py` | 32 | CSV/JSON/NetCDF4/Zarr round trips, embedded provenance, seeded perturbation (D34) |
 | `test_forecasting_adapter.py` | 5 | T5.3a exact persistence, represented autoregressive rollout, backward gradients, deterministic evidence, refusal contracts and CPU/RTX vendor-neutral accelerator parity |
 | `test_forecasting_artifact_evaluation.py` | 8 | T5.3b/T5.2d checkpoint/config integrity, artifact-bound lineage, persistence-relative metrics, physical-time reporting/refusals, undefined-skill handling and CPU/RTX vendor-neutral accelerator parity |
+| `test_forecasting_protocol.py` | 7 | T5.0a exact schema completeness, canonical identity, immutable nested configuration, evidence requirements, temporal/rollout consistency, persistence and tamper/drift refusal |
+| `test_forecasting_protocol_binding.py` | 4 | T5.0b exact dataset/protocol/checkpoint binding, recomputed coordinate/statistics identities, drift refusals and bound-evaluation cross-run isolation |
 | `test_frontend_contract.py` | 31 | the frontend/backend contract, including transform/dataset/cadence readiness claim boundaries, plus the UI integrity guards: no fabricated results, no unqualified validation claims, units and slope uncertainty displayed |
 | `test_grid_operators.py` | 64 | grid metrics, metric-aware gradient/Laplacian, area weighting, physical-wavenumber spectra, D26 |
 | `test_hypothesis.py` | 3 | correlation and categorical hypothesis discovery |
@@ -1809,7 +1896,7 @@ able to sit three slices out of date.
 | `test_wavelet_bank.py` | 27 | T4B.2 expansion through the engine's own parameter matrix, the 1,000-combination guard, decompose_bank / extract_scale_signature, the vertical-bank refusals |
 | `test_transforms.py` | 13 | fft/dct/dwt/dtcwt/hybrid round trips; D1 recorded as a strict xfail |
 | `test_zarr_source.py` | 58 | R13 crop geometry, chunk-hostility prediction, byte counting, cache and provenance round trip, the NetCDF engine (D33), zarr HTTP surface |
-| **total** | **783** | |
+| **total** | **794** | |
 
 ### 7.2h A surrogate null that was not the null it claimed (T4C.5)
 

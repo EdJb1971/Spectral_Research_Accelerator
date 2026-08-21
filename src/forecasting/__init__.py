@@ -16,6 +16,31 @@ from src.forecasting.artifact import (
     save_laboratory_artifact,
 )
 from src.forecasting.evaluation import ForecastEvaluation, evaluate_against_persistence
+from src.forecasting.binding import (
+    BINDING_SCHEMA,
+    DATASET_BINDING_SCHEMA,
+    DatasetProtocolBinding,
+    ExperimentProtocolBinding,
+    bind_artifact_to_protocol,
+    bind_dataset_to_protocol,
+    protocol_training_provenance,
+    provenance_sha256,
+)
+from src.forecasting.protocol import (
+    PROTOCOL_SCHEMA,
+    DataContract,
+    DomainContract,
+    ModelContract,
+    MotivatingExperimentProtocol,
+    NormalisationContract,
+    OptimizerContract,
+    RolloutContract,
+    SplitContract,
+    TimelineContract,
+    TransformContract,
+    load_experiment_protocol,
+    save_experiment_protocol,
+)
 
 __all__ = [
     "Forecaster",
@@ -31,4 +56,25 @@ __all__ = [
     "save_laboratory_artifact",
     "ForecastEvaluation",
     "evaluate_against_persistence",
+    "BINDING_SCHEMA",
+    "DATASET_BINDING_SCHEMA",
+    "DatasetProtocolBinding",
+    "ExperimentProtocolBinding",
+    "bind_artifact_to_protocol",
+    "bind_dataset_to_protocol",
+    "protocol_training_provenance",
+    "provenance_sha256",
+    "PROTOCOL_SCHEMA",
+    "DataContract",
+    "DomainContract",
+    "ModelContract",
+    "MotivatingExperimentProtocol",
+    "NormalisationContract",
+    "OptimizerContract",
+    "RolloutContract",
+    "SplitContract",
+    "TimelineContract",
+    "TransformContract",
+    "load_experiment_protocol",
+    "save_experiment_protocol",
 ]

@@ -40,7 +40,7 @@ VARIABLE_ALIASES: Mapping[str, Tuple[str, ...]] = {
 }
 
 
-def _stable_hash(value: Any, length: int = 32) -> str:
+def _stable_hash(value: Any, length: int = 64) -> str:
     blob = json.dumps(value, sort_keys=True, separators=(",", ":"), default=str)
     return hashlib.sha256(blob.encode("utf-8")).hexdigest()[:length]
 
@@ -73,6 +73,7 @@ class RegionalForecastConfig:
     embargo_frames: int = 1
     dtype: str = "float32"
     statistics_chunk_frames: int = 32
+    longitude_convention: Optional[str] = None
 
     def __post_init__(self) -> None:
         if not self.variables or len(set(self.variables)) != len(self.variables):
@@ -124,6 +125,10 @@ class RegionalForecastConfig:
                 or self.statistics_chunk_frames < 1:
             raise InvalidParameterError("statistics_chunk_frames", self.statistics_chunk_frames,
                                         "a positive integer frame count")
+        if self.longitude_convention not in (None, "-180..180", "0..360"):
+            raise InvalidParameterError(
+                "longitude_convention", self.longitude_convention,
+                "'-180..180', '0..360', or None when the source convention is not known")
 
     def to_provenance(self) -> Dict[str, Any]:
         record = asdict(self)
@@ -631,13 +636,21 @@ def prepare_regional_forecast_datasets(dataset: Any, config: RegionalForecastCon
         "level_hpa": config.level_hpa,
         "timestamps": {"count": len(times), "first": _time_strings(times[:1])[0],
                        "last": _time_strings(times[-1:])[0],
-                       "sha256": _stable_hash(_time_strings(times))},
+                       "sha256": _stable_hash(_time_strings(times)), "timezone": "UTC"},
         "cadence": cadence,
         "grid": {"latitude": [float(v) for v in lat], "longitude": [float(v) for v in lon],
                  "shape": [len(lat), len(lon)],
-                 "sha256": _stable_hash({"latitude": lat.tolist(), "longitude": lon.tolist()})},
+                 "sha256": _stable_hash({"latitude": lat.tolist(), "longitude": lon.tolist()}),
+                 "longitude_convention": config.longitude_convention},
         "temporal_split": split_record,
         "normalisation": normalisation.to_provenance(),
+        "normalisation_contract": {
+            "method": "per-variable population z-score",
+            "scope": ("each variable over all training times and spatial grid points at the "
+                      "selected pressure level"),
+            "fitted_split": "train", "ddof": 0,
+            "statistics_artifact_sha256": normalisation.to_provenance()["artifact_hash"],
+        },
         "construction_order": "split and embargo frames first; fit train statistics; construct samples within each split",
         "device_policy": "CPU tensors returned; DataLoader/training loop may move batches to CUDA, ROCm or MPS",
     }
@@ -722,13 +735,21 @@ def prepare_cached_regional_forecast(spec: Any, config: RegionalForecastConfig,
         "level_hpa": config.level_hpa,
         "timestamps": {"count": len(times), "first": _time_strings(times[:1])[0],
                        "last": _time_strings(times[-1:])[0],
-                       "sha256": _stable_hash(_time_strings(times))},
+                       "sha256": _stable_hash(_time_strings(times)), "timezone": "UTC"},
         "cadence": cadence,
         "grid": {"latitude": [float(v) for v in lat], "longitude": [float(v) for v in lon],
                  "shape": [len(lat), len(lon)],
-                 "sha256": _stable_hash({"latitude": lat.tolist(), "longitude": lon.tolist()})},
+                 "sha256": _stable_hash({"latitude": lat.tolist(), "longitude": lon.tolist()}),
+                 "longitude_convention": config.longitude_convention},
         "temporal_split": split_record,
         "normalisation": normalisation.to_provenance(),
+        "normalisation_contract": {
+            "method": "per-variable population z-score",
+            "scope": ("each variable over all training times and spatial grid points at the "
+                      "selected pressure level"),
+            "fitted_split": "train", "ddof": 0,
+            "statistics_artifact_sha256": normalisation.to_provenance()["artifact_hash"],
+        },
         "construction_order": ("split and embargo frames first; stream train-only statistics; "
                                "construct samples within each split"),
         "storage": {"mode": "lazy_local_zarr", "worker_handle_policy": "one handle per process",

@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import math
 from dataclasses import asdict, dataclass
+from datetime import datetime, timezone
 from typing import Any, Dict, Iterable, Mapping, Optional, Sequence, Tuple
 
 import torch
@@ -12,6 +13,7 @@ import torch
 from src.forecasting.adapter import (
     Forecaster, ForecastContractError, PersistenceForecaster, _validate_history,
 )
+from src.forecasting.binding import ExperimentProtocolBinding, validate_evaluation_binding
 
 
 @dataclass(frozen=True)
@@ -31,6 +33,7 @@ class ForecastEvaluation:
     forecaster: Mapping[str, Any]
     baseline: Mapping[str, Any]
     dataset_provenance: Mapping[str, Any]
+    experiment_binding: Optional[Mapping[str, Any]]
     prediction_sha256: str
     target_sha256: str
     claim_boundary: str
@@ -59,6 +62,18 @@ def _safe_skill(model_mse: float, baseline_mse: float) -> Optional[float]:
     return 1.0 - model_mse / baseline_mse
 
 
+def _utc_ns(value: Any) -> int:
+    try:
+        parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    except ValueError:
+        raise ForecastContractError("dataset split provenance contains an invalid timestamp") from None
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    else:
+        parsed = parsed.astimezone(timezone.utc)
+    return int(parsed.timestamp() * 1_000_000_000)
+
+
 def evaluate_against_persistence(
     forecaster: Forecaster,
     batches: Iterable[Mapping[str, torch.Tensor]],
@@ -69,6 +84,7 @@ def evaluate_against_persistence(
     channel_std: Optional[Sequence[float]] = None,
     channel_units: Optional[Mapping[str, str]] = None,
     dataset_provenance: Optional[Mapping[str, Any]] = None,
+    experiment_binding: Optional[ExperimentProtocolBinding] = None,
     device: Optional[torch.device] = None,
 ) -> ForecastEvaluation:
     """Evaluate exactly matched predictions and persistence targets in bounded memory.
@@ -92,6 +108,17 @@ def evaluate_against_persistence(
         raise ForecastContractError("channel_units contains variables outside the evaluation contract")
     target_device = device or next(forecaster.parameters(), torch.empty(0)).device
     target_device = torch.device(target_device)
+    dataset_record = dict(dataset_provenance or {})
+    forecaster_record = dict(forecaster.to_provenance())
+    if experiment_binding is not None:
+        if not isinstance(experiment_binding, ExperimentProtocolBinding):
+            raise ForecastContractError(
+                "experiment_binding must be a validated ExperimentProtocolBinding")
+        if not dataset_record:
+            raise ForecastContractError(
+                "a bound evaluation requires the complete bound dataset provenance")
+        validate_evaluation_binding(
+            experiment_binding, dataset_record, forecaster_record, variables, leads)
 
     shape = (len(leads), len(variables))
     squared = torch.zeros(shape, dtype=torch.float64)
@@ -140,6 +167,19 @@ def evaluate_against_persistence(
                         or tuple(target_times.shape) != expected_duration_shape:
                     raise ForecastContractError(
                         "timestamp tensor shapes do not match the evaluation history/target contract")
+                if experiment_binding is not None:
+                    split_key = "val" if split == "validation" else split
+                    split_record = dataset_record.get("temporal_split", {}).get(split_key)
+                    if not isinstance(split_record, Mapping):
+                        raise ForecastContractError(
+                            "bound dataset provenance has no declared %r split" % split_key)
+                    first_ns = _utc_ns(split_record.get("first_timestamp"))
+                    last_ns = _utc_ns(split_record.get("last_timestamp"))
+                    observed_min = min(int(input_times.min()), int(target_times.min()))
+                    observed_max = max(int(input_times.max()), int(target_times.max()))
+                    if observed_min < first_ns or observed_max > last_ns:
+                        raise ForecastContractError(
+                            "evaluation batch timestamps fall outside the bound %s split" % split_key)
                 derived_durations = target_times - input_times[:, -1:]
                 if not torch.equal(durations, derived_durations):
                     raise ForecastContractError(
@@ -251,12 +291,16 @@ def evaluate_against_persistence(
             "value_count": count,
         }
     return ForecastEvaluation(
-        schema="forecast-evaluation/v2", split=split, variables=variables, lead_frames=leads,
+        schema=("forecast-evaluation/v3" if experiment_binding is not None
+                else "forecast-evaluation/v2"),
+        split=split, variables=variables, lead_frames=leads,
         lead_durations_hours=lead_durations_hours,
         sample_count=sample_count, batch_count=batch_count, device=str(target_device),
         metrics=metrics, aggregate_standardized=aggregate,
-        forecaster=dict(forecaster.to_provenance()), baseline=baseline.to_provenance(),
-        dataset_provenance=dict(dataset_provenance or {}),
+        forecaster=forecaster_record, baseline=baseline.to_provenance(),
+        dataset_provenance=dataset_record,
+        experiment_binding=(None if experiment_binding is None
+                            else experiment_binding.to_provenance()),
         prediction_sha256=prediction_digest.hexdigest(), target_sha256=target_digest.hexdigest(),
         claim_boundary=("Single-checkpoint deterministic evaluation against persistence; no "
                         "uncertainty estimate, multiple-seed inference, significance test, or "

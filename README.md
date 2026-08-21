@@ -6,9 +6,10 @@ hypothesis screening.
 
 The platform joins a tensor-accelerated computational backend (**PyTorch**, **xarray**,
 **SQLAlchemy**) to a React/Vite/Plotly dashboard and a Jupyter playground. It is not yet a
-validated forecasting system: the decisive Phase 4C real-ERA5 gate has not been run, and the
-learned forecasting comparison is future Phase 5 work. Current status, evidence and known
-limitations live in `roadmap.md`, `VERIFICATION.md` and `architecture.md` respectively.
+validated forecasting system: the decisive Phase 4C real-ERA5 gate has not been run, and Phase 5
+has integration contracts but no completed learned forecasting comparison. Current status,
+evidence and known limitations live in `roadmap.md`, `VERIFICATION.md` and `architecture.md`
+respectively.
 
 ---
 
@@ -50,6 +51,30 @@ ERA5 crops and construct leakage-safe PyTorch forecast datasets from a materiali
 **cannot yet reproduce a controlled learned-forecast comparison**: no matched spectral neural
 network, actual laboratory-model integration, training loop or forecast-skill evaluation across
 representations is implemented. That must not be inferred from the current data/transform tools.
+
+The laboratory hand-off is now mechanically strict. `src.forecasting.protocol` accepts a
+versioned motivating-experiment protocol only when domain coordinates/shape, data cadence,
+histories and physical leads, transform semantics, train-only normalisation, exact splits,
+optimiser/training budget, rollout semantics and parameter counts are all explicit. It also
+requires a reference and SHA-256 for the source laboratory config. Canonical JSON has a stable
+content hash and persisted records are integrity checked. This contract is ready, but no real
+laboratory config has yet been supplied: the motivating experiment is therefore **NOT FROZEN**.
+
+`src.forecasting.binding` then checks that execution matches that declaration. It recomputes
+coordinate and train-statistics hashes, checks exact UTC splits and data/transform/model/training
+semantics, and creates one dataset/protocol/checkpoint identity. Passing that binding to the
+evaluator upgrades the record to schema v3 and refuses cross-run substitution or samples outside
+the declared held-out split. This is ready for Adam's real manifest, but the current acceptance
+fixture is synthetic; there is deliberately no UI "ready" badge claiming a real experiment yet.
+
+FourCastNet 3 is now documented as the first planned external global judge under T5.6. Its
+published 72-variable, six-hour global ensemble outputs contain the same five 850-hPa fields as
+the NZ study, making common regional evaluation and independent multiscale error analysis useful.
+It is **not integrated**. The planned design runs the full global model in an optional isolated
+Earth2Studio worker, preferably on suitable HPC hardware, then imports a hashed NetCDF/Zarr
+forecast and crops NZ afterward. The main application remains usable without NVIDIA hardware,
+Earth2Studio, model weights or network access. An NZ crop will never be passed directly to FCN3,
+and NVIDIA's spectral-fidelity claims will be tested rather than repeated as platform findings.
 
 The first Phase 5 target is deliberately practical: an importable PyTorch path for the exact
 regional workflow used by the motivating research -- batches shaped `(B, C, H, W)`, aligned

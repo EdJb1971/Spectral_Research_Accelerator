@@ -3905,3 +3905,80 @@ Clean full regression and documentation audit:
 
 D43 remains open: no live CDS request, multi-year NZ crop or cross-route ERA5 comparison ran in
 this slice. T5.2d proves the temporal contract, not the data acquisition or forecast skill.
+
+## T5.0a - versioned, hashable motivating-experiment protocol contract
+
+`src/forecasting/protocol.py` implements schema `motivating-forecast-protocol/v1`. A record must
+name and hash its source laboratory evidence and provide exact sections for domain and coordinate
+identity, dataset/cadence, histories and frame/physical leads, transform semantics, train-only
+normalisation, calendar splits/embargo, optimiser/scheduler/training budget, rollout semantics and
+model parameter counts. Exact-key parsing refuses absent or unknown fields. Placeholder values,
+unsupported versions, invalid evidence/artifact hashes, non-training normalisation, inconsistent
+physical leads, insufficient embargo and contradictory rollout feedback are refused.
+
+Model and optimiser configuration JSON is recursively immutable after construction. Canonical
+serialization produces a full SHA-256 and persisted envelopes refuse overwrite and verify that
+hash on load. Focused acceptance, including all parametrised missing-section cases and adjacent
+artifact/evaluator regression:
+
+```text
+python -m pytest -q src/tests/test_forecasting_protocol.py \
+  src/tests/test_forecasting_artifact_evaluation.py \
+  src/tests/test_forecasting_adapter.py
+28 passed, 1 warning in 2.77s
+```
+
+The tests use a clearly fictional laboratory path, hashes and protocol. They prove contract
+behaviour only. No professor/Adam repository, configuration, coordinate hash or normalisation
+artifact was supplied, so the actual motivating experiment is **NOT FROZEN**, T5.0 remains
+partial and this slice makes no scientific-skill claim.
+
+Clean full regression and documentation audit:
+
+```text
+1000 passed, 1 skipped, 1 xfailed, 6 warnings in 173.43s
+790 test functions across 32 test_*.py files
+tools/audit_docs.py: RESULT ok
+```
+
+## T5.0b - frozen protocol to runtime binding
+
+`src/forecasting/binding.py` now prevents a complete protocol from becoming detached from the
+objects actually executed. `bind_dataset_to_protocol` checks source/version, variables and level,
+regular cadence, history/leads, embargo, exact UTC split instants, grid geometry/order/convention,
+and train-only normalisation. It independently recomputes the full coordinate SHA-256 from the
+recorded arrays and the statistics SHA-256 from the recorded normalisation values. Dataset grid,
+timestamp and normalisation identities were upgraded from truncated 32-hex digests to truthful
+64-hex SHA-256 values; source-cache content hashes retain their existing explicitly separate
+contract.
+
+`protocol_training_provenance` supplies the exact protocol/dataset/model-version/optimiser/rollout
+identity that a training job must preserve. `bind_artifact_to_protocol` accepts a checkpoint only
+when those identities plus model class/config/counts and complete transform semantics agree.
+Bound evaluation uses schema `forecast-evaluation/v3`, carries the resulting combined binding,
+and refuses another dataset, checkpoint, variable/lead family, or samples outside the declared
+held-out split. Unbound generic evaluation remains schema v2 and cannot be mistaken for a bound
+motivating-experiment run.
+
+Focused protocol, binding, dataset and adjacent artefact/evaluation acceptance:
+
+```text
+python -m pytest src/tests/test_forecasting_protocol_binding.py \
+  src/tests/test_forecasting_protocol.py src/tests/test_regional_forecast.py \
+  src/tests/test_forecasting_artifact_evaluation.py -q
+43 passed, 1 warning in 9.99s
+```
+
+The eight new executed cases include exact binding plus deliberate source, grid, cadence,
+normalisation, split, unbound-training and cross-run substitution failures. All identities and
+evidence are synthetic fixtures. No real professor/Adam configuration, data crop, statistics,
+checkpoint or scientific-skill evidence was created, so T5.0 remains partial and the UI remains
+truthfully unpromoted.
+
+Clean full regression and documentation audit:
+
+```text
+1008 passed, 1 skipped, 1 xfailed, 6 warnings in 174.11s
+794 test functions across 33 test_*.py files
+tools/audit_docs.py: RESULT ok
+```
