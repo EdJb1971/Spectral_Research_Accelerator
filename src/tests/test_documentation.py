@@ -295,12 +295,21 @@ def test_status_sections_agree_on_the_defect_ledger(architecture, roadmap):
     open_ids = [d for d, body in rows
                 if "**FIXED**" not in body and "PARTIAL" not in body]
 
+    # The id lists are plural: the guard was first written when exactly one defect was open,
+    # and a regex that only matches one forces the *document* to be wrong whenever a second
+    # one is found - which is precisely backwards for a consistency check.
     claim = re.search(
-        r"\(D1-D(\d+),\s+of which\s+\*\*(\d+) fixed,\s+(\d+) partial \((D\d+)\),\s+"
-        r"(\d+) open \((D\d+)\)\*\*\)", roadmap)
+        r"\(D1-D(\d+),\s+of which\s+\*\*(\d+) fixed,\s+(\d+) partial \(([^)]+)\),\s+"
+        r"(\d+) open \(([^)]+)\)\*\*\)", roadmap)
     assert claim, ("roadmap.md Section 1 must state the ledger range and counts in the "
-                   "form '(D1-D32, of which **30 fixed, 1 partial (D18), 1 open (D17)**)'")
+                   "form '(D1-D41, of which **38 fixed, 1 partial (D18), 2 open (D17, D41)**)'")
+
+    def ids(text):
+        return [part.strip() for part in text.split(",") if part.strip()]
+
     assert int(claim.group(1)) == len(rows)
     assert int(claim.group(2)) == len(fixed)
-    assert [claim.group(4)] == partial
-    assert [claim.group(6)] == open_ids
+    assert int(claim.group(3)) == len(partial)
+    assert ids(claim.group(4)) == partial
+    assert int(claim.group(5)) == len(open_ids)
+    assert ids(claim.group(6)) == open_ids

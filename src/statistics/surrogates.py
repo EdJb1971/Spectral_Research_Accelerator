@@ -78,13 +78,22 @@ def _hermitian_phases(shape, rng: np.random.Generator) -> np.ndarray:
 def phase_randomise(data: np.ndarray, seed: Optional[int] = None) -> np.ndarray:
     """Fourier-transform surrogate: identical power spectrum, randomised phases.
 
-    Works on 1D series and 2D fields. The power spectrum is preserved to machine precision -
-    asserted in the tests, because "approximately the same spectrum" would make any rejection
-    ambiguous between real structure and a spectral mismatch.
+    Works in **any** number of dimensions. Nothing below is dimension-specific: the phases
+    come from `fftn` of a real field of the same shape, and the self-conjugate bins are found
+    by an axis loop. The original 1D/2D restriction was a statement about what had been
+    tested, not about what the arithmetic could do, and Phase 4C needs the 3D case - a
+    `(time, y, x)` record whose surrogate must preserve the temporal autocorrelation as well
+    as the spatial spectrum (rule R12), which no stack of independent 2D surrogates does.
+
+    The power spectrum is preserved to machine precision - asserted in the tests, because
+    "approximately the same spectrum" would make any rejection ambiguous between real
+    structure and a spectral mismatch. The Hermitian residual check at the end is what makes
+    the generalisation safe rather than hopeful: a phase field that was not antisymmetric in
+    some dimension would leave an imaginary part and raise here.
     """
     arr = np.asarray(data, dtype=np.float64)
-    if arr.ndim not in (1, 2):
-        raise SurrogateError("phase_randomise supports 1D or 2D input, got %dD" % arr.ndim)
+    if arr.ndim < 1:
+        raise SurrogateError("phase_randomise needs at least a 1D array, got a scalar")
     rng = _rng(seed)
     spectrum = np.fft.fftn(arr)
     phases = _hermitian_phases(arr.shape, rng)

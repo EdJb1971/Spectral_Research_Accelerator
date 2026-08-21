@@ -465,3 +465,58 @@ def subband_energies(coeffs: Dict[str, Any]) -> Dict[str, Any]:
         }
     out["lowpass_energy"] = float(torch.sum(coeffs["lowpass"] ** 2))
     return out
+
+
+# ------------------------------------------------------------------ filter geometry (R13)
+
+def filter_support(level: int, level1: str = "near_sym_b",
+                   qshift: str = "qshift_b") -> int:
+    """Effective support, in **parent-grid pixels**, of the level-`level` highpass.
+
+    A cascade of decimating filters has support `1 + sum_m (L_m - 1) * 2**(m-1)`, where
+    `L_m` is the filter applied at stage `m`: the lowpass at every stage below the last, and
+    the highpass at the last. Each stage's filter is stretched by the accumulated decimation,
+    which is where the `2**(m-1)` comes from.
+
+    This generalises `stationary.filter_support`, which assumes one filter length throughout
+    and so reduces to `(L - 1) * 2**(level-1) + 1`. The dual tree does not: level 1 uses the
+    odd-length near-symmetric pair and levels 2 and above use the q-shift pair, and a
+    halfwidth computed as though it were 13 taps all the way down understates the coarse-level
+    contamination - which would leave edge artefacts inside a region reported as valid.
+    """
+    if level < 1:
+        raise DTCWTError("level must be >= 1, got %r" % (level,))
+    l1 = _get_lengths(level1, LEVEL1_FILTERS)
+    qs = _get_lengths(qshift, QSHIFT_FILTERS)
+    if level == 1:
+        return int(l1["h1o"])
+    support = 1 + (l1["h0o"] - 1)                      # stage 1: lowpass, no stretch yet
+    for stage in range(2, level):                       # intermediate stages: lowpass
+        support += (qs["h0a"] - 1) * 2 ** (stage - 1)
+    support += (qs["h1a"] - 1) * 2 ** (level - 1)       # final stage: highpass
+    return int(support)
+
+
+def valid_interior_halfwidth(level: int, level1: str = "near_sym_b",
+                             qshift: str = "qshift_b") -> int:
+    """Contaminated margin per side at `level`, in parent-grid pixels (rule R13)."""
+    return filter_support(level, level1, qshift) // 2
+
+
+def native_halfwidth(level: int, level1: str = "near_sym_b",
+                     qshift: str = "qshift_b") -> int:
+    """The same margin expressed in **native** (decimated) samples at `level`.
+
+    A level-`j` subband is decimated by `2**j`, so the parent-grid margin covers
+    `halfwidth / 2**j` native samples - rounded **up**, because a native sample whose support
+    straddles the boundary is contaminated whether or not its centre falls inside it. The
+    consequence is the familiar one: edge contamination in a decimated pyramid is roughly
+    constant in native samples, while in parent pixels it doubles with every level.
+    """
+    return int(math.ceil(valid_interior_halfwidth(level, level1, qshift) / 2 ** level))
+
+
+def _get_lengths(name: str, table: Dict[str, Dict[str, Tuple[float, ...]]]) -> Dict[str, int]:
+    if name not in table:
+        raise DTCWTError("unknown filter %r; available: %s" % (name, sorted(table)))
+    return {key: len(values) for key, values in table[name].items()}

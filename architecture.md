@@ -870,6 +870,210 @@ The module docstring also claimed a `.pt` format that was never implemented. It 
 single format and why: a torch checkpoint is a pickle readable only by the version that wrote
 it, which is not a property reproducible data should have.
 
+## 3C. Phase 4C - `ScaleSignature`, `SurrogateNull`, Cross-Scale Dependency (THE GATE)
+
+Phase 4C is where the platform stops building instruments and asks its question. Everything
+below exists to make one sentence answerable honestly: *does fine-scale activity at `t`
+precede coarse-scale activity at `t + dt`, beyond what the power spectrum and the
+autocorrelation already explain?*
+
+Three of the four modules are small. What took the work was the calibration - finding the
+configurations in which the machinery returns a confident answer that is entirely an artefact,
+and closing each one with a measurement rather than a caveat.
+
+### 3C.1 The signature (`src/analysis_engine/scale_signature.py`, T4C.1)
+
+Four numbers per `(time, scale)`, reducing a five-dimensional coefficient array to a matrix
+small enough to store, to test against two hundred surrogates, and to reason about: energy
+density, energy fraction, participation ratio, Gini coefficient - plus a threshold count that
+is reported and never primary.
+
+**Rule R3 is why three of them exist.** A raw count of "significant coefficients" at a scale
+has no answer independent of the threshold, because each scale has its own coefficient
+variance; and in a decimated pyramid the number of *available* coefficients already falls as
+`s**-2`, so an unnormalised per-scale total is reporting the pyramid's geometry. Every measure
+here is a density, a fraction, or a population-normalised concentration.
+
+The three threshold-free measures are kept separate because they disagree informatively.
+Energy fraction says how the energy divides between scales and nothing about whether it sits
+in one structure. The participation ratio, `(sum w)**2 / (n sum w**2)` on coefficient energies,
+is `1/n` for a single dominant coefficient and `1` for a perfectly even scale. The Gini
+coefficient responds to the whole distribution's shape rather than to its second moment, so a
+scale with a long tail of medium coefficients separates from one with a single spike.
+
+**The measures have analytic values on white noise, and the tests assert those rather than
+"roughly flat".** For a real transform the coefficient energy is chi-squared with one degree of
+freedom, giving a participation ratio of exactly `1/3` and a Gini of exactly `2/pi`; for a
+circular complex band it is exponential, giving `1/2` and `1/2`. Measured: `0.334` and `0.636`
+for SWT, `0.499` and `0.500` for DTCWT at level 2. That is a test of the arithmetic, not a
+snapshot of it.
+
+**A measured property of the dual tree, recorded because it changes what level 1 means.** The
+q-shift filters that make the two trees a Hilbert pair only start at level 2. At level 1 the
+real and imaginary variances of a subband differ by a factor of **2.19** on white noise, while
+at levels 2 to 4 they agree to within 6 percent, and the level-1 participation ratio
+correspondingly sits at `0.467` - between the real value `1/3` and the circular-complex value
+`1/2`, and predictable from the two variances alone to within 0.02. Level 1 of a DTCWT is not
+an analytic signal, and a concentration measure taken there does not mean quite what it means
+above.
+
+**Everything is computed on native coefficients, inside the valid interior.** Two corrections
+that are silent when wrong:
+
+*   A resampled DTCWT band repeats every native coefficient `4**j` times. Energy *fractions*
+    survive that untouched - the parent grid has the same cell count at every scale, so the
+    factor cancels in the ratio, and a test asserts the aligned and native fractions agree to
+    float64. The participation ratio does **not** survive it: replicating every coefficient
+    `r` times multiplies it by exactly `r`, so an aligned-view signature would report the
+    coarse scales as far more evenly spread than they are. `CoefficientField.native_band`
+    recovers the true coefficients either from the retained native arrays or by subsampling
+    the aligned view on the replication stride, which is exact rather than approximate.
+*   Coefficients within one filter support of the edge are contaminated by the padding
+    (rule R13) and look exactly like strong, localised, oriented features - which is what a
+    concentration measure is built to notice. The mask is per-scale and computed from the
+    transform's own filter lengths.
+
+**Rule R13's crop-size table understates the dual tree, and now says so.** The table is derived
+for a single 14-tap filter repeated at every level. DTCWT is not that: level 1 uses the 19-tap
+near-symmetric highpass and levels above use the q-shift pair, so `dtcwt.filter_support`
+accumulates the actual cascade and returns a level-4 margin of **97 parent pixels against the
+table's 52**. The consequence is concrete: a 256x256 crop - the roadmap's stated practical
+minimum for four dyadic levels - leaves DTCWT level 4 a **2x2** valid interior, four
+coefficients per orientation. The signature reports that scale as *thin* by name rather than
+averaging over it, and 512x512 restores it to 18x18. Logged as D40.
+
+### 3C.2 Surrogate nulls for a record (`src/analysis_engine/surrogate_null.py`, T4C.2)
+
+`src/statistics/surrogates.py` already generates surrogates of an array and is not
+reimplemented here; this module is the sequence-level layer above it. It is deliberately not
+named `analysis_engine/surrogates.py`, as the roadmap suggested: two modules called
+`surrogates` in one codebase resolve differently depending on which package the reader is in,
+and it invites the phase-randomisation core to be forked and drift.
+
+`phase_randomise` was restricted to 1D and 2D input. The arithmetic never was - the phases come
+from `fftn` of a real field of the same shape and the self-conjugate bins are found by an axis
+loop - and the restriction was a statement about what had been tested. It now works in any
+number of dimensions, which is what makes the default null possible.
+
+**The choice of null is a choice about time, and getting it wrong is not subtle.**
+
+| null | preserves | measured behaviour on an AR(1) record with no organisation |
+|---|---|---|
+| `spatiotemporal_phase` (default) | the full 3D spectrum, hence the spatial spectrum **and** the temporal autocorrelation | null lag-one autocorrelation **0.845** against the record's 0.900 |
+| `per_frame_phase` | each frame's own spectrum | null lag-one autocorrelation **0.013** - the autocorrelation itself beats the null |
+| `circular_time_shift` | every frame exactly | the right null for a lagged claim; destroys only alignment |
+
+`per_frame_phase` is what "preserving the per-frame PSD" literally asks for and it is the wrong
+default: it destroys the record's temporal structure, so a statistic that depends on time is
+compared against a null that is easier to beat than reality (rule R12). It is kept, with a
+warning attached to every result that uses it, because the failure is worth being able to
+demonstrate.
+
+T4C.2's acceptance criteria hold: the spatiotemporal surrogate preserves the 3D power spectrum
+to **3.4e-16** while the frame-by-frame correlation with the source falls below 0.1; a
+sequence of localised blobs scores at the p-value floor with an effect size above 3; and a
+fractional Brownian sequence does not score at all.
+
+### 3C.3 Cross-scale lagged dependency (`src/analysis_engine/cross_scale.py`, T4C.3)
+
+Lagged mutual information and transfer entropy over the `A_t(s)` matrix, for every ordered
+scale pair and every admissible lag, each against its own surrogate ensemble, with the family
+corrected together. Transfer entropy - `I(A_{t+lag}(s') ; A_t(s) | A_t(s'))` - is the one that
+speaks to precedence, because conditioning on the target's own present is what stops a series
+with a long autocorrelation showing dependence on anything that shares its timescale.
+
+Both estimators use equiprobable bins with the Miller-Madow correction, and **neither is
+reported as a raw value**: every number is an excess over an ensemble with the same length,
+the same bins and the same marginals, so the plug-in bias is present on both sides.
+
+**Three ways this produces a confident wrong answer. Each was found by building it, and each
+is now a measurement.**
+
+**1. A linear lag against a circular null rejects every time.** Fourier-transform surrogates
+are circularly stationary; a record is not. A lagged statistic computed on the record as a
+line is systematically larger than the same statistic on the surrogates. Measured on twenty
+independent AR(1) records, where the null is true by construction:
+
+| lag statistic | false rejections at alpha = 0.05 | median p |
+|---|---|---|
+| linear (`x[:-k]` against `x[k:]`) | **20 of 20** | 0.010 |
+| circular (wrapped) | **0 of 20** | 0.485 |
+
+Lags therefore wrap by default, and the fraction of pairs coming from the wrap is reported so
+the dilution stays visible. This is the single most dangerous configuration in Phase 4C: it
+would have produced a gate that passed on pure red noise.
+
+**2. The shift null must exclude the simultaneous alignment, not only the tested one.**
+Rolling the source by `s` measures the pair at an effective lag of `lag + s`, so the ensemble
+has to exclude shifts near `0` - the alternative hypothesis - **and** shifts near `-lag`, which
+put the two series at effective lag zero. That second window is easy to forget and it is not
+hypothetical: anything varying frame by frame and touching every scale at once couples the
+scales instantaneously. On the synthetic cascade the single shift at `s = -lag` produced a
+transfer entropy of **0.412 nats against an observed 0.211** - the largest value in the entire
+"null" ensemble came from a real relationship in the data - and capped the achievable p-value
+at about 0.005 however many surrogates were drawn. Significance limited by a null that was
+wrong rather than by evidence that was weak. With both windows excluded the same test reaches
+the p-value floor.
+
+**3. Rule R4's support floor, stated honestly.** A coarse coefficient and the fine ones beneath
+it are computed from the same pixels. But the transform here is **spatial and applied frame by
+frame**, so its temporal support is exactly zero, and quoting one would be an invention. What
+is real is the time a structure needs to advect across the filter's spatial support:
+`t_cross(s) = support(s) * dx / U`. `support_floor` computes it and **refuses to default the
+advection speed** - a plausible-looking 10 m/s would silently set every floor in every result
+from a number the reader never chose. Without it, the only floor applied is one frame, and the
+result says so in as many words.
+
+**The acceptance criterion, measured end to end.** `src/synthetic_generator/cascade.py` builds
+a record in which a fine band's amplitude at `t` sets a coarse band's amplitude at `t + 3`,
+driven by a *red* modulation - a white one would have made the test far too easy. Run through
+the whole path (decompose, signature, sweep, 1,999 circular-shift surrogates, Benjamini-
+Yekutieli):
+
+| record | significant tests | which |
+|---|---|---|
+| cascade | **2** | `1 -> 3 @ lag 3` and `2 -> 3 @ lag 3`, `q = 0.0157`, excess 0.17 and 0.16 nats |
+| the same record, phase-randomised | **0** | - |
+
+Correct lag, correct direction, and nothing in the reverse direction. The phase-randomised
+version preserves every spectrum and every autocorrelation and destroys only the alignment, so
+a dependency that survived it was never about the alignment; none does.
+
+**A sweep that cannot reject anything says so.** 99 surrogates floor the p-value at 0.01, and
+18 tests under Benjamini-Yekutieli need a raw p below about 4e-4; the full 120-test sweep needs
+**12,885 surrogates**. `check_power`, built for T4C.5, is called before the result is read and
+its warning is attached, because a study that was arithmetically incapable of rejecting
+anything is otherwise indistinguishable from a clean negative.
+
+### 3C.4 The power-law core (`src/analysis_engine/power_law.py`, T4C.4)
+
+`spectra.fit_power_law` grew up inside the radial-spectrum code and speaks its language:
+annuli, isotropy, `beta_energy_1d`, Charney and Kolmogorov. All correct for a power spectrum
+and meaningless for the two other power laws 4C needs - energy against scale, and feature
+population against scale. The least-squares core is therefore factored into `loglog_fit`, which
+knows nothing about what `x` and `y` are; `spectra.fit_power_law` now calls it and adds the
+turbulence interpretation on top, with its behaviour unchanged and a test pinning the two
+together.
+
+**Rule R2 is enforced in the return value, not in prose.** A fractional Brownian field gives a
+clean, high-`r_squared` power law and contains no organisation whatsoever, so
+`compare_exponent_to_null` returns `reportable: False` until an exponent has been placed beside
+a surrogate ensemble. `reportable` is deliberately not conditioned on significance: a null
+result is reportable, and is often the point.
+
+`scale_energy_exponent` fits `A(s) ~ s**-alpha` against the per-available-coefficient energy
+density - rule R3's normalisation, since an unnormalised population count in a decimated
+pyramid already falls as `s**-2` and an unnormalised fit would recover `2 + physics` and
+attribute both to the same cause.
+
+### 3C.5 What 4C does not yet answer
+
+T4C.6, the gate review itself, asks the question **on real ERA5 data**. Everything needed to
+ask it now exists and is calibrated, and the synthetic answers are the ones a working
+instrument should give. The verdict is not written here, because it has not been run on the
+atmosphere yet - and writing it from synthetic evidence would be exactly the kind of claim
+this phase was built to prevent.
+
 ## 4. Database Schema and State Tracking (`src/database/models.py`, `session.py`, `migrate.py`)
 
 The database layer (`src/database/`) is fully configured using SQLAlchemy and targets a persistent or in-memory SQLite database (`spectral_earth.db`). 
@@ -1035,7 +1239,7 @@ See `VERIFICATION.md` for the captured command output behind every statement her
 | Item | Status |
 |---|---|
 | Python venv + dependencies | installed (torch 2.13.0, numpy 2.2.6, pydantic 1.10.26, SQLAlchemy 2.0.52, xarray 2025.6.1, FastAPI 0.110.3) |
-| Backend test suite | **781 passed, 1 xfailed** (plus 1 skipped: the opt-in live-GCS check) (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17, 351 after T3.5.6, 379 after T3.5.15, 407 after T3.5.19, 449 after T4C.5, 709 after T4A.4) |
+| Backend test suite | **855 passed, 1 xfailed** (plus 1 skipped: the opt-in live-GCS check) (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17, 351 after T3.5.6, 379 after T3.5.15, 407 after T3.5.19, 449 after T4C.5, 709 after T4A.4, 781 after T4B.4) |
 | Ground-Truth Benchmark Suite | **15 PASS, 0 FAIL, 2 NOT_YET_RUNNABLE** (`python -m src.benchmarks`, exit 0) |
 | Frontend `npm install` + `npm run build` | passes, emits 1,378 modules + real JS/CSS assets (was: 1 module, no assets) |
 | Backend server | starts, serves OpenAPI, all smoke-tested endpoints return 200 |
@@ -1112,6 +1316,8 @@ code paths that `architecture.md` previously described as implemented and rigoro
 | D37 | `data_layer/exporters.py` (found by starting the platform, T3.5.25) | **CSV export was lossy and nothing said so.** Fields were written with `%.10g`; IEEE-754 double needs **17** significant digits to round-trip, so seven were silently discarded. Found on a live export/import loop through the running server - CSV was the only format that came back changed, and only comparing the arrays revealed it. This is the same precision D36 was fixed to stop throwing away at the HTTP boundary, discarded again one layer out in the file format. Now `%.17g`, with a bit-exactness test across all four formats; the cost is about 50% more bytes. | **FIXED** T3.5.25 |
 | D38 | `artifact_store/store.py` (found while building T4B.1) | **A complex summary that silently described only the real part.** `summarise` called `float(values.min())` unconditionally. For a complex array that does not raise: numpy casts to real, discards the imaginary part, and warns where nobody reads it - `[1+2j, 3-1j]` reported `min = 1.0`. Every DTCWT coefficient field is complex, so the lineage rows of an entire phase would have carried real-part statistics labelled as statistics of the array. Complex arrays are now summarised on their **magnitude** and say so under `statistic_of`. | **FIXED** T4B.1 |
 | D39 | `artifact_store/store.py` (found while building T4B.3) | **The store dropped the time axis of a `FieldSequence`.** `put` stored the `(T, H, W)` tensor and the grid but not the timestamps, so `load` returned an array that was not a sequence - and any caller rebuilding one would have assumed a regular cadence, silently mis-dating every frame of an irregular record. The irony is exact: 4A existed to give the platform a time axis, and the store built in the same slice discarded it. Artifacts now carry their own axes inside the `.npz` (times as an array member, labels and grid as one JSON member, `allow_pickle=False`), with `load_sequence` / `load_coefficient_field` rebuilding the real object. The 4 KB handle budget is unaffected: the axes went into the archive, not the database row. | **FIXED** T4B.3 |
+| D40 | `roadmap.md` rule R13's crop-size table (found while building T4C.1) | **The valid-interior table understates the dual tree by nearly a factor of two.** The table is derived for a single 14-tap filter repeated at every level; DTCWT uses a 19-tap near-symmetric highpass at level 1 and the q-shift pair above it, so the real level-4 margin is **97 parent pixels against the table's 52**. The consequence is concrete rather than theoretical: a 256x256 crop - the roadmap's stated practical minimum for four dyadic levels - leaves DTCWT level 4 a **2x2** valid interior, four coefficients per orientation, on which a participation ratio is almost pure sampling noise. `dtcwt.filter_support` now accumulates the actual cascade, and `scale_signature` reports such a scale as *thin* by name instead of averaging over it. | **FIXED** T4C.1 |
+| D41 | `data_layer/zarr_source.py:144` vs `transform_engine/stationary.py:107` (found while building T4C.1) | **Two implementations of rule R13 that disagree by one pixel per side.** `zarr_source.valid_interior` floors `(L - 1) * 2**(j-1) / 2`; `stationary.valid_interior_halfwidth` computes `support // 2`, which rounds the same quantity up. For an even-length filter the true halfwidth is a half-integer, so flooring is **anti-conservative**: it declares one contaminated pixel per side to be valid, at every level, in the module that sizes crops. The exposure is bounded and known - two pixels of interior width - and no current analysis depends on the difference, but the two must not disagree. Fix: adopt the conservative rounding in `zarr_source`, and update R13's table (`N=64, level 1: 52 -> 50`) and the three assertions in `test_zarr_source.py` that pin the table's numbers. | **OPEN** |
 
 **Root cause common to D20, D23, D25 and D2:** the transform engine — the mathematical core of
 the platform — had **no test file at all**. `src/tests/test_transforms.py` now exists (36 cases
@@ -1228,7 +1434,7 @@ able to sit three slices out of date.
 | `test_api_infrastructure.py` | 16 | health, listing, pagination, CORS, data-source transparency, benchmark endpoints |
 | `test_benchmarks.py` | 45 | Ground-Truth Benchmark Suite, seed discipline, climatology removal, D30 determinism |
 | `test_boundary_synthetic.py` | 7 | boundary treatments, windowing, synthetic generators |
-| `test_coefficient_field.py` | 35 | T4B.1 acceptance: parent-grid alignment, perfect reconstruction per family, lineage-safe summary; DTCWT upsampling declared; LevelBank and level slicing (T4B.4) |
+| `test_coefficient_field.py` | 40 | T4B.1 acceptance: parent-grid alignment, perfect reconstruction per family, lineage-safe summary; DTCWT upsampling declared; LevelBank and level slicing (T4B.4) |
 | `test_documentation.py` | 18 | this document and roadmap.md against the code |
 | `test_dtcwt.py` | 28 | Kingsbury q-shift DTCWT: primitives vs reference, two oracles, orientation, shift invariance, D1 head-to-heads |
 | `test_executor.py` | 26 | Executor backends, seed derivation, ordering, device/thread policy, SQLite concurrency, byte-identical sweeps |
@@ -1243,10 +1449,13 @@ able to sit three slices out of date.
 | `test_registries.py` | 29 | registries, error taxonomy, fallback chain, and the T3.5.15 plugin acceptance criterion |
 | `test_stationary.py` | 19 | undecimated SWT: shift invariance, perfect reconstruction, frame constant, PyWavelets oracle, R3 normalisation |
 | `test_statistics.py` | 36 | FDR procedures vs scipy, surrogate preservation properties, calibration on a true null, stationarity gate, screening |
+| `test_cross_scale.py` | 21 | T4C.3 acceptance: the injected cascade recovered at the right lag and direction, null on its phase-randomised twin; the Theiler windows, the support floor, the power check |
+| `test_scale_signature.py` | 28 | T4C.1 acceptance and the analytic values of every measure on white noise; threshold sensitivity measured; R13 interior refusals; T4C.4 power-law core |
+| `test_surrogate_null.py` | 14 | T4C.2 acceptance: spectrum preserved, phase destroyed, organised scores and fBm does not; the two calibrations (wrong null, linear lag) |
 | `test_wavelet_bank.py` | 27 | T4B.2 expansion through the engine's own parameter matrix, the 1,000-combination guard, decompose_bank / extract_scale_signature, the vertical-bank refusals |
 | `test_transforms.py` | 13 | fft/dct/dwt/dtcwt/hybrid round trips; D1 recorded as a strict xfail |
 | `test_zarr_source.py` | 58 | R13 crop geometry, chunk-hostility prediction, byte counting, cache and provenance round trip, the NetCDF engine (D33), zarr HTTP surface |
-| **total** | **624** | |
+| **total** | **692** | |
 
 ### 7.2h A surrogate null that was not the null it claimed (T4C.5)
 

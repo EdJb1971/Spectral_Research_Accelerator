@@ -311,13 +311,17 @@ def test_extract_scale_signature_reports_energy_per_time_and_scale(store):
 
 
 def test_the_signature_states_its_own_scope(store):
-    """T4B.3 is the plumbing; participation ratio and Gini are T4C.1. Saying so in the result
-    keeps the roadmap honest at the point a reader actually looks."""
+    """In Phase 4B this action carried the energy half of rule R3 and said so; T4C.1 finished
+    it. The assertion moved with the code rather than being deleted, so the result still has
+    to state what it covers at the point a reader actually looks.
+    """
     field = decompose_sequence(make_sequence(n_frames=2), "swt", {"levels": 2})
     result = actions.execute(
         "extract_scale_signature", {"coefficients": store.put(field, name="cf").ref}, CPU)
-    assert "T4C.1" in result["scope"]
-    assert "participation_ratio" not in result
+    assert "rule R3 in full" in result["scope"]
+    assert "never primary" in result["scope"], "the threshold count must carry its caveat"
+    for measure in ("participation_ratio", "gini", "threshold_fraction", "threshold_values"):
+        assert measure in result
 
 
 def test_the_signature_accepts_a_field_directly(store):

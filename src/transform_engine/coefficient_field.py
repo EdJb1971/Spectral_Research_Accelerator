@@ -242,6 +242,132 @@ class CoefficientField:
         safe = torch.where(total > 0, total, torch.ones_like(total))
         return energy / safe
 
+    # ------------------------------------------------------------------ native geometry
+
+    def replication_factor(self, scale: Any) -> float:
+        """Parent-grid cells occupied by one native coefficient of `scale`.
+
+        `1.0` for an undecimated family. For DTCWT it is `4**j`, and it is the reason the
+        next two methods exist.
+        """
+        if not self.resampled_to_parent:
+            return 1.0
+        native = self.native_shapes.get(scale)
+        if native is None:
+            raise InvalidParameterError(
+                "scale", scale,
+                "a scale whose native shape was recorded. This field declares "
+                "resampled_to_parent=True but carries no native shape for %r, so the "
+                "replication factor cannot be recovered and any per-scale energy taken from "
+                "the aligned view would be wrong by an unknown factor" % (scale,))
+        height, width = self.shape[-2:]
+        return (height * width) / float(native[0] * native[1])
+
+    def available_coefficients(self) -> List[int]:
+        """Coefficients the transform actually computed per scale, over all orientations.
+
+        Rule R3's second trap in one number. In a decimated pyramid the *number of available
+        coefficients* falls as `s**-2`, so any per-scale quantity that is not divided by this
+        is measuring the pyramid's geometry as much as the field.
+        """
+        n_orientations = self.n_orientations
+        counts = []
+        for scale in self.scales:
+            if self.resampled_to_parent:
+                native = self.native_shapes.get(scale)
+                if native is None:
+                    raise InvalidParameterError(
+                        "native_shapes", None,
+                        "a native shape for every scale; without it the available "
+                        "coefficient count per scale is unknown")
+                counts.append(int(native[0] * native[1]) * n_orientations)
+            else:
+                height, width = self.shape[-2:]
+                counts.append(int(height * width) * n_orientations)
+        return counts
+
+    def native_band(self, t: int, scale: Any, orientation: Any) -> torch.Tensor:
+        """One band as the transform computed it, before any alignment.
+
+        Recovered from the retained native coefficients where they exist, and otherwise by
+        **subsampling the aligned view on the replication stride** - which is exact, not an
+        approximation, because the alignment is nearest-neighbour replication and
+        `interpolate(..., mode='nearest')` maps output index `i` to input index `i // r`.
+        A field restored from an artifact therefore still yields its true coefficients, which
+        is what lets a scale signature be computed from stored lineage rather than only from
+        a live decomposition.
+
+        Refused rather than guessed when the parent shape is not an exact multiple of the
+        native shape: the stride would then be fractional and the subsample would silently
+        pick up duplicated rows.
+        """
+        aligned = self.band(t, scale, orientation)
+        if not self.resampled_to_parent:
+            return aligned
+
+        s_index = self.scale_index(scale)
+        o_index = self.orientation_index(orientation)
+        if self._native is not None and self.wavelet_family == "dtcwt":
+            return self._native[t]["highpass"][s_index][:, :, o_index]
+
+        native = self.native_shapes.get(scale)
+        if native is None:
+            raise InvalidParameterError(
+                "scale", scale, "a scale whose native shape was recorded")
+        height, width = self.shape[-2:]
+        if height % native[0] or width % native[1]:
+            raise ShapeMismatchError(
+                "aligned band", (height, width), "an exact multiple of the native shape",
+                tuple(native),
+                fix="The replication stride is not an integer, so the aligned view cannot be "
+                    "subsampled back to the native coefficients. Re-run the decomposition "
+                    "with keep_native=True, or use a parent grid whose size is a multiple of "
+                    "2**levels.")
+        return aligned[::height // native[0], ::width // native[1]]
+
+    def native_energy(self) -> torch.Tensor:
+        """`(time, scale, orientation)` energy of the coefficients **as computed**.
+
+        Identical to `energy()` for an undecimated family. For a resampled one it is the
+        aligned energy divided by the replication factor - the energy the transform actually
+        produced, which is the one Parseval relates to the reconstructed band.
+        """
+        out = torch.zeros((self.n_times, self.n_scales, self.n_orientations),
+                          dtype=torch.float64)
+        for t in range(self.n_times):
+            for s_i, scale in enumerate(self.scales):
+                for o_i, orientation in enumerate(self.orientations):
+                    band = self.native_band(t, scale, orientation)
+                    magnitude = torch.abs(band) if torch.is_complex(band) else band
+                    out[t, s_i, o_i] = (magnitude.to(torch.float64) ** 2).sum()
+        return out
+
+    def energy_density(self) -> torch.Tensor:
+        """`(time, scale, orientation)` energy **per available coefficient** (rule R3).
+
+        `energy()` reports the energy of the array as stored, which on a resampled family is
+        inflated at level `j` by the replication factor `4**j`: the aligned band repeats each
+        native coefficient that many times. The inflation is worth stating plainly because
+        the obvious conclusion from it is wrong, and it was checked rather than assumed:
+
+        *   **Energy *fractions* are unaffected.** `density(j) = aligned(j) / (H * W)`, and
+            `H * W` does not depend on the scale, so the replication factor cancels in the
+            ratio exactly. `energy_fractions()` is therefore already the R3-normalised
+            quantity, not a biased one. A test asserts the two agree to float64.
+        *   **Absolute per-coefficient energy is not**, and it is what a power-law fit against
+            scale consumes, so that fit uses this method and not `energy()`.
+
+        The same distinction decides where the concentration measures are computed: a
+        participation ratio taken on the aligned view is `r` times too large, because
+        replicating every coefficient `r` times multiplies it by `r`. The Gini coefficient
+        survives replication unchanged. Both facts are asserted in `test_scale_signature.py`
+        rather than left as reasoning.
+        """
+        per_orientation = torch.tensor(
+            [count / self.n_orientations for count in self.available_coefficients()],
+            dtype=torch.float64).view(1, -1, 1)
+        return self.native_energy() / per_orientation
+
     # ------------------------------------------------------------------ reconstruction
 
     def has_native(self) -> bool:

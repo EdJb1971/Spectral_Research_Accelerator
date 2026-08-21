@@ -587,18 +587,21 @@ def _summarise_decompose_bank(result, args):
 
 @register_action(
     'extract_scale_signature',
-    description='Per (time, scale) energy and energy fraction from a CoefficientField.',
+    description='Full per (time, scale) ScaleSignature from a CoefficientField (rule R3).',
     params={'coefficients': 'a {step.coefficients_ref} from decompose_bank',
-            'normalise': 'bool; report energy fractions as well as raw energy'},
+            'threshold_sigma': 'float; multiple of the per-scale RMS for the reported '
+                               'threshold count, default 3.0',
+            'interior': 'bool; exclude the boundary-contaminated margin per scale (R13), '
+                        'default true'},
     node_type='metrics',
 )
 def extract_scale_signature(args: Dict[str, Any], device: torch.device) -> Dict[str, Any]:
-    """Collapse a `CoefficientField` to a per-`(time, scale)` energy signature (T4B.3).
+    """Collapse a `CoefficientField` to its full `ScaleSignature` (T4B.3, completed by T4C.1).
 
-    **Scope, so the roadmap is not over-claimed:** this is the energy half of rule R3 - energy
-    per scale, and the fraction of each frame's energy that scale carries. The full
-    `ScaleSignature` of T4C.1 adds participation ratio, the Gini coefficient and threshold
-    counts. This action is the plumbing that 4C extends, not 4C delivered early.
+    Introduced in Phase 4B carrying the energy half of rule R3 and saying so in its own
+    result. T4C.1 finished it: the payload now carries participation ratio, the Gini
+    coefficient and the threshold count **with the threshold that produced it**, all computed
+    on native coefficients inside the per-scale valid interior.
 
     Energy *fractions* rather than raw energy are what make signatures comparable: raw energy
     scales with the amplitude of the field, so the same structure in two fields recorded in
@@ -622,38 +625,145 @@ def extract_scale_signature(args: Dict[str, Any], device: torch.device) -> Dict[
             "'{step.coefficients_ref}', which passes the reference rather than the "
             "dereferenced array - an array alone has lost its scale and orientation labels")
 
-    energy = field.energy()
-    fractions = field.energy_fractions()
-    per_scale = fractions.sum(dim=2)
-    dominant = torch.argmax(per_scale, dim=1)
+    from src.analysis_engine.scale_signature import scale_signature
+
+    signature = scale_signature(
+        field,
+        interior=bool(args.get("interior", True)),
+        threshold_sigma=float(args.get("threshold_sigma", 3.0)))
 
     return {
         "scales": [str(s) for s in field.scales],
         "orientations": [str(o) for o in field.orientations],
         "times_seconds": [float(t) for t in field.times],
-        "energy": energy.tolist(),
-        "energy_fraction": fractions.tolist(),
-        "energy_fraction_per_scale": per_scale.tolist(),
-        "dominant_scale_per_time": [field.scales[int(i)] for i in dominant],
+        "energy_density": signature.energy_density.tolist(),
+        "energy_fraction_per_scale": signature.energy_fraction.tolist(),
+        "participation_ratio": signature.participation_ratio.tolist(),
+        "gini": signature.gini.tolist(),
+        "threshold_fraction": signature.threshold_fraction.tolist(),
+        "threshold_sigma": signature.threshold_sigma,
+        "threshold_values": [float(v) for v in signature.threshold_values],
+        "dominant_scale_per_time": signature.dominant_scale(),
+        "available_coefficients": [int(v) for v in signature.available],
+        "valid_interior": list(signature.interior),
         "wavelet_family": field.wavelet_family,
         "orientation_convention": field.orientation_convention,
         "scale_wavelength_bands": field.scale_wavelength_bands(),
-        "scope": ("energy and energy fraction only; participation ratio, Gini and threshold "
-                  "counts are T4C.1"),
+        "warnings": list(signature.warnings),
+        "scope": ("rule R3 in full: energy fraction, participation ratio and Gini are "
+                  "threshold-free and primary; the threshold count is reported with its "
+                  "threshold and is never primary"),
     }
 
 
 def _summarise_extract_scale_signature(result, args):
     """Small enough to embed whole: `(time, scale)` is the one reduction that always fits."""
+    import numpy as _np
+
+    def _mean(values):
+        array = _np.asarray(values, dtype=float)
+        if array.size == 0:
+            return []
+        with _np.errstate(invalid="ignore"):
+            return [None if _np.isnan(v) else float(v) for v in _np.nanmean(array, axis=0)]
+
     return {"wavelet_family": result.get("wavelet_family"),
             "scales": result.get("scales"),
-            "energy_fraction_per_scale": result.get("energy_fraction_per_scale"),
+            "mean_energy_fraction": _mean(result.get("energy_fraction_per_scale", [])),
+            "mean_participation_ratio": _mean(result.get("participation_ratio", [])),
+            "mean_gini": _mean(result.get("gini", [])),
+            "threshold_sigma": result.get("threshold_sigma"),
             "dominant_scale_per_time": result.get("dominant_scale_per_time"),
+            "warnings": result.get("warnings"),
             "scope": result.get("scope")}
 
 
+
+
+@register_action(
+    'cross_scale_dependency',
+    description='Lagged cross-scale dependency over a ScaleSignature, FDR-corrected (T4C.3).',
+    params={'coefficients': 'a {step.coefficients_ref} from decompose_bank',
+            'lags': 'list of positive integer lags, in frames',
+            'cadence_seconds': 'sampling interval of the record',
+            'measure': 'signature measure to correlate; default energy_density',
+            'estimator': 'transfer_entropy (default) or mutual_information',
+            'advection_speed_m_s': 'declared speed for the rule R4 support floor; omitted '
+                                   'means the floor is not enforced and the result says so',
+            'n_surrogates': 'circular-shift surrogates per test; default 199'},
+    node_type='metrics',
+)
+def cross_scale_dependency(args: Dict[str, Any], device: torch.device) -> Dict[str, Any]:
+    """Does scale `s` at `t` precede scale `s'` at `t + lag`? (roadmap T4C.3.)
+
+    Every ordered scale pair at every admissible lag, each against its own circular-shift
+    surrogate ensemble, with the whole family corrected together. The result is deliberately
+    verbose: it carries the tests that were *excluded* and why, the support floor and its
+    basis, and a power check, because a sweep that silently drops what it cannot test looks
+    identical to one that had nothing to drop.
+    """
+    from src.analysis_engine.cross_scale import cross_scale_dependency as _sweep
+    from src.analysis_engine.scale_signature import scale_signature
+    from src.artifact_store import store as artifact_store
+    from src.core.errors import InvalidParameterError
+    from src.transform_engine.coefficient_field import CoefficientField
+
+    value = args.get("coefficients")
+    if isinstance(value, dict) and "coefficients_ref" in value:
+        value = value["coefficients_ref"]
+    if isinstance(value, CoefficientField):
+        field = value
+    elif isinstance(value, str) and artifact_store.is_ref(value):
+        field = artifact_store.get_store().load_coefficient_field(value)
+    else:
+        raise InvalidParameterError(
+            "coefficients", type(value).__name__,
+            "a CoefficientField or an artifact reference. Reference the producing step as "
+            "'{step.coefficients_ref}'; a dereferenced array has lost the scale labels and "
+            "the time axis this analysis is entirely about")
+
+    lags = [int(v) for v in (args.get("lags") or [1, 2, 3])]
+    if any(lag < 1 for lag in lags):
+        raise InvalidParameterError(
+            "lags", lags, "positive lags in frames. A zero lag is a simultaneous "
+            "association, not a precursor relationship, and rule R7's language does not "
+            "cover it")
+
+    signature = scale_signature(field)
+    return _sweep(
+        signature,
+        lags=lags,
+        cadence_seconds=float(args.get("cadence_seconds", 3600.0)),
+        measure=str(args.get("measure", "energy_density")),
+        estimator=str(args.get("estimator", "transfer_entropy")),
+        advection_speed_m_s=args.get("advection_speed_m_s"),
+        n_surrogates=int(args.get("n_surrogates", 199)))
+
+
+def _summarise_cross_scale_dependency(result, args):
+    """Only what survived, plus the two things that decide whether a zero means anything."""
+    significant = [row for row in result.get("results", []) if row.get("significant")]
+    return {
+        "estimator": result.get("estimator"),
+        "n_tests": result.get("n_tests"),
+        "n_excluded": result.get("n_excluded"),
+        "n_significant": result.get("n_significant"),
+        "correction": result.get("correction"),
+        "can_reject_after_correction": (result.get("power") or {}).get(
+            "can_reject_after_correction"),
+        "support_floor_enforced": (result.get("support_floor") or {}).get("enforced"),
+        "top": [{"label": row["label"], "excess_nats": row["excess_nats"],
+                 "q_value": row["q_value"], "lag_seconds": row["lag_seconds"]}
+                for row in sorted(significant, key=lambda r: r["q_value"])[:5]],
+        "causality_caveat": result.get("causality_caveat"),
+        "warnings": result.get("warnings"),
+    }
+
+
 for _bank_name, _bank_fn in (("decompose_bank", _summarise_decompose_bank),
-                             ("extract_scale_signature", _summarise_extract_scale_signature)):
+                             ("extract_scale_signature", _summarise_extract_scale_signature),
+                             ("cross_scale_dependency",
+                              _summarise_cross_scale_dependency)):
     _SUMMARISERS[_bank_name] = _bank_fn
     _bank_entry = ACTIONS.entry(_bank_name)
     ACTIONS.register(_bank_name, description=_bank_entry.description,

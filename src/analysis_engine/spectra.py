@@ -44,6 +44,7 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 import numpy as np
 import torch
 
+from src.analysis_engine.power_law import PowerLawError, loglog_fit
 from src.physical_core.grid import GridSpec, GridError
 
 #: Reference turbulence regimes, expressed in the 1D energy-spectrum convention E(k).
@@ -388,39 +389,27 @@ def fit_power_law(
             "log_bias_corrected": False,
         }
 
-    x = np.log(k_arr[mask])
-    y = np.log(p_arr[mask])
-    m = np.maximum(c_arr[mask] / 2.0, 1.0)   # complex modes per bin, floored
-
+    # Weights: an annulus average of m complex modes is ~ chi^2_{2m} / 2m, whose log has
+    # variance ~ 1/m, so inverse-variance weighting is weight ~ m.
+    m_all = np.maximum(c_arr / 2.0, 1.0)
+    power_for_fit = p_arr.copy()
     corrected = False
     if log_bias_correction:
-        y = y + (np.log(m) - _digamma(m))
+        # Equivalent to adding log(m) - psi(m) to each log-power, expressed multiplicatively
+        # so the generic fitter can keep taking y rather than ln y.
+        power_for_fit = power_for_fit * np.exp(np.log(m_all) - _digamma(m_all))
         corrected = True
 
-    w = m if weighting == "counts" else np.ones_like(x)
+    weights = m_all if weighting == "counts" else np.ones_like(k_arr)
+    try:
+        fit = loglog_fit(k_arr, power_for_fit, weights=weights, x_min=lo, x_max=hi)
+    except PowerLawError as exc:
+        raise GridError(str(exc)) from exc
 
-    sw = np.sum(w)
-    swx = np.sum(w * x)
-    swy = np.sum(w * y)
-    swxx = np.sum(w * x * x)
-    swxy = np.sum(w * x * y)
-    denom = sw * swxx - swx ** 2
-    if denom <= 0:
-        raise GridError(
-            "degenerate power-law fit: all %d retained bins share the same wavenumber, so "
-            "the design matrix is singular." % n
-        )
-    slope = (sw * swxy - swx * swy) / denom
-    intercept = (swy - slope * swx) / sw
-
-    resid = y - (slope * x + intercept)
-    ss_res_w = float(np.sum(w * resid ** 2))
-    ybar_w = swy / sw
-    ss_tot_w = float(np.sum(w * (y - ybar_w) ** 2))
-    r_squared = 1.0 - ss_res_w / ss_tot_w if ss_tot_w > 0 else float("nan")
-
-    sigma2 = ss_res_w / (n - 2)
-    slope_se = math.sqrt(sigma2 * sw / denom)
+    slope = fit["slope"]
+    intercept = fit["intercept_ln_c"]
+    r_squared = fit["r_squared"]
+    slope_se = fit["slope_standard_error"]
 
     beta = -slope
     beta_energy = beta if convention == "energy_1d" else beta - 1.0

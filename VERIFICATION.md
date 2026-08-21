@@ -2772,3 +2772,212 @@ counts with the threshold recorded), `SurrogateNull` integration, and cross-scal
 dependency. It is self-contained - it needs nothing from 4D-4G - and it is where the project
 finds out whether the central idea is real. Everything built so far exists to make that
 question askable honestly; 4C is where it gets asked.
+
+---
+
+## Slice 18 - Phase 4C: the gate's instruments
+
+T4C.1, T4C.2, T4C.3, T4C.4. Four of four. T4C.5 was already done; **T4C.6, the gate review
+itself, is not run** - see the last section.
+
+### T4C.1 acceptance criteria, measured
+
+```
+sinusoid wl=8   -> dominant level 3 (swt and dtcwt), fraction > 0.5
+sinusoid wl=16  -> dominant level 4 (swt and dtcwt)
+white noise     -> energy fraction flat to within 15% across usable scales
+rescale x1000   -> every threshold-free measure bit-identical
+```
+
+The measures have **analytic** values on white noise, and the tests assert those rather than
+"roughly flat". Real transform: coefficient energy is chi-squared with one degree of freedom,
+so the participation ratio is exactly `1/3` and the Gini exactly `2/pi`. Circular complex
+band: exponential, so `1/2` and `1/2`.
+
+```
+swt   level 1 : PR 0.334  gini 0.636   (analytic 0.3333, 0.6366)
+dtcwt level 2 : PR 0.499  gini 0.500   (analytic 0.5,    0.5)
+```
+
+### Rule R3's first trap, measured rather than described
+
+Moving the threshold from 2 to 4 sigma changes the reported threshold count by **more than a
+factor of ten**, while `energy_fraction`, `participation_ratio` and `gini` are *bit-identical*.
+That is why the threshold count is reported with its threshold and is never primary.
+
+### Two things that would have been silently wrong in the signature
+
+**Replication.** A resampled DTCWT band repeats every native coefficient `4**j` times. The
+obvious conclusion - that energy fractions are biased towards coarse scales - is **wrong**, and
+was checked rather than assumed: the parent grid has the same cell count at every scale, so the
+factor cancels in the ratio exactly. The participation ratio does *not* survive it; replicating
+`r` times multiplies it by exactly `r`. Both halves are now asserted, so a future "fix" cannot
+break a quantity that is already right. Measures are taken on native coefficients, recovered
+from the aligned view by exact stride subsampling when the native arrays are gone.
+
+**Rule R13's crop table understates the dual tree by nearly two (D40).** The table is derived
+for one 14-tap filter repeated at every level. DTCWT uses a 19-tap near-symmetric highpass at
+level 1 and the q-shift pair above:
+
+```
+dtcwt parent halfwidth by level : 9, 19, 45, 97     (R13 table for 14 taps: 6, 13, 26, 52)
+dtcwt native halfwidth by level : 5,  5,  6,  7     (roughly constant, as a decimated
+                                                     pyramid should be)
+256x256 dtcwt interiors : L1 118x118  L2 54x54  L3 20x20  L4 2x2
+512x512 dtcwt interiors : L1 246x246  L2 118x118 L3 52x52  L4 18x18
+```
+
+A 256x256 crop - this project's stated practical minimum for four dyadic levels - leaves DTCWT
+level 4 **four coefficients per orientation**. The signature names that scale *thin* rather
+than averaging over it.
+
+### A measured property of the transform, worth recording
+
+Level 1 of a DTCWT is not an analytic signal: the q-shift filters that make the two trees a
+Hilbert pair start at level 2.
+
+```
+level 1 : var(re) 0.3412  var(im) 0.1555  ratio 2.19   E[w^2]/E[w]^2 = 2.128
+level 2 : var(re) 0.2466  var(im) 0.2472  ratio 1.00   E[w^2]/E[w]^2 = 2.002
+level 3 : ratio 1.03                                   1.987
+level 4 : ratio 1.06                                   1.999
+```
+
+The level-1 participation ratio therefore sits at 0.467, between the real-Gaussian `1/3` and
+the circular-complex `1/2`, and is predictable from those two variances alone to within 0.02.
+The test asserts that prediction, which makes it a check on the arithmetic rather than a
+snapshot.
+
+### T4C.2 - and one deviation from the task, stated
+
+The module is `analysis_engine/surrogate_null.py`, **not** `analysis_engine/surrogates.py` as
+the task names it. Two modules called `surrogates` in one codebase resolve differently
+depending on which package the reader is in, and it invites the phase-randomisation core to be
+forked and drift. The generators in `src/statistics/surrogates.py` are called, not
+reimplemented; `phase_randomise` was generalised from 2D to any dimension, which its own
+arithmetic already supported - the restriction was a statement about what had been tested.
+
+```
+spatiotemporal_phase : psd3d err 3.44e-16  max frame psd err 7.15e-01  max |corr| 0.068
+per_frame_phase      : psd3d err 1.43e+00  max frame psd err 3.63e-16  max |corr| 0.097
+circular_time_shift  : psd3d err 0.00e+00  max frame psd err 8.33e-01  max |corr| 0.591
+```
+
+**The choice of null is a choice about time.** On an AR(1) record with no organisation at all:
+
+| null | null lag-one autocorrelation | record's |
+|---|---|---|
+| `spatiotemporal_phase` (default) | **0.845** | 0.900 |
+| `per_frame_phase` | **0.013** | 0.900 |
+
+Preserving the *per-frame* PSD is what the task literally asks for, and it destroys the
+record's temporal structure - so the autocorrelation itself beats the null (rule R12). It is
+kept, with a warning attached to every result that uses it, because being able to demonstrate
+the failure is worth more than removing it.
+
+### T4C.3 - the acceptance criterion, end to end
+
+```
+cascade            : 2 significant - 1->3 @ lag 3 (excess 0.170 nats, q 0.0157)
+                                     2->3 @ lag 3 (excess 0.155 nats, q 0.0157)
+                     nothing in the reverse direction
+phase-randomised   : 0 significant
+both               : power ok (1,999 surrogates against 18 tests under BY)
+```
+
+Correct lag, correct direction. The phase-randomised twin preserves every spectrum and every
+autocorrelation and destroys only the alignment.
+
+### The two calibrations that decide whether any of that means anything
+
+**1. A linear lag against a circular null rejects every time.** FT surrogates are circularly
+stationary; a record is not. Twenty independent AR(1) records, null true by construction:
+
+```
+linear lag statistic   : 20 of 20 false rejections, median p 0.010
+circular lag statistic :  0 of 20 false rejections, median p 0.485
+```
+
+Lags therefore wrap by default and the wrap fraction is reported. Without this the gate would
+have passed on pure red noise.
+
+**2. The shift null must exclude the simultaneous alignment as well as the tested one.**
+Rolling the source by `s` measures effective lag `lag + s`, so `s = -lag` puts the two series
+at effective lag zero - a real alignment of the data, not a shuffle. On the cascade:
+
+```
+observed TE (lag 3)          : 0.211 nats
+largest value in the "null"  : 0.412 nats, at exactly s = -lag
+p-value ceiling this imposed : ~0.005, regardless of ensemble size
+after excluding both windows : p reaches the floor, q = 0.0157
+```
+
+Significance limited by a null that was wrong rather than by evidence that was weak. Anything
+that varies frame by frame and touches every scale at once couples the scales instantaneously,
+so this is the ordinary case and not a corner one.
+
+### Rule R4's support floor, stated honestly
+
+The transform is spatial and applied frame by frame, so its **temporal support is zero**.
+Quoting one would be an invention. What is real is the advective crossing time of the filter
+support, `support * dx / U`, and `support_floor` **refuses to default the wind speed**: a
+plausible-looking 10 m/s would set every floor in every result from a number the reader never
+chose. Without it the only floor applied is one frame, and the result says so in as many words.
+
+### A sweep that cannot reject anything says so
+
+```
+120 tests, 99 surrogates, Benjamini-Yekutieli -> surrogates required: 12,885
+"This study cannot produce a significant result... A null result from this
+ configuration says nothing about the data."
+```
+
+`check_power`, built in T4C.5, is consulted before the result is read. The first full sweep of
+this slice returned zero significant results and was *correct* to - it was arithmetically
+incapable of returning anything else, which is a completely different statement from a clean
+negative.
+
+### T4C.4
+
+The least-squares core is now `analysis_engine/power_law.loglog_fit`, which knows nothing about
+turbulence; `spectra.fit_power_law` calls it and adds the Charney/Kolmogorov interpretation on
+top. Existing behaviour unchanged - the 118 spectral and benchmark tests pass untouched - with a
+new test pinning the two together. Rule R2 is enforced in the return value: an exponent comes
+back `reportable: False` until it sits beside a surrogate ensemble, and `reportable` is
+deliberately *not* conditioned on significance, because a null result is reportable and is
+often the point.
+
+### Defects
+
+*   **D40 - R13's crop table understates the dual tree.** Fixed: `dtcwt.filter_support`
+    accumulates the real cascade, and thin scales are named.
+*   **D41 - two implementations of R13 that disagree by one pixel per side.** `OPEN`, with the
+    fix specified. `zarr_source.valid_interior` floors a half-integer halfwidth where
+    `stationary.valid_interior_halfwidth` rounds it up; flooring is the anti-conservative
+    direction, declaring one contaminated pixel per side valid, in the module that sizes crops.
+    Bounded and known - two pixels of interior width - and nothing currently depends on the
+    difference, but the two must not disagree. Left open rather than fixed late in a long slice
+    because the fix changes a published table quoted in several places.
+
+### Suite after slice 18
+
+```
+855 passed, 1 skipped (opt-in live GCS), 1 xfailed
+692 test functions across 28 files
+tools/audit_docs.py: RESULT ok (exit 0)
+```
+
+Phase 4C: **4 of 4 implementable tasks complete**, every stated acceptance criterion met and
+measured.
+
+### Next
+
+**T4C.6, the gate review, on real ERA5 data.** It is deliberately not written from synthetic
+evidence. Everything it needs now exists and is calibrated, and on synthetic data the
+instrument gives the answers a working instrument should: it finds an injected cascade at the
+right lag and direction, and finds nothing in that same record once the alignment is destroyed.
+The verdict belongs to a run on the atmosphere.
+
+Two smaller items this slice deliberately did not take on: registering the cascade as a
+ground-truth benchmark (the generator and its truth function exist and are tested; only the
+`register_benchmark` call and the suite's documented counts are missing), and closing D41.

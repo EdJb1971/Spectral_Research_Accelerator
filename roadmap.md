@@ -12,7 +12,7 @@ Everything below either serves that question or gets cut.
 ## 1. Honest Technical Status
 
 Verified against the code on 2026-08-20. Every claim here is backed by captured output in
-`VERIFICATION.md`; `architecture.md` Section 7 holds the full defect ledger (D1-D39, of which **37 fixed, 1 partial (D18), 1 open (D17)**).
+`VERIFICATION.md`; `architecture.md` Section 7 holds the full defect ledger (D1-D41, of which **38 fixed, 1 partial (D18), 2 open (D17, D41)**).
 
 The numbers in this table are checked by `src/tests/test_documentation.py`, which parses them
 out of this file and compares them against the source. That guard exists because this table
@@ -22,7 +22,7 @@ status section, it is a memory.
 
 | Area | Real status |
 |---|---|
-| Backend test suite | **781 passed, 1 xfailed.** Plus one skipped by design: the live-GCS check is opt-in. Trajectory: 19 written / 1 failing / uncollectable -> 65 -> 152 -> 222 -> 271 -> 351 -> 407 -> 449 -> 478 -> 535 -> 548 -> 593 -> 642 -> 647 -> 709 -> 781. |
+| Backend test suite | **855 passed, 1 xfailed.** Plus one skipped by design: the live-GCS check is opt-in. Trajectory: 19 written / 1 failing / uncollectable -> 65 -> 152 -> 222 -> 271 -> 351 -> 407 -> 449 -> 478 -> 535 -> 548 -> 593 -> 642 -> 647 -> 709 -> 781 -> 855. |
 | Ground-Truth Benchmark Suite | **15 PASS, 0 FAIL, 2 NOT_YET_RUNNABLE.** Nine datasets with declared known answers, five of them nulls. CI-ready via `python -m src.benchmarks` (exit 0). |
 | Backend compute modules | **Written, executed and tested.** `physical_core` carries `GridSpec` + metric-aware operators; `analysis_engine` gained `spectra.py` and `climatology.py`; `transform_engine` gained the undecimated `stationary.py` and a real `dtcwt.py`; `statistics/` and `core/` are new packages. |
 | Physical units and wavenumbers | **Correct as of T3.5.13.** Gradients metric-aware, spectra on a physical `k` axis, domain statistics area-weighted, and every quantity carries its units. Previously all of it was pixel-space and unlabelled (D13). |
@@ -30,7 +30,7 @@ status section, it is a memory.
 | Shift invariance | **Available as of T3.5.7** via the undecimated SWT: 0.00% energy spread against the decimated DWT's 153.50%. |
 | DTCWT | **Implemented as advertised as of T3.5.6** (D1 closed). Real Kingsbury q-shift dual tree, six oriented complex subbands with *measured* passband centres, vendored full-precision coefficients, cross-checked against two independent oracles. Near shift invariant, not exact — the SWT remains the exactly shift-invariant transform. |
 | Reproducibility | **Seeded generation, perturbation and run-level seed capture** (T3.5.12/T3.5.19). `ExperimentRun.seed` and `execution` are persisted, and a sweep is byte-identical across executor backends. Replaying a run from lineage alone is still outstanding. |
-| Statistical validity | **Controlled as of T4C.5** (D8 closed). Bonferroni / Holm / BH / BY with the dependence assumption reported alongside every q-value, five surrogate null models, an ESS correction, a calibrated stationarity gate and an explicit power check. The D8 scenario went from 3 reported "discoveries" on 9-sample noise to 0, while a real effect among 19 nulls at n=40 is still recovered. |
+| Statistical validity | **Controlled as of T4C.5, and calibrated as of T4C.3** (D8 closed). Bonferroni / Holm / BH / BY with the dependence assumption reported alongside every q-value, five surrogate null models, an ESS correction, a calibrated stationarity gate and an explicit power check. The D8 scenario went from 3 reported "discoveries" on 9-sample noise to 0, while a real effect among 19 nulls at n=40 is still recovered. T4C.3 added the two calibrations that decide whether a lagged test means anything at all: a linear lag against a circularly stationary null falsely rejects **20 of 20** AR(1) records where the null is true, and a shift null that keeps the simultaneous alignment caps the achievable p-value at about 0.005 regardless of ensemble size. |
 | Registries / extension seams | **Registry-based as of T3.5.15** (D15 closed). Transforms, pipeline actions and data sources are decorator-registered with capability metadata; the plugin acceptance test registers a third-party transform without editing `src/`. |
 | Error reporting | **Taxonomy in place as of T3.5.14** (D14 closed). `SpectralEarthError` subclasses carry their own status code and client-safety, so an HTTP status follows from the error *kind* rather than from the call site. |
 | HPC / executor seam | **In place as of T3.5.19.** Serial / thread / process backends behind one interface, submission-order results, thread-budget control and SQLite WAL + `busy_timeout`. Measured honestly: on this workload **serial beat thread(4) and process(4)**, because PyTorch already parallelises the FFT across cores. Cross-device CPU/CUDA/MPS agreement is **not** verified — this machine is CPU-only (D18, partial). |
@@ -865,7 +865,9 @@ inventing a cadence. The refusal names `{step.sequence_ref}` as the fix.
 
 **Scope stated in the result payload, not just here:** `extract_scale_signature` is the *energy
 half* of R3. Participation ratio, Gini and threshold counts are T4C.1, and the action says so
-under its own `scope` key, at the point a reader actually looks.
+under its own `scope` key, at the point a reader actually looks. *(T4C.1 has since delivered
+them; the action now returns all four measures and its `scope` string moved with the code
+rather than being deleted, so the test that pinned the caveat still pins the new one.)*
 
 **T4B.4 Pressure level as a bank dimension.** ERA5 is `time x level x lat x lon x variable`, and the vertical axis is currently only a *selector* (pick 500 hPa). But the canonical atmospheric precursor relationship is inherently vertical: an upper-level trough preceding surface cyclogenesis. Treat level as a first-class bank dimension alongside scale and orientation - decompose per level, and let 4E constellations span levels with **vertical offset as an edge attribute**. - **DONE**
 **Scope discipline:** this is *2D-per-level*, not 3D wavelets. Full 3D transforms are deliberately out of scope for Phase 4 on cost and complexity grounds; per-level decomposition with cross-level edges unlocks the most physically famous precursor structure at a fraction of the price, and is the natural target for T4F.6's known-phenomenon gate.
@@ -896,21 +898,130 @@ per level and not a 3D transform, and a test requires that sentence to be there.
 
 This phase is self-contained: it needs **nothing** from 4D-4G, and it is where the project finds out whether the central idea is real.
 
-**T4C.1 `ScaleSignature` (`src/analysis_engine/scale_signature.py`) *(implements R3)***
+**T4C.1 `ScaleSignature` (`src/analysis_engine/scale_signature.py`) *(implements R3)*** - **DONE**
 Per `(t, scale)`: energy fraction, participation ratio, Gini coefficient, and - reported but never primary - threshold-based counts with the threshold recorded. Direct generalisation of the existing `compute_wavelet_energy`.
 **Acceptance:** signature of a pure sinusoid concentrates at its scale; signature of white noise is flat in energy fraction; both invariant to a global amplitude rescale.
 
-**T4C.2 `SurrogateNull` (`src/analysis_engine/surrogates.py`) *(implements R1)***
+**Met, and the measures are asserted against their analytic values rather than against
+"roughly flat".** A sinusoid of wavelength 8 concentrates at level 3 and one of wavelength 16
+at level 4, in both families; white noise is flat to within 15%; and every threshold-free
+measure is bit-identical under a 1,000x rescale.
+
+On white noise the coefficient energy of a **real** transform is chi-squared with one degree
+of freedom, so the participation ratio is exactly `1/3` and the Gini exactly `2/pi`; for a
+**circular complex** band it is exponential, giving `1/2` and `1/2`. Measured: **0.334 / 0.636**
+(SWT) and **0.499 / 0.500** (DTCWT level 2). Those are predictions, not snapshots.
+
+**The threshold measure is reported and demonstrably not primary.** Moving the threshold from
+2 to 4 sigma changes the threshold count by more than a factor of ten while the other three
+measures are *bit-identical* - rule R3's first trap, measured rather than described.
+
+**Three things that would have been silently wrong:**
+
+*   A resampled DTCWT band repeats every native coefficient `4**j` times. Energy *fractions*
+    are unaffected (the factor cancels in the ratio - checked, not assumed), but the
+    participation ratio is multiplied by exactly `r`. Measures are therefore taken on native
+    coefficients, recovered from the aligned view by exact stride subsampling when the native
+    arrays are gone.
+*   **Rule R13's crop table understates the dual tree by nearly two.** It is derived for one
+    14-tap filter at every level; DTCWT's cascade gives a level-4 margin of **97 parent pixels
+    against the table's 52**, so a 256x256 crop - this roadmap's stated minimum for four
+    levels - leaves DTCWT level 4 a **2x2** interior. Reported as *thin* by name; 512x512
+    restores it to 18x18. Logged as **D40**.
+*   Level 1 of a DTCWT is not an analytic signal: the q-shift Hilbert pair starts at level 2,
+    and the real and imaginary variances of a level-1 subband differ by a factor of **2.19**
+    on white noise against 1.00-1.06 above it. Its participation ratio sits at 0.467, between
+    the real and circular-complex values, and is predictable from those two variances alone.
+
+**T4C.2 `SurrogateNull` (`src/analysis_engine/surrogate_null.py`) *(implements R1)*** - **DONE**
 Phase-randomised and AAFT surrogate generators preserving the PSD (and, for sequences, per-frame PSD). Ensemble of N (default 200) with effect sizes and empirical p-values against the ensemble.
 **Acceptance:** surrogate PSD matches source PSD within tolerance while phase correlation is destroyed; a known-organised synthetic field scores significantly, and a fractional Brownian field does **not**.
 
-**T4C.3 Cross-scale lagged dependency *(implements R4)***
+**Met.** The spatiotemporal surrogate preserves the 3D power spectrum to **3.4e-16** while the
+frame-by-frame correlation with the source falls below 0.1; a sequence of localised blobs
+scores at the p-value floor with an effect size above 3; a fractional Brownian sequence does
+not score.
+
+**One deviation from the task, stated rather than quietly taken.** The module is
+`surrogate_null.py`, not `surrogates.py`: two modules of that name in one codebase resolve
+differently depending on which package the reader is in, and it invites the
+phase-randomisation core to be forked. The generators in `src/statistics/surrogates.py` are
+called, not reimplemented - `phase_randomise` was generalised from 2D to any dimension, which
+its arithmetic already supported.
+
+**The choice of null is a choice about time, and the wrong one is not subtle.** On an AR(1)
+record with no organisation at all:
+
+| null | null lag-one autocorrelation | record's |
+|---|---|---|
+| `spatiotemporal_phase` (default) | **0.845** | 0.900 |
+| `per_frame_phase` | **0.013** | 0.900 |
+
+Preserving the *per-frame* PSD is what this task literally asks for, and it destroys the
+record's temporal structure - so the autocorrelation itself beats the null (rule R12). It is
+kept, with a warning on every result that uses it, because being able to demonstrate the
+failure is worth more than removing it.
+
+**T4C.3 Cross-scale lagged dependency *(implements R4)*** - **DONE**
 Lagged mutual information and transfer entropy over the $A_t(s)$ matrix, for all scale pairs and admissible lags, with the per-scale support floor enforced and reported.
 **Acceptance:** recovers an injected cross-scale coupling in a synthetic cascade; reports **null** on a phase-randomised version of that same field.
 
-**T4C.4 Generic `fit_power_law` and scale-population exponent *(implements R2, R3)***
+**Met, end to end.** `src/synthetic_generator/cascade.py` builds a record whose fine band at
+`t` sets its coarse band at `t + 3`, driven by a *red* modulation - a white one would have made
+the test far too easy. Through the whole path (decompose, signature, sweep, 1,999
+circular-shift surrogates, Benjamini-Yekutieli):
+
+| record | significant | which |
+|---|---|---|
+| cascade | **2** | `1 -> 3 @ lag 3`, `2 -> 3 @ lag 3`, `q = 0.0157` |
+| the same record, phase-randomised | **0** | - |
+
+Correct lag, correct direction, nothing in reverse.
+
+**Two calibrations that decide whether any of it means anything, both found by building it:**
+
+*   **A linear lag against a circular null rejects every time.** FT surrogates are circularly
+    stationary and a record is not. On twenty AR(1) records where the null is true by
+    construction: **20 of 20** false rejections with a linear lag, **0 of 20** with a circular
+    one (median p 0.010 against 0.485). Lags therefore wrap, and the wrap fraction is reported.
+    This one would have produced a gate that passed on pure red noise.
+*   **The shift null must exclude the simultaneous alignment as well as the tested one.**
+    Rolling the source by `s` measures effective lag `lag + s`, so `s = -lag` puts the series
+    at effective lag zero - a real alignment, not a shuffle. On the cascade that single shift
+    gave a transfer entropy of **0.412 nats against an observed 0.211**, the largest value in
+    the whole "null" ensemble, capping the achievable p-value at about 0.005 however many
+    surrogates were drawn.
+
+**Rule R4's floor, stated honestly.** The transform is spatial and applied frame by frame, so
+its temporal support is **zero**; the real floor is the advective crossing time of the filter
+support, `support * dx / U`. `support_floor` computes it and **refuses to default the wind
+speed** - a plausible 10 m/s would set every floor in every result from a number the reader
+never chose. Without it the only floor is one frame, and the result says so.
+
+**And a sweep that cannot reject anything says so.** The full 120-test sweep needs **12,885
+surrogates** under Benjamini-Yekutieli; `check_power` is consulted before the result is read,
+because a study arithmetically incapable of rejecting is otherwise indistinguishable from a
+clean negative.
+
+**T4C.4 Generic `fit_power_law` and scale-population exponent *(implements R2, R3)*** - **DONE**
 Factor the log-log least-squares core out of `fit_spectral_slope` into a reusable `fit_power_law(x, y, x_min, x_max)`; keep the Charney/Kolmogorov interpretation as a thin turbulence-specific wrapper so existing behaviour is unchanged. Apply it to $N(s)$ / energy vs scale, normalised per R3, always reported against $\alpha_{\text{surrogate}}$.
 **Acceptance:** existing `fit_spectral_slope` tests still pass unchanged; recovers a known exponent from a synthetic multifractal.
+
+**Met.** The least-squares core is now `analysis_engine/power_law.loglog_fit`, which knows
+nothing about turbulence; `spectra.fit_power_law` calls it and adds the Charney/Kolmogorov
+interpretation on top. Existing behaviour is unchanged - all 118 spectral and benchmark tests
+pass untouched - and a new test pins the two together so they cannot drift.
+
+**Rule R2 is enforced in the return value, not in prose.** `compare_exponent_to_null` returns
+`reportable: False` until an exponent has been placed beside a surrogate ensemble, because a
+fractional Brownian field yields a clean high-`r_squared` power law and contains nothing.
+`reportable` is deliberately not conditioned on *significance*: a null result is reportable and
+is often the point.
+
+`scale_energy_exponent` fits `A(s) ~ s**-alpha` against the per-available-coefficient density
+- rule R3's normalisation, since an unnormalised count in a decimated pyramid already falls as
+`s**-2` and would recover `2 + physics` with the two indistinguishable. Recovery of an injected
+`s**-1.5` is exact to `r_squared = 1.0`.
 
 **T4C.5 FDR control utility *(implements R5, fixes D8)*** - **DONE**
 
@@ -961,6 +1072,12 @@ Benjamini-Hochberg helper; retrofit it onto the **existing** hypothesis engine a
 **T4C.6 GATE REVIEW.** Written verdict: does cross-scale organisation exceed the surrogate ensemble at $q < 0.05$, at lags above the support floor, on real ERA5 data?
 *   **Pass** -> proceed to 4D.
 *   **Fail** -> stop. Write up the negative result. It is a genuine, publishable-shaped finding that the observed cross-scale coefficient structure is explained by the power spectrum alone, and it saves 4D-4G entirely.
+
+**Not yet run, and deliberately not pre-judged.** T4C.1-T4C.5 are complete and calibrated, and
+on synthetic data the instrument gives the answers a working instrument should: it finds an
+injected cascade at the right lag and direction, and finds nothing in that same record once
+the alignment is destroyed. The verdict belongs to a run on real ERA5 data; writing it from
+synthetic evidence would be exactly the kind of claim this phase exists to prevent.
 
 ### Phase 4D - `SpectralFeature` and `SpectralFeatureTrack`
 

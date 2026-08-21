@@ -434,3 +434,79 @@ def test_levels_that_collapse_onto_one_stored_level_are_refused():
     message = str(excinfo.value)
     assert "identical data" in message
     assert "correlating a field with itself" in message
+
+
+# ==================================================== native coefficients (added for T4C.1)
+
+def test_the_aligned_view_subsamples_back_to_the_native_coefficients_exactly():
+    """Nearest-neighbour alignment is replication, so the stride recovers the original.
+
+    This is what lets a scale signature be computed from an artifact-restored field: the
+    coefficients are still there, spread out, and the spreading is exactly invertible.
+    """
+    sequence = make_sequence(2)
+    live = decompose_sequence(sequence, "dtcwt", {"levels": 3}, keep_native=True)
+    restored = live.drop_native()
+
+    for scale in live.scales:
+        for orientation in live.orientations:
+            assert torch.equal(live.native_band(0, scale, orientation),
+                               restored.native_band(0, scale, orientation))
+    assert tuple(live.native_band(0, 3, live.orientations[0]).shape) == (8, 8)
+
+
+def test_the_replication_factor_is_exactly_four_to_the_level():
+    field = decompose_sequence(make_sequence(1), "dtcwt", {"levels": 3}, keep_native=False)
+    assert [field.replication_factor(s) for s in field.scales] == [4.0, 16.0, 64.0]
+    swt = decompose_sequence(make_sequence(1), "swt", {"levels": 3}, keep_native=False)
+    assert [swt.replication_factor(s) for s in swt.scales] == [1.0, 1.0, 1.0]
+
+
+def test_aligned_energy_is_inflated_but_the_fraction_is_not():
+    """The correction that turned out not to be needed, pinned so it stays that way.
+
+    The aligned band at level `j` repeats every native coefficient `4**j` times, so its
+    summed energy is inflated by exactly that factor - and the obvious conclusion, that the
+    energy fractions are therefore biased towards coarse scales, is **wrong**: the parent
+    grid has the same number of cells at every scale, so the factor cancels in the ratio.
+    Asserting both halves keeps a future 'fix' from breaking a quantity that is already right.
+    """
+    field = decompose_sequence(make_sequence(2), "dtcwt", {"levels": 3}, keep_native=True)
+    aligned = field.energy()
+    native = field.native_energy()
+
+    for index, scale in enumerate(field.scales):
+        assert torch.allclose(aligned[:, index, :],
+                              native[:, index, :] * field.replication_factor(scale))
+
+    aligned_fraction = aligned.sum(dim=2) / aligned.sum(dim=(1, 2), keepdim=True)[:, :, 0]
+    density = field.energy_density().sum(dim=2)
+    density_fraction = density / density.sum(dim=1, keepdim=True)
+    assert torch.allclose(aligned_fraction, density_fraction)
+
+
+def test_available_coefficients_counts_what_the_transform_computed():
+    field = decompose_sequence(make_sequence(1), "dtcwt", {"levels": 3}, keep_native=False)
+    assert field.available_coefficients() == [32 * 32 * 6, 16 * 16 * 6, 8 * 8 * 6]
+    swt = decompose_sequence(make_sequence(1), "swt", {"levels": 3}, keep_native=False)
+    assert swt.available_coefficients() == [64 * 64 * 3] * 3
+
+
+def test_the_dtcwt_filter_geometry_grows_with_level():
+    """Rule R13's margin, computed from the dual tree's own cascade rather than assumed.
+
+    The R13 table is written for a single 14-tap filter repeated at every level. The dual
+    tree is not that: level 1 uses the 19-tap near-symmetric highpass and levels above use
+    the q-shift pair, so the parent-grid margin is larger than the table suggests - which is
+    why a 256x256 crop leaves DTCWT level 4 almost nothing.
+    """
+    from src.transform_engine import dtcwt as dtcwt_mod
+
+    parent = [dtcwt_mod.valid_interior_halfwidth(j) for j in range(1, 5)]
+    assert parent == sorted(parent) and parent[0] < parent[-1]
+    assert parent[3] > 52, "the 14-tap table's level-4 margin understates the dual tree's"
+
+    native = [dtcwt_mod.native_halfwidth(j) for j in range(1, 5)]
+    assert max(native) - min(native) <= 3, (
+        "in native samples the margin is roughly constant across levels, which is the "
+        "standard property of a decimated pyramid")
