@@ -141,7 +141,8 @@ move each batch to CUDA, ROCm or MPS. `cross_check_era5_overlap` requires exact 
 coordinates and reports per-variable error under declared tolerances. The checker passes on the
 independent local acceptance fixture, but an actual second ERA5 acquisition route has **NOT
 RUN**, so source-value agreement is not claimed. D43 still blocks a viable multi-year crop and
-no laboratory-model adapter exists.
+the actual laboratory model has not been integrated. T5.3a now supplies the adapter contract,
+an exact persistence baseline and deterministic tiny integration evidence described below.
 
 ### 1.3 Boundary-support hypothesis for the New Zealand comparison *(proposed study)*
 
@@ -282,6 +283,29 @@ and 35.87/65.91 ms RTX; encoded storage is 1.465 MiB and maximum round-trip erro
 
 This is **T5.1a-e, not all of T5.1**. Non-NVIDIA hardware evidence, mixed
 precision and compilation acceptance remain outstanding.
+
+### 3.1f Forecasting integration (`src/forecasting/adapter.py`, T5.3a)
+
+`Forecaster` is the physical-space contract shared by learned adapters and baselines:
+`predict(history, lead_count)` accepts `(B,history,C,H,W)` and returns
+`(B,lead,C,H,W)`. `PersistenceForecaster` is the exact, zero-parameter no-change baseline; it
+repeats the final observed normalised state without passing through a transform.
+
+`ForecasterAdapter` wraps a one-step coefficient-space `torch.nn.Module` between an accepted
+`RepresentationModule` and its inverse. It rejects output shape, dtype, device or finiteness
+changes, reconstructs each prediction, and rolls multiple leads autoregressively in physical
+space. T5.3a deliberately uses only the last history frame because the motivating inner loop is
+`(B,C,H,W)`; that Markov assumption and the rollout policy are carried in provenance rather than
+hidden. `TinyResidualCoefficientModel` and `run_tiny_deterministic_step` are importable
+integration fixtures. The latter executes a real `RegionalForecastDataset` batch through
+representation -> model -> inverse -> MSE -> backward and records loss, gradient norm, tensor
+hashes, shapes, parameter count, seed/device/dtype and an explicit no-skill claim boundary.
+
+Acceptance proves exact fixed-fixture reproduction on CPU, non-zero finite parameter gradients,
+Haar analysis/synthesis in the loop, explicit contract refusals and CPU/RTX prediction/gradient
+agreement through the vendor-neutral PyTorch `cuda` API. This is integration evidence only. The
+professor's actual architecture, weights/training schedule, history semantics and forecast-skill
+evaluation have not been integrated or run.
 
 ### 3.2 Synthetic Field Generator & Perturbation Engine (`src/synthetic_generator/`)
 *   **Deterministic Field Generator (`generator.py`):** Generates analytical 2D fields:
@@ -1489,7 +1513,7 @@ See `VERIFICATION.md` for the captured command output behind every statement her
 | Item | Status |
 |---|---|
 | Python venv + dependencies | installed (torch 2.13.0+cu130, numpy 2.2.6, pydantic 1.10.26, SQLAlchemy 2.0.52, xarray 2025.6.1, FastAPI 0.110.3) |
-| Backend test suite | **957 passed, 1 xfailed** (plus 1 skipped: opt-in live GCS) (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17, 351 after T3.5.6, 379 after T3.5.15, 407 after T3.5.19, 449 after T4C.5, 709 after T4A.4, 781 after T4B.4, 855 after T4C.5, 859 after T4C.5c, 882 after T5.1a CPU acceptance, 883 after RTX acceptance, 890 after portable profiles, 911 after T5.1b/D44, 917 after T5.1c, 933 after T5.1d/D45, 946 after T5.1e, 955 after T5.2a, 957 after T5.2b) |
+| Backend test suite | **962 passed, 1 xfailed** (plus 1 skipped: opt-in live GCS) (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17, 351 after T3.5.6, 379 after T3.5.15, 407 after T3.5.19, 449 after T4C.5, 709 after T4A.4, 781 after T4B.4, 855 after T4C.5, 859 after T4C.5c, 882 after T5.1a CPU acceptance, 883 after RTX acceptance, 890 after portable profiles, 911 after T5.1b/D44, 917 after T5.1c, 933 after T5.1d/D45, 946 after T5.1e, 955 after T5.2a, 957 after T5.2b, 962 after T5.3a) |
 | Ground-Truth Benchmark Suite | **15 PASS, 0 FAIL, 2 NOT_YET_RUNNABLE** (`python -m src.benchmarks`, exit 0) |
 | Frontend `npm install` + `npm run build` | passes, emits 1,378 modules + real JS/CSS assets (was: 1 module, no assets) |
 | Backend server | starts, serves OpenAPI, all smoke-tested endpoints return 200 |
@@ -1694,6 +1718,7 @@ able to sit three slices out of date.
 | `test_executor.py` | 33 | Executor backends, seed derivation, ordering, portable CPU/accelerator/HPC profiles, doctor, device/thread policy, SQLite concurrency, byte-identical sweeps |
 | `test_experiments.py` | 3 | declarative sweeps and lineage |
 | `test_exports.py` | 32 | CSV/JSON/NetCDF4/Zarr round trips, embedded provenance, seeded perturbation (D34) |
+| `test_forecasting_adapter.py` | 5 | T5.3a exact persistence, represented autoregressive rollout, backward gradients, deterministic evidence, refusal contracts and CPU/RTX vendor-neutral accelerator parity |
 | `test_frontend_contract.py` | 30 | the frontend/backend contract, including transform/dataset readiness claim boundaries, plus the UI integrity guards: no fabricated results, no unqualified validation claims, units and slope uncertainty displayed |
 | `test_grid_operators.py` | 64 | grid metrics, metric-aware gradient/Laplacian, area weighting, physical-wavenumber spectra, D26 |
 | `test_hypothesis.py` | 3 | correlation and categorical hypothesis discovery |
@@ -1711,7 +1736,7 @@ able to sit three slices out of date.
 | `test_wavelet_bank.py` | 27 | T4B.2 expansion through the engine's own parameter matrix, the 1,000-combination guard, decompose_bank / extract_scale_signature, the vertical-bank refusals |
 | `test_transforms.py` | 13 | fft/dct/dwt/dtcwt/hybrid round trips; D1 recorded as a strict xfail |
 | `test_zarr_source.py` | 58 | R13 crop geometry, chunk-hostility prediction, byte counting, cache and provenance round trip, the NetCDF engine (D33), zarr HTTP surface |
-| **total** | **759** | |
+| **total** | **764** | |
 
 ### 7.2h A surrogate null that was not the null it claimed (T4C.5)
 

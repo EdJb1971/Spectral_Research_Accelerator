@@ -48,7 +48,7 @@ representations on limited-area weather domains. Today it can inspect their boun
 behaviour, localisation, scale/orientation structure and representation diagnostics on real
 ERA5 crops and construct leakage-safe PyTorch forecast datasets from a materialised crop. It
 **cannot yet reproduce a controlled learned-forecast comparison**: no matched spectral neural
-network, laboratory-model adapter, training loop or forecast-skill evaluation across
+network, actual laboratory-model integration, training loop or forecast-skill evaluation across
 representations is implemented. That must not be inferred from the current data/transform tools.
 
 The first Phase 5 target is deliberately practical: an importable PyTorch path for the exact
@@ -103,8 +103,33 @@ silently falls back to simulated data. The ERA5 panel reports only manifest-leve
 eligibility until values are opened, and keeps preparation, train-only normalisation and the
 independent-route overlap check as separate claims. **This is not the whole forecasting path:**
 mixed-precision/compilation acceptance, non-NVIDIA hardware evidence, a viable multi-year
-regional source (D43), an actual independent ERA5 overlap run, the model adapter and evaluation
-harness remain outstanding.
+regional source (D43), an actual independent ERA5 overlap run, actual laboratory-model
+integration and the evaluation harness remain outstanding.
+
+T5.3a adds the first forecasting seam without pretending the laboratory model has been
+integrated. `PersistenceForecaster` is an exact zero-parameter physical-space baseline.
+`ForecasterAdapter` wraps any one-step `torch.nn.Module` whose output preserves the encoded
+tensor shape, dtype and device, then reconstructs each step and feeds it back autoregressively.
+The importable smoke run exercises a real dataset batch through representation, model, inverse,
+MSE and `backward()` while labelling its result as plumbing evidence, not forecast skill:
+
+```python
+from src.forecasting import (
+    ForecasterAdapter, PersistenceForecaster, run_tiny_deterministic_step)
+from src.transform_engine.training import make_representation
+
+batch = next(iter(train_loader))
+persistence = PersistenceForecaster().predict(batch["inputs"], lead_count=3)
+evidence = run_tiny_deterministic_step(batch, representation="haar", seed=7103)
+
+# Existing one-step coefficient model: encoded (B,C,H,W) -> same shape/dtype/device.
+adapter = ForecasterAdapter(existing_model, make_representation("db2", levels=3))
+prediction = adapter.predict(batch["inputs"], lead_count=batch["targets"].shape[1])
+```
+
+T5.3a uses only the final history frame and records that Markov assumption in provenance. The
+actual professor/laboratory architecture, optimiser, schedule and evaluation protocol remain
+unintegrated; no current evidence compares representation skill.
 
 ### Accelerator installation and portability
 

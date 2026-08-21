@@ -3707,3 +3707,48 @@ The scientific boundary remains: training values are exhaustively checked while 
 stream; validation/test values are checked on access, not by a second full-crop scan. No actual
 independent ERA5 route or viable multi-year NZ crop has been acquired, so T5.2 and D43 remain
 partial/open respectively.
+
+## T5.3a - forecaster seam, persistence baseline and deterministic tiny backward pass
+
+`src/forecasting/adapter.py` adds a physical-space `Forecaster` contract over the exact tensor
+shapes emitted by `RegionalForecastDataset`. `PersistenceForecaster` is a zero-parameter exact
+baseline: every requested lead is the last input state. It does not pass through a transform,
+so transform reconstruction error cannot contaminate the baseline definition.
+
+`ForecasterAdapter` wraps a one-step coefficient model between any accepted
+`RepresentationModule` and its inverse. It requires the model output to preserve encoded shape,
+dtype and device and refuses non-finite coefficients. Multi-lead output is an autoregressive
+physical-state rollout. T5.3a uses the final history frame only and records that limitation,
+the representation, rollout policy and model parameter counts in provenance.
+
+The importable `run_tiny_deterministic_step` consumes a real default-collated dataset batch and
+executes dataset -> Haar representation -> residual 1x1 coefficient model -> inverse -> MSE ->
+`backward()`. Evidence includes the seed, device/dtype, all tensor shapes, parameter count, loss,
+finite non-zero gradient norm and prediction/gradient hashes. Two fixed CPU runs are byte-
+identical. The acceptance test also compares prediction and parameter gradients between CPU and
+the available RTX through PyTorch's vendor-neutral `cuda` API; it passed. ROCm hardware itself
+is still NOT RUN.
+
+Focused acceptance:
+
+```text
+python -m pytest src/tests/test_forecasting_adapter.py -q
+5 passed, 1 warning in 6.45s
+
+python -m pytest src/tests/test_forecasting_adapter.py \
+  src/tests/test_regional_forecast.py src/tests/test_training_representations.py -q
+93 passed, 1 warning in 81.47s
+```
+
+Clean full regression from the moved external-drive workspace:
+
+```text
+962 passed, 1 skipped, 1 xfailed, 6 warnings in 227.51s
+764 test functions across 31 files
+```
+
+The skip remains the opt-in live-GCS check and the xfail remains the declared historical
+degenerate-DTCWT comparison. This run proves the integration seam, deterministic fixture and
+autograd path. The tiny residual model is not Adam's model, is not trained to skill and supplies
+no evidence that one representation forecasts better than another. Actual laboratory-model
+configuration/checkpoint lineage and its train/evaluate protocol remain T5.3 outstanding work.
