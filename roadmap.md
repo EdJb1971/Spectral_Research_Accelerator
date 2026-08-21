@@ -27,8 +27,9 @@ multi-year real NZ crop (D43), an actual independent
 ERA5 route cross-check or the poster's learned forecasting experiment. No current task has
 implemented its neural architecture, autoregressive training schedule or matched forecast
 comparison. Phase 5's remaining model work is a proposal to integrate that judge, not evidence
-that the laboratory architecture or experiment exists inside SpectralEarth. T5.3a supplies only
-the generic adapter and persistence/smoke baselines described below.
+that the laboratory architecture or experiment exists inside SpectralEarth. T5.3a-b supplies
+the generic adapter, persistence/smoke baselines, verified artifact contract and held-out
+evaluator described below; Adam's model and weights have not been supplied or executed.
 
 Consequently:
 
@@ -64,9 +65,9 @@ status section, it is a memory.
 
 | Area | Real status |
 |---|---|
-| **Phase progress** | **Phase 3.5 complete** (25 tasks). **Phase 4A, 4B and 4C complete** as implementable work: T4A.1-4, T4B.1-4, T4C.1-5. **T5.1 is partial:** T5.1a-e accepts raw/FFT/DCT/Haar/db2/SWT/DTCWT training representations, optimized and exposed with truthful UI readiness; mixed precision and remaining cross-device acceptance remain. **T5.2 is partial:** T5.2a-b implements the aligned, leakage-safe, train-normalised PyTorch dataset and bounded-memory worker-safe cache interface, while the actual independent ERA5 overlap and viable multi-year NZ crop remain blocked by D43. **T5.3 is partial:** T5.3a supplies the forecaster contract, persistence baseline and deterministic represented training smoke run; the actual laboratory model remains unintegrated. **Not done:** T4C.6, the real-ERA5 gate review; 4D-4H; T5.0 and T5.4-7. Per-task evidence blocks sit under each task below; a task without a **DONE** or **PARTIAL** label has not been started. |
+| **Phase progress** | **Phase 3.5 complete** (25 tasks). **Phase 4A, 4B and 4C complete** as implementable work: T4A.1-4, T4B.1-4, T4C.1-5. **T5.1 is partial:** T5.1a-e accepts raw/FFT/DCT/Haar/db2/SWT/DTCWT training representations, optimized and exposed with truthful UI readiness; mixed precision and remaining cross-device acceptance remain. **T5.2 is partial:** T5.2a-b implements the aligned, leakage-safe, train-normalised PyTorch dataset and bounded-memory worker-safe cache interface, while the actual independent ERA5 overlap and viable multi-year NZ crop remain blocked by D43. **T5.3 is partial:** T5.3a-b supplies the forecaster seam, persistence baseline, deterministic represented smoke run, verified model-artifact contract and persistence-relative evaluator; the actual laboratory model remains unintegrated. **Not done:** T4C.6, the real-ERA5 gate review; 4D-4H; T5.0 and T5.4-7. Per-task evidence blocks sit under each task below; a task without a **DONE** or **PARTIAL** label has not been started. |
 | **Accessibility** | **Zero, measured.** `0` `aria-*` or `role` attributes and `0` keyboard handlers across `frontend/src`. No focus management. The UI is usable with a mouse and by nobody else. Not scheduled; recorded so it cannot be mistaken for an oversight. |
-| Backend test suite | **962 passed, 1 xfailed.** Plus one explicit skip: the opt-in live-GCS check. Trajectory: 19 written / 1 failing / uncollectable -> 65 -> 152 -> 222 -> 271 -> 351 -> 407 -> 449 -> 478 -> 535 -> 548 -> 593 -> 642 -> 647 -> 709 -> 781 -> 855 -> 859 -> 882 -> 883 -> 890 -> 911 -> 917 -> 933 -> 946 -> 955 -> 957 -> 962. |
+| Backend test suite | **969 passed, 1 xfailed.** Plus one explicit skip: the opt-in live-GCS check. Trajectory: 19 written / 1 failing / uncollectable -> 65 -> 152 -> 222 -> 271 -> 351 -> 407 -> 449 -> 478 -> 535 -> 548 -> 593 -> 642 -> 647 -> 709 -> 781 -> 855 -> 859 -> 882 -> 883 -> 890 -> 911 -> 917 -> 933 -> 946 -> 955 -> 957 -> 962 -> 969. |
 | Ground-Truth Benchmark Suite | **15 PASS, 0 FAIL, 2 NOT_YET_RUNNABLE.** Nine datasets with declared known answers, five of them nulls. CI-ready via `python -m src.benchmarks` (exit 0). |
 | Backend compute modules | **Written, executed and tested.** `physical_core` carries `GridSpec` + metric-aware operators; `analysis_engine` gained `spectra.py` and `climatology.py`; `transform_engine` gained the undecimated `stationary.py` and a real `dtcwt.py`; `statistics/` and `core/` are new packages. |
 | Physical units and wavenumbers | **Correct as of T3.5.13.** Gradients metric-aware, spectra on a physical `k` axis, domain statistics area-weighted, and every quantity carries its units. Previously all of it was pixel-space and unlabelled (D13). |
@@ -1352,7 +1353,7 @@ implemented unless its acceptance evidence appears in `VERIFICATION.md`.
     Ten focused tests cover T5.2a-b.
     **Outstanding:** the checker has not run against an actual second ERA5 route and no viable
     multi-year NZ crop has been acquired; D43 therefore remains open and T5.2 is not complete.
-*   **T5.3 Integrate the existing laboratory model -- PARTIAL (T5.3a seam accepted; laboratory model open).** Put its train/evaluate operations behind
+*   **T5.3 Integrate the existing laboratory model -- PARTIAL (T5.3a-b contracts accepted; laboratory model open).** Put its train/evaluate operations behind
     the `Forecaster` seam without copying model logic into the transform engine. Supply a
     minimal importable example and persistence baseline before dashboard or REST integration.
     **Acceptance:** one deliberately tiny end-to-end run executes dataset -> representation ->
@@ -1368,9 +1369,21 @@ implemented unless its acceptance evidence appears in `VERIFICATION.md`.
     hashes with a no-skill claim boundary. Five tests prove exact persistence, deterministic CPU
     reproduction, Haar-in-loop gradients, refusal behavior and CPU/RTX prediction/gradient parity
     through the vendor-neutral CUDA/ROCm API.
-    **Outstanding:** Adam's actual model interface, history semantics, checkpoint/config lineage,
-    optimiser/schedule and train/evaluate protocol have not been supplied or integrated. T5.3a
-    therefore proves the seam, not the laboratory experiment or representation skill.
+    **Delivered T5.3b:** `src/forecasting/artifact.py` saves a tensor-only state dict and canonical
+    manifest, verifies model/representation config, model class, checkpoint SHA-256 and tensor
+    schema before safe strict loading, and embeds that identity into forecaster provenance.
+    `evaluation.py` performs bounded-memory, exactly matched held-out comparison with persistence,
+    reporting per-lead/per-variable standardized RMSE/MAE/bias and MSE skill. Physical-unit
+    errors require explicit training scales; combined-variable metrics remain standardized;
+    perfect-persistence skill is undefined rather than infinite. Stream hashes, dataset/split
+    provenance and a single-checkpoint/no-uncertainty claim boundary are recorded. Seven tests
+    include tamper/config-drift refusal and CPU/RTX evaluator parity through the vendor-neutral
+    CUDA/ROCm API.
+    **Outstanding:** Adam's actual model code/interface, weights, history semantics and declared
+    optimiser/schedule have not been supplied or run. Multiple independently trained seeds,
+    uncertainty, temporal dependence and correction-family inference belong to T5.4/T5.5.
+    T5.3b proves a usable integration/evaluation contract, not the laboratory experiment or
+    representation skill.
 *   **T5.4 Run the boundary-support/domain-size study.** Cross representation with nested
     domains at fixed resolution, dates and central New Zealand evaluation window. Report
     full-domain, common-valid-interior and distance-to-boundary skill plus a boundary

@@ -284,7 +284,7 @@ and 35.87/65.91 ms RTX; encoded storage is 1.465 MiB and maximum round-trip erro
 This is **T5.1a-e, not all of T5.1**. Non-NVIDIA hardware evidence, mixed
 precision and compilation acceptance remain outstanding.
 
-### 3.1f Forecasting integration (`src/forecasting/adapter.py`, T5.3a)
+### 3.1f Forecasting integration (`src/forecasting/`, T5.3a-b)
 
 `Forecaster` is the physical-space contract shared by learned adapters and baselines:
 `predict(history, lead_count)` accepts `(B,history,C,H,W)` and returns
@@ -306,6 +306,22 @@ Haar analysis/synthesis in the loop, explicit contract refusals and CPU/RTX pred
 agreement through the vendor-neutral PyTorch `cuda` API. This is integration evidence only. The
 professor's actual architecture, weights/training schedule, history semantics and forecast-skill
 evaluation have not been integrated or run.
+
+T5.3b separates model code, model identity and evaluation. `artifact.py` writes a tensor-only
+PyTorch `state_dict` beside a canonical JSON manifest containing caller-declared model and
+representation configurations, training provenance, fully qualified model class, parameter
+counts, tensor-schema hash and checkpoint SHA-256. Loading verifies these before deserialisation
+and uses `weights_only=True` plus strict state-dict matching. It never imports a class named by
+the manifest. `load_laboratory_forecaster` binds the verified artifact into adapter provenance.
+
+`evaluation.py` streams held-out batches through the forecaster and exact physical-space
+persistence baseline on the same targets. Per lead and variable it reports standardized RMSE,
+MAE, bias and MSE skill (`1 - model_MSE/persistence_MSE`). Physical-unit errors appear only with
+explicit training standard deviations; combined-variable metrics remain standardized and state
+their weighting. Perfect-persistence denominators are undefined (`None`), not infinite.
+Prediction/target hashes, split, counts, dataset provenance, artifact-bearing model provenance
+and a no-uncertainty/no-skill claim boundary form the evaluation record. This is a
+real-model-ready contract, not evidence that the professor's model has been supplied or has skill.
 
 ### 3.2 Synthetic Field Generator & Perturbation Engine (`src/synthetic_generator/`)
 *   **Deterministic Field Generator (`generator.py`):** Generates analytical 2D fields:
@@ -1513,7 +1529,7 @@ See `VERIFICATION.md` for the captured command output behind every statement her
 | Item | Status |
 |---|---|
 | Python venv + dependencies | installed (torch 2.13.0+cu130, numpy 2.2.6, pydantic 1.10.26, SQLAlchemy 2.0.52, xarray 2025.6.1, FastAPI 0.110.3) |
-| Backend test suite | **962 passed, 1 xfailed** (plus 1 skipped: opt-in live GCS) (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17, 351 after T3.5.6, 379 after T3.5.15, 407 after T3.5.19, 449 after T4C.5, 709 after T4A.4, 781 after T4B.4, 855 after T4C.5, 859 after T4C.5c, 882 after T5.1a CPU acceptance, 883 after RTX acceptance, 890 after portable profiles, 911 after T5.1b/D44, 917 after T5.1c, 933 after T5.1d/D45, 946 after T5.1e, 955 after T5.2a, 957 after T5.2b, 962 after T5.3a) |
+| Backend test suite | **969 passed, 1 xfailed** (plus 1 skipped: opt-in live GCS) (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17, 351 after T3.5.6, 379 after T3.5.15, 407 after T3.5.19, 449 after T4C.5, 709 after T4A.4, 781 after T4B.4, 855 after T4C.5, 859 after T4C.5c, 882 after T5.1a CPU acceptance, 883 after RTX acceptance, 890 after portable profiles, 911 after T5.1b/D44, 917 after T5.1c, 933 after T5.1d/D45, 946 after T5.1e, 955 after T5.2a, 957 after T5.2b, 962 after T5.3a, 969 after T5.3b) |
 | Ground-Truth Benchmark Suite | **15 PASS, 0 FAIL, 2 NOT_YET_RUNNABLE** (`python -m src.benchmarks`, exit 0) |
 | Frontend `npm install` + `npm run build` | passes, emits 1,378 modules + real JS/CSS assets (was: 1 module, no assets) |
 | Backend server | starts, serves OpenAPI, all smoke-tested endpoints return 200 |
@@ -1719,6 +1735,7 @@ able to sit three slices out of date.
 | `test_experiments.py` | 3 | declarative sweeps and lineage |
 | `test_exports.py` | 32 | CSV/JSON/NetCDF4/Zarr round trips, embedded provenance, seeded perturbation (D34) |
 | `test_forecasting_adapter.py` | 5 | T5.3a exact persistence, represented autoregressive rollout, backward gradients, deterministic evidence, refusal contracts and CPU/RTX vendor-neutral accelerator parity |
+| `test_forecasting_artifact_evaluation.py` | 7 | T5.3b checkpoint/config integrity, safe strict loading, artifact-bound lineage, persistence-relative metrics, undefined-skill handling, refusal contracts and CPU/RTX vendor-neutral accelerator parity |
 | `test_frontend_contract.py` | 30 | the frontend/backend contract, including transform/dataset readiness claim boundaries, plus the UI integrity guards: no fabricated results, no unqualified validation claims, units and slope uncertainty displayed |
 | `test_grid_operators.py` | 64 | grid metrics, metric-aware gradient/Laplacian, area weighting, physical-wavenumber spectra, D26 |
 | `test_hypothesis.py` | 3 | correlation and categorical hypothesis discovery |
@@ -1736,7 +1753,7 @@ able to sit three slices out of date.
 | `test_wavelet_bank.py` | 27 | T4B.2 expansion through the engine's own parameter matrix, the 1,000-combination guard, decompose_bank / extract_scale_signature, the vertical-bank refusals |
 | `test_transforms.py` | 13 | fft/dct/dwt/dtcwt/hybrid round trips; D1 recorded as a strict xfail |
 | `test_zarr_source.py` | 58 | R13 crop geometry, chunk-hostility prediction, byte counting, cache and provenance round trip, the NetCDF engine (D33), zarr HTTP surface |
-| **total** | **764** | |
+| **total** | **771** | |
 
 ### 7.2h A surrogate null that was not the null it claimed (T4C.5)
 

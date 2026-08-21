@@ -3752,3 +3752,61 @@ degenerate-DTCWT comparison. This run proves the integration seam, deterministic
 autograd path. The tiny residual model is not Adam's model, is not trained to skill and supplies
 no evidence that one representation forecasts better than another. Actual laboratory-model
 configuration/checkpoint lineage and its train/evaluate protocol remain T5.3 outstanding work.
+
+## T5.3b - verified model artifact and persistence-relative evaluation contract
+
+`src/forecasting/artifact.py` records a laboratory model as a tensor-only PyTorch `state_dict`
+and canonical JSON manifest. The record includes caller-declared model/representation config,
+training provenance, fully qualified model class, parameter counts, state-schema hash and full
+checkpoint SHA-256. Loading verifies config and file identity before `torch.load`, uses
+`weights_only=True`, requires a string-to-tensor mapping and performs strict state-dict loading.
+The caller constructs the model; no manifest value is imported or executed. The verified
+artifact is bound into `ForecasterAdapter` provenance.
+
+`src/forecasting/evaluation.py` evaluates a declared non-training split in bounded memory and
+compares every prediction with physical-space persistence on exactly the same target. It reports
+standardized RMSE, MAE, bias and MSE skill score per lead/variable, plus standardized-only
+aggregation. Optional physical errors require explicit train-normalisation standard deviations
+and never combine unlike units. A zero persistence MSE yields undefined (`None`) skill. Counts,
+split/dataset/model provenance and prediction/target stream hashes are retained. The claim
+boundary says this is a single-checkpoint result without multi-seed uncertainty or significance.
+
+Focused and forecasting-path acceptance:
+
+```text
+python -m pytest src/tests/test_forecasting_artifact_evaluation.py \
+  src/tests/test_forecasting_adapter.py -q
+12 passed, 1 warning in 3.64s
+
+python -m pytest src/tests/test_forecasting_artifact_evaluation.py \
+  src/tests/test_forecasting_adapter.py src/tests/test_regional_forecast.py \
+  src/tests/test_training_representations.py -q
+100 passed, 1 warning in 25.60s
+```
+
+The accelerator evaluation test executed on the available RTX through PyTorch's vendor-neutral
+`cuda` device API and passed. That same API is used by ROCm, but AMD hardware remains NOT RUN.
+Seven T5.3b tests cover exact restore, checkpoint tamper refusal, configuration/manifest drift,
+overwrite refusal, artifact-bound provenance, physical/standardized metric semantics,
+perfect-persistence undefined skill, bad split/empty/misaligned refusal and CPU/accelerator parity.
+
+The first full-suite run after adding the modules produced **2 documentation-integrity failures
+and 967 passes**: the new source modules and test file were not yet in `architecture.md`. This was
+an honest ordered gate failure, not a numerical failure. The inventory and claimed totals were
+then updated before the clean rerun recorded below.
+
+The actual professor/laboratory architecture, weights, history semantics and declared training
+recipe have still not been supplied or executed. This slice makes a real model verifiable and
+evaluable when supplied; it provides no present evidence of forecast or representation skill.
+
+Clean full regression after documentation reconciliation:
+
+```text
+969 passed, 1 skipped, 1 xfailed, 6 warnings in 197.56s
+771 test functions across 30 `test_*.py` files
+```
+
+The skip remains the opt-in live-GCS check and the xfail remains the declared historical
+degenerate-DTCWT comparison. `tools/audit_docs.py` reports no undocumented modules/routes, no
+stale inventory rows, 45 defects (42 fixed, D18 partial, D17/D43 open), matching 969/1 suite
+claims and `RESULT: ok`.

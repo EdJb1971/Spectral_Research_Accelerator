@@ -95,7 +95,8 @@ class ForecasterAdapter(Forecaster):
     """
 
     def __init__(self, step_model: nn.Module, representation: RepresentationModule,
-                 model_name: Optional[str] = None) -> None:
+                 model_name: Optional[str] = None,
+                 model_artifact: Optional[Mapping[str, Any]] = None) -> None:
         super().__init__()
         if not isinstance(step_model, nn.Module):
             raise ForecastContractError("step_model must be a torch.nn.Module")
@@ -104,6 +105,7 @@ class ForecasterAdapter(Forecaster):
         self.step_model = step_model
         self.representation = representation
         self.model_name = model_name or type(step_model).__name__
+        self.model_artifact = None if model_artifact is None else dict(model_artifact)
 
     def _step(self, state: torch.Tensor) -> torch.Tensor:
         encoded = self.representation(state)
@@ -143,7 +145,7 @@ class ForecasterAdapter(Forecaster):
 
     def to_provenance(self) -> Mapping[str, Any]:
         parameters = tuple(self.step_model.parameters())
-        return {
+        record = {
             "schema": "forecaster/v1",
             "name": self.model_name,
             "kind": "represented_autoregressive_step_adapter",
@@ -154,6 +156,11 @@ class ForecasterAdapter(Forecaster):
             "parameter_count": int(sum(p.numel() for p in parameters)),
             "trainable_parameter_count": int(sum(p.numel() for p in parameters if p.requires_grad)),
         }
+        if self.model_artifact is not None:
+            record["model_artifact"] = dict(self.model_artifact)
+        else:
+            record["model_artifact"] = None
+        return record
 
 
 class TinyResidualCoefficientModel(nn.Module):

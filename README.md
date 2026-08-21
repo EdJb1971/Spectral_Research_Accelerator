@@ -103,8 +103,8 @@ silently falls back to simulated data. The ERA5 panel reports only manifest-leve
 eligibility until values are opened, and keeps preparation, train-only normalisation and the
 independent-route overlap check as separate claims. **This is not the whole forecasting path:**
 mixed-precision/compilation acceptance, non-NVIDIA hardware evidence, a viable multi-year
-regional source (D43), an actual independent ERA5 overlap run, actual laboratory-model
-integration and the evaluation harness remain outstanding.
+regional source (D43), an actual independent ERA5 overlap run and execution of the actual
+laboratory model remain outstanding.
 
 T5.3a adds the first forecasting seam without pretending the laboratory model has been
 integrated. `PersistenceForecaster` is an exact zero-parameter physical-space baseline.
@@ -128,8 +128,45 @@ prediction = adapter.predict(batch["inputs"], lead_count=batch["targets"].shape[
 ```
 
 T5.3a uses only the final history frame and records that Markov assumption in provenance. The
-actual professor/laboratory architecture, optimiser, schedule and evaluation protocol remain
-unintegrated; no current evidence compares representation skill.
+actual professor/laboratory architecture and its history semantics remain unintegrated; no
+current evidence compares representation skill.
+
+T5.3b adds the model-artifact and held-out evaluation contract around that seam. Laboratory code
+still constructs its own model—the platform never imports executable code named by a manifest.
+The loader verifies the model/representation configuration, model class, parameter schema and
+checkpoint SHA-256 before a strict tensor-only `state_dict` load, then embeds that identity in
+the forecaster and evaluation provenance:
+
+```python
+from src.forecasting import (
+    evaluate_against_persistence, load_laboratory_forecaster,
+    save_laboratory_artifact)
+
+artifact = save_laboratory_artifact(
+    "runs/model-a", existing_model,
+    model_config=model_config,
+    representation_config={"name": "db2", "levels": 3},
+    training_provenance={
+        "dataset": bundle.provenance, "seed": 7103,
+        "optimizer": optimizer_config, "schedule": schedule_config,
+    })
+forecaster, artifact = load_laboratory_forecaster(
+    "runs/model-a", existing_model, make_representation("db2", levels=3),
+    expected_model_config=model_config,
+    expected_representation_config={"name": "db2", "levels": 3})
+result = evaluate_against_persistence(
+    forecaster, test_loader, variables=config.variables,
+    lead_frames=config.lead_frames, split="test",
+    channel_std=bundle.normalisation.std,
+    dataset_provenance=bundle.test.provenance)
+```
+
+Evaluation streams exactly matched model and persistence errors. It reports standardized RMSE,
+MAE, bias and `1 - model_MSE / persistence_MSE` per lead and variable. Physical-unit errors
+appear only when explicit training scales are supplied; cross-variable aggregation stays in
+standardized space. A zero-error persistence denominator produces `null` skill, not infinity.
+Every result says it is a single-checkpoint evaluation without seed uncertainty or significance,
+so this contract makes no scientific-skill claim.
 
 ### Accelerator installation and portability
 
