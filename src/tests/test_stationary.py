@@ -24,7 +24,7 @@ from src.transform_engine.stationary import (
 )
 from src.transform_engine.transforms import SpectralTransformEngine as Decimated
 
-SHAPES = [(32, 32), (31, 33), (64, 48)]
+SHAPES = [(40, 40), (39, 41), (64, 48)]
 LEVELS = [1, 2, 3]
 
 
@@ -64,10 +64,19 @@ def test_dilate_filter_inserts_zeros():
 def test_support_and_interior_grow_with_level():
     """R13 arithmetic: coarse levels exclude far more of the domain than fine ones."""
     supports = [filter_support("db2", j) for j in range(1, 6)]
-    assert supports == sorted(supports) and len(set(supports)) == 5
-    # A 64px crop still leaves a (small) interior for db2 at level 5 ...
-    assert 64 - 2 * valid_interior_halfwidth("db2", 5) == 16
-    # ... but db3 at level 5 exhausts it completely: support 81 px, halfwidth 40.
+    assert supports == [4, 10, 22, 46, 94]
+    # Independent construction: convolve every inherited, dilated low-pass stage. This catches
+    # the D44 failure mode where only the current level's filter was counted.
+    low, _ = get_filters("db2")
+    effective = np.array([1.0])
+    composed_supports = []
+    for level in range(1, 6):
+        effective = np.convolve(effective, dilate_filter(low, 2 ** (level - 1)))
+        composed_supports.append(effective.size)
+    assert composed_supports == supports
+    # A recursive db2 cascade already exhausts a 64px crop at level 5.
+    assert 64 - 2 * valid_interior_halfwidth("db2", 5) < 0
+    # The longer db3 filter exhausts it earlier and by a larger margin.
     assert 64 - 2 * valid_interior_halfwidth("db3", 5) < 0
 
 
@@ -213,7 +222,8 @@ def test_swt_matches_pywavelets_oracle(wavelet, levels):
     pywt = pytest.importorskip("pywt")
 
     torch.manual_seed(0)
-    x = torch.randn(32, 32, dtype=torch.float64)
+    # 48 leaves a genuine interior for the longest db3 level-3 cascade (support 36; D44).
+    x = torch.randn(48, 48, dtype=torch.float64)
     ours = apply_swt2d(PhysicalField(x), levels=levels, wavelet=wavelet, mode="periodic")
     ref = pywt.swt2(x.numpy(), wavelet, level=levels, norm=True, trim_approx=False)
 

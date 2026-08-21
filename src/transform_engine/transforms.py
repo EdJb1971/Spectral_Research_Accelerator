@@ -4,12 +4,16 @@ from typing import Tuple, Dict, Any, List, Optional
 from src.physical_core.field import PhysicalField
 
 def get_dct_matrix(N: int, device: torch.device, dtype: torch.dtype = torch.float32) -> torch.Tensor:
-    n = torch.arange(N, device=device, dtype=dtype).unsqueeze(0)
-    k = torch.arange(N, device=device, dtype=dtype).unsqueeze(1)
+    # Evaluate the deterministic basis in float64 before a float32 cast.  Direct float32
+    # trigonometry accumulated ~8e-5 round-trip error on a 120x80 regional grid; the cast of
+    # the float64 basis reduces that to ~2e-6 and is paid only when a matrix is constructed.
+    work_dtype = torch.float64 if dtype == torch.float32 else dtype
+    n = torch.arange(N, device=device, dtype=work_dtype).unsqueeze(0)
+    k = torch.arange(N, device=device, dtype=work_dtype).unsqueeze(1)
     M = torch.cos(np.pi * k * (n + 0.5) / N)
     M[0, :] *= np.sqrt(1.0 / N)
     M[1:, :] *= np.sqrt(2.0 / N)
-    return M
+    return M.to(dtype=dtype)
 
 class SpectralTransformEngine:
     """

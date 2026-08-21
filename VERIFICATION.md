@@ -3149,3 +3149,238 @@ Therefore no batched, CUDA, mixed-precision, compiled, cached-filter or training
 claim is accepted. Those remain explicit T5.1 acceptance work. No inference about the external
 poster follows from these margins until its exact domain, filters, levels and boundary mode are
 obtained and frozen under T5.0.
+
+---
+
+## T5.1a - training-native raw, FFT and DCT representations
+
+`src/transform_engine/training.py` adds the first accepted part of `RepresentationModule`.
+It accepts `(B,C,H,W)` float32/float64 tensors and keeps synthesis context in an immutable
+`EncodedRepresentation`, rather than mutable module state. Accepted representations are:
+
+* raw identity control;
+* real FFT with real channels followed by imaginary channels; and
+* orthonormal DCT-II/III with fixed-shape registered matrix buffers.
+
+The DCT buffers are reused during every forward/inverse call. Device/dtype migration rebuilds
+the deterministic matrices once at the destination precision; it does not promote previously
+rounded float32 values. The canonical float32 basis is evaluated in float64 before casting.
+
+Focused acceptance command:
+
+```text
+python -m pytest -q src/tests/test_training_representations.py src/tests/test_transforms.py
+57 passed, 1 skipped, 1 xfailed, 1 warning in 2.70s
+```
+
+At the time of this CPU audit, the skip was the explicit accelerator parity test because the
+venv contained a CPU-only PyTorch wheel. That historical result is superseded by the real-GPU
+verification below. The xfail is the pre-existing degenerate DTCWT regression arm.
+
+A single-machine microbenchmark measured combined encode+inverse after five warmups and over
+30 samples. It is descriptive, not a portable performance guarantee:
+
+```text
+PyTorch 2.13.0+cpu; 6 threads; CPU; float32; shape (4,5,120,80)
+representation  median ms  p90 ms  encoded bytes  max reconstruction error
+raw                0.0043    0.0046        768000  0
+fft                0.5728    0.7136        787200  1.1920929e-06
+dct                0.6779    0.9684        768000  1.90734863e-06
+```
+
+The tests cover batch/item equivalence, odd and even widths, explicit complex packing,
+float32/float64 reconstruction, forward/inverse `gradcheck`, immutable model-output context,
+cache pointer reuse, module dtype migration, malformed inputs and factory errors. Haar, db2,
+SWT and DTCWT are not present in the training factory; T5.1 remains **PARTIAL**.
+
+### Full suite after T5.1a
+
+```text
+882 passed, 2 skipped, 1 xfailed, 6 warnings in 125.16s
+712 test functions across 29 files
+```
+
+The second skip is the CUDA test described above; the pre-existing live-GCS test remains the
+first. The full suite and documentation integrity checks are green. This result accepts the
+CPU raw/FFT/DCT slice only; it does not close T5.1 or provide forecast evidence.
+
+---
+
+## T5.1a accelerator verification - RTX CUDA, vendor-neutral test seam
+
+The workstation was not CPU-only. `nvidia-smi` reported an NVIDIA GeForce RTX 5050 Laptop GPU
+with 8,151 MiB, but the venv held `torch 2.13.0+cpu`. The official CUDA 13.0 wheel was installed:
+
+```text
+torch: 2.13.0+cu130
+compiled CUDA runtime: 13.0
+driver-advertised CUDA runtime: 13.3
+device: NVIDIA GeForce RTX 5050 Laptop GPU
+compute capability: 12.0
+device memory: 7.96 GiB
+```
+
+The former CUDA-specific test is now a vendor-neutral accelerator test. It enumerates available
+PyTorch devices, moves each representation through ordinary `.to(device)` semantics, compares
+raw/FFT/DCT coefficients and reconstructions with CPU, and performs backward propagation with
+finite-gradient assertions. PyTorch ROCm deliberately exposes AMD devices through its `cuda`
+API; `core/device.available_devices` now records `accelerator_runtime = rocm|cuda|mps` plus the
+compiled CUDA/HIP versions so AMD execution cannot be mislabeled as NVIDIA.
+
+Focused result on the installed RTX:
+
+```text
+python -m pytest -q src/tests/test_training_representations.py src/tests/test_executor.py
+52 passed, 1 warning in 23.35s
+```
+
+No accelerator test was skipped. A CUDA-event timing of 200 encode+inverse iterations after 20
+warmups on float32 `(4,5,120,80)` measured:
+
+```text
+representation  mean ms  encoded bytes  max reconstruction error
+raw               0.0052        768000  0
+fft               0.1733        787200  1.1920929e-06
+dct               0.1465        768000  1.9073486e-06
+```
+
+This verifies NVIDIA CUDA for T5.1a. The code path contains no NVIDIA-specific tensor calls and
+is compatible by construction with a supported PyTorch ROCm build, but AMD ROCm, Apple MPS and
+Windows DirectML hardware have not been run and are not claimed as verified. T5.1 remains
+partial because the training wavelet representations are still outstanding.
+
+### Full suite on the accelerator-enabled build
+
+```text
+PyTorch 2.13.0+cu130
+883 passed, 1 skipped, 1 xfailed, 6 warnings in 129.27s
+712 test functions across 29 files
+```
+
+The sole skip is the explicitly opt-in live-GCS transport check. The accelerator test executed
+and passed; it is no longer part of the skip count.
+
+---
+
+## Portable laptop/local-GPU/HPC execution profiles
+
+The execution policy now exposes `auto`, `cpu`, `accelerator` and `hpc` profiles. Tests assert
+CPU forcing, conflict refusal, accelerator-without-device refusal, Slurm/PBS detection,
+scheduler local-rank placement, login-node refusal, profile environment handling and a real
+doctor smoke report. The obsolete `experiment_engine.get_execution_device` implementation now
+delegates to the same policy used by API health and experiments.
+
+Focused result:
+
+```text
+python -m pytest -q src/tests/test_executor.py src/tests/test_training_representations.py
+59 passed, 1 warning in 23.26s
+```
+
+Actual human-readable doctor output on this workstation:
+
+```text
+SpectralEarth execution doctor
+  platform: Windows AMD64
+  PyTorch:  2.13.0+cu130
+  profile:  auto -> cuda:0
+  runtime:  cuda
+  smoke cpu:     PASS
+  smoke cuda:0:  PASS
+```
+
+The doctor performs no network operation and has no scheduler client. `hpc` recognises only an
+active Slurm, PBS or LSF allocation and refuses to run on a login node. This makes the same
+codebase easy to run locally or within an allocated job without making local functionality
+depend on cluster availability. Remote submission and artifact transfer are not implemented.
+
+### Full suite after portable profiles and doctor
+
+```text
+890 passed, 1 skipped, 1 xfailed, 6 warnings in 128.00s
+719 test functions across 29 files
+```
+
+The suite ran under the accelerator-enabled build with the default `auto` profile selecting the
+RTX. The only skip remains live GCS. A simulated Slurm allocation
+(`SLURM_JOB_ID=doctor-simulation`, `SLURM_LOCALID=0`) resolved `hpc -> cuda:0` and passed CPU and
+CUDA smoke plus `--require-accelerator`; this verifies allocation parsing and placement logic,
+not a real scheduler submission or cluster performance result.
+
+---
+
+## T5.1b - batched decimated Haar/db2 and the corrected cascade budget (D44)
+
+`HaarRepresentation` and `DB2Representation` now accept `(B,C,H,W)` float32/float64 tensors,
+use the canonical filter definitions, and return one recursively packed Mallat plane. The
+boundary convention is explicit PyWavelets-compatible `periodization`; bottom/right dyadic
+padding and the inverse crop are immutable synthesis metadata, and callers may refuse implicit
+padding. No mutable per-call state is held on the module.
+
+The numerical acceptance is independent where it matters:
+
+* level-one LL/LH/HL/HH bands match `pywt.dwt2(..., mode="periodization")` in float64;
+* multilevel packed energy matches a separate PyWavelets decomposition;
+* odd and even shapes reconstruct, batch execution equals item execution, and float64
+  `gradcheck` passes through encode and inverse;
+* the vendor-neutral accelerator test checks CPU/RTX coefficients, reconstruction and backward
+  gradients for Haar and db2 as well as raw/FFT/DCT.
+
+The focused regression result after the implementation and R13 correction was:
+
+```text
+python -m pytest -q src/tests/test_training_representations.py src/tests/test_stationary.py src/tests/test_zarr_source.py
+189 passed, 1 skipped, 5 warnings in 18.94s
+```
+
+The skip is the opt-in live-GCS transport test, not accelerator coverage.
+
+### D44: the earlier generic edge budget was wrong
+
+The previous SWT/Zarr formula counted only the filter newly applied at level `j`:
+`(L-1)2^(j-1)+1`. A recursive coefficient has already passed through every earlier low-pass
+stage. Directly composing the dilated filters gives the complete support
+`1+(L-1)(2^j-1)`. A test now performs that convolution independently and compares its measured
+length with `filter_support`.
+
+Consequences recorded rather than softened:
+
+```text
+wavelet/filter   corrected margins per side
+Haar, levels 1-4       1, 2, 4, 8
+db2, levels 1-4        2, 5, 11, 23
+14 taps, levels 1-4    7, 20, 46, 98
+```
+
+With the declared minimum of 128 valid pixels, the generic four/five-level crop floors are now
+512/1024, not 256/512. The historical 257x257 WeatherBench transfer remains valid evidence of
+transport amplification, but it is only geometrically adequate for three generic levels under
+R13. Earlier D40/D41 verification text is retained as history and superseded by this correction.
+
+### Honest performance status
+
+Float32 encode+inverse on `(4,5,120,80)`, three levels, measured after warmup:
+
+```text
+representation   CPU mean ms   RTX mean ms   encoded bytes   max error
+haar                  5.6843        4.8761          768000    9.54e-7
+db2                   9.2046       13.7383          768000    9.54e-7
+```
+
+The clear implementation issues multiple `torch.roll` kernels per tap. It is accepted as the
+numerical reference path, not yet as the final cheap training-loop path: db2 is measurably
+slower on this RTX than on CPU. Fused convolution/compilation and mixed-precision acceptance
+remain explicit T5.1 work rather than being hidden behind the fact that CUDA executes.
+
+### Full suite after T5.1b and D44
+
+```text
+911 passed, 1 skipped, 1 xfailed, 6 warnings in 130.10s
+726 test functions across 29 files
+```
+
+The only skip remains the opt-in live-GCS transport check. The xfail remains the declared
+degenerate DTCWT regression arm. On the first full attempt, the Windows process-pool stress
+test had one transient worker memory-allocation failure and the frontend contract exposed its
+stale expected crop floor. The contract was corrected; both checks then passed together, and
+the complete clean result above is from a fresh full-suite rerun.

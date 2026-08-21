@@ -24,6 +24,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from src.core import device as device_policy
+from src.core import doctor as execution_doctor
 from src.core.errors import InvalidParameterError
 from src.core.executor import (
     ExecutorStartupError,
@@ -203,9 +204,8 @@ def test_device_selection_falls_back_to_cpu_and_honours_an_override(monkeypatch)
 def test_requesting_an_unavailable_device_says_so(monkeypatch):
     """Silently falling back to CPU would make a 'ran on GPU' claim untrue."""
     monkeypatch.setenv(device_policy.DEVICE_ENV_VAR, "cuda")
-    if torch.cuda.is_available():
-        pytest.skip("CUDA is available here, so the failure path cannot be exercised")
-    with pytest.raises(RuntimeError, match="CUDA is not available"):
+    monkeypatch.setattr(torch.cuda, "is_available", lambda: False)
+    with pytest.raises(RuntimeError, match="CUDA/ROCm is not available"):
         device_policy.select_device()
 
 
@@ -221,6 +221,88 @@ def test_device_describe_is_a_provenance_record():
                 "torch_num_threads", "n_workers", "thread_budget_per_worker"):
         assert key in record, key
     assert record["available"]["cpu"] is True
+    assert record["available"]["accelerator_runtime"] in (None, "cuda", "rocm", "mps")
+    if getattr(torch.version, "hip", None):
+        assert record["available"]["accelerator_runtime"] == "rocm"
+    elif torch.cuda.is_available():
+        assert record["available"]["accelerator_runtime"] == "cuda"
+
+
+def test_scheduler_context_recognises_allocations_without_a_cluster_client():
+    assert device_policy.scheduler_context({})["scheduler"] is None
+    assert device_policy.scheduler_context({
+        "SLURM_JOB_ID": "8123", "SLURM_LOCALID": "2"
+    }) == {"scheduler": "slurm", "job_id": "8123", "local_rank": 2}
+    assert device_policy.scheduler_context({
+        "PBS_JOBID": "44.server", "OMPI_COMM_WORLD_LOCAL_RANK": "1"
+    }) == {"scheduler": "pbs", "job_id": "44.server", "local_rank": 1}
+
+
+def test_cpu_profile_is_portable_and_rejects_a_conflicting_device(monkeypatch):
+    monkeypatch.delenv(device_policy.DEVICE_ENV_VAR, raising=False)
+    profile = device_policy.resolve_profile("cpu")
+    assert profile.device == "cpu"
+    assert profile.fallback_used is False
+    monkeypatch.setenv(device_policy.DEVICE_ENV_VAR, "cuda:0")
+    with pytest.raises(RuntimeError, match="conflicts"):
+        device_policy.resolve_profile("cpu")
+
+
+def test_accelerator_profile_refuses_a_silent_cpu_fallback(monkeypatch):
+    monkeypatch.delenv(device_policy.DEVICE_ENV_VAR, raising=False)
+    monkeypatch.setattr(
+        device_policy, "_select_device_raw", lambda prefer=None, run_idx=0: torch.device("cpu")
+    )
+    with pytest.raises(RuntimeError, match="only CPU is available"):
+        device_policy.resolve_profile("accelerator")
+
+
+def test_hpc_profile_refuses_to_run_on_a_login_node(monkeypatch):
+    monkeypatch.delenv(device_policy.DEVICE_ENV_VAR, raising=False)
+    monkeypatch.setattr(
+        device_policy, "scheduler_context",
+        lambda environ=None: {"scheduler": None, "job_id": None, "local_rank": 0},
+    )
+    with pytest.raises(RuntimeError, match="active Slurm, PBS or LSF allocation"):
+        device_policy.resolve_profile("hpc")
+
+
+def test_hpc_profile_maps_scheduler_local_rank_to_a_device(monkeypatch):
+    monkeypatch.delenv(device_policy.DEVICE_ENV_VAR, raising=False)
+    monkeypatch.setattr(
+        device_policy, "scheduler_context",
+        lambda environ=None: {"scheduler": "slurm", "job_id": "99", "local_rank": 3},
+    )
+    seen = []
+    monkeypatch.setattr(
+        device_policy, "_select_device_raw",
+        lambda prefer=None, run_idx=0: seen.append(run_idx) or torch.device("cuda:1"),
+    )
+    profile = device_policy.resolve_profile("hpc")
+    assert seen == [3]
+    assert profile.scheduler == "slurm"
+    assert profile.job_id == "99"
+    assert profile.local_rank == 3
+    assert profile.device == "cuda:1"
+
+
+def test_select_device_honours_the_profile_environment(monkeypatch):
+    monkeypatch.delenv(device_policy.DEVICE_ENV_VAR, raising=False)
+    monkeypatch.setenv(device_policy.PROFILE_ENV_VAR, "cpu")
+    assert device_policy.select_device().type == "cpu"
+    monkeypatch.setenv(device_policy.PROFILE_ENV_VAR, "not-a-profile")
+    with pytest.raises(ValueError, match="unknown execution profile"):
+        device_policy.select_device()
+
+
+def test_execution_doctor_runs_cpu_and_every_detected_accelerator():
+    report = execution_doctor.build_report("auto")
+    assert report["schema_version"] == 1
+    assert report["smoke"]["cpu"]["status"] == "PASS"
+    assert report["ready"] is True
+    if torch.cuda.is_available():
+        assert report["smoke"]["cuda:0"]["status"] == "PASS"
+    assert report["resolved_profile"]["device"] == str(device_policy.select_device())
 
 
 def test_determinism_record_states_what_was_actually_achieved():

@@ -12,6 +12,8 @@ pydantic>=1.10.0,<2.0.0
 sqlalchemy>=2.0.0
 
 # Deep Learning and Tensor Core
+# PyPI may resolve this to a CPU-only wheel. Install the appropriate official CUDA or ROCm
+# wheel first when accelerator execution is required; README.md records the verified command.
 torch>=2.0.0,<3.0.0
 
 # Scientific & Grid Computing

@@ -91,7 +91,7 @@ def _spec(store, **overrides):
 def test_edge_exclusion_reproduces_the_r13_table():
     """R13 uses the conservative radius and agrees with the transform implementation."""
     margins = [zs.edge_exclusion(j, taps=14) for j in (1, 2, 3, 4)]
-    assert margins == [7, 13, 26, 52]
+    assert margins == [7, 20, 46, 98]
 
     # Exercise the real shared family as well as the published 14-tap sizing convention.
     assert [zs.edge_exclusion(j, taps=4) for j in (1, 2, 3)] == [
@@ -103,38 +103,38 @@ def test_valid_interior_reproduces_the_r13_table():
     # R13's corrected table: N=64 has 50 valid px at level 1 and none at level 4.
     assert zs.valid_interior(64, 1) == 50
     assert zs.valid_interior(64, 4) <= 0
-    assert zs.valid_interior(256, 4) == 152
-    assert zs.valid_interior(512, 4) == 408
+    assert zs.valid_interior(256, 4) == 60
+    assert zs.valid_interior(512, 4) == 316
 
 
 def test_minimum_crop_size_matches_the_roadmaps_numbers():
-    """R13: practical minimum 256 for four dyadic levels, 512 for five."""
-    assert zs.minimum_crop_size(4) == 256
-    assert zs.minimum_crop_size(5) == 512
+    """D44: recursive support makes the practical floors 512 and 1024."""
+    assert zs.minimum_crop_size(4) == 512
+    assert zs.minimum_crop_size(5) == 1024
 
 
 def test_crop_too_small_is_refused_and_names_the_minimum():
     with pytest.raises(FieldTooSmallError) as excinfo:
         zs.check_crop_size(64, 64, levels=4)
     message = str(excinfo.value)
-    assert "256" in message, "the refusal must name the minimum size"
-    assert "52 px per side" in message
+    assert "512" in message, "the refusal must name the minimum size"
+    assert "98 px per side" in message
     # And it must say which dimension to give up instead - R13 is explicit that the grid is
     # never the thing to shrink.
     assert "never the grid" in message
 
 
 def test_crop_at_the_floor_is_accepted_and_reports_its_interior():
-    report = zs.check_crop_size(256, 256, levels=4)
+    report = zs.check_crop_size(512, 512, levels=4)
     assert report["ok"] is True
-    assert report["minimum_size"] == 256
-    assert report["valid_interior_by_level"][4] == 152
+    assert report["minimum_size"] == 512
+    assert report["valid_interior_by_level"][4] == 316
 
 
 def test_a_crop_that_passes_four_levels_can_still_fail_five():
-    zs.check_crop_size(256, 256, levels=4)
+    zs.check_crop_size(512, 512, levels=4)
     with pytest.raises(FieldTooSmallError):
-        zs.check_crop_size(256, 256, levels=5)
+        zs.check_crop_size(512, 512, levels=5)
 
 
 # ======================================================== crop specification
@@ -635,8 +635,8 @@ def test_catalogue_endpoint_reports_stores_and_the_network_gate(client):
     assert body["network_env_var"] == zs.NETWORK_ENV_VAR
     assert body["missing_dependencies"] == []
     # The R13 floor is published, so a caller can size a crop before requesting one.
-    assert body["r13_minimum_crop"]["4"] == 256
-    assert body["r13_minimum_crop"]["5"] == 512
+    assert body["r13_minimum_crop"]["4"] == 512
+    assert body["r13_minimum_crop"]["5"] == 1024
 
 
 def test_inspect_endpoint_reports_hostility_without_transferring_data(client, hostile_store):
@@ -653,9 +653,9 @@ def test_inspect_endpoint_reports_hostility_without_transferring_data(client, ho
     assert body["cached"] is False
     assert body["spec"]["content_key"]
     # A crop below the R13 floor is *reported*, not raised: the caller asked what this crop
-    # would cost, and "too small, minimum 256x256" is the answer to that question.
+    # would cost, and "too small, minimum 512x512" is the answer to that question.
     assert body["geometry"]["ok"] is False
-    assert body["geometry"]["minimum_size"] == 256
+    assert body["geometry"]["minimum_size"] == 512
     # And the response hands back the command that would do it for real.
     assert "materialise" in body["cli"]
 

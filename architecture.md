@@ -96,12 +96,17 @@ boundary conventions and provenance schemas; adapters move a selected batch item
 analysis spine when diagnostics are required. This separation gives training code a normal
 PyTorch interface without creating a second scientific definition of each transform.
 
-**Current readiness boundary.** The existing FFT, DCT, SWT and real DTCWT execute with PyTorch
-operations and a CPU smoke test has propagated finite gradients through forward/inverse
-reconstruction. That is encouraging implementation evidence, not training acceptance. They
-still reject `(B,C,H,W)` input; filter tensors and DCT matrices are rebuilt per call; CUDA,
-mixed precision, complex-gradient behaviour, batching, compilation, throughput and activation
-memory have not been accepted. No `RegionalForecastDataset` or laboratory-model adapter exists.
+**Current readiness boundary.** `src/transform_engine/training.py` now implements the accepted
+first slice: raw, FFT and DCT modules over `(B,C,H,W)`, with immutable per-batch synthesis
+context, exact-shape validation, differentiable inverse operations and cached DCT buffers. FFT
+packs real then imaginary coefficients on the channel axis rather than using discontinuous
+magnitude/phase. Haar, db2, SWT and DTCWT remain 2D analysis transforms and are not registered
+as training representations. CPU/accelerator reconstruction, coefficient parity and backward
+gradients are verified on an RTX 5050 Laptop GPU with PyTorch `2.13.0+cu130`. The accelerator
+test is vendor-neutral: an AMD ROCm build appears through PyTorch's `cuda` device API, while
+provenance distinguishes runtime `rocm` from `cuda`. ROCm, MPS and DirectML hardware are NOT
+RUN; mixed precision, compilation and wavelet-pyramid layouts remain unaccepted. No
+`RegionalForecastDataset` or laboratory-model adapter exists.
 
 ### 1.3 Boundary-support hypothesis for the New Zealand comparison *(proposed study)*
 
@@ -175,6 +180,37 @@ Provides forward and inverse spectral transforms, working as a core mathematical
     *   `swt_energy_fractions()` is the R3-compliant scale summary. Note that the construction applies a `2**level` amplitude gain, so **raw** per-level energies are not comparable across levels — measured on one field, raw energies read 3302/3192/2740 (apparently flat) while normalised they read 826/200/43 (clean octave decay). Same data, opposite conclusion.
 *   **Hybrid Spectral Representation:** Separates fields into a low-frequency component (reconstructed via low-pass FFT filtering) and a high-frequency residual component (reconstructed via Haar DWT). Vectorized with `torch.meshgrid` to avoid loops.
     *   *Known defect:* the forward pass decomposes as `field = low + residual`, but `inverse_hybrid` recombines as `mixing_weight * low + (1 - mixing_weight) * high`. This is not the inverse of the forward split for **any** value of `mixing_weight`, so the `hybrid` transform always reports a non-zero reconstruction MSE for algebraic rather than physical reasons. Fixed in Task 3.5.5.
+
+### 3.1 Training representations (`src/transform_engine/training.py`, T5.1a-b)
+
+`RepresentationModule` is the PyTorch forecasting seam; it does not replace the analytical
+registry. `RawRepresentation`, `FFTRepresentation`, `DCTRepresentation`,
+`HaarRepresentation` and `DB2Representation` accept float32 or
+float64 `(B,C,H,W)` tensors and return an `EncodedRepresentation`. The latter carries the
+model-ready tensor plus immutable representation name, original shape, layout and synthesis
+metadata. `with_values(model_output)` preserves that context without storing mutable call state
+on the module, so concurrent calls cannot overwrite one another.
+
+The FFT uses `rfft2` and packs real channels followed by imaginary channels. This avoids the
+branch cut and zero-magnitude singularity of magnitude/phase while remaining consumable by an
+ordinary real-valued model. DCT spatial shape is fixed at module construction and its two
+orthonormal cosine matrices are registered buffers: forward/inverse allocate no matrices, and
+`.to(device/dtype)` regenerates the deterministic cache once at the destination precision.
+The shared `get_dct_matrix` evaluates float32 bases in float64 before casting, reducing measured
+120x80 float32 round-trip maximum error from roughly `8e-5` to below `2e-6`.
+
+**T5.1b adds the decimated wavelet reference path.** Haar and db2 use the canonical filter
+definitions, PyWavelets-compatible `periodization` phase, explicit bottom/right dyadic padding,
+and a recursively packed Mallat plane (`LL|LH / HL|HH`). The immutable context records padding,
+filter length and the corrected accumulated-cascade margin at every level. Odd shapes reconstruct
+after an explicit crop; implicit padding can be refused. Level-one bands agree with independent
+PyWavelets oracles, multilevel energy agrees, float64 `gradcheck` passes, and reconstruction and
+backward gradients have CPU/RTX-CUDA evidence. The implementation is accepted as the clear
+numerical reference, **not yet as the final cheap per-training-step kernel**: the unfused
+`torch.roll` construction makes db2 slower on the measured RTX than CPU.
+
+This is **T5.1a-b, not all of T5.1**. Batched SWT/DTCWT, fused or compiled wavelet kernels,
+non-NVIDIA hardware evidence, mixed precision and compilation acceptance remain outstanding.
 
 ### 3.2 Synthetic Field Generator & Perturbation Engine (`src/synthetic_generator/`)
 *   **Deterministic Field Generator (`generator.py`):** Generates analytical 2D fields:
@@ -302,10 +338,24 @@ startup on this platform (`spawn` re-imports torch per worker), so it only pays 
 tasks or genuinely GIL-bound work. `GET /api/v1/health` reports this rationale alongside the
 available backends, so the choice is informed rather than guessed.
 
-`device.py` selects CUDA -> MPS -> CPU with an explicit `SPECTRAL_DEVICE` override, and
+`device.py` selects CUDA/ROCm -> MPS -> CPU with an explicit `SPECTRAL_DEVICE` override, and
 **refuses** a device that is not present rather than silently falling back - a run that claims
 to have used a GPU must have used one. `describe()` records the device, thread counts and
 determinism mode into every run's `execution` column.
+
+The portable profile layer adds `SPECTRAL_PROFILE=auto|cpu|accelerator|hpc`. `auto` is the app
+default and preserves a complete CPU fallback; `accelerator` makes a missing accelerator an
+error rather than an unnoticed slow run; `hpc` requires an active Slurm, PBS or LSF allocation
+and maps scheduler local rank onto the available CUDA/ROCm devices. It deliberately cannot
+submit or cancel work, so a home laptop never depends on cluster reachability. The compatibility
+wrapper in `experiment_engine/engine.py` now delegates to this one policy rather than retaining
+its former CUDA/CPU-only selector.
+
+`src/core/doctor.py` is the zero-network preflight: `python -m src.core.doctor [--json]` reports
+OS/Python/PyTorch, compiled CUDA or HIP runtime, devices, scheduler context, resolved profile,
+and actual CPU/accelerator FFT reconstruction plus backward-gradient smoke tests. Readiness is
+defined for the selected profile; failures on an optional backend do not make an explicitly
+selected CPU profile unusable. `--require-accelerator` provides the stricter cluster/job guard.
 
 SQLite is configured per-connection for concurrency: **WAL** journal mode (so readers and one
 writer proceed together) and a 30 s **busy_timeout** (without which contention raises
@@ -465,10 +515,11 @@ bytes transferred recorded. The inversion is the entire point: the remote layout
 timestep per chunk, the cache is all frames in one chunk, and a cross-scale read of a region
 becomes a single seek.
 
-**R13 enforced, not documented.** `edge_exclusion(j) = floor(((L-1)·2^(j-1)+1)/2)` uses the
-conservative effective-support radius and reproduces R13's corrected table (7/13/26/52 px per
-side at levels 1–4 for a 14-tap filter), and
-`minimum_crop_size` returns R13's own figures — 256 for four levels, 512 for five. A crop below
+**R13 enforced, not documented.** `edge_exclusion(j) = floor((1 + (L-1)·(2^j-1))/2)` uses the
+support of the complete inherited low-pass cascade, not merely the filter applied at level `j`.
+For a 14-tap filter it gives 7/20/46/98 px per side at levels 1–4, and
+`minimum_crop_size` returns 512 for four levels and 1024 for five when 128 valid pixels are
+required. A crop below
 the floor is **refused**, naming the minimum and the measured valid interior, because a 64x64
 crop has *zero* valid interior at level 4: cross-scale analysis on it is not noisy but
 arithmetically impossible, and every edge coefficient looks exactly like a strong, localised,
@@ -1364,8 +1415,8 @@ See `VERIFICATION.md` for the captured command output behind every statement her
 
 | Item | Status |
 |---|---|
-| Python venv + dependencies | installed (torch 2.13.0, numpy 2.2.6, pydantic 1.10.26, SQLAlchemy 2.0.52, xarray 2025.6.1, FastAPI 0.110.3) |
-| Backend test suite | **859 passed, 1 xfailed** (plus 1 skipped: the opt-in live-GCS check) (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17, 351 after T3.5.6, 379 after T3.5.15, 407 after T3.5.19, 449 after T4C.5, 709 after T4A.4, 781 after T4B.4, 855 after T4C.5) |
+| Python venv + dependencies | installed (torch 2.13.0+cu130, numpy 2.2.6, pydantic 1.10.26, SQLAlchemy 2.0.52, xarray 2025.6.1, FastAPI 0.110.3) |
+| Backend test suite | **911 passed, 1 xfailed** (plus 1 skipped: opt-in live GCS) (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17, 351 after T3.5.6, 379 after T3.5.15, 407 after T3.5.19, 449 after T4C.5, 709 after T4A.4, 781 after T4B.4, 855 after T4C.5, 859 after T4C.5c, 882 after T5.1a CPU acceptance, 883 after RTX acceptance, 890 after portable profiles, 911 after T5.1b/D44) |
 | Ground-Truth Benchmark Suite | **15 PASS, 0 FAIL, 2 NOT_YET_RUNNABLE** (`python -m src.benchmarks`, exit 0) |
 | Frontend `npm install` + `npm run build` | passes, emits 1,378 modules + real JS/CSS assets (was: 1 module, no assets) |
 | Backend server | starts, serves OpenAPI, all smoke-tested endpoints return 200 |
@@ -1412,7 +1463,7 @@ artefact in this repository.
 | D15 | `data_layer/adapters.py:150,162`, `experiment_engine/engine.py` | **The "seams" described in Section 5 are not extension points.** `_get_simulated_fallback` is a hard-coded if/elif over three dataset ids, `list_datasets` iterates a hard-coded literal list, and `_execute_action` is a 13-branch if/elif chain. Adding a data source or a pipeline action requires editing core engine files. | **FIXED** T3.5.15 |
 | D16 | `physical_core/field.py:20` | `PhysicalField.__init__` force-casts to float32 with no opt-out. Acceptable for visualisation; marginal for surrogate ensemble statistics, log-log power-law fits, and mutual-information/transfer-entropy estimation in Phase 4C. | **FIXED** T3.5.16 |
 | D17 | `analysis_engine/diagnostics.py:29,56`, `analysis_engine/decomposition.py:81`, `boundary_lab/boundary.py:31,123` | **Per-bin Python loops over full arrays.** Five functions bin values by radius or distance using `for k in range(...)` with a fresh boolean mask over the *entire* array each iteration - `O(bins x H x W)` where `O(H x W)` suffices via `bincount`/`scatter_add`. On a 512x512 field (`max_r = 256`) `compute_radial_psd` performs ~256 full passes, roughly 67M element visits instead of 262k. These are the innermost functions of the Phase 4C loop, called inside a surrogate ensemble; unfixed, they alone decide whether the platform is usable on a laptop. | T3.5.20 |
-| D18 | `experiment_engine/engine.py:18-22` | `get_execution_device` probes CUDA only. No Apple-silicon MPS branch and no explicit CPU-thread configuration, so a large class of development laptops silently runs the slowest available path. | **PARTIAL** T3.5.21 - selection chain, override, refusal path and thread budget implemented and tested on CPU; the CPU/CUDA/MPS agreement check cannot be run on this CPU-only machine and is not claimed |
+| D18 | `experiment_engine/engine.py:18-22` | `get_execution_device` probes CUDA only. No Apple-silicon MPS branch and no explicit CPU-thread configuration, so a large class of development laptops silently runs the slowest available path. | **PARTIAL** T3.5.21 - selection chain, override, refusal path and thread budget implemented; CUDA execution is now verified on the RTX 5050 for T5.1a, but whole-platform CPU/CUDA agreement and ROCm/MPS hardware remain unverified |
 
 ### 7.2b Defects found by executing the code (T3.5.0)
 
@@ -1446,6 +1497,7 @@ code paths that `architecture.md` previously described as implemented and rigoro
 | D41 | `data_layer/zarr_source.py` vs `transform_engine/stationary.py` (found while building T4C.1) | **Two implementations of rule R13 disagreed by one pixel per side at level 1.** `zarr_source.valid_interior` floored the half-integer radius of an even-length filter while `stationary.valid_interior_halfwidth` used the conservative effective-support halfwidth. The crop module therefore declared one contaminated pixel per side valid at level 1. `edge_exclusion` now derives and halves the full effective support, the R13 table is corrected (`N=64, level 1: 52 -> 50`), and the existing geometry test asserts agreement with the SWT implementation so the definitions cannot drift independently again. | **FIXED** T4C.5a |
 | D42 | `data_layer/adapters.py`, `experiment_engine/actions.py` (found preparing T4C.6) | **Real ERA5 existed beside the Phase 4 pipeline, not inside it.** The Zarr API could inspect and materialise a crop, but `slice_sequence` supplied only a dataset id; the registered source requires the crop specification and therefore could never serve the action that every Phase 4 stage uses. The adapter also assumed `lat`/`lon`, while WeatherBench uses `latitude`/`longitude`. Parameterised source options now flow through the action without entering the unsafe id-only cache, coordinates are normalised onto the physical spine, and source request/provenance survives on the sequence. An offline WeatherBench-shaped test runs cached crop -> `FieldSequence` -> registered action -> artifact and asserts observational, non-simulated provenance. | **FIXED** T4C.5b |
 | D43 | `data_layer/zarr_source.py` catalogue / T4C.6 data design | **The real-data gate is not laptop-feasible through the catalogued WeatherBench layouts.** The supposedly compromise 0.7-degree store is chunked `(8,13,512,256)`: every eight-frame read transfers all levels and the globe. Live metadata inspection for a three-year, one-variable, 255x255 request estimated 29.88 GB fetched for 1.14 GB wanted (26.2x); the 0.25-degree archive is worse. A short record would fit the machine but leaves the independent transfer-entropy partitions estimator-starved. Fix: add and independently verify a temporally deep, spatially tiled ERA5 source (or direct regional CDS acquisition), then freeze the crop and run T4C.6. Do not reduce the sample or edge-validity requirements to fit the old storage layout. | **OPEN** |
+| D44 | `transform_engine/stationary.py:filter_support` / `data_layer/zarr_source.py:edge_exclusion` (found while building T5.1b) | **The generic R13 budget discarded inherited low-pass support.** It counted only the filter newly applied at level `j`, `(L-1)2^(j-1)+1`, although an SWT coefficient has passed through every preceding low-pass stage. The complete cascade is `1+(L-1)(2^j-1)`. For db2 the level-4 margin changes from 12 to 23 pixels; for the declared generic 14-tap budget it changes from 52 to 98, moving the four/five-level 128-valid-pixel floors from 256/512 to 512/1024. Both implementations, their tests, the tier table and R13 documentation now use the accumulated support. An independent convolution of the dilated filters tests the composition rather than merely repeating the formula. Historical D40/D41 measurements remain recorded but are superseded wherever they relied on the generic table. | **FIXED** T5.1b |
 
 **Root cause common to D20, D23, D25 and D2:** the transform engine — the mathematical core of
 the platform — had **no test file at all**. `src/tests/test_transforms.py` now exists (36 cases
@@ -1565,7 +1617,7 @@ able to sit three slices out of date.
 | `test_coefficient_field.py` | 40 | T4B.1 acceptance: parent-grid alignment, perfect reconstruction per family, lineage-safe summary; DTCWT upsampling declared; LevelBank and level slicing (T4B.4) |
 | `test_documentation.py` | 18 | this document and roadmap.md against the code |
 | `test_dtcwt.py` | 28 | Kingsbury q-shift DTCWT: primitives vs reference, two oracles, orientation, shift invariance, D1 head-to-heads |
-| `test_executor.py` | 26 | Executor backends, seed derivation, ordering, device/thread policy, SQLite concurrency, byte-identical sweeps |
+| `test_executor.py` | 33 | Executor backends, seed derivation, ordering, portable CPU/accelerator/HPC profiles, doctor, device/thread policy, SQLite concurrency, byte-identical sweeps |
 | `test_experiments.py` | 3 | declarative sweeps and lineage |
 | `test_exports.py` | 32 | CSV/JSON/NetCDF4/Zarr round trips, embedded provenance, seeded perturbation (D34) |
 | `test_frontend_contract.py` | 28 | the frontend/backend contract, plus the UI integrity guards: no fabricated results, no unqualified validation claims, units and slope uncertainty displayed |
@@ -1577,13 +1629,14 @@ able to sit three slices out of date.
 | `test_registries.py` | 29 | registries, error taxonomy, fallback chain, and the T3.5.15 plugin acceptance criterion |
 | `test_stationary.py` | 19 | undecimated SWT: shift invariance, perfect reconstruction, frame constant, PyWavelets oracle, R3 normalisation |
 | `test_statistics.py` | 36 | FDR procedures vs scipy, surrogate preservation properties, calibration on a true null, stationarity gate, screening |
+| `test_training_representations.py` | 23 | T5.1a-b raw/FFT/DCT/Haar/db2 batch contract, reconstruction, immutable context, PyWavelets periodization oracle, Mallat packing, support metadata, gradcheck, cached DCT buffers, dtype migration and vendor-neutral accelerator parity |
 | `test_cross_scale.py` | 25 | T4C.3 acceptance plus the frozen T4C.6 protocol: injected cascade/null twin, Theiler windows, support floor, power check, split sufficiency, embargo and three-state replication verdict |
 | `test_scale_signature.py` | 28 | T4C.1 acceptance and the analytic values of every measure on white noise; threshold sensitivity measured; R13 interior refusals; T4C.4 power-law core |
 | `test_surrogate_null.py` | 14 | T4C.2 acceptance: spectrum preserved, phase destroyed, organised scores and fBm does not; the two calibrations (wrong null, linear lag) |
 | `test_wavelet_bank.py` | 27 | T4B.2 expansion through the engine's own parameter matrix, the 1,000-combination guard, decompose_bank / extract_scale_signature, the vertical-bank refusals |
 | `test_transforms.py` | 13 | fft/dct/dwt/dtcwt/hybrid round trips; D1 recorded as a strict xfail |
 | `test_zarr_source.py` | 58 | R13 crop geometry, chunk-hostility prediction, byte counting, cache and provenance round trip, the NetCDF engine (D33), zarr HTTP surface |
-| **total** | **696** | |
+| **total** | **726** | |
 
 ### 7.2h A surrogate null that was not the null it claimed (T4C.5)
 
@@ -1622,7 +1675,7 @@ Two further consequences worth recording:
 ### 7.3 Precision caveats (not defects, but do not overstate them)
 
 *   `compute_ssim` is single-window global SSIM, not locally-windowed SSIM (Section 3.2).
-*   ~~`get_execution_device` round-robins `run_idx % num_gpus`, but sweeps run strictly sequentially, so multi-GPU assignment is cosmetic.~~ **Addressed in T3.5.19/T3.5.21:** runs are distributed through the Executor seam and `device.select_device(run_idx=...)` spreads them across CUDA devices. Untested on real multi-GPU hardware - this machine is CPU-only, and that is stated rather than implied.
+*   ~~`get_execution_device` round-robins `run_idx % num_gpus`, but sweeps run strictly sequentially, so multi-GPU assignment is cosmetic.~~ **Addressed in T3.5.19/T3.5.21:** runs are distributed through the Executor seam and `device.select_device(run_idx=...)` spreads them across CUDA/ROCm devices. Single-device CUDA is verified on the RTX 5050; multi-GPU, ROCm and MPS execution remain untested.
 *   The DWT is **decimated**: each level halves resolution, so scale *n* lives on a different grid from the parent field. This is correct for compression and reconstruction, but it makes cross-scale spatial reasoning awkward - the reason Phase 3.5 adds an undecimated SWT alongside it.
 *   `PhysicalField` remains intentionally **strictly 2D** and raises on any other rank
     (`field.py:19`). Phase 4A added `FieldSequence` for `(time, y, x)` records rather than

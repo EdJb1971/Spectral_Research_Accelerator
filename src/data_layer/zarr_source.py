@@ -127,25 +127,25 @@ HOSTILE_AMPLIFICATION = 4.0
 DEFAULT_FILTER_TAPS = 14
 
 #: Smallest valid interior worth analysing, in pixels per side. This is a judgement, so it
-#: is a named constant rather than a literal: 128 reproduces the roadmap's R13 figures
-#: exactly (four levels -> 256, five levels -> 512), which is the calibration for it.
+#: is a named constant rather than a literal: with the accumulated cascade support, 128
+#: valid pixels requires 512 for four levels and 1024 for five (D44).
 MIN_VALID_INTERIOR = 128
 
 
 def edge_exclusion(level: int, taps: int = DEFAULT_FILTER_TAPS) -> int:
     """Pixels contaminated per side at an undecimated level (roadmap R13).
 
-    The effective support is ``(L - 1) * 2**(j-1) + 1`` pixels.  Conservatively exclude
+    The recursive cascade support is ``1 + (L - 1) * (2**j - 1)`` pixels. Conservatively exclude
     ``support // 2`` per side, which is equivalent to taking the ceiling of the possibly
     half-integer radius.  This deliberately matches
     :func:`transform_engine.stationary.valid_interior_halfwidth`; flooring would declare a
     contaminated pixel valid for an even-length filter at level 1 (D41).
 
-    For L=14 the margins at levels 1-4 are 7, 13, 26 and 52 pixels per side.
+    For L=14 the margins at levels 1-4 are 7, 20, 46 and 98 pixels per side.
     """
     if level < 1:
         raise InvalidParameterError("level", level, "an integer >= 1")
-    support = (taps - 1) * (2 ** (level - 1)) + 1
+    support = 1 + (taps - 1) * (2 ** level - 1)
     return int(support // 2)
 
 
@@ -159,8 +159,8 @@ def minimum_crop_size(levels: int, taps: int = DEFAULT_FILTER_TAPS,
     """Smallest crop that leaves ``min_interior`` valid pixels at the *coarsest* level.
 
     Rounded up to a power of two, because the dyadic transforms want one and because it
-    matches how a researcher thinks about crop sizes. Gives 256 for four levels and 512 for
-    five, which is exactly what R13 states.
+    matches how a researcher thinks about crop sizes. With the accumulated cascade support it
+    gives 512 for four levels and 1024 for five (D44).
     """
     needed = min_interior + 2 * edge_exclusion(levels, taps)
     size = 1

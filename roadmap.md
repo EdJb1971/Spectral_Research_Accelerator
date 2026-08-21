@@ -50,7 +50,7 @@ skill, show the counterexamples, or report that no robust relationship survives.
 ## 1. Honest Technical Status
 
 Verified against the code on 2026-08-21. Every claim here is backed by captured output in
-`VERIFICATION.md`; `architecture.md` Section 7 holds the full defect ledger (D1-D43, of which **40 fixed, 1 partial (D18), 2 open (D17, D43)**).
+`VERIFICATION.md`; `architecture.md` Section 7 holds the full defect ledger (D1-D44, of which **41 fixed, 1 partial (D18), 2 open (D17, D43)**).
 
 The numbers in this table are checked by `src/tests/test_documentation.py`, which parses them
 out of this file and compares them against the source. That guard exists because this table
@@ -60,9 +60,9 @@ status section, it is a memory.
 
 | Area | Real status |
 |---|---|
-| **Phase progress** | **Phase 3.5 complete** (25 tasks). **Phase 4A, 4B and 4C complete** as implementable work: T4A.1-4, T4B.1-4, T4C.1-5. **Not done:** T4C.6, the gate review itself, which requires a run on real ERA5 and is deliberately not written from synthetic evidence; and the whole of **4D-4H** (~27 tasks: feature detection and tracking, constellations, transition mining, `RepresentationScore`, the optional learned encoder). Per-task evidence blocks sit under each task below; a task without a **DONE** label has not been started. |
+| **Phase progress** | **Phase 3.5 complete** (25 tasks). **Phase 4A, 4B and 4C complete** as implementable work: T4A.1-4, T4B.1-4, T4C.1-5. **T5.1 is partial:** T5.1a-b accepts raw/FFT/DCT/Haar/db2 training representations; SWT/DTCWT and the remaining cross-device/performance acceptance remain. **Not done:** T4C.6, the real-ERA5 gate review; 4D-4H; T5.0 and T5.2-7. Per-task evidence blocks sit under each task below; a task without a **DONE** or **PARTIAL** label has not been started. |
 | **Accessibility** | **Zero, measured.** `0` `aria-*` or `role` attributes and `0` keyboard handlers across `frontend/src`. No focus management. The UI is usable with a mouse and by nobody else. Not scheduled; recorded so it cannot be mistaken for an oversight. |
-| Backend test suite | **859 passed, 1 xfailed.** Plus one skipped by design: the live-GCS check is opt-in. Trajectory: 19 written / 1 failing / uncollectable -> 65 -> 152 -> 222 -> 271 -> 351 -> 407 -> 449 -> 478 -> 535 -> 548 -> 593 -> 642 -> 647 -> 709 -> 781 -> 855 -> 859. |
+| Backend test suite | **911 passed, 1 xfailed.** Plus one explicit skip: the opt-in live-GCS check. Trajectory: 19 written / 1 failing / uncollectable -> 65 -> 152 -> 222 -> 271 -> 351 -> 407 -> 449 -> 478 -> 535 -> 548 -> 593 -> 642 -> 647 -> 709 -> 781 -> 855 -> 859 -> 882 -> 883 -> 890 -> 911. |
 | Ground-Truth Benchmark Suite | **15 PASS, 0 FAIL, 2 NOT_YET_RUNNABLE.** Nine datasets with declared known answers, five of them nulls. CI-ready via `python -m src.benchmarks` (exit 0). |
 | Backend compute modules | **Written, executed and tested.** `physical_core` carries `GridSpec` + metric-aware operators; `analysis_engine` gained `spectra.py` and `climatology.py`; `transform_engine` gained the undecimated `stationary.py` and a real `dtcwt.py`; `statistics/` and `core/` are new packages. |
 | Physical units and wavenumbers | **Correct as of T3.5.13.** Gradients metric-aware, spectra on a physical `k` axis, domain statistics area-weighted, and every quantity carries its units. Previously all of it was pixel-space and unlabelled (D13). |
@@ -73,7 +73,7 @@ status section, it is a memory.
 | Statistical validity | **Controlled as of T4C.5, and calibrated as of T4C.3** (D8 closed). Bonferroni / Holm / BH / BY with the dependence assumption reported alongside every q-value, five surrogate null models, an ESS correction, a calibrated stationarity gate and an explicit power check. The D8 scenario went from 3 reported "discoveries" on 9-sample noise to 0, while a real effect among 19 nulls at n=40 is still recovered. T4C.3 added the two calibrations that decide whether a lagged test means anything at all: a linear lag against a circularly stationary null falsely rejects **20 of 20** AR(1) records where the null is true, and a shift null that keeps the simultaneous alignment caps the achievable p-value at about 0.005 regardless of ensemble size. |
 | Registries / extension seams | **Registry-based as of T3.5.15** (D15 closed). Transforms, pipeline actions and data sources are decorator-registered with capability metadata; the plugin acceptance test registers a third-party transform without editing `src/`. |
 | Error reporting | **Taxonomy in place as of T3.5.14** (D14 closed). `SpectralEarthError` subclasses carry their own status code and client-safety, so an HTTP status follows from the error *kind* rather than from the call site. |
-| HPC / executor seam | **In place as of T3.5.19.** Serial / thread / process backends behind one interface, submission-order results, thread-budget control and SQLite WAL + `busy_timeout`. Measured honestly: on this workload **serial beat thread(4) and process(4)**, because PyTorch already parallelises the FFT across cores. Cross-device CPU/CUDA/MPS agreement is **not** verified — this machine is CPU-only (D18, partial). |
+| HPC / executor seam | **In place as of T3.5.19.** Serial / thread / process backends behind one interface, submission-order results, thread-budget control and SQLite WAL + `busy_timeout`. Measured honestly: on this workload **serial beat thread(4) and process(4)**, because PyTorch already parallelises the FFT across cores. T5.1a-b CPU/RTX-CUDA parity is verified; whole-platform and ROCm/MPS agreement are not (D18 remains partial). |
 | Schema migrations | **In place as of T3.5.8** (D32 closed). Two Alembic revisions, `ensure_schema` at startup, drift against the ORM checked by test. `create_all` had silently left the repository's own database unqueryable. PostgreSQL is verified only as *rendered* DDL, not executed. |
 | FastAPI surface | **27 endpoints**, executed and smoke-tested. CORS, health and collection endpoints all added (T3.5.2, T3.5.10). Health now reports device, executor, SQLite pragmas and schema revision. |
 | React frontend | **Nine modules, wired to the backend, and no longer able to fabricate a result** (T3.5.22/T3.5.23). Export in CSV/JSON/NetCDF4/Zarr/PNG/SVG with provenance embedded in the file; units, spectral convention and slope uncertainty displayed; simulated data labelled where it is used. Health/device/executor/schema, the benchmark suite, the data-source chain with its simulated flags, the ERA5 crop inspector and per-hypothesis statistics are all reachable now; `tsc` is clean and the build emits 1,378 modules. A contract test asserts every fetched path is served and every field the UI reads exists. **Rendered in a browser and confirmed working by the user on 2026-08-20** (T3.5.25) - the platform was started, both servers came up, and the nine tabs were reported working. No screenshots were captured, so that confirmation is a **user report rather than an artefact in the repository**; T3.5.0 asked for a screenshot per tab and that literal evidence is still absent. |
@@ -89,7 +89,8 @@ history, not current status, and this table replaces it.
 Phases 1 and 2 are done as *code* and now substantially done as *verified software*. Phase 3
 is partial. Phase 3.5's 25 implementation tasks are complete; the literal screenshot evidence
 requested by T3.5.0 is still absent, and D18's cross-device agreement remains partial because
-this machine is CPU-only. Phase 4A-4C.5 are complete; the real-ERA5 T4C.6 gate review and all
+only the T5.1a-b slice has CPU/CUDA parity evidence and ROCm/MPS are unmeasured. Phase 4A-4C.5
+are complete; the real-ERA5 T4C.6 gate review and all
 of 4D-4H remain undone. See Section 4 for per-task evidence.
 
 ---
@@ -211,19 +212,19 @@ Regional analysis is the **primary scientific unit**, not merely a cost-saving c
 
 **Two hard requirements:**
 
-1.  **Scale-dependent edge exclusion.** Feature detection, constellation extraction and every statistic operate only on the **valid interior**: `interior = N - 2 * halfwidth(j)`, where for an undecimated transform at level *j* with an *L*-tap filter `halfwidth(j) ~ (L-1) * 2^(j-1) / 2`. The mask is per-scale - coarse scales exclude far more than fine ones. The platform **computes and reports** the valid interior per scale rather than assuming it, since the exact figure depends on the chosen filter.
+1.  **Scale-dependent edge exclusion.** Feature detection, constellation extraction and every statistic operate only on the **valid interior**: `interior = N - 2 * halfwidth(j)`. For a recursively undecimated transform, the complete cascade support is `1 + (L-1)(2^j-1)`; counting only the current level's dilated filter discards the inherited low-pass support (D44). The mask is per-scale - coarse scales exclude far more than fine ones. The platform **computes and reports** the valid interior per scale rather than assuming it, since the exact figure depends on the chosen filter.
 
 2.  **Crops must be sized from the coarsest scale, and the numbers are larger than intuition suggests.** Valid interior width for a 14-tap filter:
 
     | Level (scale) | Excluded per side | N=64 | N=128 | N=256 | N=512 |
     |---|---|---|---|---|---|
     | 1 (2) | 7 px | 50 | 114 | 242 | 498 |
-    | 2 (4) | 13 px | 38 | 102 | 230 | 486 |
-    | 3 (8) | 26 px | 12 | 76 | 204 | 460 |
-    | 4 (16) | 52 px | **none** | 24 | 152 | 408 |
-    | 5 (32) | 104 px | **none** | **none** | 48 | 304 |
+    | 2 (4) | 20 px | 24 | 88 | 216 | 472 |
+    | 3 (8) | 46 px | **none** | 36 | 164 | 420 |
+    | 4 (16) | 98 px | **none** | **none** | 60 | 316 |
+    | 5 (32) | 202 px | **none** | **none** | **none** | 108 |
 
-    **A 64x64 crop has zero valid interior at scale 16 and about 12x12 px at scale 8.** Cross-scale analysis - the entire premise of Phase 4C - is therefore *impossible* on a 64x64 region. Practical minimum is **256x256 for four dyadic levels and 512x512 for five**. The `laptop` tier is constrained on frames, bank breadth and surrogate count, **never** by shrinking the grid below its valid-interior floor.
+    **A 64x64 crop has zero valid interior already at scale 8.** Cross-scale analysis - the entire premise of Phase 4C - is therefore *impossible* on a 64x64 region. With the declared 128-pixel minimum valid interior, the practical floor is **512x512 for four dyadic levels and 1024x1024 for five**. The `laptop` tier is constrained on frames, bank breadth and surrogate count, **never** by shrinking the grid below its valid-interior floor.
 
 **Acceptance:** a test asserts that a field with a deliberately discontinuous edge produces **no** detected features inside the valid interior, and that requesting more levels than the crop can support raises rather than silently returning contaminated results.
 
@@ -292,8 +293,8 @@ Implemented as **tiers** - one code path, config only, no cluster-only branches:
 | Tier | Grid | Levels | Frames | Bank | Surrogates | Target runtime |
 |---|---|---|---|---|---|---|
 | `smoke` (CI, every commit) | 64x64 | 2 | 8 | 2 families | 8 | seconds |
-| `laptop` | 256x256 | 4 | 200 | 3 families | 50 | minutes |
-| `workstation` | 512x512 | 5 | 1000 | full bank | 200 | hours |
+| `laptop` | 256x256 | 3 | 200 | 3 families | 50 | minutes |
+| `workstation` | 512x512 | 4 | 1000 | full bank | 200 | hours |
 | `cluster` | native (1440x721) | 6 | full archive | full bank | 1000 | Phase 6 |
 
 **Grid sizes are floors set by R13, not preferences.** The `smoke` tier is explicitly a *mechanism* test at 2 levels - it verifies the code runs, and its results are **never** scientifically meaningful, because 64x64 cannot support cross-scale analysis. Any tier is scaled down by cutting frames, bank breadth or surrogate count - never by cutting the grid below its valid-interior floor.
@@ -347,6 +348,7 @@ The extension points the plan commits to. Each is a protocol with a registry, so
 | **Scorer term** | `@register_scorer` | 4G | representation scoring | add a score term without touching the scorer |
 | **Forecaster** | `Forecaster.predict` | 4G | 4G baselines, Phase 5 | persistence / advection / FourCastNet behind one interface |
 | **Executor** | `Executor.submit/map/gather` | T3.5.19 | everything parallel | serial / thread / process / celery / slurm |
+| **Execution profile** | `resolve_profile` + `python -m src.core.doctor` | T5.1 portability slice | app, experiments, local/HPC preflight | implemented: auto/cpu/accelerator plus allocation-guarded hpc; no remote submission |
 | **Artifact store** | `ArtifactStore.put/get` | T4A.3 | everything large | local disk now, object store later |
 | **Database** | SQLAlchemy session | exists | everything | genuinely already decoupled |
 
@@ -559,7 +561,7 @@ The raw material is not a constraint: **ERA5** (ECMWF/Copernicus reanalysis, hou
 
 This is also excellent provenance (E5): a crop is *exactly* specifiable as `{store URI, dataset version, variable, time range, bbox, levels}` plus a content hash of the materialised snapshot - far stronger than "someone put a `.nc` in a folder", and it makes any finding reproducible by anyone with an internet connection.
 
-**Acceptance:** the adapter reports the remote store's chunk structure and **warns when the requested access pattern is chunk-hostile**; a 256x256 region (the R13 floor for four levels) over one year materialises within the `laptop` tier budget with recorded bytes-transferred; the adapter refuses a crop too small for the requested number of levels, naming the minimum; re-requesting an identical crop hits the cache with zero network traffic; the crop specification round-trips from the lineage record to an identical re-materialisation.
+**Acceptance:** the adapter reports the remote store's chunk structure and **warns when the requested access pattern is chunk-hostile**; a 512x512 region (the corrected R13 floor for four levels) over one year is costed against the `laptop` tier budget with recorded bytes-transferred; the adapter refuses a crop too small for the requested number of levels, naming the minimum; re-requesting an identical crop hits the cache with zero network traffic; the crop specification round-trips from the lineage record to an identical re-materialisation.
 
 **Met, with one criterion measured and found unachievable — reported rather than reworded.**
 
@@ -574,9 +576,9 @@ Verified against the **live** WeatherBench 2 archive (24 ERA5 stores enumerated 
     network, because level is inside the chunk.
 *   **Recorded bytes transferred.** 257x257, 4 levels, 8 days at 6 h: predicted 1,727.6 MB
     uncompressed, **measured 951.3 MB wire in 186.3 s**, cached to 19.0 MB.
-*   **The R13 floor is refused, not warned about.** `edge_exclusion` reproduces R13's
-    conservatively rounded table (7/13/26/52 px at levels 1–4, corrected when D41 closed in
-    T4C.5a) and `minimum_crop_size` returns R13's 256 and 512.
+*   **The R13 floor is refused, not warned about.** After D44, `edge_exclusion` accumulates the
+    complete inherited cascade (7/20/46/98 px at levels 1–4 for 14 taps) and
+    `minimum_crop_size` returns 512 and 1024 for four and five levels.
     A 64x64 crop at four levels raises, naming the minimum, the contaminated width and which
     dimension to constrain instead.
 *   **A repeat request transfers zero bytes**, asserted as `== 0` rather than as "fast": the
@@ -592,8 +594,9 @@ connection sustains even with 16 concurrent chunk fetches. This is a property of
 chunk-1 layout and of consumer bandwidth, not of the adapter. R13 already says which dimension
 to give up: *"the `laptop` tier is constrained on frames, bank breadth and surrogate count,
 **never** by shrinking the grid below its valid-interior floor."* So the honest laptop-tier ERA5
-crop at 0.25 degree is 256x256 x 4 levels x days, not x a year, and the adapter now says so with
-numbers before any download starts.
+crop at 0.25 degree is 256x256 x 3 levels x days, or 512x512 x 4 levels x fewer days, not x a
+year. The historical 257x257 transfer remains valid transport evidence, but D44 means it was
+not valid evidence of a four-level scientific floor. The adapter now says so before download.
 
 **Two defects found while doing it.**
 
@@ -618,7 +621,7 @@ Define the `Executor` protocol with `serial`/`thread`/`process` backends; route 
 
 **Met.** `core/executor.py` (serial/thread/process, submission-order results,
 `SeedSequence.spawn` seeding, per-worker thread budget) and `core/device.py`
-(CUDA -> MPS -> CPU with an explicit override). The sweep is split into
+(CUDA/ROCm -> MPS -> CPU with an explicit override). The sweep is split into
 `execute_run_payload` - which computes a run with **no database access**, so it can cross a
 process boundary - and serial persistence in the parent. 28 tests in `test_executor.py`;
 suite 379 -> 407.
@@ -644,20 +647,21 @@ of 4 runs COMPLETED with the fourth naming its bad parameter.
 Replace all five per-bin loops with `torch.bincount` / `scatter_add` single-pass reductions (`compute_radial_psd`, `compute_spectral_coherence`, `decompose_by_boundary`, `analyze_boundary_artefacts`, and the Tukey window construction). Batch the transform over `(time, scale, orientation)` as tensor dimensions rather than Python iteration.
 **Acceptance:** bit-comparable results to the current implementation (within float tolerance) on the benchmark suite, plus a recorded speed-up on a 512x512 field. This is a prerequisite for the `laptop` tier being honest rather than aspirational.
 
-### T3.5.21 Device and thread policy *(D18, implements E9)* - **PARTIAL** (CPU verified; the CPU/CUDA/MPS agreement half cannot be run on this machine)
-Extend `get_execution_device` to CUDA -> MPS -> CPU with an explicit override; configure CPU thread counts; make every kernel device-agnostic (the current code mixes CPU-constructed tensors with a selected device in places).
+### T3.5.21 Device and thread policy *(D18, implements E9)* - **PARTIAL** (CPU and T5.1a CUDA verified; whole-platform/ROCm/MPS agreement remains)
+Extend `get_execution_device` to CUDA/ROCm -> MPS -> CPU with an explicit override; configure CPU thread counts; make every kernel device-agnostic (the current code mixes CPU-constructed tensors with a selected device in places).
 **Acceptance:** the `smoke` tier passes identically on CPU, CUDA and MPS, with results agreeing within float tolerance across all three.
 
 **Partially met, and the gap is stated rather than papered over.** `core/device.py` implements
-the CUDA -> MPS -> CPU chain with a `SPECTRAL_DEVICE` override, configures CPU/BLAS thread
+the CUDA/ROCm -> MPS -> CPU chain with a `SPECTRAL_DEVICE` override, configures CPU/BLAS thread
 counts, and **refuses** a requested device that is not present instead of silently falling
 back to CPU - a run that claims a GPU must have used one. `to_device` centralises moving
 nested structures, addressing the mixed CPU/device tensor construction D18 flagged.
 
-**Not verified on CUDA or MPS:** this machine is CPU-only (`torch 2.13.0+cpu`). The
-cross-device agreement half of the acceptance cannot be executed here and is *not* claimed.
-The tests assert the selection logic, the refusal path and the thread budget; the CPU/CUDA/MPS
-comparison remains open and is the one part of this task still outstanding.
+The venv now uses `torch 2.13.0+cu130`, and T5.1a-b raw/FFT/DCT/Haar/db2 reconstruction, coefficients and
+backward gradients agree between CPU and the RTX 5050 within declared tolerance. PyTorch ROCm
+uses the same `cuda` device API; `device.available_devices` records the compiled runtime as
+`rocm` or `cuda` so provenance remains vendor-correct. The full smoke tier, AMD ROCm hardware
+and Apple MPS remain unmeasured, so D18 is still partial.
 
 ### T3.5.22 Surface the backend in the UI *(closes the gap between capability and reach)* - **DONE**
 Wire the endpoints that had no consumer into the React workbench: health (device, executor,
@@ -1249,15 +1253,40 @@ implemented unless its acceptance evidence appears in `VERIFICATION.md`.
     optimiser, rollout and parameter counts. Poster-derived estimates are not substitutes.
     **Acceptance:** a versioned, hashable protocol object can reproduce the declared design and
     rejects an incomplete configuration.
-*   **T5.1 Build `RepresentationModule`.** Provide raw, FFT, DCT, Haar, db2, SWT and DTCWT
+*   **T5.1 Build `RepresentationModule` -- PARTIAL (T5.1a-b raw/FFT/DCT/Haar/db2 accepted).** Provide raw, FFT, DCT, Haar, db2, SWT and DTCWT
     modules over `(B,C,H,W)` with forward/inverse operations, stable structured outputs,
     explicit complex packing and boundary/support metadata. Filters or cosine matrices are
     cached/registered by device and dtype rather than rebuilt each step. The analysis and
     training paths consume one canonical filter definition.
     **Acceptance:** batch-versus-item equivalence, reconstruction tolerance, `gradcheck`,
-    forward-and-inverse gradient flow, CPU/CUDA parity where CUDA is available, device/dtype
+    forward-and-inverse gradient flow, CPU/accelerator parity on every available PyTorch
+    backend, device/dtype
     migration, deterministic repeatability, mixed-precision policy, and measured runtime,
-    activation memory and cache reuse. A CPU-only machine records CUDA as NOT RUN, never PASS.
+    activation memory and cache reuse. An unavailable backend is recorded as NOT RUN, never PASS.
+    **Delivered T5.1a:** `training.py` defines immutable `EncodedRepresentation`, the abstract
+    module contract, a stable factory and accepted raw/FFT/DCT implementations. FFT uses
+    real/imaginary channel packing; DCT uses registered, migration-aware buffers built from the
+    canonical matrix definition. Batch/item equivalence, odd/even reconstruction, gradcheck,
+    malformed-context refusal, cache reuse and float32/float64 migration are tested. CPU/RTX
+    CUDA coefficient parity, reconstruction and backward gradients are verified through a
+    vendor-neutral accelerator test.
+    **Delivered T5.1b:** Haar/db2 implement an invertible, recursively packed Mallat plane with
+    explicit periodic boundary convention and dyadic padding/crop metadata. Level-one bands
+    agree with PyWavelets `periodization`; multilevel energy, batch/item equivalence, odd-shape
+    reconstruction, `gradcheck`, CPU/RTX coefficient parity and backward gradients are tested.
+    The support metadata uses the corrected complete cascade from D44. This clear `torch.roll`
+    implementation is the accepted numerical reference, not yet the accepted per-step
+    performance kernel: measured db2 encode+inverse was 9.20 ms on CPU and 13.74 ms on this RTX
+    for float32 `(4,5,120,80)` at three levels.
+    **Outstanding:** batched SWT/DTCWT, a fused/compiled wavelet path with training-loop
+    throughput acceptance, AMD ROCm/MPS hardware evidence, mixed precision and compilation
+    policy.
+    **Portable execution companion delivered:** `SPECTRAL_PROFILE=auto` uses acceleration when
+    available and remains fully CPU-capable; `cpu` and `accelerator` make intent explicit;
+    `hpc` recognises Slurm/PBS/LSF allocation and local rank while refusing login-node use.
+    `python -m src.core.doctor` performs CPU and detected-accelerator FFT/backward smoke tests
+    and emits attachable JSON. This is local placement/preflight, not cluster submission or
+    artifact synchronisation; those require Adam's actual HPC contract.
 *   **T5.2 Build `RegionalForecastDataset`.** Materialise and rechunk a provenance-carrying New
     Zealand crop with aligned 850-hPa `t/q/u/v/z`, timestamps and grid coordinates. Yield input
     histories and lead-time targets as tensors; apply `split_temporal` and a lag-sufficient

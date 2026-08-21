@@ -30,11 +30,8 @@ from src.core.errors import (
 )
 
 def get_execution_device(run_idx: int = 0) -> torch.device:
-    if torch.cuda.is_available():
-        num_gpus = torch.cuda.device_count()
-        device_id = run_idx % num_gpus
-        return torch.device(f"cuda:{device_id}")
-    return torch.device("cpu")
+    """Compatibility wrapper around the single portable device policy."""
+    return device_policy.select_device(run_idx=run_idx)
 
 def _resolvable_names(params: Dict[str, Any], step_outputs: Dict[str, Any]) -> List[str]:
     """Everything a `{...}` reference could legitimately name right now."""

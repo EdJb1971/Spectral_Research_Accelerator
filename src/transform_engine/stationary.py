@@ -99,9 +99,17 @@ def dilate_filter(f: torch.Tensor, dilation: int) -> torch.Tensor:
 
 
 def filter_support(wavelet: str, level: int) -> int:
-    """Full spatial support, in pixels, of the effective filter at `level`."""
+    """Full parent-grid support of the *recursive* coefficient at ``level``.
+
+    Level ``j`` is not produced by one dilated filter acting on the original field: it acts on
+    the low-pass output of all preceding levels. Supports therefore accumulate as
+    ``1 + (L-1) * sum(2**m, m=0..j-1)``. The former single-stage formula silently discarded
+    that inherited support (D44).
+    """
+    if level < 1:
+        raise ValueError("level must be >= 1, got %r" % level)
     h, _ = _FILTERS[wavelet.lower()]
-    return (len(h) - 1) * (2 ** (level - 1)) + 1
+    return 1 + (len(h) - 1) * (2 ** level - 1)
 
 
 def valid_interior_halfwidth(wavelet: str, level: int) -> int:

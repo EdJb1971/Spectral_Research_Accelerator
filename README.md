@@ -54,9 +54,53 @@ The first Phase 5 target is deliberately practical: an importable PyTorch path f
 regional workflow used by the motivating research -- batches shaped `(B, C, H, W)`, aligned
 850-hPa `t/q/u/v/z` inputs and targets, strict temporal splits with an embargo, differentiable
 forward/inverse representations, and a small evaluation harness around an existing lab model.
-This is a **planned interface, not a current feature**. The present transforms accept one 2D
-`PhysicalField`; the viable multi-year regional data source and `torch.utils.data.Dataset` are
-also still outstanding.
+The training-native path in `src/transform_engine/training.py` now includes raw, FFT, DCT and
+multilevel decimated Haar/db2 modules over `(B,C,H,W)`. They reconstruct differentiably and expose immutable
+synthesis context for a model prediction. FFT uses explicit real/imaginary channel packing and
+DCT matrices are cached module buffers; Haar/db2 use a PyWavelets-compatible periodisation
+phase and a model-ready Mallat coefficient plane. **This is not the whole forecasting path:**
+batched SWT/DTCWT, optimized wavelet kernels, non-NVIDIA hardware acceptance, the viable multi-year regional source,
+`torch.utils.data.Dataset`, model adapter and evaluation harness remain outstanding.
+
+### Accelerator installation and portability
+
+The source is vendor-neutral at the PyTorch device boundary. NVIDIA CUDA and AMD ROCm both use
+`torch.device("cuda")` in PyTorch; execution provenance records whether the compiled runtime is
+`cuda` or `rocm` so an AMD run is not mislabeled as NVIDIA. Apple MPS remains part of the device
+policy. The current Windows workstation is verified with an RTX 5050 Laptop GPU using:
+
+```powershell
+.\.venv\Scripts\python.exe -m pip install --upgrade `
+  --index-url https://download.pytorch.org/whl/cu130 torch==2.13.0+cu130
+```
+
+An AMD system must install the official ROCm PyTorch build appropriate to its supported OS and
+ROCm version; the representation code and accelerator test require no NVIDIA-specific calls.
+ROCm hardware and Windows DirectML have **not** been tested in this repository, so portability
+to those runtimes is designed but not claimed as verified.
+
+### One workflow from laptop to HPC
+
+Run the same local capability check on any machine:
+
+```powershell
+.\.venv\Scripts\python.exe -m src.core.doctor
+.\.venv\Scripts\python.exe -m src.core.doctor --json
+```
+
+`SPECTRAL_PROFILE` controls placement without changing scientific code:
+
+* `auto` (default) uses an available accelerator and otherwise falls back to CPU;
+* `cpu` guarantees the dependency-free path, useful on an unsupported AMD laptop;
+* `accelerator` requires CUDA/ROCm or MPS and refuses a silent CPU fallback; and
+* `hpc` runs only inside a detected Slurm, PBS or LSF allocation, uses scheduler local rank for
+  GPU placement, and refuses accidental execution on a login node.
+
+For example, Adam can use `auto` on his laptop and set `SPECTRAL_PROFILE=hpc` inside an
+allocated cluster job. The application does not connect to, submit to or depend on the HPC
+system; the same repository and commands run in both places. Remote submission, environment
+modules/containers and artifact transfer remain site-specific work until the actual cluster
+contract is known.
 
 A priority experiment will test whether transform rankings change with domain size and valid
 interior. This is recorded as a falsifiable support-length/boundary hypothesis, not as a claim

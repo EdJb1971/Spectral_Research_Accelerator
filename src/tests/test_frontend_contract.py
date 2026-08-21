@@ -179,7 +179,7 @@ def test_zarr_catalogue_payload_has_the_fields_the_form_reads(client):
         assert key in body
     first = next(iter(body["stores"].values()))
     assert "note" in first, "the store picker shows the note; it must be present"
-    assert body["r13_minimum_crop"]["4"] == 256
+    assert body["r13_minimum_crop"]["4"] == 512
 
 
 def test_zarr_inspect_payload_has_the_nested_keys_the_ui_reads(client, tmp_path):
