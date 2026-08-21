@@ -124,11 +124,14 @@ def test_evaluation_reports_exact_matched_persistence_skill_and_physical_units()
         dataset_provenance={"split_contract_hash": "fixed-test-split"})
 
     assert result.sample_count == 3 and result.batch_count == 1
+    assert result.schema == "forecast-evaluation/v2"
+    assert result.lead_durations_hours == (6.0, 12.0)
     assert model.training  # evaluation restores caller state
     assert result.metrics["1"]["t"]["standardized_rmse"] < 1e-6
     assert result.metrics["2"]["q"]["standardized_rmse"] < 1e-6
     assert result.metrics["1"]["t"]["mse_skill_score_vs_persistence"] > 0.999999
     assert result.metrics["1"]["t"]["physical_unit"] == "K"
+    assert result.metrics["2"]["t"]["lead_duration_hours"] == 12.0
     assert result.metrics["1"]["t"]["physical_rmse"] == pytest.approx(
         2.0 * result.metrics["1"]["t"]["standardized_rmse"])
     assert result.aggregate_standardized["1"]["aggregation"].startswith("equal weight")
@@ -161,6 +164,36 @@ def test_evaluation_refuses_training_empty_and_misaligned_contracts():
     with pytest.raises(ForecastContractError, match="declared contract"):
         evaluate_against_persistence(
             model, [batch], variables=("t",), lead_frames=(1, 2), split="test")
+
+
+def test_evaluation_refuses_missing_or_variable_physical_lead_durations():
+    batch = _forecast_batch()
+    model = _perfect_increment_adapter(batch)
+    missing = dict(batch)
+    del missing["lead_durations_ns"]
+    with pytest.raises(ForecastContractError, match="frame offsets alone"):
+        evaluate_against_persistence(
+            model, [missing], variables=("t", "q"), lead_frames=(1, 2), split="test")
+    irregular = dict(batch)
+    irregular["lead_durations_ns"] = batch["lead_durations_ns"].clone()
+    irregular["target_times_ns"] = batch["target_times_ns"].clone()
+    irregular["lead_durations_ns"][1, 0] += 3_600_000_000_000
+    irregular["target_times_ns"][1, 0] += 3_600_000_000_000
+    with pytest.raises(ForecastContractError, match="varies between samples"):
+        evaluate_against_persistence(
+            model, [irregular], variables=("t", "q"), lead_frames=(1, 2), split="test")
+    inconsistent = dict(batch)
+    inconsistent["lead_durations_ns"] = batch["lead_durations_ns"].clone()
+    inconsistent["lead_durations_ns"][:, 1] += 3_600_000_000_000
+    with pytest.raises(ForecastContractError, match="timing provenance is inconsistent"):
+        evaluate_against_persistence(
+            model, [inconsistent], variables=("t", "q"), lead_frames=(1, 2), split="test")
+    irregular_axis = dict(batch)
+    irregular_axis["time_axis_cadence_ns"] = torch.zeros_like(
+        batch["time_axis_cadence_ns"])
+    with pytest.raises(ForecastContractError, match="complete dataset time axis is irregular"):
+        evaluate_against_persistence(
+            model, [irregular_axis], variables=("t", "q"), lead_frames=(1, 2), split="test")
 
 
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA/ROCm accelerator not available")

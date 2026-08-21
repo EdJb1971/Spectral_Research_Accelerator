@@ -3862,3 +3862,46 @@ current Copernicus queue, credentials, wire transfer or ERA5 values. No live CDS
 multi-year NZ crop or WeatherBench overlap has run. D43 therefore remains open. T5.2d calendar
 splits/physical lead durations and T5.3c protocol-selected model semantics are now explicit
 planned roadmap tasks rather than implicit assumptions.
+
+## T5.2d - exact calendar splits and physical forecast time
+
+`RegionalForecastConfig` now supports exact `(validation_start, test_start)` calendar boundaries
+without removing ratio mode. Each declared boundary must be an exact returned timestamp; the
+configured embargo is excluded after it before samples are constructed. `expected_cadence_hours`
+is checked against every interval when declared. Dataset schema v2 records measured cadence and
+split mode, and every item derives `lead_durations_ns` from target timestamps relative to the
+final input timestamp while carrying the cadence measured over the complete source axis.
+
+Evaluation schema v2 requires input times, target times and derived durations. It recomputes the
+durations, verifies one regular cadence maps every declared frame lead to hours, requires that
+mapping to match the complete axis and remain constant across samples/batches, and publishes
+`lead_durations_hours`. Refusal
+tests cover missing timing, irregular samples, inconsistent duration/timestamp provenance,
+cadence mismatch and non-exact calendar boundaries.
+
+The metadata-only crop UI does not promote manifest eligibility into timing evidence: it displays
+ratio dates as unfrozen, cadence as `NOT VERIFIED`, and physical lead labels as unavailable.
+
+```text
+python -m pytest -q src/tests/test_regional_forecast.py \
+  src/tests/test_forecasting_artifact_evaluation.py \
+  src/tests/test_forecasting_adapter.py src/tests/test_frontend_contract.py
+56 passed, 5 warnings in 12.12s
+
+cd frontend && npm run build
+tsc passed; 1,385 modules transformed; built in 1m 27s
+```
+
+Rendered browser inspection is **NOT RUN**: the browser-control skill was followed, but no
+controllable browser tool was attached to this session. This is stated explicitly rather than
+substituting a build for visual evidence.
+
+Clean full regression and documentation audit:
+
+```text
+985 passed, 1 skipped, 1 xfailed, 6 warnings in 165.37s
+783 test functions across 31 `test_*.py` files
+```
+
+D43 remains open: no live CDS request, multi-year NZ crop or cross-route ERA5 comparison ran in
+this slice. T5.2d proves the temporal contract, not the data acquisition or forecast skill.

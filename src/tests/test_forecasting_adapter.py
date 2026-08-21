@@ -32,7 +32,8 @@ def _forecast_batch():
         first_timestamp="2020-01-01T00:00:00", last_timestamp="2020-01-03T18:00:00",
         source_content_hash="fixture-content-hash")
     dataset = RegionalForecastDataset(
-        values=values, times_ns=torch.arange(12, dtype=torch.int64),
+        values=values, times_ns=(torch.arange(12, dtype=torch.int64)
+                                * 6 * 3_600_000_000_000),
         frame_indices=tuple(range(12)), split="train", config=config,
         normalisation=normalisation, provenance={"fixture": "T5.3a"})
     return next(iter(DataLoader(dataset, batch_size=3, shuffle=False)))

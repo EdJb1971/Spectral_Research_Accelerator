@@ -69,6 +69,10 @@ def test_shapes_aliases_and_default_collation_are_training_native():
     batch = next(iter(DataLoader(bundle.train, batch_size=2, shuffle=False)))
     assert batch["inputs"].shape == (2, 3, 5, 4, 5)
     assert batch["targets"].shape == (2, 2, 5, 4, 5)
+    assert batch["lead_durations_ns"].shape == (2, 2)
+    assert batch["lead_durations_ns"][0].tolist() == [6 * 3_600_000_000_000,
+                                                       12 * 3_600_000_000_000]
+    assert batch["time_axis_cadence_ns"].tolist() == [6 * 3_600_000_000_000] * 2
     assert bundle.provenance["variables"]["resolved_names"] == LONG_NAMES
 
 
@@ -124,6 +128,41 @@ def test_provenance_fingerprints_source_crop_grid_time_split_and_normalisation()
     assert len(record["grid"]["sha256"]) == 32
     assert record["construction_order"].startswith("split and embargo")
     assert "CUDA, ROCm or MPS" in record["device_policy"]
+
+
+def test_calendar_boundaries_are_exact_embargoed_and_provenanced():
+    source = _dataset()
+    config = _config(calendar_boundaries=("2020-01-06T00:00:00", "2020-01-10T00:00:00"),
+                     expected_cadence_hours=6)
+    bundle = prepare_regional_forecast_datasets(source, config, _manifest(source))
+    assert bundle.provenance["schema"] == "regional_forecast_dataset/v2"
+    assert bundle.provenance["cadence"]["observed_cadence_hours"] == 6
+    assert bundle.provenance["cadence"]["expectation_checked"] is True
+    assert bundle.train.frame_indices[-1] == 19
+    assert bundle.val.frame_indices[0] == 22
+    assert bundle.val.frame_indices[-1] == 35
+    assert bundle.test.frame_indices[0] == 38
+    assert bundle.provenance["config"]["calendar_boundaries"] == [
+        "2020-01-06T00:00:00", "2020-01-10T00:00:00"]
+
+
+def test_cadence_and_calendar_contracts_refuse_ambiguity():
+    source = _dataset()
+    with pytest.raises(InvalidParameterError, match="do not reinterpret"):
+        prepare_regional_forecast_datasets(
+            source, _config(expected_cadence_hours=1), _manifest(source))
+    irregular = source.assign_coords(time=source.time.values.copy())
+    changed = irregular.time.values.copy()
+    changed[10:] += np.timedelta64(1, "h")
+    irregular = irregular.assign_coords(time=changed)
+    with pytest.raises(InvalidParameterError, match="do not reinterpret"):
+        prepare_regional_forecast_datasets(
+            irregular, _config(expected_cadence_hours=6), _manifest(irregular))
+    with pytest.raises(InvalidParameterError, match="present exactly"):
+        prepare_regional_forecast_datasets(
+            source, _config(calendar_boundaries=("2020-01-06T01:00:00",
+                                                  "2020-01-10T00:00:00")),
+            _manifest(source))
 
 
 def test_scientific_refusals_are_explicit():
@@ -255,6 +294,9 @@ def test_manifest_readiness_never_claims_value_checks_from_metadata():
     ready = assess_manifest_readiness(manifest, _config())
     assert ready["structurally_eligible"]
     assert ready["dataset_prepared"] is False
+    assert ready["split_mode"] == "ratios"
+    assert ready["cadence_verified"] is False
+    assert ready["physical_lead_reporting_available"] is False
     assert ready["train_only_normalisation_verified"] is False
     assert ready["independent_era5_crosscheck"] == "NOT RUN"
     missing = dict(manifest, variables=["temperature"])

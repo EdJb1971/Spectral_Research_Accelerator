@@ -92,6 +92,9 @@ from src.data_layer.zarr_source import CropSpec
 
 config = RegionalForecastConfig(
     level_hpa=850, history_frames=2, lead_frames=(1, 2, 4), embargo_frames=4,
+    expected_cadence_hours=6,
+    # Optional reproducible experiment cutoffs: (validation_start, test_start).
+    # calendar_boundaries=("2018-01-01T00:00:00", "2019-01-01T00:00:00"),
     statistics_chunk_frames=32)
 bundle = prepare_cached_regional_forecast(crop_spec, config, cache_dir=shared_cache)
 train_loader = DataLoader(bundle.train, batch_size=8, shuffle=True, num_workers=2)
@@ -167,6 +170,18 @@ appear only when explicit training scales are supplied; cross-variable aggregati
 standardized space. A zero-error persistence denominator produces `null` skill, not infinity.
 Every result says it is a single-checkpoint evaluation without seed uncertainty or significance,
 so this contract makes no scientific-skill claim.
+
+T5.2d makes the temporal meaning equally explicit. Calendar mode requires the declared
+validation/test boundary timestamps to exist exactly in the returned time axis and applies the
+same lag-sufficient embargo after each boundary; ratio mode remains available for exploratory
+fixtures. `expected_cadence_hours`, when supplied, must match every interval exactly. Each sample
+derives nanosecond lead durations and the whole-axis cadence from its timestamps, and evaluation
+independently recomputes them, requires one regular frame-to-hour mapping across the complete
+time axis and all samples/batches, and reports both
+frame offsets and hours. Missing, irregular or inconsistent timing is refused instead of being
+silently labelled as (for example) a six-hour forecast. The cached-crop UI remains metadata-only:
+it displays cadence as `NOT VERIFIED` and physical lead labels as unavailable until actual
+dataset preparation has opened and checked the time axis.
 
 ### Accelerator installation and portability
 

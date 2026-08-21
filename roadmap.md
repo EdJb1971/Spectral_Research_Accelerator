@@ -65,9 +65,9 @@ status section, it is a memory.
 
 | Area | Real status |
 |---|---|
-| **Phase progress** | **Phase 3.5 complete** (25 tasks). **Phase 4A, 4B and 4C complete** as implementable work: T4A.1-4, T4B.1-4, T4C.1-5. **T5.1 is partial:** T5.1a-e accepts raw/FFT/DCT/Haar/db2/SWT/DTCWT training representations, optimized and exposed with truthful UI readiness; mixed precision and remaining cross-device acceptance remain. **T5.2 is partial:** T5.2a-b implements the aligned, leakage-safe, train-normalised PyTorch dataset and bounded-memory worker-safe cache interface; T5.2c implements offline-accepted resumable CDS acquisition/cache conversion, while its live run, independent overlap and viable multi-year NZ crop remain blocked by D43; T5.2d is planned. **T5.3 is partial:** T5.3a-b supplies the forecaster seam, persistence baseline, deterministic represented smoke run, verified model-artifact contract and persistence-relative evaluator; T5.3c and the actual laboratory model remain open. **Not done:** T4C.6, the real-ERA5 gate review; 4D-4H; T5.0 and T5.4-7. Per-task evidence blocks sit under each task below; a task without a **DONE** or **PARTIAL** label has not been started. |
+| **Phase progress** | **Phase 3.5 complete** (25 tasks). **Phase 4A, 4B and 4C complete** as implementable work: T4A.1-4, T4B.1-4, T4C.1-5. **T5.1 is partial:** T5.1a-e accepts raw/FFT/DCT/Haar/db2/SWT/DTCWT training representations, optimized and exposed with truthful UI readiness; mixed precision and remaining cross-device acceptance remain. **T5.2 is partial:** T5.2a-d implements the aligned, leakage-safe, train-normalised PyTorch dataset, bounded-memory worker-safe cache, offline-accepted CDS acquisition contract, exact calendar splits and verified physical-time leads; the live CDS run, independent overlap and viable multi-year NZ crop remain blocked by D43. **T5.3 is partial:** T5.3a-b supplies the forecaster seam, persistence baseline, deterministic represented smoke run, verified model-artifact contract and persistence-relative evaluator; T5.3c and the actual laboratory model remain open. **Not done:** T4C.6, the real-ERA5 gate review; 4D-4H; T5.0 and T5.4-7. Per-task evidence blocks sit under each task below; a task without a **DONE** or **PARTIAL** label has not been started. |
 | **Accessibility** | **Zero, measured.** `0` `aria-*` or `role` attributes and `0` keyboard handlers across `frontend/src`. No focus management. The UI is usable with a mouse and by nobody else. Not scheduled; recorded so it cannot be mistaken for an oversight. |
-| Backend test suite | **981 passed, 1 xfailed.** Plus one explicit skip: the opt-in live-GCS check. Trajectory: 19 written / 1 failing / uncollectable -> 65 -> 152 -> 222 -> 271 -> 351 -> 407 -> 449 -> 478 -> 535 -> 548 -> 593 -> 642 -> 647 -> 709 -> 781 -> 855 -> 859 -> 882 -> 883 -> 890 -> 911 -> 917 -> 933 -> 946 -> 955 -> 957 -> 962 -> 969 -> 981. |
+| Backend test suite | **985 passed, 1 xfailed.** Plus one explicit skip: the opt-in live-GCS check. Trajectory: 19 written / 1 failing / uncollectable -> 65 -> 152 -> 222 -> 271 -> 351 -> 407 -> 449 -> 478 -> 535 -> 548 -> 593 -> 642 -> 647 -> 709 -> 781 -> 855 -> 859 -> 882 -> 883 -> 890 -> 911 -> 917 -> 933 -> 946 -> 955 -> 957 -> 962 -> 969 -> 981 -> 985. |
 | Ground-Truth Benchmark Suite | **15 PASS, 0 FAIL, 2 NOT_YET_RUNNABLE.** Nine datasets with declared known answers, five of them nulls. CI-ready via `python -m src.benchmarks` (exit 0). |
 | Backend compute modules | **Written, executed and tested.** `physical_core` carries `GridSpec` + metric-aware operators; `analysis_engine` gained `spectra.py` and `climatology.py`; `transform_engine` gained the undecimated `stationary.py` and a real `dtcwt.py`; `statistics/` and `core/` are new packages. |
 | Physical units and wavenumbers | **Correct as of T3.5.13.** Gradients metric-aware, spectra on a physical `k` axis, domain statistics area-weighted, and every quantity carries its units. Previously all of it was pixel-space and unlabelled (D13). |
@@ -1320,7 +1320,7 @@ implemented unless its acceptance evidence appears in `VERIFICATION.md`.
     `python -m src.core.doctor` performs CPU and detected-accelerator FFT/backward smoke tests
     and emits attachable JSON. This is local placement/preflight, not cluster submission or
     artifact synchronisation; those require Adam's actual HPC contract.
-*   **T5.2 Build `RegionalForecastDataset` -- PARTIAL (T5.2a-b accepted; T5.2c offline contract accepted/live gate open; T5.2d planned).** Materialise and rechunk a provenance-carrying New
+*   **T5.2 Build `RegionalForecastDataset` -- PARTIAL (T5.2a-d accepted; live data gate open).** Materialise and rechunk a provenance-carrying New
     Zealand crop with aligned 850-hPa `t/q/u/v/z`, timestamps and grid coordinates. Yield input
     histories and lead-time targets as tensors; apply `split_temporal` and a lag-sufficient
     embargo before sample construction; fit every normalisation statistic on training data
@@ -1360,11 +1360,18 @@ implemented unless its acceptance evidence appears in `VERIFICATION.md`.
     functions (12 executed cases) cover planning/CLI/refusal, network gating, resume/tamper behavior,
     cache replay, exact timestamp enforcement and lazy dataset compatibility. This is offline
     service-contract evidence: no CDS request or ERA5 agreement has run.
-    **T5.2d Calendar and physical-time contract -- NOT STARTED:** add explicit train/validation/
-    test boundary dates alongside ratios; validate that requested cadence matches returned
-    timestamps; carry physical lead durations (hours) from samples through evaluation and UI;
-    refuse a frame-offset report whose cadence is absent or irregular. This prevents Emily's
-    ambiguous "6 hourly forecast steps" from being silently interpreted as six-hourly data.
+    **Delivered T5.2d:** `calendar_boundaries=(validation_start, test_start)` provides exact,
+    reproducible split dates alongside the retained ratio mode. Boundaries must occur on the
+    returned axis and each is followed by the configured lag-sufficient embargo. An explicitly
+    requested cadence must match every interval. Dataset schema v2 derives lead durations from
+    timestamps and records whole-axis cadence; evaluation schema v2 independently recomputes
+    them, requires one regular frame-to-hour mapping across the complete axis and all
+    samples/batches, and reports frames plus hours. Missing,
+    irregular or tampered timing is refused. The manifest-only UI truthfully shows ratio dates
+    as unfrozen, cadence as `NOT VERIFIED` and physical lead labels as unavailable. This prevents
+    Emily's ambiguous "6 hourly forecast steps" from being silently interpreted as six-hourly
+    data. Focused backend/UI contracts and the 1,385-module production build pass; browser render
+    inspection was not run because no controllable browser was attached.
     **Outstanding:** run the CDS path live, acquire a viable multi-year NZ crop, and execute the
     existing exact coordinate/value overlap checker against WeatherBench on a small common
     window. Record queue time, wire bytes, cache size and returned schema. D43 remains open and

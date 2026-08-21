@@ -2600,6 +2600,14 @@ export default function App() {
                           <div className="text-amber-300/80 mt-1 font-sans leading-relaxed">
                             Prepared dataset: NO &bull; train-only normalisation verified: NO &bull; independent ERA5 cross-check: NOT RUN
                           </div>
+                          <div className="text-amber-300/80 mt-1 font-sans leading-relaxed">
+                            Split contract: {c.regional_forecast_readiness.split_mode === 'calendar_boundaries'
+                              ? `calendar (${c.regional_forecast_readiness.calendar_boundaries?.join(' → ')})`
+                              : 'ratios (dates not frozen)'} &bull;{' '}
+                            cadence: {c.regional_forecast_readiness.cadence_verified
+                              ? `${c.regional_forecast_readiness.expected_cadence_hours} h verified`
+                              : 'NOT VERIFIED'} &bull; physical lead labels: NOT AVAILABLE
+                          </div>
                           <div className="text-slate-600 mt-1 font-sans leading-relaxed">
                             {c.regional_forecast_readiness.claim_boundary}
                           </div>

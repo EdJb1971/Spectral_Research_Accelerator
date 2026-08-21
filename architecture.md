@@ -117,7 +117,13 @@ train/validation/test (including returned embargo sequences) before it creates a
 target index. Population mean/std vectors are fitted in float64 over training frames and grid
 cells only, serialized as a hashed `NormalisationArtifact`, then reused unchanged by all splits.
 Items are default-collatable dictionaries with `(history,C,H,W)` inputs, `(lead,C,H,W)` targets,
-Unix-nanosecond timestamps and original frame indices. Source content hash, materialised crop
+Unix-nanosecond timestamps, timestamp-derived lead durations and original frame indices. Ratio
+splits remain available; calendar mode instead requires exact validation/test start timestamps
+on the returned axis and applies the embargo after each declared boundary. An optional expected
+cadence must match every observed interval. Each sample also carries the measured whole-axis
+cadence. Evaluation recomputes duration from timestamps, requires all frame leads and the full
+axis to share one regular physical cadence, and records both frames and
+hours; missing or inconsistent timing is a hard refusal. Source content hash, materialised crop
 manifest/chunking, canonical/resolved variables, 850-hPa selection, full time/grid fingerprints,
 split bounds and normalisation lineage travel in the bundle provenance.
 
@@ -717,6 +723,26 @@ consent, atomic resume, tamper refusal, exact timestamp enforcement, cache conve
 complete lazy Dataset/DataLoader interface. It does **not** prove CDS credentials, queue service,
 wire transfer, current NetCDF conversion or ERA5 agreement. No live request or multi-year NZ
 crop has run, so this is T5.2c partial infrastructure and D43 remains open.
+
+### 3.13b Calendar splits and physical forecast time (`regional_forecast.py`, `evaluation.py`, T5.2d)
+
+`RegionalForecastConfig.calendar_boundaries=(validation_start, test_start)` selects a reproducible
+calendar contract; without it, the existing ratios are retained. Boundaries must occur exactly
+in the source time axis—no nearest-time rounding—and the lag-sufficient embargo is excluded at
+the start of validation and test. `expected_cadence_hours` is optional because historical
+experiments may not have frozen it, but when declared it is checked against every timestamp
+interval and a mismatch or irregular axis aborts preparation. Dataset schema v2 records the
+split mode and cadence evidence and emits `lead_durations_ns` derived from each target and the
+final history timestamp plus `time_axis_cadence_ns` measured over the full source axis.
+
+Forecast evaluation schema v2 does not accept frame labels alone. It requires input/target
+timestamps and durations, recomputes their equality, proves each duration is the corresponding
+integer frame offset times one common cadence, and proves that mapping is constant across every
+sample and batch. Results retain frame-keyed metrics for machine compatibility while adding
+`lead_durations_hours` globally and per metric. The crop panel exposes only the weaker manifest
+state: dates are not frozen under its default ratio contract, cadence is `NOT VERIFIED`, and
+physical lead labels are unavailable. Production TypeScript/build and contract tests pass;
+rendered browser inspection was **NOT RUN** because no controllable browser was attached.
 
 ### 3.14 Export (`src/data_layer/exporters.py`, T3.5.23)
 
@@ -1558,9 +1584,9 @@ See `VERIFICATION.md` for the captured command output behind every statement her
 | Item | Status |
 |---|---|
 | Python venv + dependencies | installed (torch 2.13.0+cu130, numpy 2.2.6, pydantic 1.10.26, SQLAlchemy 2.0.52, xarray 2025.6.1, FastAPI 0.110.3) |
-| Backend test suite | **981 passed, 1 xfailed** (plus 1 skipped: opt-in live GCS) (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17, 351 after T3.5.6, 379 after T3.5.15, 407 after T3.5.19, 449 after T4C.5, 709 after T4A.4, 781 after T4B.4, 855 after T4C.5, 859 after T4C.5c, 882 after T5.1a CPU acceptance, 883 after RTX acceptance, 890 after portable profiles, 911 after T5.1b/D44, 917 after T5.1c, 933 after T5.1d/D45, 946 after T5.1e, 955 after T5.2a, 957 after T5.2b, 962 after T5.3a, 969 after T5.3b, 981 after T5.2c offline acceptance) |
+| Backend test suite | **985 passed, 1 xfailed** (plus 1 skipped: opt-in live GCS) (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17, 351 after T3.5.6, 379 after T3.5.15, 407 after T3.5.19, 449 after T4C.5, 709 after T4A.4, 781 after T4B.4, 855 after T4C.5, 859 after T4C.5c, 882 after T5.1a CPU acceptance, 883 after RTX acceptance, 890 after portable profiles, 911 after T5.1b/D44, 917 after T5.1c, 933 after T5.1d/D45, 946 after T5.1e, 955 after T5.2a, 957 after T5.2b, 962 after T5.3a, 969 after T5.3b, 981 after T5.2c offline acceptance, 985 after T5.2d) |
 | Ground-Truth Benchmark Suite | **15 PASS, 0 FAIL, 2 NOT_YET_RUNNABLE** (`python -m src.benchmarks`, exit 0) |
-| Frontend `npm install` + `npm run build` | passes, emits 1,378 modules + real JS/CSS assets (was: 1 module, no assets) |
+| Frontend `npm install` + `npm run build` | passes, emits 1,385 modules + real JS/CSS assets (was: 1 module, no assets) |
 | Backend server | starts, serves OpenAPI, all smoke-tested endpoints return 200 |
 | End-to-end experiment sweep | 9-run parameter sweep completes 9/9, writes 28 lineage nodes / 54 edges, hypothesis engine returns results |
 | Version control | `git init` run to enable E5 provenance capture; no commit made yet |
@@ -1765,13 +1791,13 @@ able to sit three slices out of date.
 | `test_experiments.py` | 3 | declarative sweeps and lineage |
 | `test_exports.py` | 32 | CSV/JSON/NetCDF4/Zarr round trips, embedded provenance, seeded perturbation (D34) |
 | `test_forecasting_adapter.py` | 5 | T5.3a exact persistence, represented autoregressive rollout, backward gradients, deterministic evidence, refusal contracts and CPU/RTX vendor-neutral accelerator parity |
-| `test_forecasting_artifact_evaluation.py` | 7 | T5.3b checkpoint/config integrity, safe strict loading, artifact-bound lineage, persistence-relative metrics, undefined-skill handling, refusal contracts and CPU/RTX vendor-neutral accelerator parity |
-| `test_frontend_contract.py` | 30 | the frontend/backend contract, including transform/dataset readiness claim boundaries, plus the UI integrity guards: no fabricated results, no unqualified validation claims, units and slope uncertainty displayed |
+| `test_forecasting_artifact_evaluation.py` | 8 | T5.3b/T5.2d checkpoint/config integrity, artifact-bound lineage, persistence-relative metrics, physical-time reporting/refusals, undefined-skill handling and CPU/RTX vendor-neutral accelerator parity |
+| `test_frontend_contract.py` | 31 | the frontend/backend contract, including transform/dataset/cadence readiness claim boundaries, plus the UI integrity guards: no fabricated results, no unqualified validation claims, units and slope uncertainty displayed |
 | `test_grid_operators.py` | 64 | grid metrics, metric-aware gradient/Laplacian, area weighting, physical-wavenumber spectra, D26 |
 | `test_hypothesis.py` | 3 | correlation and categorical hypothesis discovery |
 | `test_imports.py` | 36 | NetCDF/Zarr/CSV/JSON import, dimension pinning, axis identification, laundering guard, benchmark runs over HTTP |
 | `test_migrations.py` | 25 | Alembic history, ORM/schema drift, per-revision round trips, pre-Alembic adoption, auto-migrate refusal, PostgreSQL rendering |
-| `test_regional_forecast.py` | 10 | T5.2a-b alignment, pre-sample temporal embargo, train-only normalisation, provenance, eager/lazy equivalence, bounded streaming, forced-spawn multi-worker loading, local/HPC cache seam and independent-route comparison contract |
+| `test_regional_forecast.py` | 12 | T5.2a-d alignment, ratio/calendar embargo, cadence validation, physical lead durations, train-only normalisation, provenance, eager/lazy equivalence, bounded streaming, multi-worker loading, local/HPC cache seam and independent-route comparison contract |
 | `test_sequence.py` | 37 | FieldSequence validation, cadence, R6 temporal split and leakage guardrails, slice_sequence |
 | `test_registries.py` | 30 | registries, error taxonomy, fallback chain, plugin acceptance and DTCWT native-visualisation contract |
 | `test_stationary.py` | 19 | undecimated SWT: shift invariance, perfect reconstruction, frame constant, PyWavelets oracle, R3 normalisation |
@@ -1783,7 +1809,7 @@ able to sit three slices out of date.
 | `test_wavelet_bank.py` | 27 | T4B.2 expansion through the engine's own parameter matrix, the 1,000-combination guard, decompose_bank / extract_scale_signature, the vertical-bank refusals |
 | `test_transforms.py` | 13 | fft/dct/dwt/dtcwt/hybrid round trips; D1 recorded as a strict xfail |
 | `test_zarr_source.py` | 58 | R13 crop geometry, chunk-hostility prediction, byte counting, cache and provenance round trip, the NetCDF engine (D33), zarr HTTP surface |
-| **total** | **779** | |
+| **total** | **783** | |
 
 ### 7.2h A surrogate null that was not the null it claimed (T4C.5)
 

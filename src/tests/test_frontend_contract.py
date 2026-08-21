@@ -395,6 +395,12 @@ def test_dataset_simulated_flag_is_shown_where_the_data_is_used(app_source):
     assert "chosen.fallback_reason" in app_source
 
 
+def test_regional_forecast_ui_refuses_unverified_physical_time_claims(app_source):
+    assert "cadence: NOT VERIFIED" in app_source or "cadence_verified" in app_source
+    assert "physical lead labels: NOT AVAILABLE" in app_source
+    assert "ratios (dates not frozen)" in app_source
+
+
 def test_units_and_spectral_convention_are_displayed(app_source):
     """R15: the same field has different exponents under E(k) and S(k)."""
     for key in ("k_units", "power_units", "convention", "convention_note"):

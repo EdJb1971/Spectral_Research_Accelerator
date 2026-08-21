@@ -68,6 +68,8 @@ class RegionalForecastConfig:
     lead_frames: Tuple[int, ...] = (1,)
     train_ratio: float = 0.6
     val_ratio: float = 0.2
+    calendar_boundaries: Optional[Tuple[str, str]] = None
+    expected_cadence_hours: Optional[float] = None
     embargo_frames: int = 1
     dtype: str = "float32"
     statistics_chunk_frames: int = 32
@@ -94,6 +96,28 @@ class RegionalForecastConfig:
                 "embargo_frames", self.embargo_frames,
                 "at least the longest lead (%d frames). A shorter embargo gives a clean-looking "
                 "split whose training target can enter the next window" % max(self.lead_frames))
+        if self.calendar_boundaries is not None:
+            if len(self.calendar_boundaries) != 2:
+                raise InvalidParameterError(
+                    "calendar_boundaries", self.calendar_boundaries,
+                    "exactly (validation_start, test_start) ISO timestamps")
+            try:
+                boundaries = tuple(np.datetime64(value, "ns") for value in self.calendar_boundaries)
+            except (TypeError, ValueError):
+                raise InvalidParameterError(
+                    "calendar_boundaries", self.calendar_boundaries,
+                    "two valid ISO timestamps") from None
+            if any(np.isnat(value) for value in boundaries) or boundaries[0] >= boundaries[1]:
+                raise InvalidParameterError(
+                    "calendar_boundaries", self.calendar_boundaries,
+                    "validation_start strictly before test_start")
+        if self.expected_cadence_hours is not None:
+            cadence = float(self.expected_cadence_hours)
+            cadence_ns = cadence * 3_600_000_000_000
+            if not np.isfinite(cadence) or cadence <= 0 or not cadence_ns.is_integer():
+                raise InvalidParameterError(
+                    "expected_cadence_hours", self.expected_cadence_hours,
+                    "a positive duration exactly representable in integer nanoseconds")
         if self.dtype not in ("float32", "float64"):
             raise InvalidParameterError("dtype", self.dtype, "float32 or float64")
         if int(self.statistics_chunk_frames) != self.statistics_chunk_frames \
@@ -105,6 +129,10 @@ class RegionalForecastConfig:
         record = asdict(self)
         record["variables"] = list(self.variables)
         record["lead_frames"] = list(self.lead_frames)
+        if self.calendar_boundaries is not None:
+            record["calendar_boundaries"] = list(self.calendar_boundaries)
+        record["split_mode"] = ("calendar_boundaries" if self.calendar_boundaries is not None
+                                else "ratios")
         record["contract_hash"] = _stable_hash(record)
         return record
 
@@ -246,6 +274,11 @@ class RegionalForecastDataset(Dataset):
         self.normalisation = normalisation
         self.provenance = dict(provenance)
         self.provenance["split"] = split
+        intervals = torch.diff(self.times_ns)
+        unique_intervals = torch.unique(intervals)
+        self.time_axis_cadence_ns = (int(unique_intervals[0])
+                                     if len(unique_intervals) == 1
+                                     and int(unique_intervals[0]) > 0 else 0)
 
         first_anchor = config.history_frames - 1
         final_anchor = len(self.frame_indices) - 1 - max(config.lead_frames)
@@ -288,6 +321,10 @@ class RegionalForecastDataset(Dataset):
             "targets": targets,
             "input_times_ns": self.times_ns[input_global],
             "target_times_ns": self.times_ns[target_global],
+            "lead_durations_ns": (self.times_ns[target_global]
+                                  - self.times_ns[input_global[-1]]),
+            "time_axis_cadence_ns": torch.tensor(self.time_axis_cadence_ns,
+                                                  dtype=torch.int64),
             "input_frame_indices": torch.tensor(input_global, dtype=torch.int64),
             "target_frame_indices": torch.tensor(target_global, dtype=torch.int64),
         }
@@ -470,13 +507,73 @@ def _streaming_normalisation(source: _LazyZarrValues, train_indices: Sequence[in
                             "cells; float64 Chan block merge"), chunk_frames=chunk)
 
 
+def _cadence_record(times: np.ndarray, config: RegionalForecastConfig) -> Dict[str, Any]:
+    """Measure the complete time axis and enforce an explicitly requested cadence."""
+    time_ns = times.astype("datetime64[ns]").astype("int64")
+    differences = np.diff(time_ns)
+    unique = np.unique(differences)
+    regular = len(unique) == 1
+    actual_ns = int(unique[0]) if regular else None
+    expected_ns = (None if config.expected_cadence_hours is None else
+                   int(float(config.expected_cadence_hours) * 3_600_000_000_000))
+    if expected_ns is not None and (not regular or actual_ns != expected_ns):
+        observed = [float(value) / 3_600_000_000_000 for value in unique[:10]]
+        raise InvalidParameterError(
+            "time cadence", observed,
+            "a regular %.12g-hour cadence matching expected_cadence_hours; do not reinterpret "
+            "frame offsets as physical lead time" % float(config.expected_cadence_hours))
+    return {
+        "is_regular": regular,
+        "observed_cadence_hours": (None if actual_ns is None else
+                                   actual_ns / 3_600_000_000_000),
+        "expected_cadence_hours": config.expected_cadence_hours,
+        "expectation_checked": expected_ns is not None,
+        "unique_interval_hours": [float(value) / 3_600_000_000_000
+                                  for value in unique[:10]],
+        "interval_count": int(len(differences)),
+        "claim_boundary": ("Physical lead durations are computed from sample timestamps. "
+                           "A configured cadence is reported as verified only after exact "
+                           "agreement with every returned interval."),
+    }
+
+
 def _timeline_split(times: np.ndarray, config: RegionalForecastConfig) -> Dict[str, FieldSequence]:
     # Reuse the platform's accepted R6 implementation.  A one-pixel sentinel represents only
     # the timeline; no meteorological value is copied into this validation structure.
     sentinel = PhysicalField(torch.zeros((1, 1)), grid=GridSpec.pixel((1, 1)))
     timeline = FieldSequence([sentinel] * len(times), times, metadata={"purpose": "T5.2 timeline"})
-    parts = split_temporal(timeline, config.train_ratio, config.val_ratio,
-                           embargo_frames=config.embargo_frames)
+    if config.calendar_boundaries is None:
+        parts = split_temporal(timeline, config.train_ratio, config.val_ratio,
+                               embargo_frames=config.embargo_frames)
+    else:
+        time_ns = times.astype("datetime64[ns]").astype("int64")
+        boundaries_ns = tuple(int(np.datetime64(value, "ns").astype("int64"))
+                              for value in config.calendar_boundaries)
+        missing = [value for value in boundaries_ns if value not in set(time_ns.tolist())]
+        if missing:
+            raise InvalidParameterError(
+                "calendar_boundaries", config.calendar_boundaries,
+                "timestamps present exactly on the returned time axis; implicit rounding is refused")
+        val_start, test_start = (int(np.flatnonzero(time_ns == value)[0])
+                                 for value in boundaries_ns)
+        embargo = config.embargo_frames
+
+        def part(start: int, stop: int, name: str) -> FieldSequence:
+            if stop <= start:
+                raise InvalidParameterError(
+                    "calendar split", config.calendar_boundaries,
+                    "non-empty train/validation/test windows after the declared embargo")
+            return FieldSequence(timeline.fields[start:stop],
+                                 timeline.raw_times_slice(slice(start, stop)),
+                                 metadata=dict(timeline.metadata), split=name)
+
+        parts = {
+            "train": part(0, val_start, "train"),
+            "embargo_train_val": part(val_start, val_start + embargo, "embargo"),
+            "val": part(val_start + embargo, test_start, "val"),
+            "embargo_val_test": part(test_start, test_start + embargo, "embargo"),
+            "test": part(test_start + embargo, len(times), "test"),
+        }
     validate_temporal_guardrails(parts["train"], parts["val"], max(config.lead_frames))
     validate_temporal_guardrails(parts["val"], parts["test"], max(config.lead_frames))
     return parts
@@ -495,6 +592,7 @@ def prepare_regional_forecast_datasets(dataset: Any, config: RegionalForecastCon
         raise InvalidParameterError("source_manifest", sorted(source_manifest),
                                     "a materialised source record containing content_hash")
     values_np, times, lat, lon, variable_record = _resolve_arrays(dataset, config)
+    cadence = _cadence_record(times, config)
     parts = _timeline_split(times, config)
     time_ns_np = times.astype("datetime64[ns]").astype("int64")
     index_by_time = {int(value): i for i, value in enumerate(time_ns_np)}
@@ -525,7 +623,7 @@ def prepare_regional_forecast_datasets(dataset: Any, config: RegionalForecastCon
         for name, indices in frame_indices.items()
     }
     provenance = {
-        "schema": "regional_forecast_dataset/v1",
+        "schema": "regional_forecast_dataset/v2",
         "source": dict(source_manifest),
         "source_content_hash": content_hash,
         "config": config.to_provenance(),
@@ -534,6 +632,7 @@ def prepare_regional_forecast_datasets(dataset: Any, config: RegionalForecastCon
         "timestamps": {"count": len(times), "first": _time_strings(times[:1])[0],
                        "last": _time_strings(times[-1:])[0],
                        "sha256": _stable_hash(_time_strings(times))},
+        "cadence": cadence,
         "grid": {"latitude": [float(v) for v in lat], "longitude": [float(v) for v in lon],
                  "shape": [len(lat), len(lon)],
                  "sha256": _stable_hash({"latitude": lat.tolist(), "longitude": lon.tolist()})},
@@ -583,6 +682,7 @@ def prepare_cached_regional_forecast(spec: Any, config: RegionalForecastConfig,
             % (config.statistics_chunk_frames, config.statistics_chunk_frames))
 
     parts = _timeline_split(times, config)
+    cadence = _cadence_record(times, config)
     time_ns_np = times.astype("datetime64[ns]").astype("int64")
     index_by_time = {int(value): i for i, value in enumerate(time_ns_np)}
     frame_indices = {
@@ -614,7 +714,7 @@ def prepare_cached_regional_forecast(spec: Any, config: RegionalForecastConfig,
         for name, indices in frame_indices.items()
     }
     provenance = {
-        "schema": "regional_forecast_dataset/v1",
+        "schema": "regional_forecast_dataset/v2",
         "source": dict(manifest),
         "source_content_hash": content_hash,
         "config": config.to_provenance(),
@@ -623,6 +723,7 @@ def prepare_cached_regional_forecast(spec: Any, config: RegionalForecastConfig,
         "timestamps": {"count": len(times), "first": _time_strings(times[:1])[0],
                        "last": _time_strings(times[-1:])[0],
                        "sha256": _stable_hash(_time_strings(times))},
+        "cadence": cadence,
         "grid": {"latitude": [float(v) for v in lat], "longitude": [float(v) for v in lon],
                  "shape": [len(lat), len(lon)],
                  "sha256": _stable_hash({"latitude": lat.tolist(), "longitude": lon.tolist()})},
@@ -681,11 +782,19 @@ def assess_manifest_readiness(manifest: Mapping[str, Any],
         "required_level_hpa": config.level_hpa, "level_available": level_available,
         "n_frames": n_frames, "minimum_frames_lower_bound": minimum_frames,
         "content_fingerprinted": bool(manifest.get("content_hash")),
+        "split_mode": ("calendar_boundaries" if config.calendar_boundaries is not None
+                       else "ratios"),
+        "calendar_boundaries": (None if config.calendar_boundaries is None
+                                else list(config.calendar_boundaries)),
+        "expected_cadence_hours": config.expected_cadence_hours,
+        "cadence_verified": False,
+        "physical_lead_reporting_available": False,
         "dataset_prepared": False,
         "train_only_normalisation_verified": False,
         "independent_era5_crosscheck": "NOT RUN",
-        "claim_boundary": ("Structural eligibility uses manifest metadata only. Prepare the dataset to "
-                           "compute split/sample boundaries and train-only statistics; run an actual "
+        "claim_boundary": ("Structural eligibility uses manifest metadata only. Cadence, physical "
+                           "lead durations, split/sample boundaries and train-only statistics are not "
+                           "verified until preparation opens the timestamps/values; run an actual "
                            "second ERA5 route before claiming source-value agreement."),
     }
 

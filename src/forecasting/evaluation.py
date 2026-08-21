@@ -22,6 +22,7 @@ class ForecastEvaluation:
     split: str
     variables: Tuple[str, ...]
     lead_frames: Tuple[int, ...]
+    lead_durations_hours: Tuple[float, ...]
     sample_count: int
     batch_count: int
     device: str
@@ -38,6 +39,7 @@ class ForecastEvaluation:
         record = asdict(self)
         record["variables"] = list(self.variables)
         record["lead_frames"] = list(self.lead_frames)
+        record["lead_durations_hours"] = list(self.lead_durations_hours)
         return record
 
 
@@ -100,6 +102,7 @@ def evaluate_against_persistence(
     value_count = torch.zeros(shape, dtype=torch.int64)
     prediction_digest, target_digest = hashlib.sha256(), hashlib.sha256()
     sample_count = batch_count = 0
+    lead_durations_ns: Optional[Tuple[int, ...]] = None
     baseline = PersistenceForecaster().to(target_device)
     was_training = forecaster.training
     forecaster.eval()
@@ -108,6 +111,13 @@ def evaluate_against_persistence(
             for batch in batches:
                 if "inputs" not in batch or "targets" not in batch:
                     raise ForecastContractError("every evaluation batch needs inputs and targets")
+                timing_fields = {"input_times_ns", "target_times_ns", "lead_durations_ns",
+                                 "time_axis_cadence_ns"}
+                if not timing_fields.issubset(batch):
+                    raise ForecastContractError(
+                        "every evaluation batch needs input_times_ns, target_times_ns, "
+                        "lead_durations_ns and time_axis_cadence_ns; frame offsets alone do not "
+                        "declare physical forecast time")
                 history = batch["inputs"].to(target_device)
                 targets = batch["targets"].to(target_device)
                 _validate_history(history)
@@ -118,6 +128,55 @@ def evaluate_against_persistence(
                         % (tuple(targets.shape), expected))
                 if targets.dtype != history.dtype or not bool(torch.isfinite(targets).all()):
                     raise ForecastContractError("evaluation targets must be finite and share history dtype")
+                durations = torch.as_tensor(batch["lead_durations_ns"], dtype=torch.int64)
+                expected_duration_shape = (history.shape[0], len(leads))
+                if tuple(durations.shape) != expected_duration_shape or bool((durations <= 0).any()):
+                    raise ForecastContractError(
+                        "lead_durations_ns must have shape %r with positive durations"
+                        % (expected_duration_shape,))
+                input_times = torch.as_tensor(batch["input_times_ns"], dtype=torch.int64)
+                target_times = torch.as_tensor(batch["target_times_ns"], dtype=torch.int64)
+                if tuple(input_times.shape) != (history.shape[0], history.shape[1]) \
+                        or tuple(target_times.shape) != expected_duration_shape:
+                    raise ForecastContractError(
+                        "timestamp tensor shapes do not match the evaluation history/target contract")
+                derived_durations = target_times - input_times[:, -1:]
+                if not torch.equal(durations, derived_durations):
+                    raise ForecastContractError(
+                        "lead_durations_ns does not equal target timestamp minus final input "
+                        "timestamp; timing provenance is inconsistent")
+                if not bool((durations == durations[0:1]).all()):
+                    raise ForecastContractError(
+                        "physical lead duration varies between samples; irregular cadence cannot "
+                        "be reported as one frame-offset forecast lead")
+                observed_durations = tuple(int(value) for value in durations[0].tolist())
+                if any(right <= left for left, right in zip(observed_durations,
+                                                            observed_durations[1:])):
+                    raise ForecastContractError(
+                        "physical lead durations must be strictly increasing with lead_frames")
+                cadence_candidates = []
+                for duration, lead in zip(observed_durations, leads):
+                    if duration % lead:
+                        raise ForecastContractError(
+                            "physical lead duration is not an integer cadence multiple of its "
+                            "declared lead_frames offset")
+                    cadence_candidates.append(duration // lead)
+                if len(set(cadence_candidates)) != 1:
+                    raise ForecastContractError(
+                        "lead_frames do not map to one regular physical cadence")
+                axis_cadence = torch.as_tensor(batch["time_axis_cadence_ns"], dtype=torch.int64)
+                if tuple(axis_cadence.shape) != (history.shape[0],) \
+                        or bool((axis_cadence <= 0).any()) \
+                        or not bool((axis_cadence == cadence_candidates[0]).all()):
+                    raise ForecastContractError(
+                        "the complete dataset time axis is irregular or does not match the "
+                        "physical cadence implied by lead_frames")
+                if lead_durations_ns is None:
+                    lead_durations_ns = observed_durations
+                elif observed_durations != lead_durations_ns:
+                    raise ForecastContractError(
+                        "physical lead duration changed between evaluation batches; cadence is "
+                        "irregular or batches do not share one temporal contract")
                 predictions = forecaster.predict(history, lead_count=len(leads))
                 if tuple(predictions.shape) != tuple(targets.shape):
                     raise ForecastContractError("forecaster prediction shape does not match evaluation targets")
@@ -144,6 +203,8 @@ def evaluate_against_persistence(
         forecaster.train(was_training)
     if batch_count == 0:
         raise ForecastContractError("evaluation received no batches")
+    assert lead_durations_ns is not None
+    lead_durations_hours = tuple(value / 3_600_000_000_000 for value in lead_durations_ns)
 
     metrics: Dict[str, Any] = {}
     for lead_index, lead in enumerate(leads):
@@ -156,6 +217,8 @@ def evaluate_against_persistence(
             baseline_mse = float(baseline_squared[lead_index, channel] / count)
             baseline_mae = float(baseline_absolute[lead_index, channel] / count)
             record: Dict[str, Any] = {
+                "lead_frames": lead,
+                "lead_duration_hours": lead_durations_hours[lead_index],
                 "standardized_rmse": math.sqrt(mse),
                 "standardized_mae": mae,
                 "standardized_bias": bias,
@@ -188,7 +251,8 @@ def evaluate_against_persistence(
             "value_count": count,
         }
     return ForecastEvaluation(
-        schema="forecast-evaluation/v1", split=split, variables=variables, lead_frames=leads,
+        schema="forecast-evaluation/v2", split=split, variables=variables, lead_frames=leads,
+        lead_durations_hours=lead_durations_hours,
         sample_count=sample_count, batch_count=batch_count, device=str(target_device),
         metrics=metrics, aggregate_standardized=aggregate,
         forecaster=dict(forecaster.to_provenance()), baseline=baseline.to_provenance(),

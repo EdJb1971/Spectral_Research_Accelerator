@@ -475,6 +475,11 @@ export interface ZarrCachedResponse {
       n_frames: number;
       minimum_frames_lower_bound: number;
       content_fingerprinted: boolean;
+      split_mode: 'ratios' | 'calendar_boundaries';
+      calendar_boundaries: string[] | null;
+      expected_cadence_hours: number | null;
+      cadence_verified: boolean;
+      physical_lead_reporting_available: boolean;
       dataset_prepared: boolean;
       train_only_normalisation_verified: boolean;
       independent_era5_crosscheck: string;
