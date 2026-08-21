@@ -179,7 +179,7 @@ Boundary-dependent coefficients are not automatically useless to a predictor. Th
 claim is narrower: a representation mechanism is supported only if its ranking survives the
 declared controls, and either a surviving or disappearing db2 deficit is a reportable result.
 
-### 1.4 FourCastNet 3 external-judge boundary *(planned, not implemented)*
+### 1.4 FourCastNet 3 external-judge boundary (`src/forecasting/external_fcn3.py`, partial)
 
 FourCastNet 3 (FCN3) is the first concrete T5.6 external target, not part of the motivating
 regional model. The official July 2025 NGC model card declares a 710,867,670-parameter
@@ -201,7 +201,7 @@ optimization: it changes both the input contract and the spherical/global operat
 learned spherical Morlet-wavelet convolution kernels must not be described as the same
 experimental treatment as the explicit Haar/db2/SWT/DTCWT representations around Adam's model.
 
-The proposed boundary is file-oriented and vendor-isolated:
+The implemented offline boundary and proposed worker path are file-oriented and vendor-isolated:
 
 ```text
 portable app -> hashed ExternalForecastRun request
@@ -210,20 +210,41 @@ portable app -> hashed ExternalForecastRun request
              -> canonical forecast-cube import -> NZ crop -> common evaluation/analysis
 ```
 
-The app must start, prepare requests and analyse existing outputs without Earth2Studio, an NGC
-account, CUDA or the checkpoint. The worker records checkpoint/package/config/data hashes,
+The app must start and prepare requests without Earth2Studio, an NGC account, CUDA or the
+checkpoint; once the canonical importer exists, it must likewise analyse saved outputs without
+those dependencies. The worker records checkpoint/package/config/data hashes,
 initial condition, member identity/noise process, six-hour leads, precision, device/runtime,
 units, coordinates and resource measurements. Evaluation will require persistence and the same
 truth samples, then add ensemble-member/mean errors, CRPS, spread-skill and rank diagnostics.
 Multiscale analysis tests FCN3's published spectral claims rather than assuming them.
+
+T5.6a now implements the first and last identity edges of that diagram. `ExternalForecastRun`
+is an exact-key, versioned, canonically hashable declaration covering the reviewed FCN3 model
+identity and parameter count; package, checkpoint, model-card and licence evidence; pinned
+Earth2Studio/PyTorch/torch-harmonics environment; all 72 input channels in canonical order;
+global grid and coordinate identity; source and normalisation hashes; timezone-bearing initial
+conditions; six-hour steps; one unique seed per intrinsic stochastic ensemble member; output
+variables/format/reference; global-then-crop policy; precision; and prepare-only or external
+worker placement. Only Linux/NVIDIA CUDA is accepted as an executed-worker declaration in v1;
+other hardware remains a truthful planning refusal rather than an optimistic fallback.
+
+`ExternalForecastResult` can be sealed only for an external-worker request. It binds the request
+hash to a deterministic SHA-256 of either a NetCDF file or every named/file-sized byte stream in
+a Zarr tree, plus global shape, variables, initializations, cadence, steps, ensemble count,
+precision, OS/accelerator/hardware, peak RAM/VRAM, wall time and worker-log hash. The manifest has
+its own derived hash, refuses overwrite, reloads strictly, verifies against the originating
+request and detects changed artifact bytes. This is byte/provenance acceptance only: it does not
+open the forecast arrays or establish their schema, units, values, calibration, spectral fidelity
+or skill.
 
 Portability is deliberately asymmetric. The official model card lists Linux/NVIDIA Turing,
 Ampere and Hopper; it recommends bf16 and reports A100/H100/L40S testing, but no minimum VRAM or
 AMD support. Its 2.65-GB compressed package and 711M parameters do not establish that an 8-GB
 RTX can execute it. RTX 5050, AMD GPU and CPU inference are all **NOT RUN**. HPC may enable the
 worker, but FCN3 is never a dependency for the regional workflow or ordinary workbench use.
-No FCN3 source, dependency, checkpoint, global initial condition or forecast artefact currently
-exists in this repository.
+No FCN3 dependency, worker, checkpoint, global initial condition or forecast artefact currently
+exists in this repository. Only the dependency-free request/result contract and synthetic test
+artifacts exist; the canonical forecast-cube importer and ensemble evaluation remain planned.
 
 ---
 
@@ -1669,7 +1690,7 @@ See `VERIFICATION.md` for the captured command output behind every statement her
 | Item | Status |
 |---|---|
 | Python venv + dependencies | installed (torch 2.13.0+cu130, numpy 2.2.6, pydantic 1.10.26, SQLAlchemy 2.0.52, xarray 2025.6.1, FastAPI 0.110.3) |
-| Backend test suite | **1008 passed, 1 xfailed** (plus 1 skipped: opt-in live GCS) (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17, 351 after T3.5.6, 379 after T3.5.15, 407 after T3.5.19, 449 after T4C.5, 709 after T4A.4, 781 after T4B.4, 855 after T4C.5, 859 after T4C.5c, 882 after T5.1a CPU acceptance, 883 after RTX acceptance, 890 after portable profiles, 911 after T5.1b/D44, 917 after T5.1c, 933 after T5.1d/D45, 946 after T5.1e, 955 after T5.2a, 957 after T5.2b, 962 after T5.3a, 969 after T5.3b, 981 after T5.2c offline acceptance, 985 after T5.2d, 1000 after T5.0a, 1008 after T5.0b) |
+| Backend test suite | **1027 passed, 1 xfailed** (plus 1 skipped: opt-in live GCS) (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17, 351 after T3.5.6, 379 after T3.5.15, 407 after T3.5.19, 449 after T4C.5, 709 after T4A.4, 781 after T4B.4, 855 after T4C.5, 859 after T4C.5c, 882 after T5.1a CPU acceptance, 883 after RTX acceptance, 890 after portable profiles, 911 after T5.1b/D44, 917 after T5.1c, 933 after T5.1d/D45, 946 after T5.1e, 955 after T5.2a, 957 after T5.2b, 962 after T5.3a, 969 after T5.3b, 981 after T5.2c offline acceptance, 985 after T5.2d, 1000 after T5.0a, 1008 after T5.0b, 1027 after T5.6a offline acceptance) |
 | Ground-Truth Benchmark Suite | **15 PASS, 0 FAIL, 2 NOT_YET_RUNNABLE** (`python -m src.benchmarks`, exit 0) |
 | Frontend `npm install` + `npm run build` | passes, emits 1,385 modules + real JS/CSS assets (was: 1 module, no assets) |
 | Backend server | starts, serves OpenAPI, all smoke-tested endpoints return 200 |
@@ -1875,6 +1896,7 @@ able to sit three slices out of date.
 | `test_executor.py` | 33 | Executor backends, seed derivation, ordering, portable CPU/accelerator/HPC profiles, doctor, device/thread policy, SQLite concurrency, byte-identical sweeps |
 | `test_experiments.py` | 3 | declarative sweeps and lineage |
 | `test_exports.py` | 32 | CSV/JSON/NetCDF4/Zarr round trips, embedded provenance, seeded perturbation (D34) |
+| `test_external_fcn3.py` | 9 | T5.6a offline FCN3 request/result schemas, exact global input and ensemble contracts, portability refusals, canonical persistence, file/tree identity and request/artifact tamper isolation |
 | `test_forecasting_adapter.py` | 5 | T5.3a exact persistence, represented autoregressive rollout, backward gradients, deterministic evidence, refusal contracts and CPU/RTX vendor-neutral accelerator parity |
 | `test_forecasting_artifact_evaluation.py` | 8 | T5.3b/T5.2d checkpoint/config integrity, artifact-bound lineage, persistence-relative metrics, physical-time reporting/refusals, undefined-skill handling and CPU/RTX vendor-neutral accelerator parity |
 | `test_forecasting_protocol.py` | 7 | T5.0a exact schema completeness, canonical identity, immutable nested configuration, evidence requirements, temporal/rollout consistency, persistence and tamper/drift refusal |
@@ -1896,7 +1918,7 @@ able to sit three slices out of date.
 | `test_wavelet_bank.py` | 27 | T4B.2 expansion through the engine's own parameter matrix, the 1,000-combination guard, decompose_bank / extract_scale_signature, the vertical-bank refusals |
 | `test_transforms.py` | 13 | fft/dct/dwt/dtcwt/hybrid round trips; D1 recorded as a strict xfail |
 | `test_zarr_source.py` | 58 | R13 crop geometry, chunk-hostility prediction, byte counting, cache and provenance round trip, the NetCDF engine (D33), zarr HTTP surface |
-| **total** | **794** | |
+| **total** | **803** | |
 
 ### 7.2h A surrogate null that was not the null it claimed (T4C.5)
 

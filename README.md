@@ -67,14 +67,19 @@ evaluator upgrades the record to schema v3 and refuses cross-run substitution or
 the declared held-out split. This is ready for Adam's real manifest, but the current acceptance
 fixture is synthetic; there is deliberately no UI "ready" badge claiming a real experiment yet.
 
-FourCastNet 3 is now documented as the first planned external global judge under T5.6. Its
+FourCastNet 3 is the first partially implemented external global-judge track under T5.6. Its
 published 72-variable, six-hour global ensemble outputs contain the same five 850-hPa fields as
 the NZ study, making common regional evaluation and independent multiscale error analysis useful.
-It is **not integrated**. The planned design runs the full global model in an optional isolated
-Earth2Studio worker, preferably on suitable HPC hardware, then imports a hashed NetCDF/Zarr
-forecast and crops NZ afterward. The main application remains usable without NVIDIA hardware,
-Earth2Studio, model weights or network access. An NZ crop will never be passed directly to FCN3,
-and NVIDIA's spectral-fidelity claims will be tested rather than repeated as platform findings.
+`src.forecasting.external_fcn3` now implements a dependency-free, versioned request and sealed
+result identity: it requires the global grid, all 72 ordered inputs, exact source/model/software
+hashes, UTC initializations, stochastic member seeds, six-hour rollout, global-then-crop policy
+and explicit worker hardware; returned NetCDF/Zarr bytes and resource measurements are bound to
+the request. **FCN3 itself is not integrated or run.** The planned worker remains an optional
+isolated Earth2Studio process, preferably on suitable HPC hardware, after which a future importer
+will validate the arrays and crop NZ. The main application remains usable without NVIDIA
+hardware, Earth2Studio, model weights or network access. An NZ crop will never be passed directly
+to FCN3, and NVIDIA's spectral-fidelity claims will be tested rather than repeated as platform
+findings.
 
 The first Phase 5 target is deliberately practical: an importable PyTorch path for the exact
 regional workflow used by the motivating research -- batches shaped `(B, C, H, W)`, aligned

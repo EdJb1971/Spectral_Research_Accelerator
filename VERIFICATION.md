@@ -3982,3 +3982,60 @@ Clean full regression and documentation audit:
 794 test functions across 33 test_*.py files
 tools/audit_docs.py: RESULT ok
 ```
+
+## T5.6a - offline FourCastNet 3 request/result boundary
+
+`src/forecasting/external_fcn3.py` implements a dependency-free boundary between the portable
+workbench and a future isolated Earth2Studio worker. Schema `external-forecast-run/fcn3-v1`
+requires reviewed model/package/checkpoint/model-card/licence identities; pinned Earth2Studio,
+PyTorch, torch-harmonics and environment-lock versions/hashes; the complete canonical 72-channel
+input order; global 721x1440 coordinates and hash; source and normalisation identities;
+timezone-bearing initialization times; six-hour rollout; one unique seed per intrinsic
+stochastic member; output variables/format/reference; global-then-crop semantics; precision; and
+an explicit prepare-only or accepted Linux/NVIDIA-worker placement.
+
+Regional inputs, reordered/missing channels, external perturbation, naive timestamps, seed-count
+drift, placeholders, extra fields and unverified Windows/AMD worker claims are refused. Planning,
+canonical hashing and race-safe persistence import no Earth2Studio, Makani, torch-harmonics or
+network client.
+
+Schema `external-forecast-result/fcn3-v1` seals only an external-worker request. It binds the
+request to selected outputs, global geometry and time contract, measured OS/device/hardware,
+precision, wall time, peak RAM/VRAM, worker-log SHA-256 and a deterministic content hash. NetCDF
+must be a file; Zarr must be a non-empty tree whose digest includes every relative name, file
+size and byte stream without following symlinks. Result manifests have a derived hash, refuse
+overwrite, verify against their originating request, and detect artifact changes. The result's
+claim boundary says explicitly that no array schema, units, values, calibration, spectral
+fidelity or forecast skill have been verified.
+
+Focused acceptance:
+
+```text
+python -m pytest src/tests/test_external_fcn3.py -q
+19 passed, 1 warning in 2.13s
+
+python -m pytest src/tests/test_external_fcn3.py \
+  src/tests/test_forecasting_protocol.py \
+  src/tests/test_forecasting_protocol_binding.py \
+  src/tests/test_forecasting_artifact_evaluation.py -q
+50 passed, 1 warning in 3.79s
+```
+
+All model/data/checkpoint/environment hashes and artifacts in these tests are explicitly
+synthetic. No NGC access, download, FCN3 dependency, global ERA5 state, worker, inference,
+forecast-array validation, NZ crop or ensemble evaluation ran. RTX 5050, AMD, CPU and HPC FCN3
+execution therefore remain `NOT RUN`.
+
+Documentation audit after reconciliation:
+
+```text
+18 passed, 1 warning in 8.67s
+803 test functions across 34 test_*.py files
+tools/audit_docs.py: RESULT ok
+```
+
+Clean full regression for the delivered tree:
+
+```text
+1027 passed, 1 skipped, 1 xfailed, 6 warnings in 164.09s
+```

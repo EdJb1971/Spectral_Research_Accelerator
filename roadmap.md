@@ -65,9 +65,9 @@ status section, it is a memory.
 
 | Area | Real status |
 |---|---|
-| **Phase progress** | **Phase 3.5 complete** (25 tasks). **Phase 4A, 4B and 4C complete** as implementable work: T4A.1-4, T4B.1-4, T4C.1-5. **T5.0 is partial:** T5.0a-b supplies the strict versioned/hashable protocol and runtime-binding gate, but the actual laboratory evidence/config has not been supplied or frozen. **T5.1 is partial:** T5.1a-e accepts raw/FFT/DCT/Haar/db2/SWT/DTCWT training representations, optimized and exposed with truthful UI readiness; mixed precision and remaining cross-device acceptance remain. **T5.2 is partial:** T5.2a-d implements the aligned, leakage-safe, train-normalised PyTorch dataset, bounded-memory worker-safe cache, offline-accepted CDS acquisition contract, exact calendar splits and verified physical-time leads; the live CDS run, independent overlap and viable multi-year NZ crop remain blocked by D43. **T5.3 is partial:** T5.3a-b supplies the forecaster seam, persistence baseline, deterministic represented smoke run, verified model-artifact contract and persistence-relative evaluator; T5.3c and the actual laboratory model remain open. **Not done:** T4C.6, the real-ERA5 gate review; 4D-4H; T5.4-7. Per-task evidence blocks sit under each task below; a task without a **DONE** or **PARTIAL** label has not been started. |
+| **Phase progress** | **Phase 3.5 complete** (25 tasks). **Phase 4A, 4B and 4C complete** as implementable work: T4A.1-4, T4B.1-4, T4C.1-5. **T5.0 is partial:** T5.0a-b supplies the strict versioned/hashable protocol and runtime-binding gate, but the actual laboratory evidence/config has not been supplied or frozen. **T5.1 is partial:** T5.1a-e accepts raw/FFT/DCT/Haar/db2/SWT/DTCWT training representations, optimized and exposed with truthful UI readiness; mixed precision and remaining cross-device acceptance remain. **T5.2 is partial:** T5.2a-d implements the aligned, leakage-safe, train-normalised PyTorch dataset, bounded-memory worker-safe cache, offline-accepted CDS acquisition contract, exact calendar splits and verified physical-time leads; the live CDS run, independent overlap and viable multi-year NZ crop remain blocked by D43. **T5.3 is partial:** T5.3a-b supplies the forecaster seam, persistence baseline, deterministic represented smoke run, verified model-artifact contract and persistence-relative evaluator; T5.3c and the actual laboratory model remain open. **T5.6 is partial:** T5.6a supplies the offline FCN3 request/result identity contract; no worker, dependency, checkpoint, initial condition or forecast-array import has run. **Not done:** T4C.6, the real-ERA5 gate review; 4D-4H; T5.4-5, the remaining T5.6 execution/evaluation work, and T5.7. Per-task evidence blocks sit under each task below; a task without a **DONE** or **PARTIAL** label has not been started. |
 | **Accessibility** | **Zero, measured.** `0` `aria-*` or `role` attributes and `0` keyboard handlers across `frontend/src`. No focus management. The UI is usable with a mouse and by nobody else. Not scheduled; recorded so it cannot be mistaken for an oversight. |
-| Backend test suite | **1008 passed, 1 xfailed.** Plus one explicit skip: the opt-in live-GCS check. Trajectory: 19 written / 1 failing / uncollectable -> 65 -> 152 -> 222 -> 271 -> 351 -> 407 -> 449 -> 478 -> 535 -> 548 -> 593 -> 642 -> 647 -> 709 -> 781 -> 855 -> 859 -> 882 -> 883 -> 890 -> 911 -> 917 -> 933 -> 946 -> 955 -> 957 -> 962 -> 969 -> 981 -> 985 -> 1000 -> 1008. |
+| Backend test suite | **1027 passed, 1 xfailed.** Plus one explicit skip: the opt-in live-GCS check. Trajectory: 19 written / 1 failing / uncollectable -> 65 -> 152 -> 222 -> 271 -> 351 -> 407 -> 449 -> 478 -> 535 -> 548 -> 593 -> 642 -> 647 -> 709 -> 781 -> 855 -> 859 -> 882 -> 883 -> 890 -> 911 -> 917 -> 933 -> 946 -> 955 -> 957 -> 962 -> 969 -> 981 -> 985 -> 1000 -> 1008 -> 1027. |
 | Ground-Truth Benchmark Suite | **15 PASS, 0 FAIL, 2 NOT_YET_RUNNABLE.** Nine datasets with declared known answers, five of them nulls. CI-ready via `python -m src.benchmarks` (exit 0). |
 | Backend compute modules | **Written, executed and tested.** `physical_core` carries `GridSpec` + metric-aware operators; `analysis_engine` gained `spectra.py` and `climatology.py`; `transform_engine` gained the undecimated `stationary.py` and a real `dtcwt.py`; `statistics/` and `core/` are new packages. |
 | Physical units and wavenumbers | **Correct as of T3.5.13.** Gradients metric-aware, spectra on a physical `k` axis, domain statistics area-weighted, and every quantity carries its units. Previously all of it was pixel-space and unlabelled (D13). |
@@ -1454,7 +1454,7 @@ implemented unless its acceptance evidence appears in `VERIFICATION.md`.
     `RepresentationScore`. Treat a null or contradiction as an outcome to diagnose -- score
     misspecification, low power, dataset shift, forecaster interaction and a genuinely absent
     relationship remain distinct explanations.
-*   **T5.6 External forecaster adapters -- NOT STARTED (FCN3 first target).** Add an external
+*   **T5.6 External forecaster adapters -- PARTIAL (T5.6a offline contract accepted; FCN3 not run).** Add an external
     global model only after its data, weights, licence, grid, variables, normalisation, rollout
     and runtime contracts are frozen. WeatherBench catalogue presence does not mean the current
     regional training path can supply the model or that inference is laptop-feasible.
@@ -1470,7 +1470,7 @@ implemented unless its acceptance evidence appears in `VERIFICATION.md`.
     SpectralEarth findings. FCN3's learned spherical Morlet kernels are not the same intervention
     as inserting Haar/db2/SWT/DTCWT representations into Adam's regional model.
 
-    **T5.6a FCN3/Earth2Studio inference contract -- PLANNED:**
+    **T5.6a FCN3/Earth2Studio inference contract -- PARTIAL:**
 
     1. Define a versioned, hashable `ExternalForecastRun` request for the exact Earth2Studio,
        FCN3 package/checkpoint, 72-channel order, global coordinate grid, normalisation, initial
@@ -1508,6 +1508,25 @@ implemented unless its acceptance evidence appears in `VERIFICATION.md`.
     [`torch-harmonics`](https://github.com/NVIDIA/torch-harmonics). The checkpoint/model card and
     Earth2Studio are Apache-2.0 according to their published records, but every pinned asset's
     licence and redistribution terms must still be captured at acquisition time.
+
+    **Delivered T5.6a offline boundary:** `src/forecasting/external_fcn3.py` defines schema
+    `external-forecast-run/fcn3-v1` with exact model/package/checkpoint/model-card/licence hashes,
+    pinned Earth2Studio/PyTorch/torch-harmonics environment identity, the canonical ordered 72
+    channels, global 721x1440 grid and coordinate hash, source and normalisation identity, UTC
+    initializations, six-hour stochastic ensemble rollout, output selection/crop policy and an
+    explicit prepare-only or Linux/NVIDIA-worker profile. It rejects regional inputs, reordered
+    or missing channels, external perturbation, ambiguous time, seed mismatch, unsupported
+    worker platforms and placeholders. Requests serialize canonically with full SHA-256 and
+    refuse overwrite. Completed-worker manifests bind request identity, selected variables,
+    global geometry, runtime/precision/hardware, measured wall time/peak RAM/VRAM, worker-log hash
+    and deterministic file or directory-tree content hash. NetCDF must be a file and Zarr a tree;
+    result/request and artifact tampering are refused. Nineteen executed acceptance cases pass.
+
+    **Still outstanding:** there is no Earth2Studio worker process, environment lock, real model
+    card/package/checkpoint hash, NGC access, 72-channel initial condition, forecast execution,
+    NetCDF/Zarr schema/value validator, NZ crop importer or ensemble evaluator. The result seal
+    explicitly proves bytes and declarations only. T5.6a remains partial and every hardware run
+    remains `NOT RUN`.
 *   **T5.7 Sensitivity and error-field analysis.** Perturb initial fields through the existing
     `PerturbationEngine`, then analyse forecast errors by scale, orientation, location, lead and
     boundary distance rather than as a single scalar.
