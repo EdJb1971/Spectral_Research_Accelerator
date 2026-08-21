@@ -3810,3 +3810,55 @@ The skip remains the opt-in live-GCS check and the xfail remains the declared hi
 degenerate-DTCWT comparison. `tools/audit_docs.py` reports no undocumented modules/routes, no
 stale inventory rows, 45 defects (42 fixed, D18 partial, D17/D43 open), matching 969/1 suite
 claims and `RESULT: ok`.
+
+## T5.2c / D43a - resumable regional CDS acquisition, offline acceptance
+
+`src/data_layer/cds_source.py` adds the direct regional acquisition route proposed by D43 while
+keeping CDS outside the normal fallback chain. `CDSRegionalRequest` records canonical variables,
+inclusive dates, explicit UTC hours, pressure levels, grid spacing and north/west/south/east
+bounds. Calendar-month shards carry exact request hashes. Planning is network-free; acquisition
+requires the existing explicit network gate and the optional `requirements-cds.txt` dependency.
+Credentials remain exclusively in standard CDS client configuration and never enter a record.
+
+Downloads use `.part` files, validate as NetCDF, receive full file hashes and are atomically
+renamed before acquisition state advances. Resume re-hashes completed shards and refuses changed
+or untracked files. Conversion normalises accepted CDS name/coordinate variants, requires the
+exact requested timestamp/level/grid contract, refuses unresolved member/`expver` dimensions and
+non-finite values, then writes the same bounded-time-chunk content-addressed Zarr cache consumed
+lazily by `RegionalForecastDataset`. `rematerialise_cds_from_provenance` preserves the acquisition
+route; the ordinary Zarr rematerialiser is not allowed to mistake CDS for a Zarr URI.
+
+The command below was executed without network access and printed two exact monthly request
+payloads plus their hashes:
+
+```text
+python -m src.data_layer.cds_source plan --date-start 2020-01-30 \
+  --date-end 2020-02-02 --hours 0,6,12,18 --lat -46 -45 \
+  --lon 170 171 --analysis-levels 1
+network_used: false; monthly shards: 2
+```
+
+Offline focused acceptance:
+
+```text
+python -m pytest src/tests/test_cds_source.py -q
+12 passed, 1 warning in 5.10s
+
+python -m pytest src/tests/test_cds_source.py src/tests/test_zarr_source.py \
+  src/tests/test_regional_forecast.py -q
+78 passed, 1 skipped, 5 warnings in 31.18s
+```
+
+Clean full regression after documentation reconciliation:
+
+```text
+981 passed, 1 skipped, 1 xfailed, 6 warnings in 187.50s
+779 test functions across 31 `test_*.py` files
+```
+
+The focused tests use a deterministic fake CDS client that writes real HDF5 NetCDF shards. They
+prove our request, resume, validation, conversion and Dataset contracts; they do not prove the
+current Copernicus queue, credentials, wire transfer or ERA5 values. No live CDS request,
+multi-year NZ crop or WeatherBench overlap has run. D43 therefore remains open. T5.2d calendar
+splits/physical lead durations and T5.3c protocol-selected model semantics are now explicit
+planned roadmap tasks rather than implicit assumptions.

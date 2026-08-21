@@ -1,0 +1,4 @@
+# Optional direct regional ERA5 acquisition (T5.2c / D43a).
+# The main application and all cached laptop/HPC workflows remain usable without this file.
+-r requirements.txt
+cdsapi>=0.7.7,<1.0

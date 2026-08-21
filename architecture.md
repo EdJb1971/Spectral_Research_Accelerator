@@ -689,6 +689,35 @@ coordinates are normalised to the `PhysicalField` `lat`/`lon` spine, and the res
 WeatherBench-shaped test executes the complete offline path from cached crop to artifact
 handle, with `is_simulated == False`.
 
+### 3.13a Regional ERA5 through CDS (`src/data_layer/cds_source.py`, T5.2c / D43a)
+
+CDS is treated as a queued acquisition backend, not a normal fallback `DataSource`: resolving a
+dataset must never silently submit a remote job. `CDSRegionalRequest` freezes canonical
+`t/q/u/v/z` selections, inclusive dates, explicit UTC hours, pressure levels, grid spacing and
+north/west/south/east area order. Dateline-crossing boxes are refused until split explicitly.
+The immutable request and every monthly shard have full SHA-256 identities.
+
+`plan_monthly_shards` follows queue-friendly calendar boundaries. Acquisition is disabled unless
+`SPECTRALEARTH_ALLOW_NETWORK=1` or the caller passes explicit consent. Each response is written
+to a `.part` file, opened as NetCDF, hashed and atomically renamed before completion state is
+updated. Resume re-hashes completed files and refuses untracked or changed shards. Standard CDS
+client configuration owns credentials; no token is inspected, passed to our functions or
+written into provenance. `cdsapi>=0.7.7` is isolated in `requirements-cds.txt`, so cached
+laptop/HPC work has no CDS dependency.
+
+`materialise_cds` normalises reviewed CDS coordinate/name variants, requires the exact requested
+timestamps and levels, refuses implicit ensemble/`expver` selection and non-finite values, then
+writes the existing content-addressed Zarr cache with bounded time chunks. The unchanged
+`prepare_cached_regional_forecast` path consumes it lazily. A cache manifest includes the full
+acquisition state and says `independent_overlap_check: NOT RUN`; replay uses
+`rematerialise_cds_from_provenance` rather than mistaking a CDS request for a Zarr URI.
+
+Offline acceptance uses deterministic, real NetCDF shards and proves month splitting, network
+consent, atomic resume, tamper refusal, exact timestamp enforcement, cache conversion and the
+complete lazy Dataset/DataLoader interface. It does **not** prove CDS credentials, queue service,
+wire transfer, current NetCDF conversion or ERA5 agreement. No live request or multi-year NZ
+crop has run, so this is T5.2c partial infrastructure and D43 remains open.
+
 ### 3.14 Export (`src/data_layer/exporters.py`, T3.5.23)
 
 Before this module the platform **could not emit a single file**. Every field, spectrum, metric,
@@ -1529,7 +1558,7 @@ See `VERIFICATION.md` for the captured command output behind every statement her
 | Item | Status |
 |---|---|
 | Python venv + dependencies | installed (torch 2.13.0+cu130, numpy 2.2.6, pydantic 1.10.26, SQLAlchemy 2.0.52, xarray 2025.6.1, FastAPI 0.110.3) |
-| Backend test suite | **969 passed, 1 xfailed** (plus 1 skipped: opt-in live GCS) (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17, 351 after T3.5.6, 379 after T3.5.15, 407 after T3.5.19, 449 after T4C.5, 709 after T4A.4, 781 after T4B.4, 855 after T4C.5, 859 after T4C.5c, 882 after T5.1a CPU acceptance, 883 after RTX acceptance, 890 after portable profiles, 911 after T5.1b/D44, 917 after T5.1c, 933 after T5.1d/D45, 946 after T5.1e, 955 after T5.2a, 957 after T5.2b, 962 after T5.3a, 969 after T5.3b) |
+| Backend test suite | **981 passed, 1 xfailed** (plus 1 skipped: opt-in live GCS) (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17, 351 after T3.5.6, 379 after T3.5.15, 407 after T3.5.19, 449 after T4C.5, 709 after T4A.4, 781 after T4B.4, 855 after T4C.5, 859 after T4C.5c, 882 after T5.1a CPU acceptance, 883 after RTX acceptance, 890 after portable profiles, 911 after T5.1b/D44, 917 after T5.1c, 933 after T5.1d/D45, 946 after T5.1e, 955 after T5.2a, 957 after T5.2b, 962 after T5.3a, 969 after T5.3b, 981 after T5.2c offline acceptance) |
 | Ground-Truth Benchmark Suite | **15 PASS, 0 FAIL, 2 NOT_YET_RUNNABLE** (`python -m src.benchmarks`, exit 0) |
 | Frontend `npm install` + `npm run build` | passes, emits 1,378 modules + real JS/CSS assets (was: 1 module, no assets) |
 | Backend server | starts, serves OpenAPI, all smoke-tested endpoints return 200 |
@@ -1609,7 +1638,7 @@ code paths that `architecture.md` previously described as implemented and rigoro
 | D40 | `roadmap.md` rule R13's crop-size table (found while building T4C.1) | **The valid-interior table understates the dual tree by nearly a factor of two.** The table is derived for a single 14-tap filter repeated at every level; DTCWT uses a 19-tap near-symmetric highpass at level 1 and the q-shift pair above it, so the real level-4 margin is **97 parent pixels against the table's 52**. The consequence is concrete rather than theoretical: a 256x256 crop - the roadmap's stated practical minimum for four dyadic levels - leaves DTCWT level 4 a **2x2** valid interior, four coefficients per orientation, on which a participation ratio is almost pure sampling noise. `dtcwt.filter_support` now accumulates the actual cascade, and `scale_signature` reports such a scale as *thin* by name instead of averaging over it. | **FIXED** T4C.1 |
 | D41 | `data_layer/zarr_source.py` vs `transform_engine/stationary.py` (found while building T4C.1) | **Two implementations of rule R13 disagreed by one pixel per side at level 1.** `zarr_source.valid_interior` floored the half-integer radius of an even-length filter while `stationary.valid_interior_halfwidth` used the conservative effective-support halfwidth. The crop module therefore declared one contaminated pixel per side valid at level 1. `edge_exclusion` now derives and halves the full effective support, the R13 table is corrected (`N=64, level 1: 52 -> 50`), and the existing geometry test asserts agreement with the SWT implementation so the definitions cannot drift independently again. | **FIXED** T4C.5a |
 | D42 | `data_layer/adapters.py`, `experiment_engine/actions.py` (found preparing T4C.6) | **Real ERA5 existed beside the Phase 4 pipeline, not inside it.** The Zarr API could inspect and materialise a crop, but `slice_sequence` supplied only a dataset id; the registered source requires the crop specification and therefore could never serve the action that every Phase 4 stage uses. The adapter also assumed `lat`/`lon`, while WeatherBench uses `latitude`/`longitude`. Parameterised source options now flow through the action without entering the unsafe id-only cache, coordinates are normalised onto the physical spine, and source request/provenance survives on the sequence. An offline WeatherBench-shaped test runs cached crop -> `FieldSequence` -> registered action -> artifact and asserts observational, non-simulated provenance. | **FIXED** T4C.5b |
-| D43 | `data_layer/zarr_source.py` catalogue / T4C.6 data design | **The real-data gate is not laptop-feasible through the catalogued WeatherBench layouts.** The supposedly compromise 0.7-degree store is chunked `(8,13,512,256)`: every eight-frame read transfers all levels and the globe. Live metadata inspection for a three-year, one-variable, 255x255 request estimated 29.88 GB fetched for 1.14 GB wanted (26.2x); the 0.25-degree archive is worse. A short record would fit the machine but leaves the independent transfer-entropy partitions estimator-starved. Fix: add and independently verify a temporally deep, spatially tiled ERA5 source (or direct regional CDS acquisition), then freeze the crop and run T4C.6. Do not reduce the sample or edge-validity requirements to fit the old storage layout. | **OPEN** |
+| D43 | `data_layer/zarr_source.py`, `data_layer/cds_source.py` / T4C.6 data design | **The real-data gate is not laptop-feasible through the catalogued WeatherBench layouts.** The supposedly compromise 0.7-degree store is chunked `(8,13,512,256)`: every eight-frame read transfers all levels and the globe. Live metadata inspection for a three-year, one-variable, 255x255 request estimated 29.88 GB fetched for 1.14 GB wanted (26.2x); the 0.25-degree archive is worse. T5.2c now supplies an offline-accepted, resumable direct regional CDS acquisition and canonical-cache path, but no live CDS request, multi-year NZ crop or cross-route overlap has run. Close only after that acquisition and verification evidence exists, then freeze the crop and run T4C.6. Do not reduce sample or edge-validity requirements to fit the old layout. | **OPEN - acquisition contract implemented; live data gate not run** |
 | D44 | `transform_engine/stationary.py:filter_support` / `data_layer/zarr_source.py:edge_exclusion` (found while building T5.1b) | **The generic R13 budget discarded inherited low-pass support.** It counted only the filter newly applied at level `j`, `(L-1)2^(j-1)+1`, although an SWT coefficient has passed through every preceding low-pass stage. The complete cascade is `1+(L-1)(2^j-1)`. For db2 the level-4 margin changes from 12 to 23 pixels; for the declared generic 14-tap budget it changes from 52 to 98, moving the four/five-level 128-valid-pixel floors from 256/512 to 512/1024. Both implementations, their tests, the tier table and R13 documentation now use the accumulated support. An independent convolution of the dilated filters tests the composition rather than merely repeating the formula. Historical D40/D41 measurements remain recorded but are superseded wherever they relied on the generic table. | **FIXED** T5.1b |
 | D45 | `transform_engine/training.py` convolution paths (found by the first full T5.1d run) | **A transform whose numerical result depended on what ran before it.** `enable_determinism` selects a different cuDNN convolution algorithm; with ambient TF32 enabled, the RTX SWT round-trip maximum error changed from **2.38e-7 to 4.48e-4** on the same seeded input. Focused tests passed because they started in fresh process state; the ordered full suite exposed it. All training convolution calls now scope `allow_tf32=False` locally and restore the caller's policy. A regression test deliberately enables deterministic cuDNN plus TF32, asserts the 3e-6 reconstruction tolerance, and asserts the ambient flag is restored. | **FIXED** T5.1d |
 
@@ -1728,6 +1757,7 @@ able to sit three slices out of date.
 | `test_api_infrastructure.py` | 16 | health, listing, pagination, CORS, data-source transparency, benchmark endpoints |
 | `test_benchmarks.py` | 45 | Ground-Truth Benchmark Suite, seed discipline, climatology removal, D30 determinism |
 | `test_boundary_synthetic.py` | 7 | boundary treatments, windowing, synthetic generators |
+| `test_cds_source.py` | 8 | T5.2c monthly CDS planning/CLI, request refusals, network consent, atomic resume, shard integrity, route-aware replay and canonical lazy dataset compatibility |
 | `test_coefficient_field.py` | 40 | T4B.1 acceptance: parent-grid alignment, perfect reconstruction per family, lineage-safe summary; DTCWT upsampling declared; LevelBank and level slicing (T4B.4) |
 | `test_documentation.py` | 18 | this document and roadmap.md against the code |
 | `test_dtcwt.py` | 28 | Kingsbury q-shift DTCWT: primitives vs reference, two oracles, orientation, shift invariance, D1 head-to-heads |
@@ -1753,7 +1783,7 @@ able to sit three slices out of date.
 | `test_wavelet_bank.py` | 27 | T4B.2 expansion through the engine's own parameter matrix, the 1,000-combination guard, decompose_bank / extract_scale_signature, the vertical-bank refusals |
 | `test_transforms.py` | 13 | fft/dct/dwt/dtcwt/hybrid round trips; D1 recorded as a strict xfail |
 | `test_zarr_source.py` | 58 | R13 crop geometry, chunk-hostility prediction, byte counting, cache and provenance round trip, the NetCDF engine (D33), zarr HTTP surface |
-| **total** | **771** | |
+| **total** | **779** | |
 
 ### 7.2h A surrogate null that was not the null it claimed (T4C.5)
 

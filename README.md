@@ -326,5 +326,27 @@ provenance. Network reads are disabled unless `SPECTRALEARTH_ALLOW_NETWORK` is e
 crops remain available offline. Local-file cache entries are invalidated when files appear,
 disappear or change, so an API restart is not required.
 
-**Not supported:** GRIB (`.grib`/`.grib2`) via `cfgrib`, direct Copernicus CDS retrieval, and
-NOAA HRRR/GFS object-store retrieval.
+T5.2c adds an optional direct Copernicus CDS acquisition backend for the chunk-hostile regional
+long-record case. Install it with `pip install -r requirements-cds.txt`. A
+`CDSRegionalRequest` declares exact inclusive dates, UTC hours, north/west/south/east bounds,
+canonical variables, pressure levels and grid spacing. It plans monthly requests, requires
+explicit network consent, downloads atomically, resumes only hash-verified shards and converts
+the result into the same local Zarr cache used by `RegionalForecastDataset`. Credentials remain
+in the standard CDS client configuration and never enter provenance. The offline acquisition,
+resume and conversion contracts pass; **a real CDS request, multi-year NZ crop and independent
+WeatherBench overlap check have NOT RUN**, so D43 remains open.
+
+Planning is network-free and prints the exact monthly CDS payloads before anything is queued:
+
+```powershell
+python -m src.data_layer.cds_source plan `
+  --date-start 2020-01-01 --date-end 2020-12-31 --hours 0,6,12,18 `
+  --lat -50 -20 --lon 150 180 --pressure-levels 850 --analysis-levels 3
+```
+
+Those bounds and dates are an interface example, **not Emily's experiment specification**.
+Materialisation uses the same scientific arguments plus explicit `--download-dir`, `--cache-dir`
+and `--time-chunk`; it still refuses unless the network gate and standard CDS credentials are set.
+
+**Not supported:** GRIB (`.grib`/`.grib2`) ingestion via `cfgrib`, dateline-crossing CDS boxes
+without splitting them into two requests, and NOAA HRRR/GFS object-store retrieval.
