@@ -132,10 +132,11 @@ def create_simulated_toy() -> xr.Dataset:
     return ds
 
 class MeteorologicalDataAdapter:
-    """Resolves dataset ids to xarray Datasets, preferring real NetCDF over simulation.
+    """Resolve dataset ids through the source registry and slice them onto the core spine.
 
     GRIB is NOT supported: there is no cfgrib branch here and cfgrib is not a dependency.
-    Only ``.nc`` is probed. Remote sources (CDS API, S3) and Zarr are Task 3.5.20.
+    Local files use ``.nc``; the separately registered Zarr source accepts explicit,
+    provenance-carrying regional ERA5 crop specifications.
     """
 
     _datasets: Dict[str, xr.Dataset] = {}
@@ -151,7 +152,8 @@ class MeteorologicalDataAdapter:
         return path if os.path.exists(path) else None
 
     @classmethod
-    def get_dataset(cls, dataset_id: str) -> xr.Dataset:
+    def get_dataset(cls, dataset_id: str,
+                    source_options: Optional[Dict[str, Any]] = None) -> xr.Dataset:
         """Resolve a dataset through the registered source chain (T3.5.15, standard E2).
 
         Sources are tried in priority order and the full attempt record is kept, so a run
@@ -160,6 +162,26 @@ class MeteorologicalDataAdapter:
         dropping a new `.nc` file into `data/` is still picked up without a restart.
         """
         dataset_id = dataset_id.lower()
+        options = dict(source_options or {})
+
+        # Parameterised sources such as ERA5 Zarr do not denote one stable dataset by id:
+        # the crop specification *is part of the identity*. Their own content-addressed cache
+        # handles reuse, so do not put one crop in the legacy id-only process cache where a
+        # later request for another crop could silently receive the first one (D42).
+        if options:
+            resolution = data_sources.resolve(dataset_id, **options)
+            cls._sources[dataset_id] = {
+                "kind": resolution.kind,
+                "path": None,
+                "mtime": None,
+                "fallback_reason": resolution.fallback_reason,
+                "source_name": resolution.source_name,
+                "is_simulated": resolution.is_simulated,
+                "provenance": resolution.to_provenance(),
+                "request": options,
+            }
+            return resolution.dataset
+
         path = cls._resolve_path(dataset_id)
         mtime = os.path.getmtime(path) if path else None
 
@@ -288,9 +310,10 @@ class MeteorologicalDataAdapter:
         time: Optional[str] = None,
         level: Optional[float] = None,
         lat_range: Optional[Tuple[float, float]] = None,
-        lon_range: Optional[Tuple[float, float]] = None
+        lon_range: Optional[Tuple[float, float]] = None,
+        source_options: Optional[Dict[str, Any]] = None,
     ) -> PhysicalField:
-        ds = cls.get_dataset(dataset_id)
+        ds = cls.get_dataset(dataset_id, source_options=source_options)
         
         if variable not in ds.data_vars:
             raise ValueError(f"Variable '{variable}' not found in dataset '{dataset_id}'. Available: {list(ds.data_vars.keys())}")
@@ -312,12 +335,19 @@ class MeteorologicalDataAdapter:
                 else:
                     da = da.isel(level=len(da.coords["level"]) // 2)
                     
+        lat_name = "lat" if "lat" in da.coords else "latitude"
+        lon_name = "lon" if "lon" in da.coords else "longitude"
+
         if lat_range is not None:
             lat_min, lat_max = sorted(lat_range)
-            da = da.sel(lat=slice(lat_min, lat_max))
+            latitude = da.coords[lat_name].values
+            lat_slice = (slice(lat_max, lat_min)
+                         if len(latitude) > 1 and latitude[0] > latitude[-1]
+                         else slice(lat_min, lat_max))
+            da = da.sel({lat_name: lat_slice})
         if lon_range is not None:
             lon_min, lon_max = sorted(lon_range)
-            da = da.sel(lon=slice(lon_min, lon_max))
+            da = da.sel({lon_name: slice(lon_min, lon_max)})
             
         da = da.squeeze()
         if len(da.dims) != 2:
@@ -327,8 +357,8 @@ class MeteorologicalDataAdapter:
         if torch.isnan(data_tensor).any() or torch.isinf(data_tensor).any():
             data_tensor = torch.nan_to_num(data_tensor, nan=0.0, posinf=0.0, neginf=0.0)
             
-        lat_coords = torch.tensor(da.coords["lat"].values, dtype=torch.float32)
-        lon_coords = torch.tensor(da.coords["lon"].values, dtype=torch.float32)
+        lat_coords = torch.tensor(da.coords[lat_name].values, dtype=torch.float32)
+        lon_coords = torch.tensor(da.coords[lon_name].values, dtype=torch.float32)
         
         coords = {"lat": lat_coords, "lon": lon_coords}
         metadata = {
@@ -355,6 +385,7 @@ class MeteorologicalDataAdapter:
         lat_range: Optional[Tuple[float, float]] = None,
         lon_range: Optional[Tuple[float, float]] = None,
         max_frames: int = 2000,
+        source_options: Optional[Dict[str, Any]] = None,
     ) -> "FieldSequence":
         """Crop a dataset over **time** rather than at one instant (roadmap T4A.4).
 
@@ -369,7 +400,7 @@ class MeteorologicalDataAdapter:
         """
         from src.physical_core.sequence import FieldSequence
 
-        ds = cls.get_dataset(dataset_id)
+        ds = cls.get_dataset(dataset_id, source_options=source_options)
         if variable not in ds.data_vars:
             raise ValueError(
                 f"Variable '{variable}' not found in dataset '{dataset_id}'. "
@@ -398,19 +429,26 @@ class MeteorologicalDataAdapter:
             else:
                 da = da.isel(level=len(da.coords["level"]) // 2)
 
+        lat_name = "lat" if "lat" in da.coords else "latitude"
+        lon_name = "lon" if "lon" in da.coords else "longitude"
+
         if lat_range is not None:
             lat_min, lat_max = sorted(lat_range)
-            da = da.sel(lat=slice(lat_min, lat_max))
+            latitude = da.coords[lat_name].values
+            lat_slice = (slice(lat_max, lat_min)
+                         if len(latitude) > 1 and latitude[0] > latitude[-1]
+                         else slice(lat_min, lat_max))
+            da = da.sel({lat_name: lat_slice})
         if lon_range is not None:
             lon_min, lon_max = sorted(lon_range)
-            da = da.sel(lon=slice(lon_min, lon_max))
+            da = da.sel({lon_name: slice(lon_min, lon_max)})
 
         n_frames = int(da.sizes["time"])
         if n_frames > max_frames:
             raise ValueError(
                 f"this crop selects {n_frames} frames, over the {max_frames}-frame limit. "
                 f"Materialising them as PhysicalField objects would use roughly "
-                f"{n_frames * da.sizes.get('lat', 1) * da.sizes.get('lon', 1) * 8 / 1e9:.1f} GB "
+                f"{n_frames * da.sizes.get(lat_name, 1) * da.sizes.get(lon_name, 1) * 8 / 1e9:.1f} GB "
                 f"before any analysis runs. Narrow time_range, or raise max_frames "
                 f"deliberately if the memory is genuinely available.")
 
@@ -426,8 +464,8 @@ class MeteorologicalDataAdapter:
         # does not.
         n_nonfinite = int(np.count_nonzero(~np.isfinite(values)))
 
-        lat_coords = torch.tensor(da.coords["lat"].values, dtype=torch.float64)
-        lon_coords = torch.tensor(da.coords["lon"].values, dtype=torch.float64)
+        lat_coords = torch.tensor(da.coords[lat_name].values, dtype=torch.float64)
+        lon_coords = torch.tensor(da.coords[lon_name].values, dtype=torch.float64)
         coords = {"lat": lat_coords, "lon": lon_coords}
 
         base_metadata = {
@@ -459,6 +497,8 @@ class MeteorologicalDataAdapter:
             "is_simulated": bool(source.get("is_simulated", True)),
             "source_kind": source.get("kind", "unknown"),
             "fallback_reason": source.get("fallback_reason"),
+            "source_provenance": source.get("provenance"),
+            "source_request": source.get("request"),
         }
         return FieldSequence(fields, da.coords["time"].values, metadata=metadata)
 

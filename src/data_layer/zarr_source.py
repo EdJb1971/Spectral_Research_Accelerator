@@ -91,8 +91,10 @@ CATALOGUE: Dict[str, Dict[str, Any]] = {
         "cadence_hours": 6,
         "grid": (256, 512),
         "levels": 13,
-        "note": ("The compromise store: a 256x256 crop meets the R13 four-level floor and "
-                 "is half the global grid, so amplification is small."),
+        "note": ("Time chunks are eight frames deep, but each still spans every level and "
+                 "the full 512x256 globe. Live inspection on 2026-08-21 estimated 29.88 GB "
+                 "for a three-year, one-variable 255x255 crop (26.2x amplification). This "
+                 "is not a laptop-feasible long-record regional source for T4C.6 (D43)."),
     },
 }
 
@@ -133,12 +135,18 @@ MIN_VALID_INTERIOR = 128
 def edge_exclusion(level: int, taps: int = DEFAULT_FILTER_TAPS) -> int:
     """Pixels contaminated per side at an undecimated level (roadmap R13).
 
-    ``halfwidth(j) = floor((L - 1) * 2**(j-1) / 2)``. Reproduces R13's table for L=14:
-    6, 13, 26, 52 px per side at levels 1-4.
+    The effective support is ``(L - 1) * 2**(j-1) + 1`` pixels.  Conservatively exclude
+    ``support // 2`` per side, which is equivalent to taking the ceiling of the possibly
+    half-integer radius.  This deliberately matches
+    :func:`transform_engine.stationary.valid_interior_halfwidth`; flooring would declare a
+    contaminated pixel valid for an even-length filter at level 1 (D41).
+
+    For L=14 the margins at levels 1-4 are 7, 13, 26 and 52 pixels per side.
     """
     if level < 1:
         raise InvalidParameterError("level", level, "an integer >= 1")
-    return int((taps - 1) * (2 ** (level - 1)) // 2)
+    support = (taps - 1) * (2 ** (level - 1)) + 1
+    return int(support // 2)
 
 
 def valid_interior(size: int, level: int, taps: int = DEFAULT_FILTER_TAPS) -> int:

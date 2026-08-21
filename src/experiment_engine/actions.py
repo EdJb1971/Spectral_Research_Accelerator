@@ -405,7 +405,9 @@ def summarise(action: str, step_result: dict, resolved_args: dict) -> dict:
     description='Crop a dataset over time into a FieldSequence, stored as an artifact.',
     params={'dataset_id': 'registered dataset id', 'variable': 'str',
             'time_range': '[start, end] ISO timestamps', 'level': 'float hPa',
-            'lat_range': '[min, max]', 'lon_range': '[min, max]'},
+            'lat_range': '[min, max]', 'lon_range': '[min, max]',
+            'crop': 'optional provenance block for a parameterised source such as ERA5 Zarr',
+            'cache_dir': 'optional local Zarr cache directory'},
     node_type='field',
 )
 def slice_sequence(args: Dict[str, Any], device: torch.device) -> Dict[str, Any]:
@@ -426,6 +428,11 @@ def slice_sequence(args: Dict[str, Any], device: torch.device) -> Dict[str, Any]
         time_range = tuple(time_range)
     lat_range = args.get("lat_range")
     lon_range = args.get("lon_range")
+    source_options = None
+    if args.get("crop") is not None:
+        source_options = {"crop": args["crop"]}
+        if args.get("cache_dir") is not None:
+            source_options["cache_dir"] = args["cache_dir"]
 
     sequence = MeteorologicalDataAdapter.slice_sequence(
         dataset_id=args["dataset_id"],
@@ -435,6 +442,7 @@ def slice_sequence(args: Dict[str, Any], device: torch.device) -> Dict[str, Any]
         lat_range=tuple(lat_range) if lat_range else None,
         lon_range=tuple(lon_range) if lon_range else None,
         max_frames=int(args.get("max_frames", 2000)),
+        source_options=source_options,
     )
     handle = artifact_store.get_store().put(
         sequence, name="%s_%s" % (args["dataset_id"], args["variable"]))

@@ -31,6 +31,61 @@ def _signature(sequence, levels=3):
         sequence, "swt", {"levels": levels, "wavelet": "db2"}, keep_native=False))
 
 
+def _gate_result(protocol, *, significant=True, powered=True, floor=True):
+    rows = []
+    for source in range(1, protocol.n_scales + 1):
+        for target in range(1, protocol.n_scales + 1):
+            if source == target:
+                continue
+            for lag in protocol.lags:
+                rows.append({
+                    "label": "%d->%d@%d" % (source, target, lag),
+                    "significant": bool(significant and source == 1 and target == 2
+                                        and lag == protocol.lags[0]),
+                    "q_value": 0.01 if significant else 1.0,
+                    "excess_nats": 0.2 if significant else 0.0,
+                })
+    return {"estimator": protocol.estimator, "measure": protocol.measure,
+            "lags_frames": list(protocol.lags), "n_tests": protocol.family_size,
+            "power": {"can_reject_after_correction": powered},
+            "support_floor": {"enforced": floor}, "results": rows}
+
+
+def test_gate_protocol_refuses_an_underpowered_or_leaky_design():
+    with pytest.raises(InvalidParameterError, match="cannot produce a significant result"):
+        cs.GateProtocol("underpowered", 3, (1, 2), 4000,
+                        embargo_frames=2, n_surrogates=99).validate()
+    with pytest.raises(InvalidParameterError, match="longest tested lag"):
+        cs.GateProtocol("leaky", 3, (1, 2, 3), 4000,
+                        embargo_frames=2, n_surrogates=4999).validate()
+
+
+def test_gate_protocol_refuses_partitions_too_short_for_the_estimator():
+    with pytest.raises(InvalidParameterError, match="both independent partitions"):
+        cs.GateProtocol("short", 3, (1, 2), 2000,
+                        embargo_frames=2, n_surrogates=4999).validate()
+
+
+def test_gate_protocol_fingerprint_is_stable_and_sensitive():
+    protocol = cs.GateProtocol("nz", 3, (1, 2), 4000,
+                               embargo_frames=2, n_surrogates=4999)
+    assert protocol.fingerprint() == protocol.fingerprint()
+    changed = cs.GateProtocol("nz", 3, (1, 2), 4000,
+                              embargo_frames=2, n_surrogates=5000)
+    assert protocol.fingerprint() != changed.fingerprint()
+
+
+def test_replication_gate_distinguishes_pass_fail_and_invalid():
+    protocol = cs.GateProtocol("nz", 3, (1, 2), 4000,
+                               embargo_frames=2, n_surrogates=4999)
+    positive = _gate_result(protocol)
+    null = _gate_result(protocol, significant=False)
+    assert cs.evaluate_replication_gate(positive, positive, protocol)["verdict"] == "PASS"
+    assert cs.evaluate_replication_gate(positive, null, protocol)["verdict"] == "FAIL"
+    invalid = _gate_result(protocol, powered=False)
+    assert cs.evaluate_replication_gate(positive, invalid, protocol)["verdict"] == "INVALID"
+
+
 @pytest.fixture(scope="module")
 def cascade():
     return build_cascade(n=96, n_frames=192, lag=3, seed=5)

@@ -21,10 +21,12 @@ import os
 
 import numpy as np
 import pytest
+import torch
 
 from src.core.errors import DataSourceError, FieldTooSmallError, InvalidParameterError
 from src.data_layer import builtin_sources  # noqa: F401  (registers the other sources)
 from src.data_layer import zarr_source as zs
+from src.transform_engine.stationary import valid_interior_halfwidth
 
 xr = pytest.importorskip("xarray")
 pytest.importorskip("zarr")
@@ -87,13 +89,19 @@ def _spec(store, **overrides):
 # ======================================================== R13 crop geometry
 
 def test_edge_exclusion_reproduces_the_r13_table():
-    """R13 states 6, 13, 26, 52 px per side for a 14-tap filter at levels 1-4."""
-    assert [zs.edge_exclusion(j, taps=14) for j in (1, 2, 3, 4)] == [6, 13, 26, 52]
+    """R13 uses the conservative radius and agrees with the transform implementation."""
+    margins = [zs.edge_exclusion(j, taps=14) for j in (1, 2, 3, 4)]
+    assert margins == [7, 13, 26, 52]
+
+    # Exercise the real shared family as well as the published 14-tap sizing convention.
+    assert [zs.edge_exclusion(j, taps=4) for j in (1, 2, 3)] == [
+        valid_interior_halfwidth("db2", j) for j in (1, 2, 3)
+    ]
 
 
 def test_valid_interior_reproduces_the_r13_table():
-    # R13's table: N=64 has 52 valid px at level 1 and *none* at level 4.
-    assert zs.valid_interior(64, 1) == 52
+    # R13's corrected table: N=64 has 50 valid px at level 1 and none at level 4.
+    assert zs.valid_interior(64, 1) == 50
     assert zs.valid_interior(64, 4) <= 0
     assert zs.valid_interior(256, 4) == 152
     assert zs.valid_interior(512, 4) == 408
@@ -511,6 +519,31 @@ def test_source_serves_a_cached_crop_with_no_network(monkeypatch, hostile_store,
     dataset = zs.ERA5ZarrSource.fetch(zs.ZARR_DATASET_ID,
                                       crop=spec.to_provenance(), cache_dir=cache)
     assert "temperature" in dataset.data_vars
+
+    # D42: real crops must reach the Phase 4 sequence action, not stop at the Zarr tab.
+    from src.artifact_store import store as store_module
+    from src.artifact_store.store import ArtifactStore
+    from src.data_layer.adapters import MeteorologicalDataAdapter
+    from src.experiment_engine import actions
+
+    monkeypatch.setattr(store_module, "_DEFAULT", ArtifactStore(str(tmp_path / "artifacts")))
+    source = {"crop": spec.to_provenance(), "cache_dir": cache}
+    sequence = MeteorologicalDataAdapter.slice_sequence(
+        zs.ZARR_DATASET_ID, "temperature", level=850, source_options=source)
+    assert len(sequence) > 1
+    assert sequence.metadata["is_simulated"] is False
+    assert sequence.metadata["source_kind"] == "zarr"
+    assert sequence.grid.kind == "latlon"
+
+    result = actions.execute("slice_sequence", {
+        "dataset_id": zs.ZARR_DATASET_ID,
+        "variable": "temperature",
+        "level": 850,
+        "crop": spec.to_provenance(),
+        "cache_dir": cache,
+    }, torch.device("cpu"))
+    assert result["sequence_ref"].startswith("artifact://")
+    assert result["summary"]["metadata"]["is_simulated"] is False
 
 
 def test_source_without_a_crop_explains_why_it_cannot_guess():

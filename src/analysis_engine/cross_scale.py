@@ -45,6 +45,9 @@ cancels.
 from __future__ import annotations
 
 import math
+import hashlib
+import json
+from dataclasses import asdict, dataclass
 from typing import Any, Callable, Dict, List, Optional, Sequence
 
 import numpy as np
@@ -58,6 +61,156 @@ DEFAULT_BINS = 6
 DEFAULT_SHIFT_SURROGATES = 199
 
 MIN_SAMPLES_PER_CELL = 5.0
+
+
+@dataclass(frozen=True)
+class GateProtocol:
+    """Frozen design for the T4C.6 train/test replication gate.
+
+    The protocol is deliberately independent of a particular cloud store. Data acquisition
+    may change when a better chunk layout becomes available; the hypothesis family, power,
+    temporal split and decision rule must not change after results are seen.
+    """
+
+    study_id: str
+    n_scales: int
+    lags: tuple
+    expected_frames: int
+    cadence_seconds: float = 21600.0
+    train_ratio: float = 0.6
+    embargo_frames: int = 8
+    estimator: str = "transfer_entropy"
+    measure: str = "energy_density"
+    bins: int = DEFAULT_BINS
+    n_surrogates: int = 4999
+    alpha: float = 0.05
+    correction: str = "benjamini_yekutieli"
+    require_advection_floor: bool = True
+    seed: int = 20260821
+
+    @property
+    def family_size(self) -> int:
+        return self.n_scales * (self.n_scales - 1) * len(self.lags)
+
+    @property
+    def samples_per_joint_cell_required(self) -> int:
+        dimensions = 3 if self.estimator == "transfer_entropy" else 2
+        return int((self.bins ** dimensions) * MIN_SAMPLES_PER_CELL)
+
+    def validate(self) -> Dict[str, Any]:
+        """Refuse a design incapable of producing an interpretable PASS or FAIL."""
+        if not self.study_id.strip():
+            raise InvalidParameterError("study_id", self.study_id, "a non-empty identifier")
+        if self.n_scales < 2:
+            raise InvalidParameterError("n_scales", self.n_scales, "at least two scales")
+        if not self.lags or any(int(v) < 1 for v in self.lags):
+            raise InvalidParameterError("lags", self.lags, "positive frame lags")
+        if self.embargo_frames < max(int(v) for v in self.lags):
+            raise InvalidParameterError(
+                "embargo_frames", self.embargo_frames,
+                "at least the longest tested lag (%d frames), so a target cannot cross a "
+                "temporal split boundary" % max(int(v) for v in self.lags))
+        if not 0.0 < self.train_ratio < 1.0:
+            raise InvalidParameterError("train_ratio", self.train_ratio, "a fraction in (0, 1)")
+        if self.expected_frames < 1:
+            raise InvalidParameterError("expected_frames", self.expected_frames,
+                                        "a positive frame count")
+        if self.estimator not in ("transfer_entropy", "mutual_information"):
+            raise InvalidParameterError("estimator", self.estimator,
+                                        "'transfer_entropy' or 'mutual_information'")
+
+        train_frames = int(self.expected_frames * self.train_ratio)
+        test_frames = self.expected_frames - train_frames - self.embargo_frames
+        required = self.samples_per_joint_cell_required
+        if min(train_frames, test_frames) < required:
+            raise InvalidParameterError(
+                "expected_frames", self.expected_frames,
+                "enough frames that both independent partitions have at least %d samples "
+                "(%d bins across the estimator's joint cells at %.0f samples/cell). This "
+                "design gives train=%d and test=%d after a %d-frame embargo"
+                % (required, self.bins, MIN_SAMPLES_PER_CELL, train_frames, test_frames,
+                   self.embargo_frames))
+
+        power = check_power(self.n_surrogates, self.family_size, alpha=self.alpha,
+                            method=self.correction)
+        if not power["can_reject_after_correction"]:
+            raise InvalidParameterError(
+                "n_surrogates", self.n_surrogates,
+                power["warning"] or "enough surrogates to reject after correction")
+        return {
+            "family_size": self.family_size,
+            "train_frames": train_frames,
+            "test_frames": test_frames,
+            "embargo_frames": self.embargo_frames,
+            "minimum_frames_per_partition": required,
+            "power": power,
+            "fingerprint": self.fingerprint(),
+        }
+
+    def fingerprint(self) -> str:
+        """Stable identity for the exact protocol placed beside every gate result."""
+        payload = json.dumps(asdict(self), sort_keys=True, separators=(",", ":"),
+                             default=list).encode("utf-8")
+        return hashlib.sha256(payload).hexdigest()
+
+
+def evaluate_replication_gate(train: Dict[str, Any], test: Dict[str, Any],
+                              protocol: GateProtocol) -> Dict[str, Any]:
+    """PASS only relationships that replicate under the frozen design.
+
+    FAIL is a scientifically valid null result. INVALID means the run cannot adjudicate the
+    question (configuration drift, no geometric support floor, or inadequate surrogate
+    power) and must never be displayed as a negative finding.
+    """
+    design = protocol.validate()
+    problems: List[str] = []
+    for split_name, result in (("train", train), ("test", test)):
+        if result.get("estimator") != protocol.estimator:
+            problems.append("%s estimator is %r, expected %r" %
+                            (split_name, result.get("estimator"), protocol.estimator))
+        if result.get("measure") != protocol.measure:
+            problems.append("%s measure is %r, expected %r" %
+                            (split_name, result.get("measure"), protocol.measure))
+        if [int(v) for v in result.get("lags_frames", [])] != [int(v) for v in protocol.lags]:
+            problems.append("%s lag family differs from the frozen protocol" % split_name)
+        if int(result.get("n_tests", -1)) != protocol.family_size:
+            problems.append("%s tested %r hypotheses, expected the declared family of %d" %
+                            (split_name, result.get("n_tests"), protocol.family_size))
+        if not (result.get("power") or {}).get("can_reject_after_correction", False):
+            problems.append("%s partition was underpowered after correction" % split_name)
+        if protocol.require_advection_floor and not (
+                result.get("support_floor") or {}).get("enforced", False):
+            problems.append("%s partition did not enforce the declared advection floor" %
+                            split_name)
+
+    if problems:
+        return {"verdict": "INVALID", "problems": problems,
+                "protocol_fingerprint": design["fingerprint"], "replicated": []}
+
+    def positive(rows: Sequence[Dict[str, Any]]) -> Dict[str, Dict[str, Any]]:
+        return {
+            str(row["label"]): row for row in rows
+            if bool(row.get("significant"))
+            and float(row.get("q_value", 1.0)) <= protocol.alpha
+            and float(row.get("excess_nats", 0.0)) > 0.0
+        }
+
+    train_positive = positive(train.get("results", []))
+    test_positive = positive(test.get("results", []))
+    labels = sorted(set(train_positive) & set(test_positive))
+    replicated = [{"label": label,
+                   "train": train_positive[label],
+                   "test": test_positive[label]}
+                  for label in labels]
+    return {
+        "verdict": "PASS" if replicated else "FAIL",
+        "problems": [],
+        "protocol_fingerprint": design["fingerprint"],
+        "replicated": replicated,
+        "decision_rule": ("PASS requires the same positive, q<=alpha relationship in the "
+                          "independent train and test partitions; an adequately powered "
+                          "absence is FAIL, never INVALID"),
+    }
 
 
 class CrossScaleError(ValueError):

@@ -3013,3 +3013,139 @@ repository.
 pass untouched". The figure is right but the description was loose: it is the 118 tests in
 `test_grid_operators.py`, `test_benchmarks.py` and `test_hypothesis.py`, which are the files
 that exercise the fit. Now stated that way in both documents.
+
+---
+
+## T4C.5a - one conservative edge convention (D41)
+
+Closed on 2026-08-21 before designing the real-ERA5 gate. The crop-sizing path used
+`floor((L-1) * 2**(j-1) / 2)` while the SWT analysis path used half of the full effective
+support. For an even-length filter at level 1 the radius is a half-integer, so the former
+declared one contaminated pixel per side valid.
+
+The implementation now computes the effective support first and uses `support // 2`, matching
+`stationary.valid_interior_halfwidth`. The published 14-tap R13 margins are therefore
+7/13/26/52 rather than 6/13/26/52 pixels per side; the N=64 level-1 interior is 50 rather than
+52 pixels. Coarser margins and the 256/512 minimum crop sizes are unchanged. The existing R13
+geometry test now compares the Zarr sizing implementation directly with the SWT implementation
+for db2, preventing the two definitions from drifting independently again.
+
+Evidence command:
+
+```text
+python -m pytest -q src/tests/test_zarr_source.py -k
+"edge_exclusion or valid_interior or minimum_crop or crop_too_small or crop_at_the_floor"
+```
+
+The result is recorded in the next suite block after execution. D41 is now **FIXED**; D17 is
+the sole fully open defect and D18 remains partial because cross-device hardware is absent.
+
+---
+
+## T4C.5b - real ERA5 reaches the Phase 4 pipeline (D42)
+
+Closed on 2026-08-21 while preparing the real-data gate. Static review found that the Zarr
+source required a crop block but the registered `slice_sequence` action could pass only a
+dataset id. The dedicated ERA5 tab and the Phase 4 analysis spine were therefore both working
+and disconnected. WeatherBench coordinates also use `latitude`/`longitude`, while the adapter
+indexed only `lat`/`lon`.
+
+The adapter now accepts parameterised source options without putting them in its legacy
+dataset-id cache, the action passes the crop and cache directory through, and both coordinate
+naming conventions map onto the physical `lat`/`lon` spine. Resolution provenance and the
+source request are stored in `FieldSequence.metadata`.
+
+Executed against a local Zarr store with WeatherBench's dimensions and hostile remote chunk
+layout. The crop was materialised, the network disabled, then the cached data ran through the
+adapter and registered action into the artifact store. Assertions require multiple timestamps,
+a lat/lon physical grid, `source_kind == "zarr"`, `is_simulated is False`, and an
+`artifact://` sequence handle.
+
+```text
+python -m pytest -q \
+  src/tests/test_zarr_source.py::test_source_serves_a_cached_crop_with_no_network
+
+1 passed
+```
+
+This proves the transport and provenance seam on a structurally faithful local store. It does
+not claim that T4C.6 has run on the atmosphere; no real crop is currently present under
+`data/zarr_cache`, and the gate protocol still has to be frozen before a network transfer.
+
+---
+
+## T4C.5c - frozen replication protocol and the honest data blocker (D43)
+
+`GateProtocol` and `evaluate_replication_gate` now make the T4C.6 decision rule executable.
+Four tests assert rejection of an underpowered surrogate family, rejection of an embargo
+shorter than the longest lag, rejection of estimator-starved temporal partitions, stable and
+sensitive protocol fingerprints, and the distinction between PASS, FAIL and INVALID.
+
+The live 0.7-degree WeatherBench store was inspected without materialising data:
+
+```text
+store: era5_0p7_6h
+variable: temperature
+window: 2018-01-01 to 2020-12-31
+selection: 4384 times x 1 level x 255 lon x 255 lat
+chunks: 8 x 13 x 512 x 256
+wanted: 1,140,278,400 bytes
+estimated fetched: 29,880,221,696 bytes
+amplification: 26.2x
+```
+
+That is a metadata-derived uncompressed upper bound, not a measured wire transfer, and is
+labelled accordingly. It is sufficient to reject the current layout for a laptop-tier gate:
+the layout transfers every level and global spatial chunk regardless of the regional request.
+D43 records the missing spatially tiled temporal source. The gate remains **not run**.
+
+### Suite after T4C.5a-c
+
+```text
+859 passed, 1 skipped (opt-in live GCS), 1 xfailed
+696 test functions across 28 files
+tools/audit_docs.py: RESULT ok (exit 0)
+```
+
+The full suite completed in 226.68 s. The xfail remains the deliberately retained regression
+arm for the original degenerate transform; the skip remains the explicitly opt-in live-GCS
+transport check. Neither is a T4C.6 atmospheric verdict.
+
+---
+
+## Phase 5 readiness audit - planning evidence, not implementation acceptance
+
+The immediate regional-training proposal was checked against the current implementation before
+being added to `architecture.md` and `roadmap.md`. This was a read-only smoke test, not a new
+feature or an acceptance test.
+
+For the implemented `near_sym_b` / `qshift_b` DTCWT, `valid_interior_halfwidth` returned:
+
+```text
+levels 1..4: [9, 19, 45, 97] parent-grid pixels per side
+```
+
+For the current SWT filters it returned:
+
+```text
+Haar levels 1..4: [1, 1, 2, 4]
+db2  levels 1..4: [2, 3, 6, 12]
+```
+
+On fresh float64 32x32 tensors with `requires_grad=True`, forward/inverse reconstruction for
+DTCWT (two levels), db2 SWT (two levels), DCT and FFT produced finite input gradients and
+maximum reconstruction errors between `1.1e-15` and `2.6e-14`. This establishes only that the
+present CPU operations can participate in those simple autograd graphs.
+
+The same audit confirmed the blocking interface fact:
+
+```text
+PhysicalField(torch.randn(2, 5, 32, 32))
+ValueError: PhysicalField data must be 2D. Got shape torch.Size([2, 5, 32, 32])
+CUDA available: False
+```
+
+Therefore no batched, CUDA, mixed-precision, compiled, cached-filter or training-throughput
+claim is accepted. Those remain explicit T5.1 acceptance work. No inference about the external
+poster follows from these margins until its exact domain, filters, levels and boundary mode are
+obtained and frozen under T5.0.

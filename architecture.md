@@ -50,11 +50,97 @@ The system architecture is structured hierarchically:
 
 ---
 
+### 1.1 Scope boundary: analysis workbench versus learned forecaster
+
+An EGU poster supplied as external research context, *Spectral representations for regional
+AI-based weather prediction* (Emily O'Riordan, Victoria University of Wellington), compares
+Fourier, DCT, Haar, db2 and DTCWT representations inside a controlled lightweight neural
+forecaster over the New Zealand ERA5 domain. It reports initial forecast-RMSE differences by
+lead time and variable. Those poster results are **not evidence produced by this repository**
+and are not reproduced here.
+
+The present implementation is relevant to that research because it can:
+
+* obtain provenance-carrying regional ERA5 crops;
+* execute and validate the named transform families, including a real six-orientation DTCWT;
+* measure boundary artefacts, reconstruction, scale activity and directional structure; and
+* evaluate statistical claims against declared surrogate nulls and corrected test families.
+
+It cannot yet answer the poster's forecasting question. There is no matched spectral neural
+network, model-training loop, autoregressive rollout or representation-controlled forecast
+skill experiment in the current source tree. Phase 5 proposes a `Forecaster` seam, but future
+roadmap text is not implemented capability. Until that work is built and tested, statements
+about one representation improving learned regional forecast skill must cite external results,
+not SpectralEarth.
+
+### 1.2 Immediate research target: a training-native regional bridge *(proposed)*
+
+The first downstream integration is the motivating laboratory workflow, not a large global
+model: `(B, C, H, W) -> representation -> existing regional forecaster -> inverse -> loss`.
+That makes the platform useful in the current experiment while keeping the interfaces general
+enough for another regional model, variable set, pressure level or geographic domain.
+
+This requires a second, deliberately narrow spine beside `PhysicalField`:
+
+* `RepresentationModule`, a `torch.nn.Module`-compatible forward/inverse contract over
+  batched tensors, with structured coefficient metadata and an explicit real/imaginary packing
+  convention;
+* `RegionalForecastDataset`, yielding aligned input/target tensors plus timestamps, grid,
+  variables, levels, lead time, source fingerprint and split provenance; and
+* `ForecasterAdapter`, which lets an existing laboratory model act as the downstream judge
+  without making its architecture part of SpectralEarth.
+
+`PhysicalField` remains the 2D, coordinate-aware analysis object. It must not be weakened into
+an untyped container for arbitrary training batches. The two spines share filter definitions,
+boundary conventions and provenance schemas; adapters move a selected batch item into the
+analysis spine when diagnostics are required. This separation gives training code a normal
+PyTorch interface without creating a second scientific definition of each transform.
+
+**Current readiness boundary.** The existing FFT, DCT, SWT and real DTCWT execute with PyTorch
+operations and a CPU smoke test has propagated finite gradients through forward/inverse
+reconstruction. That is encouraging implementation evidence, not training acceptance. They
+still reject `(B,C,H,W)` input; filter tensors and DCT matrices are rebuilt per call; CUDA,
+mixed precision, complex-gradient behaviour, batching, compilation, throughput and activation
+memory have not been accepted. No `RegionalForecastDataset` or laboratory-model adapter exists.
+
+### 1.3 Boundary-support hypothesis for the New Zealand comparison *(proposed study)*
+
+For the implemented `near_sym_b` / `qshift_b` DTCWT, the measured parent-grid contaminated
+margin per side is 9, 19, 45 and 97 pixels at levels 1--4. If -- and only if -- the motivating
+experiment used these filters, comparable boundary handling, a domain near 120x80 and three or
+four levels, its coarsest coefficients would have no strict two-dimensional valid interior.
+The poster does not establish all of those configuration facts, so this is an audit hypothesis,
+not a finding about its model.
+
+The related hypothesis is that part of the db2-versus-Haar ranking could arise from support
+length interacting with a limited domain. It will be tested with nested domains at fixed
+resolution and dates, not inferred from filter length alone. The frozen design must include:
+
+* the exact external model configuration, tensor shape, transform library/version, filters,
+  levels, padding and coefficient packing;
+* identical temporal splits, embargo, training schedule and train-only normalisation;
+* a common central New Zealand evaluation window while the surrounding context grows;
+* full-domain, common-valid-interior and distance-to-boundary skill, plus a boundary
+  masking/zeroing ablation;
+* independently seeded fits, temporal block uncertainty, effect sizes and a declared
+  transform-by-variable-by-lead correction family; and
+* a transform-by-domain-size interaction as the primary test, with parameter count, coefficient
+  redundancy, measured compute and memory reported as possible confounders.
+
+Boundary-dependent coefficients are not automatically useless to a predictor. The scientific
+claim is narrower: a representation mechanism is supported only if its ranking survives the
+declared controls, and either a surviving or disappearing db2 deficit is a reportable result.
+
+---
+
 ## 2. The Core Spine: `PhysicalField`
 
 The primary data structures of atmospheric models (temperature, geopotential, wind velocities) are multidimensional grids. In SpectralEarth, the unified spine of the entire application is the **`PhysicalField`** class (`src/physical_core/field.py`). 
 
-Instead of passing raw PyTorch tensors across modules, every analytical engine, generator, transform, and adapter operates on a `PhysicalField` object. 
+Instead of passing raw PyTorch tensors across analytical modules, every analytical engine,
+generator, transform, and adapter operates on a `PhysicalField` object. The proposed
+training-native bridge in Section 1.2 is the intentional exception: batches remain tensors and
+cross into `PhysicalField` only for coordinate-aware diagnostics.
 
 ### Implementation Mechanics:
 *   **Grid Representation:** Encapsulates a 2D spatial grid as a `torch.Tensor` (shape: `H, W`), coordinate mappings (e.g., latitude/longitude or local x/y), and metadata dictionary.
@@ -110,7 +196,10 @@ Designed to study how boundary treatments affect regional models:
 ### 3.4 Data Layer Adapters (`src/data_layer/adapters.py`)
 Decouples data access from file systems:
 *   **Under the Hood:** Supports direct NetCDF data ingestion from the `./data/` folder (looks for `era5_reanalysis.nc`, `gfs_forecast.nc`, and `toy_climate_model.nc` using `xarray.open_dataset` when files are present).
-*   **GRIB is not supported.** No GRIB branch exists, `cfgrib` is not a dependency, and only the `.nc` extension is probed. The misleading code comment has been removed and the class docstring now states this explicitly. Remote sources (CDS API, S3) and Zarr are Task 3.5.20.
+*   **GRIB is not supported.** No GRIB branch exists and `cfgrib` is not a dependency. Local
+    adapters probe `.nc`; separately, T3.5.18 added opt-in ERA5 access through the public
+    WeatherBench 2 Zarr archive on GCS with a provenance-carrying local cache. Direct
+    Copernicus CDS and NOAA HRRR/GFS retrieval remain unsupported.
 *   **Cache invalidation (fixed, T3.5.8):** `get_dataset` now records `{kind, path, mtime}` per dataset in `_sources` and re-resolves whenever the file appears, disappears or changes on disk, so a newly added `.nc` is picked up without restarting the API. `invalidate_cache(dataset_id=None)` forces a re-resolve.
 *   **Source transparency (E2):** `get_source_info()` reports where a dataset actually came from, and `list_datasets()` / the `/api/v1/data/datasets` response now carry `source_kind`, `source_path`, `is_simulated` and `fallback_reason`. A run can no longer be silently satisfied by simulated data while the researcher believes they are using reanalysis — the fallback is a visible provenance fact, not a convenience.
 *   **Simulated Datasets Fallback:** If the physical files are absent, seamlessly falls back to high-fidelity, in-memory simulated datasets built via `xarray.Dataset`:
@@ -376,8 +465,9 @@ bytes transferred recorded. The inversion is the entire point: the remote layout
 timestep per chunk, the cache is all frames in one chunk, and a cross-scale read of a region
 becomes a single seek.
 
-**R13 enforced, not documented.** `edge_exclusion(j) = floor((L-1)·2^(j-1)/2)` reproduces R13's
-table exactly (6/13/26/52 px per side at levels 1–4 for a 14-tap filter), and
+**R13 enforced, not documented.** `edge_exclusion(j) = floor(((L-1)·2^(j-1)+1)/2)` uses the
+conservative effective-support radius and reproduces R13's corrected table (7/13/26/52 px per
+side at levels 1–4 for a 14-tap filter), and
 `minimum_crop_size` returns R13's own figures — 256 for four levels, 512 for five. A crop below
 the floor is **refused**, naming the minimum and the measured valid interior, because a 64x64
 crop has *zero* valid interior at level 4: cross-scale analysis on it is not noisy but
@@ -405,6 +495,15 @@ Registered in the fallback chain at priority 20, between `netcdf_local` (10) and
 dispatch chain; until this slice that query returned an empty list, so the seam was a claim.
 It is now a fact, with a test asserting it.
 
+The catalogued 0.7-degree store is **not** the long-record regional solution previously
+implied by its "compromise" label. Live metadata inspection on 2026-08-21 found chunks of
+`(8, 13, 512, 256)` for temperature: eight frames but all levels and the whole globe. A
+three-year, one-variable 255x255 request is estimated at **29.88 GB fetched for 1.14 GB wanted
+(26.2x amplification)**. With independent train/test transfer-entropy partitions needing a
+multi-year record, this is outside the declared laptop tier. Logged as D43; no T4C.6 real-data
+verdict exists until a spatially tiled temporal source or direct regional acquisition path is
+implemented and verified.
+
 It declares `crop_dataset_ids` rather than `dataset_ids`, and the distinction is load-bearing:
 `list_datasets` promises that every id under `dataset_ids` appears with concrete variables, a
 time range, a bounding box and a resolution. A crop *family* has none of those until a crop is
@@ -417,6 +516,16 @@ Operator interface: `python -m src.data_layer.zarr_source {catalogue|cached|insp
 Materialisation is deliberately **not** exposed over HTTP: it is a minutes-to-hours job needing
 the Phase 4A artifact store and a job record, and an endpoint that held a connection open for
 two hours would be a worse answer than no endpoint.
+
+**Joined to the Phase 4 spine (T4C.5b, closing D42).** The original Zarr implementation ended
+at its dedicated API: `slice_sequence` called the adapter with only a dataset id, while a Zarr
+archive necessarily requires a crop specification. Parameterised source options now pass
+through the registered action and adapter; crop identity remains in the Zarr content-addressed
+cache rather than the adapter's id-only process cache. WeatherBench's `latitude`/`longitude`
+coordinates are normalised to the `PhysicalField` `lat`/`lon` spine, and the resulting
+`FieldSequence` records the real source request and resolution provenance. A local
+WeatherBench-shaped test executes the complete offline path from cached crop to artifact
+handle, with `is_simulated == False`.
 
 ### 3.14 Export (`src/data_layer/exporters.py`, T3.5.23)
 
@@ -1067,13 +1176,24 @@ density - rule R3's normalisation, since an unnormalised population count in a d
 pyramid already falls as `s**-2` and an unnormalised fit would recover `2 + physics` and
 attribute both to the same cause.
 
+**A gate is now a frozen object, not prose (T4C.5c).** `cross_scale.GateProtocol` records the
+scale/lag family, estimator, measure, bins, surrogate count, alpha, correction, expected frame
+count, temporal split, embargo and seed, and hashes that exact design to a stable SHA-256
+fingerprint. Validation refuses a surrogate ensemble whose empirical p-value floor cannot
+survive the declared correction, a train/test partition below five samples per joint-estimator
+cell, or an embargo shorter than the longest tested lag. `evaluate_replication_gate` requires
+the same positive corrected relationship in both independent partitions. It returns three
+states: PASS, an adequately powered FAIL, or INVALID for configuration drift, missing
+advection support or inadequate power. INVALID is not a negative scientific result.
+
 ### 3C.5 What 4C does not yet answer
 
-T4C.6, the gate review itself, asks the question **on real ERA5 data**. Everything needed to
-ask it now exists and is calibrated, and the synthetic answers are the ones a working
-instrument should give. The verdict is not written here, because it has not been run on the
-atmosphere yet - and writing it from synthetic evidence would be exactly the kind of claim
-this phase was built to prevent.
+T4C.6, the gate review itself, asks the question **on real ERA5 data**. The analysis and
+decision instruments exist and are calibrated; the present WeatherBench layouts do not supply
+the required multi-year regional record within the laptop tier (D43). The verdict is not
+written here because it has not been run on the atmosphere. Writing it from synthetic evidence
+or an estimator-starved short record would be exactly the kind of claim this phase was built
+to prevent.
 
 ## 4. Database Schema and State Tracking (`src/database/models.py`, `session.py`, `migrate.py`)
 
@@ -1245,7 +1365,7 @@ See `VERIFICATION.md` for the captured command output behind every statement her
 | Item | Status |
 |---|---|
 | Python venv + dependencies | installed (torch 2.13.0, numpy 2.2.6, pydantic 1.10.26, SQLAlchemy 2.0.52, xarray 2025.6.1, FastAPI 0.110.3) |
-| Backend test suite | **855 passed, 1 xfailed** (plus 1 skipped: the opt-in live-GCS check) (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17, 351 after T3.5.6, 379 after T3.5.15, 407 after T3.5.19, 449 after T4C.5, 709 after T4A.4, 781 after T4B.4) |
+| Backend test suite | **859 passed, 1 xfailed** (plus 1 skipped: the opt-in live-GCS check) (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17, 351 after T3.5.6, 379 after T3.5.15, 407 after T3.5.19, 449 after T4C.5, 709 after T4A.4, 781 after T4B.4, 855 after T4C.5) |
 | Ground-Truth Benchmark Suite | **15 PASS, 0 FAIL, 2 NOT_YET_RUNNABLE** (`python -m src.benchmarks`, exit 0) |
 | Frontend `npm install` + `npm run build` | passes, emits 1,378 modules + real JS/CSS assets (was: 1 module, no assets) |
 | Backend server | starts, serves OpenAPI, all smoke-tested endpoints return 200 |
@@ -1323,7 +1443,9 @@ code paths that `architecture.md` previously described as implemented and rigoro
 | D38 | `artifact_store/store.py` (found while building T4B.1) | **A complex summary that silently described only the real part.** `summarise` called `float(values.min())` unconditionally. For a complex array that does not raise: numpy casts to real, discards the imaginary part, and warns where nobody reads it - `[1+2j, 3-1j]` reported `min = 1.0`. Every DTCWT coefficient field is complex, so the lineage rows of an entire phase would have carried real-part statistics labelled as statistics of the array. Complex arrays are now summarised on their **magnitude** and say so under `statistic_of`. | **FIXED** T4B.1 |
 | D39 | `artifact_store/store.py` (found while building T4B.3) | **The store dropped the time axis of a `FieldSequence`.** `put` stored the `(T, H, W)` tensor and the grid but not the timestamps, so `load` returned an array that was not a sequence - and any caller rebuilding one would have assumed a regular cadence, silently mis-dating every frame of an irregular record. The irony is exact: 4A existed to give the platform a time axis, and the store built in the same slice discarded it. Artifacts now carry their own axes inside the `.npz` (times as an array member, labels and grid as one JSON member, `allow_pickle=False`), with `load_sequence` / `load_coefficient_field` rebuilding the real object. The 4 KB handle budget is unaffected: the axes went into the archive, not the database row. | **FIXED** T4B.3 |
 | D40 | `roadmap.md` rule R13's crop-size table (found while building T4C.1) | **The valid-interior table understates the dual tree by nearly a factor of two.** The table is derived for a single 14-tap filter repeated at every level; DTCWT uses a 19-tap near-symmetric highpass at level 1 and the q-shift pair above it, so the real level-4 margin is **97 parent pixels against the table's 52**. The consequence is concrete rather than theoretical: a 256x256 crop - the roadmap's stated practical minimum for four dyadic levels - leaves DTCWT level 4 a **2x2** valid interior, four coefficients per orientation, on which a participation ratio is almost pure sampling noise. `dtcwt.filter_support` now accumulates the actual cascade, and `scale_signature` reports such a scale as *thin* by name instead of averaging over it. | **FIXED** T4C.1 |
-| D41 | `data_layer/zarr_source.py:144` vs `transform_engine/stationary.py:107` (found while building T4C.1) | **Two implementations of rule R13 that disagree by one pixel per side.** `zarr_source.valid_interior` floors `(L - 1) * 2**(j-1) / 2`; `stationary.valid_interior_halfwidth` computes `support // 2`, which rounds the same quantity up. For an even-length filter the true halfwidth is a half-integer, so flooring is **anti-conservative**: it declares one contaminated pixel per side to be valid, at every level, in the module that sizes crops. The exposure is bounded and known - two pixels of interior width - and no current analysis depends on the difference, but the two must not disagree. Fix: adopt the conservative rounding in `zarr_source`, and update R13's table (`N=64, level 1: 52 -> 50`) and the three assertions in `test_zarr_source.py` that pin the table's numbers. | **OPEN** |
+| D41 | `data_layer/zarr_source.py` vs `transform_engine/stationary.py` (found while building T4C.1) | **Two implementations of rule R13 disagreed by one pixel per side at level 1.** `zarr_source.valid_interior` floored the half-integer radius of an even-length filter while `stationary.valid_interior_halfwidth` used the conservative effective-support halfwidth. The crop module therefore declared one contaminated pixel per side valid at level 1. `edge_exclusion` now derives and halves the full effective support, the R13 table is corrected (`N=64, level 1: 52 -> 50`), and the existing geometry test asserts agreement with the SWT implementation so the definitions cannot drift independently again. | **FIXED** T4C.5a |
+| D42 | `data_layer/adapters.py`, `experiment_engine/actions.py` (found preparing T4C.6) | **Real ERA5 existed beside the Phase 4 pipeline, not inside it.** The Zarr API could inspect and materialise a crop, but `slice_sequence` supplied only a dataset id; the registered source requires the crop specification and therefore could never serve the action that every Phase 4 stage uses. The adapter also assumed `lat`/`lon`, while WeatherBench uses `latitude`/`longitude`. Parameterised source options now flow through the action without entering the unsafe id-only cache, coordinates are normalised onto the physical spine, and source request/provenance survives on the sequence. An offline WeatherBench-shaped test runs cached crop -> `FieldSequence` -> registered action -> artifact and asserts observational, non-simulated provenance. | **FIXED** T4C.5b |
+| D43 | `data_layer/zarr_source.py` catalogue / T4C.6 data design | **The real-data gate is not laptop-feasible through the catalogued WeatherBench layouts.** The supposedly compromise 0.7-degree store is chunked `(8,13,512,256)`: every eight-frame read transfers all levels and the globe. Live metadata inspection for a three-year, one-variable, 255x255 request estimated 29.88 GB fetched for 1.14 GB wanted (26.2x); the 0.25-degree archive is worse. A short record would fit the machine but leaves the independent transfer-entropy partitions estimator-starved. Fix: add and independently verify a temporally deep, spatially tiled ERA5 source (or direct regional CDS acquisition), then freeze the crop and run T4C.6. Do not reduce the sample or edge-validity requirements to fit the old storage layout. | **OPEN** |
 
 **Root cause common to D20, D23, D25 and D2:** the transform engine — the mathematical core of
 the platform — had **no test file at all**. `src/tests/test_transforms.py` now exists (36 cases
@@ -1455,13 +1577,13 @@ able to sit three slices out of date.
 | `test_registries.py` | 29 | registries, error taxonomy, fallback chain, and the T3.5.15 plugin acceptance criterion |
 | `test_stationary.py` | 19 | undecimated SWT: shift invariance, perfect reconstruction, frame constant, PyWavelets oracle, R3 normalisation |
 | `test_statistics.py` | 36 | FDR procedures vs scipy, surrogate preservation properties, calibration on a true null, stationarity gate, screening |
-| `test_cross_scale.py` | 21 | T4C.3 acceptance: the injected cascade recovered at the right lag and direction, null on its phase-randomised twin; the Theiler windows, the support floor, the power check |
+| `test_cross_scale.py` | 25 | T4C.3 acceptance plus the frozen T4C.6 protocol: injected cascade/null twin, Theiler windows, support floor, power check, split sufficiency, embargo and three-state replication verdict |
 | `test_scale_signature.py` | 28 | T4C.1 acceptance and the analytic values of every measure on white noise; threshold sensitivity measured; R13 interior refusals; T4C.4 power-law core |
 | `test_surrogate_null.py` | 14 | T4C.2 acceptance: spectrum preserved, phase destroyed, organised scores and fBm does not; the two calibrations (wrong null, linear lag) |
 | `test_wavelet_bank.py` | 27 | T4B.2 expansion through the engine's own parameter matrix, the 1,000-combination guard, decompose_bank / extract_scale_signature, the vertical-bank refusals |
 | `test_transforms.py` | 13 | fft/dct/dwt/dtcwt/hybrid round trips; D1 recorded as a strict xfail |
 | `test_zarr_source.py` | 58 | R13 crop geometry, chunk-hostility prediction, byte counting, cache and provenance round trip, the NetCDF engine (D33), zarr HTTP surface |
-| **total** | **692** | |
+| **total** | **696** | |
 
 ### 7.2h A surrogate null that was not the null it claimed (T4C.5)
 
@@ -1502,7 +1624,16 @@ Two further consequences worth recording:
 *   `compute_ssim` is single-window global SSIM, not locally-windowed SSIM (Section 3.2).
 *   ~~`get_execution_device` round-robins `run_idx % num_gpus`, but sweeps run strictly sequentially, so multi-GPU assignment is cosmetic.~~ **Addressed in T3.5.19/T3.5.21:** runs are distributed through the Executor seam and `device.select_device(run_idx=...)` spreads them across CUDA devices. Untested on real multi-GPU hardware - this machine is CPU-only, and that is stated rather than implied.
 *   The DWT is **decimated**: each level halves resolution, so scale *n* lives on a different grid from the parent field. This is correct for compression and reconstruction, but it makes cross-scale spatial reasoning awkward - the reason Phase 3.5 adds an undecimated SWT alongside it.
-*   `PhysicalField` is **strictly 2D** and raises on any other rank (`field.py:19`). There is no time axis anywhere in the compute layer: the adapter returns a single timestep, and `decompose_by_lead_time` only works because the caller assembles the list itself. Phase 4A introduces `FieldSequence`.
-*   Lineage `value` columns and inter-step `step_outputs` carry **full payloads** as nested Python lists (`analyze_boundary` returns an entire padded field this way). This is a hard scaling wall for coefficient fields, addressed by the `ArtifactStore` in Phase 4A.
-*   ~~No `GET /api/v1/experiments` collection endpoint and no health endpoint.~~ **Both added (T3.5.10):** paginated listing with `limit`/`offset`/`status`, and `GET /api/v1/health` reporting database reachability, backend scheme, dataset count and execution device. The frontend does not yet consume either — wiring them into the Experiment Engine tab is outstanding.
+*   `PhysicalField` remains intentionally **strictly 2D** and raises on any other rank
+    (`field.py:19`). Phase 4A added `FieldSequence` for `(time, y, x)` records rather than
+    weakening that invariant; algorithms must declare whether they consume a frame or a
+    sequence.
+*   Historical pipeline actions embedded full payloads in lineage. Phase 4A's `ArtifactStore`
+    and the later sequence/coefficient actions now offload large arrays behind content-addressed
+    handles. Any new action that puts a full coefficient or sequence payload in a database
+    lineage value is therefore a regression, not an accepted scaling limitation.
+*   `GET /api/v1/experiments`, `GET /api/v1/health` and the benchmark endpoints were added in
+    T3.5.10 and are consumed by the frontend as of T3.5.22-T3.5.24. Contract tests assert that
+    every fetched path is served and that the response fields read by the UI exist; those tests
+    verify the interface contract, not browser rendering.
 *   ~~Alembic is absent - the schema is created by `Base.metadata.create_all` in the FastAPI lifespan, so there is no migration path for the seven tables Phase 4 adds.~~ **Fixed in T3.5.8** (Section 4.1). `create_all` was not merely missing a migration path: it silently failed to add columns to tables that already existed, which had already broken the real `spectral_earth.db` (defect D32).

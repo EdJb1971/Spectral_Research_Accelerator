@@ -1,17 +1,27 @@
 # SpectralEarth: Visual Research Workbench & Discovery Engine
 
-SpectralEarth is a high-performance, scientific-grade visual research workbench designed for multi-scale atmospheric physics, regional spectral modeling, data assimilation benchmarking, and automated hypothesis discovery.
+SpectralEarth is a research workbench under active scientific validation for multiscale
+atmospheric analysis, regional spectral modelling, data-assimilation diagnostics and
+hypothesis screening.
 
-The platform bridges a highly optimized, tensor-accelerated computational backend (**PyTorch**, **xarray**, **SQLAlchemy**) with a reactive, publication-ready research dashboard (**React**, **Vite**, **Plotly**), and a structured exploratory **Jupyter Playground**.
+The platform joins a tensor-accelerated computational backend (**PyTorch**, **xarray**,
+**SQLAlchemy**) to a React/Vite/Plotly dashboard and a Jupyter playground. It is not yet a
+validated forecasting system: the decisive Phase 4C real-ERA5 gate has not been run, and the
+learned forecasting comparison is future Phase 5 work. Current status, evidence and known
+limitations live in `roadmap.md`, `VERIFICATION.md` and `architecture.md` respectively.
 
 ---
 
 ## 🗺️ Key Scientific Pillars
 
-### 1. Multiscale Transforms (FFT, DCT, DWT, Hybrid) &mdash; DTCWT in progress
-SpectralEarth ships working 2D FFT, DCT-II/III, multi-level Haar DWT, and a hybrid FFT+DWT representation, all with exact or near-exact inverses.
+### 1. Multiscale Transforms (FFT, DCT, DWT, SWT, DTCWT, Hybrid)
+SpectralEarth ships tested 2D FFT, DCT-II/III, decimated Haar DWT, undecimated SWT,
+a real Kingsbury q-shift DTCWT, and a hybrid FFT+DWT representation.
 
-> **Honest status:** the function named `apply_dtcwt2d` is **not yet a true Dual-Tree Complex Wavelet Transform.** Its second filter tree is numerically identical to the first up to a sign, so it provides *no* shift invariance and *no* directional subbands, despite the `_real`/`_imag` labelling. Genuine Kingsbury q-shift filters (giving real shift invariance and 6 oriented subbands at $\pm 15^\circ, \pm 45^\circ, \pm 75^\circ$) are **Task 3.5.6** in `roadmap.md`, and are a hard prerequisite for the Phase 4 feature-tracking layer. See `architecture.md` Section 3.1 and defect D1 for the full analysis.
+> **Honest status:** `src/transform_engine/dtcwt.py` is the real DTCWT implementation,
+> cross-checked against two independent reference implementations. The original degenerate
+> `apply_dtcwt2d` remains only as a regression-test comparison arm and is not on a runtime
+> path. The DTCWT is approximately shift-invariant; SWT is the exactly shift-invariant option.
 
 ### 2. Turbulence Spectral Slope ($\beta$) Fitting
 To verify if models (including Neural Weather Operators) preserve physical consistency and kinetic energy cascades, the engine computes radial Power Spectral Density (PSD) and fits a power-law exponent ($\beta$) using log-log least-squares regression:
@@ -22,10 +32,37 @@ It automatically classifies flow regimes into **Charney 2D Enstrophy Cascade ($\
 Regional models are prone to boundary artifacts. The lab applies Circular, Reflective, and Replicate padding, alongside Tukey (cosine-tapered), Hann, and Hamming tapering windows to analyze spatial gradient decay and quantify **Spectral Leakage** in Fourier space.
 
 ### 4. Dynamic Provenance Lineage DAG
-Ensures waterproof reproducibility. Every pipeline sweep commits code revisions, input datasets, coordinate configurations, transform coefficients, and final diagnostics as unique nodes and edges inside a directed acyclic graph (DAG), visualized live inside the UI.
+Captures run seeds, execution policy, resolved data source, artefact references and lineage
+nodes/edges. This substantially improves reproducibility, but replaying a run from lineage
+alone is still outstanding and is not claimed.
 
 ### 5. Automated Hypothesis Discovery
-The engine mines relational runs tables, computing Pearson's $r$ correlation coefficients and categorical optimization metrics. It automatically generates **adaptive, follow-up experiment configurations** to prove discovered relationships, which can be adopted back into the pipeline in a single click.
+The engine screens run tables for numerical and categorical associations and can propose
+follow-up experiment configurations. Associations are hypotheses, not proof or causation;
+reported findings carry multiple-comparison information and statistical caveats.
+
+### 6. Relationship to regional AI weather forecasting
+
+The project is scientifically aligned with comparing Fourier, cosine and wavelet
+representations on limited-area weather domains. Today it can inspect their boundary
+behaviour, localisation, scale/orientation structure and representation diagnostics on real
+ERA5 crops. It **cannot yet reproduce a controlled learned-forecast comparison**: no matched
+spectral neural network, training loop or forecast-skill evaluation across representations is
+implemented. That belongs to Phase 5 and must not be inferred from the current analysis tools.
+
+The first Phase 5 target is deliberately practical: an importable PyTorch path for the exact
+regional workflow used by the motivating research -- batches shaped `(B, C, H, W)`, aligned
+850-hPa `t/q/u/v/z` inputs and targets, strict temporal splits with an embargo, differentiable
+forward/inverse representations, and a small evaluation harness around an existing lab model.
+This is a **planned interface, not a current feature**. The present transforms accept one 2D
+`PhysicalField`; the viable multi-year regional data source and `torch.utils.data.Dataset` are
+also still outstanding.
+
+A priority experiment will test whether transform rankings change with domain size and valid
+interior. This is recorded as a falsifiable support-length/boundary hypothesis, not as a claim
+that the external poster is wrong. Full-domain, common-interior and boundary-band skill will be
+reported separately so predictive boundary information is not silently confused with
+padding-contaminated coefficient geometry.
 
 ---
 
@@ -48,7 +85,7 @@ The engine mines relational runs tables, computing Pearson's $r$ correlation coe
 │   ├── transform_engine/    # Wavelets, Dual-Tree DTCWT, manual DCT, and FFT
 │   ├── synthetic_generator/ # Affine perturbations and sinusoid/vortex/front generators
 │   ├── boundary_lab/        # Windowing (Tukey/Hann) and spatial gradient decay
-│   ├── data_layer/          # Ingestion adapters supporting in-memory & NetCDF files
+│   ├── data_layer/          # Simulated, local NetCDF and opt-in ERA5 Zarr sources
 │   ├── analysis_engine/     # Power spectral density, coherence, and slope fittings
 │   ├── experiment_engine/   # Dynamic Cartesian sweeps and lineage tracking
 │   ├── hypothesis_engine/   # Pattern correlation mining
@@ -117,11 +154,14 @@ npm run dev
 
 For exploratory scripting, double-click **`research_playground.ipynb`** at the workspace root to launch the Jupyter research notebook.
 
-It features a 5-step, fully interactive widgets dashboard built with `ipywidgets` and `plotly` that mirrors the frontend dashboard. (Note: `ipywidgets`, `plotly` and `matplotlib` are **not** yet listed in `requirements.txt` - install them separately until Task 3.5.11 lands.) Your son can dynamically tweak wavelet levels, modify Tukey alpha tapers, fit Kolmogorov/Charney turbulence slopes, and **export formal markdown reports** (`spectral_earth_active_report.md`) directly from his notebooks.
+It features a 5-step interactive widgets dashboard built with `ipywidgets` and `plotly`.
+Those packages and `matplotlib` are declared in `requirements.txt`. The notebook supports
+wavelet-level and boundary-taper experiments, spectral-slope fitting and Markdown report
+export; it is an exploratory interface, not a substitute for a recorded pipeline run.
 
 ---
 
-## 📂 Live Data Ingestion (NetCDF4)
+## 📂 Real Data Ingestion
 
 Place your real-world meteorological cutouts inside the `data/` folder:
 *   For ERA5 Reanalysis: Name your file `era5_reanalysis.nc`
@@ -130,4 +170,11 @@ Place your real-world meteorological cutouts inside the `data/` folder:
 
 The `MeteorologicalDataAdapter` (`src/data_layer/adapters.py`) will automatically identify these files, parse them via `xarray`, and enable interactive coordinate cropping, pressure-level selections, and variable extractions inside the UI. If no files are present, the system defaults to high-fidelity, in-memory simulated weather fields for sandbox testing.
 
-**Not yet supported:** GRIB (`.grib`/`.grib2`) parsing via `cfgrib`, and remote retrieval from the Copernicus CDS API or AWS S3 (NOAA HRRR/GFS). Only local `.nc` files are probed. Datasets are also memoised for the process lifetime, so a newly added file requires an API restart. Both are tracked as Task 3.1-remaining and Task 3.5.9 in `roadmap.md`.
+The source registry also supports opt-in, cloud-native ERA5 regional crops from the public
+WeatherBench 2 Zarr archive on Google Cloud, with a rechunked local cache and recorded
+provenance. Network reads are disabled unless `SPECTRALEARTH_ALLOW_NETWORK` is enabled; cached
+crops remain available offline. Local-file cache entries are invalidated when files appear,
+disappear or change, so an API restart is not required.
+
+**Not supported:** GRIB (`.grib`/`.grib2`) via `cfgrib`, direct Copernicus CDS retrieval, and
+NOAA HRRR/GFS object-store retrieval.

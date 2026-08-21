@@ -9,10 +9,48 @@ Everything below either serves that question or gets cut.
 
 ---
 
+### External research alignment and the claim boundary
+
+The supplied EGU poster *Spectral representations for regional AI-based weather prediction* by Emily
+O'Riordan (Victoria University of Wellington) is relevant external context, not a result of
+this project. It asks whether Fourier, DCT, Haar, db2 and DTCWT representations change forecast
+skill in a controlled lightweight neural model over the New Zealand ERA5 domain at 850 hPa.
+Its initial results motivate this roadmap's boundary, transform and downstream-forecast work.
+
+SpectralEarth currently supplies much of the **measurement apparatus** needed around that
+question: the compared 2D transforms, physical grid metadata, boundary diagnostics,
+scale/orientation summaries, surrogate nulls, corrected inference, provenance and a verified
+single-variable regional Zarr crop path. It does **not** yet supply a viable multi-year,
+five-variable regional training dataset or the poster's learned forecasting experiment. No
+current task has implemented its neural architecture, batched transform API, training data
+protocol, autoregressive training schedule or matched forecast comparison. Phase 5 is a
+proposal to build or integrate that judge, not evidence that it exists.
+
+Consequently:
+
+* poster findings must be labelled external and cannot be used as SpectralEarth validation;
+* transform properties (localisation, directionality, shift behaviour) must not be promoted to
+  forecast-skill claims without a controlled predictive experiment;
+* a future comparison must hold the model, parameter budget, training schedule, data split and
+  evaluation protocol fixed enough to isolate representation choice; and
+* persistence and appropriate operational/ML baselines, uncertainty across seeds or folds,
+  per-variable/per-lead-time families and compute cost belong in the acceptance criteria.
+
+The practical priority is the laboratory's existing regional model. Phase 5A therefore begins
+with an importable PyTorch representation layer and a provenance-carrying regional dataset,
+then wraps the existing model. Global pre-trained models remain useful later generalisation
+judges; they are not allowed to delay a usable local vertical slice.
+
+The clever outcome is not a system that automatically agrees with the motivating poster. It is
+one that can explain which measured property of a representation predicts held-out forecast
+skill, show the counterexamples, or report that no robust relationship survives.
+
+---
+
 ## 1. Honest Technical Status
 
 Verified against the code on 2026-08-21. Every claim here is backed by captured output in
-`VERIFICATION.md`; `architecture.md` Section 7 holds the full defect ledger (D1-D41, of which **38 fixed, 1 partial (D18), 2 open (D17, D41)**).
+`VERIFICATION.md`; `architecture.md` Section 7 holds the full defect ledger (D1-D43, of which **40 fixed, 1 partial (D18), 2 open (D17, D43)**).
 
 The numbers in this table are checked by `src/tests/test_documentation.py`, which parses them
 out of this file and compares them against the source. That guard exists because this table
@@ -24,7 +62,7 @@ status section, it is a memory.
 |---|---|
 | **Phase progress** | **Phase 3.5 complete** (25 tasks). **Phase 4A, 4B and 4C complete** as implementable work: T4A.1-4, T4B.1-4, T4C.1-5. **Not done:** T4C.6, the gate review itself, which requires a run on real ERA5 and is deliberately not written from synthetic evidence; and the whole of **4D-4H** (~27 tasks: feature detection and tracking, constellations, transition mining, `RepresentationScore`, the optional learned encoder). Per-task evidence blocks sit under each task below; a task without a **DONE** label has not been started. |
 | **Accessibility** | **Zero, measured.** `0` `aria-*` or `role` attributes and `0` keyboard handlers across `frontend/src`. No focus management. The UI is usable with a mouse and by nobody else. Not scheduled; recorded so it cannot be mistaken for an oversight. |
-| Backend test suite | **855 passed, 1 xfailed.** Plus one skipped by design: the live-GCS check is opt-in. Trajectory: 19 written / 1 failing / uncollectable -> 65 -> 152 -> 222 -> 271 -> 351 -> 407 -> 449 -> 478 -> 535 -> 548 -> 593 -> 642 -> 647 -> 709 -> 781 -> 855. |
+| Backend test suite | **859 passed, 1 xfailed.** Plus one skipped by design: the live-GCS check is opt-in. Trajectory: 19 written / 1 failing / uncollectable -> 65 -> 152 -> 222 -> 271 -> 351 -> 407 -> 449 -> 478 -> 535 -> 548 -> 593 -> 642 -> 647 -> 709 -> 781 -> 855 -> 859. |
 | Ground-Truth Benchmark Suite | **15 PASS, 0 FAIL, 2 NOT_YET_RUNNABLE.** Nine datasets with declared known answers, five of them nulls. CI-ready via `python -m src.benchmarks` (exit 0). |
 | Backend compute modules | **Written, executed and tested.** `physical_core` carries `GridSpec` + metric-aware operators; `analysis_engine` gained `spectra.py` and `climatology.py`; `transform_engine` gained the undecimated `stationary.py` and a real `dtcwt.py`; `statistics/` and `core/` are new packages. |
 | Physical units and wavenumbers | **Correct as of T3.5.13.** Gradients metric-aware, spectra on a physical `k` axis, domain statistics area-weighted, and every quantity carries its units. Previously all of it was pixel-space and unlabelled (D13). |
@@ -49,7 +87,10 @@ nothing had ever been executed, that the test suite could not be collected, and 
 history, not current status, and this table replaces it.
 
 Phases 1 and 2 are done as *code* and now substantially done as *verified software*. Phase 3
-is partial. Phase 3.5 is nearly complete - T3.5.18 (real ERA5) and the browser verification of the frontend are the substantive gaps. See Section 4 for per-task status.
+is partial. Phase 3.5's 25 implementation tasks are complete; the literal screenshot evidence
+requested by T3.5.0 is still absent, and D18's cross-device agreement remains partial because
+this machine is CPU-only. Phase 4A-4C.5 are complete; the real-ERA5 T4C.6 gate review and all
+of 4D-4H remain undone. See Section 4 for per-task evidence.
 
 ---
 
@@ -83,9 +124,9 @@ is partial. Phase 3.5 is nearly complete - T3.5.18 (real ERA5) and the browser v
                    |
                    v
 +--------------------------------------+
-| PHASE 5: Neural Weather Model as     |  FourCastNet / ClimaX becomes the
-|          Downstream Judge            |  judge of representation quality,
-|                                      |  not the object of study.
+| PHASE 5: Training-Native Regional    |  The existing laboratory model is
+|          Forecast Research           |  the first downstream judge; global
+|                                      |  models are later adapters.
 +------------------+-------------------+
                    |
                    v
@@ -100,7 +141,10 @@ is partial. Phase 3.5 is nearly complete - T3.5.18 (real ERA5) and the browser v
 *   **4C (statistical gate)** - if cross-scale organisation does not beat phase-randomised surrogates, 4D-4H are cancelled and the negative result is the deliverable. 4C also blocks 4D-4H scientifically, since the null machinery is shared.
 *   **4F.6 (physical gate)** - if the mining recovers no recognisable known phenomena on a period containing documented events, the pipeline is presumed broken and 4G does not start (see R10).
 
-4H is optional and never gates anything. Phase 5 needs 4G. Phase 6 needs nothing, but makes 4B-4F affordable at scale.
+4H is optional and never gates anything. Phase 5A (T5.0--T5.4) is an intentional fast track:
+it needs the verified transform core and a real-data resolution for D43, but does not wait for
+4D--4G. T5.5's comparison with `RepresentationScore` does need 4G. Phase 6 needs nothing, but
+makes 4B-4F and broad Phase 5 sweeps affordable at scale.
 
 ---
 
@@ -173,7 +217,7 @@ Regional analysis is the **primary scientific unit**, not merely a cost-saving c
 
     | Level (scale) | Excluded per side | N=64 | N=128 | N=256 | N=512 |
     |---|---|---|---|---|---|
-    | 1 (2) | 6 px | 52 | 116 | 244 | 500 |
+    | 1 (2) | 7 px | 50 | 114 | 242 | 498 |
     | 2 (4) | 13 px | 38 | 102 | 230 | 486 |
     | 3 (8) | 26 px | 12 | 76 | 204 | 460 |
     | 4 (16) | 52 px | **none** | 24 | 152 | 408 |
@@ -296,6 +340,8 @@ The extension points the plan commits to. Each is a protocol with a registry, so
 | **Data source** | `DataSource.fetch/list_variables/capabilities` + fallback chain | T3.5.15 | all phases | replaces the hard-coded if/elif (D15) |
 | **Pipeline action** | `@register_action` | T3.5.15 | experiment engine | replaces the 13-branch chain (D15) |
 | **Transform** | `@register_transform` | T3.5.15 | 4B wavelet bank | makes the bank sweepable without engine edits |
+| **Training representation** | `RepresentationModule.forward/inverse` | T5.1 | regional or global PyTorch forecasters | proposed; batched/autograd/device contract separate from the 2D analysis registry |
+| **Forecast dataset** | `RegionalForecastDataset` | T5.2 | Phase 5 training/evaluation | proposed; aligned variables, targets, split and provenance |
 | **Feature detector** | `@register_detector` | 4D | 4D/4E | alternative detection strategies |
 | **Surrogate generator** | `@register_surrogate` | 4C | all mining | phase-randomised, AAFT, IAAFT |
 | **Scorer term** | `@register_scorer` | 4G | representation scoring | add a score term without touching the scorer |
@@ -528,8 +574,9 @@ Verified against the **live** WeatherBench 2 archive (24 ERA5 stores enumerated 
     network, because level is inside the chunk.
 *   **Recorded bytes transferred.** 257x257, 4 levels, 8 days at 6 h: predicted 1,727.6 MB
     uncompressed, **measured 951.3 MB wire in 186.3 s**, cached to 19.0 MB.
-*   **The R13 floor is refused, not warned about.** `edge_exclusion` reproduces R13's table
-    exactly (6/13/26/52 px at levels 1–4) and `minimum_crop_size` returns R13's own 256 and 512.
+*   **The R13 floor is refused, not warned about.** `edge_exclusion` reproduces R13's
+    conservatively rounded table (7/13/26/52 px at levels 1–4, corrected when D41 closed in
+    T4C.5a) and `minimum_crop_size` returns R13's 256 and 512.
     A 64x64 crop at four levels raises, naming the minimum, the contaminated width and which
     dimension to constrain instead.
 *   **A repeat request transfers zero bytes**, asserted as `== 0` rather than as "fast": the
@@ -1083,6 +1130,23 @@ injected cascade at the right lag and direction, and finds nothing in that same 
 the alignment is destroyed. The verdict belongs to a run on real ERA5 data; writing it from
 synthetic evidence would be exactly the kind of claim this phase exists to prevent.
 
+**The decision protocol is now executable, but the data requirement is not yet met
+(T4C.5c).** `GateProtocol` freezes the scale/lag family, estimator, bins, surrogate count,
+alpha, correction, split, embargo and seed behind a stable SHA-256 fingerprint. It refuses a
+study whose surrogate p-value floor cannot survive correction, whose train or test partition
+has fewer than five samples per joint-estimator cell, or whose embargo is shorter than the
+longest tested lag. `evaluate_replication_gate` returns PASS only when the same positive,
+corrected relationship occurs independently in train and test; an adequately powered absence
+is FAIL, while configuration drift, missing advection support or inadequate power is INVALID.
+
+No crop is currently cached. Live metadata inspection of the 0.7-degree store found that the
+three-year, one-variable record needed to populate independent transfer-entropy partitions
+would fetch an estimated **29.88 GB** because every eight-frame chunk still spans all levels
+and the globe (26.2x amplification). The 0.25-degree source is worse. T4C.6 is therefore
+blocked by **D43**, not complete: add a temporally deep, spatially tiled source (or a direct
+regional CDS acquisition path), verify its values/provenance against ERA5, then freeze the
+exact crop before transfer. The sample requirement will not be relaxed to fit the old layout.
+
 ### Phase 4D - `SpectralFeature` and `SpectralFeatureTrack`
 
 **T4D.1 Feature detection.** Local maxima in `CoefficientField` above a surrogate-calibrated threshold, with sub-pixel localisation; yields `{id, t, y, x, scale, orientation, strength, phase}`.
@@ -1133,8 +1197,17 @@ Each rule therefore carries: its constituent features' physical coordinates, the
 
 **T4G.1 Baseline forecasters *(de-risks Phase 5)***
 Persistence and optical-flow advection. Cheap, CPU-only, no model weights.
-**Additionally, and better:** WeatherBench 2 publishes *precomputed forecasts* from operational and ML models (IFS HRES, GraphCast, Pangu, and others) alongside the ERA5 ground truth. That means `RepresentationScore` can be validated against **real model forecast errors without running a single model**, which pulls the central Phase 5 validation forward into Phase 4G at near-zero cost. If a representation's score fails to track real GraphCast error structure here, the scoring formula is wrong and we learn it before integrating anything.
-**Rationale:** if the scorer cannot distinguish representations against persistence, it will not distinguish them against FourCastNet either - and that is worth learning in a week rather than after a model integration.
+**Additionally:** WeatherBench 2 publishes *precomputed forecasts* from operational and ML
+models (IFS HRES, GraphCast, Pangu, and others) alongside ERA5 ground truth. Those errors let
+the score face an external predictive target without running a model, pulling an informative
+diagnostic forward into Phase 4G at low compute cost. This is not a direct validation of
+representation choice because those forecasters were not trained on the candidate
+representations. Failure to track their error structure is evidence against the score's claimed
+generality, but does not by itself identify whether the cause is the formula, low power, domain
+shift or forecaster mismatch.
+**Rationale:** persistence and precomputed forecast errors are cheap falsification probes. A
+failure against either requires diagnosis before model integration; it is not automatically
+attributed to one component.
 
 **T4G.2 The score.** Recurrence + sparsity + temporal persistence + cross-scale coherence + spatial coherence + **predictive information** + generalisation. Predictive information is the **anchor** term; without it the score rewards whichever wavelet is busiest.
 
@@ -1150,21 +1223,77 @@ Persistence and optical-flow advection. Cheap, CPU-only, no model weights.
 There are two ways to answer "which little graphs predict which bigger graphs", and the choice matters more than it looks:
 
 *   **(a) Symbolic** - frequent attributed-pattern mining with support and lift (T4E, T4F). Auditable, human-readable, slow, combinatorial. **This is the deliverable.** It is what makes SpectralEarth a research instrument rather than another opaque predictor.
-*   **(b) Learned** - a GNN over the constellation graphs trained to predict coarse-scale state at $t+\Delta$. More expressive and much faster, but it reintroduces exactly the interpretability problem this platform exists to dissolve. Using a black box to explain a black box (Phase 5's FourCastNet) would be self-defeating.
+*   **(b) Learned** - a GNN over the constellation graphs trained to predict coarse-scale state at $t+\Delta$. More expressive and much faster, but it reintroduces exactly the interpretability problem this platform exists to dissolve. Using a black box to explain a downstream forecast model would be self-defeating.
 
 **Therefore (b) is admitted in one narrow role only: as a ceiling estimator.** Train the GNN purely to measure *how much predictable signal the graph representation contains at all*, which bounds how good the symbolic rules in 4F could ever become. A large gap between the GNN's skill and the symbolic rules' skill means the mining is leaving signal on the table and 4E's attribute set or matching tolerance needs revisiting. A small gap means the symbolic rules have extracted essentially everything available, and the work is done. The GNN's predictions are **never** presented as findings.
 **Acceptance:** reports one number - the symbolic-vs-learned skill gap on the held-out temporal split - and nothing else.
 
 ---
 
-## 6. Phase 5 - Neural Weather Model as Downstream Judge
+## 6. Phase 5 - Training-Native Regional Forecast Research
 
-**Reframing:** FourCastNet is no longer the goal. It is the *instrument* that tells us whether `RepresentationScore` predicts real forecast skill.
+**Reframing:** the downstream model is a judge, not the product. The first judge is the
+laboratory's existing lightweight New Zealand model because that produces immediate research
+value and the sharpest falsifiable question. GraphCast, FourCastNet and ClimaX are later
+adapters for generalisation, not prerequisites.
 
-*   **T5.1** Integrate a pre-trained model (GraphCast, FourCastNet or ClimaX) behind the `Forecaster` seam, with `predict` / `fine_tune` pipeline actions. Note that GraphCast's own tooling points researchers at the same WeatherBench 2 ERA5 Zarr used by T3.5.18, so the data path is already built by this point - only the weights and the inference wrapper are new.
-*   **T5.2** Feed each candidate representation (raw, Fourier, wavelet, hybrid, selected multiscale) and correlate `RepresentationScore` against actual forecast skill. **If the correlation is null, 4G's scoring formula is wrong and must be revised** - this is the external validation of the entire Phase 4 thesis.
-*   **T5.3** Sensitivity benchmarking: perturbed initial fields via the existing `PerturbationEngine`, tracking error trajectories and structural degradation - now expressible per scale and per orientation rather than as a single scalar.
-*   **T5.4** Analyse FCN *error* fields with the same coefficient machinery: at what scales, locations and times does the model fail? This is the question the platform's name has always promised.
+**Fast-track dependency:** T5.0--T5.4 depend on the verified transform core and a resolution of
+D43, not on completion of feature tracking/mining in 4D--4F. They may proceed as a useful
+vertical slice while the broader discovery engine continues. Nothing in this section is
+implemented unless its acceptance evidence appears in `VERIFICATION.md`.
+
+*   **T5.0 Freeze the motivating experiment contract.** Obtain the actual repository/config or
+    an exported manifest for the laboratory model: domain coordinates and tensor shape,
+    variables/levels, cadence, input history, lead times, transform package/version, filters,
+    decomposition depth, boundary mode, coefficient packing, normalisation, split dates,
+    optimiser, rollout and parameter counts. Poster-derived estimates are not substitutes.
+    **Acceptance:** a versioned, hashable protocol object can reproduce the declared design and
+    rejects an incomplete configuration.
+*   **T5.1 Build `RepresentationModule`.** Provide raw, FFT, DCT, Haar, db2, SWT and DTCWT
+    modules over `(B,C,H,W)` with forward/inverse operations, stable structured outputs,
+    explicit complex packing and boundary/support metadata. Filters or cosine matrices are
+    cached/registered by device and dtype rather than rebuilt each step. The analysis and
+    training paths consume one canonical filter definition.
+    **Acceptance:** batch-versus-item equivalence, reconstruction tolerance, `gradcheck`,
+    forward-and-inverse gradient flow, CPU/CUDA parity where CUDA is available, device/dtype
+    migration, deterministic repeatability, mixed-precision policy, and measured runtime,
+    activation memory and cache reuse. A CPU-only machine records CUDA as NOT RUN, never PASS.
+*   **T5.2 Build `RegionalForecastDataset`.** Materialise and rechunk a provenance-carrying New
+    Zealand crop with aligned 850-hPa `t/q/u/v/z`, timestamps and grid coordinates. Yield input
+    histories and lead-time targets as tensors; apply `split_temporal` and a lag-sufficient
+    embargo before sample construction; fit every normalisation statistic on training data
+    only. Selecting 850 hPa does not reduce transfer from a source whose chunks span all
+    levels, so D43 must be solved with a spatially tiled temporal source or verified direct
+    regional acquisition rather than hidden by a short record.
+    **Acceptance:** values and coordinates cross-check against an independent ERA5 route on a
+    small overlap; no input or target crosses a split/embargo boundary; provenance fingerprints
+    the source, crop, variables, levels, timestamps, chunking and normalisation artefact.
+*   **T5.3 Integrate the existing laboratory model.** Put its train/evaluate operations behind
+    the `Forecaster` seam without copying model logic into the transform engine. Supply a
+    minimal importable example and persistence baseline before dashboard or REST integration.
+    **Acceptance:** one deliberately tiny end-to-end run executes dataset -> representation ->
+    model -> inverse -> loss -> backward, then a fixed small fixture reproduces deterministically.
+    A tiny run proves integration only; it is not forecast evidence.
+*   **T5.4 Run the boundary-support/domain-size study.** Cross representation with nested
+    domains at fixed resolution, dates and central New Zealand evaluation window. Report
+    full-domain, common-valid-interior and distance-to-boundary skill plus a boundary
+    masking/zeroing ablation. The primary estimand is the transform-by-domain-size interaction,
+    not whether one rank happens to swap. Hold architecture, split, optimiser, training budget
+    and rollout fixed; report coefficient width/redundancy, parameter count, compute and memory.
+    Use independently seeded fits, temporal block uncertainty, effect sizes and a frozen
+    transform-by-variable-by-lead correction family. A shrinking, unchanged or reversed db2
+    deficit is equally reportable.
+*   **T5.5 General representation-controlled benchmark.** Extend the accepted harness to any
+    selected multiscale representation and relate held-out forecast results to
+    `RepresentationScore`. Treat a null or contradiction as an outcome to diagnose -- score
+    misspecification, low power, dataset shift, forecaster interaction and a genuinely absent
+    relationship remain distinct explanations.
+*   **T5.6 External forecaster adapters.** Add pre-trained GraphCast, FourCastNet or ClimaX only
+    after their data/weights/licensing and grid contracts are verified. WeatherBench catalogue
+    presence does not mean the current regional training data path is built or laptop-feasible.
+*   **T5.7 Sensitivity and error-field analysis.** Perturb initial fields through the existing
+    `PerturbationEngine`, then analyse forecast errors by scale, orientation, location, lead and
+    boundary distance rather than as a single scalar.
 
 ---
 
