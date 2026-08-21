@@ -11,7 +11,7 @@ Everything below either serves that question or gets cut.
 
 ## 1. Honest Technical Status
 
-Verified against the code on 2026-08-20. Every claim here is backed by captured output in
+Verified against the code on 2026-08-21. Every claim here is backed by captured output in
 `VERIFICATION.md`; `architecture.md` Section 7 holds the full defect ledger (D1-D41, of which **38 fixed, 1 partial (D18), 2 open (D17, D41)**).
 
 The numbers in this table are checked by `src/tests/test_documentation.py`, which parses them
@@ -22,6 +22,8 @@ status section, it is a memory.
 
 | Area | Real status |
 |---|---|
+| **Phase progress** | **Phase 3.5 complete** (25 tasks). **Phase 4A, 4B and 4C complete** as implementable work: T4A.1-4, T4B.1-4, T4C.1-5. **Not done:** T4C.6, the gate review itself, which requires a run on real ERA5 and is deliberately not written from synthetic evidence; and the whole of **4D-4H** (~27 tasks: feature detection and tracking, constellations, transition mining, `RepresentationScore`, the optional learned encoder). Per-task evidence blocks sit under each task below; a task without a **DONE** label has not been started. |
+| **Accessibility** | **Zero, measured.** `0` `aria-*` or `role` attributes and `0` keyboard handlers across `frontend/src`. No focus management. The UI is usable with a mouse and by nobody else. Not scheduled; recorded so it cannot be mistaken for an oversight. |
 | Backend test suite | **855 passed, 1 xfailed.** Plus one skipped by design: the live-GCS check is opt-in. Trajectory: 19 written / 1 failing / uncollectable -> 65 -> 152 -> 222 -> 271 -> 351 -> 407 -> 449 -> 478 -> 535 -> 548 -> 593 -> 642 -> 647 -> 709 -> 781 -> 855. |
 | Ground-Truth Benchmark Suite | **15 PASS, 0 FAIL, 2 NOT_YET_RUNNABLE.** Nine datasets with declared known answers, five of them nulls. CI-ready via `python -m src.benchmarks` (exit 0). |
 | Backend compute modules | **Written, executed and tested.** `physical_core` carries `GridSpec` + metric-aware operators; `analysis_engine` gained `spectra.py` and `climatology.py`; `transform_engine` gained the undecimated `stationary.py` and a real `dtcwt.py`; `statistics/` and `core/` are new packages. |
@@ -1009,8 +1011,10 @@ Factor the log-log least-squares core out of `fit_spectral_slope` into a reusabl
 
 **Met.** The least-squares core is now `analysis_engine/power_law.loglog_fit`, which knows
 nothing about turbulence; `spectra.fit_power_law` calls it and adds the Charney/Kolmogorov
-interpretation on top. Existing behaviour is unchanged - all 118 spectral and benchmark tests
-pass untouched - and a new test pins the two together so they cannot drift.
+interpretation on top. Existing behaviour is unchanged - the 118 tests in the three files that
+exercise the fit (`test_grid_operators.py`, `test_benchmarks.py`, `test_hypothesis.py`) pass
+untouched - and a new test pins the generic core and the spectral wrapper together so they
+cannot drift apart.
 
 **Rule R2 is enforced in the return value, not in prose.** `compare_exponent_to_null` returns
 `reportable: False` until an exponent has been placed beside a surrogate ensemble, because a

@@ -1052,7 +1052,8 @@ annuli, isotropy, `beta_energy_1d`, Charney and Kolmogorov. All correct for a po
 and meaningless for the two other power laws 4C needs - energy against scale, and feature
 population against scale. The least-squares core is therefore factored into `loglog_fit`, which
 knows nothing about what `x` and `y` are; `spectra.fit_power_law` now calls it and adds the
-turbulence interpretation on top, with its behaviour unchanged and a test pinning the two
+turbulence interpretation on top, with its behaviour unchanged - the 118 tests in the three files that
+exercise the fit pass untouched - and a test pinning the generic core and the spectral wrapper
 together.
 
 **Rule R2 is enforced in the return value, not in prose.** A fractional Brownian field gives a
@@ -1217,6 +1218,11 @@ The architecture is highly modular and maintains clean boundaries at several cri
 The React frontend is fully written and structurally complete. It was installed and built in T3.5.0/T3.5.3 (`npm run build` emits hashed JS and CSS into `dist/`) and wired to the previously unreachable endpoints in T3.5.22. Its **rendered appearance was confirmed by the user on 2026-08-20** (T3.5.25): the platform was started, both servers came up, and the nine tabs were reported working. That confirmation is a user report, not an artefact - **no screenshot per tab exists in this repository**, so T3.5.0's literal evidence clause is still outstanding. The contract tests prove the nine tabs compile, call routes that exist and read fields that are present; they still do not prove anything renders, and the distinction is kept explicit because a green suite plus a green build is exactly what makes people assume otherwise.
 
 *   **Component Visualizations:** `Heatmap2D.tsx` and `LineChart.tsx` wrap `react-plotly.js`; `LineageGraph.tsx` is a hand-rolled SVG node-link renderer with a tooltip inspector and no external graph dependency. All three take reactive props and render spatial fields, PSD curves, coherence ratios, and provenance DAGs.
+*   **Accessibility: zero, and measured rather than assumed.** `frontend/src` contains
+    **0** `aria-*` or `role` attributes and **0** keyboard handlers, with no focus
+    management anywhere. The nine tabs are operable with a mouse and by nobody else. This is
+    recorded here, in the document that says what exists, so it cannot be read as an
+    oversight or discovered later as a surprise; it is not currently scheduled.
 *   **Main Application (`App.tsx`):** ~2,400 lines covering state hooks for **nine** tabs (Synthetic Generator, Meteorological Data, Boundary-Condition Lab, Spectral Transforms, Diagnostic & Analysis, Experiment Engine, Automated Hypotheses, **Platform & Evidence**, **Real ERA5 (Zarr)**), loading indicators, dynamic sliders, and follow-up proposal adoption.
 *   **Platform & Evidence tab (T3.5.22):** the execution device, core and thread counts, executor backends with the measured rationale for the serial default, the SQLite pragmas actually in force, the stamped Alembic revision with an explicit warning when the schema is behind the code, the data-source fallback chain labelled observational/SIMULATED from each source's own declared flag, and the full Ground-Truth Benchmark Suite with its declared known answers and null benchmarks marked. All of this existed on the backend for several slices with no consumer.
 *   **Real ERA5 tab (T3.5.22):** a crop form driven by the store catalogue, the R13 minimum crop size for the chosen number of wavelet levels, and an **inspect** action that reports chunk structure, the predicted amplification, the chunk-hostility warning and the per-level valid interior — metadata only, no transfer — then hands back the CLI command that would materialise it. The network gate is shown when it is off, with the variable that enables it.

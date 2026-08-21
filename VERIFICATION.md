@@ -2981,3 +2981,35 @@ The verdict belongs to a run on the atmosphere.
 Two smaller items this slice deliberately did not take on: registering the cascade as a
 ground-truth benchmark (the generator and its truth function exist and are tested; only the
 `register_benchmark` call and the suite's documented counts are missing), and closing D41.
+
+### Slice 18 addendum - a tracking audit, and three gaps it found
+
+Prompted by a direct question: are the documents sufficient for another agent to pick this up
+cold, and are they honest about what is implemented? Checked rather than answered.
+
+**What was already right.** `tools/audit_docs.py` reports no undocumented modules, no
+undocumented routes, no stale inventory rows, a consistent defect ledger and matching suite
+totals. Every roadmap task without a **DONE** label is genuinely unstarted (T4C.6 and all of
+4D-4G). The known shortfalls were already recorded where they belong: no screenshot per tab,
+PostgreSQL migrations rendered but never executed, `App.tsx` still monolithic, D17 open, D18
+blocked on hardware. `VERIFICATION.md` carries an unbroken record from slice 2 to slice 18.
+**No project memory files exist**, so nothing about this project is held anywhere except the
+repository.
+
+**Three gaps, now closed:**
+
+*   **`roadmap.md` Section 1 was dated 2026-08-20**, a day stale, on the section whose whole
+    purpose is to be current.
+*   **No row anywhere stated phase progress.** A reader could reconstruct it by scanning
+    thirty task headings for **DONE** labels, which is exactly the kind of reconstruction a
+    status table exists to prevent. Added: what is complete, what is not, and the explicit
+    statement that an unlabelled task is unstarted.
+*   **Accessibility was measured at zero in `VERIFICATION.md` and named as unmet in
+    `roadmap.md`, but appeared nowhere in `architecture.md`** - the document designated as
+    the record of what exists. A gap recorded in two places out of three is a gap that will
+    eventually be read as absent rather than as unbuilt.
+
+**One imprecision corrected.** The T4C.4 evidence said "all 118 spectral and benchmark tests
+pass untouched". The figure is right but the description was loose: it is the 118 tests in
+`test_grid_operators.py`, `test_benchmarks.py` and `test_hypothesis.py`, which are the files
+that exercise the fit. Now stated that way in both documents.
