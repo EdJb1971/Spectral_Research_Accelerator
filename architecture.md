@@ -121,6 +121,19 @@ Unix-nanosecond timestamps and original frame indices. Source content hash, mate
 manifest/chunking, canonical/resolved variables, 850-hPa selection, full time/grid fingerprints,
 split bounds and normalisation lineage travel in the bundle provenance.
 
+The cached path is bounded-memory as of T5.2b. `open_cached_lazy` retains the cache-only
+refusal without calling `.load()`. Coordinate vectors are read first; float64 population
+moments are then computed only over training indices in configurable frame blocks using Chan's
+stable merge formula. `_LazyZarrValues` serialises no live xarray object and opens one local
+store per process on first sample read; a PID guard also closes and reopens a handle inherited
+through HPC `fork`. `RegionalForecastBundle.close()` and its context-manager form make parent
+handle lifetime explicit. Lazy and eager statistics/tensors agree on the fixture, and a forced-
+spawn two-worker DataLoader succeeds after a parent read. Training cells are checked for finite
+values while statistics stream; validation/test cells are checked when accessed. Cached
+preparation refuses a missing or oversized recorded on-disk time chunk and instructs the user
+to rematerialise with `time_chunk <= statistics_chunk_frames`; this is what turns the memory
+bound into an enforceable storage property rather than an assumption about lazy indexing.
+
 The interface is deliberately placement-neutral: `prepare_cached_regional_forecast` takes a
 content-addressed `CropSpec` and an explicit local or shared-HPC cache directory, permits no
 network fallback, and returns CPU tensors for a normal PyTorch `DataLoader`; a training loop may
@@ -1476,7 +1489,7 @@ See `VERIFICATION.md` for the captured command output behind every statement her
 | Item | Status |
 |---|---|
 | Python venv + dependencies | installed (torch 2.13.0+cu130, numpy 2.2.6, pydantic 1.10.26, SQLAlchemy 2.0.52, xarray 2025.6.1, FastAPI 0.110.3) |
-| Backend test suite | **955 passed, 1 xfailed** (plus 1 skipped: opt-in live GCS) (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17, 351 after T3.5.6, 379 after T3.5.15, 407 after T3.5.19, 449 after T4C.5, 709 after T4A.4, 781 after T4B.4, 855 after T4C.5, 859 after T4C.5c, 882 after T5.1a CPU acceptance, 883 after RTX acceptance, 890 after portable profiles, 911 after T5.1b/D44, 917 after T5.1c, 933 after T5.1d/D45, 946 after T5.1e, 955 after T5.2a) |
+| Backend test suite | **957 passed, 1 xfailed** (plus 1 skipped: opt-in live GCS) (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17, 351 after T3.5.6, 379 after T3.5.15, 407 after T3.5.19, 449 after T4C.5, 709 after T4A.4, 781 after T4B.4, 855 after T4C.5, 859 after T4C.5c, 882 after T5.1a CPU acceptance, 883 after RTX acceptance, 890 after portable profiles, 911 after T5.1b/D44, 917 after T5.1c, 933 after T5.1d/D45, 946 after T5.1e, 955 after T5.2a, 957 after T5.2b) |
 | Ground-Truth Benchmark Suite | **15 PASS, 0 FAIL, 2 NOT_YET_RUNNABLE** (`python -m src.benchmarks`, exit 0) |
 | Frontend `npm install` + `npm run build` | passes, emits 1,378 modules + real JS/CSS assets (was: 1 module, no assets) |
 | Backend server | starts, serves OpenAPI, all smoke-tested endpoints return 200 |
@@ -1686,7 +1699,7 @@ able to sit three slices out of date.
 | `test_hypothesis.py` | 3 | correlation and categorical hypothesis discovery |
 | `test_imports.py` | 36 | NetCDF/Zarr/CSV/JSON import, dimension pinning, axis identification, laundering guard, benchmark runs over HTTP |
 | `test_migrations.py` | 25 | Alembic history, ORM/schema drift, per-revision round trips, pre-Alembic adoption, auto-migrate refusal, PostgreSQL rendering |
-| `test_regional_forecast.py` | 8 | T5.2a alignment, pre-sample temporal embargo, train-only normalisation, provenance, default DataLoader collation, local/HPC cache seam and independent-route comparison contract |
+| `test_regional_forecast.py` | 10 | T5.2a-b alignment, pre-sample temporal embargo, train-only normalisation, provenance, eager/lazy equivalence, bounded streaming, forced-spawn multi-worker loading, local/HPC cache seam and independent-route comparison contract |
 | `test_sequence.py` | 37 | FieldSequence validation, cadence, R6 temporal split and leakage guardrails, slice_sequence |
 | `test_registries.py` | 30 | registries, error taxonomy, fallback chain, plugin acceptance and DTCWT native-visualisation contract |
 | `test_stationary.py` | 19 | undecimated SWT: shift invariance, perfect reconstruction, frame constant, PyWavelets oracle, R3 normalisation |
@@ -1698,7 +1711,7 @@ able to sit three slices out of date.
 | `test_wavelet_bank.py` | 27 | T4B.2 expansion through the engine's own parameter matrix, the 1,000-combination guard, decompose_bank / extract_scale_signature, the vertical-bank refusals |
 | `test_transforms.py` | 13 | fft/dct/dwt/dtcwt/hybrid round trips; D1 recorded as a strict xfail |
 | `test_zarr_source.py` | 58 | R13 crop geometry, chunk-hostility prediction, byte counting, cache and provenance round trip, the NetCDF engine (D33), zarr HTTP surface |
-| **total** | **757** | |
+| **total** | **759** | |
 
 ### 7.2h A surrogate null that was not the null it claimed (T4C.5)
 

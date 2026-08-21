@@ -11,9 +11,9 @@ from torch.utils.data import DataLoader
 
 from src.core.errors import InvalidParameterError
 from src.data_layer.regional_forecast import (
-    RegionalForecastConfig, assess_manifest_readiness, cross_check_era5_overlap,
+    RegionalForecastConfig, _LazyZarrValues, assess_manifest_readiness, cross_check_era5_overlap,
     prepare_cached_regional_forecast, prepare_regional_forecast_datasets)
-from src.data_layer.zarr_source import CropSpec, materialise
+from src.data_layer.zarr_source import CropSpec, materialise, open_cached_lazy
 
 xr = pytest.importorskip("xarray")
 pytest.importorskip("zarr")
@@ -168,7 +168,83 @@ def test_content_addressed_cache_has_the_same_one_call_local_or_hpc_interface(tm
     bundle = prepare_cached_regional_forecast(spec, _config(), cache_dir=str(cache))
     assert manifest["cache_chunking"]["time"] == 16
     assert bundle.provenance["source"]["remote_bytes"] == 0
+    assert bundle.provenance["storage"]["mode"] == "lazy_local_zarr"
+    assert bundle.provenance["storage"]["explicit_full_crop_load"] is False
+    assert bundle.provenance["storage"]["maximum_on_disk_time_chunk_frames"] == 16
+    assert isinstance(bundle.train.values, _LazyZarrValues)
     assert bundle.train[0]["inputs"].device.type == "cpu"
+    assert bundle.train.values._dataset is not None  # first sample opened this process's handle
+    bundle.close()
+
+
+def test_lazy_cache_matches_eager_tensors_and_float64_train_statistics(tmp_path):
+    source = _dataset(nt=50)
+    store = tmp_path / "source.zarr"
+    source.to_zarr(store, mode="w", consolidated=True)
+    cache = tmp_path / "cache"
+    spec = CropSpec(store=str(store), variables=tuple(LONG_NAMES.values()),
+                    time_start="2020-01-01", time_end="2020-01-13",
+                    lat_min=-47.1, lat_max=-33.9, lon_min=165.9, lon_max=179.1,
+                    levels=(850,), n_levels_analysis=1)
+    materialise(spec, cache_dir=str(cache), time_chunk=7, check_size=False)
+    with pytest.raises(InvalidParameterError, match="Rematerialise.*time_chunk=6"):
+        prepare_cached_regional_forecast(
+            spec, _config(statistics_chunk_frames=6), cache_dir=str(cache))
+    config = _config(statistics_chunk_frames=7)
+    lazy = prepare_cached_regional_forecast(spec, config, cache_dir=str(cache))
+    cached, manifest = open_cached_lazy(spec, cache_dir=str(cache))
+    try:
+        eager = prepare_regional_forecast_datasets(cached, config, manifest)
+    finally:
+        cached.close()
+    assert lazy.normalisation.mean == pytest.approx(eager.normalisation.mean, rel=1e-12, abs=1e-12)
+    assert lazy.normalisation.std == pytest.approx(eager.normalisation.std, rel=1e-12, abs=1e-12)
+    for split_name in ("train", "val", "test"):
+        lazy_item = getattr(lazy, split_name)[0]
+        eager_item = getattr(eager, split_name)[0]
+        assert torch.equal(lazy_item["input_frame_indices"], eager_item["input_frame_indices"])
+        assert torch.equal(lazy_item["target_frame_indices"], eager_item["target_frame_indices"])
+        assert torch.allclose(lazy_item["inputs"], eager_item["inputs"], rtol=1e-6, atol=1e-6)
+        assert torch.allclose(lazy_item["targets"], eager_item["targets"], rtol=1e-6, atol=1e-6)
+    lazy.close()
+    eager.close()
+
+
+def test_streaming_statistics_respect_frame_bound_and_worker_spawn_reads(tmp_path, monkeypatch):
+    source = _dataset(nt=50)
+    store = tmp_path / "source.zarr"
+    source.to_zarr(store, mode="w", consolidated=True)
+    cache = tmp_path / "cache"
+    spec = CropSpec(store=str(store), variables=tuple(LONG_NAMES.values()),
+                    time_start="2020-01-01", time_end="2020-01-13",
+                    lat_min=-47.1, lat_max=-33.9, lon_min=165.9, lon_max=179.1,
+                    levels=(850,), n_levels_analysis=1)
+    materialise(spec, cache_dir=str(cache), time_chunk=7, check_size=False)
+    observed = []
+    original_read = _LazyZarrValues.read
+
+    def recording_read(self, indices):
+        observed.append(len(indices))
+        return original_read(self, indices)
+
+    monkeypatch.setattr(_LazyZarrValues, "read", recording_read)
+    bundle = prepare_cached_regional_forecast(
+        spec, _config(statistics_chunk_frames=7), cache_dir=str(cache))
+    assert observed and max(observed) <= 7
+    assert bundle.train.values._dataset is None
+    _ = bundle.train[0]
+    assert bundle.train.values._dataset is not None
+    # Spawn forces serialisation even on fork-based HPC hosts and exercises the Windows path.
+    loader = DataLoader(bundle.train, batch_size=2, num_workers=2,
+                        multiprocessing_context="spawn")
+    iterator = iter(loader)
+    try:
+        batch = next(iterator)
+        assert batch["inputs"].shape == (2, 3, 5, 4, 5)
+    finally:
+        iterator._shutdown_workers()
+    assert bundle.train.values._dataset is not None  # parent handle was neither shared nor closed
+    bundle.close()
 
 
 def test_manifest_readiness_never_claims_value_checks_from_metadata():

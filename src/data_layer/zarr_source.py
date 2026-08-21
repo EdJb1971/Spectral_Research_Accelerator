@@ -821,6 +821,30 @@ def load_cached(spec: "CropSpec", cache_dir: Optional[str] = None
     return dataset, manifest
 
 
+def open_cached_lazy(spec: "CropSpec", cache_dir: Optional[str] = None
+                     ) -> Tuple[Any, Dict[str, Any]]:
+    """Open a materialised crop without loading its arrays into host memory.
+
+    This is the bounded-memory counterpart to :func:`load_cached`.  It has the same strict
+    local-only precondition, but leaves value reads lazy so a consumer can stream statistics
+    or select individual training windows.  The returned xarray object owns an open local
+    store and must be closed by the caller.
+    """
+    cache_dir = _cache_dir(cache_dir)
+    if not is_cached(spec, cache_dir):
+        raise DataSourceError(
+            "crop %s is not in the cache at %r. Call materialise() first; lazy opening is "
+            "deliberately not allowed to fall back to the network."
+            % (spec.content_key(), cache_dir), content_key=spec.content_key())
+    dataset, counter = open_dataset(cache_path(spec, cache_dir), chunks=None)
+    with open(manifest_path(spec, cache_dir), "r", encoding="utf-8") as handle:
+        manifest = json.load(handle)
+    manifest["local_read"] = counter.report()
+    manifest["remote_bytes"] = 0
+    manifest["value_access"] = "lazy_local_zarr"
+    return dataset, manifest
+
+
 def rematerialise_from_provenance(record: Dict[str, Any],
                                   cache_dir: Optional[str] = None,
                                   **kwargs: Any) -> Dict[str, Any]:

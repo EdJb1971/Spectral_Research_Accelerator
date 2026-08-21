@@ -3630,9 +3630,9 @@ directory to an HPC shared path does not change the Python interface or require 
 coordinates, permits no interpolation, and reports per-variable maximum/mean absolute error
 under declared tolerances. It passes against an independent local construction and detects both
 a changed value and shifted coordinates. It has **NOT RUN against an actual second ERA5
-acquisition route**, so T5.2 remains partial and D43 remains open. Likewise, the current cache
-loader eagerly materialises the prepared crop in host memory; a viable multi-year source and
-worker-safe lazy access remain part of resolving D43, not capabilities claimed here.
+acquisition route**, so T5.2 remains partial and D43 remains open. At T5.2a acceptance the cache
+loader still eagerly materialised the prepared crop in host memory; that specific limitation
+was subsequently removed by T5.2b below.
 
 The ERA5 cache panel now reports manifest-only structural eligibility while explicitly showing
 `Prepared dataset: NO`, `train-only normalisation verified: NO` and `independent ERA5
@@ -3665,3 +3665,45 @@ Clean full suite after the documentation inventory was reconciled:
 
 The skip remains the opt-in live-GCS transport test; the xfail remains the declared historical
 degenerate-DTCWT comparison arm.
+
+## T5.2b - worker-safe lazy Zarr and streaming train statistics
+
+`open_cached_lazy` preserves the cache-only/no-network refusal but omits `.load()`. Cached
+forecast preparation reads only coordinates and metadata eagerly, splits/embargoes the
+timeline, then computes per-variable train-only population moments in bounded configurable
+frame blocks. Blocks are converted to float64 and combined with Chan's stable parallel-
+variance formula; normalisation provenance records the method and block size.
+
+The constructor also verifies the manifest's physical Zarr time chunk is no larger than the
+declared statistics block. A missing or oversized chunk is refused with an exact
+`time_chunk=<N>` rematerialisation instruction. This matters because selecting seven frames
+from a lazy array can still load an all-time physical chunk; bounded memory is therefore backed
+by both the algorithm and the store layout.
+
+`_LazyZarrValues` stores the cache path and canonical layout, not a live xarray object. Its
+pickle state strips all handles, and its PID guard closes/reopens a handle inherited through
+fork. Each DataLoader process therefore owns its local store handle. Sample reads combine the
+history and targets into one unique index selection, check fetched values are finite and return
+the same CPU tensor dictionary as T5.2a. `RegionalForecastBundle.close()` and context-manager
+support release parent handles explicitly.
+
+Acceptance tests demonstrate lazy/eager mean and standard-deviation agreement to `1e-12`,
+tensor agreement to `1e-6`, a seven-frame upper bound during statistics fitting, and a forced-
+spawn two-worker DataLoader after the parent has already read a sample. The broader focused
+suite result is:
+
+```text
+134 passed, 1 skipped, 5 warnings in 34.57s
+```
+
+Clean full regression after adding explicit reader/worker teardown and the physical-chunk guard:
+
+```text
+957 passed, 1 skipped, 1 xfailed, 6 warnings in 164.23s
+759 test functions across 30 files
+```
+
+The scientific boundary remains: training values are exhaustively checked while their moments
+stream; validation/test values are checked on access, not by a second full-crop scan. No actual
+independent ERA5 route or viable multi-year NZ crop has been acquired, so T5.2 and D43 remain
+partial/open respectively.

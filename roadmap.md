@@ -21,8 +21,9 @@ SpectralEarth currently supplies much of the **measurement apparatus** needed ar
 question: the compared 2D transforms, physical grid metadata, boundary diagnostics,
 scale/orientation summaries, surrogate nulls, corrected inference, provenance and a verified
 single-variable regional Zarr crop path. T5.1a-e now supplies the batched transform API and
-T5.2a supplies the leakage-safe five-variable PyTorch dataset constructor over a materialised
-crop. It does **not** yet supply the viable multi-year real NZ crop (D43), an actual independent
+T5.2a-b supplies the leakage-safe five-variable PyTorch dataset constructor plus bounded-memory,
+worker-safe local Zarr access over a materialised crop. It does **not** yet supply the viable
+multi-year real NZ crop (D43), an actual independent
 ERA5 route cross-check or the poster's learned forecasting experiment. No current task has
 implemented its neural architecture, autoregressive training schedule or matched forecast
 comparison. Phase 5's remaining model work is a proposal to integrate that judge, not evidence
@@ -62,9 +63,9 @@ status section, it is a memory.
 
 | Area | Real status |
 |---|---|
-| **Phase progress** | **Phase 3.5 complete** (25 tasks). **Phase 4A, 4B and 4C complete** as implementable work: T4A.1-4, T4B.1-4, T4C.1-5. **T5.1 is partial:** T5.1a-e accepts raw/FFT/DCT/Haar/db2/SWT/DTCWT training representations, optimized and exposed with truthful UI readiness; mixed precision and remaining cross-device acceptance remain. **T5.2 is partial:** T5.2a implements the aligned, leakage-safe, train-normalised PyTorch dataset/cache interface and readiness UI, while the actual independent ERA5 overlap and viable multi-year NZ crop remain blocked by D43. **Not done:** T4C.6, the real-ERA5 gate review; 4D-4H; T5.0 and T5.3-7. Per-task evidence blocks sit under each task below; a task without a **DONE** or **PARTIAL** label has not been started. |
+| **Phase progress** | **Phase 3.5 complete** (25 tasks). **Phase 4A, 4B and 4C complete** as implementable work: T4A.1-4, T4B.1-4, T4C.1-5. **T5.1 is partial:** T5.1a-e accepts raw/FFT/DCT/Haar/db2/SWT/DTCWT training representations, optimized and exposed with truthful UI readiness; mixed precision and remaining cross-device acceptance remain. **T5.2 is partial:** T5.2a-b implements the aligned, leakage-safe, train-normalised PyTorch dataset and bounded-memory worker-safe cache interface, while the actual independent ERA5 overlap and viable multi-year NZ crop remain blocked by D43. **Not done:** T4C.6, the real-ERA5 gate review; 4D-4H; T5.0 and T5.3-7. Per-task evidence blocks sit under each task below; a task without a **DONE** or **PARTIAL** label has not been started. |
 | **Accessibility** | **Zero, measured.** `0` `aria-*` or `role` attributes and `0` keyboard handlers across `frontend/src`. No focus management. The UI is usable with a mouse and by nobody else. Not scheduled; recorded so it cannot be mistaken for an oversight. |
-| Backend test suite | **955 passed, 1 xfailed.** Plus one explicit skip: the opt-in live-GCS check. Trajectory: 19 written / 1 failing / uncollectable -> 65 -> 152 -> 222 -> 271 -> 351 -> 407 -> 449 -> 478 -> 535 -> 548 -> 593 -> 642 -> 647 -> 709 -> 781 -> 855 -> 859 -> 882 -> 883 -> 890 -> 911 -> 917 -> 933 -> 946 -> 955. |
+| Backend test suite | **957 passed, 1 xfailed.** Plus one explicit skip: the opt-in live-GCS check. Trajectory: 19 written / 1 failing / uncollectable -> 65 -> 152 -> 222 -> 271 -> 351 -> 407 -> 449 -> 478 -> 535 -> 548 -> 593 -> 642 -> 647 -> 709 -> 781 -> 855 -> 859 -> 882 -> 883 -> 890 -> 911 -> 917 -> 933 -> 946 -> 955 -> 957. |
 | Ground-Truth Benchmark Suite | **15 PASS, 0 FAIL, 2 NOT_YET_RUNNABLE.** Nine datasets with declared known answers, five of them nulls. CI-ready via `python -m src.benchmarks` (exit 0). |
 | Backend compute modules | **Written, executed and tested.** `physical_core` carries `GridSpec` + metric-aware operators; `analysis_engine` gained `spectra.py` and `climatology.py`; `transform_engine` gained the undecimated `stationary.py` and a real `dtcwt.py`; `statistics/` and `core/` are new packages. |
 | Physical units and wavenumbers | **Correct as of T3.5.13.** Gradients metric-aware, spectra on a physical `k` axis, domain statistics area-weighted, and every quantity carries its units. Previously all of it was pixel-space and unlabelled (D13). |
@@ -1317,7 +1318,7 @@ implemented unless its acceptance evidence appears in `VERIFICATION.md`.
     `python -m src.core.doctor` performs CPU and detected-accelerator FFT/backward smoke tests
     and emits attachable JSON. This is local placement/preflight, not cluster submission or
     artifact synchronisation; those require Adam's actual HPC contract.
-*   **T5.2 Build `RegionalForecastDataset` -- PARTIAL (T5.2a accepted; real-source gate open).** Materialise and rechunk a provenance-carrying New
+*   **T5.2 Build `RegionalForecastDataset` -- PARTIAL (T5.2a-b accepted; real-source gate open).** Materialise and rechunk a provenance-carrying New
     Zealand crop with aligned 850-hPa `t/q/u/v/z`, timestamps and grid coordinates. Yield input
     histories and lead-time targets as tensors; apply `split_temporal` and a lag-sufficient
     embargo before sample construction; fit every normalisation statistic on training data
@@ -1336,9 +1337,18 @@ implemented unless its acceptance evidence appears in `VERIFICATION.md`.
     bundle provenance fingerprints the source manifest, variables, crop/chunking, grid, time,
     split and normalisation. `prepare_cached_regional_forecast` performs a measured local-only
     read from any explicit laptop/HPC cache path. `cross_check_era5_overlap` requires exact
-    coordinates and reports per-variable errors. Eight focused tests include a real local Zarr
+    coordinates and reports per-variable errors. The T5.2a tests include a real local Zarr
     materialise/rechunk/cache round trip and DataLoader collation. The ERA5 UI labels manifest
     structure separately from preparation, train-only fitting and independent-route evidence.
+    **Delivered T5.2b:** cached preparation opens metadata lazily, streams float64 train-only
+    moments in configurable bounded frame blocks using Chan merging, and reads only requested
+    history/target windows. Live xarray handles are excluded from pickling; each spawned worker
+    opens its own local Zarr handle, while a PID guard safely reopens after HPC fork. The bundle
+    has explicit `close()`/context-manager lifetime. Lazy/eager statistics and tensors agree,
+    a two-worker forced-spawn loader passes after a parent read, and provenance records lazy
+    mode and both requested/stored block bounds. Oversized or unrecorded on-disk time chunks are
+    refused with a rematerialisation instruction, since lazy indexing alone cannot bound them.
+    Ten focused tests cover T5.2a-b.
     **Outstanding:** the checker has not run against an actual second ERA5 route and no viable
     multi-year NZ crop has been acquired; D43 therefore remains open and T5.2 is not complete.
 *   **T5.3 Integrate the existing laboratory model.** Put its train/evaluate operations behind

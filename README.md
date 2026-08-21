@@ -76,9 +76,13 @@ canonical `t/q/u/v/z` aliases at 850 hPa, verifies coordinate alignment, applies
 mean/standard deviation per variable using training frames only. Each ordinary PyTorch dataset
 item contains `(history,C,H,W)` inputs, `(lead,C,H,W)` targets, timestamps and frame indices;
 the shared provenance fingerprints the source manifest, crop, grid, time axis, split and
-normalisation artifact. The same `prepare_cached_regional_forecast(..., cache_dir=...)` call
-works against a laptop folder or an HPC shared cache and returns CPU tensors for the training
-loop to place on CUDA, ROCm or MPS.
+normalisation artifact. Cached preparation reads metadata eagerly but never the full crop:
+float64 train-only moments are merged from bounded frame blocks, while each DataLoader process
+opens its own local Zarr handle on first use. Preparation refuses an on-disk time chunk larger
+than `statistics_chunk_frames`, because lazy indexing cannot undo an unbounded Zarr chunk;
+materialise forecast caches with a matching explicit `time_chunk`. The same
+`prepare_cached_regional_forecast(..., cache_dir=...)` call works against a laptop folder or an
+HPC shared cache and returns CPU tensors for the training loop to place on CUDA, ROCm or MPS.
 
 ```python
 from torch.utils.data import DataLoader
@@ -87,9 +91,11 @@ from src.data_layer.regional_forecast import (
 from src.data_layer.zarr_source import CropSpec
 
 config = RegionalForecastConfig(
-    level_hpa=850, history_frames=2, lead_frames=(1, 2, 4), embargo_frames=4)
+    level_hpa=850, history_frames=2, lead_frames=(1, 2, 4), embargo_frames=4,
+    statistics_chunk_frames=32)
 bundle = prepare_cached_regional_forecast(crop_spec, config, cache_dir=shared_cache)
-train_loader = DataLoader(bundle.train, batch_size=8, shuffle=True, num_workers=0)
+train_loader = DataLoader(bundle.train, batch_size=8, shuffle=True, num_workers=2)
+# Call bundle.close() when persistent loaders/workers are finished, or use `with bundle:`.
 ```
 
 `crop_spec` and `shared_cache` are intentionally explicit; preparation never downloads or
