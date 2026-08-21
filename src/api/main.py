@@ -29,6 +29,7 @@ from src.data_layer import zarr_source as _zarr_source  # noqa: F401
 from src.core.errors import InvalidParameterError, SpectralEarthError, classify
 from src.transform_engine import dtcwt as RealDTCWT
 from src.transform_engine import stationary as swt_engine
+from src.transform_engine.training import training_representation_catalogue, RepresentationError
 from src.synthetic_generator.generator import SyntheticFieldGenerator
 from src.synthetic_generator.perturbation import PerturbationEngine
 from src.boundary_lab.boundary import BoundaryConditionLab
@@ -776,6 +777,25 @@ async def list_transforms():
     """
     return transform_registry.TRANSFORMS.describe()
 
+
+@app.get("/api/v1/training/representations")
+async def list_training_representations(
+    levels: int = Query(3, ge=1, le=8),
+    wavelet: str = Query("db2"),
+    height: int = Query(120, ge=1, le=4096),
+    width: int = Query(80, ge=1, le=4096),
+):
+    """Training readiness is distinct from availability as a single-field transform.
+
+    Returns accepted batched/autograd capabilities plus the selected SWT redundancy and R13
+    edge budget. Entries that exist only for 2D analysis are named as such rather than being
+    omitted or accidentally advertised as model-ready.
+    """
+    try:
+        return training_representation_catalogue(levels, wavelet, (height, width))
+    except RepresentationError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
 @app.get("/api/v1/data/sources")
 async def list_data_sources():
     """The data-source fallback chain, in priority order (standard E2)."""
@@ -980,6 +1000,7 @@ async def zarr_catalogue():
 async def zarr_cached_crops():
     """Crops already materialised locally. Available with no network at all."""
     from src.data_layer import zarr_source as zarr_adapter
+    from src.data_layer.regional_forecast import assess_manifest_readiness
 
     crops = zarr_adapter.cached_crops()
     return {
@@ -993,6 +1014,7 @@ async def zarr_cached_crops():
                 "shape": c.get("shape"),
                 "megabytes_transferred": c.get("megabytes_transferred"),
                 "elapsed_s": c.get("elapsed_s"),
+                "regional_forecast_readiness": assess_manifest_readiness(c),
             }
             for c in crops
         ],

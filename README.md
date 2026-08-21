@@ -46,21 +46,59 @@ reported findings carry multiple-comparison information and statistical caveats.
 The project is scientifically aligned with comparing Fourier, cosine and wavelet
 representations on limited-area weather domains. Today it can inspect their boundary
 behaviour, localisation, scale/orientation structure and representation diagnostics on real
-ERA5 crops. It **cannot yet reproduce a controlled learned-forecast comparison**: no matched
-spectral neural network, training loop or forecast-skill evaluation across representations is
-implemented. That belongs to Phase 5 and must not be inferred from the current analysis tools.
+ERA5 crops and construct leakage-safe PyTorch forecast datasets from a materialised crop. It
+**cannot yet reproduce a controlled learned-forecast comparison**: no matched spectral neural
+network, laboratory-model adapter, training loop or forecast-skill evaluation across
+representations is implemented. That must not be inferred from the current data/transform tools.
 
 The first Phase 5 target is deliberately practical: an importable PyTorch path for the exact
 regional workflow used by the motivating research -- batches shaped `(B, C, H, W)`, aligned
 850-hPa `t/q/u/v/z` inputs and targets, strict temporal splits with an embargo, differentiable
 forward/inverse representations, and a small evaluation harness around an existing lab model.
-The training-native path in `src/transform_engine/training.py` now includes raw, FFT, DCT and
-multilevel decimated Haar/db2 modules over `(B,C,H,W)`. They reconstruct differentiably and expose immutable
+The training-native path in `src/transform_engine/training.py` now includes raw, FFT, DCT,
+multilevel decimated Haar/db2, undecimated SWT and DTCWT modules over `(B,C,H,W)`. They reconstruct differentiably and expose immutable
 synthesis context for a model prediction. FFT uses explicit real/imaginary channel packing and
 DCT matrices are cached module buffers; Haar/db2 use a PyWavelets-compatible periodisation
-phase and a model-ready Mallat coefficient plane. **This is not the whole forecasting path:**
-batched SWT/DTCWT, optimized wavelet kernels, non-NVIDIA hardware acceptance, the viable multi-year regional source,
-`torch.utils.data.Dataset`, model adapter and evaluation harness remain outstanding.
+phase and a model-ready Mallat coefficient plane. Haar/db2 default to a cached four-band
+`conv2d`/`conv_transpose2d` kernel, while `implementation="reference"` retains the clear
+per-tap oracle. SWT packs final LL plus three parent-grid detail bands per level, reports its
+`1+3L` coefficient expansion and boundary-valid interior, and automatically uses the measured
+faster FFT path on CPU or convolution on CUDA/ROCm/MPS. The Spectral Transforms tab reads the
+training-readiness contract from the backend. DTCWT uses an exact four-real-plane atlas, reports
+native and parent-grid edge margins, and is shown as training accepted only because batch,
+inverse, autograd, analytical-oracle and CPU/RTX parity tests pass. Its analytical view displays
+native complex magnitudes with one within-level colour scale and a marked valid inset; it does
+not interpolate scales or imply atlas adjacency is physical.
+
+`src/data_layer/regional_forecast.py` now supplies the dataset half of that bridge. It resolves
+canonical `t/q/u/v/z` aliases at 850 hPa, verifies coordinate alignment, applies the accepted
+`split_temporal` embargo before constructing histories/targets, and fits one population
+mean/standard deviation per variable using training frames only. Each ordinary PyTorch dataset
+item contains `(history,C,H,W)` inputs, `(lead,C,H,W)` targets, timestamps and frame indices;
+the shared provenance fingerprints the source manifest, crop, grid, time axis, split and
+normalisation artifact. The same `prepare_cached_regional_forecast(..., cache_dir=...)` call
+works against a laptop folder or an HPC shared cache and returns CPU tensors for the training
+loop to place on CUDA, ROCm or MPS.
+
+```python
+from torch.utils.data import DataLoader
+from src.data_layer.regional_forecast import (
+    RegionalForecastConfig, prepare_cached_regional_forecast)
+from src.data_layer.zarr_source import CropSpec
+
+config = RegionalForecastConfig(
+    level_hpa=850, history_frames=2, lead_frames=(1, 2, 4), embargo_frames=4)
+bundle = prepare_cached_regional_forecast(crop_spec, config, cache_dir=shared_cache)
+train_loader = DataLoader(bundle.train, batch_size=8, shuffle=True, num_workers=0)
+```
+
+`crop_spec` and `shared_cache` are intentionally explicit; preparation never downloads or
+silently falls back to simulated data. The ERA5 panel reports only manifest-level structural
+eligibility until values are opened, and keeps preparation, train-only normalisation and the
+independent-route overlap check as separate claims. **This is not the whole forecasting path:**
+mixed-precision/compilation acceptance, non-NVIDIA hardware evidence, a viable multi-year
+regional source (D43), an actual independent ERA5 overlap run, the model adapter and evaluation
+harness remain outstanding.
 
 ### Accelerator installation and portability
 

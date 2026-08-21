@@ -54,6 +54,17 @@ export const apiService = {
     return handleResponse<types.TransformResponse>(response);
   },
 
+  async listTrainingRepresentations(
+    levels: number, wavelet: string, height: number, width: number
+  ): Promise<types.TrainingRepresentationCatalogue> {
+    const params = new URLSearchParams({
+      levels: String(levels), wavelet, height: String(height), width: String(width),
+    });
+    return handleResponse<types.TrainingRepresentationCatalogue>(
+      await fetch(`${BASE_URL}/training/representations?${params}`, { method: 'GET' })
+    );
+  },
+
   // Synthetic Field Generator
   async generateSynthetic(payload: types.GenerateRequest): Promise<types.GenerateResponse> {
     const response = await fetch(`${BASE_URL}/synthetic/generate`, {

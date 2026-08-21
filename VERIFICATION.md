@@ -3384,3 +3384,284 @@ degenerate DTCWT regression arm. On the first full attempt, the Windows process-
 test had one transient worker memory-allocation failure and the frontend contract exposed its
 stale expected crop floor. The contract was corrected; both checks then passed together, and
 the complete clean result above is from a fresh full-suite rerun.
+
+---
+
+## T5.1c - convolution wavelet training kernel, reference retained
+
+The default Haar/db2 implementation now evaluates all four bands at each level with one
+strided `conv2d`. Synthesis uses the same registered four-kernel bank in
+`conv_transpose2d`, followed by the exact adjoint of the symmetric circular pad. The earlier
+per-tap `torch.roll` implementation remains selectable as `implementation="reference"`; it is
+an executable oracle, not deleted optimization history.
+
+Acceptance compares more than reconstruction through an identity:
+
+* fused and reference packed coefficients agree in float64;
+* their independently executed inverses agree;
+* gradients of a random weighted coefficient loss with respect to the input agree, so a
+  coefficient-order or adjoint error cannot hide behind perfect reconstruction;
+* both implementations pass float64 `gradcheck`;
+* the cached `(4,1,L,L)` bank is a registered buffer, reused across calls and regenerated from
+  canonical full-precision filters after dtype/device migration;
+* implementation identity travels in immutable synthesis metadata, and inverse refuses a
+  context from the other implementation.
+
+Focused result, including the available RTX accelerator arm:
+
+```text
+python -m pytest -q src/tests/test_training_representations.py
+51 passed, 1 warning in 5.02s
+```
+
+### Runtime and training-step measurement
+
+Float32 `(4,5,120,80)`, three levels, PyTorch `2.13.0+cu130`; every timed region was warmed up
+and device-synchronised. `train step` is encode -> inverse -> mean-square loss -> backward with
+a fresh leaf tensor, not forward timing mislabeled as training throughput.
+
+```text
+device  wavelet  implementation  round trip ms  train step ms  max error
+CPU     Haar     reference              4.4808        10.3181    9.54e-7
+CPU     Haar     conv2d                 2.7521         7.3525    9.54e-7
+CPU     db2      reference              7.3852        17.8177    1.19e-6
+CPU     db2      conv2d                 3.9173        14.0860    1.19e-6
+RTX     Haar     reference              4.8243        11.4812    9.54e-7
+RTX     Haar     conv2d                 0.7041         3.9465    1.19e-6
+RTX     db2      reference              7.5844        18.2640    9.54e-7
+RTX     db2      conv2d                 1.4504         8.6618    1.19e-6
+```
+
+This reverses T5.1b's important performance failure: db2 now benefits materially from the RTX.
+It does not imply that the whole future model is GPU-bound or that AMD has been measured.
+
+CUDA peak memory was reset after allocating the module and input, then measured across one full
+training step. Encoded storage is 0.732 MiB in every arm:
+
+```text
+wavelet  implementation  incremental peak MiB
+Haar     reference                    6.042
+Haar     conv2d                       3.343
+db2      reference                    5.310
+db2      conv2d                       5.866
+```
+
+The db2 speedup costs 0.556 MiB of incremental peak allocation on this batch; that tradeoff is
+small on an 8 GiB device but is recorded rather than omitted. Mixed precision, `torch.compile`,
+ROCm and MPS remain NOT RUN.
+
+### Full suite after T5.1c
+
+```text
+917 passed, 1 skipped, 1 xfailed, 6 warnings in 131.01s
+729 test functions across 29 files
+```
+
+The only skip remains the opt-in live-GCS transport check; the xfail remains the declared
+degenerate DTCWT regression arm. The available RTX accelerator test executed and passed.
+
+---
+
+## T5.1d - batched autograd SWT and truthful readiness UI
+
+`SWTRepresentation` is now an accepted `(B,C,H,W)` training representation for Haar, db2 and
+db3. Its model tensor packs final LL then levelwise LH/HL/HH for each input channel. Every band
+keeps `(H,W)`, giving the explicit ratio `1+3*levels`; db2 at three levels therefore turns five
+input variables into 50 model channels and expands float32 `(4,5,120,80)` from 0.732 MiB to
+7.324 MiB.
+
+Numerical acceptance does not rely on self-reconstruction alone:
+
+* packed coefficients agree channel-by-channel with the existing coordinate-aware analytical
+  SWT;
+* convolution and an independent FFT circular-filter path agree in packed coefficients,
+  inverse and gradients of a random weighted coefficient loss;
+* both implementations reconstruct batched Haar/db2/db3 through three levels;
+* float64 `gradcheck` passes and the vendor-neutral accelerator arm executes encode, inverse and
+  backward on the RTX;
+* rolling the input by `(5,-7)` rolls every coefficient by exactly `(5,-7)` under the declared
+  periodic boundary;
+* a support-exhausted request is refused, and metadata carries support, per-side exclusion,
+  valid interior HxW, level amplitude gain, energy-normalisation rule and band meaning.
+
+Focused training result after the precision regression below:
+
+```text
+python -m pytest -q src/tests/test_training_representations.py
+66 passed, 1 warning in 4.80s
+```
+
+### Measured execution policy and cost
+
+Float32 `(4,5,120,80)`, db2, three levels; timed regions were warmed and device-synchronised.
+The training step is encode -> inverse -> mean-square loss -> backward with a fresh leaf.
+
+```text
+device  implementation  round trip ms  training step ms  encoded MiB  max error
+CPU     FFT reference          19.8094           47.2215        7.324   2.15e-6
+CPU     convolution            69.4380          150.2459        7.324   1.91e-6
+RTX     FFT reference          13.5782           19.5791        7.324   2.62e-6
+RTX     convolution             6.4003           14.5261        7.324   1.43e-6
+```
+
+Incremental RTX peak allocation was 52.485 MiB for FFT and 25.464 MiB for convolution. The
+default `auto` policy therefore selects FFT on CPU and convolution on CUDA/ROCm/MPS. That is a
+measured CPU/RTX decision and an execution policy for the other PyTorch devices, **not** ROCm or
+MPS verification.
+
+### D45 - ambient cuDNN state changed the transform
+
+The first full-suite run failed the accelerator reconstruction test after `enable_determinism`
+had run. On the identical seeded L1 db2 input, deterministic cuDNN with ambient TF32 moved the
+maximum error from 2.38e-7 to 4.48e-4. A focused fresh-process run had hidden the state
+dependence. Training convolution operations now locally scope `allow_tf32=False` and restore
+the caller's policy. A dedicated test enters deterministic+TF32 state, verifies reconstruction
+within 3e-6, and verifies that TF32 is still enabled for the caller afterwards. D45 is fixed,
+not papered over with a wider tolerance.
+
+### Readiness API and Spectral Transforms UI
+
+`GET /api/v1/training/representations` is separate from the analytical transform registry. It
+reports which representations are genuinely batched/autograd accepted and, for the selected
+grid/wavelet/levels, derives SWT coefficient channels, accumulated support, edge exclusion and
+valid interior. The React panel renders coefficient expansion, shift behaviour, directional
+meaning, boundary convention, scientific role, limitations, verified environments and NOT RUN
+environments. DTCWT is present as **analysis only**, preventing availability for one 2D field
+from being misread as training readiness.
+
+```text
+python -m pytest -q src/tests/test_training_representations.py src/tests/test_frontend_contract.py
+94 passed, 5 warnings in 10.69s
+
+npm run build
+TypeScript PASS; Vite PASS; 1384 modules transformed
+bundle: 10,009.37 kB JS (3,016.88 kB gzip)
+```
+
+The bundle size warning is real and code-splitting remains outstanding. Browser-skill setup was
+attempted, but the session reported no available controllable browser, so rendered visual
+inspection is **NOT RUN**. No screenshot or visual acceptance is claimed.
+
+### Full suite after T5.1d and D45
+
+```text
+933 passed, 1 skipped, 1 xfailed, 6 warnings in 137.81s
+740 test functions across 29 files
+```
+
+The skip remains the opt-in live-GCS transport test. The xfail remains the declared degenerate
+DTCWT regression arm. The RTX accelerator test executed and passed in the clean rerun.
+
+## T5.1e - batched autograd DTCWT and native scientific visualisation
+
+`DTCWTRepresentation` now accepts float32/float64 `(B,C,H,W)`, vmaps the canonical Kingsbury
+analysis/synthesis arithmetic, and registers all twelve level-1/q-shift analysis and synthesis
+filters as dtype/device-migration-aware buffers. Its four-real-plane recursive atlas is a tested
+bijection: unpacking and repacking arbitrary coefficients is exact, and every one of the six
+complex orientations at every native scale is retained without interpolation.
+
+Acceptance covers batch reconstruction, analytical `PhysicalField` coefficient agreement,
+random coefficient-loss gradients, fast float64 `gradcheck`, cache migration, refusal when the
+declared edge margin leaves no strict two-dimensional interior, and CPU/RTX coefficient parity,
+inverse and backward flow. The CUDA test ran on the installed RTX 5050; ROCm/MPS remain NOT RUN.
+
+For float32 `(2,5,120,80)`, `near_sym_b`/`qshift_b`, L2, ten timed iterations after warm-up:
+
+```text
+device  round trip ms  training step ms  encoded MiB  max error
+CPU          46.23          138.34          1.465       1.20e-6
+RTX          35.87           65.91          1.465       1.20e-6
+```
+
+The analytical DTCWT summary now returns six complex-magnitude maps at each level's native
+resolution, measured and nominal direction centres, and native/parent validity margins. The UI
+uses one colour range across the six panels of a level, draws the valid-interior inset, and says
+explicitly that panel/atlas adjacency is not physical, levels are not resampled together, and
+phase is retained for synthesis rather than painted as a scalar physical field. The production
+TypeScript/Vite build passed (1,385 modules; 10,014.34 kB JS / 3,018.35 kB gzip); the existing
+large-bundle warning remains.
+
+Focused acceptance:
+
+```text
+143 passed, 1 warning in 10.30s
+137 passed, 5 warnings in 19.78s  # training + registry + frontend contracts
+```
+
+The first full run found only a stale documentation count, which was corrected before the clean
+rerun. Final suite:
+
+```text
+946 passed, 1 skipped, 1 xfailed, 6 warnings in 156.12s
+748 test functions across 29 files
+```
+
+The skip is still the opt-in live-GCS transport check and the xfail is still the declared old
+degenerate-DTCWT comparison arm. The backend and frontend were started and answered health/HTTP
+checks, but browser discovery returned an empty list, so rendered inspection is **NOT RUN** and
+no screenshot or visual acceptance is claimed. Both exact temporary server processes were then
+stopped.
+
+## T5.2a - leakage-safe regional forecast dataset bridge
+
+`src/data_layer/regional_forecast.py` now constructs ordinary PyTorch datasets from a
+materialised xarray/ERA5 crop. Canonical `t/q/u/v/z` resolve against either short names or the
+WeatherBench long names, 850 hPa is selected explicitly, every variable must share exact time,
+latitude and longitude coordinates, and non-finite cells are refused rather than imputed by an
+unstated policy.
+
+The accepted R6 `split_temporal` implementation runs before sample indexing. The configuration
+refuses an embargo shorter than the longest lead; tests then enumerate every input and target
+frame from every sample and prove each remains inside its assigned split and outside the two
+returned embargo sequences. Per-variable population means and standard deviations are computed
+in float64 over training frames/grid cells only, stored in a hashed `NormalisationArtifact`, and
+reused by identity for validation and test. A held-out million-unit offset does not alter the
+training means, making the leakage test causal rather than a metadata assertion.
+
+The default PyTorch collator produces `(B,history,C,H,W)` inputs and `(B,lead,C,H,W)` targets,
+with Unix-nanosecond timestamps and original frame indices. Bundle provenance carries the source
+manifest/content hash, crop/chunking, canonical and resolved variables, pressure level, complete
+time/grid fingerprints, split extents and normalisation artifact. A local test writes a
+chunk-hostile five-variable Zarr source, materialises/rechunks it into an arbitrary directory,
+and prepares the dataset through that cache with measured `remote_bytes == 0`; changing that
+directory to an HPC shared path does not change the Python interface or require a GPU.
+
+`cross_check_era5_overlap` is implemented as the real acceptance instrument: it requires exact
+coordinates, permits no interpolation, and reports per-variable maximum/mean absolute error
+under declared tolerances. It passes against an independent local construction and detects both
+a changed value and shifted coordinates. It has **NOT RUN against an actual second ERA5
+acquisition route**, so T5.2 remains partial and D43 remains open. Likewise, the current cache
+loader eagerly materialises the prepared crop in host memory; a viable multi-year source and
+worker-safe lazy access remain part of resolving D43, not capabilities claimed here.
+
+The ERA5 cache panel now reports manifest-only structural eligibility while explicitly showing
+`Prepared dataset: NO`, `train-only normalisation verified: NO` and `independent ERA5
+cross-check: NOT RUN`. A green manifest therefore cannot be mistaken for completed value-level
+acceptance.
+
+Focused acceptance:
+
+```text
+python -m pytest -q src/tests/test_regional_forecast.py \
+  src/tests/test_sequence.py src/tests/test_zarr_source.py src/tests/test_frontend_contract.py
+132 passed, 1 skipped, 5 warnings in 18.06s
+
+npm run build
+TypeScript PASS; Vite PASS; 1,385 modules transformed
+bundle: 10,015.27 kB JS (3,018.56 kB gzip)
+```
+
+The existing large-bundle warning remains. Both local servers answered HTTP 200. The mandatory
+browser connection was attempted, troubleshooting was followed and browser discovery returned
+an empty list, so rendered inspection of the T5.2 addition is **NOT RUN** and no screenshot is
+claimed.
+
+Clean full suite after the documentation inventory was reconciled:
+
+```text
+955 passed, 1 skipped, 1 xfailed, 6 warnings in 149.29s
+757 test functions across 30 files
+```
+
+The skip remains the opt-in live-GCS transport test; the xfail remains the declared historical
+degenerate-DTCWT comparison arm.

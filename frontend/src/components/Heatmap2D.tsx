@@ -14,6 +14,10 @@ interface Heatmap2DProps {
   yLabel?: string;
   /** DOM id, so FigureExport can find this exact plot to render to PNG/SVG. */
   divId?: string;
+  /** Shared numeric colour range, required when panels are compared quantitatively. */
+  zRange?: [number, number];
+  /** Invalid boundary width in native samples. Shaded, never silently cropped. */
+  validInset?: number;
 }
 
 export const Heatmap2D: React.FC<Heatmap2DProps> = ({
@@ -25,6 +29,8 @@ export const Heatmap2D: React.FC<Heatmap2DProps> = ({
   xLabel,
   yLabel,
   divId,
+  zRange,
+  validInset = 0,
 }) => {
   let colorscale: string | any[][] = 'Viridis';
   if (colormap === 'coolwarm') {
@@ -57,6 +63,8 @@ export const Heatmap2D: React.FC<Heatmap2DProps> = ({
               hovertemplate: units
                 ? `%{x}, %{y}<br>%{z:.6g} ${units}<extra></extra>`
                 : '%{x}, %{y}<br>%{z:.6g}<extra></extra>',
+              zmin: zRange?.[0],
+              zmax: zRange?.[1],
             },
           ]}
           layout={{
@@ -67,6 +75,16 @@ export const Heatmap2D: React.FC<Heatmap2DProps> = ({
             font: { color: '#94a3b8', size: 10 },
             xaxis: { title: xLabel ? { text: xLabel } : undefined, gridcolor: '#1e293b', zeroline: false },
             yaxis: { title: yLabel ? { text: yLabel } : undefined, gridcolor: '#1e293b', zeroline: false },
+            shapes: validInset > 0 && data.length && data[0]?.length ? [{
+              type: 'rect', x0: validInset - 0.5, x1: data[0].length - validInset - 0.5,
+              y0: validInset - 0.5, y1: data.length - validInset - 0.5,
+              line: { color: '#fbbf24', width: 2, dash: 'dash' }, fillcolor: 'rgba(0,0,0,0)',
+            }] : [],
+            annotations: validInset > 0 ? [{
+              xref: 'paper', yref: 'paper', x: 0.01, y: 0.99, xanchor: 'left', yanchor: 'top',
+              text: `dashed box = valid interior (${validInset}px inset)`, showarrow: false,
+              bgcolor: 'rgba(2,6,23,0.8)', font: { color: '#fbbf24', size: 9 },
+            }] : [],
           }}
           config={{
             displaylogo: false,

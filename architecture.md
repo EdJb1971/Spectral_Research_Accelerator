@@ -73,7 +73,7 @@ roadmap text is not implemented capability. Until that work is built and tested,
 about one representation improving learned regional forecast skill must cite external results,
 not SpectralEarth.
 
-### 1.2 Immediate research target: a training-native regional bridge *(proposed)*
+### 1.2 Immediate research target: a training-native regional bridge *(partially implemented)*
 
 The first downstream integration is the motivating laboratory workflow, not a large global
 model: `(B, C, H, W) -> representation -> existing regional forecaster -> inverse -> loss`.
@@ -96,17 +96,39 @@ boundary conventions and provenance schemas; adapters move a selected batch item
 analysis spine when diagnostics are required. This separation gives training code a normal
 PyTorch interface without creating a second scientific definition of each transform.
 
-**Current readiness boundary.** `src/transform_engine/training.py` now implements the accepted
-first slice: raw, FFT and DCT modules over `(B,C,H,W)`, with immutable per-batch synthesis
-context, exact-shape validation, differentiable inverse operations and cached DCT buffers. FFT
+**Current readiness boundary.** `src/transform_engine/training.py` now implements accepted
+raw, FFT, DCT, Haar, db2, SWT and DTCWT modules over `(B,C,H,W)`, with immutable per-batch synthesis
+context, exact-shape validation, differentiable inverse operations and cached matrices/filter
+banks. FFT
 packs real then imaginary coefficients on the channel axis rather than using discontinuous
-magnitude/phase. Haar, db2, SWT and DTCWT remain 2D analysis transforms and are not registered
-as training representations. CPU/accelerator reconstruction, coefficient parity and backward
+magnitude/phase. DTCWT uses a lossless four-real-plane recursive atlas per input channel;
+every real and imaginary component stays at its native dyadic resolution and arbitrary
+model-produced atlases remain invertible. CPU/accelerator reconstruction, coefficient parity and backward
 gradients are verified on an RTX 5050 Laptop GPU with PyTorch `2.13.0+cu130`. The accelerator
 test is vendor-neutral: an AMD ROCm build appears through PyTorch's `cuda` device API, while
 provenance distinguishes runtime `rocm` from `cuda`. ROCm, MPS and DirectML hardware are NOT
-RUN; mixed precision, compilation and wavelet-pyramid layouts remain unaccepted. No
-`RegionalForecastDataset` or laboratory-model adapter exists.
+RUN; mixed precision and compilation remain unaccepted.
+
+`src/data_layer/regional_forecast.py` now implements `RegionalForecastDataset` and a three-split
+bundle over aligned 850-hPa `t/q/u/v/z`. The constructor resolves long/short ERA5 aliases,
+refuses misaligned coordinates, missing/non-finite values and an embargo shorter than the
+longest lead, then reuses the accepted `split_temporal` guardrail. It assigns frames to
+train/validation/test (including returned embargo sequences) before it creates any history or
+target index. Population mean/std vectors are fitted in float64 over training frames and grid
+cells only, serialized as a hashed `NormalisationArtifact`, then reused unchanged by all splits.
+Items are default-collatable dictionaries with `(history,C,H,W)` inputs, `(lead,C,H,W)` targets,
+Unix-nanosecond timestamps and original frame indices. Source content hash, materialised crop
+manifest/chunking, canonical/resolved variables, 850-hPa selection, full time/grid fingerprints,
+split bounds and normalisation lineage travel in the bundle provenance.
+
+The interface is deliberately placement-neutral: `prepare_cached_regional_forecast` takes a
+content-addressed `CropSpec` and an explicit local or shared-HPC cache directory, permits no
+network fallback, and returns CPU tensors for a normal PyTorch `DataLoader`; a training loop may
+move each batch to CUDA, ROCm or MPS. `cross_check_era5_overlap` requires exact time/grid
+coordinates and reports per-variable error under declared tolerances. The checker passes on the
+independent local acceptance fixture, but an actual second ERA5 acquisition route has **NOT
+RUN**, so source-value agreement is not claimed. D43 still blocks a viable multi-year crop and
+no laboratory-model adapter exists.
 
 ### 1.3 Boundary-support hypothesis for the New Zealand comparison *(proposed study)*
 
@@ -181,7 +203,7 @@ Provides forward and inverse spectral transforms, working as a core mathematical
 *   **Hybrid Spectral Representation:** Separates fields into a low-frequency component (reconstructed via low-pass FFT filtering) and a high-frequency residual component (reconstructed via Haar DWT). Vectorized with `torch.meshgrid` to avoid loops.
     *   *Known defect:* the forward pass decomposes as `field = low + residual`, but `inverse_hybrid` recombines as `mixing_weight * low + (1 - mixing_weight) * high`. This is not the inverse of the forward split for **any** value of `mixing_weight`, so the `hybrid` transform always reports a non-zero reconstruction MSE for algebraic rather than physical reasons. Fixed in Task 3.5.5.
 
-### 3.1 Training representations (`src/transform_engine/training.py`, T5.1a-b)
+### 3.1 Training representations (`src/transform_engine/training.py`, T5.1a-e)
 
 `RepresentationModule` is the PyTorch forecasting seam; it does not replace the analytical
 registry. `RawRepresentation`, `FFTRepresentation`, `DCTRepresentation`,
@@ -205,12 +227,48 @@ and a recursively packed Mallat plane (`LL|LH / HL|HH`). The immutable context r
 filter length and the corrected accumulated-cascade margin at every level. Odd shapes reconstruct
 after an explicit crop; implicit padding can be refused. Level-one bands agree with independent
 PyWavelets oracles, multilevel energy agrees, float64 `gradcheck` passes, and reconstruction and
-backward gradients have CPU/RTX-CUDA evidence. The implementation is accepted as the clear
-numerical reference, **not yet as the final cheap per-training-step kernel**: the unfused
-`torch.roll` construction makes db2 slower on the measured RTX than CPU.
+backward gradients have CPU/RTX-CUDA evidence. `implementation="reference"` retains this clear
+per-tap numerical oracle.
 
-This is **T5.1a-b, not all of T5.1**. Batched SWT/DTCWT, fused or compiled wavelet kernels,
-non-NVIDIA hardware evidence, mixed precision and compilation acceptance remain outstanding.
+**T5.1c adds the training kernel without deleting the oracle.** The default constructs the four
+LL/LH/HL/HH kernels once as a registered buffer, evaluates a level with one strided `conv2d`,
+and synthesises with one `conv_transpose2d` plus the exact adjoint of circular padding. It
+matches reference coefficients, reconstruction and coefficient-loss input gradients to float64
+noise. On float32 `(4,5,120,80)`, three levels, the RTX db2 round trip fell from 7.58 ms to
+1.45 ms and the full round-trip-plus-backward step from 18.26 ms to 8.66 ms. Incremental CUDA
+peak was 5.87 MiB versus 5.31 MiB for the reference, an explicit 0.56 MiB speed/memory tradeoff.
+CPU also improved (7.39 to 3.92 ms round trip).
+
+**T5.1d adds the undecimated training comparison.** `SWTRepresentation` packs final LL followed
+by levelwise LH/HL/HH for each input channel, so its coefficient ratio is exactly `1+3L` while
+every band keeps the parent grid. Haar, db2 and db3 are supported. The default policy follows
+measurement rather than vendor preference: FFT circular filtering on CPU, four-band convolution
+on CUDA/ROCm/MPS. A retained FFT oracle agrees with the convolution path in coefficients,
+inverse and random coefficient-loss gradients; the packed batch also agrees with the existing
+coordinate-aware analytical SWT and is exactly translation-equivariant under periodic shifts.
+Metadata records accumulated support, valid interior shape at every level, amplitude gain,
+energy normalisation, redundancy, boundary warning and the honest directional meaning: three
+separable bands, **not** six signed orientations. On `(4,5,120,80)`, db2 L3 expands storage to
+7.324 MiB (10x), and the measured auto paths take 19.81/47.22 ms CPU and 6.40/14.53 ms RTX for
+round-trip/training-step respectively. RTX incremental peak is 25.46 MiB.
+
+**T5.1e adds the orientation-aware training comparison.** `DTCWTRepresentation` vmaps the
+canonical Kingsbury analysis and synthesis over flattened batch/channel items while reusing
+registered level-1 and q-shift filter buffers. Its exact four-plane real atlas retains the six
+complex bands at every native scale without interpolation: plane 0 recursively nests the
+coarse pyramid and planes 1--3 hold level-1 real/imaginary components. Atlas adjacency is
+explicitly storage geometry, never physical adjacency. The module reports parent and native
+edge margins, native valid interiors, nominal and independently measured direction centres,
+and refuses configurations with no two-dimensional valid interior. The analytical UI summary
+shows native complex-magnitude maps with a shared within-level colour scale and the valid inset
+drawn; it does not resample levels or paint phase as a scalar field. Coordinate-aware oracle
+agreement, exact arbitrary-atlas packing, float64 gradcheck, random coefficient-loss gradients,
+batch reconstruction, cached filter migration and CPU/RTX-CUDA parity pass. On float32
+`(2,5,120,80)` at two levels, measured round-trip/training-step times are 46.23/138.34 ms CPU
+and 35.87/65.91 ms RTX; encoded storage is 1.465 MiB and maximum round-trip error is 1.20e-6.
+
+This is **T5.1a-e, not all of T5.1**. Non-NVIDIA hardware evidence, mixed
+precision and compilation acceptance remain outstanding.
 
 ### 3.2 Synthetic Field Generator & Perturbation Engine (`src/synthetic_generator/`)
 *   **Deterministic Field Generator (`generator.py`):** Generates analytical 2D fields:
@@ -719,7 +777,7 @@ reason in the test itself.
 
 ## 3.12 HTTP API Surface
 
-27 routes. Listed here because an undocumented endpoint is an untested contract.
+28 routes. Listed here because an undocumented endpoint is an untested contract.
 
 | Method | Route | Notes |
 |---|---|---|
@@ -730,6 +788,7 @@ reason in the test itself.
 | POST | `/api/v1/boundary/analyze` | declares its pixel frame explicitly (D13) |
 | GET | `/api/v1/actions` | every registered pipeline action, generated from the registry (T3.5.15) |
 | GET | `/api/v1/transforms` | every registered transform with its params and capabilities (T3.5.15) |
+| GET | `/api/v1/training/representations` | batched/autograd readiness, verification limits, SWT redundancy, DTCWT atlas geometry and selected R13 interiors (T5.1e) |
 | GET | `/api/v1/data/sources` | the data-source fallback chain in priority order (E2) |
 | POST | `/api/v1/import/inspect` | describe an uploaded file without committing to a 2D slice of it (T3.5.24) |
 | POST | `/api/v1/import/field` | read one pinned 2D field out of an upload, with reconstructed provenance |
@@ -1397,6 +1456,7 @@ The React frontend is fully written and structurally complete. It was installed 
 *   **Main Application (`App.tsx`):** ~2,400 lines covering state hooks for **nine** tabs (Synthetic Generator, Meteorological Data, Boundary-Condition Lab, Spectral Transforms, Diagnostic & Analysis, Experiment Engine, Automated Hypotheses, **Platform & Evidence**, **Real ERA5 (Zarr)**), loading indicators, dynamic sliders, and follow-up proposal adoption.
 *   **Platform & Evidence tab (T3.5.22):** the execution device, core and thread counts, executor backends with the measured rationale for the serial default, the SQLite pragmas actually in force, the stamped Alembic revision with an explicit warning when the schema is behind the code, the data-source fallback chain labelled observational/SIMULATED from each source's own declared flag, and the full Ground-Truth Benchmark Suite with its declared known answers and null benchmarks marked. All of this existed on the backend for several slices with no consumer.
 *   **Real ERA5 tab (T3.5.22):** a crop form driven by the store catalogue, the R13 minimum crop size for the chosen number of wavelet levels, and an **inspect** action that reports chunk structure, the predicted amplification, the chunk-hostility warning and the per-level valid interior — metadata only, no transfer — then hands back the CLI command that would materialise it. The network gate is shown when it is off, with the variable that enables it.
+*   **Spectral Transforms training-readiness and DTCWT evidence panels (T5.1e):** read backend-derived contracts rather than a hand-written capability list. Every candidate shows coefficient expansion, shift behaviour, directional meaning, boundary convention, scientific role, verified and NOT RUN backends, and limitations. SWT and DTCWT show the selected grid's per-level edge exclusion and valid interior. Applying an analytical DTCWT additionally shows six native-resolution complex-magnitude maps at the chosen scale, one shared colour range, measured versus nominal angles and a marked valid inset. No cross-level interpolation is used; phase and atlas adjacency are not mislabelled as physical scalar structure.
 *   **Statistics on every hypothesis (defect D8, presentation half):** the card labelled a bare `|r|` as "Confidence" and showed nothing else, which is what made nine noise correlations from a 9-run sweep read as nine discoveries. It now says **effect size**, and shows the q-value, the raw p-value, the family size, the correction procedure **with its dependence assumption**, and the R7 non-causality caveat. A finding with no correction gets an explicit warning rather than looking identical to a corrected one.
 *   **Frontend/backend contract, checked mechanically (`src/tests/test_frontend_contract.py`):** `npm run build` runs `tsc`, so the frontend's internal types are checked; nothing checked them against the backend, and the payloads that matter are `Record<string, any>` because their shape is nested. The tests parse `api.ts` for every path it fetches and assert each is served (distinguishing a path parameter from a query string), assert every service method is actually called from `App.tsx`, and assert every nested key the UI reads exists in a real response. It found a live bug on its first run: the hypothesis card rendered `statistics.correction`, which is an **object**, and would have thrown *"Objects are not valid as a React child"* while `tsc`, `vite build` and 547 backend tests all passed.
 *   **API Integration:** `src/services/api.ts` covers every backend endpoint via `fetch` against the relative base `/api/v1`. The offline fallback lives in `App.tsx`, not in the client service - each tab catches the network error and substitutes a local mock generator (`getMockDatasets`, `runMockFieldGenerator`, `applyMockPerturbation`, and the mock lineage fixture at `App.tsx:647`). The relative base URL means the frontend normally goes through the Vite dev proxy (`vite.config.ts`); since T3.5.2 the API also declares `CORSMiddleware` with an origin allowlist from `CORS_ALLOW_ORIGINS`, so a direct cross-origin call works too (defect D5).
@@ -1416,7 +1476,7 @@ See `VERIFICATION.md` for the captured command output behind every statement her
 | Item | Status |
 |---|---|
 | Python venv + dependencies | installed (torch 2.13.0+cu130, numpy 2.2.6, pydantic 1.10.26, SQLAlchemy 2.0.52, xarray 2025.6.1, FastAPI 0.110.3) |
-| Backend test suite | **911 passed, 1 xfailed** (plus 1 skipped: opt-in live GCS) (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17, 351 after T3.5.6, 379 after T3.5.15, 407 after T3.5.19, 449 after T4C.5, 709 after T4A.4, 781 after T4B.4, 855 after T4C.5, 859 after T4C.5c, 882 after T5.1a CPU acceptance, 883 after RTX acceptance, 890 after portable profiles, 911 after T5.1b/D44) |
+| Backend test suite | **955 passed, 1 xfailed** (plus 1 skipped: opt-in live GCS) (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17, 351 after T3.5.6, 379 after T3.5.15, 407 after T3.5.19, 449 after T4C.5, 709 after T4A.4, 781 after T4B.4, 855 after T4C.5, 859 after T4C.5c, 882 after T5.1a CPU acceptance, 883 after RTX acceptance, 890 after portable profiles, 911 after T5.1b/D44, 917 after T5.1c, 933 after T5.1d/D45, 946 after T5.1e, 955 after T5.2a) |
 | Ground-Truth Benchmark Suite | **15 PASS, 0 FAIL, 2 NOT_YET_RUNNABLE** (`python -m src.benchmarks`, exit 0) |
 | Frontend `npm install` + `npm run build` | passes, emits 1,378 modules + real JS/CSS assets (was: 1 module, no assets) |
 | Backend server | starts, serves OpenAPI, all smoke-tested endpoints return 200 |
@@ -1498,6 +1558,7 @@ code paths that `architecture.md` previously described as implemented and rigoro
 | D42 | `data_layer/adapters.py`, `experiment_engine/actions.py` (found preparing T4C.6) | **Real ERA5 existed beside the Phase 4 pipeline, not inside it.** The Zarr API could inspect and materialise a crop, but `slice_sequence` supplied only a dataset id; the registered source requires the crop specification and therefore could never serve the action that every Phase 4 stage uses. The adapter also assumed `lat`/`lon`, while WeatherBench uses `latitude`/`longitude`. Parameterised source options now flow through the action without entering the unsafe id-only cache, coordinates are normalised onto the physical spine, and source request/provenance survives on the sequence. An offline WeatherBench-shaped test runs cached crop -> `FieldSequence` -> registered action -> artifact and asserts observational, non-simulated provenance. | **FIXED** T4C.5b |
 | D43 | `data_layer/zarr_source.py` catalogue / T4C.6 data design | **The real-data gate is not laptop-feasible through the catalogued WeatherBench layouts.** The supposedly compromise 0.7-degree store is chunked `(8,13,512,256)`: every eight-frame read transfers all levels and the globe. Live metadata inspection for a three-year, one-variable, 255x255 request estimated 29.88 GB fetched for 1.14 GB wanted (26.2x); the 0.25-degree archive is worse. A short record would fit the machine but leaves the independent transfer-entropy partitions estimator-starved. Fix: add and independently verify a temporally deep, spatially tiled ERA5 source (or direct regional CDS acquisition), then freeze the crop and run T4C.6. Do not reduce the sample or edge-validity requirements to fit the old storage layout. | **OPEN** |
 | D44 | `transform_engine/stationary.py:filter_support` / `data_layer/zarr_source.py:edge_exclusion` (found while building T5.1b) | **The generic R13 budget discarded inherited low-pass support.** It counted only the filter newly applied at level `j`, `(L-1)2^(j-1)+1`, although an SWT coefficient has passed through every preceding low-pass stage. The complete cascade is `1+(L-1)(2^j-1)`. For db2 the level-4 margin changes from 12 to 23 pixels; for the declared generic 14-tap budget it changes from 52 to 98, moving the four/five-level 128-valid-pixel floors from 256/512 to 512/1024. Both implementations, their tests, the tier table and R13 documentation now use the accumulated support. An independent convolution of the dilated filters tests the composition rather than merely repeating the formula. Historical D40/D41 measurements remain recorded but are superseded wherever they relied on the generic table. | **FIXED** T5.1b |
+| D45 | `transform_engine/training.py` convolution paths (found by the first full T5.1d run) | **A transform whose numerical result depended on what ran before it.** `enable_determinism` selects a different cuDNN convolution algorithm; with ambient TF32 enabled, the RTX SWT round-trip maximum error changed from **2.38e-7 to 4.48e-4** on the same seeded input. Focused tests passed because they started in fresh process state; the ordered full suite exposed it. All training convolution calls now scope `allow_tf32=False` locally and restore the caller's policy. A regression test deliberately enables deterministic cuDNN plus TF32, asserts the 3e-6 reconstruction tolerance, and asserts the ambient flag is restored. | **FIXED** T5.1d |
 
 **Root cause common to D20, D23, D25 and D2:** the transform engine — the mathematical core of
 the platform — had **no test file at all**. `src/tests/test_transforms.py` now exists (36 cases
@@ -1620,23 +1681,24 @@ able to sit three slices out of date.
 | `test_executor.py` | 33 | Executor backends, seed derivation, ordering, portable CPU/accelerator/HPC profiles, doctor, device/thread policy, SQLite concurrency, byte-identical sweeps |
 | `test_experiments.py` | 3 | declarative sweeps and lineage |
 | `test_exports.py` | 32 | CSV/JSON/NetCDF4/Zarr round trips, embedded provenance, seeded perturbation (D34) |
-| `test_frontend_contract.py` | 28 | the frontend/backend contract, plus the UI integrity guards: no fabricated results, no unqualified validation claims, units and slope uncertainty displayed |
+| `test_frontend_contract.py` | 30 | the frontend/backend contract, including transform/dataset readiness claim boundaries, plus the UI integrity guards: no fabricated results, no unqualified validation claims, units and slope uncertainty displayed |
 | `test_grid_operators.py` | 64 | grid metrics, metric-aware gradient/Laplacian, area weighting, physical-wavenumber spectra, D26 |
 | `test_hypothesis.py` | 3 | correlation and categorical hypothesis discovery |
 | `test_imports.py` | 36 | NetCDF/Zarr/CSV/JSON import, dimension pinning, axis identification, laundering guard, benchmark runs over HTTP |
 | `test_migrations.py` | 25 | Alembic history, ORM/schema drift, per-revision round trips, pre-Alembic adoption, auto-migrate refusal, PostgreSQL rendering |
+| `test_regional_forecast.py` | 8 | T5.2a alignment, pre-sample temporal embargo, train-only normalisation, provenance, default DataLoader collation, local/HPC cache seam and independent-route comparison contract |
 | `test_sequence.py` | 37 | FieldSequence validation, cadence, R6 temporal split and leakage guardrails, slice_sequence |
-| `test_registries.py` | 29 | registries, error taxonomy, fallback chain, and the T3.5.15 plugin acceptance criterion |
+| `test_registries.py` | 30 | registries, error taxonomy, fallback chain, plugin acceptance and DTCWT native-visualisation contract |
 | `test_stationary.py` | 19 | undecimated SWT: shift invariance, perfect reconstruction, frame constant, PyWavelets oracle, R3 normalisation |
 | `test_statistics.py` | 36 | FDR procedures vs scipy, surrogate preservation properties, calibration on a true null, stationarity gate, screening |
-| `test_training_representations.py` | 23 | T5.1a-b raw/FFT/DCT/Haar/db2 batch contract, reconstruction, immutable context, PyWavelets periodization oracle, Mallat packing, support metadata, gradcheck, cached DCT buffers, dtype migration and vendor-neutral accelerator parity |
+| `test_training_representations.py` | 43 | T5.1a-e raw/FFT/DCT/Haar/db2/SWT/DTCWT batch contract, reconstruction, immutable context, analytical/PyWavelets/FFT oracles, exact complex-atlas bijection, fused/reference coefficient and gradient agreement, translation equivariance, explicit TF32 precision isolation, Mallat/channel packing, support/redundancy metadata, gradcheck, cached buffers, dtype migration and vendor-neutral accelerator parity |
 | `test_cross_scale.py` | 25 | T4C.3 acceptance plus the frozen T4C.6 protocol: injected cascade/null twin, Theiler windows, support floor, power check, split sufficiency, embargo and three-state replication verdict |
 | `test_scale_signature.py` | 28 | T4C.1 acceptance and the analytic values of every measure on white noise; threshold sensitivity measured; R13 interior refusals; T4C.4 power-law core |
 | `test_surrogate_null.py` | 14 | T4C.2 acceptance: spectrum preserved, phase destroyed, organised scores and fBm does not; the two calibrations (wrong null, linear lag) |
 | `test_wavelet_bank.py` | 27 | T4B.2 expansion through the engine's own parameter matrix, the 1,000-combination guard, decompose_bank / extract_scale_signature, the vertical-bank refusals |
 | `test_transforms.py` | 13 | fft/dct/dwt/dtcwt/hybrid round trips; D1 recorded as a strict xfail |
 | `test_zarr_source.py` | 58 | R13 crop geometry, chunk-hostility prediction, byte counting, cache and provenance round trip, the NetCDF engine (D33), zarr HTTP surface |
-| **total** | **726** | |
+| **total** | **757** | |
 
 ### 7.2h A surrogate null that was not the null it claimed (T4C.5)
 

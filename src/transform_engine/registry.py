@@ -161,12 +161,44 @@ def _register_builtins() -> None:
 
     def _dtcwt_summary(c):
         s = dtcwt_mod.subband_energies(c)
+        native_maps = []
+        for index, band in enumerate(c["highpass"]):
+            level = index + 1
+            parent_margin = dtcwt_mod.valid_interior_halfwidth(
+                level, c["level1"], c["qshift"]
+            )
+            native_margin = dtcwt_mod.native_halfwidth(
+                level, c["level1"], c["qshift"]
+            )
+            native_maps.append({
+                "level": level,
+                "native_shape": list(band.shape[:2]),
+                "valid_interior_halfwidth_parent_px": parent_margin,
+                "valid_interior_halfwidth_native_px": native_margin,
+                "valid_interior_native_shape": [
+                    max(0, band.shape[0] - 2 * native_margin),
+                    max(0, band.shape[1] - 2 * native_margin),
+                ],
+                # Magnitude is stable under small shifts and is the interpretable display
+                # quantity. Complex phase is retained for inverse/training but deliberately
+                # not painted as an unlabeled decorative heatmap.
+                "magnitude_by_orientation": band.abs().permute(2, 0, 1).tolist(),
+            })
         return {
             "levels": c["levels"], "level1": c["level1"], "qshift": c["qshift"],
             "feature_orientations_deg": s["feature_orientations_deg"],
             "wavevector_orientations_deg": s["wavevector_orientations_deg"],
             "orientation_convention": s["orientation_convention"],
             "subband_energy": s["levels"],
+            "native_magnitude_maps": native_maps,
+            "measured_level1_wavevector_deg": dtcwt_mod.MEASURED_LEVEL1_WAVEVECTOR_DEG,
+            "measured_qshift_wavevector_deg": dtcwt_mod.MEASURED_QSHIFT_WAVEVECTOR_DEG,
+            "visualization_contract": {
+                "quantity": "complex magnitude",
+                "sampling": "native decimated grid per level; no cross-level interpolation",
+                "validity": "exclude the stated inset on every side",
+                "warning": "map adjacency and atlas tile adjacency do not imply physical adjacency",
+            },
             "coefficient_provenance": c["coefficient_provenance"],
         }
 

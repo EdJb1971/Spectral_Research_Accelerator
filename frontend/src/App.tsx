@@ -5,6 +5,8 @@ import { LineageGraph } from './components/LineageGraph';
 import { FieldExportBar, TableExportBar } from './components/ExportBar';
 import { FigureExport } from './components/FigureExport';
 import { FieldImport } from './components/FieldImport';
+import { TrainingReadiness } from './components/TrainingReadiness';
+import { DTCWTScientificView } from './components/DTCWTScientificView';
 import { apiService } from './services/api';
 import * as types from './types/api';
 import {
@@ -138,11 +140,13 @@ export default function App() {
   // --- TAB 4 STATE: Spectral Transform Engine ---
   const [transformType, setTransformType] = useState('fft');
   const [waveletLevels, setWaveletLevels] = useState(1);
+  const [waveletFamily, setWaveletFamily] = useState('db2');
   const [crossoverFreq, setCrossoverFreq] = useState(0.2);
   const [mixingWeight, setMixingWeight] = useState(0.5);
   const [reconstructedField, setReconstructedField] = useState<number[][] | null>(null);
   const [transformMetrics, setTransformMetrics] = useState<types.TransformResponse['metrics'] | null>(null);
-  const [_transformCoefficients, setTransformCoefficients] = useState<Record<string, any> | null>(null);
+  const [transformCoefficients, setTransformCoefficients] = useState<Record<string, any> | null>(null);
+  const [trainingCatalogue, setTrainingCatalogue] = useState<types.TrainingRepresentationCatalogue | null>(null);
 
   // --- TAB 5 STATE: Analysis & Diagnostics ---
   const [forecastNoise, setForecastNoise] = useState(0.15);
@@ -204,6 +208,19 @@ export default function App() {
   useEffect(() => {
     checkConnection();
   }, []);
+
+  useEffect(() => {
+    if (backendConnected !== true) return;
+    apiService.listTrainingRepresentations(
+      waveletLevels,
+      waveletFamily,
+      primaryField.length,
+      primaryField[0]?.length || 1,
+    ).then(setTrainingCatalogue).catch((err: any) => {
+      setTrainingCatalogue(null);
+      setError(`Training capability evidence could not be loaded: ${err.message}`);
+    });
+  }, [backendConnected, waveletLevels, waveletFamily, primaryField]);
 
   const checkConnection = async () => {
     try {
@@ -370,6 +387,7 @@ export default function App() {
         transform_type: transformType,
         config: {
           levels: waveletLevels,
+          wavelet: waveletFamily,
           crossover_freq: crossoverFreq,
           mixing_weight: mixingWeight
         }
@@ -1036,6 +1054,7 @@ export default function App() {
                   </div>
                 </div>
               </div>
+
             </div>
           )}
 
@@ -1420,12 +1439,13 @@ export default function App() {
                       <option value="fft">2D Fast Fourier Transform (FFT)</option>
                       <option value="dct">2D Discrete Cosine Transform (DCT)</option>
                       <option value="dwt">2D Haar Discrete Wavelet (DWT)</option>
+                      <option value="swt">2D Stationary Wavelet (SWT — shift invariant)</option>
                       <option value="dtcwt">2D Dual-Tree Complex Wavelet (DTCWT)</option>
                       <option value="hybrid">FFT Low-Pass + DWT Residual Hybrid</option>
                     </select>
                   </div>
 
-                  {['dwt', 'dtcwt'].includes(transformType) && (
+                  {['dwt', 'swt', 'dtcwt'].includes(transformType) && (
                     <div>
                       <label className="text-xs text-slate-400 flex justify-between mb-1">
                         <span>Wavelet Levels: {waveletLevels}</span>
@@ -1435,6 +1455,21 @@ export default function App() {
                         onChange={(e) => setWaveletLevels(parseInt(e.target.value))}
                         className="w-full accent-teal-500"
                       />
+                    </div>
+                  )}
+
+                  {transformType === 'swt' && (
+                    <div>
+                      <label className="text-xs text-slate-400 block mb-1">SWT Wavelet Family</label>
+                      <select
+                        value={waveletFamily}
+                        onChange={(e) => setWaveletFamily(e.target.value)}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-sm text-slate-200 focus:outline-none"
+                      >
+                        <option value="haar">Haar — shortest support</option>
+                        <option value="db2">db2 — poster comparison</option>
+                        <option value="db3">db3 — longer/smoother support</option>
+                      </select>
                     </div>
                   )}
 
@@ -1516,8 +1551,13 @@ export default function App() {
                       </div>
                     </div>
                   )}
+                  {transformType === 'dtcwt' && (
+                    <DTCWTScientificView summary={transformCoefficients as any} />
+                  )}
                 </div>
               </div>
+
+              <TrainingReadiness catalogue={trainingCatalogue} />
             </div>
           )}
 
@@ -2540,10 +2580,28 @@ export default function App() {
                       </h3>
                       {zarrCached.crops.map(c => (
                         <div key={c.content_key} className="text-[11px] font-mono border border-slate-800 rounded p-2 bg-slate-950">
-                          <div className="text-slate-200">{c.content_key}</div>
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-slate-200">{c.content_key}</span>
+                            <span className={c.regional_forecast_readiness.structurally_eligible
+                              ? 'text-emerald-400' : 'text-amber-400'}>
+                              {c.regional_forecast_readiness.structurally_eligible
+                                ? 'T5.2 structure eligible' : 'T5.2 inputs incomplete'}
+                            </span>
+                          </div>
                           <div className="text-slate-500">
                             {Object.entries(c.shape || {}).map(([k, v]) => `${k}=${v}`).join(' ')} &bull;{' '}
                             {c.megabytes_transferred} MB transferred in {c.elapsed_s}s
+                          </div>
+                          <div className="text-slate-400 mt-1">
+                            850 hPa {c.regional_forecast_readiness.level_available ? 'present' : 'missing'} &bull;{' '}
+                            t/q/u/v/z {c.regional_forecast_readiness.missing_variables.length === 0
+                              ? 'present' : `missing ${c.regional_forecast_readiness.missing_variables.join('/')}`}
+                          </div>
+                          <div className="text-amber-300/80 mt-1 font-sans leading-relaxed">
+                            Prepared dataset: NO &bull; train-only normalisation verified: NO &bull; independent ERA5 cross-check: NOT RUN
+                          </div>
+                          <div className="text-slate-600 mt-1 font-sans leading-relaxed">
+                            {c.regional_forecast_readiness.claim_boundary}
                           </div>
                         </div>
                       ))}

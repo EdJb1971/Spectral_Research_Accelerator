@@ -34,7 +34,7 @@ the agreement partly circular.
 from __future__ import annotations
 
 import math
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Mapping, Optional, Tuple
 
 import torch
 import torch.nn.functional as F
@@ -66,6 +66,12 @@ from src.transform_engine.kingsbury_coeffs import (
 #
 #: Direction of the subband's spatial *wavevector* (the direction of variation), degrees.
 SUBBAND_WAVEVECTOR_DEG: Tuple[float, ...] = (75.0, 45.0, 15.0, 165.0, 135.0, 105.0)
+MEASURED_LEVEL1_WAVEVECTOR_DEG: Tuple[float, ...] = (
+    82.1, 45.0, 7.9, 161.2, 135.0, 108.8,
+)
+MEASURED_QSHIFT_WAVEVECTOR_DEG: Tuple[float, ...] = (
+    74.7, 45.0, 15.3, 164.6, 135.0, 105.4,
+)
 
 #: Orientation of the *feature* (edge, front, filament) the subband responds to, which is
 #: the wavevector direction rotated by 90 degrees. This is the convention a meteorologist
@@ -73,6 +79,12 @@ SUBBAND_WAVEVECTOR_DEG: Tuple[float, ...] = (75.0, 45.0, 15.0, 165.0, 135.0, 105
 #: :func:`subband_energies` - and the two are kept as separate named constants precisely
 #: because silently mixing them is a 90-degree error that looks like a sign convention.
 SUBBAND_FEATURE_DEG: Tuple[float, ...] = tuple((w + 90.0) % 180.0 for w in SUBBAND_WAVEVECTOR_DEG)
+MEASURED_LEVEL1_FEATURE_DEG: Tuple[float, ...] = tuple(
+    (w + 90.0) % 180.0 for w in MEASURED_LEVEL1_WAVEVECTOR_DEG
+)
+MEASURED_QSHIFT_FEATURE_DEG: Tuple[float, ...] = tuple(
+    (w + 90.0) % 180.0 for w in MEASURED_QSHIFT_WAVEVECTOR_DEG
+)
 
 #: Backwards-compatible alias; prefer the two explicit names above.
 SUBBAND_ORIENTATIONS_DEG: Tuple[float, ...] = SUBBAND_FEATURE_DEG
@@ -154,19 +166,14 @@ def _coldfilt(x: torch.Tensor, ha: torch.Tensor, hb: torch.Tensor) -> torch.Tens
     t = torch.arange(5, r + 2 * m - 2, 4, device=x.device)
     r2 = r // 2
 
-    out = torch.zeros((r2, c), dtype=x.dtype, device=x.device)
     # The branch on sign(sum(ha*hb)) decides which tree lands on even output samples. It is
     # a property of the filter pair, not a convention we may pick.
-    if float(torch.sum(ha * hb)) > 0:
-        s1, s2 = slice(0, r2, 2), slice(1, r2, 2)
-    else:
-        s2, s1 = slice(0, r2, 2), slice(1, r2, 2)
-
-    out[s1, :] = (_col_convolve(x.index_select(0, idx[t - 1]), hao)
-                  + _col_convolve(x.index_select(0, idx[t - 3]), hae))
-    out[s2, :] = (_col_convolve(x.index_select(0, idx[t]), hbo)
-                  + _col_convolve(x.index_select(0, idx[t - 2]), hbe))
-    return out
+    tree_a = (_col_convolve(x.index_select(0, idx[t - 1]), hao)
+              + _col_convolve(x.index_select(0, idx[t - 3]), hae))
+    tree_b = (_col_convolve(x.index_select(0, idx[t]), hbo)
+              + _col_convolve(x.index_select(0, idx[t - 2]), hbe))
+    ordered = (tree_a, tree_b) if float(torch.sum(ha * hb)) > 0 else (tree_b, tree_a)
+    return torch.stack(ordered, dim=1).reshape(r2, c)
 
 
 def _colifilt(x: torch.Tensor, ha: torch.Tensor, hb: torch.Tensor) -> torch.Tensor:
@@ -180,26 +187,27 @@ def _colifilt(x: torch.Tensor, ha: torch.Tensor, hb: torch.Tensor) -> torch.Tens
                    -0.5, r - 0.5)
     hao, hae = ha[0:m:2], ha[1:m:2]
     hbo, hbe = hb[0:m:2], hb[1:m:2]
-    out = torch.zeros((r * 2, c), dtype=x.dtype, device=x.device)
     positive = float(torch.sum(ha * hb)) > 0
 
     if m2 % 2 == 0:
         t = torch.arange(3, r + m, 2, device=x.device)
         ta, tb = (t, t - 1) if positive else (t - 1, t)
-        s = torch.arange(0, r * 2, 4, device=x.device)
-        out[s, :] = _col_convolve(x.index_select(0, idx[tb - 2]), hae)
-        out[s + 1, :] = _col_convolve(x.index_select(0, idx[ta - 2]), hbe)
-        out[s + 2, :] = _col_convolve(x.index_select(0, idx[tb]), hao)
-        out[s + 3, :] = _col_convolve(x.index_select(0, idx[ta]), hbo)
+        rows = (
+            _col_convolve(x.index_select(0, idx[tb - 2]), hae),
+            _col_convolve(x.index_select(0, idx[ta - 2]), hbe),
+            _col_convolve(x.index_select(0, idx[tb]), hao),
+            _col_convolve(x.index_select(0, idx[ta]), hbo),
+        )
     else:
         t = torch.arange(2, r + m - 1, 2, device=x.device)
         ta, tb = (t, t - 1) if positive else (t - 1, t)
-        s = torch.arange(0, r * 2, 4, device=x.device)
-        out[s, :] = _col_convolve(x.index_select(0, idx[tb]), hao)
-        out[s + 1, :] = _col_convolve(x.index_select(0, idx[ta]), hbo)
-        out[s + 2, :] = _col_convolve(x.index_select(0, idx[tb]), hae)
-        out[s + 3, :] = _col_convolve(x.index_select(0, idx[ta]), hbe)
-    return out
+        rows = (
+            _col_convolve(x.index_select(0, idx[tb]), hao),
+            _col_convolve(x.index_select(0, idx[ta]), hbo),
+            _col_convolve(x.index_select(0, idx[tb]), hae),
+            _col_convolve(x.index_select(0, idx[ta]), hbe),
+        )
+    return torch.stack(rows, dim=1).reshape(r * 2, c)
 
 
 def _q2c(y: torch.Tensor) -> torch.Tensor:
@@ -225,17 +233,18 @@ def _c2q(w: torch.Tensor, gain: Tuple[float, float]) -> torch.Tensor:
     p = w[..., 0] * (s * gain[0]) + w[..., 1] * (s * gain[1])
     q = w[..., 0] * (s * gain[0]) - w[..., 1] * (s * gain[1])
     h, wid = p.shape
-    out = torch.zeros((h * 2, wid * 2), dtype=p.real.dtype, device=p.device)
-    out[0::2, 0::2] = p.real
-    out[0::2, 1::2] = p.imag
-    out[1::2, 0::2] = q.imag
-    out[1::2, 1::2] = -q.real
-    return out
+    even_rows = torch.stack((p.real, p.imag), dim=-1).reshape(h, wid * 2)
+    odd_rows = torch.stack((q.imag, -q.real), dim=-1).reshape(h, wid * 2)
+    return torch.stack((even_rows, odd_rows), dim=-2).reshape(h * 2, wid * 2)
 
 
 def _get(name: str, table: Dict[str, Dict[str, Tuple[float, ...]]], key: str,
          device, dtype) -> torch.Tensor:
     return torch.tensor(table[name][key], dtype=dtype, device=device)
+
+
+def _cached_or_get(cache, name, table, key, device, dtype):
+    return cache[key] if key in cache else _get(name, table, key, device, dtype)
 
 
 def available_filters() -> Dict[str, List[str]]:
@@ -260,6 +269,7 @@ def apply_dtcwt2d(
     level1: str = "near_sym_b",
     qshift: str = "qshift_b",
     dtype: torch.dtype = torch.float64,
+    _filters: Optional[Mapping[str, torch.Tensor]] = None,
 ) -> Dict[str, Any]:
     """Forward dual-tree complex wavelet transform.
 
@@ -291,12 +301,13 @@ def apply_dtcwt2d(
         data = torch.cat((data, data[:, -1:]), dim=1)
 
     device = data.device
-    h0o = _get(level1, LEVEL1_FILTERS, "h0o", device, dtype)
-    h1o = _get(level1, LEVEL1_FILTERS, "h1o", device, dtype)
-    h0a = _get(qshift, QSHIFT_FILTERS, "h0a", device, dtype)
-    h0b = _get(qshift, QSHIFT_FILTERS, "h0b", device, dtype)
-    h1a = _get(qshift, QSHIFT_FILTERS, "h1a", device, dtype)
-    h1b = _get(qshift, QSHIFT_FILTERS, "h1b", device, dtype)
+    cached = _filters or {}
+    h0o = _cached_or_get(cached, level1, LEVEL1_FILTERS, "h0o", device, dtype)
+    h1o = _cached_or_get(cached, level1, LEVEL1_FILTERS, "h1o", device, dtype)
+    h0a = _cached_or_get(cached, qshift, QSHIFT_FILTERS, "h0a", device, dtype)
+    h0b = _cached_or_get(cached, qshift, QSHIFT_FILTERS, "h0b", device, dtype)
+    h1a = _cached_or_get(cached, qshift, QSHIFT_FILTERS, "h1a", device, dtype)
+    h1b = _cached_or_get(cached, qshift, QSHIFT_FILTERS, "h1b", device, dtype)
 
     min_dim = min(data.shape)
     if min_dim < 2 ** levels:
@@ -314,15 +325,11 @@ def apply_dtcwt2d(
     hi = _colfilter(data, h1o).transpose(0, 1)
     lolo = _colfilter(lo, h0o).transpose(0, 1)
 
-    band = torch.zeros((lolo.shape[0] // 2, lolo.shape[1] // 2, 6),
-                       dtype=torch.complex128 if dtype == torch.float64 else torch.complex64,
-                       device=device)
     horiz = _q2c(_colfilter(hi, h0o).transpose(0, 1))
     vert = _q2c(_colfilter(lo, h1o).transpose(0, 1))
     diag = _q2c(_colfilter(hi, h1o).transpose(0, 1))
-    band[:, :, 0], band[:, :, 5] = horiz[..., 0], horiz[..., 1]
-    band[:, :, 2], band[:, :, 3] = vert[..., 0], vert[..., 1]
-    band[:, :, 1], band[:, :, 4] = diag[..., 0], diag[..., 1]
+    band = torch.stack((horiz[..., 0], diag[..., 0], vert[..., 0],
+                        vert[..., 1], diag[..., 1], horiz[..., 1]), dim=-1)
     highpass.append(band)
     shapes.append(tuple(lolo.shape))
 
@@ -334,16 +341,11 @@ def apply_dtcwt2d(
         hi = _coldfilt(lolo, h1b, h1a).transpose(0, 1)
         lolo = _coldfilt(lo, h0b, h0a).transpose(0, 1)
 
-        band = torch.zeros(
-            (lolo.shape[0] // 2, lolo.shape[1] // 2, 6),
-            dtype=torch.complex128 if dtype == torch.float64 else torch.complex64,
-            device=device)
         horiz = _q2c(_coldfilt(hi, h0b, h0a).transpose(0, 1))
         vert = _q2c(_coldfilt(lo, h1b, h1a).transpose(0, 1))
         diag = _q2c(_coldfilt(hi, h1b, h1a).transpose(0, 1))
-        band[:, :, 0], band[:, :, 5] = horiz[..., 0], horiz[..., 1]
-        band[:, :, 2], band[:, :, 3] = vert[..., 0], vert[..., 1]
-        band[:, :, 1], band[:, :, 4] = diag[..., 0], diag[..., 1]
+        band = torch.stack((horiz[..., 0], diag[..., 0], vert[..., 0],
+                            vert[..., 1], diag[..., 1], horiz[..., 1]), dim=-1)
         highpass.append(band)
 
     return {
@@ -363,7 +365,11 @@ def apply_dtcwt2d(
     }
 
 
-def inverse_dtcwt2d(coeffs: Dict[str, Any], dtype: torch.dtype = torch.float64) -> PhysicalField:
+def inverse_dtcwt2d(
+    coeffs: Dict[str, Any],
+    dtype: torch.dtype = torch.float64,
+    _filters: Optional[Mapping[str, torch.Tensor]] = None,
+) -> PhysicalField:
     """Reconstruct a field from :func:`apply_dtcwt2d` output."""
     level1 = coeffs["level1"]
     qshift = coeffs["qshift"]
@@ -371,12 +377,13 @@ def inverse_dtcwt2d(coeffs: Dict[str, Any], dtype: torch.dtype = torch.float64) 
     highpass = coeffs["highpass"]
     device = lowpass.device
 
-    g0o = _get(level1, LEVEL1_FILTERS, "g0o", device, dtype)
-    g1o = _get(level1, LEVEL1_FILTERS, "g1o", device, dtype)
-    g0a = _get(qshift, QSHIFT_FILTERS, "g0a", device, dtype)
-    g0b = _get(qshift, QSHIFT_FILTERS, "g0b", device, dtype)
-    g1a = _get(qshift, QSHIFT_FILTERS, "g1a", device, dtype)
-    g1b = _get(qshift, QSHIFT_FILTERS, "g1b", device, dtype)
+    cached = _filters or {}
+    g0o = _cached_or_get(cached, level1, LEVEL1_FILTERS, "g0o", device, dtype)
+    g1o = _cached_or_get(cached, level1, LEVEL1_FILTERS, "g1o", device, dtype)
+    g0a = _cached_or_get(cached, qshift, QSHIFT_FILTERS, "g0a", device, dtype)
+    g0b = _cached_or_get(cached, qshift, QSHIFT_FILTERS, "g0b", device, dtype)
+    g1a = _cached_or_get(cached, qshift, QSHIFT_FILTERS, "g1a", device, dtype)
+    g1b = _cached_or_get(cached, qshift, QSHIFT_FILTERS, "g1b", device, dtype)
 
     z = lowpass
     for level in range(len(highpass) - 1, 0, -1):

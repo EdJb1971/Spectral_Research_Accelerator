@@ -13,6 +13,50 @@ export interface TransformResponse {
   };
 }
 
+export interface TrainingRepresentationEntry {
+  name: string;
+  label: string;
+  status: 'accepted' | 'analysis_only';
+  batched: boolean;
+  autograd: boolean;
+  exact_inverse: boolean | null;
+  coefficient_ratio: string;
+  shift_behavior: string;
+  directionality: string;
+  boundary: string;
+  scientific_role: string;
+  limitations: string[];
+  verified: string[];
+  not_run: string[];
+  selected_configuration?: {
+    wavelet?: string;
+    level1?: string;
+    qshift?: string;
+    levels: number;
+    spatial_shape: number[];
+    coefficient_channels_per_input_channel?: number;
+    atlas_planes_per_input_channel?: number;
+    accumulated_support_by_level?: number[];
+    valid_interior_halfwidth_by_level?: number[];
+    valid_interior_shape_by_level?: number[][];
+    valid_interior_halfwidth_parent_px_by_level?: number[];
+    valid_interior_halfwidth_native_px_by_level?: number[];
+    native_shape_by_level?: number[][];
+    valid_interior_native_shape_by_level?: number[][];
+    coarsest_scale_has_valid_interior: boolean;
+    implementation_policy?: string;
+    display_contract?: string;
+  };
+}
+
+export interface TrainingRepresentationCatalogue {
+  contract: string;
+  selected_levels: number;
+  selected_wavelet: string;
+  selected_spatial_shape: number[];
+  representations: TrainingRepresentationEntry[];
+}
+
 export interface GenerateRequest {
   type: string;
   height: number;
@@ -420,6 +464,22 @@ export interface ZarrCachedResponse {
     shape: Record<string, number>;
     megabytes_transferred: number;
     elapsed_s: number;
+    regional_forecast_readiness: {
+      structurally_eligible: boolean;
+      required_variables: string[];
+      resolved_variables: Record<string, string>;
+      missing_variables: string[];
+      ambiguous_variables: string[];
+      required_level_hpa: number;
+      level_available: boolean;
+      n_frames: number;
+      minimum_frames_lower_bound: number;
+      content_fingerprinted: boolean;
+      dataset_prepared: boolean;
+      train_only_normalisation_verified: boolean;
+      independent_era5_crosscheck: string;
+      claim_boundary: string;
+    };
   }>;
 }
 

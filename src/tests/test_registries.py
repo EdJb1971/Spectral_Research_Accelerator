@@ -158,6 +158,22 @@ def test_all_builtin_transforms_are_registered_and_invertible():
         assert isinstance(result["summary"], dict)
 
 
+def test_dtcwt_summary_exposes_native_magnitude_and_validity_without_resampling():
+    field = PhysicalField(torch.randn(64, 72, dtype=torch.float64))
+    summary = transform_registry.apply_transform("dtcwt", field, {"levels": 2})["summary"]
+    assert summary["visualization_contract"]["quantity"] == "complex magnitude"
+    assert "no cross-level interpolation" in summary["visualization_contract"]["sampling"]
+    assert len(summary["native_magnitude_maps"]) == 2
+    first, second = summary["native_magnitude_maps"]
+    assert first["native_shape"] == [32, 36]
+    assert second["native_shape"] == [16, 18]
+    assert first["valid_interior_halfwidth_native_px"] == 5
+    assert first["valid_interior_native_shape"] == [22, 26]
+    assert len(first["magnitude_by_orientation"]) == 6
+    assert len(first["magnitude_by_orientation"][0]) == 32
+    assert len(first["magnitude_by_orientation"][0][0]) == 36
+
+
 def test_every_transform_declares_its_parameters_and_capabilities():
     for entry in transform_registry.TRANSFORMS.entries():
         assert entry.description, entry.name

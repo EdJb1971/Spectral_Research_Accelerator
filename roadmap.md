@@ -20,11 +20,13 @@ Its initial results motivate this roadmap's boundary, transform and downstream-f
 SpectralEarth currently supplies much of the **measurement apparatus** needed around that
 question: the compared 2D transforms, physical grid metadata, boundary diagnostics,
 scale/orientation summaries, surrogate nulls, corrected inference, provenance and a verified
-single-variable regional Zarr crop path. It does **not** yet supply a viable multi-year,
-five-variable regional training dataset or the poster's learned forecasting experiment. No
-current task has implemented its neural architecture, batched transform API, training data
-protocol, autoregressive training schedule or matched forecast comparison. Phase 5 is a
-proposal to build or integrate that judge, not evidence that it exists.
+single-variable regional Zarr crop path. T5.1a-e now supplies the batched transform API and
+T5.2a supplies the leakage-safe five-variable PyTorch dataset constructor over a materialised
+crop. It does **not** yet supply the viable multi-year real NZ crop (D43), an actual independent
+ERA5 route cross-check or the poster's learned forecasting experiment. No current task has
+implemented its neural architecture, autoregressive training schedule or matched forecast
+comparison. Phase 5's remaining model work is a proposal to integrate that judge, not evidence
+that it exists.
 
 Consequently:
 
@@ -50,7 +52,7 @@ skill, show the counterexamples, or report that no robust relationship survives.
 ## 1. Honest Technical Status
 
 Verified against the code on 2026-08-21. Every claim here is backed by captured output in
-`VERIFICATION.md`; `architecture.md` Section 7 holds the full defect ledger (D1-D44, of which **41 fixed, 1 partial (D18), 2 open (D17, D43)**).
+`VERIFICATION.md`; `architecture.md` Section 7 holds the full defect ledger (D1-D45, of which **42 fixed, 1 partial (D18), 2 open (D17, D43)**).
 
 The numbers in this table are checked by `src/tests/test_documentation.py`, which parses them
 out of this file and compares them against the source. That guard exists because this table
@@ -60,9 +62,9 @@ status section, it is a memory.
 
 | Area | Real status |
 |---|---|
-| **Phase progress** | **Phase 3.5 complete** (25 tasks). **Phase 4A, 4B and 4C complete** as implementable work: T4A.1-4, T4B.1-4, T4C.1-5. **T5.1 is partial:** T5.1a-b accepts raw/FFT/DCT/Haar/db2 training representations; SWT/DTCWT and the remaining cross-device/performance acceptance remain. **Not done:** T4C.6, the real-ERA5 gate review; 4D-4H; T5.0 and T5.2-7. Per-task evidence blocks sit under each task below; a task without a **DONE** or **PARTIAL** label has not been started. |
+| **Phase progress** | **Phase 3.5 complete** (25 tasks). **Phase 4A, 4B and 4C complete** as implementable work: T4A.1-4, T4B.1-4, T4C.1-5. **T5.1 is partial:** T5.1a-e accepts raw/FFT/DCT/Haar/db2/SWT/DTCWT training representations, optimized and exposed with truthful UI readiness; mixed precision and remaining cross-device acceptance remain. **T5.2 is partial:** T5.2a implements the aligned, leakage-safe, train-normalised PyTorch dataset/cache interface and readiness UI, while the actual independent ERA5 overlap and viable multi-year NZ crop remain blocked by D43. **Not done:** T4C.6, the real-ERA5 gate review; 4D-4H; T5.0 and T5.3-7. Per-task evidence blocks sit under each task below; a task without a **DONE** or **PARTIAL** label has not been started. |
 | **Accessibility** | **Zero, measured.** `0` `aria-*` or `role` attributes and `0` keyboard handlers across `frontend/src`. No focus management. The UI is usable with a mouse and by nobody else. Not scheduled; recorded so it cannot be mistaken for an oversight. |
-| Backend test suite | **911 passed, 1 xfailed.** Plus one explicit skip: the opt-in live-GCS check. Trajectory: 19 written / 1 failing / uncollectable -> 65 -> 152 -> 222 -> 271 -> 351 -> 407 -> 449 -> 478 -> 535 -> 548 -> 593 -> 642 -> 647 -> 709 -> 781 -> 855 -> 859 -> 882 -> 883 -> 890 -> 911. |
+| Backend test suite | **955 passed, 1 xfailed.** Plus one explicit skip: the opt-in live-GCS check. Trajectory: 19 written / 1 failing / uncollectable -> 65 -> 152 -> 222 -> 271 -> 351 -> 407 -> 449 -> 478 -> 535 -> 548 -> 593 -> 642 -> 647 -> 709 -> 781 -> 855 -> 859 -> 882 -> 883 -> 890 -> 911 -> 917 -> 933 -> 946 -> 955. |
 | Ground-Truth Benchmark Suite | **15 PASS, 0 FAIL, 2 NOT_YET_RUNNABLE.** Nine datasets with declared known answers, five of them nulls. CI-ready via `python -m src.benchmarks` (exit 0). |
 | Backend compute modules | **Written, executed and tested.** `physical_core` carries `GridSpec` + metric-aware operators; `analysis_engine` gained `spectra.py` and `climatology.py`; `transform_engine` gained the undecimated `stationary.py` and a real `dtcwt.py`; `statistics/` and `core/` are new packages. |
 | Physical units and wavenumbers | **Correct as of T3.5.13.** Gradients metric-aware, spectra on a physical `k` axis, domain statistics area-weighted, and every quantity carries its units. Previously all of it was pixel-space and unlabelled (D13). |
@@ -73,10 +75,10 @@ status section, it is a memory.
 | Statistical validity | **Controlled as of T4C.5, and calibrated as of T4C.3** (D8 closed). Bonferroni / Holm / BH / BY with the dependence assumption reported alongside every q-value, five surrogate null models, an ESS correction, a calibrated stationarity gate and an explicit power check. The D8 scenario went from 3 reported "discoveries" on 9-sample noise to 0, while a real effect among 19 nulls at n=40 is still recovered. T4C.3 added the two calibrations that decide whether a lagged test means anything at all: a linear lag against a circularly stationary null falsely rejects **20 of 20** AR(1) records where the null is true, and a shift null that keeps the simultaneous alignment caps the achievable p-value at about 0.005 regardless of ensemble size. |
 | Registries / extension seams | **Registry-based as of T3.5.15** (D15 closed). Transforms, pipeline actions and data sources are decorator-registered with capability metadata; the plugin acceptance test registers a third-party transform without editing `src/`. |
 | Error reporting | **Taxonomy in place as of T3.5.14** (D14 closed). `SpectralEarthError` subclasses carry their own status code and client-safety, so an HTTP status follows from the error *kind* rather than from the call site. |
-| HPC / executor seam | **In place as of T3.5.19.** Serial / thread / process backends behind one interface, submission-order results, thread-budget control and SQLite WAL + `busy_timeout`. Measured honestly: on this workload **serial beat thread(4) and process(4)**, because PyTorch already parallelises the FFT across cores. T5.1a-b CPU/RTX-CUDA parity is verified; whole-platform and ROCm/MPS agreement are not (D18 remains partial). |
+| HPC / executor seam | **In place as of T3.5.19.** Serial / thread / process backends behind one interface, submission-order results, thread-budget control and SQLite WAL + `busy_timeout`. Measured honestly: on this workload **serial beat thread(4) and process(4)**, because PyTorch already parallelises the FFT across cores. T5.1a-e CPU/RTX-CUDA parity is verified; whole-platform and ROCm/MPS agreement are not (D18 remains partial). |
 | Schema migrations | **In place as of T3.5.8** (D32 closed). Two Alembic revisions, `ensure_schema` at startup, drift against the ORM checked by test. `create_all` had silently left the repository's own database unqueryable. PostgreSQL is verified only as *rendered* DDL, not executed. |
 | FastAPI surface | **27 endpoints**, executed and smoke-tested. CORS, health and collection endpoints all added (T3.5.2, T3.5.10). Health now reports device, executor, SQLite pragmas and schema revision. |
-| React frontend | **Nine modules, wired to the backend, and no longer able to fabricate a result** (T3.5.22/T3.5.23). Export in CSV/JSON/NetCDF4/Zarr/PNG/SVG with provenance embedded in the file; units, spectral convention and slope uncertainty displayed; simulated data labelled where it is used. Health/device/executor/schema, the benchmark suite, the data-source chain with its simulated flags, the ERA5 crop inspector and per-hypothesis statistics are all reachable now; `tsc` is clean and the build emits 1,378 modules. A contract test asserts every fetched path is served and every field the UI reads exists. **Rendered in a browser and confirmed working by the user on 2026-08-20** (T3.5.25) - the platform was started, both servers came up, and the nine tabs were reported working. No screenshots were captured, so that confirmation is a **user report rather than an artefact in the repository**; T3.5.0 asked for a screenshot per tab and that literal evidence is still absent. |
+| React frontend | **Nine modules, wired to the backend, and no longer able to fabricate a result** (T3.5.22/T3.5.23). Export in CSV/JSON/NetCDF4/Zarr/PNG/SVG with provenance embedded in the file; units, spectral convention and slope uncertainty displayed; simulated data labelled where it is used. Health/device/executor/schema, the benchmark suite, the data-source chain with its simulated flags, the ERA5 crop inspector, T5.1 representation readiness, T5.2 manifest readiness and per-hypothesis statistics are reachable now; `tsc` is clean and the current build emits 1,385 modules. A contract test asserts every fetched path is served and every field the UI reads exists. **Rendered in a browser and confirmed working by the user on 2026-08-20** (T3.5.25) - the platform was started, both servers came up, and the nine tabs were reported working. No screenshots were captured, so that confirmation is a **user report rather than an artefact in the repository**; T3.5.0 asked for a screenshot per tab and that literal evidence is still absent. The T5.2 readiness addition was not rendered in this session because browser discovery returned no available browser; its TypeScript build and contract test pass. |
 | Real ERA5 data | **Reading the live archive as of T3.5.18.** Regional crops stream from public WeatherBench 2 Zarr on GCS into a rechunked local cache: 257x257 x 4 levels x 8 days materialised in 186 s (951 MB wire, 19 MB cached, 51.1x chunk amplification measured against 51.1x predicted). Network access is opt-in; a cached crop works offline. **A one-year crop at the R13 floor is 79 GB and ~2 h - measured, not achievable at laptop tier, and stated as such.** |
 | Vectorisation | **Partial** (D17). The radial PSD and coherence paths are vectorised; per-bin Python loops remain in `decompose_by_boundary` and `analyze_boundary_artefacts`. |
 
@@ -89,7 +91,7 @@ history, not current status, and this table replaces it.
 Phases 1 and 2 are done as *code* and now substantially done as *verified software*. Phase 3
 is partial. Phase 3.5's 25 implementation tasks are complete; the literal screenshot evidence
 requested by T3.5.0 is still absent, and D18's cross-device agreement remains partial because
-only the T5.1a-b slice has CPU/CUDA parity evidence and ROCm/MPS are unmeasured. Phase 4A-4C.5
+only the T5.1a-e slice has CPU/CUDA parity evidence and ROCm/MPS are unmeasured. Phase 4A-4C.5
 are complete; the real-ERA5 T4C.6 gate review and all
 of 4D-4H remain undone. See Section 4 for per-task evidence.
 
@@ -341,8 +343,8 @@ The extension points the plan commits to. Each is a protocol with a registry, so
 | **Data source** | `DataSource.fetch/list_variables/capabilities` + fallback chain | T3.5.15 | all phases | replaces the hard-coded if/elif (D15) |
 | **Pipeline action** | `@register_action` | T3.5.15 | experiment engine | replaces the 13-branch chain (D15) |
 | **Transform** | `@register_transform` | T3.5.15 | 4B wavelet bank | makes the bank sweepable without engine edits |
-| **Training representation** | `RepresentationModule.forward/inverse` | T5.1 | regional or global PyTorch forecasters | proposed; batched/autograd/device contract separate from the 2D analysis registry |
-| **Forecast dataset** | `RegionalForecastDataset` | T5.2 | Phase 5 training/evaluation | proposed; aligned variables, targets, split and provenance |
+| **Training representation** | `RepresentationModule.forward/inverse` | T5.1 | regional or global PyTorch forecasters | partial: raw/FFT/DCT/Haar/db2/SWT/DTCWT accepted; mixed precision and non-NVIDIA evidence remain |
+| **Forecast dataset** | `RegionalForecastDataset` | T5.2 | Phase 5 training/evaluation | partial; aligned 850-hPa t/q/u/v/z histories/targets, pre-sample embargo, train-only normalisation and provenance implemented; real-source acceptance/D43 open |
 | **Feature detector** | `@register_detector` | 4D | 4D/4E | alternative detection strategies |
 | **Surrogate generator** | `@register_surrogate` | 4C | all mining | phase-randomised, AAFT, IAAFT |
 | **Scorer term** | `@register_scorer` | 4G | representation scoring | add a score term without touching the scorer |
@@ -657,7 +659,7 @@ counts, and **refuses** a requested device that is not present instead of silent
 back to CPU - a run that claims a GPU must have used one. `to_device` centralises moving
 nested structures, addressing the mixed CPU/device tensor construction D18 flagged.
 
-The venv now uses `torch 2.13.0+cu130`, and T5.1a-b raw/FFT/DCT/Haar/db2 reconstruction, coefficients and
+The venv now uses `torch 2.13.0+cu130`, and T5.1a-e raw/FFT/DCT/Haar/db2/SWT/DTCWT reconstruction, coefficients and
 backward gradients agree between CPU and the RTX 5050 within declared tolerance. PyTorch ROCm
 uses the same `cuda` device API; `device.available_devices` records the compiled runtime as
 `rocm` or `cuda` so provenance remains vendor-correct. The full smoke tier, AMD ROCm hardware
@@ -1253,7 +1255,7 @@ implemented unless its acceptance evidence appears in `VERIFICATION.md`.
     optimiser, rollout and parameter counts. Poster-derived estimates are not substitutes.
     **Acceptance:** a versioned, hashable protocol object can reproduce the declared design and
     rejects an incomplete configuration.
-*   **T5.1 Build `RepresentationModule` -- PARTIAL (T5.1a-b raw/FFT/DCT/Haar/db2 accepted).** Provide raw, FFT, DCT, Haar, db2, SWT and DTCWT
+*   **T5.1 Build `RepresentationModule` -- PARTIAL (T5.1a-e raw/FFT/DCT/Haar/db2/SWT/DTCWT accepted).** Provide raw, FFT, DCT, Haar, db2, SWT and DTCWT
     modules over `(B,C,H,W)` with forward/inverse operations, stable structured outputs,
     explicit complex packing and boundary/support metadata. Filters or cosine matrices are
     cached/registered by device and dtype rather than rebuilt each step. The analysis and
@@ -1278,16 +1280,44 @@ implemented unless its acceptance evidence appears in `VERIFICATION.md`.
     implementation is the accepted numerical reference, not yet the accepted per-step
     performance kernel: measured db2 encode+inverse was 9.20 ms on CPU and 13.74 ms on this RTX
     for float32 `(4,5,120,80)` at three levels.
-    **Outstanding:** batched SWT/DTCWT, a fused/compiled wavelet path with training-loop
-    throughput acceptance, AMD ROCm/MPS hardware evidence, mixed precision and compilation
-    policy.
+    **Delivered T5.1c:** the default cached four-band convolution kernel matches the retained
+    `implementation="reference"` path in coefficients, inverse and input gradients. On the same
+    batch, db2 round trip is 3.92 ms CPU / 1.45 ms RTX and a round-trip-plus-backward training
+    step is 14.09 ms CPU / 8.66 ms RTX. Incremental CUDA peak is 5.87 MiB against 5.31 MiB for
+    the reference; the speedup therefore costs 0.56 MiB on this workload. Kernel cache reuse and
+    dtype migration are tested.
+    **Delivered T5.1d:** SWT packs final LL plus levelwise LH/HL/HH on the parent grid, supports
+    Haar/db2/db3, reconstructs exactly and is exactly translation-equivariant under periodic
+    shifts. The convolution path agrees with both the coordinate-aware analytical SWT and an
+    FFT training oracle in coefficients, inverse and coefficient-loss gradients. Auto policy
+    uses the measured faster FFT path on CPU and convolution on CUDA/ROCm/MPS. Metadata and the
+    new UI readiness endpoint/panel expose `1+3L` redundancy, level gain/energy normalisation,
+    support, valid interior, artificial crop wrap, three-band directional limitation, verified
+    CPU/RTX evidence and ROCm/MPS/mixed/compile NOT RUN status. For db2 L3 `(4,5,120,80)`, packed
+    storage is 7.324 MiB; round-trip/training-step is 19.81/47.22 ms CPU and 6.40/14.53 ms RTX,
+    with 25.46 MiB incremental CUDA peak.
+    **Delivered T5.1e:** DTCWT vmaps the canonical Kingsbury transform over `(B,C)` and caches
+    all analysis/synthesis filters as migration-aware buffers. A lossless four-real-plane
+    recursive atlas preserves every native complex coefficient without interpolation and
+    supports arbitrary model outputs. Metadata and UI expose nominal/measured orientations,
+    native/parent edge margins, valid interiors, level-1 directional uncertainty and artificial
+    atlas adjacency. Analytical coefficient maps show complex magnitude on native grids with a
+    shared within-level scale and marked valid inset; phase is retained but not painted as a
+    physical scalar. The module refuses a level/domain combination with no strict 2D interior.
+    Coordinate-aware oracle agreement, exact atlas bijection, coefficient-loss gradients,
+    float64 gradcheck and RTX parity pass. On float32 `(2,5,120,80)`, L2, measured
+    round-trip/training-step is 46.23/138.34 ms CPU and 35.87/65.91 ms RTX; storage is
+    1.465 MiB and maximum error 1.20e-6.
+    **Outstanding:** AMD ROCm/MPS hardware evidence, mixed precision and
+    compilation policy. Browser rendering of the new panel is NOT RUN in this session because
+    no controllable browser was attached; TypeScript production build and API/UI contracts pass.
     **Portable execution companion delivered:** `SPECTRAL_PROFILE=auto` uses acceleration when
     available and remains fully CPU-capable; `cpu` and `accelerator` make intent explicit;
     `hpc` recognises Slurm/PBS/LSF allocation and local rank while refusing login-node use.
     `python -m src.core.doctor` performs CPU and detected-accelerator FFT/backward smoke tests
     and emits attachable JSON. This is local placement/preflight, not cluster submission or
     artifact synchronisation; those require Adam's actual HPC contract.
-*   **T5.2 Build `RegionalForecastDataset`.** Materialise and rechunk a provenance-carrying New
+*   **T5.2 Build `RegionalForecastDataset` -- PARTIAL (T5.2a accepted; real-source gate open).** Materialise and rechunk a provenance-carrying New
     Zealand crop with aligned 850-hPa `t/q/u/v/z`, timestamps and grid coordinates. Yield input
     histories and lead-time targets as tensors; apply `split_temporal` and a lag-sufficient
     embargo before sample construction; fit every normalisation statistic on training data
@@ -1297,6 +1327,20 @@ implemented unless its acceptance evidence appears in `VERIFICATION.md`.
     **Acceptance:** values and coordinates cross-check against an independent ERA5 route on a
     small overlap; no input or target crosses a split/embargo boundary; provenance fingerprints
     the source, crop, variables, levels, timestamps, chunking and normalisation artefact.
+    **Delivered T5.2a:** `regional_forecast.py` resolves canonical `t/q/u/v/z` from either short
+    or WeatherBench names, pins 850 hPa, refuses coordinate mismatch/non-finite data and reuses
+    `split_temporal` with an embargo at least as long as the maximum lead. Frames are split
+    before histories/targets are indexed. A hashed population mean/std artifact is fitted in
+    float64 on training frames only and reused by validation/test. Default-collatable dataset
+    items contain input/target tensors, Unix-nanosecond timestamps and original frame indices;
+    bundle provenance fingerprints the source manifest, variables, crop/chunking, grid, time,
+    split and normalisation. `prepare_cached_regional_forecast` performs a measured local-only
+    read from any explicit laptop/HPC cache path. `cross_check_era5_overlap` requires exact
+    coordinates and reports per-variable errors. Eight focused tests include a real local Zarr
+    materialise/rechunk/cache round trip and DataLoader collation. The ERA5 UI labels manifest
+    structure separately from preparation, train-only fitting and independent-route evidence.
+    **Outstanding:** the checker has not run against an actual second ERA5 route and no viable
+    multi-year NZ crop has been acquired; D43 therefore remains open and T5.2 is not complete.
 *   **T5.3 Integrate the existing laboratory model.** Put its train/evaluate operations behind
     the `Forecaster` seam without copying model logic into the transform engine. Supply a
     minimal importable example and persistence baseline before dashboard or REST integration.

@@ -123,7 +123,8 @@ def valid_interior_halfwidth(wavelet: str, level: int) -> int:
     return filter_support(wavelet, level) // 2
 
 
-def _circular_filter_1d(x: torch.Tensor, f: torch.Tensor, dim: int, adjoint: bool = False) -> torch.Tensor:
+def circular_filter_1d(x: torch.Tensor, f: torch.Tensor, dim: int,
+                       adjoint: bool = False) -> torch.Tensor:
     """Circular convolution (or its adjoint) along one axis, via FFT.
 
     Done in the frequency domain deliberately: circular convolution is exact there and the
@@ -144,6 +145,11 @@ def _circular_filter_1d(x: torch.Tensor, f: torch.Tensor, dim: int, adjoint: boo
     shape = [1] * x.ndim
     shape[dim] = n
     return torch.fft.ifft(torch.fft.fft(x, dim=dim) * F.view(shape), dim=dim).real
+
+
+# Backwards-compatible private alias. The training representation imports the public function so
+# the analytical and batched paths cannot acquire different phase conventions.
+_circular_filter_1d = circular_filter_1d
 
 
 def _reflect_filter_1d(x: torch.Tensor, f: torch.Tensor, dim: int) -> torch.Tensor:

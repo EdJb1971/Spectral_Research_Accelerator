@@ -182,6 +182,35 @@ def test_zarr_catalogue_payload_has_the_fields_the_form_reads(client):
     assert body["r13_minimum_crop"]["4"] == 512
 
 
+def test_training_readiness_payload_carries_every_scientific_caveat_the_ui_reads(client):
+    body = client.get(
+        "/api/v1/training/representations",
+        params={"levels": 3, "wavelet": "db2", "height": 120, "width": 80},
+    ).json()
+    for key in ("contract", "selected_levels", "selected_wavelet",
+                "selected_spatial_shape", "representations"):
+        assert key in body
+    by_name = {entry["name"]: entry for entry in body["representations"]}
+    assert by_name["swt"]["status"] == "accepted"
+    assert by_name["dtcwt"]["status"] == "accepted"
+    for entry in body["representations"]:
+        for key in ("label", "status", "batched", "autograd", "exact_inverse",
+                    "coefficient_ratio", "shift_behavior", "directionality", "boundary",
+                    "scientific_role", "limitations", "verified", "not_run"):
+            assert key in entry, "%s.%s is rendered by TrainingReadiness" % (entry["name"], key)
+    selected = by_name["swt"]["selected_configuration"]
+    for key in ("coefficient_channels_per_input_channel", "valid_interior_halfwidth_by_level",
+                "valid_interior_shape_by_level", "coarsest_scale_has_valid_interior",
+                "implementation_policy"):
+        assert key in selected, "swt.selected_configuration.%s is rendered" % key
+    selected_dtcwt = by_name["dtcwt"]["selected_configuration"]
+    for key in ("atlas_planes_per_input_channel",
+                "valid_interior_halfwidth_parent_px_by_level",
+                "valid_interior_native_shape_by_level", "coarsest_scale_has_valid_interior",
+                "display_contract"):
+        assert key in selected_dtcwt, "dtcwt.selected_configuration.%s is rendered" % key
+
+
 def test_zarr_inspect_payload_has_the_nested_keys_the_ui_reads(client, tmp_path):
     """The report the crop tab renders, field by field, including the nested ones."""
     zs = pytest.importorskip("src.data_layer.zarr_source")
@@ -442,6 +471,15 @@ def test_imported_origin_is_reported_as_unknown_not_real(all_sources):
     """`is_simulated: null` must display as "unknown", never as observational."""
     assert "Origin unknown" in all_sources
     assert "makes no claim about whether this is real data" in all_sources
+
+
+def test_regional_dataset_readiness_keeps_three_claims_separate(all_sources):
+    """A suitable manifest is not evidence that preparation or ERA5 agreement ran."""
+    assert "T5.2 structure eligible" in all_sources
+    assert "Prepared dataset: NO" in all_sources
+    assert "train-only normalisation verified: NO" in all_sources
+    assert "independent ERA5 cross-check: NOT RUN" in all_sources
+    assert "claim_boundary" in all_sources
 
 
 def test_benchmarks_can_be_run_from_the_ui(all_sources):
