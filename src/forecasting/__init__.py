@@ -88,6 +88,15 @@ from src.forecasting.matched_truth import (
     MatchedTruthBuild,
     build_matched_truth,
 )
+from src.forecasting.evaluation_run import (
+    EVALUATION_RUN_CONFIG_SCHEMA,
+    EVALUATION_RUN_RECEIPT_SCHEMA,
+    EvaluationRunConfig,
+    EvaluationRunReceipt,
+    load_evaluation_run_receipt,
+    run_external_evaluation,
+    save_evaluation_run_receipt,
+)
 
 __all__ = [
     "Forecaster",
@@ -163,4 +172,11 @@ __all__ = [
     "PUBLISHED_OVERLAP_ROLE",
     "MatchedTruthBuild",
     "build_matched_truth",
+    "EVALUATION_RUN_CONFIG_SCHEMA",
+    "EVALUATION_RUN_RECEIPT_SCHEMA",
+    "EvaluationRunConfig",
+    "EvaluationRunReceipt",
+    "load_evaluation_run_receipt",
+    "run_external_evaluation",
+    "save_evaluation_run_receipt",
 ]

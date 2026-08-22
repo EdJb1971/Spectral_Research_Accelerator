@@ -4190,3 +4190,49 @@ overlap check, FCN3 worker, model checkpoint, global initial condition, real for
 verification score ran. The receipt proves exact matching and declared period lineage, not
 source independence, meteorological correctness, calibration, spectral fidelity or skill. The
 UI therefore still has no FCN3 scientific result to display.
+
+## T5.6e - reproducible external-evaluation run orchestration
+
+`src/forecasting/evaluation_run.py` composes the accepted T5.6b-d seams without adding network
+or model-worker behavior. `EvaluationRunConfig` is versioned and hashable and requires explicit
+grid-aligned bounds, non-training split dates, FCN3-period role, the 850-hPa bridge and positive
+forecast-chunk/evaluation-tile byte limits. `run_external_evaluation` authenticates and scans the
+sealed global artifact, crops it exactly, opens an existing content-addressed ERA5 cache through
+the local-only lazy path, builds exact truth, runs bounded ensemble/persistence evaluation and
+closes both stores on every exit path. Existing output is refused before either store opens.
+
+Successful execution publishes canonical JSON from a flushed same-directory temporary file via
+an atomic no-overwrite filesystem operation (rename on Windows; hard link on POSIX). The receipt includes run/config identity, forecast validation,
+regional lineage, complete ERA5 manifest, matched-truth selection, all metrics and evaluated
+value-stream hashes. Reload verifies the outer SHA-256, nested run/config/evaluation hashes and
+cross-section forecast, validation, ERA5-source and truth-builder identities. These hashes detect
+corruption and substitution; they are not cryptographic signatures.
+
+Focused synthetic acceptance:
+
+```text
+python -m pytest src/tests/test_evaluation_run.py -q
+10 passed, 1 warning in 5.61s
+```
+
+Adjacent T5.6b-e acceptance:
+
+```text
+python -m pytest src/tests/test_evaluation_run.py \
+  src/tests/test_external_forecast_cube.py \
+  src/tests/test_external_ensemble_evaluation.py \
+  src/tests/test_matched_truth.py -q
+53 passed, 1 warning in 12.88s
+```
+
+Clean full regression for the delivered tree:
+
+```text
+1080 passed, 1 skipped, 1 xfailed, 6 warnings in 190.66s
+```
+
+The end-to-end acceptance run uses synthetic Zarr forecast and ERA5 stores with analytically
+inspectable values. No CDS network request, independent ERA5 overlap check, FCN3 worker,
+checkpoint, global initial condition or real forecast ran. The receipt proves pipeline execution
+and identity for supplied inputs, not independence, calibration, uncertainty, significance,
+generalisation, spectral fidelity or meteorological skill. No FCN3 result is exposed in the UI.

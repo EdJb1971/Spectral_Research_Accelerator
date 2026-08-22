@@ -82,6 +82,13 @@ still do not exist. The main application remains usable without NVIDIA hardware,
 model weights or network access. An NZ crop will never be passed directly to FCN3, and NVIDIA's
 spectral-fidelity claims will be tested rather than repeated as platform findings.
 
+`src.forecasting.evaluation_run` now provides the offline execution path once those artifacts
+exist. A versioned config freezes bounds, held-out dates/role and memory ceilings; the runner
+authenticates and crops the forecast, opens only an existing local ERA5 cache, matches exact
+valid times, evaluates against persistence and atomically writes one no-overwrite JSON result
+and provenance receipt. Receipt reload checks nested hashes and cross-section lineage. Current
+acceptance uses synthetic Zarr fixtures only, so the UI still shows no FCN3 skill result.
+
 The first Phase 5 target is deliberately practical: an importable PyTorch path for the exact
 regional workflow used by the motivating research -- batches shaped `(B, C, H, W)`, aligned
 850-hPa `t/q/u/v/z` inputs and targets, strict temporal splits with an embargo, differentiable
