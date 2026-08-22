@@ -4486,6 +4486,40 @@ cross-scale + CDS + campaign + gate focused acceptance    52 passed
 full repository suite                                   1116 passed, 1 skipped, 1 xfailed
 ```
 
-No atmospheric protocol was selected and no live data was accessed. The corrected floor means
-the eventual lag family may be longer than earlier planning implied; that is a scientific
-correction, not a parameter to relax for convenience.
+No atmospheric protocol was selected in T4C.5g and no live data was accessed. The corrected
+floor means the eventual lag family may be longer than earlier planning implied; that is a
+scientific correction, not a parameter to relax for convenience. T4C.5h below records the
+subsequent preregistration.
+
+## T4C.5h - primary scientific campaign preregistration
+
+The primary T4C.6 campaign is now checked in as
+`campaigns/t4c6_nz_era5_temperature_850_v1.json` and authenticated by campaign SHA-256
+`84f7b53fd25d555c8dcd57c6006288b95c5908f2a1d5c002d10a6572c7875975`. It freezes one
+field and one family before atmospheric values are acquired: 850-hPa temperature, 2018--2022,
+six-hour cadence, the 161x161 20--60 S / 140--180 E grid, three db2 SWT levels, energy-density
+transfer entropy, lags 3--8 frames, six bins, 4,999 surrogates, BY at 0.05, eight embargo frames
+and seed 20260821.
+
+The local review reports 7,304 total frames; 4,382 train, 8 embargo and 2,914 test; 139x139
+deepest valid parent interior; a deepest physical support floor of three frames; 36 hypotheses;
+and a BY minimum of 3,005 surrogates. Its calendar split is explicit down to the timestamp.
+The acceptance test pins the complete campaign hash and review output, so changing any nested
+request or statistic is visible. The review command constructs no client and uses no network:
+
+```text
+campaign preregistration acceptance                     8 passed
+campaign review network_used                             false
+full repository suite                                  1117 passed, 1 skipped, 1 xfailed
+```
+
+The real frozen preflight was then run against the repository's intended D: locations. It
+estimated 4.75 GiB working bytes across the full/canary NetCDF and Zarr artifacts plus the
+WeatherBench overlap, required another 5 GiB reserve, observed 1,180.06 GiB free and passed the
+storage gate. Status was correctly `BLOCKED` on `cdsapi` not installed, standard CDS credential
+configuration absent and explicit network consent disabled. `client_constructed` and
+`network_used` were both false; no secret value was inspected.
+
+This is protocol evidence only. No CDS credential was validated, no WeatherBench or CDS byte
+was transferred, no overlap receipt passed and no T4C.6 verdict exists. D43 remains open and
+4D--4H remain gated.

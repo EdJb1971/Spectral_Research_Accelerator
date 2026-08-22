@@ -38,6 +38,7 @@ from src.data_layer.zarr_source import (
 CAMPAIGN_SCHEMA = "cross-scale-gate-campaign/v1"
 CAMPAIGN_ENVELOPE_SCHEMA = "cross-scale-gate-campaign-envelope/v1"
 PREFLIGHT_SCHEMA = "cross-scale-gate-campaign-preflight/v1"
+SCIENTIFIC_REVIEW_SCHEMA = "cross-scale-gate-scientific-review/v1"
 
 
 def _canonical_json(value: Any) -> bytes:
@@ -153,19 +154,64 @@ def _scientific_review(campaign: "GateCampaign") -> Dict[str, Any]:
             "lags at or above the pre-acquisition physical support floor of %d frames"
             % maximum_floor)
     design = plan.protocol.validate()
+    full_times = _times(request)
+    train_stop = design["train_frames"]
+    test_start = train_stop + plan.protocol.embargo_frames
     train_hours = max(0, design["train_frames"] - 1) * plan.protocol.cadence_seconds / 3600.0
     return {
+        "primary_analysis": {
+            "variable": plan.variable,
+            "level_hpa": float(plan.level_hpa),
+            "transform_family": plan.transform_family,
+            "transform_config": plan.transform_config(),
+            "measure": plan.protocol.measure,
+            "estimator": plan.protocol.estimator,
+            "lags_frames": [int(value) for value in plan.protocol.lags],
+            "lags_hours": [float(value * plan.protocol.cadence_seconds / 3600.0)
+                           for value in plan.protocol.lags],
+            "multiple_comparison_correction": plan.protocol.correction,
+            "alpha": float(plan.protocol.alpha),
+        },
         "grid_shape": [height, width], "grid_degrees": request.grid_degrees,
         "valid_parent_interiors": interiors,
         "minimum_valid_parent_pixels": MIN_VALID_INTERIOR,
         "physical_support_floor": floors,
         "full_frames": len(_times(request)),
         "train_frames": design["train_frames"], "test_frames": design["test_frames"],
+        "calendar_split": {
+            "train_start": str(full_times[0]),
+            "train_end": str(full_times[train_stop - 1]),
+            "embargo_start": str(full_times[train_stop]),
+            "embargo_end": str(full_times[test_start - 1]),
+            "test_start": str(full_times[test_start]),
+            "test_end": str(full_times[-1]),
+        },
         "train_annual_cycles": train_hours / (365.2422 * 24.0),
         "hypothesis_family_size": plan.protocol.family_size,
         "surrogate_statistic_evaluations_upper_bound": (
             2 * plan.protocol.family_size * plan.protocol.n_surrogates),
         "power": design["power"],
+    }
+
+
+def review_gate_campaign(campaign: "GateCampaign") -> Dict[str, Any]:
+    """Return the zero-network scientific preregistration review for a frozen campaign."""
+    return {
+        "schema": SCIENTIFIC_REVIEW_SCHEMA,
+        "campaign_id": campaign.campaign_id,
+        "campaign_sha256": campaign.fingerprint(),
+        "study_plan_sha256": campaign.gate_plan.fingerprint(),
+        "scientific_design": _scientific_review(campaign),
+        "decision_rule": (
+            "PASS requires the same positive q<=%.9g directed scale/lag relationship in "
+            "both frozen partitions; an adequately powered absence is FAIL; any contract, "
+            "source, geometry, overlap or power failure is INVALID."
+            % campaign.gate_plan.protocol.alpha),
+        "claim_boundary": (
+            "The result adjudicates only this primary ERA5 relationship family. It does not "
+            "establish causality, universality across fields/levels/regions, forecast skill "
+            "or operational readiness. No secondary analysis may replace the primary verdict."),
+        "network_used": False,
     }
 
 
@@ -486,6 +532,8 @@ def _parser() -> argparse.ArgumentParser:
     freeze.add_argument("--design", required=True,
                         help="JSON object conforming to cross-scale-gate-campaign/v1")
     freeze.add_argument("--out", required=True, help="new immutable campaign envelope")
+    review = commands.add_parser("review")
+    review.add_argument("--campaign", required=True)
     preflight = commands.add_parser("preflight")
     preflight.add_argument("--campaign", required=True)
     preflight.add_argument("--full-download-dir", required=True)
@@ -505,6 +553,10 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         campaign = GateCampaign.from_mapping(design)
         fingerprint = save_gate_campaign(args.out, campaign)
         result = {"campaign_sha256": fingerprint, "campaign_path": str(Path(args.out))}
+        code = 0
+    elif args.command == "review":
+        campaign = load_gate_campaign(args.campaign)
+        result = review_gate_campaign(campaign)
         code = 0
     else:
         campaign = load_gate_campaign(args.campaign)

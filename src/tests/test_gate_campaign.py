@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
@@ -13,6 +14,7 @@ from src.analysis_engine.gate_campaign import (
     load_gate_campaign,
     main,
     preflight_gate_campaign,
+    review_gate_campaign,
     save_gate_campaign,
 )
 from src.analysis_engine.gate_run import GateStudyPlan
@@ -73,6 +75,45 @@ def test_campaign_is_exact_hashable_atomic_and_tamper_detecting(tmp_path):
     path.write_text(json.dumps(tampered), encoding="utf-8")
     with pytest.raises((DataSourceError, InvalidParameterError)):
         load_gate_campaign(path)
+
+
+def test_checked_in_real_campaign_is_an_authenticated_preregistration(capsys):
+    path = (Path(__file__).parents[2] / "campaigns"
+            / "t4c6_nz_era5_temperature_850_v1.json")
+    campaign = load_gate_campaign(path)
+    assert campaign.fingerprint() == (
+        "84f7b53fd25d555c8dcd57c6006288b95c5908f2a1d5c002d10a6572c7875975")
+    review = review_gate_campaign(campaign)
+    design = review["scientific_design"]
+    assert review["network_used"] is False
+    assert design["primary_analysis"] == {
+        "variable": "t", "level_hpa": 850.0, "transform_family": "swt",
+        "transform_config": {"levels": 3, "wavelet": "db2", "mode": "periodic"},
+        "measure": "energy_density", "estimator": "transfer_entropy",
+        "lags_frames": [3, 4, 5, 6, 7, 8],
+        "lags_hours": [18.0, 24.0, 30.0, 36.0, 42.0, 48.0],
+        "multiple_comparison_correction": "benjamini_yekutieli", "alpha": 0.05,
+    }
+    assert design["full_frames"] == 7304
+    assert design["calendar_split"] == {
+        "train_start": "2018-01-01T00:00:00.000000000",
+        "train_end": "2020-12-31T06:00:00.000000000",
+        "embargo_start": "2020-12-31T12:00:00.000000000",
+        "embargo_end": "2021-01-02T06:00:00.000000000",
+        "test_start": "2021-01-02T12:00:00.000000000",
+        "test_end": "2022-12-31T18:00:00.000000000",
+    }
+    assert design["hypothesis_family_size"] == 36
+    assert design["power"]["surrogates_required"] == 3005
+    assert design["power"]["can_reject_after_correction"] is True
+    assert min(design["primary_analysis"]["lags_frames"]) == max(
+        item["floor_frames"] for item in
+        design["physical_support_floor"]["floors"])
+
+    assert main(["review", "--campaign", str(path)]) == 0
+    emitted = json.loads(capsys.readouterr().out)
+    assert emitted["campaign_sha256"] == campaign.fingerprint()
+    assert emitted["scientific_design"] == design
 
 
 @pytest.mark.parametrize("change,match", [

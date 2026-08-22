@@ -495,18 +495,21 @@ preflight. The preflight is zero-network, budgets all campaign artifacts togethe
 the mandatory canary-first order:
 
 ```powershell
-python -m src.analysis_engine.gate_campaign freeze `
-  --design gate-campaign-design.json --out gate-campaign.json
+python -m src.analysis_engine.gate_campaign review `
+  --campaign campaigns/t4c6_nz_era5_temperature_850_v1.json
 python -m src.analysis_engine.gate_campaign preflight `
-  --campaign gate-campaign.json `
+  --campaign campaigns/t4c6_nz_era5_temperature_850_v1.json `
   --full-download-dir data/cds/full --canary-download-dir data/cds/canary `
   --cache-dir data/zarr_cache --independent-cache-dir data/zarr_cache
 ```
 
-`gate-campaign-design.json` is intentionally not supplied by the repository: its region,
-dates, variable, transform and statistical choices are the scientific protocol and must be
-reviewed rather than inferred from an example command. A ready preflight still does not prove
-credentials, licence acceptance, remote service availability, ERA5 agreement or the hypothesis.
+The checked-in campaign is the preregistered T4C.6 primary analysis, not an example: five
+complete years (2018--2022), 0.25-degree 20--60 S / 140--180 E, 850-hPa temperature, three
+db2 SWT scales and 18--48-hour transfer-entropy lags. Its campaign SHA-256 is pinned by a test;
+the review command emits exact calendar partitions, transform interiors, physical lag floors,
+the 36-test BY family and surrogate resolution without touching the network. A ready preflight
+still does not prove credentials, licence acceptance, remote service availability, ERA5
+agreement or the hypothesis.
 Before reporting readiness it now derives the exact grid shape and chosen transform supports,
 requires at least 128 valid parent-grid pixels at every scale, converts lat/lon degrees to
 physical metres for the advection floor, refuses shorter lags, and reports temporal split,

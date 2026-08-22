@@ -65,10 +65,10 @@ status section, it is a memory.
 
 | Area | Real status |
 |---|---|
-| **Phase progress** | **Phase 3.5 complete** (25 tasks). **Phase 4A, 4B and the pre-gate 4C instrument are complete:** T4A.1-4, T4B.1-4, T4C.1-5g. T4C.5d-g make the real gate, independent-source check, two-stage acquisition and physical preflight bounded and content-bound, but **T4C.6 has not run**. **T5.0 is partial:** T5.0a-b supplies the strict versioned/hashable protocol and runtime-binding gate, but the actual laboratory evidence/config has not been supplied or frozen. **T5.1 is partial:** T5.1a-e accepts raw/FFT/DCT/Haar/db2/SWT/DTCWT training representations, optimized and exposed with truthful UI readiness; mixed precision and remaining cross-device acceptance remain. **T5.2 is partial:** T5.2a-d implements the aligned, leakage-safe, train-normalised PyTorch dataset, bounded-memory worker-safe cache, bounded blockwise CDS cache publication, exact calendar splits and verified physical-time leads; the live CDS run, independent overlap and viable multi-year NZ crop remain blocked by D43. **T5.3 is partial:** T5.3a-b supplies the forecaster seam, persistence baseline, deterministic represented smoke run, verified model-artifact contract and persistence-relative evaluator; T5.3c and the actual laboratory model remain open. **T5.6 is partial:** T5.6a-g supplies the offline FCN3 identity, lazy canonical cube/import boundary, exact ERA5 truth bridge, matched ensemble metric engine, atomic reproducible run receipt, portable laptop/HPC runner and verified API/UI reporting; no worker, dependency, checkpoint, initial condition, real forecast or real truth evaluation has run, so the result UI is honestly empty. **Not done:** T4C.6, the real-ERA5 gate review; 4D-4H; T5.4-5, the remaining T5.6 inference/real-data work, T5.7, and the T5.8 irregular-observation/spatial-downscaling track. Per-task evidence blocks sit under each task below; a task without a **DONE** or **PARTIAL** label has not been started. |
+| **Phase progress** | **Phase 3.5 complete** (25 tasks). **Phase 4A, 4B and the pre-gate 4C instrument are complete:** T4A.1-4, T4B.1-4, T4C.1-5h. T4C.5d-h make the real gate, independent-source check, two-stage acquisition, physical preflight and primary preregistration bounded and content-bound, but **T4C.6 has not run**. **T5.0 is partial:** T5.0a-b supplies the strict versioned/hashable protocol and runtime-binding gate, but the actual laboratory evidence/config has not been supplied or frozen. **T5.1 is partial:** T5.1a-e accepts raw/FFT/DCT/Haar/db2/SWT/DTCWT training representations, optimized and exposed with truthful UI readiness; mixed precision and remaining cross-device acceptance remain. **T5.2 is partial:** T5.2a-d implements the aligned, leakage-safe, train-normalised PyTorch dataset, bounded-memory worker-safe cache, bounded blockwise CDS cache publication, exact calendar splits and verified physical-time leads; the live CDS run, independent overlap and viable multi-year NZ crop remain blocked by D43. **T5.3 is partial:** T5.3a-b supplies the forecaster seam, persistence baseline, deterministic represented smoke run, verified model-artifact contract and persistence-relative evaluator; T5.3c and the actual laboratory model remain open. **T5.6 is partial:** T5.6a-g supplies the offline FCN3 identity, lazy canonical cube/import boundary, exact ERA5 truth bridge, matched ensemble metric engine, atomic reproducible run receipt, portable laptop/HPC runner and verified API/UI reporting; no worker, dependency, checkpoint, initial condition, real forecast or real truth evaluation has run, so the result UI is honestly empty. **Not done:** T4C.6, the real-ERA5 gate review; 4D-4H; T5.4-5, the remaining T5.6 inference/real-data work, T5.7, and the T5.8 irregular-observation/spatial-downscaling track. Per-task evidence blocks sit under each task below; a task without a **DONE** or **PARTIAL** label has not been started. |
 | Ownership / licence | **Declared in `LICENSE.md`.** Edward Jonathan Bentley retains the proprietary SpectralEarth core. Adam Frank Bentley has a named perpetual, worldwide, royalty-free grant for lawful personal, academic, research and commercial use/modification, without public redistribution or sublicensing of the core. Independent extensions and upstream contributions remain separately governed. This bespoke text has not been professionally reviewed. |
 | **Accessibility** | **Zero, measured.** `0` `aria-*` or `role` attributes and `0` keyboard handlers across `frontend/src`. No focus management. The UI is usable with a mouse and by nobody else. Not scheduled; recorded so it cannot be mistaken for an oversight. |
-| Backend test suite | **1116 passed, 1 xfailed.** Plus one explicit skip: the opt-in live-GCS check. Trajectory: 19 written / 1 failing / uncollectable -> 65 -> 152 -> 222 -> 271 -> 351 -> 407 -> 449 -> 478 -> 535 -> 548 -> 593 -> 642 -> 647 -> 709 -> 781 -> 855 -> 859 -> 882 -> 883 -> 890 -> 911 -> 917 -> 933 -> 946 -> 955 -> 957 -> 962 -> 969 -> 981 -> 985 -> 1000 -> 1008 -> 1027 -> 1042 -> 1056 -> 1070 -> 1080 -> 1089 -> 1094 -> 1095 -> 1102 -> 1104 -> 1106 -> 1112 -> 1116. |
+| Backend test suite | **1117 passed, 1 xfailed.** Plus one explicit skip: the opt-in live-GCS check. Trajectory: 19 written / 1 failing / uncollectable -> 65 -> 152 -> 222 -> 271 -> 351 -> 407 -> 449 -> 478 -> 535 -> 548 -> 593 -> 642 -> 647 -> 709 -> 781 -> 855 -> 859 -> 882 -> 883 -> 890 -> 911 -> 917 -> 933 -> 946 -> 955 -> 957 -> 962 -> 969 -> 981 -> 985 -> 1000 -> 1008 -> 1027 -> 1042 -> 1056 -> 1070 -> 1080 -> 1089 -> 1094 -> 1095 -> 1102 -> 1104 -> 1106 -> 1112 -> 1116 -> 1117. |
 | Ground-Truth Benchmark Suite | **15 PASS, 0 FAIL, 2 NOT_YET_RUNNABLE.** Nine datasets with declared known answers, five of them nulls. CI-ready via `python -m src.benchmarks` (exit 0). |
 | Backend compute modules | **Written, executed and tested.** `physical_core` carries `GridSpec` + metric-aware operators; `analysis_engine` gained `spectra.py` and `climatology.py`; `transform_engine` gained the undecimated `stationary.py` and a real `dtcwt.py`; `statistics/` and `core/` are new packages. |
 | Physical units and wavenumbers | **Correct as of T3.5.13.** Gradients metric-aware, spectra on a physical `k` axis, domain statistics area-weighted, and every quantity carries its units. Previously all of it was pixel-space and unlabelled (D13). |
@@ -1189,7 +1189,8 @@ credit; checks only the presence (never values) of standard credential configura
 `cdsapi`, and explicit network consent; and constructs no client. The mandatory order is
 WeatherBench overlap -> CDS canary -> require PASS -> full CDS record -> require a new PASS
 bound to the full cache -> T4C.6. Unknown or inconsistent nested design fields are refused.
-No campaign design has been populated with scientific choices and no live step has run.
+The acquisition mechanism was accepted here without selecting the scientific design; T4C.5h
+subsequently supplies that preregistration. No live step has run.
 
 **T4C.5g Pre-acquisition physical geometry audit *(fixes D53-D54)* - DONE.** Review found
 that `support_floor` read `GridSpec.dx` before fields explicitly labelled in metres. For a
@@ -1205,6 +1206,30 @@ independently rejects server-snapped endpoints even when spacing is correct.
 The support-floor audit found D48: the code claimed filter support but used `2**level`. It now
 uses SWT/DTCWT's exact accumulated `support_parent_px`; for db2 level 3 that is 22 pixels, not
 the scale label 8. The synthetic Zarr-to-receipt job passes without network access.
+
+**T4C.5h Primary T4C.6 scientific preregistration - DONE.** The exact primary campaign is now
+the authenticated `campaigns/t4c6_nz_era5_temperature_850_v1.json`, rather than parameters
+copied from examples at acquisition time. It freezes 2018--2022 at six-hour cadence over the
+161x161 Southwest-Pacific/NZ-supporting crop (20--60 S, 140--180 E), one deliberately primary
+field (850-hPa temperature), three exactly shift-invariant db2 SWT scales, energy density,
+transfer entropy, six 18--48-hour lags, six equiprobable bins, 4,999 circular-shift surrogates,
+BY correction at 0.05, an eight-frame embargo and seed 20260821. The 36-test family needs at
+least 3,005 surrogates, retains 139x139 valid parent pixels at level 3 and starts exactly at
+the conservative three-frame support floor. The split is 4,382 train / 8 embargo / 2,914 test
+frames. A zero-network `review` command emits those facts, exact calendar boundaries, hashes
+and claim boundary. Secondary variables, levels, transforms or regions may be exploratory
+follow-ups but cannot replace this verdict. The choices keep the family singular: temperature
+is the scalar field shared with the downstream 850-hPa regional work; SWT avoids position-phase
+sensitivity; db2 is the shortest non-Haar accepted wavelet; three levels are the deepest that
+retain the R13 interior on this crop; five complete years give nearly three annual cycles to
+the train-only climatology and comfortably populate the six-bin conditional estimator; and
+the lag window begins at the physical floor rather than at a convenient one-frame lag.
+
+The actual zero-network preflight passed storage: 4.75 GiB working requirement plus a 5 GiB
+reserve against 1,180.06 GiB free on D:. It constructed no client and remains blocked on the
+three expected local prerequisites: `cdsapi`, standard CDS credential configuration and explicit
+network consent; service-side licence acceptance remains unproven. No acquisition or atmospheric
+test ran in this task.
 
 **T4C.6 GATE REVIEW.** Written verdict: does cross-scale organisation exceed the surrogate ensemble at $q < 0.05$, at lags above the support floor, on real ERA5 data?
 *   **Pass** -> proceed to 4D.
