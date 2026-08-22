@@ -416,8 +416,39 @@ def support_floor(signature, cadence_seconds: float,
         raise InvalidParameterError("cadence_seconds", cadence_seconds,
                                     "a positive sampling interval")
     grid = signature.provenance.get("grid") or {}
-    dx = grid.get("dx") or grid.get("representative_dx_metres") or grid.get("dx_metres")
-    physical = isinstance(dx, (int, float)) and dx and math.isfinite(dx) and dx > 0
+    spacing_m = None
+    spacing_basis = None
+    kind = grid.get("kind")
+    if kind in ("latlon", "cartesian"):
+        try:
+            from src.physical_core.grid import GridSpec
+            physical_grid = GridSpec.from_provenance(dict(grid))
+            # Support is expressed in parent-grid pixels. With no frozen flow direction,
+            # use the larger physical cell axis so an anisotropic/lat-lon grid cannot make
+            # the crossing floor anti-conservative. In particular, GridSpec.dx is degrees
+            # for lat/lon and must never be interpreted as metres (D53).
+            dx_values = physical_grid.dx_metres()
+            dy_values = physical_grid.dy_metres()
+            spacing_m = max(float(dx_values.max()), float(dy_values.max()))
+            spacing_basis = (
+                "maximum physical cell-axis spacing over the crop, reconstructed from "
+                "GridSpec; angular dx/dy are converted to metres"
+                if kind == "latlon" else
+                "maximum declared Cartesian cell-axis spacing in metres")
+        except (KeyError, TypeError, ValueError) as exc:
+            raise InvalidParameterError(
+                "signature.provenance.grid", grid,
+                "a complete physical GridSpec for an advective support floor: %s" % exc) from exc
+    else:
+        # Compatibility with older explicitly metric provenance. Deliberately do not read
+        # bare `dx`: its unit depends on grid kind and caused D53.
+        candidate = grid.get("representative_dx_metres") or grid.get("dx_metres")
+        if isinstance(candidate, (int, float)) and candidate \
+                and math.isfinite(candidate) and candidate > 0:
+            spacing_m = float(candidate)
+            spacing_basis = "legacy provenance field explicitly labelled in metres"
+    physical = (isinstance(spacing_m, (int, float)) and math.isfinite(spacing_m)
+                and spacing_m > 0)
 
     floors: List[Dict[str, Any]] = []
     warnings: List[str] = []
@@ -444,11 +475,13 @@ def support_floor(signature, cadence_seconds: float,
                       "filter cascade" % support_px),
         }
         if physical and advection_speed_m_s:
-            support_m = support_px * float(dx)
+            support_m = support_px * float(spacing_m)
             crossing = support_m / float(advection_speed_m_s)
             frames = max(1, int(math.ceil(crossing / cadence_seconds)))
             record.update({
                 "spatial_support_m": support_m,
+                "physical_spacing_m_per_parent_px": float(spacing_m),
+                "physical_spacing_basis": spacing_basis,
                 "crossing_time_s": crossing,
                 "floor_frames": frames,
                 "basis": ("advective crossing of the filter support: %.0f m at %.1f m/s is "

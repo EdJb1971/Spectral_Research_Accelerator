@@ -117,6 +117,7 @@ def test_monthly_plan_is_exact_hashable_and_uses_official_area_order():
     ({"date_start": "2020-02-01", "date_end": "2020-01-01"}, "date_start/date_end"),
     ({"lon_min": 170.0, "lon_max": -170.0}, "longitude bounds"),
     ({"pressure_levels": (849,)}, "pressure_levels"),
+    ({"lat_max": -45.1}, "latitude bounds/grid"),
 ])
 def test_request_refuses_ambiguous_or_unsupported_selections(override, match):
     with pytest.raises(InvalidParameterError, match=match):
@@ -252,6 +253,21 @@ def test_materialisation_refuses_missing_requested_timestamp(tmp_path):
         materialise_cds(
             _request(), download_dir=tmp_path / "downloads", cache_dir=str(tmp_path / "cache"),
             time_chunk=8, check_size=False, client=IncompleteClient(), allow_network=True)
+
+
+def test_materialisation_refuses_server_snapped_grid_bounds(tmp_path):
+    class ShiftedGridClient(FakeCDSClient):
+        def retrieve(self, dataset, request, target):
+            super().retrieve(dataset, request, target)
+            with xr.open_dataset(target) as opened:
+                shifted = opened.load().assign_coords(latitude=opened.latitude + 0.125)
+            shifted.to_netcdf(target, mode="w", engine="h5netcdf")
+
+    with pytest.raises(DataSourceError, match="bounds do not exactly match"):
+        materialise_cds(
+            _request(date_start="2020-01-01", date_end="2020-01-02"),
+            download_dir=tmp_path / "downloads", cache_dir=str(tmp_path / "cache"),
+            time_chunk=8, check_size=False, client=ShiftedGridClient(), allow_network=True)
 
 
 def test_multimonth_materialisation_never_loads_a_full_shard(tmp_path, monkeypatch):

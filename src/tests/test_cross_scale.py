@@ -190,6 +190,27 @@ def test_a_declared_advection_speed_produces_a_scale_dependent_floor(cascade_sig
     assert floors["floors"][-1]["crossing_time_s"] == pytest.approx(22 * 25000.0 / 10.0)
 
 
+def test_latlon_support_floor_converts_degrees_and_uses_conservative_physical_axis():
+    """D53: GridSpec.dx=0.25 is degrees, not the 0.25 metres the old path assumed."""
+    from types import SimpleNamespace
+    from src.physical_core.grid import GridSpec
+
+    grid = GridSpec.latlon(
+        (161, 161), lat0=-20.0, dlat=-0.25, lon0=140.0, dlon=0.25)
+    signature = SimpleNamespace(
+        scales=[1, 2, 3],
+        interior=[
+            {"support_parent_px": 4}, {"support_parent_px": 10},
+            {"support_parent_px": 22}],
+        provenance={"grid": grid.to_provenance()})
+    floors = cs.support_floor(signature, 21600.0, advection_speed_m_s=10.0)
+    coarse = floors["floors"][-1]
+    assert grid.to_provenance()["dx"] == 0.25
+    assert coarse["physical_spacing_m_per_parent_px"] > 27_000
+    assert coarse["floor_frames"] == 3
+    assert "converted to metres" in coarse["physical_spacing_basis"]
+
+
 def test_lags_below_the_floor_are_excluded_by_name(cascade_signature):
     result = cs.cross_scale_dependency(
         cascade_signature, lags=[1, 2], cadence_seconds=CADENCE,

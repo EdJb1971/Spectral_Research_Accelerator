@@ -487,6 +487,32 @@ blocks, records per-variable tolerances/errors, and cannot overwrite or reuse ev
 different design. Synthetic runs are always labelled
 `scientific_verdict: NOT_ESTABLISHED`. No atmospheric T4C.6 verdict has yet been produced.
 
+Before live acquisition, freeze the complete two-stage design with
+`src.analysis_engine.gate_campaign`. Its portable JSON binds a small CDS canary and matching
+WeatherBench crop to the full request and gate plan; machine paths are supplied only at
+preflight. The preflight is zero-network, budgets all campaign artifacts together, checks
+`cdsapi`, standard credential-configuration presence and explicit network consent, and emits
+the mandatory canary-first order:
+
+```powershell
+python -m src.analysis_engine.gate_campaign freeze `
+  --design gate-campaign-design.json --out gate-campaign.json
+python -m src.analysis_engine.gate_campaign preflight `
+  --campaign gate-campaign.json `
+  --full-download-dir data/cds/full --canary-download-dir data/cds/canary `
+  --cache-dir data/zarr_cache --independent-cache-dir data/zarr_cache
+```
+
+`gate-campaign-design.json` is intentionally not supplied by the repository: its region,
+dates, variable, transform and statistical choices are the scientific protocol and must be
+reviewed rather than inferred from an example command. A ready preflight still does not prove
+credentials, licence acceptance, remote service availability, ERA5 agreement or the hypothesis.
+Before reporting readiness it now derives the exact grid shape and chosen transform supports,
+requires at least 128 valid parent-grid pixels at every scale, converts lat/lon degrees to
+physical metres for the advection floor, refuses shorter lags, and reports temporal split,
+annual-climatology coverage, multiplicity power and the upper-bound surrogate workload. CDS
+bounds must align exactly to the requested grid and returned endpoints may not be server-snapped.
+
 **Not supported:** GRIB (`.grib`/`.grib2`) ingestion via `cfgrib`, dateline-crossing CDS boxes
 without splitting them into two requests, and NOAA HRRR/GFS object-store retrieval.
 

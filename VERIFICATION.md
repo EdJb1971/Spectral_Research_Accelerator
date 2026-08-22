@@ -4427,3 +4427,65 @@ full repository suite                          1106 passed, 1 skipped, 1 xfailed
 The WeatherBench fixture in these tests is derived locally from deterministic fake CDS output.
 It proves the mechanism and refusal boundary only. No Copernicus request, real WeatherBench
 value comparison, multi-year crop or T4C.6 atmospheric verdict ran; D43 remains open.
+
+## T4C.5f - frozen canary-first acquisition campaign
+
+D52 was an ordering and identity defect: the full acquisition, WeatherBench overlap and gate
+plan could be operated separately, so the multi-year transfer was effectively the first live
+integration test of CDS decoding. A mismatch discovered afterwards would waste the expensive
+transfer, while manually coordinated JSON could drift in dates, grid, variables or cadence.
+
+`GateCampaign` now binds the full request, an exact contained CDS canary, a catalogued
+WeatherBench overlap and the real `GateStudyPlan`. Reconstruction is strict down through nested
+provenance: unknown fields and stale derived hashes are refused. The preflight aggregates
+worst-case storage for both NetCDF downloads, both CDS Zarr caches and the WeatherBench cache by
+physical volume without compression credit. It checks dependency, standard configuration-file
+or environment presence and explicit consent, but never reads a secret, constructs a client or
+uses the network.
+
+The frozen order requires a canary overlap PASS before full acquisition and a second overlap
+receipt bound to the full cache before T4C.6. Six tests cover immutable round-trip/tamper
+refusal, canary containment, WeatherBench grid/cadence matching, frame-count drift, aggregate
+storage/readiness and the machine-readable freeze/preflight CLI.
+
+```text
+campaign acceptance                              6 passed
+campaign + gate + CDS focused acceptance        24 passed
+full repository suite                         1112 passed, 1 skipped, 1 xfailed
+```
+
+These tests use synthetic request identities and mocked readiness signals. No scientific
+campaign design was selected or saved, no dependency or credential was installed, and no live
+network request or atmospheric verdict occurred.
+
+## T4C.5g - the preflight's distance unit was wrong (D53-D54)
+
+The world-class design audit found D53 in the decisive R4 guard. `GridSpec` correctly stores
+lat/lon `dx` in degrees, but `support_floor` selected bare `dx` before any metric field and
+treated ERA5's `0.25` as metres. A db2 level-3 support of 22 pixels therefore appeared 5.5 m
+wide instead of hundreds of kilometres, generally collapsing the declared advection floor to
+one frame. The receipt would have looked precise while admitting the exact short lags the rule
+exists to exclude.
+
+Physical grid provenance is now reconstructed through `GridSpec`; angular axes are converted
+using the spherical metric and the largest physical cell axis across the crop is used when flow
+direction is not frozen. A 161x161, 0.25° test spanning 20-60°S now measures more than 27 km per
+parent pixel and gives a three-frame level-3 floor at 10 m/s and six-hour cadence. The test
+explicitly asserts that the provenance still contains `dx=0.25`, proving the fix is unit
+conversion rather than a changed fixture.
+
+D54 was the matching timing defect. R13 geometry and physical lags were checked only when the
+full cache already existed. `GateCampaign` now computes actual SWT/DTCWT supports, valid parent
+interiors and the metric support floor before acquisition, and refuses undersized crops or lag
+families below it. Its report also records split sizes, annual-cycle coverage, family size,
+power and an upper bound on surrogate statistic evaluations. CDS requests require integer grid
+intervals; ingestion separately refuses shifted endpoints even when their spacing is correct.
+
+```text
+cross-scale + CDS + campaign + gate focused acceptance    52 passed
+full repository suite                                   1116 passed, 1 skipped, 1 xfailed
+```
+
+No atmospheric protocol was selected and no live data was accessed. The corrected floor means
+the eventual lag family may be longer than earlier planning implied; that is a scientific
+correction, not a parameter to relax for convenience.

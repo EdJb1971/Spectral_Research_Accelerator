@@ -149,6 +149,17 @@ class CDSRegionalRequest:
         if not math.isfinite(self.grid_degrees) or self.grid_degrees <= 0:
             raise InvalidParameterError("grid_degrees", self.grid_degrees,
                                         "a finite positive angular spacing")
+        for name, span in (
+                ("latitude", self.lat_max - self.lat_min),
+                ("longitude", self.lon_max - self.lon_min)):
+            intervals = span / self.grid_degrees
+            if not math.isclose(intervals, round(intervals), rel_tol=0.0, abs_tol=1e-9):
+                raise InvalidParameterError(
+                    "%s bounds/grid" % name,
+                    (self.lat_min, self.lat_max, self.lon_min, self.lon_max,
+                     self.grid_degrees),
+                    "bounds separated by an integer number of grid intervals; server-side "
+                    "snapping would change the frozen crop")
         if self.dataset != CDS_DATASET:
             raise InvalidParameterError("dataset", self.dataset,
                                         "the reviewed ERA5 pressure-level product %s" % CDS_DATASET)
@@ -589,6 +600,13 @@ def _normalise_downloaded_dataset(
     if not np.allclose(np.abs(np.diff(lat)), spec.grid_degrees, rtol=0.0, atol=1e-8) or not np.allclose(
             np.abs(np.diff(lon)), spec.grid_degrees, rtol=0.0, atol=1e-8):
         raise DataSourceError("CDS output grid spacing does not match the declared request")
+    if not (math.isclose(float(lat.min()), spec.lat_min, rel_tol=0.0, abs_tol=1e-8)
+            and math.isclose(float(lat.max()), spec.lat_max, rel_tol=0.0, abs_tol=1e-8)
+            and math.isclose(float(lon.min()), spec.lon_min, rel_tol=0.0, abs_tol=1e-8)
+            and math.isclose(float(lon.max()), spec.lon_max, rel_tol=0.0, abs_tol=1e-8)):
+        raise DataSourceError(
+            "CDS output grid bounds do not exactly match the frozen request; server-side "
+            "coordinate snapping is not accepted")
     if any(not np.issubdtype(dataset[name].dtype, np.number) for name in spec.variables):
         raise DataSourceError("CDS output variables must be numeric")
     # Canonical dimension order makes append semantics and the logical content hash
