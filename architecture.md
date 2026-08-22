@@ -179,7 +179,7 @@ Boundary-dependent coefficients are not automatically useless to a predictor. Th
 claim is narrower: a representation mechanism is supported only if its ranking survives the
 declared controls, and either a surviving or disappearing db2 deficit is a reportable result.
 
-### 1.4 FourCastNet 3 external-judge boundary (`src/forecasting/external_fcn3.py`, `external_cube.py`, `matched_truth.py`, `ensemble_evaluation.py`, `evaluation_run.py`, `evaluation_job.py`, partial)
+### 1.4 FourCastNet 3 external-judge boundary (`src/forecasting/external_fcn3.py`, `external_cube.py`, `matched_truth.py`, `ensemble_evaluation.py`, `evaluation_run.py`, `evaluation_job.py`, `evaluation_report.py`, partial)
 
 FourCastNet 3 (FCN3) is the first concrete T5.6 external target, not part of the motivating
 regional model. The official July 2025 NGC model card declares a 710,867,670-parameter
@@ -331,6 +331,27 @@ checks its config, request, result, artifact and crop identities against the por
 Job and binding files are themselves atomically published and never overwritten. This layer is
 intentionally not a scheduler: Slurm/Celery submission remains an Executor concern in Phase 6.
 
+T5.6g adds the evidence-to-interface boundary in `evaluation_report.py` and the Forecast
+Evaluation tab. Receipt import is an uploaded JSON document, never an arbitrary server path.
+The server applies the same outer, nested and cross-lineage verifier as the offline loader,
+reduces the receipt to a path-free presentation contract, and stores the original verified JSON
+under its receipt SHA-256. Every list/get read verifies it again; corrupted entries disappear
+from listing rather than becoming partial reports. An integrity-valid fixture is still refused:
+display eligibility additionally requires the truth manifest to name an exact URI from the
+accepted ERA5 catalogue and to carry no synthetic/fixture source declaration. This authenticates
+the receipt and forecast artifact and checks the declared truth route; it is **not** a third-party
+digital signature over ERA5 values, so the UI says `DECLARED_OFFICIAL_ERA5`, not “source signed.”
+
+The tenth UI module has a hard empty state: with no admitted receipt it renders no scores or
+plots. With one, it presents unit-preserving variable/lead rows for ensemble mean, persistence,
+MSE skill score, CRPS, spread and spread/skill; rank frequencies with their fractional-tie policy
+and `diagnostic only` label; exact dates/domain/pressure/split/member/grid scope; content hashes;
+holdout role; and both receipt claim boundaries. `scientific_skill` remains
+`NOT_ESTABLISHED` regardless of a positive point score because the receipt contains no sampling
+uncertainty, significance, dependence or generalisation result. New T5.6g receipts also embed
+the already-hashed forecast request/result so model, checkpoint and runner identity can be shown;
+older valid receipts truthfully report that only their digests were retained.
+
 These gates prove artifact acceptance and deterministic matched-sample metric calculation. They
 do **not** prove meteorological correctness, ensemble calibration, spectral fidelity,
 generalisation or skill on real data. Sampling uncertainty and dependence-aware inference remain
@@ -345,6 +366,24 @@ No FCN3 dependency, worker, checkpoint, global initial condition or real forecas
 currently exists in this repository. Only the dependency-free request/result/cube contracts,
 synthetic matched truth and analytic ensemble-evaluation fixtures exist; no real-data evaluation
 exists.
+
+### 1.5 Ownership and extension boundary (`LICENSE.md`)
+
+SpectralEarth is proprietary software owned by Edward Jonathan Bentley, not an open-source
+integration project for a laboratory. The root licence gives Adam Frank Bentley a personal,
+perpetual, worldwide, royalty-free right to use, modify and operate it for lawful personal,
+academic, research and commercial work, including on institutional, cloud and HPC systems. It
+does not transfer ownership of the core or permit its public redistribution, sale as a platform
+or sublicensing. Narrow collaborator access is allowed only to support Adam's work and creates
+no independent licence.
+
+The legal boundary matches the technical one: an independently authored adapter or plugin that
+does not reproduce a substantial part of the core can remain its author's work, subject to any
+employer, university or funder rights. Incorporation into the core requires separate written
+contribution terms. Third-party code, data, papers, services, model weights and other artifacts
+remain governed by their own terms; the SpectralEarth licence cannot grant rights Edward does
+not hold. This section records the repository's declared terms, not evidence that a lawyer has
+reviewed them.
 
 ---
 
@@ -1091,11 +1130,14 @@ reason in the test itself.
 
 ## 3.12 HTTP API Surface
 
-28 routes. Listed here because an undocumented endpoint is an untested contract.
+31 routes. Listed here because an undocumented endpoint is an untested contract.
 
 | Method | Route | Notes |
 |---|---|---|
 | GET | `/api/v1/health` | DB reachability, backend scheme, dataset count, execution device (T3.5.10) |
+| GET | `/api/v1/evaluation/receipts` | verified, display-eligible real-source reports; empty means no evidence (T5.6g) |
+| GET | `/api/v1/evaluation/receipts/{report_id}` | one content-addressed report, reverified on read; no machine paths |
+| POST | `/api/v1/evaluation/receipts/import` | verify and admit JSON; fixtures, tampering and non-catalogue truth are refused |
 | POST | `/api/v1/transforms/apply` | fft, dct, dwt, hybrid, **swt**, **dtcwt** (real Kingsbury q-shift, T3.5.6; `level1`/`qshift` sweepable) |
 | POST | `/api/v1/synthetic/generate` | vortex, front, turbulence, wave |
 | POST | `/api/v1/synthetic/perturb` | rotate, translate, noise (now seedable, T3.5.12) |
@@ -1759,7 +1801,7 @@ The architecture is highly modular and maintains clean boundaries at several cri
 
 ## 6. Front-End Technical Implementation
 
-The React frontend is fully written and structurally complete. It was installed and built in T3.5.0/T3.5.3 (`npm run build` emits hashed JS and CSS into `dist/`) and wired to the previously unreachable endpoints in T3.5.22. Its **rendered appearance was confirmed by the user on 2026-08-20** (T3.5.25): the platform was started, both servers came up, and the nine tabs were reported working. That confirmation is a user report, not an artefact - **no screenshot per tab exists in this repository**, so T3.5.0's literal evidence clause is still outstanding. The contract tests prove the nine tabs compile, call routes that exist and read fields that are present; they still do not prove anything renders, and the distinction is kept explicit because a green suite plus a green build is exactly what makes people assume otherwise.
+The React frontend is fully written and structurally complete. It was installed and built in T3.5.0/T3.5.3 (`npm run build` emits hashed JS and CSS into `dist/`) and wired to the previously unreachable endpoints in T3.5.22. Its **rendered appearance was confirmed by the user on 2026-08-20** (T3.5.25): the platform was started, both servers came up, and the then-nine tabs were reported working. T5.6g adds a tenth tab which has compiled and built but has **not** been visually inspected in a browser. The earlier confirmation is a user report, not an artefact - **no screenshot per tab exists in this repository**, so T3.5.0's literal evidence clause remains outstanding. Contract tests prove all ten tabs compile, call routes that exist and read fields that are present; they do not prove rendered appearance.
 
 *   **Component Visualizations:** `Heatmap2D.tsx` and `LineChart.tsx` wrap `react-plotly.js`; `LineageGraph.tsx` is a hand-rolled SVG node-link renderer with a tooltip inspector and no external graph dependency. All three take reactive props and render spatial fields, PSD curves, coherence ratios, and provenance DAGs.
 *   **Accessibility: zero, and measured rather than assumed.** `frontend/src` contains
@@ -1790,7 +1832,7 @@ See `VERIFICATION.md` for the captured command output behind every statement her
 | Item | Status |
 |---|---|
 | Python venv + dependencies | installed (torch 2.13.0+cu130, numpy 2.2.6, pydantic 1.10.26, SQLAlchemy 2.0.52, xarray 2025.6.1, FastAPI 0.110.3) |
-| Backend test suite | **1089 passed, 1 xfailed** (plus 1 skipped: opt-in live GCS) (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17, 351 after T3.5.6, 379 after T3.5.15, 407 after T3.5.19, 449 after T4C.5, 709 after T4A.4, 781 after T4B.4, 855 after T4C.5, 859 after T4C.5c, 882 after T5.1a CPU acceptance, 883 after RTX acceptance, 890 after portable profiles, 911 after T5.1b/D44, 917 after T5.1c, 933 after T5.1d/D45, 946 after T5.1e, 955 after T5.2a, 957 after T5.2b, 962 after T5.3a, 969 after T5.3b, 981 after T5.2c offline acceptance, 985 after T5.2d, 1000 after T5.0a, 1008 after T5.0b, 1027 after T5.6a offline acceptance, 1042 after T5.6b cube acceptance, 1056 after T5.6c matched evaluation, 1070 after T5.6d truth matching, 1080 after T5.6e orchestration, 1089 after T5.6f portable jobs) |
+| Backend test suite | **1095 passed, 1 xfailed** (plus 1 skipped: opt-in live GCS) (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17, 351 after T3.5.6, 379 after T3.5.15, 407 after T3.5.19, 449 after T4C.5, 709 after T4A.4, 781 after T4B.4, 855 after T4C.5, 859 after T4C.5c, 882 after T5.1a CPU acceptance, 883 after RTX acceptance, 890 after portable profiles, 911 after T5.1b/D44, 917 after T5.1c, 933 after T5.1d/D45, 946 after T5.1e, 955 after T5.2a, 957 after T5.2b, 962 after T5.3a, 969 after T5.3b, 981 after T5.2c offline acceptance, 985 after T5.2d, 1000 after T5.0a, 1008 after T5.0b, 1027 after T5.6a offline acceptance, 1042 after T5.6b cube acceptance, 1056 after T5.6c matched evaluation, 1070 after T5.6d truth matching, 1080 after T5.6e orchestration, 1089 after T5.6f portable jobs, 1094 after T5.6g reporting, 1095 after the licence guard) |
 | Ground-Truth Benchmark Suite | **15 PASS, 0 FAIL, 2 NOT_YET_RUNNABLE** (`python -m src.benchmarks`, exit 0) |
 | Frontend `npm install` + `npm run build` | passes, emits 1,385 modules + real JS/CSS assets (was: 1 module, no assets) |
 | Backend server | starts, serves OpenAPI, all smoke-tested endpoints return 200 |
@@ -1991,7 +2033,7 @@ able to sit three slices out of date.
 | `test_boundary_synthetic.py` | 7 | boundary treatments, windowing, synthetic generators |
 | `test_cds_source.py` | 8 | T5.2c monthly CDS planning/CLI, request refusals, network consent, atomic resume, shard integrity, route-aware replay and canonical lazy dataset compatibility |
 | `test_coefficient_field.py` | 40 | T4B.1 acceptance: parent-grid alignment, perfect reconstruction per family, lineage-safe summary; DTCWT upsampling declared; LevelBank and level slicing (T4B.4) |
-| `test_documentation.py` | 18 | this document and roadmap.md against the code |
+| `test_documentation.py` | 19 | architecture, roadmap and proprietary named-licence boundary against the code/repository |
 | `test_dtcwt.py` | 28 | Kingsbury q-shift DTCWT: primitives vs reference, two oracles, orientation, shift invariance, D1 head-to-heads |
 | `test_executor.py` | 33 | Executor backends, seed derivation, ordering, portable CPU/accelerator/HPC profiles, doctor, device/thread policy, SQLite concurrency, byte-identical sweeps |
 | `test_experiments.py` | 3 | declarative sweeps and lineage |
@@ -2000,6 +2042,7 @@ able to sit three slices out of date.
 | `test_external_ensemble_evaluation.py` | 8 | T5.6c exact truth/initialization alignment, member/mean/persistence errors, analytic CRPS and spread, area-weighted fractional-tie ranks, bounded lazy reads, content identity and scientific refusal contracts |
 | `test_external_forecast_cube.py` | 8 | T5.6b authenticated lazy NetCDF/Zarr import, exact dimensions/axes/grid/variables/SI units, bounded complete finite-value scan, explicit grid-aligned NZ crop lineage and pre-open tamper refusal |
 | `test_evaluation_job.py` | 7 | T5.6f canonical portable jobs, separately hashed relocatable bindings, authenticated no-write preflight, input/overwrite refusals, exact receipt binding and complete create/bind/preflight/run CLI workflow |
+| `test_evaluation_report.py` | 5 | T5.6g report flattening, real-source admission versus synthetic refusal, path-free provenance, content-addressed idempotence, read-time tamper hiding and complete import/list/get API boundary |
 | `test_evaluation_run.py` | 6 | T5.6e real synthetic Zarr end-to-end orchestration, versioned/hashable controls, atomic no-overwrite receipt, nested/cross-lineage integrity and handle cleanup on failure |
 | `test_matched_truth.py` | 9 | T5.6d lazy exact ERA5 initialization/valid-time selection, source/selection identity, split and FCN3-period guards, evaluator compatibility and time/grid/level/unit/alias refusals |
 | `test_forecasting_adapter.py` | 5 | T5.3a exact persistence, represented autoregressive rollout, backward gradients, deterministic evidence, refusal contracts and CPU/RTX vendor-neutral accelerator parity |
@@ -2023,7 +2066,7 @@ able to sit three slices out of date.
 | `test_wavelet_bank.py` | 27 | T4B.2 expansion through the engine's own parameter matrix, the 1,000-combination guard, decompose_bank / extract_scale_signature, the vertical-bank refusals |
 | `test_transforms.py` | 13 | fft/dct/dwt/dtcwt/hybrid round trips; D1 recorded as a strict xfail |
 | `test_zarr_source.py` | 58 | R13 crop geometry, chunk-hostility prediction, byte counting, cache and provenance round trip, the NetCDF engine (D33), zarr HTTP surface |
-| **total** | **841** | |
+| **total** | **847** | |
 
 ### 7.2h A surrogate null that was not the null it claimed (T4C.5)
 

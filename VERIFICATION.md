@@ -4281,3 +4281,77 @@ contract identity, relocation, authenticated local preflight, refusal behavior, 
 and deterministic receipt binding. They do not show that Adam's laptop or HPC allocation was
 used, that FCN3 or CDS ran, or that any real forecast has accuracy, calibration, spectral
 fidelity or skill. No evaluation result was added to the UI.
+
+## T5.6g - receipt-backed API/UI reporting
+
+`src/forecasting/evaluation_report.py` sends no receipt directly to the browser. It first uses
+the T5.6e verifier for outer, nested and cross-lineage hashes, requires an exact accepted ERA5
+catalogue URI with no synthetic/fixture declaration, flattens metrics without combining units,
+and removes machine-local paths. Admitted JSON is stored under the receipt SHA-256 and reverified
+on every list/get. Deliberately corrupted files are omitted rather than partially rendered.
+
+The API accepts JSON uploads only and provides content-addressed list/get routes. The tenth
+Forecast Evaluation tab renders no metrics or plots in the empty state. A verified report shows
+ensemble-mean and persistence errors, persistence-relative MSE skill, CRPS, spread/skill,
+diagnostic rank frequencies and their tie policy, exact dates/domain/level/split/member/grid
+scope, model/checkpoint/content identities and both claim boundaries. It always reports
+`scientific_skill: NOT_ESTABLISHED`; a point estimate is not uncertainty or generalisation.
+The ERA5 label is explicitly a checked source declaration, not a digital signature over values.
+
+Focused receipt/run/job acceptance:
+
+```text
+python -m pytest src/tests/test_evaluation_report.py \
+  src/tests/test_evaluation_run.py src/tests/test_evaluation_job.py -q
+24 passed, 2 warnings in 11.19s
+```
+
+Frontend static acceptance:
+
+```text
+npx tsc --noEmit
+0 errors
+
+npm run build
+1386 modules transformed; built in 1m 25s
+```
+
+The five T5.6g cases use synthetic forecast/truth arrays. One test temporarily installs an
+explicit controlled catalogue declaration solely to exercise the admission/display path; the
+ordinary fixture is refused and leaves the store empty. Therefore no real ERA5/FCN3 receipt was
+created, imported or displayed, and the new tab has not been visually inspected. The tests prove
+the reporting boundary, not source authenticity, meteorological skill or calibration.
+
+Clean full regression for the delivered T5.6g tree:
+
+```text
+1094 passed, 1 skipped, 1 xfailed, 6 warnings in 215.71s
+```
+
+## Proprietary ownership and named researcher licence
+
+`LICENSE.md` now records Edward Jonathan Bentley as owner and gives Adam Frank Bentley a named,
+perpetual, worldwide, royalty-free licence to use and modify SpectralEarth for lawful personal,
+academic, research and commercial work, including institutional/cloud/HPC execution. The core
+cannot be publicly redistributed, sold as a platform or sublicensed without Edward's separate
+written permission. Narrow collaborator access, independent extensions, future upstream
+contributions, third-party materials, scientific responsibility, warranty, breach and New
+Zealand governing law are addressed separately rather than compressed into “do what he likes.”
+The repository describes this accurately as proprietary and not open source.
+
+A documentation test pins the owner/licensee names and contacts plus the substantive grant and
+restriction boundary:
+
+```text
+python -m pytest src/tests/test_documentation.py -q
+19 passed, 1 warning in 9.18s
+```
+
+Clean full regression after adding that guard:
+
+```text
+1095 passed, 1 skipped, 1 xfailed, 6 warnings in 196.84s
+```
+
+This evidence proves repository consistency only. The bespoke licence has not been reviewed by
+a New Zealand intellectual-property lawyer and is not represented as professional legal advice.

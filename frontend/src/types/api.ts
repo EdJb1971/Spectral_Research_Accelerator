@@ -571,3 +571,47 @@ export interface RegistryEntry {
   defined_in?: string;
   node_type?: string;
 }
+
+// ---------------------------------------------------------------- verified forecast evaluation (T5.6g)
+
+export interface EvaluationMetricRow {
+  lead_hours: number;
+  variable: string;
+  unit: string;
+  ensemble_mean: { rmse: number; mae: number; bias: number; mse_skill_score_vs_persistence: number | null };
+  persistence: { rmse: number; mae: number; bias: number };
+  crps: number;
+  spread_rms: number;
+  spread_skill_ratio: number | null;
+  member_errors: Record<string, { rmse: number; mae: number; bias: number }>;
+  initialization_count: number;
+  gridpoint_count: number;
+}
+
+export interface EvaluationReport {
+  schema: string;
+  report_id: string;
+  readiness: {
+    receipt_integrity: 'VERIFIED';
+    forecast_artifact: 'AUTHENTICATED_AND_VALIDATED';
+    truth_source: 'DECLARED_OFFICIAL_ERA5';
+    display_eligible: true;
+    independent_holdout: boolean;
+    scientific_skill: 'NOT_ESTABLISHED';
+    reason: string;
+  };
+  scope: {
+    split: string; split_start: string; split_end: string; evaluation_role: string;
+    level_hpa: number; bounds: Record<string, any>; variables: string[];
+    lead_durations_hours: number[]; initialization_count: number;
+    ensemble_members: number[]; grid_shape: number[]; area_weighting: string;
+  };
+  metrics: EvaluationMetricRow[];
+  rank_diagnostics: Array<{
+    lead_hours: number; variable: string; area_weighted_frequency: number[];
+    fractional_tie_counts: number[]; bin_definition: string; tie_policy: string;
+    diagnostic_only: true;
+  }>;
+  provenance: Record<string, any>;
+  claim_boundaries: string[];
+}

@@ -7,6 +7,7 @@ import { FigureExport } from './components/FigureExport';
 import { FieldImport } from './components/FieldImport';
 import { TrainingReadiness } from './components/TrainingReadiness';
 import { DTCWTScientificView } from './components/DTCWTScientificView';
+import { EvaluationEvidence } from './components/EvaluationEvidence';
 import { apiService } from './services/api';
 import * as types from './types/api';
 import {
@@ -36,7 +37,8 @@ import {
   HardDrive,
   Search,
   WifiOff,
-  Boxes
+  Boxes,
+  FileCheck2
 } from 'lucide-react';
 
 export default function App() {
@@ -58,6 +60,8 @@ export default function App() {
   const [benchmarkRunning, setBenchmarkRunning] = useState(false);
   const [registryTransforms, setRegistryTransforms] = useState<types.RegistryEntry[]>([]);
   const [registryActions, setRegistryActions] = useState<types.RegistryEntry[]>([]);
+  const [evaluationReports, setEvaluationReports] = useState<types.EvaluationReport[]>([]);
+  const [receiptImporting, setReceiptImporting] = useState(false);
   const [importedProvenance, setImportedProvenance] = useState<Record<string, any> | null>(null);
   const [zarrCrop, setZarrCrop] = useState<types.ZarrCropRequest>({
     store: 'era5_0p25_6h',
@@ -555,6 +559,30 @@ export default function App() {
     }
   };
 
+  const loadEvaluationReports = async () => {
+    try {
+      setEvaluationReports(await apiService.listEvaluationReports());
+    } catch (e: any) {
+      setError(`Verified evaluation reports unavailable: ${e.message}`);
+    }
+  };
+
+  const handleImportEvaluationReceipt = async (file: File) => {
+    setReceiptImporting(true);
+    setError(null);
+    try {
+      const imported = await apiService.importEvaluationReceipt(file);
+      // Re-read through the normal verified GET boundary as well as displaying the import
+      // response; this proves the content-addressed store can reproduce what it admitted.
+      const stored = await apiService.getEvaluationReport(imported.report_id);
+      setEvaluationReports(current => [stored, ...current.filter(r => r.report_id !== stored.report_id)]);
+    } catch (e: any) {
+      setError(`Receipt refused: ${e.message}`);
+    } finally {
+      setReceiptImporting(false);
+    }
+  };
+
   const handleRunBenchmarks = async () => {
     setBenchmarkRunning(true);
     setError(null);
@@ -619,6 +647,7 @@ export default function App() {
         .catch(() => { /* the status load already reports an unreachable backend */ });
     }
     if (activeTab === 'era5' && !zarrCatalogue) loadZarrCatalogue();
+    if (activeTab === 'evaluation') loadEvaluationReports();
   }, [activeTab]);
 
   return (
@@ -660,7 +689,8 @@ export default function App() {
             { id: 'declarative', name: '6. Experiment Engine', icon: FileCode },
             { id: 'hypothesis', name: '7. Automated Hypotheses', icon: Lightbulb },
             { id: 'platform', name: '8. Platform & Evidence', icon: ShieldCheck },
-            { id: 'era5', name: '9. Real ERA5 (Zarr)', icon: Cloud }
+            { id: 'era5', name: '9. Real ERA5 (Zarr)', icon: Cloud },
+            { id: 'evaluation', name: '10. Forecast Evaluation', icon: FileCheck2 }
           ].map(tab => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -2618,6 +2648,12 @@ export default function App() {
                 </div>
               </div>
             </div>
+          )}
+
+          {/* TAB 10: VERIFIED FORECAST EVALUATION ------------------------------------ */}
+          {activeTab === 'evaluation' && (
+            <EvaluationEvidence reports={evaluationReports} importing={receiptImporting}
+              onImport={handleImportEvaluationReceipt} />
           )}
         </main>
       </div>

@@ -36,6 +36,8 @@ from src.boundary_lab.boundary import BoundaryConditionLab
 from src.data_layer.adapters import MeteorologicalDataAdapter
 from src.analysis_engine.diagnostics import SpectralSpatialAnalysisEngine
 from src.analysis_engine.decomposition import ErrorDecompositionEngine
+from src.forecasting.adapter import ForecastContractError
+from src.forecasting.evaluation_report import EvaluationReceiptStore, MAX_RECEIPT_BYTES
 
 # Defect D36: every incoming field was cast to float32 at this boundary, so the platform's
 # double-precision core was discarded the moment a request arrived. Measured on the running
@@ -50,6 +52,12 @@ from src.database.models import Experiment, ExperimentRun, LineageNode, LineageE
 from src.experiment_engine.engine import DeclarativeExperimentEngine
 
 logger = logging.getLogger("api")
+
+
+def _evaluation_receipts() -> EvaluationReceiptStore:
+    """Resolve at request time so laptop/HPC deployments and tests can relocate evidence."""
+    directory = getattr(app.state, "evaluation_receipt_dir", None)
+    return EvaluationReceiptStore(directory)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -584,6 +592,35 @@ async def health(db: Session = Depends(get_db)):
         database_settings=db_settings,
         schema_state=schema_state,
     )
+
+
+@app.get("/api/v1/evaluation/receipts")
+async def list_evaluation_receipts():
+    """List only verified, accepted real-source reports; an empty list is the honest empty state."""
+    return _evaluation_receipts().list()
+
+
+@app.get("/api/v1/evaluation/receipts/{report_id}")
+async def get_evaluation_receipt(report_id: str):
+    try:
+        return _evaluation_receipts().get(report_id)
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="verified evaluation report not found") from None
+    except ForecastContractError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from None
+
+
+@app.post("/api/v1/evaluation/receipts/import")
+async def import_evaluation_receipt(file: UploadFile = File(...)):
+    """Verify and content-address one receipt upload; server filesystem paths are never accepted."""
+    filename = file.filename or "receipt.json"
+    if not filename.lower().endswith(".json"):
+        raise HTTPException(status_code=415, detail="evaluation receipt must be a .json file")
+    payload = await file.read(MAX_RECEIPT_BYTES + 1)
+    try:
+        return _evaluation_receipts().import_bytes(payload)
+    except ForecastContractError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from None
 
 
 @app.post("/api/v1/transforms/apply", response_model=TransformResponse)

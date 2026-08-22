@@ -107,6 +107,15 @@ nothing. `run` performs no download, model inference or scheduler submission; it
 accepted evaluator and verifies the resulting receipt against the job. These commands are
 tested with synthetic stores only. They do not mean FCN3, real ERA5 verification or HPC has run.
 
+The **Forecast Evaluation** tab is the receipt-backed presentation seam. Import the JSON written
+by the final command; the server rechecks its outer/nested hashes and cross-lineage identities,
+requires a declared accepted ERA5 catalogue source, stores it under its content hash, and then
+shows matched forecast/persistence metrics, CRPS, spread/skill, rank diagnostics, exact scope,
+provenance and claim boundaries. It accepts uploads only—never a browser-supplied server path.
+With no admitted real-source receipt, the tab contains an explicit empty state and no result
+visuals. A verified receipt still says **scientific skill not established**: sampling uncertainty,
+dependence, significance and generalisation remain separate work.
+
 The first Phase 5 target is deliberately practical: an importable PyTorch path for the exact
 regional workflow used by the motivating research -- batches shaped `(B, C, H, W)`, aligned
 850-hPa `t/q/u/v/z` inputs and targets, strict temporal splits with an embargo, differentiable
@@ -454,3 +463,15 @@ and `--time-chunk`; it still refuses unless the network gate and standard CDS cr
 
 **Not supported:** GRIB (`.grib`/`.grib2`) ingestion via `cfgrib`, dateline-crossing CDS boxes
 without splitting them into two requests, and NOAA HRRR/GFS object-store retrieval.
+
+---
+
+## Licence
+
+SpectralEarth is proprietary software; it is not released under an open-source licence.
+Copyright remains with Edward Jonathan Bentley. [The repository licence](LICENSE.md) grants
+Adam Frank Bentley a named, perpetual, worldwide and royalty-free right to use and modify the
+platform for lawful personal, academic, scientific and commercial work, while reserving public
+redistribution and sublicensing of the SpectralEarth core. Independently authored extensions
+remain separate under the terms stated there. Third-party libraries, datasets, papers and model
+artifacts retain their own licences and conditions.

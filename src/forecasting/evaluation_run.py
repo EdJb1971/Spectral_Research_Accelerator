@@ -164,6 +164,10 @@ def _run_request(
         "forecast_result_sha256": forecast_result.result_sha256,
         "forecast_artifact_sha256": forecast_result.artifact_sha256,
         "forecast_artifact_reference": forecast_result.artifact_reference,
+        # Embedded as well as hashed from T5.6g onward so a report can show the actual model,
+        # checkpoint, software and runtime rather than reverse-label a digest.
+        "forecast_request": forecast_request.to_mapping(),
+        "forecast_result": forecast_result.to_mapping(),
         "era5_crop": era5_crop.to_provenance(),
         "era5_crop_content_key": era5_crop.content_key(),
         "execution": (
@@ -241,6 +245,17 @@ def _verify_receipt_record(record: Any) -> None:
         raise ForecastContractError("embedded ensemble evaluation SHA-256 mismatch")
     if run_request.get("config_sha256") != _canonical_hash(run_request.get("config")):
         raise ForecastContractError("embedded evaluation config SHA-256 mismatch")
+    embedded_request = run_request.get("forecast_request")
+    if embedded_request is not None:
+        if _canonical_hash(embedded_request) != run_request.get("forecast_request_sha256"):
+            raise ForecastContractError("embedded forecast request SHA-256 mismatch")
+    embedded_result = run_request.get("forecast_result")
+    if embedded_result is not None:
+        result_without_hash = dict(embedded_result)
+        result_sha256 = result_without_hash.pop("result_sha256", None)
+        if (result_sha256 != run_request.get("forecast_result_sha256")
+                or _canonical_hash(result_without_hash) != result_sha256):
+            raise ForecastContractError("embedded forecast result SHA-256 mismatch")
 
     validation = record["forecast_validation"]
     regional = record["regional_forecast_provenance"]
@@ -267,6 +282,16 @@ def _verify_receipt_record(record: Any) -> None:
         raise ForecastContractError("evaluation does not bind the matched-truth builder")
 
 
+def verify_evaluation_run_receipt(record: Any) -> Mapping[str, Any]:
+    """Verify an already-decoded receipt and return it unchanged.
+
+    API uploads and notebooks use this same verifier as filesystem loads; there is no weaker
+    presentation parser.
+    """
+    _verify_receipt_record(record)
+    return record
+
+
 def load_evaluation_run_receipt(
     path: Union[str, os.PathLike[str]],
 ) -> Mapping[str, Any]:
@@ -275,8 +300,7 @@ def load_evaluation_run_receipt(
         record = json.loads(Path(path).read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
         raise ForecastContractError("cannot read evaluation run receipt: %s" % exc) from exc
-    _verify_receipt_record(record)
-    return record
+    return verify_evaluation_run_receipt(record)
 
 
 def run_external_evaluation(

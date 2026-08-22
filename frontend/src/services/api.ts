@@ -273,5 +273,23 @@ export const apiService = {
   async listActions(): Promise<types.RegistryEntry[]> {
     return handleResponse<types.RegistryEntry[]>(
       await fetch(`${BASE_URL}/actions`, { method: 'GET' }));
+  },
+
+  // ------------------------------------------------ verified evaluation receipts (T5.6g)
+  async listEvaluationReports(): Promise<types.EvaluationReport[]> {
+    return handleResponse<types.EvaluationReport[]>(
+      await fetch(`${BASE_URL}/evaluation/receipts`, { method: 'GET' }));
+  },
+
+  async getEvaluationReport(reportId: string): Promise<types.EvaluationReport> {
+    return handleResponse<types.EvaluationReport>(
+      await fetch(`${BASE_URL}/evaluation/receipts/${encodeURIComponent(reportId)}`, { method: 'GET' }));
+  },
+
+  async importEvaluationReceipt(file: File): Promise<types.EvaluationReport> {
+    const form = new FormData();
+    form.append('file', file);
+    return handleResponse<types.EvaluationReport>(
+      await fetch(`${BASE_URL}/evaluation/receipts/import`, { method: 'POST', body: form }));
   }
 };

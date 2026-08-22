@@ -47,6 +47,11 @@ def verification():
     return _read("VERIFICATION.md")
 
 
+@pytest.fixture(scope="module")
+def licence():
+    return _read("LICENSE.md")
+
+
 def _source_modules():
     out = []
     for path in glob.glob(os.path.join(REPO_ROOT, "src", "**", "*.py"), recursive=True):
@@ -249,6 +254,22 @@ def test_architecture_does_not_claim_the_frontend_was_never_built(architecture):
     assert "has never been installed or built" not in architecture
     # ...but the genuinely unverified part must still be stated.
     assert "rendered appearance" in architecture.lower()
+
+
+def test_proprietary_licence_preserves_owner_and_named_researcher_boundary(licence):
+    """The intended family grant must not silently become all-rights-reserved or open source."""
+    required = (
+        "Edward Jonathan Bentley", "ed.j.bentley@gmail.com",
+        "Adam Frank Bentley", "adam.f.bentley@gmail.com",
+        "perpetual", "worldwide", "royalty-free", "commercial activity",
+        "high-performance-computing", "Independent Extension",
+        "must not", "publicly distribute", "sublicensed",
+        "Third-party materials", "laws of New Zealand",
+    )
+    for text in required:
+        assert text in licence, "LICENSE.md has lost the declared term %r" % text
+    assert "not an open-source" in licence
+    assert "does not assign or transfer ownership" in licence
 
 # ============================================================== status-section drift
 
