@@ -221,10 +221,9 @@ def _preflight_with_reader(plan: GateStudyPlan, reader: CachedFieldReader) -> Di
     if plan.evidence_role == "real_era5_gate":
         if reader.source_provenance.get("source_route") != "Copernicus Climate Data Store API":
             raise DataSourceError("real gate source is not the direct regional CDS route")
-        if reader.source_provenance.get("independent_overlap_check") != "PASS":
-            raise DataSourceError(
-                "real gate requires a recorded PASS from the independent WeatherBench overlap "
-                "check; acquisition alone does not authenticate ERA5 values")
+        from src.data_layer.era5_overlap import validate_overlap_evidence
+        validate_overlap_evidence(
+            reader.source_provenance, variable=plan.variable, level_hpa=plan.level_hpa)
         if reader.units.lower() == "unknown":
             raise DataSourceError("real gate variable units are unknown")
     sample = reader.read_frame(0)

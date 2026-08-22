@@ -4400,3 +4400,30 @@ groups download and cache requirements by physical volume, and the insufficient-
 proves that the fake CDS client's call list remains empty. At verification time D: had
 1,180.1 GiB free; this observation is operational context only, because the live command will
 recheck capacity against the final frozen request.
+
+## T4C.5e - independent ERA5 evidence is executable, bounded and content-bound
+
+Static review found D51: `cross_check_era5_overlap` produced a useful in-memory report, but the
+real gate accepted only the mutable manifest string `independent_overlap_check: PASS`. There
+was no path from comparison to durable evidence, and no proof that PASS belonged to the CDS
+bytes, request, WeatherBench bytes, variable or level presented to the gate.
+
+`src/data_layer/era5_overlap.py` now opens existing caches only, selects exact coordinates
+without interpolation, checks compatible declared units, and compares each variable in bounded
+frame blocks using frozen relative and variable-specific absolute tolerances. It publishes one
+atomic no-overwrite receipt binding both content hashes, the CDS request, coordinate hash,
+level, variables, tolerances, error metrics and memory bound. The CDS manifest embeds that
+receipt and its SHA; real gate preflight recomputes and validates them. A one-cell perturbation
+is durably recorded as FAIL and is explicitly refused as gate authority; receipt tampering and
+comparison-design drift are also refused.
+
+Offline acceptance:
+
+```text
+CDS acquisition + gate job focused suite       18 passed
+full repository suite                          1106 passed, 1 skipped, 1 xfailed
+```
+
+The WeatherBench fixture in these tests is derived locally from deterministic fake CDS output.
+It proves the mechanism and refusal boundary only. No Copernicus request, real WeatherBench
+value comparison, multi-year crop or T4C.6 atmospheric verdict ran; D43 remains open.

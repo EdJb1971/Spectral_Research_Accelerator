@@ -976,6 +976,10 @@ class CachedFieldReader:
                 "source_route": manifest.get("source_route", "catalogued Zarr cache"),
                 "independent_overlap_check": manifest.get(
                     "independent_overlap_check", "NOT DECLARED"),
+                "independent_overlap_receipt_sha256": manifest.get(
+                    "independent_overlap_receipt_sha256"),
+                "independent_overlap_receipt": manifest.get(
+                    "independent_overlap_receipt"),
                 "acquisition_request_sha256": (
                     ((manifest.get("acquisition") or {}).get("request") or {}).get(
                         "request_sha256")),

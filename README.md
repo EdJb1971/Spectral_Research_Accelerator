@@ -472,7 +472,19 @@ The T4C.6 execution boundary is available in `src.analysis_engine.gate_run`. A v
 `preflight_cached_gate` verifies an existing cache without network fallback, and
 `run_cached_gate` streams train-only climatology and scale signatures into an atomic,
 tamper-detecting receipt. The real-evidence role refuses anything except the direct CDS route
-with a passed independent WeatherBench overlap check. Synthetic runs are always labelled
+with a content-bound passed independent WeatherBench overlap receipt. Once a small matching
+WeatherBench crop is materialised locally, publish that receipt without network fallback with:
+
+```powershell
+python -m src.data_layer.era5_overlap `
+  --primary-manifest data/zarr_cache/<cds-key>.json `
+  --independent-manifest data/zarr_cache/<weatherbench-key>.json `
+  --variables t --level-hpa 850 --block-frames 8
+```
+
+The comparison requires exact timestamps/grid coordinates and compatible units, streams value
+blocks, records per-variable tolerances/errors, and cannot overwrite or reuse evidence from a
+different design. Synthetic runs are always labelled
 `scientific_verdict: NOT_ESTABLISHED`. No atmospheric T4C.6 verdict has yet been produced.
 
 **Not supported:** GRIB (`.grib`/`.grib2`) ingestion via `cfgrib`, dateline-crossing CDS boxes

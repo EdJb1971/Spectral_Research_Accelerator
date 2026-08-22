@@ -22,11 +22,24 @@ from src.data_layer.cds_source import (
     preflight_cds_storage,
     rematerialise_cds_from_provenance,
 )
+from src.data_layer.era5_overlap import (
+    load_overlap_receipt,
+    main as overlap_main,
+    overlap_receipt_path,
+    validate_overlap_evidence,
+    verify_cached_era5_overlap,
+)
 from src.data_layer.regional_forecast import (
     RegionalForecastConfig,
     prepare_cached_regional_forecast,
 )
-from src.data_layer.zarr_source import load_cached
+from src.data_layer.zarr_source import (
+    CropSpec,
+    cache_path,
+    load_cached,
+    manifest_path,
+    streaming_content_hash,
+)
 
 xr = pytest.importorskip("xarray")
 pytest.importorskip("zarr")
@@ -52,11 +65,17 @@ class FakeCDSClient:
         lon = np.arange(west, east + grid / 2, grid)
         shape = (len(times), len(levels), len(lat), len(lon))
         variables = {}
+        units = {
+            "temperature": "K", "specific_humidity": "kg kg**-1",
+            "u_component_of_wind": "m s**-1", "v_component_of_wind": "m s**-1",
+            "geopotential": "m**2 s**-2",
+        }
         for channel, name in enumerate(request["variable"]):
             base = np.arange(np.prod(shape), dtype=np.float32).reshape(shape)
             variables[name] = (
                 ("valid_time", "pressure_level", "latitude", "longitude"),
                 base * np.float32(1e-5) + np.float32(channel + 1),
+                {"units": units[name]},
             )
         response = xr.Dataset(
             variables,
@@ -256,6 +275,102 @@ def test_multimonth_materialisation_never_loads_a_full_shard(tmp_path, monkeypat
     assert max(loaded_frame_counts) <= 3
     assert manifest["shape"]["time"] == 20
     assert manifest["materialisation"]["maximum_source_frames_in_memory"] == 3
+
+
+def _write_weatherbench_overlap(spec, primary_cache, independent_cache, *, perturb=False):
+    primary, _ = load_cached(spec.to_crop_spec(), cache_dir=str(primary_cache))
+    try:
+        overlap = primary.isel(time=slice(0, 4)).load().copy(deep=True)
+    finally:
+        primary.close()
+    if perturb:
+        overlap["t"].values[0, 0, 0, 0] += np.float32(1.0)
+    independent = CropSpec(
+        store="era5_0p25_6h", variables=spec.variables,
+        time_start=str(overlap.time.values[0]), time_end=str(overlap.time.values[-1]),
+        lat_min=spec.lat_min, lat_max=spec.lat_max,
+        lon_min=spec.lon_min, lon_max=spec.lon_max,
+        levels=spec.pressure_levels, n_levels_analysis=1)
+    target = Path(cache_path(independent, str(independent_cache)))
+    target.parent.mkdir(parents=True, exist_ok=True)
+    overlap = overlap.chunk({"time": 2, "level": 1, "latitude": 5, "longitude": 5})
+    encoding = {}
+    for name in overlap.data_vars:
+        overlap[name].encoding.pop("chunks", None)
+        overlap[name].encoding.pop("preferred_chunks", None)
+        encoding[name] = {"chunks": (2, 1, 5, 5)}
+    overlap.to_zarr(target, mode="w", consolidated=True, encoding=encoding)
+    with xr.open_zarr(target, consolidated=True) as opened:
+        content_hash = streaming_content_hash(opened, time_block=2)
+    Path(manifest_path(independent, str(independent_cache))).write_text(json.dumps({
+        "content_key": independent.content_key(),
+        "spec": independent.to_provenance(),
+        "content_hash": content_hash,
+        "shape": {key: int(value) for key, value in overlap.sizes.items()},
+        "variables": sorted(overlap.data_vars),
+        "cache_chunking": {"time": 2, "level": 1, "latitude": 5, "longitude": 5},
+    }), encoding="utf-8")
+    return independent
+
+
+def test_overlap_receipt_is_bounded_content_bound_atomic_and_gate_verifiable(tmp_path, capsys):
+    spec = _request(date_start="2020-01-01", date_end="2020-01-02")
+    primary_cache, independent_cache = tmp_path / "primary", tmp_path / "independent"
+    materialise_cds(
+        spec, download_dir=tmp_path / "downloads", cache_dir=str(primary_cache),
+        time_chunk=3, check_size=False, client=FakeCDSClient(), allow_network=True)
+    independent = _write_weatherbench_overlap(spec, primary_cache, independent_cache)
+    receipt = verify_cached_era5_overlap(
+        spec.to_crop_spec(), independent, primary_cache_dir=str(primary_cache),
+        independent_cache_dir=str(independent_cache), variables=("t",),
+        level_hpa=850, block_frames=2)
+    assert receipt["passed"] and receipt["coordinates_exact"]
+    assert receipt["bounded_execution"] == {
+        "network_used": False, "block_frames": 2,
+        "maximum_frames_per_source_in_memory": 2, "full_overlap_loaded": False}
+    assert all(record["mismatch_count"] == 0 for record in receipt["variables"].values())
+    stored = load_overlap_receipt(overlap_receipt_path(spec.to_crop_spec(), str(primary_cache)))
+    assert stored["receipt_sha256"] == receipt["receipt_sha256"]
+    manifest = json.loads(Path(manifest_path(
+        spec.to_crop_spec(), str(primary_cache))).read_text(encoding="utf-8"))
+    validate_overlap_evidence(manifest, variable="t", level_hpa=850)
+
+    # Re-entry recovers/attaches the same immutable evidence; it cannot publish another result.
+    repeated = verify_cached_era5_overlap(
+        spec.to_crop_spec(), independent, primary_cache_dir=str(primary_cache),
+        independent_cache_dir=str(independent_cache), variables=("t",),
+        level_hpa=850, block_frames=2)
+    assert repeated["receipt_sha256"] == receipt["receipt_sha256"]
+    assert overlap_main([
+        "--primary-manifest", manifest_path(spec.to_crop_spec(), str(primary_cache)),
+        "--independent-manifest", manifest_path(independent, str(independent_cache)),
+        "--variables", "t", "--level-hpa", "850", "--block-frames", "2",
+    ]) == 0
+    assert json.loads(capsys.readouterr().out)["receipt_sha256"] == receipt["receipt_sha256"]
+    manifest["independent_overlap_receipt"]["passed"] = False
+    with pytest.raises(DataSourceError, match="missing or tampered"):
+        validate_overlap_evidence(manifest, variable="t", level_hpa=850)
+
+
+def test_failed_overlap_is_recorded_but_cannot_authorise_the_gate(tmp_path):
+    spec = _request(date_start="2020-01-01", date_end="2020-01-02")
+    primary_cache, independent_cache = tmp_path / "primary", tmp_path / "independent"
+    materialise_cds(
+        spec, download_dir=tmp_path / "downloads", cache_dir=str(primary_cache),
+        time_chunk=3, check_size=False, client=FakeCDSClient(), allow_network=True)
+    independent = _write_weatherbench_overlap(
+        spec, primary_cache, independent_cache, perturb=True)
+    receipt = verify_cached_era5_overlap(
+        spec.to_crop_spec(), independent, primary_cache_dir=str(primary_cache),
+        independent_cache_dir=str(independent_cache), variables=("t",),
+        level_hpa=850, block_frames=2)
+    assert not receipt["passed"]
+    assert receipt["variables"]["t"]["mismatch_count"] == 1
+    manifest = json.loads(Path(manifest_path(
+        spec.to_crop_spec(), str(primary_cache))).read_text(encoding="utf-8"))
+    assert manifest["independent_overlap_check"] == "FAIL"
+    with pytest.raises(DataSourceError, match="not a recorded PASS"):
+        validate_overlap_evidence(manifest, variable="t", level_hpa=850)
 
 
 def test_plan_cli_prints_exact_request_without_network(capsys):

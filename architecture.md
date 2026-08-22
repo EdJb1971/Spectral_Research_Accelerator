@@ -1693,6 +1693,15 @@ end-to-end evidence. **No atmospheric verdict follows:** the accepted fixture is
 `scientific_verdict: NOT_ESTABLISHED`; D43 and T4C.6 remain open until the live acquisition and
 independent overlap check exist.
 
+T4C.5e closes the last evidence-binding seam before acquisition. `data_layer/era5_overlap.py`
+opens only two existing local caches, selects WeatherBench timestamps and grid coordinates
+exactly (never interpolating), and compares each canonical variable in bounded frame blocks
+under recorded unit-aware tolerances. It publishes a no-overwrite receipt binding both content
+hashes, the CDS request, level, coordinates, variables, tolerances and boundedness evidence,
+then atomically attaches that receipt to the CDS manifest. `gate_run` validates the embedded
+receipt and its SHA rather than trusting the old mutable `independent_overlap_check: PASS`
+string. A FAIL remains durable evidence but cannot authorise the atmospheric gate.
+
 ## 4. Database Schema and State Tracking (`src/database/models.py`, `session.py`, `migrate.py`)
 
 The database layer (`src/database/`) is fully configured using SQLAlchemy and targets a persistent or in-memory SQLite database (`spectral_earth.db`). 
@@ -1864,7 +1873,7 @@ See `VERIFICATION.md` for the captured command output behind every statement her
 | Item | Status |
 |---|---|
 | Python venv + dependencies | installed (torch 2.13.0+cu130, numpy 2.2.6, pydantic 1.10.26, SQLAlchemy 2.0.52, xarray 2025.6.1, FastAPI 0.110.3) |
-| Backend test suite | **1104 passed, 1 xfailed** (plus 1 skipped: opt-in live GCS) (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17, 351 after T3.5.6, 379 after T3.5.15, 407 after T3.5.19, 449 after T4C.5, 709 after T4A.4, 781 after T4B.4, 855 after T4C.5, 859 after T4C.5c, 882 after T5.1a CPU acceptance, 883 after RTX acceptance, 890 after portable profiles, 911 after T5.1b/D44, 917 after T5.1c, 933 after T5.1d/D45, 946 after T5.1e, 955 after T5.2a, 957 after T5.2b, 962 after T5.3a, 969 after T5.3b, 981 after T5.2c offline acceptance, 985 after T5.2d, 1000 after T5.0a, 1008 after T5.0b, 1027 after T5.6a offline acceptance, 1042 after T5.6b cube acceptance, 1056 after T5.6c matched evaluation, 1070 after T5.6d truth matching, 1080 after T5.6e orchestration, 1089 after T5.6f portable jobs, 1094 after T5.6g reporting, 1095 after the licence guard, 1102 after T4C.5d gate readiness, 1104 after D50 storage preflight) |
+| Backend test suite | **1106 passed, 1 xfailed** (plus 1 skipped: opt-in live GCS) (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17, 351 after T3.5.6, 379 after T3.5.15, 407 after T3.5.19, 449 after T4C.5, 709 after T4A.4, 781 after T4B.4, 855 after T4C.5, 859 after T4C.5c, 882 after T5.1a CPU acceptance, 883 after RTX acceptance, 890 after portable profiles, 911 after T5.1b/D44, 917 after T5.1c, 933 after T5.1d/D45, 946 after T5.1e, 955 after T5.2a, 957 after T5.2b, 962 after T5.3a, 969 after T5.3b, 981 after T5.2c offline acceptance, 985 after T5.2d, 1000 after T5.0a, 1008 after T5.0b, 1027 after T5.6a offline acceptance, 1042 after T5.6b cube acceptance, 1056 after T5.6c matched evaluation, 1070 after T5.6d truth matching, 1080 after T5.6e orchestration, 1089 after T5.6f portable jobs, 1094 after T5.6g reporting, 1095 after the licence guard, 1102 after T4C.5d gate readiness, 1104 after D50 storage preflight, 1106 after T4C.5e overlap evidence) |
 | Ground-Truth Benchmark Suite | **15 PASS, 0 FAIL, 2 NOT_YET_RUNNABLE** (`python -m src.benchmarks`, exit 0) |
 | Frontend `npm install` + `npm run build` | passes, emits 1,386 modules + real JS/CSS assets (was: 1 module, no assets) |
 | Backend server | starts, serves OpenAPI, all smoke-tested endpoints return 200 |
@@ -1953,6 +1962,7 @@ code paths that `architecture.md` previously described as implemented and rigoro
 | D48 | `analysis_engine/cross_scale.py:support_floor` | **The support floor did not use filter support.** Its prose and result basis said advective crossing of the transform filter, but the implementation used `2**level`; db2 level 3 was treated as 8 pixels although its accumulated cascade support is 22, understating the lags contaminated by shared air. `ScaleSignature` now carries the exact SWT/DTCWT parent-grid support and the floor refuses to invent a fallback. | **FIXED** T4C.5d |
 | D49 | `analysis_engine/cross_scale.py`, `gate_run.py` | **A PASS/FAIL was not authenticated to the complete study.** `GateProtocol` omitted crop/variable/level/transform/climatology/source identity, and `evaluate_replication_gate` did not require result fingerprints or exact bins/alpha/correction/surrogate count. `GateStudyPlan` freezes the full job; preflight and receipt bind both split results to it, while a real role requires CDS plus independent-overlap evidence. | **FIXED** T4C.5d |
 | D50 | `data_layer/cds_source.py` | **Live acquisition had no enforced disk-capacity gate.** Monthly resume and bounded conversion protected correctness and RAM, but a request could still fill the download/cache volume mid-run. `preflight_cds_storage` now budgets remaining NetCDF shards and the complete temporary Zarr without compression credit, combines roles sharing a volume, preserves at least 5 GiB or 10% working-space reserve, records the check and refuses before the first client call. | **FIXED** T4C.5d |
+| D51 | `analysis_engine/gate_run.py`, `data_layer/regional_forecast.py` | **The real gate trusted an unauthenticated manifest string.** The independent ERA5 checker returned an in-memory report, but no executable path published it; manually changing `independent_overlap_check` to `PASS` satisfied gate preflight. `era5_overlap.py` now performs bounded exact-coordinate CDS/WeatherBench comparison, publishes immutable content-bound evidence, and the gate recomputes and validates its receipt hash, source/request identity, variable and level. | **FIXED** T4C.5e |
 
 **Root cause common to D20, D23, D25 and D2:** the transform engine — the mathematical core of
 the platform — had **no test file at all**. `src/tests/test_transforms.py` now exists (36 cases
@@ -2069,7 +2079,7 @@ able to sit three slices out of date.
 | `test_api_infrastructure.py` | 16 | health, listing, pagination, CORS, data-source transparency, benchmark endpoints |
 | `test_benchmarks.py` | 46 | Ground-Truth Benchmark Suite, seed discipline, eager/streamed climatology agreement, D30 determinism |
 | `test_boundary_synthetic.py` | 8 | boundary treatments, windowing, synthetic generators and independent Euclidean-ring oracle |
-| `test_cds_source.py` | 11 | T5.2c monthly CDS planning/CLI, request refusals, network consent, atomic resume, shard integrity, conservative shared-volume storage refusal, bounded blockwise Zarr publication, route-aware replay and lazy dataset compatibility |
+| `test_cds_source.py` | 13 | T5.2c monthly CDS planning/CLI, request refusals, network consent, atomic resume, shard integrity, conservative storage refusal, bounded Zarr publication, plus PASS/FAIL independent-route receipt publication, replay and tamper refusal |
 | `test_coefficient_field.py` | 40 | T4B.1 acceptance: parent-grid alignment, perfect reconstruction per family, lineage-safe summary; DTCWT upsampling declared; LevelBank and level slicing (T4B.4) |
 | `test_documentation.py` | 19 | architecture, roadmap and proprietary named-licence boundary against the code/repository |
 | `test_dtcwt.py` | 28 | Kingsbury q-shift DTCWT: primitives vs reference, two oracles, orientation, shift invariance, D1 head-to-heads |
@@ -2105,7 +2115,7 @@ able to sit three slices out of date.
 | `test_wavelet_bank.py` | 27 | T4B.2 expansion through the engine's own parameter matrix, the 1,000-combination guard, decompose_bank / extract_scale_signature, the vertical-bank refusals |
 | `test_transforms.py` | 13 | fft/dct/dwt/dtcwt/hybrid round trips; D1 recorded as a strict xfail |
 | `test_zarr_source.py` | 59 | R13 geometry, chunk-hostility, byte counting, streaming content identity, exact chunk-bounded frame reader, cache/provenance round trip, NetCDF engine and HTTP surface |
-| **total** | **856** | |
+| **total** | **858** | |
 
 ### 7.2h A surrogate null that was not the null it claimed (T4C.5)
 
