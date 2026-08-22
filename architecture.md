@@ -179,7 +179,7 @@ Boundary-dependent coefficients are not automatically useless to a predictor. Th
 claim is narrower: a representation mechanism is supported only if its ranking survives the
 declared controls, and either a surviving or disappearing db2 deficit is a reportable result.
 
-### 1.4 FourCastNet 3 external-judge boundary (`src/forecasting/external_fcn3.py`, partial)
+### 1.4 FourCastNet 3 external-judge boundary (`src/forecasting/external_fcn3.py`, `external_cube.py`, `matched_truth.py`, `ensemble_evaluation.py`, partial)
 
 FourCastNet 3 (FCN3) is the first concrete T5.6 external target, not part of the motivating
 regional model. The official July 2025 NGC model card declares a 710,867,670-parameter
@@ -237,14 +237,80 @@ request and detects changed artifact bytes. This is byte/provenance acceptance o
 open the forecast arrays or establish their schema, units, values, calibration, spectral fidelity
 or skill.
 
+T5.6b adds the array acceptance boundary in `external_cube.py`. A returned NetCDF4 or Zarr
+artifact is content-authenticated against both manifests **before xarray opens it**. The
+canonical cube uses Earth2Studio's public `time`, `ensemble`, `lead_time`, `lat` and `lon`
+coordinate vocabulary and one named array per requested physical variable. It requires the exact
+global 721x1440 grid and declared coordinate hash, UTC initializations, member seeds, six-hour
+lead durations, requested variable set, floating dtypes and canonical SI units (`K`, `m s-1`,
+`kg kg-1`, `m2 s-2`, `Pa` or `kg m-2`, as applicable). NetCDF CF numeric durations and Zarr
+`timedelta64` leads normalize to the same exact nanosecond axis. A completed-write marker is
+mandatory, and partial or semantically different output is refused.
+
+The value gate is complete but bounded: Dask exposes the on-disk chunks, the importer rejects a
+decompressed chunk above the declared byte budget, and then checks every value for finiteness one
+chunk at a time. It never calls `.load()` on the global ensemble. `GeographicBounds` requires
+explicit, inclusive, grid-aligned endpoints and the same longitude convention as the global run;
+implicit rounding, interpolation, antimeridian wrapping and a guessed default "NZ box" are
+refused. The resulting `RegionalForecastCube` stays lazy and carries request, result, artifact
+and validation hashes plus the exact regional coordinate hash. This follows the official
+Earth2Studio [coordinate conventions](https://nvidia.github.io/earth2studio/userguide/about/data.html)
+and [chunked-output guidance](https://nvidia.github.io/earth2studio/main/userguide/components/io/)
+reviewed 2026-08-22 while making the workbench's stricter semantics explicit.
+
+T5.6c adds the portable matched-truth evaluator in `ensemble_evaluation.py`. Its verifying truth
+has exact `time`, `lead_time`, `lat` and `lon` coordinates, while the initialization dataset has
+the same `time`, `lat` and `lon` and supplies the physical persistence baseline. Both require a
+completed-write marker, content-source SHA-256, explicit non-training split and the same canonical
+SI units as the forecast. The regional forecast's request/result/artifact/validation hashes,
+shape and coordinate hash are rechecked. Variables, timestamps, leads and grid coordinates must
+match exactly; interpolation, unit conversion and missing-value deletion are refused.
+
+Evaluation visits bounded spatial source tiles and leaves all xarray/Dask inputs lazy. For every
+variable and lead it records cosine-latitude-area-weighted RMSE, MAE and bias for each seeded
+member, the ensemble mean and persistence; `1 - ensemble_mean_MSE / persistence_MSE`; exact
+empirical finite-ensemble CRPS; RMS population ensemble standard deviation; and the explicitly
+defined uncorrected spread/RMSE ratio. A zero denominator becomes `null`. Rank bins use uniform
+fractional allocation across all ranks admissible under an exact truth/member tie and report
+both fractional cell counts and area-weighted frequencies. Rank shape is diagnostic only. No
+cross-variable score combines unlike physical units. Receipts bind the three provenances,
+coordinate identity, value-stream hashes, member/lead identities, weighting and source-tile byte
+limit. Temporary working memory is O(members x tile cells), not represented as the source-read
+byte limit.
+
+T5.6d adds the lazy observation bridge in `matched_truth.py`. It accepts the canonical regional
+ERA5/CDS xarray cube and its mandatory materialized-content manifest, plus a validated regional
+forecast. It derives every valid timestamp as initialization plus the exact nanosecond lead,
+requires initialization and all valid times to occur exactly once on the strictly increasing
+source axis, and uses labelled integer indexing so the field arrays remain Dask-backed. The
+850-hPa level, source alias, floating dtype, SI unit and regional latitude/longitude values must
+match exactly. Nearest-time matching, regridding, level approximation and unit conversion are
+hard refusals.
+
+The caller declares a non-training split with inclusive start/end timestamps; both analyses and
+verifying targets must remain inside it. `fresh_post_2019_holdout` is accepted only when every
+sample is from 2020 onward. Any use of FCN3's published 1980-2015 training, 2016-2017 test or
+2018-2019 evaluation periods must instead be labelled
+`published_partition_diagnostic`; pre-1980 dates are refused by the v1 contract because their
+relationship to the pinned model is undeclared. The receipt hashes the complete source manifest,
+retains its materialized content digest, and binds forecast/grid identity, aliases, level,
+variables, split, period classification, initializations, leads and valid-time selection. That
+receipt establishes matching and provenance only; it does not prove source independence.
+
+These gates prove artifact acceptance and deterministic matched-sample metric calculation. They
+do **not** prove meteorological correctness, ensemble calibration, spectral fidelity,
+generalisation or skill on real data. Sampling uncertainty and dependence-aware inference remain
+future work; no FCN3 or ERA5 result has been evaluated in this repository.
+
 Portability is deliberately asymmetric. The official model card lists Linux/NVIDIA Turing,
 Ampere and Hopper; it recommends bf16 and reports A100/H100/L40S testing, but no minimum VRAM or
 AMD support. Its 2.65-GB compressed package and 711M parameters do not establish that an 8-GB
 RTX can execute it. RTX 5050, AMD GPU and CPU inference are all **NOT RUN**. HPC may enable the
 worker, but FCN3 is never a dependency for the regional workflow or ordinary workbench use.
-No FCN3 dependency, worker, checkpoint, global initial condition or forecast artefact currently
-exists in this repository. Only the dependency-free request/result contract and synthetic test
-artifacts exist; the canonical forecast-cube importer and ensemble evaluation remain planned.
+No FCN3 dependency, worker, checkpoint, global initial condition or real forecast artefact
+currently exists in this repository. Only the dependency-free request/result/cube contracts,
+synthetic matched truth and analytic ensemble-evaluation fixtures exist; no real-data evaluation
+exists.
 
 ---
 
@@ -1690,7 +1756,7 @@ See `VERIFICATION.md` for the captured command output behind every statement her
 | Item | Status |
 |---|---|
 | Python venv + dependencies | installed (torch 2.13.0+cu130, numpy 2.2.6, pydantic 1.10.26, SQLAlchemy 2.0.52, xarray 2025.6.1, FastAPI 0.110.3) |
-| Backend test suite | **1027 passed, 1 xfailed** (plus 1 skipped: opt-in live GCS) (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17, 351 after T3.5.6, 379 after T3.5.15, 407 after T3.5.19, 449 after T4C.5, 709 after T4A.4, 781 after T4B.4, 855 after T4C.5, 859 after T4C.5c, 882 after T5.1a CPU acceptance, 883 after RTX acceptance, 890 after portable profiles, 911 after T5.1b/D44, 917 after T5.1c, 933 after T5.1d/D45, 946 after T5.1e, 955 after T5.2a, 957 after T5.2b, 962 after T5.3a, 969 after T5.3b, 981 after T5.2c offline acceptance, 985 after T5.2d, 1000 after T5.0a, 1008 after T5.0b, 1027 after T5.6a offline acceptance) |
+| Backend test suite | **1070 passed, 1 xfailed** (plus 1 skipped: opt-in live GCS) (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17, 351 after T3.5.6, 379 after T3.5.15, 407 after T3.5.19, 449 after T4C.5, 709 after T4A.4, 781 after T4B.4, 855 after T4C.5, 859 after T4C.5c, 882 after T5.1a CPU acceptance, 883 after RTX acceptance, 890 after portable profiles, 911 after T5.1b/D44, 917 after T5.1c, 933 after T5.1d/D45, 946 after T5.1e, 955 after T5.2a, 957 after T5.2b, 962 after T5.3a, 969 after T5.3b, 981 after T5.2c offline acceptance, 985 after T5.2d, 1000 after T5.0a, 1008 after T5.0b, 1027 after T5.6a offline acceptance, 1042 after T5.6b cube acceptance, 1056 after T5.6c matched evaluation, 1070 after T5.6d truth matching) |
 | Ground-Truth Benchmark Suite | **15 PASS, 0 FAIL, 2 NOT_YET_RUNNABLE** (`python -m src.benchmarks`, exit 0) |
 | Frontend `npm install` + `npm run build` | passes, emits 1,385 modules + real JS/CSS assets (was: 1 module, no assets) |
 | Backend server | starts, serves OpenAPI, all smoke-tested endpoints return 200 |
@@ -1897,6 +1963,9 @@ able to sit three slices out of date.
 | `test_experiments.py` | 3 | declarative sweeps and lineage |
 | `test_exports.py` | 32 | CSV/JSON/NetCDF4/Zarr round trips, embedded provenance, seeded perturbation (D34) |
 | `test_external_fcn3.py` | 9 | T5.6a offline FCN3 request/result schemas, exact global input and ensemble contracts, portability refusals, canonical persistence, file/tree identity and request/artifact tamper isolation |
+| `test_external_ensemble_evaluation.py` | 8 | T5.6c exact truth/initialization alignment, member/mean/persistence errors, analytic CRPS and spread, area-weighted fractional-tie ranks, bounded lazy reads, content identity and scientific refusal contracts |
+| `test_external_forecast_cube.py` | 8 | T5.6b authenticated lazy NetCDF/Zarr import, exact dimensions/axes/grid/variables/SI units, bounded complete finite-value scan, explicit grid-aligned NZ crop lineage and pre-open tamper refusal |
+| `test_matched_truth.py` | 9 | T5.6d lazy exact ERA5 initialization/valid-time selection, source/selection identity, split and FCN3-period guards, evaluator compatibility and time/grid/level/unit/alias refusals |
 | `test_forecasting_adapter.py` | 5 | T5.3a exact persistence, represented autoregressive rollout, backward gradients, deterministic evidence, refusal contracts and CPU/RTX vendor-neutral accelerator parity |
 | `test_forecasting_artifact_evaluation.py` | 8 | T5.3b/T5.2d checkpoint/config integrity, artifact-bound lineage, persistence-relative metrics, physical-time reporting/refusals, undefined-skill handling and CPU/RTX vendor-neutral accelerator parity |
 | `test_forecasting_protocol.py` | 7 | T5.0a exact schema completeness, canonical identity, immutable nested configuration, evidence requirements, temporal/rollout consistency, persistence and tamper/drift refusal |
@@ -1918,7 +1987,7 @@ able to sit three slices out of date.
 | `test_wavelet_bank.py` | 27 | T4B.2 expansion through the engine's own parameter matrix, the 1,000-combination guard, decompose_bank / extract_scale_signature, the vertical-bank refusals |
 | `test_transforms.py` | 13 | fft/dct/dwt/dtcwt/hybrid round trips; D1 recorded as a strict xfail |
 | `test_zarr_source.py` | 58 | R13 crop geometry, chunk-hostility prediction, byte counting, cache and provenance round trip, the NetCDF engine (D33), zarr HTTP surface |
-| **total** | **803** | |
+| **total** | **828** | |
 
 ### 7.2h A surrogate null that was not the null it claimed (T4C.5)
 

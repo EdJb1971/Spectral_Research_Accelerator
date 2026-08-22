@@ -74,12 +74,13 @@ the NZ study, making common regional evaluation and independent multiscale error
 result identity: it requires the global grid, all 72 ordered inputs, exact source/model/software
 hashes, UTC initializations, stochastic member seeds, six-hour rollout, global-then-crop policy
 and explicit worker hardware; returned NetCDF/Zarr bytes and resource measurements are bound to
-the request. **FCN3 itself is not integrated or run.** The planned worker remains an optional
-isolated Earth2Studio process, preferably on suitable HPC hardware, after which a future importer
-will validate the arrays and crop NZ. The main application remains usable without NVIDIA
-hardware, Earth2Studio, model weights or network access. An NZ crop will never be passed directly
-to FCN3, and NVIDIA's spectral-fidelity claims will be tested rather than repeated as platform
-findings.
+the request. `src.forecasting.external_cube` authenticates those bytes before opening them,
+requires exact time/member/lead/grid/variable axes and SI units, scans every value in bounded
+storage chunks, and creates only an exact, explicitly declared regional view. **FCN3 itself is
+not integrated or run.** The isolated Earth2Studio worker, checkpoint and real forecast artifact
+still do not exist. The main application remains usable without NVIDIA hardware, Earth2Studio,
+model weights or network access. An NZ crop will never be passed directly to FCN3, and NVIDIA's
+spectral-fidelity claims will be tested rather than repeated as platform findings.
 
 The first Phase 5 target is deliberately practical: an importable PyTorch path for the exact
 regional workflow used by the motivating research -- batches shaped `(B, C, H, W)`, aligned
@@ -212,6 +213,39 @@ frame offsets and hours. Missing, irregular or inconsistent timing is refused in
 silently labelled as (for example) a six-hour forecast. The cached-crop UI remains metadata-only:
 it displays cadence as `NOT VERIFIED` and physical lead labels as unavailable until actual
 dataset preparation has opened and checked the time axis.
+
+### Matched external-ensemble verification
+
+`build_matched_truth(...)` lazily selects the exact 850-hPa ERA5/CDS analyses required by a
+regional external forecast. It constructs both `(time, lead_time, lat, lon)` verifying truth and
+the `(time, lat, lon)` observed initialization used by persistence. Initialization and valid
+times, grid points, level, variables and SI units must match exactly; no nearest-time lookup,
+regridding or unit conversion is performed. A held-out split interval must contain every
+initialization and valid time. Runs wholly from 2020 onward may be labelled a fresh post-2019
+holdout; overlap with FCN3's published 1980-2015 training, 2016-2017 test or 2018-2019
+evaluation periods requires the explicit `published_partition_diagnostic` role.
+
+The source manifest hash, its materialized content digest, requested samples, forecast/grid
+identity, split, FCN3-period classification and exact selection semantics form a deterministic
+builder receipt. Field arrays remain Dask-backed. This proves matching and lineage, not that the
+ERA5 route is independent of model inputs or that a forecast is skilful.
+
+`evaluate_regional_ensemble(...)` accepts the lazy NZ forecast produced by the canonical
+FCN3 importer, verifying truth on exact `(time, lead_time, lat, lon)` coordinates, and the
+corresponding observed initialization used for persistence. It refuses coordinate, variable,
+unit, held-out split, lineage, completeness and finite-value mismatches; it does not interpolate
+or silently delete missing cells.
+
+For each physical variable and lead it reports every member's RMSE/MAE/bias, ensemble-mean
+errors and MSE skill against exact persistence, empirical ensemble CRPS, population ensemble
+spread/RMSE, and rank-bin diagnostics with deterministic fractional treatment of ties. Spatial
+scores use cosine-latitude area weights. Unlike units are never pooled. Reads remain lazy and
+spatially tiled; the recorded byte ceiling covers source arrays materialised per tile, while
+working memory remains proportional to ensemble size times tile size.
+
+The builder and evaluator are accepted on synthetic fixtures only. No real FCN3 output or
+matched ERA5 truth has been scored, so the UI must not display an FCN3 skill or calibration
+result yet.
 
 ### Accelerator installation and portability
 

@@ -65,9 +65,9 @@ status section, it is a memory.
 
 | Area | Real status |
 |---|---|
-| **Phase progress** | **Phase 3.5 complete** (25 tasks). **Phase 4A, 4B and 4C complete** as implementable work: T4A.1-4, T4B.1-4, T4C.1-5. **T5.0 is partial:** T5.0a-b supplies the strict versioned/hashable protocol and runtime-binding gate, but the actual laboratory evidence/config has not been supplied or frozen. **T5.1 is partial:** T5.1a-e accepts raw/FFT/DCT/Haar/db2/SWT/DTCWT training representations, optimized and exposed with truthful UI readiness; mixed precision and remaining cross-device acceptance remain. **T5.2 is partial:** T5.2a-d implements the aligned, leakage-safe, train-normalised PyTorch dataset, bounded-memory worker-safe cache, offline-accepted CDS acquisition contract, exact calendar splits and verified physical-time leads; the live CDS run, independent overlap and viable multi-year NZ crop remain blocked by D43. **T5.3 is partial:** T5.3a-b supplies the forecaster seam, persistence baseline, deterministic represented smoke run, verified model-artifact contract and persistence-relative evaluator; T5.3c and the actual laboratory model remain open. **T5.6 is partial:** T5.6a supplies the offline FCN3 request/result identity contract; no worker, dependency, checkpoint, initial condition or forecast-array import has run. **Not done:** T4C.6, the real-ERA5 gate review; 4D-4H; T5.4-5, the remaining T5.6 execution/evaluation work, and T5.7. Per-task evidence blocks sit under each task below; a task without a **DONE** or **PARTIAL** label has not been started. |
+| **Phase progress** | **Phase 3.5 complete** (25 tasks). **Phase 4A, 4B and 4C complete** as implementable work: T4A.1-4, T4B.1-4, T4C.1-5. **T5.0 is partial:** T5.0a-b supplies the strict versioned/hashable protocol and runtime-binding gate, but the actual laboratory evidence/config has not been supplied or frozen. **T5.1 is partial:** T5.1a-e accepts raw/FFT/DCT/Haar/db2/SWT/DTCWT training representations, optimized and exposed with truthful UI readiness; mixed precision and remaining cross-device acceptance remain. **T5.2 is partial:** T5.2a-d implements the aligned, leakage-safe, train-normalised PyTorch dataset, bounded-memory worker-safe cache, offline-accepted CDS acquisition contract, exact calendar splits and verified physical-time leads; the live CDS run, independent overlap and viable multi-year NZ crop remain blocked by D43. **T5.3 is partial:** T5.3a-b supplies the forecaster seam, persistence baseline, deterministic represented smoke run, verified model-artifact contract and persistence-relative evaluator; T5.3c and the actual laboratory model remain open. **T5.6 is partial:** T5.6a-d supplies the offline FCN3 request/result identity, lazy canonical cube/import boundary, exact ERA5 truth bridge and matched ensemble metric engine; no worker, dependency, checkpoint, initial condition, real forecast or real truth evaluation has run. **Not done:** T4C.6, the real-ERA5 gate review; 4D-4H; T5.4-5, the remaining T5.6 execution/inference work, and T5.7. Per-task evidence blocks sit under each task below; a task without a **DONE** or **PARTIAL** label has not been started. |
 | **Accessibility** | **Zero, measured.** `0` `aria-*` or `role` attributes and `0` keyboard handlers across `frontend/src`. No focus management. The UI is usable with a mouse and by nobody else. Not scheduled; recorded so it cannot be mistaken for an oversight. |
-| Backend test suite | **1027 passed, 1 xfailed.** Plus one explicit skip: the opt-in live-GCS check. Trajectory: 19 written / 1 failing / uncollectable -> 65 -> 152 -> 222 -> 271 -> 351 -> 407 -> 449 -> 478 -> 535 -> 548 -> 593 -> 642 -> 647 -> 709 -> 781 -> 855 -> 859 -> 882 -> 883 -> 890 -> 911 -> 917 -> 933 -> 946 -> 955 -> 957 -> 962 -> 969 -> 981 -> 985 -> 1000 -> 1008 -> 1027. |
+| Backend test suite | **1070 passed, 1 xfailed.** Plus one explicit skip: the opt-in live-GCS check. Trajectory: 19 written / 1 failing / uncollectable -> 65 -> 152 -> 222 -> 271 -> 351 -> 407 -> 449 -> 478 -> 535 -> 548 -> 593 -> 642 -> 647 -> 709 -> 781 -> 855 -> 859 -> 882 -> 883 -> 890 -> 911 -> 917 -> 933 -> 946 -> 955 -> 957 -> 962 -> 969 -> 981 -> 985 -> 1000 -> 1008 -> 1027 -> 1042 -> 1056 -> 1070. |
 | Ground-Truth Benchmark Suite | **15 PASS, 0 FAIL, 2 NOT_YET_RUNNABLE.** Nine datasets with declared known answers, five of them nulls. CI-ready via `python -m src.benchmarks` (exit 0). |
 | Backend compute modules | **Written, executed and tested.** `physical_core` carries `GridSpec` + metric-aware operators; `analysis_engine` gained `spectra.py` and `climatology.py`; `transform_engine` gained the undecimated `stationary.py` and a real `dtcwt.py`; `statistics/` and `core/` are new packages. |
 | Physical units and wavenumbers | **Correct as of T3.5.13.** Gradients metric-aware, spectra on a physical `k` axis, domain statistics area-weighted, and every quantity carries its units. Previously all of it was pixel-space and unlabelled (D13). |
@@ -1454,7 +1454,7 @@ implemented unless its acceptance evidence appears in `VERIFICATION.md`.
     `RepresentationScore`. Treat a null or contradiction as an outcome to diagnose -- score
     misspecification, low power, dataset shift, forecaster interaction and a genuinely absent
     relationship remain distinct explanations.
-*   **T5.6 External forecaster adapters -- PARTIAL (T5.6a offline contract accepted; FCN3 not run).** Add an external
+*   **T5.6 External forecaster adapters -- PARTIAL (T5.6a-d offline contract/cube/truth/evaluator accepted; FCN3 not run).** Add an external
     global model only after its data, weights, licence, grid, variables, normalisation, rollout
     and runtime contracts are frozen. WeatherBench catalogue presence does not mean the current
     regional training path can supply the model or that inference is laptop-feasible.
@@ -1485,7 +1485,7 @@ implemented unless its acceptance evidence appears in `VERIFICATION.md`.
     4. Bind output to checkpoint/config/data hashes and record ensemble member, initialization,
        lead times, units, grid, precision, device/runtime and worker logs. Import through one
        canonical forecast-cube adapter before common evaluation.
-    5. Extend held-out evaluation with ensemble mean/member metrics, CRPS, spread-skill ratio and
+    5. **Implemented as T5.6c:** extend held-out evaluation with ensemble mean/member metrics, CRPS, spread-skill ratio and
        rank diagnostics, plus the existing persistence comparison and multiscale error analysis.
        Freeze dates, NZ crop, variables and correction families before comparing with Adam's
        model. Never use FCN3 evaluation years as a fresh test set without accounting for its
@@ -1522,11 +1522,51 @@ implemented unless its acceptance evidence appears in `VERIFICATION.md`.
     and deterministic file or directory-tree content hash. NetCDF must be a file and Zarr a tree;
     result/request and artifact tampering are refused. Nineteen executed acceptance cases pass.
 
+    **Delivered T5.6b canonical cube/import boundary:** `src/forecasting/external_cube.py`
+    authenticates the sealed artifact before opening it through portable xarray/Dask. NetCDF4
+    and Zarr normalize to a canonical per-variable cube over exact `time`, seeded `ensemble`,
+    six-hour `lead_time`, global `lat` and `lon` axes. Dimensions, the 721x1440 coordinate values
+    and request hash, variable set, floating dtype and explicit canonical SI unit for every field
+    are mandatory. A completed-write marker is required. The finite-value gate first refuses any
+    decompressed storage chunk above its byte budget, then examines every forecast value one
+    chunk at a time. An explicitly supplied `GeographicBounds` creates an inclusive, lazy NZ
+    subset only when all endpoints lie exactly on the source grid and use the declared longitude
+    convention; it never rounds, interpolates, wraps or invents the experimental domain. Crop
+    provenance binds request, result, artifact, validation, bounds and regional coordinates.
+    Fifteen executed acceptance cases use compressed synthetic global cubes in both formats; no
+    FCN3 prediction is represented.
+
+    **Delivered T5.6c matched-truth ensemble evaluation:**
+    `src/forecasting/ensemble_evaluation.py` requires a validated regional forecast, exact
+    held-out verifying truth and the corresponding observed initialization. It rechecks lineage,
+    dimensions, times, physical lead durations, grid, variable set and SI units and refuses
+    interpolation, silent missing-value deletion or training-labelled truth. Bounded lazy source
+    tiles feed cosine-latitude-weighted member/ensemble-mean/persistence RMSE, MAE and bias,
+    persistence-relative MSE skill, empirical CRPS, population-spread/RMSE and rank diagnostics.
+    Ties receive deterministic fractional rank allocation; zero skill/spread denominators are
+    `null`; variables with unlike units are never pooled. The content-bound receipt states that
+    rank shape is diagnostic and that no uncertainty, independence, significance, calibration,
+    generalisation or superiority follows. Fourteen analytic synthetic cases pass; no real
+    meteorology is represented.
+
+    **Delivered T5.6d lazy matched-truth builder:** `src/forecasting/matched_truth.py`
+    constructs evaluator-ready truth and persistence-initialization cubes from the canonical
+    regional ERA5/CDS dataset without loading field values. It derives valid times exactly from
+    initialization plus lead, requires every timestamp, grid coordinate, 850-hPa level, source
+    alias and SI unit to match, and refuses nearest matching, regridding or conversion. Both
+    initialization and valid time must remain inside the declared held-out interval. A fresh
+    holdout label requires every sample from 2020 onward; use of FCN3's published 1980-2019
+    partitions is retained only under an explicit diagnostic role. Source-manifest/content and
+    complete selection identity are hashed into the lazy cubes and receipt. Fourteen synthetic
+    acceptance cases pass; no live ERA5 or FCN3 values were matched.
+
     **Still outstanding:** there is no Earth2Studio worker process, environment lock, real model
     card/package/checkpoint hash, NGC access, 72-channel initial condition, forecast execution,
-    NetCDF/Zarr schema/value validator, NZ crop importer or ensemble evaluator. The result seal
-    explicitly proves bytes and declarations only. T5.6a remains partial and every hardware run
-    remains `NOT RUN`.
+    real canonical artifact, real matched ERA5 truth run, dependence-aware uncertainty or comparison
+    with Adam's model. T5.6a proves bytes/declarations, T5.6b proves schema/units/finiteness/crop
+    lineage and T5.6c proves metric implementation on analytic fixtures; none proves
+    meteorological accuracy, calibration, spectral fidelity or real-data skill. T5.6 remains
+    partial and every hardware run remains `NOT RUN`.
 *   **T5.7 Sensitivity and error-field analysis.** Perturb initial fields through the existing
     `PerturbationEngine`, then analyse forecast errors by scale, orientation, location, lead and
     boundary distance rather than as a single scalar.

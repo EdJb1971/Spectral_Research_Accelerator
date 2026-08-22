@@ -60,6 +60,34 @@ from src.forecasting.external_fcn3 import (
     verify_external_forecast_artifact,
     verify_external_forecast_result,
 )
+from src.forecasting.external_cube import (
+    CANONICAL_DIMS,
+    CANONICAL_FORECAST_CUBE_SCHEMA,
+    DEFAULT_MAX_CHUNK_BYTES,
+    FORECAST_CUBE_VALIDATION_SCHEMA,
+    CanonicalForecastCube,
+    ForecastCubeValidation,
+    GeographicBounds,
+    RegionalForecastCube,
+    fcn3_variable_unit,
+    grid_coordinates_sha256,
+    open_canonical_forecast_cube,
+)
+from src.forecasting.ensemble_evaluation import (
+    DEFAULT_EVALUATION_TILE_BYTES,
+    ENSEMBLE_EVALUATION_SCHEMA,
+    INITIAL_STATE_SCHEMA,
+    MATCHED_TRUTH_SCHEMA,
+    EnsembleEvaluation,
+    evaluate_regional_ensemble,
+)
+from src.forecasting.matched_truth import (
+    FRESH_HOLDOUT_ROLE,
+    MATCHED_TRUTH_BUILDER_SCHEMA,
+    PUBLISHED_OVERLAP_ROLE,
+    MatchedTruthBuild,
+    build_matched_truth,
+)
 
 __all__ = [
     "Forecaster",
@@ -113,4 +141,26 @@ __all__ = [
     "seal_external_forecast_result",
     "verify_external_forecast_artifact",
     "verify_external_forecast_result",
+    "CANONICAL_DIMS",
+    "CANONICAL_FORECAST_CUBE_SCHEMA",
+    "DEFAULT_MAX_CHUNK_BYTES",
+    "FORECAST_CUBE_VALIDATION_SCHEMA",
+    "CanonicalForecastCube",
+    "ForecastCubeValidation",
+    "GeographicBounds",
+    "RegionalForecastCube",
+    "fcn3_variable_unit",
+    "grid_coordinates_sha256",
+    "open_canonical_forecast_cube",
+    "DEFAULT_EVALUATION_TILE_BYTES",
+    "ENSEMBLE_EVALUATION_SCHEMA",
+    "INITIAL_STATE_SCHEMA",
+    "MATCHED_TRUTH_SCHEMA",
+    "EnsembleEvaluation",
+    "evaluate_regional_ensemble",
+    "FRESH_HOLDOUT_ROLE",
+    "MATCHED_TRUTH_BUILDER_SCHEMA",
+    "PUBLISHED_OVERLAP_ROLE",
+    "MatchedTruthBuild",
+    "build_matched_truth",
 ]

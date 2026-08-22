@@ -4039,3 +4039,154 @@ Clean full regression for the delivered tree:
 ```text
 1027 passed, 1 skipped, 1 xfailed, 6 warnings in 164.09s
 ```
+
+## T5.6b - lazy canonical forecast cube and global-to-regional import
+
+`src/forecasting/external_cube.py` authenticates a sealed T5.6a NetCDF4 file or Zarr tree before
+xarray opens it. Schema `canonical-forecast-cube/fcn3-v1` requires the exact global dimensions,
+UTC initialization axis, member seeds, six-hour physical lead durations, 721x1440 coordinate
+values and coordinate hash, requested variable set, floating data and explicit canonical SI
+units. NetCDF CF durations and Zarr timedeltas are normalized to the same nanosecond axis.
+
+The finite-value pass is lazy but complete: it checks storage chunk sizes before computation,
+refuses a decompressed chunk larger than the declared memory budget and then visits every value
+one chunk at a time. An exact `GeographicBounds` subset remains Dask-backed and records the
+request, result, artifact and validation hashes, inclusive endpoints and regional grid hash.
+There is no implicit rounding, interpolation, longitude conversion, antimeridian wrap or default
+NZ box. Tampered artifacts are refused before the xarray opener is called.
+
+Focused acceptance over compressed synthetic global NetCDF4 and Zarr fixtures:
+
+```text
+python -m pytest src/tests/test_external_forecast_cube.py -q
+15 passed, 1 warning in 8.09s
+```
+
+Adjacent forecasting/data acceptance:
+
+```text
+python -m pytest src/tests/test_external_forecast_cube.py \
+  src/tests/test_external_fcn3.py \
+  src/tests/test_forecasting_protocol_binding.py \
+  src/tests/test_regional_forecast.py -q
+54 passed, 1 warning in 14.51s
+```
+
+Documentation reconciliation:
+
+```text
+python -m pytest src/tests/test_documentation.py -q
+18 passed, 1 warning in 8.12s
+python tools/audit_docs.py
+811 test functions across 35 test_*.py files
+tools/audit_docs.py: RESULT ok
+```
+
+Clean full regression for the delivered tree:
+
+```text
+1042 passed, 1 skipped, 1 xfailed, 6 warnings in 163.16s
+```
+
+These tests contain constant synthetic fields, not FCN3 forecasts. The validation receipt proves
+identity, canonical structure, units and finite values only. It does not prove meteorological
+correctness, calibration, spectral fidelity or forecast skill. No Earth2Studio dependency,
+checkpoint, worker, initial condition or real external forecast ran.
+
+## T5.6c - matched-truth regional ensemble evaluation
+
+`src/forecasting/ensemble_evaluation.py` evaluates a validated lazy regional ensemble against
+verifying truth and the observed field at forecast initialization on exact shared timestamps,
+lead durations, coordinates, variables and SI units. Both observation cubes require completed
+writes, source SHA-256 identities and an explicitly held-out, matching split. The regional
+forecast's request/result/artifact/validation and coordinate identities are rechecked. Training
+truth, altered coordinates, reordered variable axes, changed units, missing variables and any
+non-finite value are refused; there is no interpolation or complete-case deletion.
+
+For each variable and lead, analytic acceptance covers member and ensemble-mean RMSE/MAE/bias,
+the physical persistence baseline, `1 - ensemble_mean_MSE / persistence_MSE`, exact empirical
+ensemble CRPS, RMS population ensemble spread, the explicitly uncorrected spread/RMSE ratio and
+rank bins. Spatial scores use measured cosine-latitude weights. Exact ties are distributed
+uniformly and fractionally over every admissible truth rank. Zero denominators are represented
+as `None`, not infinity. Variables in different units are not aggregated. Input reads remain
+Dask-backed and are materialised as bounded regional source tiles; the receipt records observed
+and allowed source-tile bytes and SHA-256 identities of the evaluated value streams.
+
+Focused analytic acceptance:
+
+```text
+python -m pytest src/tests/test_external_ensemble_evaluation.py -q
+14 passed, 1 warning in 3.40s
+```
+
+Adjacent FCN contract/cube/evaluator acceptance:
+
+```text
+python -m pytest src/tests/test_external_ensemble_evaluation.py \
+  src/tests/test_external_forecast_cube.py \
+  src/tests/test_external_fcn3.py -q
+48 passed, 1 warning in 9.32s
+```
+
+Clean full regression for the delivered tree:
+
+```text
+1056 passed, 1 skipped, 1 xfailed, 6 warnings in 190.57s
+```
+
+The fourteen cases use small analytic synthetic arrays with known answers; they are not weather
+forecasts. This slice validates metric definitions and refusal behavior only. Rank histograms
+are diagnostics, not independent draws or hypothesis tests, and no uncertainty interval is yet
+reported. No FCN3 checkpoint, Earth2Studio worker, real forecast, ERA5 truth match, calibration,
+spectral-fidelity test or scientific skill claim ran. UI skill/calibration results therefore
+remain unavailable rather than fabricated.
+
+## T5.6d - lazy matched ERA5/CDS truth builder
+
+`src/forecasting/matched_truth.py` constructs the two exact observation cubes required by T5.6c
+from a canonical regional pressure-level xarray dataset and its source manifest. It computes
+each valid time as initialization plus the forecast's nanosecond lead and selects analyses by
+labelled integer index. Synthetic acceptance confirms the outputs remain Dask-backed and enter
+the evaluator directly. The source axis must be datetime64, unique and strictly increasing;
+every initialization and valid time must exist exactly. Grid coordinates, the single 850-hPa
+level, source alias, floating dtype and canonical SI units must match. Tests refuse nearest-time
+substitution, regridding, approximate levels, unit conversion and ambiguous aliases.
+
+The split contract applies to targets as well as initializations. Every required timestamp must
+remain in the declared non-training interval. `fresh_post_2019_holdout` refuses any overlap with
+FCN3's published 1980-2015 train, 2016-2017 test and 2018-2019 evaluation partitions;
+`published_partition_diagnostic` is required when those dates are intentionally inspected and
+is itself refused for a wholly post-2019 sample. Pre-1980 dates are outside the v1 declaration
+and refused. The deterministic receipt binds the complete source-manifest SHA-256, its existing
+materialized-value digest, forecast/grid identity, variables/aliases, level, split, period role,
+initializations, leads, valid-time digest and exact-selection semantics. T5.6c preserves and
+compares that builder lineage between truth and initialization.
+
+Focused synthetic acceptance:
+
+```text
+python -m pytest src/tests/test_matched_truth.py -q
+14 passed, 1 warning in 3.39s
+```
+
+Adjacent T5.6 request/cube/truth/evaluator acceptance:
+
+```text
+python -m pytest src/tests/test_matched_truth.py \
+  src/tests/test_external_ensemble_evaluation.py \
+  src/tests/test_external_forecast_cube.py \
+  src/tests/test_external_fcn3.py -q
+62 passed, 1 warning in 10.74s
+```
+
+Clean full regression for the delivered tree:
+
+```text
+1070 passed, 1 skipped, 1 xfailed, 6 warnings in 181.88s
+```
+
+All field values and forecasts in these tests are synthetic. No CDS request, ERA5 independent
+overlap check, FCN3 worker, model checkpoint, global initial condition, real forecast or real
+verification score ran. The receipt proves exact matching and declared period lineage, not
+source independence, meteorological correctness, calibration, spectral fidelity or skill. The
+UI therefore still has no FCN3 scientific result to display.
