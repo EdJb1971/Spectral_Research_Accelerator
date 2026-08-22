@@ -101,6 +101,29 @@ class EvaluationRunConfig:
     def __hash__(self) -> int:
         return int(self.fingerprint()[:16], 16)
 
+    @classmethod
+    def from_mapping(cls, value: Mapping[str, Any]) -> "EvaluationRunConfig":
+        fields = set(cls.__dataclass_fields__)
+        if not isinstance(value, Mapping) or set(value) != fields:
+            supplied = set(value) if isinstance(value, Mapping) else set()
+            raise ForecastContractError(
+                "evaluation run config fields differ: missing=%r unknown=%r" %
+                (sorted(fields - supplied), sorted(supplied - fields)))
+        record = dict(value)
+        bounds_fields = set(GeographicBounds.__dataclass_fields__)
+        bounds = record.get("bounds")
+        if not isinstance(bounds, Mapping) or set(bounds) != bounds_fields:
+            supplied_bounds = set(bounds) if isinstance(bounds, Mapping) else set()
+            raise ForecastContractError(
+                "evaluation bounds fields differ: missing=%r unknown=%r" %
+                (sorted(bounds_fields - supplied_bounds),
+                 sorted(supplied_bounds - bounds_fields)))
+        record["bounds"] = GeographicBounds(**dict(bounds))
+        try:
+            return cls(**record)
+        except TypeError as exc:
+            raise ForecastContractError("invalid evaluation run config: %s" % exc) from exc
+
 
 @dataclass(frozen=True)
 class EvaluationRunReceipt:

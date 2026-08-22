@@ -179,7 +179,7 @@ Boundary-dependent coefficients are not automatically useless to a predictor. Th
 claim is narrower: a representation mechanism is supported only if its ranking survives the
 declared controls, and either a surviving or disappearing db2 deficit is a reportable result.
 
-### 1.4 FourCastNet 3 external-judge boundary (`src/forecasting/external_fcn3.py`, `external_cube.py`, `matched_truth.py`, `ensemble_evaluation.py`, `evaluation_run.py`, partial)
+### 1.4 FourCastNet 3 external-judge boundary (`src/forecasting/external_fcn3.py`, `external_cube.py`, `matched_truth.py`, `ensemble_evaluation.py`, `evaluation_run.py`, `evaluation_job.py`, partial)
 
 FourCastNet 3 (FCN3) is the first concrete T5.6 external target, not part of the motivating
 regional model. The official July 2025 NGC model card declares a 710,867,670-parameter
@@ -313,6 +313,23 @@ checks the outer content hash, embedded request/config/evaluation hashes, and cr
 forecast, validation, ERA5-source and builder identities. This is reproducible execution
 evidence, not a digital signature and not evidence that the sources are independent or that the
 forecast has scientific skill.
+
+T5.6f adds the portable invocation boundary in `evaluation_job.py`. `EvaluationJob` embeds the
+typed T5.6a request/result, exact ERA5 `CropSpec` and T5.6e config in one versioned canonical
+record; its SHA-256 therefore changes with any scientific input or memory control. It contains
+no machine path. `EvaluationPathBindings` separately binds forecast-artifact, ERA5-cache and
+receipt paths to that job hash. Relative paths resolve from the bindings file, allowing the
+same job bytes to move between a Windows laptop and a Linux/shared HPC filesystem without
+silently changing the experiment.
+
+The four-command CLI creates a job from existing validated manifests, creates machine-local
+bindings, preflights them and runs the accepted orchestrator. Preflight verifies request/result
+compatibility, authenticates the complete forecast artifact, opens the local-only lazy ERA5
+cache, rechecks its crop identity and refuses an existing output; it neither writes a receipt
+nor performs network access or inference. Run delegates to T5.6e, reloads the atomic receipt and
+checks its config, request, result, artifact and crop identities against the portable job.
+Job and binding files are themselves atomically published and never overwritten. This layer is
+intentionally not a scheduler: Slurm/Celery submission remains an Executor concern in Phase 6.
 
 These gates prove artifact acceptance and deterministic matched-sample metric calculation. They
 do **not** prove meteorological correctness, ensemble calibration, spectral fidelity,
@@ -1773,7 +1790,7 @@ See `VERIFICATION.md` for the captured command output behind every statement her
 | Item | Status |
 |---|---|
 | Python venv + dependencies | installed (torch 2.13.0+cu130, numpy 2.2.6, pydantic 1.10.26, SQLAlchemy 2.0.52, xarray 2025.6.1, FastAPI 0.110.3) |
-| Backend test suite | **1080 passed, 1 xfailed** (plus 1 skipped: opt-in live GCS) (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17, 351 after T3.5.6, 379 after T3.5.15, 407 after T3.5.19, 449 after T4C.5, 709 after T4A.4, 781 after T4B.4, 855 after T4C.5, 859 after T4C.5c, 882 after T5.1a CPU acceptance, 883 after RTX acceptance, 890 after portable profiles, 911 after T5.1b/D44, 917 after T5.1c, 933 after T5.1d/D45, 946 after T5.1e, 955 after T5.2a, 957 after T5.2b, 962 after T5.3a, 969 after T5.3b, 981 after T5.2c offline acceptance, 985 after T5.2d, 1000 after T5.0a, 1008 after T5.0b, 1027 after T5.6a offline acceptance, 1042 after T5.6b cube acceptance, 1056 after T5.6c matched evaluation, 1070 after T5.6d truth matching, 1080 after T5.6e orchestration) |
+| Backend test suite | **1089 passed, 1 xfailed** (plus 1 skipped: opt-in live GCS) (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17, 351 after T3.5.6, 379 after T3.5.15, 407 after T3.5.19, 449 after T4C.5, 709 after T4A.4, 781 after T4B.4, 855 after T4C.5, 859 after T4C.5c, 882 after T5.1a CPU acceptance, 883 after RTX acceptance, 890 after portable profiles, 911 after T5.1b/D44, 917 after T5.1c, 933 after T5.1d/D45, 946 after T5.1e, 955 after T5.2a, 957 after T5.2b, 962 after T5.3a, 969 after T5.3b, 981 after T5.2c offline acceptance, 985 after T5.2d, 1000 after T5.0a, 1008 after T5.0b, 1027 after T5.6a offline acceptance, 1042 after T5.6b cube acceptance, 1056 after T5.6c matched evaluation, 1070 after T5.6d truth matching, 1080 after T5.6e orchestration, 1089 after T5.6f portable jobs) |
 | Ground-Truth Benchmark Suite | **15 PASS, 0 FAIL, 2 NOT_YET_RUNNABLE** (`python -m src.benchmarks`, exit 0) |
 | Frontend `npm install` + `npm run build` | passes, emits 1,385 modules + real JS/CSS assets (was: 1 module, no assets) |
 | Backend server | starts, serves OpenAPI, all smoke-tested endpoints return 200 |
@@ -1982,6 +1999,7 @@ able to sit three slices out of date.
 | `test_external_fcn3.py` | 9 | T5.6a offline FCN3 request/result schemas, exact global input and ensemble contracts, portability refusals, canonical persistence, file/tree identity and request/artifact tamper isolation |
 | `test_external_ensemble_evaluation.py` | 8 | T5.6c exact truth/initialization alignment, member/mean/persistence errors, analytic CRPS and spread, area-weighted fractional-tie ranks, bounded lazy reads, content identity and scientific refusal contracts |
 | `test_external_forecast_cube.py` | 8 | T5.6b authenticated lazy NetCDF/Zarr import, exact dimensions/axes/grid/variables/SI units, bounded complete finite-value scan, explicit grid-aligned NZ crop lineage and pre-open tamper refusal |
+| `test_evaluation_job.py` | 7 | T5.6f canonical portable jobs, separately hashed relocatable bindings, authenticated no-write preflight, input/overwrite refusals, exact receipt binding and complete create/bind/preflight/run CLI workflow |
 | `test_evaluation_run.py` | 6 | T5.6e real synthetic Zarr end-to-end orchestration, versioned/hashable controls, atomic no-overwrite receipt, nested/cross-lineage integrity and handle cleanup on failure |
 | `test_matched_truth.py` | 9 | T5.6d lazy exact ERA5 initialization/valid-time selection, source/selection identity, split and FCN3-period guards, evaluator compatibility and time/grid/level/unit/alias refusals |
 | `test_forecasting_adapter.py` | 5 | T5.3a exact persistence, represented autoregressive rollout, backward gradients, deterministic evidence, refusal contracts and CPU/RTX vendor-neutral accelerator parity |
@@ -2005,7 +2023,7 @@ able to sit three slices out of date.
 | `test_wavelet_bank.py` | 27 | T4B.2 expansion through the engine's own parameter matrix, the 1,000-combination guard, decompose_bank / extract_scale_signature, the vertical-bank refusals |
 | `test_transforms.py` | 13 | fft/dct/dwt/dtcwt/hybrid round trips; D1 recorded as a strict xfail |
 | `test_zarr_source.py` | 58 | R13 crop geometry, chunk-hostility prediction, byte counting, cache and provenance round trip, the NetCDF engine (D33), zarr HTTP surface |
-| **total** | **834** | |
+| **total** | **841** | |
 
 ### 7.2h A surrogate null that was not the null it claimed (T4C.5)
 

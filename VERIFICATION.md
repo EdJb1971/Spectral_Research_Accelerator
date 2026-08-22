@@ -4236,3 +4236,48 @@ inspectable values. No CDS network request, independent ERA5 overlap check, FCN3
 checkpoint, global initial condition or real forecast ran. The receipt proves pipeline execution
 and identity for supplied inputs, not independence, calibration, uncertainty, significance,
 generalisation, spectral fidelity or meteorological skill. No FCN3 result is exposed in the UI.
+
+## T5.6f - portable laptop/HPC evaluation job runner
+
+`src/forecasting/evaluation_job.py` separates one machine-independent scientific job from its
+machine-local filesystem paths. `EvaluationJob` strictly embeds and hashes the validated FCN3
+request/result, ERA5 `CropSpec` and T5.6e evaluation config. `EvaluationPathBindings` has its own
+hash, contains only forecast/cache/receipt paths and must name the exact job hash. Relative paths
+resolve from the bindings file, so moving a job between Windows and Linux/shared storage does not
+change scientific identity.
+
+The `create`, `bind`, `preflight` and `run` CLI commands execute without Earth2Studio, CUDA or a
+network client. Preflight authenticates the complete forecast artifact, opens the existing
+local-only ERA5 cache, verifies crop identity, refuses an existing output and writes nothing.
+Run invokes T5.6e, reloads its atomic receipt and proves that config/request/result/artifact/crop
+identity matches the portable job. Jobs and bindings also use atomic no-overwrite publication.
+No scheduler is contacted or simulated.
+
+Focused synthetic acceptance:
+
+```text
+python -m pytest src/tests/test_evaluation_job.py -q
+9 passed, 1 warning in 29.08s
+```
+
+Adjacent T5.6a-f acceptance:
+
+```text
+python -m pytest src/tests/test_evaluation_job.py \
+  src/tests/test_evaluation_run.py src/tests/test_matched_truth.py \
+  src/tests/test_external_ensemble_evaluation.py \
+  src/tests/test_external_forecast_cube.py src/tests/test_external_fcn3.py -q
+81 passed, 1 warning in 14.79s
+```
+
+Clean full regression for the delivered tree:
+
+```text
+1089 passed, 1 skipped, 1 xfailed, 6 warnings in 177.06s
+```
+
+The focused end-to-end cases use synthetic Zarr forecast and ERA5 stores. They prove portable
+contract identity, relocation, authenticated local preflight, refusal behavior, CLI operation
+and deterministic receipt binding. They do not show that Adam's laptop or HPC allocation was
+used, that FCN3 or CDS ran, or that any real forecast has accuracy, calibration, spectral
+fidelity or skill. No evaluation result was added to the UI.

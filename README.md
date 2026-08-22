@@ -89,6 +89,24 @@ valid times, evaluates against persistence and atomically writes one no-overwrit
 and provenance receipt. Receipt reload checks nested hashes and cross-section lineage. Current
 acceptance uses synthetic Zarr fixtures only, so the UI still shows no FCN3 skill result.
 
+`src.forecasting.evaluation_job` makes that path portable without changing its scientific
+identity. A job contains the request/result/crop/evaluation contracts; a separate bindings file
+contains machine-local forecast, cache and receipt paths and is pinned to the job hash. Relative
+paths resolve from the bindings file, so the same job can be copied between Windows, a laptop
+and a shared HPC filesystem while only the bindings change. The command-line workflow is:
+
+```text
+python -m src.forecasting.evaluation_job create --forecast-request RUN.json --forecast-result RESULT.json --era5-crop CROP.json --evaluation-config EVAL.json --output JOB.json
+python -m src.forecasting.evaluation_job bind --job JOB.json --forecast-artifact FORECAST.zarr --era5-cache-dir ERA5_CACHE --receipt RECEIPT.json --output BINDINGS.json
+python -m src.forecasting.evaluation_job preflight --job JOB.json --bindings BINDINGS.json
+python -m src.forecasting.evaluation_job run --job JOB.json --bindings BINDINGS.json
+```
+
+`preflight` authenticates the saved forecast and opens the existing local ERA5 cache but writes
+nothing. `run` performs no download, model inference or scheduler submission; it executes the
+accepted evaluator and verifies the resulting receipt against the job. These commands are
+tested with synthetic stores only. They do not mean FCN3, real ERA5 verification or HPC has run.
+
 The first Phase 5 target is deliberately practical: an importable PyTorch path for the exact
 regional workflow used by the motivating research -- batches shaped `(B, C, H, W)`, aligned
 850-hPa `t/q/u/v/z` inputs and targets, strict temporal splits with an embargo, differentiable

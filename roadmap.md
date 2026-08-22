@@ -65,9 +65,9 @@ status section, it is a memory.
 
 | Area | Real status |
 |---|---|
-| **Phase progress** | **Phase 3.5 complete** (25 tasks). **Phase 4A, 4B and 4C complete** as implementable work: T4A.1-4, T4B.1-4, T4C.1-5. **T5.0 is partial:** T5.0a-b supplies the strict versioned/hashable protocol and runtime-binding gate, but the actual laboratory evidence/config has not been supplied or frozen. **T5.1 is partial:** T5.1a-e accepts raw/FFT/DCT/Haar/db2/SWT/DTCWT training representations, optimized and exposed with truthful UI readiness; mixed precision and remaining cross-device acceptance remain. **T5.2 is partial:** T5.2a-d implements the aligned, leakage-safe, train-normalised PyTorch dataset, bounded-memory worker-safe cache, offline-accepted CDS acquisition contract, exact calendar splits and verified physical-time leads; the live CDS run, independent overlap and viable multi-year NZ crop remain blocked by D43. **T5.3 is partial:** T5.3a-b supplies the forecaster seam, persistence baseline, deterministic represented smoke run, verified model-artifact contract and persistence-relative evaluator; T5.3c and the actual laboratory model remain open. **T5.6 is partial:** T5.6a-e supplies the offline FCN3 identity, lazy canonical cube/import boundary, exact ERA5 truth bridge, matched ensemble metric engine and atomic reproducible run receipt; no worker, dependency, checkpoint, initial condition, real forecast or real truth evaluation has run. **Not done:** T4C.6, the real-ERA5 gate review; 4D-4H; T5.4-5, the remaining T5.6 execution/inference work, and T5.7. Per-task evidence blocks sit under each task below; a task without a **DONE** or **PARTIAL** label has not been started. |
+| **Phase progress** | **Phase 3.5 complete** (25 tasks). **Phase 4A, 4B and 4C complete** as implementable work: T4A.1-4, T4B.1-4, T4C.1-5. **T5.0 is partial:** T5.0a-b supplies the strict versioned/hashable protocol and runtime-binding gate, but the actual laboratory evidence/config has not been supplied or frozen. **T5.1 is partial:** T5.1a-e accepts raw/FFT/DCT/Haar/db2/SWT/DTCWT training representations, optimized and exposed with truthful UI readiness; mixed precision and remaining cross-device acceptance remain. **T5.2 is partial:** T5.2a-d implements the aligned, leakage-safe, train-normalised PyTorch dataset, bounded-memory worker-safe cache, offline-accepted CDS acquisition contract, exact calendar splits and verified physical-time leads; the live CDS run, independent overlap and viable multi-year NZ crop remain blocked by D43. **T5.3 is partial:** T5.3a-b supplies the forecaster seam, persistence baseline, deterministic represented smoke run, verified model-artifact contract and persistence-relative evaluator; T5.3c and the actual laboratory model remain open. **T5.6 is partial:** T5.6a-f supplies the offline FCN3 identity, lazy canonical cube/import boundary, exact ERA5 truth bridge, matched ensemble metric engine, atomic reproducible run receipt and portable laptop/HPC job runner; no worker, dependency, checkpoint, initial condition, real forecast or real truth evaluation has run. **Not done:** T4C.6, the real-ERA5 gate review; 4D-4H; T5.4-5, the remaining T5.6 inference/real-data work, T5.7, and the T5.8 irregular-observation/spatial-downscaling track. Per-task evidence blocks sit under each task below; a task without a **DONE** or **PARTIAL** label has not been started. |
 | **Accessibility** | **Zero, measured.** `0` `aria-*` or `role` attributes and `0` keyboard handlers across `frontend/src`. No focus management. The UI is usable with a mouse and by nobody else. Not scheduled; recorded so it cannot be mistaken for an oversight. |
-| Backend test suite | **1080 passed, 1 xfailed.** Plus one explicit skip: the opt-in live-GCS check. Trajectory: 19 written / 1 failing / uncollectable -> 65 -> 152 -> 222 -> 271 -> 351 -> 407 -> 449 -> 478 -> 535 -> 548 -> 593 -> 642 -> 647 -> 709 -> 781 -> 855 -> 859 -> 882 -> 883 -> 890 -> 911 -> 917 -> 933 -> 946 -> 955 -> 957 -> 962 -> 969 -> 981 -> 985 -> 1000 -> 1008 -> 1027 -> 1042 -> 1056 -> 1070 -> 1080. |
+| Backend test suite | **1089 passed, 1 xfailed.** Plus one explicit skip: the opt-in live-GCS check. Trajectory: 19 written / 1 failing / uncollectable -> 65 -> 152 -> 222 -> 271 -> 351 -> 407 -> 449 -> 478 -> 535 -> 548 -> 593 -> 642 -> 647 -> 709 -> 781 -> 855 -> 859 -> 882 -> 883 -> 890 -> 911 -> 917 -> 933 -> 946 -> 955 -> 957 -> 962 -> 969 -> 981 -> 985 -> 1000 -> 1008 -> 1027 -> 1042 -> 1056 -> 1070 -> 1080 -> 1089. |
 | Ground-Truth Benchmark Suite | **15 PASS, 0 FAIL, 2 NOT_YET_RUNNABLE.** Nine datasets with declared known answers, five of them nulls. CI-ready via `python -m src.benchmarks` (exit 0). |
 | Backend compute modules | **Written, executed and tested.** `physical_core` carries `GridSpec` + metric-aware operators; `analysis_engine` gained `spectra.py` and `climatology.py`; `transform_engine` gained the undecimated `stationary.py` and a real `dtcwt.py`; `statistics/` and `core/` are new packages. |
 | Physical units and wavenumbers | **Correct as of T3.5.13.** Gradients metric-aware, spectra on a physical `k` axis, domain statistics area-weighted, and every quantity carries its units. Previously all of it was pixel-space and unlabelled (D13). |
@@ -348,6 +348,8 @@ The extension points the plan commits to. Each is a protocol with a registry, so
 | **Transform** | `@register_transform` | T3.5.15 | 4B wavelet bank | makes the bank sweepable without engine edits |
 | **Training representation** | `RepresentationModule.forward/inverse` | T5.1 | regional or global PyTorch forecasters | partial: raw/FFT/DCT/Haar/db2/SWT/DTCWT accepted; mixed precision and non-NVIDIA evidence remain |
 | **Forecast dataset** | `RegionalForecastDataset` | T5.2 | Phase 5 training/evaluation | partial; aligned 850-hPa t/q/u/v/z histories/targets, pre-sample embargo, train-only normalisation and provenance implemented; real-source acceptance/D43 open |
+| **Point observations** | planned `ObservationSet` | T5.8a | observation-conditioned models and station verification | not started; current data contracts accept gridded fields, not irregular station observations |
+| **Conditional field model** | planned `ConditionalFieldModel` | T5.8b-e | spatial downscaling and observation enhancement | not started; no DeepSensor or other off-grid model adapter is currently implemented |
 | **Feature detector** | `@register_detector` | 4D | 4D/4E | alternative detection strategies |
 | **Surrogate generator** | `@register_surrogate` | 4C | all mining | phase-randomised, AAFT, IAAFT |
 | **Scorer term** | `@register_scorer` | 4G | representation scoring | add a score term without touching the scorer |
@@ -1454,7 +1456,7 @@ implemented unless its acceptance evidence appears in `VERIFICATION.md`.
     `RepresentationScore`. Treat a null or contradiction as an outcome to diagnose -- score
     misspecification, low power, dataset shift, forecaster interaction and a genuinely absent
     relationship remain distinct explanations.
-*   **T5.6 External forecaster adapters -- PARTIAL (T5.6a-e offline contract/cube/truth/evaluator/orchestrator accepted; FCN3 not run).** Add an external
+*   **T5.6 External forecaster adapters -- PARTIAL (T5.6a-f offline contract/cube/truth/evaluator/orchestrator/portable runner accepted; FCN3 not run).** Add an external
     global model only after its data, weights, licence, grid, variables, normalisation, rollout
     and runtime contracts are frozen. WeatherBench catalogue presence does not mean the current
     regional training path can supply the model or that inference is laptop-feasible.
@@ -1571,17 +1573,96 @@ implemented unless its acceptance evidence appears in `VERIFICATION.md`.
     synthetic acceptance cases pass, including a real Zarr-to-Zarr end-to-end fixture. This is
     execution evidence only: the fixture is not meteorology and establishes no skill.
 
+    **Delivered T5.6f portable evaluation job runner:**
+    `src/forecasting/evaluation_job.py` packages the accepted request, sealed result, ERA5
+    `CropSpec` and evaluation config into schema `external-evaluation-job/fcn3-era5-v1` with one
+    canonical SHA-256. Machine paths are excluded from that identity and live in a separately
+    hashed `external-evaluation-path-bindings/v1` record bound to the job hash, so the identical
+    scientific job can use relative laptop paths or shared HPC paths. `create`, `bind`,
+    `preflight` and `run` CLI commands require no Python scripting. Preflight authenticates the
+    forecast artifact, opens only the existing local ERA5 cache, checks crop identity and
+    refuses an existing receipt without downloading data, invoking FCN3 or writing results.
+    Run executes T5.6e and verifies the saved receipt corresponds exactly to the portable job.
+    Job/binding publication is atomic and no-overwrite. Nine synthetic executed cases cover
+    relocation, tampering, missing inputs, overwrite refusal, the complete CLI workflow and a
+    real Zarr-to-Zarr evaluation fixture. No scheduler submission is performed: Phase 6 owns
+    Slurm/Celery execution, while this slice produces the portable command they will invoke.
+
     **Still outstanding:** there is no Earth2Studio worker process, environment lock, real model
     card/package/checkpoint hash, NGC access, 72-channel initial condition, forecast execution,
     real canonical artifact, real matched ERA5 truth run, dependence-aware uncertainty or comparison
     with Adam's model. T5.6a proves bytes/declarations, T5.6b proves schema/units/finiteness/crop
-    lineage, T5.6c proves metric implementation, and T5.6d-e prove exact synthetic matching and
-    reproducible orchestration; none proves
+    lineage, T5.6c proves metric implementation, T5.6d-e prove exact synthetic matching and
+    reproducible orchestration, and T5.6f proves portable offline invocation; none proves
     meteorological accuracy, calibration, spectral fidelity or real-data skill. T5.6 remains
     partial and every hardware run remains `NOT RUN`.
 *   **T5.7 Sensitivity and error-field analysis.** Perturb initial fields through the existing
     `PerturbationEngine`, then analyse forecast errors by scale, orientation, location, lead and
     boundary distance rather than as a single scalar.
+*   **T5.8 Irregular observations and observation-conditioned spatial downscaling -- NOT
+    STARTED.** Extend the gridded forecast workbench with generic contracts for models that map
+    coarse gridded context, irregular observations and high-resolution covariates to a
+    deterministic or probabilistic field. This is a separate scientific task from temporal
+    forecasting: the existing ERA5/CDS cache and NetCDF/Zarr readers cover part of the gridded
+    input path, but they do **not** currently represent station observations, point-context /
+    point-target roles, spatial holdouts, target-grid refinement or distribution-valued output.
+
+    **T5.8a Canonical point-observation contract:** define a versioned, hashable
+    `ObservationSet` carrying UTC time, stable station/source identity, latitude, longitude,
+    optional elevation, variable identity, physical unit, measured value, quality-control
+    state, missingness reason and source/content provenance. Require an explicit coordinate
+    reference system and longitude convention; reject duplicate observation keys, ambiguous
+    units, non-finite accepted values and silently discarded QC failures. Storage may be
+    Parquet/Arrow or another measured streaming format, but the scientific contract must not
+    depend on a particular table library.
+
+    **T5.8b Conditional-field sample and model seams:** define explicit roles for coarse gridded
+    context, irregular point context, withheld point targets, static or time-varying
+    high-resolution covariates, land/validity masks and the requested target coordinates or
+    grid. Record native and target resolution, grid alignment, CRS, interpolation/regridding
+    operator and boundary policy. Add a generic `ConditionalFieldModel` adapter whose output is
+    a physical field, samples, or declared distribution parameters; do not make DeepSensor a
+    core dependency or encode one library's internal task object as the platform contract.
+
+    **T5.8c Leakage-safe temporal and spatial evaluation:** compose the existing temporal
+    embargo with frozen station/region holdouts. Fit every normalisation, transformation,
+    imputation and station-selection rule on training data only. A point held out as a target
+    must not reappear as context through another table, cached task or collocated identifier.
+    Persist the split seed and exact station/time membership. Report interpolation to seen
+    locations, prediction at unseen locations and transfer to held-out regions as different
+    estimands rather than pooling them.
+
+    **T5.8d Probabilistic verification and baselines:** retain the declared likelihood or sample
+    semantics through export. Evaluate physical-unit bias/MAE/RMSE alongside appropriate proper
+    scores such as CRPS or log score where mathematically defined, coverage and sharpness, over
+    identical held-out observations. Compare against declared coarse-grid interpolation and
+    climatology/persistence baselines. Stratify results by variable, location, elevation,
+    season, observation density and distance to the nearest context station; predeclare
+    correction families and dependence-aware uncertainty before inferential claims.
+
+    **T5.8e Portable adapters, UI and acceptance:** accept canonical xarray NetCDF/Zarr gridded
+    inputs plus the canonical point-observation table on laptop and HPC paths. Prove the generic
+    seam with synthetic irregular stations, a deliberately withheld station/region and at least
+    one minimal external-library compatibility fixture. The UI must show context versus target
+    points, native versus target grid, masks, units, QC exclusions, uncertainty semantics,
+    split identity and provenance; it must not display a smooth high-resolution map without
+    also exposing observation support and validation coverage.
+
+    **Acceptance boundary:** round-trip every contract without semantic loss; detect shuffled
+    coordinates, unit/CRS errors, point-target leakage, train/test normalisation leakage and
+    distribution-parameter mislabelling; demonstrate bounded-memory loading; and reproduce a
+    synthetic known answer against independent metric oracles. Only then add a real DeepSensor,
+    ConvNP or other downscaler adapter. Compatibility does not establish forecast/downscaling
+    skill, observational representativeness or operational readiness.
+
+    **External interface case reviewed 2026-08-22:** Emily O'Riordan's
+    [deepsensorNZ](https://github.com/oriordanemily/deepsensorNZ) at commit
+    `68dd21f7aab5c375dfbe34637cd469ba4592243a` motivated this gap: it combines ERA5/WRF gridded
+    context, station context/targets, high-resolution auxiliary fields and probabilistic ConvNP
+    predictions. It is an interoperability reference, not copied code, evidence for the wavelet
+    experiment, or proof that T5.8 exists. No repository-root licence file was observed during
+    that review, so no source reuse or vendoring is planned without explicit permission and
+    licence clarification.
 
 ---
 
