@@ -1661,6 +1661,38 @@ written here because it has not been run on the atmosphere. Writing it from synt
 or an estimator-starved short record would be exactly the kind of claim this phase was built
 to prevent.
 
+The execution boundary is now complete as T4C.5d in `analysis_engine/gate_run.py`. A frozen
+`GateStudyPlan` binds the exact `CropSpec`, variable, pressure level, SWT/DTCWT filters and
+boundary convention, train-only harmonic climatology, threshold, declared advection speed and
+the complete `GateProtocol` under one SHA-256. `preflight_cached_gate` opens only an existing
+local cache and checks source identity, exact frame count/cadence, actual transform interiors
+and the filter-support lag floor before expensive work. For a frozen transform it derives the
+valid parent-grid shape from that transform's exact accumulated support and enforces R13's
+128-pixel minimum directly; the conservative generic 14-tap crop table remains a planning
+bound, not a substitute for the selected filter. A real-evidence role additionally
+requires direct CDS provenance and a recorded PASS from the independent WeatherBench overlap
+check; a local fixture cannot be relabelled as ERA5.
+
+The data and analysis paths are bounded rather than merely lazy. CDS monthly shards are
+validated and appended to a temporary Zarr store in declared time blocks; the complete logical
+content hash is streamed independently of chunk layout before atomic publication. A cached
+`CachedFieldReader` exposes one exact physical frame at a time with a decompressed-chunk byte
+ceiling. `fit_harmonic_climatology_stream` retains only one source frame plus the small
+`(parameters,H,W)` fit and estimates it on training indices only. `stream_scale_signature`
+makes two deterministic passes, retaining one source/coefficient frame, matches every eager
+measure, fits thresholds on train and reuses them unchanged on test, and refuses if the input
+bytes differ between passes. The final receipt authenticates the plan, climatology, source
+streams, train/test results and verdict and is published atomically without overwrite.
+
+This work found five defects rather than hiding them behind the external-data blocker: D46
+(whole-record CDS materialisation), D47 (whole-record coefficient/climatology residency), D48
+(an advection floor documented as filter support but implemented as `2**level`) and D49 (a gate
+verdict not bound to crop/transform/source/result identity), plus D50 (no enforced free-space
+budget before a resumable acquisition). All five are fixed with synthetic
+end-to-end evidence. **No atmospheric verdict follows:** the accepted fixture is explicitly
+`scientific_verdict: NOT_ESTABLISHED`; D43 and T4C.6 remain open until the live acquisition and
+independent overlap check exist.
+
 ## 4. Database Schema and State Tracking (`src/database/models.py`, `session.py`, `migrate.py`)
 
 The database layer (`src/database/`) is fully configured using SQLAlchemy and targets a persistent or in-memory SQLite database (`spectral_earth.db`). 
@@ -1806,7 +1838,7 @@ The React frontend is fully written and structurally complete. It was installed 
 *   **Component Visualizations:** `Heatmap2D.tsx` and `LineChart.tsx` wrap `react-plotly.js`; `LineageGraph.tsx` is a hand-rolled SVG node-link renderer with a tooltip inspector and no external graph dependency. All three take reactive props and render spatial fields, PSD curves, coherence ratios, and provenance DAGs.
 *   **Accessibility: zero, and measured rather than assumed.** `frontend/src` contains
     **0** `aria-*` or `role` attributes and **0** keyboard handlers, with no focus
-    management anywhere. The nine tabs are operable with a mouse and by nobody else. This is
+    management anywhere. The ten tabs are operable with a mouse and by nobody else. This is
     recorded here, in the document that says what exists, so it cannot be read as an
     oversight or discovered later as a surprise; it is not currently scheduled.
 *   **Main Application (`App.tsx`):** ~2,400 lines covering state hooks for **nine** tabs (Synthetic Generator, Meteorological Data, Boundary-Condition Lab, Spectral Transforms, Diagnostic & Analysis, Experiment Engine, Automated Hypotheses, **Platform & Evidence**, **Real ERA5 (Zarr)**), loading indicators, dynamic sliders, and follow-up proposal adoption.
@@ -1832,17 +1864,18 @@ See `VERIFICATION.md` for the captured command output behind every statement her
 | Item | Status |
 |---|---|
 | Python venv + dependencies | installed (torch 2.13.0+cu130, numpy 2.2.6, pydantic 1.10.26, SQLAlchemy 2.0.52, xarray 2025.6.1, FastAPI 0.110.3) |
-| Backend test suite | **1095 passed, 1 xfailed** (plus 1 skipped: opt-in live GCS) (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17, 351 after T3.5.6, 379 after T3.5.15, 407 after T3.5.19, 449 after T4C.5, 709 after T4A.4, 781 after T4B.4, 855 after T4C.5, 859 after T4C.5c, 882 after T5.1a CPU acceptance, 883 after RTX acceptance, 890 after portable profiles, 911 after T5.1b/D44, 917 after T5.1c, 933 after T5.1d/D45, 946 after T5.1e, 955 after T5.2a, 957 after T5.2b, 962 after T5.3a, 969 after T5.3b, 981 after T5.2c offline acceptance, 985 after T5.2d, 1000 after T5.0a, 1008 after T5.0b, 1027 after T5.6a offline acceptance, 1042 after T5.6b cube acceptance, 1056 after T5.6c matched evaluation, 1070 after T5.6d truth matching, 1080 after T5.6e orchestration, 1089 after T5.6f portable jobs, 1094 after T5.6g reporting, 1095 after the licence guard) |
+| Backend test suite | **1104 passed, 1 xfailed** (plus 1 skipped: opt-in live GCS) (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17, 351 after T3.5.6, 379 after T3.5.15, 407 after T3.5.19, 449 after T4C.5, 709 after T4A.4, 781 after T4B.4, 855 after T4C.5, 859 after T4C.5c, 882 after T5.1a CPU acceptance, 883 after RTX acceptance, 890 after portable profiles, 911 after T5.1b/D44, 917 after T5.1c, 933 after T5.1d/D45, 946 after T5.1e, 955 after T5.2a, 957 after T5.2b, 962 after T5.3a, 969 after T5.3b, 981 after T5.2c offline acceptance, 985 after T5.2d, 1000 after T5.0a, 1008 after T5.0b, 1027 after T5.6a offline acceptance, 1042 after T5.6b cube acceptance, 1056 after T5.6c matched evaluation, 1070 after T5.6d truth matching, 1080 after T5.6e orchestration, 1089 after T5.6f portable jobs, 1094 after T5.6g reporting, 1095 after the licence guard, 1102 after T4C.5d gate readiness, 1104 after D50 storage preflight) |
 | Ground-Truth Benchmark Suite | **15 PASS, 0 FAIL, 2 NOT_YET_RUNNABLE** (`python -m src.benchmarks`, exit 0) |
-| Frontend `npm install` + `npm run build` | passes, emits 1,385 modules + real JS/CSS assets (was: 1 module, no assets) |
+| Frontend `npm install` + `npm run build` | passes, emits 1,386 modules + real JS/CSS assets (was: 1 module, no assets) |
 | Backend server | starts, serves OpenAPI, all smoke-tested endpoints return 200 |
 | End-to-end experiment sweep | 9-run parameter sweep completes 9/9, writes 28 lineage nodes / 54 edges, hypothesis engine returns results |
-| Version control | `git init` run to enable E5 provenance capture; no commit made yet |
+| Version control | active Git history captures implementation slices; scientific run receipts carry their own content identities rather than treating the current commit as data provenance |
 
 Earlier revisions of this document and of `roadmap.md` claimed the platform was "validated"
 and "zero-error". It was not: the first real execution produced 8 test failures and a frontend
-that had never rendered. The ledger below grew from 18 entries to **31** as a direct result of
-running the code and of building the tests that check it — **29 of which are now fixed, and one partially**.
+that had never rendered. The ledger below has grown from 18 entries to **49** as a direct result
+of running the code and building tests against independent answers — **47 are fixed, D18 is
+partial, and D43 remains open**.
 
 Defects D26-D31 were all found *after* the code they concern was written and passing, by
 tests written against analytic answers rather than against the code's own behaviour. Six of
@@ -1878,7 +1911,7 @@ artefact in this repository.
 | D14 | `api/main.py` (10 sites) | Every `except` re-raises a generic 500 with a fixed string (`"An error occurred during ..."`), discarding the exception entirely. For a research tool this is the difference between a usable diagnostic and a dead end. | **FIXED** T3.5.14 |
 | D15 | `data_layer/adapters.py:150,162`, `experiment_engine/engine.py` | **The "seams" described in Section 5 are not extension points.** `_get_simulated_fallback` is a hard-coded if/elif over three dataset ids, `list_datasets` iterates a hard-coded literal list, and `_execute_action` is a 13-branch if/elif chain. Adding a data source or a pipeline action requires editing core engine files. | **FIXED** T3.5.15 |
 | D16 | `physical_core/field.py:20` | `PhysicalField.__init__` force-casts to float32 with no opt-out. Acceptable for visualisation; marginal for surrogate ensemble statistics, log-log power-law fits, and mutual-information/transfer-entropy estimation in Phase 4C. | **FIXED** T3.5.16 |
-| D17 | `analysis_engine/diagnostics.py:29,56`, `analysis_engine/decomposition.py:81`, `boundary_lab/boundary.py:31,123` | **Per-bin Python loops over full arrays.** Five functions bin values by radius or distance using `for k in range(...)` with a fresh boolean mask over the *entire* array each iteration - `O(bins x H x W)` where `O(H x W)` suffices via `bincount`/`scatter_add`. On a 512x512 field (`max_r = 256`) `compute_radial_psd` performs ~256 full passes, roughly 67M element visits instead of 262k. These are the innermost functions of the Phase 4C loop, called inside a surrogate ensemble; unfixed, they alone decide whether the platform is usable on a laptop. | T3.5.20 |
+| D17 | `analysis_engine/diagnostics.py`, `analysis_engine/decomposition.py`, `boundary_lab/boundary.py` | **Per-bin Python loops over full arrays.** Five radial/distance paths repeatedly masked the entire field. All now use single-pass grouped reductions or vector construction; independent loop oracles preserve results. The last 512x512/256-ring path measured 148.8 ms mean before and 7.70 ms after (19.3x). | **FIXED** T3.5.20 |
 | D18 | `experiment_engine/engine.py:18-22` | `get_execution_device` probes CUDA only. No Apple-silicon MPS branch and no explicit CPU-thread configuration, so a large class of development laptops silently runs the slowest available path. | **PARTIAL** T3.5.21 - selection chain, override, refusal path and thread budget implemented; CUDA execution is now verified on the RTX 5050 for T5.1a, but whole-platform CPU/CUDA agreement and ROCm/MPS hardware remain unverified |
 
 ### 7.2b Defects found by executing the code (T3.5.0)
@@ -1915,6 +1948,11 @@ code paths that `architecture.md` previously described as implemented and rigoro
 | D43 | `data_layer/zarr_source.py`, `data_layer/cds_source.py` / T4C.6 data design | **The real-data gate is not laptop-feasible through the catalogued WeatherBench layouts.** The supposedly compromise 0.7-degree store is chunked `(8,13,512,256)`: every eight-frame read transfers all levels and the globe. Live metadata inspection for a three-year, one-variable, 255x255 request estimated 29.88 GB fetched for 1.14 GB wanted (26.2x); the 0.25-degree archive is worse. T5.2c now supplies an offline-accepted, resumable direct regional CDS acquisition and canonical-cache path, but no live CDS request, multi-year NZ crop or cross-route overlap has run. Close only after that acquisition and verification evidence exists, then freeze the crop and run T4C.6. Do not reduce sample or edge-validity requirements to fit the old layout. | **OPEN - acquisition contract implemented; live data gate not run** |
 | D44 | `transform_engine/stationary.py:filter_support` / `data_layer/zarr_source.py:edge_exclusion` (found while building T5.1b) | **The generic R13 budget discarded inherited low-pass support.** It counted only the filter newly applied at level `j`, `(L-1)2^(j-1)+1`, although an SWT coefficient has passed through every preceding low-pass stage. The complete cascade is `1+(L-1)(2^j-1)`. For db2 the level-4 margin changes from 12 to 23 pixels; for the declared generic 14-tap budget it changes from 52 to 98, moving the four/five-level 128-valid-pixel floors from 256/512 to 512/1024. Both implementations, their tests, the tier table and R13 documentation now use the accumulated support. An independent convolution of the dilated filters tests the composition rather than merely repeating the formula. Historical D40/D41 measurements remain recorded but are superseded wherever they relied on the generic table. | **FIXED** T5.1b |
 | D45 | `transform_engine/training.py` convolution paths (found by the first full T5.1d run) | **A transform whose numerical result depended on what ran before it.** `enable_determinism` selects a different cuDNN convolution algorithm; with ambient TF32 enabled, the RTX SWT round-trip maximum error changed from **2.38e-7 to 4.48e-4** on the same seeded input. Focused tests passed because they started in fresh process state; the ordered full suite exposed it. All training convolution calls now scope `allow_tf32=False` locally and restore the caller's policy. A regression test deliberately enables deterministic cuDNN plus TF32, asserts the 3e-6 reconstruction tolerance, and asserts the ambient flag is restored. | **FIXED** T5.1d |
+| D46 | `data_layer/cds_source.py:materialise_cds` | **A resumable download followed by an unbounded conversion.** Monthly shards were each `.load()`ed, retained in a list and concatenated into the complete multi-year five-variable record before Zarr writing. The proposed D43 route could therefore require tens of GB of RAM even though the final cache was chunked. Conversion now validates and appends bounded time blocks to a sibling store, streams its logical content hash and atomically publishes only after exact whole-axis validation. | **FIXED** T4C.5d |
+| D47 | `analysis_engine/climatology.py`, `scale_signature.py`, `transform_engine/coefficient_field.py` | **The real gate's analysis path required whole-record RAM.** Climatology constructed `(T,H,W)` and decomposition constructed `(T,S,O,H,W)` before reducing to a small signature; thousands of 512x512 frames make that path larger than laptop memory. Train-only harmonic fitting and exact record-level signature extraction now retain one source/coefficient frame, carry boundedness evidence and reject source mutation between passes. | **FIXED** T4C.5d |
+| D48 | `analysis_engine/cross_scale.py:support_floor` | **The support floor did not use filter support.** Its prose and result basis said advective crossing of the transform filter, but the implementation used `2**level`; db2 level 3 was treated as 8 pixels although its accumulated cascade support is 22, understating the lags contaminated by shared air. `ScaleSignature` now carries the exact SWT/DTCWT parent-grid support and the floor refuses to invent a fallback. | **FIXED** T4C.5d |
+| D49 | `analysis_engine/cross_scale.py`, `gate_run.py` | **A PASS/FAIL was not authenticated to the complete study.** `GateProtocol` omitted crop/variable/level/transform/climatology/source identity, and `evaluate_replication_gate` did not require result fingerprints or exact bins/alpha/correction/surrogate count. `GateStudyPlan` freezes the full job; preflight and receipt bind both split results to it, while a real role requires CDS plus independent-overlap evidence. | **FIXED** T4C.5d |
+| D50 | `data_layer/cds_source.py` | **Live acquisition had no enforced disk-capacity gate.** Monthly resume and bounded conversion protected correctness and RAM, but a request could still fill the download/cache volume mid-run. `preflight_cds_storage` now budgets remaining NetCDF shards and the complete temporary Zarr without compression credit, combines roles sharing a volume, preserves at least 5 GiB or 10% working-space reserve, records the check and refuses before the first client call. | **FIXED** T4C.5d |
 
 **Root cause common to D20, D23, D25 and D2:** the transform engine — the mathematical core of
 the platform — had **no test file at all**. `src/tests/test_transforms.py` now exists (36 cases
@@ -2026,12 +2064,12 @@ able to sit three slices out of date.
 
 | File | Test functions | Covers |
 |---|---|---|
-| `test_analysis_data.py` | 6 | diagnostics and data-layer endpoints |
+| `test_analysis_data.py` | 7 | diagnostics/data-layer endpoints and independent D17 boundary-ring oracle |
 | `test_artifact_store.py` | 33 | content addressing, checksum verification, handle budget, T4A.3 acceptance |
 | `test_api_infrastructure.py` | 16 | health, listing, pagination, CORS, data-source transparency, benchmark endpoints |
-| `test_benchmarks.py` | 45 | Ground-Truth Benchmark Suite, seed discipline, climatology removal, D30 determinism |
-| `test_boundary_synthetic.py` | 7 | boundary treatments, windowing, synthetic generators |
-| `test_cds_source.py` | 8 | T5.2c monthly CDS planning/CLI, request refusals, network consent, atomic resume, shard integrity, route-aware replay and canonical lazy dataset compatibility |
+| `test_benchmarks.py` | 46 | Ground-Truth Benchmark Suite, seed discipline, eager/streamed climatology agreement, D30 determinism |
+| `test_boundary_synthetic.py` | 8 | boundary treatments, windowing, synthetic generators and independent Euclidean-ring oracle |
+| `test_cds_source.py` | 11 | T5.2c monthly CDS planning/CLI, request refusals, network consent, atomic resume, shard integrity, conservative shared-volume storage refusal, bounded blockwise Zarr publication, route-aware replay and lazy dataset compatibility |
 | `test_coefficient_field.py` | 40 | T4B.1 acceptance: parent-grid alignment, perfect reconstruction per family, lineage-safe summary; DTCWT upsampling declared; LevelBank and level slicing (T4B.4) |
 | `test_documentation.py` | 19 | architecture, roadmap and proprietary named-licence boundary against the code/repository |
 | `test_dtcwt.py` | 28 | Kingsbury q-shift DTCWT: primitives vs reference, two oracles, orientation, shift invariance, D1 head-to-heads |
@@ -2050,6 +2088,7 @@ able to sit three slices out of date.
 | `test_forecasting_protocol.py` | 7 | T5.0a exact schema completeness, canonical identity, immutable nested configuration, evidence requirements, temporal/rollout consistency, persistence and tamper/drift refusal |
 | `test_forecasting_protocol_binding.py` | 4 | T5.0b exact dataset/protocol/checkpoint binding, recomputed coordinate/statistics identities, drift refusals and bound-evaluation cross-run isolation |
 | `test_frontend_contract.py` | 31 | the frontend/backend contract, including transform/dataset/cadence readiness claim boundaries, plus the UI integrity guards: no fabricated results, no unqualified validation claims, units and slope uncertainty displayed |
+| `test_gate_run.py` | 1 | T4C.5d frozen plan, local-only preflight, bounded train-only climatology/signatures, authenticated synthetic gate receipt, no-overwrite and tamper refusal |
 | `test_grid_operators.py` | 64 | grid metrics, metric-aware gradient/Laplacian, area weighting, physical-wavenumber spectra, D26 |
 | `test_hypothesis.py` | 3 | correlation and categorical hypothesis discovery |
 | `test_imports.py` | 36 | NetCDF/Zarr/CSV/JSON import, dimension pinning, axis identification, laundering guard, benchmark runs over HTTP |
@@ -2061,12 +2100,12 @@ able to sit three slices out of date.
 | `test_statistics.py` | 36 | FDR procedures vs scipy, surrogate preservation properties, calibration on a true null, stationarity gate, screening |
 | `test_training_representations.py` | 43 | T5.1a-e raw/FFT/DCT/Haar/db2/SWT/DTCWT batch contract, reconstruction, immutable context, analytical/PyWavelets/FFT oracles, exact complex-atlas bijection, fused/reference coefficient and gradient agreement, translation equivariance, explicit TF32 precision isolation, Mallat/channel packing, support/redundancy metadata, gradcheck, cached buffers, dtype migration and vendor-neutral accelerator parity |
 | `test_cross_scale.py` | 25 | T4C.3 acceptance plus the frozen T4C.6 protocol: injected cascade/null twin, Theiler windows, support floor, power check, split sufficiency, embargo and three-state replication verdict |
-| `test_scale_signature.py` | 28 | T4C.1 acceptance and the analytic values of every measure on white noise; threshold sensitivity measured; R13 interior refusals; T4C.4 power-law core |
+| `test_scale_signature.py` | 29 | T4C.1 acceptance, analytic white-noise values, eager/streamed exact agreement and source-mutation refusal; threshold sensitivity; R13 interiors; T4C.4 power-law core |
 | `test_surrogate_null.py` | 14 | T4C.2 acceptance: spectrum preserved, phase destroyed, organised scores and fBm does not; the two calibrations (wrong null, linear lag) |
 | `test_wavelet_bank.py` | 27 | T4B.2 expansion through the engine's own parameter matrix, the 1,000-combination guard, decompose_bank / extract_scale_signature, the vertical-bank refusals |
 | `test_transforms.py` | 13 | fft/dct/dwt/dtcwt/hybrid round trips; D1 recorded as a strict xfail |
-| `test_zarr_source.py` | 58 | R13 crop geometry, chunk-hostility prediction, byte counting, cache and provenance round trip, the NetCDF engine (D33), zarr HTTP surface |
-| **total** | **847** | |
+| `test_zarr_source.py` | 59 | R13 geometry, chunk-hostility, byte counting, streaming content identity, exact chunk-bounded frame reader, cache/provenance round trip, NetCDF engine and HTTP surface |
+| **total** | **856** | |
 
 ### 7.2h A surrogate null that was not the null it claimed (T4C.5)
 

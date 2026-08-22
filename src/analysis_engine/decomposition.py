@@ -65,31 +65,37 @@ class ErrorDecompositionEngine:
     ) -> List[Dict[str, Any]]:
         H, W = forecast.shape
         error = forecast - ground_truth
-        
-        y_indices = torch.arange(H, dtype=torch.float64, device=forecast.device)
-        x_indices = torch.arange(W, dtype=torch.float64, device=forecast.device)
-        grid_y, grid_x = torch.meshgrid(y_indices, x_indices, indexing="ij")
-        
-        dist_left = grid_x
-        dist_right = (W - 1) - grid_x
-        dist_top = grid_y
-        dist_bottom = (H - 1) - grid_y
-        
-        dist_to_boundary = torch.stack([dist_left, dist_right, dist_top, dist_bottom], dim=0).min(dim=0)[0]
-        
-        profiles = []
-        for d in range(0, boundary_width + 1):
-            mask = (dist_to_boundary >= d) & (dist_to_boundary < d + 1)
-            if torch.any(mask):
-                err_bin = error[mask]
-                rmse = torch.sqrt(torch.mean(err_bin**2)).item()
-                mae = torch.mean(torch.abs(err_bin)).item()
-                profiles.append({
-                    "distance": float(d),
-                    "rmse": rmse,
-                    "mean_absolute_error": mae
-                })
-        return profiles
+
+        # Every cell belongs to exactly one integer-distance ring.  The former
+        # implementation rebuilt a full H x W boolean mask for every ring, making this
+        # O(boundary_width * H * W).  Compute the labels once and reduce all rings in one
+        # pass instead.  ``bincount`` also avoids materialising four H x W coordinate
+        # grids merely to take their minimum.
+        y = torch.arange(H, dtype=torch.int64, device=forecast.device)
+        x = torch.arange(W, dtype=torch.int64, device=forecast.device)
+        y_distance = torch.minimum(y, (H - 1) - y)
+        x_distance = torch.minimum(x, (W - 1) - x)
+        distance_bins = torch.minimum(y_distance[:, None], x_distance[None, :])
+
+        selected = distance_bins <= int(boundary_width)
+        labels = distance_bins[selected].reshape(-1)
+        if labels.numel() == 0:
+            return []
+
+        values = error[selected].reshape(-1)
+        n_bins = int(labels.max().item()) + 1
+        counts = torch.bincount(labels, minlength=n_bins)
+        squared_sum = torch.bincount(labels, weights=values.square(), minlength=n_bins)
+        absolute_sum = torch.bincount(labels, weights=values.abs(), minlength=n_bins)
+        valid = torch.nonzero(counts, as_tuple=False).flatten()
+
+        means_squared = squared_sum[valid] / counts[valid]
+        means_absolute = absolute_sum[valid] / counts[valid]
+        return [{
+            "distance": float(distance.item()),
+            "rmse": float(torch.sqrt(means_squared[index]).item()),
+            "mean_absolute_error": float(means_absolute[index].item()),
+        } for index, distance in enumerate(valid)]
 
     @staticmethod
     def decompose_by_lead_time(

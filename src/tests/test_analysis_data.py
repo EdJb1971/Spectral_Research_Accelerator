@@ -61,6 +61,33 @@ def test_error_decomposition():
     assert boundary_decomp[0]["distance"] == 0.0
     assert boundary_decomp[0]["rmse"] > 0.0
 
+def test_boundary_error_decomposition_matches_independent_ring_oracle():
+    """D17: grouped reduction must preserve every integer boundary-ring statistic."""
+    forecast = torch.arange(7 * 10, dtype=torch.float64).reshape(7, 10) / 7.0
+    truth = torch.flip(forecast, dims=(0, 1)) / 3.0
+    actual = ErrorDecompositionEngine.decompose_by_boundary(
+        forecast, truth, boundary_width=20)
+
+    error = forecast.numpy() - truth.numpy()
+    expected = []
+    for distance in range(4):
+        values = []
+        for row in range(error.shape[0]):
+            for column in range(error.shape[1]):
+                if min(row, column, error.shape[0] - 1 - row,
+                       error.shape[1] - 1 - column) == distance:
+                    values.append(error[row, column])
+        values = np.asarray(values)
+        expected.append({
+            "distance": float(distance),
+            "rmse": float(np.sqrt(np.mean(values ** 2))),
+            "mean_absolute_error": float(np.mean(np.abs(values))),
+        })
+
+    assert len(actual) == len(expected)
+    for observed, oracle in zip(actual, expected):
+        assert observed == pytest.approx(oracle, abs=1e-12)
+
 def test_api_endpoints_analysis_data(client):
     
     resp = client.get("/api/v1/data/datasets")

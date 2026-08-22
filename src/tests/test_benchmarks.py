@@ -17,6 +17,7 @@ import torch
 from src.analysis_engine.climatology import (
     ClimatologyError,
     HOURS_PER_YEAR,
+    fit_harmonic_climatology_stream,
     harmonic_design_matrix,
     remove_climatology,
 )
@@ -315,6 +316,43 @@ def test_climatology_can_be_fitted_on_training_frames_only():
            if r.stage == "4C.r11_split_aware"][0]
     assert res.outcome is Outcome.PASS, res.detail
     assert res.measured["fitted_on_all"] is False
+
+
+def test_streaming_climatology_matches_eager_fit_without_holding_the_record():
+    from src.physical_core.field import PhysicalField
+    from src.physical_core.grid import GridSpec
+
+    times = np.arange(72, dtype=np.float64) * 6.0
+    generator = torch.Generator().manual_seed(717)
+    pattern = torch.randn(6, 7, dtype=torch.float64, generator=generator)
+    weather = torch.randn(72, 6, 7, dtype=torch.float64, generator=generator) * 0.05
+    stack = torch.stack([
+        pattern * (2.0 * math.sin(2 * math.pi * hour / 24.0)
+                   + 0.4 * math.cos(2 * math.pi * hour / (24.0 * 30.0)))
+        for hour in times]) + weather
+    fit_mask = np.arange(72) < 48
+    eager = remove_climatology(
+        stack, times, periods_hours=(24.0, 24.0 * 30.0), n_harmonics=1,
+        fit_mask=fit_mask)
+    grid = GridSpec.cartesian((6, 7), dy_m=1000.0, dx_m=1000.0)
+    reads = []
+
+    def reader(index):
+        reads.append(index)
+        return PhysicalField(
+            stack[index], grid=grid,
+            metadata={"variable": "t", "level": 850.0, "units": "K"})
+
+    fitted = fit_harmonic_climatology_stream(
+        reader, times, fit_mask=fit_mask,
+        periods_hours=(24.0, 24.0 * 30.0), n_harmonics=1)
+    streamed = torch.stack([fitted.anomaly(index).data for index in range(72)])
+    assert torch.allclose(streamed, eager["anomalies"], rtol=1e-12, atol=1e-12)
+    assert reads[:48] == list(range(48))
+    assert fitted.provenance["fitted_on_frames"] == 48
+    assert fitted.provenance["fitted_on_all_frames"] is False
+    assert fitted.provenance["source_frames_resident"] == 1
+    assert len(fitted.provenance["fit_sha256"]) == 64
 
 
 def test_raw_cycles_look_like_a_strong_finding():

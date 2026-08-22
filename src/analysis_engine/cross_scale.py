@@ -101,23 +101,46 @@ class GateProtocol:
         """Refuse a design incapable of producing an interpretable PASS or FAIL."""
         if not self.study_id.strip():
             raise InvalidParameterError("study_id", self.study_id, "a non-empty identifier")
-        if self.n_scales < 2:
+        if isinstance(self.n_scales, bool) or int(self.n_scales) != self.n_scales \
+                or self.n_scales < 2:
             raise InvalidParameterError("n_scales", self.n_scales, "at least two scales")
-        if not self.lags or any(int(v) < 1 for v in self.lags):
-            raise InvalidParameterError("lags", self.lags, "positive frame lags")
+        if (not self.lags or any(isinstance(v, bool) or int(v) != v or int(v) < 1
+                                 for v in self.lags)
+                or tuple(sorted(set(int(v) for v in self.lags))) != tuple(self.lags)):
+            raise InvalidParameterError(
+                "lags", self.lags, "strictly increasing unique positive integer frame lags")
         if self.embargo_frames < max(int(v) for v in self.lags):
             raise InvalidParameterError(
                 "embargo_frames", self.embargo_frames,
                 "at least the longest tested lag (%d frames), so a target cannot cross a "
                 "temporal split boundary" % max(int(v) for v in self.lags))
-        if not 0.0 < self.train_ratio < 1.0:
+        if not math.isfinite(self.cadence_seconds) or self.cadence_seconds <= 0:
+            raise InvalidParameterError("cadence_seconds", self.cadence_seconds,
+                                        "a finite positive physical cadence")
+        if not math.isfinite(self.train_ratio) or not 0.0 < self.train_ratio < 1.0:
             raise InvalidParameterError("train_ratio", self.train_ratio, "a fraction in (0, 1)")
-        if self.expected_frames < 1:
+        if isinstance(self.expected_frames, bool) or int(self.expected_frames) != self.expected_frames \
+                or self.expected_frames < 1:
             raise InvalidParameterError("expected_frames", self.expected_frames,
                                         "a positive frame count")
         if self.estimator not in ("transfer_entropy", "mutual_information"):
             raise InvalidParameterError("estimator", self.estimator,
                                         "'transfer_entropy' or 'mutual_information'")
+        if self.measure not in (
+                "energy_density", "energy_fraction", "participation_ratio", "gini"):
+            raise InvalidParameterError(
+                "measure", self.measure,
+                "a threshold-free scale measure; threshold_fraction is never a gate primary")
+        if isinstance(self.bins, bool) or int(self.bins) != self.bins or self.bins < 2:
+            raise InvalidParameterError("bins", self.bins, "an integer >= 2")
+        if isinstance(self.n_surrogates, bool) or int(self.n_surrogates) != self.n_surrogates \
+                or self.n_surrogates < 1:
+            raise InvalidParameterError("n_surrogates", self.n_surrogates,
+                                        "a positive integer ensemble size")
+        if not math.isfinite(self.alpha) or not 0.0 < self.alpha < 1.0:
+            raise InvalidParameterError("alpha", self.alpha, "a finite probability in (0, 1)")
+        if isinstance(self.seed, bool) or int(self.seed) != self.seed or self.seed < 0:
+            raise InvalidParameterError("seed", self.seed, "a non-negative integer")
 
         train_frames = int(self.expected_frames * self.train_ratio)
         test_frames = self.expected_frames - train_frames - self.embargo_frames
@@ -147,6 +170,26 @@ class GateProtocol:
             "fingerprint": self.fingerprint(),
         }
 
+    def to_mapping(self) -> Dict[str, Any]:
+        mapping = asdict(self)
+        mapping["lags"] = list(self.lags)
+        return mapping
+
+    @classmethod
+    def from_mapping(cls, mapping: Dict[str, Any]) -> "GateProtocol":
+        expected = set(cls.__dataclass_fields__)
+        missing = sorted(expected - set(mapping))
+        extra = sorted(set(mapping) - expected)
+        if missing or extra:
+            raise InvalidParameterError(
+                "gate protocol keys", sorted(mapping),
+                "exact keys; missing=%s unknown=%s" % (missing, extra))
+        values = dict(mapping)
+        values["lags"] = tuple(values["lags"])
+        protocol = cls(**values)
+        protocol.validate()
+        return protocol
+
     def fingerprint(self) -> str:
         """Stable identity for the exact protocol placed beside every gate result."""
         payload = json.dumps(asdict(self), sort_keys=True, separators=(",", ":"),
@@ -165,6 +208,8 @@ def evaluate_replication_gate(train: Dict[str, Any], test: Dict[str, Any],
     design = protocol.validate()
     problems: List[str] = []
     for split_name, result in (("train", train), ("test", test)):
+        if result.get("protocol_fingerprint") != design["fingerprint"]:
+            problems.append("%s result is not bound to the frozen protocol" % split_name)
         if result.get("estimator") != protocol.estimator:
             problems.append("%s estimator is %r, expected %r" %
                             (split_name, result.get("estimator"), protocol.estimator))
@@ -176,6 +221,16 @@ def evaluate_replication_gate(train: Dict[str, Any], test: Dict[str, Any],
         if int(result.get("n_tests", -1)) != protocol.family_size:
             problems.append("%s tested %r hypotheses, expected the declared family of %d" %
                             (split_name, result.get("n_tests"), protocol.family_size))
+        if int(result.get("bins", -1)) != protocol.bins:
+            problems.append("%s bin count differs from the frozen protocol" % split_name)
+        correction = result.get("correction") or {}
+        if correction.get("method") != protocol.correction:
+            problems.append("%s correction differs from the frozen protocol" % split_name)
+        if not math.isclose(float(result.get("alpha", float("nan"))), protocol.alpha,
+                            rel_tol=0.0, abs_tol=0.0):
+            problems.append("%s alpha differs from the frozen protocol" % split_name)
+        if int(result.get("n_surrogates_requested", -1)) != protocol.n_surrogates:
+            problems.append("%s surrogate count differs from the frozen protocol" % split_name)
         if not (result.get("power") or {}).get("can_reject_after_correction", False):
             problems.append("%s partition was underpowered after correction" % split_name)
         if protocol.require_advection_floor and not (
@@ -371,14 +426,22 @@ def support_floor(signature, cadence_seconds: float,
             level = int(scale)
         except (TypeError, ValueError):
             level = position
-        support_px = 2 ** level
+        interior_record = (signature.interior[position - 1]
+                           if position - 1 < len(signature.interior) else {})
+        support_px = interior_record.get("support_parent_px")
+        if not isinstance(support_px, (int, float)) or support_px <= 0:
+            raise InvalidParameterError(
+                "signature.interior[%d].support_parent_px" % (position - 1), support_px,
+                "the transform's measured positive parent-grid filter support. Using 2**level "
+                "would understate the shared spatial footprint for longer filters")
         record: Dict[str, Any] = {
             "scale": str(scale),
             "level": level,
             "spatial_support_px": support_px,
             "floor_frames": 1,
-            "basis": "sampling cadence only: consecutive frames are the finest lag the "
-                     "record can express",
+            "basis": ("sampling cadence only: consecutive frames are the finest lag the "
+                      "record can express; spatial support is the transform's exact %d-pixel "
+                      "filter cascade" % support_px),
         }
         if physical and advection_speed_m_s:
             support_m = support_px * float(dx)
@@ -629,6 +692,24 @@ def cross_scale_dependency(
             "pairs are a large share of the sample and the estimate is diluted. Use a longer "
             "record rather than a shorter lag." % (100.0 * wrap_fraction))
 
+    analysis_config = {
+        "estimator": estimator,
+        "measure": measure,
+        "bins": int(bins),
+        "wrap": bool(wrap),
+        "n_scales": int(n_scales),
+        "lags_frames": [int(value) for value in lags],
+        "cadence_seconds": float(cadence_seconds),
+        "advection_speed_m_s": (float(advection_speed_m_s)
+                                 if advection_speed_m_s is not None else None),
+        "n_surrogates": int(n_surrogates),
+        "alpha": float(alpha),
+        "correction": correction,
+        "seed": int(seed),
+    }
+    analysis_config_sha256 = hashlib.sha256(json.dumps(
+        analysis_config, sort_keys=True, separators=(",", ":"),
+        allow_nan=False).encode("utf-8")).hexdigest()
     return {
         "estimator": estimator,
         "measure": measure,
@@ -645,6 +726,11 @@ def cross_scale_dependency(
         "results": screened.get("results", []),
         "n_significant": screened.get("n_significant", 0),
         "power": power,
+        "alpha": float(alpha),
+        "n_surrogates_requested": int(n_surrogates),
+        "seed": int(seed),
+        "analysis_config": analysis_config,
+        "analysis_config_sha256": analysis_config_sha256,
         "correction": screened.get("correction"),
         "null_model": ("circular shift of the source series: both series keep their own "
                        "distribution and autocorrelation, only the alignment between them "

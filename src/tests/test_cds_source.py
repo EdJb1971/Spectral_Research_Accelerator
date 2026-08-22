@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 import json
 from pathlib import Path
+from types import SimpleNamespace
 
 import numpy as np
 import pytest
@@ -14,9 +15,11 @@ from src.core.errors import DataSourceError, InvalidParameterError
 from src.data_layer.cds_source import (
     CDSRegionalRequest,
     acquire_cds_shards,
+    estimate_cds_storage,
     materialise_cds,
     main,
     plan_monthly_shards,
+    preflight_cds_storage,
     rematerialise_cds_from_provenance,
 )
 from src.data_layer.regional_forecast import (
@@ -108,6 +111,37 @@ def test_acquisition_is_network_opt_in_even_with_an_injected_client(tmp_path):
     assert client.calls == []
 
 
+def test_storage_preflight_is_conservative_and_combines_a_shared_volume(tmp_path, monkeypatch):
+    spec = _request(date_start="2020-01-01", date_end="2020-01-02")
+    estimate = estimate_cds_storage(spec)
+    assert estimate["frames"] == 8
+    assert estimate["compression_credit_assumed"] is False
+    assert estimate["artifact_bytes_upper_bound"] > estimate["raw_value_bytes"] * 2
+    monkeypatch.setattr(
+        "src.data_layer.cds_source.shutil.disk_usage",
+        lambda path: SimpleNamespace(total=10**12, used=0, free=10**12))
+    report = preflight_cds_storage(
+        spec, download_dir=tmp_path / "downloads", cache_dir=tmp_path / "cache",
+        minimum_free_reserve_bytes=0)
+    assert report["status"] == "READY"
+    assert len(report["volumes"]) == 1
+    assert report["volumes"][0]["roles"] == ["download", "cache"]
+    assert report["volumes"][0]["working_bytes_required"] == (
+        report["download_estimate"]["artifact_bytes_upper_bound"]
+        + report["cache_estimate"]["artifact_bytes_upper_bound"])
+
+
+def test_insufficient_storage_refuses_before_the_first_network_call(tmp_path, monkeypatch):
+    client = FakeCDSClient()
+    monkeypatch.setattr(
+        "src.data_layer.cds_source.shutil.disk_usage",
+        lambda path: SimpleNamespace(total=1, used=1, free=0))
+    with pytest.raises(DataSourceError, match="storage preflight failed"):
+        acquire_cds_shards(
+            _request(), tmp_path / "downloads", client=client, allow_network=True)
+    assert client.calls == []
+
+
 def test_monthly_download_is_atomic_resumable_and_contains_no_credentials(tmp_path):
     client = FakeCDSClient()
     spec = _request(date_start="2020-01-30", date_end="2020-02-02")
@@ -148,6 +182,14 @@ def test_cds_materialisation_enters_existing_lazy_dataset_interface(tmp_path):
         "time": 80, "level": 1, "latitude": 5, "longitude": 5}
     assert manifest["cache_chunking"]["time"] == 8
     assert len(manifest["content_hash"]) == 32
+    assert manifest["materialisation"] == {
+        "strategy": "monthly shards appended in bounded time blocks",
+        "maximum_source_frames_in_memory": 8,
+        "requested_time_block_frames": 8,
+        "full_record_loaded": False,
+        "publication": "temporary sibling Zarr renamed only after complete validation",
+        "content_hash": "logical variable-major stream; independent of Zarr chunking",
+    }
 
     crop = spec.to_crop_spec()
     dataset, cached_manifest = load_cached(crop, cache_dir=str(cache))
@@ -193,6 +235,29 @@ def test_materialisation_refuses_missing_requested_timestamp(tmp_path):
             time_chunk=8, check_size=False, client=IncompleteClient(), allow_network=True)
 
 
+def test_multimonth_materialisation_never_loads_a_full_shard(tmp_path, monkeypatch):
+    """A real gate record is larger than RAM; boundedness must be executable evidence."""
+    spec = _request(date_start="2020-01-30", date_end="2020-02-03")
+    original_load = xr.Dataset.load
+    loaded_frame_counts = []
+
+    def guarded_load(dataset, *args, **kwargs):
+        frames = int(dataset.sizes.get("time", 0))
+        loaded_frame_counts.append(frames)
+        if frames > 3:
+            raise AssertionError("attempted to load more than the declared time block")
+        return original_load(dataset, *args, **kwargs)
+
+    monkeypatch.setattr(xr.Dataset, "load", guarded_load)
+    manifest = materialise_cds(
+        spec, download_dir=tmp_path / "downloads", cache_dir=str(tmp_path / "cache"),
+        time_chunk=3, check_size=False, client=FakeCDSClient(), allow_network=True)
+    assert len(plan_monthly_shards(spec)) == 2
+    assert max(loaded_frame_counts) <= 3
+    assert manifest["shape"]["time"] == 20
+    assert manifest["materialisation"]["maximum_source_frames_in_memory"] == 3
+
+
 def test_plan_cli_prints_exact_request_without_network(capsys):
     assert main([
         "plan", "--date-start", "2020-01-30", "--date-end", "2020-02-02",
@@ -203,4 +268,5 @@ def test_plan_cli_prints_exact_request_without_network(capsys):
     assert result["network_used"] is False
     assert len(result["monthly_shards"]) == 2
     assert result["request"]["hours_utc"] == [0, 6, 12, 18]
+    assert result["storage_estimate"]["compression_credit_assumed"] is False
     assert "completed_shards" not in result

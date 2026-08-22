@@ -71,6 +71,46 @@ def test_boundary_condition_lab():
     assert len(analysis["distance_profiles"]) > 0
     assert "spectral_leakage" in analysis
 
+def test_boundary_profiles_match_independent_euclidean_ring_oracle():
+    """D17: one-pass grouped means/maxima retain the padded-corner definition."""
+    from src.boundary_lab.boundary import BoundaryConditionLab
+
+    data = torch.arange(5 * 7, dtype=torch.float64).reshape(5, 7) / 11.0
+    field = PhysicalField(data)
+    reference = PhysicalField(torch.zeros(9, 11, dtype=torch.float64))
+    result = BoundaryConditionLab.analyze_boundary_artefacts(
+        field, "reflect", 2, reference_field=reference)
+    padded = BoundaryConditionLab.apply_boundary_treatment(field, "reflect", 2)
+    dy, dx = torch.gradient(padded.to(torch.float64), edge_order=1)
+    gradient = torch.sqrt(dx.square() + dy.square()).numpy()
+    error = padded.abs().numpy()
+
+    bins = {}
+    for row in range(padded.shape[0]):
+        for column in range(padded.shape[1]):
+            inside_y = min(row - 2, 2 + field.data.shape[0] - 1 - row)
+            inside_x = min(column - 2, 2 + field.data.shape[1] - 1 - column)
+            if min(inside_y, inside_x) >= 0:
+                distance = min(inside_y, inside_x)
+            else:
+                outside_y = max(2 - row, 0) + max(
+                    row - (2 + field.data.shape[0] - 1), 0)
+                outside_x = max(2 - column, 0) + max(
+                    column - (2 + field.data.shape[1] - 1), 0)
+                distance = np.sqrt(outside_y ** 2 + outside_x ** 2)
+            bins.setdefault(int(np.floor(distance)), []).append((row, column))
+
+    assert [row["distance"] for row in result["distance_profiles"]] == [
+        float(value) for value in sorted(bins)]
+    for observed, distance in zip(result["distance_profiles"], sorted(bins)):
+        indices = bins[distance]
+        gradients = np.asarray([gradient[index] for index in indices])
+        errors = np.asarray([error[index] for index in indices])
+        assert observed["mean_gradient"] == pytest.approx(gradients.mean(), abs=1e-12)
+        assert observed["max_gradient"] == pytest.approx(gradients.max(), abs=1e-12)
+        assert observed["mean_absolute_error"] == pytest.approx(errors.mean(), abs=1e-12)
+        assert observed["max_absolute_error"] == pytest.approx(errors.max(), abs=1e-12)
+
 def test_api_endpoints(client):
         
     # Test Synthetic Generation Endpoint

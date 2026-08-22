@@ -50,7 +50,9 @@ that are easy to get wrong and silent when wrong:
 from __future__ import annotations
 
 from dataclasses import dataclass, field as dataclass_field
-from typing import Any, Dict, List, Optional, Sequence
+import hashlib
+import json
+from typing import Any, Callable, Dict, List, Mapping, Optional, Sequence
 
 import numpy as np
 import torch
@@ -264,6 +266,7 @@ def _interior_halfwidth(field, scale: Any, position: int) -> Dict[str, Any]:
         from src.transform_engine import stationary as swt_mod
         wavelet = str(field.config.get("wavelet", "haar"))
         halfwidth = swt_mod.valid_interior_halfwidth(wavelet, level)
+        support_parent = swt_mod.filter_support(wavelet, level)
         basis = "swt %s, undecimated: halfwidth in parent pixels equals halfwidth in " \
                 "native samples" % wavelet
     else:
@@ -271,10 +274,12 @@ def _interior_halfwidth(field, scale: Any, position: int) -> Dict[str, Any]:
         level1 = str(field.config.get("level1", "near_sym_b"))
         qshift = str(field.config.get("qshift", "qshift_b"))
         halfwidth = dtcwt_mod.native_halfwidth(level, level1, qshift)
+        support_parent = dtcwt_mod.filter_support(level, level1, qshift)
         basis = ("dtcwt %s / %s, decimated by 2**%d: parent halfwidth %d px"
                  % (level1, qshift, level,
                     dtcwt_mod.valid_interior_halfwidth(level, level1, qshift)))
     return {"scale": str(scale), "level": level, "halfwidth_native": int(halfwidth),
+            "support_parent_px": int(support_parent),
             "basis": basis}
 
 
@@ -283,6 +288,7 @@ def scale_signature(
     *,
     interior: bool = True,
     threshold_sigma: float = DEFAULT_THRESHOLD_SIGMA,
+    threshold_values: Optional[Sequence[float]] = None,
 ) -> ScaleSignature:
     """Reduce a `CoefficientField` to its per-`(time, scale)` signature.
 
@@ -305,7 +311,18 @@ def scale_signature(
     pr = np.full(shape, np.nan)
     gn = np.full(shape, np.nan)
     thresh_fraction = np.full(shape, np.nan)
-    thresholds = np.full(n_scales, np.nan)
+    if threshold_values is None:
+        thresholds = np.full(n_scales, np.nan)
+        threshold_source = "fitted from this complete coefficient record"
+    else:
+        thresholds = np.asarray(threshold_values, dtype=np.float64)
+        if thresholds.shape != (n_scales,) or np.any(~np.isfinite(thresholds)) \
+                or np.any(thresholds < 0):
+            raise InvalidParameterError(
+                "threshold_values", threshold_values,
+                "%d finite non-negative per-scale thresholds" % n_scales)
+        thresholds = thresholds.copy()
+        threshold_source = "supplied frozen per-scale thresholds"
     available = np.zeros(n_scales, dtype=np.int64)
     interior_records: List[Dict[str, Any]] = []
     warnings: List[str] = []
@@ -363,11 +380,13 @@ def scale_signature(
             per_time.append(np.concatenate(parts))
         gathered.append(per_time)
         usable = [values for values in per_time if values is not None]
-        if usable:
+        if usable and threshold_values is None:
             available[s_index] = int(usable[0].size)
             stacked = np.concatenate(usable)
             rms = float(np.sqrt(np.mean(stacked ** 2)))
             thresholds[s_index] = threshold_sigma * rms
+        elif usable:
+            available[s_index] = int(usable[0].size)
 
     # Pass two: the measures.
     for s_index, scale in enumerate(field.scales):
@@ -417,6 +436,7 @@ def scale_signature(
         warnings=warnings,
         provenance={
             "computed_from": "native coefficients",
+            "threshold_source": threshold_source,
             "interior_mask": bool(interior),
             "interior_rule": "R13",
             "resampled_to_parent": bool(field.resampled_to_parent),
@@ -428,6 +448,179 @@ def scale_signature(
                 "the replication factor, so an aligned-view signature would report a "
                 "resampled family as far more evenly spread than it is."),
         },
+    )
+
+
+def stream_scale_signature(
+    frame_reader: Callable[[int], Any],
+    times: Sequence[Any],
+    *,
+    family: str = "swt",
+    config: Optional[Mapping[str, Any]] = None,
+    interior: bool = True,
+    threshold_sigma: float = DEFAULT_THRESHOLD_SIGMA,
+    threshold_values: Optional[Sequence[float]] = None,
+    source_provenance: Optional[Mapping[str, Any]] = None,
+) -> ScaleSignature:
+    """Build the exact record-level signature while retaining one frame at a time.
+
+    The ordinary path first materialises ``(T,S,O,H,W)`` coefficients.  That is appropriate
+    for small interactive records and impossible for the multi-year 512x512 T4C.6 gate.  This
+    path makes two deterministic passes through a random-access frame reader: the first emits
+    every threshold-free statistic and fits the record-level RMS thresholds; the second emits
+    only the fractions above those frozen thresholds.  At no point is more than one source
+    frame and one frame's coefficient pyramid retained.
+
+    Both passes hash the exact field bytes and must agree.  A mutable cache or reader therefore
+    fails rather than combining statistics from two different records.
+    """
+    from src.physical_core.field import PhysicalField
+    from src.transform_engine.coefficient_field import decompose_field
+
+    raw_times = np.asarray(times)
+    if raw_times.ndim != 1 or raw_times.size == 0:
+        raise InvalidParameterError("times", raw_times.shape,
+                                    "a non-empty one-dimensional time coordinate")
+    if not callable(frame_reader):
+        raise InvalidParameterError("frame_reader", type(frame_reader).__name__,
+                                    "a callable accepting one integer frame index")
+    config_dict = dict(config or {})
+
+    first_signature: Optional[ScaleSignature] = None
+    first_grid = first_coords = first_variable = first_level = first_units = None
+    threshold_free: Dict[str, List[np.ndarray]] = {
+        name: [] for name in THRESHOLD_FREE
+    }
+    input_hashes: List[str] = []
+    warnings: List[str] = []
+    peak_source_bytes = peak_coefficient_bytes = 0
+
+    def pass_digest(pass_index: int, collect: bool,
+                    frozen_thresholds: Optional[np.ndarray] = None) -> List[np.ndarray]:
+        nonlocal first_signature, first_grid, first_coords, first_variable, first_level
+        nonlocal first_units, peak_source_bytes, peak_coefficient_bytes
+        digest = hashlib.sha256()
+        digest.update(np.asarray(raw_times).astype("datetime64[ns]").astype("int64").tobytes()
+                      if raw_times.dtype.kind in "MOUS" else
+                      np.asarray(raw_times, dtype=np.float64).tobytes())
+        fractions: List[np.ndarray] = []
+        for index in range(int(raw_times.size)):
+            frame = frame_reader(index)
+            if not isinstance(frame, PhysicalField):
+                raise InvalidParameterError(
+                    "frame_reader(%d)" % index, type(frame).__name__, "a PhysicalField")
+            if not bool(torch.isfinite(frame.data).all()):
+                raise InvalidParameterError(
+                    "frame_reader(%d)" % index, "non-finite values",
+                    "a complete finite physical field; gate data are never imputed")
+            grid_record = frame.grid.to_provenance()
+            coord_record = {
+                name: np.asarray(value.detach().cpu(), dtype=np.float64).tolist()
+                for name, value in sorted(frame.coords.items())
+            }
+            variable = frame.metadata.get("variable")
+            level = frame.metadata.get("level")
+            units = frame.units
+            if first_grid is None:
+                first_grid, first_coords = grid_record, coord_record
+                first_variable, first_level, first_units = variable, level, units
+            elif (grid_record != first_grid or coord_record != first_coords
+                  or variable != first_variable or level != first_level or units != first_units):
+                raise InvalidParameterError(
+                    "frame_reader(%d)" % index, "field identity drift",
+                    "the exact grid, coordinates, variable, level and units of frame 0")
+
+            values = np.ascontiguousarray(frame.data.detach().cpu().numpy())
+            digest.update(str(tuple(values.shape)).encode("utf-8"))
+            digest.update(str(values.dtype).encode("utf-8"))
+            digest.update(values.tobytes())
+            peak_source_bytes = max(peak_source_bytes, int(values.nbytes))
+
+            coefficients = decompose_field(
+                frame, family=family, config=config_dict, keep_native=True)
+            peak_coefficient_bytes = max(
+                peak_coefficient_bytes,
+                int(coefficients.data.numel() * coefficients.data.element_size()))
+            signature = scale_signature(
+                coefficients, interior=interior, threshold_sigma=threshold_sigma,
+                threshold_values=frozen_thresholds)
+            if first_signature is None:
+                first_signature = signature
+            elif (signature.scales != first_signature.scales
+                  or signature.interior != first_signature.interior
+                  or not np.array_equal(signature.available, first_signature.available)):
+                raise InvalidParameterError(
+                    "frame_reader(%d)" % index, "coefficient geometry drift",
+                    "the same scales, valid interiors and coefficient populations as frame 0")
+            if collect:
+                for name in THRESHOLD_FREE:
+                    threshold_free[name].append(np.asarray(getattr(signature, name)[0]))
+                warnings.extend(signature.warnings)
+            else:
+                fractions.append(np.asarray(signature.threshold_fraction[0]))
+        input_hashes.append(digest.hexdigest())
+        return fractions
+
+    pass_digest(1, collect=True)
+    assert first_signature is not None
+    energy_density = np.stack(threshold_free["energy_density"], axis=0)
+    if threshold_values is None:
+        with np.errstate(invalid="ignore"):
+            frozen_thresholds = threshold_sigma * np.sqrt(np.nanmean(energy_density, axis=0))
+        threshold_fit = "fitted from this streamed record"
+    else:
+        frozen_thresholds = np.asarray(threshold_values, dtype=np.float64)
+        if frozen_thresholds.shape != (first_signature.n_scales,) \
+                or np.any(~np.isfinite(frozen_thresholds)) or np.any(frozen_thresholds < 0):
+            raise InvalidParameterError(
+                "threshold_values", threshold_values,
+                "%d finite non-negative train-fitted thresholds"
+                % first_signature.n_scales)
+        threshold_fit = "supplied from the independent training split"
+    if np.any(~np.isfinite(frozen_thresholds)):
+        raise InvalidParameterError(
+            "thresholds", frozen_thresholds.tolist(),
+            "at least one finite-energy valid interior at every declared scale")
+    threshold_fraction = np.stack(
+        pass_digest(2, collect=False, frozen_thresholds=frozen_thresholds), axis=0)
+    if input_hashes[0] != input_hashes[1]:
+        raise InvalidParameterError(
+            "frame_reader", input_hashes,
+            "identical bytes in both streaming passes; the source changed during analysis")
+
+    provenance = dict(first_signature.provenance)
+    provenance.update({
+        "execution": "two-pass bounded-memory streaming",
+        "source_frames_resident": 1,
+        "coefficient_frames_resident": 1,
+        "peak_source_frame_bytes": peak_source_bytes,
+        "peak_aligned_coefficient_frame_bytes": peak_coefficient_bytes,
+        "input_stream_sha256": input_hashes[0],
+        "input_verified_unchanged_between_passes": True,
+        "threshold_fit": threshold_fit,
+        "source": dict(source_provenance or {}),
+        "source_provenance_sha256": hashlib.sha256(json.dumps(
+            dict(source_provenance or {}), sort_keys=True, separators=(",", ":"),
+            allow_nan=False, default=str).encode("utf-8")).hexdigest(),
+    })
+    return ScaleSignature(
+        times_seconds=np.asarray(raw_times).astype("datetime64[ns]").astype("int64") / 1e9
+        if raw_times.dtype.kind in "MOUS" else np.asarray(raw_times, dtype=np.float64),
+        scales=list(first_signature.scales),
+        wavelet_family=first_signature.wavelet_family,
+        energy_density=energy_density,
+        energy_fraction=np.stack(threshold_free["energy_fraction"], axis=0),
+        participation_ratio=np.stack(threshold_free["participation_ratio"], axis=0),
+        gini=np.stack(threshold_free["gini"], axis=0),
+        threshold_fraction=threshold_fraction,
+        threshold_sigma=float(threshold_sigma),
+        threshold_values=frozen_thresholds,
+        available=np.asarray(first_signature.available),
+        interior=list(first_signature.interior),
+        source_variable=first_signature.source_variable,
+        level_hpa=first_signature.level_hpa,
+        warnings=sorted(set(warnings)),
+        provenance=provenance,
     )
 
 

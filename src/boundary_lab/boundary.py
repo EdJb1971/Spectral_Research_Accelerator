@@ -132,24 +132,41 @@ class BoundaryConditionLab:
         else:
             abs_error = torch.zeros_like(padded_data)
             
-        max_dist = int(torch.max(dist_to_boundary).item())
-        distance_profiles = []
-        
-        for d in range(0, max_dist + 1):
-            mask = (dist_to_boundary >= d) & (dist_to_boundary < d + 1)
-            if torch.any(mask):
-                mean_grad = torch.mean(grad_mag[mask]).item()
-                max_grad = torch.max(grad_mag[mask]).item()
-                mean_err = torch.mean(abs_error[mask]).item() if has_ref else 0.0
-                max_err = torch.max(abs_error[mask]).item() if has_ref else 0.0
-                
-                distance_profiles.append({
-                    "distance": float(d),
-                    "mean_gradient": mean_grad,
-                    "max_gradient": max_grad,
-                    "mean_absolute_error": mean_err,
-                    "max_absolute_error": max_err
-                })
+        # Group every pixel once by floor(distance), then reduce all rings together.  The
+        # old loop allocated and scanned a full padded-field mask for every distance, an
+        # O(number_of_rings * H * W) path inside boundary sweeps.  Means use ``bincount``;
+        # maxima use the matching grouped scatter reduction.  The distance construction
+        # above is unchanged, including Euclidean distance around padded corners.
+        labels = torch.floor(dist_to_boundary).to(torch.int64).reshape(-1)
+        n_bins = int(labels.max().item()) + 1
+        counts = torch.bincount(labels, minlength=n_bins)
+
+        flat_grad = grad_mag.reshape(-1)
+        gradient_sum = torch.bincount(labels, weights=flat_grad, minlength=n_bins)
+        gradient_max = torch.full(
+            (n_bins,), -torch.inf, dtype=flat_grad.dtype, device=flat_grad.device)
+        gradient_max.scatter_reduce_(0, labels, flat_grad, reduce="amax", include_self=True)
+
+        if has_ref:
+            flat_error = abs_error.reshape(-1)
+            error_sum = torch.bincount(labels, weights=flat_error, minlength=n_bins)
+            error_max = torch.full(
+                (n_bins,), -torch.inf, dtype=flat_error.dtype, device=flat_error.device)
+            error_max.scatter_reduce_(0, labels, flat_error, reduce="amax", include_self=True)
+        else:
+            error_sum = torch.zeros(n_bins, dtype=flat_grad.dtype, device=flat_grad.device)
+            error_max = torch.zeros(n_bins, dtype=flat_grad.dtype, device=flat_grad.device)
+
+        valid = torch.nonzero(counts, as_tuple=False).flatten()
+        gradient_mean = gradient_sum[valid] / counts[valid]
+        error_mean = error_sum[valid] / counts[valid]
+        distance_profiles = [{
+            "distance": float(distance.item()),
+            "mean_gradient": float(gradient_mean[index].item()),
+            "max_gradient": float(gradient_max[distance].item()),
+            "mean_absolute_error": float(error_mean[index].item()),
+            "max_absolute_error": float(error_max[distance].item()),
+        } for index, distance in enumerate(valid)]
                 
         orig_fft = torch.abs(torch.fft.rfft2(field.data))
         padded_fft = torch.abs(torch.fft.rfft2(padded_data))

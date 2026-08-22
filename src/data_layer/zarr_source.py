@@ -691,6 +691,33 @@ def _content_hash(dataset) -> str:
     return digest.hexdigest()[:32]
 
 
+def streaming_content_hash(dataset, time_block: int = 32) -> str:
+    """Return the canonical data hash without materialising a whole long record.
+
+    This emits the same logical byte stream as :func:`_content_hash`: variables in name
+    order, followed by each name, full shape and contiguous C-order values.  Splitting an
+    array along its leading ``time`` dimension does not change that byte stream, so neither
+    the read block nor the Zarr chunk layout can change the identity.
+    """
+    import numpy as np
+
+    if isinstance(time_block, bool) or int(time_block) != time_block or time_block < 1:
+        raise InvalidParameterError("time_block", time_block, "a positive integer")
+    digest = hashlib.sha256()
+    for name in sorted(dataset.data_vars):
+        variable = dataset[name]
+        digest.update(name.encode("utf-8"))
+        digest.update(str(tuple(int(value) for value in variable.shape)).encode("utf-8"))
+        if variable.dims and variable.dims[0] == "time":
+            for start in range(0, int(variable.sizes["time"]), int(time_block)):
+                stop = min(start + int(time_block), int(variable.sizes["time"]))
+                values = np.ascontiguousarray(variable.isel(time=slice(start, stop)).values)
+                digest.update(values.tobytes())
+        else:
+            digest.update(np.ascontiguousarray(variable.values).tobytes())
+    return digest.hexdigest()[:32]
+
+
 def materialise(spec: "CropSpec", cache_dir: Optional[str] = None,
                 storage_options: Optional[Dict[str, Any]] = None,
                 time_chunk: Optional[int] = None,
@@ -843,6 +870,165 @@ def open_cached_lazy(spec: "CropSpec", cache_dir: Optional[str] = None
     manifest["remote_bytes"] = 0
     manifest["value_access"] = "lazy_local_zarr"
     return dataset, manifest
+
+
+class CachedFieldReader:
+    """Random-access physical frames from one authenticated local crop selection.
+
+    This is the bounded bridge into the Phase 4 streaming analysis.  It opens only an
+    existing local Zarr cache, selects one exact variable and pressure level, and reads one
+    time index per call.  Machine paths never enter ``source_provenance``.
+    """
+
+    def __init__(
+        self,
+        spec: CropSpec,
+        variable: str,
+        *,
+        level_hpa: Optional[float] = None,
+        cache_dir: Optional[str] = None,
+        maximum_source_chunk_bytes: int = 512 * 1024 * 1024,
+    ) -> None:
+        import numpy as np
+        import torch
+
+        if isinstance(maximum_source_chunk_bytes, bool) \
+                or int(maximum_source_chunk_bytes) != maximum_source_chunk_bytes \
+                or maximum_source_chunk_bytes < 1:
+            raise InvalidParameterError(
+                "maximum_source_chunk_bytes", maximum_source_chunk_bytes,
+                "a positive integer byte ceiling")
+        self.dataset, manifest = open_cached_lazy(spec, cache_dir)
+        try:
+            if manifest.get("content_key") != spec.content_key():
+                raise DataSourceError("cached manifest content key does not match the crop")
+            if variable not in self.dataset.data_vars:
+                raise DataSourceError(
+                    "variable %r is absent from the cached crop; available variables are %s"
+                    % (variable, sorted(str(name) for name in self.dataset.data_vars)))
+            array = self.dataset[variable]
+            if "level" in array.dims:
+                if level_hpa is None:
+                    raise DataSourceError(
+                        "cached variable %r has a pressure-level axis; select level_hpa exactly"
+                        % variable)
+                levels = np.asarray(array.level.values, dtype=np.float64)
+                if not np.any(levels == float(level_hpa)):
+                    raise DataSourceError(
+                        "level_hpa %.6g is absent; available levels are %s"
+                        % (float(level_hpa), levels.tolist()))
+                array = array.sel(level=float(level_hpa))
+            elif level_hpa is not None:
+                raise DataSourceError(
+                    "level_hpa was supplied but cached variable %r has no level axis" % variable)
+
+            lat_name = "latitude" if "latitude" in array.dims else "lat"
+            lon_name = "longitude" if "longitude" in array.dims else "lon"
+            expected_dims = {"time", lat_name, lon_name}
+            if set(array.dims) != expected_dims:
+                raise DataSourceError(
+                    "cached field selection must have exactly time/latitude/longitude; got %s"
+                    % (list(array.dims),))
+            self.array = array.transpose("time", lat_name, lon_name)
+            self.times = np.asarray(self.array.time.values)
+            if self.times.ndim != 1 or self.times.size < 2:
+                raise DataSourceError("cached field reader requires at least two time frames")
+            nanoseconds = self.times.astype("datetime64[ns]").astype("int64")
+            deltas = np.diff(nanoseconds)
+            if np.any(deltas <= 0) or not np.all(deltas == deltas[0]):
+                raise DataSourceError(
+                    "cached time axis must be strictly increasing and exactly regular")
+            self.latitude = np.asarray(self.array[lat_name].values, dtype=np.float64)
+            self.longitude = np.asarray(self.array[lon_name].values, dtype=np.float64)
+            self._coords = {
+                "lat": torch.as_tensor(self.latitude, dtype=torch.float64),
+                "lon": torch.as_tensor(self.longitude, dtype=torch.float64),
+            }
+            stored_time_chunk = int((manifest.get("cache_chunking") or {}).get("time", 0))
+            if stored_time_chunk < 1:
+                raise DataSourceError(
+                    "cached manifest does not record a positive time chunk; bounded reads "
+                    "cannot be established")
+            source_chunk_bytes = int(
+                stored_time_chunk * self.latitude.size * self.longitude.size
+                * np.dtype(self.array.dtype).itemsize)
+            if source_chunk_bytes > int(maximum_source_chunk_bytes):
+                raise DataSourceError(
+                    "one stored source chunk expands to %d bytes, above the %d-byte ceiling; "
+                    "rematerialise with a smaller time_chunk"
+                    % (source_chunk_bytes, int(maximum_source_chunk_bytes)))
+            coordinate_digest = hashlib.sha256()
+            coordinate_digest.update(np.ascontiguousarray(nanoseconds).tobytes())
+            coordinate_digest.update(np.ascontiguousarray(self.latitude).tobytes())
+            coordinate_digest.update(np.ascontiguousarray(self.longitude).tobytes())
+            self.variable = str(variable)
+            self.level_hpa = float(level_hpa) if level_hpa is not None else None
+            self.units = str(self.array.attrs.get("units", "unknown"))
+            source_is_portable = (spec.store in CATALOGUE or "://" in spec.store
+                                  or spec.store.startswith("cds:"))
+            self.source_provenance = {
+                "content_key": manifest.get("content_key"),
+                "content_hash": manifest.get("content_hash"),
+                "crop_spec": manifest.get("spec"),
+                "shape": manifest.get("shape"),
+                "variables": manifest.get("variables"),
+                "cache_chunking": manifest.get("cache_chunking"),
+                "source_route": manifest.get("source_route", "catalogued Zarr cache"),
+                "independent_overlap_check": manifest.get(
+                    "independent_overlap_check", "NOT DECLARED"),
+                "acquisition_request_sha256": (
+                    ((manifest.get("acquisition") or {}).get("request") or {}).get(
+                        "request_sha256")),
+                "variable": self.variable,
+                "level_hpa": self.level_hpa,
+                "units": self.units,
+                "coordinate_sha256": coordinate_digest.hexdigest(),
+                "cadence_seconds": float(deltas[0] / 1e9),
+                "source_chunk_bytes": source_chunk_bytes,
+                "maximum_source_chunk_bytes": int(maximum_source_chunk_bytes),
+                "network_used": False,
+                "machine_paths_included": not source_is_portable,
+            }
+        except BaseException:
+            self.dataset.close()
+            raise
+
+    def __len__(self) -> int:
+        return int(self.times.size)
+
+    def read_frame(self, index: int):
+        import numpy as np
+        import torch
+
+        from src.physical_core.field import PhysicalField
+
+        if isinstance(index, bool) or int(index) != index or not 0 <= int(index) < len(self):
+            raise InvalidParameterError(
+                "index", index, "an integer frame index in 0..%d" % (len(self) - 1))
+        values = np.ascontiguousarray(self.array.isel(time=int(index)).values)
+        return PhysicalField(
+            torch.from_numpy(values),
+            coords=self._coords,
+            metadata={
+                "variable": self.variable,
+                "level": self.level_hpa,
+                "units": self.units,
+                "source_content_hash": self.source_provenance["content_hash"],
+                "source_coordinate_sha256": self.source_provenance["coordinate_sha256"],
+                "frame_index": int(index),
+                "is_simulated": False,
+            },
+            units=self.units,
+        )
+
+    def close(self) -> None:
+        self.dataset.close()
+
+    def __enter__(self) -> "CachedFieldReader":
+        return self
+
+    def __exit__(self, exc_type, exc, traceback) -> None:
+        self.close()
 
 
 def rematerialise_from_provenance(record: Dict[str, Any],

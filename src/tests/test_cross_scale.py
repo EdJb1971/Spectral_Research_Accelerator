@@ -47,6 +47,10 @@ def _gate_result(protocol, *, significant=True, powered=True, floor=True):
                 })
     return {"estimator": protocol.estimator, "measure": protocol.measure,
             "lags_frames": list(protocol.lags), "n_tests": protocol.family_size,
+            "bins": protocol.bins, "alpha": protocol.alpha,
+            "n_surrogates_requested": protocol.n_surrogates,
+            "correction": {"method": protocol.correction},
+            "protocol_fingerprint": protocol.fingerprint(),
             "power": {"can_reject_after_correction": powered},
             "support_floor": {"enforced": floor}, "results": rows}
 
@@ -73,6 +77,7 @@ def test_gate_protocol_fingerprint_is_stable_and_sensitive():
     changed = cs.GateProtocol("nz", 3, (1, 2), 4000,
                               embargo_frames=2, n_surrogates=5000)
     assert protocol.fingerprint() != changed.fingerprint()
+    assert cs.GateProtocol.from_mapping(protocol.to_mapping()) == protocol
 
 
 def test_replication_gate_distinguishes_pass_fail_and_invalid():
@@ -175,13 +180,14 @@ def test_the_support_floor_refuses_to_invent_an_advection_speed(cascade_signatur
 
 
 def test_a_declared_advection_speed_produces_a_scale_dependent_floor(cascade_signature):
-    """25 km cells: a level-3 filter spans 8 cells, 200 km, which is 5.6 hours at 10 m/s."""
+    """The floor uses db2's complete cascade support, not the dyadic scale label."""
     floors = cs.support_floor(cascade_signature, CADENCE, advection_speed_m_s=10.0)
     assert floors["enforced"] is True
     frames = [record["floor_frames"] for record in floors["floors"]]
     assert frames == sorted(frames), "a coarser scale cannot have a shorter floor"
     assert frames[-1] > frames[0]
-    assert floors["floors"][-1]["crossing_time_s"] == pytest.approx(8 * 25000.0 / 10.0)
+    assert floors["floors"][-1]["spatial_support_px"] == 22
+    assert floors["floors"][-1]["crossing_time_s"] == pytest.approx(22 * 25000.0 / 10.0)
 
 
 def test_lags_below_the_floor_are_excluded_by_name(cascade_signature):

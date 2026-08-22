@@ -20,6 +20,8 @@ import json
 import math
 import os
 import shutil
+import tempfile
+import time
 from dataclasses import asdict, dataclass
 from datetime import date, datetime, timedelta
 from pathlib import Path
@@ -30,11 +32,11 @@ from src.data_layer.regional_forecast import CANONICAL_VARIABLES, VARIABLE_ALIAS
 from src.data_layer.zarr_source import (
     NETWORK_ENV_VAR,
     CropSpec,
-    _content_hash,
     cache_path,
     check_crop_size,
     is_cached,
     manifest_path,
+    streaming_content_hash,
 )
 
 
@@ -52,6 +54,9 @@ PRESSURE_LEVELS = (
     900, 925, 950, 975, 1000,
 )
 ACQUISITION_SCHEMA = "cds-regional-acquisition/v1"
+STORAGE_SAFETY_FACTOR = 2.0
+MINIMUM_FREE_RESERVE_BYTES = 5 * 1024 ** 3
+PER_SHARD_OVERHEAD_BYTES = 16 * 1024 ** 2
 
 
 def _canonical_json(value: Any) -> bytes:
@@ -260,6 +265,129 @@ def plan_monthly_shards(spec: CDSRegionalRequest) -> Tuple[CDSShard, ...]:
     return tuple(shards)
 
 
+def estimate_cds_storage(
+    spec: CDSRegionalRequest,
+    *,
+    shards: Optional[Sequence[CDSShard]] = None,
+) -> Dict[str, Any]:
+    """Conservative pre-download storage estimate from the frozen request geometry.
+
+    CDS does not publish the eventual NetCDF compression ratio before materialisation.  The
+    refusal boundary therefore starts from float32 payload bytes, doubles them independently
+    for the NetCDF and Zarr artifacts, and adds fixed per-shard container overhead.  It never
+    treats hoped-for compression as available capacity.
+    """
+    selected = tuple(plan_monthly_shards(spec) if shards is None else shards)
+    frame_count = sum(len(shard.days) * len(spec.hours_utc) for shard in selected)
+    latitude_points = int(math.ceil(
+        (spec.lat_max - spec.lat_min) / spec.grid_degrees - 1e-12)) + 1
+    longitude_points = int(math.ceil(
+        (spec.lon_max - spec.lon_min) / spec.grid_degrees - 1e-12)) + 1
+    value_count = (frame_count * len(spec.pressure_levels) * latitude_points
+                   * longitude_points * len(spec.variables))
+    raw_value_bytes = int(value_count * 4)
+    artifact_bytes = int(math.ceil(raw_value_bytes * STORAGE_SAFETY_FACTOR)
+                         + len(selected) * PER_SHARD_OVERHEAD_BYTES)
+    return {
+        "basis": "float32 values x 2 safety factor + 16 MiB container overhead per shard",
+        "compression_credit_assumed": False,
+        "frames": int(frame_count),
+        "latitude_points_upper_bound": latitude_points,
+        "longitude_points_upper_bound": longitude_points,
+        "levels": len(spec.pressure_levels),
+        "variables": len(spec.variables),
+        "raw_value_bytes": raw_value_bytes,
+        "artifact_bytes_upper_bound": artifact_bytes,
+        "shards": len(selected),
+    }
+
+
+def _storage_location(path: Path) -> Tuple[Path, str]:
+    candidate = path.expanduser().absolute()
+    while not candidate.exists() and candidate != candidate.parent:
+        candidate = candidate.parent
+    if not candidate.exists():
+        raise DataSourceError("cannot resolve a filesystem for storage preflight", path=str(path))
+    resolved = candidate.resolve()
+    drive = os.path.splitdrive(str(resolved))[0].upper()
+    identity = drive or "device:%s" % os.stat(resolved).st_dev
+    return resolved, identity
+
+
+def preflight_cds_storage(
+    spec: CDSRegionalRequest,
+    *,
+    download_dir: Union[str, os.PathLike[str]],
+    cache_dir: Optional[Union[str, os.PathLike[str]]] = None,
+    minimum_free_reserve_bytes: int = MINIMUM_FREE_RESERVE_BYTES,
+) -> Dict[str, Any]:
+    """Refuse an acquisition whose peak working set plus reserve does not fit.
+
+    Completed, tracked shards already consume filesystem space, so only missing shards count
+    toward additional download capacity.  Cache conversion still budgets the complete Zarr
+    artifact.  Requirements are combined when download and cache directories share a volume.
+    """
+    if isinstance(minimum_free_reserve_bytes, bool) \
+            or int(minimum_free_reserve_bytes) != minimum_free_reserve_bytes \
+            or minimum_free_reserve_bytes < 0:
+        raise InvalidParameterError(
+            "minimum_free_reserve_bytes", minimum_free_reserve_bytes,
+            "a non-negative integer byte reserve")
+    download_path = Path(download_dir)
+    shards = plan_monthly_shards(spec)
+    completed_names = set()
+    state_path = download_path / "acquisition.json"
+    if state_path.exists():
+        state = _read_state(state_path, spec, shards)
+        completed_names = set(state.get("completed_shards", {}))
+    remaining = tuple(shard for shard in shards if shard.filename not in completed_names)
+    download_estimate = estimate_cds_storage(spec, shards=remaining)
+    cache_estimate = estimate_cds_storage(spec)
+
+    roles = [("download", download_path, download_estimate["artifact_bytes_upper_bound"])]
+    if cache_dir is not None:
+        roles.append(("cache", Path(cache_dir), cache_estimate["artifact_bytes_upper_bound"]))
+    grouped: Dict[str, Dict[str, Any]] = {}
+    for role, path, required in roles:
+        existing, identity = _storage_location(path)
+        entry = grouped.setdefault(identity, {
+            "volume": identity, "roles": [], "existing_probe": existing,
+            "working_bytes_required": 0,
+        })
+        entry["roles"].append(role)
+        entry["working_bytes_required"] += int(required)
+
+    reports = []
+    for entry in grouped.values():
+        usage = shutil.disk_usage(entry.pop("existing_probe"))
+        working = int(entry["working_bytes_required"])
+        reserve = max(int(minimum_free_reserve_bytes), int(math.ceil(working * 0.10)))
+        total_required = working + reserve
+        report = {
+            **entry,
+            "free_bytes": int(usage.free),
+            "reserve_bytes": reserve,
+            "total_free_required": total_required,
+            "passes": int(usage.free) >= total_required,
+        }
+        reports.append(report)
+    failures = [report for report in reports if not report["passes"]]
+    result = {
+        "status": "READY" if not failures else "INSUFFICIENT_SPACE",
+        "download_estimate": download_estimate,
+        "cache_estimate": cache_estimate if cache_dir is not None else None,
+        "completed_shards": len(completed_names),
+        "remaining_shards": len(remaining),
+        "volumes": sorted(reports, key=lambda record: record["volume"]),
+    }
+    if failures:
+        raise DataSourceError(
+            "CDS storage preflight failed before network use: peak working bytes plus the "
+            "free-space reserve do not fit",
+            storage_preflight=result)
+    return result
+
+
 def _network_enabled(allow_network: Optional[bool]) -> bool:
     if allow_network is not None:
         return bool(allow_network)
@@ -325,6 +453,7 @@ def acquire_cds_shards(
         raise DataSourceError(
             "CDS acquisition is network-disabled; set %s=1 or pass allow_network=True explicitly"
             % NETWORK_ENV_VAR)
+    storage_preflight = preflight_cds_storage(spec, download_dir=download_dir)
     if client is None:
         try:
             import cdsapi
@@ -389,6 +518,7 @@ def acquire_cds_shards(
         "resumed_shards": resumed,
         "complete": len(completed) == len(shards),
         "total_bytes": int(sum(int(value["bytes"]) for value in completed.values())),
+        "storage_preflight": storage_preflight,
     }
     _write_state(state_path, state)
     return state
@@ -405,7 +535,12 @@ def _expected_times(spec: CDSRegionalRequest) -> List[datetime]:
     return values
 
 
-def _normalise_downloaded_dataset(dataset: Any, spec: CDSRegionalRequest) -> Any:
+def _normalise_downloaded_dataset(
+    dataset: Any,
+    spec: CDSRegionalRequest,
+    *,
+    expected_times: Optional[Sequence[datetime]] = None,
+) -> Any:
     import numpy as np
 
     coordinate_renames = {
@@ -440,8 +575,11 @@ def _normalise_downloaded_dataset(dataset: Any, spec: CDSRegionalRequest) -> Any
     dataset = dataset.sel(level=list(spec.pressure_levels))
     dataset = dataset.sortby("time")
     observed_times = np.asarray(dataset.time.values).astype("datetime64[ns]")
-    expected_times = np.asarray(_expected_times(spec), dtype="datetime64[ns]")
-    if not np.array_equal(observed_times, expected_times):
+    required_times = np.asarray(
+        list(expected_times) if expected_times is not None else _expected_times(spec),
+        dtype="datetime64[ns]",
+    )
+    if not np.array_equal(observed_times, required_times):
         raise DataSourceError(
             "CDS output timestamps do not exactly match the requested calendar dates/hours")
     lat = np.asarray(dataset.latitude.values, dtype=float)
@@ -453,7 +591,14 @@ def _normalise_downloaded_dataset(dataset: Any, spec: CDSRegionalRequest) -> Any
         raise DataSourceError("CDS output grid spacing does not match the declared request")
     if any(not np.issubdtype(dataset[name].dtype, np.number) for name in spec.variables):
         raise DataSourceError("CDS output variables must be numeric")
-    return dataset
+    # Canonical dimension order makes append semantics and the logical content hash
+    # independent of how an individual NetCDF writer happened to order its axes.
+    return dataset.transpose("time", "level", "latitude", "longitude")
+
+
+def _shard_expected_times(shard: CDSShard, spec: CDSRegionalRequest) -> Tuple[datetime, ...]:
+    return tuple(datetime(shard.year, shard.month, day, hour)
+                 for day in shard.days for hour in spec.hours_utc)
 
 
 def materialise_cds(
@@ -476,6 +621,9 @@ def materialise_cds(
         manifest["cache_hit"] = True
         manifest["bytes_transferred"] = 0
         return manifest
+    storage_preflight = preflight_cds_storage(
+        spec, download_dir=download_dir,
+        cache_dir=Path(cache_path(crop, cache_dir)).parent)
     state = acquire_cds_shards(
         spec, download_dir, client=client, allow_network=allow_network)
     if not state.get("run", {}).get("complete"):
@@ -483,53 +631,126 @@ def materialise_cds(
 
     import numpy as np
     import xarray as xr
-    paths = [Path(download_dir) / shard.filename for shard in plan_monthly_shards(spec)]
-    opened = [xr.open_dataset(path) for path in paths]
+
+    started = time.monotonic()
+    shards = plan_monthly_shards(spec)
+    expected_frame_count = len(_expected_times(spec))
+    path = Path(cache_path(crop, cache_dir))
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if path.exists():
+        raise DataSourceError("unmanifested CDS cache path already exists", path=str(path))
+    temporary_root = Path(tempfile.mkdtemp(
+        dir=str(path.parent), prefix=".%s." % crop.content_key()))
+    temporary_store = temporary_root / "cache.zarr"
+
+    reference_lat = reference_lon = reference_level = None
+    variables_seen: Optional[Tuple[str, ...]] = None
+    frames_written = 0
+    max_frames_in_memory = 0
+    first_write = True
+    geometry: Optional[Dict[str, Any]] = None
+    chunking: Optional[Dict[str, int]] = None
     try:
-        loaded_parts = [dataset.load() for dataset in opened]
-        combined = xr.concat(loaded_parts, dim="time", data_vars="minimal", coords="minimal",
-                             compat="equals", join="exact")
-        combined = _normalise_downloaded_dataset(combined, spec)
-        if not all(bool(np.isfinite(combined[name].values).all()) for name in spec.variables):
-            raise DataSourceError("CDS output contains non-finite values; no implicit imputation is allowed")
-        height, width = int(combined.sizes["latitude"]), int(combined.sizes["longitude"])
-        geometry = (check_crop_size(height, width, spec.n_levels_analysis)
-                    if check_size else {"ok": None, "skipped": "check_size=False"})
-        chunking = {
-            "time": min(int(time_chunk), int(combined.sizes["time"])),
-            "level": int(combined.sizes["level"]),
-            "latitude": height,
-            "longitude": width,
-        }
-        rechunked = combined.chunk(chunking)
-        encoding = {}
-        for name in rechunked.data_vars:
-            for key in ("chunks", "preferred_chunks"):
-                rechunked[name].encoding.pop(key, None)
-            encoding[name] = {"chunks": tuple(
-                int(chunking.get(str(dim), rechunked.sizes[dim]))
-                for dim in rechunked[name].dims)}
-        path = Path(cache_path(crop, cache_dir))
-        path.parent.mkdir(parents=True, exist_ok=True)
-        if path.exists():
-            raise DataSourceError("unmanifested CDS cache path already exists", path=str(path))
-        rechunked.to_zarr(path, mode="w", consolidated=True, encoding=encoding)
+        for shard in shards:
+            shard_path = Path(download_dir) / shard.filename
+            with xr.open_dataset(shard_path) as opened:
+                normalised = _normalise_downloaded_dataset(
+                    opened, spec, expected_times=_shard_expected_times(shard, spec))
+                lat = np.asarray(normalised.latitude.values)
+                lon = np.asarray(normalised.longitude.values)
+                level = np.asarray(normalised.level.values)
+                names = tuple(sorted(str(name) for name in normalised.data_vars))
+                if reference_lat is None:
+                    reference_lat, reference_lon, reference_level = lat, lon, level
+                    variables_seen = names
+                    height = int(normalised.sizes["latitude"])
+                    width = int(normalised.sizes["longitude"])
+                    geometry = (check_crop_size(height, width, spec.n_levels_analysis)
+                                if check_size else {"ok": None, "skipped": "check_size=False"})
+                    chunking = {
+                        "time": min(int(time_chunk), expected_frame_count),
+                        "level": int(normalised.sizes["level"]),
+                        "latitude": height,
+                        "longitude": width,
+                    }
+                elif (not np.array_equal(lat, reference_lat)
+                      or not np.array_equal(lon, reference_lon)
+                      or not np.array_equal(level, reference_level)
+                      or names != variables_seen):
+                    raise DataSourceError(
+                        "CDS monthly shards do not share exact coordinates and variables; "
+                        "concatenation would mix different grids or schemas")
+
+                assert chunking is not None
+                for start in range(0, int(normalised.sizes["time"]), int(time_chunk)):
+                    stop = min(start + int(time_chunk), int(normalised.sizes["time"]))
+                    block = normalised.isel(time=slice(start, stop)).load()
+                    max_frames_in_memory = max(max_frames_in_memory, stop - start)
+                    if not all(bool(np.isfinite(block[name].values).all())
+                               for name in spec.variables):
+                        raise DataSourceError(
+                            "CDS output contains non-finite values; no implicit imputation is allowed")
+                    block = block.chunk(chunking)
+                    encoding = {}
+                    for name in block.data_vars:
+                        for key in ("chunks", "preferred_chunks"):
+                            block[name].encoding.pop(key, None)
+                        encoding[name] = {"chunks": tuple(
+                            int(chunking.get(str(dim), block.sizes[dim]))
+                            for dim in block[name].dims)}
+                    if first_write:
+                        block.to_zarr(
+                            temporary_store, mode="w", consolidated=False, encoding=encoding)
+                        first_write = False
+                    else:
+                        block.to_zarr(
+                            temporary_store, mode="a", append_dim="time", consolidated=False)
+                    frames_written += stop - start
+
+        if first_write or frames_written != expected_frame_count:
+            raise DataSourceError(
+                "CDS cache contains %d frames after streaming, expected %d"
+                % (frames_written, expected_frame_count))
+
+        import zarr
+        zarr.consolidate_metadata(str(temporary_store))
+        with xr.open_zarr(temporary_store, consolidated=True) as completed:
+            observed_times = np.asarray(completed.time.values).astype("datetime64[ns]")
+            expected_times = np.asarray(_expected_times(spec), dtype="datetime64[ns]")
+            if not np.array_equal(observed_times, expected_times):
+                raise DataSourceError(
+                    "streamed CDS cache timestamps do not exactly match the complete request")
+            content_hash = streaming_content_hash(completed, time_block=int(time_chunk))
+            final_shape = {key: int(value) for key, value in completed.sizes.items()}
+
+        # Publish only a complete, validated store. The manifest follows, so an interrupted
+        # conversion is never discoverable as a cache hit.
+        os.replace(temporary_store, path)
         manifest = {
             "content_key": crop.content_key(),
             "cache_path": str(path),
             "cache_hit": False,
             "spec": crop.to_provenance(),
-            "shape": {key: int(value) for key, value in combined.sizes.items()},
-            "variables": sorted(str(name) for name in combined.data_vars),
-            "content_hash": _content_hash(combined),
+            "shape": final_shape,
+            "variables": list(variables_seen or ()),
+            "content_hash": content_hash,
             "bytes_transferred": int(state["run"]["total_bytes"]),
             "megabytes_transferred": round(int(state["run"]["total_bytes"]) / 1e6, 3),
-            "elapsed_s": None,
+            "elapsed_s": round(time.monotonic() - started, 3),
             "remote_chunk_structure": "CDS monthly regional NetCDF shards",
             "access_assessment": {"route": "regional_server_side_subset", "chunk_amplification": None},
             "geometry": geometry,
             "cache_chunking": chunking,
             "rechunk_rationale": "monthly CDS shards converted to bounded time chunks for local/HPC workers",
+            "materialisation": {
+                "strategy": "monthly shards appended in bounded time blocks",
+                "maximum_source_frames_in_memory": int(max_frames_in_memory),
+                "requested_time_block_frames": int(time_chunk),
+                "full_record_loaded": False,
+                "publication": "temporary sibling Zarr renamed only after complete validation",
+                "content_hash": "logical variable-major stream; independent of Zarr chunking",
+            },
+            "storage_preflight": storage_preflight,
             "acquisition": state,
             "source_route": "Copernicus Climate Data Store API",
             "independent_overlap_check": "NOT RUN",
@@ -540,13 +761,12 @@ def materialise_cds(
         os.replace(temporary, manifest_file)
         return manifest
     except Exception:
-        incomplete_cache = Path(cache_path(crop, cache_dir))
-        if incomplete_cache.is_dir() and not Path(manifest_path(crop, cache_dir)).exists():
-            shutil.rmtree(incomplete_cache)
+        if path.is_dir() and not Path(manifest_path(crop, cache_dir)).exists():
+            shutil.rmtree(path)
         raise
     finally:
-        for dataset in opened:
-            dataset.close()
+        if temporary_root.exists():
+            shutil.rmtree(temporary_root)
 
 
 def rematerialise_cds_from_provenance(
@@ -629,6 +849,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         result = {
             "request": spec.to_provenance(),
             "monthly_shards": [shard.to_provenance() for shard in plan_monthly_shards(spec)],
+            "storage_estimate": estimate_cds_storage(spec),
             "network_used": False,
         }
     else:

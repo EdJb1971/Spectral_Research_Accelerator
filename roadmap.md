@@ -55,7 +55,7 @@ skill, show the counterexamples, or report that no robust relationship survives.
 ## 1. Honest Technical Status
 
 Verified against the code on 2026-08-22. Every claim here is backed by captured output in
-`VERIFICATION.md`; `architecture.md` Section 7 holds the full defect ledger (D1-D45, of which **42 fixed, 1 partial (D18), 2 open (D17, D43)**).
+`VERIFICATION.md`; `architecture.md` Section 7 holds the full defect ledger (D1-D50, of which **48 fixed, 1 partial (D18), 1 open (D43)**).
 
 The numbers in this table are checked by `src/tests/test_documentation.py`, which parses them
 out of this file and compares them against the source. That guard exists because this table
@@ -65,10 +65,10 @@ status section, it is a memory.
 
 | Area | Real status |
 |---|---|
-| **Phase progress** | **Phase 3.5 complete** (25 tasks). **Phase 4A, 4B and 4C complete** as implementable work: T4A.1-4, T4B.1-4, T4C.1-5. **T5.0 is partial:** T5.0a-b supplies the strict versioned/hashable protocol and runtime-binding gate, but the actual laboratory evidence/config has not been supplied or frozen. **T5.1 is partial:** T5.1a-e accepts raw/FFT/DCT/Haar/db2/SWT/DTCWT training representations, optimized and exposed with truthful UI readiness; mixed precision and remaining cross-device acceptance remain. **T5.2 is partial:** T5.2a-d implements the aligned, leakage-safe, train-normalised PyTorch dataset, bounded-memory worker-safe cache, offline-accepted CDS acquisition contract, exact calendar splits and verified physical-time leads; the live CDS run, independent overlap and viable multi-year NZ crop remain blocked by D43. **T5.3 is partial:** T5.3a-b supplies the forecaster seam, persistence baseline, deterministic represented smoke run, verified model-artifact contract and persistence-relative evaluator; T5.3c and the actual laboratory model remain open. **T5.6 is partial:** T5.6a-g supplies the offline FCN3 identity, lazy canonical cube/import boundary, exact ERA5 truth bridge, matched ensemble metric engine, atomic reproducible run receipt, portable laptop/HPC runner and verified API/UI reporting; no worker, dependency, checkpoint, initial condition, real forecast or real truth evaluation has run, so the result UI is honestly empty. **Not done:** T4C.6, the real-ERA5 gate review; 4D-4H; T5.4-5, the remaining T5.6 inference/real-data work, T5.7, and the T5.8 irregular-observation/spatial-downscaling track. Per-task evidence blocks sit under each task below; a task without a **DONE** or **PARTIAL** label has not been started. |
+| **Phase progress** | **Phase 3.5 complete** (25 tasks). **Phase 4A, 4B and the pre-gate 4C instrument are complete:** T4A.1-4, T4B.1-4, T4C.1-5d. T4C.5d makes the real gate bounded and content-bound, but **T4C.6 has not run**. **T5.0 is partial:** T5.0a-b supplies the strict versioned/hashable protocol and runtime-binding gate, but the actual laboratory evidence/config has not been supplied or frozen. **T5.1 is partial:** T5.1a-e accepts raw/FFT/DCT/Haar/db2/SWT/DTCWT training representations, optimized and exposed with truthful UI readiness; mixed precision and remaining cross-device acceptance remain. **T5.2 is partial:** T5.2a-d implements the aligned, leakage-safe, train-normalised PyTorch dataset, bounded-memory worker-safe cache, bounded blockwise CDS cache publication, exact calendar splits and verified physical-time leads; the live CDS run, independent overlap and viable multi-year NZ crop remain blocked by D43. **T5.3 is partial:** T5.3a-b supplies the forecaster seam, persistence baseline, deterministic represented smoke run, verified model-artifact contract and persistence-relative evaluator; T5.3c and the actual laboratory model remain open. **T5.6 is partial:** T5.6a-g supplies the offline FCN3 identity, lazy canonical cube/import boundary, exact ERA5 truth bridge, matched ensemble metric engine, atomic reproducible run receipt, portable laptop/HPC runner and verified API/UI reporting; no worker, dependency, checkpoint, initial condition, real forecast or real truth evaluation has run, so the result UI is honestly empty. **Not done:** T4C.6, the real-ERA5 gate review; 4D-4H; T5.4-5, the remaining T5.6 inference/real-data work, T5.7, and the T5.8 irregular-observation/spatial-downscaling track. Per-task evidence blocks sit under each task below; a task without a **DONE** or **PARTIAL** label has not been started. |
 | Ownership / licence | **Declared in `LICENSE.md`.** Edward Jonathan Bentley retains the proprietary SpectralEarth core. Adam Frank Bentley has a named perpetual, worldwide, royalty-free grant for lawful personal, academic, research and commercial use/modification, without public redistribution or sublicensing of the core. Independent extensions and upstream contributions remain separately governed. This bespoke text has not been professionally reviewed. |
 | **Accessibility** | **Zero, measured.** `0` `aria-*` or `role` attributes and `0` keyboard handlers across `frontend/src`. No focus management. The UI is usable with a mouse and by nobody else. Not scheduled; recorded so it cannot be mistaken for an oversight. |
-| Backend test suite | **1095 passed, 1 xfailed.** Plus one explicit skip: the opt-in live-GCS check. Trajectory: 19 written / 1 failing / uncollectable -> 65 -> 152 -> 222 -> 271 -> 351 -> 407 -> 449 -> 478 -> 535 -> 548 -> 593 -> 642 -> 647 -> 709 -> 781 -> 855 -> 859 -> 882 -> 883 -> 890 -> 911 -> 917 -> 933 -> 946 -> 955 -> 957 -> 962 -> 969 -> 981 -> 985 -> 1000 -> 1008 -> 1027 -> 1042 -> 1056 -> 1070 -> 1080 -> 1089 -> 1094 -> 1095. |
+| Backend test suite | **1104 passed, 1 xfailed.** Plus one explicit skip: the opt-in live-GCS check. Trajectory: 19 written / 1 failing / uncollectable -> 65 -> 152 -> 222 -> 271 -> 351 -> 407 -> 449 -> 478 -> 535 -> 548 -> 593 -> 642 -> 647 -> 709 -> 781 -> 855 -> 859 -> 882 -> 883 -> 890 -> 911 -> 917 -> 933 -> 946 -> 955 -> 957 -> 962 -> 969 -> 981 -> 985 -> 1000 -> 1008 -> 1027 -> 1042 -> 1056 -> 1070 -> 1080 -> 1089 -> 1094 -> 1095 -> 1102 -> 1104. |
 | Ground-Truth Benchmark Suite | **15 PASS, 0 FAIL, 2 NOT_YET_RUNNABLE.** Nine datasets with declared known answers, five of them nulls. CI-ready via `python -m src.benchmarks` (exit 0). |
 | Backend compute modules | **Written, executed and tested.** `physical_core` carries `GridSpec` + metric-aware operators; `analysis_engine` gained `spectra.py` and `climatology.py`; `transform_engine` gained the undecimated `stationary.py` and a real `dtcwt.py`; `statistics/` and `core/` are new packages. |
 | Physical units and wavenumbers | **Correct as of T3.5.13.** Gradients metric-aware, spectra on a physical `k` axis, domain statistics area-weighted, and every quantity carries its units. Previously all of it was pixel-space and unlabelled (D13). |
@@ -84,7 +84,7 @@ status section, it is a memory.
 | FastAPI surface | **31 endpoints**, executed and smoke-tested. CORS, health and collection endpoints all added (T3.5.2, T3.5.10); T5.6g adds verified receipt import/list/get. Health reports device, executor, SQLite pragmas and schema revision. |
 | React frontend | **Ten modules, wired to the backend, and no longer able to fabricate a result** (T3.5.22/T3.5.23/T5.6g). Export in CSV/JSON/NetCDF4/Zarr/PNG/SVG with provenance embedded in the file; units, spectral convention and slope uncertainty displayed; simulated data labelled where it is used. Health/device/executor/schema, the benchmark suite, the data-source chain with its simulated flags, the ERA5 crop inspector, T5.1 representation readiness, T5.2 manifest readiness, per-hypothesis statistics and receipt-backed forecast evaluation are reachable now; `tsc` is clean and the current build emits 1,386 modules. A contract test asserts every fetched path is served and every field the UI reads exists. **The then-nine modules were rendered in a browser and confirmed working by the user on 2026-08-20** (T3.5.25). No screenshots were captured, so that confirmation is a **user report rather than an artefact in the repository**; T3.5.0 asked for a screenshot per tab and that literal evidence is still absent. The tenth Forecast Evaluation module has compiled and built but has not been visually inspected. |
 | Real ERA5 data | **Reading the live archive as of T3.5.18.** Regional crops stream from public WeatherBench 2 Zarr on GCS into a rechunked local cache: 257x257 x 4 levels x 8 days materialised in 186 s (951 MB wire, 19 MB cached, 51.1x chunk amplification measured against 51.1x predicted). Network access is opt-in; a cached crop works offline. **A one-year crop at the R13 floor is 79 GB and ~2 h - measured, not achievable at laptop tier, and stated as such.** |
-| Vectorisation | **Partial** (D17). The radial PSD and coherence paths are vectorised; per-bin Python loops remain in `decompose_by_boundary` and `analyze_boundary_artefacts`. |
+| Vectorisation | **Complete for D17.** Radial PSD, coherence, both boundary-distance profiles and Tukey construction are single-pass/vectorised. On a 512x512 field with 256 rings, `decompose_by_boundary` fell from 148.8 ms mean to 7.70 ms mean (**19.3x**) while matching an independent oracle. Long-record signature and climatology extraction now stream one frame at a time. |
 
 **The original baseline audit** (2026-08-19, before any of Phase 3.5) is preserved in
 `architecture.md` Section 7 and in the early sections of `VERIFICATION.md`. It recorded that
@@ -651,9 +651,19 @@ so a run can be re-executed to the same numbers. And **T3.5.14's sweep-level acc
 partially-failing sweep completes its good runs and names the failing step - a test asserts 3
 of 4 runs COMPLETED with the fourth naming its bad parameter.
 
-### T3.5.20 Vectorise the radial and distance binning *(D17, implements E10)*
+### T3.5.20 Vectorise the radial and distance binning *(D17, implements E10)* - **DONE**
 Replace all five per-bin loops with `torch.bincount` / `scatter_add` single-pass reductions (`compute_radial_psd`, `compute_spectral_coherence`, `decompose_by_boundary`, `analyze_boundary_artefacts`, and the Tukey window construction). Batch the transform over `(time, scale, orientation)` as tensor dimensions rather than Python iteration.
 **Acceptance:** bit-comparable results to the current implementation (within float tolerance) on the benchmark suite, plus a recorded speed-up on a 512x512 field. This is a prerequisite for the `laptop` tier being honest rather than aspirational.
+
+**Met.** The radial PSD/coherence and Tukey paths were already vectorised. The two remaining
+distance profiles now label every pixel once, use `bincount` for counts/sums and grouped
+`scatter_reduce(amax)` for maxima, and only loop over the small result vector for JSON
+serialization. Independent nested-loop oracles preserve the integer interior rings and the
+boundary lab's Euclidean padded-corner rings exactly. On float64 512x512 input with 256 rings,
+the error-decomposition path measured 148.8 ms mean before and 7.70 ms after (**19.3x**). The
+earlier proposal to batch an entire long `(time,scale,orientation)` cube is superseded by the
+bounded T4C.5d stream: batching thousands of 512x512 coefficient frames would violate E9/E10;
+one-frame transform residency is the laptop-safe seam.
 
 ### T3.5.21 Device and thread policy *(D18, implements E9)* - **PARTIAL** (CPU and T5.1a CUDA verified; whole-platform/ROCm/MPS agreement remains)
 Extend `get_execution_device` to CUDA/ROCm -> MPS -> CPU with an explicit override; configure CPU thread counts; make every kernel device-agnostic (the current code mixes CPU-constructed tensors with a selected device in places).
@@ -1132,6 +1142,39 @@ immediately caught a real defect in the surrogate machinery** - see `architectur
 The suite is now **15 PASS, 0 FAIL, 2 NOT_YET_RUNNABLE**.
 Benjamini-Hochberg helper; retrofit it onto the **existing** hypothesis engine as well as all new mining. Every `Hypothesis` row gains `n_tests_in_family`, `p_value`, `q_value`, `surrogate_effect_size`.
 
+**T4C.5d Bounded, content-bound gate execution *(fixes D46-D50)* - DONE.** The calibrated
+statistics were not yet an executable real study. Four failures were closed before acquiring
+the expensive record:
+
+* CDS conversion no longer loads every monthly shard and concatenates the full record in RAM.
+  It validates and appends bounded time blocks to a sibling Zarr store, streams the same
+  chunk-independent logical content hash, verifies the complete time axis, and atomically
+  publishes only after success.
+* Before the first CDS client call, storage preflight budgets the remaining NetCDF shards and
+  complete temporary Zarr independently without assuming compression, combines requirements
+  on a shared volume, and preserves the greater of 5 GiB or 10% working-space reserve.
+* `stream_scale_signature` produces the exact eager energy, concentration and threshold
+  measures in two passes while retaining one source/coefficient frame. It hashes both passes
+  and refuses a source that changes between them. Test thresholds can be supplied from train,
+  preventing a secondary threshold diagnostic from fitting on held-out data.
+* `fit_harmonic_climatology_stream` uses the same explicit SVD pseudo-inverse as the accepted
+  R11 implementation, fits only declared training indices, retains `(parameters,H,W)` rather
+  than `(time,H,W)`, and matches eager anomalies to float64 tolerance.
+* `GateStudyPlan` now freezes crop, variable, level, transform/filter/boundary semantics,
+  climatology, advection speed and `GateProtocol` under one SHA-256. Local-only preflight checks
+  exact frames/cadence, actual transform interiors and the full filter-support floor. For a
+  frozen real study it enforces R13's 128-parent-pixel minimum from those actual filters; the
+  generic 14-tap 512/1024 planning floor is not incorrectly imposed on a known shorter filter.
+  The
+  runner binds train/test results to that plan, reuses train-fitted thresholds, and atomically
+  publishes a tamper-detecting receipt. Synthetic acceptance remains
+  `scientific_verdict: NOT_ESTABLISHED`; a real role additionally requires direct CDS provenance
+  and a recorded PASS from the independent WeatherBench overlap check.
+
+The support-floor audit found D48: the code claimed filter support but used `2**level`. It now
+uses SWT/DTCWT's exact accumulated `support_parent_px`; for db2 level 3 that is 22 pixels, not
+the scale label 8. The synthetic Zarr-to-receipt job passes without network access.
+
 **T4C.6 GATE REVIEW.** Written verdict: does cross-scale organisation exceed the surrogate ensemble at $q < 0.05$, at lags above the support floor, on real ERA5 data?
 *   **Pass** -> proceed to 4D.
 *   **Fail** -> stop. Write up the negative result. It is a genuine, publishable-shaped finding that the observed cross-scale coefficient structure is explained by the power spectrum alone, and it saves 4D-4G entirely.
@@ -1151,13 +1194,16 @@ longest tested lag. `evaluate_replication_gate` returns PASS only when the same 
 corrected relationship occurs independently in train and test; an adequately powered absence
 is FAIL, while configuration drift, missing advection support or inadequate power is INVALID.
 
-No crop is currently cached. Live metadata inspection of the 0.7-degree store found that the
+No gate-sized crop is currently cached. Live metadata inspection of the 0.7-degree store found that the
 three-year, one-variable record needed to populate independent transfer-entropy partitions
 would fetch an estimated **29.88 GB** because every eight-frame chunk still spans all levels
 and the globe (26.2x amplification). The 0.25-degree source is worse. T4C.6 is therefore
 blocked by **D43**, not complete: add a temporally deep, spatially tiled source (or a direct
 regional CDS acquisition path), verify its values/provenance against ERA5, then freeze the
-exact crop before transfer. The sample requirement will not be relaxed to fit the old layout.
+exact crop before transfer. The acquisition and analysis paths are now bounded and executable;
+the remaining boundary is external evidence: CDS credentials/licence acceptance, the live
+multi-year transfer and a passed independent-route overlap receipt. The sample requirement will
+not be relaxed to fit the old layout.
 
 ### Phase 4D - `SpectralFeature` and `SpectralFeatureTrack`
 

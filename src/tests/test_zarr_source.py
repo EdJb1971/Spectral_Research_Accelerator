@@ -433,6 +433,15 @@ def test_content_hash_is_independent_of_cache_chunking(hostile_store, tmp_path):
     b = zs.materialise(spec, cache_dir=str(tmp_path / "b"), check_size=False, time_chunk=12)
     assert a["cache_chunking"]["time"] != b["cache_chunking"]["time"]
     assert a["content_hash"] == b["content_hash"]
+    dataset_a, _ = zs.load_cached(_spec(hostile_store), cache_dir=str(tmp_path / "a"))
+    dataset_b, _ = zs.load_cached(_spec(hostile_store), cache_dir=str(tmp_path / "b"))
+    try:
+        assert zs.streaming_content_hash(dataset_a, time_block=1) == a["content_hash"]
+        assert zs.streaming_content_hash(dataset_a, time_block=5) == a["content_hash"]
+        assert zs.streaming_content_hash(dataset_b, time_block=7) == b["content_hash"]
+    finally:
+        dataset_a.close()
+        dataset_b.close()
 
 
 def test_size_check_is_enforced_during_materialisation(hostile_store, tmp_path):
@@ -544,6 +553,31 @@ def test_source_serves_a_cached_crop_with_no_network(monkeypatch, hostile_store,
     }, torch.device("cpu"))
     assert result["sequence_ref"].startswith("artifact://")
     assert result["summary"]["metadata"]["is_simulated"] is False
+
+
+def test_cached_field_reader_is_path_free_exact_and_chunk_bounded(hostile_store, tmp_path):
+    cache = str(tmp_path / "cache")
+    spec = _spec(hostile_store)
+    manifest = zs.materialise(
+        spec, cache_dir=cache, check_size=False, time_chunk=3)
+    with zs.CachedFieldReader(
+            spec, "temperature", level_hpa=850, cache_dir=cache) as reader:
+        assert len(reader) == manifest["shape"]["time"]
+        first = reader.read_frame(0)
+        assert first.data.shape == (
+            manifest["shape"]["latitude"], manifest["shape"]["longitude"])
+        assert first.grid.kind == "latlon"
+        assert first.metadata["variable"] == "temperature"
+        assert first.metadata["level"] == 850.0
+        assert reader.source_provenance["network_used"] is False
+        assert reader.source_provenance["machine_paths_included"] is True
+        assert "cache_path" not in reader.source_provenance
+        assert len(reader.source_provenance["coordinate_sha256"]) == 64
+
+    with pytest.raises(DataSourceError, match="above the 1-byte ceiling"):
+        zs.CachedFieldReader(
+            spec, "temperature", level_hpa=850, cache_dir=cache,
+            maximum_source_chunk_bytes=1)
 
 
 def test_source_without_a_crop_explains_why_it_cannot_guess():

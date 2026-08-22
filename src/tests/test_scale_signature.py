@@ -17,7 +17,7 @@ from src.analysis_engine.power_law import (PowerLawError, compare_exponent_to_nu
                                            loglog_fit)
 from src.analysis_engine.scale_signature import (MEASURES, ScaleSignature, gini,
                                                  participation_ratio, scale_energy_exponent,
-                                                 scale_signature)
+                                                 scale_signature, stream_scale_signature)
 from src.core.errors import InvalidParameterError
 from src.physical_core.field import PhysicalField
 from src.physical_core.grid import GridSpec
@@ -48,6 +48,46 @@ def _decompose(sequence, family, levels=4):
     config = ({"levels": levels, "wavelet": "db2"} if family == "swt"
               else {"levels": levels})
     return decompose_sequence(sequence, family, config, keep_native=True)
+
+
+def test_streamed_signature_is_exact_bounded_and_detects_a_mutable_source():
+    """T4C.6 readiness: multi-year coefficients must never be resident as one cube."""
+    grid = GridSpec.cartesian((64, 64), dy_m=25000.0, dx_m=25000.0)
+    sequence = _sequence([_noise(64, seed) for seed in range(5)], grid=grid)
+    config = {"levels": 2, "wavelet": "db2"}
+    ordinary = scale_signature(decompose_sequence(
+        sequence, "swt", config, keep_native=True))
+    reads = []
+
+    def reader(index):
+        reads.append(index)
+        return sequence.at(index)
+
+    streamed = stream_scale_signature(
+        reader, sequence.times_seconds, family="swt", config=config,
+        source_provenance={"fixture": "five deterministic frames"})
+    assert reads == list(range(5)) * 2
+    for measure in MEASURES:
+        assert np.allclose(getattr(streamed, measure), getattr(ordinary, measure),
+                           rtol=1e-12, atol=1e-12, equal_nan=True)
+    assert np.allclose(streamed.threshold_values, ordinary.threshold_values,
+                       rtol=1e-12, atol=1e-12)
+    assert streamed.provenance["source_frames_resident"] == 1
+    assert streamed.provenance["coefficient_frames_resident"] == 1
+    assert streamed.provenance["input_verified_unchanged_between_passes"] is True
+    assert len(streamed.provenance["input_stream_sha256"]) == 64
+
+    calls = [0]
+    def mutable_reader(index):
+        calls[0] += 1
+        frame = sequence.at(index)
+        if calls[0] > len(sequence) and index == 0:
+            return PhysicalField(frame.data + 1.0, grid=frame.grid)
+        return frame
+
+    with pytest.raises(InvalidParameterError, match="source changed during analysis"):
+        stream_scale_signature(
+            mutable_reader, sequence.times_seconds, family="swt", config=config)
 
 
 # ============================================================ the stated acceptance criteria

@@ -4355,3 +4355,48 @@ Clean full regression after adding that guard:
 
 This evidence proves repository consistency only. The bespoke licence has not been reviewed by
 a New Zealand intellectual-property lawyer and is not represented as professional legal advice.
+
+## T4C.5d - bounded, content-bound gate readiness and D17 closure
+
+The remaining D17 boundary-ring reductions now use single-pass grouped reductions and match
+independent loop oracles. On float64 512x512 input with 256 rings, the old
+`decompose_by_boundary` path measured 0.148814 s mean and the vectorised path 0.007700 s mean,
+a 19.3x speed-up.
+
+The direct CDS conversion no longer retains all monthly shards in memory: it validates and
+appends declared time blocks to a temporary Zarr store, verifies the complete time axis,
+streams the chunk-independent logical content hash and publishes atomically. Train-only
+harmonic climatology and exact two-pass scale signatures retain one source/coefficient frame.
+The frozen `GateStudyPlan` binds source, crop, transform, climatology and statistical protocol;
+local preflight uses the chosen filters' exact parent-grid support for both the R13 interior and
+advection floor. Receipts are no-overwrite and hash authenticated. Synthetic acceptance remains
+explicitly `scientific_verdict: NOT_ESTABLISHED`.
+
+Focused evidence:
+
+```text
+D17 analysis/boundary acceptance                         85 passed
+CDS and Zarr bounded materialisation/storage             73 passed, 1 skipped
+streamed scale signatures                                35 passed
+streamed climatology/benchmark acceptance                46 passed
+cross-scale protocol and exact support floor             60 passed
+synthetic cached gate plan -> authenticated receipt       1 passed
+documentation consistency                                19 passed
+```
+
+Clean full regression for the delivered tree:
+
+```text
+1104 passed, 1 skipped, 1 xfailed, 6 warnings in 178.68s
+```
+
+No `.cdsapirc` was present and the optional `cdsapi` dependency was not installed during this
+verification. Therefore no network request, multi-year NZ crop, independent-route overlap or
+real T4C.6 gate was run. D43 remains open, and Phase 4D-4H remains gated on that atmospheric
+PASS/FAIL rather than on synthetic plumbing evidence.
+
+D50 storage acceptance adds two refusal tests. The estimator assumes no compression credit,
+groups download and cache requirements by physical volume, and the insufficient-space case
+proves that the fake CDS client's call list remains empty. At verification time D: had
+1,180.1 GiB free; this observation is operational context only, because the live command will
+recheck capacity against the final frozen request.

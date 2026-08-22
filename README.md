@@ -457,9 +457,23 @@ python -m src.data_layer.cds_source plan `
   --lat -50 -20 --lon 150 180 --pressure-levels 850 --analysis-levels 3
 ```
 
+The plan also prints a conservative storage estimate. Materialisation rechecks the actual
+download and cache volumes before constructing the CDS client: it budgets remaining NetCDF
+shards plus the complete temporary Zarr without assuming compression, combines both when they
+share a drive, and refuses unless at least 5 GiB or 10% of the working requirement remains free
+afterwards. The storage decision is recorded in the acquisition/cache manifest.
+
 Those bounds and dates are an interface example, **not Emily's experiment specification**.
 Materialisation uses the same scientific arguments plus explicit `--download-dir`, `--cache-dir`
 and `--time-chunk`; it still refuses unless the network gate and standard CDS credentials are set.
+
+The T4C.6 execution boundary is available in `src.analysis_engine.gate_run`. A versioned
+`GateStudyPlan` freezes the crop, transform, climatology and complete statistical protocol;
+`preflight_cached_gate` verifies an existing cache without network fallback, and
+`run_cached_gate` streams train-only climatology and scale signatures into an atomic,
+tamper-detecting receipt. The real-evidence role refuses anything except the direct CDS route
+with a passed independent WeatherBench overlap check. Synthetic runs are always labelled
+`scientific_verdict: NOT_ESTABLISHED`. No atmospheric T4C.6 verdict has yet been produced.
 
 **Not supported:** GRIB (`.grib`/`.grib2`) ingestion via `cfgrib`, dateline-crossing CDS boxes
 without splitting them into two requests, and NOAA HRRR/GFS object-store retrieval.
