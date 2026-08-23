@@ -31,8 +31,10 @@ from __future__ import annotations
 
 from typing import Any, Dict, Optional, Sequence
 
-from src.analysis_engine.cross_scale import cross_scale_dependency
-from src.core.channel_series import ChannelSeriesLike, from_channel_series
+from src.analysis_engine.cross_scale import (GateProtocol, cross_scale_dependency,
+                                             evaluate_replication_gate)
+from src.core.channel_series import (ChannelSeries, ChannelSeriesLike, from_channel_series,
+                                     split_channel_series)
 from src.core.domain import DomainDeclaration
 from src.core.errors import InvalidParameterError
 
@@ -161,3 +163,90 @@ def association_only(series: ChannelSeriesLike, declaration: DomainDeclaration, 
             "while being neither" % declaration.name)
     return _run(series, declaration, claim=ASSOCIATION_CLAIM, lags=[int(v) for v in lags],
                 cadence_seconds=cadence_seconds, measure=measure, **kwargs)
+
+
+# ------------------------------------------------------------------- the replication gate
+
+def run_domain_gate(series: ChannelSeries, declaration: DomainDeclaration,
+                    protocol: GateProtocol) -> Dict[str, Any]:
+    """Split, sweep both partitions under the frozen protocol, and adjudicate (R6, TG0.3).
+
+    The verdict comes from `evaluate_replication_gate` unchanged, so it means here exactly
+    what it means for ERA5:
+
+    *   **PASS** — the same positive, corrected relationship appears independently in train and
+        test.
+    *   **FAIL** — an adequately powered absence. A result, not a failure of the run.
+    *   **INVALID** — the run cannot adjudicate: design drift, or a partition too weak to
+        reject anything. Must never be displayed as a negative finding.
+
+    The distinction between FAIL and INVALID is the whole point of the exercise. A system that
+    reports "nothing found" when it was arithmetically incapable of finding anything is worse
+    than one that reports nothing at all, because the first looks like evidence.
+
+    The protocol is validated **before** the split, so an underpowered or leaky design is
+    refused rather than run and then explained.
+    """
+    design = protocol.validate()
+
+    channels = list(series.channels)
+    if len(channels) != protocol.n_scales:
+        raise InvalidParameterError(
+            "protocol.n_scales", protocol.n_scales,
+            "the number of channels actually present (%d: %s). The frozen family size is "
+            "computed from this, and a mismatch would correct the wrong number of tests"
+            % (len(channels), channels))
+    if series.n_times != protocol.expected_frames:
+        raise InvalidParameterError(
+            "protocol.expected_frames", protocol.expected_frames,
+            "the number of frames actually present (%d). The design's per-partition power was "
+            "validated against the declared count, so a shorter record silently invalidates it"
+            % series.n_times)
+    if protocol.require_advection_floor and declaration.lag_policy != "advective":
+        raise InvalidParameterError(
+            "protocol.require_advection_floor", True,
+            "False for domain %r, which declares lag_policy=%r. The gate would demand an "
+            "enforced advective floor that this domain has already said does not exist, and "
+            "return INVALID for a reason that is really a mis-declared design"
+            % (declaration.name, declaration.lag_policy))
+
+    partitions = split_channel_series(series, train_ratio=protocol.train_ratio,
+                                      embargo_frames=protocol.embargo_frames)
+
+    def sweep(part: ChannelSeries, seed: int) -> Dict[str, Any]:
+        runner = (analyse_precedence if declaration.precedence_admissible
+                  else association_only)
+        result = runner(part, declaration, lags=protocol.lags,
+                        cadence_seconds=protocol.cadence_seconds,
+                        measure=protocol.measure, estimator=protocol.estimator,
+                        bins=protocol.bins, n_surrogates=protocol.n_surrogates,
+                        alpha=protocol.alpha, correction=protocol.correction, seed=seed)
+        result["protocol_fingerprint"] = protocol.fingerprint()
+        return result
+
+    train = sweep(partitions["train"], protocol.seed)
+    test = sweep(partitions["test"], protocol.seed + 1)
+    gate = evaluate_replication_gate(train, test, protocol)
+
+    return {
+        "protocol": protocol.to_mapping(),
+        "protocol_fingerprint": protocol.fingerprint(),
+        "design": design,
+        "domain": declaration.describe(),
+        "split": {
+            "train_frames": partitions["train"].n_times,
+            "embargo_frames": protocol.embargo_frames,
+            "test_frames": partitions["test"].n_times,
+            "embargo_at_least_longest_lag": (
+                protocol.embargo_frames >= max(int(v) for v in protocol.lags)),
+        },
+        "train": train,
+        "test": test,
+        "gate": gate,
+        "verdict": gate["verdict"],
+        "claim_boundary": (
+            "PASS adjudicates only the frozen relationship family on this exact record from "
+            "domain %r, at the declared claim level %r. It is not causality, not "
+            "universality, and not transfer to any other domain (rules R7, R14, R20)."
+            % (declaration.name, train["claim_boundary"])),
+    }

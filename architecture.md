@@ -873,6 +873,43 @@ measured a naive lag test falsely rejecting 20 of 20 AR(1) records.
 the same sense `cds_source` was before any live transfer. Nothing here is evidence about any
 real-world domain.
 
+### 3.6g The domain replication gate and its calibration (`domain_analysis.run_domain_gate`, TG0.3, `ed-dev`)
+
+Phase G0 closes here. TG0.1 showed the inference layer could take channels from anywhere;
+TG0.2 sent a non-atmospheric record through it. Neither established that a **null** record is
+reported as a null rather than as an inconclusive run, and that distinction is the difference
+between an instrument and a machine for generating plausible findings.
+
+`run_domain_gate` validates the frozen `GateProtocol` **before** splitting, applies the generic
+embargoed split `split_channel_series` (rule R6 — the embargo is returned, not dropped, so a
+receipt can show the gap was real), sweeps both partitions through the unmodified
+`cross_scale_dependency`, and adjudicates with `evaluate_replication_gate` unchanged. The
+verdict therefore means here exactly what it means for ERA5.
+
+**Measured on a domain with no grid, transform, advection or annual cycle** (900 frames, three
+AR(1) channels, 6-test family, BY at 0.05, 499 surrogates, 540/3/357 split):
+
+| Record | Verdict |
+|---|---|
+| `alpha` at `t` sets `gamma` at `t+3` | **PASS**, replicating `alpha->gamma@3` in both partitions |
+| Independent AR(1) channels, 60 trials | **60 FAIL, 0 PASS** — false-positive rate bounded below **4.87%** at 95% confidence |
+| A channel dropping out of the family | **INVALID**, not FAIL |
+
+The third row is the one that matters most. Two tests corrected as though they were six is a
+different experiment, and reporting its empty result as FAIL would present a design error as
+evidence of absence. The 60-trial figure is stated as the bound a run of 60 can support, not as
+a claim that the rate is zero.
+
+**TG0.3 found a sixth atmospheric assumption that the TG0.1 audit missed.** `GateProtocol`
+validated its measure against a literal four-name tuple of wavelet measures — an allow-list
+implementing a deny-rule. What R3 forbids is a measure that *moves with a threshold*, not one
+that lacks a wavelet name, and no generic domain can satisfy an allow-list of wavelet
+vocabulary. Gate measures are now a registry (`GATE_MEASURES`, standard E1) whose entries
+declare `threshold_free` and a justification. `threshold_fraction` is still refused — now by
+name, carrying the measured reason (moving the threshold from 2 to 4 sigma changed it by more
+than a factor of ten while every threshold-free measure was bit-identical). The four
+atmospheric measures remain admissible and no accepted design's fingerprint changed.
+
 ### 3.8 Grid Geometry and Metric-Aware Operators (`src/physical_core/grid.py`, `operators.py`)
 
 Added in T3.5.13 (defect D13, standard E3). `GridSpec` is the physical metric attached to
@@ -2213,6 +2250,7 @@ able to sit three slices out of date.
 | `test_boundary_synthetic.py` | 8 | boundary treatments, windowing, synthetic generators and independent Euclidean-ring oracle |
 | `test_cds_source.py` | 14 | T5.2c monthly CDS planning/CLI, grid-alignment/server-snap refusals, network consent, atomic resume, shard integrity, conservative storage refusal, bounded Zarr publication, plus PASS/FAIL independent-route receipt publication, replay and tamper refusal |
 | `test_channel_series.py` | 14 | TG0.1 channel-series contract: signature/plain-series result equivalence, the two protocol tiers, R21's no-support refusal, clock and shape validation |
+| `test_domain_gate.py` | 18 | TG0.3 negative control: PASS/FAIL/INVALID on a non-atmospheric domain, false-positive calibration, R6 embargoed split, gate-measure registry |
 | `test_tabular_domain.py` | 26 | TG0.2 non-atmospheric domain: planted-coupling recovery and AR(1) null through the unmodified sweep, R21/R17 refusals, declaration and adapter validation |
 | `test_coefficient_field.py` | 40 | T4B.1 acceptance: parent-grid alignment, perfect reconstruction per family, lineage-safe summary; DTCWT upsampling declared; LevelBank and level slicing (T4B.4) |
 | `test_documentation.py` | 19 | architecture, roadmap and proprietary named-licence boundary against the code/repository |
@@ -2250,7 +2288,7 @@ able to sit three slices out of date.
 | `test_wavelet_bank.py` | 27 | T4B.2 expansion through the engine's own parameter matrix, the 1,000-combination guard, decompose_bank / extract_scale_signature, the vertical-bank refusals |
 | `test_transforms.py` | 13 | fft/dct/dwt/dtcwt/hybrid round trips; D1 recorded as a strict xfail |
 | `test_zarr_source.py` | 59 | R13 geometry, chunk-hostility, byte counting, streaming content identity, exact chunk-bounded frame reader, cache/provenance round trip, NetCDF engine and HTTP surface |
-| **total** | **906** | |
+| **total** | **924** | |
 
 ### 7.2h A surrogate null that was not the null it claimed (T4C.5)
 

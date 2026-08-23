@@ -80,6 +80,13 @@ are from `src/`, excluding tests.
   with no propagation speed has no such floor and needs a different admissibility rule. This is
   also where **D48** and **D53** both bit — it is already proven to be the subtle part.
 * **`BANK_FAMILIES = ("swt","dtcwt")`** is a hardcoded tuple bypassing the transform registry.
+* **`GateProtocol` validated its measure against a four-name tuple of wavelet measures.**
+  *Found by TG0.3, missed by this audit.* An allow-list implementing a deny-rule: R3 forbids a
+  measure that moves with a threshold, not one that lacks a wavelet name, and no generic domain
+  can satisfy a list of wavelet vocabulary. Now a registry declaring `threshold_free` per entry
+  (E1); `threshold_fraction` is still refused, by name and with its measured reason. **That the
+  audit missed it is itself the finding**: assumptions of this shape are invisible from reading
+  and appear the moment a second domain is actually pushed through.
 * Correctly and permanently atmospheric: `cds_source`, `era5_overlap`, `zarr_source`,
   `regional_forecast`, `gate_campaign`, all of `forecasting/`.
 
@@ -327,14 +334,38 @@ tests adequately powered under BY. On three seeds of independent AR(1) channels 
 `cds_source` was before any live transfer. Nothing here is evidence about a real-world domain,
 and pointing the adapter at an archive is a separate act that must also record its licence.
 
-**TG0.3 The negative control.** The same adapter over a record with no cross-channel structure.
+**TG0.3 The negative control - DONE.** The same adapter over a record with no cross-channel structure.
 **Acceptance:** FAIL, not INVALID, and not PASS. An adequately powered absence must be reported
 as an absence — the property T4C.3 already calibrated for the atmospheric case.
 
-**Exit criterion.** If G0 passes, the strongest claim in the proposal — that the falsification
-layer is genuinely domain-independent — is *demonstrated rather than asserted*, at the cost of
-one adapter. If it fails, the programme stops here and the reason is worth more than the
-programme was.
+**Met, and calibrated rather than asserted.** `run_domain_gate` validates the frozen protocol
+before splitting, applies the generic embargoed split `split_channel_series` (R6, embargo
+returned rather than dropped), sweeps both partitions through the **unmodified**
+`cross_scale_dependency`, and adjudicates with `evaluate_replication_gate` unchanged.
+
+Measured on 900 frames of three AR(1) channels, 6-test family, BY at 0.05, 499 surrogates,
+540/3/357 split:
+
+| Record | Verdict |
+|---|---|
+| `alpha` at `t` sets `gamma` at `t+3` | **PASS**, replicating in both partitions |
+| Independent AR(1), 60 trials | **60 FAIL, 0 PASS** — false positives bounded below **4.87%** at 95% confidence |
+| A channel dropped from the family | **INVALID**, not FAIL |
+
+The third row carries the weight: two tests corrected as though they were six is a different
+experiment, and reporting its empty result as FAIL would present a design error as evidence of
+absence. The 60-trial number is stated as the bound a run of 60 supports, not as a claim that
+the rate is zero.
+
+**Exit criterion — MET.** The strongest claim in the proposal, that the falsification layer is
+genuinely domain-independent, is now demonstrated rather than asserted: a domain with no grid,
+no transform, no advection and no annual cycle reaches PASS, FAIL and INVALID verdicts through
+inference code that was not modified to accommodate it. The cost was one adapter and one
+assumption that had to be localised (§2.2, item 7).
+
+What this does **not** establish: that the *structural* layer generalises. G0 tested the
+inference layer on channels somebody else defined. Phases G2 and G3 build the layer that
+defines them, and that is where the abstraction is far more likely to break.
 
 ---
 

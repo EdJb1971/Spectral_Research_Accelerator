@@ -52,6 +52,54 @@ from typing import Any, Dict, List, Mapping, Optional, Protocol, Sequence, runti
 import numpy as np
 
 from src.core.errors import InvalidParameterError, ShapeMismatchError
+from src.core.registry import Registry
+
+
+@dataclass(frozen=True)
+class MeasureSpec:
+    """Whether a named measure may be a gate primary, and why (rule R3).
+
+    Registered rather than hardcoded (standard E1). `GateProtocol` previously validated its
+    measure against a literal four-name tuple of wavelet measures, which is an allow-list
+    implementing a deny-rule: what R3 actually forbids is a measure that moves with a
+    threshold. A generic domain cannot satisfy an allow-list of wavelet vocabulary, and TG0.3
+    found that out by trying. `threshold_fraction` is still refused — now by name, with its
+    reason attached, rather than by silent absence.
+    """
+
+    threshold_free: bool
+    justification: str
+
+
+GATE_MEASURES: Registry[MeasureSpec] = Registry("gate measure")
+
+GATE_MEASURES.register("energy_density", description="energy per available coefficient")(
+    MeasureSpec(True, "a ratio of energy to coefficient count; no threshold enters it"))
+GATE_MEASURES.register("energy_fraction", description="energy share across channels")(
+    MeasureSpec(True, "normalised across channels; invariant to a global amplitude rescale"))
+GATE_MEASURES.register("participation_ratio", description="effective fraction of active cells")(
+    MeasureSpec(True, "a moment ratio with an analytic value on white noise"))
+GATE_MEASURES.register("gini", description="concentration of the magnitude distribution")(
+    MeasureSpec(True, "an order statistic of the whole distribution"))
+GATE_MEASURES.register("value", description="a raw channel value, for non-transform domains")(
+    MeasureSpec(True, "the measured quantity itself, carrying whatever units the domain "
+                      "declared; no threshold and no normalisation are applied"))
+GATE_MEASURES.register(
+    "threshold_fraction", description="fraction of cells above a threshold (never a primary)")(
+    MeasureSpec(False, "it moves with the threshold, which is rule R3's first trap: moving "
+                       "the threshold from 2 to 4 sigma changed this measure by more than a "
+                       "factor of ten while every threshold-free measure was bit-identical"))
+
+
+def require_gate_measure(measure: str) -> MeasureSpec:
+    """The measure a gate is allowed to adjudicate on, or an explanatory refusal."""
+    spec = GATE_MEASURES.get(measure)
+    if not spec.threshold_free:
+        raise InvalidParameterError(
+            "measure", measure,
+            "a threshold-free measure (rule R3). %r is registered as inadmissible: %s"
+            % (measure, spec.justification))
+    return spec
 
 
 @runtime_checkable
@@ -239,6 +287,56 @@ class ChannelSeries:
     @property
     def n_channels(self) -> int:
         return len(self.channels)
+
+
+def split_channel_series(series: "ChannelSeries", *, train_ratio: float,
+                         embargo_frames: int) -> Dict[str, "ChannelSeries"]:
+    """Split a channel series in time with an embargo gap (rule R6, generic form).
+
+    The generic counterpart of `split_temporal`. The embargo is the number of frames
+    **discarded** at the boundary and must be at least the longest lag under test: without it
+    the target of a training sample lies inside the test window, and the test has been shown
+    its own answer. Autocorrelation makes this bite in any domain, not only the atmosphere —
+    the frame after the boundary is nearly a copy of the frame before it.
+
+    The discarded frames are returned under ``embargo`` rather than dropped, so a receipt can
+    show that the gap was real and how wide.
+    """
+    if not 0.0 < train_ratio < 1.0:
+        raise InvalidParameterError("train_ratio", train_ratio, "a fraction in (0, 1)")
+    if embargo_frames < 0:
+        raise InvalidParameterError("embargo_frames", embargo_frames, "a non-negative count")
+
+    n = series.n_times
+    train_stop = int(n * train_ratio)
+    test_start = train_stop + embargo_frames
+    if train_stop < 2 or (n - test_start) < 2:
+        raise InvalidParameterError(
+            "train_ratio", train_ratio,
+            "a split leaving at least two frames on each side of a %d-frame embargo; %d "
+            "frames give train=%d and test=%d" % (embargo_frames, n, train_stop,
+                                                  max(n - test_start, 0)))
+
+    def take(start: int, stop: int, label: str) -> "ChannelSeries":
+        values = {name: np.asarray(m, dtype=np.float64)[start:stop]
+                  for name, m in series.measures.items()}
+        return ChannelSeries(
+            channels=list(series.channels),
+            times_seconds=np.asarray(series.times_seconds, dtype=np.float64)[start:stop],
+            measures=values,
+            usable=None if series.usable is None else list(series.usable),
+            support_parent_px=(None if series.support_parent_px is None
+                               else list(series.support_parent_px)),
+            unusable_reason=series.unusable_reason,
+            provenance={**dict(series.provenance), "split": label,
+                        "split_frames": [start, stop],
+                        "split_train_ratio": float(train_ratio),
+                        "split_embargo_frames": int(embargo_frames)})
+
+    return {"train": take(0, train_stop, "train"),
+            "embargo": take(train_stop, test_start, "embargo") if embargo_frames >= 2
+                       else None,
+            "test": take(test_start, n, "test")}
 
 
 def from_channel_series(series: ChannelSeriesLike) -> Dict[str, Any]:

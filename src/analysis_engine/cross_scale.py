@@ -52,7 +52,8 @@ from typing import Any, Callable, Dict, List, Optional, Sequence
 
 import numpy as np
 
-from src.core.channel_series import ChannelGeometry, ChannelSeriesLike
+from src.core.channel_series import (ChannelGeometry, ChannelSeriesLike,
+                                     require_gate_measure)
 from src.core.errors import InvalidParameterError
 from src.statistics.multiple_comparisons import check_power
 from src.statistics.significance import screen
@@ -127,11 +128,11 @@ class GateProtocol:
         if self.estimator not in ("transfer_entropy", "mutual_information"):
             raise InvalidParameterError("estimator", self.estimator,
                                         "'transfer_entropy' or 'mutual_information'")
-        if self.measure not in (
-                "energy_density", "energy_fraction", "participation_ratio", "gini"):
-            raise InvalidParameterError(
-                "measure", self.measure,
-                "a threshold-free scale measure; threshold_fraction is never a gate primary")
+        # Registered rather than hardcoded (E1). The previous four-name allow-list was a
+        # deny-rule in disguise: R3 forbids a measure that moves with a threshold, and a
+        # non-wavelet domain cannot satisfy a list of wavelet vocabulary. `threshold_fraction`
+        # is still refused, now by name and with its reason.
+        require_gate_measure(self.measure)
         if isinstance(self.bins, bool) or int(self.bins) != self.bins or self.bins < 2:
             raise InvalidParameterError("bins", self.bins, "an integer >= 2")
         if isinstance(self.n_surrogates, bool) or int(self.n_surrogates) != self.n_surrogates \
