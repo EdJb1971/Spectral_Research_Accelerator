@@ -201,20 +201,54 @@ def test_an_advective_domain_still_requires_a_declared_speed(tmp_path):
                               measure=VALUE_MEASURE)
 
 
-def test_a_missing_channel_footprint_is_refused_in_domain_language(tmp_path):
-    """The wavelet-flavoured message must not reach a non-wavelet adapter."""
+def _without_footprints(series):
+    """The same record with every channel's parent-axis footprint removed."""
     from src.core.channel_series import ChannelSeries
-    series, declaration = _read(_planted(tmp_path))
-    bare = ChannelSeries(channels=list(series.channels),
+
+    return ChannelSeries(channels=list(series.channels),
                          times_seconds=series.times_seconds,
                          measures={VALUE_MEASURE: series.to_matrix(VALUE_MEASURE)})
+
+
+def test_a_missing_channel_footprint_is_refused_in_domain_language(tmp_path):
+    """The wavelet-flavoured message must not reach a non-wavelet adapter.
+
+    Asked of an *advective* domain since TG1.3, because that is the policy which reads the
+    footprint. The refusal is unchanged; what changed is which domains are asked for it.
+    """
+    series, declaration = _read(_planted(tmp_path), lag_policy="advective",
+                                declared_floor_frames=None, declared_floor_basis=None,
+                                violations=("no_natural_cycle",))
     with pytest.raises(InvalidParameterError) as caught:
-        da.analyse_precedence(bare, declaration, lags=(3,), cadence_seconds=CADENCE,
-                              measure=VALUE_MEASURE)
+        da.analyse_precedence(_without_footprints(series), declaration, lags=(3,),
+                              cadence_seconds=CADENCE, measure=VALUE_MEASURE,
+                              advection_speed_m_s=10.0)
     message = str(caught.value)
     assert "synthetic_instrument_log" in message
     assert "instantaneous reading" in message
     assert "parent-grid filter support" not in message
+
+
+def test_a_domain_whose_floor_cannot_read_a_footprint_is_no_longer_asked_for_one(tmp_path):
+    """The finding TG1.3 turned into behaviour.
+
+    A logger that reports every two minutes has a floor of two frames because of the logger,
+    not because of a filter. `support_parent_px` cannot enter that floor by any route - and
+    until TG1.3 the sweep refused to run without it, because `cross_scale_dependency` called
+    `support_floor` unconditionally whatever the domain had declared. The number a
+    non-wavelet adapter had to supply was one it could only have invented, and inventing it
+    changed nothing.
+    """
+    series, declaration = _read(_planted(tmp_path))
+    result = da.analyse_precedence(_without_footprints(series), declaration, lags=(3,),
+                                   cadence_seconds=CADENCE, measure=VALUE_MEASURE)
+    assert result["applied_lag_floor"] == {
+        "policy": "declared", "frames": 2,
+        "basis": declaration.declared_floor_basis}
+    # And the floor the sweep applied is the domain's, not the advective one it used to
+    # report: every test record now carries 2, where it used to carry 1 and cite rule R4.
+    assert {row["support_floor_frames"] for row in result["results"]} == {2}
+    assert result["support_floor"]["policy"] == "declared"
 
 
 # ------------------------------------------------------------- rule R17 and declarations

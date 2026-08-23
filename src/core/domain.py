@@ -32,16 +32,17 @@ someone onboarding a sensor archive.
 from __future__ import annotations
 
 from dataclasses import dataclass, field as dc_field
-from typing import Any, Dict, Mapping, Optional, Sequence, Tuple
+from typing import Any, Dict, Mapping, Optional, Sequence
 
 from src.core.axes import AXIS_ROLES
 from src.core.errors import InvalidParameterError, UnknownNameError
+from src.core.lag_policy import LAG_POLICIES, lag_policy_for, policy_names
 
 #: Re-exported from `src.core.axes`, which owns the vocabulary and the resolution order since
 #: TG1.1. It stays importable from here because a domain declaration is where most callers
 #: meet it: `from src.core.domain import AxisSpec, AXIS_ROLES` is one import, not two.
 __all__ = ["AXIS_ROLES", "AxisSpec", "DomainDeclaration", "KNOWN_VIOLATIONS", "LAG_POLICIES",
-           "PrecedenceNotAdmissibleError"]
+           "PrecedenceNotAdmissibleError", "lag_policy_for", "policy_names"]
 
 #: The assumptions the analysis layer inherited from the atmosphere, and what breaking each
 #: one costs. A domain names the ones it breaks; the analysis layer then refuses what those
@@ -70,12 +71,13 @@ KNOWN_VIOLATIONS: Dict[str, str] = {
         "value depends on more than one sample of the parent axis",
 }
 
-#: How a domain justifies calling a lag admissible (rule R21).
-#:
-#: ``advective``  the atmospheric path: filter support crossed at a declared speed.
-#: ``declared``   an explicit floor in frames with a recorded, domain-specific basis.
-#: ``none``       no floor exists. Association may be measured; precedence may not be claimed.
-LAG_POLICIES: Tuple[str, ...] = ("advective", "declared", "none")
+#: How a domain justifies calling a lag admissible (rule R21). Since TG1.3 this is the
+#: registry in `src.core.lag_policy`, re-exported here for the same reason `AXIS_ROLES` is:
+#: a domain declaration is where most callers meet the vocabulary. The three original
+#: policies are its first three entries -- ``advective`` (filter support crossed at a
+#: declared speed), ``declared`` (an explicit floor with a recorded basis) and ``none`` (no
+#: floor exists, so precedence may not be claimed) -- and a fourth registers from outside
+#: `src/` without this file being edited.
 
 
 class PrecedenceNotAdmissibleError(InvalidParameterError):
@@ -182,53 +184,33 @@ class DomainDeclaration:
                 "exactly one axis with role 'time'. A channel series is measured against one "
                 "clock, and two would make a lag ambiguous")
 
-        if self.lag_policy not in LAG_POLICIES:
-            raise UnknownNameError("lag policy", self.lag_policy, LAG_POLICIES,
-                                   domain=self.name)
-        if self.lag_policy == "declared":
-            if not isinstance(self.declared_floor_frames, int) \
-                    or self.declared_floor_frames < 1:
-                raise InvalidParameterError(
-                    "DomainDeclaration.declared_floor_frames", self.declared_floor_frames,
-                    "a positive integer number of frames. lag_policy='declared' means the "
-                    "domain supplies the floor rule R21 requires; omitting the number makes "
-                    "the declaration an assertion rather than a rule")
-            if not (self.declared_floor_basis or "").strip():
-                raise InvalidParameterError(
-                    "DomainDeclaration.declared_floor_basis", self.declared_floor_basis,
-                    "a stated basis for the declared floor. A floor without a reason is a "
-                    "number the reader cannot check, which is exactly what "
-                    "`advection_speed_m_s` is denied a default to prevent")
-        elif self.declared_floor_frames is not None:
-            raise InvalidParameterError(
-                "DomainDeclaration.declared_floor_frames", self.declared_floor_frames,
-                "None unless lag_policy='declared'. A floor carried by a policy that does "
-                "not use it would be reported and never applied")
-
-        if self.lag_policy == "advective" and "no_propagation_speed" in self.violations:
-            raise InvalidParameterError(
-                "DomainDeclaration.lag_policy", self.lag_policy,
-                "a policy consistent with the declared violations: this domain declares "
-                "'no_propagation_speed' and then asks for an advective floor")
-
-        # Rule R17, made enforceable. A domain with no physical metric that also claims to
-        # break nothing has not been thought about: at minimum it has broken the metric
-        # assumption the analysis layer inherited.
-        if not self.violations and self.lag_policy == "none":
-            raise InvalidParameterError(
-                "DomainDeclaration.violations", list(self.violations),
-                "at least one declared violation for a domain with no lag floor (rule R17). "
-                "A domain that breaks nothing is a second variable, not a second domain, and "
-                "provides no evidence that the abstraction generalises. If that is genuinely "
-                "true here, declare the assumptions it does break — most non-physical "
-                "sources break at least 'no_physical_metric' and 'no_propagation_speed'")
+        # Every policy-specific check lives with the policy (TG1.3): what a declared
+        # floor requires, what an advective one is inconsistent with, and rule R17's refusal
+        # of a domain that both breaks nothing and floors nothing. A fourth policy brings its
+        # own rules with it rather than adding another branch here.
+        self.lag_policy_object().validate_declaration(self)
 
     # ------------------------------------------------------------------ admissibility
 
+    def lag_policy_object(self) -> Any:
+        """The registered policy, or `UnknownNameError` naming the ones that exist."""
+        return lag_policy_for(self.lag_policy)
+
+    def lag_policy_capability(self, key: str, default: Any = None) -> Any:
+        """One declared capability of this domain's lag policy."""
+        from src.core.lag_policy import capability
+
+        return capability(self.lag_policy, key, default)
+
     @property
     def precedence_admissible(self) -> bool:
-        """Whether rule R21 permits a precedence (lead-lag) claim from this domain."""
-        return self.lag_policy != "none"
+        """Whether rule R21 permits a precedence (lead-lag) claim from this domain.
+
+        Asked of what the policy declares rather than of its name: a fourth policy that
+        justifies a floor some other way must be able to license precedence without this
+        property learning about it.
+        """
+        return bool(self.lag_policy_capability("precedence_admissible", False))
 
     def assert_precedence_admissible(self) -> None:
         if not self.precedence_admissible:
@@ -236,7 +218,7 @@ class DomainDeclaration:
 
     def minimum_admissible_lag(self) -> Optional[int]:
         """The declared floor in frames, or None when the policy computes it elsewhere."""
-        return self.declared_floor_frames if self.lag_policy == "declared" else None
+        return self.lag_policy_object().declared_floor_frames(self)
 
     def axis_roles(self) -> Dict[str, "AxisSpec"]:
         """The declaration in the form `resolve_axis_roles` accepts (TG1.1)."""

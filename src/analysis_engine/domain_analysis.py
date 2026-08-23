@@ -8,28 +8,29 @@ if a second domain needed its own inference path, the abstraction would already 
 What this adds is the gate that the atmospheric path got for free and a generic domain does
 not: rule R21's question of whether a lag is admissible *at all*, asked before any work.
 
-Three policies, from the domain's own declaration:
+Since TG1.3 the policies are a registry (`src.core.lag_policy`) and this module no longer
+knows their names. It binds the domain's declared policy to whatever parameters the caller
+supplied, hands the bound policy to `cross_scale_dependency`, and asks it three questions:
+may this domain claim precedence, is this lag family admissible, and which floor decided. The
+three original policies - ``advective``, ``declared`` and ``none`` - answer them exactly as
+the branches here used to, and a fourth answers them without this file being edited.
 
-*   ``advective`` — the atmospheric path. Delegates to `support_floor`, which derives the floor
-    from the transform's measured filter support and a declared speed.
-*   ``declared`` — the domain supplies a floor in frames with a recorded basis. Every requested
-    lag is checked against it here, and lags below it are refused rather than dropped: a sweep
-    that silently discards what it cannot test looks identical to one that had nothing to
-    discard.
-*   ``none`` — no floor exists, so no precedence claim is admissible. `association_only` is
-    then the honest entry point, and it labels its own output accordingly.
+**What the seam fixed.** The floor the *sweep* applied was always the advective one, because
+`cross_scale_dependency` called `support_floor` unconditionally. Under ``declared`` the
+domain's floor was enforced here, at the boundary, and then every test record in the receipt
+reported ``support_floor_frames: 1`` and an exclusion reason citing rule R4. The tests that
+ran were the right ones; the receipt described a different study.
 
-**Why the refusal lives here rather than in `support_floor`.** `support_floor` refuses a
-missing `support_parent_px` with a message about parent-grid filter support, which is exactly
-right for a wavelet bank and useless to someone onboarding a sensor archive. Catching the
-condition at the domain boundary means the refusal can name the domain, the violation it
-declared, and the two ways forward. Generalising `support_floor` itself into a policy registry
-is TG1.3; this is the boundary that makes TG0.2 usable before that lands.
+**Why a refusal can still live here.** A refusal is better at the domain boundary than inside
+the wavelet vocabulary: it can name the domain, the violation it declared, and the way
+forward. What changed is that the *condition* is now asked of the policy - only a policy that
+measures a filter crossing needs `support_parent_px` - so a sensor archive is no longer asked
+for a wavelet number that could not have reached any floor it applies.
 """
 
 from __future__ import annotations
 
-from typing import Any, Dict, Optional, Sequence
+from typing import Any, Dict, Mapping, Optional, Sequence
 
 from src.analysis_engine.cross_scale import (GateProtocol, cross_scale_dependency,
                                              evaluate_replication_gate)
@@ -37,6 +38,7 @@ from src.core.channel_series import (ChannelSeries, ChannelSeriesLike, from_chan
                                      split_channel_series)
 from src.core.domain import DomainDeclaration
 from src.core.errors import InvalidParameterError
+from src.core.lag_policy import BoundLagPolicy, bind as bind_lag_policy
 
 #: What a result is permitted to be called, given the domain's lag policy. Deliberately not
 #: the G6 claim ladder: this is one rung of provenance, not an adjudication.
@@ -44,16 +46,38 @@ PRECEDENCE_CLAIM = "precedence"
 ASSOCIATION_CLAIM = "association"
 
 
-def _require_declared_support(series: ChannelSeriesLike,
-                              declaration: DomainDeclaration) -> None:
+def _bind(declaration: DomainDeclaration, advection_speed_m_s: Optional[float],
+          lag_policy_params: Optional[Mapping[str, Any]]) -> BoundLagPolicy:
+    """Resolve the domain's policy and check its parameters before anything is computed.
+
+    `advection_speed_m_s` keeps its own keyword because every atmospheric caller passes it by
+    name, but it is merely one policy's parameter now: a policy that does not consume it
+    refuses it here by the generic rule, rather than by a branch that names it.
+    """
+    params: Dict[str, Any] = dict(lag_policy_params or {})
+    if advection_speed_m_s is not None:
+        if "advection_speed_m_s" in params:
+            raise InvalidParameterError(
+                "advection_speed_m_s", advection_speed_m_s,
+                "the speed supplied once. It arrived both directly and in "
+                "lag_policy_params, and the two need not agree")
+        params["advection_speed_m_s"] = float(advection_speed_m_s)
+    return bind_lag_policy(declaration.lag_policy, declaration, **params)
+
+
+def _require_declared_support(series: ChannelSeriesLike, declaration: DomainDeclaration,
+                              bound: BoundLagPolicy) -> None:
     """Fail at the domain boundary rather than inside the wavelet vocabulary.
 
-    `support_floor` needs each channel's footprint on the parent axis — how many source
-    samples one value depends on. That generalises honestly beyond wavelets: a raw sensor
-    reading depends on exactly one sample, a ten-minute mean of one-minute data on ten. What
-    it must never be is invented. Without the declaration this refusal names the domain and
-    the fix; with it, the wavelet-flavoured message never reaches a non-wavelet adapter.
+    Only for a policy that declares `requires_channel_support`. An advective floor needs each
+    channel's footprint on the parent axis - how many source samples one value depends on -
+    and that generalises honestly beyond wavelets: a raw sensor reading depends on exactly
+    one sample, a ten-minute mean of one-minute data on ten. What it must never be is
+    invented, so it is required where it is read and not required where it is not. Before
+    TG1.3 every domain paid it, including ones whose floor could not have read it.
     """
+    if not bound.capability("requires_channel_support", False):
+        return
     missing = [str(record.get("scale")) for record in series.channel_records
                if not isinstance(record.get("support_parent_px"), (int, float))
                or record.get("support_parent_px", 0) <= 0]
@@ -71,28 +95,19 @@ def _require_declared_support(series: ChannelSeriesLike,
 
 def _run(series: ChannelSeriesLike, declaration: DomainDeclaration, *, claim: str,
          lags: Sequence[int], cadence_seconds: float, measure: str,
-         **kwargs: Any) -> Dict[str, Any]:
-    _require_declared_support(series, declaration)
+         bound: BoundLagPolicy, **kwargs: Any) -> Dict[str, Any]:
+    _require_declared_support(series, declaration, bound)
     result = cross_scale_dependency(series, lags=lags, cadence_seconds=cadence_seconds,
-                                    measure=measure, **kwargs)
+                                    measure=measure, lag_floor=bound, **kwargs)
     result["domain"] = declaration.describe()
     result["channel_series"] = from_channel_series(series)
     result["claim_boundary"] = claim
-    # Which floor actually decided admissibility. Without this the receipt carries only
-    # `support_floor`'s internal block, which under a declared or absent policy reports one
-    # frame and reads as though no floor was applied at all.
-    result["applied_lag_floor"] = {
-        "policy": declaration.lag_policy,
-        "frames": (declaration.minimum_admissible_lag()
-                   if declaration.lag_policy == "declared"
-                   else (None if declaration.lag_policy == "none"
-                         else max(record["floor_frames"]
-                                  for record in result["support_floor"]["floors"]))),
-        "basis": (declaration.declared_floor_basis if declaration.lag_policy == "declared"
-                  else ("no floor exists for this domain (rule R21)"
-                        if declaration.lag_policy == "none"
-                        else "advective crossing of the declared representation support")),
-    }
+    # Which floor actually decided admissibility, said by the policy that decided it. The
+    # block predates TG1.3 and existed because the `support_floor` block underneath it was
+    # always the advective one whatever the domain declared; it is kept because a reader
+    # should not have to know which policy writes which keys to find the number that set the
+    # boundary of the study.
+    result["applied_lag_floor"] = bound.applied_floor(result["support_floor"])
     if claim == ASSOCIATION_CLAIM:
         result["warnings"] = list(result.get("warnings", [])) + [
             "domain %r declares no admissible lag floor (rule R21), so this result is an "
@@ -105,48 +120,29 @@ def _run(series: ChannelSeriesLike, declaration: DomainDeclaration, *, claim: st
 def analyse_precedence(series: ChannelSeriesLike, declaration: DomainDeclaration, *,
                        lags: Sequence[int], cadence_seconds: float,
                        measure: str, advection_speed_m_s: Optional[float] = None,
+                       lag_policy_params: Optional[Mapping[str, Any]] = None,
                        **kwargs: Any) -> Dict[str, Any]:
-    """Cross-channel precedence, refused unless the domain can justify a lag floor (R21)."""
+    """Cross-channel precedence, refused unless the domain can justify a lag floor (R21).
+
+    Every policy-specific step - which parameters are admissible, whether the requested lag
+    family clears the floor, what the floor is and what it rests on - is asked of the
+    registered policy. This function names none of them.
+    """
     declaration.assert_precedence_admissible()
     lags = [int(lag) for lag in lags]
     if not lags:
         raise InvalidParameterError("lags", lags, "at least one lag to test")
 
-    if declaration.lag_policy == "declared":
-        floor = declaration.minimum_admissible_lag()
-        below = [lag for lag in lags if lag < floor]
-        if below:
-            raise InvalidParameterError(
-                "lags", below,
-                "lags at or above domain %r's declared floor of %d frame(s) (%s). They are "
-                "refused rather than dropped, because a family silently reduced to the "
-                "testable lags is indistinguishable from one that had nothing to drop, and "
-                "rule R18 fixes the family before the sweep runs"
-                % (declaration.name, floor, declaration.declared_floor_basis))
-        # The domain's floor is the whole justification, so an advection speed would be a
-        # second, unreconciled one. Refused rather than ignored.
-        if advection_speed_m_s is not None:
-            raise InvalidParameterError(
-                "advection_speed_m_s", advection_speed_m_s,
-                "None under lag_policy='declared'. Two floors from two different bases would "
-                "silently take the larger, and the result would not say which applied")
-        return _run(series, declaration, claim=PRECEDENCE_CLAIM, lags=lags,
-                    cadence_seconds=cadence_seconds, measure=measure, **kwargs)
-
-    if advection_speed_m_s is None:
-        raise InvalidParameterError(
-            "advection_speed_m_s", None,
-            "a declared transport speed under lag_policy='advective'. It has no default here "
-            "for the same reason it has none in `support_floor`: a plausible-looking value "
-            "would set every floor in every result from a number the reader never chose")
-    return _run(series, declaration, claim=PRECEDENCE_CLAIM, lags=lags,
-                cadence_seconds=cadence_seconds, measure=measure,
-                advection_speed_m_s=advection_speed_m_s, **kwargs)
+    bound = _bind(declaration, advection_speed_m_s, lag_policy_params)
+    bound.check_lags(lags)
+    return _run(series, declaration, claim=PRECEDENCE_CLAIM, lags=lags, bound=bound,
+                cadence_seconds=cadence_seconds, measure=measure, **kwargs)
 
 
 def association_only(series: ChannelSeriesLike, declaration: DomainDeclaration, *,
-                     lags: Sequence[int], cadence_seconds: float,
-                     measure: str, **kwargs: Any) -> Dict[str, Any]:
+                     lags: Sequence[int], cadence_seconds: float, measure: str,
+                     lag_policy_params: Optional[Mapping[str, Any]] = None,
+                     **kwargs: Any) -> Dict[str, Any]:
     """Cross-channel association for a domain with no admissible lag floor.
 
     The estimator, surrogate null, correction and power check are identical to the precedence
@@ -161,14 +157,18 @@ def association_only(series: ChannelSeriesLike, declaration: DomainDeclaration, 
             "`analyse_precedence`, which applies it. Downgrading the claim while skipping the "
             "floor would report a weaker conclusion from a weaker test and look conservative "
             "while being neither" % declaration.name)
-    return _run(series, declaration, claim=ASSOCIATION_CLAIM, lags=[int(v) for v in lags],
+    lags = [int(value) for value in lags]
+    bound = _bind(declaration, None, lag_policy_params)
+    bound.check_lags(lags)
+    return _run(series, declaration, claim=ASSOCIATION_CLAIM, lags=lags, bound=bound,
                 cadence_seconds=cadence_seconds, measure=measure, **kwargs)
 
 
 # ------------------------------------------------------------------- the replication gate
 
 def run_domain_gate(series: ChannelSeries, declaration: DomainDeclaration,
-                    protocol: GateProtocol) -> Dict[str, Any]:
+                    protocol: GateProtocol, *,
+                    lag_policy_params: Optional[Mapping[str, Any]] = None) -> Dict[str, Any]:
     """Split, sweep both partitions under the frozen protocol, and adjudicate (R6, TG0.3).
 
     The verdict comes from `evaluate_replication_gate` unchanged, so it means here exactly
@@ -202,6 +202,9 @@ def run_domain_gate(series: ChannelSeries, declaration: DomainDeclaration,
             "the number of frames actually present (%d). The design's per-partition power was "
             "validated against the declared count, so a shorter record silently invalidates it"
             % series.n_times)
+    # As in `evaluate_replication_gate`: `require_advection_floor` names one policy
+    # deliberately. This is the protocol asserting which design it froze, not the analysis
+    # layer choosing a code path from a string.
     if protocol.require_advection_floor and declaration.lag_policy != "advective":
         raise InvalidParameterError(
             "protocol.require_advection_floor", True,
@@ -217,6 +220,7 @@ def run_domain_gate(series: ChannelSeries, declaration: DomainDeclaration,
         runner = (analyse_precedence if declaration.precedence_admissible
                   else association_only)
         result = runner(part, declaration, lags=protocol.lags,
+                        lag_policy_params=lag_policy_params,
                         cadence_seconds=protocol.cadence_seconds,
                         measure=protocol.measure, estimator=protocol.estimator,
                         bins=protocol.bins, n_surrogates=protocol.n_surrogates,

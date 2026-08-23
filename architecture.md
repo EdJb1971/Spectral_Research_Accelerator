@@ -1040,6 +1040,65 @@ wrong, so it could not have caught D55 and did not. The sweep now carries a nois
 seed and requiring the persisted results to move. This is the third consecutive slice in which
 execution found what reading missed, and the first in which the thing that missed it was a test.
 
+### 3.6k The lag floor is a registered policy, and the sweep applies the declared one (`src/core/lag_policy.py`, TG1.3, `ed-dev`)
+
+Rule R21 asks one question before any sweep runs: *is a lag admissible at all?* Three answers
+existed - an advective crossing time, a domain-declared floor, or no floor - and they were
+spread across four files as branches on the string `DomainDeclaration.lag_policy`. Standard
+E16 makes them a registry: each policy declares what it licenses, the analysis layer asks,
+and the policy is applied where the floor is used rather than only where the caller meets it.
+
+| Capability | What it licenses |
+|---|---|
+| `precedence_admissible` | rule R21 permits a lead-lag reading of a positive result |
+| `floor_from_declaration` | the floor is known from the declaration alone, before any data |
+| `floor_from_geometry` | the floor is computed from the record's own physical grid |
+| `requires_channel_support` | the policy reads each channel's parent-axis footprint. **False for every policy that does not measure a filter crossing** |
+| `parameters` | the extra arguments the policy consumes; anything else is refused, not ignored |
+
+`support_floor` moved into the module unchanged - including the D48/D53 physical-grid
+reconstruction - as the `advective` policy's implementation, and `cross_scale` re-exports it
+for the two gate modules that call it directly to audit a frozen atmospheric plan.
+
+**The defect the closed set was hiding.** `cross_scale_dependency` did not branch on the
+policy at all: it called `support_floor` unconditionally, so the floor that actually excluded
+tests was always the atmospheric one. Under `lag_policy='declared'` the domain's floor was
+enforced at the entry point, in `analyse_precedence`, and then every test record in the receipt
+reported `support_floor_frames: 1` with an exclusion reason citing rule R4 - a rule about
+wavelet filter geometry, quoted to a domain that had declared it has no propagation mechanism.
+The tests that ran were the right ones. The receipt described a different study, and a receipt
+that describes a different study is the failure this system exists to prevent. The sweep now
+takes a bound policy and asks it for the floor, the exclusion wording and its own contribution
+to the analysis fingerprint. The `advective` policy contributes exactly the key the old code
+hard-coded, so every atmospheric `analysis_config_sha256` is byte-identical.
+
+**Two smaller ones, found by the same move.**
+
+*   **D58.** `run_domain_gate` refused `require_advection_floor` unless the domain declared
+    `lag_policy='advective'`, and then called `analyse_precedence` with no way to pass a
+    speed - which that policy requires and is deliberately denied a default. The advective
+    path through the domain gate was therefore unreachable: each half looked correct, and the
+    pair could not be executed. It now takes `lag_policy_params`, and a test runs it.
+*   **`require_advection_floor` accepted a substitute.** The replication gate checked only
+    that *a* floor was enforced. A declared floor is a floor, but it is not the one the
+    protocol froze, and rule R18 fixes the design before the run rather than accepting a
+    substitute during it. The check now names the policy.
+
+**One deliberate behaviour change.** A domain whose policy cannot read `support_parent_px` is
+no longer required to supply it. Before TG1.3 every domain paid that entry price, because
+`support_floor` ran whatever the declaration said - so a logger reporting every two minutes,
+whose floor comes from the logger and not from a filter, had to declare a wavelet footprint
+that could not reach any floor it applied. The number was required, could only be invented,
+and changed nothing. It is still accepted and still reported where it is declared; it is only
+required by policies that read it.
+
+**Acceptance met.** `test_lag_policy_registry.py` registers `instrument_response` - a floor
+per channel from each sensor's settling time - entirely from the test module, and runs a
+complete sweep through it. It was chosen to be awkward on the axis the builtins are not:
+`advective` varies per channel but only from a physical grid, `declared` needs no data but
+gives every channel the same number, and this one needs neither. A fourth policy that was
+`declared` under another name would have proved nothing.
+
 ### 3.8 Grid Geometry and Metric-Aware Operators (`src/physical_core/grid.py`, `operators.py`)
 
 Added in T3.5.13 (defect D13, standard E3). `GridSpec` is the physical metric attached to
@@ -2263,6 +2322,7 @@ code paths that `architecture.md` previously described as implemented and rigoro
 | D53 | `analysis_engine/cross_scale.py:support_floor` | **ERA5 angular spacing was interpreted as metres.** `GridSpec.to_provenance()` stores lat/lon `dx` in degrees, but the support floor selected that field first and multiplied it directly by filter pixels. At 0.25° this understated the physical footprint by roughly five orders of magnitude. Physical grids are now reconstructed, angular spacing converted, and the maximum physical cell axis over the crop used conservatively. | **FIXED** T4C.5g |
 | D54 | `analysis_engine/gate_campaign.py`, `data_layer/cds_source.py` | **Spatial invalidity was discovered only after transfer.** Campaign validation bound request identities but did not prove grid-aligned bounds, actual-filter R13 interiors or physical lag admissibility; CDS ingestion checked spacing but not endpoints, so a server-snapped crop could pass. All are now exact pre-acquisition refusals, with returned endpoints independently rechecked. | **FIXED** T4C.5g |
 | D55 | `core/executor.py:_run_one` | **Per-task seeding is process-global, so the thread backend corrupts it.** `_run_one` calls `torch.manual_seed` and `np.random.seed` — both process-global — then invokes the task. Under `ThreadExecutor` every worker shares one generator, so a second worker's seed overwrites the first's stream before the first draws. Measured: with the seed-to-draw window held open by 10 ms of work, thread(8) disagreed with serial in **10 of 10** trials; with a microsecond-long task it disagreed in 0 of 80, because the tasks effectively serialise. Real sweep payloads are the former. This silently breaks standard E4 and re-opens D12's guarantee for `execution.backend: thread` with `n_workers > 1`, and it falsifies `roadmap.md`'s claim that "a sweep is byte-identical across executor backends" — true for `serial` and `process`, not for `thread`. `test_a_runs_seed_does_not_depend_on_which_worker_took_it` passed by timing luck and was observed failing once under full-suite load. Fixed properly rather than cheaply: streams are now per task, bound to a `contextvars.ContextVar` in `core/randomness.py` and released with the task, so no worker can reach another's. Torch values are unchanged (`Generator().manual_seed(s)` matches the global generator after `manual_seed(s)`); `enable_determinism` no longer seeds the process and reports `seed_scope` instead. The alternative — refusing `n_workers > 1` when seeds are supplied — was rejected: it removes the symptom and leaves process-global randomness inside a unit of work the platform runs concurrently. See section 3.6j. | **FIXED** TG1.2 (`ed-dev`) |
+| D58 | `analysis_engine/domain_analysis.py:run_domain_gate` | **The advective path through the domain gate was unreachable.** `run_domain_gate` refused `require_advection_floor` for any domain not declaring `lag_policy='advective'`, and then called `analyse_precedence` with no parameter through which a transport speed could travel - which the advective policy requires and is deliberately denied a default. Every advective domain gate therefore raised "a declared transport speed under lag_policy='advective'" before reaching the data. Neither half was wrong on its own, which is why no test caught it: the gate tests all used `declared` or `none` domains, and the advective tests never went through the gate. `run_domain_gate` now takes `lag_policy_params`, and `test_the_domain_gate_can_now_run_an_advective_domain` executes the combination. Found while localising the policy branches in TG1.3. | **FIXED** TG1.3 (`ed-dev`) |
 | D57 | `experiment_engine/actions.py:perturb_field` | **A declared reproducibility parameter was silently discarded.** The action's registry entry advertised that noise `accepts \`seed\` for reproducibility`; the handler then called `PerturbationEngine.add_noise(field, noise_type, level)` and dropped the seed. A user asking for a reproducible perturbation received an unreproducible one with no error — the worst shape a reproducibility defect can take, because the request looks honoured. The seed is now passed through, and omitting it falls back to the task stream (D55). Found while giving the byte-identity acceptance sweep a payload that actually draws. | **FIXED** TG1.2 (`ed-dev`) |
 | D56 | `physical_core/field.py:split_field`, `scale_resolution` | **A coordinate spelled in full was silently mishandled.** Both methods decided which coordinate was the row and which the column from hardcoded name lists - `["y","lat"]` and `["x","lon"]` - and the two lists disagreed about the fallback. A field carrying `latitude`/`longitude`, the spelling CF and ERA5 both use, matched neither: `split_field` cloned the longitude vector instead of slicing it, returning a narrowed field whose coordinate no longer described its own data and which `GridSpec.from_coords` would then read; `scale_resolution` interpolated latitude to the *column* count. Nothing raised. Both now resolve through `core/axes.resolve_axis_roles`, and a caller may declare `axis_roles` instead. The disagreement over genuinely unrecognised coordinates is preserved deliberately and asserted, so no pre-TG1.1 result moves. | **FIXED** TG1.1 (`ed-dev`) |
 
@@ -2383,11 +2443,12 @@ able to sit three slices out of date.
 | `test_boundary_synthetic.py` | 8 | boundary treatments, windowing, synthetic generators and independent Euclidean-ring oracle |
 | `test_cds_source.py` | 14 | T5.2c monthly CDS planning/CLI, grid-alignment/server-snap refusals, network consent, atomic resume, shard integrity, conservative storage refusal, bounded Zarr publication, plus PASS/FAIL independent-route receipt publication, replay and tamper refusal |
 | `test_geometry_registry.py` | 20 | TG1.2 geometry registry: the three builtins' metrics, crops, resamples and provenance unchanged; capability-driven `is_physical`/`length_units`/`latitudes`; a fourth geometry (`polar_scan`) registered from the test module with a non-uniform, non-spherical metric; the Cartesian Laplacian refusing it; `latitude`/`longitude` recognised as a sphere |
+| `test_lag_policy_registry.py` | 21 | TG1.3 lag-admissibility policies: the capability table, a fourth policy (`instrument_response`) registered from the test module with a per-channel floor, the advective arithmetic and fingerprint unchanged, the declared floor now reaching the sweep, D58, the replication gate refusing a floor from the wrong policy |
 | `test_task_randomness.py` | 15 | D55 per-task streams: torch value continuity with the old global seeding, stream advance, thread isolation of the context binding, release on failure, `require` refusal, `add_noise` ambient fallback and labelling, D57 seed pass-through, `enable_determinism` scope reporting |
 | `test_axis_roles.py` | 38 | TG1.1 declared axis roles: legacy arrangements unchanged, the three resolution bases in provenance, declaration beating a contradicting name, refusal of inference for a domain-general adapter, hint registry and collisions, D56 coordinate-slicing fix |
 | `test_channel_series.py` | 14 | TG0.1 channel-series contract: signature/plain-series result equivalence, the two protocol tiers, R21's no-support refusal, clock and shape validation |
 | `test_domain_gate.py` | 18 | TG0.3 negative control: PASS/FAIL/INVALID on a non-atmospheric domain, false-positive calibration, R6 embargoed split, gate-measure registry |
-| `test_tabular_domain.py` | 26 | TG0.2 non-atmospheric domain: planted-coupling recovery and AR(1) null through the unmodified sweep, R21/R17 refusals, declaration and adapter validation |
+| `test_tabular_domain.py` | 27 | TG0.2 non-atmospheric domain: planted-coupling recovery and AR(1) null through the unmodified sweep, R21/R17 refusals, declaration and adapter validation |
 | `test_coefficient_field.py` | 40 | T4B.1 acceptance: parent-grid alignment, perfect reconstruction per family, lineage-safe summary; DTCWT upsampling declared; LevelBank and level slicing (T4B.4) |
 | `test_documentation.py` | 19 | architecture, roadmap and proprietary named-licence boundary against the code/repository |
 | `test_dtcwt.py` | 28 | Kingsbury q-shift DTCWT: primitives vs reference, two oracles, orientation, shift invariance, D1 head-to-heads |
@@ -2424,7 +2485,7 @@ able to sit three slices out of date.
 | `test_wavelet_bank.py` | 27 | T4B.2 expansion through the engine's own parameter matrix, the 1,000-combination guard, decompose_bank / extract_scale_signature, the vertical-bank refusals |
 | `test_transforms.py` | 13 | fft/dct/dwt/dtcwt/hybrid round trips; D1 recorded as a strict xfail |
 | `test_zarr_source.py` | 59 | R13 geometry, chunk-hostility, byte counting, streaming content identity, exact chunk-bounded frame reader, cache/provenance round trip, NetCDF engine and HTTP surface |
-| **total** | **1002** | |
+| **total** | **1024** | |
 
 ### 7.2h A surrogate null that was not the null it claimed (T4C.5)
 

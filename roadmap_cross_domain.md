@@ -87,6 +87,10 @@ are from `src/`, excluding tests.
   a naming one. Rule R4's minimum admissible lag is derived from advective transport. A domain
   with no propagation speed has no such floor and needs a different admissibility rule. This is
   also where **D48** and **D53** both bit — it is already proven to be the subtle part.
+  **Localised in TG1.3**, and the assumption ran deeper than this bullet says: the sweep called
+  `support_floor` unconditionally, so the atmospheric floor was applied to every domain
+  regardless of what it had declared. The declared floor was enforced only at the boundary,
+  and the receipt reported the advective one.
 * **`BANK_FAMILIES = ("swt","dtcwt")`** is a hardcoded tuple bypassing the transform registry.
 * **`GateProtocol` validated its measure against a four-name tuple of wavelet measures.**
   *Found by TG0.3, missed by this audit.* An allow-list implementing a deny-rule: R3 forbids a
@@ -262,6 +266,17 @@ A domain adapter's registration includes the assumptions it breaks (no metric, n
 speed, irregular sampling, no natural cycle, non-stationary support). Those declarations are
 machine-readable, drive automatic refusals in the analysis layer, and are reported in every
 receipt. This makes R17 enforceable rather than aspirational.
+
+### E16. Admissibility is a registered policy, applied where the arithmetic happens.
+
+Added by TG1.3, from what that slice found. Any rule of the form *"this result is only
+admissible if ..."* is a registered policy with declared capabilities, not a branch on a
+declaration string — and it must be applied **at the point of use**, not only at the boundary
+where the caller meets it. R21's lag floor was localised to the domain entry point in TG0.2
+and left assumed inside the sweep, so a domain's declared floor was enforced in the refusal and
+absent from the receipt. A refusal written where the reader will meet it and an assumption
+living where the number is computed are two different places, and localising one does not
+localise the other.
 
 ---
 
@@ -464,10 +479,57 @@ The sweep now carries a noise step and a second test changes the root seed to pr
 move. Three consecutive slices in which execution found what reading missed; the first in which
 the thing that missed it was a test.
 
-**TG1.3 Lag-admissibility policies (R21).** `support_floor` becomes one registered policy
-(`advection`) behind a policy seam, alongside `none` (which refuses precedence claims) and
-`declared` (an explicit floor with a recorded basis). The D48/D53 physical-grid reconstruction
-moves inside the advection policy unchanged.
+**TG1.3 Lag-admissibility policies (R21) - DONE.** `src/core/lag_policy.py` holds
+`LAG_POLICIES`, and `advective`, `declared` and `none` register as its first three entries.
+Each declares `precedence_admissible`, `floor_from_declaration`, `floor_from_geometry`,
+`requires_channel_support` and the `parameters` it consumes. `support_floor` moved into the
+module unchanged - the D48/D53 physical-grid reconstruction with it - as the advective
+policy's implementation, and `cross_scale` re-exports it for the gate modules that audit a
+frozen atmospheric plan before any data exists.
+
+Every branch on the policy name is gone: `DomainDeclaration.__post_init__` calls
+`validate_declaration`, `precedence_admissible` reads a capability, `analyse_precedence` binds
+the policy and asks it to check the lag family, and `cross_scale_dependency` takes the bound
+policy instead of assuming one. `domain_analysis.py` names no policy at all.
+
+**Acceptance met.** `test_lag_policy_registry.py` registers `instrument_response` - a floor
+per channel from each sensor's settling time - from the test module, and runs a complete sweep
+through it: declaration validation, its own parameter, a per-channel floor, its own exclusion
+wording and its own fingerprint entries. It was chosen to be awkward on the axis the builtins
+are not - `advective` varies per channel but only from a physical grid, `declared` needs no
+data but is uniform, this one is neither - because a fourth policy that was `declared` under
+another name would have proved nothing.
+
+Bit-identical: the advective block is asserted against `support * dx / U` recomputed inline,
+and the atmospheric `analysis_config` is asserted to carry exactly the keys it always carried.
+
+*   **The defect the closed set was hiding.** The floor the *sweep* applied was always the
+    advective one. Under `lag_policy='declared'` the domain's floor was enforced at the entry
+    point and then every test record reported `support_floor_frames: 1` with an exclusion
+    reason citing rule R4 - a rule about wavelet filter geometry, quoted to a domain that had
+    declared it has no propagation mechanism. The right tests ran; the receipt described a
+    different study. This is the same shape as TG1.2's `laplacian` `else`: not a fallback, a
+    silent default.
+*   **D58, and a gate that accepted a substitute.** `run_domain_gate` required
+    `lag_policy='advective'` for a protocol that froze an advection floor, and had no
+    parameter through which a speed could reach the policy that requires one - so that
+    combination could not be executed at all. Separately, the replication gate's
+    `require_advection_floor` checked only that *a* floor was enforced, which a declared floor
+    satisfies; it now names the policy, because rule R18 fixes the design before the run
+    rather than accepting a substitute during it.
+*   **One deliberate behaviour change.** A domain whose policy cannot read `support_parent_px`
+    is no longer required to supply it. Every domain used to pay that entry price because
+    `support_floor` ran regardless of the declaration, so a logger whose floor comes from its
+    reporting interval had to declare a wavelet footprint that could not reach any floor it
+    applied. Required, invented, and inert.
+
+**The finding.** Rule R21 was written to stop the atmosphere's admissibility rule being
+inherited silently by domains that cannot support it. It was enforced at the domain boundary
+and nowhere else, and the boundary is not where the number is used. TG0.2 built the refusal;
+TG1.3 found that the sweep behind it had never been told. The pattern across G0 and G1 is now
+consistent enough to state plainly: **the refusals are written where the reader will meet
+them, and the assumptions live where the arithmetic happens.** Localising one does not
+localise the other, and only running the code shows the gap.
 
 **TG1.4 The sibling sample spine (E12).** A domain-general structured-sample type beside
 `PhysicalField`, for data that is not a 2D metric grid. `PhysicalField` is untouched. Adapters

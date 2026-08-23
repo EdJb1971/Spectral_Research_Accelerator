@@ -52,9 +52,9 @@ from typing import Any, Callable, Dict, List, Optional, Sequence
 
 import numpy as np
 
-from src.core.channel_series import (ChannelGeometry, ChannelSeriesLike,
-                                     require_gate_measure)
+from src.core.channel_series import ChannelSeriesLike, require_gate_measure
 from src.core.errors import InvalidParameterError
+from src.core.lag_policy import BoundLagPolicy, bind as bind_lag_policy, support_floor
 from src.statistics.multiple_comparisons import check_power
 from src.statistics.significance import screen
 
@@ -235,10 +235,18 @@ def evaluate_replication_gate(train: Dict[str, Any], test: Dict[str, Any],
             problems.append("%s surrogate count differs from the frozen protocol" % split_name)
         if not (result.get("power") or {}).get("can_reject_after_correction", False):
             problems.append("%s partition was underpowered after correction" % split_name)
+        # Naming the policy is the point here, not a leftover dispatch branch: the
+        # protocol froze *the advective floor*, and a floor from another policy is a
+        # different design (R18), however well justified it is on its own terms.
+        applied = result.get("support_floor") or {}
         if protocol.require_advection_floor and not (
-                result.get("support_floor") or {}).get("enforced", False):
-            problems.append("%s partition did not enforce the declared advection floor" %
-                            split_name)
+                applied.get("enforced", False)
+                and applied.get("policy", "advective") == "advective"):
+            problems.append(
+                "%s partition did not enforce the declared advection floor (policy %r, "
+                "enforced=%r). A floor from another policy is a floor, but it is not the one "
+                "this protocol froze, and rule R18 fixes the design before the run"
+                % (split_name, applied.get("policy"), applied.get("enforced")))
 
     if problems:
         return {"verdict": "INVALID", "problems": problems,
@@ -396,128 +404,12 @@ def lagged_mutual_information(source: Sequence[float], target: Sequence[float], 
     return mutual_information(s[:-lag], t[lag:], bins=bins)
 
 
-# ---------------------------------------------------------------- the support floor (R4)
-
-def support_floor(signature: ChannelGeometry, cadence_seconds: float,
-                  advection_speed_m_s: Optional[float] = None) -> Dict[str, Any]:
-    """The minimum admissible lag per scale, and an honest account of where it comes from.
-
-    Rule R4 says a lag shorter than the transform's own support measures filter geometry
-    rather than weather. For a **spatial** transform applied frame by frame - which is what
-    Phase 4 uses, deliberately, since 3D wavelets are out of scope - the temporal support is
-    exactly zero, and quoting one would be an invention. What is real is that a structure
-    must cross the filter's spatial support before a change at that scale can be anything
-    other than the same air seen twice: `t_cross(s) = support(s) * dx / U`.
-
-    `advection_speed_m_s` is therefore required for a geometric floor and is **not given a
-    default**. A plausible-looking 10 m/s would silently set every floor in every result, and
-    a reader would have no way to know a number they never supplied was doing the work.
-    Without it the only floor applied is one frame, and the result says so in as many words.
-    """
-    if cadence_seconds <= 0:
-        raise InvalidParameterError("cadence_seconds", cadence_seconds,
-                                    "a positive sampling interval")
-    grid = signature.provenance.get("grid") or {}
-    spacing_m = None
-    spacing_basis = None
-    kind = grid.get("kind")
-    if kind in ("latlon", "cartesian"):
-        try:
-            from src.physical_core.grid import GridSpec
-            physical_grid = GridSpec.from_provenance(dict(grid))
-            # Support is expressed in parent-grid pixels. With no frozen flow direction,
-            # use the larger physical cell axis so an anisotropic/lat-lon grid cannot make
-            # the crossing floor anti-conservative. In particular, GridSpec.dx is degrees
-            # for lat/lon and must never be interpreted as metres (D53).
-            dx_values = physical_grid.dx_metres()
-            dy_values = physical_grid.dy_metres()
-            spacing_m = max(float(dx_values.max()), float(dy_values.max()))
-            spacing_basis = (
-                "maximum physical cell-axis spacing over the crop, reconstructed from "
-                "GridSpec; angular dx/dy are converted to metres"
-                if kind == "latlon" else
-                "maximum declared Cartesian cell-axis spacing in metres")
-        except (KeyError, TypeError, ValueError) as exc:
-            raise InvalidParameterError(
-                "signature.provenance.grid", grid,
-                "a complete physical GridSpec for an advective support floor: %s" % exc) from exc
-    else:
-        # Compatibility with older explicitly metric provenance. Deliberately do not read
-        # bare `dx`: its unit depends on grid kind and caused D53.
-        candidate = grid.get("representative_dx_metres") or grid.get("dx_metres")
-        if isinstance(candidate, (int, float)) and candidate \
-                and math.isfinite(candidate) and candidate > 0:
-            spacing_m = float(candidate)
-            spacing_basis = "legacy provenance field explicitly labelled in metres"
-    physical = (isinstance(spacing_m, (int, float)) and math.isfinite(spacing_m)
-                and spacing_m > 0)
-
-    floors: List[Dict[str, Any]] = []
-    warnings: List[str] = []
-    # Hoisted: `channel_records` is a property, and on a producer that builds its records on
-    # demand rather than storing them, reading it per channel is quadratic for no reason.
-    records = list(signature.channel_records)
-    for position, scale in enumerate(signature.channels, start=1):
-        try:
-            level = int(scale)
-        except (TypeError, ValueError):
-            level = position
-        interior_record = records[position - 1] if position - 1 < len(records) else {}
-        support_px = interior_record.get("support_parent_px")
-        if not isinstance(support_px, (int, float)) or support_px <= 0:
-            raise InvalidParameterError(
-                "channel_records[%d].support_parent_px" % (position - 1), support_px,
-                "the transform's measured positive parent-grid filter support. Using 2**level "
-                "would understate the shared spatial footprint for longer filters")
-        record: Dict[str, Any] = {
-            "scale": str(scale),
-            "level": level,
-            "spatial_support_px": support_px,
-            "floor_frames": 1,
-            "basis": ("sampling cadence only: consecutive frames are the finest lag the "
-                      "record can express; spatial support is the transform's exact %d-pixel "
-                      "filter cascade" % support_px),
-        }
-        if physical and advection_speed_m_s:
-            support_m = support_px * float(spacing_m)
-            crossing = support_m / float(advection_speed_m_s)
-            frames = max(1, int(math.ceil(crossing / cadence_seconds)))
-            record.update({
-                "spatial_support_m": support_m,
-                "physical_spacing_m_per_parent_px": float(spacing_m),
-                "physical_spacing_basis": spacing_basis,
-                "crossing_time_s": crossing,
-                "floor_frames": frames,
-                "basis": ("advective crossing of the filter support: %.0f m at %.1f m/s is "
-                          "%.0f s, which is %d frame(s) at this cadence"
-                          % (support_m, advection_speed_m_s, crossing, frames)),
-            })
-        floors.append(record)
-
-    if not physical:
-        warnings.append(
-            "the signature's grid carries no physical spacing, so no advective floor could "
-            "be computed and the only floor applied is one frame. A lag floor in metres "
-            "derived from a pixel grid would be fabricated.")
-    if advection_speed_m_s is None:
-        warnings.append(
-            "no advection speed was supplied, so the geometric floor of rule R4 is not "
-            "enforced. This is reported rather than defaulted: a default speed would set "
-            "every floor in every result from a number the reader never chose.")
-
-    return {
-        "cadence_seconds": float(cadence_seconds),
-        "advection_speed_m_s": (None if advection_speed_m_s is None
-                                else float(advection_speed_m_s)),
-        "floors": floors,
-        "floor_by_scale": {record["scale"]: record["floor_frames"] for record in floors},
-        "enforced": bool(physical and advection_speed_m_s),
-        "temporal_support_note": (
-            "the transform is spatial and is applied frame by frame, so its temporal support "
-            "is zero. The floor below is advective, not filter-geometric, and it is the "
-            "honest version of rule R4 for a 2D-per-frame decomposition."),
-        "warnings": warnings,
-    }
+# ---------------------------------------------------------------- the lag floor (R4/R21)
+#
+# `support_floor` moved to `src.core.lag_policy` in TG1.3, unchanged, as the implementation of
+# the registered `advective` policy. It is re-exported here because `gate_run` and
+# `gate_campaign` call it directly to audit a frozen plan before any data exists, and those are
+# advective by construction: they are auditing an atmospheric acquisition.
 
 
 # ---------------------------------------------------------------- the dependency sweep
@@ -612,6 +504,7 @@ def cross_scale_dependency(
     bins: int = DEFAULT_BINS,
     wrap: bool = True,
     advection_speed_m_s: Optional[float] = None,
+    lag_floor: Optional[BoundLagPolicy] = None,
     n_surrogates: int = DEFAULT_SHIFT_SURROGATES,
     alpha: float = 0.05,
     correction: str = "benjamini_yekutieli",
@@ -622,7 +515,21 @@ def cross_scale_dependency(
     Returns the whole family - including the tests that were excluded by the support floor
     and why - because a sweep that silently drops what it cannot test looks identical to a
     sweep that had nothing to drop.
+
+    `lag_floor` is the bound lag policy that decides admissibility (TG1.3). It defaults to the
+    `advective` policy carrying `advection_speed_m_s`, which is what this function did
+    unconditionally before the seam existed, so every atmospheric result is unchanged. A
+    domain that justifies its floor another way passes its own bound policy, and then the
+    floor the sweep applies is the floor the domain declared - which, under
+    ``lag_policy='declared'``, it previously was not.
     """
+    if lag_floor is None:
+        lag_floor = bind_lag_policy("advective", advection_speed_m_s=advection_speed_m_s)
+    elif advection_speed_m_s is not None:
+        raise InvalidParameterError(
+            "advection_speed_m_s", advection_speed_m_s,
+            "None when an explicit lag_floor is supplied. Two floors from two different "
+            "bases would silently take one of them, and the result would not say which")
     if estimator not in ("transfer_entropy", "mutual_information"):
         raise InvalidParameterError("estimator", estimator,
                                     "'transfer_entropy' or 'mutual_information'")
@@ -631,7 +538,7 @@ def cross_scale_dependency(
 
     matrix = signature.to_matrix(measure)
     n_times, n_scales = matrix.shape
-    floors = support_floor(signature, cadence_seconds, advection_speed_m_s)
+    floors = lag_floor.floors(signature, cadence_seconds)
     warnings: List[str] = list(floors["warnings"])
 
     cells = bins ** (3 if estimator == "transfer_entropy" else 2)
@@ -669,9 +576,7 @@ def cross_scale_dependency(
                     excluded.append({
                         "source_scale": str(source_scale),
                         "target_scale": str(target_scale), "lag_frames": int(lag),
-                        "reason": ("below the rule R4 support floor of %d frame(s); at this "
-                                   "lag the two scales are the same air seen twice through "
-                                   "overlapping filters" % floor)})
+                        "reason": lag_floor.exclusion_reason(floor)})
                     continue
                 observed = statistic(source, target, lag, bins, wrap)
                 theiler = max(decorrelation_frames(source), decorrelation_frames(target))
@@ -739,8 +644,11 @@ def cross_scale_dependency(
         "n_scales": int(n_scales),
         "lags_frames": [int(value) for value in lags],
         "cadence_seconds": float(cadence_seconds),
-        "advection_speed_m_s": (float(advection_speed_m_s)
-                                 if advection_speed_m_s is not None else None),
+        # The policy contributes its own fingerprint entries, so the hash records what set
+        # the floor rather than one hard-coded key that only the atmospheric policy uses.
+        # `advective` contributes exactly `advection_speed_m_s`, which is why every existing
+        # `analysis_config_sha256` is byte-identical across TG1.3.
+        **lag_floor.config_entries(),
         "n_surrogates": int(n_surrogates),
         "alpha": float(alpha),
         "correction": correction,
