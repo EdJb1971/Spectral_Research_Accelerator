@@ -680,10 +680,63 @@ atmosphere-shaped; it has not yet shown that a real second archive fits it.
 
 The first genuinely new machinery, built directly against the benchmarks committed in §2.3.
 
-**TG2.1 The canonical feature record.** `{domain, dataset, variable, units, location, time,
-spatial_scale, temporal_scale, orientation, magnitude, significance, extent, uncertainty,
-representation, provenance}` — with original semantics and units retained under R19. Domain and
-variable are **carried, never compared numerically**.
+**TG2.1 The canonical feature record - DONE.** `src/core/feature.py` holds
+`SpectralFeature`, `FeatureSet`, and the four quantity types the record is built from:
+`Quantity` (value, units, uncertainty, kept together), `Orientation`, `Significance` and
+`FeatureLocation`. All fifteen roadmap fields are present in `describe()`.
+
+**The record enforces R19 rather than documenting it.** `compare_magnitude_to`,
+`separation_to` and `elapsed_to` raise `SemanticComparisonError` across a domain or a dataset
+boundary, and `FeatureSet` refuses to hold features from two domains, two variables, two
+representations or two clocks. A comment saying "do not compare these" is not an invariant;
+these refusals are, and each is exercised by a test that attempts the comparison.
+
+*   **Two views, and only one crosses a boundary.** `structural_signature()` is *built* from
+    the quantities that survive being stripped of their units - scale ratios, orientation,
+    significance, representation - rather than filtered out of `describe()`. Adding magnitude
+    back is then a visible edit to that method instead of an invisible consequence of a key
+    not being removed. `scale_ratio_to` is the one comparison that is permitted across a
+    domain boundary, and it still refuses when the units do not cancel: a scale in cells over
+    one in metres is not dimensionless, and that is arithmetic rather than policy.
+*   **Orientation was the trap.** A ridge at 170 degrees and one at 350 are the same axis; a
+    vector at 170 and one at 350 are opposed. The wrap period is a property of the quantity
+    and not of the number, so `ORIENTATION_CONVENTIONS` registers `axis_180` and
+    `direction_360` and the arithmetic reads the declaration (standard E16). TG2.3 gates
+    association on orientation difference, and that gate would have been wrong by up to a
+    factor of two in one of the two cases with no way to tell which.
+*   **Significance carries its own resolution.** An empirical p-value from `n` surrogates
+    cannot be smaller than `1 / (1 + n)` on the `(1 + k) / (1 + n)` convention the tree
+    already uses, and `Significance` refuses one that is - a record claiming `p = 1e-4` from
+    999 surrogates reports a number the ensemble could not have produced, and that number
+    would then be BY-corrected, ranked and published.
+*   **No `uncertainty` field, deliberately.** A single uncertainty for a record holding a
+    magnitude in kelvin, a location in cells, a scale in metres and an angle in degrees is a
+    number with no unit and no referent. It lives with each quantity, and
+    `describe()["uncertainty"]` assembles the per-quantity view - the field the list asks for,
+    without a lie in the dataclass.
+*   **A real user, not a docstring.** Features are built from *measured* centroids and
+    *measured* widths of the `advected_vortex_sequence` benchmark - never from its recorded
+    truth - and recover the known step velocity to 0.25 cells and the known scale-doubling
+    ratio to 10%. This is the TG1.4 discipline: a type without a user is speculative
+    generality with a docstring.
+
+**D59, found by giving it that user.** `truth_advected_vortex` takes the vortex position
+modulo `n`, so its recorded answer is a trajectory on a torus; `build_advected_vortex` draws a
+plain Euclidean Gaussian that is clipped at the boundary rather than wrapped. At the
+benchmark's own parameters the vortex never reaches an edge, so the two have never disagreed
+and `4D.position` passes to better than a cell. Started near one, they part company by several
+cells. **This is TG2.3's problem before it is anyone else's:** that slice's acceptance criterion
+is *1 track, 1 birth, 0 deaths*, and a tracker on a wrapping parameterisation would see the
+object fade out at one edge and appear at the other - and would be right. Left unfixed on
+purpose (making the builder periodic moves every number the benchmark produces) and asserted by
+a test, so the next slice meets it as a fact rather than as a surprise.
+
+The pattern from G1 held on the first task of G2: the defect was in an asset the audit had
+already read twice and quoted in section 2.3, and it was found by *running* something against
+it.
+
+**Evidence:** `src/tests/test_feature_record.py`, 36 tests. Full suite 1375 passed, 1 skipped,
+1 xfailed.
 
 **TG2.2 Feature extraction as a registry.** Local maxima above a surrogate-calibrated threshold
 with sub-pixel localisation is the first registered extractor, not the definition of extraction.

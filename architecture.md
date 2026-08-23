@@ -1218,6 +1218,88 @@ this is where it lands. Nothing hashed moves: `analysis_config_sha256`, the arti
 `gate_campaign`, `cds_source`, `era5_overlap` and `regional_forecast` keep their own
 `level_hpa` vocabulary because section 2.2 lists them as permanently atmospheric.
 
+### 3.6n The canonical feature record (`src/core/feature.py`, TG2.1, `ed-dev`)
+
+The first piece of the machinery section 2.3 of `roadmap_cross_domain.md` records as entirely
+absent: `grep -rE 'SpectralFeature|FeatureTrack|constellation|motif' src` returned five hits,
+all comments saying "not implemented". TG2.1 is deliberately the **record** rather than the
+extractor. What a feature is has to be settled before anything decides how to find one, because
+every later phase reads this vocabulary and rule R20 will eventually freeze a motif expressed
+in it.
+
+**The record exists to enforce R19.** Mapping sea-surface temperature and trading volume into a
+common structural vocabulary makes their structures comparable and their quantities not. So the
+canonical description does not replace the original one: domain, dataset, variable and units
+travel with every feature, and the comparisons R19 forbids raise `SemanticComparisonError`
+rather than being documented as unwise. A comment is not an invariant.
+
+Two views, and only one of them crosses a domain boundary:
+
+| View | Contains | Who may read it |
+|---|---|---|
+| `describe()` | all fifteen roadmap fields, with units and provenance | receipts, and any reader working inside one domain |
+| `structural_signature()` | scale ratios, orientation, significance, representation | a cross-domain matcher (phases G3 and G5) |
+
+`structural_signature()` is **built** from the quantities that survive being stripped of their
+units, not filtered out of `describe()`. Adding magnitude back is then a visible edit to that
+method rather than an invisible consequence of a key not being removed.
+
+**Every number carries its units, including the ones that have none.** `Quantity` holds value,
+units and uncertainty together because those three are separated at exactly the moment somebody
+needs them together. `units=None` is a legitimate declaration - the quantity is dimensionless -
+and it is distinct from "the units were never recorded", so an empty string is refused.
+
+**Orientation is the trap.** A ridge at 170 degrees and one at 350 degrees are the same axis; a
+wind vector at 170 and one at 350 are opposed. The wrap period is a property of the quantity and
+not of the number, so `ORIENTATION_CONVENTIONS` registers `axis_180` and `direction_360`, the
+arithmetic reads the declaration (standard E16), and comparing two orientations under different
+conventions raises. TG2.3's tracker gates association on orientation difference; that gate is
+wrong by up to a factor of two in one of these two cases if the convention is assumed.
+
+**Significance carries its resolution.** An empirical p-value from `n` surrogates cannot be
+smaller than `1 / (1 + n)`, on the same `(1 + k) / (1 + n)` convention `surrogate_null` already
+uses. `Significance` refuses a value below that floor, and refuses an empirical p-value with no
+ensemble size at all - a record claiming `p = 1e-4` from 999 surrogates is reporting a number
+the ensemble could not have produced, and that number would then be corrected, ranked and
+published. `declared_none` makes "not tested" a state a receipt can distinguish from "tested
+and weak".
+
+**A location is on declared axes, and knows its own topology.** `FeatureLocation` holds
+`AxisSpec`s (standard E14), refuses a `time`-role axis (a feature's time is a field of its own,
+and a second copy is a second clock that can disagree), refuses mixed units across its axes, and
+**refuses a separation across a periodic axis when the axis length is not supplied.** That last
+refusal is the difference between two cells and a hundred and twenty-six.
+
+**There is no `uncertainty` field.** The roadmap's list names one, and a single uncertainty for
+a record holding a magnitude in kelvin, a location in cells, a scale in metres and an angle in
+degrees would be a number with no unit and no referent. Uncertainty lives with each quantity and
+`describe()["uncertainty"]` assembles the per-quantity view, so the field the roadmap asks for
+is in the receipt without a lie in the dataclass.
+
+**`FeatureSet` is homogeneous by construction** - one domain, one dataset, one variable, one
+representation, one clock. Everything TG2.3 and TG3.3 will do with a set is arithmetic on
+coordinates, scales and times, and a set that quietly mixed two domains would let all of it run
+and produce comparisons R19 forbids. Mixing representations is refused for the second reason
+too: TG2.4's audit asks which representation manufactured a feature, and cannot ask that of a
+set whose features came from several.
+
+**Given a real user rather than a docstring.** The tests build features from measured centroids
+and measured widths of the `advected_vortex_sequence` benchmark - never from its recorded truth
+- and recover the known step velocity to 0.25 cells and the known scale-doubling ratio to 10%.
+A record that has only ever held a hand-written literal has not been tested.
+
+**Defect D59, found by giving it that user.** `truth_advected_vortex` takes the vortex position
+modulo `n`, so its recorded answer is a trajectory on a torus, and `build_advected_vortex` draws
+the blob with a plain Euclidean Gaussian that does not wrap. At the benchmark's own parameters
+the vortex never reaches an edge, so the two have never disagreed. Started near one, the
+recorded position and the field part company by several cells for the frames where the blob is
+clipped. This is TG2.3's problem before it is anyone else's: that slice's acceptance criterion
+is *1 track, 1 birth, 0 deaths*, and a tracker run on a wrapping parameterisation would see the
+object fade out at one edge and appear at the other, and would be right. The benchmark is left
+alone - changing its field builder would move every number it produces, and TG2.1 is not the
+slice that gets to do that - and the disagreement is asserted by a test so the next slice meets
+it as a fact rather than as a surprise.
+
 ### 3.8 Grid Geometry and Metric-Aware Operators (`src/physical_core/grid.py`, `operators.py`)
 
 Added in T3.5.13 (defect D13, standard E3). `GridSpec` is the physical metric attached to
@@ -2445,6 +2527,8 @@ code paths that `architecture.md` previously described as implemented and rigoro
 | D57 | `experiment_engine/actions.py:perturb_field` | **A declared reproducibility parameter was silently discarded.** The action's registry entry advertised that noise `accepts \`seed\` for reproducibility`; the handler then called `PerturbationEngine.add_noise(field, noise_type, level)` and dropped the seed. A user asking for a reproducible perturbation received an unreproducible one with no error — the worst shape a reproducibility defect can take, because the request looks honoured. The seed is now passed through, and omitting it falls back to the task stream (D55). Found while giving the byte-identity acceptance sweep a payload that actually draws. | **FIXED** TG1.2 (`ed-dev`) |
 | D56 | `physical_core/field.py:split_field`, `scale_resolution` | **A coordinate spelled in full was silently mishandled.** Both methods decided which coordinate was the row and which the column from hardcoded name lists - `["y","lat"]` and `["x","lon"]` - and the two lists disagreed about the fallback. A field carrying `latitude`/`longitude`, the spelling CF and ERA5 both use, matched neither: `split_field` cloned the longitude vector instead of slicing it, returning a narrowed field whose coordinate no longer described its own data and which `GridSpec.from_coords` would then read; `scale_resolution` interpolated latitude to the *column* count. Nothing raised. Both now resolve through `core/axes.resolve_axis_roles`, and a caller may declare `axis_roles` instead. The disagreement over genuinely unrecognised coordinates is preserved deliberately and asserted, so no pre-TG1.1 result moves. | **FIXED** TG1.1 (`ed-dev`) |
 
+| D59 | `benchmarks/sequences.py:build_advected_vortex`, `truth_advected_vortex` | **The recorded trajectory wraps and the field does not.** `truth_advected_vortex` takes the vortex position modulo `n`, so its known answer is a trajectory on a torus; `build_advected_vortex` draws the blob with a plain Euclidean Gaussian, which is clipped at the boundary rather than wrapped. At the benchmark's own parameters the vortex never reaches an edge, so the two have never disagreed and the `4D.position` check passes to better than a cell. Started near an edge, the recorded position and the measured centroid part company by several cells for the frames where the blob is clipped. This lands on TG2.3, whose acceptance criterion is *1 track, 1 birth, 0 deaths* on this sequence: a tracker run on a wrapping parameterisation would see the object fade out at one edge and appear at the other, and would be right, against a recorded answer that says neither happened. Left unfixed deliberately - making the builder periodic would move every number the benchmark produces, and TG2.1 is not the slice that gets to do that - and asserted by `test_the_benchmarks_trajectory_wraps_but_its_field_does_not_defect_d59` so the next slice meets it as a fact. Found by giving TG2.1's record a real user. | **OPEN**, for TG2.3 (`ed-dev`) |
+
 **Root cause common to D20, D23, D25 and D2:** the transform engine — the mathematical core of
 the platform — had **no test file at all**. `src/tests/test_transforms.py` now exists (36 cases
 across FFT, DCT, DWT, DTCWT and hybrid — two thirds of the whole suite) and covers round-trip exactness, energy conservation,
@@ -2562,6 +2646,7 @@ able to sit three slices out of date.
 | `test_boundary_synthetic.py` | 8 | boundary treatments, windowing, synthetic generators and independent Euclidean-ring oracle |
 | `test_cds_source.py` | 14 | T5.2c monthly CDS planning/CLI, grid-alignment/server-snap refusals, network consent, atomic resume, shard integrity, conservative storage refusal, bounded Zarr publication, plus PASS/FAIL independent-route receipt publication, replay and tamper refusal |
 | `test_geometry_registry.py` | 20 | TG1.2 geometry registry: the three builtins' metrics, crops, resamples and provenance unchanged; capability-driven `is_physical`/`length_units`/`latitudes`; a fourth geometry (`polar_scan`) registered from the test module with a non-uniform, non-spherical metric; the Cartesian Laplacian refusing it; `latitude`/`longitude` recognised as a sphere |
+| `test_feature_record.py` | 36 | TG2.1 canonical feature record: features measured off the advected-vortex benchmark recovering its known velocity and scale doubling, the R19 refusals (magnitude, separation, elapsed time, mixed sets), the periodic-axis refusal, orientation conventions and the surrogate resolution floor, a fourth convention and a fourth significance basis registered from the test module, and defect D59 |
 | `test_level_axis.py` | 19 | TG1.5 vertical coordinates: the registry and its sense of up, a height bank labelling its offsets the opposite way to pressure, a fourth coordinate registered from the test module, the declaration travelling from reader to signature, `level_hpa` refusing a non-pressure axis, and the pressure arithmetic unchanged |
 | `test_lag_policy_registry.py` | 21 | TG1.3 lag-admissibility policies: the capability table, a fourth policy (`instrument_response`) registered from the test module with a per-channel floor, the advective arithmetic and fingerprint unchanged, the declared floor now reaching the sweep, D58, the replication gate refusing a floor from the wrong policy |
 | `test_task_randomness.py` | 15 | D55 per-task streams: torch value continuity with the old global seeding, stream advance, thread isolation of the context binding, release on failure, `require` refusal, `add_noise` ambient fallback and labelling, D57 seed pass-through, `enable_determinism` scope reporting |
@@ -2606,7 +2691,7 @@ able to sit three slices out of date.
 | `test_wavelet_bank.py` | 27 | T4B.2 expansion through the engine's own parameter matrix, the 1,000-combination guard, decompose_bank / extract_scale_signature, the vertical-bank refusals |
 | `test_transforms.py` | 13 | fft/dct/dwt/dtcwt/hybrid round trips; D1 recorded as a strict xfail |
 | `test_zarr_source.py` | 59 | R13 geometry, chunk-hostility, byte counting, streaming content identity, exact chunk-bounded frame reader, cache/provenance round trip, NetCDF engine and HTTP surface |
-| **total** | **1071** | |
+| **total** | **1107** | |
 
 ### 7.2h A surrogate null that was not the null it claimed (T4C.5)
 
