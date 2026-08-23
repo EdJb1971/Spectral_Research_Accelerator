@@ -55,7 +55,7 @@ skill, show the counterexamples, or report that no robust relationship survives.
 ## 1. Honest Technical Status
 
 Verified against the code on 2026-08-22. Every claim here is backed by captured output in
-`VERIFICATION.md`; `architecture.md` Section 7 holds the full defect ledger (D1-D54, of which **52 fixed, 1 partial (D18), 1 open (D43)**).
+`VERIFICATION.md`; `architecture.md` Section 7 holds the full defect ledger (D1-D55, of which **52 fixed, 1 partial (D18), 2 open (D43, D55)**).
 
 The numbers in this table are checked by `src/tests/test_documentation.py`, which parses them
 out of this file and compares them against the source. That guard exists because this table
@@ -75,7 +75,7 @@ status section, it is a memory.
 | Turbulence regime classification | **Corrected as of T3.5.13.** Was off by one exponent for the platform's entire history and labelled Kolmogorov fields as Charney (D26). |
 | Shift invariance | **Available as of T3.5.7** via the undecimated SWT: 0.00% energy spread against the decimated DWT's 153.50%. |
 | DTCWT | **Implemented as advertised as of T3.5.6** (D1 closed). Real Kingsbury q-shift dual tree, six oriented complex subbands with *measured* passband centres, vendored full-precision coefficients, cross-checked against two independent oracles. Near shift invariant, not exact — the SWT remains the exactly shift-invariant transform. |
-| Reproducibility | **Seeded generation, perturbation and run-level seed capture** (T3.5.12/T3.5.19). `ExperimentRun.seed` and `execution` are persisted, and a sweep is byte-identical across executor backends. Replaying a run from lineage alone is still outstanding. |
+| Reproducibility | **Seeded generation, perturbation and run-level seed capture** (T3.5.12/T3.5.19). `ExperimentRun.seed` and `execution` are persisted, and a sweep is byte-identical across the `serial` and `process` backends. **Not across `thread` with more than one worker (D55):** `_run_one` seeds the process-global torch/numpy generators, which threads share, so a real payload's seed-to-draw window is corrupted by the next worker — measured at 10 of 10 trials once that window is held open by 10 ms of work. Replaying a run from lineage alone is still outstanding. |
 | Statistical validity | **Controlled as of T4C.5, and calibrated as of T4C.3** (D8 closed). Bonferroni / Holm / BH / BY with the dependence assumption reported alongside every q-value, five surrogate null models, an ESS correction, a calibrated stationarity gate and an explicit power check. The D8 scenario went from 3 reported "discoveries" on 9-sample noise to 0, while a real effect among 19 nulls at n=40 is still recovered. T4C.3 added the two calibrations that decide whether a lagged test means anything at all: a linear lag against a circularly stationary null falsely rejects **20 of 20** AR(1) records where the null is true, and a shift null that keeps the simultaneous alignment caps the achievable p-value at about 0.005 regardless of ensemble size. |
 | Registries / extension seams | **Registry-based as of T3.5.15** (D15 closed). Transforms, pipeline actions and data sources are decorator-registered with capability metadata; the plugin acceptance test registers a third-party transform without editing `src/`. |
 | Error reporting | **Taxonomy in place as of T3.5.14** (D14 closed). `SpectralEarthError` subclasses carry their own status code and client-safety, so an HTTP status follows from the error *kind* rather than from the call site. |

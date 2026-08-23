@@ -783,6 +783,46 @@ Concrete registries built on it:
 source and a pipeline action in one new file, and the acceptance test verifies both appear in
 the API *and* that `engine.py`, `adapters.py` and `main.py` are byte-identical afterwards.
 
+### 3.6e The channel-series contract (`src/core/channel_series.py`, TG0.1, `ed-dev`)
+
+Added on the cross-domain line (`roadmap_cross_domain.md`, Phase G0). It changes no
+behaviour; it names an interface that already existed.
+
+`cross_scale_dependency` and `support_floor` are the accepted falsification layer, and they
+were written against `ScaleSignature`. That made it look as though the cross-scale question
+required a wavelet decomposition of a 2D atmospheric field. Reading the code says otherwise:
+between them the two functions touch `to_matrix(measure)`, `channels`, `channel_records` and
+`provenance`, and nothing else — not the field, the transform, the grid, the variable or the
+pressure level. The real interface between structure and inference is **labelled scalar series
+on a shared clock, a per-channel validity mask, and a per-channel minimum-lag basis**.
+
+Two tiers, because the two consumers genuinely need different amounts:
+
+*   `ChannelGeometry` — labels, per-channel records, provenance. What a lag floor needs, with
+    no data at all. `ChannelGeometrySpec` is its concrete form.
+*   `ChannelSeriesLike` — the above plus `to_matrix`. What the dependency sweep needs.
+    `ChannelSeries` is its concrete, domain-neutral form, validating clock monotonicity,
+    label uniqueness and per-measure shape, and refusing a fabricated support the way
+    `support_floor` already refuses a defaulted advection speed.
+
+`ScaleSignature` satisfies both without being restructured: `channels` and `channel_records`
+are added as aliases for `scales` and `interior`. The record *keys* are deliberately unchanged
+— `valid_interiors` is published in every gate receipt and TG0.1's acceptance criterion is a
+bit-identical receipt — so renaming them waits for TG1.5.
+
+**Splitting the tiers was forced by running the code, not by design taste.** `gate_campaign`
+performs its pre-acquisition lag-floor audit before any data exists, and had been expressing
+that with a `SimpleNamespace` carrying `scales` and `interior`: duck-typing standing in for an
+interface nobody had written down, in the same function whose grid handling produced D53. It
+now declares `ChannelGeometrySpec`, as does the D53 regression test.
+
+`test_channel_series.py` carries the Phase G0 claim as an executable assertion: a
+`ChannelSeries` holding a signature's own numbers reproduces the signature's own
+`cross_scale_dependency` result exactly — same configuration hash, same per-test p-values,
+effect sizes, surrogate means, Theiler windows and floors. **If that test ever fails, the
+inference layer is not domain-independent and the cross-domain programme has been falsified
+at its cheapest point.**
+
 ### 3.8 Grid Geometry and Metric-Aware Operators (`src/physical_core/grid.py`, `operators.py`)
 
 Added in T3.5.13 (defect D13, standard E3). `GridSpec` is the physical metric attached to
@@ -2004,6 +2044,7 @@ code paths that `architecture.md` previously described as implemented and rigoro
 | D52 | `analysis_engine/gate_campaign.py` | **The expensive record was the first live integration test.** Acquisition, independent overlap and gate plans existed separately, so request/grid/cadence drift remained possible and the full multi-year CDS transfer could complete before discovering a decoder or cross-route mismatch. A frozen two-stage campaign now requires a small exact canary PASS first, binds all identities and ordering, and preflights aggregate storage/dependency/configuration/consent without network use. | **FIXED** T4C.5f |
 | D53 | `analysis_engine/cross_scale.py:support_floor` | **ERA5 angular spacing was interpreted as metres.** `GridSpec.to_provenance()` stores lat/lon `dx` in degrees, but the support floor selected that field first and multiplied it directly by filter pixels. At 0.25° this understated the physical footprint by roughly five orders of magnitude. Physical grids are now reconstructed, angular spacing converted, and the maximum physical cell axis over the crop used conservatively. | **FIXED** T4C.5g |
 | D54 | `analysis_engine/gate_campaign.py`, `data_layer/cds_source.py` | **Spatial invalidity was discovered only after transfer.** Campaign validation bound request identities but did not prove grid-aligned bounds, actual-filter R13 interiors or physical lag admissibility; CDS ingestion checked spacing but not endpoints, so a server-snapped crop could pass. All are now exact pre-acquisition refusals, with returned endpoints independently rechecked. | **FIXED** T4C.5g |
+| D55 | `core/executor.py:_run_one` | **Per-task seeding is process-global, so the thread backend corrupts it.** `_run_one` calls `torch.manual_seed` and `np.random.seed` — both process-global — then invokes the task. Under `ThreadExecutor` every worker shares one generator, so a second worker's seed overwrites the first's stream before the first draws. Measured: with the seed-to-draw window held open by 10 ms of work, thread(8) disagreed with serial in **10 of 10** trials; with a microsecond-long task it disagreed in 0 of 80, because the tasks effectively serialise. Real sweep payloads are the former. This silently breaks standard E4 and re-opens D12's guarantee for `execution.backend: thread` with `n_workers > 1`, and it falsifies `roadmap.md`'s claim that "a sweep is byte-identical across executor backends" — true for `serial` and `process`, not for `thread`. `test_a_runs_seed_does_not_depend_on_which_worker_took_it` passes by timing luck and was observed failing once under full-suite load. | **OPEN** — found on `ed-dev` during TG0.1; affects `master` identically |
 
 **Root cause common to D20, D23, D25 and D2:** the transform engine — the mathematical core of
 the platform — had **no test file at all**. `src/tests/test_transforms.py` now exists (36 cases
@@ -2121,6 +2162,7 @@ able to sit three slices out of date.
 | `test_benchmarks.py` | 46 | Ground-Truth Benchmark Suite, seed discipline, eager/streamed climatology agreement, D30 determinism |
 | `test_boundary_synthetic.py` | 8 | boundary treatments, windowing, synthetic generators and independent Euclidean-ring oracle |
 | `test_cds_source.py` | 14 | T5.2c monthly CDS planning/CLI, grid-alignment/server-snap refusals, network consent, atomic resume, shard integrity, conservative storage refusal, bounded Zarr publication, plus PASS/FAIL independent-route receipt publication, replay and tamper refusal |
+| `test_channel_series.py` | 14 | TG0.1 channel-series contract: signature/plain-series result equivalence, the two protocol tiers, R21's no-support refusal, clock and shape validation |
 | `test_coefficient_field.py` | 40 | T4B.1 acceptance: parent-grid alignment, perfect reconstruction per family, lineage-safe summary; DTCWT upsampling declared; LevelBank and level slicing (T4B.4) |
 | `test_documentation.py` | 19 | architecture, roadmap and proprietary named-licence boundary against the code/repository |
 | `test_dtcwt.py` | 28 | Kingsbury q-shift DTCWT: primitives vs reference, two oracles, orientation, shift invariance, D1 head-to-heads |
@@ -2157,7 +2199,7 @@ able to sit three slices out of date.
 | `test_wavelet_bank.py` | 27 | T4B.2 expansion through the engine's own parameter matrix, the 1,000-combination guard, decompose_bank / extract_scale_signature, the vertical-bank refusals |
 | `test_transforms.py` | 13 | fft/dct/dwt/dtcwt/hybrid round trips; D1 recorded as a strict xfail |
 | `test_zarr_source.py` | 59 | R13 geometry, chunk-hostility, byte counting, streaming content identity, exact chunk-bounded frame reader, cache/provenance round trip, NetCDF engine and HTTP surface |
-| **total** | **866** | |
+| **total** | **880** | |
 
 ### 7.2h A surrogate null that was not the null it claimed (T4C.5)
 

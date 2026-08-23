@@ -156,6 +156,27 @@ class ScaleSignature:
     warnings: List[str] = dataclass_field(default_factory=list)
     provenance: Dict[str, Any] = dataclass_field(default_factory=dict)
 
+    # -- the domain-neutral channel-series contract (TG0.1) ----------------------------
+    #
+    # `ScaleSignature` satisfies `src.core.channel_series.ChannelSeriesLike` without being
+    # restructured to do so. These two aliases exist so the inference layer can speak the
+    # general vocabulary - a scale is one kind of channel, a valid interior is one kind of
+    # validity record - while this class keeps the wavelet names that are correct for it.
+    #
+    # The record *keys* inside `interior` are deliberately not renamed here: they are
+    # published in the `valid_interiors` block of every gate receipt, and TG0.1's acceptance
+    # criterion is a bit-identical receipt. That rename is TG1.5.
+
+    @property
+    def channels(self):
+        """The channel labels. For a signature these are the scales."""
+        return self.scales
+
+    @property
+    def channel_records(self):
+        """Per-channel validity and lag basis. For a signature these are the interiors."""
+        return self.interior
+
     @property
     def n_times(self) -> int:
         return int(self.times_seconds.size)

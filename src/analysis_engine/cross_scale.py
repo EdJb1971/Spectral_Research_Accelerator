@@ -52,6 +52,7 @@ from typing import Any, Callable, Dict, List, Optional, Sequence
 
 import numpy as np
 
+from src.core.channel_series import ChannelGeometry, ChannelSeriesLike
 from src.core.errors import InvalidParameterError
 from src.statistics.multiple_comparisons import check_power
 from src.statistics.significance import screen
@@ -396,7 +397,7 @@ def lagged_mutual_information(source: Sequence[float], target: Sequence[float], 
 
 # ---------------------------------------------------------------- the support floor (R4)
 
-def support_floor(signature, cadence_seconds: float,
+def support_floor(signature: ChannelGeometry, cadence_seconds: float,
                   advection_speed_m_s: Optional[float] = None) -> Dict[str, Any]:
     """The minimum admissible lag per scale, and an honest account of where it comes from.
 
@@ -452,17 +453,19 @@ def support_floor(signature, cadence_seconds: float,
 
     floors: List[Dict[str, Any]] = []
     warnings: List[str] = []
-    for position, scale in enumerate(signature.scales, start=1):
+    # Hoisted: `channel_records` is a property, and on a producer that builds its records on
+    # demand rather than storing them, reading it per channel is quadratic for no reason.
+    records = list(signature.channel_records)
+    for position, scale in enumerate(signature.channels, start=1):
         try:
             level = int(scale)
         except (TypeError, ValueError):
             level = position
-        interior_record = (signature.interior[position - 1]
-                           if position - 1 < len(signature.interior) else {})
+        interior_record = records[position - 1] if position - 1 < len(records) else {}
         support_px = interior_record.get("support_parent_px")
         if not isinstance(support_px, (int, float)) or support_px <= 0:
             raise InvalidParameterError(
-                "signature.interior[%d].support_parent_px" % (position - 1), support_px,
+                "channel_records[%d].support_parent_px" % (position - 1), support_px,
                 "the transform's measured positive parent-grid filter support. Using 2**level "
                 "would understate the shared spatial footprint for longer filters")
         record: Dict[str, Any] = {
@@ -599,7 +602,7 @@ def _shift_null(source: np.ndarray, target: np.ndarray, lag: int, bins: int, wra
 
 
 def cross_scale_dependency(
-    signature,
+    signature: ChannelSeriesLike,
     *,
     lags: Sequence[int],
     cadence_seconds: float,
@@ -640,12 +643,14 @@ def cross_scale_dependency(
             "but the raw value is not."
             % (n_times, cells, per_cell, MIN_SAMPLES_PER_CELL))
 
-    usable = {record["scale"] for record in signature.interior if record["usable"]}
+    usable = {record["scale"] for record in signature.channel_records
+              if record["usable"]}
+    channels = list(signature.channels)
     tests: List[Dict[str, Any]] = []
     excluded: List[Dict[str, Any]] = []
 
-    for source_index, source_scale in enumerate(signature.scales):
-        for target_index, target_scale in enumerate(signature.scales):
+    for source_index, source_scale in enumerate(channels):
+        for target_index, target_scale in enumerate(channels):
             if source_index == target_index:
                 continue
             if (str(source_scale) not in usable) or (str(target_scale) not in usable):

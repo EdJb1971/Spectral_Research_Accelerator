@@ -192,16 +192,13 @@ def test_a_declared_advection_speed_produces_a_scale_dependent_floor(cascade_sig
 
 def test_latlon_support_floor_converts_degrees_and_uses_conservative_physical_axis():
     """D53: GridSpec.dx=0.25 is degrees, not the 0.25 metres the old path assumed."""
-    from types import SimpleNamespace
+    from src.core.channel_series import ChannelGeometrySpec
     from src.physical_core.grid import GridSpec
 
     grid = GridSpec.latlon(
         (161, 161), lat0=-20.0, dlat=-0.25, lon0=140.0, dlon=0.25)
-    signature = SimpleNamespace(
-        scales=[1, 2, 3],
-        interior=[
-            {"support_parent_px": 4}, {"support_parent_px": 10},
-            {"support_parent_px": 22}],
+    signature = ChannelGeometrySpec(
+        channels=[1, 2, 3], support_parent_px=[4, 10, 22],
         provenance={"grid": grid.to_provenance()})
     floors = cs.support_floor(signature, 21600.0, advection_speed_m_s=10.0)
     coarse = floors["floors"][-1]

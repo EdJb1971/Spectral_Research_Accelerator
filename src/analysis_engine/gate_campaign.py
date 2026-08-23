@@ -136,14 +136,17 @@ def _scientific_review(campaign: "GateCampaign") -> Dict[str, Any]:
             "at least %d valid parent-grid pixels after the frozen transform support; "
             "failures=%s" % (MIN_VALID_INTERIOR, deficient))
 
-    from types import SimpleNamespace
+    from src.core.channel_series import ChannelGeometrySpec
     from src.physical_core.grid import GridSpec
     grid = GridSpec.latlon(
         (height, width), lat0=request.lat_max, dlat=-request.grid_degrees,
         lon0=request.lon_min, dlon=request.grid_degrees)
-    signature = SimpleNamespace(
-        scales=list(range(1, plan.protocol.n_scales + 1)),
-        interior=[{"support_parent_px": value} for value in supports],
+    # Declares the `ChannelGeometry` contract it satisfies instead of duck-typing it with a
+    # SimpleNamespace: this audit runs before any data exists, so it supplies the labels,
+    # per-channel filter support and grid provenance that a lag floor needs, and nothing else.
+    signature = ChannelGeometrySpec(
+        channels=list(range(1, plan.protocol.n_scales + 1)),
+        support_parent_px=list(supports),
         provenance={"grid": grid.to_provenance()})
     floors = support_floor(
         signature, plan.protocol.cadence_seconds, plan.advection_speed_m_s)
