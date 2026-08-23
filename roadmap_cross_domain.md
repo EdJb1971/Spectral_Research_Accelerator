@@ -738,8 +738,82 @@ it.
 **Evidence:** `src/tests/test_feature_record.py`, 36 tests. Full suite 1375 passed, 1 skipped,
 1 xfailed.
 
-**TG2.2 Feature extraction as a registry.** Local maxima above a surrogate-calibrated threshold
-with sub-pixel localisation is the first registered extractor, not the definition of extraction.
+**TG2.2 Feature extraction as a registry - DONE.** `src/core/extraction.py` holds
+`EXTRACTORS`, `ExtractionField`, `NullCalibration`, `Candidate`, `ExtractorReport` and
+`ExtractionResult`. `local_maximum` is the first entry in the registry and not the definition of
+extraction.
+
+**The framework keeps what must not vary.** An extractor returns `Candidate`s - positions,
+magnitudes and scales in the units of the declared axes - and `extract()` builds the records.
+`Candidate` has no `domain`, no `representation` and no `significance`, so an extractor has no
+way to choose its own: attaching the representation (R8), attaching the surrogate p-value with
+its ensemble size, and producing records R19 can refuse by name are exactly the things a plug-in
+would otherwise vary. A second extractor registered from the test module drives the whole
+pipeline without an edit to `src`, and its records carry all three anyway.
+
+*   **The threshold is calibrated, never chosen (R3).** The cut is an order statistic of the
+    distribution of the *maximum* of a phase-randomised surrogate field, so `alpha` means the
+    probability that a structureless field with this power spectrum produces any reported feature
+    at all. An `alpha` finer than the ensemble's `1 / (1 + n)` floor is refused *before* the
+    ensemble is built - otherwise the extractor returns nothing and the receipt says the field
+    was empty, which is indistinguishable from a genuine null and silent. The comparison against
+    the cut is **strict**: an observation sitting on the threshold ties with a null maximum, and
+    a tie is not an exceedance, so `>=` reports 0.06 under a heading that says 0.05.
+*   **Both null benchmarks return nothing**, across three seeds each - while still containing
+    thousands of local maxima, so the silence is the calibration rather than a blind extractor.
+    Loosening alpha to 0.5 turns the same white-noise field into findings, which is the control
+    that claim needs. This is TG2.4's floor arriving a slice early, on the raw field; the audit
+    proper still has to run it under every registered *representation*.
+*   **The suppression radius is measured, not chosen.** Each feature suppresses its neighbourhood
+    at a multiple of its *own* measured scale. A fixed radius tuned at `scale_factor=1.0` reports
+    eight features at `scale_factor=2.0` where three were planted, every extra one a noise maximum
+    on a real blob's shoulder, above threshold, and indistinguishable in a receipt from a
+    discovery. Self-scaling, the count is three across a six-fold range of widths.
+*   **Two textbook estimators were measured and rejected.** The three-point sub-cell parabola is
+    exact for a noiseless Gaussian and free, and its denominator is the second difference - 0.028
+    against a noise amplitude of 0.05 on `planted_configuration`. It errs by up to 0.68 cells
+    where a windowed centroid errs by 0.27. The curvature of the same fit, used as a scale,
+    returned 2.1-2.9 cells for a planted width of 6.0. Neither is wrong in the textbook; both are
+    wrong for features wider than a cell or two, and nothing here guarantees narrow features.
+*   **The brightest sample is not the amplitude.** It is the largest of many noisy samples, biased
+    high by 3% at `sigma = 3` and 12% at `sigma = 18`, and fed to the integral estimator that
+    becomes a scale biased *low* by up to 9% - a bias that does **not** cancel in a ratio, because
+    it is a function of the feature's own size, and a ratio is the only form in which a scale
+    leaves its domain. The magnitude is a de-biased disc mean; the raw sample stays in provenance.
+*   **No fabricated uncertainty.** Re-measuring each scale at two window sizes gives a spread of
+    0.01-0.24 cells that does not cover the truth: at `sigma = 18` the two agree to 0.1 cells and
+    both sit 1.4 low. That is repeatability, not accuracy, and putting it in
+    `Quantity.uncertainty` would understate the error most in the records a reader would trust
+    most. Left `None`, which TG2.1 defines as "not recorded".
+*   **The declared axes change the arithmetic (E14).** On a periodic axis the neighbourhood, the
+    window and the reported coordinate wrap together, and a seam-straddling feature is found once
+    within 0.25 cells. The same array declared non-periodic is refused instead - R13 sized by the
+    feature rather than by a fixed margin, because a peak two cells from a hard edge has half its
+    integral outside the frame and comes back three cells out with a scale 24% low. A missing
+    feature is a fact a receipt can carry; a confidently mismeasured one is not.
+*   **Finding nothing is a result.** `ExtractionResult` is the object `FeatureSet`'s
+    refuse-to-be-empty docstring pointed at: it knows what was searched, with what, at what
+    threshold, and what was rejected on the way.
+
+**Measured against answers recorded before the module existed.** `planted_configuration`: three
+features, always three, position error under 1 cell, widths within 6% of the planted width from
+`scale_factor` 0.5 to 3.0, pairwise separations within 1 cell of the planted 20 to 120, under
+rotation, translation and rescaling. `advected_vortex_sequence`: exactly one feature in each of 24
+frames under a single calibration, every position within 1 cell of the recorded trajectory, and
+the measured scales reproducing the known 16-step doubling to within 5% without being told it
+exists. That is TG2.3's acceptance criterion reached from the extraction side; what is left
+between here and *1 track, 1 birth, 0 deaths* is association.
+
+The benchmark's own `4E.feature_detection` check is deliberately **not** rewired to call this
+extractor. A benchmark that validated the code under test with the code under test has stopped
+being an independent answer.
+
+**No new defect.** The off-by-one on the threshold comparison was in this slice's own code and was
+caught by its own test before it was committed; the two rejected estimators are design decisions,
+not defects in the tree. D59 remains open and remains TG2.3's.
+
+**Evidence:** `src/tests/test_feature_extraction.py`, 39 tests (54 cases with parametrisation). Full suite 1429 passed, 1 skipped,
+1 xfailed.
 
 **TG2.3 Tracking.** Frame-to-frame association with scale and orientation gating; nearest
 neighbour first, Hungarian assignment once it must be respectable. Yields velocity, scale

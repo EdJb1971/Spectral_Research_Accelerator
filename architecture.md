@@ -1300,6 +1300,111 @@ alone - changing its field builder would move every number it produces, and TG2.
 slice that gets to do that - and the disagreement is asserted by a test so the next slice meets
 it as a fact rather than as a surprise.
 
+### 3.6o Feature extraction as a registry (`src/core/extraction.py`, TG2.2, `ed-dev`)
+
+TG2.1 settled what a feature *is*. TG2.2 settles who decides that one is there, and the answer
+is: not this module. `EXTRACTORS` is a registry and `local_maximum` is the **first** entry in
+it, not the definition of extraction. A watershed, a persistence filter and a matched filter
+would each disagree with it about the same field, and a tree that hard-codes one of them has
+asserted that the disagreement does not matter.
+
+**What the framework keeps, and what the registry gets.** A registered extractor receives the
+field and the calibration and returns `Candidate`s - positions, magnitudes and scales in the
+units of the declared axes - and nothing else. `extract()` calibrates the null, dispatches, and
+builds the `SpectralFeature` records itself. `Candidate` has no `domain`, no `representation`
+and no `significance` field, so an extractor has no way to choose its own; attaching the
+representation (R8), attaching the surrogate p-value with its ensemble size (TG2.1's resolution
+floor) and producing records R19 can refuse by name are the parts that must not vary, and a
+plug-in is exactly the thing that would vary them.
+
+**The threshold is calibrated, never chosen.** Rule R3 exists because "coefficient > 0.6" is a
+number somebody picked, and a discovery pipeline built on picked numbers discovers the picks.
+The cut here is an order statistic of the distribution of the **maximum** of a surrogate field
+with the same power spectrum and randomised phases: a peak is reported when it exceeds what the
+strongest peak of a structureless field with this spectrum does, at a declared family-wise level
+over the whole frame. Three consequences follow, and each is a test:
+
+*   The p-value on the record is the tree's existing `(1 + k) / (1 + n)`, so `Significance`'s
+    resolution floor applies with no translation - and an `alpha` finer than that floor is
+    refused *before* the ensemble is built. Without that refusal the extractor returns nothing
+    and the receipt says the field was empty, which is the most expensive failure available
+    because it is indistinguishable from a genuine null and it is silent.
+*   The comparison against the threshold is **strict**. `k` counts null maxima at least as large
+    as the observation, so an observation sitting exactly on the cut ties with it and reports
+    `p` one step *above* alpha. Accepting it with `>=` reports 0.06 under a heading that says
+    0.05. The off-by-one was live for one test run and is now held shut by a test of its own.
+*   Both null benchmarks return **nothing**, across three seeds each - and the same fields still
+    contain thousands of local maxima, so the silence is the calibration working rather than an
+    extractor that cannot find anything. Loosening alpha to 0.5 turns the same white-noise field
+    into findings, which is the control that claim needs.
+
+**The suppression radius is measured, not chosen.** The one free number a peak-finder usually
+carries is how far apart two features must be, and it is the number that decides how many
+features exist. Each accepted feature is localised first and then suppresses its neighbourhood
+out to a multiple of *its own measured scale*. Fixing that radius manufactures features: on
+`planted_configuration` at `scale_factor=2.0`, a radius tuned at `scale_factor=1.0` reports
+eight features where three were planted, and all five extra ones are noise maxima on the
+shoulders of real blobs - above the calibrated threshold, and indistinguishable in a receipt
+from a discovery. With self-scaling suppression the count is exactly three across a six-fold
+range of feature widths.
+
+**Two textbook estimators were measured against the benchmark and rejected.**
+
+| Estimator | Why it looked right | What it measured |
+|---|---|---|
+| three-point sub-cell parabola | exact for a noiseless Gaussian, and free | its denominator is the second difference, of order `A / sigma^2` - 0.028 against a noise amplitude of 0.05 on `planted_configuration`. Errs by up to 0.68 cells where a windowed centroid errs by 0.27. Valid only when the feature is a cell or two wide, which nothing in this tree guarantees |
+| curvature of the same fit, as a scale | one fit yielding both position and width | returned 2.1-2.9 cells for a planted width of 6.0 |
+
+What is used instead is a windowed centroid whose window sizes itself from the measured scale,
+with the integral estimator `sigma = sqrt(I / (2 pi A))` corrected for the square window's
+truncation by `erf(r / (sigma sqrt2))^2`.
+
+**The brightest sample is not the amplitude.** It is the largest of many noisy samples, so it is
+biased high, and the bias grows as the feature broadens and more cells compete to be the
+maximum: on `planted_configuration` the peak sample overstates a unit-amplitude feature by 3% at
+`sigma = 3` cells and by 12% at `sigma = 18`. Fed to the integral estimator that becomes a scale
+biased *low* by up to 9% - in a direction that does **not** cancel in a ratio, because it is a
+function of the feature's own size, and a ratio of scales is the only form in which a scale
+leaves its domain (TG2.1). The magnitude is therefore the mean over a disc of `sigma / 2`
+divided by the analytic Gaussian disc-mean, which divides the noise by the root of the cell count
+and leaves per-feature errors under 5% across a six-fold range of scales. The raw sample stays in
+`provenance` so the correction is visible rather than merely applied.
+
+**No fabricated uncertainty.** Re-measuring each scale with a window of `2 sigma` and of
+`3 sigma` gives a spread of 0.01-0.24 cells, and that spread does not cover the truth: at
+`sigma = 18` the two agree to 0.1 cells while both sit 1.4 cells low. It is a repeatability, not
+an accuracy, and putting it in `Quantity.uncertainty` would understate the error by an order of
+magnitude in exactly the records a reader would trust most. The field is left `None`, which
+TG2.1 defines as "not recorded".
+
+**The declared axes change the arithmetic (standard E14).** A periodic axis wraps: the
+neighbourhood comparison, the localisation window and the reported coordinate wrap together, and
+a feature straddling the seam is found **once** at its true position (within 0.25 cells) rather
+than twice at two false ones. The same array declared non-periodic is a different problem and
+gets a different answer - rule R13, sized by the feature rather than by a fixed margin. A peak
+two cells from a non-periodic edge has half its integral outside the frame; the truncation
+correction then applies for the wrong reason and returns a position three cells out and a scale
+24% low, with nothing in the record to say so. It is refused and counted instead. A missing
+feature is a fact a receipt can carry; a confidently mismeasured one is not.
+
+**Finding nothing is a result.** `FeatureSet` refuses to be empty, and its docstring says an
+empty set "has no domain, and 'no features found' is a result that belongs beside the search that
+produced it". `ExtractionResult` is that object: it still knows what was searched, with which
+extractor, at what threshold, and what was rejected on the way - `below_threshold`,
+`outside_valid_interior`, `suppressed_by_a_stronger_feature`, `unmeasurable_scale`. "No features"
+and "four thousand local maxima, none of which cleared the cut" are different statements about a
+field, and TG2.4's audit is a question about the second one.
+
+**Measured against answers recorded before the module existed.** On `planted_configuration`:
+three features found, always three, position error under 1 cell, measured widths within 6% of the
+planted width across `scale_factor` 0.5 to 3.0, and pairwise separations within 1 cell of the
+planted 20 to 120 - under rotation, translation and rescaling. On `advected_vortex_sequence`:
+exactly one feature in each of 24 frames under a single calibration, every position within 1 cell
+of the recorded trajectory, and the measured scales reproducing the known 16-step doubling to
+within 5% without being told it exists. The benchmark's own `4E.feature_detection` check is
+deliberately **not** rewired to call this extractor: a benchmark that validated the code under
+test with the code under test has stopped being an independent answer.
+
 ### 3.8 Grid Geometry and Metric-Aware Operators (`src/physical_core/grid.py`, `operators.py`)
 
 Added in T3.5.13 (defect D13, standard E3). `GridSpec` is the physical metric attached to
@@ -2429,7 +2534,7 @@ See `VERIFICATION.md` for the captured command output behind every statement her
 | Item | Status |
 |---|---|
 | Python venv + dependencies | installed (torch 2.13.0+cu130, numpy 2.2.6, pydantic 1.10.26, SQLAlchemy 2.0.52, xarray 2025.6.1, FastAPI 0.110.3) |
-| Backend test suite | **1117 passed, 1 xfailed** (plus 1 skipped: opt-in live GCS) (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17, 351 after T3.5.6, 379 after T3.5.15, 407 after T3.5.19, 449 after T4C.5, 709 after T4A.4, 781 after T4B.4, 855 after T4C.5, 859 after T4C.5c, 882 after T5.1a CPU acceptance, 883 after RTX acceptance, 890 after portable profiles, 911 after T5.1b/D44, 917 after T5.1c, 933 after T5.1d/D45, 946 after T5.1e, 955 after T5.2a, 957 after T5.2b, 962 after T5.3a, 969 after T5.3b, 981 after T5.2c offline acceptance, 985 after T5.2d, 1000 after T5.0a, 1008 after T5.0b, 1027 after T5.6a offline acceptance, 1042 after T5.6b cube acceptance, 1056 after T5.6c matched evaluation, 1070 after T5.6d truth matching, 1080 after T5.6e orchestration, 1089 after T5.6f portable jobs, 1094 after T5.6g reporting, 1095 after the licence guard, 1102 after T4C.5d gate readiness, 1104 after D50 storage preflight, 1106 after T4C.5e overlap evidence, 1112 after T4C.5f campaign acceptance, 1116 after T4C.5g physical preflight, 1117 after T4C.5h preregistration) |
+| Backend test suite | **1429 passed, 1 xfailed** (plus 1 skipped: opt-in live GCS) (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17, 351 after T3.5.6, 379 after T3.5.15, 407 after T3.5.19, 449 after T4C.5, 709 after T4A.4, 781 after T4B.4, 855 after T4C.5, 859 after T4C.5c, 882 after T5.1a CPU acceptance, 883 after RTX acceptance, 890 after portable profiles, 911 after T5.1b/D44, 917 after T5.1c, 933 after T5.1d/D45, 946 after T5.1e, 955 after T5.2a, 957 after T5.2b, 962 after T5.3a, 969 after T5.3b, 981 after T5.2c offline acceptance, 985 after T5.2d, 1000 after T5.0a, 1008 after T5.0b, 1027 after T5.6a offline acceptance, 1042 after T5.6b cube acceptance, 1056 after T5.6c matched evaluation, 1070 after T5.6d truth matching, 1080 after T5.6e orchestration, 1089 after T5.6f portable jobs, 1094 after T5.6g reporting, 1095 after the licence guard, 1102 after T4C.5d gate readiness, 1104 after D50 storage preflight, 1106 after T4C.5e overlap evidence, 1112 after T4C.5f campaign acceptance, 1116 after T4C.5g physical preflight, 1117 after T4C.5h preregistration - the `master` freeze; then on `ed-dev`, 1375 after TG2.1 and 1429 after TG2.2) |
 | Ground-Truth Benchmark Suite | **15 PASS, 0 FAIL, 2 NOT_YET_RUNNABLE** (`python -m src.benchmarks`, exit 0) |
 | Frontend `npm install` + `npm run build` | passes, emits 1,386 modules + real JS/CSS assets (was: 1 module, no assets) |
 | Backend server | starts, serves OpenAPI, all smoke-tested endpoints return 200 |
@@ -2646,6 +2751,7 @@ able to sit three slices out of date.
 | `test_boundary_synthetic.py` | 8 | boundary treatments, windowing, synthetic generators and independent Euclidean-ring oracle |
 | `test_cds_source.py` | 14 | T5.2c monthly CDS planning/CLI, grid-alignment/server-snap refusals, network consent, atomic resume, shard integrity, conservative storage refusal, bounded Zarr publication, plus PASS/FAIL independent-route receipt publication, replay and tamper refusal |
 | `test_geometry_registry.py` | 20 | TG1.2 geometry registry: the three builtins' metrics, crops, resamples and provenance unchanged; capability-driven `is_physical`/`length_units`/`latitudes`; a fourth geometry (`polar_scan`) registered from the test module with a non-uniform, non-spherical metric; the Cartesian Laplacian refusing it; `latitude`/`longitude` recognised as a sphere |
+| `test_feature_extraction.py` | 39 | TG2.2 extraction as a registry: the three planted features recovered across a six-fold range of scales and under rotation, translation and rescaling; both null benchmarks silent across three seeds with the loosened-alpha control that makes the silence mean something; the strict-comparison off-by-one; an unresolvable alpha refused before the ensemble; a second extractor registered from the test module; the periodic-axis seam and the self-scaling R13 refusal; and the one-feature-per-frame handoff to TG2.3 |
 | `test_feature_record.py` | 36 | TG2.1 canonical feature record: features measured off the advected-vortex benchmark recovering its known velocity and scale doubling, the R19 refusals (magnitude, separation, elapsed time, mixed sets), the periodic-axis refusal, orientation conventions and the surrogate resolution floor, a fourth convention and a fourth significance basis registered from the test module, and defect D59 |
 | `test_level_axis.py` | 19 | TG1.5 vertical coordinates: the registry and its sense of up, a height bank labelling its offsets the opposite way to pressure, a fourth coordinate registered from the test module, the declaration travelling from reader to signature, `level_hpa` refusing a non-pressure axis, and the pressure arithmetic unchanged |
 | `test_lag_policy_registry.py` | 21 | TG1.3 lag-admissibility policies: the capability table, a fourth policy (`instrument_response`) registered from the test module with a per-channel floor, the advective arithmetic and fingerprint unchanged, the declared floor now reaching the sweep, D58, the replication gate refusing a floor from the wrong policy |
@@ -2691,7 +2797,7 @@ able to sit three slices out of date.
 | `test_wavelet_bank.py` | 27 | T4B.2 expansion through the engine's own parameter matrix, the 1,000-combination guard, decompose_bank / extract_scale_signature, the vertical-bank refusals |
 | `test_transforms.py` | 13 | fft/dct/dwt/dtcwt/hybrid round trips; D1 recorded as a strict xfail |
 | `test_zarr_source.py` | 59 | R13 geometry, chunk-hostility, byte counting, streaming content identity, exact chunk-bounded frame reader, cache/provenance round trip, NetCDF engine and HTTP surface |
-| **total** | **1107** | |
+| **total** | **1146** | |
 
 ### 7.2h A surrogate null that was not the null it claimed (T4C.5)
 
