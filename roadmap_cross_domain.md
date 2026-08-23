@@ -72,7 +72,11 @@ are from `src/`, excluding tests.
   direct violation of standard E1. Geometry is the one pluggable thing that never became
   pluggable.
 * **Axis roles are inferred from coordinate names.** `field.py` branches on `k in ["x","lon"]` /
-  `["y","lat"]` to decide which axis to slice.
+  `["y","lat"]` to decide which axis to slice. **Localised in TG1.1** (`src/core/axes.py`):
+  declaration beats name, name beats position, and every assignment records which. The audit
+  named the site and missed the defect sitting in it - the two lists disagreed about the
+  fallback, so `latitude`/`longitude` matched neither and a split returned a coordinate vector
+  that no longer described its own data (**D56**).
 * **`LevelBank(banks: Dict[float, ...])`** keys on pressure in hPa; `ScaleSignature.level_hpa` is
   a typed atmospheric field on an otherwise generic record.
 * **`support_floor(..., advection_speed_m_s)`** is the deepest conceptual assumption, not merely
@@ -374,8 +378,35 @@ defines them, and that is where the abstraction is far more likely to break.
 Localise the atmospheric assumptions named in §2.2. **No new science.** Every task is a refactor
 under the bit-identical-receipt criterion.
 
-**TG1.1 Axis roles (E14).** Replace name-based axis inference with declared roles. Coordinate
-naming becomes a label, not a semantic.
+**TG1.1 Axis roles (E14) - DONE.** Name-based axis inference is now one *registered*
+convention behind a declaration, in `src/core/axes.py`. `resolve_axis_roles` applies three
+stages in a fixed order - declared, registered name, trailing-axes position - and records which
+one produced each answer, so a guess leaves a trace instead of vanishing into a result.
+`AxisResolution.require_declared` refuses the two inferred bases outright, which is what
+`DomainDeclaration.resolve_axes` uses: a sensor archive whose columns are called `x` and `y`
+must not silently acquire a geometry, because a geometry licenses per-metre reporting and this
+domain has no metre. `importers.inspect` / `read_field` take an optional `axis_roles` and write
+the resolution into the record; `PhysicalField` takes one and propagates it through splits and
+resamples.
+
+Bit-identical: all five dimension arrangements the importer previously handled resolve to the
+same spatial pair, asserted directly. Two changes are not:
+
+*   **A finding, and the reason to do G1 by execution.** `field.py` decided row-versus-column
+    from two hardcoded name lists, `["y","lat"]` and `["x","lon"]`, **which disagreed about
+    the fallback**. A field spelled `latitude`/`longitude` - CF's spelling, and ERA5's -
+    matched neither: a split *cloned* the longitude vector rather than slicing it, returning a
+    narrowed field whose coordinate no longer described its own data. Recorded as **D56**,
+    fixed here. The audit in section 2.2 named this site and did not see the defect in it.
+*   **Half a spatial pair is no longer a pair.** The replaced code searched for a latitude name
+    and a longitude name independently and fell back to the trailing two axes when *either* was
+    missing - which for dims `(lat, time, cols)` pairs the clock with the columns and calls the
+    result spatial. That is a different field, not a transposition, and nothing downstream can
+    detect it. It is now a refusal. No file the atmospheric line has met takes this path.
+
+A third, smaller one is worth recording because of where it was found: the documentation guard
+required a fixed defect to name a task matching `T` plus a digit. `TG1.1` did not match. The
+first fork task to fix a defect found it; reading had not.
 
 **TG1.2 Geometry registry (E13).** `GridSpec.kind` becomes a registry with declared capabilities;
 `latlon`, `cartesian` and `pixel` register as the first three entries. Operators query

@@ -169,9 +169,15 @@ def test_defect_ids_are_contiguous(architecture):
 
 
 def test_fixed_defects_name_the_task_that_fixed_them(architecture):
+    """`T3.5.24` or `T4C.5g` on the atmospheric line, `TG1.1` on the generalisation line.
+
+    The pattern was ``T`` plus a digit until TG1.1, which is a small example of what Phase G1 is for: a
+    guard that had quietly assumed the only task vocabulary there would ever be. It was found
+    by the first fork task to fix a defect rather than by reading.
+    """
     for line in architecture.splitlines():
         if line.startswith("| D") and "**FIXED**" in line:
-            assert re.search(r"\*\*FIXED\*\*\s*T\d", line), (
+            assert re.search(r"\*\*FIXED\*\*\s*TG?\d", line), (
                 "a FIXED defect must name the task that fixed it: %s" % line[:80])
 
 

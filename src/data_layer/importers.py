@@ -39,6 +39,7 @@ import tempfile
 import zipfile
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
+from src.core.axes import resolve_axis_roles
 from src.core.errors import DataSourceError, InvalidParameterError
 
 #: Extensions this module can read, longest first so `.zarr.zip` wins over `.zip`.
@@ -49,9 +50,11 @@ SUFFIXES = (".zarr.zip", ".nc", ".nc4", ".netcdf", ".cdf", ".csv", ".json")
 #: rejection rather than an out-of-memory kill.
 MAX_UPLOAD_BYTES = 256 * 1024 * 1024
 
-#: Names commonly used for the two spatial axes, in the order they are looked for.
-LAT_NAMES = ("latitude", "lat", "y", "nlat")
-LON_NAMES = ("longitude", "lon", "x", "nlon")
+#: The names this module used to consult for the two spatial axes now live in
+#: `src.core.axes.AXIS_NAME_HINTS`, where they are one registered convention among several
+#: rather than a fact about axes (TG1.1). A caller who knows the roles passes `axis_roles`
+#: and is believed; a caller who does not gets the same answer as before, with a record of
+#: how it was reached.
 
 
 def detect_format(filename: str) -> str:
@@ -90,7 +93,28 @@ def content_hash(payload: bytes) -> str:
 
 # --------------------------------------------------------------------------- inspection
 
-def inspect(payload: bytes, filename: str) -> Dict[str, Any]:
+def _per_variable_roles(axis_roles: Optional[Dict[str, str]], all_dims: Sequence[str],
+                        var_dims: Sequence[Any]) -> Optional[Dict[str, str]]:
+    """Narrow a file-level role declaration to one variable's axes.
+
+    Filtering is the right behaviour - variables in one file need not share axes - but only
+    after checking the declaration against the file as a whole. A role declared for an axis
+    that appears nowhere is a typo, and silently filtering it away would leave the axis it was
+    meant for to be inferred, which is the failure this parameter exists to prevent.
+    """
+    if not axis_roles:
+        return None
+    unknown = [name for name in axis_roles if name not in set(all_dims)]
+    if unknown:
+        raise InvalidParameterError(
+            "axis_roles", unknown,
+            "roles only for axes this file has, which are %s" % (sorted(set(all_dims)),))
+    present = {str(d) for d in var_dims}
+    return {name: role for name, role in axis_roles.items() if name in present}
+
+
+def inspect(payload: bytes, filename: str,
+            axis_roles: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
     """Describe an upload **without** committing to a 2D slice of it.
 
     Two calls, deliberately: `inspect` then `read_field`. A file with a time axis has no single
@@ -122,8 +146,11 @@ def inspect(payload: bytes, filename: str) -> Dict[str, Any]:
     dataset = _open_dataset(payload, fmt)
     try:
         variables: Dict[str, Any] = {}
+        all_dims = [str(d) for var in dataset.data_vars.values() for d in var.dims]
         for name, var in dataset.data_vars.items():
-            lat, lon = _spatial_dims(var.dims)
+            declared = _per_variable_roles(axis_roles, all_dims, var.dims)
+            resolution = _resolve_axes(var.dims, declared)
+            lat, lon = _spatial_dims(var.dims, declared)
             extra = {str(d): int(dataset.sizes[d]) for d in var.dims
                      if d not in (lat, lon)}
             variables[str(name)] = {
@@ -132,6 +159,8 @@ def inspect(payload: bytes, filename: str) -> Dict[str, Any]:
                 "dtype": str(var.dtype),
                 "units": var.attrs.get("units"),
                 "spatial_dims": [lat, lon] if lat and lon else None,
+                # How each role was reached: declared, by registered name, or by position.
+                "axes": resolution.describe(),
                 # These are the axes that have no meaning for a 2D field and must be pinned.
                 "extra_dims": extra,
             }
@@ -154,21 +183,28 @@ def inspect(payload: bytes, filename: str) -> Dict[str, Any]:
         dataset.close()
 
 
-def _spatial_dims(dims: Sequence[Any]) -> Tuple[Optional[str], Optional[str]]:
-    """Identify the latitude and longitude axes by name, then by position.
+def _resolve_axes(dims: Sequence[Any],
+                  axis_roles: Optional[Dict[str, str]] = None):
+    """Roles for this variable's axes: declared if the caller said so, otherwise inferred.
 
-    Falling back to "the last two dimensions" is correct for every convention this platform
-    has met, but only *after* the name check: a file with dims ``(lat, lon, time)`` would
-    otherwise be read transposed, and a transposed field still looks like a field.
+    The inference is unchanged - registered names first, trailing axes second - but it is now
+    performed by `src.core.axes`, which records *which* of those two produced each answer.
+    That record is what a reader needs: "the spatial axes were chosen by position" is a
+    caveat on every anisotropy number in the result, and it used to be invisible.
     """
-    names = [str(d) for d in dims]
-    lat = next((n for n in names if n.lower() in LAT_NAMES), None)
-    lon = next((n for n in names if n.lower() in LON_NAMES), None)
-    if lat and lon:
-        return lat, lon
-    if len(names) >= 2:
-        return names[-2], names[-1]
-    return None, None
+    return resolve_axis_roles(dims, axis_roles)
+
+
+def _spatial_dims(dims: Sequence[Any],
+                  axis_roles: Optional[Dict[str, str]] = None
+                  ) -> Tuple[Optional[str], Optional[str]]:
+    """The two spatial axes in ``(row, column)`` order, or ``(None, None)``.
+
+    A single resolved spatial axis is reported as none: half a grid is not a grid, and the
+    caller's next act would be to pair it with whatever sat beside it.
+    """
+    row, column = _resolve_axes(dims, axis_roles).spatial_pair()
+    return (row, column) if row and column else (None, None)
 
 
 def _open_dataset(payload: bytes, fmt: str):
@@ -246,6 +282,7 @@ def read_field(
     filename: str,
     variable: Optional[str] = None,
     selection: Optional[Dict[str, int]] = None,
+    axis_roles: Optional[Dict[str, str]] = None,
 ) -> Dict[str, Any]:
     """Read one 2D field, with its coordinates and a reconstructed provenance record.
 
@@ -264,7 +301,10 @@ def read_field(
         # round trip lossless rather than merely numerically correct.
         units = (embedded or {}).get("units") or None
         variable = (embedded or {}).get("variable") or "field"
-        return _result(field, coords, filename, fmt, digest, embedded, {}, units, variable)
+        # A flat grid's axes are not inferred: this reader built them, so their roles are
+        # declared rather than guessed, and the record says `declared` for both.
+        return _result(field, coords, filename, fmt, digest, embedded, {}, units, variable,
+                       axes=_resolve_axes(("y", "x"), {"y": "space", "x": "space"}))
 
     dataset = _open_dataset(payload, fmt)
     try:
@@ -279,7 +319,11 @@ def read_field(
             raise InvalidParameterError("variable", chosen, "one of %s" % ", ".join(names))
 
         var = dataset[chosen]
-        lat, lon = _spatial_dims(var.dims)
+        declared = _per_variable_roles(
+            axis_roles, [str(d) for v in dataset.data_vars.values() for d in v.dims],
+            var.dims)
+        resolution = _resolve_axes(var.dims, declared)
+        lat, lon = _spatial_dims(var.dims, declared)
         extra = [str(d) for d in var.dims if d not in (lat, lon)]
         selection = {str(k): int(v) for k, v in (selection or {}).items()}
 
@@ -308,7 +352,9 @@ def read_field(
         if values.ndim != 2:
             raise DataSourceError(
                 "after selection the field is still %dD (dims %s). This usually means the "
-                "spatial axes were not recognised; rename them to latitude/longitude or x/y."
+                "spatial axes were not recognised. Name them latitude/longitude or x/y, or "
+                "pass `axis_roles` to say which axes are spatial - a declared role is "
+                "believed and never second-guessed by a name."
                 % (values.ndim, list(var.dims)))
 
         coords: Dict[str, List[float]] = {}
@@ -319,7 +365,7 @@ def read_field(
         return _result(
             [[float(v) for v in row] for row in values], coords, filename, fmt, digest,
             {k: v for k, v in dataset.attrs.items()}, selection,
-            var.attrs.get("units"), chosen)
+            var.attrs.get("units"), chosen, axes=resolution)
     finally:
         dataset.close()
 
@@ -377,7 +423,8 @@ def _as_2d(array):
     return [[float(v) for v in row] for row in array]
 
 
-def _result(field, coords, filename, fmt, digest, embedded, selection, units, variable):
+def _result(field, coords, filename, fmt, digest, embedded, selection, units, variable,
+            axes=None):
     """Assemble the field plus the provenance that must travel with it.
 
     ``is_simulated`` is inherited from the file when the file says so, and is otherwise
@@ -407,6 +454,10 @@ def _result(field, coords, filename, fmt, digest, embedded, selection, units, va
             "selection": selection or {},
             "units": units,
             "shape": [len(field), len(field[0])],
+            # Which axes were taken to be spatial, and on whose authority. A pair chosen by
+            # position is a caveat on every orientation statistic downstream, and before
+            # TG1.1 that choice left no trace in the record at all.
+            "axes": axes.describe() if axes is not None else None,
             # Preserved rather than flattened away: a round trip through this platform must
             # not launder a simulated field into an apparently observational one.
             "embedded_provenance": embedded or {},

@@ -34,12 +34,14 @@ from __future__ import annotations
 from dataclasses import dataclass, field as dc_field
 from typing import Any, Dict, Mapping, Optional, Sequence, Tuple
 
+from src.core.axes import AXIS_ROLES
 from src.core.errors import InvalidParameterError, UnknownNameError
 
-#: Axis roles the analysis layer understands. An axis declares one; nothing infers it from a
-#: coordinate's name. `category` exists so a non-ordered axis (station, instrument, cohort)
-#: can be carried without being mistaken for something a lag can be taken along.
-AXIS_ROLES: Tuple[str, ...] = ("time", "space", "level", "member", "category")
+#: Re-exported from `src.core.axes`, which owns the vocabulary and the resolution order since
+#: TG1.1. It stays importable from here because a domain declaration is where most callers
+#: meet it: `from src.core.domain import AxisSpec, AXIS_ROLES` is one import, not two.
+__all__ = ["AXIS_ROLES", "AxisSpec", "DomainDeclaration", "KNOWN_VIOLATIONS", "LAG_POLICIES",
+           "PrecedenceNotAdmissibleError"]
 
 #: The assumptions the analysis layer inherited from the atmosphere, and what breaking each
 #: one costs. A domain names the ones it breaks; the analysis layer then refuses what those
@@ -105,6 +107,10 @@ class AxisSpec:
     units: Optional[str] = None
     periodic: bool = False
     ordered: bool = True
+    #: Position within the role, when a role has more than one axis - row before column for a
+    #: spatial pair. `None` means "take the order the axes are declared in", which is right
+    #: whenever the declaration is already written in that order.
+    ordinal: Optional[int] = None
 
     def __post_init__(self) -> None:
         if self.role not in AXIS_ROLES:
@@ -115,9 +121,16 @@ class AxisSpec:
                 "True for a time axis. An unordered clock makes a lag meaningless, and "
                 "declaring one would let a precedence result be computed from it anyway")
 
+        if self.ordinal is not None and (not isinstance(self.ordinal, int)
+                                         or self.ordinal < 0):
+            raise InvalidParameterError(
+                "AxisSpec.ordinal", self.ordinal,
+                "a non-negative position within the role, or None", axis=self.name)
+
     def describe(self) -> Dict[str, Any]:
         return {"name": self.name, "role": self.role, "units": self.units,
-                "periodic": self.periodic, "ordered": self.ordered}
+                "periodic": self.periodic, "ordered": self.ordered,
+                "ordinal": self.ordinal}
 
 
 @dataclass(frozen=True)
@@ -224,6 +237,25 @@ class DomainDeclaration:
     def minimum_admissible_lag(self) -> Optional[int]:
         """The declared floor in frames, or None when the policy computes it elsewhere."""
         return self.declared_floor_frames if self.lag_policy == "declared" else None
+
+    def axis_roles(self) -> Dict[str, "AxisSpec"]:
+        """The declaration in the form `resolve_axis_roles` accepts (TG1.1)."""
+        return {axis.name: axis for axis in self.axes}
+
+    def resolve_axes(self, dims: Sequence[Any]) -> Any:
+        """Roles for `dims`, taken from this declaration and from nothing else.
+
+        Both inference stages are off. A declared domain that meets an axis it did not declare
+        must say so rather than have the axis identified from its spelling: the domain author
+        is the only party who knows, and a convention borrowed from gridded output is not an
+        answer about a sensor archive.
+        """
+        from src.core.axes import resolve_axis_roles
+
+        return resolve_axis_roles(
+            dims, self.axis_roles(), allow_name_inference=False,
+            allow_positional_inference=False,
+        ).require_declared("domain %r declares its axes (standard E14)" % self.name)
 
     def describe(self) -> Dict[str, Any]:
         """The record that travels with every result derived from this domain."""

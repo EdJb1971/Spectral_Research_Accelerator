@@ -910,6 +910,51 @@ name, carrying the measured reason (moving the threshold from 2 to 4 sigma chang
 than a factor of ten while every threshold-free measure was bit-identical). The four
 atmospheric measures remain admissible and no accepted design's fingerprint changed.
 
+### 3.6h Axis roles are declared, not read off the coordinate names (`src/core/axes.py`, TG1.1, `ed-dev`)
+
+Phase G1 opens here. The task is not new science: it is to find where the atmosphere is
+load-bearing inside code that reads as general, and to localise it **without moving a single
+receipt**.
+
+The first such place was `importers._spatial_dims`, which decided what an axis *meant* from
+what it was *called* — two tuples of names (`latitude, lat, y, nlat` / `longitude, lon, x,
+nlon`), and where those failed, the last two dimensions. Both halves are conventions of
+gridded model output. Neither is removed. What changes is that they are now one **registered**
+convention among possible others, and that every assignment records its authority:
+
+| Basis | Meaning |
+|---|---|
+| `declared` | The caller supplied the role. Never overridden by a name. |
+| `name` | Matched a registered naming convention (`AXIS_NAME_HINTS`, standard E1). A strong hint, still a hint. |
+| `position` | The trailing-axes fallback. Correct for gridded output, unjustified elsewhere. |
+
+`resolve_axis_roles` applies those three in that order and returns a frozen `AxisResolution`
+carrying `roles`, `ordinals` and `basis`. `inspect` and `read_field` both accept an optional
+`axis_roles` declaration, and both now write the resolution into the record — so *"the spatial
+axes were chosen by position"* is a readable caveat on every orientation statistic instead of
+an invisible one. `AxisResolution.require_declared` refuses `name` and `position` outright,
+which is what `DomainDeclaration.resolve_axes` uses: a sensor archive whose columns happen to
+be called `x` and `y` must not silently acquire a geometry, because a geometry is what
+licenses per-metre reporting and this domain has no metre.
+
+`AxisSpec` gains an optional `ordinal` — the position within a role, row before column — so a
+domain that declares two spatial axes controls which is which. Ordering by ordinal is also
+what makes a `(lon, lat)` file come back as `(lat, lon)`: a transposed field still looks like
+a field, and every anisotropy number computed from it would be wrong undetectably.
+
+**One deliberate behaviour change, asserted rather than tolerated.** The code replaced here
+searched for a latitude name and a longitude name *independently*, and fell back to the
+trailing two axes when either was missing. For dims `(lat, time, cols)` that pairs the clock
+with the columns and calls the result spatial — not a transposition but a different field.
+A single resolved spatial axis is now discarded rather than half-trusted, and the import
+refuses. No file the atmospheric line has met takes this path: all five arrangements the
+importer previously handled resolve identically, which
+`test_every_arrangement_the_importer_met_resolves_as_it_did_before` asserts directly.
+
+Adding an archive's vocabulary is a registration, from outside `src/`, exactly as a transform
+is — `test_a_new_naming_convention_registers_without_editing_src` is the acceptance. Two hints
+claiming one name are refused rather than resolved by import order.
+
 ### 3.8 Grid Geometry and Metric-Aware Operators (`src/physical_core/grid.py`, `operators.py`)
 
 Added in T3.5.13 (defect D13, standard E3). `GridSpec` is the physical metric attached to
@@ -2132,6 +2177,7 @@ code paths that `architecture.md` previously described as implemented and rigoro
 | D53 | `analysis_engine/cross_scale.py:support_floor` | **ERA5 angular spacing was interpreted as metres.** `GridSpec.to_provenance()` stores lat/lon `dx` in degrees, but the support floor selected that field first and multiplied it directly by filter pixels. At 0.25° this understated the physical footprint by roughly five orders of magnitude. Physical grids are now reconstructed, angular spacing converted, and the maximum physical cell axis over the crop used conservatively. | **FIXED** T4C.5g |
 | D54 | `analysis_engine/gate_campaign.py`, `data_layer/cds_source.py` | **Spatial invalidity was discovered only after transfer.** Campaign validation bound request identities but did not prove grid-aligned bounds, actual-filter R13 interiors or physical lag admissibility; CDS ingestion checked spacing but not endpoints, so a server-snapped crop could pass. All are now exact pre-acquisition refusals, with returned endpoints independently rechecked. | **FIXED** T4C.5g |
 | D55 | `core/executor.py:_run_one` | **Per-task seeding is process-global, so the thread backend corrupts it.** `_run_one` calls `torch.manual_seed` and `np.random.seed` — both process-global — then invokes the task. Under `ThreadExecutor` every worker shares one generator, so a second worker's seed overwrites the first's stream before the first draws. Measured: with the seed-to-draw window held open by 10 ms of work, thread(8) disagreed with serial in **10 of 10** trials; with a microsecond-long task it disagreed in 0 of 80, because the tasks effectively serialise. Real sweep payloads are the former. This silently breaks standard E4 and re-opens D12's guarantee for `execution.backend: thread` with `n_workers > 1`, and it falsifies `roadmap.md`'s claim that "a sweep is byte-identical across executor backends" — true for `serial` and `process`, not for `thread`. `test_a_runs_seed_does_not_depend_on_which_worker_took_it` passes by timing luck and was observed failing once under full-suite load. | **OPEN** — found on `ed-dev` during TG0.1; affects `master` identically |
+| D56 | `physical_core/field.py:split_field`, `scale_resolution` | **A coordinate spelled in full was silently mishandled.** Both methods decided which coordinate was the row and which the column from hardcoded name lists - `["y","lat"]` and `["x","lon"]` - and the two lists disagreed about the fallback. A field carrying `latitude`/`longitude`, the spelling CF and ERA5 both use, matched neither: `split_field` cloned the longitude vector instead of slicing it, returning a narrowed field whose coordinate no longer described its own data and which `GridSpec.from_coords` would then read; `scale_resolution` interpolated latitude to the *column* count. Nothing raised. Both now resolve through `core/axes.resolve_axis_roles`, and a caller may declare `axis_roles` instead. The disagreement over genuinely unrecognised coordinates is preserved deliberately and asserted, so no pre-TG1.1 result moves. | **FIXED** TG1.1 (`ed-dev`) |
 
 **Root cause common to D20, D23, D25 and D2:** the transform engine — the mathematical core of
 the platform — had **no test file at all**. `src/tests/test_transforms.py` now exists (36 cases
@@ -2249,6 +2295,7 @@ able to sit three slices out of date.
 | `test_benchmarks.py` | 46 | Ground-Truth Benchmark Suite, seed discipline, eager/streamed climatology agreement, D30 determinism |
 | `test_boundary_synthetic.py` | 8 | boundary treatments, windowing, synthetic generators and independent Euclidean-ring oracle |
 | `test_cds_source.py` | 14 | T5.2c monthly CDS planning/CLI, grid-alignment/server-snap refusals, network consent, atomic resume, shard integrity, conservative storage refusal, bounded Zarr publication, plus PASS/FAIL independent-route receipt publication, replay and tamper refusal |
+| `test_axis_roles.py` | 38 | TG1.1 declared axis roles: legacy arrangements unchanged, the three resolution bases in provenance, declaration beating a contradicting name, refusal of inference for a domain-general adapter, hint registry and collisions, D56 coordinate-slicing fix |
 | `test_channel_series.py` | 14 | TG0.1 channel-series contract: signature/plain-series result equivalence, the two protocol tiers, R21's no-support refusal, clock and shape validation |
 | `test_domain_gate.py` | 18 | TG0.3 negative control: PASS/FAIL/INVALID on a non-atmospheric domain, false-positive calibration, R6 embargoed split, gate-measure registry |
 | `test_tabular_domain.py` | 26 | TG0.2 non-atmospheric domain: planted-coupling recovery and AR(1) null through the unmodified sweep, R21/R17 refusals, declaration and adapter validation |
@@ -2288,7 +2335,7 @@ able to sit three slices out of date.
 | `test_wavelet_bank.py` | 27 | T4B.2 expansion through the engine's own parameter matrix, the 1,000-combination guard, decompose_bank / extract_scale_signature, the vertical-bank refusals |
 | `test_transforms.py` | 13 | fft/dct/dwt/dtcwt/hybrid round trips; D1 recorded as a strict xfail |
 | `test_zarr_source.py` | 59 | R13 geometry, chunk-hostility, byte counting, streaming content identity, exact chunk-bounded frame reader, cache/provenance round trip, NetCDF engine and HTTP surface |
-| **total** | **924** | |
+| **total** | **962** | |
 
 ### 7.2h A surrogate null that was not the null it claimed (T4C.5)
 
