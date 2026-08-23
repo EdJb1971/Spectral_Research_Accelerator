@@ -18,6 +18,12 @@ merely slow science:
     `SeedSequence.spawn`, one substream per item, so a run's randomness depends on its index
     and the root seed and on nothing else - not on which worker picked it up.
 
+    Deriving the seed is only half of it, and the other half was defect **D55**. A seed that
+    is then installed into a *process-global* generator is shared by every thread in the
+    pool, so the derivation is undone by the backend that needs it most. Each task now gets
+    its own streams, bound to its context for exactly its own duration; see
+    `src.core.randomness`, which also records why refusing threaded seeding was the wrong fix.
+
 3.  **Thread oversubscription.** `n_workers` processes each defaulting to one BLAS thread per
     core means `n_workers x n_cores` threads on `n_cores` cores. Throughput *falls*. Each
     worker's thread budget is set on entry (see `core.device.thread_budget`).
@@ -97,13 +103,17 @@ def _run_one(fn, index, item, seed, threads):
 
     if threads:
         configure_threads(threads)
+    from src.core.randomness import task_randomness
+
     started = time.time()
     try:
-        if seed is not None:
-            import torch
-            torch.manual_seed(int(seed))
-            np.random.seed(int(seed) % (2 ** 32))
-        value = fn(item, seed) if _takes_seed(fn) else fn(item)
+        # Defect D55. This used to call `torch.manual_seed` and `np.random.seed`, which are
+        # process-global: under `ThreadExecutor` every worker shares one generator, so a
+        # second worker's seed lands inside the first's seed-to-draw window. Measured with
+        # that window held open by 10 ms of work, thread(8) disagreed with serial in 10 of 10
+        # trials. The streams are now bound to this task's context and released with it.
+        with task_randomness(seed):
+            value = fn(item, seed) if _takes_seed(fn) else fn(item)
         return TaskResult(index=index, ok=True, value=value, seed=seed,
                           elapsed_s=time.time() - started)
     except Exception as exc:

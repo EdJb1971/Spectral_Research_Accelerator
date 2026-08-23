@@ -148,15 +148,13 @@ def gradient(
     d_dcol = g_col / safe_dx
     magnitude = torch.sqrt(d_drow ** 2 + d_dcol ** 2)
 
-    if gspec.kind == "latlon":
-        north_sign = 1.0 if gspec.dy > 0 else -1.0
-        d_dnorth = north_sign * d_drow
-        d_deast = d_dcol
-    else:
-        # Rows increase downward in array order; treat +row as +y ("north") for a plane,
-        # and record the convention rather than leaving it to the reader.
-        d_dnorth = d_drow
-        d_deast = d_dcol
+    # TG1.2: the geometry states which way is north, rather than this function deciding it
+    # from the grid's name. For a plane the answer is +1 - rows increase downward in array
+    # order and +row is treated as +y - and it is now a stated default on `Geometry` rather
+    # than an `else` branch here.
+    north_sign = gspec.geometry.north_sign(gspec)
+    d_dnorth = north_sign * d_drow
+    d_deast = d_dcol
 
     unit = "value per m" if gspec.is_physical else "value per pixel"
 
@@ -174,7 +172,7 @@ def gradient(
             "d_drow/d_dcol are per metre along increasing row/column index; "
             "d_dnorth/d_deast are geographic (north_sign=%s); direction_rad is "
             "anticlockwise from east"
-            % ("+1" if gspec.kind != "latlon" or gspec.dy > 0 else "-1")
+            % ("+1" if north_sign > 0 else "-1")
         ),
         "grid": gspec.to_provenance(),
     }
@@ -205,7 +203,7 @@ def laplacian(
     work = data.to(dtype)
     H, W = work.shape
 
-    if gspec.kind == "latlon":
+    if gspec.capability("spherical", False):
         dphi = math.radians(gspec.dy)          # signed, radians per row
         dlam = math.radians(gspec.dx)          # radians per column
         R = gspec.radius_m
@@ -248,6 +246,11 @@ def laplacian(
         lap = term_meridional + term_zonal
         unit = "value per m^2"
     else:
+        # The five-point stencil is only a Laplacian when one dy/dx describes the whole
+        # grid. Before TG1.2 this branch was the `else` of `kind == "latlon"` and would have
+        # accepted any future non-uniform geometry, returning a plausible number labelled
+        # `value per m^2`. It now states its precondition instead.
+        gspec.assert_uniform_metric("the Cartesian five-point Laplacian")
         dy = gspec.representative_dy_metres()
         dx = gspec.representative_dx_metres()
         lap = (_second_difference(work, dim=0) / dy ** 2
@@ -259,7 +262,7 @@ def laplacian(
         "valid_mask": _interior_mask((H, W), device=work.device),
         "units": unit,
         "is_physical": gspec.is_physical,
-        "operator": ("laplace_beltrami_sphere" if gspec.kind == "latlon"
+        "operator": ("laplace_beltrami_sphere" if gspec.capability("spherical", False)
                      else "cartesian_5point"),
         "grid": gspec.to_provenance(),
     }

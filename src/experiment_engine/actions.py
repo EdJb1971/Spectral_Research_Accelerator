@@ -185,7 +185,14 @@ def perturb_field(args: Dict[str, Any], device: torch.device) -> Dict[str, Any]:
         elif p_type == "noise":
             noise_type = pert.get("noise_type", "gaussian")
             level = pert.get("level", 0.1)
-            current_field = PerturbationEngine.add_noise(current_field, noise_type, level)
+            # Defect D57: the action's declared params advertised that noise "accepts `seed`
+            # for reproducibility", and the seed was then dropped on the floor here. A user
+            # asking for a reproducible perturbation got an unreproducible one and no error -
+            # the worst shape a reproducibility defect can take, because the request looks
+            # honoured. Omitting it now falls back to the task's stream (D55), so a seeded
+            # sweep is reproducible either way.
+            current_field = PerturbationEngine.add_noise(
+                current_field, noise_type, level, seed=pert.get("seed"))
         else:
             raise ValueError(f"Unsupported perturbation type: {p_type}")
             

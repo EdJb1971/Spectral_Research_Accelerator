@@ -70,7 +70,11 @@ are from `src/`, excluding tests.
   `ScaleSignature`, the transform registry seam, `surrogate_null`.
 * **`GridSpec.kind` is a closed enum** `{pixel, cartesian, latlon}` that raises otherwise — a
   direct violation of standard E1. Geometry is the one pluggable thing that never became
-  pluggable.
+  pluggable. **Localised in TG1.2** (`src/physical_core/geometry.py`): a registry with declared
+  capabilities, and operators asking what a geometry can do. The audit called this a naming and
+  extensibility problem; it was also a correctness one. `laplacian`'s `else` branch would have
+  given any future non-uniform geometry the five-point Cartesian stencil and a `value per m^2`
+  label — the same shape as D56, one layer up.
 * **Axis roles are inferred from coordinate names.** `field.py` branches on `k in ["x","lon"]` /
   `["y","lat"]` to decide which axis to slice. **Localised in TG1.1** (`src/core/axes.py`):
   declaration beats name, name beats position, and every assignment records which. The audit
@@ -408,11 +412,57 @@ A third, smaller one is worth recording because of where it was found: the docum
 required a fixed defect to name a task matching `T` plus a digit. `TG1.1` did not match. The
 first fork task to fix a defect found it; reading had not.
 
-**TG1.2 Geometry registry (E13).** `GridSpec.kind` becomes a registry with declared capabilities;
-`latlon`, `cartesian` and `pixel` register as the first three entries. Operators query
-capabilities.
-**Acceptance:** a fourth geometry registers from a test module without editing `src/`, matching
-the existing plugin acceptance test for transforms.
+**TG1.2 Geometry registry (E13) - DONE.** `GridSpec.kind` is a key into
+`src/physical_core/geometry.py`'s `GEOMETRIES`. `pixel`, `cartesian` and `latlon` register as the
+first three entries, each declaring `physical_metric`, `uniform_metric`, `spherical`,
+`has_latitude` and `length_units`. Eleven branches in `grid.py` and five in `operators.py` became
+methods on the registered geometry or capability queries: `is_physical` reads the declaration
+instead of testing `kind != "pixel"`, `latitudes()` refuses on `has_latitude`, `gradient` asks
+the geometry which way is north, `laplacian` selects Laplace-Beltrami on `spherical`.
+
+**Acceptance met.** `test_geometry_registry.py` registers `polar_scan` - a radar PPI sweep, rows
+range gates and columns azimuth - entirely from the test module, and constructs, validates,
+measures, crops and serialises it through the seam. It was chosen to be awkward on purpose: its
+zonal metric grows with range, so it declares `uniform_metric=False` *without* being a sphere.
+A fourth geometry that is `cartesian` under another name would have proved nothing.
+
+Bit-identical: every metric, area weight, crop, resample and provenance record of the three
+builtins is asserted against the arithmetic the pre-TG1.2 code held, recomputed inline in the
+test rather than compared to itself.
+
+*   **The defect the closed enum was hiding.** `laplacian` read `if kind == "latlon": spherical
+    else: cartesian_5point`. That `else` was a silent default, not a fallback: `polar_scan`
+    would have been handed one representative spacing for a metric that varies by a factor of
+    2.25 across the grid and returned a finite array labelled `value per m^2`. No exception, no
+    warning, no NaN. It now states its precondition and refuses. `gradient`, which already
+    divided by a per-row `dx_metres()`, generalised for free - the contrast between the two is
+    the finding, and it is the shape to look for in TG1.3.
+*   **The registry needed `params` to be open at all.** `lat0`, `lon0` and `radius_m` are
+    *`latlon`'s* parameters that happen to have named fields on `GridSpec` for historical
+    reasons. A geometry with a different parameterisation could not have existed. `GridSpec`
+    now carries `params`, a sorted tuple of geometry-specific scalars, and a geometry that
+    requires one refuses construction without it.
+*   **One deliberate behaviour change.** `from_coords` resolves names through TG1.1's registry,
+    so `latitude`/`longitude` spelled in full is recognised as a sphere. It previously matched
+    only the abbreviation, and such a field received a **pixel** grid - a spherical metric
+    present in the data and discarded. Same family as D56. Nothing here builds a `PhysicalField`
+    with those spellings, so no existing result moves.
+
+**D55 closed in the same slice, the expensive way.** Per-task random streams
+(`src/core/randomness.py`), bound to a `contextvars.ContextVar` for exactly one task's duration.
+The cheap fix - refusing `n_workers > 1` when seeds are supplied - was rejected: it removes the
+symptom and leaves process-global randomness inside a unit of work the platform is explicitly
+allowed to run concurrently. Torch values are unchanged. **D57** fell out of it: `perturb_field`
+advertised a `seed` parameter in its registry entry and dropped it on the floor, so a request
+for a reproducible perturbation was honoured in appearance only.
+
+And the finding that is larger than either defect: `test_sweep_is_byte_identical_across_backends`
+- the acceptance criterion for "a sweep is byte-identical across executor backends" - ran a
+pipeline containing **no random draw at all**. It certified a reproducibility claim with a
+payload that had no seed-dependent behaviour to get wrong, which is why it could not catch D55.
+The sweep now carries a noise step and a second test changes the root seed to prove the results
+move. Three consecutive slices in which execution found what reading missed; the first in which
+the thing that missed it was a test.
 
 **TG1.3 Lag-admissibility policies (R21).** `support_floor` becomes one registered policy
 (`advection`) behind a policy seam, alongside `none` (which refuses precedence claims) and

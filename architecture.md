@@ -955,12 +955,98 @@ Adding an archive's vocabulary is a registration, from outside `src/`, exactly a
 is — `test_a_new_naming_convention_registers_without_editing_src` is the acceptance. Two hints
 claiming one name are refused rather than resolved by import order.
 
+### 3.6i Geometry is a registry, and operators ask what it can do (`src/physical_core/geometry.py`, TG1.2, `ed-dev`)
+
+`GridSpec.kind` was three strings, and eleven methods in `grid.py` plus five call sites in
+`operators.py` branched on them. Standard E13 makes it a registry: `pixel`, `cartesian` and
+`latlon` register as the first three entries, each declaring capabilities, and every branch
+becomes a method on the registered `Geometry`.
+
+| Capability | What it licenses |
+|---|---|
+| `physical_metric` | lengths are a physical unit, so anything may be reported per metre |
+| `uniform_metric` | one spacing describes the whole grid. **False for `latlon`** |
+| `spherical` | the Laplacian is Laplace-Beltrami, not the five-point stencil |
+| `has_latitude` | rows carry a latitude, so `cos(lat)` area weighting applies |
+| `length_units` | the label printed beside every derived quantity |
+
+`is_physical` and `length_units` now read the declaration instead of testing `kind !=
+"pixel"`; `latitudes()` refuses on `has_latitude` rather than on a name; `gradient` asks the
+geometry `north_sign` instead of deciding it from `kind == "latlon"`. `GridSpec` keeps the
+arithmetic that is true of *any* geometry - endpoint-preserving resample scaling, crop bounds,
+wavenumber axes - and delegates the rest.
+
+**The defect the closed enum was hiding.** `laplacian` read `if kind == "latlon": spherical
+else: cartesian_5point`. The `else` was not a fallback, it was a silent default: a geometry
+whose metric varies across the grid - which is the interesting case, and precisely why
+`latlon` needed its own branch - would have been handed one representative spacing and
+returned a finite array labelled `value per m^2`. No exception, no warning, no NaN. That
+branch now states its precondition (`assert_uniform_metric`), and the acceptance test proves
+it fires: `polar_scan`, a radar PPI sweep registered from the test module, has a metric that
+grows with range and is refused. `gradient`, which already divided by a per-row `dx_metres()`,
+generalised for free - the contrast between the two operators is the finding.
+
+`GridSpec` also gains `params`, a sorted tuple of geometry-specific scalars. Without it the
+registry would have been open in name only: `lat0`, `lon0` and `radius_m` are *`latlon`'s*
+parameters that happen to have named fields for historical reasons, and a fourth geometry
+with a different parameterisation could not have existed. `polar_scan` stores its `r0` there
+and refuses construction without it, so a grid with no metric is refused at construction
+rather than discovered at the first gradient.
+
+**One deliberate behaviour change.** `from_coords` now resolves coordinate names through
+TG1.1's registry, so `latitude`/`longitude` spelled in full - CF's spelling and ERA5's - is
+recognised as a sphere. It previously matched only the abbreviation and such a field received
+a **pixel** grid: gradients per pixel, no `cos(lat)` weighting, a spherical metric present in
+the data and discarded. The same family as D56, found in the same way. Nothing in this
+repository builds a `PhysicalField` with those spellings - the importers normalise to
+`lat`/`lon` - so no existing result moves, and the five arrangements `from_coords` already
+handled are asserted unchanged.
+
+### 3.6j Random streams belong to the task, not to the process (`src/core/randomness.py`, D55, `ed-dev`)
+
+`executor._run_one` opened every task with `torch.manual_seed(seed)` and `np.random.seed(seed)`.
+Both mutate a generator owned by the *process*. Under `serial` and `process` exactly one task
+sits between its seeding and its draws; under `thread` with more than one worker every thread
+shares the one generator, so worker B's seed lands inside worker A's seed-to-draw window.
+
+The window is microseconds for a toy payload, which is why the property test passed. Held open
+by 10 ms of work - which is what a sweep payload is - `thread(8)` disagreed with `serial` in
+**10 of 10** trials.
+
+Each task now gets a `TaskStreams` bound to a `contextvars.ContextVar` for exactly its own
+duration. A `ContextVar` set inside a thread is invisible to every other thread, which is the
+isolation required and nothing more; it costs one binding in the serial and process backends;
+and payload code reaches the stream without every intervening signature growing a `generator=`
+parameter, which would have meant a mechanical rewrite of the action layer.
+
+*   **The values did not move.** `torch.Generator().manual_seed(s)` yields the same sequence
+    as the global generator after `torch.manual_seed(s)`, asserted directly.
+*   **The cheap fix was rejected on purpose.** Refusing `n_workers > 1` when seeds are supplied
+    would have preserved every value too, and left process-global randomness inside a unit of
+    work the platform is explicitly allowed to run concurrently.
+*   **Unseeded stays unseeded.** Outside a task there is no stream; `add_noise` records
+    `rng_source` and `seeded: False` rather than inventing one, because an unreproducible
+    result must stay distinguishable from a reproducible one (defect D12's lesson).
+*   `enable_determinism` no longer seeds the process. It records `seed_scope`, which reports
+    `task`, `unbound` or `task_mismatch`, so a reproducibility claim is checked against the
+    binding rather than against an assumption.
+
+**The finding, which is larger than the defect.** `test_sweep_is_byte_identical_across_backends`
+is the acceptance criterion for "a sweep is byte-identical across executor backends" - and its
+pipeline was a vortex and a wavelet transform. **Entirely deterministic. Not one random draw.**
+It certified a reproducibility claim with a payload that had no seed-dependent behaviour to get
+wrong, so it could not have caught D55 and did not. The sweep now carries a noise step, and
+`test_the_acceptance_sweep_actually_draws_random_numbers` guards the guard by changing the root
+seed and requiring the persisted results to move. This is the third consecutive slice in which
+execution found what reading missed, and the first in which the thing that missed it was a test.
+
 ### 3.8 Grid Geometry and Metric-Aware Operators (`src/physical_core/grid.py`, `operators.py`)
 
 Added in T3.5.13 (defect D13, standard E3). `GridSpec` is the physical metric attached to
-every `PhysicalField` - `pixel`, `cartesian` or `latlon` - and the default is deliberately
-`pixel` rather than `None`, so "lengths here are array indices" is a recorded fact that
-travels with the data rather than an unexamined assumption.
+every `PhysicalField` - `pixel`, `cartesian` or `latlon`, and since TG1.2 whatever else is
+registered (section 3.6i) - and the default is deliberately `pixel` rather than `None`, so
+"lengths here are array indices" is a recorded fact that travels with the data rather than an
+unexamined assumption.
 
 *   Exact spherical cell areas (`R^2 dlon (sin(lat_n) - sin(lat_s))`), validated by summing a
     global grid to `4 pi R^2` to **1.2e-16**.
@@ -2176,7 +2262,8 @@ code paths that `architecture.md` previously described as implemented and rigoro
 | D52 | `analysis_engine/gate_campaign.py` | **The expensive record was the first live integration test.** Acquisition, independent overlap and gate plans existed separately, so request/grid/cadence drift remained possible and the full multi-year CDS transfer could complete before discovering a decoder or cross-route mismatch. A frozen two-stage campaign now requires a small exact canary PASS first, binds all identities and ordering, and preflights aggregate storage/dependency/configuration/consent without network use. | **FIXED** T4C.5f |
 | D53 | `analysis_engine/cross_scale.py:support_floor` | **ERA5 angular spacing was interpreted as metres.** `GridSpec.to_provenance()` stores lat/lon `dx` in degrees, but the support floor selected that field first and multiplied it directly by filter pixels. At 0.25° this understated the physical footprint by roughly five orders of magnitude. Physical grids are now reconstructed, angular spacing converted, and the maximum physical cell axis over the crop used conservatively. | **FIXED** T4C.5g |
 | D54 | `analysis_engine/gate_campaign.py`, `data_layer/cds_source.py` | **Spatial invalidity was discovered only after transfer.** Campaign validation bound request identities but did not prove grid-aligned bounds, actual-filter R13 interiors or physical lag admissibility; CDS ingestion checked spacing but not endpoints, so a server-snapped crop could pass. All are now exact pre-acquisition refusals, with returned endpoints independently rechecked. | **FIXED** T4C.5g |
-| D55 | `core/executor.py:_run_one` | **Per-task seeding is process-global, so the thread backend corrupts it.** `_run_one` calls `torch.manual_seed` and `np.random.seed` — both process-global — then invokes the task. Under `ThreadExecutor` every worker shares one generator, so a second worker's seed overwrites the first's stream before the first draws. Measured: with the seed-to-draw window held open by 10 ms of work, thread(8) disagreed with serial in **10 of 10** trials; with a microsecond-long task it disagreed in 0 of 80, because the tasks effectively serialise. Real sweep payloads are the former. This silently breaks standard E4 and re-opens D12's guarantee for `execution.backend: thread` with `n_workers > 1`, and it falsifies `roadmap.md`'s claim that "a sweep is byte-identical across executor backends" — true for `serial` and `process`, not for `thread`. `test_a_runs_seed_does_not_depend_on_which_worker_took_it` passes by timing luck and was observed failing once under full-suite load. | **OPEN** — found on `ed-dev` during TG0.1; affects `master` identically |
+| D55 | `core/executor.py:_run_one` | **Per-task seeding is process-global, so the thread backend corrupts it.** `_run_one` calls `torch.manual_seed` and `np.random.seed` — both process-global — then invokes the task. Under `ThreadExecutor` every worker shares one generator, so a second worker's seed overwrites the first's stream before the first draws. Measured: with the seed-to-draw window held open by 10 ms of work, thread(8) disagreed with serial in **10 of 10** trials; with a microsecond-long task it disagreed in 0 of 80, because the tasks effectively serialise. Real sweep payloads are the former. This silently breaks standard E4 and re-opens D12's guarantee for `execution.backend: thread` with `n_workers > 1`, and it falsifies `roadmap.md`'s claim that "a sweep is byte-identical across executor backends" — true for `serial` and `process`, not for `thread`. `test_a_runs_seed_does_not_depend_on_which_worker_took_it` passed by timing luck and was observed failing once under full-suite load. Fixed properly rather than cheaply: streams are now per task, bound to a `contextvars.ContextVar` in `core/randomness.py` and released with the task, so no worker can reach another's. Torch values are unchanged (`Generator().manual_seed(s)` matches the global generator after `manual_seed(s)`); `enable_determinism` no longer seeds the process and reports `seed_scope` instead. The alternative — refusing `n_workers > 1` when seeds are supplied — was rejected: it removes the symptom and leaves process-global randomness inside a unit of work the platform runs concurrently. See section 3.6j. | **FIXED** TG1.2 (`ed-dev`) |
+| D57 | `experiment_engine/actions.py:perturb_field` | **A declared reproducibility parameter was silently discarded.** The action's registry entry advertised that noise `accepts \`seed\` for reproducibility`; the handler then called `PerturbationEngine.add_noise(field, noise_type, level)` and dropped the seed. A user asking for a reproducible perturbation received an unreproducible one with no error — the worst shape a reproducibility defect can take, because the request looks honoured. The seed is now passed through, and omitting it falls back to the task stream (D55). Found while giving the byte-identity acceptance sweep a payload that actually draws. | **FIXED** TG1.2 (`ed-dev`) |
 | D56 | `physical_core/field.py:split_field`, `scale_resolution` | **A coordinate spelled in full was silently mishandled.** Both methods decided which coordinate was the row and which the column from hardcoded name lists - `["y","lat"]` and `["x","lon"]` - and the two lists disagreed about the fallback. A field carrying `latitude`/`longitude`, the spelling CF and ERA5 both use, matched neither: `split_field` cloned the longitude vector instead of slicing it, returning a narrowed field whose coordinate no longer described its own data and which `GridSpec.from_coords` would then read; `scale_resolution` interpolated latitude to the *column* count. Nothing raised. Both now resolve through `core/axes.resolve_axis_roles`, and a caller may declare `axis_roles` instead. The disagreement over genuinely unrecognised coordinates is preserved deliberately and asserted, so no pre-TG1.1 result moves. | **FIXED** TG1.1 (`ed-dev`) |
 
 **Root cause common to D20, D23, D25 and D2:** the transform engine — the mathematical core of
@@ -2295,6 +2382,8 @@ able to sit three slices out of date.
 | `test_benchmarks.py` | 46 | Ground-Truth Benchmark Suite, seed discipline, eager/streamed climatology agreement, D30 determinism |
 | `test_boundary_synthetic.py` | 8 | boundary treatments, windowing, synthetic generators and independent Euclidean-ring oracle |
 | `test_cds_source.py` | 14 | T5.2c monthly CDS planning/CLI, grid-alignment/server-snap refusals, network consent, atomic resume, shard integrity, conservative storage refusal, bounded Zarr publication, plus PASS/FAIL independent-route receipt publication, replay and tamper refusal |
+| `test_geometry_registry.py` | 20 | TG1.2 geometry registry: the three builtins' metrics, crops, resamples and provenance unchanged; capability-driven `is_physical`/`length_units`/`latitudes`; a fourth geometry (`polar_scan`) registered from the test module with a non-uniform, non-spherical metric; the Cartesian Laplacian refusing it; `latitude`/`longitude` recognised as a sphere |
+| `test_task_randomness.py` | 15 | D55 per-task streams: torch value continuity with the old global seeding, stream advance, thread isolation of the context binding, release on failure, `require` refusal, `add_noise` ambient fallback and labelling, D57 seed pass-through, `enable_determinism` scope reporting |
 | `test_axis_roles.py` | 38 | TG1.1 declared axis roles: legacy arrangements unchanged, the three resolution bases in provenance, declaration beating a contradicting name, refusal of inference for a domain-general adapter, hint registry and collisions, D56 coordinate-slicing fix |
 | `test_channel_series.py` | 14 | TG0.1 channel-series contract: signature/plain-series result equivalence, the two protocol tiers, R21's no-support refusal, clock and shape validation |
 | `test_domain_gate.py` | 18 | TG0.3 negative control: PASS/FAIL/INVALID on a non-atmospheric domain, false-positive calibration, R6 embargoed split, gate-measure registry |
@@ -2302,7 +2391,7 @@ able to sit three slices out of date.
 | `test_coefficient_field.py` | 40 | T4B.1 acceptance: parent-grid alignment, perfect reconstruction per family, lineage-safe summary; DTCWT upsampling declared; LevelBank and level slicing (T4B.4) |
 | `test_documentation.py` | 19 | architecture, roadmap and proprietary named-licence boundary against the code/repository |
 | `test_dtcwt.py` | 28 | Kingsbury q-shift DTCWT: primitives vs reference, two oracles, orientation, shift invariance, D1 head-to-heads |
-| `test_executor.py` | 33 | Executor backends, seed derivation, ordering, portable CPU/accelerator/HPC profiles, doctor, device/thread policy, SQLite concurrency, byte-identical sweeps |
+| `test_executor.py` | 38 | Executor backends, seed derivation, ordering, portable CPU/accelerator/HPC profiles, doctor, device/thread policy, SQLite concurrency, byte-identical sweeps (now over a payload that actually draws), D55 thread/serial agreement with the seed-to-draw window held open |
 | `test_experiments.py` | 3 | declarative sweeps and lineage |
 | `test_exports.py` | 32 | CSV/JSON/NetCDF4/Zarr round trips, embedded provenance, seeded perturbation (D34) |
 | `test_external_fcn3.py` | 9 | T5.6a offline FCN3 request/result schemas, exact global input and ensemble contracts, portability refusals, canonical persistence, file/tree identity and request/artifact tamper isolation |
@@ -2335,7 +2424,7 @@ able to sit three slices out of date.
 | `test_wavelet_bank.py` | 27 | T4B.2 expansion through the engine's own parameter matrix, the 1,000-combination guard, decompose_bank / extract_scale_signature, the vertical-bank refusals |
 | `test_transforms.py` | 13 | fft/dct/dwt/dtcwt/hybrid round trips; D1 recorded as a strict xfail |
 | `test_zarr_source.py` | 59 | R13 geometry, chunk-hostility, byte counting, streaming content identity, exact chunk-bounded frame reader, cache/provenance round trip, NetCDF engine and HTTP surface |
-| **total** | **962** | |
+| **total** | **1002** | |
 
 ### 7.2h A surrogate null that was not the null it claimed (T4C.5)
 

@@ -273,10 +273,18 @@ def enable_determinism(seed: Optional[int] = None) -> Dict[str, Any]:
     """
     record: Dict[str, Any] = {"requested_deterministic": True}
     if seed is not None:
-        torch.manual_seed(int(seed))
-        if torch.cuda.is_available():
-            torch.cuda.manual_seed_all(int(seed))
+        # Defect D55: this used to seed the process-global torch generator here, which under
+        # the thread backend is the generator every other concurrent task is also using. The
+        # seed now belongs to the task, not the process - `src.core.randomness` binds it, and
+        # `executor._run_one` opens that binding around every task. The seed stays in the
+        # record because the record is what a reproducibility claim is checked against, and
+        # the task binding is reported next to it so the two cannot drift apart.
+        from src.core import randomness
         record["seed"] = int(seed)
+        streams = randomness.current()
+        record["seed_scope"] = "task" if streams is not None else "unbound"
+        if streams is not None and int(streams.seed) != int(seed):
+            record["seed_scope"] = "task_mismatch"
     try:
         torch.use_deterministic_algorithms(True, warn_only=True)
         record["deterministic_algorithms"] = "warn_only"

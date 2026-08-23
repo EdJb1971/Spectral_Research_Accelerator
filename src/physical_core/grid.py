@@ -32,22 +32,40 @@ A `GridSpec` is attached to every `PhysicalField`. The default is ``GridSpec.pix
 which is deliberately *not* None: "we are working in pixel units" is then a recorded fact
 that travels with the data and gets printed in the units field of every derived quantity,
 rather than an unexamined assumption.
+
+**TG1.2 (standard E13).** `kind` used to be a closed set of three strings and this module
+branched on it in eleven places. It is now a key into `src.physical_core.geometry.GEOMETRIES`,
+and every one of those branches is a method on the registered `Geometry`. `GridSpec` still
+owns the *shape* arithmetic that is true of any geometry - endpoint-preserving resampling,
+crop bounds, wavenumber axes - and delegates everything that depends on what the surface
+actually is. Callers ask `spec.capability(...)`, never `spec.kind == ...`.
 """
 
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass, field as dc_field
-from typing import Any, Dict, Optional, Tuple
+from dataclasses import dataclass, field as dc_field, replace as dc_replace
+from typing import Any, Dict, Mapping, Optional, Tuple
 
 import torch
 
+from src.core.errors import UnknownNameError
+from src.physical_core.geometry import (
+    EARTH_RADIUS_M,
+    IFS_EARTH_RADIUS_M,
+    capability,
+    geometry_for,
+    recognisers,
+)
+
+# EARTH_RADIUS_M / IFS_EARTH_RADIUS_M are defined in `geometry.py` (the spherical geometry is
+# what needs them) and re-exported here, because every existing caller imports them from this
+# module and a constant moving house is not a reason to touch thirty call sites.
+#
 # IUGG mean Earth radius (R_1, arithmetic mean of the WGS84 semi-axes), metres.
 # ERA5 / IFS use 6371229.0; the difference is 3.5e-5 relative and is recorded rather
 # than hidden, because a spectral slope fitted over two decades of k is not sensitive to
 # it but an absolute gradient in K/m is quoted to more digits than that.
-EARTH_RADIUS_M = 6371008.7714
-IFS_EARTH_RADIUS_M = 6371229.0
 
 #: A metric below this many metres is treated as degenerate rather than merely small.
 #: cos(90 degrees) evaluates to 6.1e-17 in float64, not 0, so a polar row yields a zonal
@@ -79,7 +97,7 @@ class GridError(ValueError):
 class GridSpec:
     """Physical geometry of a 2D field indexed ``[row, col]`` = ``[y, x]``.
 
-    Three kinds:
+    Three geometries ship as builtins; `kind` is a registry key, so there may be more:
 
     ``pixel``     - dimensionless index space. Spacing 1, area weights uniform. Honest
                     default; every derived quantity is then labelled ``per_pixel``.
@@ -88,6 +106,9 @@ class GridSpec:
                     ``dlat`` may be negative (ERA5 stores north-to-south); the sign is
                     preserved for coordinate reconstruction and taken as absolute for
                     metrics.
+
+    `lat0`, `lon0` and `radius_m` are ``latlon``'s parameters with named fields, kept for
+    compatibility; a geometry registered later puts its own parameters in `params`.
     """
 
     kind: str
@@ -99,46 +120,90 @@ class GridSpec:
     radius_m: float = EARTH_RADIUS_M
     variable_units: Optional[str] = None   # units of the *values*, e.g. "K", "m s^-1"
     notes: Tuple[str, ...] = dc_field(default_factory=tuple)
+    #: Geometry-specific scalars, for a geometry the builtin fields do not describe (TG1.2).
+    #: `lat0`, `lon0` and `radius_m` are *latlon's* parameters that happen to have named
+    #: fields for historical reasons; a registered geometry with a different parameterisation
+    #: puts its own here instead of being unable to exist. Stored as a sorted tuple of pairs
+    #: rather than a dict so that the dataclass stays frozen, hashable and comparable, which
+    #: `notes` already established as the house style for this class.
+    params: Tuple[Tuple[str, float], ...] = dc_field(default_factory=tuple)
 
     # ---------------------------------------------------------------- construction
 
     def __post_init__(self) -> None:
-        if self.kind not in ("pixel", "cartesian", "latlon"):
+        # TG1.2: the kind is a registry key, so the valid set is whatever is registered -
+        # including a geometry a plugin added a moment ago. `UnknownNameError` is translated
+        # rather than propagated because every existing caller catches `GridError` here, and
+        # its "did you mean" survives in the message.
+        try:
+            geometry = geometry_for(self.kind)
+        except UnknownNameError as exc:
             raise GridError(
-                "GridSpec.kind must be 'pixel', 'cartesian' or 'latlon', got %r. "
-                "Use GridSpec.pixel(shape) if the field genuinely has no physical metric."
-                % (self.kind,)
-            )
+                "%s Use GridSpec.pixel(shape) if the field genuinely has no physical "
+                "metric, or register a geometry in src.physical_core.geometry.GEOMETRIES."
+                % (exc,)
+            ) from None
         if len(self.shape) != 2:
             raise GridError("GridSpec.shape must be (H, W), got %r" % (self.shape,))
         if self.shape[0] < 1 or self.shape[1] < 1:
             raise GridError("GridSpec.shape must be positive, got %r" % (self.shape,))
-        if self.kind == "cartesian" and (self.dy <= 0 or self.dx <= 0):
+
+        # Accept a mapping for convenience and normalise to the canonical sorted tuple, so
+        # two grids built from equal parameters compare equal regardless of insertion order.
+        if isinstance(self.params, Mapping):
+            object.__setattr__(self, "params",
+                               tuple(sorted((str(k), float(v))
+                                            for k, v in self.params.items())))
+        else:
+            object.__setattr__(self, "params",
+                               tuple(sorted((str(k), float(v)) for k, v in self.params)))
+
+        geometry.validate(self)
+
+    def param(self, name: str, default: Optional[float] = None) -> Optional[float]:
+        """One geometry-specific scalar, or ``default`` (TG1.2).
+
+        A geometry that *requires* a parameter should raise from its `validate`, not read a
+        default here: a grid missing the number that gives it a metric has no metric, and
+        discovering that at the first gradient rather than at construction is precisely the
+        failure D13 exists to prevent.
+        """
+        for key, value in self.params:
+            if key == name:
+                return value
+        return default
+
+    # ---------------------------------------------------------------- geometry
+
+    @property
+    def geometry(self) -> Any:
+        """The registered `Geometry` for this grid's `kind` (TG1.2)."""
+        return geometry_for(self.kind)
+
+    def capability(self, key: str, default: Any = None) -> Any:
+        """One declared capability of this grid's geometry.
+
+        Standard E13: ask what a geometry *can do*, never which one it is. `is_physical`,
+        `length_units` and every branch in `operators.py` go through here.
+        """
+        return capability(self.kind, key, default)
+
+    def assert_uniform_metric(self, operation: str) -> None:
+        """Refuse an operation that assumes one spacing for the whole grid.
+
+        The pre-TG1.2 code had no equivalent: `laplacian`'s ``else`` branch applied the
+        five-point Cartesian stencil to *anything* that was not ``latlon``, so a geometry
+        whose metric varies across the grid would have received a plausible number labelled
+        ``value per m^2``. Now the else-branch states its precondition.
+        """
+        if not self.capability("uniform_metric", True):
             raise GridError(
-                "cartesian spacing must be positive metres, got dy=%r dx=%r" % (self.dy, self.dx)
+                "%s assumes a single spacing for the whole grid, but geometry %r declares "
+                "uniform_metric=False - its metric varies from row to row, so one dy/dx is "
+                "not a description of it. Either give %r a specialised implementation, or "
+                "regrid to a geometry with a uniform metric first."
+                % (operation, self.kind, self.kind)
             )
-        if self.kind == "latlon":
-            if self.dy == 0 or self.dx <= 0:
-                raise GridError(
-                    "latlon grid needs non-zero dlat and positive dlon in degrees, "
-                    "got dlat=%r dlon=%r" % (self.dy, self.dx)
-                )
-            if self.lat0 is None or self.lon0 is None:
-                raise GridError(
-                    "latlon grid requires lat0 and lon0 (degrees) - the zonal metric "
-                    "R*cos(lat)*dlon depends on latitude, so a lat/lon grid without a "
-                    "latitude origin has no metric at all."
-                )
-            lat_end = self.lat0 + self.dy * (self.shape[0] - 1)
-            for name, value in (("lat0", self.lat0), ("last latitude", lat_end)):
-                if not (-90.0 - 1e-9 <= value <= 90.0 + 1e-9):
-                    raise GridError(
-                        "latlon grid runs off the sphere: %s = %.4f degrees, outside "
-                        "[-90, 90]. Check the sign of dlat (ERA5 latitudes descend, so "
-                        "dlat is negative)." % (name, value)
-                    )
-            if self.radius_m <= 0:
-                raise GridError("radius_m must be positive, got %r" % (self.radius_m,))
 
     @classmethod
     def pixel(cls, shape: Tuple[int, int], variable_units: Optional[str] = None) -> "GridSpec":
@@ -183,37 +248,23 @@ class GridSpec:
     ) -> "GridSpec":
         """Infer a grid from coordinate vectors, falling back to ``pixel``.
 
-        Recognises ``lat``/``lon`` (degrees, assumed regular) and ``y``/``x`` when
-        ``metadata['grid_units']`` is a length unit. Anything else yields a pixel grid,
-        because guessing a metric is worse than recording that we do not have one.
+        Each registered geometry is asked, in ascending `coord_priority`, whether it
+        recognises these coordinates; ``pixel`` sits last and always says yes. Anything no
+        geometry recognises therefore yields a pixel grid, because guessing a metric is worse
+        than recording that we do not have one.
+
+        Coordinate *names* come from TG1.1's registry rather than from literals here, so
+        ``latitude``/``longitude`` spelled in full - which is how CF and ERA5 spell them - is
+        now recognised as a sphere. Before TG1.2 it fell through to a pixel grid: a field
+        with a perfectly good spherical metric, silently analysed in array indices.
         """
         metadata = metadata or {}
-        units = str(metadata.get("grid_units", "")).lower()
+        shape = tuple(shape)
         var_units = metadata.get("units")
-
-        if "lat" in coords and "lon" in coords:
-            lat = coords["lat"].flatten().to(torch.float64)
-            lon = coords["lon"].flatten().to(torch.float64)
-            if lat.numel() >= 2 and lon.numel() >= 2:
-                dlat = float((lat[-1] - lat[0]) / (lat.numel() - 1))
-                dlon = float((lon[-1] - lon[0]) / (lon.numel() - 1))
-                if dlat != 0.0 and dlon > 0.0:
-                    return cls.latlon(shape, float(lat[0]), dlat, float(lon[0]), dlon,
-                                      variable_units=var_units)
-
-        if units in ("m", "metre", "metres", "meter", "meters",
-                     "km", "kilometre", "kilometres", "kilometer", "kilometers"):
-            scale = 1000.0 if units.startswith("k") else 1.0
-            y = coords.get("y")
-            x = coords.get("x")
-            if y is not None and x is not None and y.numel() >= 2 and x.numel() >= 2:
-                yy = y.flatten().to(torch.float64)
-                xx = x.flatten().to(torch.float64)
-                dy = abs(float((yy[-1] - yy[0]) / (yy.numel() - 1))) * scale
-                dx = abs(float((xx[-1] - xx[0]) / (xx.numel() - 1))) * scale
-                if dy > 0 and dx > 0:
-                    return cls.cartesian(shape, dy, dx, variable_units=var_units)
-
+        for geometry in recognisers():
+            fields = geometry.from_coords(coords, shape, metadata)
+            if fields is not None:
+                return cls(variable_units=var_units, **fields)
         return cls.pixel(shape, variable_units=var_units)
 
     # ---------------------------------------------------------------- derivation
@@ -230,8 +281,6 @@ class GridSpec:
         new_shape = tuple(new_shape)
         if len(new_shape) != 2 or new_shape[0] < 1 or new_shape[1] < 1:
             raise GridError("resampled() needs a positive (H, W), got %r" % (new_shape,))
-        if self.kind == "pixel":
-            return GridSpec.pixel(new_shape, variable_units=self.variable_units)
 
         def scale(old_n: int, new_n: int, spacing: float) -> float:
             if new_n == 1 or old_n == 1:
@@ -240,10 +289,7 @@ class GridSpec:
 
         dy = scale(self.height, new_shape[0], self.dy)
         dx = scale(self.width, new_shape[1], self.dx)
-        if self.kind == "cartesian":
-            return GridSpec.cartesian(new_shape, dy, dx, variable_units=self.variable_units)
-        return GridSpec.latlon(new_shape, self.lat0, dy, self.lon0, dx,
-                               radius_m=self.radius_m, variable_units=self.variable_units)
+        return dc_replace(self, **self.geometry.resampled(self, new_shape, dy, dx))
 
     def subset(self, row_start: int = 0, row_stop: Optional[int] = None,
                col_start: int = 0, col_stop: Optional[int] = None) -> "GridSpec":
@@ -262,14 +308,7 @@ class GridSpec:
                 "subset is empty: rows [%d:%d] cols [%d:%d] of a %dx%d grid"
                 % (row_start, row_stop, col_start, col_stop, self.height, self.width)
             )
-        if self.kind == "pixel":
-            return GridSpec.pixel((h, w), variable_units=self.variable_units)
-        if self.kind == "cartesian":
-            return GridSpec.cartesian((h, w), self.dy, self.dx,
-                                      variable_units=self.variable_units)
-        return GridSpec.latlon((h, w), self.lat0 + self.dy * row_start, self.dy,
-                               self.lon0 + self.dx * col_start, self.dx,
-                               radius_m=self.radius_m, variable_units=self.variable_units)
+        return dc_replace(self, **self.geometry.subset(self, row_start, col_start, (h, w)))
 
     # ---------------------------------------------------------------- coordinates
 
@@ -283,40 +322,37 @@ class GridSpec:
 
     @property
     def is_physical(self) -> bool:
-        """True when lengths are in metres, i.e. anything other than a pixel grid."""
-        return self.kind != "pixel"
+        """True when lengths are in a physical unit, as the geometry declares."""
+        return bool(self.capability("physical_metric", False))
 
     @property
     def length_units(self) -> str:
-        return "pixel" if self.kind == "pixel" else "m"
+        return str(self.capability("length_units", "pixel"))
 
     def latitudes(self, device=None, dtype=torch.float64) -> torch.Tensor:
         """Row latitudes in degrees. Raises for other grids rather than inventing them."""
-        if self.kind != "latlon":
+        if not self.capability("has_latitude", False):
             raise GridError(
-                "latitudes() is only defined for a latlon grid; this grid is %r. "
-                "A %s grid has no latitude, so cos(lat) area weighting does not apply "
-                "(and uniform weights are already correct for it)." % (self.kind, self.kind)
+                "latitudes() is only defined for a grid whose geometry declares "
+                "has_latitude; this grid is %r. A %s grid has no latitude, so cos(lat) area "
+                "weighting does not apply (and uniform weights are already correct for it)."
+                % (self.kind, self.kind)
             )
         idx = torch.arange(self.height, device=device, dtype=dtype)
         return self.lat0 + self.dy * idx
 
     def longitudes(self, device=None, dtype=torch.float64) -> torch.Tensor:
-        if self.kind != "latlon":
-            raise GridError("longitudes() is only defined for a latlon grid; this grid is %r."
-                            % (self.kind,))
+        if not self.capability("has_latitude", False):
+            raise GridError("longitudes() is only defined for a grid whose geometry declares "
+                            "has_latitude; this grid is %r." % (self.kind,))
         idx = torch.arange(self.width, device=device, dtype=dtype)
         return self.lon0 + self.dx * idx
 
     # ---------------------------------------------------------------- metrics
 
     def dy_metres(self, device=None, dtype=torch.float64) -> torch.Tensor:
-        """Meridional spacing per row, shape ``(H,)``. Constant for all three kinds."""
-        if self.kind == "latlon":
-            value = self.radius_m * math.radians(abs(self.dy))
-        else:
-            value = abs(self.dy)
-        return torch.full((self.height,), float(value), device=device, dtype=dtype)
+        """Meridional spacing per row, shape ``(H,)``. Constant for all three builtins."""
+        return self.geometry.dy_metres(self, device, dtype)
 
     def dx_metres(self, device=None, dtype=torch.float64) -> torch.Tensor:
         """Zonal spacing per row, shape ``(H,)``.
@@ -324,10 +360,7 @@ class GridSpec:
         This is the whole point of the module: on a lat/lon grid it varies as ``cos(lat)``,
         so it is returned per row and never collapsed to a scalar without saying so.
         """
-        if self.kind == "latlon":
-            lat_rad = torch.deg2rad(self.latitudes(device=device, dtype=dtype))
-            return self.radius_m * torch.cos(lat_rad) * math.radians(self.dx)
-        return torch.full((self.height,), float(abs(self.dx)), device=device, dtype=dtype)
+        return self.geometry.dx_metres(self, device, dtype)
 
     def representative_dx_metres(self) -> float:
         """A single zonal spacing for FFT use, taken at the patch's mean latitude.
@@ -337,16 +370,10 @@ class GridSpec:
         across the patch, so the size of that approximation is always visible rather than
         assumed small.
         """
-        if self.kind == "latlon":
-            lats = self.latitudes()
-            mean_lat = float(lats.mean())
-            return self.radius_m * math.cos(math.radians(mean_lat)) * math.radians(self.dx)
-        return float(abs(self.dx))
+        return float(self.geometry.representative_dx(self))
 
     def representative_dy_metres(self) -> float:
-        if self.kind == "latlon":
-            return self.radius_m * math.radians(abs(self.dy))
-        return float(abs(self.dy))
+        return float(self.geometry.representative_dy(self))
 
     def cell_area(self, device=None, dtype=torch.float64) -> torch.Tensor:
         """Area of each cell, shape ``(H, W)``. m^2 for physical grids, 1.0 for pixel.
@@ -357,19 +384,7 @@ class GridSpec:
         for coarse grids, and the exact form also stays correct in a polar row where
         cos(lat) -> 0.
         """
-        if self.kind != "latlon":
-            cell = self.representative_dy_metres() * self.representative_dx_metres()
-            return torch.full(self.shape, float(cell), device=device, dtype=dtype)
-
-        lats = self.latitudes(device=device, dtype=dtype)
-        half = abs(self.dy) / 2.0
-        north = torch.clamp(lats + half, max=90.0)
-        south = torch.clamp(lats - half, min=-90.0)
-        band = (self.radius_m ** 2) * math.radians(self.dx) * (
-            torch.sin(torch.deg2rad(north)) - torch.sin(torch.deg2rad(south))
-        )
-        band = torch.abs(band)
-        return band.unsqueeze(1).expand(self.height, self.width).contiguous()
+        return self.geometry.cell_area(self, device, dtype)
 
     def area_weights(self, device=None, dtype=torch.float64) -> torch.Tensor:
         """Cell areas normalised to sum to 1 - the weights for any domain statistic."""
@@ -456,7 +471,7 @@ class GridSpec:
         if units == "pixel":
             return "cycles per domain (pixel index)"
         label = _WAVENUMBER_UNITS[units][1]
-        if self.kind == "pixel":
+        if not self.is_physical:
             if "km" in label:
                 raise GridError(
                     "wavenumber units %r are kilometre-based but this is a pixel grid, "
@@ -464,7 +479,7 @@ class GridSpec:
                     "GridSpec.latlon to the field, or request 'rad_per_m'/'cycles_per_m' "
                     "which are reported per pixel." % (units,)
                 )
-            return label.replace(" m^-1", " pixel^-1")
+            return label.replace(" m^-1", " %s^-1" % self.length_units)
         return label
 
     # ---------------------------------------------------------------- diagnostics
@@ -498,43 +513,12 @@ class GridSpec:
                 "slope; bin on physical |k| instead (units != 'pixel')." % aspect
             )
 
-        if self.kind == "latlon":
-            lats = self.latitudes()
-            dxs = self.radius_m * torch.cos(torch.deg2rad(lats)) * math.radians(self.dx)
-            lo, hi = float(torch.min(dxs)), float(torch.max(dxs))
-            mid = 0.5 * (lo + hi)
-            variation = 100.0 * (hi - lo) / mid if mid > 0 else float("inf")
-            info["dx_variation_pct"] = variation
-            info["dx_metres_min"] = lo
-            info["dx_metres_max"] = hi
-            info["lat_range_deg"] = (float(torch.min(lats)), float(torch.max(lats)))
-            if variation > LATLON_DX_VARIATION_WARN_PCT:
-                info["warnings"].append(
-                    "The zonal metric varies by %.1f%% across this lat/lon patch "
-                    "(%.0f m at one edge, %.0f m at the other). Fourier analysis uses a "
-                    "single representative dx at the mean latitude, so spectral results "
-                    "carry an error of that order. Regrid to an equal-area or conformal "
-                    "projection, or use a narrower latitude band, before quoting a slope."
-                    % (variation, lo, hi)
-                )
+        self.geometry.anisotropy(self, info)
         return info
 
     def describe(self) -> str:
         """One-line human-readable summary, for provenance records and error messages."""
-        if self.kind == "pixel":
-            return "pixel grid %dx%d (dimensionless; lengths are array indices)" % self.shape
-        if self.kind == "cartesian":
-            return "cartesian grid %dx%d, dy=%.1f m, dx=%.1f m" % (
-                self.shape[0], self.shape[1], self.dy, self.dx)
-        lats = self.latitudes()
-        return (
-            "latlon grid %dx%d, lat %.3f..%.3f deg (dlat=%.4f), lon %.3f..%.3f deg "
-            "(dlon=%.4f), R=%.1f m, dy=%.0f m, dx=%.0f m at mean latitude"
-            % (self.shape[0], self.shape[1], float(lats[0]), float(lats[-1]), self.dy,
-               self.lon0, self.lon0 + self.dx * (self.width - 1), self.dx,
-               self.radius_m, self.representative_dy_metres(),
-               self.representative_dx_metres())
-        )
+        return self.geometry.describe(self)
 
     def to_provenance(self) -> Dict[str, Any]:
         """JSON-serialisable record, so a grid round-trips through a lineage node (E5)."""
@@ -547,20 +531,19 @@ class GridSpec:
             "variable_units": self.variable_units,
             "description": self.describe(),
         }
-        if self.kind == "latlon":
-            record.update({"lat0": self.lat0, "lon0": self.lon0, "radius_m": self.radius_m})
+        if self.params:
+            record["params"] = {k: v for k, v in self.params}
+        record.update(self.geometry.provenance(self))
         return record
 
     @classmethod
     def from_provenance(cls, record: Dict[str, Any]) -> "GridSpec":
         """Inverse of :meth:`to_provenance`."""
         kind = record["kind"]
-        shape = tuple(record["shape"])
-        if kind == "pixel":
-            return cls.pixel(shape, variable_units=record.get("variable_units"))
-        if kind == "cartesian":
-            return cls.cartesian(shape, record["dy"], record["dx"],
-                                 variable_units=record.get("variable_units"))
-        return cls.latlon(shape, record["lat0"], record["dy"], record["lon0"], record["dx"],
-                          radius_m=record.get("radius_m", EARTH_RADIUS_M),
-                          variable_units=record.get("variable_units"))
+        fields = dict(kind=kind, shape=tuple(record["shape"]),
+                      dy=record["dy"], dx=record["dx"],
+                      variable_units=record.get("variable_units"))
+        if record.get("params"):
+            fields["params"] = record["params"]
+        fields.update(geometry_for(kind).rebuild(record))
+        return cls(**fields)
