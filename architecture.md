@@ -1158,6 +1158,66 @@ cannot hold (an array, a tensor, a `GridSpec`) replaced by its type name rather 
 key with no value reads as a key with no content. `provenance_keys` is unchanged, and no
 atmospheric receipt passes through this function.
 
+### 3.6m The vertical coordinate is declared, and pressure is one instance (`src/core/level_axis.py`, TG1.5, `ed-dev`)
+
+The last Phase G1 task, and the last item in section 2.2's list. Three places carried a
+vertical level and no two agreed on how: `LevelBank` was keyed on `Dict[float, ...]` where the
+float was hectopascals, `ScaleSignature` carried a field named `level_hpa`, and
+`CoefficientField.level` carried a bare number with no units at all. The unit was in an
+attribute name, in a docstring, and nowhere.
+
+**The part that was not cosmetic.** `LevelBank.vertical_offsets` decided direction with
+`"upward" if upper < lower else "downward"` - right for pressure, right for depth, and exactly
+backwards for height or altitude. That is the one place in the tree that reports the *direction*
+of a vertical precursor relationship, which is the sign distinguishing an upper-level trough
+from a surface one. Nothing shipped wrong, because no height axis exists; the point is that
+nothing could have gone right either, and the rule sat at the site where the finding is made.
+
+A `LevelCoordinate` declares two things and no more:
+
+| Field | What it decides |
+|---|---|
+| `units` | what the number means; a coordinate with no units is refused at construction |
+| `increases_upward` | which way along the axis is up - the whole content, and the reason depth and pressure agree with each other and disagree with height |
+
+`LEVEL_COORDINATES` registers `pressure_hpa`, `height_m` and `depth_m`; a fourth registers from
+outside `src/` and drives a whole bank. `LevelCoordinate.axis_spec()` returns a declared
+`level`-role `AxisSpec`, so the roadmap's phrase is literal rather than nominal - the same spec
+type TG1.1 resolves and TG1.4's `StructuredSample` accepts.
+
+**Ordering and direction are separate, and both are recorded.** Levels are still ordered by
+ascending coordinate value, because that is what `LevelBank` already did and changing it would
+reorder the stacked tensor of every existing bank. Which end of that order is the top is then
+the coordinate's business: `summary()` carries `ascending_order_runs`, so a reader never has to
+know the convention to read the result.
+
+**The declaration travels with the number.** `zarr_source`'s cached reader stamps
+`level_axis: pressure_hpa` on each frame - it selected an ERA5 pressure level by name, so it is
+the one place entitled to declare the coordinate. `decompose_sequence` reads it from the
+sequence metadata by the same rule it already read `level`, `decompose_levels` stamps every
+field in a bank, and `scale_signature` carries it onto the signature. A level that arrives
+without a coordinate reports `level_units: None` rather than being assumed to be pressure.
+
+**`level_hpa` survives as a property, and it is now a claim that can be wrong.** "The 850-hPa
+signature" is how the atmospheric line talks, and removing the spelling would make every reader
+carry the axis check itself. It refuses a non-pressure axis rather than returning `None`,
+because a `None` there would read as "this signature has no level" about a signature that has
+one.
+
+**One correctness change beyond the rename.** The streaming signature refused frame-to-frame
+drift in grid, coordinates, variable, level and units. The vertical coordinate now joins that
+list: 500 on a pressure axis and 500 on a height axis are different frames, and a record that
+switched axis partway would have passed every other check, because the number never moved.
+
+**Receipt keys changed, deliberately and for the first time in G1.** `levels_hpa` became
+`levels`, `from_level_hpa`/`to_level_hpa`/`offset_hpa` became `from_level`/`to_level`/`offset`
+with `level_units` beside them, and `ScaleSignature.summary()["level_hpa"]` became
+`level` + `level_axis` + `level_units`. TG0.1 explicitly deferred this rename to TG1.5, and
+this is where it lands. Nothing hashed moves: `analysis_config_sha256`, the artifact digests
+(which hash tensor bytes) and the frozen campaign hash are untouched, and `gate_run`,
+`gate_campaign`, `cds_source`, `era5_overlap` and `regional_forecast` keep their own
+`level_hpa` vocabulary because section 2.2 lists them as permanently atmospheric.
+
 ### 3.8 Grid Geometry and Metric-Aware Operators (`src/physical_core/grid.py`, `operators.py`)
 
 Added in T3.5.13 (defect D13, standard E3). `GridSpec` is the physical metric attached to
@@ -2502,6 +2562,7 @@ able to sit three slices out of date.
 | `test_boundary_synthetic.py` | 8 | boundary treatments, windowing, synthetic generators and independent Euclidean-ring oracle |
 | `test_cds_source.py` | 14 | T5.2c monthly CDS planning/CLI, grid-alignment/server-snap refusals, network consent, atomic resume, shard integrity, conservative storage refusal, bounded Zarr publication, plus PASS/FAIL independent-route receipt publication, replay and tamper refusal |
 | `test_geometry_registry.py` | 20 | TG1.2 geometry registry: the three builtins' metrics, crops, resamples and provenance unchanged; capability-driven `is_physical`/`length_units`/`latitudes`; a fourth geometry (`polar_scan`) registered from the test module with a non-uniform, non-spherical metric; the Cartesian Laplacian refusing it; `latitude`/`longitude` recognised as a sphere |
+| `test_level_axis.py` | 19 | TG1.5 vertical coordinates: the registry and its sense of up, a height bank labelling its offsets the opposite way to pressure, a fourth coordinate registered from the test module, the declaration travelling from reader to signature, `level_hpa` refusing a non-pressure axis, and the pressure arithmetic unchanged |
 | `test_lag_policy_registry.py` | 21 | TG1.3 lag-admissibility policies: the capability table, a fourth policy (`instrument_response`) registered from the test module with a per-channel floor, the advective arithmetic and fingerprint unchanged, the declared floor now reaching the sweep, D58, the replication gate refusing a floor from the wrong policy |
 | `test_task_randomness.py` | 15 | D55 per-task streams: torch value continuity with the old global seeding, stream advance, thread isolation of the context binding, release on failure, `require` refusal, `add_noise` ambient fallback and labelling, D57 seed pass-through, `enable_determinism` scope reporting |
 | `test_axis_roles.py` | 38 | TG1.1 declared axis roles: legacy arrangements unchanged, the three resolution bases in provenance, declaration beating a contradicting name, refusal of inference for a domain-general adapter, hint registry and collisions, D56 coordinate-slicing fix |
@@ -2545,7 +2606,7 @@ able to sit three slices out of date.
 | `test_wavelet_bank.py` | 27 | T4B.2 expansion through the engine's own parameter matrix, the 1,000-combination guard, decompose_bank / extract_scale_signature, the vertical-bank refusals |
 | `test_transforms.py` | 13 | fft/dct/dwt/dtcwt/hybrid round trips; D1 recorded as a strict xfail |
 | `test_zarr_source.py` | 59 | R13 geometry, chunk-hostility, byte counting, streaming content identity, exact chunk-bounded frame reader, cache/provenance round trip, NetCDF engine and HTTP surface |
-| **total** | **1052** | |
+| **total** | **1071** | |
 
 ### 7.2h A surrogate null that was not the null it claimed (T4C.5)
 

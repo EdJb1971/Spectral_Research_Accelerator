@@ -41,6 +41,7 @@ from dataclasses import asdict, dataclass, field as dc_field
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 from src.core.errors import DataSourceError, FieldTooSmallError, InvalidParameterError
+from src.core.level_axis import PRESSURE_HPA
 
 # --------------------------------------------------------------------------- catalogue
 
@@ -1016,6 +1017,11 @@ class CachedFieldReader:
             metadata={
                 "variable": self.variable,
                 "level": self.level_hpa,
+                # TG1.5: the unit travels with the number from the one place that
+                # knows it. This reader selects an ERA5 pressure level by name, so it
+                # is entitled to declare the coordinate; nothing downstream has to
+                # infer hPa from an attribute name.
+                "level_axis": PRESSURE_HPA,
                 "units": self.units,
                 "source_content_hash": self.source_provenance["content_hash"],
                 "source_coordinate_sha256": self.source_provenance["coordinate_sha256"],

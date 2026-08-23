@@ -20,6 +20,7 @@ from typing import Any, Callable, Dict, NamedTuple, Optional
 import torch
 
 from src.core.errors import MissingParameterError
+from src.core.level_axis import PRESSURE_HPA
 from src.core.registry import Registry
 from src.analysis_engine.decomposition import ErrorDecompositionEngine
 from src.analysis_engine.diagnostics import SpectralSpatialAnalysisEngine
@@ -571,6 +572,9 @@ def decompose_bank(args: Dict[str, Any], device: torch.device) -> Dict[str, Any]
         field = select_orientations(field, combination.get("orientations"))
         if level_hpa is not None:
             field.level = float(level_hpa)
+            # TG1.5: the sweep parameter is named in hectopascals, so the field it
+            # stamps declares the pressure coordinate rather than leaving a bare number.
+            field.level_axis = PRESSURE_HPA
         handle = store.put(field, name="bank_%s_l%s" % (family, combination.get("levels")))
         results.append({
             "wavelet_family": family,

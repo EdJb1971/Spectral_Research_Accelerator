@@ -86,7 +86,11 @@ are from `src/`, excluding tests.
   fallback, so `latitude`/`longitude` matched neither and a split returned a coordinate vector
   that no longer described its own data (**D56**).
 * **`LevelBank(banks: Dict[float, ...])`** keys on pressure in hPa; `ScaleSignature.level_hpa` is
-  a typed atmospheric field on an otherwise generic record.
+  a typed atmospheric field on an otherwise generic record. **Localised in TG1.5**
+  (`src/core/level_axis.py`), and here too the audit named the naming problem and missed the
+  arithmetic one underneath it: `vertical_offsets` decided `"upward" if upper < lower`, which
+  is a fact about pressure sitting at the one site that reports the direction of a vertical
+  precursor relationship. Right for pressure, right for depth, backwards for height.
 * **`support_floor(..., advection_speed_m_s)`** is the deepest conceptual assumption, not merely
   a naming one. Rule R4's minimum admissible lag is derived from advective transport. A domain
   with no propagation speed has no such floor and needs a different admissibility rule. This is
@@ -396,10 +400,11 @@ defines them, and that is where the abstraction is far more likely to break.
 
 ---
 
-### Phase G1 — The abstraction audit
+### Phase G1 — The abstraction audit — **COMPLETE**
 
 Localise the atmospheric assumptions named in §2.2. **No new science.** Every task is a refactor
-under the bit-identical-receipt criterion.
+under the bit-identical-receipt criterion. All five tasks are done; the phase's answer is
+written up under *Phase G1 closed* below.
 
 **TG1.1 Axis roles (E14) - DONE.** Name-based axis inference is now one *registered*
 convention behind a declaration, in `src/core/axes.py`. `resolve_axis_roles` applies three
@@ -584,14 +589,90 @@ actually blocked was the *habit* of routing every domain through the field type 
 Removing an obstacle here meant building a second door, not widening the first, and the type
 that was said to be in the way turned out not to be on the path at all.
 
-**TG1.5 Level as a declared axis.** `LevelBank`'s `Dict[float, ...]` and
-`ScaleSignature.level_hpa` become a declared `level`-role axis with units. Pressure becomes one
-instance.
+**TG1.5 Level as a declared axis - DONE.** `src/core/level_axis.py` holds
+`LEVEL_COORDINATES`, and `pressure_hpa`, `height_m` and `depth_m` are its first three entries.
+A `LevelCoordinate` declares its units and `increases_upward`, and nothing else.
+`LevelCoordinate.axis_spec()` returns a declared `level`-role `AxisSpec`, the same type TG1.1
+resolves and TG1.4's `StructuredSample` accepts, so "a declared level-role axis with units" is
+literal here rather than nominal.
+
+**The assumption was again deeper than the bullet.** Three sites carried a level and no two
+agreed how: `LevelBank` keyed on hPa, `ScaleSignature.level_hpa` had the unit in the attribute
+name, and `CoefficientField.level` had no unit anywhere. But the load-bearing line was
+`vertical_offsets`, which decided direction by comparing two numbers - correct for pressure and
+depth, backwards for height, at the exact site that reports whether a precursor was above or
+below. Nothing shipped wrong because no height axis exists in the tree; nothing *could* have
+gone right either, and `test_a_height_bank_labels_its_offsets_the_other_way_round` is the test
+that could not have been written before this slice.
+
+**The declaration travels with the number.** `zarr_source` stamps `level_axis` on the frame it
+reads, because selecting an ERA5 pressure level by name is what entitles a component to declare
+the coordinate; `decompose_sequence` reads it by the same rule it already read `level`;
+`decompose_levels` stamps every field in a bank; `scale_signature` carries it onto the
+signature. A level that arrives without a coordinate reports no units rather than being assumed
+to be pressure - the honest report of a bare number, which is a real state of the tree.
+
+*   **`level_hpa` survives as a property that can refuse.** "The 850-hPa signature" is how the
+    atmospheric line talks. It now refuses a non-pressure axis rather than returning `None`,
+    because a `None` there would read as "this signature has no level" about one that has a
+    level in metres.
+*   **One correctness change beyond the rename.** The streaming signature refused frame-to-frame
+    drift in grid, coordinates, variable, level and units. The vertical coordinate joins that
+    list: 500 on a pressure axis and 500 on a height axis are different frames, and a record
+    that switched partway would have passed every other check because the number never moved.
+*   **Receipt keys changed, deliberately, for the first time in G1.** `levels_hpa` became
+    `levels`; `from_level_hpa`/`to_level_hpa`/`offset_hpa` became `from_level`/`to_level`/
+    `offset` with `level_units` beside them; `ScaleSignature.summary()["level_hpa"]` became
+    `level` + `level_axis` + `level_units`. TG0.1 deferred exactly this rename to TG1.5 and this
+    is where it lands. Nothing hashed moves - `analysis_config_sha256`, the artifact digests
+    and the frozen campaign hash are untouched - and `gate_run`, `gate_campaign`, `cds_source`,
+    `era5_overlap` and `regional_forecast` keep their own `level_hpa` vocabulary, because
+    section 2.2 lists them as permanently atmospheric and a rename there would be generality
+    theatre.
+
+---
 
 **Exit criterion.** The atmospheric line runs bit-identically, and every assumption in §2.2 is
 either registered, declared, or documented as an accepted limit on generality. **Any assumption
 that resists localisation is written up as a finding** — that is a real answer about the
 abstraction, not a failure of the phase.
+
+### Phase G1 closed
+
+**Against the exit criterion.** The atmospheric line runs bit-identically in every sense that
+was ever claimed for it: the same numbers, the same `analysis_config_sha256`, the same artifact
+digests, the same frozen campaign hash. Every assumption in section 2.2 is now registered,
+declared, or recorded as an accepted limit:
+
+| Assumption | Outcome |
+|---|---|
+| `PhysicalField` is strictly 2D | **Answered in TG1.4** by a sibling spine. `PhysicalField` untouched and still refusing. |
+| `GridSpec.kind` is a closed enum | **Registered in TG1.2**, with capabilities. |
+| Axis roles inferred from names | **Declared in TG1.1**, with the basis of every assignment recorded. |
+| `LevelBank` / `level_hpa` | **Declared in TG1.5**, pressure one registered coordinate of three. |
+| `support_floor(..., advection_speed_m_s)` | **Registered in TG1.3** as one lag policy of three. |
+| `BANK_FAMILIES` hardcoded tuple | Registered in TG0.4. |
+| `GateProtocol`'s measure allow-list | Registered in TG0.3. |
+| `cds_source`, `era5_overlap`, `zarr_source`, `regional_forecast`, `gate_campaign`, `forecasting/` | Accepted limit: permanently atmospheric, and left so deliberately. |
+
+**Four numbered defects, an unreachable refusal, and a pattern in where they were.** D55, D56,
+D57 and D58, plus a `require_declared` check in TG1.4's first draft that could never fire, were
+all found by *executing* a generalisation and never by reading the code. Three of them sat
+inside sites the section 2.2 audit had already named and read: the axis-name lists (D56), the
+geometry enum's `else` branch, and the advective floor (D58). TG1.5 repeated it once more - the
+audit named `LevelBank`'s pressure keys and did not see the direction rule underneath them. The
+pattern is consistent enough to state as the phase's answer: **an assumption is visible where it
+is written down and invisible where it is used, and only running the code crosses that gap.**
+Standard E16 is the general form.
+
+**Is the abstraction real?** On the evidence of G1: yes, and less of it was load-bearing than
+the audit believed. Four of the five obstacles were localised without weakening anything, and
+the largest one - `PhysicalField` - turned out not to be on the path at all. What was genuinely
+atmospheric was smaller and sharper than expected: the advective lag floor (a real physical
+assumption, now one registered policy among several) and the vertical direction convention (a
+real fact about pressure, now declared). Neither resisted localisation. The honest caveat is
+that every second domain exercised so far is synthetic, so G1 has shown the machinery is not
+atmosphere-shaped; it has not yet shown that a real second archive fits it.
 
 ---
 

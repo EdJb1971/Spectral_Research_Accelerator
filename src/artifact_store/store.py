@@ -389,6 +389,7 @@ class ArtifactStore:
             native=None,
             config=record.get("config") or {},
             level=record.get("level"),
+            level_axis=record.get("level_axis"),
             metadata={**(record.get("metadata") or {}), "restored_from_artifact": True})
 
     def exists(self, handle_or_ref) -> bool:
@@ -463,6 +464,7 @@ def _coerce(value: Any) -> Tuple[np.ndarray, str, Dict[str, Any], Dict[str, np.n
             "resampled_to_parent": value.resampled_to_parent,
             "native_shapes": {str(k): list(v) for k, v in value.native_shapes.items()},
             "level": value.level,
+            "level_axis": value.level_axis,
             "config": dict(value.config),
             "metadata": dict(value.metadata),
         })

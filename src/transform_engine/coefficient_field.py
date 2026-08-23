@@ -38,6 +38,7 @@ import torch
 
 from src.core.errors import (FieldTooSmallError, InvalidParameterError, ShapeMismatchError,
                              UnknownNameError)
+from src.core.level_axis import PRESSURE_HPA, coordinate_for, units_of
 from src.physical_core.field import PhysicalField
 from src.physical_core.grid import GridSpec
 from src.physical_core.sequence import FieldSequence
@@ -84,6 +85,9 @@ class CoefficientField:
         native: Optional[List[Dict[str, Any]]] = None,
         config: Optional[Dict[str, Any]] = None,
         level: Optional[float] = None,
+        # TG1.5: which vertical coordinate `level` is a value of. `None` means nobody
+        # declared one, which is reported as such rather than assumed to be pressure.
+        level_axis: Optional[str] = None,
         metadata: Optional[Dict[str, Any]] = None,
     ) -> None:
         if not isinstance(data, torch.Tensor):
@@ -134,6 +138,9 @@ class CoefficientField:
         self.resampled_to_parent = bool(resampled_to_parent)
         self.native_shapes = dict(native_shapes or {})
         self.level = level
+        if level_axis is not None:
+            coordinate_for(level_axis)  # refuse an unregistered vertical coordinate
+        self.level_axis = None if level_axis is None else str(level_axis)
         self.config = dict(config or {})
         self.metadata = dict(metadata or {})
         self._native = native
@@ -219,7 +226,7 @@ class CoefficientField:
             native_shapes={self.scales[i]: self.native_shapes[self.scales[i]]
                            for i in s_idx if self.scales[i] in self.native_shapes},
             native=None,  # a subset cannot be inverted; see reconstruct()
-            config=self.config, level=self.level,
+            config=self.config, level=self.level, level_axis=self.level_axis,
             metadata={**self.metadata, "subset_of": "CoefficientField"})
 
     # ------------------------------------------------------------------ energy
@@ -455,6 +462,8 @@ class CoefficientField:
             "dtype": str(self.data.dtype),
             "source_variable": self.source_variable,
             "level": self.level,
+            "level_axis": self.level_axis,
+            "level_units": units_of(self.level_axis),
             "grid": self.grid.to_provenance(),
             "resampled_to_parent": self.resampled_to_parent,
             "config": dict(self.config),
@@ -613,6 +622,10 @@ def decompose_sequence(
         native=native if keep_native else None,
         config={"family": family, **config},
         level=sequence.metadata.get("level"),
+        # TG1.5: the coordinate travels with the number, from the reader that knew it. Read
+        # from the same place as `level` and by the same rule, so a sequence that carries one
+        # and not the other is reported as exactly that rather than assumed to be pressure.
+        level_axis=sequence.metadata.get("level_axis"),
         metadata={"n_source_frames": len(sequence),
                   "source_units": sequence.units,
                   "is_simulated": sequence.metadata.get("is_simulated"),
@@ -630,7 +643,7 @@ def decompose_field(field: PhysicalField, family: str = "swt",
 # --------------------------------------------------------------------------- level banks
 
 class LevelBank:
-    """Per-pressure-level `CoefficientField`s that share a grid and a time axis (T4B.4).
+    """`CoefficientField`s at several levels of one declared vertical axis (T4B.4, TG1.5).
 
     **Why level is a bank dimension and not a filter.** The most famous precursor relationship
     in synoptic meteorology is vertical: an upper-level trough preceding surface cyclogenesis.
@@ -643,16 +656,26 @@ class LevelBank:
     independently, and the vertical relationship is carried as an edge attribute by the
     constellation work in 4E. A 3D transform would be a different and much more expensive
     object, and calling this one 3D would misdescribe what it computes.
+
+    **The vertical coordinate is declared (TG1.5).** `level_axis` names a registered
+    `LevelCoordinate`, which supplies the units and - the part that is not cosmetic - which
+    direction along the axis is up. It defaults to `pressure_hpa` because every caller in the
+    tree is atmospheric and the default is recorded in `summary()`, but the direction of a
+    vertical offset is now read from the coordinate rather than assumed. A bank of heights
+    declares `height_m` and gets its offsets labelled the right way round.
     """
 
     def __init__(self, banks: Dict[float, CoefficientField],
-                 metadata: Optional[Dict[str, Any]] = None) -> None:
+                 metadata: Optional[Dict[str, Any]] = None,
+                 level_axis: str = PRESSURE_HPA) -> None:
         if not banks:
             raise InvalidParameterError(
-                "banks", {}, "at least one pressure level. An empty bank has no grid and no "
+                "banks", {}, "at least one level. An empty bank has no grid and no "
                              "time axis to validate anything else against")
 
-        self.levels: List[float] = sorted(float(k) for k in banks)
+        self.level_axis = str(level_axis)
+        self.coordinate = coordinate_for(self.level_axis)
+        self.levels: List[float] = list(self.coordinate.ordered(banks))
         self.banks: Dict[float, CoefficientField] = {float(k): v for k, v in banks.items()}
 
         reference = self.banks[self.levels[0]]
@@ -677,13 +700,21 @@ class LevelBank:
                     % (self.levels[0], reference.wavelet_family))
         self.metadata = dict(metadata or {})
 
+    @property
+    def level_units(self) -> str:
+        return self.coordinate.units
+
+    def axis_spec(self, name: str = "level"):
+        """This bank's vertical axis as a declared `level`-role `AxisSpec` (TG1.1)."""
+        return self.coordinate.axis_spec(name)
+
     def __len__(self) -> int:
         return len(self.levels)
 
     def at_level(self, level: float) -> CoefficientField:
         value = float(level)
         if value not in self.banks:
-            raise UnknownNameError("pressure level", level,
+            raise UnknownNameError("level (%s)" % self.coordinate.units, level,
                                    ["%g" % lev for lev in self.levels])
         return self.banks[value]
 
@@ -694,10 +725,12 @@ class LevelBank:
     def vertical_offsets(self) -> List[Dict[str, Any]]:
         """Every ordered level pair with its signed offset - the 4E edge attribute.
 
-        Signed and in hPa: "500 hPa relative to 850 hPa" is `-350`, i.e. *above*, and the sign
-        is what distinguishes an upper-level precursor from a surface one. Pressure decreases
-        upward, so a negative offset means higher in the atmosphere, and that is recorded
-        explicitly rather than left to the reader.
+        Signed and in the axis's own units: "500 hPa relative to 850 hPa" is `-350`, i.e.
+        *above*, and the sign is what distinguishes an upper-level precursor from a surface
+        one. **Which sign means up is the coordinate's business, not this method's.** Before
+        TG1.5 the rule was written here as `"upward" if upper < lower`, which is right for
+        pressure and for depth and backwards for height - a hardcoded atmospheric convention
+        sitting at the one place that reports the direction of a vertical relationship.
         """
         pairs = []
         for lower in self.levels:
@@ -705,44 +738,55 @@ class LevelBank:
                 if lower == upper:
                     continue
                 pairs.append({
-                    "from_level_hpa": lower,
-                    "to_level_hpa": upper,
-                    "offset_hpa": upper - lower,
-                    "direction": "upward" if upper < lower else "downward",
+                    "from_level": lower,
+                    "to_level": upper,
+                    "offset": self.coordinate.offset(lower, upper),
+                    "level_units": self.coordinate.units,
+                    "direction": self.coordinate.direction(lower, upper),
                 })
         return pairs
 
     def to_tensor(self) -> torch.Tensor:
-        """`(level, time, scale, orientation, y, x)`, levels ascending in pressure."""
+        """`(level, time, scale, orientation, y, x)`, levels ascending in the axis's units."""
         return torch.stack([self.banks[lev].data for lev in self.levels], dim=0)
 
     def summary(self) -> Dict[str, Any]:
         return {
             "type": "LevelBank",
-            "levels_hpa": list(self.levels),
+            "levels": list(self.levels),
             "n_levels": len(self.levels),
             "shape_per_level": list(self.reference.shape),
             "wavelet_family": self.reference.wavelet_family,
             "scope": ("2D decomposition per level, not a 3D wavelet transform: no vertical "
                       "structure is resolved within a decomposition, and the vertical "
                       "relationship is carried as a cross-level edge attribute"),
-            "vertical_offsets_hpa": sorted({p["offset_hpa"]
-                                            for p in self.vertical_offsets()}),
+            "vertical_offsets": sorted({p["offset"] for p in self.vertical_offsets()}),
             "per_level": {"%g" % lev: self.banks[lev].summary() for lev in self.levels},
             "metadata": dict(self.metadata),
+            **self.coordinate.describe(self.level_axis),
         }
 
 
 def decompose_levels(sequences: Dict[float, FieldSequence], family: str = "swt",
                      config: Optional[Dict[str, Any]] = None,
-                     keep_native: bool = False) -> LevelBank:
-    """Decompose one sequence per pressure level into a `LevelBank` (T4B.4).
+                     keep_native: bool = False,
+                     level_axis: str = PRESSURE_HPA) -> LevelBank:
+    """Decompose one sequence per level into a `LevelBank` (T4B.4).
 
     `keep_native` defaults to `False` here and `True` for a single sequence: a bank over levels
     multiplies the native payload by the number of levels, and the reason to build one is
     cross-level analysis rather than reconstruction.
+
+    Each decomposed field is stamped with the level *and* the axis it belongs to, so a
+    `CoefficientField` pulled out of a bank still knows what its own number means.
     """
-    banks = {float(level): decompose_sequence(sequence, family=family, config=config,
-                                              keep_native=keep_native)
-             for level, sequence in sequences.items()}
-    return LevelBank(banks, metadata={"family": family, "config": dict(config or {})})
+    coordinate_for(level_axis)
+    banks = {}
+    for level, sequence in sequences.items():
+        field = decompose_sequence(sequence, family=family, config=config,
+                                   keep_native=keep_native)
+        field.level = float(level)
+        field.level_axis = level_axis
+        banks[float(level)] = field
+    return LevelBank(banks, metadata={"family": family, "config": dict(config or {})},
+                     level_axis=level_axis)
