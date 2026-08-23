@@ -823,6 +823,56 @@ effect sizes, surrogate means, Theiler windows and floors. **If that test ever f
 inference layer is not domain-independent and the cross-domain programme has been falsified
 at its cheapest point.**
 
+### 3.6f Domain declarations and the first non-atmospheric adapter (`src/core/domain.py`, `src/analysis_engine/domain_analysis.py`, `src/data_layer/tabular_source.py`, TG0.2, `ed-dev`)
+
+TG0.1 showed the inference layer *could* take channels from anywhere. TG0.2 sends some through
+it, and adds the safety the atmospheric path had for free.
+
+`DomainDeclaration` is what a source supplies besides data: declared axis roles (E14), declared
+violations drawn from a fixed vocabulary rather than free text (E15), a licence, and a **lag
+policy** (R21). It enforces rule R17 directly — a domain declaring no violations *and* no lag
+floor is refused, because a source that breaks nothing is a second variable, not a second
+domain, and is no evidence that the abstraction generalises. Licence is required rather than
+optional, since TG8.2 will make export refuse a product whose source terms forbid it and an
+optional field is one that gets left blank.
+
+Three lag policies: `advective` (the atmospheric path, delegating to `support_floor`),
+`declared` (an explicit floor in frames with a recorded basis), and `none` (no floor exists).
+Under `none`, `analyse_precedence` refuses **before any computation** and names the domain, the
+violation it declared and the two ways forward; `association_only` remains available and labels
+its own output, because the difference between association and precedence here is what the
+domain can justify, not what was computed. Lags below a declared floor are refused rather than
+dropped — a family silently reduced to its testable members is indistinguishable from one that
+had nothing to drop (R18).
+
+`domain_analysis.py` is deliberately thin: `cross_scale_dependency` runs **unmodified**, with
+the same surrogates, correction, power check and excluded-test accounting it applies to ERA5.
+If a second domain had needed its own inference path, the abstraction would already have failed.
+The one thing it adds at the boundary is a check that every channel declares its parent-axis
+footprint, so a non-wavelet adapter never meets `support_floor`'s message about parent-grid
+filter support. That footprint generalises honestly: a raw reading depends on exactly one
+sample, a ten-minute mean of one-minute data on ten. It is never guessed — the same reasoning
+that denies `advection_speed_m_s` a default.
+
+`tabular_source.py` reads a local delimited file — one clock column, one column per channel —
+into a `ChannelSeries` and its declaration, with a content hash and no network path at all. It
+refuses an irregular clock unless the domain declares `irregular_sampling`, refuses to sort a
+non-monotonic one, and refuses non-finite values rather than imputing them: interpolation
+upstream of a dependence estimator manufactures exactly the short-lag structure R4 exists to
+exclude.
+
+**Measured, on a record with no grid, no transform, no advection and no annual cycle.** Three
+AR(1) channels where `alpha` at `t` sets `gamma` at `t+3` and `beta` is a bystander: the
+unmodified sweep recovers `alpha->gamma@3` with **0.9985 nats** of excess against **0.1458** at
+lag 2 (the residue of alpha's own autocorrelation), implicates `beta` in nothing, and reports
+12 tests adequately powered under BY. On three seeds of independent AR(1) channels it returns
+**0 of 12** significant. The null returning null is the load-bearing half — T4C.3 already
+measured a naive lag test falsely rejecting 20 of 20 AR(1) records.
+
+**Boundary: no public dataset has been ingested.** This is offline-accepted infrastructure in
+the same sense `cds_source` was before any live transfer. Nothing here is evidence about any
+real-world domain.
+
 ### 3.8 Grid Geometry and Metric-Aware Operators (`src/physical_core/grid.py`, `operators.py`)
 
 Added in T3.5.13 (defect D13, standard E3). `GridSpec` is the physical metric attached to
@@ -2163,6 +2213,7 @@ able to sit three slices out of date.
 | `test_boundary_synthetic.py` | 8 | boundary treatments, windowing, synthetic generators and independent Euclidean-ring oracle |
 | `test_cds_source.py` | 14 | T5.2c monthly CDS planning/CLI, grid-alignment/server-snap refusals, network consent, atomic resume, shard integrity, conservative storage refusal, bounded Zarr publication, plus PASS/FAIL independent-route receipt publication, replay and tamper refusal |
 | `test_channel_series.py` | 14 | TG0.1 channel-series contract: signature/plain-series result equivalence, the two protocol tiers, R21's no-support refusal, clock and shape validation |
+| `test_tabular_domain.py` | 26 | TG0.2 non-atmospheric domain: planted-coupling recovery and AR(1) null through the unmodified sweep, R21/R17 refusals, declaration and adapter validation |
 | `test_coefficient_field.py` | 40 | T4B.1 acceptance: parent-grid alignment, perfect reconstruction per family, lineage-safe summary; DTCWT upsampling declared; LevelBank and level slicing (T4B.4) |
 | `test_documentation.py` | 19 | architecture, roadmap and proprietary named-licence boundary against the code/repository |
 | `test_dtcwt.py` | 28 | Kingsbury q-shift DTCWT: primitives vs reference, two oracles, orientation, shift invariance, D1 head-to-heads |
@@ -2199,7 +2250,7 @@ able to sit three slices out of date.
 | `test_wavelet_bank.py` | 27 | T4B.2 expansion through the engine's own parameter matrix, the 1,000-combination guard, decompose_bank / extract_scale_signature, the vertical-bank refusals |
 | `test_transforms.py` | 13 | fft/dct/dwt/dtcwt/hybrid round trips; D1 recorded as a strict xfail |
 | `test_zarr_source.py` | 59 | R13 geometry, chunk-hostility, byte counting, streaming content identity, exact chunk-bounded frame reader, cache/provenance round trip, NetCDF engine and HTTP surface |
-| **total** | **880** | |
+| **total** | **906** | |
 
 ### 7.2h A surrogate null that was not the null it claimed (T4C.5)
 

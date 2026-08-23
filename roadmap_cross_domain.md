@@ -276,19 +276,56 @@ that the accepted inference layer consumes labelled scalar time series with a va
 lag floor. G0 feeds it such series from a non-atmospheric source and runs the *existing*,
 *unmodified* gate.
 
-**TG0.1 The channel-series contract.** Extract the implicit contract behind
+**TG0.1 The channel-series contract - DONE.** Extract the implicit contract behind
 `ScaleSignature.to_matrix()` into an explicit, documented type — labelled channels, shared clock,
 validity mask, per-channel lag floor, provenance — that `ScaleSignature` then satisfies. No
 behaviour change.
 **Acceptance:** the ERA5 synthetic gate fixture produces a **bit-identical receipt** before and
 after. This is the acceptance criterion for every task in G0 and G1 and is not repeated below.
 
-**TG0.2 A non-atmospheric channel source.** One adapter producing the contract from a public
+**Met.** `src/core/channel_series.py` states the contract in two tiers, because the two
+consumers need different amounts: `ChannelGeometry` (labels, records, provenance - what a lag
+floor needs, with no data) and `ChannelSeriesLike` (plus `to_matrix` - what the sweep needs).
+`ScaleSignature` satisfies both through aliases and is otherwise untouched; record *keys* stay
+as they are, because they are published in every gate receipt. A test asserts that a
+`ChannelSeries` holding a signature's own numbers reproduces its `cross_scale_dependency`
+result exactly - config hash, p-values, effect sizes, surrogate means, Theiler windows, floors.
+
+The two-tier split was **forced by running the code**: `gate_campaign` audits the lag floor
+before any data exists and had been duck-typing that with a `SimpleNamespace`, in the same
+function whose grid handling produced D53.
+
+**D55 found here, not introduced here, and present on `master` identically.** `_run_one` seeds
+the process-global torch/numpy generators and `ThreadExecutor` workers share them. Measured: 10
+of 10 trials corrupted once the seed-to-draw window is held open by 10 ms of work; 0 of 80 when
+the task is microseconds long and the pool effectively serialises. Breaks E4 and re-opens D12
+for `execution.backend: thread` with `n_workers > 1`. Left **OPEN**: the fix changes seeded
+results on both lines.
+
+**TG0.2 A non-atmospheric channel source - DONE (offline).** One adapter producing the contract from a public
 dataset with no advection and no annual cycle. Declares its violations under E15, and therefore
 declares that it has **no geometric lag floor** — exercising R21's refusal path on the first day.
 **Acceptance:** `cross_scale_dependency` runs unmodified; the run either produces a corrected,
 surrogate-referenced, train/test-replicated result or an explanatory refusal naming the missing
 floor. Both outcomes are successes for G0. A silent number is a failure.
+
+**Met, and both outcomes are exercised.** `core/domain.py` supplies `DomainDeclaration` (axis
+roles, a fixed violation vocabulary, licence, lag policy) and enforces R17 by refusing a domain
+that declares no violations and no floor. `analysis_engine/domain_analysis.py` refuses a
+precedence claim under lag policy `none` before any computation, naming the domain, its declared
+violation and the two ways forward, while leaving `association_only` available and
+self-labelling. `data_layer/tabular_source.py` reads a local delimited record with a content
+hash and no network path.
+
+Measured on three AR(1) channels with no grid, transform, advection or cycle, where `alpha` at
+`t` sets `gamma` at `t+3`: the **unmodified** sweep recovers `alpha->gamma@3` at **0.9985 nats**
+excess against **0.1458** at lag 2, implicates the bystander channel in nothing, and reports 12
+tests adequately powered under BY. On three seeds of independent AR(1) channels it returns
+**0 of 12** significant.
+
+**No public dataset has been ingested.** Offline-accepted infrastructure, in the same sense
+`cds_source` was before any live transfer. Nothing here is evidence about a real-world domain,
+and pointing the adapter at an archive is a separate act that must also record its licence.
 
 **TG0.3 The negative control.** The same adapter over a record with no cross-channel structure.
 **Acceptance:** FAIL, not INVALID, and not PASS. An adequately powered absence must be reported
