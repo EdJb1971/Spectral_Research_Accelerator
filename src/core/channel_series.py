@@ -339,9 +339,27 @@ def split_channel_series(series: "ChannelSeries", *, train_ratio: float,
             "test": take(test_start, n, "test")}
 
 
+def _recordable(value: Any, depth: int = 0) -> Any:
+    """A provenance value a receipt can hold, or a note of what was left out.
+
+    A lineage record must not hold arrays, tensors or a `GridSpec`; it must also not silently
+    drop what it cannot hold, because a key with no value reads as a key with no content.
+    Anything unrepresentable is replaced by its type name, so a reader can see that something
+    was there and what kind of thing it was.
+    """
+    if isinstance(value, (str, bool, int, float)) or value is None:
+        return value
+    if depth < 3 and isinstance(value, Mapping):
+        return {str(key): _recordable(item, depth + 1) for key, item in value.items()}
+    if depth < 3 and isinstance(value, (list, tuple)) and len(value) <= 64:
+        return [_recordable(item, depth + 1) for item in value]
+    return "<%s>" % type(value).__name__
+
+
 def from_channel_series(series: ChannelSeriesLike) -> Dict[str, Any]:
     """Summarise any `ChannelSeriesLike` for a lineage record, without holding its arrays."""
     records = list(series.channel_records)
+    provenance = dict(series.provenance)
     return {
         "n_channels": len(list(series.channels)),
         "channels": [str(label) for label in series.channels],
@@ -349,5 +367,12 @@ def from_channel_series(series: ChannelSeriesLike) -> Dict[str, Any]:
                    if record.get("usable")],
         "with_declared_support": [str(record.get("scale")) for record in records
                                   if record.get("support_parent_px")],
-        "provenance_keys": sorted(str(key) for key in dict(series.provenance)),
+        "provenance_keys": sorted(str(key) for key in provenance),
+        # Added in TG1.4. `provenance_keys` alone said a key existed and not what it held,
+        # which was harmless while every producer's real record lived on the
+        # `DomainDeclaration` - and stopped being harmless when the sample spine put the
+        # reduction that produced the numbers on the *series*. Two reductions may legitimately
+        # emit the same gate measure, so a receipt that names only the measure cannot say which
+        # arithmetic it describes.
+        "provenance": {str(key): _recordable(value) for key, value in provenance.items()},
     }

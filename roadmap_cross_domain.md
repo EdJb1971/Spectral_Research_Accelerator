@@ -68,6 +68,10 @@ are from `src/`, excluding tests.
   single largest obstacle. It excludes 1D series, 3D volumes, irregular point sets and graphs,
   and everything above it inherits the constraint: `FieldSequence`, `CoefficientField`,
   `ScaleSignature`, the transform registry seam, `surrogate_null`.
+  **Answered in TG1.4** (`src/core/sample.py`), and not by relaxing it - `PhysicalField` is
+  untouched and still refuses. The obstacle was real but it was in the wrong place: nothing in
+  the accepted falsification layer wanted a *field*, and once a sample can be reduced to a
+  `ChannelSeries` a rank-3 domain runs the whole gate without a grid existing anywhere.
 * **`GridSpec.kind` is a closed enum** `{pixel, cartesian, latlon}` that raises otherwise — a
   direct violation of standard E1. Geometry is the one pluggable thing that never became
   pluggable. **Localised in TG1.2** (`src/physical_core/geometry.py`): a registry with declared
@@ -531,12 +535,54 @@ consistent enough to state plainly: **the refusals are written where the reader 
 them, and the assumptions live where the arithmetic happens.** Localising one does not
 localise the other, and only running the code shows the gap.
 
-**TG1.4 The sibling sample spine (E12).** A domain-general structured-sample type beside
-`PhysicalField`, for data that is not a 2D metric grid. `PhysicalField` is untouched. Adapters
-move a sample into the analysis spine when 2D diagnostics are required, exactly as the training
-spine already does.
-**Acceptance:** a test asserts `PhysicalField` still raises on non-2D input. The generalisation
-must not be reachable through the analysis object.
+**TG1.4 The sibling sample spine (E12) - DONE.** `src/core/sample.py` holds
+`StructuredSample`: an array of any rank whose axes are declared `AxisSpec`s, with a geometry
+deliberately absent. `PhysicalField` is untouched and a test asserts it still raises on `(16,)`,
+`(4,4,4)` and `(2,3,4,5)`.
+
+**Declaration is structural, not a check.** Roles resolve through TG1.1's registry with both
+inference stages off, and an `AxisSpec` cannot exist without a role, so no constructible sample
+has a guessed axis and `basis` is `declared` everywhere. An earlier draft called
+`require_declared` after construction; that check was unreachable, and an unreachable refusal is
+worse than none because it reads as protection. The refusal a caller actually meets is that a
+bare axis name is not a role.
+
+**The route to inference does not pass through `PhysicalField`.**
+`channel_series_from_samples` reduces each frame along its non-channel axes to one scalar per
+channel, giving the `ChannelSeries` that TG0.1 showed `cross_scale_dependency` actually
+consumes. Reductions are a registry, each declaring the gate measure it emits - load-bearing,
+because that name is what a protocol freezes and what R3 is adjudicated on: an unregistered
+measure is refused at build, and two reductions emitting one measure are refused rather than
+merged.
+
+**The bridge is one-way, narrow, and refuses rather than repairs.** `to_physical_field` requires
+exactly two axes, both declared `space`, in array order. A declaration whose spatial ordinals
+run against array order is refused, never transposed - a transposed field still looks like a
+field, and every orientation and anisotropy statistic taken from it would be wrong in a way
+nothing downstream can detect. `src.core` does not import `physical_core` at module scope, so a
+non-gridded domain does not pull in torch to declare an axis.
+
+**Acceptance met by execution, not by construction.** A three-band photometer whose frame is a
+`(band, detector, repeat)` block recovers a planted coupling through the unmodified sweep, finds
+nothing in the AR(1) control, and passes the unmodified replication gate with the floor its own
+declaration set. The pair is the test; a sample type without it is speculative generality with
+a docstring.
+
+*   **One change outside the new module, and the reason for it.** `from_channel_series`
+    published the *names* of a series' provenance keys and never their values - harmless while
+    every producer's real record lived on the `DomainDeclaration`, which travels into each
+    result whole. The sample spine puts the arithmetic on the *series*, and two reductions may
+    legitimately emit the same gate measure, so a receipt naming only the measure could not say
+    which arithmetic produced it. The lineage record now carries the values, with anything it
+    cannot hold named by type rather than dropped. No atmospheric receipt passes through this
+    function.
+
+**The finding.** The obstacle section 2.2 named was real, and it was in the wrong place.
+`PhysicalField`'s 2D constraint blocks nothing the falsification layer needs, because that layer
+was never shown a field - TG0.1 established it consumes labelled series. What the constraint
+actually blocked was the *habit* of routing every domain through the field type on the way in.
+Removing an obstacle here meant building a second door, not widening the first, and the type
+that was said to be in the way turned out not to be on the path at all.
 
 **TG1.5 Level as a declared axis.** `LevelBank`'s `Dict[float, ...]` and
 `ScaleSignature.level_hpa` become a declared `level`-role axis with units. Pressure becomes one

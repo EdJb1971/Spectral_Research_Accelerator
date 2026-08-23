@@ -1099,6 +1099,65 @@ complete sweep through it. It was chosen to be awkward on the axis the builtins 
 gives every channel the same number, and this one needs neither. A fourth policy that was
 `declared` under another name would have proved nothing.
 
+### 3.6l The sibling sample spine (`src/core/sample.py`, TG1.4, `ed-dev`)
+
+Section 2.2 of the cross-domain roadmap calls `PhysicalField`'s strict 2D constraint "the
+single largest obstacle" to a second domain, and standard E12 forbids relaxing it. TG1.4 is
+the demonstration that both hold at once. `StructuredSample` is an array of **any** rank whose
+axes are declared `AxisSpec`s, and it is not, and does not become, a field.
+
+**Declaration is structural here, not a check.** Axis roles resolve through TG1.1's registry
+with *both* inference stages switched off, and an `AxisSpec` cannot exist without a role - so
+there is no constructible sample whose roles were guessed, and `AxisResolution.basis` is
+``declared`` for every axis of every sample. That is the refusal the type exists for: an array
+whose axes are called `x` and `y` is not a field, because a field licenses per-metre gradients,
+radial binning and area weighting, and a domain with no metre must not acquire one by spelling.
+A sample therefore carries **no geometry at all**; one is asserted at the bridge, by a caller,
+and recorded as theirs.
+
+**The route into the accepted falsification layer does not pass through `PhysicalField`.**
+`channel_series_from_samples` reduces each frame along its non-channel axes to one scalar per
+channel, producing the `ChannelSeries` that TG0.1 showed `cross_scale_dependency` actually
+consumes. Rank, extra axes and the absence of a metric are all reduced away before the analysis
+layer sees anything. The reductions are a registry (`SAMPLE_REDUCTIONS`), and each declares the
+gate measure it emits - a capability that is load-bearing rather than decorative: the measure
+name is what a `GateProtocol` freezes and what rule R3 is adjudicated on, so a reduction
+emitting a name no measure registry knows is refused at build, and two reductions emitting one
+measure are refused rather than silently merged.
+
+**The bridge is one-way and narrow.** `StructuredSample.to_physical_field` is the counterpart
+of `training.py`'s batch boundary in the other direction. It requires exactly two axes, both
+declared ``space``, in array order, and refuses everything else with the condition that failed
+and a pointer to the path that works. Two properties follow, and both are asserted:
+
+*   Nothing in the analysis spine accepts a sample. The bridge is a method of the *sample*, so
+    the direction of the dependency is visible at the call site, and `src.core` does not import
+    `physical_core` at module scope - a non-gridded domain does not pull in torch to declare
+    an axis.
+*   A declaration whose spatial ordinals run against array order is **refused, never
+    transposed**. `PhysicalField` reads array dimension 0 as the row, so transposing here would
+    fix the array and leave every orientation and anisotropy statistic computed from it
+    silently wrong - the failure `NameHint.ordinal` prevents in TG1.1, one layer up.
+
+**Acceptance met, and deliberately not only by construction.** A three-band photometer whose
+frame is a ``(band, detector, repeat)`` block runs the unmodified sweep and the unmodified
+replication gate: the planted coupling is recovered, the AR(1) control is not, the gate returns
+PASS, and the floor that decided admissibility is the one the domain declared. The pair matters
+more than the single positive - a detector that finds a planted signal and also finds signal in
+autocorrelated noise has found nothing, and without it a sample type is speculative generality
+with a docstring. Alongside it, `PhysicalField` is asserted still to raise on shapes `(16,)`,
+`(4,4,4)` and `(2,3,4,5)`.
+
+**One change outside the new module.** `from_channel_series` published only the *names* of a
+series' provenance keys, never their values. That was harmless while every producer's record
+lived on the `DomainDeclaration`, which `describe()` carries into every result whole. The sample
+spine puts the arithmetic that produced the numbers on the *series*, and two reductions may
+legitimately emit the same gate measure - so a receipt naming only the measure could not say
+which arithmetic it described. The lineage record now carries the values, with anything it
+cannot hold (an array, a tensor, a `GridSpec`) replaced by its type name rather than dropped: a
+key with no value reads as a key with no content. `provenance_keys` is unchanged, and no
+atmospheric receipt passes through this function.
+
 ### 3.8 Grid Geometry and Metric-Aware Operators (`src/physical_core/grid.py`, `operators.py`)
 
 Added in T3.5.13 (defect D13, standard E3). `GridSpec` is the physical metric attached to
@@ -2448,6 +2507,7 @@ able to sit three slices out of date.
 | `test_axis_roles.py` | 38 | TG1.1 declared axis roles: legacy arrangements unchanged, the three resolution bases in provenance, declaration beating a contradicting name, refusal of inference for a domain-general adapter, hint registry and collisions, D56 coordinate-slicing fix |
 | `test_channel_series.py` | 14 | TG0.1 channel-series contract: signature/plain-series result equivalence, the two protocol tiers, R21's no-support refusal, clock and shape validation |
 | `test_domain_gate.py` | 18 | TG0.3 negative control: PASS/FAIL/INVALID on a non-atmospheric domain, false-positive calibration, R6 embargoed split, gate-measure registry |
+| `test_sample_spine.py` | 28 | TG1.4 sibling sample spine: a rank-3 domain through the unmodified sweep and replication gate, the planted/AR(1) pair, `PhysicalField` still refusing non-2D input, the one-way bridge and its transpose refusal, declaration-not-inference refusals, and a fourth reduction registered from the test module |
 | `test_tabular_domain.py` | 27 | TG0.2 non-atmospheric domain: planted-coupling recovery and AR(1) null through the unmodified sweep, R21/R17 refusals, declaration and adapter validation |
 | `test_coefficient_field.py` | 40 | T4B.1 acceptance: parent-grid alignment, perfect reconstruction per family, lineage-safe summary; DTCWT upsampling declared; LevelBank and level slicing (T4B.4) |
 | `test_documentation.py` | 19 | architecture, roadmap and proprietary named-licence boundary against the code/repository |
@@ -2485,7 +2545,7 @@ able to sit three slices out of date.
 | `test_wavelet_bank.py` | 27 | T4B.2 expansion through the engine's own parameter matrix, the 1,000-combination guard, decompose_bank / extract_scale_signature, the vertical-bank refusals |
 | `test_transforms.py` | 13 | fft/dct/dwt/dtcwt/hybrid round trips; D1 recorded as a strict xfail |
 | `test_zarr_source.py` | 59 | R13 geometry, chunk-hostility, byte counting, streaming content identity, exact chunk-bounded frame reader, cache/provenance round trip, NetCDF engine and HTTP surface |
-| **total** | **1024** | |
+| **total** | **1052** | |
 
 ### 7.2h A surrogate null that was not the null it claimed (T4C.5)
 
