@@ -89,7 +89,7 @@ def test_seed_bundle_records_its_own_derivation():
 # ============================================================== registry
 
 def test_every_benchmark_declares_gates_and_a_known_answer():
-    assert len(all_benchmarks()) >= 8
+    assert len(all_benchmarks()) >= 11
     for b in all_benchmarks():
         assert b.gates, "%s declares no gate" % b.name
         assert b.kind in ("field", "sequence")
@@ -173,7 +173,7 @@ def test_pending_gates_are_reported_not_hidden(suite_results):
     # transition is the point of the three-valued outcome: a gate becoming real should change
     # this number, and this test is what makes the change deliberate rather than incidental.
     assert counts["NOT_YET_RUNNABLE"] >= 1
-    assert counts["PASS"] >= 15
+    assert counts["PASS"] >= 19
     report = format_report(suite_results)
     assert "NOT_YET_RUNNABLE" in report
     assert "Gates defined but not yet enforceable" in report
@@ -187,6 +187,10 @@ def test_pending_gates_are_reported_not_hidden(suite_results):
         tracking = [c for c in suite_results[benchmark] if c.stage == "4D.tracking"]
         assert tracking and tracking[0].outcome is Outcome.PASS, (
             "4D.tracking must be enforced on %s, not pending" % benchmark)
+    audit = [c for c in suite_results["representation_null_field"]
+             if c.stage == "4E.representation_audit"]
+    assert audit and audit[0].outcome is Outcome.PASS, (
+        "TG2.4's representation audit must be enforced, not pending")
 
 
 def test_a_check_that_crashes_is_a_failure_not_an_error():

@@ -308,6 +308,141 @@ register_benchmark(Benchmark(
 ))
 
 
+# ------------------------------------------------- 5. structureless field, every lens
+
+#: A family-wise level over forty-five planes cannot be resolved by fewer. The audit refuses
+#: rather than quietly reporting at a level it cannot reach, so this number is load-bearing:
+#: 499 surrogates is a refusal, not a coarser answer.
+_AUDIT_SURROGATES = 999
+_AUDIT_SEED = 20260825
+
+#: 128 cells, not 256. Large enough that the dual-tree level-3 subbands still have a valid
+#: interior once their filters have taken six samples off every side, and small enough that
+#: a thousand decompositions of five representations run in a test suite.
+_AUDIT_N = 128
+
+
+def build_representation_null(bundle: SeedBundle, n: int = _AUDIT_N, hurst: float = 0.7,
+                              spacing_m: float = DEFAULT_SPACING_M) -> PhysicalField:
+    """The same scale-free fBm as benchmark 2, sized so every registered lens can be audited.
+
+    fBm rather than white noise on purpose. White noise has no structure *and* no
+    correlation, so a lens has very little to work with; fBm is smooth, correlated and
+    edge-bearing, which is exactly the material a boundary rule or a decimation phase can
+    turn into a localised artefact. It is the harder null, and the one rule R8 is about.
+    """
+    return build_fbm(bundle, n=n, hurst=hurst, spacing_m=spacing_m)
+
+
+def truth_representation_null(n: int = _AUDIT_N, hurst: float = 0.7,
+                              spacing_m: float = DEFAULT_SPACING_M) -> Dict[str, Any]:
+    return {
+        "hurst": hurst,
+        "has_organisation": False,
+        "expected_feature_count": 0,
+        "family_wise_alpha": 0.05,
+        "expected_uncovered_transforms": 0,
+        "minimum_planes_audited": 40,
+        "note": ("Scale-free by construction: no localised structure at any scale, so a "
+                 "feature reported in any plane of any registered representation was made "
+                 "by the representation and not found in the data (rule R8). The audit "
+                 "corrects for its own family, because forty-five planes tested at a "
+                 "nominal 0.05 each report something on roughly five structureless fields "
+                 "out of six."),
+    }
+
+
+@stage_check("4E.representation_audit")
+def _check_no_representation_manufactures_a_feature(field: PhysicalField,
+                                                    truth: Dict[str, Any]) -> CheckResult:
+    """**The false-positive floor for representations** (rule R8, roadmap TG2.4).
+
+    TG2.2 measured this floor on the raw array. This measures it on every plane of every
+    registered lens: the null is propagated *through* each representation, so an artefact
+    present in every realisation raises the cut instead of being reported, and the family of
+    planes is counted and paid for before any of them is read.
+
+    Three ways to pass without having looked, all of them failures here: a registered
+    transform with no plane builder (`uncovered`), a plane whose null nothing could exceed
+    (`vacuous`), and a plane whose valid interior is empty (refused, and struck from the
+    family). The report carries all three counts and the number of cells actually searched.
+    """
+    from src.core.domain import AxisSpec
+    from src.core.extraction import ExtractionField
+    from src.core.representation import audit_all
+
+    values = np.asarray(field.data.numpy(), dtype=np.float64)
+    axes = (AxisSpec("row", "space", units="cells", ordinal=0),
+            AxisSpec("col", "space", units="cells", ordinal=1))
+    frame = ExtractionField(
+        values=values, axes=axes, domain="synthetic", dataset="representation_null",
+        variable="amplitude", units=None, time=0.0, time_units="frames",
+        representation="identity")
+    report = audit_all(frame, alpha=float(truth["family_wise_alpha"]),
+                       n_surrogates=_AUDIT_SURROGATES, seed=_AUDIT_SEED)
+    summary = report.describe()
+    level = report.level
+    measured = {
+        "found": report.found,
+        "findings": summary["findings"],
+        "representations": summary["representations"],
+        "planes_audited": summary["planes_audited"],
+        "planes_refused": summary["planes_refused"],
+        "searchable_cells": report.searched,
+        "uncovered_transforms": summary["uncovered_transforms"],
+        "unauditable": summary["unauditable"],
+        "vacuous": summary["vacuous"],
+        "family_size": level.family_size,
+        "alpha_per_plane": level.alpha_per_plane,
+        "measured_fwer": level.measured_fwer,
+        "uncorrected_fwer": level.notes.get("uncorrected_fwer"),
+        "n_surrogates": _AUDIT_SURROGATES,
+    }
+    problems = []
+    if report.found:
+        problems.append("MANUFACTURED %d FEATURE(S) IN SCALE-FREE fBm: %s"
+                        % (report.found, summary["findings"]))
+    if summary["uncovered_transforms"]:
+        problems.append("registered transforms with no plane builder, so they were never "
+                        "audited: %s" % ", ".join(summary["uncovered_transforms"]))
+    if summary["planes_audited"] < int(truth["minimum_planes_audited"]):
+        problems.append("only %d planes could be audited, below the %d this benchmark "
+                        "expects; a clean result from too few planes is a pass earned by "
+                        "not looking"
+                        % (summary["planes_audited"], int(truth["minimum_planes_audited"])))
+    vacuous_audited = [p.plane.name for a in report.audits for p in a.audited_planes
+                       if p.vacuous]
+    if vacuous_audited:
+        problems.append("planes whose null nothing could exceed were counted as clean: %s"
+                        % ", ".join(vacuous_audited))
+    return CheckResult(
+        "4E.representation_audit",
+        Outcome.FAIL if problems else Outcome.PASS,
+        ("; ".join(problems)) if problems else
+        ("no feature in %d planes of %d representations, %d cells searched; family of %d "
+         "corrected to alpha %.4g per plane (measured FWER %.3f, %.3f uncorrected); %d "
+         "planes refused by name, %d transforms uncovered"
+         % (summary["planes_audited"], len(summary["representations"]), report.searched,
+            level.family_size, level.alpha_per_plane, level.measured_fwer,
+            level.notes.get("uncorrected_fwer", float("nan")),
+            summary["planes_refused"], len(summary["uncovered_transforms"]))),
+        measured)
+
+
+register_benchmark(Benchmark(
+    name="representation_null_field",
+    kind="field",
+    description=("Scale-free fBm audited through every registered representation; the "
+                 "false-positive floor rule R8 asks for."),
+    gates=("4E.representation_audit",),
+    build=build_representation_null,
+    known_answer=truth_representation_null,
+    checks=(_check_no_representation_manufactures_a_feature,),
+    params={"n": _AUDIT_N, "hurst": 0.7},
+    is_null=True,
+))
+
+
 # ------------------------------------------------------------------ 4. planted configuration
 
 def _gaussian_blob(n: int, cy: float, cx: float, sigma: float,

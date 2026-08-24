@@ -245,6 +245,13 @@ class NullCalibration:
     seed: int
     null_maxima: Tuple[float, ...]
     statistic: str = "frame_maximum"
+    #: The representation the surrogate ensemble was pushed *through* before the maxima were
+    #: taken, when the null was propagated rather than built where the numbers are read
+    #: (TG2.4). `None` means the ensemble and the observation are the same kind of array, so
+    #: the null hypothesis is the plain one. When it is set, the hypothesis is materially
+    #: different - it is about the representation of a structureless field, not about a
+    #: structureless field - and `describe()` says so rather than leaving a reader to assume.
+    propagated_through: Optional[str] = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "null_maxima", tuple(float(v) for v in self.null_maxima))
@@ -283,10 +290,14 @@ class NullCalibration:
             "null_max_min": float(arr.min()) if arr.size else None,
             "null_max_median": float(np.median(arr)) if arr.size else None,
             "null_max_max": float(arr.max()) if arr.size else None,
+            "propagated_through": self.propagated_through,
             "null_hypothesis": (
-                "no peak in this frame exceeds the strongest peak of a field with the same "
-                "power spectrum and randomised phases, at family-wise level %g over the "
-                "whole frame" % self.alpha),
+                "no peak in this frame exceeds the strongest peak of %s, at family-wise "
+                "level %g over the whole frame"
+                % (("%s applied to a field with the same power spectrum and randomised "
+                    "phases" % self.propagated_through) if self.propagated_through
+                   else "a field with the same power spectrum and randomised phases",
+                   self.alpha)),
         }
 
 
@@ -330,14 +341,54 @@ def calibrate(
 
     arr = np.asarray(values, dtype=np.float64)
     ensemble = surrogate_module.generate(arr, method=method, n=n, seed=int(seed))
-    null_max = np.array([float(np.max(np.asarray(m))) for m in ensemble["members"]],
-                        dtype=np.float64)
+    null_max = [float(np.max(np.asarray(m))) for m in ensemble["members"]]
+    return calibration_from_maxima(
+        null_max, alpha=float(alpha), method=str(method), seed=int(seed))
+
+
+def calibration_from_maxima(
+    null_maxima: Sequence[float],
+    *,
+    alpha: float = DEFAULT_ALPHA,
+    method: str = DEFAULT_SURROGATE_METHOD,
+    seed: int = DEFAULT_SEED,
+    propagated_through: Optional[str] = None,
+) -> NullCalibration:
+    """The cut, from an ensemble of frame maxima somebody else built.
+
+    `calibrate` builds its ensemble by surrogating the array it is handed. TG2.4 needs the
+    same order statistic over maxima that were produced a different way - surrogates of the
+    *field*, each pushed through a representation, with the maximum taken in the coefficient
+    plane - and the arithmetic of the cut must not be reimplemented there, because a second
+    copy of `floor(alpha * (1 + n)) - 1` is a second chance to get the off-by-one wrong.
+    """
+    maxima = [float(v) for v in null_maxima]
+    n = len(maxima)
+    if n < 1:
+        raise InvalidParameterError(
+            "calibration_from_maxima.null_maxima", 0, "at least one surrogate maximum")
+    if not 0.0 < float(alpha) < 1.0:
+        raise InvalidParameterError(
+            "calibration_from_maxima.alpha", alpha,
+            "a family-wise level strictly between 0 and 1")
+    floor = 1.0 / (1.0 + n)
+    if float(alpha) < floor - 1e-12:
+        raise InvalidParameterError(
+            "calibration_from_maxima.alpha", alpha,
+            "a level the ensemble can resolve. %d surrogates resolve no p-value smaller "
+            "than %.6g" % (n, floor), n_surrogates=n, resolution_floor=floor)
+    if not all(math.isfinite(v) for v in maxima):
+        raise InvalidParameterError(
+            "calibration_from_maxima.null_maxima", "non-finite entries",
+            "finite maxima; a non-finite null maximum makes the cut unusable rather than "
+            "merely large")
     allowed_k = int(math.floor(float(alpha) * (1.0 + n))) - 1
-    ordered = np.sort(null_max)[::-1]
+    ordered = np.sort(np.asarray(maxima, dtype=np.float64))[::-1]
     threshold = float(ordered[allowed_k])
     return NullCalibration(
         threshold=threshold, alpha=float(alpha), method=str(method),
-        n_surrogates=n, seed=int(seed), null_maxima=tuple(null_max.tolist()))
+        n_surrogates=n, seed=int(seed), null_maxima=tuple(maxima),
+        propagated_through=propagated_through)
 
 
 # ------------------------------------------------------------------------ what an extractor returns

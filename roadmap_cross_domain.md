@@ -904,9 +904,67 @@ marks unmeasurable, and the tracker reports the one death that answer now derive
 **Evidence:** `src/tests/test_tracking.py`, 47 tests. Full suite 1477 passed, 1 skipped, 1
 xfailed; benchmark suite 18 PASS, 0 FAIL, 1 NOT_YET_RUNNABLE.
 
-**TG2.4 Representation-induced feature audit.** Extract features from a field with **no**
-structure under each registered representation and confirm the extractor reports none. R8's
-lesson: a representation can manufacture a motif, and the null benchmarks must catch it.
+**TG2.4 Representation-induced feature audit. DONE (`ed-dev`).** `src/core/representation.py`
+holds `REPRESENTATIONS`, `NULL_STRATEGIES`, `FAMILY_CORRECTIONS`, `RepresentationPlane`,
+`CorrectedLevel` and `AuditReport`. A new null benchmark `representation_null_field` gates
+`4E.representation_audit`.
+
+*   **A representation becomes a set of planes.** Named 2D arrays with declared axes, a
+    declared decimation in parent cells per sample, and the filter's contaminated margin
+    (R13). Six registered transforms plus the identity produce forty-eight planes of a
+    128-cell frame; forty-five of them are testable. `raw` is the identity, so TG2.2's floor is an entry in
+    the same registry rather than a separate argument - and propagating through it reproduces
+    `calibrate`'s null exactly, which is what makes the audit a generalisation of the tree's
+    existing calibration rather than a second opinion about it.
+*   **The null is propagated through the lens, never rebuilt inside it.** An artefact of a
+    representation is in every realisation the representation is pointed at, so it must be in
+    the null. Rebuilding the null in the coefficient plane keeps that plane's spectrum and
+    scatters its localisation, which turns a fixed artefact into a discovery: on the same
+    scale-free field, propagating reports nothing and rebuilding reports **eight to
+    thirty-four features**, almost all of them dual-tree subbands. Registered as two
+    strategies so that difference is measured rather than asserted - and measured on the dual
+    tree, because on the undecimated stationary transform the two agree and a claim tested
+    only there would have been worthless.
+*   **The audit had to pay for its own family before it could ask its own question.** R18,
+    arriving two phases early. Forty-five planes read as one question is a family, and
+    measured on its own ensemble the uncorrected procedure rejects on **83-88%** of
+    structureless fields. `FAMILY_CORRECTIONS` reads the family-wise rate off the same
+    ensemble the cuts come from, leave-one-out, so dependence between bands of one
+    decomposition is measured; Bonferroni is registered beside it and, on six identical
+    columns, prices one test wearing six hats at a sixth of the level.
+*   **Keeping every threshold an order statistic has a price, and it is refused rather than
+    fudged.** The strictest cut `n` surrogates can express still rejects about `P / n` of the
+    time over `P` planes, so a family-wise 0.05 over forty-five planes needs **about nine
+    hundred surrogates**. 499 is a refusal naming the family size, the achievable rate and
+    the required ensemble - not a coarser answer.
+*   **Three ways to earn a pass without looking, all refused.** A null nothing can violate
+    (`phase_randomise` leaves an FFT magnitude plane bit-identical, so its threshold is its
+    own observation for ever); a plane R13 leaves no interior in (struck from the family, so
+    a test with no possible outcome cannot make the others stricter); and a registered
+    transform nobody wrote a plane builder for (named in `uncovered_transforms`, and the
+    audit is not clean).
+*   **A frequency plane is refused by name, not silently skipped.** The axes of an FFT
+    magnitude plane are wavenumbers, and declaring them `space` so a spatial peak-finder
+    would take them is the error TG1.1 exists to prevent. `fft` and `dct` carry `axes=None`
+    and a stated reason, their nulls are measured, and they are reported as **unauditable
+    rather than clean**. Closing that gap needs an extractor with a spectral shape model and
+    none is registered; recorded as a limit, not as a silence.
+*   **A defect in this slice's own code, found by running it.** The dual-tree lowpass of a
+    three-level decomposition is decimated by four, not eight, because it does not go through
+    the quad-to-complex step that halves the highpass again. Declared as eight, a feature
+    planted at row 70 of a 128-cell frame came back at row 137 - outside the frame it was
+    found in, in the frame's own units. The decimation is now measured from the two shapes and
+    any builder whose declared factor its own array does not have is refused.
+
+**Acceptance.** `representation_null_field`: no feature in any of the **forty-five** testable
+planes of **seven** registered representations - the six transforms plus the identity - with **215,884 cells** searched, family corrected from a nominal 0.05
+to **0.001** per plane against a measured family-wise rate of **0.037**. The audit's power is
+measured rather than assumed: the same lenses at the same corrected level find a six-sigma blob
+nine times over, in the raw field, both approximations, the hybrid's low-pass half and the
+coarse detail bands.
+
+**Evidence:** `src/tests/test_representation.py`, 59 tests. Full suite 1536 passed, 1 skipped,
+1 xfailed; benchmark suite 19 PASS, 0 FAIL, 1 NOT_YET_RUNNABLE.
 
 **Exit criterion.** Features and tracks exist, are domain-typed rather than weather-typed, and
 pass a benchmark written before them.

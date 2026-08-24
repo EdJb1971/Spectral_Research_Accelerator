@@ -1509,6 +1509,101 @@ recorded answer marks unmeasurable, and the tracker reports the one death the re
 now derives. That is defect D59 closed end to end - extractor, tracker and recorded answer on
 one declared topology.
 
+
+### 3.6q Representation-induced feature audit (`src/core/representation.py`, TG2.4, `ed-dev`)
+
+TG2.2 measured the false-positive floor on the raw array: structureless data in, nothing out.
+Rule R8 says the other half out loud - *a representation can manufacture a motif* - and a
+peak-finder that is honest on an array is not thereby honest on a wavelet band of that array,
+because the band is not the array. Every transform in `TRANSFORMS` is a lens, every lens has
+its own artefacts, and a discovery pipeline reads the lens rather than the field. This module
+points the registered extractor at every plane of every registered representation of a field
+that has nothing in it, and requires the answer to be nothing.
+
+**A representation becomes a set of planes.** `REPRESENTATIONS` is a registry keyed by
+transform name, plus `raw` for the identity - so the floor TG2.2 measured is an entry here
+rather than a separate argument. A plane is a named 2D array with **declared axes**, a declared
+decimation in parent cells per sample, and the filter's contaminated margin (rule R13). Six
+registered transforms plus the identity produce forty-eight planes of a 128-cell frame;
+forty-five of them are testable.
+
+**The null is propagated, never rebuilt.** This is the decision the audit stands on, and it is
+a registry with a declared default rather than a constant.
+
+*   `propagate_through_representation` surrogates the **field** and pushes every surrogate
+    through the same lens with the same configuration. The null then carries the
+    representation, so an artefact present in every realisation raises the cut instead of
+    being reported.
+*   `randomise_in_representation` surrogates the **coefficient plane**. It is what "calibrate
+    where you measure" means and it is wrong: the plane's own spectrum is a product of the
+    lens, so randomising phases inside it destroys the artefact the null was supposed to
+    account for. Registered so the difference can be measured, and it is: on the same
+    scale-free field, propagating reports nothing and rebuilding reports **eight to
+    thirty-four features**, almost all of them dual-tree subbands.
+
+The identity check is what makes the default a *generalisation* rather than a second opinion:
+propagated through `raw`, the audit's null is `calibrate`'s null to the last bit.
+
+**The audit pays for its own family, and could not afford it at first.** Forty-five planes
+tested at a nominal family-wise 0.05 each is forty-five tests, and the answer is read as one
+question - *did any lens manufacture a feature?* Measured on the ensemble itself, the
+uncorrected procedure rejects on **83-88%** of structureless fields. `FAMILY_CORRECTIONS` is a
+third registry: `max_statistic` reads the family-wise rate off the same surrogate ensemble the
+cuts come from, leave-one-out, so dependence between bands of one decomposition is measured
+rather than assumed; `bonferroni` prices them as strangers; `none` is registered to be measured
+against. The corrected level is a shared per-plane rank, which keeps every threshold an order
+statistic of its own null - `calibrate`'s no-interpolation rule (§3.6o) applied to a family.
+
+That rule has a price and the price is refused rather than fudged: the strictest cut `n`
+surrogates can express is "larger than every null maximum", which over `P` planes still rejects
+about `P / n` of the time, so a family-wise 0.05 over forty-five planes **needs about nine
+hundred surrogates**. `FamilyTooLargeError` names the family size, the achievable rate and the
+required ensemble, and 499 surrogates is a refusal rather than a coarser answer.
+
+**Three ways to earn a pass without looking, all refused.**
+
+*   **A null nothing can violate.** `phase_randomise` preserves the amplitude spectrum to
+    machine precision and an FFT magnitude plane *is* the amplitude spectrum, so every
+    surrogate has a bit-identical plane, the threshold equals the observation and a strict `>`
+    reports nothing on any data whatever. Every plane's null spread is measured relative to
+    what it gates; a vacuous one is recorded as `vacuous` and cannot be counted clean.
+*   **A plane with nothing left to search.** A dual-tree level-3 subband of a 64-cell frame is
+    8 x 8 samples with a six-sample contaminated margin on every side - no valid interior at
+    all. Such planes are refused by name and **struck from the family**, so a test with no
+    possible outcome cannot make the other tests stricter. The report carries the number of
+    cells actually searched: 215,884 across forty-five planes at 128 cells.
+*   **A lens nobody looked through.** Coverage is checked against the *transform* registry, not
+    against this module's own, so a transform registered without a plane builder is named in
+    `uncovered_transforms` and the audit is not clean.
+
+**Not every plane is extractable, and that is a declaration rather than a silence.** The axes
+of an FFT magnitude plane are wavenumbers. Declaring them `space` so a spatial peak-finder
+would accept them is exactly the error §3.6a exists to prevent, and it would license a
+position, a width and a separation in cells that the plane does not have. `fft` and `dct` carry
+`axes=None` and a stated reason, their nulls are still measured, and they are reported as
+**unauditable rather than clean**. Closing that gap needs a registered extractor with a
+spectral shape model, and none exists; the FFT phase is not offered as a plane at all, because
+its maximum is a property of the branch cut.
+
+**A defect this slice found in itself, by running it.** The dual-tree lowpass of a three-level
+decomposition looks as though it should be decimated by eight, because its six subbands are; it
+is decimated by **four**, because the lowpass does not go through the quad-to-complex step that
+halves the highpass again. Declared as eight, `plane_field` built a coordinate axis twice as
+long as the field, and a feature planted at row 70 of a 128-cell frame came back at **row 137** -
+outside the frame it was found in, in the frame's own units, with nothing in the record to say
+so. The decimation is now measured from the two shapes, and `representation_planes` refuses any
+builder whose declared factor its own array does not have.
+
+**`4E.representation_audit` and `representation_null_field`.** A new null benchmark: scale-free
+fBm at 128 cells - correlated, smooth and edge-bearing, which is the material a boundary rule
+or a decimation phase turns into a localised artefact, and therefore the harder null. Audited
+through every registered representation at 999 surrogates it reports **no feature in any of the
+forty-five testable planes**, with the family corrected from a nominal 0.05 to 0.001 per plane
+against a measured family-wise rate of 0.037-0.045. The audit's power is measured separately
+rather than assumed: the same lenses, the same corrected level and a six-sigma blob produce
+nine findings, in the raw field, both approximations, the low-pass half of the hybrid and the
+coarse detail bands - so "it found nothing" is a statement about the field.
+
 ### 3.8 Grid Geometry and Metric-Aware Operators (`src/physical_core/grid.py`, `operators.py`)
 
 Added in T3.5.13 (defect D13, standard E3). `GridSpec` is the physical metric attached to
@@ -1571,7 +1666,7 @@ offline and declares no truth.
 *   `runner.py`, `__main__.py` - report and CLI (`python -m src.benchmarks`, exit 1 on any
     failure, usable directly as a CI gate).
 
-Current status: **18 PASS, 0 FAIL, 1 NOT_YET_RUNNABLE**. See Section 7.2f.
+Current status: **19 PASS, 0 FAIL, 1 NOT_YET_RUNNABLE**. See Section 7.2f.
 
 ### 3.13 Cloud-Native ERA5 over Zarr (`src/data_layer/zarr_source.py`, T3.5.18)
 
@@ -2640,8 +2735,8 @@ See `VERIFICATION.md` for the captured command output behind every statement her
 | Item | Status |
 |---|---|
 | Python venv + dependencies | installed (torch 2.13.0+cu130, numpy 2.2.6, pydantic 1.10.26, SQLAlchemy 2.0.52, xarray 2025.6.1, FastAPI 0.110.3) |
-| Backend test suite | **1477 passed, 1 xfailed** (plus 1 skipped: opt-in live GCS) (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17, 351 after T3.5.6, 379 after T3.5.15, 407 after T3.5.19, 449 after T4C.5, 709 after T4A.4, 781 after T4B.4, 855 after T4C.5, 859 after T4C.5c, 882 after T5.1a CPU acceptance, 883 after RTX acceptance, 890 after portable profiles, 911 after T5.1b/D44, 917 after T5.1c, 933 after T5.1d/D45, 946 after T5.1e, 955 after T5.2a, 957 after T5.2b, 962 after T5.3a, 969 after T5.3b, 981 after T5.2c offline acceptance, 985 after T5.2d, 1000 after T5.0a, 1008 after T5.0b, 1027 after T5.6a offline acceptance, 1042 after T5.6b cube acceptance, 1056 after T5.6c matched evaluation, 1070 after T5.6d truth matching, 1080 after T5.6e orchestration, 1089 after T5.6f portable jobs, 1094 after T5.6g reporting, 1095 after the licence guard, 1102 after T4C.5d gate readiness, 1104 after D50 storage preflight, 1106 after T4C.5e overlap evidence, 1112 after T4C.5f campaign acceptance, 1116 after T4C.5g physical preflight, 1117 after T4C.5h preregistration - the `master` freeze; then on `ed-dev`, 1375 after TG2.1, 1429 after TG2.2 and 1477 after TG2.3) |
-| Ground-Truth Benchmark Suite | **18 PASS, 0 FAIL, 1 NOT_YET_RUNNABLE** (`python -m src.benchmarks`, exit 0) |
+| Backend test suite | **1536 passed, 1 xfailed** (plus 1 skipped: opt-in live GCS) (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17, 351 after T3.5.6, 379 after T3.5.15, 407 after T3.5.19, 449 after T4C.5, 709 after T4A.4, 781 after T4B.4, 855 after T4C.5, 859 after T4C.5c, 882 after T5.1a CPU acceptance, 883 after RTX acceptance, 890 after portable profiles, 911 after T5.1b/D44, 917 after T5.1c, 933 after T5.1d/D45, 946 after T5.1e, 955 after T5.2a, 957 after T5.2b, 962 after T5.3a, 969 after T5.3b, 981 after T5.2c offline acceptance, 985 after T5.2d, 1000 after T5.0a, 1008 after T5.0b, 1027 after T5.6a offline acceptance, 1042 after T5.6b cube acceptance, 1056 after T5.6c matched evaluation, 1070 after T5.6d truth matching, 1080 after T5.6e orchestration, 1089 after T5.6f portable jobs, 1094 after T5.6g reporting, 1095 after the licence guard, 1102 after T4C.5d gate readiness, 1104 after D50 storage preflight, 1106 after T4C.5e overlap evidence, 1112 after T4C.5f campaign acceptance, 1116 after T4C.5g physical preflight, 1117 after T4C.5h preregistration - the `master` freeze; then on `ed-dev`, 1375 after TG2.1, 1429 after TG2.2, 1477 after TG2.3 and 1536 after TG2.4) |
+| Ground-Truth Benchmark Suite | **19 PASS, 0 FAIL, 1 NOT_YET_RUNNABLE** (`python -m src.benchmarks`, exit 0) |
 | Frontend `npm install` + `npm run build` | passes, emits 1,386 modules + real JS/CSS assets (was: 1 module, no assets) |
 | Backend server | starts, serves OpenAPI, all smoke-tested endpoints return 200 |
 | End-to-end experiment sweep | 9-run parameter sweep completes 9/9, writes 28 lineage nodes / 54 edges, hypothesis engine returns results |
@@ -2803,7 +2898,7 @@ the float32 defect ships.
 
 `src/benchmarks/` holds ten datasets whose correct answer is known before analysis. Five of
 them are **null benchmarks** - their answer is "there is nothing here". Current status:
-**18 PASS, 0 FAIL, 1 NOT_YET_RUNNABLE.**
+**19 PASS, 0 FAIL, 1 NOT_YET_RUNNABLE.**
 
 The one pending entry gates a stage that does not exist yet (4E constellation matching).
 `4D.tracking` **graduated to an enforced PASS** in TG2.3, on `advected_vortex_sequence` and
@@ -2859,6 +2954,7 @@ able to sit three slices out of date.
 | `test_cds_source.py` | 14 | T5.2c monthly CDS planning/CLI, grid-alignment/server-snap refusals, network consent, atomic resume, shard integrity, conservative storage refusal, bounded Zarr publication, plus PASS/FAIL independent-route receipt publication, replay and tamper refusal |
 | `test_geometry_registry.py` | 20 | TG1.2 geometry registry: the three builtins' metrics, crops, resamples and provenance unchanged; capability-driven `is_physical`/`length_units`/`latitudes`; a fourth geometry (`polar_scan`) registered from the test module with a non-uniform, non-spherical metric; the Cartesian Laplacian refusing it; `latitude`/`longitude` recognised as a sphere |
 | `test_tracking.py` | 47 | TG2.3 frame-to-frame association: `4D.tracking` moving from NOT_YET_RUNNABLE to PASS with the recorded velocity and doubling time recovered from the field alone; the coincidence gate derived from alpha and the frame's own density and tightening when the frame crowds; a declared bound as a rate against an irregular clock; greedy and Hungarian disagreeing measurably, plus a third associator registered from the test module and two rogue ones refused; the seam crossing that is one track on a torus and two on a plane; the orientation gate reading the convention rather than the number and refused outright on an extractor that reports none; and the empty-frame and short-clock regressions |
+| `test_representation.py` | 59 | TG2.4 representation-induced feature audit: the floor on every plane of every registered lens, and the planted blob that proves the audit can see; the null propagated through the representation against the same null rebuilt inside it, measured on the dual tree where they differ and on the stationary transform where they do not; the FFT magnitude plane whose null nothing can exceed; the family of forty-five planes that rejects on 86% of structureless fields uncorrected, the ensemble refused as too small for it, and the correction registry that prices six identical columns as one test; the declared decimation an array does not have; and the plane R13 leaves no interior in |
 | `test_feature_extraction.py` | 39 | TG2.2 extraction as a registry: the three planted features recovered across a six-fold range of scales and under rotation, translation and rescaling; both null benchmarks silent across three seeds with the loosened-alpha control that makes the silence mean something; the strict-comparison off-by-one; an unresolvable alpha refused before the ensemble; a second extractor registered from the test module; the periodic-axis seam and the self-scaling R13 refusal; and the one-feature-per-frame handoff to TG2.3 |
 | `test_feature_record.py` | 37 | TG2.1 canonical feature record: features measured off the advected-vortex benchmark recovering its known velocity and scale doubling, the R19 refusals (magnitude, separation, elapsed time, mixed sets), the periodic-axis refusal, orientation conventions and the surrogate resolution floor, a fourth convention and a fourth significance basis registered from the test module, and defect D59 |
 | `test_level_axis.py` | 19 | TG1.5 vertical coordinates: the registry and its sense of up, a height bank labelling its offsets the opposite way to pressure, a fourth coordinate registered from the test module, the declaration travelling from reader to signature, `level_hpa` refusing a non-pressure axis, and the pressure arithmetic unchanged |
@@ -2905,7 +3001,7 @@ able to sit three slices out of date.
 | `test_wavelet_bank.py` | 27 | T4B.2 expansion through the engine's own parameter matrix, the 1,000-combination guard, decompose_bank / extract_scale_signature, the vertical-bank refusals |
 | `test_transforms.py` | 13 | fft/dct/dwt/dtcwt/hybrid round trips; D1 recorded as a strict xfail |
 | `test_zarr_source.py` | 59 | R13 geometry, chunk-hostility, byte counting, streaming content identity, exact chunk-bounded frame reader, cache/provenance round trip, NetCDF engine and HTTP surface |
-| **total** | **1194** | |
+| **total** | **1253** | |
 
 ### 7.2h A surrogate null that was not the null it claimed (T4C.5)
 
