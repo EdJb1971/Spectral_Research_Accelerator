@@ -1298,7 +1298,8 @@ is *1 track, 1 birth, 0 deaths*, and a tracker run on a wrapping parameterisatio
 object fade out at one edge and appear at the other, and would be right. The benchmark is left
 alone - changing its field builder would move every number it produces, and TG2.1 is not the
 slice that gets to do that - and the disagreement is asserted by a test so the next slice meets
-it as a fact rather than as a surprise.
+it as a fact rather than as a surprise. **TG2.3 closed it** by declaring the topology instead
+of picking a side; see Section 3.6p.
 
 ### 3.6o Feature extraction as a registry (`src/core/extraction.py`, TG2.2, `ed-dev`)
 
@@ -1405,6 +1406,109 @@ within 5% without being told it exists. The benchmark's own `4E.feature_detectio
 deliberately **not** rewired to call this extractor: a benchmark that validated the code under
 test with the code under test has stopped being an independent answer.
 
+### 3.6p Frame-to-frame association (`src/core/tracking.py`, TG2.3, `ed-dev`)
+
+TG2.1 settled what a feature is; TG2.2 settled who decides one is there. This is the first
+claim in the tree that is not a measurement of a single array: nothing in a pair of frames
+says two blobs are one object, so association is an *inference*, and the design is entirely
+about keeping the inference's assumptions visible instead of dissolving them into constants.
+
+**The framework/registry split is TG2.2's, unchanged.** A registered associator receives a
+cost matrix and a boolean mask of admissible pairs and returns pairs. It never sees a
+feature, a unit or a time, so it cannot invent a gate, cannot bridge a gap, cannot decide
+what a birth is and cannot attach anything to a record. `ASSOCIATORS` holds `greedy_nearest`
+and `hungarian`, and a third registered from the test module drives the tracker with no edit
+to `src`.
+
+**The gate is derived, never chosen.** A tracker's one free number is how far a feature may
+move between frames, and it decides how many objects exist in exactly the way TG2.2's
+suppression radius decided how many features exist. The ceiling here is a **coincidence
+radius**: the distance at which the expected number of *unrelated* features from the target
+frame falling inside the search ball equals the same `alpha` the extraction was already
+calibrated at.
+
+    r  =  ( alpha * measure / (count * V_d) ) ** (1/d)
+
+On the vortex benchmark - one feature, a 128x128 frame, `alpha = 0.05` - that is 16.1 cells,
+against a true step of 2.9. It is not a motion model. It is the point past which proximity
+stops being evidence, and it moves with the frame: sixty-four features in the same frame
+tighten it by a factor of eight, because a gate that does not tighten when the field crowds
+is a gate that manufactures tracks precisely where the data is least able to support them.
+
+**Everything stricter is declared physics, not tuning.** `MotionBounds` carries a maximum
+speed, a maximum scale-doubling rate and a maximum turn rate; all three default to `None`,
+which means *not declared* rather than *unbounded by assumption*, and the receipt reports
+which gates were active so a run with no declared physics cannot be mistaken for one whose
+physics happened to be satisfied. Bounds are **rates**, multiplied by the actual elapsed time
+of each link: the same 12-cell step is admissible over six frames and refused over one under
+one declared bound of 3 cells per frame, and a gate expressed per *frame* would have answered
+the same in both cases and been wrong in one of them. A declared bound can only tighten the
+coincidence gate, never widen it - generous physics does not license a link chance already
+explains.
+
+**A gate on a quantity the extractor does not measure is refused.** This slice's acceptance
+criterion names scale and orientation gating, and the only extractor TG2.2 registered
+declares `reports_orientation: False`. Passing every pair because the quantity is missing
+would put the gate in the receipt while refusing nothing, and the run would then be
+indistinguishable from one whose physics was tested and satisfied. Asking for an orientation
+gate on those features raises, naming the capability.
+
+**Orientation is where TG2.1's convention registry pays.** Under `axis_180`, features at 170
+and 350 degrees are the same ridge and link; under `direction_360` they are opposed and the
+same declared turn rate refuses. The numbers on the records are identical in both runs, and
+the wrap period is read from the declaration rather than from the number - the failure TG2.1
+predicted would have been wrong by a factor of two with no way to tell which case you were in.
+
+**The cost has no weights, because the gates are the weights.** Each active gate contributes
+the square of the fraction of itself the pair used, so an admissible pair costs at most one
+per gate. A hand-set trade-off between "how far it moved" and "how much it grew" would be one
+more free number deciding how many objects exist.
+
+**Two associators, because they disagree measurably.** Registering a second implementation is
+speculative generality unless the difference can be shown (TG1.4's lesson). On a constructed
+three-object frame where one object sits one cell from another's true partner, `greedy_nearest`
+takes that pair first - it is the cheapest single link in the frame - and the stranded track
+then pays nine times as much: total 35 against the Hungarian assignment's 27, with two of the
+three identities swapped. The capability flags say `optimal: True` and `optimal: False`, and
+`with_capability("optimal", True)` returns exactly one entry.
+
+**A missed frame ends a track, and the clock is required to know that one was missed.** The
+first version of `track()` read its clock off the features it was given, and it had two
+defects that its own benchmark run exposed before commit. A vortex advected out of a
+24-frame sequence after frame 5 produced a `FeatureSet` whose last frame *was* frame 5, so
+the track ran to the end of its own evidence and looked complete where the recorded answer
+says one death. And an empty frame in the middle vanished entirely, silently bridging exactly
+the gap the module's docstring promises never to bridge. `times` - every frame that was
+searched - is now a required argument, `track_extractions()` takes it from the
+`ExtractionResult`s so a caller cannot supply a clock shorter than the run, and
+`empty_frames` is on the receipt. Gap bridging is refused outright: it requires a motion
+model good enough to say where the object was while it was invisible, and this tree has
+measured no such model. A death followed by a birth is a fact a reader can argue with; a
+bridged gap is an assertion that nothing happened in between.
+
+**Everything else is inherited rather than restated.** A `Track` holds a `FeatureSet`, so it
+cannot span two domains, two variables, two representations or two clocks - the refusals are
+TG2.1's and are not reimplemented here. Velocity is refused on a clock whose units were never
+recorded, and on a single sighting, where returning zero would report a measurement that was
+never made. A displacement is accumulated link by link rather than taken end to end, because
+on a torus a full lap and standing still have the same endpoints. `scale_velocity` is a
+least-squares slope of `log2(scale)`, dimensionless by construction because it is built from
+ratios of the track's own scales - the one form in which TG2.1 lets a scale leave its domain -
+and it refuses a track whose observations do not all carry one. `doubling_time` refuses a
+shrinking track rather than returning a negative number that invites reading as a magnitude.
+
+**`4D.tracking` moves from `NOT_YET_RUNNABLE` to PASS.** It has held a recorded answer since
+T3.5.17 and raised `NotImplementedError` ever since. On `advected_vortex_sequence`: one track,
+one birth, no deaths over 24 frames, worst position error 0.544 cells against a target of one,
+and a measured doubling time of 16.31 steps against a recorded 16 - the tracker was given the
+fields, the declared axes and an alpha, never the velocity or the growth rate. On
+`advected_vortex_periodic_sequence`, the seam-crossing variant added with this slice, the same
+numbers: 0.735 cells and 16.38 steps. Started at (100, 100) so the vortex advects out of the
+frame, the extractor refuses the clipped blob by rule R13 in exactly the 18 frames the
+recorded answer marks unmeasurable, and the tracker reports the one death the recorded answer
+now derives. That is defect D59 closed end to end - extractor, tracker and recorded answer on
+one declared topology.
+
 ### 3.8 Grid Geometry and Metric-Aware Operators (`src/physical_core/grid.py`, `operators.py`)
 
 Added in T3.5.13 (defect D13, standard E3). `GridSpec` is the physical metric attached to
@@ -1461,11 +1565,13 @@ offline and declares no truth.
 *   `seeding.py` - `SeedSequence.spawn` derivation from a root seed and a **`zlib.crc32`**
     label hash (Python's `hash()` on a string is salted per process and would break
     cross-session reproducibility).
-*   `fields.py` / `sequences.py` - the nine datasets.
+*   `fields.py` / `sequences.py` - the ten datasets, including
+    `advected_vortex_periodic_sequence`, added in TG2.3 so that a benchmark declaring a
+    torus draws one (defect D59).
 *   `runner.py`, `__main__.py` - report and CLI (`python -m src.benchmarks`, exit 1 on any
     failure, usable directly as a CI gate).
 
-Current status: **15 PASS, 0 FAIL, 2 NOT_YET_RUNNABLE**. See Section 7.2f.
+Current status: **18 PASS, 0 FAIL, 1 NOT_YET_RUNNABLE**. See Section 7.2f.
 
 ### 3.13 Cloud-Native ERA5 over Zarr (`src/data_layer/zarr_source.py`, T3.5.18)
 
@@ -2534,8 +2640,8 @@ See `VERIFICATION.md` for the captured command output behind every statement her
 | Item | Status |
 |---|---|
 | Python venv + dependencies | installed (torch 2.13.0+cu130, numpy 2.2.6, pydantic 1.10.26, SQLAlchemy 2.0.52, xarray 2025.6.1, FastAPI 0.110.3) |
-| Backend test suite | **1429 passed, 1 xfailed** (plus 1 skipped: opt-in live GCS) (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17, 351 after T3.5.6, 379 after T3.5.15, 407 after T3.5.19, 449 after T4C.5, 709 after T4A.4, 781 after T4B.4, 855 after T4C.5, 859 after T4C.5c, 882 after T5.1a CPU acceptance, 883 after RTX acceptance, 890 after portable profiles, 911 after T5.1b/D44, 917 after T5.1c, 933 after T5.1d/D45, 946 after T5.1e, 955 after T5.2a, 957 after T5.2b, 962 after T5.3a, 969 after T5.3b, 981 after T5.2c offline acceptance, 985 after T5.2d, 1000 after T5.0a, 1008 after T5.0b, 1027 after T5.6a offline acceptance, 1042 after T5.6b cube acceptance, 1056 after T5.6c matched evaluation, 1070 after T5.6d truth matching, 1080 after T5.6e orchestration, 1089 after T5.6f portable jobs, 1094 after T5.6g reporting, 1095 after the licence guard, 1102 after T4C.5d gate readiness, 1104 after D50 storage preflight, 1106 after T4C.5e overlap evidence, 1112 after T4C.5f campaign acceptance, 1116 after T4C.5g physical preflight, 1117 after T4C.5h preregistration - the `master` freeze; then on `ed-dev`, 1375 after TG2.1 and 1429 after TG2.2) |
-| Ground-Truth Benchmark Suite | **15 PASS, 0 FAIL, 2 NOT_YET_RUNNABLE** (`python -m src.benchmarks`, exit 0) |
+| Backend test suite | **1477 passed, 1 xfailed** (plus 1 skipped: opt-in live GCS) (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17, 351 after T3.5.6, 379 after T3.5.15, 407 after T3.5.19, 449 after T4C.5, 709 after T4A.4, 781 after T4B.4, 855 after T4C.5, 859 after T4C.5c, 882 after T5.1a CPU acceptance, 883 after RTX acceptance, 890 after portable profiles, 911 after T5.1b/D44, 917 after T5.1c, 933 after T5.1d/D45, 946 after T5.1e, 955 after T5.2a, 957 after T5.2b, 962 after T5.3a, 969 after T5.3b, 981 after T5.2c offline acceptance, 985 after T5.2d, 1000 after T5.0a, 1008 after T5.0b, 1027 after T5.6a offline acceptance, 1042 after T5.6b cube acceptance, 1056 after T5.6c matched evaluation, 1070 after T5.6d truth matching, 1080 after T5.6e orchestration, 1089 after T5.6f portable jobs, 1094 after T5.6g reporting, 1095 after the licence guard, 1102 after T4C.5d gate readiness, 1104 after D50 storage preflight, 1106 after T4C.5e overlap evidence, 1112 after T4C.5f campaign acceptance, 1116 after T4C.5g physical preflight, 1117 after T4C.5h preregistration - the `master` freeze; then on `ed-dev`, 1375 after TG2.1, 1429 after TG2.2 and 1477 after TG2.3) |
+| Ground-Truth Benchmark Suite | **18 PASS, 0 FAIL, 1 NOT_YET_RUNNABLE** (`python -m src.benchmarks`, exit 0) |
 | Frontend `npm install` + `npm run build` | passes, emits 1,386 modules + real JS/CSS assets (was: 1 module, no assets) |
 | Backend server | starts, serves OpenAPI, all smoke-tested endpoints return 200 |
 | End-to-end experiment sweep | 9-run parameter sweep completes 9/9, writes 28 lineage nodes / 54 edges, hypothesis engine returns results |
@@ -2632,7 +2738,7 @@ code paths that `architecture.md` previously described as implemented and rigoro
 | D57 | `experiment_engine/actions.py:perturb_field` | **A declared reproducibility parameter was silently discarded.** The action's registry entry advertised that noise `accepts \`seed\` for reproducibility`; the handler then called `PerturbationEngine.add_noise(field, noise_type, level)` and dropped the seed. A user asking for a reproducible perturbation received an unreproducible one with no error — the worst shape a reproducibility defect can take, because the request looks honoured. The seed is now passed through, and omitting it falls back to the task stream (D55). Found while giving the byte-identity acceptance sweep a payload that actually draws. | **FIXED** TG1.2 (`ed-dev`) |
 | D56 | `physical_core/field.py:split_field`, `scale_resolution` | **A coordinate spelled in full was silently mishandled.** Both methods decided which coordinate was the row and which the column from hardcoded name lists - `["y","lat"]` and `["x","lon"]` - and the two lists disagreed about the fallback. A field carrying `latitude`/`longitude`, the spelling CF and ERA5 both use, matched neither: `split_field` cloned the longitude vector instead of slicing it, returning a narrowed field whose coordinate no longer described its own data and which `GridSpec.from_coords` would then read; `scale_resolution` interpolated latitude to the *column* count. Nothing raised. Both now resolve through `core/axes.resolve_axis_roles`, and a caller may declare `axis_roles` instead. The disagreement over genuinely unrecognised coordinates is preserved deliberately and asserted, so no pre-TG1.1 result moves. | **FIXED** TG1.1 (`ed-dev`) |
 
-| D59 | `benchmarks/sequences.py:build_advected_vortex`, `truth_advected_vortex` | **The recorded trajectory wraps and the field does not.** `truth_advected_vortex` takes the vortex position modulo `n`, so its known answer is a trajectory on a torus; `build_advected_vortex` draws the blob with a plain Euclidean Gaussian, which is clipped at the boundary rather than wrapped. At the benchmark's own parameters the vortex never reaches an edge, so the two have never disagreed and the `4D.position` check passes to better than a cell. Started near an edge, the recorded position and the measured centroid part company by several cells for the frames where the blob is clipped. This lands on TG2.3, whose acceptance criterion is *1 track, 1 birth, 0 deaths* on this sequence: a tracker run on a wrapping parameterisation would see the object fade out at one edge and appear at the other, and would be right, against a recorded answer that says neither happened. Left unfixed deliberately - making the builder periodic would move every number the benchmark produces, and TG2.1 is not the slice that gets to do that - and asserted by `test_the_benchmarks_trajectory_wraps_but_its_field_does_not_defect_d59` so the next slice meets it as a fact. Found by giving TG2.1's record a real user. | **OPEN**, for TG2.3 (`ed-dev`) |
+| D59 | `benchmarks/sequences.py:build_advected_vortex`, `truth_advected_vortex` | **The recorded trajectory wraps and the field does not.** `truth_advected_vortex` takes the vortex position modulo `n`, so its known answer is a trajectory on a torus; `build_advected_vortex` draws the blob with a plain Euclidean Gaussian, which is clipped at the boundary rather than wrapped. At the benchmark's own parameters the vortex never reaches an edge, so the two have never disagreed and the `4D.position` check passes to better than a cell. Started near an edge, the recorded position and the measured centroid part company by several cells for the frames where the blob is clipped. This lands on TG2.3, whose acceptance criterion is *1 track, 1 birth, 0 deaths* on this sequence: a tracker run on a wrapping parameterisation would see the object fade out at one edge and appear at the other, and would be right, against a recorded answer that says neither happened. Left unfixed deliberately - making the builder periodic would move every number the benchmark produces, and TG2.1 is not the slice that gets to do that - and asserted by a test so the next slice meets it as a fact. Found by giving TG2.1's record a real user. **Fixed in TG2.3**: the topology is now a declared parameter (`periodic`) that the builder, the recorded answer and both checks read (standard E14), rather than the builder assuming one and the answer the other. At the registered parameters every number the benchmark produces is unchanged - the modulo was a no-op there, which is exactly why it hid. `track_count`, `births` and `deaths` are now **derived** from an analytic `mass_inside_frame` rather than asserted as the constants 1, 1 and 0, so a sequence that advects the vortex out of the frame records the death that actually happens; and a second registered benchmark, `advected_vortex_periodic_sequence`, declares a torus and draws one, which makes the seam-crossing case answerable for the first time. | **FIXED** TG2.3 (`ed-dev`) |
 
 **Root cause common to D20, D23, D25 and D2:** the transform engine — the mathematical core of
 the platform — had **no test file at all**. `src/tests/test_transforms.py` now exists (36 cases
@@ -2695,12 +2801,13 @@ the float32 defect ships.
 
 ### 7.2f The false-positive floor (T3.5.17)
 
-`src/benchmarks/` holds nine datasets whose correct answer is known before analysis. Five of
+`src/benchmarks/` holds ten datasets whose correct answer is known before analysis. Five of
 them are **null benchmarks** - their answer is "there is nothing here". Current status:
-**15 PASS, 0 FAIL, 2 NOT_YET_RUNNABLE.**
+**18 PASS, 0 FAIL, 1 NOT_YET_RUNNABLE.**
 
-The two pending entries gate stages that do not exist yet (4D tracking, 4E constellation
-matching). A third, `4C.surrogate_null`, **graduated to an enforced PASS** in T4C.5 - and in
+The one pending entry gates a stage that does not exist yet (4E constellation matching).
+`4D.tracking` **graduated to an enforced PASS** in TG2.3, on `advected_vortex_sequence` and
+on the `advected_vortex_periodic_sequence` variant added with it (Section 3.6p). A third, `4C.surrogate_null`, **graduated to an enforced PASS** in T4C.5 - and in
 doing so immediately caught a real defect in the surrogate machinery (Section 7.2h). They report `NOT_YET_RUNNABLE` naming the missing stage
 rather than being skipped, because a skipped test is invisible in a summary line and would
 let "all green" mean "we never looked".
@@ -2751,8 +2858,9 @@ able to sit three slices out of date.
 | `test_boundary_synthetic.py` | 8 | boundary treatments, windowing, synthetic generators and independent Euclidean-ring oracle |
 | `test_cds_source.py` | 14 | T5.2c monthly CDS planning/CLI, grid-alignment/server-snap refusals, network consent, atomic resume, shard integrity, conservative storage refusal, bounded Zarr publication, plus PASS/FAIL independent-route receipt publication, replay and tamper refusal |
 | `test_geometry_registry.py` | 20 | TG1.2 geometry registry: the three builtins' metrics, crops, resamples and provenance unchanged; capability-driven `is_physical`/`length_units`/`latitudes`; a fourth geometry (`polar_scan`) registered from the test module with a non-uniform, non-spherical metric; the Cartesian Laplacian refusing it; `latitude`/`longitude` recognised as a sphere |
+| `test_tracking.py` | 47 | TG2.3 frame-to-frame association: `4D.tracking` moving from NOT_YET_RUNNABLE to PASS with the recorded velocity and doubling time recovered from the field alone; the coincidence gate derived from alpha and the frame's own density and tightening when the frame crowds; a declared bound as a rate against an irregular clock; greedy and Hungarian disagreeing measurably, plus a third associator registered from the test module and two rogue ones refused; the seam crossing that is one track on a torus and two on a plane; the orientation gate reading the convention rather than the number and refused outright on an extractor that reports none; and the empty-frame and short-clock regressions |
 | `test_feature_extraction.py` | 39 | TG2.2 extraction as a registry: the three planted features recovered across a six-fold range of scales and under rotation, translation and rescaling; both null benchmarks silent across three seeds with the loosened-alpha control that makes the silence mean something; the strict-comparison off-by-one; an unresolvable alpha refused before the ensemble; a second extractor registered from the test module; the periodic-axis seam and the self-scaling R13 refusal; and the one-feature-per-frame handoff to TG2.3 |
-| `test_feature_record.py` | 36 | TG2.1 canonical feature record: features measured off the advected-vortex benchmark recovering its known velocity and scale doubling, the R19 refusals (magnitude, separation, elapsed time, mixed sets), the periodic-axis refusal, orientation conventions and the surrogate resolution floor, a fourth convention and a fourth significance basis registered from the test module, and defect D59 |
+| `test_feature_record.py` | 37 | TG2.1 canonical feature record: features measured off the advected-vortex benchmark recovering its known velocity and scale doubling, the R19 refusals (magnitude, separation, elapsed time, mixed sets), the periodic-axis refusal, orientation conventions and the surrogate resolution floor, a fourth convention and a fourth significance basis registered from the test module, and defect D59 |
 | `test_level_axis.py` | 19 | TG1.5 vertical coordinates: the registry and its sense of up, a height bank labelling its offsets the opposite way to pressure, a fourth coordinate registered from the test module, the declaration travelling from reader to signature, `level_hpa` refusing a non-pressure axis, and the pressure arithmetic unchanged |
 | `test_lag_policy_registry.py` | 21 | TG1.3 lag-admissibility policies: the capability table, a fourth policy (`instrument_response`) registered from the test module with a per-channel floor, the advective arithmetic and fingerprint unchanged, the declared floor now reaching the sweep, D58, the replication gate refusing a floor from the wrong policy |
 | `test_task_randomness.py` | 15 | D55 per-task streams: torch value continuity with the old global seeding, stream advance, thread isolation of the context binding, release on failure, `require` refusal, `add_noise` ambient fallback and labelling, D57 seed pass-through, `enable_determinism` scope reporting |
@@ -2797,7 +2905,7 @@ able to sit three slices out of date.
 | `test_wavelet_bank.py` | 27 | T4B.2 expansion through the engine's own parameter matrix, the 1,000-combination guard, decompose_bank / extract_scale_signature, the vertical-bank refusals |
 | `test_transforms.py` | 13 | fft/dct/dwt/dtcwt/hybrid round trips; D1 recorded as a strict xfail |
 | `test_zarr_source.py` | 59 | R13 geometry, chunk-hostility, byte counting, streaming content identity, exact chunk-bounded frame reader, cache/provenance round trip, NetCDF engine and HTTP surface |
-| **total** | **1146** | |
+| **total** | **1194** | |
 
 ### 7.2h A surrogate null that was not the null it claimed (T4C.5)
 

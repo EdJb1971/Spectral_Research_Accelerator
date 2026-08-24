@@ -169,33 +169,61 @@ def test_a_periodic_axis_without_its_period_is_refused_rather_than_wrapped_wrong
     assert naive == pytest.approx(126.0)
 
 
-def test_the_benchmarks_trajectory_wraps_but_its_field_does_not_defect_d59():
-    """D59, found while giving TG2.1 a real user.
+def test_the_benchmarks_trajectory_and_its_field_now_agree_defect_d59():
+    """D59, found while giving TG2.1 a real user, and closed by TG2.3.
 
-    `truth_advected_vortex` takes the vortex position modulo `n`, so its recorded answer is
-    a trajectory on a torus - and `build_advected_vortex` draws the blob with a plain
-    Euclidean Gaussian that does not wrap. Away from the boundary the two agree to better
-    than a cell, which is why nobody has noticed: at the benchmark's own parameters the
-    vortex never reaches the edge. Started near it, the recorded position and the field part
-    company by several cells for the frames where the blob is clipped by the boundary.
+    `truth_advected_vortex` used to take the vortex position modulo `n`, so its recorded
+    answer was a trajectory on a torus while `build_advected_vortex` drew a plain Euclidean
+    Gaussian that clips at the boundary. At the benchmark's own parameters the vortex never
+    reaches an edge, so the two never disagreed; started near one, the recorded answer put
+    the vortex on the far side of the frame and the field had it half outside the near one.
 
-    This matters for TG2.3, whose acceptance criterion is *1 track, 1 birth, 0 deaths* on
-    this sequence. A tracker run on a wrapping parameterisation would see the object fade
-    out at one edge and appear at the other, and would be right to report a death and a
-    birth - against a recorded answer that says there are none. The benchmark is left as it
-    is: changing its field builder would move every number it produces, and TG2.1 is not the
-    slice that gets to do that. It is written down, and it is checked, so the next slice
-    meets it as a fact rather than as a surprise.
+    The fix is that the topology is now *declared* by the `periodic` parameter and read by
+    the builder, by the recorded answer and by the checks (standard E14) - rather than the
+    builder assuming one and the answer assuming the other. Two things follow, and this test
+    is both of them:
+
+    *   Where the recorded answer says the feature is measurable, it agrees with the field
+        to a twentieth of a cell.
+    *   The recorded answer stops claiming a position that the field cannot support, and
+        `deaths` is now derived from that rather than asserted as the constant zero. Beyond
+        the window the clipping bias is real and grows with the mass lost - which is why the
+        window exists rather than a comment saying to be careful near edges.
     """
-    features, _, truth = _vortex_features(start=(32.0, 120.0))
+    features, _, truth = _vortex_features(steps=10, start=(100.0, 100.0))
+    measurable = set(truth["measurable_frames"])
+    assert measurable == {0, 1, 2, 3, 4, 5}
+    assert truth["deaths"] == 1, "the vortex leaves the frame and the answer now says so"
+    assert truth["periodic"] is False
+
     errors = []
-    for feature, (_, tx) in zip(features, truth["positions_rowcol"]):
-        delta = abs(feature.location.coords["col"] - tx)
-        errors.append(min(delta, GRID_N - delta))
-    near_seam = max(errors[1:5])
-    away_from_seam = max(errors[8:])
-    assert near_seam > 1.5, "the seam frames must actually disagree for this to be D59"
-    assert away_from_seam < 1.0, "away from the seam the measurement is sound"
+    for t, (feature, (ty, tx)) in enumerate(zip(features, truth["positions_rowcol"])):
+        errors.append(math.hypot(feature.location.coords["row"] - ty,
+                                 feature.location.coords["col"] - tx))
+    assert max(errors[t] for t in sorted(measurable)) < 0.5
+    assert errors[-1] > 1.0, ("outside the measurable window the clipped blob really is "
+                              "mismeasured, which is what the window is for")
+    assert truth["mass_inside_frame"][-1] < truth["measurable_mass_fraction"]
+
+
+def test_the_periodic_variant_wraps_in_the_field_as_well_as_in_the_answer():
+    """The other half of the D59 fix: a benchmark that declares a torus draws one.
+
+    The seam-crossing case was unanswerable before, because whichever answer a tracker gave
+    the recorded one disagreed. Here the trajectory wraps, the field wraps with it, and the
+    measured centroid follows the recorded position across both seams.
+    """
+    bench = get_benchmark("advected_vortex_periodic_sequence")
+    seq = bench.make()
+    truth = bench.truth()
+    assert truth["periodic"] is True
+    assert min(truth["positions_rowcol"][t][1] for t in range(len(seq.fields))) < 20.0
+    errors = []
+    for field, (ty, tx) in zip(seq.fields, truth["positions_rowcol"]):
+        cy, cx, _ = _centroid_and_width(field.data)
+        dy, dx = abs(cy - ty), abs(cx - tx)
+        errors.append(math.hypot(min(dy, GRID_N - dy), min(dx, GRID_N - dx)))
+    assert max(errors) < 1.0
 
 
 def test_a_period_on_a_non_periodic_axis_is_refused():

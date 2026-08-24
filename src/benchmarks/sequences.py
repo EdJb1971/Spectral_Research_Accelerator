@@ -21,7 +21,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 import numpy as np
 import torch
@@ -108,6 +108,54 @@ def correlation_p_value(x: np.ndarray, y: np.ndarray, n_eff: Optional[float] = N
 
 # ------------------------------------------------------------------ 1. advected vortex
 
+def _torus_gaussian_blob(n: int, cy: float, cx: float, sigma: float,
+                         amplitude: float = 1.0) -> torch.Tensor:
+    """A Gaussian on a doubly-periodic grid - the same blob, on the declared topology.
+
+    Distances are minimum-image, so the blob that leaves one edge arrives at the other with
+    its mass intact. `_gaussian_blob` is the Euclidean version and clips instead; which of
+    the two is drawn is the benchmark's `periodic` declaration and never an inference from
+    where the trajectory happens to go (defect D59, standard E14).
+    """
+    idx = torch.arange(n, dtype=torch.float64)
+    dy = (idx - cy + n / 2.0) % n - n / 2.0
+    dx = (idx - cx + n / 2.0) % n - n / 2.0
+    yy, xx = torch.meshgrid(dy, dx, indexing="ij")
+    return amplitude * torch.exp(-(yy ** 2 + xx ** 2) / (2.0 * sigma ** 2))
+
+
+def _vortex_centres(n: int, steps: int, start: Tuple[float, float],
+                    velocity: Tuple[float, float],
+                    periodic: bool) -> List[Tuple[float, float]]:
+    """The trajectory, read off the declared topology rather than assumed.
+
+    On a torus the position is taken modulo the axis length; on a plane it is not, and a
+    vortex advected past the edge has a position outside the frame - which is the honest
+    statement that it left, not a coordinate to be wrapped into a place where there is
+    nothing to see.
+    """
+    wrap = (lambda v: v % n) if periodic else (lambda v: v)
+    return [(wrap(start[0] + velocity[0] * t), wrap(start[1] + velocity[1] * t))
+            for t in range(steps)]
+
+
+def _mass_inside_frame(n: int, cy: float, cx: float, sigma: float,
+                       periodic: bool) -> float:
+    """Fraction of the blob's integral that lies inside the frame - analytic, no detector.
+
+    A statement about the field alone, so that "the feature is measurable in this frame" is
+    a property of the benchmark rather than a property of whichever extractor is asking.
+    """
+    if periodic:
+        return 1.0
+    root2 = math.sqrt(2.0)
+    axis = 1.0
+    for centre in (cy, cx):
+        axis *= 0.5 * (math.erf(centre / (sigma * root2))
+                       + math.erf((n - centre) / (sigma * root2)))
+    return float(axis)
+
+
 def build_advected_vortex(
     bundle: SeedBundle,
     n: int = 128,
@@ -118,16 +166,24 @@ def build_advected_vortex(
     doubling_steps: float = 16.0,
     noise_amplitude: float = 0.02,
     spacing_m: float = DEFAULT_SPACING_M,
+    periodic: bool = False,
 ) -> FieldSequence:
-    """A Gaussian vortex on a known straight trajectory, growing at a known rate."""
+    """A Gaussian vortex on a known straight trajectory, growing at a known rate.
+
+    `periodic` declares the topology of the *field*, and both the drawing here and the
+    recorded answer in `truth_advected_vortex` read it. Before defect D59 was fixed they
+    disagreed: the answer wrapped and the field did not, which cost nothing at these
+    parameters - where the vortex never reaches an edge - and several cells anywhere near
+    one.
+    """
     g = _grid(n, spacing_m)
     gen = bundle.torch_generator()
+    blob = _torus_gaussian_blob if periodic else _gaussian_blob
+    centres = _vortex_centres(n, steps, start, velocity_cells_per_step, periodic)
     fields = []
-    for t in range(steps):
-        cy = (start[0] + velocity_cells_per_step[0] * t) % n
-        cx = (start[1] + velocity_cells_per_step[1] * t) % n
+    for t, (cy, cx) in enumerate(centres):
         sigma = sigma0 * (2.0 ** (t / doubling_steps))
-        data = _gaussian_blob(n, cy, cx, sigma)
+        data = blob(n, cy, cx, sigma)
         if noise_amplitude > 0:
             data = data + noise_amplitude * torch.randn(n, n, generator=gen,
                                                         dtype=torch.float64)
@@ -140,48 +196,104 @@ def truth_advected_vortex(
     velocity_cells_per_step: Tuple[float, float] = (1.5, 2.5), sigma0: float = 5.0,
     doubling_steps: float = 16.0, noise_amplitude: float = 0.02,
     spacing_m: float = DEFAULT_SPACING_M,
+    periodic: bool = False,
+    measurable_mass_fraction: float = 0.99,
 ) -> Dict[str, Any]:
-    positions = [((start[0] + velocity_cells_per_step[0] * t) % n,
-                  (start[1] + velocity_cells_per_step[1] * t) % n) for t in range(steps)]
+    """The recorded answer, derived from the same declaration the builder draws from.
+
+    `track_count`, `births` and `deaths` are **derived** rather than asserted. They used to
+    be the constants 1, 1 and 0, which is the right answer only while the vortex stays
+    inside the frame; a sequence that advects it out is one where a tracker reporting a
+    death is correct and the recorded answer saying otherwise is the defect.
+
+    `measurable_mass_fraction` is the benchmark's own declaration of when a clipped blob has
+    stopped being the feature it was - the fraction of its integral that must remain inside
+    the frame. It is stated here, in the asset, rather than inferred by whatever detector is
+    being graded against it.
+    """
+    centres = _vortex_centres(n, steps, start, velocity_cells_per_step, periodic)
+    sigmas = [sigma0 * (2.0 ** (t / doubling_steps)) for t in range(steps)]
+    mass = [_mass_inside_frame(n, cy, cx, s, periodic)
+            for (cy, cx), s in zip(centres, sigmas)]
+    measurable = [m >= measurable_mass_fraction for m in mass]
+    runs = _contiguous_runs(measurable)
     return {
-        "positions_rowcol": positions,
+        "positions_rowcol": centres,
         "velocity_cells_per_step": velocity_cells_per_step,
         "speed_m_per_step": math.hypot(*velocity_cells_per_step) * spacing_m,
-        "sigma_cells": [sigma0 * (2.0 ** (t / doubling_steps)) for t in range(steps)],
+        "sigma_cells": sigmas,
         "scale_doubling_steps": doubling_steps,
-        "track_count": 1,
-        "births": 1,
-        "deaths": 0,
-        "note": ("Exactly one track, no births or deaths after the first frame. A "
-                 "shift-variant transform makes a tracker report spurious births and "
-                 "deaths on this sequence - which is what defect D1 caused and what "
-                 "T3.5.7's undecimated SWT fixes."),
+        "periodic": periodic,
+        "measurable_mass_fraction": measurable_mass_fraction,
+        "mass_inside_frame": mass,
+        "measurable_frames": [t for t, ok in enumerate(measurable) if ok],
+        "track_count": len(runs),
+        "births": len(runs),
+        "deaths": sum(1 for _, end in runs if end < steps - 1),
+        "note": ("One track for as long as the vortex is inside the frame, with no births "
+                 "or deaths while it stays there. A shift-variant transform makes a tracker "
+                 "report spurious births and deaths on this sequence - which is what defect "
+                 "D1 caused and what T3.5.7's undecimated SWT fixes. The topology is "
+                 "declared by `periodic` and read by both the builder and this answer "
+                 "(defect D59)."),
     }
+
+
+def _contiguous_runs(flags: Sequence[bool]) -> List[Tuple[int, int]]:
+    """Inclusive (start, end) index pairs of each maximal run of True."""
+    runs: List[Tuple[int, int]] = []
+    start: Optional[int] = None
+    for i, ok in enumerate(flags):
+        if ok and start is None:
+            start = i
+        elif not ok and start is not None:
+            runs.append((start, i - 1))
+            start = None
+    if start is not None:
+        runs.append((start, len(flags) - 1))
+    return runs
 
 
 @stage_check("4D.position")
 def _check_vortex_position(seq: FieldSequence, truth: Dict[str, Any]) -> CheckResult:
     """Centroid tracking of the known trajectory - runnable without the 4D tracker.
 
-    Uses the intensity centroid on the largest-magnitude connected region, computed on the
-    torus so the periodic wrap does not create a spurious jump.
+    Two things here read the benchmark's declared topology and one deliberately does not.
+    The **distance** does - a wrap distance on a torus and an ordinary one on a plane - and
+    so does the **set of frames**, which is now the frames where the recorded answer says
+    99% of the blob is still inside the frame rather than all of them.
+
+    The **centroid estimator** does not, and that is a measurement rather than an oversight.
+    Replacing the circular mean with an ordinary one on the Euclidean sequence made the
+    worst error eight times larger, 0.830 cells against 0.052: the diffuse noise floor
+    survives the `clamp(d - mean, 0)**2` weighting everywhere in the frame, and an ordinary
+    mean drags toward the centre of the array while a circular one lets it cancel. The
+    circular estimator's failure mode is a blob straddling the seam of a *non*-periodic
+    frame, and the measurable-frames filter above is exactly what excludes those.
     """
+    periodic = bool(truth.get("periodic", False))
+    measurable = set(truth.get("measurable_frames", range(len(seq.fields))))
     errors = []
-    for f, (ty, tx) in zip(seq.fields, truth["positions_rowcol"]):
+    for t, (f, (ty, tx)) in enumerate(zip(seq.fields, truth["positions_rowcol"])):
+        if t not in measurable:
+            continue
         d = f.data
         n = d.shape[0]
         w = torch.clamp(d - d.mean(), min=0.0) ** 2
         idx = torch.arange(n, dtype=torch.float64)
-        # circular mean, because the vortex wraps
+
+        # circular mean: robust to the diffuse noise floor on either topology
         def circ(weight_1d):
             ang = 2 * math.pi * idx / n
             s = float((weight_1d * torch.sin(ang)).sum())
             c = float((weight_1d * torch.cos(ang)).sum())
             return (math.atan2(s, c) % (2 * math.pi)) * n / (2 * math.pi)
+
         cy = circ(w.sum(dim=1))
         cx = circ(w.sum(dim=0))
-        dy = min(abs(cy - ty), n - abs(cy - ty))
-        dx = min(abs(cx - tx), n - abs(cx - tx))
+        dy, dx = abs(cy - ty), abs(cx - tx)
+        if periodic:
+            dy, dx = min(dy, n - dy), min(dx, n - dx)
         errors.append(math.hypot(dy, dx))
     worst = max(errors)
     return CheckResult(
@@ -225,11 +337,96 @@ def _check_vortex_scale_growth(seq: FieldSequence, truth: Dict[str, Any]) -> Che
         {"early_centroid": early, "late_centroid": late, "monotonicity": monotone})
 
 
+#: Enough surrogates to resolve alpha = 0.05 on the (1 + k) / (1 + n) convention, and few
+#: enough that the gate runs in a test suite. The threshold is calibrated on the first frame
+#: and reused, so a birth cannot be the cut moving between frames.
+_TRACKING_SURROGATES = 99
+_TRACKING_SEED = 20260824
+
+
+def _tracked(seq: FieldSequence, truth: Dict[str, Any]):
+    """Extract every frame under one calibration and link them (TG2.2 then TG2.3).
+
+    The axes are declared from the benchmark's own `periodic` flag, so the extractor's
+    valid-interior rule and the tracker's wrap distance are both reading the same
+    declaration the field was drawn from.
+    """
+    from src.core.domain import AxisSpec
+    from src.core.extraction import ExtractionField, calibrate, extract
+    from src.core.tracking import track_extractions
+
+    periodic = bool(truth.get("periodic", False))
+    axes = (AxisSpec("row", "space", units="cells", periodic=periodic, ordinal=0),
+            AxisSpec("col", "space", units="cells", periodic=periodic, ordinal=1))
+    frames = [np.asarray(f.data.numpy(), dtype=np.float64) for f in seq.fields]
+    calibration = calibrate(frames[0], alpha=0.05, n_surrogates=_TRACKING_SURROGATES,
+                            seed=_TRACKING_SEED)
+    results = []
+    for t, values in enumerate(frames):
+        field = ExtractionField(
+            values=values, axes=axes, domain="synthetic",
+            dataset="advected_vortex_sequence", variable="amplitude", units=None,
+            time=float(t), time_units="frames", representation="identity")
+        results.append(extract(field, calibration=calibration))
+    return track_extractions(results), results
+
+
 @stage_check("4D.tracking")
 def _check_vortex_tracking(seq: FieldSequence, truth: Dict[str, Any]) -> CheckResult:
-    raise NotImplementedError(
-        "4D.tracking: SpectralFeatureTrack linking (T4D) is not implemented; the known "
-        "answer (1 track, 1 birth, 0 deaths, exact positions) is recorded")
+    """One object, one birth, no deaths, and a growth rate nobody told the tracker.
+
+    The recorded answer this is graded against - the trajectory, the doubling time, the
+    track count - was written before any of the code it grades. What the tracker is allowed
+    to know is the field, the declared axes and the same alpha the extraction was calibrated
+    at; the velocity and the doubling time are outputs, never inputs.
+    """
+    tracking, results = _tracked(seq, truth)
+    if tracking is None:
+        return CheckResult("4D.tracking", Outcome.FAIL,
+                           "the extractor reported no features in any frame, so there is "
+                           "nothing to associate", {"found": 0})
+    measurable = list(truth.get("measurable_frames", range(len(seq.fields))))
+    longest = tracking.longest
+    errors = [
+        math.hypot(*_wrapped_delta(item.location.coords, truth["positions_rowcol"][int(item.time)],
+                                   n=seq.fields[0].data.shape[0],
+                                   periodic=bool(truth.get("periodic", False))))
+        for item in longest]
+    worst = max(errors)
+    doubling = longest.doubling_time().value
+    known = float(truth["scale_doubling_steps"])
+    detail = {
+        "track_count": len(tracking), "births": tracking.births,
+        "deaths": tracking.deaths, "longest_track_frames": len(longest),
+        "worst_error_cells": worst,
+        "coincidence_radius_cells": tracking.steps[1].coincidence_radius,
+        "measured_doubling_steps": doubling,
+        "features_per_frame": sorted({r.found for r in results}),
+    }
+    ok = (len(tracking) == truth["track_count"]
+          and tracking.births == truth["births"]
+          and tracking.deaths == truth["deaths"]
+          and len(longest) == len(measurable)
+          and worst < 1.0
+          and abs(doubling / known - 1.0) < 0.10)
+    return CheckResult(
+        "4D.tracking",
+        Outcome.PASS if ok else Outcome.FAIL,
+        "%d track(s), %d birth(s), %d death(s) over %d measurable frames; worst position "
+        "error %.3f cells (target < 1); scale doubles every %.2f steps against a recorded "
+        "%.0f; gate radius %.1f cells, derived from alpha and the frame's own density"
+        % (len(tracking), tracking.births, tracking.deaths, len(measurable), worst,
+           doubling, known, tracking.steps[1].coincidence_radius),
+        detail)
+
+
+def _wrapped_delta(coords: Dict[str, float], recorded: Tuple[float, float], *,
+                   n: int, periodic: bool) -> Tuple[float, float]:
+    dy = abs(coords["row"] - recorded[0])
+    dx = abs(coords["col"] - recorded[1])
+    if periodic:
+        dy, dx = min(dy, n - dy), min(dx, n - dx)
+    return dy, dx
 
 
 register_benchmark(Benchmark(
@@ -241,6 +438,19 @@ register_benchmark(Benchmark(
     known_answer=truth_advected_vortex,
     checks=(_check_vortex_position, _check_vortex_scale_growth, _check_vortex_tracking),
     params={"n": 128, "steps": 24},
+))
+
+
+register_benchmark(Benchmark(
+    name="advected_vortex_periodic_sequence",
+    kind="sequence",
+    description="The same vortex on a declared torus, started so that it crosses both "
+                "seams - the case defect D59 made unanswerable.",
+    gates=("4D.position", "4D.tracking"),
+    build=build_advected_vortex,
+    known_answer=truth_advected_vortex,
+    checks=(_check_vortex_position, _check_vortex_tracking),
+    params={"n": 128, "steps": 24, "start": (120.0, 120.0), "periodic": True},
 ))
 
 

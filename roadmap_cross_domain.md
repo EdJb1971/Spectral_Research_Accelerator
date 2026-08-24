@@ -815,13 +815,94 @@ not defects in the tree. D59 remains open and remains TG2.3's.
 **Evidence:** `src/tests/test_feature_extraction.py`, 39 tests (54 cases with parametrisation). Full suite 1429 passed, 1 skipped,
 1 xfailed.
 
-**TG2.3 Tracking.** Frame-to-frame association with scale and orientation gating; nearest
-neighbour first, Hungarian assignment once it must be respectable. Yields velocity, scale
-velocity and lifetime.
-**Acceptance:** `4D.tracking` moves from `NOT_YET_RUNNABLE` to **PASS** on
-`advected_vortex_sequence` — 1 track, 1 birth, 0 deaths, position error < 1 px, correct
-scale-doubling detection. The answer is already recorded in the repository and was not written by
-this phase.
+**TG2.3 Tracking - DONE.** `src/core/tracking.py` holds `ASSOCIATORS`, `SearchVolume`,
+`MotionBounds`, `GateReport`, `Track` and `TrackingResult`. `4D.tracking` has moved from
+`NOT_YET_RUNNABLE` to **PASS**, and the benchmark suite is 18 PASS / 0 FAIL / 1 pending.
+
+**The framework/registry split is TG2.2's, unchanged.** A registered associator receives a
+cost matrix and a mask of admissible pairs and returns pairs. It never sees a feature, a unit
+or a time, so it cannot invent a gate, cannot bridge a gap, cannot decide what a birth is and
+cannot attach anything to a record.
+
+*   **The gate is derived, never chosen.** A tracker's one free number is how far a feature may
+    move between frames, and it decides how many objects exist exactly as TG2.2's suppression
+    radius decided how many features exist. The ceiling is a **coincidence radius**: the
+    distance at which the expected number of *unrelated* features from the target frame inside
+    the search ball equals the same `alpha` the extraction was calibrated at. One feature in a
+    128x128 frame at `alpha = 0.05` gives 16.1 cells against a true step of 2.9 - and
+    sixty-four features in the same frame tighten it by a factor of eight, because a gate that
+    does not tighten when the field crowds manufactures tracks precisely where the data can
+    least support them.
+*   **Everything stricter is declared physics, not tuning.** `MotionBounds` carries a maximum
+    speed, doubling rate and turn rate, all `None` by default - meaning *not declared* rather
+    than *unbounded by assumption*, with the receipt reporting which gates were active. They
+    are **rates**, multiplied by the actual elapsed time: the same 12-cell step is admissible
+    over six frames and refused over one under a single declared bound of 3 cells per frame,
+    where a gate expressed per *frame* would have answered identically in both cases and been
+    wrong in one. A declared bound can only tighten the coincidence gate, never widen it.
+*   **A gate on a quantity the extractor does not measure is refused.** This slice's acceptance
+    names orientation gating, and TG2.2's only registered extractor declares
+    `reports_orientation: False`. Passing every pair because the quantity is missing would put
+    the gate in the receipt while refusing nothing, and the run would be indistinguishable from
+    one whose physics was tested and satisfied.
+*   **Orientation is where TG2.1's convention registry pays.** Under `axis_180`, 170 and 350
+    degrees are the same ridge and link; under `direction_360` they are opposed and the same
+    declared turn rate refuses. The numbers on the records are identical in both runs.
+*   **The cost has no weights, because the gates are the weights.** Each active gate contributes
+    the square of the fraction of itself the pair used. A hand-set trade-off between "how far it
+    moved" and "how much it grew" would be one more free number deciding how many objects exist.
+*   **Two associators, because they disagree measurably.** A second implementation is
+    speculative generality unless the difference can be shown (TG1.4). On a constructed
+    three-object frame where one object sits one cell from another's true partner,
+    `greedy_nearest` takes that pair first - the cheapest single link in the frame - and the
+    stranded track pays nine times as much: total 35 against the Hungarian assignment's 27,
+    with two of three identities swapped. A third associator registered from the test module
+    drives the tracker with no edit to `src`, and two rogue ones - one returning a pair the gate
+    refused, one claiming an observation twice - are refused by the framework rather than
+    trusted.
+
+**Two defects in this slice's own tracker, found by running it against the benchmark rather
+than by reading it.** The first version read its clock off the features it was given. A vortex
+advected out of a 24-frame sequence after frame 5 produced a `FeatureSet` whose last frame *was*
+frame 5, so the track ran to the end of its own evidence and looked complete against a recorded
+answer that says one death - **a tracker that could never report a death at the end of a run**.
+And an empty frame in the middle vanished entirely, silently bridging exactly the gap the
+module's own docstring promises never to bridge. `times` - every frame that was searched - is now
+required, `track_extractions()` takes it from the `ExtractionResult`s so a caller cannot supply a
+clock shorter than the run, and `empty_frames` is on the receipt. Both are held shut by
+regression tests. Neither is a new D-number: both were in code written this slice and caught
+before it was committed.
+
+**D59 is closed, by declaring the topology instead of picking a side.** `truth_advected_vortex`
+took the vortex position modulo `n` while `build_advected_vortex` drew a Euclidean Gaussian that
+clips. The fix makes `periodic` a declared parameter that the builder, the recorded answer and
+both checks read (standard E14). At the registered parameters **every number the benchmark
+produces is unchanged** - the modulo was a no-op there, which is exactly why it hid for so long.
+`track_count`, `births` and `deaths` are now *derived* from an analytic `mass_inside_frame`
+rather than asserted as the constants 1, 1 and 0, so a sequence that advects the vortex out
+records the death that actually happens; and a second registered benchmark,
+`advected_vortex_periodic_sequence`, declares a torus and draws one, making the seam-crossing
+case answerable for the first time.
+
+**One measurement went the other way, and was reverted on the evidence.** Making `4D.position`'s
+*centroid estimator* read the topology - an ordinary mean on a plane, a circular one on a torus -
+made the worst error eight times larger, 0.830 cells against 0.052. The diffuse noise floor
+survives the check's weighting everywhere in the frame, and an ordinary mean drags toward the
+centre of the array while a circular one lets it cancel. The circular estimator stays; what reads
+the declaration is the *distance*, and what protects the estimator's one failure mode is the
+measurable-frames filter.
+
+**Measured against answers recorded before the tracker existed.** `advected_vortex_sequence`: one
+track, one birth, no deaths over 24 frames; every position within 1 cell of the recorded
+trajectory (worst 0.544); velocity 1.5 and 2.5 cells per frame recovered to 0.05; doubling time
+16.31 steps against a recorded 16. The tracker was given the fields, the declared axes and an
+alpha - never the velocity or the growth rate. `advected_vortex_periodic_sequence`: the same, at
+0.735 cells and 16.38 steps, across both seams. Started at (100, 100) so the vortex advects out,
+the extractor refuses the clipped blob by rule R13 in exactly the 18 frames the recorded answer
+marks unmeasurable, and the tracker reports the one death that answer now derives.
+
+**Evidence:** `src/tests/test_tracking.py`, 47 tests. Full suite 1477 passed, 1 skipped, 1
+xfailed; benchmark suite 18 PASS, 0 FAIL, 1 NOT_YET_RUNNABLE.
 
 **TG2.4 Representation-induced feature audit.** Extract features from a field with **no**
 structure under each registered representation and confirm the extractor reports none. R8's

@@ -168,21 +168,25 @@ def test_pending_gates_are_reported_not_hidden(suite_results):
     start meaning "we did not look".
     """
     counts = summarise(suite_results)
-    # Was 3 pending; `4C.surrogate_null` became enforceable in T4C.5 when the surrogate
-    # machinery landed, so it moved from NOT_YET_RUNNABLE to PASS. That transition is the
-    # point of the three-valued outcome: a gate becoming real should change this number.
-    assert counts["NOT_YET_RUNNABLE"] >= 2
-    assert counts["PASS"] >= 12
+    # Was 3 pending, then 2, now 1. `4C.surrogate_null` became enforceable in T4C.5 when the
+    # surrogate machinery landed, and `4D.tracking` in TG2.3 when the tracker did. That
+    # transition is the point of the three-valued outcome: a gate becoming real should change
+    # this number, and this test is what makes the change deliberate rather than incidental.
+    assert counts["NOT_YET_RUNNABLE"] >= 1
+    assert counts["PASS"] >= 15
     report = format_report(suite_results)
     assert "NOT_YET_RUNNABLE" in report
     assert "Gates defined but not yet enforceable" in report
-    for stage in ("4D.tracking", "4E.invariance"):
-        assert stage in report
-    # ...and the one that graduated must now be a genuine PASS, not silently absent.
+    assert "4E.invariance" in report
+    # ...and the ones that graduated must now be genuine PASSes, not silently absent.
     surrogate = [c for c in suite_results["fractional_brownian"]
                  if c.stage == "4C.surrogate_null"]
     assert surrogate and surrogate[0].outcome is Outcome.PASS, (
         "the fBm surrogate-null gate must be enforced, not pending")
+    for benchmark in ("advected_vortex_sequence", "advected_vortex_periodic_sequence"):
+        tracking = [c for c in suite_results[benchmark] if c.stage == "4D.tracking"]
+        assert tracking and tracking[0].outcome is Outcome.PASS, (
+            "4D.tracking must be enforced on %s, not pending" % benchmark)
 
 
 def test_a_check_that_crashes_is_a_failure_not_an_error():
