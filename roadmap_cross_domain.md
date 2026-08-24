@@ -1066,9 +1066,55 @@ asserted: the same four p-values corrected over the generated 36 reject nothing.
 **Evidence:** `src/tests/test_preregistration.py`, 40 tests. Full suite 1621 passed, 1
 skipped, 1 xfailed; benchmark suite unchanged at 19 PASS, 0 FAIL, 1 NOT_YET_RUNNABLE.
 
-**TG3.3 Constellations as attributed graphs.** Features plus typed relations — distance, relative
-scale, temporal lag, direction, convergence, containment, succession, co-occurrence — expressed
-independently of originating domain. Relations are a registry.
+**TG3.3 Constellations as attributed graphs. DONE (`ed-dev`).** `src/core/constellation.py`
+holds `Relation`, the `RELATIONS` registry of all eight named relations, `RelationValue`,
+`RelationContext`, `measurable_relations`, `relation_axis`, `AttributedGraph`, `MatchReport`,
+`constellation`, `constellations_from_set` and the two refusals `RelationUnmeasurableError`
+and `GraphTooLargeError`.
+
+*   **A relation is a quantity divided by something the features carry themselves.** TG2.1
+    already permits `scale_ratio_to` across a domain boundary and refuses `separation_to`
+    across one, and that contrast is the whole design: forty cells at a scale of six cells and
+    twelve hundred metres at a scale of a hundred and eighty metres are the same relation,
+    while forty and twelve hundred are not. Relations are computed *within* a domain, on
+    coordinates in a space that exists; what crosses the boundary is the graph.
+*   **Sorting the eight by what each needs is a finding, not a taxonomy.** `succession` needs
+    nothing but a shared clock, because an ordering is dimensionless already. `co_occurrence`
+    needs a temporal scale, because simultaneity is a *tolerance* and a tolerance in seconds is
+    not a statement another domain can read. The other six need a scale, an extent or an
+    orientation.
+*   **Two of the eight cannot be measured at all today, and they register anyway.** The only
+    extractor TG2.2 registers declares `reports_orientation: False`, so `direction` and
+    `convergence` refuse by name - TG2.3's rule about gates carried into relations, since a
+    relation treating an absent quantity as "no evidence against" would appear in a receipt,
+    constrain nothing and be indistinguishable from one doing work. `convergence` carries a
+    second refusal of the same kind: an undirected axis does not point, so it cannot converge.
+*   **The registry reaches TG3.1 through `relation_axis`.** A family priced over eight
+    relations when three are measurable declares five tests that could not have happened -
+    which is not a conservative rounding but a receipt naming tests that never ran. Three
+    measurable relations give an unordered-pair family of 3; all eight give 28.
+*   **Matching is exhaustive or refused.** `k!` node correspondences up to eight nodes, and a
+    refusal above that rather than a greedy assignment, because an approximate match that
+    returns True is a claim. The report names both carried records, so a reader sees that two
+    graphs matched while describing an amplitude field and a temperature field (R19) and
+    whether they came from different representations (R8) - stated, never compared.
+*   **A defect in this slice, found by running it.** A graph built with `strict=False` records
+    a refused relation rather than propagating it, and `matches` compared the relations the
+    graph *declared* rather than those it carried. Such a graph therefore did not match
+    **itself**, and the stated reason blamed the geometry for what was a hole in the record. A
+    missing relation is now a refusal naming the edge, and the caller narrows to what was
+    measured.
+
+**Acceptance met.** The `planted_configuration` triangle is built twice from the benchmark's
+own geometry - once as a dimensionless amplitude on a grid in **cells**, once as kelvin on a
+30-metre grid, with a different domain, dataset, variable, units and spacing - and the two
+attributed graphs are **equal**, agreeing on 6.67 (40 cells over a 6-cell scale; 1,200 m over
+180 m) rather than merely on which edges exist. The negative control is measured, not asserted:
+a relation registered from the test module *without* the dimensionless division reports 40 on
+one side and 1,200 on the other, and the same two graphs then fail to match.
+
+**Evidence:** `src/tests/test_constellation.py`, 65 tests. Full suite 1686 passed, 1 skipped,
+1 xfailed; benchmark suite unchanged at 19 PASS, 0 FAIL, 1 NOT_YET_RUNNABLE.
 
 **TG3.4 Invariant matching.**
 **Acceptance:** `4E.invariance` moves from `NOT_YET_RUNNABLE` to **PASS** on

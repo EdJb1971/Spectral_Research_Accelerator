@@ -1769,6 +1769,79 @@ different geometries, and the seal would bind both - so a confirmation on the pa
 labels name would be indistinguishable from one on the partition the count names. The
 mismatch is now refused at construction.
 
+### 3.6t Constellations are attributed graphs, and a relation divides by what the features carry (`src/core/constellation.py`, TG3.3, `ed-dev`)
+
+TG2.1 settled what a feature is, TG2.2 who decides one is there and TG2.3 which feature in one
+frame is the same object as one in the next. This module settles what a *configuration* is:
+`k` features plus the typed relations between them, described so the description survives
+leaving its domain.
+
+**The whole problem is one contrast already present in TG2.1.** `scale_ratio_to` is permitted
+across a domain boundary and `separation_to` is refused across one, because a ratio of two
+lengths is a number about the world and a distance in cells is a number about an array. So a
+relation is not "a quantity computed from two features"; it is that quantity *divided by
+something the two features carry themselves*. Forty cells at a scale of six cells and twelve
+hundred metres at a scale of a hundred and eighty metres are the same relation. Forty and
+twelve hundred are not, and the module contains no way to say otherwise.
+
+**Relations are computed within a domain and compared across one.** A constellation is drawn
+from a single dataset - a `FeatureSet` is already one domain, one dataset, one variable and one
+representation - so the coordinates the relations read are coordinates in a space that exists.
+What crosses the boundary afterwards is the `AttributedGraph`, split into `attributes` (the
+dimensionless view, which `matches` reads) and `carried` (domain, dataset, variable,
+representation, units, which nothing in `matches` can reach). As in TG2.1's
+`structural_signature`, the comparable view is **built rather than filtered**: putting a
+carried field back into a comparison is a visible edit to `_node_attributes`, not the
+consequence of a key someone forgot to remove. Absolute orientation does not appear there
+either - an angle measured from the grid's north is a property of how the array was stored -
+and it re-enters as *differences* on the edges, which is where it means something.
+
+**Eight relations, and sorting them by what each needs is a finding rather than a taxonomy.**
+`succession` needs nothing but a shared clock, because an ordering is dimensionless already:
+what came first came first in frames and in hours alike. `co_occurrence` needs a temporal
+scale, because simultaneity is a *tolerance*, and a tolerance in seconds is not a statement
+another domain can read. `distance` needs a spatial scale, `containment` an extent,
+`temporal_lag` a temporal scale, and `direction` and `convergence` an orientation - which the
+only extractor TG2.2 registers declares it does not report.
+
+**So two of the eight cannot be measured at all today, and they register anyway and refuse by
+name.** This is the design ruling of the slice. It is TG2.3's rule about gates carried into
+relations: a relation that treated an absent quantity as "no evidence against" would appear in
+a receipt, constrain nothing, and be indistinguishable from one that was doing work.
+`convergence` carries a second refusal of the same kind - it is refused under an *undirected*
+orientation convention, because an axis does not point, and a ridge at 170 degrees and one at
+350 are the same orientation.
+
+**`relation_axis` is how the registry reaches TG3.1.** A family priced over eight relations
+when three are measurable has declared five tests that could not have happened. That is not a
+conservative rounding in R18's direction - it is a receipt naming tests that never ran - so a
+declaration is built from `measurable_relations` rather than from `RELATIONS.names()`. Three
+measurable relations give an unordered-pair family of 3; all eight give 28.
+
+**Matching is exhaustive or refused.** Two graphs describe the same configuration if some
+correspondence of their nodes makes every attribute and every relation agree, which is `k!`
+comparisons; above `MAX_MATCH_NODES` (8) this refuses rather than falling back on a greedy
+assignment, because an approximate match that returns `True` is a claim. The `MatchReport`
+names the correspondence, the relations compared and **both carried records**, so a reader can
+see that two graphs matched while describing an amplitude field and a temperature field (R19),
+and can see whether the two came from different representations (R8) - stated, never compared.
+
+**What this slice deliberately does not do.** It does not match a configuration under rotation,
+rescaling and translation; that is TG3.4, whose whole acceptance is `4E.invariance` moving off
+`NOT_YET_RUNNABLE`, and claiming it here would leave that slice nothing to prove. A rotated
+triangle does match on the relations measured here, because distance and relative scale are
+rotation-invariant on their own - the relations that would fail are the two needing an
+orientation nothing reports yet. It does not mine for repeated configurations either; TG3.5
+does that, through TG3.1's declared family and TG3.2's split.
+
+**A defect in this slice, found by running it.** A graph built with `strict=False` records a
+refused relation instead of propagating it, and `matches` compared the relations the graph
+*declared* rather than the ones it carried. The result was that such a graph did not match
+**itself**, and the stated reason blamed the geometry - "no correspondence makes every
+relation agree" - for what was a hole in the record. A missing relation is now a refusal
+naming the edge and the reason it was not measured, and the caller narrows `relations` to what
+was actually measured.
+
 ### 3.8 Grid Geometry and Metric-Aware Operators (`src/physical_core/grid.py`, `operators.py`)
 
 Added in T3.5.13 (defect D13, standard E3). `GridSpec` is the physical metric attached to
@@ -2900,7 +2973,7 @@ See `VERIFICATION.md` for the captured command output behind every statement her
 | Item | Status |
 |---|---|
 | Python venv + dependencies | installed (torch 2.13.0+cu130, numpy 2.2.6, pydantic 1.10.26, SQLAlchemy 2.0.52, xarray 2025.6.1, FastAPI 0.110.3) |
-| Backend test suite | **1621 passed, 1 xfailed** (plus 1 skipped: opt-in live GCS) (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17, 351 after T3.5.6, 379 after T3.5.15, 407 after T3.5.19, 449 after T4C.5, 709 after T4A.4, 781 after T4B.4, 855 after T4C.5, 859 after T4C.5c, 882 after T5.1a CPU acceptance, 883 after RTX acceptance, 890 after portable profiles, 911 after T5.1b/D44, 917 after T5.1c, 933 after T5.1d/D45, 946 after T5.1e, 955 after T5.2a, 957 after T5.2b, 962 after T5.3a, 969 after T5.3b, 981 after T5.2c offline acceptance, 985 after T5.2d, 1000 after T5.0a, 1008 after T5.0b, 1027 after T5.6a offline acceptance, 1042 after T5.6b cube acceptance, 1056 after T5.6c matched evaluation, 1070 after T5.6d truth matching, 1080 after T5.6e orchestration, 1089 after T5.6f portable jobs, 1094 after T5.6g reporting, 1095 after the licence guard, 1102 after T4C.5d gate readiness, 1104 after D50 storage preflight, 1106 after T4C.5e overlap evidence, 1112 after T4C.5f campaign acceptance, 1116 after T4C.5g physical preflight, 1117 after T4C.5h preregistration - the `master` freeze; then on `ed-dev`, 1375 after TG2.1, 1429 after TG2.2, 1477 after TG2.3, 1536 after TG2.4, 1577 after TG3.1 and 1621 after TG3.2) |
+| Backend test suite | **1686 passed, 1 xfailed** (plus 1 skipped: opt-in live GCS) (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17, 351 after T3.5.6, 379 after T3.5.15, 407 after T3.5.19, 449 after T4C.5, 709 after T4A.4, 781 after T4B.4, 855 after T4C.5, 859 after T4C.5c, 882 after T5.1a CPU acceptance, 883 after RTX acceptance, 890 after portable profiles, 911 after T5.1b/D44, 917 after T5.1c, 933 after T5.1d/D45, 946 after T5.1e, 955 after T5.2a, 957 after T5.2b, 962 after T5.3a, 969 after T5.3b, 981 after T5.2c offline acceptance, 985 after T5.2d, 1000 after T5.0a, 1008 after T5.0b, 1027 after T5.6a offline acceptance, 1042 after T5.6b cube acceptance, 1056 after T5.6c matched evaluation, 1070 after T5.6d truth matching, 1080 after T5.6e orchestration, 1089 after T5.6f portable jobs, 1094 after T5.6g reporting, 1095 after the licence guard, 1102 after T4C.5d gate readiness, 1104 after D50 storage preflight, 1106 after T4C.5e overlap evidence, 1112 after T4C.5f campaign acceptance, 1116 after T4C.5g physical preflight, 1117 after T4C.5h preregistration - the `master` freeze; then on `ed-dev`, 1375 after TG2.1, 1429 after TG2.2, 1477 after TG2.3, 1536 after TG2.4, 1577 after TG3.1, 1621 after TG3.2 and 1686 after TG3.3) |
 | Ground-Truth Benchmark Suite | **19 PASS, 0 FAIL, 1 NOT_YET_RUNNABLE** (`python -m src.benchmarks`, exit 0) |
 | Frontend `npm install` + `npm run build` | passes, emits 1,386 modules + real JS/CSS assets (was: 1 module, no assets) |
 | Backend server | starts, serves OpenAPI, all smoke-tested endpoints return 200 |
@@ -3122,6 +3195,7 @@ able to sit three slices out of date.
 | `test_representation.py` | 59 | TG2.4 representation-induced feature audit: the floor on every plane of every registered lens, and the planted blob that proves the audit can see; the null propagated through the representation against the same null rebuilt inside it, measured on the dual tree where they differ and on the stationary transform where they do not; the FFT magnitude plane whose null nothing can exceed; the family of forty-five planes that rejects on 86% of structureless fields uncorrected, the ensemble refused as too small for it, and the correction registry that prices six identical columns as one test; the declared decimation an array does not have; and the plane R13 leaves no interior in |
 | `test_family_accounting.py` | 30 | TG3.1 family accounting: the T4C.6 declaration priced at 36 members and 3,005 surrogates from the frozen campaign JSON, with its label set compared against a real sweep rather than against its own count; every combinator's cheap count checked against its own enumeration; unordered triples registered from the test module; the unaffordable family refused with both R18 remedies computed, the narrowing checked by taking it and checked to be tight, and the case where no single axis can reach the ceiling; the zero-member term that scored as a remedy; and the admissibility audit that never moves the correction unit |
 | `test_preregistration.py` | 40 | TG3.2 the generate/confirm split: the T4C.6 family of 36 refused at an ensemble of 199 while a four-member frozen subset of it is affordable, corrected at four rather than at 36, on a partition opened once; a partition identified from a series whose values raise on access; an edited field named and an editor who rewrites the digest table too caught by the outer digest; the wholesale rewrite that verifies against itself and is caught only against the published digest; the second, entirely honest seal against the same held-out data refused; the lineage refusals for mining on held-out and freezing against train; a refusal never spending the partition while a confirmation always does; and the channel-count/label contradiction found by running it |
+| `test_constellation.py` | 65 | TG3.3 constellations as attributed graphs: the planted triangle built twice, in cells as a dimensionless amplitude and in metres as a temperature, matching as the same attributed graph, with a relation registered from the test module *without* the dimensionless division making the same two graphs disagree; all eight relations registered with their requirements declared; `direction` and `convergence` refusing against TG2.2's own `reports_orientation: False` capability; `convergence` refused on an undirected axis; a bearing refused across a periodic seam and from a point to itself; the geometric-mean reference that does not follow the larger scale; the relation axis a TG3.1 family may be priced over, 3 against 28; matching exhaustive to 8 nodes and refused above it; and the non-strict graph that did not match itself, found by running it |
 | `test_feature_extraction.py` | 39 | TG2.2 extraction as a registry: the three planted features recovered across a six-fold range of scales and under rotation, translation and rescaling; both null benchmarks silent across three seeds with the loosened-alpha control that makes the silence mean something; the strict-comparison off-by-one; an unresolvable alpha refused before the ensemble; a second extractor registered from the test module; the periodic-axis seam and the self-scaling R13 refusal; and the one-feature-per-frame handoff to TG2.3 |
 | `test_feature_record.py` | 37 | TG2.1 canonical feature record: features measured off the advected-vortex benchmark recovering its known velocity and scale doubling, the R19 refusals (magnitude, separation, elapsed time, mixed sets), the periodic-axis refusal, orientation conventions and the surrogate resolution floor, a fourth convention and a fourth significance basis registered from the test module, and defect D59 |
 | `test_level_axis.py` | 19 | TG1.5 vertical coordinates: the registry and its sense of up, a height bank labelling its offsets the opposite way to pressure, a fourth coordinate registered from the test module, the declaration travelling from reader to signature, `level_hpa` refusing a non-pressure axis, and the pressure arithmetic unchanged |
@@ -3168,7 +3242,7 @@ able to sit three slices out of date.
 | `test_wavelet_bank.py` | 27 | T4B.2 expansion through the engine's own parameter matrix, the 1,000-combination guard, decompose_bank / extract_scale_signature, the vertical-bank refusals |
 | `test_transforms.py` | 13 | fft/dct/dwt/dtcwt/hybrid round trips; D1 recorded as a strict xfail |
 | `test_zarr_source.py` | 59 | R13 geometry, chunk-hostility, byte counting, streaming content identity, exact chunk-bounded frame reader, cache/provenance round trip, NetCDF engine and HTTP surface |
-| **total** | **1323** | |
+| **total** | **1388** | |
 
 ### 7.2h A surrogate null that was not the null it claimed (T4C.5)
 
