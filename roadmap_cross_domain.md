@@ -976,11 +976,52 @@ pass a benchmark written before them.
 **This phase is where R18 is either solved or the programme is bounded by it.** Do the
 multiplicity work *first*; the mining code is comparatively easy and will be worthless without it.
 
-**TG3.1 Family accounting.** Before any mining code: an exact enumerator that, given a search
-specification, returns the family size and the surrogate count `required_surrogates` demands, and
-**refuses the specification** when `check_power` fails. Refusals name which R18 remedy applies.
-**Acceptance:** the enumerator reproduces T4C.6's known family (36 tests, 3,005 surrogates) from
-its campaign JSON.
+**TG3.1 Family accounting. DONE (`ed-dev`).** `src/core/family.py` holds `SearchAxis`,
+`SearchTerm`, `FAMILY_COMBINATORS`, `SearchSpecification`, `FamilyAccount`,
+`max_affordable_family` and `FamilyUnaffordableError`, with
+`GateProtocol.search_specification()` as the bridge from the frozen atmospheric protocol.
+
+*   **A family is enumerated, not computed from a formula.** `GateProtocol.family_size` is
+    correct and describes exactly one search shape; a second formula beside it is a second
+    chance to be wrong by a factor nobody notices, and a bare family size cannot fail. A
+    specification is terms over named, enumerated axes, and each registered combinator both
+    counts (which prices a family too large to build) and enumerates (which a sweep is checked
+    against). A test asserts the two agree for every entry, because implementations that drift
+    apart would make a refusal and a receipt describe different searches undetectably.
+*   **`ordered_pairs` is why the registry exists rather than a product rule.** The T4C.6 family
+    is ordered *distinct* pairs of three scales crossed with six lags, and no Cartesian rule
+    expresses either the ordering or the distinctness. TG3.3's `k`-feature constellations are a
+    third shape; unordered triples register from the test module and drive a declaration.
+*   **The refusal computes both R18 remedies rather than naming them.** `max_affordable_family`
+    bisects the largest family the declared ensemble can still reject one member of - 2, 4, 8,
+    15 and 54 members at 99, 199, 499, 999 and 4,999 surrogates under BY at 0.05 - and reports
+    per axis the largest number of values that reaches it. The narrowing is checked by taking
+    it and checked to be tight; where no single axis can reach the ceiling the refusal says so
+    instead of sending the reader round a loop. The generate/confirm split is stated as what it
+    is: not a cheaper family, a correction moved onto one frozen before the held-out partition
+    was opened.
+*   **A defect in this slice, found by running it.** The narrowing search reported "scale from 5
+    to 1 values" as sufficient. `ordered_pairs` over one value has no members, so the family was
+    empty and every ceiling was satisfied - the remedy was to empty the search. A zero-member
+    term is now refused, and reaching a ceiling by emptying one does not count as achievable.
+*   **The admissibility audit never moves the correction unit** (design option A). A lag below
+    its support floor was never testable and is worth counting before acquisition, but the
+    declared size and `correction_unit` both stay on the receipt: correcting only the members
+    that survived a screen is correcting a family chosen after looking. An audit that empties
+    the family, or one whose basis is not stated, is refused.
+*   **The phase's boundary is now a measurement rather than an argument.** The constellation
+    sweep R18 warns about - 5 scales x 4 orientations x 8 lags x 7 representations - is **4,480
+    members needing 805,029 surrogates**, about 7.2e9 estimator evaluations at the sweep's own
+    cost. That is this module's output, not a claim about it.
+
+**Acceptance met.** Read from `campaigns/t4c6_nz_era5_temperature_850_v1.json` rather than from
+a literal, the T4C.6 declaration prices at exactly **36 members and 3,005 surrogates**, agreeing
+with the formula it generalises and with the `check_power` result `GateProtocol.validate` already
+enforced - and its **label set is compared against a real sweep**, in order, because 36 agreeing
+with 36 for two different reasons would pass a count check.
+
+**Evidence:** `src/tests/test_family_accounting.py`, 30 tests. Full suite 1577 passed, 1
+skipped, 1 xfailed; benchmark suite unchanged at 19 PASS, 0 FAIL, 1 NOT_YET_RUNNABLE.
 
 **TG3.2 Generate/confirm split.** Machinery for mining on train, freezing the declaration under a
 content hash, and testing once on held-out — with the frozen declaration cryptographically bound

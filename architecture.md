@@ -1604,6 +1604,92 @@ rather than assumed: the same lenses, the same corrected level and a six-sigma b
 nine findings, in the raw field, both approximations, the low-pass half of the hybrid and the
 coarse detail bands - so "it found nothing" is a statement about the field.
 
+### 3.6r The declared family is priced before anything enumerates (`src/core/family.py`, TG3.1, `ed-dev`)
+
+Phase G3 opens with the multiplicity work, deliberately before any mining code, because rule
+R18 is the phase's binding constraint and the mining is worthless without it. TG2.4 made the
+case by hitting it: the audit's own forty-five-plane family was unaffordable at the ensemble
+size it started with, and that was a family nobody had budgeted for because nobody had counted
+it in advance.
+
+**What existed and why it was not enough.** `GateProtocol.family_size` is
+`n_scales * (n_scales - 1) * len(lags)`, which is correct, and which describes exactly one
+search shape. A constellation sweep over scales x orientations x lags x representations x
+motif configurations is a different shape. A second formula written beside the first is a
+second chance to be wrong by a factor nobody notices, and the wrongness would be invisible:
+a family size is a bare number, and a bare number cannot fail.
+
+`SearchSpecification` is therefore a declaration made of **terms over named, enumerated
+axes**, and each term's combinator both counts and enumerates:
+
+| Combinator | Members | Why a product rule does not cover it |
+|---|---|---|
+| `product` | Cartesian across its axes | - |
+| `ordered_pairs` | ordered distinct pairs from one axis | source->target and target->source are two questions |
+| `unordered_pairs` | unordered distinct pairs | a symmetric relation is one test, not two |
+
+`FAMILY_COMBINATORS` is a registry (standard E1) because TG3.3's `k`-feature constellations are
+neither a product nor a pair; the acceptance registers unordered triples from the test module
+and drives a whole declaration through it. `count` prices a family that may be far too large to
+build and `enumerate` builds the one that is not, so a test asserts the two agree for every
+registered entry at four axis sizes - two implementations that could drift apart would make a
+refusal and a receipt describe different searches with nothing able to detect it.
+
+**The acceptance is the label set, not the count.** `GateProtocol.search_specification()`
+renders `source->target@lag`, the same labels `cross_scale_dependency` emits, and the test
+compares against a **real sweep** on a three-channel record over the frozen lag family, in
+order. Read from `campaigns/t4c6_nz_era5_temperature_850_v1.json` rather than from a literal,
+the T4C.6 declaration prices at exactly **36 members and 3,005 surrogates**, agreeing with both
+the formula it generalises and the `check_power` result `GateProtocol.validate` already
+enforced. 36 agreeing with 36 for two different reasons would have passed a count check.
+
+**`declare()` refuses; `account()` reports.** Mining code calls `declare()`, which raises
+`FamilyUnaffordableError` when `check_power` fails, so a pass that cannot reject anything is
+refused before it runs instead of run and read as a negative afterwards. The refusal computes
+both remedies R18 admits rather than naming them:
+
+*   **preregistered narrowing** - `max_affordable_family` bisects the largest family the
+    declared ensemble can still reject one member of (2, 4, 8, 15 and 54 members at 99, 199,
+    499, 999 and 4,999 surrogates under BY at 0.05), then reports per axis the largest number
+    of values that reaches it. At 4,999 surrogates a five-scale eight-lag sweep (160 members,
+    needing 18,097) is fixed by narrowing the lag axis alone, and the test checks that remedy
+    by **taking** it - and checks it is tight, since one value more is still refused.
+*   **generate/confirm split** (TG3.2), stated as what it is: it does not make the family
+    cheaper, it moves the correction onto a confirmatory family frozen before the held-out
+    partition is opened.
+
+At 499 surrogates neither axis of that sweep can get there alone, and the refusal says so
+rather than sending the reader round a loop.
+
+**A defect in this slice, found by running it.** The narrowing search reported *"scale from 5
+to 1 values"* as sufficient at 499 surrogates. `ordered_pairs` over a single value has **no
+members**, so the family size was zero and zero is under every ceiling. The remedy was to
+empty the search - a pass with nothing in it, and an empty result to read. A term of size zero
+is now refused at construction, and reaching a ceiling by emptying a term is not counted as
+achievable.
+
+**The programme's boundary is measured here rather than argued.** Phase G3's exit criterion
+says that if TG3.1 proves every scientifically interesting family unaffordable, that is the
+real boundary and is written up as such. The constellation sweep R18 warns about - 5 scales x
+4 orientations x 8 lags x 7 representations - is **4,480 members needing 805,029 surrogates**,
+which at the sweep's own `2 x family x n_surrogates` cost is about 7.2e9 estimator evaluations.
+That is an output of this module, not a claim about it.
+
+**Option A on admissibility, and it is a refusal rather than a convenience.** A lag below its
+support floor is a member that was never testable, and `audit_admissibility` reports how many
+there are before acquisition - but it does **not** move `family_size`, and both the declared
+size and `correction_unit` stay on the receipt beside the shortfall. Correcting only the
+members that survived a screen is correcting a family chosen after looking, which is the
+specific move R18 forbids. An audit that empties the family is refused, because a pass with no
+possible outcome must not run and report nothing; an exclusion with no stated basis is refused,
+because a justification that is not recorded is indistinguishable from one chosen to improve
+the answer.
+
+`fingerprint()` is a content hash over the whole declaration - terms, axis values, alpha,
+correction and ensemble size - so TG3.2 has exactly one thing to freeze. Nothing here is
+evidence: `FamilyAccount.describe()` carries a claim boundary saying that affordability means
+the pass is capable of rejecting a member and nothing more.
+
 ### 3.8 Grid Geometry and Metric-Aware Operators (`src/physical_core/grid.py`, `operators.py`)
 
 Added in T3.5.13 (defect D13, standard E3). `GridSpec` is the physical metric attached to
@@ -2735,7 +2821,7 @@ See `VERIFICATION.md` for the captured command output behind every statement her
 | Item | Status |
 |---|---|
 | Python venv + dependencies | installed (torch 2.13.0+cu130, numpy 2.2.6, pydantic 1.10.26, SQLAlchemy 2.0.52, xarray 2025.6.1, FastAPI 0.110.3) |
-| Backend test suite | **1536 passed, 1 xfailed** (plus 1 skipped: opt-in live GCS) (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17, 351 after T3.5.6, 379 after T3.5.15, 407 after T3.5.19, 449 after T4C.5, 709 after T4A.4, 781 after T4B.4, 855 after T4C.5, 859 after T4C.5c, 882 after T5.1a CPU acceptance, 883 after RTX acceptance, 890 after portable profiles, 911 after T5.1b/D44, 917 after T5.1c, 933 after T5.1d/D45, 946 after T5.1e, 955 after T5.2a, 957 after T5.2b, 962 after T5.3a, 969 after T5.3b, 981 after T5.2c offline acceptance, 985 after T5.2d, 1000 after T5.0a, 1008 after T5.0b, 1027 after T5.6a offline acceptance, 1042 after T5.6b cube acceptance, 1056 after T5.6c matched evaluation, 1070 after T5.6d truth matching, 1080 after T5.6e orchestration, 1089 after T5.6f portable jobs, 1094 after T5.6g reporting, 1095 after the licence guard, 1102 after T4C.5d gate readiness, 1104 after D50 storage preflight, 1106 after T4C.5e overlap evidence, 1112 after T4C.5f campaign acceptance, 1116 after T4C.5g physical preflight, 1117 after T4C.5h preregistration - the `master` freeze; then on `ed-dev`, 1375 after TG2.1, 1429 after TG2.2, 1477 after TG2.3 and 1536 after TG2.4) |
+| Backend test suite | **1577 passed, 1 xfailed** (plus 1 skipped: opt-in live GCS) (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17, 351 after T3.5.6, 379 after T3.5.15, 407 after T3.5.19, 449 after T4C.5, 709 after T4A.4, 781 after T4B.4, 855 after T4C.5, 859 after T4C.5c, 882 after T5.1a CPU acceptance, 883 after RTX acceptance, 890 after portable profiles, 911 after T5.1b/D44, 917 after T5.1c, 933 after T5.1d/D45, 946 after T5.1e, 955 after T5.2a, 957 after T5.2b, 962 after T5.3a, 969 after T5.3b, 981 after T5.2c offline acceptance, 985 after T5.2d, 1000 after T5.0a, 1008 after T5.0b, 1027 after T5.6a offline acceptance, 1042 after T5.6b cube acceptance, 1056 after T5.6c matched evaluation, 1070 after T5.6d truth matching, 1080 after T5.6e orchestration, 1089 after T5.6f portable jobs, 1094 after T5.6g reporting, 1095 after the licence guard, 1102 after T4C.5d gate readiness, 1104 after D50 storage preflight, 1106 after T4C.5e overlap evidence, 1112 after T4C.5f campaign acceptance, 1116 after T4C.5g physical preflight, 1117 after T4C.5h preregistration - the `master` freeze; then on `ed-dev`, 1375 after TG2.1, 1429 after TG2.2, 1477 after TG2.3, 1536 after TG2.4 and 1577 after TG3.1) |
 | Ground-Truth Benchmark Suite | **19 PASS, 0 FAIL, 1 NOT_YET_RUNNABLE** (`python -m src.benchmarks`, exit 0) |
 | Frontend `npm install` + `npm run build` | passes, emits 1,386 modules + real JS/CSS assets (was: 1 module, no assets) |
 | Backend server | starts, serves OpenAPI, all smoke-tested endpoints return 200 |
@@ -2955,6 +3041,7 @@ able to sit three slices out of date.
 | `test_geometry_registry.py` | 20 | TG1.2 geometry registry: the three builtins' metrics, crops, resamples and provenance unchanged; capability-driven `is_physical`/`length_units`/`latitudes`; a fourth geometry (`polar_scan`) registered from the test module with a non-uniform, non-spherical metric; the Cartesian Laplacian refusing it; `latitude`/`longitude` recognised as a sphere |
 | `test_tracking.py` | 47 | TG2.3 frame-to-frame association: `4D.tracking` moving from NOT_YET_RUNNABLE to PASS with the recorded velocity and doubling time recovered from the field alone; the coincidence gate derived from alpha and the frame's own density and tightening when the frame crowds; a declared bound as a rate against an irregular clock; greedy and Hungarian disagreeing measurably, plus a third associator registered from the test module and two rogue ones refused; the seam crossing that is one track on a torus and two on a plane; the orientation gate reading the convention rather than the number and refused outright on an extractor that reports none; and the empty-frame and short-clock regressions |
 | `test_representation.py` | 59 | TG2.4 representation-induced feature audit: the floor on every plane of every registered lens, and the planted blob that proves the audit can see; the null propagated through the representation against the same null rebuilt inside it, measured on the dual tree where they differ and on the stationary transform where they do not; the FFT magnitude plane whose null nothing can exceed; the family of forty-five planes that rejects on 86% of structureless fields uncorrected, the ensemble refused as too small for it, and the correction registry that prices six identical columns as one test; the declared decimation an array does not have; and the plane R13 leaves no interior in |
+| `test_family_accounting.py` | 30 | TG3.1 family accounting: the T4C.6 declaration priced at 36 members and 3,005 surrogates from the frozen campaign JSON, with its label set compared against a real sweep rather than against its own count; every combinator's cheap count checked against its own enumeration; unordered triples registered from the test module; the unaffordable family refused with both R18 remedies computed, the narrowing checked by taking it and checked to be tight, and the case where no single axis can reach the ceiling; the zero-member term that scored as a remedy; and the admissibility audit that never moves the correction unit |
 | `test_feature_extraction.py` | 39 | TG2.2 extraction as a registry: the three planted features recovered across a six-fold range of scales and under rotation, translation and rescaling; both null benchmarks silent across three seeds with the loosened-alpha control that makes the silence mean something; the strict-comparison off-by-one; an unresolvable alpha refused before the ensemble; a second extractor registered from the test module; the periodic-axis seam and the self-scaling R13 refusal; and the one-feature-per-frame handoff to TG2.3 |
 | `test_feature_record.py` | 37 | TG2.1 canonical feature record: features measured off the advected-vortex benchmark recovering its known velocity and scale doubling, the R19 refusals (magnitude, separation, elapsed time, mixed sets), the periodic-axis refusal, orientation conventions and the surrogate resolution floor, a fourth convention and a fourth significance basis registered from the test module, and defect D59 |
 | `test_level_axis.py` | 19 | TG1.5 vertical coordinates: the registry and its sense of up, a height bank labelling its offsets the opposite way to pressure, a fourth coordinate registered from the test module, the declaration travelling from reader to signature, `level_hpa` refusing a non-pressure axis, and the pressure arithmetic unchanged |
@@ -3001,7 +3088,7 @@ able to sit three slices out of date.
 | `test_wavelet_bank.py` | 27 | T4B.2 expansion through the engine's own parameter matrix, the 1,000-combination guard, decompose_bank / extract_scale_signature, the vertical-bank refusals |
 | `test_transforms.py` | 13 | fft/dct/dwt/dtcwt/hybrid round trips; D1 recorded as a strict xfail |
 | `test_zarr_source.py` | 59 | R13 geometry, chunk-hostility, byte counting, streaming content identity, exact chunk-bounded frame reader, cache/provenance round trip, NetCDF engine and HTTP surface |
-| **total** | **1253** | |
+| **total** | **1283** | |
 
 ### 7.2h A surrogate null that was not the null it claimed (T4C.5)
 

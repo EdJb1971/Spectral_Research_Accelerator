@@ -54,6 +54,7 @@ import numpy as np
 
 from src.core.channel_series import ChannelSeriesLike, require_gate_measure
 from src.core.errors import InvalidParameterError
+from src.core.family import SearchAxis, SearchSpecification, SearchTerm
 from src.core.lag_policy import BoundLagPolicy, bind as bind_lag_policy, support_floor
 from src.statistics.multiple_comparisons import check_power
 from src.statistics.significance import screen
@@ -93,6 +94,33 @@ class GateProtocol:
     @property
     def family_size(self) -> int:
         return self.n_scales * (self.n_scales - 1) * len(self.lags)
+
+    def search_specification(self) -> "SearchSpecification":
+        """This protocol expressed as a TG3.1 `SearchSpecification`.
+
+        The formula above is correct and describes exactly one search shape. A constellation
+        sweep is a different shape, and TG3.1's enumerator is where every shape is priced by
+        one piece of arithmetic instead of one formula per caller. This is the bridge: the
+        specification declares the same ordered distinct scale pairs crossed with the same
+        lags, renders the same `source->target@lag` labels the sweep emits, and a test
+        asserts both the count and the label set agree with a real sweep rather than only
+        with this formula.
+        """
+        return SearchSpecification(
+            terms=(
+                SearchTerm("ordered_pairs",
+                           (SearchAxis("scale", tuple(range(1, int(self.n_scales) + 1))),)),
+                SearchTerm("product",
+                           (SearchAxis("lag_frames", tuple(int(v) for v in self.lags)),)),
+            ),
+            n_surrogates=int(self.n_surrogates),
+            alpha=float(self.alpha),
+            correction=self.correction,
+            label_format="{0}->{1}@{2}",
+            study_id=self.study_id,
+            notes={"estimator": self.estimator, "measure": self.measure,
+                   "cadence_seconds": float(self.cadence_seconds)},
+        )
 
     @property
     def samples_per_joint_cell_required(self) -> int:
