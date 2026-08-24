@@ -168,15 +168,17 @@ def test_pending_gates_are_reported_not_hidden(suite_results):
     start meaning "we did not look".
     """
     counts = summarise(suite_results)
-    # Was 3 pending, then 2, now 1. `4C.surrogate_null` became enforceable in T4C.5 when the
-    # surrogate machinery landed, and `4D.tracking` in TG2.3 when the tracker did. That
-    # transition is the point of the three-valued outcome: a gate becoming real should change
-    # this number, and this test is what makes the change deliberate rather than incidental.
-    assert counts["NOT_YET_RUNNABLE"] >= 1
-    assert counts["PASS"] >= 19
+    # Was 3 pending, then 2, then 1, and now none. `4C.surrogate_null` became enforceable in
+    # T4C.5 when the surrogate machinery landed, `4D.tracking` in TG2.3 when the tracker did,
+    # and `4E.invariance` in TG3.4 when a matcher existed to put to it. That transition is
+    # the point of the three-valued outcome: a gate becoming real should change this number,
+    # and this test is what makes the change deliberate rather than incidental. It is now an
+    # equality, because there is nothing left to graduate and a new pending gate should have
+    # to be argued for here.
+    assert counts["NOT_YET_RUNNABLE"] == 0
+    assert counts["PASS"] >= 20
     report = format_report(suite_results)
-    assert "NOT_YET_RUNNABLE" in report
-    assert "Gates defined but not yet enforceable" in report
+    assert "Gates defined but not yet enforceable" not in report
     assert "4E.invariance" in report
     # ...and the ones that graduated must now be genuine PASSes, not silently absent.
     surrogate = [c for c in suite_results["fractional_brownian"]

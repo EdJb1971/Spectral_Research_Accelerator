@@ -1842,6 +1842,124 @@ relation agree" - for what was a hole in the record. A missing relation is now a
 naming the edge and the reason it was not measured, and the caller narrows `relations` to what
 was actually measured.
 
+### 3.6u Invariant matching, and the tolerance that is measured rather than chosen (`src/core/invariance.py`, TG3.4, `ed-dev`)
+
+The `4E.invariance` gate has been defined since T3.5.17 and reported `NOT_YET_RUNNABLE` ever
+since, because the benchmark could present the planted triangle rotated, rescaled and
+translated but nothing existed to be asked whether it was the same triangle. It now reports
+**PASS**, and it was the last pending gate in the suite: the benchmark run is 20 PASS, 0 FAIL,
+0 NOT_YET_RUNNABLE.
+
+**A matcher here is not an algorithm, it is a choice of what to measure.** Every entry in
+`MATCHERS` is a function from features to an `AttributedGraph`, and the comparison is always
+TG3.3's exhaustive `AttributedGraph.matches`. A registered matcher therefore cannot fail by
+being careless about the node correspondence, because it does not get to decide the
+correspondence; it can only fail by keying on the wrong quantity, which is the failure the
+gate is about. Two are registered. `relative_geometry` divides each separation by the
+geometric mean of every separation in the configuration and declares invariance to all three
+transforms. `absolute_position` keys on coordinates and raw separations, declares invariance
+to nothing, and is the position-memorising control the roadmap asked to see fail.
+
+**A dimensionless relation is only as invariant as the thing it divided by.** TG3.3's
+`distance` is a separation over the geometric mean of the two features' *estimated* spatial
+scales. It is dimensionless, so it looked scale-invariant, and on exact synthetic geometry it
+is - the relation does not move at all under a rescaling when the scale is known exactly. On
+the benchmark it moves by 4.8% at `scale_factor=3` against a 3.3% noise floor, because the
+extractor's scale estimate drifts from about +1.4% at a 6-cell sigma to about -2.6% at 18
+cells while the separation itself is recovered to better than 1%. The whole of the drift lands
+in the quotient. Neither the relation nor the extractor is at fault; what is measured is that
+the two compose badly, and dividing by a *modelled* quantity imports that quantity's bias into
+the relation that divided by it.
+
+**The invariant that survives divides one measurement by another of the same kind.** A
+separation over a separation cancels its units exactly and involves no estimated scale at all,
+and it reproduces to within the noise across all three transforms. The price is that it needs
+three features: with two there is one edge, its ratio to its own mean is 1, and a matcher that
+returns the same signature for every configuration reports a discovery on every pair it is
+shown. `build_signature` refuses a pair for `relative_geometry` on exactly that ground - which
+is also why TG3.3 divided by the modelled scale, and was right to for two features.
+
+**`scale_normalised` is public and deliberately unregistered.** It is TG3.3's `distance`
+comparison, unchanged, and TG3.5 will want it, because it is the one that works on a pair and
+crosses a domain boundary. It is not in `MATCHERS` because a registry entry carries a
+declaration and this one has no declaration that can be demonstrated: measured directly it is
+not rescaling-invariant, but tested the way `measure_invariance` tests, over seven rescalings,
+the evidence comes to `p = 0.016` and does not survive the family correction. True and unproven
+at once is not a state a declaration can hold, so the function stays public and the registry
+stays honest.
+
+**The extractor does not return its features in a stable order.** The order follows which blob
+happened to be brightest, so it shuffles between noise realisations. The first version of the
+noise floor compared replicate node 0 with replicate node 0 and measured that shuffle: it put
+`absolute_position`'s floor at 0.27, wide enough that a configuration rotated by 37 degrees
+matched its own memorised pixel coordinates. `best_deviation` minimises over the same `k!`
+correspondences a match searches, which brought the floor to 0.026.
+
+**A noise floor is an operating point; invariance needs a test.** `calibrate_match_tolerance`
+re-measures the same configuration under different noise and reports the largest disagreement
+it produced. There is no safety factor, because a safety factor is a free parameter and a free
+parameter is where a tuned result hides - and the false-rejection rate that comes with it,
+about `1/(n_null + 1)`, is written into the tolerance's own basis rather than left implicit.
+But thresholding a family of presentations at that value would reject a genuinely invariant
+matcher about one time in five, which is R18's subject exactly: thirteen chances at a
+one-in-sixty-seven event. `measure_invariance` instead compares the presentations against the
+whole null distribution with a one-sided rank test, on the reasoning that a presentation and a
+replicate measure the same thing whenever the matcher is invariant, and divides alpha across
+the tests actually run - one per transform, plus the scale recovery.
+
+**A test that could not have failed does not confer anything.** `InvarianceTest.power_floor` is
+the smallest p-value the comparison could return, and a test whose floor sits above its own
+alpha is marked `vacuous` and grants no invariance. This is TG2.4's rule about a plane whose
+null nothing could exceed, carried into a rank test: two replicates give one null value, and
+one presentation against one null value cannot report a p-value below 0.5 however wrong the
+matcher is.
+
+**A declared capability is measured, not trusted.** `audit_declared_invariance` runs every
+registered matcher against every presentation and compares what it survived with what it
+declared. Overclaiming fails, and so does understating, for the reason TG3.1's relation axis
+gives: a receipt naming a property the run did not have is wrong in either direction, and a
+matcher that under-declares makes a caller reach for a heavier one it did not need. The
+position-memorising control therefore fails by the general rule applied to it rather than by a
+special case written for it, and a future matcher that overclaims will fail the same way with
+no edit to the gate.
+
+**Only a single transform can attribute a result.** A presentation combining rotation,
+translation and rescaling is measured and reported but confers no invariance on its own,
+because a combined presentation that matched could have matched because two errors cancelled,
+and a cancellation is not a property.
+
+**The scale-aware reading.** The benchmark's known answer has recorded
+`scale_ratio_vs_reference` since T3.5.17 and nothing read it, which is the same species of
+defect as a relation that constrains nothing. `recover_scale_ratio` takes the `MatchReport`
+rather than a flag, so it structurally cannot run before a decision has been made: the
+separation scale lives in `carried`, nothing in `matches` can read it, and this reads it only
+to describe a match already decided without it (R19). It is recovered from the separations
+rather than from the estimated scales, and across the benchmark's sixfold range it returns
+`scale_factor` to better than 1% where the scale estimate drifts by 6%. Across a unit boundary
+it refuses by name and says why - a configuration in cells is not a number of times bigger than
+one in metres, and the match that crossed that boundary crossed it precisely because it had
+divided the units out. The recovery is judged against its *own* noise floor, measured by
+`scale_recovery_null`; the first version of the gate judged it against the shape's floor, which
+is the noise of a different number, and failed a correct matcher on it.
+
+**What the gate refuses to accept as a pass**, beyond the matchers' declarations: a noise floor
+built from fewer replicates than the benchmark's known answer requires, because that floor is a
+maximum and a maximum over few samples is biased low in the direction that rejects a matcher
+which is invariant; any vacuous test; and a run in which no scale ratio was recovered, since a
+matcher blind to scale and a matcher that measures scale and states it both match a rescaled
+triangle, and only one of them produces the number. The minima live in
+`truth_planted_configuration` rather than in the check, because a gate that decides how hard to
+look at the moment it looks can always decide to look less hard.
+
+**What this slice does not do.** It does not recover a scale ratio across a domain boundary; a
+ratio of separations in cells to separations in metres is not a number, and TG3.5 is where a
+cross-domain configuration will need one, if it needs one at all. It does not mine for repeated
+configurations - that is TG3.5, through TG3.1's declared family and TG3.2's split. And the
+gate's transformed presentations are built from a fixed label rather than from the run's root
+seed, so varying the root seed varies the reference and not the presentations; the gate has
+been confirmed to pass at four root seeds, which is four references against one presentation
+set rather than four independent runs.
+
 ### 3.8 Grid Geometry and Metric-Aware Operators (`src/physical_core/grid.py`, `operators.py`)
 
 Added in T3.5.13 (defect D13, standard E3). `GridSpec` is the physical metric attached to
@@ -1904,7 +2022,7 @@ offline and declares no truth.
 *   `runner.py`, `__main__.py` - report and CLI (`python -m src.benchmarks`, exit 1 on any
     failure, usable directly as a CI gate).
 
-Current status: **19 PASS, 0 FAIL, 1 NOT_YET_RUNNABLE**. See Section 7.2f.
+Current status: **20 PASS, 0 FAIL, 0 NOT_YET_RUNNABLE**. See Section 7.2f.
 
 ### 3.13 Cloud-Native ERA5 over Zarr (`src/data_layer/zarr_source.py`, T3.5.18)
 
@@ -2973,8 +3091,8 @@ See `VERIFICATION.md` for the captured command output behind every statement her
 | Item | Status |
 |---|---|
 | Python venv + dependencies | installed (torch 2.13.0+cu130, numpy 2.2.6, pydantic 1.10.26, SQLAlchemy 2.0.52, xarray 2025.6.1, FastAPI 0.110.3) |
-| Backend test suite | **1686 passed, 1 xfailed** (plus 1 skipped: opt-in live GCS) (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17, 351 after T3.5.6, 379 after T3.5.15, 407 after T3.5.19, 449 after T4C.5, 709 after T4A.4, 781 after T4B.4, 855 after T4C.5, 859 after T4C.5c, 882 after T5.1a CPU acceptance, 883 after RTX acceptance, 890 after portable profiles, 911 after T5.1b/D44, 917 after T5.1c, 933 after T5.1d/D45, 946 after T5.1e, 955 after T5.2a, 957 after T5.2b, 962 after T5.3a, 969 after T5.3b, 981 after T5.2c offline acceptance, 985 after T5.2d, 1000 after T5.0a, 1008 after T5.0b, 1027 after T5.6a offline acceptance, 1042 after T5.6b cube acceptance, 1056 after T5.6c matched evaluation, 1070 after T5.6d truth matching, 1080 after T5.6e orchestration, 1089 after T5.6f portable jobs, 1094 after T5.6g reporting, 1095 after the licence guard, 1102 after T4C.5d gate readiness, 1104 after D50 storage preflight, 1106 after T4C.5e overlap evidence, 1112 after T4C.5f campaign acceptance, 1116 after T4C.5g physical preflight, 1117 after T4C.5h preregistration - the `master` freeze; then on `ed-dev`, 1375 after TG2.1, 1429 after TG2.2, 1477 after TG2.3, 1536 after TG2.4, 1577 after TG3.1, 1621 after TG3.2 and 1686 after TG3.3) |
-| Ground-Truth Benchmark Suite | **19 PASS, 0 FAIL, 1 NOT_YET_RUNNABLE** (`python -m src.benchmarks`, exit 0) |
+| Backend test suite | **1742 passed, 1 xfailed** (plus 1 skipped: opt-in live GCS) (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17, 351 after T3.5.6, 379 after T3.5.15, 407 after T3.5.19, 449 after T4C.5, 709 after T4A.4, 781 after T4B.4, 855 after T4C.5, 859 after T4C.5c, 882 after T5.1a CPU acceptance, 883 after RTX acceptance, 890 after portable profiles, 911 after T5.1b/D44, 917 after T5.1c, 933 after T5.1d/D45, 946 after T5.1e, 955 after T5.2a, 957 after T5.2b, 962 after T5.3a, 969 after T5.3b, 981 after T5.2c offline acceptance, 985 after T5.2d, 1000 after T5.0a, 1008 after T5.0b, 1027 after T5.6a offline acceptance, 1042 after T5.6b cube acceptance, 1056 after T5.6c matched evaluation, 1070 after T5.6d truth matching, 1080 after T5.6e orchestration, 1089 after T5.6f portable jobs, 1094 after T5.6g reporting, 1095 after the licence guard, 1102 after T4C.5d gate readiness, 1104 after D50 storage preflight, 1106 after T4C.5e overlap evidence, 1112 after T4C.5f campaign acceptance, 1116 after T4C.5g physical preflight, 1117 after T4C.5h preregistration - the `master` freeze; then on `ed-dev`, 1375 after TG2.1, 1429 after TG2.2, 1477 after TG2.3, 1536 after TG2.4, 1577 after TG3.1, 1621 after TG3.2, 1686 after TG3.3 and 1742 after TG3.4) |
+| Ground-Truth Benchmark Suite | **20 PASS, 0 FAIL, 0 NOT_YET_RUNNABLE** (`python -m src.benchmarks`, exit 0) |
 | Frontend `npm install` + `npm run build` | passes, emits 1,386 modules + real JS/CSS assets (was: 1 module, no assets) |
 | Backend server | starts, serves OpenAPI, all smoke-tested endpoints return 200 |
 | End-to-end experiment sweep | 9-run parameter sweep completes 9/9, writes 28 lineage nodes / 54 edges, hypothesis engine returns results |
@@ -3136,12 +3254,17 @@ the float32 defect ships.
 
 `src/benchmarks/` holds ten datasets whose correct answer is known before analysis. Five of
 them are **null benchmarks** - their answer is "there is nothing here". Current status:
-**19 PASS, 0 FAIL, 1 NOT_YET_RUNNABLE.**
+**20 PASS, 0 FAIL, 0 NOT_YET_RUNNABLE.**
 
-The one pending entry gates a stage that does not exist yet (4E constellation matching).
-`4D.tracking` **graduated to an enforced PASS** in TG2.3, on `advected_vortex_sequence` and
-on the `advected_vortex_periodic_sequence` variant added with it (Section 3.6p). A third, `4C.surrogate_null`, **graduated to an enforced PASS** in T4C.5 - and in
-doing so immediately caught a real defect in the surrogate machinery (Section 7.2h). They report `NOT_YET_RUNNABLE` naming the missing stage
+**Nothing is pending any more.** Three gates were defined before the stages that could
+answer them existed, and all three have now graduated to enforced PASSes: `4C.surrogate_null`
+in T4C.5 - which immediately caught a real defect in the surrogate machinery (Section 7.2h) -
+`4D.tracking` in TG2.3, on `advected_vortex_sequence` and on the
+`advected_vortex_periodic_sequence` variant added with it (Section 3.6p), and `4E.invariance`
+in TG3.4 (Section 3.6u), which was the last of them. `test_benchmarks.py` now asserts the
+pending count is **zero** rather than at least one, so a newly pending gate has to be argued
+for there rather than appearing quietly. While a gate is pending it reports
+`NOT_YET_RUNNABLE` naming the missing stage
 rather than being skipped, because a skipped test is invisible in a summary line and would
 let "all green" mean "we never looked".
 
@@ -3195,6 +3318,7 @@ able to sit three slices out of date.
 | `test_representation.py` | 59 | TG2.4 representation-induced feature audit: the floor on every plane of every registered lens, and the planted blob that proves the audit can see; the null propagated through the representation against the same null rebuilt inside it, measured on the dual tree where they differ and on the stationary transform where they do not; the FFT magnitude plane whose null nothing can exceed; the family of forty-five planes that rejects on 86% of structureless fields uncorrected, the ensemble refused as too small for it, and the correction registry that prices six identical columns as one test; the declared decimation an array does not have; and the plane R13 leaves no interior in |
 | `test_family_accounting.py` | 30 | TG3.1 family accounting: the T4C.6 declaration priced at 36 members and 3,005 surrogates from the frozen campaign JSON, with its label set compared against a real sweep rather than against its own count; every combinator's cheap count checked against its own enumeration; unordered triples registered from the test module; the unaffordable family refused with both R18 remedies computed, the narrowing checked by taking it and checked to be tight, and the case where no single axis can reach the ceiling; the zero-member term that scored as a remedy; and the admissibility audit that never moves the correction unit |
 | `test_preregistration.py` | 40 | TG3.2 the generate/confirm split: the T4C.6 family of 36 refused at an ensemble of 199 while a four-member frozen subset of it is affordable, corrected at four rather than at 36, on a partition opened once; a partition identified from a series whose values raise on access; an edited field named and an editor who rewrites the digest table too caught by the outer digest; the wholesale rewrite that verifies against itself and is caught only against the published digest; the second, entirely honest seal against the same held-out data refused; the lineage refusals for mining on held-out and freezing against train; a refusal never spending the partition while a confirmation always does; and the channel-count/label contradiction found by running it |
+| `test_invariance.py` | 56 | TG3.4 invariant matching: the `4E.invariance` gate moving off `NOT_YET_RUNNABLE` to PASS, with the position-memorising control audited beside it and surviving nothing; the shape identical under exact rotation, translation and rescaling and TG3.3's `distance` exactly invariant too when the scale is exact, which is what places the benchmark's 4.8% drift in the extractor's scale estimate rather than in the relation; a scalene configuration refused a match so scale-invariance is not permission to match anything; a pair refused by the shape matcher because one edge over its own mean is 1 for every configuration in the world; deviations minimised over correspondences, the defect that had put the position matcher's noise floor at 0.27; a tolerance refused without a stated basis and `match` refusing a tolerance that is merely a number; a vacuous test conferring no invariance; overclaiming and understating both caught on matchers registered from the test module; the scale ratio recovered from the separations, refused across a unit boundary, structurally unable to precede the decision, and judged against its own noise floor rather than the shape's |
 | `test_constellation.py` | 65 | TG3.3 constellations as attributed graphs: the planted triangle built twice, in cells as a dimensionless amplitude and in metres as a temperature, matching as the same attributed graph, with a relation registered from the test module *without* the dimensionless division making the same two graphs disagree; all eight relations registered with their requirements declared; `direction` and `convergence` refusing against TG2.2's own `reports_orientation: False` capability; `convergence` refused on an undirected axis; a bearing refused across a periodic seam and from a point to itself; the geometric-mean reference that does not follow the larger scale; the relation axis a TG3.1 family may be priced over, 3 against 28; matching exhaustive to 8 nodes and refused above it; and the non-strict graph that did not match itself, found by running it |
 | `test_feature_extraction.py` | 39 | TG2.2 extraction as a registry: the three planted features recovered across a six-fold range of scales and under rotation, translation and rescaling; both null benchmarks silent across three seeds with the loosened-alpha control that makes the silence mean something; the strict-comparison off-by-one; an unresolvable alpha refused before the ensemble; a second extractor registered from the test module; the periodic-axis seam and the self-scaling R13 refusal; and the one-feature-per-frame handoff to TG2.3 |
 | `test_feature_record.py` | 37 | TG2.1 canonical feature record: features measured off the advected-vortex benchmark recovering its known velocity and scale doubling, the R19 refusals (magnitude, separation, elapsed time, mixed sets), the periodic-axis refusal, orientation conventions and the surrogate resolution floor, a fourth convention and a fourth significance basis registered from the test module, and defect D59 |
@@ -3242,7 +3366,7 @@ able to sit three slices out of date.
 | `test_wavelet_bank.py` | 27 | T4B.2 expansion through the engine's own parameter matrix, the 1,000-combination guard, decompose_bank / extract_scale_signature, the vertical-bank refusals |
 | `test_transforms.py` | 13 | fft/dct/dwt/dtcwt/hybrid round trips; D1 recorded as a strict xfail |
 | `test_zarr_source.py` | 59 | R13 geometry, chunk-hostility, byte counting, streaming content identity, exact chunk-bounded frame reader, cache/provenance round trip, NetCDF engine and HTTP surface |
-| **total** | **1388** | |
+| **total** | **1444** | |
 
 ### 7.2h A surrogate null that was not the null it claimed (T4C.5)
 

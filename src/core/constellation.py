@@ -581,7 +581,7 @@ def relation_axis(features: Sequence[SpectralFeature],
 # ------------------------------------------------------------------- the attributed graph
 
 
-def _node_attributes(feature: SpectralFeature) -> Dict[str, Any]:
+def node_attributes(feature: SpectralFeature) -> Dict[str, Any]:
     """The dimensionless view of one node, built rather than filtered.
 
     Deliberately *not* `structural_signature()`. That view carries `representation`, which
@@ -603,7 +603,7 @@ def _node_attributes(feature: SpectralFeature) -> Dict[str, Any]:
     }
 
 
-def _carried(feature: SpectralFeature) -> Dict[str, Any]:
+def carried_record(feature: SpectralFeature) -> Dict[str, Any]:
     """What R19 protects: travels with the graph, never enters a comparison."""
     return {"domain": feature.domain, "dataset": feature.dataset,
             "variable": feature.variable, "representation": feature.representation,
@@ -886,8 +886,8 @@ def constellation(features: Sequence[SpectralFeature], *,
                 refusals.setdefault((left, right), {})[name] = str(exc)
         edges[(left, right)] = edge
     return AttributedGraph(
-        attributes=tuple(_node_attributes(f) for f in features),
-        carried=tuple(_carried(f) for f in features),
+        attributes=tuple(node_attributes(f) for f in features),
+        carried=tuple(carried_record(f) for f in features),
         edges=edges, relations=chosen, refusals=refusals)
 
 
@@ -917,5 +917,6 @@ __all__ = [
     "MAX_MATCH_NODES", "DEFAULT_TOLERANCE", "RelationUnmeasurableError",
     "GraphTooLargeError", "RelationValue", "RelationContext", "Relation", "RELATIONS",
     "relation_for", "measurable_relations", "relation_axis", "MatchReport",
-    "AttributedGraph", "constellation", "constellations_from_set",
+    "AttributedGraph", "constellation", "constellations_from_set", "node_attributes",
+    "carried_record",
 ]

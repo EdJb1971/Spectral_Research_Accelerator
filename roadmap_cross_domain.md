@@ -1116,11 +1116,74 @@ one side and 1,200 on the other, and the same two graphs then fail to match.
 **Evidence:** `src/tests/test_constellation.py`, 65 tests. Full suite 1686 passed, 1 skipped,
 1 xfailed; benchmark suite unchanged at 19 PASS, 0 FAIL, 1 NOT_YET_RUNNABLE.
 
-**TG3.4 Invariant matching.**
+**TG3.4 Invariant matching. DONE (`ed-dev`)**
 **Acceptance:** `4E.invariance` moves from `NOT_YET_RUNNABLE` to **PASS** on
 `build_planted_configuration` under rotation, rescaling and translation. A matcher that memorises
 pixel positions must fail this, and a test asserts that a deliberately position-memorising matcher
 does.
+
+`src/core/invariance.py` — `MATCHERS`, a registry whose entries are functions from features to
+an `AttributedGraph`, so the comparison is always TG3.3's exhaustive `matches` and a matcher can
+only fail by keying on the wrong quantity; `relative_geometry` (each separation over the
+geometric mean of all of them) and `absolute_position` (the position-memorising control);
+`scale_normalised`, public and deliberately unregistered; `best_deviation`, minimised over
+correspondences; `null_deviations` and `scale_recovery_null`; `calibrate_match_tolerance`;
+`match`, `recover_scale_ratio`, `ScaleRatio`; `Presentation`, `InvarianceTest`,
+`ScaleRecoveryTest`, `InvarianceReport`; `measure_invariance` and `audit_declared_invariance`.
+The `4E.invariance` check in `src/benchmarks/fields.py` is implemented against it.
+
+Findings:
+
+*   **A dimensionless relation is only as invariant as the thing it divided by.** TG3.3's
+    `distance` divides a separation by the features' *estimated* spatial scale. On exact
+    geometry it is perfectly scale-invariant; on the benchmark it moves 4.8% at
+    `scale_factor=3` against a 3.3% noise floor, because the scale estimate drifts from about
+    +1.4% at a 6-cell sigma to about -2.6% at 18 cells while the separation is recovered to
+    better than 1%. The whole drift lands in the quotient.
+*   **The invariant that survives divides one measurement by another of the same kind.** A
+    separation over a separation cancels its units exactly and borrows nothing's accuracy. It
+    needs three features: with two, one edge over its own mean is 1 for every configuration in
+    the world, and a matcher that matches everything reports a discovery on every pair.
+*   **A matcher whose declaration cannot be demonstrated does not get registered.**
+    `scale_normalised` is not rescaling-invariant when measured directly, but over seven
+    rescalings the evidence comes to `p = 0.016` and does not survive the family correction.
+    True and unproven at once is not a state a declaration can hold.
+*   **The extractor does not return its features in a stable order** - it follows which blob was
+    brightest. Comparing replicate node 0 with node 0 measured that shuffle and put the position
+    matcher's noise floor at 0.27, wide enough that a 37-degree rotation matched its own
+    memorised pixel coordinates. Minimising over correspondences brought it to 0.026.
+*   **A noise floor is an operating point, not a test.** Thresholding thirteen presentations at
+    the largest of sixty-six noise samples rejects a genuinely invariant matcher about one time
+    in five - R18's subject exactly. Invariance is decided by a one-sided rank test of the
+    presentations against the whole null, with alpha divided across the tests actually run, and
+    a test whose smallest possible p-value sits above its own alpha is `vacuous` and confers
+    nothing (TG2.4's rule, carried into a rank test).
+*   **A declared capability is measured, not trusted.** Overclaiming fails and so does
+    understating, for the reason TG3.1's relation axis gives. The control fails by the general
+    rule rather than by a special case, and a future matcher that overclaims fails the same way
+    with no edit to the gate.
+*   **The scale-aware reading, and the unread field it closes.** `scale_ratio_vs_reference` has
+    sat in the benchmark's known answer since T3.5.17 with nothing reading it - the same species
+    of defect as a relation that constrains nothing. It is now recovered from the separations
+    (better than 1% across a sixfold range, where the scale estimate drifts by 6%), refused by
+    name across a unit boundary, and structurally unable to run before the match: it takes the
+    `MatchReport`, so R19 holds by construction rather than by comment.
+
+**A defect found by running it.** The gate first judged the recovered scale ratio against the
+*shape's* noise floor and failed a correct matcher on it. The shape's floor and the size's floor
+are the noise of two different numbers; `scale_recovery_null` measures the right one.
+
+**Acceptance met.** `4E.invariance` reports **PASS**, and it was the last pending gate in the
+suite - the benchmark run is now **20 PASS, 0 FAIL, 0 NOT_YET_RUNNABLE**, and
+`test_benchmarks.py` asserts the pending count is zero rather than at least one. Two matchers
+are audited over 13 presentations against 10 replicates: `relative_geometry` declares rotation,
+translation and rescaling and is measured to have all three; `absolute_position` declares
+nothing and is measured to have nothing, at `p = 0.0000` against every transform. Six scale
+ratios are recovered and checked against their own noise floor. The gate has been confirmed to
+pass at four root seeds.
+
+**Evidence:** `src/tests/test_invariance.py`, 56 tests. Full suite 1742 passed, 1 skipped,
+1 xfailed; benchmark suite 20 PASS, 0 FAIL, 0 NOT_YET_RUNNABLE.
 
 **TG3.5 Recurring motifs.** Mining for repeated constellation configurations, executed only
 through TG3.1's declared family and TG3.2's split.

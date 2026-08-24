@@ -521,6 +521,14 @@ def truth_planted_configuration(
         # reported separately, which is exactly the toggle T4E needs.
         "invariant_signature": "equilateral triangle, 3 features",
         "scale_ratio_vs_reference": scale_factor,
+        # What the 4E.invariance check needs to rebuild this configuration under transforms
+        # and to measure its own noise floor. The minima are stated here, in the known
+        # answer, rather than inside the check: a gate that decides how hard to look at the
+        # moment it looks can always decide to look less hard.
+        "noise_amplitude": noise_amplitude,
+        "minimum_invariance_replicates": 10,
+        "minimum_scale_ratios_recovered": 3,
+        "invariance_transforms": ("rotation", "translation", "rescaling"),
     }
 
 
@@ -548,11 +556,169 @@ def _check_planted_features_present(field: PhysicalField, truth: Dict[str, Any])
         {"found": found, "positions": truth["positions_rowcol"]})
 
 
+_INVARIANCE_REPLICATES = 10
+_INVARIANCE_ROTATIONS = (37.0, 71.0, 211.0, 259.0)
+_INVARIANCE_TRANSLATIONS = ((25.0, -30.0), (-40.0, 15.0), (18.0, 22.0))
+_INVARIANCE_SCALES = (0.5, 0.75, 1.5, 2.0, 3.0)
+_INVARIANCE_SURROGATES = 99
+_INVARIANCE_SEED = 1234
+
+
+def _invariance_features(values):
+    """Extract the configuration from one array, declared the way TG2.2 requires."""
+    from src.core.domain import AxisSpec
+    from src.core.extraction import ExtractionField, extract
+
+    frame = ExtractionField(
+        values=np.asarray(values, dtype=np.float64),
+        axes=(AxisSpec("row", "space", units="cells", ordinal=0),
+              AxisSpec("col", "space", units="cells", ordinal=1)),
+        domain="synthetic", dataset="planted_configuration", variable="amplitude",
+        units=None, time=0.0, time_units="frames", representation="identity")
+    return list(extract(frame, n_surrogates=_INVARIANCE_SURROGATES, seed=_INVARIANCE_SEED))
+
+
 @stage_check("4E.invariance")
 def _check_planted_invariance(field: PhysicalField, truth: Dict[str, Any]) -> CheckResult:
-    raise NotImplementedError(
-        "4E.invariance: constellation matching with relative geometry (T4E) is not "
-        "implemented; the transformed variants and their expected match are recorded")
+    """**The 4E gate** (roadmap TG3.4): is the same configuration recognised as the same?
+
+    The check does not ask whether some matcher happens to match. It asks whether every
+    registered matcher's *declared* invariance is the invariance it has, which makes the
+    position-memorising control fail by the general rule rather than by a special case, and
+    makes a future matcher that overclaims fail the same way without an edit here.
+
+    Three things it refuses to accept as a pass. A noise floor measured from too few
+    replicates, because that floor is a maximum and a maximum over few samples is biased
+    low, in the direction that rejects a matcher which is invariant. A test whose smallest
+    possible p-value sits above its own alpha, which is TG2.4's vacuous rule - it would
+    report invariance because it could not have reported anything else. And a scale ratio
+    nobody recovered: a matcher blind to scale and a matcher that measures scale and states
+    it both match a rescaled triangle, and only one of them has said how much bigger it was.
+    """
+    from src.benchmarks.seeding import derive
+    from src.core.invariance import (
+        MATCHERS, TRANSFORMS, Presentation, audit_declared_invariance,
+    )
+
+    n = int(field.data.shape[0])
+    base = dict(n=n, triangle_side=float(truth["pairwise_distance_cells"]),
+                feature_sigma=float(truth["feature_sigma_cells"]),
+                noise_amplitude=float(truth["noise_amplitude"]))
+
+    def built(label, **overrides):
+        params = dict(base)
+        params.update(overrides)
+        bundle = derive("planted_configuration/%s" % label)
+        return _invariance_features(
+            build_planted_configuration(bundle, **params).data.numpy())
+
+    reference = _invariance_features(field.data.numpy())
+    replicates = [built("replicate/%d" % i) for i in range(_INVARIANCE_REPLICATES)]
+
+    presentations = []
+    for angle in _INVARIANCE_ROTATIONS:
+        name = "rotation/%g" % angle
+        presentations.append(
+            Presentation(name, ("rotation",), built(name, rotation_deg=angle)))
+    for shift in _INVARIANCE_TRANSLATIONS:
+        name = "translation/%g,%g" % shift
+        presentations.append(
+            Presentation(name, ("translation",), built(name, translation=shift)))
+    for factor in _INVARIANCE_SCALES:
+        name = "rescaling/%g" % factor
+        presentations.append(
+            Presentation(name, ("rescaling",), built(name, scale_factor=factor),
+                         expected_scale_ratio=factor))
+    combined = "combined/17deg+shift+1.5x"
+    presentations.append(Presentation(
+        combined, TRANSFORMS,
+        built(combined, rotation_deg=17.0, translation=(-20.0, 40.0), scale_factor=1.5),
+        expected_scale_ratio=1.5))
+
+    reports = audit_declared_invariance(reference, presentations, replicates)
+
+    problems = []
+    minimum = int(truth["minimum_invariance_replicates"])
+    if len(replicates) < minimum:
+        problems.append(
+            "the noise floor was measured from %d replicates, below the %d this benchmark "
+            "requires; that floor is a maximum, and a maximum over too few samples is "
+            "biased low in the direction that rejects a matcher which is invariant"
+            % (len(replicates), minimum))
+    for name, report in sorted(reports.items()):
+        if report.vacuous:
+            problems.append(
+                "matcher %r was passed on %s by a test that could not have failed"
+                % (name, ", ".join(report.vacuous)))
+        if report.overclaimed:
+            problems.append("matcher %r declares invariance to %s and does not have it"
+                            % (name, ", ".join(report.overclaimed)))
+        if report.understated:
+            problems.append("matcher %r survived %s without declaring it"
+                            % (name, ", ".join(report.understated)))
+
+    fully = sorted(name for name, report in reports.items()
+                   if tuple(report.measured) == TRANSFORMS)
+    if not fully:
+        problems.append("no registered matcher survived all of %s, which is the gate itself"
+                        % ", ".join(TRANSFORMS))
+    controls = sorted(name for name in reports
+                      if not MATCHERS.entry(name).capabilities.get("invariant_to", ()))
+    if not controls:
+        problems.append(
+            "no matcher declaring no invariance was audited, so nothing showed that this "
+            "configuration can be got wrong; a suite in which everything passes is a suite "
+            "that has not been shown able to fail")
+    for name in controls:
+        if reports[name].measured:
+            problems.append(
+                "the position-memorising control %r survived %s, so the presentations do "
+                "not move the configuration far enough to tell a matcher from a memory"
+                % (name, ", ".join(reports[name].measured)))
+
+    needed = int(truth["minimum_scale_ratios_recovered"])
+    recovered = 0
+    for name in fully:
+        recovery = reports[name].scale_recovery
+        if recovery is None:
+            problems.append(
+                "matcher %r was never asked how much bigger anything was; a matcher blind "
+                "to scale and one that measures scale and states it both match a rescaled "
+                "triangle, and only one of them produces the number" % name)
+            continue
+        recovered = max(recovered, len(recovery.errors))
+        if recovery.vacuous:
+            problems.append(
+                "matcher %r had its scale recovery passed by a test that could not have "
+                "failed" % name)
+        elif not recovery.accurate:
+            worst = max(range(len(recovery.errors)), key=lambda i: recovery.errors[i])
+            problems.append(
+                "matcher %r recovered scale ratios worse than its own noise floor "
+                "(p=%.4g at alpha %.4g); worst was %s, built %g times bigger and recovered "
+                "as %.4f"
+                % (name, recovery.p_value, recovery.alpha, recovery.presentations[worst],
+                   recovery.expected[worst], recovery.recovered[worst]))
+        if len(recovery.errors) < needed:
+            problems.append(
+                "only %d rescaled presentation(s) were put to matcher %r, below the %d "
+                "this benchmark requires" % (len(recovery.errors), name, needed))
+
+    summary = "; ".join(
+        "%s declared %s, survived %s"
+        % (name, ",".join(report.declared) or "nothing",
+           ",".join(report.measured) or "nothing")
+        for name, report in sorted(reports.items()))
+    return CheckResult(
+        "4E.invariance",
+        Outcome.FAIL if problems else Outcome.PASS,
+        ("; ".join(problems)) if problems else
+        ("%d matchers audited over %d presentations against %d replicates: %s; %d scale "
+         "ratio(s) recovered"
+         % (len(reports), len(presentations), len(replicates), summary, recovered)),
+        {"reports": {name: report.describe() for name, report in sorted(reports.items())},
+         "n_presentations": len(presentations), "n_replicates": len(replicates),
+         "scale_ratios_recovered": recovered})
 
 
 register_benchmark(Benchmark(
