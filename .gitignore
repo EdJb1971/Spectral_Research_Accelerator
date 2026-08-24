@@ -20,3 +20,5 @@ data/*.nc
 data/*.grib
 data/*.grib2
 data/*.zarr/
+*.db-shm
+*.db-wal
