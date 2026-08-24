@@ -1023,9 +1023,48 @@ with 36 for two different reasons would pass a count check.
 **Evidence:** `src/tests/test_family_accounting.py`, 30 tests. Full suite 1577 passed, 1
 skipped, 1 xfailed; benchmark suite unchanged at 19 PASS, 0 FAIL, 1 NOT_YET_RUNNABLE.
 
-**TG3.2 Generate/confirm split.** Machinery for mining on train, freezing the declaration under a
-content hash, and testing once on held-out — with the frozen declaration cryptographically bound
-so a post-hoc edit is detectable. This is R18's escape hatch and must exist before mining does.
+**TG3.2 Generate/confirm split. DONE (`ed-dev`).** `src/core/preregistration.py` holds
+`PartitionIdentity`, `Seal`, `HeldOutLedger`, `report_generation`,
+`freeze_confirmatory_family`, `confirm_on_held_out` and the three refusals `SealBrokenError`,
+`HeldOutAlreadyOpenedError` and `PartitionMismatchError`. This is R18's escape hatch and it
+exists before any mining does.
+
+*   **It is not a cheaper family, and the module says so.** The generate stage still
+    enumerates and still tests; `report_generation` refuses to call the result anything but
+    candidates, records its p-values as uncorrected, and refuses a candidate that is not a
+    declared member of the generate specification — one nobody enumerated has no family and so
+    no correction unit. What the split buys is a *confirmatory* family fixed and hashed before
+    the held-out partition is opened, which is why the correction may legitimately be small.
+*   **Two ways to cheat, caught two different ways.** A `Seal` carries a digest per sealed
+    field and a digest over that table. An edited field is **named**; an editor who recomputes
+    the digest table breaks the outer digest instead. Neither is the check that matters:
+    `verify` states in its own return value that self-consistency says nothing about whether
+    the seal was edited, and `verify_published` — against a digest recorded where the author
+    cannot rewrite it — is the one with weight. A test proves the gap by rewriting a seal
+    wholesale; it verifies perfectly against itself and fails only against the published
+    digest.
+*   **The ledger is keyed by the partition, not by the seal.** That is the substance of
+    "once". A seal-keyed ledger would admit a second, entirely honest seal against the same
+    held-out data: each confirmation individually defensible, the pair uncorrected. The
+    refusal names both seals and computes the two remedies.
+*   **A partition is identified without being read.** `from_series` takes geometry and the
+    lineage the split wrote and touches no measure array — proved by a series whose values
+    raise on access, because a seal written after reading the held-out data is not a
+    preregistration whatever it hashes to.
+*   **A refusal never spends the partition; a confirmation always does.** Seal, partition and
+    label set are all checked before the ledger is written and nothing is checked after.
+*   **A defect in this slice, found by running it.** `PartitionIdentity` never checked
+    `channel_labels` against `n_channels`. A record claiming three channels while carrying two
+    labels describes two geometries and the seal would bind both. Now refused at construction.
+
+**Acceptance met.** Priced off `campaigns/t4c6_nz_era5_temperature_850_v1.json` rather than a
+literal, the **T4C.6 family of 36 is refused at an ensemble of 199** (it needs 3,005) while a
+**four-member frozen subset needs 166 and is not** — and the four are corrected at four, on a
+partition that can then never be opened again. The distinction is measured rather than
+asserted: the same four p-values corrected over the generated 36 reject nothing.
+
+**Evidence:** `src/tests/test_preregistration.py`, 40 tests. Full suite 1621 passed, 1
+skipped, 1 xfailed; benchmark suite unchanged at 19 PASS, 0 FAIL, 1 NOT_YET_RUNNABLE.
 
 **TG3.3 Constellations as attributed graphs.** Features plus typed relations — distance, relative
 scale, temporal lag, direction, convergence, containment, succession, co-occurrence — expressed

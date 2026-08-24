@@ -1690,6 +1690,85 @@ correction and ensemble size - so TG3.2 has exactly one thing to freeze. Nothing
 evidence: `FamilyAccount.describe()` carries a claim boundary saying that affordability means
 the pass is capable of rejecting a member and nothing more.
 
+### 3.6s The held-out partition is opened once, and the declaration is bound before it (`src/core/preregistration.py`, TG3.2, `ed-dev`)
+
+TG3.1 ends by refusing things. The T4C.6 family of 36 needs 3,005 surrogates; the
+constellation sweep Phase G3 exists to run needs 805,029. R18 admits exactly two remedies and
+`max_affordable_family` computes the first one; this slice is the second, and it is the one
+that lets a search stay the size it needs to be.
+
+**What the split does not buy.** Nothing here reduces the number of tests performed. The
+generate stage still enumerates 36 and still tests 36, on the training partition, and
+`report_generation` refuses to call any of that a result: its p-values are recorded under
+`p_values_uncorrected`, its claim boundary says *candidates, not findings*, and a candidate
+that is not a declared member of the generate specification is refused outright, because a
+candidate nobody enumerated has no family and therefore no correction unit. What the split
+buys is that the **confirmatory** family - a subset, small enough to be affordable - is
+written down and hashed *before the held-out partition is opened*, so the correction applies
+to a family that was fixed without reference to the data it is tested on.
+
+The acceptance is the whole walkthrough rather than any one function, priced off the same
+frozen campaign file TG3.1 reads: **36 members are refused at an ensemble of 199, a
+four-member subset of them needs 166 and is not**, and the four are corrected at four. That
+the distinction is not cosmetic is measured, not asserted - the same four p-values corrected
+over the generated 36 reject nothing, and over the frozen four reject one.
+
+**Two ways to cheat, and how each is caught.**
+
+*   **Editing the declaration afterwards.** A `Seal` carries a digest per sealed field and a
+    digest over that table, and the two layers fail differently on purpose. An edited *field*
+    no longer matches the digest recorded beside it, so `verify` **names it**. An editor who
+    also recomputes the digest table breaks the outer digest instead, which is caught but
+    cannot say which field moved.
+*   **Opening the held-out partition twice.** `HeldOutLedger` records consumption keyed by the
+    **partition digest, not by the seal**. That choice is the substance of "once": a ledger
+    keyed by seal would let a study write a second, entirely honest seal - correctly hashed,
+    correctly frozen, affordable at its own size - and test the same held-out data again. Each
+    confirmation would be individually defensible and the pair would be uncorrected, which is
+    the arithmetic R18 exists to stop. The refusal names both seals and states the two
+    remedies: a partition this study has not touched, or one seal covering both families whose
+    combined size is then the correction unit and must clear the TG3.1 gate.
+
+**The boundary, stated rather than blurred.** A content hash detects an unrecorded edit; it
+does not prevent one. Anyone who can rewrite the seal file can recompute every digest in it,
+and nothing here is signed. `verify` says so in its own return value - *self-consistency only;
+this says the local copy was not edited carelessly, and says nothing about whether it was
+edited*. `verify_published` is the check that carries weight, and it needs a digest that came
+from somewhere the author cannot rewrite - a commit, a registry entry, a preregistration
+record. A test proves the gap is real: a wholesale rewrite verifies perfectly against itself
+and is caught only against the published digest. Passing no published digest at all is
+refused, because a self-consistent seal is not evidence about itself.
+
+**A partition is identified without reading it.** `PartitionIdentity.from_series` takes
+channels, frame count, the parent frames the split recorded and the lineage the split wrote,
+and touches no measure array - a test hands it a series whose values raise on access, because
+a seal written after reading the held-out data is not a preregistration whatever it hashes to.
+Provenance goes through `_recordable`, so an array becomes `<ndarray>` rather than being
+dropped: the digest is over JSON, and a key with no value reads as a key with no content.
+
+**Refusals that are lineage checks rather than conventions.** Mining on a partition whose own
+provenance records it as the held-out one is refused. Freezing against a partition whose
+lineage records it as the training split is refused, because confirming on the data the
+candidates were selected from measures the selection. A confirmatory member outside the
+generated family is refused as a fresh search under the name of a confirmation. A frozen
+member with no p-value is refused, because the correction is computed over what was frozen and
+an untested member is a claim that it was tested and not reported; a p-value for a member the
+seal does not contain is refused as mining on held-out data whatever it is called.
+
+**Order matters, and is tested.** The seal is verified, the presented partition is checked
+against the one the seal named, and the p-value set is checked to be exactly the frozen label
+set - and only then is the partition spent. So a refusal never consumes the held-out data and
+a completed confirmation always does. A confirmation that rejects nothing produces a receipt
+like any other, since a null is the expected outcome of an honest split and must not look like
+a failure.
+
+**A defect in this slice, found by running it.** `PartitionIdentity` validated its frame
+count, its channel count and its name, but never checked `channel_labels` against
+`n_channels`. A record claiming three channels while carrying two labels describes two
+different geometries, and the seal would bind both - so a confirmation on the partition the
+labels name would be indistinguishable from one on the partition the count names. The
+mismatch is now refused at construction.
+
 ### 3.8 Grid Geometry and Metric-Aware Operators (`src/physical_core/grid.py`, `operators.py`)
 
 Added in T3.5.13 (defect D13, standard E3). `GridSpec` is the physical metric attached to
@@ -2821,7 +2900,7 @@ See `VERIFICATION.md` for the captured command output behind every statement her
 | Item | Status |
 |---|---|
 | Python venv + dependencies | installed (torch 2.13.0+cu130, numpy 2.2.6, pydantic 1.10.26, SQLAlchemy 2.0.52, xarray 2025.6.1, FastAPI 0.110.3) |
-| Backend test suite | **1577 passed, 1 xfailed** (plus 1 skipped: opt-in live GCS) (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17, 351 after T3.5.6, 379 after T3.5.15, 407 after T3.5.19, 449 after T4C.5, 709 after T4A.4, 781 after T4B.4, 855 after T4C.5, 859 after T4C.5c, 882 after T5.1a CPU acceptance, 883 after RTX acceptance, 890 after portable profiles, 911 after T5.1b/D44, 917 after T5.1c, 933 after T5.1d/D45, 946 after T5.1e, 955 after T5.2a, 957 after T5.2b, 962 after T5.3a, 969 after T5.3b, 981 after T5.2c offline acceptance, 985 after T5.2d, 1000 after T5.0a, 1008 after T5.0b, 1027 after T5.6a offline acceptance, 1042 after T5.6b cube acceptance, 1056 after T5.6c matched evaluation, 1070 after T5.6d truth matching, 1080 after T5.6e orchestration, 1089 after T5.6f portable jobs, 1094 after T5.6g reporting, 1095 after the licence guard, 1102 after T4C.5d gate readiness, 1104 after D50 storage preflight, 1106 after T4C.5e overlap evidence, 1112 after T4C.5f campaign acceptance, 1116 after T4C.5g physical preflight, 1117 after T4C.5h preregistration - the `master` freeze; then on `ed-dev`, 1375 after TG2.1, 1429 after TG2.2, 1477 after TG2.3, 1536 after TG2.4 and 1577 after TG3.1) |
+| Backend test suite | **1621 passed, 1 xfailed** (plus 1 skipped: opt-in live GCS) (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17, 351 after T3.5.6, 379 after T3.5.15, 407 after T3.5.19, 449 after T4C.5, 709 after T4A.4, 781 after T4B.4, 855 after T4C.5, 859 after T4C.5c, 882 after T5.1a CPU acceptance, 883 after RTX acceptance, 890 after portable profiles, 911 after T5.1b/D44, 917 after T5.1c, 933 after T5.1d/D45, 946 after T5.1e, 955 after T5.2a, 957 after T5.2b, 962 after T5.3a, 969 after T5.3b, 981 after T5.2c offline acceptance, 985 after T5.2d, 1000 after T5.0a, 1008 after T5.0b, 1027 after T5.6a offline acceptance, 1042 after T5.6b cube acceptance, 1056 after T5.6c matched evaluation, 1070 after T5.6d truth matching, 1080 after T5.6e orchestration, 1089 after T5.6f portable jobs, 1094 after T5.6g reporting, 1095 after the licence guard, 1102 after T4C.5d gate readiness, 1104 after D50 storage preflight, 1106 after T4C.5e overlap evidence, 1112 after T4C.5f campaign acceptance, 1116 after T4C.5g physical preflight, 1117 after T4C.5h preregistration - the `master` freeze; then on `ed-dev`, 1375 after TG2.1, 1429 after TG2.2, 1477 after TG2.3, 1536 after TG2.4, 1577 after TG3.1 and 1621 after TG3.2) |
 | Ground-Truth Benchmark Suite | **19 PASS, 0 FAIL, 1 NOT_YET_RUNNABLE** (`python -m src.benchmarks`, exit 0) |
 | Frontend `npm install` + `npm run build` | passes, emits 1,386 modules + real JS/CSS assets (was: 1 module, no assets) |
 | Backend server | starts, serves OpenAPI, all smoke-tested endpoints return 200 |
@@ -3042,6 +3121,7 @@ able to sit three slices out of date.
 | `test_tracking.py` | 47 | TG2.3 frame-to-frame association: `4D.tracking` moving from NOT_YET_RUNNABLE to PASS with the recorded velocity and doubling time recovered from the field alone; the coincidence gate derived from alpha and the frame's own density and tightening when the frame crowds; a declared bound as a rate against an irregular clock; greedy and Hungarian disagreeing measurably, plus a third associator registered from the test module and two rogue ones refused; the seam crossing that is one track on a torus and two on a plane; the orientation gate reading the convention rather than the number and refused outright on an extractor that reports none; and the empty-frame and short-clock regressions |
 | `test_representation.py` | 59 | TG2.4 representation-induced feature audit: the floor on every plane of every registered lens, and the planted blob that proves the audit can see; the null propagated through the representation against the same null rebuilt inside it, measured on the dual tree where they differ and on the stationary transform where they do not; the FFT magnitude plane whose null nothing can exceed; the family of forty-five planes that rejects on 86% of structureless fields uncorrected, the ensemble refused as too small for it, and the correction registry that prices six identical columns as one test; the declared decimation an array does not have; and the plane R13 leaves no interior in |
 | `test_family_accounting.py` | 30 | TG3.1 family accounting: the T4C.6 declaration priced at 36 members and 3,005 surrogates from the frozen campaign JSON, with its label set compared against a real sweep rather than against its own count; every combinator's cheap count checked against its own enumeration; unordered triples registered from the test module; the unaffordable family refused with both R18 remedies computed, the narrowing checked by taking it and checked to be tight, and the case where no single axis can reach the ceiling; the zero-member term that scored as a remedy; and the admissibility audit that never moves the correction unit |
+| `test_preregistration.py` | 40 | TG3.2 the generate/confirm split: the T4C.6 family of 36 refused at an ensemble of 199 while a four-member frozen subset of it is affordable, corrected at four rather than at 36, on a partition opened once; a partition identified from a series whose values raise on access; an edited field named and an editor who rewrites the digest table too caught by the outer digest; the wholesale rewrite that verifies against itself and is caught only against the published digest; the second, entirely honest seal against the same held-out data refused; the lineage refusals for mining on held-out and freezing against train; a refusal never spending the partition while a confirmation always does; and the channel-count/label contradiction found by running it |
 | `test_feature_extraction.py` | 39 | TG2.2 extraction as a registry: the three planted features recovered across a six-fold range of scales and under rotation, translation and rescaling; both null benchmarks silent across three seeds with the loosened-alpha control that makes the silence mean something; the strict-comparison off-by-one; an unresolvable alpha refused before the ensemble; a second extractor registered from the test module; the periodic-axis seam and the self-scaling R13 refusal; and the one-feature-per-frame handoff to TG2.3 |
 | `test_feature_record.py` | 37 | TG2.1 canonical feature record: features measured off the advected-vortex benchmark recovering its known velocity and scale doubling, the R19 refusals (magnitude, separation, elapsed time, mixed sets), the periodic-axis refusal, orientation conventions and the surrogate resolution floor, a fourth convention and a fourth significance basis registered from the test module, and defect D59 |
 | `test_level_axis.py` | 19 | TG1.5 vertical coordinates: the registry and its sense of up, a height bank labelling its offsets the opposite way to pressure, a fourth coordinate registered from the test module, the declaration travelling from reader to signature, `level_hpa` refusing a non-pressure axis, and the pressure arithmetic unchanged |
@@ -3088,7 +3168,7 @@ able to sit three slices out of date.
 | `test_wavelet_bank.py` | 27 | T4B.2 expansion through the engine's own parameter matrix, the 1,000-combination guard, decompose_bank / extract_scale_signature, the vertical-bank refusals |
 | `test_transforms.py` | 13 | fft/dct/dwt/dtcwt/hybrid round trips; D1 recorded as a strict xfail |
 | `test_zarr_source.py` | 59 | R13 geometry, chunk-hostility, byte counting, streaming content identity, exact chunk-bounded frame reader, cache/provenance round trip, NetCDF engine and HTTP surface |
-| **total** | **1283** | |
+| **total** | **1323** | |
 
 ### 7.2h A surrogate null that was not the null it claimed (T4C.5)
 
