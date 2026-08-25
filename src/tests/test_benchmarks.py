@@ -92,7 +92,7 @@ def test_every_benchmark_declares_gates_and_a_known_answer():
     assert len(all_benchmarks()) >= 11
     for b in all_benchmarks():
         assert b.gates, "%s declares no gate" % b.name
-        assert b.kind in ("field", "sequence")
+        assert b.kind in ("field", "sequence", "cross_domain")
         truth = b.truth()
         assert isinstance(truth, dict) and truth, "%s has an empty known answer" % b.name
         assert b.description

@@ -1448,8 +1448,66 @@ this question", not "there is nothing here".
 **Evidence:** `src/tests/test_refusal.py`, 72 tests. Full suite 1922 passed, 1 skipped,
 1 xfailed; benchmark suite **27 PASS, 0 FAIL, 0 NOT_YET_RUNNABLE**.
 
-**TG4.3 Planted cross-domain relationships.** Two synthetic domains with different units,
-semantics and cadences, one carrying information about the other's later state.
+**TG4.3 Planted cross-domain relationships. DONE (`ed-dev`)** Two synthetic domains with
+different units, semantics and cadences, one carrying information about the other's later
+state.
+
+`src/core/cross_domain.py` — `DomainChannel`, `DomainTimeSeries`, `CrossDomainSweep`;
+`align_exact`, `cross_domain_metadata`, `cross_domain_pairs`, `physical_lags`,
+`sweep_cross_domain` and `confirm_cross_domain`; `ExactClockRequiredError` and
+`PhysicalLagRequiredError`. `src/benchmarks/cross_domain.py` adds the paired
+`planted_cross_domain` and `cross_domain_null` benchmarks under the gates
+`4F.cross_domain_recovery` and `4F.cross_domain_null`.
+
+**The common representation does not erase either domain.** Each operand carries its native
+meaning, units, dataset identity, licence, cadence, lag policy and provenance. Channel labels
+are namespaced by domain before they enter TG4.1's machinery, and the full semantic record is
+bound into the held-out partition identity. Changing `K` to another unit after the seal is a
+partition change and is refused; a within-domain member presented to this boundary is refused
+as laundering. The receipt reports a dimensionless structural statistic beside the original
+Kelvin and megawatt operands and states the R19 boundary: temporal association, no comparison
+of raw magnitude, and no causal mechanism established.
+
+**The common clock is an intersection, not an invention.** The first synthetic domain is an
+hourly thermal instrument with 1,080 observations; the second is a three-hourly operational
+ledger with 360. `align_exact` retains the 360 timestamps both observed, records the 720
+unused thermal observations, hashes the parent clock and performs **no interpolation**.
+Offset clocks with no exact overlap, irregular native clocks and a non-regular exact
+intersection are explanatory refusals. They are not passed to a default resampler whose
+choice could move the result.
+
+**A lag is physical before it is a frame count.** The family is declared at 3, 6, 9 and 12
+hours. Each domain's R21 floor is converted from its own native cadence first — two hourly
+sensor-response frames versus one three-hour reporting frame — and the larger physical floor
+is applied before the durations are expressed on the shared clock. A duration below either
+floor, between common-clock frames or declared twice refuses the family rather than silently
+narrowing it. A domain declaring aggregate values must name the aggregation window too, and
+that window raises the floor so two overlapping reports cannot be read as precedence.
+
+**Nothing is told where to look.** Two channels per domain give eight ordered cross-boundary
+directions, including both directions for every pair and no within-domain pair; crossed with
+four physical lags, the training sweep declares and measures **32 members**. It freezes what
+the training partition cannot distinguish before the held-out partition is opened and uses
+TG4.1's circular-shift null and TG3.2's one-use ledger unchanged.
+
+**Acceptance met, with the null carrying the weight.** On five root seeds the planted record
+confirms exactly
+`synthetic_thermal_observatory::thermal_gradient > synthetic_demand_ledger::demand_pressure`
+at the planted six-hour lag, corrected q = 0.0050 every time. `cross_domain_null` is the same
+builder at coupling zero — same clocks, units, semantics, marginal processes, family and
+ensemble. Its own training partition freezes two to four candidates, so the pass is not
+vacuous; held-out confirmation returns **nothing** at all five seeds, with its smallest
+corrected q from 0.167 to 1.000.
+
+**The refusal boundary remains visible.** This slice supports regular native clocks whose
+exact intersection is regular, policies whose physical floor is fixed by the declaration,
+and domains declaring no natural cycle. It does not interpolate irregular observations,
+remove two different native calendars, distinguish a common driver from a direct relation or
+license causal language. Those are named limits rather than behaviours hidden in alignment.
+
+**Evidence:** `src/tests/test_cross_domain.py`, 47 test functions and 50 cases. Full suite
+1972 passed, 1 skipped,
+1 xfailed; benchmark suite **29 PASS, 0 FAIL, 0 NOT_YET_RUNNABLE**.
 
 ---
 
