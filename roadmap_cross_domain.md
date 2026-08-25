@@ -1357,12 +1357,96 @@ benchmark suite is now **24 PASS, 0 FAIL, 0 NOT_YET_RUNNABLE**.
 **Evidence:** `src/tests/test_precedence.py`, 62 test functions and 63 cases. Full suite 1850 passed, 1 skipped,
 1 xfailed; benchmark suite 24 PASS, 0 FAIL, 0 NOT_YET_RUNNABLE.
 
-**TG4.2 The five refusals.** Per the proposal's own validation strategy, the engine must:
-recover planted relationships without being told their scale or lag; reject convincing but
-artificial correlations; distinguish independent observations from autocorrelated repetitions;
-avoid representation-induced motifs; and report *no relationship* when none exists.
+**TG4.2 The five refusals. DONE (`ed-dev`)** Per the proposal's own validation strategy, the
+engine must: recover planted relationships without being told their scale or lag; reject
+convincing but artificial correlations; distinguish independent observations from
+autocorrelated repetitions; avoid representation-induced motifs; and report *no relationship*
+when none exists.
 **Acceptance:** five benchmarks, at least three of them nulls, all returning null. Per the
 existing Definition of Done, **the null benchmarks returning null is the load-bearing result.**
+
+`src/core/refusal.py` — `Refusal`, `REFUSALS` and `refusal_coverage`; `LagProfile`,
+`lag_profile`, `simultaneous_strength`, `explained_by_leakage`, `refuse_leaked_members`;
+`calendar_periods`, `remove_calendar`, `require_calendar_removed`; `naive_versus_effective`;
+`carry_forward` and `refusal_report`; `EverythingRefusedError` and `CalendarNotRemovedError`.
+Three new benchmarks in `src/benchmarks/sequences.py` — `shared_cycle_precedence`,
+`slow_independent_precedence` and `leaked_band_precedence` — carrying the gates
+`4F.refusal_calendar`, `4F.refusal_autocorrelation` and `4F.refusal_representation`, alongside
+TG4.1's `4F.precedence_recovery` and `4F.precedence_null`.
+
+**Acceptance met, and computed rather than asserted.** Five benchmarks, **four of them nulls**,
+all five green at five root seeds. `refusal_coverage` checks the register against the live
+benchmark registry - every named benchmark exists, declares the gate its refusal claims, and
+agrees about whether it is a null - so a deleted or renamed benchmark fails a test rather than
+leaving a sentence in a document. All five are **the same builder at five settings**, which is
+what makes the four nulls controls rather than separate experiments.
+
+**Two of the three new traps were holes, not demonstrations.** Each of the three gates runs its
+own pass twice - guarded, which is the study, and unguarded, which is the trap measured on the
+same record - and fails if its trap stops springing.
+
+Findings:
+
+*   **A single band, read through a redundant transform, manufactures four relationships.**
+    One modulation, one spatial band, no second process anywhere. A stationary wavelet spreads
+    that band's energy over every level, so every level's series is a smeared copy of one
+    process and its memory keeps the copies correlated at a lag. TG4.1's basis control cannot
+    see this: it excites both bands independently and asks which *pairs* the transform
+    confuses. Run the TG4.1 pipeline unchanged and it confirms **all four admissible members
+    at q = 0.0104 at every one of five root seeds**, each at the shortest admissible lag.
+*   **The rule that refuses it is a ceiling, not a threshold.** Instantaneous leakage gives
+    `r(k) = r(0) * rho(k)` with `rho <= 1`, so the simultaneous correlation is the supremum of
+    everything a leak can produce and a lead is claimable only when it is **stronger than the
+    same-frame relationship it might be a smeared copy of**. Nothing to tune. On the
+    single-band record **0 of 48 members survive** at all five seeds - a *refusal of the
+    family*, which is a different outcome from "nothing was significant" and is what that
+    benchmark's known answer demands. On the planted record 20 to 44 of 48 survive and the true
+    member still confirms at **q = 0.0050** at all five seeds: the ceiling costs a real finding
+    nothing. The lag the family may never contain is now the reference every member is measured
+    against.
+*   **A shared cycle defeats the surrogate that was supposed to be enough.** Two independently
+    modulated bands both carrying one deterministic cycle, the fine band's crest three frames
+    early, nothing coupled. A circular shift preserves the periodicity but moves its phase, so
+    most shifts misalign the crests and the observed alignment still looks surprising:
+    unguarded, the pipeline **confirms three or four of the four members at every one of five
+    seeds**, at q <= 0.0104, the strongest carrying a naive p between 1.7e-71 and 6.4e-54 and
+    an ESS-corrected one between 3.6e-13 and 2.8e-10. Neither R12 nor the surrogate refuses it.
+*   **The calendar is metadata, not a discovery.** Rule R11 lifted into this pipeline: the
+    cycles a record is exposed to are computed from its **own cadence**, fitted on the training
+    partition and subtracted from both on one shared clock, and `carry_forward` - the single
+    door between a sweep and a seal - refuses a record that still contains them. With the
+    removal in place the same five seeds confirm nothing, smallest corrected q 0.105. Detecting
+    the period from the data instead was tried and **measured to be impossible at this record
+    length**: the strictest of four out-of-sample variants separates a real cycle at 0.13-0.58
+    from a red-noise fluke at up to 0.29, over ten seeds and five record types. The clock
+    overlaps with nothing.
+*   **What that leaves undefended is said out loud.** A periodic confound at a period the clock
+    does not name is refused by nothing here, and the measurement above is the measurement of
+    how badly it goes: the engine confirms it, repeatably.
+*   **The third trap was already refused, and the benchmark measures by how much.** Two
+    independent bands at `phi = 0.95` over 288 frames confirm nothing at all five seeds, while
+    **22 to 48 of the 48 members** carry a naive p below 0.05 and as many as **20** carry an
+    ESS-corrected one, on a record whose effective pairs are 8 to 19 per cent of its frames.
+    `naive_versus_effective` reports both, because a corrected count with no naive count beside
+    it does not show that the correction did anything.
+
+**Where one harmonic came from.** The calendar reaches a band's energy series through a
+nonlinearity, so more harmonics looked likely to help. On a longer record - 384 frames with a
+24-frame cycle - the residual confirms a lag-1 relationship at one root seed in five, and does
+so at one, two and three harmonics alike, the larger counts removing slightly *less* of the
+spurious lead. That says the leak is a false positive of a 0.05 test rather than an unremoved
+cycle. It is recorded rather than tuned away, and it is the one place this refusal has been
+seen to fail.
+
+**What this slice does not do.** It adds no new statistic. It does not separate a common driver
+from a direct relationship - the conditional statistic that would is still absent, as TG4.1
+also said. And the leakage ceiling is sufficient for refusal, not necessary: it refuses
+everything a leak could have made, which would also refuse a genuine relationship that is
+strongest within a frame. The honest reading of an emptied family is "this record cannot carry
+this question", not "there is nothing here".
+
+**Evidence:** `src/tests/test_refusal.py`, 72 tests. Full suite 1922 passed, 1 skipped,
+1 xfailed; benchmark suite **27 PASS, 0 FAIL, 0 NOT_YET_RUNNABLE**.
 
 **TG4.3 Planted cross-domain relationships.** Two synthetic domains with different units,
 semantics and cadences, one carrying information about the other's later state.

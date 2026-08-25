@@ -893,6 +893,19 @@ _PRECEDENCE_SEED = 90210
 #: the run's root seed would make the declared family depend on the data under test.
 _PRECEDENCE_CONTROL_LABEL = "precedence/basis_control"
 
+#: TG4.2's three traps, as settings of this same builder rather than as new generators.
+#: The cycle is the diurnal one at a two-hourly cadence - twelve frames - because that is
+#: what `refusal.calendar_periods` derives from the record's own clock, and a trap at a
+#: period the clock does not name is a different experiment (one this tree does not pass).
+_REFUSAL_CADENCE_SECONDS = 7200.0
+_PRECEDENCE_CYCLE_PERIOD = 12.0
+_PRECEDENCE_CYCLE_LAG = 3
+_PRECEDENCE_CYCLE_AMPLITUDE = 3.5
+_PRECEDENCE_CYCLE_STEPS = 288
+_PRECEDENCE_SLOW_PHI = 0.95
+_PRECEDENCE_SLOW_STEPS = 288
+_PRECEDENCE_LEAK_PHI = 0.9
+
 
 def _red_modulation(length: int, phi: float, gen: torch.Generator) -> torch.Tensor:
     """AR(1) in time with unit marginal variance, so `phi` changes the memory and nothing else."""
@@ -915,6 +928,10 @@ def build_precedence_sequence(
     fine_level: int = _PRECEDENCE_FINE_LEVEL,
     coarse_level: int = _PRECEDENCE_COARSE_LEVEL,
     noise_amplitude: float = _PRECEDENCE_NOISE,
+    cycle_amplitude: float = 0.0,
+    cycle_period: float = _PRECEDENCE_CYCLE_PERIOD,
+    cycle_lag: int = _PRECEDENCE_CYCLE_LAG,
+    coarse_present: bool = True,
     spacing_m: float = DEFAULT_SPACING_M,
 ) -> FieldSequence:
     """Fine-band amplitude at `t` sets coarse-band amplitude at `t + lag`, or does not.
@@ -929,9 +946,22 @@ def build_precedence_sequence(
     too easy and hides the whole R12 problem: a correlation between two autocorrelated series
     has far fewer independent pairs than frames, and a benchmark that never has to face that
     would pass a pipeline that ignores it.
+
+    TG4.2 added three more settings, and no second generator. `cycle_amplitude` adds one
+    deterministic cycle to *both* bands' modulations with `cycle_lag` frames between their
+    crests, which manufactures a strong lead out of a calendar and couples nothing.
+    `coarse_present=False` excites the fine band alone, so the record holds exactly one
+    process and every relationship a decomposition finds in it is the decomposition's. Raising
+    `phi` towards one leaves the record with many frames and few observations. Those three,
+    with `coupling` at its two ends, are the five benchmarks that carry the five refusals -
+    one builder, five settings, which is what makes the four nulls controls.
     """
     if not 0.0 <= coupling <= 1.0:
         raise ValueError("coupling must lie in [0, 1]; got %r" % (coupling,))
+    if cycle_amplitude < 0.0:
+        raise ValueError("cycle_amplitude must be non-negative; got %r" % (cycle_amplitude,))
+    if cycle_period <= 1.0:
+        raise ValueError("cycle_period must exceed one frame; got %r" % (cycle_period,))
     g = _grid(n, spacing_m)
     gen = bundle.torch_generator()
     driver = _red_modulation(steps + lag, phi, gen)
@@ -943,8 +973,17 @@ def build_precedence_sequence(
         # would flip the band's sign and leave the energy - the measured quantity - unchanged.
         return torch.log1p(torch.exp(v)) + 0.1
 
-    fine_amplitude = amplitude(driver[lag:])
-    coarse_amplitude = amplitude(mixed[:steps])
+    # A deterministic cycle shared by both bands, offset so that the fine band's crest
+    # arrives `cycle_lag` frames before the coarse band's. It couples nothing: it is added
+    # to two independent modulations, and the relationship it manufactures belongs to the
+    # calendar rather than to the record.
+    clock = torch.arange(steps, dtype=torch.float64)
+    fine_cycle = cycle_amplitude * torch.sin(2 * math.pi * clock / cycle_period)
+    coarse_cycle = cycle_amplitude * torch.sin(
+        2 * math.pi * (clock - float(cycle_lag)) / cycle_period)
+
+    fine_amplitude = amplitude(driver[lag:] + fine_cycle)
+    coarse_amplitude = amplitude(mixed[:steps] + coarse_cycle)
 
     kmag = g.wavenumber_magnitude("rad_per_m", shifted=False, dtype=torch.float64)
     k_nyq = g.isotropic_k_max("rad_per_m")
@@ -961,8 +1000,9 @@ def build_precedence_sequence(
         fine = torch.fft.ifft2(fine_mask * torch.exp(1j * phase_f)).real
         coarse = torch.fft.ifft2(coarse_mask * torch.exp(1j * phase_c)).real
         data = (fine / (fine.std() + 1e-12) * float(fine_amplitude[t])
-                + coarse / (coarse.std() + 1e-12) * float(coarse_amplitude[t])
                 + noise_amplitude * torch.randn(n, n, generator=gen, dtype=torch.float64))
+        if coarse_present:
+            data = data + coarse / (coarse.std() + 1e-12) * float(coarse_amplitude[t])
         fields.append(PhysicalField(data, grid=g, units="dimensionless"))
     return FieldSequence(fields, np.arange(steps, dtype=float), g)
 
@@ -990,6 +1030,7 @@ def _precedence_truth(planted: bool, lag: int = _PRECEDENCE_LAG,
         "levels": _PRECEDENCE_LEVELS,
         "surrogates": _PRECEDENCE_SURROGATES,
         "expected_confirmations": 1 if planted else 0,
+        "expected_outcome": "confirmation" if planted else "no_confirmation",
         "recoverable_driver_band": (
             "the fine band, which this decomposition spreads over more than one level. The "
             "basis control shows levels 1 and 2 correlating at 0.99 within a frame whatever "
@@ -1017,7 +1058,7 @@ def truth_precedence_null(**params: Any) -> Dict[str, Any]:
     return _precedence_truth(False, **params)
 
 
-def _precedence_record(seq: FieldSequence, name: str):
+def _precedence_record(seq: FieldSequence, name: str, cadence_seconds: float = 1.0):
     """The scale-energy series as a `precedence.Record`, in log energy.
 
     Log because band energy is positive and multiplicatively modulated: the construction sets
@@ -1026,7 +1067,7 @@ def _precedence_record(seq: FieldSequence, name: str):
     """
     from src.core.precedence import Record, ScaleSeries
     series = seq.scale_energy_series(levels=_PRECEDENCE_LEVELS)
-    return Record(name=name, series=tuple(
+    return Record(name=name, cadence_seconds=float(cadence_seconds), series=tuple(
         ScaleSeries("level_%d" % j, np.log(series[j] + 1e-30)) for j in sorted(series)))
 
 
@@ -1044,21 +1085,47 @@ def _precedence_basis_control(lags: Sequence[int]):
     return measure_basis_coupling(_precedence_record(control, "basis_control"), lags=lags)
 
 
-def _run_precedence(seq: FieldSequence, name: str) -> Dict[str, Any]:
-    """The whole pass: declare, split, sweep, freeze, confirm. Identical for both benchmarks."""
+def _run_precedence(seq: FieldSequence, name: str, *, cadence_seconds: float = 1.0,
+                    guarded: bool = True) -> Dict[str, Any]:
+    """The whole pass: declare, split, deconfound, sweep, refuse, freeze, confirm.
+
+    Identical for all five benchmarks, which is what makes the four nulls controls rather
+    than separate experiments. `guarded` is what TG4.2 added: with it false the pass is the
+    one TG4.1 shipped - no calendar removal and no leakage ceiling - and it exists so that
+    each new gate can measure the false discovery its refusal prevents, on the very record it
+    is passing. A benchmark that never showed the trap was real would not be testing one.
+    """
     from src.core.precedence import (
         admissible_lags, admissible_pairs, choose_candidates, confirm_precedence,
         freeze_precedence, split_with_embargo, sweep,
     )
     from src.core.preregistration import HeldOutLedger
-    record = _precedence_record(seq, name)
+    from src.core.refusal import (
+        EverythingRefusedError, calendar_periods, carry_forward, naive_versus_effective,
+        refusal_report, remove_calendar,
+    )
+    record = _precedence_record(seq, name, cadence_seconds=cadence_seconds)
     train, held_out = split_with_embargo(record, fraction=0.6)
+    calendar = [n for n, _ in calendar_periods(train)]
+    if guarded and calendar:
+        train, held_out = remove_calendar(train, held_out)
     lags = admissible_lags(train, max_lag=_PRECEDENCE_MAX_LAG)
     basis = _precedence_basis_control(lags)
     pairs = admissible_pairs(train, coupling=basis)
     result = sweep(train, lags=lags, pairs=pairs, n_surrogates=_PRECEDENCE_SURROGATES,
                    study_id=name)
-    chosen = choose_candidates(result)
+    run: Dict[str, Any] = {
+        "record": record, "train": train, "held_out": held_out, "lags": lags,
+        "basis": basis, "pairs": pairs, "result": result, "guarded": guarded,
+        "calendar": calendar, "refusals": refusal_report(result, train),
+        "sample_size": naive_versus_effective(result), "refused": None,
+        "chosen": (), "seal": None, "receipt": None,
+    }
+    try:
+        chosen = (carry_forward(result, train) if guarded else choose_candidates(result))
+    except EverythingRefusedError as exc:
+        run["refused"] = str(exc)
+        return run
     ledger = HeldOutLedger()
     seal, ordered = freeze_precedence(
         result, held_out=held_out.identity(), sealed_at="2026-08-25T00:00:00Z",
@@ -1066,9 +1133,8 @@ def _run_precedence(seq: FieldSequence, name: str) -> Dict[str, Any]:
     receipt = confirm_precedence(seal, ordered, record=held_out,
                                  held_out=held_out.identity(), ledger=ledger,
                                  opened_at="2026-08-25T00:00:01Z", seed=_PRECEDENCE_SEED)
-    return {"record": record, "train": train, "held_out": held_out, "lags": lags,
-            "basis": basis, "pairs": pairs, "result": result, "chosen": ordered,
-            "seal": seal, "receipt": receipt}
+    run.update({"chosen": ordered, "seal": seal, "receipt": receipt})
+    return run
 
 
 def _precedence_problems(run: Dict[str, Any], truth: Dict[str, Any]) -> List[str]:
@@ -1081,6 +1147,14 @@ def _precedence_problems(run: Dict[str, Any], truth: Dict[str, Any]) -> List[str
     from src.core.precedence import affordable_member_count
     problems: List[str] = []
     result, receipt = run["result"], run["receipt"]
+    expected = truth.get("expected_outcome", "confirmation")
+    if run["refused"] and expected != "family_refused":
+        problems.append("the family was emptied by the refusals (%s), which is not this "
+                        "benchmark's expected outcome" % run["refused"][:120])
+    if not run["refused"] and expected == "family_refused":
+        problems.append("%d of %d members survived the refusals on a record whose every "
+                        "member should have been refused"
+                        % (run["refusals"]["n_survived"], result.n_examined))
     if truth["injected_lag_frames"] is not None \
             and truth["injected_lag_frames"] not in run["lags"]:
         problems.append("the planted lag %d is not in the admissible lag set %s, so the "
@@ -1099,6 +1173,8 @@ def _precedence_problems(run: Dict[str, Any], truth: Dict[str, Any]) -> List[str
         problems.append("the basis control excluded no band pair at all, so the control "
                         "measured nothing and the family still contains pairs this "
                         "decomposition cannot separate")
+    if run["refused"]:
+        return problems
     if not run["chosen"]:
         problems.append("nothing was carried forward from the sweep, so the confirmation "
                         "had nothing to test and its silence is not a result")
@@ -1138,9 +1214,11 @@ def _check_precedence_recovered(seq: FieldSequence, truth: Dict[str, Any]) -> Ch
                             % (entry["lag"], truth["injected_lag_frames"]))
     best_q = min(receipt["adjusted"]) if receipt["adjusted"] else 1.0
     detail = ("%d of %d members examined over %d admissible band pairs and lags %d-%d; "
-              "%d frozen; confirmed %s at q = %.4f on a held-out partition of %d frames"
+              "%d survived the leakage ceiling; %d frozen; confirmed %s at q = %.4f on a "
+              "held-out partition of %d frames"
               % (run["result"].n_examined, run["result"].specification.family_size,
-                 len(run["pairs"]), run["lags"][0], run["lags"][-1], len(run["chosen"]),
+                 len(run["pairs"]), run["lags"][0], run["lags"][-1],
+                 run["refusals"]["n_survived"], len(run["chosen"]),
                  confirmed or "nothing", best_q, run["held_out"].length))
     return CheckResult(
         "4F.precedence_recovery",
@@ -1164,9 +1242,11 @@ def _check_precedence_null(seq: FieldSequence, truth: Dict[str, Any]) -> CheckRe
     if confirmed:
         problems.append("confirmed %s on a record with nothing planted in it" % confirmed)
     best_q = min(receipt["adjusted"]) if receipt["adjusted"] else 1.0
-    detail = ("%d members examined over %d admissible band pairs; %d frozen from the sweep "
-              "and none confirmed; smallest corrected q %.3f, strongest held-out |r| %.3f"
-              % (run["result"].n_examined, len(run["pairs"]), len(run["chosen"]), best_q,
+    detail = ("%d members examined over %d admissible band pairs; %d survived the leakage "
+              "ceiling; %d frozen from the sweep and none confirmed; smallest corrected q "
+              "%.3f, strongest held-out |r| %.3f"
+              % (run["result"].n_examined, len(run["pairs"]),
+                 run["refusals"]["n_survived"], len(run["chosen"]), best_q,
                  max(receipt["strengths"]) if receipt["strengths"] else 0.0))
     return CheckResult(
         "4F.precedence_null",
@@ -1201,5 +1281,277 @@ register_benchmark(Benchmark(
     known_answer=truth_precedence_null,
     checks=(_check_precedence_null,),
     params={"n": _PRECEDENCE_N, "steps": _PRECEDENCE_STEPS, "lag": _PRECEDENCE_LAG},
+    is_null=True,
+))
+
+
+# ------------------------------------------------- 7. the five refusals (TG4.2)
+#
+# The proposal's validation strategy names five things the engine must do, and four of them
+# are refusals. `planted_precedence` and `precedence_null` above carry two of them. These
+# three carry the rest, and each was built by first constructing a record on which the TG4.1
+# pipeline *produced the false discovery* and then declaring the rule that refuses it - which
+# is why every one of these gates runs its own pass twice. The guarded pass is the study; the
+# unguarded pass is the trap, measured on the same record, and a gate whose trap stops
+# springing has stopped testing its refusal. `src/core/refusal.py` holds the register that
+# ties the five together and checks itself against this registry.
+
+_PRECEDENCE_LEAK_STEPS = 192
+
+
+def build_shared_cycle_precedence(bundle: SeedBundle, **params: Any) -> FieldSequence:
+    """Two independent bands that both follow one deterministic cycle."""
+    return build_precedence_sequence(
+        bundle, coupling=0.0, cycle_amplitude=_PRECEDENCE_CYCLE_AMPLITUDE,
+        cycle_period=_PRECEDENCE_CYCLE_PERIOD, cycle_lag=_PRECEDENCE_CYCLE_LAG, **params)
+
+
+def build_slow_independent_precedence(bundle: SeedBundle, **params: Any) -> FieldSequence:
+    """Two independent bands with long memory: many frames, few observations."""
+    return build_precedence_sequence(bundle, coupling=0.0, phi=_PRECEDENCE_SLOW_PHI, **params)
+
+
+def build_leaked_band_precedence(bundle: SeedBundle, **params: Any) -> FieldSequence:
+    """One band, excited alone. Every other level's series is the transform's copy of it."""
+    return build_precedence_sequence(
+        bundle, coupling=0.0, phi=_PRECEDENCE_LEAK_PHI, coarse_present=False, **params)
+
+
+def truth_shared_cycle_precedence(**params: Any) -> Dict[str, Any]:
+    truth = _precedence_truth(False, **params)
+    truth.update({
+        "cycle_period_frames": _PRECEDENCE_CYCLE_PERIOD,
+        "cycle_offset_frames": _PRECEDENCE_CYCLE_LAG,
+        "cadence_seconds": _REFUSAL_CADENCE_SECONDS,
+        "refusal": "artificial_correlation",
+        "note": ("Both bands follow one deterministic cycle, the fine band's crest arriving "
+                 "%d frames before the coarse band's, and nothing couples them. The lead is "
+                 "real, reproducible and entirely the calendar's. It is refused because the "
+                 "record's own cadence says a day is %g frames - not because anything in the "
+                 "data was detected - and the harmonics are fitted on the training partition "
+                 "and subtracted from both (rules R11 and R6)."
+                 % (_PRECEDENCE_CYCLE_LAG, _PRECEDENCE_CYCLE_PERIOD)),
+    })
+    return truth
+
+
+def truth_slow_independent_precedence(**params: Any) -> Dict[str, Any]:
+    truth = _precedence_truth(False, **params)
+    truth.update({
+        "phi": _PRECEDENCE_SLOW_PHI,
+        "refusal": "autocorrelated_repetitions",
+        "note": ("The two bands are modulated independently at phi = %g. Nothing relates "
+                 "them; what the record has instead of observations is repetitions, and a "
+                 "correlation read as if its frames were independent is significant many "
+                 "times over. The gate measures both counts, because the corrected one alone "
+                 "would not show that the correction did anything."
+                 % _PRECEDENCE_SLOW_PHI),
+    })
+    return truth
+
+
+def truth_leaked_band_precedence(**params: Any) -> Dict[str, Any]:
+    truth = _precedence_truth(False, **params)
+    truth.update({
+        "expected_outcome": "family_refused",
+        "refusal": "representation_artefact",
+        "note": ("One spatial band is excited and the other is not, so there is exactly one "
+                 "process in this record and no relationship to find. A stationary wavelet "
+                 "spreads that band's energy over every level, so every level's series is a "
+                 "smeared copy of the same process, and its memory keeps the copies "
+                 "correlated at a lag. The expected outcome is not 'nothing significant' but "
+                 "'every member refused': each one is at or below its own pair's "
+                 "simultaneous correlation, which is the ceiling of what leakage can make."),
+    })
+    return truth
+
+
+def _refusal_trap(seq: FieldSequence, name: str, cadence_seconds: float = 1.0) -> Dict[str, Any]:
+    """The same record through the TG4.1 pipeline, with TG4.2's refusals switched off."""
+    run = _run_precedence(seq, name, cadence_seconds=cadence_seconds, guarded=False)
+    receipt = run["receipt"]
+    confirmed = list(receipt["rejected_labels"]) if receipt else []
+    return {
+        "run": run,
+        "confirmed": confirmed,
+        "q": (min(receipt["adjusted"]) if receipt and receipt["adjusted"] else 1.0),
+        "lags": sorted({e["lag"] for e in (receipt["relationships"] if receipt else [])
+                        if e["label"] in confirmed}),
+    }
+
+
+@stage_check("4F.refusal_calendar")
+def _check_calendar_is_refused(seq: FieldSequence, truth: Dict[str, Any]) -> CheckResult:
+    """Reject a convincing correlation that is a cycle both bands follow."""
+    from src.core.refusal import CalendarNotRemovedError, carry_forward
+    run = _run_precedence(seq, "shared_cycle_precedence",
+                          cadence_seconds=_REFUSAL_CADENCE_SECONDS)
+    trap = _refusal_trap(seq, "shared_cycle_precedence.unguarded",
+                         cadence_seconds=_REFUSAL_CADENCE_SECONDS)
+    problems = _precedence_problems(run, truth)
+    receipt = run["receipt"]
+    confirmed = list(receipt["rejected_labels"]) if receipt else []
+    if confirmed:
+        problems.append("confirmed %s on a record whose only shared structure is the "
+                        "calendar" % confirmed)
+    if not run["calendar"]:
+        problems.append("the record's own cadence names no cycle, so the refusal this gate "
+                        "exists for was never exercised")
+    if "diurnal" not in run["train"].provenance.get("calendar_removed", ()):
+        problems.append("the training partition does not record having had its calendar "
+                        "removed, so the sweep ran on a record that still contained it")
+    if not trap["confirmed"]:
+        problems.append("the unguarded pass confirmed nothing, so this record is no longer a "
+                        "trap and the gate is not testing its refusal")
+    try:
+        carry_forward(trap["run"]["result"], trap["run"]["train"])
+    except CalendarNotRemovedError:
+        pass
+    except Exception as exc:                                     # pragma: no cover - defence
+        problems.append("carrying a candidate forward from the un-anomalised record raised "
+                        "%s rather than refusing it" % type(exc).__name__)
+    else:
+        problems.append("a candidate was carried forward from a record that still contained "
+                        "its calendar, so the refusal is advice rather than machinery")
+    best = run["result"].best
+    trap_best = trap["run"]["result"].best
+    detail = ("a %g-frame cycle shared by both bands at a %.0f-second cadence, the fine "
+              "band's crest %d frames early: unguarded, the same pipeline confirms %d "
+              "relationship(s) at q = %.4f (its strongest member carries a naive p of %.1e "
+              "and an ESS-corrected p of %.1e, so neither R12 nor the surrogate refuses "
+              "it); "
+              "with the calendar fitted on train and removed from both partitions, %d frozen "
+              "and none confirmed, smallest q %.3f"
+              % (_PRECEDENCE_CYCLE_PERIOD, _REFUSAL_CADENCE_SECONDS, _PRECEDENCE_CYCLE_LAG,
+                 len(trap["confirmed"]), trap["q"], trap_best.p_naive, trap_best.p_effective,
+                 len(run["chosen"]),
+                 min(receipt["adjusted"]) if receipt and receipt["adjusted"] else 1.0))
+    return CheckResult(
+        "4F.refusal_calendar",
+        Outcome.PASS if not problems else Outcome.FAIL,
+        detail if not problems else detail + "; " + "; ".join(problems),
+        {"confirmed": confirmed, "unguarded_confirmed": trap["confirmed"],
+         "unguarded_q": float(trap["q"]), "calendar": list(run["calendar"]),
+         "n_frozen": len(run["chosen"]),
+         "strongest_train_r": float(best.correlation),
+         "family_size": run["result"].specification.family_size})
+
+
+@stage_check("4F.refusal_autocorrelation")
+def _check_repetitions_are_not_observations(seq: FieldSequence,
+                                            truth: Dict[str, Any]) -> CheckResult:
+    """Distinguish independent observations from autocorrelated repetitions."""
+    run = _run_precedence(seq, "slow_independent_precedence")
+    problems = _precedence_problems(run, truth)
+    receipt = run["receipt"]
+    confirmed = list(receipt["rejected_labels"]) if receipt else []
+    sample = run["sample_size"]
+    if confirmed:
+        problems.append("confirmed %s between two bands modulated independently" % confirmed)
+    if sample["naive_significant"] < 12:
+        problems.append("only %d of %d members reach 0.05 on a naive frame count, so this "
+                        "record no longer traps a pipeline that ignores R12"
+                        % (sample["naive_significant"], sample["n_members"]))
+    if sample["effective_significant"] >= sample["naive_significant"]:
+        problems.append("the effective sample size changed nothing: %d members significant "
+                        "naively and %d after correction"
+                        % (sample["naive_significant"], sample["effective_significant"]))
+    best = run["result"].best
+    detail = ("two bands modulated independently at phi = %g over %d frames: %d of %d "
+              "members reach 0.05 on a naive frame count and %d after the effective sample "
+              "size (median %.2f of frames); the strongest is %s at r = %.3f; %d frozen and "
+              "none confirmed, smallest corrected q %.3f"
+              % (_PRECEDENCE_SLOW_PHI, run["record"].length, sample["naive_significant"],
+                 sample["n_members"], sample["effective_significant"],
+                 sample["median_ess_fraction"], best.label, best.correlation,
+                 len(run["chosen"]),
+                 min(receipt["adjusted"]) if receipt and receipt["adjusted"] else 1.0))
+    return CheckResult(
+        "4F.refusal_autocorrelation",
+        Outcome.PASS if not problems else Outcome.FAIL,
+        detail if not problems else detail + "; " + "; ".join(problems),
+        {"confirmed": confirmed, "naive_significant": sample["naive_significant"],
+         "effective_significant": sample["effective_significant"],
+         "median_ess_fraction": float(sample["median_ess_fraction"]),
+         "n_frozen": len(run["chosen"]),
+         "family_size": run["result"].specification.family_size})
+
+
+@stage_check("4F.refusal_representation")
+def _check_the_transform_is_not_a_relationship(seq: FieldSequence,
+                                               truth: Dict[str, Any]) -> CheckResult:
+    """Avoid a relationship that belongs to the representation rather than to the world."""
+    from src.core.refusal import simultaneous_strength
+    run = _run_precedence(seq, "leaked_band_precedence")
+    trap = _refusal_trap(seq, "leaked_band_precedence.unguarded")
+    problems = _precedence_problems(run, truth)
+    report = run["refusals"]
+    if not trap["confirmed"]:
+        problems.append("the unguarded pass confirmed nothing, so this record is no longer a "
+                        "trap and the gate is not testing its refusal")
+    if trap["lags"] and min(trap["lags"]) != run["lags"][0]:
+        problems.append("the unguarded pass confirmed at lags %s rather than at the shortest "
+                        "admissible one, which is not the signature of instantaneous leakage "
+                        "and means this record is trapping something else" % (trap["lags"],))
+    strongest = report["strongest_refused"]
+    ceiling = (simultaneous_strength(run["train"], strongest["driver"], strongest["driven"])
+               if strongest else 0.0)
+    detail = ("one band excited and read through a redundant transform: unguarded, the same "
+              "pipeline confirms %d relationship(s) at q = %.4f, all at lag %s, on a record "
+              "holding one process; guarded, all %d members are at or below their own pair's "
+              "simultaneous correlation (strongest refused %s at |r| = %.3f against a "
+              "same-frame %.3f) and the family is emptied"
+              % (len(trap["confirmed"]), trap["q"], trap["lags"] or "-",
+                 report["n_members"], strongest["label"] if strongest else "-",
+                 abs(strongest["correlation"]) if strongest else 0.0, ceiling))
+    return CheckResult(
+        "4F.refusal_representation",
+        Outcome.PASS if not problems else Outcome.FAIL,
+        detail if not problems else detail + "; " + "; ".join(problems),
+        {"unguarded_confirmed": trap["confirmed"], "unguarded_q": float(trap["q"]),
+         "unguarded_lags": list(trap["lags"]), "n_survived": report["n_survived"],
+         "n_refused_as_leakage": report["n_refused_as_leakage"],
+         "family_emptied": bool(report["family_emptied"]),
+         "simultaneous_ceiling": float(ceiling)})
+
+
+register_benchmark(Benchmark(
+    name="shared_cycle_precedence",
+    kind="sequence",
+    description="Two independently modulated bands that both follow one deterministic cycle: "
+                "a strong, reproducible lead that belongs to the calendar.",
+    gates=("4F.refusal_calendar",),
+    build=build_shared_cycle_precedence,
+    known_answer=truth_shared_cycle_precedence,
+    checks=(_check_calendar_is_refused,),
+    params={"n": _PRECEDENCE_N, "steps": _PRECEDENCE_CYCLE_STEPS, "lag": _PRECEDENCE_LAG},
+    is_null=True,
+))
+
+
+register_benchmark(Benchmark(
+    name="slow_independent_precedence",
+    kind="sequence",
+    description="Two independent bands with long memory: many frames and few observations, "
+                "which a naive frame count reads as a finding.",
+    gates=("4F.refusal_autocorrelation",),
+    build=build_slow_independent_precedence,
+    known_answer=truth_slow_independent_precedence,
+    checks=(_check_repetitions_are_not_observations,),
+    params={"n": _PRECEDENCE_N, "steps": _PRECEDENCE_SLOW_STEPS, "lag": _PRECEDENCE_LAG},
+    is_null=True,
+))
+
+
+register_benchmark(Benchmark(
+    name="leaked_band_precedence",
+    kind="sequence",
+    description="One band excited alone: every other level is the transform's smeared copy "
+                "of it, and the relationship between them is the wavelet's.",
+    gates=("4F.refusal_representation",),
+    build=build_leaked_band_precedence,
+    known_answer=truth_leaked_band_precedence,
+    checks=(_check_the_transform_is_not_a_relationship,),
+    params={"n": _PRECEDENCE_N, "steps": _PRECEDENCE_LEAK_STEPS, "lag": _PRECEDENCE_LAG},
     is_null=True,
 ))
