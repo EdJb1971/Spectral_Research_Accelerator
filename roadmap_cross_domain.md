@@ -1532,17 +1532,37 @@ digest catches a wholesale self-consistent rewrite that local hashes alone canno
 refuses held-out source data, a source label attached to a different exemplar graph, mixed or
 misnamed origins, an unpriced node count and a timestamp without an explicit UTC offset.
 
-**The chronological boundary stays with TG5.2.** A hash proves content identity, not when the
-content existed. `verify_published` supplies the comparison TG5.2 must place in a ledger before
-opening domain B; TG5.1 does not claim that a target was blind merely because the artifact is
-immutable. No real second domain was opened and no transfer result exists.
+**The chronological boundary was assigned to TG5.2.** A hash proves content identity, not when
+the content existed. `verify_published` supplies the comparison TG5.2 now places in a ledger
+before opening domain B; TG5.1 alone does not claim that a target was blind merely because the
+artifact is immutable. No real second domain was opened and no transfer result exists in this
+TG5.1 slice.
 
 **Evidence:** `src/tests/test_motif_freezing.py`, 14 tests. Targeted motif/preregistration/
 cross-domain integration: 153 passed. Full suite after documentation: **1986 passed, 1 skipped,
 1 xfailed**; benchmark suite remains **29 PASS, 0 FAIL, 0 NOT_YET_RUNNABLE**.
 
-**TG5.2 Blind transfer.** Search for the frozen motif in a domain opened *after* the freeze.
-Machinery must make redefinition impossible, not merely discouraged (R20).
+**TG5.2 Blind transfer. DONE (`ed-dev`).** `src/core/motif_transfer.py` admits target values
+only through an opener callback. Before calling it, `TransferLedger` verifies the exact
+`FrozenMotif` against its separately published digest and durably commits that digest,
+definition identity, target partition and domain declarations, and strict timezone-bearing
+`frozen_at < bound_at < opened_at` chronology. The target is spent at commit even if loading or
+validation fails, so an unpromising look cannot be followed by a redefined motif. A second open
+of the same target identity is refused across processes.
+
+Search then enumerates the complete pre-bound target scene count. Configuration size, registered
+cross-domain matcher, relation set and measured tolerance are read only from the frozen artifact
+and are absent from the API's parameters. Match reports keep both domains' carried semantics
+visible while excluding them from structural comparison. A content-addressed receipt records
+every examined/matching configuration and treats zero matches as complete. Sixteen tests (18
+cases) cover chronology, persistence, failure spending, no redefinition surface, exhaustive
+search, target-subset/domain laundering, null transfer and ledger/receipt integrity. Targeted G5/
+motif/preregistration/cross-domain integration: **171 passed**.
+
+**Claim boundary.** This proves ordering for access through this API, not the absence of earlier
+human or out-of-process archive access; that requires external access control. Synthetic domains
+exercise the contract, but no real target archive was opened. TG5.2 is descriptive motif search,
+not the corrected relationship-transfer result owned by TG5.3.
 
 **TG5.3 Relationship transfer.** Whether the motif's relationship to subsequent organisation also
 transfers, under the full G3 family accounting.

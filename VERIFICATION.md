@@ -4578,4 +4578,64 @@ RESULT               : ok
 
 This is serialization, integrity and provenance evidence over synthetic motif fixtures. It is
 not a blind transfer: no target domain was opened, no transfer search was run and no real
-cross-domain scientific result exists. Those remain TG5.2.
+cross-domain scientific result exists. Those were deferred to TG5.2 at this checkpoint.
+
+## TG5.2 - bind, open, then search without redefinition (`ed-dev`)
+
+`src/core/motif_transfer.py` closes the chronological boundary left by TG5.1. The only target
+data entry is a callback. Before invoking it, `TransferLedger` verifies the frozen artifact
+against its externally published `motif_sha256`, requires strict timezone-bearing freeze/bind/
+open order, and durably writes the motif and definition identities plus the exact target
+partition and domain declarations. It treats the target as spent at that write even if target
+loading or validation later fails. Reload verifies canonical bytes, exact schemas, record,
+partition and declaration hashes, state and chronology.
+
+The subsequent exhaustive search exposes no size, matcher, relation or tolerance parameters;
+all come from the verified frozen definition. It refuses a matcher that has not declared
+cross-domain capability, a source domain presented as a target, mislabelled target features and
+a post-open subset of the frame count bound before access. Match reports retain both domains'
+carried semantics, and a content-addressed receipt records all examined/matching configurations,
+including a complete zero-match result.
+
+Focused and integrated acceptance:
+
+```text
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_motif_transfer.py -q
+18 passed, 1 warning in 0.77s
+
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_motif_transfer.py src/tests/test_motif_freezing.py src/tests/test_motif.py src/tests/test_preregistration.py src/tests/test_cross_domain.py -q
+171 passed, 1 warning in 47.19s
+```
+
+The 16 TG5.2 test functions (18 parametrized cases) cover durable pre-opener binding, strict
+chronology, absence of a definition-override surface, semantic separation, wrong published
+digest and non-cross-domain matcher refusal, one-use target identity across processes, failure
+spending, target-domain laundering, post-open subset refusal, complete null and exhaustive
+search receipts, canonical reload, nested ledger tampering and receipt identity.
+
+Final repository, documentation and scientific-gate verification:
+
+```text
+> .\.venv\Scripts\python.exe -m pytest -q
+2004 passed, 1 skipped, 1 xfailed, 6 warnings in 820.53s (0:13:40)
+
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_documentation.py -q
+19 passed, 1 warning in 102.61s (0:01:42)
+
+> .\.venv\Scripts\python.exe tools\audit_docs.py
+undocumented modules : none
+undocumented routes  : none
+defects              : 59 defined, 57 fixed, partial ['D18'], open ['D43']
+test functions       : 1700
+stale inventory rows : none
+claimed suite totals : architecture (2004, 1) / roadmap (2004, 1)
+RESULT               : ok
+
+> .\.venv\Scripts\python.exe -m src.benchmarks
+PASS 29   FAIL 0   NOT_YET_RUNNABLE 0
+```
+
+This establishes binding-before-opening for access performed through the API, not proof that an
+archive was never inspected by a person or another program; external access control must supply
+that fact. The acceptance target is synthetic and no real archive was opened. TG5.2 reports a
+descriptive motif transfer search only; corrected relationship transfer remains TG5.3.

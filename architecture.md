@@ -2415,15 +2415,48 @@ is never replaced. Reload requires the exact versioned schema, exact field sets,
 valid graph structure, the training-partition digest, the structural digest and the outer digest.
 `verify_published` additionally compares the internally consistent object with a digest held
 outside the file. This distinction is essential: a content hash detects an edit, but someone who
-can rewrite the whole artifact can recompute its hash. TG5.2 must bind the published
-`motif_sha256` before it opens the target domain and will own that chronological ledger; TG5.1
-does not claim blind transfer merely because serialization now exists.
+can rewrite the whole artifact can recompute its hash. TG5.2 therefore binds the published
+`motif_sha256` in its chronological ledger before it opens the target domain; TG5.1 alone does
+not claim blind transfer merely because serialization exists.
 
 Fourteen acceptance tests cover deterministic canonical identity, exact graph round-trip,
 nested in-memory immutability, no-overwrite publication, structural/origin tampering, wholesale
 self-consistent rewrite versus a published digest, held-out-source refusal, label/signature
 redefinition, origin laundering, timezone requirements, strict schemas and non-canonical bytes.
 No real domain was opened and no transfer result is represented.
+
+### 3.6za Binding before opening, with no redefinition surface (`src/core/motif_transfer.py`, TG5.2, `ed-dev`)
+
+`blind_transfer` makes the chronology TG5.1 left open one controlled operation. The target
+values are not an argument: they sit behind a zero-argument `opener`. Before invoking it, a
+durable `TransferLedger` verifies the `FrozenMotif` against the separately published
+`motif_sha256`, requires strict timezone-bearing `frozen_at < bound_at < opened_at`, rejects the
+source domain and source partition as targets, and commits the motif/definition digests, exact
+target `PartitionIdentity`, complete target `DomainDeclaration`, and all three times. The
+committed record is canonical JSON, individually content-addressed, flushed and `fsync`ed before
+the callback can run. Reload checks exact fields, canonical bytes, record, target-partition and
+target-declaration hashes, the published/motif equality, state and chronology.
+
+The target is conservatively spent at that commit. A loader exception, malformed return,
+mislabelled feature domain or post-open subset of the pre-bound frame count does not roll it
+back, and a new ledger instance refuses a second motif against the same target identity. This is
+what prevents a failed or unpromising first look from becoming a free trial before another
+definition is chosen.
+
+After opening, exhaustive enumeration constructs every target signature using only the frozen
+configuration size and registered matcher, then compares it using only the frozen relation set
+and measured tolerance. Those choices do not appear in the public function signature. The
+matcher must itself declare `crosses_domains=True`; carried semantic records stay outside the
+comparison but both domains remain visible in every match report. The receipt binds the opening
+record, exact search definition, all examined and matching labels, scene support, both domain
+declarations and its own content digest. Zero matches is a complete descriptive result.
+
+This boundary proves ordering for access performed through this API, not that a person or
+another program never inspected an archive earlier; external access control remains the
+responsibility of the archive/preregistration system named in target provenance. It also makes
+no corrected relationship-transfer claim: TG5.3 owns that family, null and train/test accounting.
+The sixteen acceptance tests use two synthetic domains and cover 18 pytest cases; no real target
+archive has been opened.
 
 ### 3.11 Ground-Truth Benchmark Suite (`src/benchmarks/`)
 
@@ -3520,7 +3553,7 @@ See `VERIFICATION.md` for the captured command output behind every statement her
 | Item | Status |
 |---|---|
 | Python venv + dependencies | installed (torch 2.13.0+cu130, numpy 2.2.6, pydantic 1.10.26, SQLAlchemy 2.0.52, xarray 2025.6.1, FastAPI 0.110.3) |
-| Backend test suite | **1986 passed, 1 xfailed** (plus 1 skipped: opt-in live GCS) (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17, 351 after T3.5.6, 379 after T3.5.15, 407 after T3.5.19, 449 after T4C.5, 709 after T4A.4, 781 after T4B.4, 855 after T4C.5, 859 after T4C.5c, 882 after T5.1a CPU acceptance, 883 after RTX acceptance, 890 after portable profiles, 911 after T5.1b/D44, 917 after T5.1c, 933 after T5.1d/D45, 946 after T5.1e, 955 after T5.2a, 957 after T5.2b, 962 after T5.3a, 969 after T5.3b, 981 after T5.2c offline acceptance, 985 after T5.2d, 1000 after T5.0a, 1008 after T5.0b, 1027 after T5.6a offline acceptance, 1042 after T5.6b cube acceptance, 1056 after T5.6c matched evaluation, 1070 after T5.6d truth matching, 1080 after T5.6e orchestration, 1089 after T5.6f portable jobs, 1094 after T5.6g reporting, 1095 after the licence guard, 1102 after T4C.5d gate readiness, 1104 after D50 storage preflight, 1106 after T4C.5e overlap evidence, 1112 after T4C.5f campaign acceptance, 1116 after T4C.5g physical preflight, 1117 after T4C.5h preregistration - the `master` freeze; then on `ed-dev`, 1375 after TG2.1, 1429 after TG2.2, 1477 after TG2.3, 1536 after TG2.4, 1577 after TG3.1, 1621 after TG3.2, 1686 after TG3.3, 1742 after TG3.4, 1787 after TG3.5, 1850 after TG4.1, 1922 after TG4.2, 1972 after TG4.3 and 1986 after TG5.1) |
+| Backend test suite | **2004 passed, 1 xfailed** (plus 1 skipped: opt-in live GCS) (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17, 351 after T3.5.6, 379 after T3.5.15, 407 after T3.5.19, 449 after T4C.5, 709 after T4A.4, 781 after T4B.4, 855 after T4C.5, 859 after T4C.5c, 882 after T5.1a CPU acceptance, 883 after RTX acceptance, 890 after portable profiles, 911 after T5.1b/D44, 917 after T5.1c, 933 after T5.1d/D45, 946 after T5.1e, 955 after T5.2a, 957 after T5.2b, 962 after T5.3a, 969 after T5.3b, 981 after T5.2c offline acceptance, 985 after T5.2d, 1000 after T5.0a, 1008 after T5.0b, 1027 after T5.6a offline acceptance, 1042 after T5.6b cube acceptance, 1056 after T5.6c matched evaluation, 1070 after T5.6d truth matching, 1080 after T5.6e orchestration, 1089 after T5.6f portable jobs, 1094 after T5.6g reporting, 1095 after the licence guard, 1102 after T4C.5d gate readiness, 1104 after D50 storage preflight, 1106 after T4C.5e overlap evidence, 1112 after T4C.5f campaign acceptance, 1116 after T4C.5g physical preflight, 1117 after T4C.5h preregistration - the `master` freeze; then on `ed-dev`, 1375 after TG2.1, 1429 after TG2.2, 1477 after TG2.3, 1536 after TG2.4, 1577 after TG3.1, 1621 after TG3.2, 1686 after TG3.3, 1742 after TG3.4, 1787 after TG3.5, 1850 after TG4.1, 1922 after TG4.2, 1972 after TG4.3, 1986 after TG5.1 and 2004 after TG5.2) |
 | Ground-Truth Benchmark Suite | **29 PASS, 0 FAIL, 0 NOT_YET_RUNNABLE** (`python -m src.benchmarks`, exit 0) |
 | Frontend `npm install` + `npm run build` | passes, emits 1,386 modules + real JS/CSS assets (was: 1 module, no assets) |
 | Backend server | starts, serves OpenAPI, all smoke-tested endpoints return 200 |
@@ -3749,6 +3782,7 @@ able to sit three slices out of date.
 | `test_preregistration.py` | 40 | TG3.2 the generate/confirm split: the T4C.6 family of 36 refused at an ensemble of 199 while a four-member frozen subset of it is affordable, corrected at four rather than at 36, on a partition opened once; a partition identified from a series whose values raise on access; an edited field named and an editor who rewrites the digest table too caught by the outer digest; the wholesale rewrite that verifies against itself and is caught only against the published digest; the second, entirely honest seal against the same held-out data refused; the lineage refusals for mining on held-out and freezing against train; a refusal never spending the partition while a confirmation always does; and the channel-count/label contradiction found by running it |
 | `test_motif.py` | 45 | TG3.5 recurring motifs: the pair of gates - `4E.motif_recovery` confirming one planted motif on a partition it was not mined from, and `4E.motif_null` confirming nothing where nothing was planted, on the same family, the same tolerance and the same ensemble; the family priced at every subset of every scene and checked against the enumeration member for member; a size with no registered combinator refused rather than computed; matching under a tolerance shown to be non-transitive and the intransitive pairs counted; support counting scenes and not overlapping occurrences; the ranking key that has to prefer the shape which matched fewer things; one shape frozen once however many scenes it appeared in; a surrogate that carries everything but position and respects the separation the data demonstrates, with the unconstrained null measured to halve the p-value; the constant-signature matcher registered into TG3.4's `MATCHERS` and audited as honestly invariant to all three transforms - and priced at exactly 1 by the null; a motif tested under a frozen label whose signature came from elsewhere refused as a redefinition; and the held-out partition spent once |
 | `test_motif_freezing.py` | 14 | TG5.1 durable motif definitions: exact structural/origin separation and hashes; canonical stable serialization; process-independent graph round-trip; nested in-memory immutability; exclusive no-overwrite publication; structural and origin tamper detection; whole-artifact rewrite checked against a published digest; held-out-source, label/signature redefinition and origin-domain laundering refusals; timezone-bearing freeze order; strict schema and canonical-byte acceptance |
+| `test_motif_transfer.py` | 16 | TG5.2 blind transfer (18 pytest cases): published digest durably bound before the only target opener; strict freeze/bind/open chronology; frozen-only size/matcher/relation/tolerance and cross-domain matcher capability; complete target enumeration and post-open subset refusal; source-domain, wrong-digest and carried-domain refusals before or after the access boundary as appropriate; failure still spending the target and second-open refusal across processes; semantic visibility, null-match receipt, canonical ledger reload, nested identity/hash/schema tamper detection and receipt identity |
 | `test_precedence.py` | 62 | TG4.1 recovering a relationship nobody pointed at: the pair of gates - `4F.precedence_recovery` confirming one relationship, at the right band pair and the right lag, on a partition it was not mined from, and `4F.precedence_null` confirming nothing over the same builder with its two modulations drawn independently; the family of ordered band pairs crossed with lags priced at 15,985 surrogates and checked against the sweep member for member, with the declared pair axis shown to price it exactly as TG3.1's `ordered_pairs` combinator does; lag zero refused as not a lead and a near-unit-root record refused every lag rather than given a weak result; the basis control that measures what the decomposition relates when nothing else does, the coupled pairs it excludes, and a control with dynamics of its own refused as no control at all; the circular shift shown to preserve every value and the autocorrelation where the shuffle destroys it, with the shuffle's error measured to grow with exactly the memory it discards; the sweep's winner tested against a single-lag null and against the null of its own maximum; one relationship entering the ranking once per lag and leaving it once; the held-out partition cut too close refused a seal, spent once, and a member tested at a lag other than the frozen one refused as a redefinition |
 | `test_refusal.py` | 72 | TG4.2 the five refusals: the register that names all five, the gate each is carried by and the benchmark that gate runs on, checked against the live benchmark registry so that a deleted benchmark or an undeclared gate is a failing test rather than a stale sentence; the lag profile that starts at the one lag no precedence family may contain, and the leakage ceiling read off it - a real lead surviving it, every lag of a single process read four times refused by it, and the unguarded path shown to rank and carry forward exactly the members it refuses; a family emptied by refusal distinguished from a null result; the calendar derived from a record's own cadence rather than from its values, refused when it is faster than the sampling or the record is too short to see it turn twice, fitted on the training partition and subtracted from both on one shared clock, with a mislabelled partition shown to be removed worse; a record that still contains its calendar refused a candidate at the single door between a sweep and a seal, and a partly removed calendar refused too; both sample-size counts shown to travel and their gap to grow with memory |
 | `test_cross_domain.py` | 47 | TG4.3 planted cross-domain precedence (50 pytest cases): two native clocks at one and three hours aligned only at exact shared timestamps, with interpolation, offset clocks, irregular clocks and an irregular intersection refused; original units, semantics, licences, dataset identities and lag bases carried into the sealed receipt; the joint physical floor computed before frame conversion and raised by aggregation windows; eight cross-boundary directions crossed with four physical lags and no within-domain pair; the Kelvin-to-megawatt relationship recovered at six hours without being named, its reverse and distractors present in the family, the same-builder null selecting candidates on train and confirming none, unit tampering breaking the partition identity, a within-domain member refused as laundering, and the held-out partition spent once |
@@ -3800,7 +3834,7 @@ able to sit three slices out of date.
 | `test_wavelet_bank.py` | 27 | T4B.2 expansion through the engine's own parameter matrix, the 1,000-combination guard, decompose_bank / extract_scale_signature, the vertical-bank refusals |
 | `test_transforms.py` | 13 | fft/dct/dwt/dtcwt/hybrid round trips; D1 recorded as a strict xfail |
 | `test_zarr_source.py` | 59 | R13 geometry, chunk-hostility, byte counting, streaming content identity, exact chunk-bounded frame reader, cache/provenance round trip, NetCDF engine and HTTP surface |
-| **total** | **1684** | |
+| **total** | **1700** | |
 
 ### 7.2h A surrogate null that was not the null it claimed (T4C.5)
 
