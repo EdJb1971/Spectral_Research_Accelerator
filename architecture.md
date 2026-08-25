@@ -1848,7 +1848,7 @@ The `4E.invariance` gate has been defined since T3.5.17 and reported `NOT_YET_RU
 since, because the benchmark could present the planted triangle rotated, rescaled and
 translated but nothing existed to be asked whether it was the same triangle. It now reports
 **PASS**, and it was the last pending gate in the suite: the benchmark run was 20 PASS, 0 FAIL,
-0 NOT_YET_RUNNABLE (22 since TG3.5 added two more).
+0 NOT_YET_RUNNABLE (24 since TG3.5 and TG4.1 each added two more).
 
 **A matcher here is not an algorithm, it is a choice of what to measure.** Every entry in
 `MATCHERS` is a function from features to an `AttributedGraph`, and the comparison is always
@@ -2072,6 +2072,106 @@ training scene's noise varies with the seed, and the extractor's sub-cell locali
 stable enough that it does not change the outcome. Both gates have been confirmed to pass at
 four root seeds, which is four runs of one scene set rather than four independent ones.
 
+### 3.6w Recovering a relationship nobody pointed at (`src/core/precedence.py`, TG4.1, `ed-dev`)
+
+Phase 4C's central claim is that fine-scale activity at `t` precedes coarse-scale activity at
+`t + lag`, and `src/benchmarks/sequences.py` has carried a benchmark for it since T4C.3. That
+benchmark's check reads `driver_level` and `driven_level` **out of the known answer** and then
+takes an `argmax` over lag. It recovers the injected lag, which is worth knowing, and it is not
+the claim: a search told which two bands to look at is a search of one band pair, and a study
+that could only be run by someone who already knew the answer has not demonstrated recovery.
+This module runs the same recovery without being told, and two gates were added with it. Both
+pass. `4F.precedence_recovery` confirms one relationship on a partition it was not mined from;
+`4F.precedence_null` runs the identical pass over a record whose two modulations were drawn
+independently - same band structure, same marginals, same memory, no alignment - and confirms
+nothing. Per this tree's own Definition of Done the second is the load-bearing one.
+
+**Being told where to look is a family of one.** Declared honestly, the question over `L` bands
+and `|lags|` admissible lags is `L(L-1) * |lags|` members: ordered pairs, because *fine leads
+coarse* and *coarse leads fine* are computed from the same two series and are two hypotheses.
+Four bands and twelve lags is 144 members, which TG3.1 prices at **15,985 surrogates** before
+one of them could be rejected; eight bands and twenty-four lags is 1,344 members and 209,153.
+So TG3.2's generate/confirm split is again not an optimisation but the only affordable shape,
+and both gates refuse a pass if their own generate family ever becomes affordable in one stage.
+
+**The lag is chosen by the data, so the null has to be over the choice.** The maximum of twelve
+lagged correlations is not one correlation - its null is the distribution of a maximum - and
+this is the largest effect in the slice. Measured on records with *nothing planted in them*,
+the winner of the sweep tested against a single-lag null is significant at 0.05 in **six runs
+of six**, and against the null of the same maximum in **one of six**. `precedence_p_value`
+takes `selected_over` for that. It is necessary and nowhere near sufficient, because it prices
+the choice of lag and not the choice of band pair; what pays for the rest is the corrected
+confirmation on a partition the study did not select on, where twenty null records produce **no
+confirmation at all**. And the confirmation is affordable precisely because the lag was frozen
+on train: a frozen lag is not a selection, so the held-out null is over a single statistic.
+
+**A surrogate must keep the autocorrelation.** The honest surrogate is a circular shift of the
+driver band's series - every value, the whole autocorrelation function and the marginal
+distribution preserved exactly, and only the alignment destroyed. A shuffle destroys the memory
+too, and two red series are far more aligned at a random offset than two white ones, so a
+shuffled null sits closer to zero than the truth. Measured over twelve null records at the same
+lag: at `phi = 0` the two agree (median p 0.64 and 0.65), at `phi = 0.7` the shuffle's median p
+has fallen to 0.34 against 0.55, and at `phi = 0.9` it rejects three times in twelve where the
+shift rejects none, median p 0.19 against 0.59. The error grows with exactly the quantity the
+surrogate discarded. `permuted_series` is public and unregistered so that this is measurable.
+
+**The decomposition relates bands to each other before the world does.** This was found by
+running the null and watching it confirm a relationship at q = 0.0075 on a record with nothing
+in it. A redundant wavelet does not return four independent bands, it returns a smear: measured
+on a control built by the same pipeline with **no temporal structure at all**, levels 1 and 2
+correlate at **0.99 within a frame** whatever is planted, levels 3 and 4 at 0.78 to 0.84, and
+levels 1 and 3 at 0.49 to 0.53, while nothing survives one frame - the largest cross-band
+correlation at any admissible lag is 0.06 to 0.18. So the basis couples two bands when it
+relates them within a frame more strongly than it relates anything across one, the limit is
+read off the control rather than chosen, and of twelve ordered pairs four survive. The
+narrowing is admissible under R18 for one reason: it is derived from a control record and not
+from the record under test, so it is fixed before the study's data is read. The one lag the
+family may never contain - zero - is exactly the lag that identifies a band seen twice.
+
+**Frames are not samples, and a lag costs data.** Every candidate carries both p-values, naive
+and ESS-corrected, because the ratio is how much serial dependence was inflating it (rule R12);
+on the benchmark's own record the effective pairs are 262 of 395 frames. The same arithmetic
+decides admissibility: a lag of `k` is tested on `n - k` pairs, a family whose largest lag
+leaves fewer than eight effective pairs is refused rather than quietly tested at a power nobody
+declared, and a record slow enough - `AR(1)` at `phi = 0.98`, memory measured anywhere from 26
+to 115 frames on 360 - has *no* admissible lag and produces a refusal instead of a weak result.
+
+**One relationship enters the family once per lag it survives at.** A driver with a memory of
+several frames correlates with its target at `k - 1`, `k` and `k + 1`, so the top of the
+ranking is one hypothesis wearing three labels and freezing all three is a correction unit of
+three paid for one test. `deduplicate_candidates` keeps the best lag per ordered pair, and what
+is frozen is then the members the training partition **could not tell apart** from the winner -
+within one standard error on Fisher's z scale, which is the middle ground between pretending to
+a precision the record does not have and TG3.5's measured cost of filling the family to the
+ceiling. On the planted record that rule freezes one member; on a null record it freezes two to
+four, because when nothing stands out nothing is distinguished, and none of them confirm.
+
+**The embargo is hygiene, and it is not what protects the confirmation.** `split_with_embargo`
+drops frames between the partitions and `freeze_precedence` refuses to seal one cut closer than
+the record's own memory. Then the effect was measured, and on twenty records per setting whose
+bands are independent but slow it is not there: at `phi = 0.9` the train winner reaches the
+held-out partition at a median |r| of 0.150 without an embargo and 0.152 with one; at
+`phi = 0.95`, 0.161 against 0.188. The held-out test is a surrogate test drawn from the
+held-out record, so that record's autocorrelation is already in its null - the protection comes
+from the surrogate, not from the gap. The refusal stays as a declared constraint, recorded here
+as one whose benefit this tree has not been able to measure rather than as a repair.
+
+**What the gates refuse to accept as a pass**, beyond their own expected outcome: an admissible
+lag set that does not contain the planted lag; a generate family affordable in one stage; a
+sweep that examined a different number of members than the family priced; a basis control that
+excluded no pair at all, since a control that measured nothing has not been run; a run that
+carried no candidate forward; a frozen member whose ensemble could not have rejected it (TG2.4's
+`vacuous` rule); a correction computed over a different number of members than were frozen; and
+more frozen members than the ensemble can reject one of. The null gate shares every one of them.
+
+**What this slice does not do.** It measures precedence as a lagged correlation, which is a
+statement about alignment and not about mechanism: a common driver of both bands would produce
+the same evidence, and separating that needs a conditional statistic this module does not have.
+It searches one record at a time and does not cross a domain boundary. Its basis control is
+deliberately *not* reseeded with the run - which bands a wavelet can separate is a property of
+the transform, not of the record - so the family is stable across seeds by construction; the
+records under test do vary, and both gates have been confirmed at five root seeds.
+
 ### 3.8 Grid Geometry and Metric-Aware Operators (`src/physical_core/grid.py`, `operators.py`)
 
 Added in T3.5.13 (defect D13, standard E3). `GridSpec` is the physical metric attached to
@@ -2117,8 +2217,8 @@ decision that changed with prior BLAS state (defect **D30**).
 
 ### 3.11 Ground-Truth Benchmark Suite (`src/benchmarks/`)
 
-Added in T3.5.17 (standard E7). Thirteen synthetic datasets whose correct answer is known
-*before* analysis, of which **seven are null benchmarks** whose answer is "there is nothing
+Added in T3.5.17 (standard E7). Fifteen synthetic datasets whose correct answer is known
+*before* analysis, of which **eight are null benchmarks** whose answer is "there is nothing
 here". This is distinct from `synthetic_generator/`, which exists to keep the UI alive
 offline and declares no truth.
 
@@ -2128,14 +2228,15 @@ offline and declares no truth.
 *   `seeding.py` - `SeedSequence.spawn` derivation from a root seed and a **`zlib.crc32`**
     label hash (Python's `hash()` on a string is salted per process and would break
     cross-session reproducibility).
-*   `fields.py` / `sequences.py` - the thirteen datasets, including
+*   `fields.py` / `sequences.py` - the fifteen datasets, including
     `advected_vortex_periodic_sequence`, added in TG2.3 so that a benchmark declaring a
     torus draws one (defect D59), and `planted_motif` / `motif_null`, the TG3.5 pair that
-    differ only in whether anything was planted.
+    differ only in whether anything was planted, and `planted_precedence` /
+    `precedence_null`, the TG4.1 pair that are one builder at its two ends.
 *   `runner.py`, `__main__.py` - report and CLI (`python -m src.benchmarks`, exit 1 on any
     failure, usable directly as a CI gate).
 
-Current status: **22 PASS, 0 FAIL, 0 NOT_YET_RUNNABLE**. See Section 7.2f.
+Current status: **24 PASS, 0 FAIL, 0 NOT_YET_RUNNABLE**. See Section 7.2f.
 
 ### 3.13 Cloud-Native ERA5 over Zarr (`src/data_layer/zarr_source.py`, T3.5.18)
 
@@ -3204,8 +3305,8 @@ See `VERIFICATION.md` for the captured command output behind every statement her
 | Item | Status |
 |---|---|
 | Python venv + dependencies | installed (torch 2.13.0+cu130, numpy 2.2.6, pydantic 1.10.26, SQLAlchemy 2.0.52, xarray 2025.6.1, FastAPI 0.110.3) |
-| Backend test suite | **1787 passed, 1 xfailed** (plus 1 skipped: opt-in live GCS) (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17, 351 after T3.5.6, 379 after T3.5.15, 407 after T3.5.19, 449 after T4C.5, 709 after T4A.4, 781 after T4B.4, 855 after T4C.5, 859 after T4C.5c, 882 after T5.1a CPU acceptance, 883 after RTX acceptance, 890 after portable profiles, 911 after T5.1b/D44, 917 after T5.1c, 933 after T5.1d/D45, 946 after T5.1e, 955 after T5.2a, 957 after T5.2b, 962 after T5.3a, 969 after T5.3b, 981 after T5.2c offline acceptance, 985 after T5.2d, 1000 after T5.0a, 1008 after T5.0b, 1027 after T5.6a offline acceptance, 1042 after T5.6b cube acceptance, 1056 after T5.6c matched evaluation, 1070 after T5.6d truth matching, 1080 after T5.6e orchestration, 1089 after T5.6f portable jobs, 1094 after T5.6g reporting, 1095 after the licence guard, 1102 after T4C.5d gate readiness, 1104 after D50 storage preflight, 1106 after T4C.5e overlap evidence, 1112 after T4C.5f campaign acceptance, 1116 after T4C.5g physical preflight, 1117 after T4C.5h preregistration - the `master` freeze; then on `ed-dev`, 1375 after TG2.1, 1429 after TG2.2, 1477 after TG2.3, 1536 after TG2.4, 1577 after TG3.1, 1621 after TG3.2, 1686 after TG3.3, 1742 after TG3.4 and 1787 after TG3.5) |
-| Ground-Truth Benchmark Suite | **22 PASS, 0 FAIL, 0 NOT_YET_RUNNABLE** (`python -m src.benchmarks`, exit 0) |
+| Backend test suite | **1850 passed, 1 xfailed** (plus 1 skipped: opt-in live GCS) (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17, 351 after T3.5.6, 379 after T3.5.15, 407 after T3.5.19, 449 after T4C.5, 709 after T4A.4, 781 after T4B.4, 855 after T4C.5, 859 after T4C.5c, 882 after T5.1a CPU acceptance, 883 after RTX acceptance, 890 after portable profiles, 911 after T5.1b/D44, 917 after T5.1c, 933 after T5.1d/D45, 946 after T5.1e, 955 after T5.2a, 957 after T5.2b, 962 after T5.3a, 969 after T5.3b, 981 after T5.2c offline acceptance, 985 after T5.2d, 1000 after T5.0a, 1008 after T5.0b, 1027 after T5.6a offline acceptance, 1042 after T5.6b cube acceptance, 1056 after T5.6c matched evaluation, 1070 after T5.6d truth matching, 1080 after T5.6e orchestration, 1089 after T5.6f portable jobs, 1094 after T5.6g reporting, 1095 after the licence guard, 1102 after T4C.5d gate readiness, 1104 after D50 storage preflight, 1106 after T4C.5e overlap evidence, 1112 after T4C.5f campaign acceptance, 1116 after T4C.5g physical preflight, 1117 after T4C.5h preregistration - the `master` freeze; then on `ed-dev`, 1375 after TG2.1, 1429 after TG2.2, 1477 after TG2.3, 1536 after TG2.4, 1577 after TG3.1, 1621 after TG3.2, 1686 after TG3.3, 1742 after TG3.4, 1787 after TG3.5 and 1850 after TG4.1) |
+| Ground-Truth Benchmark Suite | **24 PASS, 0 FAIL, 0 NOT_YET_RUNNABLE** (`python -m src.benchmarks`, exit 0) |
 | Frontend `npm install` + `npm run build` | passes, emits 1,386 modules + real JS/CSS assets (was: 1 module, no assets) |
 | Backend server | starts, serves OpenAPI, all smoke-tested endpoints return 200 |
 | End-to-end experiment sweep | 9-run parameter sweep completes 9/9, writes 28 lineage nodes / 54 edges, hypothesis engine returns results |
@@ -3365,9 +3466,9 @@ the float32 defect ships.
 
 ### 7.2f The false-positive floor (T3.5.17)
 
-`src/benchmarks/` holds ten datasets whose correct answer is known before analysis. Five of
-them are **null benchmarks** - their answer is "there is nothing here". Current status:
-**22 PASS, 0 FAIL, 0 NOT_YET_RUNNABLE.**
+`src/benchmarks/` holds fifteen datasets whose correct answer is known before analysis.
+Eight of them are **null benchmarks** - their answer is "there is nothing here". Current
+status: **24 PASS, 0 FAIL, 0 NOT_YET_RUNNABLE.**
 
 **Nothing is pending any more.** Three gates were defined before the stages that could
 answer them existed, and all three have now graduated to enforced PASSes: `4C.surrogate_null`
@@ -3432,6 +3533,7 @@ able to sit three slices out of date.
 | `test_family_accounting.py` | 30 | TG3.1 family accounting: the T4C.6 declaration priced at 36 members and 3,005 surrogates from the frozen campaign JSON, with its label set compared against a real sweep rather than against its own count; every combinator's cheap count checked against its own enumeration; unordered triples registered from the test module; the unaffordable family refused with both R18 remedies computed, the narrowing checked by taking it and checked to be tight, and the case where no single axis can reach the ceiling; the zero-member term that scored as a remedy; and the admissibility audit that never moves the correction unit |
 | `test_preregistration.py` | 40 | TG3.2 the generate/confirm split: the T4C.6 family of 36 refused at an ensemble of 199 while a four-member frozen subset of it is affordable, corrected at four rather than at 36, on a partition opened once; a partition identified from a series whose values raise on access; an edited field named and an editor who rewrites the digest table too caught by the outer digest; the wholesale rewrite that verifies against itself and is caught only against the published digest; the second, entirely honest seal against the same held-out data refused; the lineage refusals for mining on held-out and freezing against train; a refusal never spending the partition while a confirmation always does; and the channel-count/label contradiction found by running it |
 | `test_motif.py` | 45 | TG3.5 recurring motifs: the pair of gates - `4E.motif_recovery` confirming one planted motif on a partition it was not mined from, and `4E.motif_null` confirming nothing where nothing was planted, on the same family, the same tolerance and the same ensemble; the family priced at every subset of every scene and checked against the enumeration member for member; a size with no registered combinator refused rather than computed; matching under a tolerance shown to be non-transitive and the intransitive pairs counted; support counting scenes and not overlapping occurrences; the ranking key that has to prefer the shape which matched fewer things; one shape frozen once however many scenes it appeared in; a surrogate that carries everything but position and respects the separation the data demonstrates, with the unconstrained null measured to halve the p-value; the constant-signature matcher registered into TG3.4's `MATCHERS` and audited as honestly invariant to all three transforms - and priced at exactly 1 by the null; a motif tested under a frozen label whose signature came from elsewhere refused as a redefinition; and the held-out partition spent once |
+| `test_precedence.py` | 62 | TG4.1 recovering a relationship nobody pointed at: the pair of gates - `4F.precedence_recovery` confirming one relationship, at the right band pair and the right lag, on a partition it was not mined from, and `4F.precedence_null` confirming nothing over the same builder with its two modulations drawn independently; the family of ordered band pairs crossed with lags priced at 15,985 surrogates and checked against the sweep member for member, with the declared pair axis shown to price it exactly as TG3.1's `ordered_pairs` combinator does; lag zero refused as not a lead and a near-unit-root record refused every lag rather than given a weak result; the basis control that measures what the decomposition relates when nothing else does, the coupled pairs it excludes, and a control with dynamics of its own refused as no control at all; the circular shift shown to preserve every value and the autocorrelation where the shuffle destroys it, with the shuffle's error measured to grow with exactly the memory it discards; the sweep's winner tested against a single-lag null and against the null of its own maximum; one relationship entering the ranking once per lag and leaving it once; the held-out partition cut too close refused a seal, spent once, and a member tested at a lag other than the frozen one refused as a redefinition |
 | `test_invariance.py` | 56 | TG3.4 invariant matching: the `4E.invariance` gate moving off `NOT_YET_RUNNABLE` to PASS, with the position-memorising control audited beside it and surviving nothing; the shape identical under exact rotation, translation and rescaling and TG3.3's `distance` exactly invariant too when the scale is exact, which is what places the benchmark's 4.8% drift in the extractor's scale estimate rather than in the relation; a scalene configuration refused a match so scale-invariance is not permission to match anything; a pair refused by the shape matcher because one edge over its own mean is 1 for every configuration in the world; deviations minimised over correspondences, the defect that had put the position matcher's noise floor at 0.27; a tolerance refused without a stated basis and `match` refusing a tolerance that is merely a number; a vacuous test conferring no invariance; overclaiming and understating both caught on matchers registered from the test module; the scale ratio recovered from the separations, refused across a unit boundary, structurally unable to precede the decision, and judged against its own noise floor rather than the shape's |
 | `test_constellation.py` | 65 | TG3.3 constellations as attributed graphs: the planted triangle built twice, in cells as a dimensionless amplitude and in metres as a temperature, matching as the same attributed graph, with a relation registered from the test module *without* the dimensionless division making the same two graphs disagree; all eight relations registered with their requirements declared; `direction` and `convergence` refusing against TG2.2's own `reports_orientation: False` capability; `convergence` refused on an undirected axis; a bearing refused across a periodic seam and from a point to itself; the geometric-mean reference that does not follow the larger scale; the relation axis a TG3.1 family may be priced over, 3 against 28; matching exhaustive to 8 nodes and refused above it; and the non-strict graph that did not match itself, found by running it |
 | `test_feature_extraction.py` | 39 | TG2.2 extraction as a registry: the three planted features recovered across a six-fold range of scales and under rotation, translation and rescaling; both null benchmarks silent across three seeds with the loosened-alpha control that makes the silence mean something; the strict-comparison off-by-one; an unresolvable alpha refused before the ensemble; a second extractor registered from the test module; the periodic-axis seam and the self-scaling R13 refusal; and the one-feature-per-frame handoff to TG2.3 |
@@ -3480,7 +3582,7 @@ able to sit three slices out of date.
 | `test_wavelet_bank.py` | 27 | T4B.2 expansion through the engine's own parameter matrix, the 1,000-combination guard, decompose_bank / extract_scale_signature, the vertical-bank refusals |
 | `test_transforms.py` | 13 | fft/dct/dwt/dtcwt/hybrid round trips; D1 recorded as a strict xfail |
 | `test_zarr_source.py` | 59 | R13 geometry, chunk-hostility, byte counting, streaming content identity, exact chunk-bounded frame reader, cache/provenance round trip, NetCDF engine and HTTP surface |
-| **total** | **1489** | |
+| **total** | **1551** | |
 
 ### 7.2h A surrogate null that was not the null it claimed (T4C.5)
 

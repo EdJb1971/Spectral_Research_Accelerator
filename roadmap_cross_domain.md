@@ -1270,8 +1270,92 @@ partition is opened, which is what TG3.2 exists for.
 
 Before any real cross-domain claim. Extends `synthetic_generator/cascade.py`.
 
-**TG4.1 Planted relationships at unknown scale and lag.** The engine is not told where the
-relationship is and must recover it.
+**TG4.1 Planted relationships at unknown scale and lag. DONE (`ed-dev`)**
+**Exit criterion:** the engine is not told where the relationship is and must recover it.
+
+`src/core/precedence.py` — `ScaleSeries`, `Record`, `PrecedenceCandidate`, `SweepResult`,
+`PrecedenceEvidence`, `BasisCoupling`; `autocorrelation_time` and `record_memory`;
+`admissible_lags`, `ordered_pairs_of`, `measure_basis_coupling`, `admissible_pairs` and
+`precedence_search_specification`, checked against the sweep member for member;
+`lagged_correlation`, `precedence_strength`, `sweep`; `circular_shift`, `permuted_series`,
+`precedence_p_value`; `split_with_embargo`; `deduplicate_candidates`,
+`indistinguishable_from_best`, `choose_candidates`, `report_precedence_generation`,
+`confirmatory_specification`, `freeze_precedence`, `confirm_precedence`. Two new benchmarks in
+`src/benchmarks/sequences.py`, `planted_precedence` and `precedence_null`, carry the gates
+`4F.precedence_recovery` and `4F.precedence_null`.
+
+**Where the generator went, and why not `cascade.py`.** This phase's preamble says it extends
+`synthetic_generator/cascade.py`, and it does not. That module builds a cascade for the offline
+UI and declares no truth; a benchmark needs a declared known answer, a gate and a null twin
+built by the same code path, which is what `src/benchmarks/` is for. `build_precedence_sequence`
+is therefore a benchmark generator with a `coupling` knob whose two ends are the two benchmarks,
+and `cascade.py` is left alone.
+
+**What was wrong with the version that already passed.** `coupled_cascade_sequence` has
+recovered a planted lag since T4C.3, and its check reads `driver_level` and `driven_level`
+straight out of the known answer before taking an `argmax` over lag. That is a search of one
+band pair, run by someone who already knew the answer. This slice asks the same question
+without being told either the pair or the lag.
+
+Findings:
+
+*   **Being told where to look is a family of one.** `L(L-1) * |lags|` members: four bands and
+    twelve lags is 144, which TG3.1 prices at **15,985 surrogates** before one could be
+    rejected; eight bands and twenty-four lags is 1,344 and 209,153. Ordered pairs, because a
+    search that asks only *fine leads coarse* was told the direction.
+*   **The lag is chosen by the data, so the null has to be over the choice.** Measured on
+    records with nothing planted: the sweep's winner against a single-lag null is significant
+    at 0.05 in **six runs of six**, and against the null of its own maximum in **one of six**.
+    It is necessary and not sufficient - it prices the choice of lag, not of band pair - and
+    what pays for the rest is the corrected held-out confirmation, where twenty null records
+    produce **no confirmation at all**. The confirmation is affordable only because the lag was
+    frozen on train: a frozen lag is not a selection, so its null is over a single statistic.
+*   **A surrogate must keep the autocorrelation.** A circular shift preserves every value, the
+    whole autocorrelation function and the marginal distribution, and destroys only the
+    alignment. A shuffle destroys the memory too: measured over twelve null records, at
+    `phi = 0` the two agree (median p 0.64 and 0.65), at `phi = 0.7` the shuffle's median p is
+    0.34 against 0.55, and at `phi = 0.9` it rejects 3 times in 12 where the shift rejects none
+    (median p 0.19 against 0.59). The error grows with exactly what the surrogate discarded.
+*   **The decomposition relates bands to each other before the world does.** Found by running
+    the null and watching it confirm a relationship at q = 0.0075 on a record with nothing in
+    it. Measured on a control built by the same pipeline with **no temporal structure at all**,
+    levels 1 and 2 correlate at **0.99 within a frame** whatever is planted, levels 3 and 4 at
+    0.78-0.84 and levels 1 and 3 at 0.49-0.53, while the largest cross-band correlation at any
+    admissible lag is 0.06-0.18. So the basis couples two bands when it relates them within a
+    frame more strongly than it relates anything across one; the limit is read off the control,
+    four of twelve ordered pairs survive, and the narrowing is admissible under R18 because it
+    comes from a control record rather than from the record under test. The one lag the family
+    may never contain - zero - is exactly the lag that identifies a band seen twice.
+*   **Frames are not samples, and a lag costs data.** Both p-values travel with every
+    candidate (R12); the benchmark's own record has 262 effective pairs out of 395 frames. The
+    same arithmetic refuses a family whose largest lag leaves fewer than eight effective pairs,
+    and refuses *every* lag on an `AR(1)` record at `phi = 0.98` - a near-unit-root record
+    produces a refusal here, not a weak result.
+*   **One relationship enters the family once per lag it survives at**, so the frozen set is
+    one member per ordered pair, and then only those the training partition could not tell
+    apart from the winner - within one standard error on Fisher's z scale. On the planted
+    record that freezes one member; on a null record two to four, because when nothing stands
+    out nothing is distinguished, and none of them confirm.
+
+**A hypothesis that measurement refuted.** The embargo between train and held-out was expected
+to matter, and on twenty records per setting whose bands are independent but slow it does not:
+at `phi = 0.9` the train winner reaches the held-out partition at a median |r| of 0.150 without
+an embargo and 0.152 with one; at `phi = 0.95`, 0.161 against 0.188. The held-out test is a
+surrogate test drawn from the held-out record, so that record's memory is already in its null -
+the protection comes from the surrogate, not from the gap. The refusal stays as a declared
+constraint and is written up as one whose benefit has not been measurable, not as a repair.
+
+**Exit criterion met.** The engine is told neither the band pair nor the lag. It declares a
+family of 48 admissible members, sweeps a training partition, freezes what it found before the
+held-out partition is opened, and confirms **one** relationship there - the fine band leading
+the coarse band by exactly the five frames that were planted - at **q = 0.0050** over a
+correction unit of 1. The null benchmark runs the identical pass, same builder at coupling
+zero, same family, same ensemble, real candidates frozen from its own training partition, and
+confirms **nothing**, which is the load-bearing result. Both gates hold at five root seeds. The
+benchmark suite is now **24 PASS, 0 FAIL, 0 NOT_YET_RUNNABLE**.
+
+**Evidence:** `src/tests/test_precedence.py`, 62 test functions and 63 cases. Full suite 1850 passed, 1 skipped,
+1 xfailed; benchmark suite 24 PASS, 0 FAIL, 0 NOT_YET_RUNNABLE.
 
 **TG4.2 The five refusals.** Per the proposal's own validation strategy, the engine must:
 recover planted relationships without being told their scale or lag; reject convincing but

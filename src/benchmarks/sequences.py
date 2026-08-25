@@ -863,3 +863,343 @@ register_benchmark(Benchmark(
     params={"n": 64, "steps": 200, "phi": 0.85},
     is_null=True,
 ))
+
+
+# ------------------------------------- 6. precedence at an unknown scale and lag (TG4.1)
+#
+# ``coupled_cascade_sequence`` above recovers a planted lag, and it is *told* which two bands
+# to look at: `_check_cascade_lag` reads `driver_level` and `driven_level` out of the known
+# answer. These two benchmarks ask the same question without being told either the band pair
+# or the lag, through `src/core/precedence.py`: a declared family of band pairs crossed with
+# lags, priced by TG3.1, mined on a training partition, frozen, and confirmed once on a
+# held-out one. `planted_precedence` must recover the relationship; `precedence_null` runs
+# the identical pass over a record whose bands are modulated independently - same spectra,
+# same marginals, same memory - and must confirm nothing. Per the Definition of Done the
+# second is the load-bearing one.
+
+_PRECEDENCE_N = 96
+_PRECEDENCE_STEPS = 192
+_PRECEDENCE_LAG = 5
+_PRECEDENCE_PHI = 0.7
+_PRECEDENCE_FINE_LEVEL = 1
+_PRECEDENCE_COARSE_LEVEL = 4
+_PRECEDENCE_LEVELS = 4
+_PRECEDENCE_MAX_LAG = 12
+_PRECEDENCE_NOISE = 0.35
+_PRECEDENCE_SURROGATES = 199
+_PRECEDENCE_SEED = 90210
+#: The basis control is deliberately *not* reseeded per run: which bands a wavelet can
+#: separate is a property of the transform, not of the record, and a control that moved with
+#: the run's root seed would make the declared family depend on the data under test.
+_PRECEDENCE_CONTROL_LABEL = "precedence/basis_control"
+
+
+def _red_modulation(length: int, phi: float, gen: torch.Generator) -> torch.Tensor:
+    """AR(1) in time with unit marginal variance, so `phi` changes the memory and nothing else."""
+    out = torch.empty(length, dtype=torch.float64)
+    out[0] = torch.randn(1, generator=gen, dtype=torch.float64)
+    innovation = math.sqrt(max(1.0 - phi * phi, 1e-12))
+    for i in range(1, length):
+        out[i] = phi * out[i - 1] + innovation * torch.randn(1, generator=gen,
+                                                             dtype=torch.float64)
+    return out
+
+
+def build_precedence_sequence(
+    bundle: SeedBundle,
+    n: int = _PRECEDENCE_N,
+    steps: int = _PRECEDENCE_STEPS,
+    lag: int = _PRECEDENCE_LAG,
+    phi: float = _PRECEDENCE_PHI,
+    coupling: float = 1.0,
+    fine_level: int = _PRECEDENCE_FINE_LEVEL,
+    coarse_level: int = _PRECEDENCE_COARSE_LEVEL,
+    noise_amplitude: float = _PRECEDENCE_NOISE,
+    spacing_m: float = DEFAULT_SPACING_M,
+) -> FieldSequence:
+    """Fine-band amplitude at `t` sets coarse-band amplitude at `t + lag`, or does not.
+
+    `coupling` in `[0, 1]` mixes the delayed modulation with an independent one drawn from
+    the same AR(1) process, so `1.0` is a perfect cascade and `0.0` is a null with identical
+    band structure, identical marginals and identical memory at every scale. The two
+    benchmarks below are this one builder at its two ends, which is what makes the null a
+    control rather than a different experiment.
+
+    The modulation is red rather than white on purpose. A white driver makes the recovery far
+    too easy and hides the whole R12 problem: a correlation between two autocorrelated series
+    has far fewer independent pairs than frames, and a benchmark that never has to face that
+    would pass a pipeline that ignores it.
+    """
+    if not 0.0 <= coupling <= 1.0:
+        raise ValueError("coupling must lie in [0, 1]; got %r" % (coupling,))
+    g = _grid(n, spacing_m)
+    gen = bundle.torch_generator()
+    driver = _red_modulation(steps + lag, phi, gen)
+    independent = _red_modulation(steps + lag, phi, gen)
+    mixed = coupling * driver + math.sqrt(max(1.0 - coupling ** 2, 0.0)) * independent
+
+    def amplitude(v: torch.Tensor) -> torch.Tensor:
+        # Positive by construction: these scale a band's energy, and a negative amplitude
+        # would flip the band's sign and leave the energy - the measured quantity - unchanged.
+        return torch.log1p(torch.exp(v)) + 0.1
+
+    fine_amplitude = amplitude(driver[lag:])
+    coarse_amplitude = amplitude(mixed[:steps])
+
+    kmag = g.wavenumber_magnitude("rad_per_m", shifted=False, dtype=torch.float64)
+    k_nyq = g.isotropic_k_max("rad_per_m")
+
+    def band(level: int) -> torch.Tensor:
+        centre = k_nyq / (2.0 ** level)
+        return torch.exp(-((kmag - centre) ** 2) / (2.0 * (0.3 * centre) ** 2))
+
+    fine_mask, coarse_mask = band(fine_level), band(coarse_level)
+    fields = []
+    for t in range(steps):
+        phase_f = torch.rand(n, n, generator=gen, dtype=torch.float64) * 2 * math.pi
+        phase_c = torch.rand(n, n, generator=gen, dtype=torch.float64) * 2 * math.pi
+        fine = torch.fft.ifft2(fine_mask * torch.exp(1j * phase_f)).real
+        coarse = torch.fft.ifft2(coarse_mask * torch.exp(1j * phase_c)).real
+        data = (fine / (fine.std() + 1e-12) * float(fine_amplitude[t])
+                + coarse / (coarse.std() + 1e-12) * float(coarse_amplitude[t])
+                + noise_amplitude * torch.randn(n, n, generator=gen, dtype=torch.float64))
+        fields.append(PhysicalField(data, grid=g, units="dimensionless"))
+    return FieldSequence(fields, np.arange(steps, dtype=float), g)
+
+
+def build_planted_precedence(bundle: SeedBundle, **params: Any) -> FieldSequence:
+    """The cascade: the fine band leads the coarse band by `lag` frames."""
+    return build_precedence_sequence(bundle, coupling=1.0, **params)
+
+
+def build_precedence_null(bundle: SeedBundle, **params: Any) -> FieldSequence:
+    """The same construction with the two modulations drawn independently."""
+    return build_precedence_sequence(bundle, coupling=0.0, **params)
+
+
+def _precedence_truth(planted: bool, lag: int = _PRECEDENCE_LAG,
+                      fine_level: int = _PRECEDENCE_FINE_LEVEL,
+                      coarse_level: int = _PRECEDENCE_COARSE_LEVEL,
+                      **_: Any) -> Dict[str, Any]:
+    return {
+        "has_organisation": bool(planted),
+        "injected_lag_frames": int(lag) if planted else None,
+        "fine_level": int(fine_level),
+        "coarse_level": int(coarse_level),
+        "max_lag_searched": _PRECEDENCE_MAX_LAG,
+        "levels": _PRECEDENCE_LEVELS,
+        "surrogates": _PRECEDENCE_SURROGATES,
+        "expected_confirmations": 1 if planted else 0,
+        "recoverable_driver_band": (
+            "the fine band, which this decomposition spreads over more than one level. The "
+            "basis control shows levels 1 and 2 correlating at 0.99 within a frame whatever "
+            "is planted, so the recoverable answer is 'the fine band leads the coarse band "
+            "by %d frames' and not 'level %d does'. A check that demanded a particular level "
+            "would be testing the wavelet's leakage pattern." % (lag, fine_level))
+        if planted else None,
+        "note": ("The engine is told neither which bands are related nor at what lag. It "
+                 "declares a family of admissible band pairs crossed with admissible lags, "
+                 "mines a training partition, freezes what it found, and tests it once on a "
+                 "held-out partition."
+                 + ("" if planted else
+                    " Here there is nothing to find: the two modulations are independent "
+                    "draws from the same AR(1) process, so every spectrum, marginal and "
+                    "autocorrelation matches the planted case and only the alignment is "
+                    "absent.")),
+    }
+
+
+def truth_planted_precedence(**params: Any) -> Dict[str, Any]:
+    return _precedence_truth(True, **params)
+
+
+def truth_precedence_null(**params: Any) -> Dict[str, Any]:
+    return _precedence_truth(False, **params)
+
+
+def _precedence_record(seq: FieldSequence, name: str):
+    """The scale-energy series as a `precedence.Record`, in log energy.
+
+    Log because band energy is positive and multiplicatively modulated: the construction sets
+    an *amplitude*, so the additive relationship is between logs, and correlating raw energies
+    would measure the relationship through a nonlinearity nobody declared.
+    """
+    from src.core.precedence import Record, ScaleSeries
+    series = seq.scale_energy_series(levels=_PRECEDENCE_LEVELS)
+    return Record(name=name, series=tuple(
+        ScaleSeries("level_%d" % j, np.log(series[j] + 1e-30)) for j in sorted(series)))
+
+
+def _precedence_basis_control(lags: Sequence[int]):
+    """What this decomposition relates to what, measured where nothing else can.
+
+    A record built by the same pipeline with **no temporal structure at all** - every frame's
+    amplitudes drawn independently - so any correlation between two of its bands is the
+    transform talking about itself rather than about the world.
+    """
+    from src.benchmarks.seeding import derive
+    from src.core.precedence import measure_basis_coupling
+    control = build_precedence_sequence(derive(_PRECEDENCE_CONTROL_LABEL), coupling=0.0,
+                                        phi=0.0)
+    return measure_basis_coupling(_precedence_record(control, "basis_control"), lags=lags)
+
+
+def _run_precedence(seq: FieldSequence, name: str) -> Dict[str, Any]:
+    """The whole pass: declare, split, sweep, freeze, confirm. Identical for both benchmarks."""
+    from src.core.precedence import (
+        admissible_lags, admissible_pairs, choose_candidates, confirm_precedence,
+        freeze_precedence, split_with_embargo, sweep,
+    )
+    from src.core.preregistration import HeldOutLedger
+    record = _precedence_record(seq, name)
+    train, held_out = split_with_embargo(record, fraction=0.6)
+    lags = admissible_lags(train, max_lag=_PRECEDENCE_MAX_LAG)
+    basis = _precedence_basis_control(lags)
+    pairs = admissible_pairs(train, coupling=basis)
+    result = sweep(train, lags=lags, pairs=pairs, n_surrogates=_PRECEDENCE_SURROGATES,
+                   study_id=name)
+    chosen = choose_candidates(result)
+    ledger = HeldOutLedger()
+    seal, ordered = freeze_precedence(
+        result, held_out=held_out.identity(), sealed_at="2026-08-25T00:00:00Z",
+        n_surrogates=_PRECEDENCE_SURROGATES, chosen=chosen, ledger=ledger, study_id=name)
+    receipt = confirm_precedence(seal, ordered, record=held_out,
+                                 held_out=held_out.identity(), ledger=ledger,
+                                 opened_at="2026-08-25T00:00:01Z", seed=_PRECEDENCE_SEED)
+    return {"record": record, "train": train, "held_out": held_out, "lags": lags,
+            "basis": basis, "pairs": pairs, "result": result, "chosen": ordered,
+            "seal": seal, "receipt": receipt}
+
+
+def _precedence_problems(run: Dict[str, Any], truth: Dict[str, Any]) -> List[str]:
+    """What neither gate accepts as a pass, whatever its own expected outcome.
+
+    The null shares every one of these deliberately: a null that reported nothing because it
+    proposed nothing, or because its ensemble could not have rejected anything, is a pass
+    obtained by not looking.
+    """
+    from src.core.precedence import affordable_member_count
+    problems: List[str] = []
+    result, receipt = run["result"], run["receipt"]
+    if truth["injected_lag_frames"] is not None \
+            and truth["injected_lag_frames"] not in run["lags"]:
+        problems.append("the planted lag %d is not in the admissible lag set %s, so the "
+                        "search could not have found it"
+                        % (truth["injected_lag_frames"], list(run["lags"])))
+    if result.affordable_here:
+        problems.append("the generate family of %d is affordable in one stage at %d "
+                        "surrogates, so this benchmark has stopped testing the split it "
+                        "exists to test" % (result.specification.family_size,
+                                            _PRECEDENCE_SURROGATES))
+    if result.n_examined != result.specification.family_size:
+        problems.append("examined %d members of a family priced at %d"
+                        % (result.n_examined, result.specification.family_size))
+    n_levels = len(run["record"].levels)
+    if len(run["pairs"]) >= n_levels * (n_levels - 1):
+        problems.append("the basis control excluded no band pair at all, so the control "
+                        "measured nothing and the family still contains pairs this "
+                        "decomposition cannot separate")
+    if not run["chosen"]:
+        problems.append("nothing was carried forward from the sweep, so the confirmation "
+                        "had nothing to test and its silence is not a result")
+    if receipt["correction_unit"] != len(run["chosen"]):
+        problems.append("corrected over %d members but froze %d"
+                        % (receipt["correction_unit"], len(run["chosen"])))
+    if receipt["vacuous"]:
+        problems.append("frozen members %s were tested by an ensemble whose smallest "
+                        "possible p-value sits above the corrected alpha, so they could not "
+                        "have been rejected however strong the data" % (receipt["vacuous"],))
+    if len(run["chosen"]) > affordable_member_count(_PRECEDENCE_SURROGATES):
+        problems.append("froze %d members, more than %d surrogates can reject one of"
+                        % (len(run["chosen"]), _PRECEDENCE_SURROGATES))
+    return problems
+
+
+@stage_check("4F.precedence_recovery")
+def _check_precedence_recovered(seq: FieldSequence, truth: Dict[str, Any]) -> CheckResult:
+    """Recover a planted relationship without being told its scale or its lag."""
+    run = _run_precedence(seq, "planted_precedence")
+    receipt = run["receipt"]
+    problems = _precedence_problems(run, truth)
+    confirmed = list(receipt["rejected_labels"])
+    fine = {"level_%d" % _PRECEDENCE_FINE_LEVEL, "level_%d" % (_PRECEDENCE_FINE_LEVEL + 1)}
+    coarse = {"level_%d" % _PRECEDENCE_COARSE_LEVEL,
+              "level_%d" % (_PRECEDENCE_COARSE_LEVEL - 1)}
+    named = [e for e in receipt["relationships"] if e["label"] in confirmed]
+    if len(confirmed) != 1:
+        problems.append("confirmed %d relationships where exactly one was planted: %s"
+                        % (len(confirmed), confirmed))
+    for entry in named:
+        if entry["driver"] not in fine or entry["driven"] not in coarse:
+            problems.append("confirmed %s, which is not the fine band leading the coarse one"
+                            % entry["label"])
+        if entry["lag"] != truth["injected_lag_frames"]:
+            problems.append("confirmed a lead of %d frames where %d was planted"
+                            % (entry["lag"], truth["injected_lag_frames"]))
+    best_q = min(receipt["adjusted"]) if receipt["adjusted"] else 1.0
+    detail = ("%d of %d members examined over %d admissible band pairs and lags %d-%d; "
+              "%d frozen; confirmed %s at q = %.4f on a held-out partition of %d frames"
+              % (run["result"].n_examined, run["result"].specification.family_size,
+                 len(run["pairs"]), run["lags"][0], run["lags"][-1], len(run["chosen"]),
+                 confirmed or "nothing", best_q, run["held_out"].length))
+    return CheckResult(
+        "4F.precedence_recovery",
+        Outcome.PASS if not problems else Outcome.FAIL,
+        detail if not problems else detail + "; " + "; ".join(problems),
+        {"confirmed": confirmed, "smallest_q": float(best_q),
+         "family_size": run["result"].specification.family_size,
+         "n_frozen": len(run["chosen"]),
+         "admissible_pairs": ["%s>%s" % p for p in run["pairs"]],
+         "basis_floor": float(run["basis"].floor),
+         "surrogates_required": run["result"].specification.account().surrogates_required})
+
+
+@stage_check("4F.precedence_null")
+def _check_precedence_null(seq: FieldSequence, truth: Dict[str, Any]) -> CheckResult:
+    """The identical pass over a record whose bands are modulated independently."""
+    run = _run_precedence(seq, "precedence_null")
+    receipt = run["receipt"]
+    problems = _precedence_problems(run, truth)
+    confirmed = list(receipt["rejected_labels"])
+    if confirmed:
+        problems.append("confirmed %s on a record with nothing planted in it" % confirmed)
+    best_q = min(receipt["adjusted"]) if receipt["adjusted"] else 1.0
+    detail = ("%d members examined over %d admissible band pairs; %d frozen from the sweep "
+              "and none confirmed; smallest corrected q %.3f, strongest held-out |r| %.3f"
+              % (run["result"].n_examined, len(run["pairs"]), len(run["chosen"]), best_q,
+                 max(receipt["strengths"]) if receipt["strengths"] else 0.0))
+    return CheckResult(
+        "4F.precedence_null",
+        Outcome.PASS if not problems else Outcome.FAIL,
+        detail if not problems else detail + "; " + "; ".join(problems),
+        {"confirmed": confirmed, "smallest_q": float(best_q),
+         "n_frozen": len(run["chosen"]),
+         "family_size": run["result"].specification.family_size,
+         "admissible_pairs": ["%s>%s" % p for p in run["pairs"]]})
+
+
+register_benchmark(Benchmark(
+    name="planted_precedence",
+    kind="sequence",
+    description="A cascade at an unknown scale and an unknown lag, recovered from a declared "
+                "family rather than from the known answer.",
+    gates=("4F.precedence_recovery",),
+    build=build_planted_precedence,
+    known_answer=truth_planted_precedence,
+    checks=(_check_precedence_recovered,),
+    params={"n": _PRECEDENCE_N, "steps": _PRECEDENCE_STEPS, "lag": _PRECEDENCE_LAG},
+))
+
+
+register_benchmark(Benchmark(
+    name="precedence_null",
+    kind="sequence",
+    description="The same construction with the two modulations drawn independently: same "
+                "spectra, same memory, no alignment.",
+    gates=("4F.precedence_null",),
+    build=build_precedence_null,
+    known_answer=truth_precedence_null,
+    checks=(_check_precedence_null,),
+    params={"n": _PRECEDENCE_N, "steps": _PRECEDENCE_STEPS, "lag": _PRECEDENCE_LAG},
+    is_null=True,
+))
