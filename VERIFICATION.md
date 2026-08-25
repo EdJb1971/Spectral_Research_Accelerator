@@ -4880,3 +4880,84 @@ out, or that the effect transfers. Gate thresholds are deliberately structural -
 of the right kind - and say nothing about the statistical adequacy of what that entry contains;
 TG5's instruments own that upstream. No rung of this ladder, including its top, licenses a causal
 reading.
+
+## TG6.3 - the five outputs of an evidence bundle (`ed-dev`)
+
+`src/core/five_outputs.py` closes Phase G6's deterministic layer. For any TG6.1 bundle,
+`summarise_evidence(bundle)` states what can be claimed, what cannot, what evidence contradicts
+it, which alternative explanations remain, and which single observation would most efficiently
+distinguish between them. It takes the bundle and nothing else - no clock, no filesystem, no
+environment, no randomness - so the report is recomputable by anyone holding the snapshot, and
+`summary_sha256` binds it to the exact revision it came from.
+
+Focused acceptance:
+
+```text
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_five_outputs.py -q
+38 passed, 1 warning in 3.27s
+```
+
+**How the invariants were actually tested.** Two randomised sweeps carry the phase, each over 600
+bundles drawn to land anywhere on the ladder. The first asserts that the claimable rungs are
+exactly those at or below the ladder's verdict; that claimable and not-claimable partition the
+ladder with every unreachable rung carrying a non-empty explanation; that the evidence against is
+exactly the adverse and contrary entries in append order and is a superset of the ladder's
+blocking set; and that the open structural alternatives mirror the unsatisfied climbing gates
+exactly. The second asserts the next observation follows its stated precedence - unblock, then
+climb, then resolve, then nominate nothing. Both sweeps assert their own coverage: the first
+requires all five rungs to occur, the second requires every branch of the precedence including the
+empty one, so neither can pass vacuously on a degenerate sample.
+
+**A defect the sweep found.** The first run of the partition sweep failed on
+`all(item.blocked_by for item in outputs.not_claimable)`. Because the ladder is climbed in order,
+a bundle can satisfy every gate a rung declares and still not reach it - evidence recorded out of
+order, so `robust_association`'s own gates pass while `association`'s do not. The original code
+named the floor gates in that case, which are satisfied here, and so reported an unreachable rung
+with an empty explanation. It now walks down from the rung to the floor and names the nearest rung
+that actually blocks the climb. `test_a_rung_whose_own_gates_all_pass_is_still_explained_by_the_gap_beneath_it`
+tests the case directly rather than leaving it to the sweep.
+
+**Mutation check.** Five deliberate defects were introduced one at a time and the focused suite
+re-run; the file was restored between runs.
+
+```text
+drop the null-result widening of output three               -> 2 failed, 36 passed
+climb before unblocking in output five                      -> 3 failed, 35 passed
+report structural alternatives their gate already closed    -> 4 failed, 34 passed
+claim one rung more than the ladder allows                  -> 4 failed, 34 passed
+nominate the last recorded alternative rather than the first -> 1 failed, 37 passed
+```
+
+Full acceptance:
+
+```text
+> .\.venv\Scripts\python.exe -m pytest -q
+2112 passed, 1 skipped, 1 xfailed, 6 warnings in 833.93s (0:13:53)
+
+> .\.venv\Scripts\python.exe -m src.benchmarks
+PASS 29   FAIL 0   NOT_YET_RUNNABLE 0
+```
+
+Documentation and inventory:
+
+```text
+> .\.venv\Scripts\python.exe tools\audit_docs.py
+undocumented modules : none
+undocumented routes  : none
+defects              : 59 defined, 57 fixed, partial ['D18'], open ['D43']
+test functions       : 1808
+stale inventory rows : none
+claimed suite totals : architecture (2112, 1) / roadmap (2112, 1)
+RESULT               : ok
+```
+
+**Claim boundary.** The fifth output is a precedence rule, not an experiment design. No expected
+information gain is computed, because the bundle carries no likelihoods to compute one from;
+"most efficient" means "the cheapest thing standing in the way", and a reader who wants a genuine
+design of experiments will not find one here. The fourth output can only name the eight
+alternatives its gates correspond to and the ones a person recorded, so a domain-specific rival
+explanation nobody wrote down is invisible to it - its absence from the report is not evidence of
+its absence in fact. The same holds of the third output, and the rendered text says "none
+recorded; that is not the same as none existing" rather than letting silence be read as
+reassurance. Nothing here grades the statistical adequacy of any entry, and no output, at any
+rung, licenses a causal reading (R7).

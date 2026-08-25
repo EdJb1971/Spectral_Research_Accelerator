@@ -1654,9 +1654,50 @@ never gathered. It is a floor on rigour, not a certificate: the top rung means a
 was recorded and passed, not that the design was sound, that the holdout was honestly held out, or
 that the effect transfers. No rung licenses a causal reading.
 
-**TG6.3 The five outputs.** For any bundle: what can be claimed; what cannot; what evidence
-contradicts it; what alternative explanations remain; and which single observation would most
-efficiently distinguish between them.
+**TG6.3 The five outputs. DONE (`ed-dev`).** `src/core/five_outputs.py` states, for any bundle:
+what can be claimed; what cannot; what evidence contradicts it; what alternative explanations
+remain; and which single observation would most efficiently distinguish between them.
+`summarise_evidence(bundle)` is a **pure function of the bundle**, like the ladder beneath it, and
+`summary_sha256` binds the report to the exact revision it came from.
+
+What can be claimed is the reached rung and every rung below it, with a fixed entitlement sentence
+in the programme's wording saying what that rung licenses and what it does not. What cannot be
+claimed is the exact complement, each rung naming the gates that stand between; because the ladder
+is climbed in order, a rung whose own gates all pass may still be unreachable, and the nearest
+rung that actually blocks it is named rather than left blank.
+
+**The evidence against is wider than the ladder's blocking set.** The ladder asks what may be
+claimed; this asks what argues against the hypothesis. So it carries every `FAIL` and `INVALID`
+entry, every `contradictory_evidence` and `failure_states` entry that is not `NOT_APPLICABLE`, and
+every passing `null_results` entry — a recorded null is contrary evidence even where it caps
+nothing — each flagged with whether it caps the bundle, so what merely argues against a claim is
+visibly distinct from what forbids it.
+
+Alternatives have two origins. Eight **structural** alternatives are mapped one-to-one and totally
+onto the eight climbing gates — `chance`, `sample_specific`, `confounding`,
+`reverse_or_simultaneous_order`, `in_sample_optimism`, `unauditable_origin`, `nothing_measured`,
+`no_estimated_effect` — each open exactly while its gate is unsatisfied. Everything else is
+**recorded**: an unaddressed confounder, a standing contradiction, a passing null. The module
+never invents a domain alternative. The next observation follows a stated precedence — resolve the
+earliest blocking entry, else close the first unmet gate in ladder order, else distinguish the
+earliest recorded alternative, else nominate nothing and say that nominating nothing is not the
+same as there being nothing.
+
+**Evidence:** `src/tests/test_five_outputs.py`, 38 tests. Two randomised sweeps carry the
+invariants: the first checks the claimable/not-claimable partition, the contrary set and the
+structural-alternative correspondence over 600 bundles reaching all five rungs; the second checks
+the next-observation precedence over 600 more in which every branch, including the empty one,
+occurs. Five deliberate mutations of the output rules were each caught. The sweep found a real
+defect during development — an unreachable rung whose own gates all passed was reported with an
+empty explanation — which is fixed and separately tested.
+
+**Claim boundary.** The fifth output is a precedence rule, not an experiment design: no expected
+information gain is computed, because the bundle carries no likelihoods, and "most efficient"
+means "the cheapest thing standing in the way". The fourth can only name alternatives its gates
+correspond to or that someone recorded, so a domain rival nobody wrote down is invisible; its
+absence from the report is not evidence of its absence in fact. The same holds of the third, and
+the rendered text says "none recorded; that is not the same as none existing" rather than leaving
+silence to be read as reassurance.
 
 ---
 

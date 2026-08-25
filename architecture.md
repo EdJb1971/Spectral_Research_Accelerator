@@ -2529,7 +2529,7 @@ different first-class field on disk is refused rather than silently re-filed.
 
 **Claim boundary.** This is a tamper-evident container and a routing discipline, not a judgement.
 It does not decide whether the evidence inside supports anything; TG6.2's ladder and TG6.3's five
-outputs own that — see 3.6zd for the ladder itself. Nor does it
+outputs own that — see 3.6zd for the ladder and 3.6ze for the five outputs. Nor does it
 authenticate the author: hashes detect
 edits to a published bundle, they do not prove who wrote it or that some evidence was never
 gathered and simply left out. Only what is appended can be weighed.
@@ -2576,8 +2576,67 @@ hypothesis digest it was computed from.
 never gathered. It is a floor on rigour, not a certificate: reaching `demonstrated_predictive
 utility` means a holdout result was recorded and passed, not that the study design was sound, that
 the holdout was honestly held out, or that the effect will hold elsewhere. TG5's external access
-control and TG6.1's tamper evidence own those questions, and no rung of this ladder — including
+control and TG6.1's tamper evidence own those questions, and 3.6ze states what a bundle's
+verdict leaves open, and no rung of this ladder — including
 its top — licenses a causal reading.
+
+### 3.6ze The five outputs of a bundle (`src/core/five_outputs.py`, TG6.3, `ed-dev`)
+
+For any TG6.1 bundle, `summarise_evidence(bundle)` states five things and nothing else: what can
+be claimed, what cannot, what evidence contradicts it, which alternative explanations remain, and
+which single observation would most efficiently distinguish between them. Like the ladder it sits
+on it is a **pure function of the bundle** — no second argument, no clock, no filesystem, no
+environment, no randomness — so the report is recomputable by anyone holding the snapshot, and
+`summary_sha256` binds it to the exact revision it came from.
+
+**What can be claimed** is the rung the ladder assigned and every rung beneath it, together with a
+fixed *entitlement* sentence stating what that rung licenses a reader to say and, explicitly, what
+it does not. The entitlement is the programme's own wording, not the study's, so a bundle cannot
+supply the sentence that describes it.
+
+**What cannot be claimed** is the exact complement: every rung above, each naming the specific
+gates that stand between and their requirements. Because the ladder is climbed in order, a rung
+whose own gates all pass may still be unreachable — a floor-rung failure, or an unmet gate on any
+rung between. The nearest such rung is named, so no unreachable rung is ever reported without a
+reason.
+
+**What contradicts it** is deliberately wider than the ladder's blocking set. The ladder asks what
+may be claimed; this output asks what argues against the hypothesis, so it carries every `FAIL` or
+`INVALID` entry in any category, every `contradictory_evidence` and `failure_states` entry at any
+status but `NOT_APPLICABLE`, and every passing `null_results` entry — a recorded null is contrary
+evidence even where it caps nothing. Each carries `caps_at_observation`, which agrees exactly with
+the ladder's blocking set, so a reader can tell what merely argues against a claim from what
+forbids it.
+
+**What alternatives remain** has two origins, and the distinction is load-bearing. Eight
+*structural* alternatives are mapped one-to-one onto the eight climbing gates — `chance`,
+`sample_specific`, `confounding`, `reverse_or_simultaneous_order`, `in_sample_optimism`,
+`unauditable_origin`, `nothing_measured`, `no_estimated_effect` — and each stays open exactly
+while its gate is unsatisfied. The mapping is total over the gate table, so no unmet gate goes
+unexplained. Every other alternative is *recorded*: a `confounders` entry that is not passing, a
+contradiction that is not `NOT_APPLICABLE`, a passing null result. The module never invents a
+domain alternative; it enumerates the ones its gates correspond to and the ones a person wrote
+down.
+
+**The single next observation** follows a fixed precedence, stated as such: resolve the earliest
+blocking entry if one stands, since while it does no further evidence can lift the bundle at all;
+otherwise close the first unmet gate in ladder order; otherwise distinguish the earliest recorded
+alternative; otherwise nominate nothing, and say plainly that nominating nothing is not the same
+as there being nothing. `render()` produces the five outputs as deterministic plain text in that
+order, with the R7 line present at every rung.
+
+Membership of all five outputs is decided by category, status and the gate table alone. Labels and
+summaries are carried through to the reader, since a human needs to know which confounder is
+open, but they can never move a verdict (R22). `permits()` delegates to the ladder, so causal
+claim kinds are refused rather than denied here too, at every rung including the top (R7).
+
+**Claim boundary.** The fifth output is a precedence rule, not an experiment design: no expected
+information gain is computed, because the bundle carries no likelihoods to compute one from, and
+"most efficient" means "the cheapest thing standing in the way", not "optimal". The fourth output
+can only name alternatives its gates correspond to or that someone recorded — a domain-specific
+rival explanation nobody wrote down is invisible to it, and its absence from the report is not
+evidence of its absence in fact. The same holds of the third: "none recorded" is not "none
+existing", and the rendered text says so rather than leaving silence to be read as reassurance.
 
 ### 3.11 Ground-Truth Benchmark Suite (`src/benchmarks/`)
 
@@ -3674,7 +3733,7 @@ See `VERIFICATION.md` for the captured command output behind every statement her
 | Item | Status |
 |---|---|
 | Python venv + dependencies | installed (torch 2.13.0+cu130, numpy 2.2.6, pydantic 1.10.26, SQLAlchemy 2.0.52, xarray 2025.6.1, FastAPI 0.110.3) |
-| Backend test suite | **2074 passed, 1 xfailed** (plus 1 skipped: opt-in live GCS) (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17, 351 after T3.5.6, 379 after T3.5.15, 407 after T3.5.19, 449 after T4C.5, 709 after T4A.4, 781 after T4B.4, 855 after T4C.5, 859 after T4C.5c, 882 after T5.1a CPU acceptance, 883 after RTX acceptance, 890 after portable profiles, 911 after T5.1b/D44, 917 after T5.1c, 933 after T5.1d/D45, 946 after T5.1e, 955 after T5.2a, 957 after T5.2b, 962 after T5.3a, 969 after T5.3b, 981 after T5.2c offline acceptance, 985 after T5.2d, 1000 after T5.0a, 1008 after T5.0b, 1027 after T5.6a offline acceptance, 1042 after T5.6b cube acceptance, 1056 after T5.6c matched evaluation, 1070 after T5.6d truth matching, 1080 after T5.6e orchestration, 1089 after T5.6f portable jobs, 1094 after T5.6g reporting, 1095 after the licence guard, 1102 after T4C.5d gate readiness, 1104 after D50 storage preflight, 1106 after T4C.5e overlap evidence, 1112 after T4C.5f campaign acceptance, 1116 after T4C.5g physical preflight, 1117 after T4C.5h preregistration - the `master` freeze; then on `ed-dev`, 1375 after TG2.1, 1429 after TG2.2, 1477 after TG2.3, 1536 after TG2.4, 1577 after TG3.1, 1621 after TG3.2, 1686 after TG3.3, 1742 after TG3.4, 1787 after TG3.5, 1850 after TG4.1, 1922 after TG4.2, 1972 after TG4.3, 1986 after TG5.1, 2004 after TG5.2 and 2020 after TG5.3, 2044 after TG6.1 and 2074 after TG6.2) |
+| Backend test suite | **2112 passed, 1 xfailed** (plus 1 skipped: opt-in live GCS) (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17, 351 after T3.5.6, 379 after T3.5.15, 407 after T3.5.19, 449 after T4C.5, 709 after T4A.4, 781 after T4B.4, 855 after T4C.5, 859 after T4C.5c, 882 after T5.1a CPU acceptance, 883 after RTX acceptance, 890 after portable profiles, 911 after T5.1b/D44, 917 after T5.1c, 933 after T5.1d/D45, 946 after T5.1e, 955 after T5.2a, 957 after T5.2b, 962 after T5.3a, 969 after T5.3b, 981 after T5.2c offline acceptance, 985 after T5.2d, 1000 after T5.0a, 1008 after T5.0b, 1027 after T5.6a offline acceptance, 1042 after T5.6b cube acceptance, 1056 after T5.6c matched evaluation, 1070 after T5.6d truth matching, 1080 after T5.6e orchestration, 1089 after T5.6f portable jobs, 1094 after T5.6g reporting, 1095 after the licence guard, 1102 after T4C.5d gate readiness, 1104 after D50 storage preflight, 1106 after T4C.5e overlap evidence, 1112 after T4C.5f campaign acceptance, 1116 after T4C.5g physical preflight, 1117 after T4C.5h preregistration - the `master` freeze; then on `ed-dev`, 1375 after TG2.1, 1429 after TG2.2, 1477 after TG2.3, 1536 after TG2.4, 1577 after TG3.1, 1621 after TG3.2, 1686 after TG3.3, 1742 after TG3.4, 1787 after TG3.5, 1850 after TG4.1, 1922 after TG4.2, 1972 after TG4.3, 1986 after TG5.1, 2004 after TG5.2 and 2020 after TG5.3, 2044 after TG6.1, 2074 after TG6.2 and 2112 after TG6.3) |
 | Ground-Truth Benchmark Suite | **29 PASS, 0 FAIL, 0 NOT_YET_RUNNABLE** (`python -m src.benchmarks`, exit 0) |
 | Frontend `npm install` + `npm run build` | passes, emits 1,386 modules + real JS/CSS assets (was: 1 module, no assets) |
 | Backend server | starts, serves OpenAPI, all smoke-tested endpoints return 200 |
@@ -3958,7 +4017,8 @@ able to sit three slices out of date.
 | `test_wavelet_bank.py` | 27 | T4B.2 expansion through the engine's own parameter matrix, the 1,000-combination guard, decompose_bank / extract_scale_signature, the vertical-bank refusals |
 | `test_transforms.py` | 13 | fft/dct/dwt/dtcwt/hybrid round trips; D1 recorded as a strict xfail |
 | `test_zarr_source.py` | 59 | R13 geometry, chunk-hostility, byte counting, streaming content identity, exact chunk-bounded frame reader, cache/provenance round trip, NetCDF engine and HTTP surface |
-| **total** | **1770** | |
+| `test_five_outputs.py` | 38 | TG6.3 the five outputs as a pure function of the bundle: what can be claimed given as the reached rung and every rung beneath it with a fixed entitlement stating what that rung does not license; what cannot be claimed as the exact complement, each unreachable rung naming the gates that stand between, including the case where a rung's own gates all pass but a floor failure or a lower unmet gate blocks the climb; the evidence against carrying every `FAIL` and `INVALID` entry, every contradiction and failure state that is not `NOT_APPLICABLE`, and every passing null result, with `caps_at_observation` agreeing exactly with the ladder's blocking set so what merely argues against a claim is distinguished from what forbids it; eight structural alternatives mapped one-to-one and totally onto the climbing gates, each open exactly while its gate is unsatisfied, alongside alternatives someone recorded; the next observation following its stated precedence of unblock, then climb, then resolve, then nominate nothing and say so, verified over a randomised sweep in which every branch including the empty one occurs and all five rungs are reached; determinism to the digest and across a round trip through disk; labels, summaries and unread payload keys carried to the reader but moving no membership; causal claim kinds refused at every rung, naming R7 |
+| **total** | **1808** | |
 
 ### 7.2h A surrogate null that was not the null it claimed (T4C.5)
 
