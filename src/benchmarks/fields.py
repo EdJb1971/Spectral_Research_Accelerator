@@ -9,7 +9,7 @@ rather than testing the synthesiser against itself.
 from __future__ import annotations
 
 import math
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 import numpy as np
 import torch
@@ -564,7 +564,7 @@ _INVARIANCE_SURROGATES = 99
 _INVARIANCE_SEED = 1234
 
 
-def _invariance_features(values):
+def _invariance_features(values, dataset: str = "planted_configuration"):
     """Extract the configuration from one array, declared the way TG2.2 requires."""
     from src.core.domain import AxisSpec
     from src.core.extraction import ExtractionField, extract
@@ -573,7 +573,7 @@ def _invariance_features(values):
         values=np.asarray(values, dtype=np.float64),
         axes=(AxisSpec("row", "space", units="cells", ordinal=0),
               AxisSpec("col", "space", units="cells", ordinal=1)),
-        domain="synthetic", dataset="planted_configuration", variable="amplitude",
+        domain="synthetic", dataset=dataset, variable="amplitude",
         units=None, time=0.0, time_units="frames", representation="identity")
     return list(extract(frame, n_surrogates=_INVARIANCE_SURROGATES, seed=_INVARIANCE_SEED))
 
@@ -730,4 +730,406 @@ register_benchmark(Benchmark(
     known_answer=truth_planted_configuration,
     checks=(_check_planted_features_present, _check_planted_invariance),
     params={"n": 256, "triangle_side": 40.0},
+))
+
+
+# --------------------------------------------------------------------- 5. recurring motif
+
+#: The planted shape, as ratios of the three arm lengths. Deliberately scalene: an
+#: equilateral triangle is the shape a matcher is most likely to find by accident, because
+#: it is the centre of the space of triangles, and planting one would measure how common
+#: the centre is rather than whether mining works.
+_MOTIF_ARM_RATIOS = (0.62, 1.0, 1.45)
+_MOTIF_SIDE_CELLS = 60.0
+_MOTIF_SIGMA_CELLS = 6.0
+#: How close two features in a scene are allowed to be. Blobs closer than this overlap and
+#: the extractor returns one feature where two were placed, which would change the feature
+#: count between scenes and make the declared family a price for a search nobody ran.
+_MOTIF_MIN_SEPARATION_CELLS = 30.0
+_MOTIF_DISTRACTORS = 3
+_MOTIF_FEATURES_PER_SCENE = 3 + _MOTIF_DISTRACTORS
+_MOTIF_SCENES_PER_PARTITION = 6
+_MOTIF_CONFIGURATION_SIZE = 3
+#: The confirmatory ensemble. TG3.1's ceiling at 199 surrogates under BY at alpha 0.05 is
+#: four members, which is what caps the frozen family - and the p-value floor 1/200 leaves
+#: a family of four rejectable, which is what makes the confirmation a test rather than a
+#: formality.
+_MOTIF_SURROGATES = 199
+_MOTIF_TOLERANCE_REPLICATES = 6
+_MOTIF_EXTRACT_SURROGATES = 99
+_MOTIF_EXTRACT_SEED = 1234
+_MOTIF_NULL_SEED = 4242
+
+
+def _motif_positions(centre: Tuple[float, float], rotation_deg: float) \
+        -> List[Tuple[float, float]]:
+    """The planted configuration's three feature centres, rotated about `centre`."""
+    radius = _MOTIF_SIDE_CELLS / math.sqrt(3.0)
+    out = []
+    for index in range(3):
+        angle = math.radians(rotation_deg + 120.0 * index - 90.0)
+        arm = radius * _MOTIF_ARM_RATIOS[index]
+        out.append((centre[0] + arm * math.sin(angle), centre[1] + arm * math.cos(angle)))
+    return out
+
+
+def _motif_scene_positions(seed: int, *, plant: bool, n: int = 256) \
+        -> List[Tuple[float, float]]:
+    """One scene's feature centres: the motif somewhere, plus distractors.
+
+    The distractors are drawn under the same minimum separation the surrogate null uses,
+    so the arrangement the null draws from is the arrangement the data was drawn from. A
+    scene whose distractors could sit closer together than a surrogate's would make the
+    observed configurations a set the null cannot produce, and the p-value would then be
+    measuring the placement rule rather than the motif.
+    """
+    rng = np.random.default_rng(seed)
+    margin = 0.16 * n
+    positions: List[Tuple[float, float]] = []
+    if plant:
+        positions += _motif_positions(
+            (float(rng.uniform(0.35 * n, 0.65 * n)), float(rng.uniform(0.35 * n, 0.65 * n))),
+            float(rng.uniform(0.0, 360.0)))
+    for _ in range(2000):
+        if len(positions) >= _MOTIF_FEATURES_PER_SCENE:
+            break
+        candidate = (float(rng.uniform(margin, n - margin)),
+                     float(rng.uniform(margin, n - margin)))
+        if all(math.hypot(candidate[0] - p[0], candidate[1] - p[1])
+               >= _MOTIF_MIN_SEPARATION_CELLS for p in positions):
+            positions.append(candidate)
+    if len(positions) != _MOTIF_FEATURES_PER_SCENE:
+        raise RuntimeError(
+            "could not place %d features at least %.1f cells apart on a %d-cell grid"
+            % (_MOTIF_FEATURES_PER_SCENE, _MOTIF_MIN_SEPARATION_CELLS, n))
+    return positions
+
+
+def _motif_field(positions: Sequence[Tuple[float, float]], bundle: SeedBundle,
+                 n: int, noise_amplitude: float, spacing_m: float) -> PhysicalField:
+    data = torch.zeros(n, n, dtype=torch.float64)
+    for (ry, rx) in positions:
+        data = data + _gaussian_blob(n, ry, rx, _MOTIF_SIGMA_CELLS)
+    if noise_amplitude > 0:
+        data = data + noise_amplitude * torch.randn(
+            n, n, generator=bundle.torch_generator(), dtype=torch.float64)
+    return PhysicalField(data, grid=_grid(n, spacing_m), units="dimensionless")
+
+
+def build_planted_motif(bundle: SeedBundle, n: int = 256, scene_seed: int = 100,
+                        plant: bool = True, noise_amplitude: float = 0.05,
+                        spacing_m: float = DEFAULT_SPACING_M) -> PhysicalField:
+    """One scene: a scalene three-feature motif, plus distractors that are not it.
+
+    The benchmark's own field is the *first training scene*, not a decoration beside the
+    check: `_check_motif` mines it together with eleven more it builds, so the field the
+    suite reports on is one of the frames the result was computed from.
+    """
+    return _motif_field(_motif_scene_positions(scene_seed, plant=plant, n=n),
+                        bundle, n, noise_amplitude, spacing_m)
+
+
+def build_motif_null(bundle: SeedBundle, n: int = 256, scene_seed: int = 500,
+                     noise_amplitude: float = 0.05,
+                     spacing_m: float = DEFAULT_SPACING_M) -> PhysicalField:
+    """The same scenes with nothing planted: the same number of features, placed at random.
+
+    Not a field of noise. The features are real, the extractor finds all of them, and the
+    mining pass examines exactly the family it examines on the planted benchmark. The only
+    thing missing is the repetition, which is the only thing the gate is allowed to find.
+    """
+    return build_planted_motif(bundle, n=n, scene_seed=scene_seed, plant=False,
+                               noise_amplitude=noise_amplitude, spacing_m=spacing_m)
+
+
+def _truth_motif(*, planted: bool, scene_seed: int, expected_confirmed: int,
+                 n: int = 256, noise_amplitude: float = 0.05,
+                 spacing_m: float = DEFAULT_SPACING_M) -> Dict[str, Any]:
+    return {
+        "planted": planted,
+        "scene_seed": scene_seed,
+        "feature_count": _MOTIF_FEATURES_PER_SCENE,
+        "motif_arm_ratios": _MOTIF_ARM_RATIOS,
+        "motif_side_cells": _MOTIF_SIDE_CELLS,
+        "feature_sigma_cells": _MOTIF_SIGMA_CELLS,
+        "minimum_separation_cells": _MOTIF_MIN_SEPARATION_CELLS,
+        "noise_amplitude": noise_amplitude,
+        # What the gate needs, stated in the known answer rather than in the check: a gate
+        # that decides how hard to look at the moment it looks can always look less hard.
+        "scenes_per_partition": _MOTIF_SCENES_PER_PARTITION,
+        "configuration_size": _MOTIF_CONFIGURATION_SIZE,
+        "n_surrogates": _MOTIF_SURROGATES,
+        "minimum_tolerance_replicates": _MOTIF_TOLERANCE_REPLICATES,
+        "expected_confirmed_motifs": expected_confirmed,
+        "expected_held_out_support": _MOTIF_SCENES_PER_PARTITION if planted else 0,
+        "generate_family_affordable_in_one_stage": False,
+    }
+
+
+def truth_planted_motif(n: int = 256, scene_seed: int = 100, plant: bool = True,
+                        noise_amplitude: float = 0.05,
+                        spacing_m: float = DEFAULT_SPACING_M) -> Dict[str, Any]:
+    return _truth_motif(planted=plant, scene_seed=scene_seed,
+                        expected_confirmed=1 if plant else 0, n=n,
+                        noise_amplitude=noise_amplitude, spacing_m=spacing_m)
+
+
+def truth_motif_null(n: int = 256, scene_seed: int = 500, noise_amplitude: float = 0.05,
+                     spacing_m: float = DEFAULT_SPACING_M) -> Dict[str, Any]:
+    return _truth_motif(planted=False, scene_seed=scene_seed, expected_confirmed=0, n=n,
+                        noise_amplitude=noise_amplitude, spacing_m=spacing_m)
+
+
+def _motif_scene_from(values, name: str, expected: int):
+    """Extract one scene, refusing a frame that does not hold the features it was built with.
+
+    The count is checked rather than trimmed. Taking "the brightest six" would look like a
+    repair and would silently change which configuration a replicate is: magnitude ordering
+    moves between noise realisations, and a tolerance calibrated across replicates that
+    disagree about *which* features they contain measures that disagreement. Measured here,
+    that mistake put the tolerance at 0.41 instead of 0.0083 - fifty times too wide, and
+    wide enough that every triangle matched every other.
+    """
+    from src.core.motif import Scene
+
+    features = _invariance_features(values, dataset="planted_motif")
+    if len(features) != expected:
+        raise RuntimeError(
+            "scene %r yielded %d features where the generator planted %d"
+            % (name, len(features), expected))
+    return Scene(name, tuple(features))
+
+
+def _mine_and_confirm(field: PhysicalField, truth: Dict[str, Any]) -> Dict[str, Any]:
+    """The whole TG3.5 pass: calibrate, mine on train, freeze, open held-out once.
+
+    The order is the point. The tolerance is measured from replicates of one configuration
+    before anything is mined; the family is priced before it is enumerated; the
+    confirmatory set is frozen against the held-out partition's identity before that
+    partition is extracted; and the p-values are computed only inside `confirm_motifs`,
+    which spends the partition through the ledger.
+    """
+    from src.benchmarks.seeding import derive
+    from src.core.invariance import calibrate_match_tolerance
+    from src.core.motif import (
+        choose_candidates, confirm_motifs, freeze_motifs, mine,
+    )
+    from src.core.preregistration import HeldOutLedger, PartitionIdentity
+
+    n = int(field.data.shape[0])
+    plant = bool(truth["planted"])
+    noise = float(truth["noise_amplitude"])
+    scenes = int(truth["scenes_per_partition"])
+    size = int(truth["configuration_size"])
+    tag = "planted_motif" if plant else "motif_null"
+
+    def frame(label: str, positions):
+        return _motif_field(positions, derive("%s/%s" % (tag, label)), n, noise,
+                            DEFAULT_SPACING_M).data.numpy()
+
+    # The noise floor, from replicates of one three-feature configuration. Three features
+    # and not six: a replicate must be the same configuration under different noise, and a
+    # six-feature frame narrowed to three by brightness is a different configuration each
+    # time the brightest three change.
+    replicate_positions = _motif_positions((n / 2.0, n / 2.0), 0.0)
+    replicates = [
+        _motif_scene_from(frame("tolerance/%d" % index, replicate_positions),
+                          "tolerance%d" % index, 3).features
+        for index in range(int(truth["minimum_tolerance_replicates"]))]
+    tolerance = calibrate_match_tolerance(replicates, matcher="relative_geometry")
+
+    # Scene 0 of the training partition is the benchmark's own field.
+    seed0 = int(truth["scene_seed"])
+    train = [_motif_scene_from(field.data.numpy(), "train0",
+                               _MOTIF_FEATURES_PER_SCENE)]
+    for index in range(1, scenes):
+        train.append(_motif_scene_from(
+            frame("train/%d" % index,
+                  _motif_scene_positions(seed0 + index, plant=plant, n=n)),
+            "train%d" % index, _MOTIF_FEATURES_PER_SCENE))
+
+    result = mine(train, size=size, tolerance=tolerance.value,
+                  n_surrogates=int(truth["n_surrogates"]), study_id=tag)
+    chosen = choose_candidates(result)
+
+    held_id = PartitionIdentity(
+        "%s-held-out" % tag, scenes, 1, ("amplitude",), (scenes, 2 * scenes),
+        {"split": "test", "scene_seeds": [seed0 + 100 + i for i in range(scenes)]})
+    ledger = HeldOutLedger()
+    seal, frozen = freeze_motifs(
+        result, held_out=held_id, sealed_at="TG3.5/frozen-before-the-held-out-scenes-exist",
+        n_surrogates=int(truth["n_surrogates"]), chosen=chosen, ledger=ledger, study_id=tag)
+
+    held = [_motif_scene_from(
+        frame("held-out/%d" % index,
+              _motif_scene_positions(seed0 + 100 + index, plant=plant, n=n)),
+        "test%d" % index, _MOTIF_FEATURES_PER_SCENE) for index in range(scenes)]
+
+    receipt = confirm_motifs(
+        seal, frozen, scenes=held, held_out=held_id, ledger=ledger,
+        opened_at="TG3.5/opened-once", size=size, tolerance=tolerance.value,
+        seed=_MOTIF_NULL_SEED)
+    return {"tolerance": tolerance, "result": result, "chosen": chosen, "seal": seal,
+            "receipt": receipt, "n_train": len(train), "n_held_out": len(held)}
+
+
+def _motif_problems(truth: Dict[str, Any], run: Dict[str, Any]) -> List[str]:
+    """Everything both motif gates refuse, whatever they expect to find.
+
+    Shared deliberately. The null benchmark and the planted one differ in what they expect
+    to be confirmed and in nothing else: a null that reported nothing because it proposed
+    nothing, or because its family was empty, or because its ensemble could not have
+    rejected anything, is not a null result - it is a pass obtained by not looking.
+    """
+    result, receipt = run["result"], run["receipt"]
+    tolerance = run["tolerance"]
+    problems: List[str] = []
+
+    minimum = int(truth["minimum_tolerance_replicates"])
+    if tolerance.n_replicates < minimum:
+        problems.append(
+            "the match tolerance was calibrated from %d replicates, below the %d this "
+            "benchmark requires; that tolerance is a maximum, and a maximum over too few "
+            "samples is biased low in the direction that finds no motif at all"
+            % (tolerance.n_replicates, minimum))
+    if run["n_train"] != int(truth["scenes_per_partition"]) or \
+            run["n_held_out"] != int(truth["scenes_per_partition"]):
+        problems.append(
+            "the partitions held %d and %d scenes where this benchmark declares %d each"
+            % (run["n_train"], run["n_held_out"], truth["scenes_per_partition"]))
+    if result.n_examined != result.specification.family_size:
+        problems.append(
+            "the pass examined %d configurations against a family priced at %d"
+            % (result.n_examined, result.specification.family_size))
+    if result.affordable_here != bool(truth["generate_family_affordable_in_one_stage"]):
+        problems.append(
+            "the generate family of %d %s affordable in one stage, so this benchmark is "
+            "not exercising the split it exists to exercise"
+            % (result.specification.family_size,
+               "was" if result.affordable_here else "was not"))
+    if not run["chosen"]:
+        problems.append(
+            "no candidate was carried forward, so nothing was put to the held-out "
+            "partition; a confirmation of nothing cannot report a null result")
+    if receipt["vacuous"]:
+        problems.append(
+            "%d frozen motif(s) were tested by an ensemble whose smallest possible p-value "
+            "sits above the corrected alpha, so they could not have been rejected however "
+            "often they recurred: %s"
+            % (len(receipt["vacuous"]), ", ".join(receipt["vacuous"])))
+    if int(receipt["correction_unit"]) != len(run["chosen"]):
+        problems.append(
+            "the correction was computed over %d members and %d were frozen"
+            % (receipt["correction_unit"], len(run["chosen"])))
+    return problems
+
+
+@stage_check("4E.motif_recovery")
+def _check_motif_recovered(field: PhysicalField, truth: Dict[str, Any]) -> CheckResult:
+    """**The TG3.5 gate**: is a configuration that really recurs found, and confirmed?
+
+    Found is not enough. The motif has to survive being frozen before the held-out scenes
+    were extracted, tested against arrangements drawn at random under the separation the
+    data itself demonstrates, and corrected over the family that was frozen. What the gate
+    accepts is a *confirmation*, and the run that produced it having been unable to cheat.
+    """
+    run = _mine_and_confirm(field, truth)
+    receipt = run["receipt"]
+    problems = _motif_problems(truth, run)
+
+    expected = int(truth["expected_confirmed_motifs"])
+    if int(receipt["n_rejected"]) != expected:
+        problems.append(
+            "%d motif(s) survived correction on the held-out partition where this "
+            "benchmark planted %d: %s"
+            % (receipt["n_rejected"], expected, ", ".join(receipt["rejected_labels"])
+               or "none"))
+    wanted = int(truth["expected_held_out_support"])
+    supports = {m["label"]: int(m["support"]) for m in receipt["motifs"]}
+    for label in receipt["rejected_labels"]:
+        if supports.get(label, 0) != wanted:
+            problems.append(
+                "motif %r was confirmed on a support of %d where the configuration was "
+                "planted in all %d held-out scenes; a motif confirmed on fewer scenes than "
+                "it was planted in was confirmed for a reason this benchmark did not plant"
+                % (label, supports.get(label, 0), wanted))
+
+    return CheckResult(
+        "4E.motif_recovery",
+        Outcome.FAIL if problems else Outcome.PASS,
+        ("; ".join(problems)) if problems else
+        ("%d of %d configurations examined at tolerance %.4f; %d frozen from a generate "
+         "family of %d; %d confirmed on held-out at q=%.4f with support %s of %d"
+         % (run["result"].n_examined, run["result"].specification.family_size,
+            run["tolerance"].value, len(run["chosen"]),
+            run["result"].specification.family_size, receipt["n_rejected"],
+            min(receipt["adjusted"]), [supports[l] for l in receipt["rejected_labels"]],
+            truth["scenes_per_partition"])),
+        {"receipt": {key: receipt[key] for key in
+                     ("labels", "p_values", "adjusted", "rejected_labels",
+                      "correction_unit", "n_rejected")},
+         "tolerance": run["tolerance"].describe(),
+         "mining": run["result"].describe()})
+
+
+@stage_check("4E.motif_null")
+def _check_motif_null(field: PhysicalField, truth: Dict[str, Any]) -> CheckResult:
+    """**The load-bearing one.** Nothing was planted, so nothing may be confirmed.
+
+    Per the Definition of Done, a null benchmark returning null is the result that matters,
+    because the failure mode this whole phase is built against is a mining pass that finds
+    a motif in anything. This benchmark gives it every opportunity: the same feature count,
+    the same family, the same tolerance, the same ensemble, and candidates that really were
+    the most repeated shapes in the training scenes.
+    """
+    run = _mine_and_confirm(field, truth)
+    receipt = run["receipt"]
+    problems = _motif_problems(truth, run)
+
+    if int(receipt["n_rejected"]) != 0:
+        problems.append(
+            "%d motif(s) survived correction on scenes with nothing planted in them: %s. "
+            "A mining pass that confirms a motif in a random arrangement would confirm one "
+            "anywhere, and every result the phase can produce would be that"
+            % (receipt["n_rejected"], ", ".join(receipt["rejected_labels"])))
+    top = max((int(m["support"]) for m in receipt["motifs"]), default=0)
+
+    return CheckResult(
+        "4E.motif_null",
+        Outcome.FAIL if problems else Outcome.PASS,
+        ("; ".join(problems)) if problems else
+        ("%d candidate(s) frozen from a generate family of %d and none confirmed; best "
+         "held-out support %d of %d, smallest corrected q %.3f"
+         % (len(run["chosen"]), run["result"].specification.family_size, top,
+            truth["scenes_per_partition"], min(receipt["adjusted"]))),
+        {"receipt": {key: receipt[key] for key in
+                     ("labels", "p_values", "adjusted", "rejected_labels",
+                      "correction_unit", "n_rejected")},
+         "tolerance": run["tolerance"].describe(),
+         "mining": run["result"].describe()})
+
+
+register_benchmark(Benchmark(
+    name="planted_motif",
+    kind="field",
+    description=("Six scenes each holding one scalene three-feature motif among "
+                 "distractors; the TG3.5 mining target."),
+    gates=("4E.motif_recovery",),
+    build=build_planted_motif,
+    known_answer=truth_planted_motif,
+    checks=(_check_motif_recovered,),
+    params={"n": 256, "scene_seed": 100},
+))
+
+register_benchmark(Benchmark(
+    name="motif_null",
+    kind="field",
+    description=("The same scenes with nothing repeated: same feature count, same family, "
+                 "same ensemble, no planted motif."),
+    gates=("4E.motif_null",),
+    build=build_motif_null,
+    known_answer=truth_motif_null,
+    checks=(_check_motif_null,),
+    params={"n": 256, "scene_seed": 500},
+    is_null=True,
 ))

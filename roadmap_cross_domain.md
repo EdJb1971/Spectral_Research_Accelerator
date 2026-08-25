@@ -1185,12 +1185,84 @@ pass at four root seeds.
 **Evidence:** `src/tests/test_invariance.py`, 56 tests. Full suite 1742 passed, 1 skipped,
 1 xfailed; benchmark suite 20 PASS, 0 FAIL, 0 NOT_YET_RUNNABLE.
 
-**TG3.5 Recurring motifs.** Mining for repeated constellation configurations, executed only
-through TG3.1's declared family and TG3.2's split.
+**TG3.5 Recurring motifs. DONE (`ed-dev`)**
+**Exit criterion:** a motif can be mined, and its declared family was affordable and corrected.
 
-**Exit criterion.** A motif can be mined, and its declared family was affordable and corrected.
-If TG3.1 proves that every scientifically interesting family is unaffordable, that is the
-programme's real boundary and it is written up as such.
+`src/core/motif.py` — `Scene`, `Occurrence`, `MotifCandidate`, `MiningResult`,
+`MotifEvidence`; `motif_search_specification` and `enumerate_occurrences`, checked against
+each other member for member; `candidates_from`, `count_intransitive`,
+`deduplicate_candidates`, `mine`; `observed_minimum_separation`, `surrogate_scene`,
+`support_of`, `motif_p_value`; `report_motif_generation`, `choose_candidates`,
+`confirmatory_specification`, `freeze_motifs`, `confirm_motifs`; and `always_matches`, the
+constant-signature control. The `unordered_triples` and `unordered_quadruples` combinators
+are registered into TG3.1's `FAMILY_COMBINATORS` from this module, which is the acceptance
+TG3.1's own test wrote when it said the next search shape would be a registration rather
+than an edit to `family.py`. Two new benchmarks in `src/benchmarks/fields.py`,
+`planted_motif` and `motif_null`, carry the gates `4E.motif_recovery` and `4E.motif_null`.
+
+Findings:
+
+*   **The family is the number of configurations looked at, and no ensemble pays for it.**
+    `s * C(n, k)`: the benchmark's six scenes of six features at `k = 3` is 120 members,
+    which TG3.1 prices at **12,885 surrogates** before one of them could be rejected; eight
+    scenes of twelve features is 1,760 members and **283,380**. The generate/confirm split
+    is not an optimisation in this slice, it is the only affordable shape - and the gate
+    refuses a pass if its own generate family ever becomes affordable in one stage, because
+    then the benchmark would have stopped testing the thing it exists to test.
+*   **Matching under a tolerance is not transitive.** A matches B and B matches C without A
+    matching C, and single-linkage clustering promotes that chain into one motif with a
+    support of three. A candidate is a star around one exemplar, and `intransitive_pairs`
+    counts how often the difference would have mattered.
+*   **Ranking by raw count prefers the promiscuous.** Support saturates at the number of
+    scenes, so the ties at the cap decide the ranking, and they have to be broken by
+    *fewer* occurrences: a shape matching three configurations per scene is looser than one
+    matching exactly one, not a stronger finding.
+*   **A confirmatory family topped up to the ceiling spends power on members nobody
+    proposed.** Freezing four candidates where the mining pass favoured one moved the
+    planted motif's corrected `q` from **0.005 to 0.042** - the difference between a clear
+    result and a marginal one. The frozen set is the top support tier, deduplicated (one
+    shape enters the ranking once per scene it occurs in, and six names for one hypothesis
+    is a correction unit of six paid for one test), capped at TG3.1's ceiling.
+*   **A surrogate has to be drawable by the process that produced the data.** Without a
+    minimum separation the null fills with near-degenerate triangles the extractor could
+    never have returned, supports the motif *less* often than a real arrangement does, and
+    makes the observed support look more surprising than it is: over five seeds, dropping
+    the constraint roughly **halves the p-value**, from 0.20-0.25 to 0.07-0.14. The
+    constraint is read off the data, not declared, and an arrangement that cannot satisfy
+    it is refused rather than quietly relaxed.
+*   **Invariance is necessary and nowhere near sufficient.** `always_matches` has a constant
+    signature. It is exactly invariant to rotation, translation and rescaling, and
+    `test_motif.py` registers it into TG3.4's `MATCHERS` and shows the invariance audit
+    calling it honest. It is also useless, and what separates it from a matcher that
+    measures something is the null: it supports every motif in every surrogate scene, so its
+    p-value is exactly 1. Public and unregistered - for the opposite reason to
+    `scale_normalised`, whose declaration cannot be demonstrated where this one's is
+    demonstrably true and worth nothing.
+
+**Two defects found by running it.** A replicate must be the same configuration, not the
+same frame: calibrating the tolerance from six-feature scenes narrowed to "the brightest
+three" measured which blobs happened to be brightest and put the tolerance at **0.41 instead
+of 0.0083** - fifty times too wide, and wide enough that every triangle matched every other.
+It is TG3.4's node-ordering defect in a new place. And TG3.4's `recover_scale_ratio` raised
+`KeyError` for a matcher that records no length; it now refuses by name, because a matcher
+can recognise two configurations as the same shape without ever having measured how big
+either of them was.
+
+**Exit criterion met.** A motif is mined, frozen before the held-out scenes exist, and
+confirmed on a partition it was not mined from at **q = 0.005** over a correction unit of 1,
+with a held-out support of 6 scenes out of 6. The null benchmark runs the identical pass -
+same family of 120, same tolerance, same ensemble, real candidates frozen from its own
+training scenes - and confirms **nothing**, which is the load-bearing result. The benchmark
+suite is now **22 PASS, 0 FAIL, 0 NOT_YET_RUNNABLE**, confirmed at four root seeds.
+
+**Evidence:** `src/tests/test_motif.py`, 45 tests. Full suite 1787 passed, 1 skipped,
+1 xfailed; benchmark suite 22 PASS, 0 FAIL, 0 NOT_YET_RUNNABLE.
+
+**And TG3.1 did prove it, for this shape.** No achievable ensemble pays for a mining pass in
+one stage: 120 members needs 12,885 surrogates and 1,760 needs 283,380. That is the
+programme's real boundary, and it is written up as such - the family is not narrowed to make
+it affordable, the correction is moved onto a confirmatory family frozen before the held-out
+partition is opened, which is what TG3.2 exists for.
 
 ---
 

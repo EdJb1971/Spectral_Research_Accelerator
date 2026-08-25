@@ -712,6 +712,17 @@ def _geometric_mean_ratio(left: AttributedGraph, right: AttributedGraph) -> floa
             / float(left.carried[0]["separation_geometric_mean"]))
 
 
+def _carries_separation_scale(graph: AttributedGraph) -> bool:
+    """Did the matcher that built this graph record a length to take a ratio of?
+
+    Not every matcher does. TG3.5's constant-signature control measures nothing at all, and
+    asking it how much bigger one configuration is than another is a question it has no
+    number for - which is a refusal by name rather than a `KeyError`, because the two read
+    very differently to whoever has to act on it.
+    """
+    return all("separation_geometric_mean" in record for record in graph.carried)
+
+
 def _log_error(found: float, expected: float) -> float:
     """`|ln(found/expected)|` - symmetric, so recovering 2x and 0.5x are equally wrong.
 
@@ -750,6 +761,15 @@ def recover_scale_ratio(left: AttributedGraph, right: AttributedGraph,
             "an established correspondence",
             "The two graphs did not match, so there is no pairing of their nodes and a "
             "ratio of their sizes would be a number relating two different things.")
+    if not (_carries_separation_scale(left) and _carries_separation_scale(right)):
+        return ScaleRatio(
+            None, None,
+            "a ratio of the two configurations' geometric mean separations",
+            unavailable="At least one of these graphs carries no separation scale, so its "
+                        "matcher measured no length and there is nothing to take a ratio "
+                        "of. A "
+                        "matcher can recognise two configurations as the same shape "
+                        "without ever having measured how big either of them was.")
     left_units = {c.get("separation_units") for c in left.carried}
     right_units = {c.get("separation_units") for c in right.carried}
     if left_units != right_units:
@@ -875,7 +895,7 @@ def measure_invariance(matcher: str, reference: Sequence[SpectralFeature],
             p_value=_rank_sum_p_value(deviations, null), alpha=per_test,
             power_floor=_power_floor(len(deviations), len(null)))
     recovery = None
-    if resized:
+    if resized and _carries_separation_scale(reference_graph):
         null_ratio = scale_recovery_null(replicates, matcher=matcher, context=context)
         found = tuple(_geometric_mean_ratio(
             reference_graph, build_signature(matcher, p.features, context=context))

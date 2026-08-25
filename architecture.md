@@ -1847,8 +1847,8 @@ was actually measured.
 The `4E.invariance` gate has been defined since T3.5.17 and reported `NOT_YET_RUNNABLE` ever
 since, because the benchmark could present the planted triangle rotated, rescaled and
 translated but nothing existed to be asked whether it was the same triangle. It now reports
-**PASS**, and it was the last pending gate in the suite: the benchmark run is 20 PASS, 0 FAIL,
-0 NOT_YET_RUNNABLE.
+**PASS**, and it was the last pending gate in the suite: the benchmark run was 20 PASS, 0 FAIL,
+0 NOT_YET_RUNNABLE (22 since TG3.5 added two more).
 
 **A matcher here is not an algorithm, it is a choice of what to measure.** Every entry in
 `MATCHERS` is a function from features to an `AttributedGraph`, and the comparison is always
@@ -1960,6 +1960,118 @@ seed, so varying the root seed varies the reference and not the presentations; t
 been confirmed to pass at four root seeds, which is four references against one presentation
 set rather than four independent runs.
 
+### 3.6v Recurring motifs, and the accounting that counting honestly requires (`src/core/motif.py`, TG3.5, `ed-dev`)
+
+A motif is a configuration that occurs more than once, and everything hard about mining for
+one follows from that sentence being about *counting*. Two gates were added with the module
+and both pass: `4E.motif_recovery` mines six training scenes, freezes what it found before
+the held-out scenes exist and confirms one motif on a partition it was not mined from;
+`4E.motif_null` runs the identical pass over scenes with nothing planted in them and confirms
+nothing. Per this tree's own Definition of Done the second is the load-bearing one.
+
+**The family is the number of configurations looked at, and no ensemble pays for it.** Mining
+`k`-feature configurations over `s` scenes of `n` features each examines `s * C(n, k)` of
+them, and every one is a chance for a repeat to look surprising. The benchmark's six scenes of
+six features at `k = 3` is 120 members - which TG3.1 prices at 12,885 surrogates before its
+ceiling allows a single member to be rejected, and eight scenes of twelve features would be
+1,760 members and 283,380 surrogates. TG3.2's generate/confirm split is therefore not an
+optimisation in this slice, it is the only affordable shape, and
+`motif_search_specification` computes that refusal rather than asserting it. The gate refuses a pass if its own generate family ever
+becomes affordable in one stage, because then the benchmark would have stopped testing the
+thing it exists to test.
+
+**The priced family and the pass are checked to be the same search, member for member.** Two
+terms multiplied - which scene, and which `size`-subset of its features - and `mine` compares
+`SearchSpecification.labels()` against the labels the enumeration actually emits, in order. A
+count check would pass on two different searches that happened to be the same size. The
+`k`-subset combinators are registered *from this module* rather than added to `family.py`,
+which is the acceptance TG3.1's own test wrote down when it said the next search shape would
+be a registration and not an edit.
+
+**A motif is an exemplar, not a cluster.** Matching under a tolerance is reflexive and
+symmetric but not transitive: A matches B and B matches C without A matching C, and
+single-linkage clustering silently promotes that chain into one motif with a support of
+three. A candidate is therefore one occurrence together with the occurrences that match
+*that* occurrence - a star, not a chain - and `MiningResult.intransitive_pairs` counts how
+often the difference would have mattered, because a design decision whose consequence is
+never measured is a preference.
+
+**Overlapping occurrences within a scene are one piece of evidence.** Two triangles in one
+scene sharing two of their three features are very nearly the same observation, so support is
+the number of *scenes* a motif occurs in and the occurrence count is carried beside it as
+description. `support_of` stops at the first match within a scene, so the null is computed
+under the same rule as the observation.
+
+**Ranking by raw count prefers the promiscuous.** Support is capped at the number of scenes
+and saturates, so the ties at the cap decide the ranking - and they have to be broken by
+*fewer* occurrences, not more. A shape matching three configurations per scene is a looser
+shape than one matching exactly one, not a stronger finding, and the key written the obvious
+way round fills the top of the ranking with shapes that match everything.
+
+**What is frozen, and why it is not simply the ceiling.** `choose_candidates` takes the
+shapes that recurred most on train, deduplicated, capped at TG3.1's ceiling. Deduplicated
+because a motif that genuinely recurs in six scenes enters the ranking six times, once under
+each scene's label, and six names for one hypothesis is a correction unit of six paid for one
+test. Only the top support tier, because a family topped up to the ceiling with candidates
+the mining pass did not favour spends correction power on members nobody proposed - measured
+on this benchmark, it moved the planted motif's corrected `q` from 0.005 to 0.042, the
+difference between a clear result and a marginal one. Selecting on train support is
+selection, and it is the selection the generate stage exists to perform: it happens before
+the seal, on the partition that was mined, and nothing it produces is a claim.
+
+**A surrogate has to be drawable by the process that produced the data.** The null places the
+same features, with the same magnitudes and scales and provenance, at random positions inside
+the extent where features were actually seen. Without a minimum separation two of them can
+land closer than the extractor could have resolved them, and the triangles they make are
+near-degenerate slivers the pipeline could never have returned; the null then fills with
+shapes unlike anything the data contains, supports the motif *less* often than a real
+arrangement would, and makes the observed support look more surprising than it is. Measured
+over five seeds, dropping the constraint roughly halves the p-value - from 0.20-0.25 to
+0.07-0.14. The constraint is read off the data (`observed_minimum_separation`) rather than
+declared, and an arrangement that cannot satisfy it is refused rather than quietly relaxed.
+
+**Invariance is necessary and nowhere near sufficient.** `always_matches` is a matcher whose
+signature is a constant. It is exactly invariant to rotation, translation and rescaling -
+genuinely, not by a trick - and `test_motif.py` registers it into TG3.4's `MATCHERS` and
+shows that `audit_declared_invariance` calls it honest. It is also useless: it reports every
+configuration as a repeat of every other. A gate built on invariance alone cannot see the
+difference, and what separates the two is the null, where the constant matcher supports every
+motif in every surrogate scene and its p-value is exactly 1. It is public and unregistered,
+for the opposite reason to `scale_normalised`: that one's declaration cannot be demonstrated,
+this one's is demonstrably true and worth nothing.
+
+**A defect in TG3.4 that TG3.5 found by using it.** `recover_scale_ratio` read
+`separation_geometric_mean` straight out of `carried` and raised `KeyError` for a matcher that
+records no length. It now refuses by name - a matcher can recognise two configurations as the
+same shape without ever having measured how big either of them was - and `measure_invariance`
+skips the scale-recovery test for such a matcher rather than failing inside it.
+
+**What the gates refuse to accept as a pass**, beyond their own expected outcome: a tolerance
+calibrated from fewer replicates than the known answer requires; partitions of the wrong size;
+an enumeration that examined a different number of configurations than the family priced; a
+generate family that turned out to be affordable in one stage; a run that carried no candidate
+forward; a frozen motif tested by an ensemble whose smallest possible p-value sits above the
+corrected alpha (TG2.4's `vacuous` rule); and a correction computed over a different number of
+members than were frozen. The null gate shares all of them, deliberately: a null that reported
+nothing because it proposed nothing is a pass obtained by not looking.
+
+**A replicate must be the same configuration, not the same frame.** The tolerance is
+calibrated from six extractions of a *three-feature* field, not from six-feature scenes
+narrowed to their brightest three. Magnitude ordering moves between noise realisations, so
+"the brightest three" is a different configuration each time it is taken; measured here, that
+mistake put the tolerance at 0.41 instead of 0.0083 - fifty times too wide, and wide enough
+that every triangle matched every other. It is the same defect TG3.4 found in its node
+ordering, in a new place.
+
+**What this slice does not do.** It does not serialise a motif's definition. The seal freezes
+the exemplar's *label* and the definition travels beside it in memory, which is enough for a
+confirmation inside one run and not enough for TG5.1, where a frozen motif has to survive the
+process that made it. It does not mine across a domain boundary. And, like TG3.4's, the
+gates' scenes are built from fixed labels rather than from the run's root seed: only the first
+training scene's noise varies with the seed, and the extractor's sub-cell localisation is
+stable enough that it does not change the outcome. Both gates have been confirmed to pass at
+four root seeds, which is four runs of one scene set rather than four independent ones.
+
 ### 3.8 Grid Geometry and Metric-Aware Operators (`src/physical_core/grid.py`, `operators.py`)
 
 Added in T3.5.13 (defect D13, standard E3). `GridSpec` is the physical metric attached to
@@ -2005,8 +2117,8 @@ decision that changed with prior BLAS state (defect **D30**).
 
 ### 3.11 Ground-Truth Benchmark Suite (`src/benchmarks/`)
 
-Added in T3.5.17 (standard E7). Nine synthetic datasets whose correct answer is known
-*before* analysis, of which **five are null benchmarks** whose answer is "there is nothing
+Added in T3.5.17 (standard E7). Thirteen synthetic datasets whose correct answer is known
+*before* analysis, of which **seven are null benchmarks** whose answer is "there is nothing
 here". This is distinct from `synthetic_generator/`, which exists to keep the UI alive
 offline and declares no truth.
 
@@ -2016,13 +2128,14 @@ offline and declares no truth.
 *   `seeding.py` - `SeedSequence.spawn` derivation from a root seed and a **`zlib.crc32`**
     label hash (Python's `hash()` on a string is salted per process and would break
     cross-session reproducibility).
-*   `fields.py` / `sequences.py` - the ten datasets, including
+*   `fields.py` / `sequences.py` - the thirteen datasets, including
     `advected_vortex_periodic_sequence`, added in TG2.3 so that a benchmark declaring a
-    torus draws one (defect D59).
+    torus draws one (defect D59), and `planted_motif` / `motif_null`, the TG3.5 pair that
+    differ only in whether anything was planted.
 *   `runner.py`, `__main__.py` - report and CLI (`python -m src.benchmarks`, exit 1 on any
     failure, usable directly as a CI gate).
 
-Current status: **20 PASS, 0 FAIL, 0 NOT_YET_RUNNABLE**. See Section 7.2f.
+Current status: **22 PASS, 0 FAIL, 0 NOT_YET_RUNNABLE**. See Section 7.2f.
 
 ### 3.13 Cloud-Native ERA5 over Zarr (`src/data_layer/zarr_source.py`, T3.5.18)
 
@@ -3091,8 +3204,8 @@ See `VERIFICATION.md` for the captured command output behind every statement her
 | Item | Status |
 |---|---|
 | Python venv + dependencies | installed (torch 2.13.0+cu130, numpy 2.2.6, pydantic 1.10.26, SQLAlchemy 2.0.52, xarray 2025.6.1, FastAPI 0.110.3) |
-| Backend test suite | **1742 passed, 1 xfailed** (plus 1 skipped: opt-in live GCS) (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17, 351 after T3.5.6, 379 after T3.5.15, 407 after T3.5.19, 449 after T4C.5, 709 after T4A.4, 781 after T4B.4, 855 after T4C.5, 859 after T4C.5c, 882 after T5.1a CPU acceptance, 883 after RTX acceptance, 890 after portable profiles, 911 after T5.1b/D44, 917 after T5.1c, 933 after T5.1d/D45, 946 after T5.1e, 955 after T5.2a, 957 after T5.2b, 962 after T5.3a, 969 after T5.3b, 981 after T5.2c offline acceptance, 985 after T5.2d, 1000 after T5.0a, 1008 after T5.0b, 1027 after T5.6a offline acceptance, 1042 after T5.6b cube acceptance, 1056 after T5.6c matched evaluation, 1070 after T5.6d truth matching, 1080 after T5.6e orchestration, 1089 after T5.6f portable jobs, 1094 after T5.6g reporting, 1095 after the licence guard, 1102 after T4C.5d gate readiness, 1104 after D50 storage preflight, 1106 after T4C.5e overlap evidence, 1112 after T4C.5f campaign acceptance, 1116 after T4C.5g physical preflight, 1117 after T4C.5h preregistration - the `master` freeze; then on `ed-dev`, 1375 after TG2.1, 1429 after TG2.2, 1477 after TG2.3, 1536 after TG2.4, 1577 after TG3.1, 1621 after TG3.2, 1686 after TG3.3 and 1742 after TG3.4) |
-| Ground-Truth Benchmark Suite | **20 PASS, 0 FAIL, 0 NOT_YET_RUNNABLE** (`python -m src.benchmarks`, exit 0) |
+| Backend test suite | **1787 passed, 1 xfailed** (plus 1 skipped: opt-in live GCS) (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17, 351 after T3.5.6, 379 after T3.5.15, 407 after T3.5.19, 449 after T4C.5, 709 after T4A.4, 781 after T4B.4, 855 after T4C.5, 859 after T4C.5c, 882 after T5.1a CPU acceptance, 883 after RTX acceptance, 890 after portable profiles, 911 after T5.1b/D44, 917 after T5.1c, 933 after T5.1d/D45, 946 after T5.1e, 955 after T5.2a, 957 after T5.2b, 962 after T5.3a, 969 after T5.3b, 981 after T5.2c offline acceptance, 985 after T5.2d, 1000 after T5.0a, 1008 after T5.0b, 1027 after T5.6a offline acceptance, 1042 after T5.6b cube acceptance, 1056 after T5.6c matched evaluation, 1070 after T5.6d truth matching, 1080 after T5.6e orchestration, 1089 after T5.6f portable jobs, 1094 after T5.6g reporting, 1095 after the licence guard, 1102 after T4C.5d gate readiness, 1104 after D50 storage preflight, 1106 after T4C.5e overlap evidence, 1112 after T4C.5f campaign acceptance, 1116 after T4C.5g physical preflight, 1117 after T4C.5h preregistration - the `master` freeze; then on `ed-dev`, 1375 after TG2.1, 1429 after TG2.2, 1477 after TG2.3, 1536 after TG2.4, 1577 after TG3.1, 1621 after TG3.2, 1686 after TG3.3, 1742 after TG3.4 and 1787 after TG3.5) |
+| Ground-Truth Benchmark Suite | **22 PASS, 0 FAIL, 0 NOT_YET_RUNNABLE** (`python -m src.benchmarks`, exit 0) |
 | Frontend `npm install` + `npm run build` | passes, emits 1,386 modules + real JS/CSS assets (was: 1 module, no assets) |
 | Backend server | starts, serves OpenAPI, all smoke-tested endpoints return 200 |
 | End-to-end experiment sweep | 9-run parameter sweep completes 9/9, writes 28 lineage nodes / 54 edges, hypothesis engine returns results |
@@ -3254,7 +3367,7 @@ the float32 defect ships.
 
 `src/benchmarks/` holds ten datasets whose correct answer is known before analysis. Five of
 them are **null benchmarks** - their answer is "there is nothing here". Current status:
-**20 PASS, 0 FAIL, 0 NOT_YET_RUNNABLE.**
+**22 PASS, 0 FAIL, 0 NOT_YET_RUNNABLE.**
 
 **Nothing is pending any more.** Three gates were defined before the stages that could
 answer them existed, and all three have now graduated to enforced PASSes: `4C.surrogate_null`
@@ -3318,6 +3431,7 @@ able to sit three slices out of date.
 | `test_representation.py` | 59 | TG2.4 representation-induced feature audit: the floor on every plane of every registered lens, and the planted blob that proves the audit can see; the null propagated through the representation against the same null rebuilt inside it, measured on the dual tree where they differ and on the stationary transform where they do not; the FFT magnitude plane whose null nothing can exceed; the family of forty-five planes that rejects on 86% of structureless fields uncorrected, the ensemble refused as too small for it, and the correction registry that prices six identical columns as one test; the declared decimation an array does not have; and the plane R13 leaves no interior in |
 | `test_family_accounting.py` | 30 | TG3.1 family accounting: the T4C.6 declaration priced at 36 members and 3,005 surrogates from the frozen campaign JSON, with its label set compared against a real sweep rather than against its own count; every combinator's cheap count checked against its own enumeration; unordered triples registered from the test module; the unaffordable family refused with both R18 remedies computed, the narrowing checked by taking it and checked to be tight, and the case where no single axis can reach the ceiling; the zero-member term that scored as a remedy; and the admissibility audit that never moves the correction unit |
 | `test_preregistration.py` | 40 | TG3.2 the generate/confirm split: the T4C.6 family of 36 refused at an ensemble of 199 while a four-member frozen subset of it is affordable, corrected at four rather than at 36, on a partition opened once; a partition identified from a series whose values raise on access; an edited field named and an editor who rewrites the digest table too caught by the outer digest; the wholesale rewrite that verifies against itself and is caught only against the published digest; the second, entirely honest seal against the same held-out data refused; the lineage refusals for mining on held-out and freezing against train; a refusal never spending the partition while a confirmation always does; and the channel-count/label contradiction found by running it |
+| `test_motif.py` | 45 | TG3.5 recurring motifs: the pair of gates - `4E.motif_recovery` confirming one planted motif on a partition it was not mined from, and `4E.motif_null` confirming nothing where nothing was planted, on the same family, the same tolerance and the same ensemble; the family priced at every subset of every scene and checked against the enumeration member for member; a size with no registered combinator refused rather than computed; matching under a tolerance shown to be non-transitive and the intransitive pairs counted; support counting scenes and not overlapping occurrences; the ranking key that has to prefer the shape which matched fewer things; one shape frozen once however many scenes it appeared in; a surrogate that carries everything but position and respects the separation the data demonstrates, with the unconstrained null measured to halve the p-value; the constant-signature matcher registered into TG3.4's `MATCHERS` and audited as honestly invariant to all three transforms - and priced at exactly 1 by the null; a motif tested under a frozen label whose signature came from elsewhere refused as a redefinition; and the held-out partition spent once |
 | `test_invariance.py` | 56 | TG3.4 invariant matching: the `4E.invariance` gate moving off `NOT_YET_RUNNABLE` to PASS, with the position-memorising control audited beside it and surviving nothing; the shape identical under exact rotation, translation and rescaling and TG3.3's `distance` exactly invariant too when the scale is exact, which is what places the benchmark's 4.8% drift in the extractor's scale estimate rather than in the relation; a scalene configuration refused a match so scale-invariance is not permission to match anything; a pair refused by the shape matcher because one edge over its own mean is 1 for every configuration in the world; deviations minimised over correspondences, the defect that had put the position matcher's noise floor at 0.27; a tolerance refused without a stated basis and `match` refusing a tolerance that is merely a number; a vacuous test conferring no invariance; overclaiming and understating both caught on matchers registered from the test module; the scale ratio recovered from the separations, refused across a unit boundary, structurally unable to precede the decision, and judged against its own noise floor rather than the shape's |
 | `test_constellation.py` | 65 | TG3.3 constellations as attributed graphs: the planted triangle built twice, in cells as a dimensionless amplitude and in metres as a temperature, matching as the same attributed graph, with a relation registered from the test module *without* the dimensionless division making the same two graphs disagree; all eight relations registered with their requirements declared; `direction` and `convergence` refusing against TG2.2's own `reports_orientation: False` capability; `convergence` refused on an undirected axis; a bearing refused across a periodic seam and from a point to itself; the geometric-mean reference that does not follow the larger scale; the relation axis a TG3.1 family may be priced over, 3 against 28; matching exhaustive to 8 nodes and refused above it; and the non-strict graph that did not match itself, found by running it |
 | `test_feature_extraction.py` | 39 | TG2.2 extraction as a registry: the three planted features recovered across a six-fold range of scales and under rotation, translation and rescaling; both null benchmarks silent across three seeds with the loosened-alpha control that makes the silence mean something; the strict-comparison off-by-one; an unresolvable alpha refused before the ensemble; a second extractor registered from the test module; the periodic-axis seam and the self-scaling R13 refusal; and the one-feature-per-frame handoff to TG2.3 |
@@ -3366,7 +3480,7 @@ able to sit three slices out of date.
 | `test_wavelet_bank.py` | 27 | T4B.2 expansion through the engine's own parameter matrix, the 1,000-combination guard, decompose_bank / extract_scale_signature, the vertical-bank refusals |
 | `test_transforms.py` | 13 | fft/dct/dwt/dtcwt/hybrid round trips; D1 recorded as a strict xfail |
 | `test_zarr_source.py` | 59 | R13 geometry, chunk-hostility, byte counting, streaming content identity, exact chunk-bounded frame reader, cache/provenance round trip, NetCDF engine and HTTP surface |
-| **total** | **1444** | |
+| **total** | **1489** | |
 
 ### 7.2h A surrogate null that was not the null it claimed (T4C.5)
 
