@@ -2529,9 +2529,55 @@ different first-class field on disk is refused rather than silently re-filed.
 
 **Claim boundary.** This is a tamper-evident container and a routing discipline, not a judgement.
 It does not decide whether the evidence inside supports anything; TG6.2's ladder and TG6.3's five
-outputs own that, and no rung logic exists yet. Nor does it authenticate the author: hashes detect
+outputs own that — see 3.6zd for the ladder itself. Nor does it
+authenticate the author: hashes detect
 edits to a published bundle, they do not prove who wrote it or that some evidence was never
 gathered and simply left out. Only what is appended can be weighed.
+
+### 3.6zd The claim ladder over a bundle (`src/core/claim_ladder.py`, TG6.2, `ed-dev`)
+
+`observation → association → robust association → candidate precursor → demonstrated predictive
+utility`. `assess_claim_ladder(bundle)` is a **pure function of the bundle**: it takes no other
+argument and reads no clock, filesystem, environment or random source, so the same evidence chain
+always yields the same verdict and the verdict can be recomputed by anyone holding the published
+bundle.
+
+Ten declarative gates decide the climb. `association` needs a passing `observations` entry, a
+passing `effect_sizes` entry and a passing `uncertainty` entry — a point estimate without a
+quantified interval is not an association. `robust_association` adds passing
+`replication_results` and `confounders` entries. `candidate_precursor` adds a passing `provenance`
+entry **and** a passing `provenance` entry whose payload records `temporal_precedence` exactly
+`true`; a truthy stand-in such as `1` or `"true"` does not count, because precedence must be
+asserted, not inferred. `demonstrated_predictive_utility` adds a passing `holdout_performance`
+entry. Only `PASS` advances a gate: `INCONCLUSIVE` and `NOT_APPLICABLE` are recorded honestly and
+buy no ground.
+
+Two gates sit on the floor rung and dominate everything above it. Any entry recorded as `FAIL` or
+`INVALID`, anywhere in the bundle, caps it at `observation`; so does any `contradictory_evidence`
+or `failure_states` entry recorded as `PASS`, which is the bundle asserting that the contradiction
+or the failure **stands**. No quantity of favourable evidence outvotes one of these, and because
+TG6.1 entries are immutable, a failure cannot be appended away — the only route to a higher rung
+is a bundle that never carried it. The assessment still reports `unblocked_rung`, the rung the
+remaining evidence would have reached, as a **diagnostic**: `rung` is what may be claimed.
+
+Causal claims are outside the ladder entirely. `permits()` answers for a rung, but **refuses** for
+`causal`, `causation`, `mechanism`, `efficacy`, `cure` and their neighbours, naming R7 — a
+refusal rather than a `False`, because a `False` invites a later "not yet" reading. The top rung
+is a statement about out-of-sample prediction and says nothing about mechanism.
+
+The gates read only category, status and the one reserved `temporal_precedence` payload key of
+entries that TG6.1 already confines to its ten first-class fields. Labels, summaries and every
+other payload key are inert, so no amount of persuasive prose in a bundle can move a rung (R22).
+A `ClaimLadderAssessment` is immutable, reports every gate with its requirement and whether it was
+satisfied, and carries an `assessment_sha256` binding the verdict to the exact bundle revision and
+hypothesis digest it was computed from.
+
+**Claim boundary.** The ladder grades the evidence that was appended; it cannot know what was
+never gathered. It is a floor on rigour, not a certificate: reaching `demonstrated_predictive
+utility` means a holdout result was recorded and passed, not that the study design was sound, that
+the holdout was honestly held out, or that the effect will hold elsewhere. TG5's external access
+control and TG6.1's tamper evidence own those questions, and no rung of this ladder — including
+its top — licenses a causal reading.
 
 ### 3.11 Ground-Truth Benchmark Suite (`src/benchmarks/`)
 
@@ -3628,7 +3674,7 @@ See `VERIFICATION.md` for the captured command output behind every statement her
 | Item | Status |
 |---|---|
 | Python venv + dependencies | installed (torch 2.13.0+cu130, numpy 2.2.6, pydantic 1.10.26, SQLAlchemy 2.0.52, xarray 2025.6.1, FastAPI 0.110.3) |
-| Backend test suite | **2044 passed, 1 xfailed** (plus 1 skipped: opt-in live GCS) (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17, 351 after T3.5.6, 379 after T3.5.15, 407 after T3.5.19, 449 after T4C.5, 709 after T4A.4, 781 after T4B.4, 855 after T4C.5, 859 after T4C.5c, 882 after T5.1a CPU acceptance, 883 after RTX acceptance, 890 after portable profiles, 911 after T5.1b/D44, 917 after T5.1c, 933 after T5.1d/D45, 946 after T5.1e, 955 after T5.2a, 957 after T5.2b, 962 after T5.3a, 969 after T5.3b, 981 after T5.2c offline acceptance, 985 after T5.2d, 1000 after T5.0a, 1008 after T5.0b, 1027 after T5.6a offline acceptance, 1042 after T5.6b cube acceptance, 1056 after T5.6c matched evaluation, 1070 after T5.6d truth matching, 1080 after T5.6e orchestration, 1089 after T5.6f portable jobs, 1094 after T5.6g reporting, 1095 after the licence guard, 1102 after T4C.5d gate readiness, 1104 after D50 storage preflight, 1106 after T4C.5e overlap evidence, 1112 after T4C.5f campaign acceptance, 1116 after T4C.5g physical preflight, 1117 after T4C.5h preregistration - the `master` freeze; then on `ed-dev`, 1375 after TG2.1, 1429 after TG2.2, 1477 after TG2.3, 1536 after TG2.4, 1577 after TG3.1, 1621 after TG3.2, 1686 after TG3.3, 1742 after TG3.4, 1787 after TG3.5, 1850 after TG4.1, 1922 after TG4.2, 1972 after TG4.3, 1986 after TG5.1, 2004 after TG5.2 and 2020 after TG5.3 and 2044 after TG6.1) |
+| Backend test suite | **2074 passed, 1 xfailed** (plus 1 skipped: opt-in live GCS) (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17, 351 after T3.5.6, 379 after T3.5.15, 407 after T3.5.19, 449 after T4C.5, 709 after T4A.4, 781 after T4B.4, 855 after T4C.5, 859 after T4C.5c, 882 after T5.1a CPU acceptance, 883 after RTX acceptance, 890 after portable profiles, 911 after T5.1b/D44, 917 after T5.1c, 933 after T5.1d/D45, 946 after T5.1e, 955 after T5.2a, 957 after T5.2b, 962 after T5.3a, 969 after T5.3b, 981 after T5.2c offline acceptance, 985 after T5.2d, 1000 after T5.0a, 1008 after T5.0b, 1027 after T5.6a offline acceptance, 1042 after T5.6b cube acceptance, 1056 after T5.6c matched evaluation, 1070 after T5.6d truth matching, 1080 after T5.6e orchestration, 1089 after T5.6f portable jobs, 1094 after T5.6g reporting, 1095 after the licence guard, 1102 after T4C.5d gate readiness, 1104 after D50 storage preflight, 1106 after T4C.5e overlap evidence, 1112 after T4C.5f campaign acceptance, 1116 after T4C.5g physical preflight, 1117 after T4C.5h preregistration - the `master` freeze; then on `ed-dev`, 1375 after TG2.1, 1429 after TG2.2, 1477 after TG2.3, 1536 after TG2.4, 1577 after TG3.1, 1621 after TG3.2, 1686 after TG3.3, 1742 after TG3.4, 1787 after TG3.5, 1850 after TG4.1, 1922 after TG4.2, 1972 after TG4.3, 1986 after TG5.1, 2004 after TG5.2 and 2020 after TG5.3, 2044 after TG6.1 and 2074 after TG6.2) |
 | Ground-Truth Benchmark Suite | **29 PASS, 0 FAIL, 0 NOT_YET_RUNNABLE** (`python -m src.benchmarks`, exit 0) |
 | Frontend `npm install` + `npm run build` | passes, emits 1,386 modules + real JS/CSS assets (was: 1 module, no assets) |
 | Backend server | starts, serves OpenAPI, all smoke-tested endpoints return 200 |
@@ -3860,6 +3906,7 @@ able to sit three slices out of date.
 | `test_motif_transfer.py` | 16 | TG5.2 blind transfer (18 pytest cases): published digest durably bound before the only target opener; strict freeze/bind/open chronology; frozen-only size/matcher/relation/tolerance and cross-domain matcher capability; complete target enumeration and post-open subset refusal; source-domain, wrong-digest and carried-domain refusals before or after the access boundary as appropriate; failure still spending the target and second-open refusal across processes; semantic visibility, null-match receipt, canonical ledger reload, nested identity/hash/schema tamper detection and receipt identity |
 | `test_motif_relationship.py` | 16 | TG5.3 relationship transfer: content-addressed outcome x lag family and ordered target train/test identities frozen before access; R21 floor, G3 affordability and no-redefinition refusals; both openings committed before either callback and every partition globally spent once even after failure; exhaustive frozen motif presence, circular-shift p-values, complete-family correction on each split and same-label replication; planted PASS, publishable-shaped null FAIL, structural absence retained at p=1, canonical plan/ledger reload, tamper and receipt identity |
 | `test_evidence_bundle.py` | 24 | TG6.1 the hashed, append-only evidence bundle: revision zero complete before any evidence and every one of the ten first-class fields routed and queryable; appending returning a new snapshot with the receiver unchanged byte for byte; each entry binding the previous digest into a gap-free, non-decreasing chain, with entries and their nested payloads read-only; `contradictory_evidence` and `failure_states` as ordinary fields carried on the same chain and undeletable by later appends; commentary, prose-only and empty payloads, non-finite and unserialisable values, bad statuses, malformed or duplicated source digests and offset-less or backwards timestamps all refused; a hypothesis refused after the bundle it anchors and refused when swapped under an existing chain; edited, dropped, reordered, substituted and never-linked entries and a mismatched bundle digest all detected, with substitution caught by the bound previous digest rather than by sequence numbering; canonical exclusive publication, no-overwrite, published-digest verification, and reload refusing dropped, softened, relocated, unknown-field and reskinned files; process-independent reload continuing the same chain; the digest sensitive to append order, not only content |
+| `test_claim_ladder.py` | 30 | TG6.2 the claim ladder as a pure function of the bundle: the floor rung claiming nothing; each rung reached only once its own evidence and every rung below it is present, climbing one rung at a time without skipping; every gate individually necessary, with a point estimate lacking quantified uncertainty refused as an association and temporal precedence required to be recorded exactly `true` rather than merely truthy; only `PASS` advancing a gate. A single `FAIL` or `INVALID` entry, or a standing `contradictory_evidence` or `failure_states` `PASS`, capping a fully evidenced bundle at `observation`, unoutvotable by piled favourable evidence and unappealable by a later retraction; the invariant held over an exhaustive field x status sweep and a randomised sweep of whole bundles in which both the blocked and clear branches and all five rungs occur; agreement with an independent restatement of the rule. Determinism to the digest, independence from append order and from labels, summaries and unread payload keys, and the same rung after a round trip through disk; causal claim kinds refused rather than denied, naming R7; the verdict binding the exact bundle revision and reporting why the climb stopped |
 | `test_precedence.py` | 62 | TG4.1 recovering a relationship nobody pointed at: the pair of gates - `4F.precedence_recovery` confirming one relationship, at the right band pair and the right lag, on a partition it was not mined from, and `4F.precedence_null` confirming nothing over the same builder with its two modulations drawn independently; the family of ordered band pairs crossed with lags priced at 15,985 surrogates and checked against the sweep member for member, with the declared pair axis shown to price it exactly as TG3.1's `ordered_pairs` combinator does; lag zero refused as not a lead and a near-unit-root record refused every lag rather than given a weak result; the basis control that measures what the decomposition relates when nothing else does, the coupled pairs it excludes, and a control with dynamics of its own refused as no control at all; the circular shift shown to preserve every value and the autocorrelation where the shuffle destroys it, with the shuffle's error measured to grow with exactly the memory it discards; the sweep's winner tested against a single-lag null and against the null of its own maximum; one relationship entering the ranking once per lag and leaving it once; the held-out partition cut too close refused a seal, spent once, and a member tested at a lag other than the frozen one refused as a redefinition |
 | `test_refusal.py` | 72 | TG4.2 the five refusals: the register that names all five, the gate each is carried by and the benchmark that gate runs on, checked against the live benchmark registry so that a deleted benchmark or an undeclared gate is a failing test rather than a stale sentence; the lag profile that starts at the one lag no precedence family may contain, and the leakage ceiling read off it - a real lead surviving it, every lag of a single process read four times refused by it, and the unguarded path shown to rank and carry forward exactly the members it refuses; a family emptied by refusal distinguished from a null result; the calendar derived from a record's own cadence rather than from its values, refused when it is faster than the sampling or the record is too short to see it turn twice, fitted on the training partition and subtracted from both on one shared clock, with a mislabelled partition shown to be removed worse; a record that still contains its calendar refused a candidate at the single door between a sweep and a seal, and a partly removed calendar refused too; both sample-size counts shown to travel and their gap to grow with memory |
 | `test_cross_domain.py` | 47 | TG4.3 planted cross-domain precedence (50 pytest cases): two native clocks at one and three hours aligned only at exact shared timestamps, with interpolation, offset clocks, irregular clocks and an irregular intersection refused; original units, semantics, licences, dataset identities and lag bases carried into the sealed receipt; the joint physical floor computed before frame conversion and raised by aggregation windows; eight cross-boundary directions crossed with four physical lags and no within-domain pair; the Kelvin-to-megawatt relationship recovered at six hours without being named, its reverse and distractors present in the family, the same-builder null selecting candidates on train and confirming none, unit tampering breaking the partition identity, a within-domain member refused as laundering, and the held-out partition spent once |
@@ -3911,7 +3958,7 @@ able to sit three slices out of date.
 | `test_wavelet_bank.py` | 27 | T4B.2 expansion through the engine's own parameter matrix, the 1,000-combination guard, decompose_bank / extract_scale_signature, the vertical-bank refusals |
 | `test_transforms.py` | 13 | fft/dct/dwt/dtcwt/hybrid round trips; D1 recorded as a strict xfail |
 | `test_zarr_source.py` | 59 | R13 geometry, chunk-hostility, byte counting, streaming content identity, exact chunk-bounded frame reader, cache/provenance round trip, NetCDF engine and HTTP surface |
-| **total** | **1740** | |
+| **total** | **1770** | |
 
 ### 7.2h A surrogate null that was not the null it claimed (T4C.5)
 

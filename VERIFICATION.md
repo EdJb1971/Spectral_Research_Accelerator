@@ -4799,3 +4799,84 @@ It does not decide whether the evidence inside supports anything: TG6.2's ladder
 outputs own that, and no rung logic exists yet. The hashes detect edits to a published bundle;
 they do not authenticate an author, and they cannot show that relevant evidence was gathered and
 simply never appended. Only what is appended can be weighed.
+
+## TG6.2 - the claim ladder (`ed-dev`)
+
+`src/core/claim_ladder.py` assigns `observation -> association -> robust association ->
+candidate precursor -> demonstrated predictive utility` from a TG6.1 bundle and nothing else.
+`assess_claim_ladder(bundle)` takes no second argument and reads no clock, filesystem,
+environment or random source, so the verdict is recomputable by anyone holding the published
+snapshot. Ten declarative gates decide the climb; only `PASS` advances one.
+
+Two gates sit on the floor rung and dominate the rest. Any `FAIL` or `INVALID` entry anywhere,
+and any `contradictory_evidence` or `failure_states` entry recorded as `PASS` - the bundle
+asserting that the contradiction or failure stands - caps the bundle at `observation`. Because
+TG6.1 entries are immutable, a failure cannot be appended away. Causal claim kinds are refused by
+`permits()` rather than answered `False`, naming R7.
+
+Focused acceptance:
+
+```text
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_claim_ladder.py -q
+30 passed, 1 warning in 2.46s
+```
+
+**How the purity requirement was actually tested.** Determinism to the digest; two separately
+built bundles with the same evidence agreeing; independence from append order over forty
+shuffles; a bundle whose labels read `DEFINITIVE PROOF OF CAUSATION` and whose payloads carry
+`interpretation: causal` and `rung: demonstrated_predictive_utility` receiving byte-identical
+gates to a plain one; and an identical rung after a round trip through `save_evidence_bundle` and
+`load_evidence_bundle`. The strongest of them restates the ladder rule independently, in the test
+file, and compares the two implementations over a randomised sweep of eight hundred bundles.
+
+**How the blocking requirement was actually tested.** Exhaustively over every first-class field
+at every status appended to a fully evidenced bundle - fifty cases, each asserted to block or not
+block exactly as the rule says - and over eight hundred randomised whole bundles. A blocked
+bundle stays on the floor as eleven further rounds of complete favourable evidence are piled on
+it, and a later `PASS` provenance entry claiming to supersede the failure does not lift it.
+
+**A weak property test found and replaced.** The first randomised sweep drew categories and
+statuses uniformly. Instrumenting it showed the result: all six hundred bundles landed on
+`observation`, four hundred and eighty-five of them blocked and the rest simply short of
+evidence. That sweep would have passed unchanged against a `assess_claim_ladder` that returned
+`"observation"` unconditionally, so it was testing almost nothing. The generator now seeds a
+random subset of the full evidence set before adding noise, and the tests assert their own
+coverage: all five rungs must occur in the agreement sweep, and both the blocked and the clear
+branch must occur more than a hundred times each in the blocking sweep.
+
+**Mutation check.** Four deliberate defects were introduced into the gate table one at a time and
+the focused suite re-run against each: ignoring standing contradictions (7 failures), removing the
+blocking cap so `rung` follows `unblocked_rung` (9), accepting a truthy precedence value instead
+of exactly `true` (2), and dropping the uncertainty gate (3). Each was caught, and the file was
+restored from a backup between runs.
+
+Full acceptance:
+
+```text
+> .\.venv\Scripts\python.exe -m pytest -q
+2074 passed, 1 skipped, 1 xfailed, 6 warnings in 801.61s (0:13:21)
+
+> .\.venv\Scripts\python.exe -m src.benchmarks
+PASS 29   FAIL 0   NOT_YET_RUNNABLE 0
+```
+
+Documentation and inventory:
+
+```text
+> .\.venv\Scripts\python.exe tools\audit_docs.py
+undocumented modules : none
+undocumented routes  : none
+defects              : 59 defined, 57 fixed, partial ['D18'], open ['D43']
+test functions       : 1770
+stale inventory rows : none
+claimed suite totals : architecture (2074, 1) / roadmap (2074, 1)
+RESULT               : ok
+```
+
+**Claim boundary.** The ladder grades the evidence that was appended and cannot know what was
+never gathered. It is a floor on rigour, not a certificate: reaching the top rung means a holdout
+result was recorded and passed, not that the design was sound, that the holdout was honestly held
+out, or that the effect transfers. Gate thresholds are deliberately structural - one passing entry
+of the right kind - and say nothing about the statistical adequacy of what that entry contains;
+TG5's instruments own that upstream. No rung of this ladder, including its top, licenses a causal
+reading.

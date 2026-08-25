@@ -1618,12 +1618,41 @@ it does not decide whether the evidence inside supports anything — TG6.2's lad
 outputs own that. Hashes detect edits to a published bundle; they do not authenticate the author,
 and they cannot show that relevant evidence was gathered and simply never appended.
 
-**TG6.2 The ladder.** `observation → association → robust association → candidate precursor →
-demonstrated predictive utility`. Each rung has deterministic entry conditions computed from the
-bundle. Causal claims are **outside the ladder entirely** and unreachable without an explicit
-causal-inference framework that this programme does not provide (R7).
-**Acceptance:** rung assignment is a pure function of the bundle, property-tested; and a bundle
-with a FAIL or INVALID gate cannot reach any rung above `observation` by any input.
+**TG6.2 The ladder. DONE (`ed-dev`).** `src/core/claim_ladder.py` assigns
+`observation → association → robust association → candidate precursor → demonstrated predictive
+utility` through ten declarative gates. `assess_claim_ladder(bundle)` is a **pure function of the
+bundle**: no second argument, no clock, no filesystem, no environment, no randomness, so the
+verdict is recomputable by anyone holding the published snapshot.
+
+`association` requires passing `observations`, `effect_sizes` and `uncertainty` entries — a point
+estimate without a quantified interval is not an association. `robust_association` adds passing
+`replication_results` and `confounders`. `candidate_precursor` adds passing `provenance` and a
+passing `provenance` payload recording `temporal_precedence` exactly `true`; a truthy stand-in
+does not count, because precedence must be asserted rather than inferred.
+`demonstrated_predictive_utility` adds a passing `holdout_performance`. Only `PASS` advances a
+gate; `INCONCLUSIVE` and `NOT_APPLICABLE` are recorded honestly and buy no ground.
+
+**Nothing outvotes a failure.** Any `FAIL` or `INVALID` entry anywhere, and any
+`contradictory_evidence` or `failure_states` entry recorded as `PASS` — the bundle asserting the
+contradiction stands — caps the bundle at `observation`. TG6.1 immutability means a failure cannot
+be appended away: the only route higher is a bundle that never carried it. `unblocked_rung` reports
+what the remaining evidence would have reached, as a diagnostic; `rung` is what may be claimed.
+Causal claims are outside the ladder entirely: `permits()` **refuses** `causal`, `causation`,
+`mechanism`, `efficacy`, `cure` and their neighbours naming R7, rather than returning a `False`
+that invites a later "not yet" reading (R7). The gates read only category, status and the one
+reserved precedence key, so prose in labels, summaries and unread payload keys is inert (R22).
+
+**Evidence:** `src/tests/test_claim_ladder.py`, 30 tests. Purity is property-tested by
+determinism to the digest, independence from append order and from all unread text, an identical
+rung after a round trip through disk, and agreement with an independent restatement of the rule
+over a randomised sweep in which all five rungs occur. The blocking invariant is tested
+exhaustively over field × status and over randomised whole bundles in which both the blocked and
+clear branches occur; four deliberate mutations of the gate table were each caught.
+
+**Claim boundary.** The ladder grades the evidence that was appended and cannot know what was
+never gathered. It is a floor on rigour, not a certificate: the top rung means a holdout result
+was recorded and passed, not that the design was sound, that the holdout was honestly held out, or
+that the effect transfers. No rung licenses a causal reading.
 
 **TG6.3 The five outputs.** For any bundle: what can be claimed; what cannot; what evidence
 contradicts it; what alternative explanations remain; and which single observation would most
