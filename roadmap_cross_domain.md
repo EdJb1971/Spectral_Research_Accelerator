@@ -1592,10 +1592,31 @@ out-of-process inspection.
 
 Deterministic and mandatory. Must exist before G7.
 
-**TG6.1 `EvidenceBundle`.** Hypothesis, observations, effect sizes, uncertainty, null results,
-replication results, holdout performance, provenance, confounders, **contradictory evidence** and
-failure states — as a hashed, append-only structure. Contradictory evidence is a first-class
-field, not a remark.
+**TG6.1 `EvidenceBundle`. DONE (`ed-dev`).** `src/core/evidence.py` holds one `Hypothesis` —
+identifier, statement, prediction, timezone-bearing registration and provenance — plus an ordered
+chain of `EvidenceEntry` records under ten first-class fields: `observations`, `effect_sizes`,
+`uncertainty`, `null_results`, `replication_results`, `holdout_performance`, `provenance`,
+`confounders`, **`contradictory_evidence`** and **`failure_states`**. The last two are ordinary
+fields with ordinary accessors carried on the same chain and the same digest as favourable
+evidence; no later append can remove or dilute them.
+
+`append()` returns the next immutable snapshot and leaves the receiver unchanged byte for byte.
+Each entry hashes its own body including the previous entry's digest, anchored on a digest binding
+schema, study id, creation time and hypothesis, so dropping, reordering, relinking, softening or
+swapping the hypothesis under an existing chain is detected. Sequence numbers are gap-free,
+append chronology non-decreasing, payloads deep-frozen and required to be non-empty finite JSON.
+Every entry must name one of the ten fields: there is no `commentary`, `notes` or `interpretation`
+route, so **free text cannot enter the structure the TG6.2 gates read** (R22). Canonical
+exclusive publication refuses to overwrite; reload re-verifies every entry digest, chain link,
+sequence, category placement, exact canonical bytes and the separately published bundle digest,
+and refuses an entry relocated into a different first-class field on disk.
+
+**Evidence:** `src/tests/test_evidence_bundle.py`, 24 tests.
+
+**Claim boundary.** This is a tamper-evident container and a routing discipline, not a judgement:
+it does not decide whether the evidence inside supports anything — TG6.2's ladder and TG6.3's five
+outputs own that. Hashes detect edits to a published bundle; they do not authenticate the author,
+and they cannot show that relevant evidence was gathered and simply never appended.
 
 **TG6.2 The ladder.** `observation → association → robust association → candidate precursor →
 demonstrated predictive utility`. Each rung has deterministic entry conditions computed from the

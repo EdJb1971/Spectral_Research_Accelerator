@@ -4713,3 +4713,89 @@ shift protects the observed marginal series and destroys their alignment, but it
 out a shared driver. A `PASS` therefore supports replicated precedence/association only; it does
 not establish mechanism, causality or predictive utility. As in TG5.2, the ledger proves API
 ordering and external access control must establish that the archive was not inspected earlier.
+
+## TG6.1 - the hashed, append-only evidence bundle (`ed-dev`)
+
+`src/core/evidence.py` opens Phase G6 with the structure the claim ladder will read. An
+`EvidenceBundle` binds one `Hypothesis` - identifier, statement, prediction, timezone-bearing
+registration time and provenance - to an ordered chain of `EvidenceEntry` records under ten
+first-class scientific fields: `observations`, `effect_sizes`, `uncertainty`, `null_results`,
+`replication_results`, `holdout_performance`, `provenance`, `confounders`,
+`contradictory_evidence` and `failure_states`.
+
+`append()` returns the next immutable snapshot and leaves the receiver unchanged byte for byte,
+so a prior revision stays a citable object. Each entry hashes its own body including the previous
+entry's digest, anchored on a digest over schema, study id, creation time and hypothesis. Sequence
+numbers are gap-free, append chronology is non-decreasing, payloads are deep-frozen and required
+to be non-empty finite JSON, and every entry must name one of the ten fields. There is no
+`commentary`, `notes` or `interpretation` route, so free text cannot enter the structure the TG6.2
+gates read; TG7 may record adversarial commentary beside the bundle, never inside it (R22).
+
+Focused acceptance:
+
+```text
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_evidence_bundle.py -q
+24 passed, 1 warning in 2.30s
+```
+
+The 24 tests cover revision zero complete before any evidence; all ten fields routed and queryable;
+the receiver unchanged byte for byte across an append; the previous-digest chain; entries and
+nested payloads read-only; `contradictory_evidence` and `failure_states` carried on the same chain
+and undeletable by later appends; commentary, prose-only and empty payloads, non-finite and
+unserialisable values, invalid statuses, malformed or duplicated source digests and offset-less or
+backwards timestamps all refused; a hypothesis refused after the bundle it anchors and refused when
+swapped under an existing chain; edited, dropped, reordered, substituted and never-linked entries
+and a mismatched bundle digest all detected; canonical exclusive publication, no-overwrite,
+published-digest verification, reload refusing dropped, softened, relocated, unknown-field and
+reskinned files; process-independent reload continuing the same chain; and a digest sensitive to
+append order, not only content.
+
+One of these deserves naming. Dropping, reordering and duplicating entries are all caught by the
+sequence check alone, which means a test built only from those cases never exercises the hash link
+at all. `test_substituting_an_earlier_entry_breaks_the_link_the_later_entry_committed_to` supplies
+a well-formed replacement for entry 1 with the correct sequence, category and chronology but
+different content, and a successor whose sequence is right but which was never linked to its
+predecessor. Only the bound previous digest rejects these, so the chain property is tested as
+itself rather than as a side effect of numbering.
+
+Full acceptance:
+
+```text
+> .\.venv\Scripts\python.exe -m pytest -q
+2044 passed, 1 skipped, 1 xfailed, 6 warnings in 815.33s (0:13:35)
+
+> .\.venv\Scripts\python.exe -m src.benchmarks
+PASS 29   FAIL 0   NOT_YET_RUNNABLE 0
+```
+
+Documentation and inventory:
+
+```text
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_documentation.py -q
+19 passed, 1 warning in 99.32s (0:01:39)
+
+> .\.venv\Scripts\python.exe tools\audit_docs.py
+undocumented modules : none
+undocumented routes  : none
+defects              : 59 defined, 57 fixed, partial ['D18'], open ['D43']
+test functions       : 1740
+stale inventory rows : none
+claimed suite totals : architecture (2044, 1) / roadmap (2044, 1)
+RESULT               : ok
+```
+
+**An audit gap found while verifying this slice.** The first confirming full run returned
+`1 failed, 2043 passed`: the inventory's `| **total** |` row still said 1716 against an actual
+1740. `tools/audit_docs.py` had already reported `RESULT: ok` on that same tree. It checks the
+per-file inventory rows and the two claimed suite totals but never the inventory total row, so it
+can pass while `test_documentation.py::test_documented_test_counts_match_the_source` fails.
+Architecture 7.4 presents the tool as reporting the same facts outside a test run; on this row it
+does not. The row is corrected and the suite is green, but the tool remains the weaker of the two
+checks and should not be treated as sufficient on its own. Not fixed here - it is outside TG6.1
+and belongs in the defect register.
+
+**Claim boundary.** This is a tamper-evident container and a routing discipline, not a judgement.
+It does not decide whether the evidence inside supports anything: TG6.2's ladder and TG6.3's five
+outputs own that, and no rung logic exists yet. The hashes detect edits to a published bundle;
+they do not authenticate an author, and they cannot show that relevant evidence was gathered and
+simply never appended. Only what is appended can be weighed.
