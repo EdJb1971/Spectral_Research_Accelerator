@@ -4638,4 +4638,78 @@ PASS 29   FAIL 0   NOT_YET_RUNNABLE 0
 This establishes binding-before-opening for access performed through the API, not proof that an
 archive was never inspected by a person or another program; external access control must supply
 that fact. The acceptance target is synthetic and no real archive was opened. TG5.2 reports a
-descriptive motif transfer search only; corrected relationship transfer remains TG5.3.
+descriptive motif transfer search only; corrected relationship transfer is supplied by TG5.3.
+
+## TG5.3 - corrected relationship transfer on target train and test (`ed-dev`)
+
+`src/core/motif_relationship.py` adds the corrected inferential layer deliberately excluded from
+TG5.2. `RelationshipPlan` binds the published frozen motif, target domain, ordered non-overlapping
+train/test identities, outcome x positive-lag `SearchSpecification`, one-sided mean-difference
+statistic, circular-shift null, ensemble, alpha, correction and seed. R21 precedence admission,
+the declared lag floor and G3 affordability are checked before the plan exists. Canonical
+no-overwrite persistence and a separately published plan digest protect the declaration across
+processes.
+
+Execution exposes no analysis override parameters. `RelationshipLedger` verifies both published
+digests and durably spends both partitions before either opener, globally refusing reuse of one
+partition even with a new counterpart. Every frozen family member is evaluated in both splits;
+non-estimable members remain at p=1. The full family is corrected independently in train and test,
+and only the same positive rejected label in both yields `PASS`. An adequately powered empty
+intersection yields the complete `FAIL` result required by the roadmap.
+
+Focused acceptance after final ledger and reload hardening:
+
+```text
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_motif_relationship.py -q
+16 passed, 1 warning in 2.46s
+```
+
+G3/G5 integration:
+
+```text
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_motif_relationship.py src/tests/test_motif_transfer.py src/tests/test_motif_freezing.py src/tests/test_motif.py src/tests/test_family_accounting.py src/tests/test_preregistration.py src/tests/test_cross_domain.py -q
+228 passed, 1 warning in 46.55s
+```
+
+The 16 TG5.3 tests cover the complete content-addressed family and split declaration, absence of
+an execution-time redefinition surface, both-opening precommit, same-label corrected replication,
+planted PASS and null FAIL, no-motif p=1 accounting, wrong published digest before access,
+failure spending, target subset/outcome laundering, split chronology, R21 and lag-floor refusal,
+family affordability, canonical plan round-trip, plan/ledger tampering, global partition reuse and
+receipt identity.
+
+Direct `RelationshipPlan` construction, factory construction and reload all execute the same
+domain reconstruction, R21/floor, split, family-identity and affordability checks; the public
+dataclass is not a bypass around its factory.
+
+Documentation and inventory:
+
+```text
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_documentation.py -q
+19 passed, 1 warning in 101.28s (0:01:41)
+
+> .\.venv\Scripts\python.exe tools\audit_docs.py
+undocumented modules : none
+undocumented routes  : none
+defects              : 59 defined, 57 fixed, partial ['D18'], open ['D43']
+test functions       : 1716
+stale inventory rows : none
+claimed suite totals : architecture (2020, 1) / roadmap (2020, 1)
+RESULT               : ok
+```
+
+Full acceptance:
+
+```text
+> .\.venv\Scripts\python.exe -m pytest -q
+2020 passed, 1 skipped, 1 xfailed, 6 warnings in 822.43s (0:13:42)
+
+> .\.venv\Scripts\python.exe -m src.benchmarks
+PASS 29   FAIL 0   NOT_YET_RUNNABLE 0
+```
+
+This is synthetic instrument evidence, not a real cross-domain relationship result. Circular
+shift protects the observed marginal series and destroys their alignment, but it does not rule
+out a shared driver. A `PASS` therefore supports replicated precedence/association only; it does
+not establish mechanism, causality or predictive utility. As in TG5.2, the ledger proves API
+ordering and external access control must establish that the archive was not inspected earlier.

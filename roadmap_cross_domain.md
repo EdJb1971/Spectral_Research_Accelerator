@@ -1561,15 +1561,30 @@ motif/preregistration/cross-domain integration: **171 passed**.
 
 **Claim boundary.** This proves ordering for access through this API, not the absence of earlier
 human or out-of-process archive access; that requires external access control. Synthetic domains
-exercise the contract, but no real target archive was opened. TG5.2 is descriptive motif search,
-not the corrected relationship-transfer result owned by TG5.3.
+exercise the contract, but no real target archive was opened. TG5.2 is descriptive motif search;
+the corrected relationship-transfer result is supplied separately by TG5.3.
 
-**TG5.3 Relationship transfer.** Whether the motif's relationship to subsequent organisation also
-transfers, under the full G3 family accounting.
+**TG5.3 Relationship transfer. DONE (`ed-dev`).** `src/core/motif_relationship.py` freezes one
+content-addressed `RelationshipPlan`: the published motif, complete target domain, ordered
+non-overlapping train/test identities, outcome x positive-lag family, one-sided effect,
+circular-shift null, ensemble, alpha, correction and seed. R21 must license precedence, every
+lag must meet the domain floor and G3 affordability must pass before either target split can be
+opened.
 
-**Acceptance:** a preregistered transfer with a declared family, a corrected result and a
-train/test split. **A null result here is a genuine, publishable-shaped finding** and is an
-acceptable outcome of the entire programme.
+The execution API has no analysis override surface. A durable ledger verifies the separately
+published motif and plan digests and commits both partitions before either callback; each
+partition is globally one-use even under a new pairing, and failure still spends both. Every
+frozen member is tested and corrected over the complete family independently on train and test.
+Only a positive label rejecting in both is a transfer `PASS`; an adequately powered empty
+intersection is a complete `FAIL`, so **a null result here remains a genuine,
+publishable-shaped finding**. Non-estimable members remain inside correction at p=1 rather than
+quietly shrinking the family.
+
+**Evidence:** `src/tests/test_motif_relationship.py`, 16 tests. Focused TG5.3: **16 passed**;
+G3/G5 integration: **228 passed**. Synthetic planted and null fixtures exercise the instrument;
+no real target archive has been opened. This licenses association/precedence only, not mechanism,
+causality or predictive utility, and external access control still owns the absence of earlier
+out-of-process inspection.
 
 ---
 
