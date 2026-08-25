@@ -1515,8 +1515,31 @@ license causal language. Those are named limits rather than behaviours hidden in
 
 The flagship experiment, and correctly last among the scientific phases.
 
-**TG5.1 Motif freezing.** A structural definition serialised under a content hash, with the
-originating domain recorded and the definition immutable thereafter.
+**TG5.1 Motif freezing. DONE (`ed-dev`).** `src/core/motif_freeze.py` turns one exact
+`MotifCandidate` selected from a `MiningResult` into schema `frozen-motif/v1`. The durable
+definition contains the dimensionless graph attributes and typed edges, registered matcher,
+configuration size, relation set, refusals and measured tolerance under its own SHA-256. The
+outer motif hash additionally binds the source family identity and size, exemplar label and
+selection counts, training `PartitionIdentity`, study and freeze time, complete originating
+`DomainDeclaration`, and every node's carried domain/dataset/variable/representation/unit
+record. The structural and semantic halves are stored separately, so recording the origin does
+not make it part of the cross-domain comparison.
+
+Nested records are immutable in memory. Canonical JSON publication uses exclusive creation and
+refuses every overwrite; reload requires exact schema fields, canonical bytes, a reconstructible
+`AttributedGraph`, and matching partition, definition and outer hashes. A separately published
+digest catches a wholesale self-consistent rewrite that local hashes alone cannot. Freezing
+refuses held-out source data, a source label attached to a different exemplar graph, mixed or
+misnamed origins, an unpriced node count and a timestamp without an explicit UTC offset.
+
+**The chronological boundary stays with TG5.2.** A hash proves content identity, not when the
+content existed. `verify_published` supplies the comparison TG5.2 must place in a ledger before
+opening domain B; TG5.1 does not claim that a target was blind merely because the artifact is
+immutable. No real second domain was opened and no transfer result exists.
+
+**Evidence:** `src/tests/test_motif_freezing.py`, 14 tests. Targeted motif/preregistration/
+cross-domain integration: 153 passed. Full suite after documentation: **1986 passed, 1 skipped,
+1 xfailed**; benchmark suite remains **29 PASS, 0 FAIL, 0 NOT_YET_RUNNABLE**.
 
 **TG5.2 Blind transfer.** Search for the frozen motif in a domain opened *after* the freeze.
 Machinery must make redefinition impossible, not merely discouraged (R20).

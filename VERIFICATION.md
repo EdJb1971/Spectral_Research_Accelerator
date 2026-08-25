@@ -4523,3 +4523,59 @@ configuration absent and explicit network consent disabled. `client_constructed`
 This is protocol evidence only. No CDS credential was validated, no WeatherBench or CDS byte
 was transferred, no overlap receipt passed and no T4C.6 verdict exists. D43 remains open and
 4D--4H remain gated.
+
+## TG5.1 - durable motif freezing (`ed-dev`)
+
+`src/core/motif_freeze.py` closes the process boundary TG3.5 explicitly left open. A
+`FrozenMotif` serialises the exact dimensionless exemplar graph, matcher, configuration size
+and measured tolerance under `definition_sha256`. `motif_sha256` additionally binds the
+originating `DomainDeclaration`, every node's carried semantic record, the training partition
+and its digest, the generate-family identity and selection record, study identity and a
+timezone-bearing freeze time. Structure remains separate from carried domain meaning.
+
+The in-memory record recursively freezes nested mappings. Persistence emits canonical JSON,
+uses exclusive creation, flushes and `fsync`s, and refuses overwrite. Reload rejects schema
+drift, incomplete origin meaning, non-canonical bytes, an invalid reconstructed graph and any
+partition/definition/outer hash mismatch. A published-digest check distinguishes local
+self-consistency from evidence that the definition existed before a later operation. TG5.2,
+not this slice, must record that digest before opening the target domain.
+
+Focused acceptance after the final constructor hardening:
+
+```text
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_motif_freezing.py src/tests/test_motif.py src/tests/test_preregistration.py src/tests/test_cross_domain.py -q
+153 passed, 1 warning in 48.37s
+```
+
+The 14 TG5.1 tests cover structural/origin separation and dual hashes, exact graph round-trip,
+deterministic canonical bytes, nested immutability, no-overwrite publication, structural and
+semantic tamper detection, whole-artifact rewrite versus a published digest, held-out-source
+refusal, label/signature redefinition, origin laundering, explicit timezone, strict fields and
+non-canonical serialization.
+
+The final complete repository run, after architecture and roadmap updates:
+
+```text
+> .\.venv\Scripts\python.exe -m pytest -q
+1986 passed, 1 skipped, 1 xfailed, 6 warnings in 831.86s (0:13:51)
+```
+
+Standalone scientific gates and documentation audit:
+
+```text
+> .\.venv\Scripts\python.exe -m src.benchmarks
+PASS 29   FAIL 0   NOT_YET_RUNNABLE 0
+
+> .\.venv\Scripts\python.exe tools\audit_docs.py
+undocumented modules : none
+undocumented routes  : none
+defects              : 59 defined, 57 fixed, partial ['D18'], open ['D43']
+test functions       : 1684
+stale inventory rows : none
+claimed suite totals : architecture (1986, 1) / roadmap (1986, 1)
+RESULT               : ok
+```
+
+This is serialization, integrity and provenance evidence over synthetic motif fixtures. It is
+not a blind transfer: no target domain was opened, no transfer search was run and no real
+cross-domain scientific result exists. Those remain TG5.2.
