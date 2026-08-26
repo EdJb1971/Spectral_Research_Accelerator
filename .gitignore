@@ -4,6 +4,9 @@ __pycache__/
 *.py[cod]
 .pytest_cache/
 
+# Local secrets and machine-specific environment settings
+.env.local
+
 # Database
 *.db
 

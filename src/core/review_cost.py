@@ -36,7 +36,7 @@ from typing import Any, Callable, Dict, Mapping, Optional, Sequence, Tuple, Unio
 import httpx
 
 from src.core.errors import DataSourceError, InvalidParameterError
-from src.core.recorded_call import EFFORTS, REVIEW_ROLES, ReviewedBundle
+from src.core.recorded_call import EFFORTS, REVIEW_ROLES, ResponseSchema, ReviewedBundle
 from src.core.round_robin import PanelSeat, ReviewPanel
 
 
@@ -153,8 +153,13 @@ def build_gemini_batch_request(request: Mapping[str, Any], *,
         "contents": [{"role": "user", "parts": [{"text": prompt}]}],
         "generationConfig": {
             "thinkingConfig": {"thinkingLevel": effort},
-            "responseMimeType": "application/json",
-            "responseJsonSchema": _json_schema(request),
+            "responseFormat": {"text": {
+                # Batch speaks the protobuf JSON dialect and requires the enum spelling;
+                # the synchronous REST examples also show the MIME spelling, but the live
+                # Batch endpoint rejects that with TextResponseFormat.MimeType INVALID_ARGUMENT.
+                "mimeType": "APPLICATION_JSON",
+                "schema": _json_schema(request),
+            }},
         },
     }
     if cached_content is not None:
@@ -181,6 +186,15 @@ def _batch(value: Mapping[str, Any]) -> Mapping[str, Any]:
         raise DataSourceError("Gemini Batch API returned a non-object response")
     response = value.get("response")
     if isinstance(response, Mapping):
+        # The live API returns the completed GenerateContentBatch metadata and output in
+        # separate Operation fields: ``metadata`` carries state/times while ``response`` is
+        # the GenerateContentBatchOutput itself.  The reference's direct resource shape puts
+        # that same output below ``output``.  Normalize both without guessing at content.
+        if "inlinedResponses" in response or "responsesFile" in response:
+            metadata = value.get("metadata")
+            combined = dict(metadata) if isinstance(metadata, Mapping) else {}
+            combined["output"] = response
+            return combined
         return response
     metadata = value.get("metadata")
     if isinstance(metadata, Mapping) and ("state" in metadata or "output" in metadata):
@@ -210,7 +224,9 @@ def _usage(response: Mapping[str, Any], batch_name: str) -> Dict[str, Any]:
         raise DataSourceError("Gemini response usageMetadata is not an object")
     try:
         input_tokens = int(raw.get("promptTokenCount", 0))
-        output_tokens = int(raw.get("candidatesTokenCount", 0))
+        candidate_tokens = int(raw.get("candidatesTokenCount", 0))
+        thinking_tokens = int(raw.get("thoughtsTokenCount", 0))
+        output_tokens = candidate_tokens + thinking_tokens
         cached_tokens = int(raw.get("cachedContentTokenCount", 0))
         total_tokens = int(raw.get("totalTokenCount", input_tokens + output_tokens))
     except (TypeError, ValueError) as exc:
@@ -333,6 +349,12 @@ class GeminiBatchTransport:
             structured = json.loads(raw)
         except json.JSONDecodeError as exc:
             raise DataSourceError("Gemini structured output was not valid JSON") from exc
+        # TG7.1 will check this again while constructing RecordedCall.  Checking here too keeps
+        # a direct transport smoke test from presenting merely-valid JSON as schema acceptance.
+        schema = request.get("response_schema")
+        if not isinstance(schema, Mapping):
+            raise DataSourceError("Gemini request carried no response JSON schema")
+        ResponseSchema.from_mapping(schema).validate(structured)
         responded = batch.get("endTime") or batch.get("updateTime")
         if not isinstance(responded, str):
             responded = self.now().isoformat()

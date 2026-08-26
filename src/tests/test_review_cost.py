@@ -131,6 +131,22 @@ def _final_batch(*, cached=4500, state="BATCH_STATE_SUCCEEDED"):
         }}]}}}}
 
 
+def _live_operation_shape():
+    """Shape returned by the first real Gemini batch on 2026-08-26 (text removed)."""
+    raw = json.dumps(ANSWER, separators=(",", ":"))
+    response = {
+        "candidates": [{"content": {"parts": [{"text": raw}]}}],
+        "usageMetadata": {"promptTokenCount": 52, "candidatesTokenCount": 28,
+                          "thoughtsTokenCount": 305, "totalTokenCount": 385},
+    }
+    return {"name": "batches/abc", "done": True,
+            "metadata": {"name": "batches/abc", "state": "BATCH_STATE_SUCCEEDED",
+                         "endTime": MOMENT, "batchStats": {"requestCount": "1",
+                                                            "successfulRequestCount": "1"}},
+            "response": {"inlinedResponses": {"inlinedResponses": [
+                {"metadata": {"request_sha256": "b" * 64}, "response": response}]}}}
+
+
 def test_default_policy_pins_one_real_model_and_cheaper_challenger_effort():
     policy = ReviewCostPolicy()
     panel = policy.panel()
@@ -158,8 +174,9 @@ def test_batch_builder_preserves_schema_effort_cache_and_stable_request_identity
     assert payload["batch"]["displayName"] == "spectralearth-" + "b" * 20
     assert row["metadata"] == {"request_sha256": "b" * 64}
     assert generated["generationConfig"]["thinkingConfig"] == {"thinkingLevel": "low"}
-    assert generated["generationConfig"]["responseMimeType"] == "application/json"
-    assert generated["generationConfig"]["responseJsonSchema"] \
+    assert generated["generationConfig"]["responseFormat"]["text"]["mimeType"] \
+        == "APPLICATION_JSON"
+    assert generated["generationConfig"]["responseFormat"]["text"]["schema"] \
         == ANSWER_SCHEMA.to_mapping()["schema"]
     assert generated["cachedContent"] == "cachedContents/shared"
     assert json.loads(generated["contents"][0]["parts"][0]["text"])["instruction"] \
@@ -197,6 +214,18 @@ def test_gemini_transport_uses_batch_polling_and_returns_tg7_1_contract():
     assert answer["usage"]["service_mode"] == "batch"
     assert answer["usage"]["cached_input_tokens"] == 4500
     assert answer["usage"]["provider_usage"]["cachedContentTokenCount"] == 4500
+
+
+def test_gemini_transport_accepts_the_real_operation_shape_and_bills_thinking_as_output():
+    client = _Client(_live_operation_shape())
+    transport = GeminiBatchTransport("secret", client=client, poll_interval_seconds=0,
+                                     sleeper=lambda _: None)
+    answer = transport(_request())
+    assert answer["structured"] == ANSWER
+    assert answer["responded_at"] == MOMENT
+    assert answer["usage"]["input_tokens"] == 52
+    assert answer["usage"]["output_tokens"] == 333  # 28 visible + 305 thinking
+    assert answer["usage"]["total_tokens"] == 385
 
 
 def test_gemini_transport_reports_safe_http_and_terminal_failures():

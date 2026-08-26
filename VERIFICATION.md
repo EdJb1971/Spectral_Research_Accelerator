@@ -5202,23 +5202,24 @@ Focused acceptance:
 
 ```text
 > .\.venv\Scripts\python.exe -m pytest src/tests/test_review_cost.py -q
-18 passed, 1 warning in 0.39s
+19 passed, 1 warning in 1.67s
 
 > .\.venv\Scripts\python.exe -m pytest src/tests/test_review_cost.py src/tests/test_recorded_call.py src/tests/test_round_robin.py -q
-123 passed, 1 warning in 8.73s
+124 passed, 1 warning in 8.67s
 ```
 
-The 14 test functions (18 cases) cover the exact Batch payload, schema and thinking-level
-translation; submission and polling; structured response and raw usage preservation; header-only
-key handling; safe HTTP and failed-batch errors; an eight-call 90%-cache-hit receipt; and refusals
-for configured-but-zero cache, standard service, effort drift, raw/normalized disagreement,
-batch-id splicing, duplicate identities, invalid arithmetic, overwrite and tampering.
+The 15 test functions (19 cases) cover the exact Batch payload, schema and thinking-level
+translation; submission and polling; both the reference and first live completed-operation
+shapes; structured response and raw usage preservation; visible-plus-thinking output accounting;
+header-only key handling; safe HTTP and failed-batch errors; an eight-call 90%-cache-hit receipt;
+and refusals for configured-but-zero cache, standard service, effort drift, raw/normalized
+disagreement, batch-id splicing, duplicate identities, invalid arithmetic, overwrite and tampering.
 
 Full acceptance:
 
 ```text
 > .\.venv\Scripts\python.exe -m pytest -q
-2235 passed, 1 skipped, 1 xfailed, 6 warnings in 986.07s (0:16:26)
+2236 passed, 1 skipped, 1 xfailed, 6 warnings in 857.91s (0:14:17)
 
 > .\.venv\Scripts\python.exe -m src.benchmarks
 PASS 29   FAIL 0   NOT_YET_RUNNABLE 0
@@ -5226,18 +5227,36 @@ PASS 29   FAIL 0   NOT_YET_RUNNABLE 0
 > .\.venv\Scripts\python.exe tools\audit_docs.py
 undocumented modules : none
 undocumented routes  : none
-defects              : 59 defined, 57 fixed, partial ['D18'], open ['D43']
-test functions       : 1921
+defects              : 60 defined, 58 fixed, partial ['D18'], open ['D43']
+test functions       : 1922
 stale inventory rows : none
-claimed suite totals : architecture (2235, 1) / roadmap (2235, 1)
+claimed suite totals : architecture (2236, 1) / roadmap (2236, 1)
 RESULT               : ok
 ```
 
-**Not live evidence.** `GEMINI_API_KEY` and `GOOGLE_API_KEY` were absent from the verification
-process. The API adapter is accepted against the documented wire contract and recorded offline
-HTTP responses; provider authentication, real asynchronous latency, real billing and a real cache
-hit have **NOT RUN**. The test's non-zero cache count proves that the audit rejects a zero and
-accepts a measured provider field; it is not presented as Google's measurement of this project.
+**Live smoke, and D60.** After `GEMINI_API_KEY` was supplied through the ignored `.env.local`,
+three tiny calls were attempted. The first authenticated and completed but exposed that the
+operation's `metadata` and `response` are siblings rather than the direct resource shape used by
+the offline fixture. After that parser fix, the second completed and exposed a worse issue: the
+legacy structured-output fields were accepted but ignored, returning valid JSON outside the
+declared schema; it also showed that billed output is visible candidates plus thinking tokens.
+The current `responseFormat` field initially returned a safe 400 because Batch requires protobuf
+enum `APPLICATION_JSON`, not the synchronous REST example's `application/json`. With that dialect
+pinned and local response validation added, the final batch succeeded:
+
+```text
+batch        : batches/nd6n27...mb26
+model        : gemini-3.5-flash
+response     : {"note": "Structured Batch transport is operational for test TG7.3a live smoke.", "status": "ok"}
+usage        : 52 input, 32 candidate, 92 thinking, 176 total
+normalised   : 52 input, 124 output, 0 cached
+```
+
+The key was read from `.env.local`, which `git check-ignore` confirms is ignored, and was never
+printed or written into an artifact. Authentication, submission, polling, structured output and
+usage are therefore live-accepted. The smoke prompt is below Gemini 3.5 Flash's 4,096-token cache
+floor and correctly hit no cache, so a real cache hit, full eight-role review and live cost receipt
+remain **NOT RUN**. The offline non-zero cache fixture tests the auditor, not Google's cache.
 
 **Claim boundary.** Cost routing and token accounting say nothing about whether a challenge is
 good. The receipt cannot reach the EvidenceBundle or any G6 gate, and caching does not make an LLM

@@ -1827,20 +1827,22 @@ no-overwrite persistence. Monetary cost is reconstructed from a dated price tabl
 frozen into a supposedly timeless receipt; the policy pins the documentation snapshot and the
 documented 50% Batch factor.
 
-**Evidence:** `src/tests/test_review_cost.py`, 14 tests (18 cases). The offline HTTP fixture
+**Evidence:** `src/tests/test_review_cost.py`, 15 tests (19 cases). The offline HTTP fixture
 exercises submission, polling, structured response parsing, raw usage preservation and cache-hit
 accounting; an eight-call review proves the model/effort/batch routes and a 90% measured cache-hit
 fraction. Cache enabled with zero hit, standard service, effort drift, normalized/raw usage
 disagreement, batch-id splicing, duplicate batch identities, receipt tampering and API failures
-are refused. Focused G7 integration is 123 passed.
-Full acceptance is **2235 passed, 1 skipped, 1 xfailed**; the scientific benchmark suite remains
-29 PASS, 0 FAIL, 0 NOT_YET_RUNNABLE.
+are refused. The first real call found D60: the completed-operation nesting, structured-output
+dialect and thinking-token accounting differed from the offline fixture. All three are fixed and
+the live-derived operation shape is now a regression test. A subsequent real batch returned the
+exact declared `{status, note}` schema with 52 input and 124 billed output tokens.
 
 **Claim boundary.** The official Gemini model, caching, Batch, thinking and pricing pages were
-reviewed 2026-08-26, but no API key was present in the acceptance process. A real provider call,
-real asynchronous latency, real bill and real cache hit are therefore **NOT RUN**. The transport
-is offline-accepted, not live-accepted. A cost receipt says what route and usage were recorded;
-it says nothing about review quality and cannot move a G6 claim.
+reviewed 2026-08-26. Authentication, asynchronous Batch polling, structured output and token
+usage are live-accepted against Gemini 3.5 Flash. The 52-token smoke is below the 4,096-token
+cache floor and correctly reported zero cached tokens, so a real cache hit, full review and live
+cost receipt remain **NOT RUN**. A cost receipt says what route and usage were recorded; it says
+nothing about review quality and cannot move a G6 claim.
 
 **TG7.4 Translation, bounded.** Rendering a finding in domain language for a reader. Under R19
 this may not introduce a semantic comparison the structural evidence does not support, and under
