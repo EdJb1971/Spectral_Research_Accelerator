@@ -100,9 +100,17 @@ def _request_from_mapping(value: Any, label: str) -> CDSRegionalRequest:
     return request
 
 
+#: Fields a crop record may omit because they postdate records already written and signed.
+#: `vertical_dim` arrived with TG10.1; a preregistration written before it is authenticated by
+#: its fingerprint, so demanding the field would invalidate a signed artefact retroactively
+#: (defect D63). Absence means the ERA5 default, which is what those records meant.
+_OPTIONAL_CROP_FIELDS = frozenset({"vertical_dim"})
+
+
 def _crop_from_mapping(value: Any, label: str) -> CropSpec:
     fields = set(CropSpec.__dataclass_fields__) | {"uri", "content_key"}
-    record = _exact(value, fields, label)
+    supplied = set(value) if isinstance(value, Mapping) else set()
+    record = _exact(value, fields - (_OPTIONAL_CROP_FIELDS - supplied), label)
     crop = CropSpec.from_provenance(dict(record))
     if dict(record) != crop.to_provenance():
         raise InvalidParameterError(label, record,

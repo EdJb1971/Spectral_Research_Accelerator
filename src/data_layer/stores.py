@@ -40,6 +40,8 @@ from typing import Any, Dict, List, Optional, Tuple
 from src.core.domain import DOMAIN_DECLARATIONS, DomainDeclaration
 from src.core.errors import InvalidParameterError
 from src.core.registry import Registry
+from src.data_layer.store_probe import (STORE_PROBES, StoreProbe, probe_by_digest,
+                                        record_probe)
 
 #: How a store is reached. Declared per store rather than discovered, so a deployment can be
 #: told what it will need *before* a request fails with a credential error.
@@ -75,6 +77,9 @@ class ChunkFacts:
     change is this record and its date, not the entry's existence.
     """
 
+    #: `None` means the size was **not recorded**, which is different from not measured: an
+    #: inspection can establish an amplification without noting a per-chunk figure, and
+    #: inventing one to fill the field is defect D62.
     megabytes_per_chunk: Optional[float]
     method: str
     measured_on: str = ""
@@ -95,10 +100,10 @@ class ChunkFacts:
                     "megabytes_per_chunk", self.megabytes_per_chunk,
                     "None when the method is 'not measured'; a figure nobody measured is "
                     "an assumption wearing a measurement's clothes")
-        elif self.megabytes_per_chunk is None or self.megabytes_per_chunk <= 0:
+        elif self.megabytes_per_chunk is not None and self.megabytes_per_chunk <= 0:
             raise InvalidParameterError(
                 "megabytes_per_chunk", self.megabytes_per_chunk,
-                "a positive size in megabytes for method %r" % self.method)
+                "a positive size in megabytes, or None if the inspection did not record one")
         if self.method == "live inspection" and not self.measured_on.strip():
             raise InvalidParameterError(
                 "measured_on", self.measured_on,
@@ -144,6 +149,11 @@ class GriddedStore:
     levels: int
     note: str
     chunks: ChunkFacts
+    #: Digest of the `StoreProbe` that produced this entry's chunk figures (TG10.3). Required
+    #: whenever `chunks.method` is anything other than `not measured`: a store that claims a
+    #: measurement must be able to produce the look that made it. `None` is only honest
+    #: alongside the admission that nobody has looked.
+    probe_digest: Optional[str] = None
     variables_note: str = ""
     extra: Dict[str, Any] = dc_field(default_factory=dict)
 
@@ -213,6 +223,7 @@ class GriddedStore:
             "access_means": ACCESS_REQUIREMENTS[self.access],
             "vertical_dim": self.vertical_dim,
             "chunks": self.chunks.to_dict(),
+            "probe_digest": self.probe_digest,
         }
         if self.variables_note:
             payload["variables_note"] = self.variables_note
@@ -238,6 +249,58 @@ def _ensure_domains() -> None:
     register_builtin_domains()
 
 
+def _assert_probe_supports(store: GriddedStore) -> None:
+    """No store may be registered claiming a measurement it cannot produce (TG10.3).
+
+    Three checks, and each has a specific failure behind it.
+
+    *   **A claimed measurement needs a probe.** `not measured` is the honest entry for a
+        store nobody has opened; anything else asserts that somebody looked, and the look is
+        now a record rather than a memory.
+    *   **The probe must be of this store's URI.** Without it, a probe of a friendly store
+        would license a hostile one - the reference would be present, checkable, and about
+        something else entirely.
+    *   **The entry may not quote a figure the probe did not see.** Defect D62 is a per-chunk
+        size written into a field no inspection had filled. A number the record disagrees with
+        is the same defect with a citation attached, which is worse.
+    """
+    if store.chunks.method == "not measured":
+        if store.probe_digest is not None:
+            raise InvalidParameterError(
+                "probe_digest", store.probe_digest,
+                "None when the chunk method is 'not measured'; a store cannot both cite a "
+                "look and say nobody looked")
+        return
+    if not store.probe_digest:
+        raise InvalidParameterError(
+            "probe_digest", store.probe_digest,
+            "the digest of the probe that produced these figures, because chunks.method is "
+            "%r. Run `store_probe.probe_and_record` and cite its digest, or declare "
+            "method='not measured'" % store.chunks.method)
+    if store.probe_digest not in STORE_PROBES:
+        raise InvalidParameterError(
+            "probe_digest", store.probe_digest,
+            "a digest present in the probe ledger; nothing has recorded this probe")
+    probe = probe_by_digest(store.probe_digest)
+    if probe.uri != store.uri:
+        raise InvalidParameterError(
+            "probe_digest", store.probe_digest,
+            "a probe of this store's URI %r, but that probe looked at %r"
+            % (store.uri, probe.uri))
+    for label, claimed, observed in (
+            ("megabytes_per_chunk", store.chunks.megabytes_per_chunk,
+             probe.megabytes_per_chunk),
+            ("regional_amplification", store.chunks.regional_amplification,
+             probe.amplification)):
+        if claimed is None or observed is None:
+            continue
+        if abs(float(claimed) - float(observed)) > 0.05 * max(1.0, abs(float(observed))):
+            raise InvalidParameterError(
+                "chunks.%s" % label, claimed,
+                "a figure the cited probe supports; probe %s recorded %s"
+                % (store.probe_digest, observed))
+
+
 def register_store(store: GriddedStore, *, replace: bool = False,
                    tags: Optional[List[str]] = None) -> GriddedStore:
     """Register one store, refusing a domain nothing has declared.
@@ -251,6 +314,7 @@ def register_store(store: GriddedStore, *, replace: bool = False,
     if store.domain not in DOMAIN_DECLARATIONS:
         # Raises UnknownNameError, which lists the valid names and offers a "did you mean".
         DOMAIN_DECLARATIONS.get(store.domain)
+    _assert_probe_supports(store)
     return GRIDDED_STORES.add(
         store.name, store, description=store.note.split(".")[0].strip(),
         capabilities={
@@ -260,6 +324,7 @@ def register_store(store: GriddedStore, *, replace: bool = False,
             "requires_network": store.access != "local",
             "requires_credentials": store.access == "credentials",
             "chunk_measured": store.chunks.method != "not measured",
+            "probe_digest": store.probe_digest,
             "acquisition_shape": "grid_crop",
         },
         tags=list(tags or []) + [store.domain, store.access],
@@ -300,6 +365,78 @@ def domains_with_stores() -> List[str]:
 
 # --------------------------------------------------------------------------- built-ins
 
+#: The four ERA5 entries' chunk figures, as **transcriptions** of inspections run before
+#: `store_probe` existed (TG10.3). Every one is `evidence="prior recorded inspection"`, which
+#: is the admission that this code did not produce them; `transcribed_probes()` counts them, so
+#: the number can only fall where anyone can see it. They exist because the alternative was to
+#: delete four true records or to fabricate four live runs, and both are worse.
+#:
+#: Two of them carry only what the original note wrote down. `era5_0p25_1h_full37` and
+#: `era5_1p5_6h` have a per-chunk size and no chunk shape and no date of their own — the date
+#: below is the 2026-08-20 catalogue listing, not a separate measurement — and that is
+#: recorded as it stands rather than completed by inference, which is what defect D62 was.
+BUILTIN_PROBES: Tuple[StoreProbe, ...] = (
+    StoreProbe(
+        uri=("gs://weatherbench2/datasets/era5/"
+             "1959-2023_01_10-wb13-6h-1440x721.zarr"),
+        outcome="described",
+        evidence="prior recorded inspection",
+        probed_on="2026-08-20",
+        dimensions={"latitude": 721, "longitude": 1440, "level": 13},
+        variables=("temperature",),
+        variable_structure={"temperature": {
+            "dims": ["time", "level", "latitude", "longitude"],
+            "chunks": [1, 13, 721, 1440],
+            "chunk_megabytes": 54.0,
+        }},
+        crop={"description": ("a 256x256 four-level crop, two timesteps, as recorded in "
+                              "VERIFICATION.md slice 11")},
+        amplification=51.1,
+        megabytes_per_chunk=54.0,
+        note=("VERIFICATION.md slice 11: 108 MB moved to deliver 2.11 MB, within 0.1% of "
+              "what `assess_access_pattern` predicts from chunk metadata alone. The crop is "
+              "described rather than given as a spec, because the original record described "
+              "it and reconstructing exact bounds would be an invention."),
+    ),
+    StoreProbe(
+        uri=("gs://weatherbench2/datasets/era5/"
+             "1959-2023_01_10-full_37-1h-0p25deg-chunk-1.zarr"),
+        outcome="described",
+        evidence="prior recorded inspection",
+        probed_on="2026-08-20",
+        megabytes_per_chunk=153.6,
+        note=("Transcribed from the catalogue note. No chunk shape and no separate date were "
+              "recorded; the date is the 2026-08-20 listing of the bucket. A live probe "
+              "would supersede this record."),
+    ),
+    StoreProbe(
+        uri=("gs://weatherbench2/datasets/era5/"
+             "1959-2023_01_10-6h-240x121_equiangular_with_poles_conservative.zarr"),
+        outcome="described",
+        evidence="prior recorded inspection",
+        probed_on="2026-08-20",
+        megabytes_per_chunk=12.1,
+        note=("Transcribed from the catalogue note: eight timesteps deep, which is why long "
+              "records are affordable here. No chunk shape and no separate date were "
+              "recorded; the date is the 2026-08-20 listing of the bucket."),
+    ),
+    StoreProbe(
+        uri=("gs://weatherbench2/datasets/era5/"
+             "1959-2022-6h-512x256_equiangular_conservative.zarr"),
+        outcome="described",
+        evidence="prior recorded inspection",
+        probed_on="2026-08-21",
+        crop={"description": "a three-year, one-variable 255x255 crop"},
+        amplification=26.2,
+        note=("The 2026-08-21 inspection estimated 29.88 GB for the crop described and "
+              "recorded no per-chunk size, so none is stated. Defect D43 is open against "
+              "this store: that is not a laptop-feasible long-record regional source."),
+    ),
+)
+
+#: Probe digest per URI, so an entry below cites a record rather than repeating a number.
+_BUILTIN_PROBE_DIGESTS: Dict[str, str] = {p.uri: p.digest() for p in BUILTIN_PROBES}
+
 #: The four public WeatherBench 2 ERA5 stores, verified reachable anonymously on 2026-08-20
 #: by listing `gs://weatherbench2/datasets/era5` (24 stores). Only the ones this platform has
 #: a use for are listed; `describe_store` works on any Zarr URI, listed or not.
@@ -324,6 +461,8 @@ BUILTIN_STORES: Tuple[GriddedStore, ...] = (
               "levels x whole globe (54.0 MB/chunk), so regional crops are severely "
               "chunk-hostile - measured 51.1x amplification. Use for the R13 spatial "
               "floor with a short window, not for long records."),
+        probe_digest=_BUILTIN_PROBE_DIGESTS[
+            "gs://weatherbench2/datasets/era5/1959-2023_01_10-wb13-6h-1440x721.zarr"],
         chunks=ChunkFacts(
             megabytes_per_chunk=54.0,
             method="live inspection",
@@ -349,6 +488,9 @@ BUILTIN_STORES: Tuple[GriddedStore, ...] = (
         levels=37,
         note=("Hourly, 37 levels, 153.6 MB/chunk. The most chunk-hostile store in the "
               "catalogue for regional work; 561,264 timesteps."),
+        probe_digest=_BUILTIN_PROBE_DIGESTS[
+            "gs://weatherbench2/datasets/era5/"
+            "1959-2023_01_10-full_37-1h-0p25deg-chunk-1.zarr"],
         chunks=ChunkFacts(
             megabytes_per_chunk=153.6,
             method="store metadata",
@@ -370,6 +512,9 @@ BUILTIN_STORES: Tuple[GriddedStore, ...] = (
         note=("Coarse but chunked 8 timesteps deep (12.1 MB/chunk), so long records are "
               "cheap. Global grid is 121x240, which is BELOW the R13 256x256 floor - "
               "usable for whole-globe work, not for a regional cross-scale crop."),
+        probe_digest=_BUILTIN_PROBE_DIGESTS[
+            "gs://weatherbench2/datasets/era5/"
+            "1959-2023_01_10-6h-240x121_equiangular_with_poles_conservative.zarr"],
         chunks=ChunkFacts(
             megabytes_per_chunk=12.1,
             method="store metadata",
@@ -391,14 +536,20 @@ BUILTIN_STORES: Tuple[GriddedStore, ...] = (
               "the full 512x256 globe. Live inspection on 2026-08-21 estimated 29.88 GB "
               "for a three-year, one-variable 255x255 crop (26.2x amplification). This "
               "is not a laptop-feasible long-record regional source for T4C.6 (D43)."),
+        probe_digest=_BUILTIN_PROBE_DIGESTS[
+            "gs://weatherbench2/datasets/era5/"
+            "1959-2022-6h-512x256_equiangular_conservative.zarr"],
         chunks=ChunkFacts(
-            megabytes_per_chunk=8.0,
+            megabytes_per_chunk=None,
             method="live inspection",
             measured_on="2026-08-21",
             regional_amplification=26.2,
-            note=("The store that reads as the reasonable middle option and is not one. "
-                  "Defect D43 is open against this figure: 29.88 GB for a three-year "
-                  "one-variable 255x255 crop is not laptop-feasible."),
+            note=("The 2026-08-21 inspection recorded the amplification and the estimated "
+                  "total, not a per-chunk size, so no per-chunk size is stated here (defect "
+                  "D62: TG10.1 first put 8.0 MB in this field, which nobody had measured). "
+                  "The store that reads as the reasonable middle option and is not one: "
+                  "defect D43 is open against it, 29.88 GB for a three-year one-variable "
+                  "255x255 crop being not laptop-feasible."),
         ),
     ),
 )
@@ -412,11 +563,20 @@ def register_builtin_stores() -> Tuple[str, ...]:
     appears only after a researcher visits the right tab is a store whose access requirement
     and chunk cost can be missed.
     """
+    for probe in BUILTIN_PROBES:
+        record_probe(probe)
     for store in BUILTIN_STORES:
         if store.name in GRIDDED_STORES:
             continue
         register_store(store)
     return tuple(store.name for store in BUILTIN_STORES)
+
+
+#: Registered eagerly at import, not on first use. Defect D35 was a registry whose contents
+#: depended on which handler had happened to run; a catalogue that fills only once somebody
+#: imports `zarr_source` is the same hazard with a longer fuse, and it was real until TG10.3 -
+#: `stores` was importable on its own with an empty registry.
+register_builtin_stores()
 
 
 class CatalogueView(Mapping):
@@ -451,7 +611,7 @@ class CatalogueView(Mapping):
         return "CatalogueView(%s)" % GRIDDED_STORES.names()
 
 
-__all__ = ["ACCESS_REQUIREMENTS", "BUILTIN_STORES", "GRIDDED_STORES",
+__all__ = ["ACCESS_REQUIREMENTS", "BUILTIN_PROBES", "BUILTIN_STORES", "GRIDDED_STORES",
            "KNOWN_VERTICAL_DIMENSIONS", "MEASUREMENT_METHODS", "CatalogueView",
            "ChunkFacts", "GriddedStore", "catalogue_payload", "domains_with_stores",
            "register_builtin_stores", "register_store", "store_for", "stores_for_domain",

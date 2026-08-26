@@ -206,6 +206,20 @@ export const apiService = {
     return handleResponse<types.ZarrCachedResponse>(response);
   },
 
+  async zarrProbes(): Promise<types.ZarrProbeLedgerResponse> {
+    const response = await fetch(`${BASE_URL}/data/zarr/probes`, { method: 'GET' });
+    return handleResponse<types.ZarrProbeLedgerResponse>(response);
+  },
+
+  async zarrProbe(payload: types.ZarrProbeRequest): Promise<types.ZarrProbeResponse> {
+    const response = await fetch(`${BASE_URL}/data/zarr/probe`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    return handleResponse<types.ZarrProbeResponse>(response);
+  },
+
   async zarrInspect(payload: types.ZarrCropRequest): Promise<types.ZarrInspectResponse> {
     const response = await fetch(`${BASE_URL}/data/zarr/inspect`, {
       method: 'POST',

@@ -422,6 +422,53 @@ export interface ZarrStore {
   variables_note?: string;
 }
 
+export interface ZarrProbeRecord {
+  digest: string;
+  uri: string;
+  /** "described", or one of the four ways a store declines. Every one is a RESULT. */
+  outcome: string;
+  outcome_means: string;
+  /** "probe run" or "prior recorded inspection" - whether this code produced the figures. */
+  evidence: string;
+  evidence_means: string;
+  probed_on: string;
+  dimensions: Record<string, number>;
+  variables: string[];
+  variable_structure: Record<string, Record<string, unknown>>;
+  crop: Record<string, unknown> | null;
+  amplification: number | null;
+  megabytes_per_chunk: number | null;
+  /** Three-valued: null means nobody measured, which is never the same as false. */
+  chunk_hostile: boolean | null;
+  refusal_detail: string;
+  note: string;
+}
+
+export interface ZarrProbeRequest {
+  uri: string;
+  variables?: string[];
+  crop?: ZarrCropRequest | null;
+  persist?: boolean;
+}
+
+export interface ZarrProbeResponse {
+  probe: ZarrProbeRecord;
+  saved_to: string | null;
+  requested: string;
+  resolved_uri: string;
+}
+
+export interface ZarrProbeLedgerResponse {
+  count: number;
+  /** Records this code did not produce, published so the number can only fall in the open. */
+  transcribed: number;
+  probe_dir: string;
+  outcomes: Record<string, string>;
+  evidence_kinds: Record<string, string>;
+  probes: ZarrProbeRecord[];
+  note: string;
+}
+
 export interface ZarrCatalogueResponse {
   stores: Record<string, ZarrStore>;
   store_domains: string[];

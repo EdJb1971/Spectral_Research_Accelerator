@@ -2429,7 +2429,10 @@ generalisation reaches the *selection* path only; the cached-crop reader still s
 levels and `level_hpa`, which is honest for the four ERA5 stores that exist and is the remaining
 half of the job when a real depth-axis store arrives in TG12.1.
 
-**TG10.2 The domain-first acquisition surface.** Data currently lives in tab 2, tab 9 and tab 12;
+**TG10.2 The domain-first acquisition surface. NEXT — not started.** *(TG10.1 and TG10.3 are
+done; TG10.3 was deliberately taken ahead of this slice, so the DONE markers below are out of
+numeric order on purpose. It now has real probe records to render, which is why.)* Data
+currently lives in tab 2, tab 9 and tab 12;
 ocean and sky would make five tabs. Instead: **choose a domain, see what can be acquired for it,
 make a selection.** One route family lists, per declared domain, its available acquisitions and
 each one's shape (`grid_crop`, `profile_query`, `channel_table`). Tab 9 becomes *Acquire*, and the
@@ -2439,13 +2442,51 @@ and `ChannelRecords` already are. Every acquisition carries the domain's declare
 **Acceptance:** every existing ERA5 capability reachable with no regression, and the tab count
 does not grow when a domain is added.
 
-**TG10.3 Store probing as a recorded act.** Registering a store whose behaviour nobody measured is
+**What TG10.3 left for it.** The probe ledger (`GET /api/v1/data/zarr/probes`) and the probe
+button now sit inline in the ERA5 tab, added there because a served route nobody can reach is a
+capability the platform does not really have. They move into the *Acquire* surface with the
+rest of that UI, and the transcription count belongs where a researcher chooses a store rather
+than beside a form field.
+
+**TG10.3 Store probing as a recorded act. DONE** (2026-08-27; `src/data_layer/store_probe.py`,
+`src/tests/test_store_probe.py`; architecture.md §3.6zp; VERIFICATION.md). Taken **before**
+TG10.2 rather than after, because the acquisition surface renders exactly what the probe
+produces and building it first would have meant rendering transcribed prose and revising it a
+week later. Registering a store whose behaviour nobody measured is
 how D43 happened. A probe opens a URI and records its dims, variables, chunk shape, bytes per
 chunk and the amplification a stated crop would suffer — and **records the result either way**,
 including "unreachable" or "needs credentials", which are results rather than failures. No store
 may be registered without one.
 **Acceptance:** the four ERA5 stores' recorded notes are reproduced by the probe, and a
 deliberately hostile store is characterised as hostile before anyone crops it.
+
+**Delivered.** The hostile half of the acceptance criterion is met offline and the word
+*before* is what is checked: a hostile fixture is characterised as hostile with nothing
+materialised, no cache entry created, and the amplification agreeing exactly with what
+`assess_access_pattern` predicts from chunk metadata. The ERA5 half is met only as far as
+offline can take it — the four recorded notes are held as **transcriptions**, `evidence="prior
+recorded inspection"`, counted by `transcribed_probes()` and published by the ledger route so
+the number can only fall in the open. The opt-in live probe that would check a transcription
+against the real WeatherBench store is written and **NOT RUN**.
+
+**Three things worth recording.** *(1)* **A refusal is a result.** `unreachable`, `needs
+credentials` and `network is switched off` are recorded rather than raised, and the HTTP route
+returns 200 with a recorded outcome where `/inspect` returns 409. *(2)* **The registration gate
+is where the slice has teeth**: a store claiming a measurement must cite a probe, of its own
+URI, whose figures it does not contradict. *(3)* **Two mutations survived the first pass** and
+both were weak tests rather than weak guards — a fixture whose two variables were identically
+sized could not tell a maximum from a mean, and an assertion that merely required *something*
+to raise let the probe requirement be deleted, because the next check happened to raise too
+with an error that would have sent an author looking in the wrong place.
+
+**Two defects found and fixed here, both introduced by TG10.1.** **D62**: `era5_0p7_6h` was
+given a per-chunk size of 8.0 MB that no inspection produced, in the registry built to refuse
+exactly that — and it passed because `ChunkFacts` *demanded* a positive figure for any method
+other than `not measured`, which made the dishonest entry the easy one. **D63**: adding
+`vertical_dim` to `CropSpec` changed `to_provenance`, and that record is embedded in
+**authenticated** artefacts, so a checked-in signed preregistration stopped loading. Found by
+the full suite **after TG10.1 was reported and committed**, because the slice was reported on
+the strength of targeted suites while the full run was still going.
 
 #### Phase G11 — The workbench: making the engine reachable
 

@@ -867,6 +867,21 @@ class ZarrCropRequest(BaseModel):
                                   description="Wavelet levels the crop must support (R13).")
 
 
+class ZarrProbeRequest(BaseModel):
+    """Probe one store and record the result, whatever the result is (TG10.3)."""
+
+    uri: str = Field(..., description="Catalogue id, raw Zarr URI, or a local store path.")
+    variables: List[str] = Field(
+        default_factory=list,
+        description="Variables to describe. Empty means every variable the store carries.")
+    crop: Optional[ZarrCropRequest] = Field(
+        None,
+        description=("Optional crop to cost. An amplification is a fact about one access "
+                     "pattern, so it is only computed when the pattern is stated."))
+    persist: bool = Field(
+        True, description="Write the record to the probe directory as well as the ledger.")
+
+
 class ExportFieldRequest(BaseModel):
     """Export a 2D field with its coordinates and provenance (T3.5.23)."""
 
@@ -1077,6 +1092,76 @@ async def zarr_cached_crops():
             for c in crops
         ],
     }
+
+
+@app.get("/api/v1/data/zarr/probes")
+async def zarr_probes():
+    """Every recorded probe, newest first, with the transcription debt stated (TG10.3).
+
+    `transcribed` counts records this code did not produce - inspections run before the probe
+    existed, transcribed rather than deleted or re-invented. It is published rather than kept
+    internal so the number can only fall where anyone can see it.
+    """
+    from src.data_layer import store_probe
+
+    ledger = store_probe.probe_ledger()
+    return {
+        "count": len(ledger),
+        "transcribed": len(store_probe.transcribed_probes()),
+        "probe_dir": store_probe.DEFAULT_PROBE_DIR,
+        "outcomes": store_probe.PROBE_OUTCOMES,
+        "evidence_kinds": store_probe.EVIDENCE_KINDS,
+        "probes": ledger,
+        "note": ("A probe records what a store is, and records `unreachable`, `needs "
+                 "credentials` or `network is switched off` just as readily - those are "
+                 "results about a store, not failures of the probe."),
+    }
+
+
+@app.post("/api/v1/data/zarr/probe")
+async def zarr_probe(request: ZarrProbeRequest):
+    """Open a store, record its structure and cost, and record the refusal if it will not open.
+
+    **Metadata only.** The store is opened lazily and an amplification is chunk arithmetic, so
+    nothing of the data crosses the wire. Unlike `/inspect`, this does **not** return 409 when
+    network access is off: "network is switched off here" is a recorded outcome, because a
+    deployment that cannot reach a store needs that written down rather than raised.
+
+    The one thing that is still an error is a request that makes no sense - an empty URI, or a
+    crop that is not a crop - because that is a fault in the request rather than a fact about
+    a store.
+    """
+    from src.data_layer import store_probe
+    from src.data_layer import zarr_source as zarr_adapter
+
+    crop = None
+    if request.crop is not None:
+        try:
+            crop = zarr_adapter.CropSpec(
+                store=request.crop.store, variables=tuple(request.crop.variables),
+                time_start=request.crop.time_start, time_end=request.crop.time_end,
+                lat_min=request.crop.lat_min, lat_max=request.crop.lat_max,
+                lon_min=request.crop.lon_min, lon_max=request.crop.lon_max,
+                levels=tuple(request.crop.levels),
+                n_levels_analysis=request.crop.n_levels_analysis,
+                vertical_dim=zarr_adapter.vertical_dim_for_store(request.crop.store),
+            )
+        except SpectralEarthError as e:
+            info = classify(e)
+            raise HTTPException(status_code=info["status_code"], detail=info["detail"])
+
+    uri = zarr_adapter.uri_for(request.uri) or request.uri
+    try:
+        probe = store_probe.probe_store(
+            uri, variables=list(request.variables) or None, crop=crop)
+    except SpectralEarthError as e:
+        info = classify(e)
+        raise HTTPException(status_code=info["status_code"], detail=info["detail"])
+
+    store_probe.record_probe(probe)
+    saved = store_probe.save_probe(probe) if request.persist else None
+    return {"probe": probe.to_dict(), "saved_to": saved,
+            "requested": request.uri, "resolved_uri": uri}
 
 
 @app.post("/api/v1/data/zarr/inspect")

@@ -23,5 +23,7 @@ data/*.nc
 data/*.grib
 data/*.grib2
 data/*.zarr/
+# Probe records are reproducible observations, not source; the README stays.
+data/store_probes/*.json
 *.db-shm
 *.db-wal

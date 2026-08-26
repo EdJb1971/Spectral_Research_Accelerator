@@ -186,13 +186,26 @@ def test_an_unmeasured_store_may_not_quote_a_chunk_size():
 @pytest.mark.parametrize("kwargs", [
     {"megabytes_per_chunk": 1.0, "method": "guessed"},
     {"megabytes_per_chunk": 0.0, "method": "store metadata"},
-    {"megabytes_per_chunk": None, "method": "store metadata"},
     {"megabytes_per_chunk": 1.0, "method": "store metadata",
      "shape": (1, 2, 3), "dims": ("time", "latitude")},
 ])
 def test_chunk_facts_refuse_an_incoherent_record(kwargs):
     with pytest.raises(InvalidParameterError):
         ChunkFacts(**kwargs)
+
+
+def test_a_measurement_may_record_no_per_chunk_size_without_inventing_one():
+    """D62: TG10.1 put 8.0 MB in a field no inspection had filled, in a registry whose whole
+    purpose is refusing figures nobody measured. Not recorded is a third state, distinct from
+    not measured: the 2026-08-21 inspection of `era5_0p7_6h` established an amplification and
+    an estimated total and noted no per-chunk figure, which is what the entry now says."""
+    facts = ChunkFacts(megabytes_per_chunk=None, method="store metadata")
+    assert facts.megabytes_per_chunk is None and facts.method == "store metadata"
+    entry = store_for("era5_0p7_6h").chunks
+    assert entry.method == "live inspection" and entry.measured_on == "2026-08-21"
+    assert entry.megabytes_per_chunk is None, (
+        "no inspection recorded a per-chunk size for this store")
+    assert entry.regional_amplification == pytest.approx(26.2)
 
 
 def test_the_measured_era5_figures_survived_the_move_from_prose_to_fields():
@@ -278,6 +291,22 @@ def test_the_vertical_axis_round_trips_through_a_provenance_record():
     legacy = {k: v for k, v in zs.CropSpec(**PINNED_KEY_SPEC).to_provenance().items()
               if k != "vertical_dim"}
     assert zs.CropSpec.from_provenance(legacy).vertical_dim == "level"
+
+
+def test_an_era5_provenance_record_is_byte_identical_to_the_pre_tg10_1_record():
+    """D63. The record is embedded in **authenticated** artefacts - a gate campaign's
+    preregistration is fingerprinted over it - so emitting a new key retroactively changed the
+    fingerprint of a signed record written before the field existed, and a checked-in campaign
+    stopped loading. `vertical_dim` is therefore omitted when it is `level`, exactly as it is
+    omitted from the content key, and a schema does not grow under an artefact already signed.
+    """
+    record = zs.CropSpec(**PINNED_KEY_SPEC).to_provenance()
+    assert "vertical_dim" not in record
+    assert sorted(record) == ["content_key", "lat_max", "lat_min", "levels",
+                              "lon_max", "lon_min", "n_levels_analysis", "store",
+                              "time_end", "time_start", "uri", "variables"]
+    assert zs.CropSpec(**dict(PINNED_KEY_SPEC, vertical_dim="depth")).to_provenance()[
+        "vertical_dim"] == "depth"
 
 
 def test_a_blank_vertical_axis_name_is_refused_at_construction():

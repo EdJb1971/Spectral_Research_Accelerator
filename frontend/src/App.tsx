@@ -58,6 +58,10 @@ export default function App() {
   const [zarrCatalogue, setZarrCatalogue] = useState<types.ZarrCatalogueResponse | null>(null);
   const [zarrCached, setZarrCached] = useState<types.ZarrCachedResponse | null>(null);
   const [zarrInspection, setZarrInspection] = useState<types.ZarrInspectResponse | null>(null);
+  // TG10.3: probing a store is a recorded act. `zarrProbes` is the ledger, `zarrProbeResult`
+  // the record from the last probe run here - including a refusal, which is a result.
+  const [zarrProbes, setZarrProbes] = useState<types.ZarrProbeLedgerResponse | null>(null);
+  const [zarrProbeResult, setZarrProbeResult] = useState<types.ZarrProbeRecord | null>(null);
   // T3.5.24: evidence a researcher can generate, and capabilities they can discover.
   const [benchmarkRun, setBenchmarkRun] = useState<types.BenchmarkSuiteResponse | null>(null);
   const [benchmarkSeed, setBenchmarkSeed] = useState(20260819);
@@ -611,16 +615,35 @@ export default function App() {
     setError(null);
   };
 
+  // TG10.3. The button reports whatever the probe concluded, refusals included: "this store
+  // wants credentials" and "network is switched off here" are results a researcher needs
+  // before planning a crop, not errors to be swallowed into a red banner.
+  const runZarrProbe = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const result = await apiService.zarrProbe({ uri: zarrCrop.store });
+      setZarrProbeResult(result.probe);
+      setZarrProbes(await apiService.zarrProbes());
+    } catch (e: any) {
+      setError(`Probe request refused: ${e.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const loadZarrCatalogue = async () => {
     setLoading(true);
     setError(null);
     try {
-      const [cat, cached] = await Promise.all([
+      const [cat, cached, probes] = await Promise.all([
         apiService.zarrCatalogue(),
         apiService.zarrCached(),
+        apiService.zarrProbes(),
       ]);
       setZarrCatalogue(cat);
       setZarrCached(cached);
+      setZarrProbes(probes);
     } catch (e: any) {
       setError(`Zarr catalogue unavailable: ${e.message}`);
     } finally {
@@ -2466,6 +2489,47 @@ export default function App() {
                           {zarrCatalogue.stores[zarrCrop.store].note}
                         </p>
                       </>
+                    )}
+                    {/* TG10.3: probing is a recorded act, so it has a button and a ledger. */}
+                    <div className="mt-2 flex items-center gap-2">
+                      <button
+                        onClick={runZarrProbe}
+                        disabled={loading}
+                        className="text-[10px] px-2 py-1 rounded border border-slate-700 text-slate-300 hover:bg-slate-800 disabled:opacity-40"
+                      >
+                        Probe this store
+                      </button>
+                      {zarrProbes && (
+                        <span className="text-[10px] text-slate-500">
+                          {zarrProbes.count} probe{zarrProbes.count === 1 ? '' : 's'} recorded
+                          {zarrProbes.transcribed > 0
+                            ? `, of which ${zarrProbes.transcribed} transcribed from inspections this code did not run`
+                            : ''}
+                        </span>
+                      )}
+                    </div>
+                    {zarrProbeResult && (
+                      <div className="mt-2 border border-slate-800 rounded p-2 bg-slate-950">
+                        <p className="text-[10px] text-slate-300">
+                          {zarrProbeResult.probed_on} — {zarrProbeResult.outcome_means}
+                        </p>
+                        {zarrProbeResult.refusal_detail && (
+                          <p className="text-[10px] text-amber-400 mt-1 leading-relaxed">
+                            {zarrProbeResult.refusal_detail}
+                          </p>
+                        )}
+                        {zarrProbeResult.megabytes_per_chunk !== null && (
+                          <p className="text-[10px] text-slate-500 mt-1">
+                            Largest chunk {zarrProbeResult.megabytes_per_chunk} MB
+                            {zarrProbeResult.chunk_hostile === null
+                              ? ' · no crop was stated, so no amplification was computed'
+                              : ` · ${zarrProbeResult.chunk_hostile ? 'chunk-hostile' : 'not chunk-hostile'} for the stated crop`}
+                          </p>
+                        )}
+                        <p className="text-[10px] text-slate-600 mt-1">
+                          {zarrProbeResult.evidence_means}
+                        </p>
+                      </div>
                     )}
                   </div>
 

@@ -5762,3 +5762,94 @@ four ERA5 stores that exist and is the remaining half of the job when a real dep
 arrives. The fifth store in the acceptance test is a fixture URI that has never been opened, and
 says so through `method="not measured"`. Rendered browser inspection of the catalogue tab after
 this change is **NOT RUN**.
+
+---
+
+## TG10.3 - Store probing as a recorded act (2026-08-27, `ed-dev`)
+
+Taken **before** TG10.2 rather than after, because the acquisition surface renders what the
+probe produces and building it first would have meant rendering transcribed prose and revising
+it a week later.
+
+**Acceptance criterion, in two halves.**
+
+*   **"A deliberately hostile store is characterised as hostile before anyone crops it"** -
+    **MET, offline.** The load-bearing word is *before*, so the test asserts it: a hostile
+    fixture store is characterised as hostile with **nothing materialised**, no cache entry
+    created, and an amplification agreeing to within 1e-9 with what `assess_access_pattern`
+    predicts from chunk metadata alone.
+*   **"The four ERA5 stores' recorded notes are reproduced by the probe"** - **NOT MET, and
+    recorded as such.** The four notes are held as **transcriptions** (`evidence="prior
+    recorded inspection"`), not as probe runs. They are counted by `transcribed_probes()` and
+    the count is served by `GET /api/v1/data/zarr/probes`, so the debt is published rather
+    than hidden and the number can only fall in the open. The opt-in test that would check a
+    transcription against the live WeatherBench store is written and **NOT RUN**.
+
+**Results.**
+
+```
+Full suite            2503 passed, 2 skipped, 1 xfailed
+test_store_probe.py   43 passed, 1 skipped (34 test functions; the skip is the live probe)
+test_stores.py        31 passed
+adjacent suites       test_frontend_contract, test_zarr_source - 189 passed, 2 skipped
+Documentation audit   19 passed
+tsc --noEmit          clean
+npm run build         succeeds
+```
+
+The two skips are the two opt-in live checks: the WeatherBench GCS read from T3.5.18, and this
+slice's live probe. Both require `SPECTRALEARTH_ALLOW_NETWORK=1` and neither has been run.
+
+**Eight deliberate mutations. Six caught on the first pass, two survived.**
+
+```
+M1  drop the probe requirement from registration  -> SURVIVED, then 1 test failed
+M2  let a probe of any URI license any store      -> 1 test failed
+M3  let an entry quote a figure the probe denies  -> 1 test failed
+M4  raise on network-off instead of recording it  -> 2 tests failed
+M5  fold unknown amplification into "not hostile" -> 2 tests failed
+M6  drop the reason from an open failure          -> 6 tests failed
+M7  report the mean chunk rather than the worst   -> SURVIVED, then 1 test failed
+M8  let save_probe overwrite an existing record   -> 1 test failed
+```
+
+**Both survivors were weak tests, not weak guards, and the tests were fixed rather than the
+code.** M7 survived because the two-variable fixture it used carries two `float32` variables of
+identical shape, so the maximum and the mean are the same number and the assertion was
+decorative; it now probes a store whose variables differ in dtype, and asserts the two figures
+differ before comparing. M1 survived because the *next* check also raised - deleting "you must
+cite a probe" left "that digest is not in the ledger", which is true, unhelpful, and would send
+an author looking in the wrong place; the test now asserts the message names the claim being
+made, the remedy, and the honest alternative.
+
+**Two defects found and fixed, both introduced by TG10.1.**
+
+*   **D62** - `era5_0p7_6h` carried a per-chunk size of **8.0 MB that no inspection produced**,
+    in the registry built to refuse figures nobody measured. The 2026-08-21 note records an
+    amplification and an estimated total and no per-chunk size, and 8.0 does not even follow
+    from the chunk shape the note describes, which works out at 54.5 MB. It passed because
+    `ChunkFacts` *demanded* a positive figure for any method other than `not measured`, so
+    filling the field was the only way to record a real inspection - a validation rule that
+    made the dishonest entry the easy one. **Not recorded** is now a third state distinct from
+    **not measured**.
+*   **D63** - adding `vertical_dim` to `CropSpec` changed `to_provenance`, which is embedded in
+    **authenticated** artefacts: a gate campaign's preregistration is fingerprinted over it, so
+    a checked-in signed record written before the field existed stopped loading.
+    `to_provenance` now omits the field when it is `level`, as `canonical()` does, so an ERA5
+    record is byte-identical to its pre-TG10.1 form.
+
+**How D63 reached a commit, recorded because the process failure matters more than the bug.**
+TG10.1 was reported complete on the strength of targeted suites while the full run was still in
+progress, and the full run is what found it. The targeted suites were the wrong evidence for
+the claim that was made, and the honest statement at that point would have been "targeted
+suites pass, full suite still running".
+
+**Claim boundary.** **No live probe of a public archive has been run**, and
+`data/store_probes/` holds nothing produced by one. Every figure in the catalogue is still a
+transcription of an inspection this code did not run. A probe records structure and *predicted*
+cost from chunk metadata; it transfers no data, and it does not validate the data in a store. A
+store characterised as friendly is friendly **for the crop that was stated** - the same fixture
+amplifies 1x for a request that lines up with its chunks and 30x for one that straddles them,
+which is why an amplification is refused unless the crop travels with it. The registration gate
+proves that an entry cites a look; it does not prove the look was recent, or that the archive
+has not rechunked since. Rendered browser inspection of the probe panel is **NOT RUN**.

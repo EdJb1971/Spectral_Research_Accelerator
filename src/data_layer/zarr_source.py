@@ -66,8 +66,6 @@ from src.data_layer.stores import (  # noqa: F401  (GriddedStore, store_for re-e
 #: `register_store` exists to require.
 CATALOGUE: Mapping[str, Dict[str, Any]] = CatalogueView()
 
-register_builtin_stores()
-
 #: Where materialised crops live. Content-addressed, so two identical specs share one entry.
 DEFAULT_CACHE_DIR = os.path.join("data", "zarr_cache")
 
@@ -260,9 +258,20 @@ class CropSpec:
         return hashlib.sha256(blob.encode("utf-8")).hexdigest()[:16]
 
     def to_provenance(self) -> Dict[str, Any]:
+        """The lineage record. **Byte-identical to the pre-TG10.1 record for an ERA5 crop.**
+
+        `vertical_dim` is omitted when it is `level`, for the same reason `canonical()` omits
+        it and for one sharper reason found by defect D63: this record is embedded in
+        authenticated artefacts - a gate campaign's preregistration is fingerprinted over it -
+        so emitting a new key retroactively changed the fingerprint of a signed record that
+        was written before the field existed. A schema that grows under an artefact already
+        signed is not a schema; a store whose axis is not `level` still says so.
+        """
         record = dict(asdict(self))
         record["variables"] = list(self.variables)
         record["levels"] = list(self.levels)
+        if self.vertical_dim == "level":
+            record.pop("vertical_dim", None)
         record["uri"] = self.uri
         record["content_key"] = self.content_key()
         return record
