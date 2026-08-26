@@ -1806,14 +1806,41 @@ the panel records and does not make. Every test uses a recorded transport, so no
 shows that a real client behaves as the protocol expects. Retention is not resolution: an outcome
 carrying four unresolved dissents is an honest record of an argument nobody won.
 
-**TG7.3 Cost control.** The review layer makes many small calls over a shared evidence corpus,
-which is the exact shape prompt caching is designed for: the bundle and rubric form a stable
-prefix, the challenged claim is the volatile suffix, and `usage.cache_read_input_tokens` is
-asserted non-zero by a test rather than assumed. Non-interactive review passes go through the
-Batch API at half cost. Challenger roles that are mechanical rather than judgemental run at lower
-effort or on a smaller model; the final synthesis does not. Model selection is deferred to
-implementation time and pinned per run in the receipt, because a bundle reviewed by a different
-model is different evidence.
+**TG7.3 Cost control. DONE (`ed-dev`).** `src/core/review_cost.py` adds a provider-neutral
+`ReviewCostPolicy` / `ReviewCostReceipt` audit and the first concrete transport,
+`GeminiBatchTransport`, for the GA model id `gemini-3.5-flash`. Every role is pinned before the
+review: the four challenger seats use low thinking, the response uses medium, and candidate
+synthesis, independent reassessment and final synthesis use high. One provider/model across all
+seats is recorded honestly as overlap by TG7.2; the effort gradient is cost control, not
+independence.
+
+Every non-interactive turn is translated into one asynchronous inlined Batch GenerateContent
+request with the TG7.1 response schema, and the returned `batches/{id}` is its API request
+identity. The API key exists only in the request header and cannot enter a record or exception.
+An optional explicit `cachedContents/{id}` resource may carry the shared corpus, while implicit
+caching remains possible; neither is credited merely because it was configured.
+`audit_review_cost` requires `service_mode: batch`, reconciles normalized token counts against
+the preserved raw Gemini `usageMetadata`, and refuses the whole review unless measured cached
+tokens are non-zero. The immutable receipt binds per-call unique batch identities and aggregate
+input/output/cached/total tokens to the exact review-record and policy digests, with atomic
+no-overwrite persistence. Monetary cost is reconstructed from a dated price table rather than
+frozen into a supposedly timeless receipt; the policy pins the documentation snapshot and the
+documented 50% Batch factor.
+
+**Evidence:** `src/tests/test_review_cost.py`, 14 tests (18 cases). The offline HTTP fixture
+exercises submission, polling, structured response parsing, raw usage preservation and cache-hit
+accounting; an eight-call review proves the model/effort/batch routes and a 90% measured cache-hit
+fraction. Cache enabled with zero hit, standard service, effort drift, normalized/raw usage
+disagreement, batch-id splicing, duplicate batch identities, receipt tampering and API failures
+are refused. Focused G7 integration is 123 passed.
+Full acceptance is **2235 passed, 1 skipped, 1 xfailed**; the scientific benchmark suite remains
+29 PASS, 0 FAIL, 0 NOT_YET_RUNNABLE.
+
+**Claim boundary.** The official Gemini model, caching, Batch, thinking and pricing pages were
+reviewed 2026-08-26, but no API key was present in the acceptance process. A real provider call,
+real asynchronous latency, real bill and real cache hit are therefore **NOT RUN**. The transport
+is offline-accepted, not live-accepted. A cost receipt says what route and usage were recorded;
+it says nothing about review quality and cannot move a G6 claim.
 
 **TG7.4 Translation, bounded.** Rendering a finding in domain language for a reader. Under R19
 this may not introduce a semantic comparison the structural evidence does not support, and under

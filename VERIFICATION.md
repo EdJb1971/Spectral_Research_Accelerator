@@ -5170,3 +5170,75 @@ reviewer overlap is recorded rather than refused. Every test uses a recorded tra
 nothing here shows that a real client behaves as the protocol expects. And retention is not
 resolution: an outcome carrying four unresolved dissents is an honest record of an argument
 nobody won, not a finding.
+
+## TG7.3 - cost-controlled review transport (`ed-dev`)
+
+`src/core/review_cost.py` adds a provider-neutral route/usage audit and the first concrete API
+transport. `GeminiBatchTransport` maps TG7.1 calls onto Gemini 3.5 Flash's asynchronous inlined
+Batch GenerateContent endpoint, polls the named operation, preserves the raw structured response
+and `usageMetadata`, and returns exactly the transport mapping `record_call` already accepts.
+The API key is header-only, has no serialisation path, and is redacted from `repr` and provider
+error messages.
+
+Official provider material reviewed 2026-08-26:
+
+* `https://ai.google.dev/gemini-api/docs/whats-new-gemini-3.5` - GA model id
+  `gemini-3.5-flash`, structured output, Batch/caching support, and low/medium/high thinking;
+* `https://ai.google.dev/gemini-api/docs/caching` - implicit caching on Gemini 2.5+, the
+  4,096-token floor for Gemini 3.5 Flash, and measured cached-token usage;
+* `https://ai.google.dev/api/batch-api` - inlined requests/responses, `batches/{id}`, polling and
+  terminal states; and
+* `https://ai.google.dev/gemini-api/docs/pricing` - Batch at 50% of standard token price.
+
+The cost policy fixes one real model id and every effort before the review: low for the four
+challengers, medium for the response, high for candidate synthesis, independent reassessment and
+final synthesis. `audit_review_cost` independently reconciles normalized input/output/cached/total
+counts against the raw provider object, requires the Batch route and at least one measured cache
+hit, and binds the aggregate to both the review-record and policy digests. The receipt persists
+atomically without overwrite and rechecks its content digest on load. It records tokens and the
+dated pricing source, not a dollar figure that would become false when a price changes.
+
+Focused acceptance:
+
+```text
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_review_cost.py -q
+18 passed, 1 warning in 0.39s
+
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_review_cost.py src/tests/test_recorded_call.py src/tests/test_round_robin.py -q
+123 passed, 1 warning in 8.73s
+```
+
+The 14 test functions (18 cases) cover the exact Batch payload, schema and thinking-level
+translation; submission and polling; structured response and raw usage preservation; header-only
+key handling; safe HTTP and failed-batch errors; an eight-call 90%-cache-hit receipt; and refusals
+for configured-but-zero cache, standard service, effort drift, raw/normalized disagreement,
+batch-id splicing, duplicate identities, invalid arithmetic, overwrite and tampering.
+
+Full acceptance:
+
+```text
+> .\.venv\Scripts\python.exe -m pytest -q
+2235 passed, 1 skipped, 1 xfailed, 6 warnings in 986.07s (0:16:26)
+
+> .\.venv\Scripts\python.exe -m src.benchmarks
+PASS 29   FAIL 0   NOT_YET_RUNNABLE 0
+
+> .\.venv\Scripts\python.exe tools\audit_docs.py
+undocumented modules : none
+undocumented routes  : none
+defects              : 59 defined, 57 fixed, partial ['D18'], open ['D43']
+test functions       : 1921
+stale inventory rows : none
+claimed suite totals : architecture (2235, 1) / roadmap (2235, 1)
+RESULT               : ok
+```
+
+**Not live evidence.** `GEMINI_API_KEY` and `GOOGLE_API_KEY` were absent from the verification
+process. The API adapter is accepted against the documented wire contract and recorded offline
+HTTP responses; provider authentication, real asynchronous latency, real billing and a real cache
+hit have **NOT RUN**. The test's non-zero cache count proves that the audit rejects a zero and
+accepts a measured provider field; it is not presented as Google's measurement of this project.
+
+**Claim boundary.** Cost routing and token accounting say nothing about whether a challenge is
+good. The receipt cannot reach the EvidenceBundle or any G6 gate, and caching does not make an LLM
+answer reproducible. R22 and R23 are unchanged.
