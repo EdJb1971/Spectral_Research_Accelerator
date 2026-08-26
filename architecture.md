@@ -2529,7 +2529,8 @@ different first-class field on disk is refused rather than silently re-filed.
 
 **Claim boundary.** This is a tamper-evident container and a routing discipline, not a judgement.
 It does not decide whether the evidence inside supports anything; TG6.2's ladder and TG6.3's five
-outputs own that — see 3.6zd for the ladder and 3.6ze for the five outputs. Nor does it
+outputs own that — see 3.6zd for the ladder, 3.6ze for the five outputs and 3.6zf for the
+recorded-call boundary above them. Nor does it
 authenticate the author: hashes detect
 edits to a published bundle, they do not prove who wrote it or that some evidence was never
 gathered and simply left out. Only what is appended can be weighed.
@@ -2637,6 +2638,57 @@ can only name alternatives its gates correspond to or that someone recorded — 
 rival explanation nobody wrote down is invisible to it, and its absence from the report is not
 evidence of its absence in fact. The same holds of the third: "none recorded" is not "none
 existing", and the rendered text says so rather than leaving silence to be read as reassurance.
+
+### 3.6zf The recorded-call boundary (`src/core/recorded_call.py`, TG7.1, `ed-dev`)
+
+Phase G7 puts an adversarial review layer **above** the G6 gates. This module is the only door
+through which that layer may speak, and it is built so the layer cannot reach the gates through
+it. Three things are enforced.
+
+**Every call is recorded verbatim, because it cannot be regenerated (R23).** A `RecordedCall`
+carries the exact request sent, the exact response bytes returned, the exact model id, the effort
+setting, the API request id and both timestamps, chained to its predecessor by digest. The record
+states `recorded-not-reproducible` in its own body, and a loaded record claiming to be
+deterministic is refused by name. Sampling parameters are **refused rather than recorded** at any
+depth of the request — `temperature`, `top_p`, `top_k` and `seed` — because they are rejected by
+the API on current models and because pinning one would imply a reproducibility this layer does
+not have. `render()` prints the R23 declaration above any commentary it displays, and says
+plainly when nothing was recorded.
+
+**Every response is constrained to a declared schema.** A `ResponseSchema` of typed, optionally
+enumerated fields is sent as the request's `output_config.format` with `additionalProperties`
+closed, and the recorded response must parse as JSON matching it exactly: free text where a
+schema was declared is a refusal, not a string for later code to parse hopefully. The record
+keeps the response bytes *and* the structured parse and requires them to agree, so the parse can
+be re-checked at any time; that check runs in `__post_init__` rather than at record time, so it
+survives a round trip through disk. A closed schema is also what stops an undeclared
+`claim_level` field arriving in an answer.
+
+**No recorded output is an input to any claim level (R22).** Commentary lives in a `ReviewRecord`
+that binds the bundle's digest and revision **from outside**, is published in its own file beside
+the bundle, and is never appended to the evidence chain — the ten scientific fields contain no
+category it could be appended to. A `ReviewedBundle` holds the pair and computes every
+claim-bearing property from `self.bundle` alone; `record_call` hands back the *same bundle
+object* it was given. `strip_review` deletes the whole review and returns that bundle unchanged,
+and `verify_claim_independence` checks the claim digest with the review present and deleted,
+re-derives it from the bundle's own canonical bytes, and refuses if any recorded phrase of at
+least `SMUGGLING_FLOOR` characters is found inside those bytes — the one way R22 could actually
+be broken is a person copying an answer into a summary or payload, and that is caught rather than
+assumed absent.
+
+Commentary on one revision is not commentary on another: appending evidence yields a new bundle,
+and pairing it with the old review is refused. The eight TG7.2 round-robin roles are fixed here,
+so a call cannot invent an authority for itself, and the transport is injected — this module
+opens no socket, which is why the boundary is testable without one.
+
+**Claim boundary.** This slice records calls and fences them off; it does not conduct a review.
+Nothing here judges whether a challenge was any good, and a well-formed response saying something
+false is recorded exactly as faithfully as a true one. The smuggling check finds recorded wording
+reproduced in the bundle; it cannot detect a person who reads commentary, is persuaded by it, and
+records a genuine-looking measurement in their own words — no structural check can, and the
+defence against that is the chain of provenance the gates already require, not this function.
+Determinism is not claimed anywhere in the layer: an identical request may return a different
+answer tomorrow, which is precisely why the answer is stored rather than recomputed.
 
 ### 3.11 Ground-Truth Benchmark Suite (`src/benchmarks/`)
 
@@ -3733,7 +3785,7 @@ See `VERIFICATION.md` for the captured command output behind every statement her
 | Item | Status |
 |---|---|
 | Python venv + dependencies | installed (torch 2.13.0+cu130, numpy 2.2.6, pydantic 1.10.26, SQLAlchemy 2.0.52, xarray 2025.6.1, FastAPI 0.110.3) |
-| Backend test suite | **2112 passed, 1 xfailed** (plus 1 skipped: opt-in live GCS) (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17, 351 after T3.5.6, 379 after T3.5.15, 407 after T3.5.19, 449 after T4C.5, 709 after T4A.4, 781 after T4B.4, 855 after T4C.5, 859 after T4C.5c, 882 after T5.1a CPU acceptance, 883 after RTX acceptance, 890 after portable profiles, 911 after T5.1b/D44, 917 after T5.1c, 933 after T5.1d/D45, 946 after T5.1e, 955 after T5.2a, 957 after T5.2b, 962 after T5.3a, 969 after T5.3b, 981 after T5.2c offline acceptance, 985 after T5.2d, 1000 after T5.0a, 1008 after T5.0b, 1027 after T5.6a offline acceptance, 1042 after T5.6b cube acceptance, 1056 after T5.6c matched evaluation, 1070 after T5.6d truth matching, 1080 after T5.6e orchestration, 1089 after T5.6f portable jobs, 1094 after T5.6g reporting, 1095 after the licence guard, 1102 after T4C.5d gate readiness, 1104 after D50 storage preflight, 1106 after T4C.5e overlap evidence, 1112 after T4C.5f campaign acceptance, 1116 after T4C.5g physical preflight, 1117 after T4C.5h preregistration - the `master` freeze; then on `ed-dev`, 1375 after TG2.1, 1429 after TG2.2, 1477 after TG2.3, 1536 after TG2.4, 1577 after TG3.1, 1621 after TG3.2, 1686 after TG3.3, 1742 after TG3.4, 1787 after TG3.5, 1850 after TG4.1, 1922 after TG4.2, 1972 after TG4.3, 1986 after TG5.1, 2004 after TG5.2 and 2020 after TG5.3, 2044 after TG6.1, 2074 after TG6.2 and 2112 after TG6.3) |
+| Backend test suite | **2167 passed, 1 xfailed** (plus 1 skipped: opt-in live GCS) (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17, 351 after T3.5.6, 379 after T3.5.15, 407 after T3.5.19, 449 after T4C.5, 709 after T4A.4, 781 after T4B.4, 855 after T4C.5, 859 after T4C.5c, 882 after T5.1a CPU acceptance, 883 after RTX acceptance, 890 after portable profiles, 911 after T5.1b/D44, 917 after T5.1c, 933 after T5.1d/D45, 946 after T5.1e, 955 after T5.2a, 957 after T5.2b, 962 after T5.3a, 969 after T5.3b, 981 after T5.2c offline acceptance, 985 after T5.2d, 1000 after T5.0a, 1008 after T5.0b, 1027 after T5.6a offline acceptance, 1042 after T5.6b cube acceptance, 1056 after T5.6c matched evaluation, 1070 after T5.6d truth matching, 1080 after T5.6e orchestration, 1089 after T5.6f portable jobs, 1094 after T5.6g reporting, 1095 after the licence guard, 1102 after T4C.5d gate readiness, 1104 after D50 storage preflight, 1106 after T4C.5e overlap evidence, 1112 after T4C.5f campaign acceptance, 1116 after T4C.5g physical preflight, 1117 after T4C.5h preregistration - the `master` freeze; then on `ed-dev`, 1375 after TG2.1, 1429 after TG2.2, 1477 after TG2.3, 1536 after TG2.4, 1577 after TG3.1, 1621 after TG3.2, 1686 after TG3.3, 1742 after TG3.4, 1787 after TG3.5, 1850 after TG4.1, 1922 after TG4.2, 1972 after TG4.3, 1986 after TG5.1, 2004 after TG5.2 and 2020 after TG5.3, 2044 after TG6.1, 2074 after TG6.2, 2112 after TG6.3 and 2167 after TG7.1) |
 | Ground-Truth Benchmark Suite | **29 PASS, 0 FAIL, 0 NOT_YET_RUNNABLE** (`python -m src.benchmarks`, exit 0) |
 | Frontend `npm install` + `npm run build` | passes, emits 1,386 modules + real JS/CSS assets (was: 1 module, no assets) |
 | Backend server | starts, serves OpenAPI, all smoke-tested endpoints return 200 |
@@ -4018,7 +4070,8 @@ able to sit three slices out of date.
 | `test_transforms.py` | 13 | fft/dct/dwt/dtcwt/hybrid round trips; D1 recorded as a strict xfail |
 | `test_zarr_source.py` | 59 | R13 geometry, chunk-hostility, byte counting, streaming content identity, exact chunk-bounded frame reader, cache/provenance round trip, NetCDF engine and HTTP surface |
 | `test_five_outputs.py` | 38 | TG6.3 the five outputs as a pure function of the bundle: what can be claimed given as the reached rung and every rung beneath it with a fixed entitlement stating what that rung does not license; what cannot be claimed as the exact complement, each unreachable rung naming the gates that stand between, including the case where a rung's own gates all pass but a floor failure or a lower unmet gate blocks the climb; the evidence against carrying every `FAIL` and `INVALID` entry, every contradiction and failure state that is not `NOT_APPLICABLE`, and every passing null result, with `caps_at_observation` agreeing exactly with the ladder's blocking set so what merely argues against a claim is distinguished from what forbids it; eight structural alternatives mapped one-to-one and totally onto the climbing gates, each open exactly while its gate is unsatisfied, alongside alternatives someone recorded; the next observation following its stated precedence of unblock, then climb, then resolve, then nominate nothing and say so, verified over a randomised sweep in which every branch including the empty one occurs and all five rungs are reached; determinism to the digest and across a round trip through disk; labels, summaries and unread payload keys carried to the reader but moving no membership; causal claim kinds refused at every rung, naming R7 |
-| **total** | **1808** | |
+| `test_recorded_call.py` | 50 | TG7.1 the recorded-call boundary: every call capturing the verbatim request, the verbatim response bytes, the exact model id, effort, API request id and both timestamps, chained by digest and labelled `recorded-not-reproducible`, with a loaded record claiming determinism refused by name; sampling parameters refused at any depth of the request; the declared schema sent as `output_config.format` with `additionalProperties` closed, and free text, a missing field, an undeclared `claim_level`, a value outside its enumeration, a wrong type and a parse disagreeing with the response bytes each refused, the check surviving a round trip rather than holding only at record time; commentary bound to one exact bundle revision, published beside the bundle and never over it, never overwritten, and refused when spliced from another bundle even where the chain would accept it; and the acceptance test of the phase — a corpus standing on all five rungs plus a blocked and a contradicted bundle, reviewed by all eight roles with commentary demanding promotion, whose every claim level is identical after deleting every LLM output — with a randomised sweep over 300 reviewed bundles, a second over 200 recorded chains, and the smuggling check that refuses recorded wording found inside the evidence chain (R22, R23) |
+| **total** | **1858** | |
 
 ### 7.2h A surrogate null that was not the null it claimed (T4C.5)
 

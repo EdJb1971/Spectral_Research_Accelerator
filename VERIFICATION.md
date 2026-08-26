@@ -4961,3 +4961,99 @@ its absence in fact. The same holds of the third output, and the rendered text s
 recorded; that is not the same as none existing" rather than letting silence be read as
 reassurance. Nothing here grades the statistical adequacy of any entry, and no output, at any
 rung, licenses a causal reading (R7).
+
+## TG7.1 - the recorded-call boundary (`ed-dev`)
+
+`src/core/recorded_call.py` opens Phase G7. It is the only door through which the adversarial
+review layer may speak, and it is built so the layer cannot reach the G6 gates through it. Every
+call captures the verbatim request, the verbatim response bytes, the exact model id, the effort
+setting, the API request id and both timestamps, because an LLM output cannot be regenerated
+(R23); every response is constrained to a declared schema sent as `output_config.format`; and no
+recorded output is an input to any claim level (R22).
+
+Focused acceptance:
+
+```text
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_recorded_call.py -q
+55 passed, 1 warning in 1.80s
+```
+
+**The acceptance test of the phase.** `test_deleting_every_llm_output_from_a_corpus_of_bundles_changes_no_claim_level`
+builds a corpus of seven bundles - one standing on each of the five rungs, one blocked by a
+failed replication, one carrying a standing contradiction - and reviews each with all eight
+TG7.2 roles. The commentary is deliberately assertive: it returns `supported`, asserts the
+relationship is causal, and demands promotion to demonstrated predictive utility by name. Every
+claim level, every claimable set and every summary digest is identical after deleting the whole
+review, and the corpus asserts its own coverage, so it cannot pass by standing on one rung.
+
+`verify_claim_independence` makes the same guarantee executable outside the test. It compares the
+claim digest with the review present and deleted, re-derives it from the bundle's own canonical
+bytes, and refuses if any recorded phrase of at least `SMUGGLING_FLOOR` characters is found
+inside them. That last check is the one that could actually fail, and
+`test_recorded_commentary_found_inside_the_evidence_chain_is_refused` shows it firing on a bundle
+where a reviewer's argument has been copied into a confounders summary.
+
+**How the invariants were actually tested.** Two randomised sweeps carry the rest. The first
+draws 300 bundles landing anywhere on the ladder, attaches between zero and four calls of random
+role, effort and verdict, and asserts the claim digest, rung and blocking set are untouched and
+that the five outputs are byte-identical after stripping the review; it requires all five rungs
+to occur and at least one bundle to have been reviewed at all, so it cannot pass vacuously. The
+second draws 200 records of one to five calls and asserts the recorded chain stays self-checking
+and reloadable through canonical JSON, requiring every chain length to occur.
+
+**A masked check the mutation run found.** The fifth mutation - letting a call bind a bundle
+other than the one under review - passed all 54 tests at first. The test that should have caught
+it appended a call from another bundle, but that call's `previous_sha256` did not link up either,
+so the chain check refused it first and the binding check was never exercised.
+`test_a_call_bound_to_another_bundle_is_refused_even_when_the_chain_would_accept_it` now
+constructs a stray call whose digest does link up and whose subject does not, and the mutation is
+caught.
+
+**Mutation check.** Five deliberate defects were introduced one at a time and the focused suite
+re-run; the file was restored between runs.
+
+```text
+do not check the response against its declared schema        -> 4 failed, 50 passed
+accept an answer from a model that was not asked             -> 1 failed, 53 passed
+allow sampling parameters to be pinned                       -> 5 failed, 49 passed
+skip the smuggling check in verify_claim_independence        -> 1 failed, 53 passed
+let a call bind a bundle other than the one under review     -> 1 failed, 54 passed
+```
+
+The first four were run against the 54-test suite; the fifth against the 55 cases that include
+the isolating test described above.
+
+Full acceptance:
+
+```text
+> .\.venv\Scripts\python.exe -m pytest -q
+2167 passed, 1 skipped, 1 xfailed, 6 warnings in 1241.16s (0:20:41)
+
+> .\.venv\Scripts\python.exe -m src.benchmarks
+PASS 29   FAIL 0   NOT_YET_RUNNABLE 0
+```
+
+Documentation and inventory:
+
+```text
+> .\.venv\Scripts\python.exe tools\audit_docs.py
+undocumented modules : none
+undocumented routes  : none
+defects              : 59 defined, 57 fixed, partial ['D18'], open ['D43']
+test functions       : 1858
+stale inventory rows : none
+claimed suite totals : architecture (2167, 1) / roadmap (2167, 1)
+RESULT               : ok
+```
+
+**Claim boundary.** This slice records calls and fences them off; it does not conduct a review.
+No test here judges whether a challenge was any good, and a well-formed response saying something
+false is recorded exactly as faithfully as a true one. The transport is injected and every test
+uses a recorded one, so nothing here demonstrates that a real API client behaves as the boundary
+expects - that is TG7.3's problem, along with the `cache_read_input_tokens` assertion the usage
+block is being kept for. The smuggling check finds recorded wording reproduced in a bundle; it
+cannot detect a person who reads commentary, is persuaded by it, and records a genuine-looking
+measurement in their own words. No structural check can, and the defence against that is the
+provenance the gates already require, not this function. Determinism is not claimed anywhere in
+the layer: an identical request may return a different answer tomorrow, which is exactly why the
+answer is stored rather than recomputed.

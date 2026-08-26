@@ -1706,12 +1706,47 @@ silence to be read as reassurance.
 Sits **above** G6's gates and may not touch them (R22). Non-deterministic and recorded as such
 (R23).
 
-**TG7.1 The recorded-call boundary.** Every call captures verbatim request, verbatim response,
-exact model id, effort, API request id and timestamp. Structured outputs
-(`output_config.format`, or `messages.parse()`) constrain every response to a schema, so
-commentary can never arrive as free text that later code parses hopefully.
-**Acceptance:** a test deletes every LLM output from a corpus of bundles and asserts **no claim
-level changes**. This is R22 made executable and is the single most important test in the phase.
+**TG7.1 The recorded-call boundary. DONE (`ed-dev`).** `src/core/recorded_call.py` is the only
+door through which the review layer may speak, and it is built so the layer cannot reach the G6
+gates through it. Every call captures the verbatim request, the verbatim response bytes, the
+exact model id, the effort setting, the API request id and both timestamps, chained by digest and
+labelled `recorded-not-reproducible` in its own body (R23). Sampling parameters are **refused
+rather than recorded** at any depth — `temperature`, `top_p`, `top_k`, `seed` — because pinning
+one would imply a reproducibility this layer does not have. A `ResponseSchema` is sent as
+`output_config.format` with `additionalProperties` closed, and the response must parse as JSON
+matching it exactly; free text where a schema was declared is refused rather than parsed
+hopefully, and the record keeps both the bytes and the parse and requires them to agree, so the
+check survives a round trip through disk rather than holding only at record time.
+
+Commentary lives in a `ReviewRecord` that binds the bundle's digest and revision from outside, is
+published in its own file beside the bundle, and is never appended to the evidence chain.
+`record_call` hands back the same bundle object it was given; `ReviewedBundle` computes every
+claim-bearing property from that bundle alone; `strip_review` deletes the whole review and
+returns it unchanged.
+
+**Acceptance: a corpus of bundles standing on all five rungs — plus a blocked one and a
+contradicted one — is reviewed by all eight roles with deliberately assertive commentary
+demanding promotion, and every claim level, every claimable set and every summary digest is
+identical after deleting every LLM output.** `verify_claim_independence` makes that executable
+outside the test: it compares the claim digest with the review present and deleted, re-derives it
+from the bundle's own canonical bytes, and refuses if any recorded phrase of at least
+`SMUGGLING_FLOOR` characters appears inside them — the one way R22 could actually be broken is a
+person copying an answer into a summary or payload, and that is caught rather than assumed
+absent.
+
+**Evidence:** `src/tests/test_recorded_call.py`, 50 tests (55 cases). Two randomised sweeps: one
+over 300 reviewed bundles reaching all five rungs, asserting that no review of any shape moves
+any claim level; one over 200 records of one to five calls, asserting the recorded chain stays
+self-checking and reloadable. Five deliberate mutations of the boundary were each caught — the
+fifth only after a test was added to isolate it, because the chain check had been masking the
+bundle-binding check.
+
+**Claim boundary.** This slice records calls and fences them off; it does not conduct a review.
+Nothing here judges whether a challenge was any good, and a well-formed false answer is recorded
+as faithfully as a true one. The smuggling check finds recorded wording reproduced in a bundle;
+it cannot detect a person who reads commentary, is persuaded, and records a genuine-looking
+measurement in their own words. No structural check can, and the defence against that is the
+provenance the gates already require.
 
 **TG7.2 Adversarial round-robin.** Candidate synthesis → statistical challenger → confounder and
 alternative-explanation challenger → domain-plausibility challenger → provenance and methodology
