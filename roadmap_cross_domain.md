@@ -2392,7 +2392,9 @@ before** new domains land, so the sprawl of a tab per archive is never built and
 
 Generalise what tab 9 already does well. **No new archive in this phase.**
 
-**TG10.1 The store catalogue becomes a registry.** `zarr_source.CATALOGUE` is a plain dict of four
+**TG10.1 The store catalogue becomes a registry. DONE** (2026-08-27; `src/data_layer/stores.py`,
+`src/tests/test_stores.py`, `src/tests/store_plugin_example.py`; architecture.md §3.6zo;
+VERIFICATION.md). `zarr_source.CATALOGUE` was a plain dict of four
 ERA5 stores carrying ERA5-shaped fields (`resolution_deg`, `cadence_hours`, `levels`). Standard E1
 exists to forbid exactly that shape: a fifth store cannot be added from outside `src/`.
 `GRIDDED_STORES` becomes a registry whose entries declare the **domain** they belong to, their
@@ -2405,6 +2407,27 @@ stays machine-independent so the cache remains shareable and the provenance stay
 recipe rather than a description.
 **Acceptance:** a fifth store registers from a file outside `src/` and reaches the catalogue
 route, by the method `test_registries.py` already uses.
+
+**Delivered, with three things worth recording.** *(1)* The acceptance criterion is met by the
+method named — `src/tests/store_plugin_example.py` registers a `depth`-axis store no core module
+imports, reaches `GET /api/v1/data/zarr/catalogue`, and `zarr_source.py` and `main.py` are hashed
+byte-identical afterwards. It sits in `src/tests/` rather than literally outside `src/`, which is
+where `plugin_example.py` and `domain_plugin_example.py` already live; the substance of the
+criterion — no core file edited — is what is checked. *(2)* **A silent failure was found and is
+now a test.** A depth-axis store read through the ERA5 path selected no vertical subset at all
+and reported nothing, because the hard-coded `"level" in subset.coords` was simply false: the
+full depth axis flowed into the cache while the manifest recorded the request. *(3)* **The
+content key deliberately does not move.** `vertical_dim` enters the canonical form only when it
+is not `level`, because adding it unconditionally would orphan every materialised crop and make
+every recorded provenance record name a key that no longer resolves. One key is pinned to a
+literal taken from the pre-TG10.1 module, so a future change to the canonical form is a decision
+someone takes rather than a number someone updates.
+
+**What TG10.1 did not do.** No store was opened and no live fetch was run — registering a store
+is a declaration, and TG10.3 is what makes probing a recorded act and a precondition. The
+generalisation reaches the *selection* path only; the cached-crop reader still speaks in pressure
+levels and `level_hpa`, which is honest for the four ERA5 stores that exist and is the remaining
+half of the job when a real depth-axis store arrives in TG12.1.
 
 **TG10.2 The domain-first acquisition surface.** Data currently lives in tab 2, tab 9 and tab 12;
 ocean and sky would make five tabs. Instead: **choose a domain, see what can be acquired for it,

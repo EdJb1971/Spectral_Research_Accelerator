@@ -2445,9 +2445,27 @@ export default function App() {
                       ))}
                     </select>
                     {zarrCatalogue?.stores?.[zarrCrop.store] && (
-                      <p className="text-[10px] text-slate-500 mt-1.5 leading-relaxed">
-                        {zarrCatalogue.stores[zarrCrop.store].note}
-                      </p>
+                      <>
+                        {/* TG10.1: the catalogue now says whose domain a store is, how it is
+                            reached and whether anyone measured its chunking. A store nobody
+                            has measured says so rather than reading like one that was. */}
+                        <p className="text-[10px] text-slate-400 mt-1.5">
+                          Domain <span className="text-teal-400">{zarrCatalogue.stores[zarrCrop.store].domain}</span>
+                          {' · '}vertical axis <span className="text-teal-400">{zarrCatalogue.stores[zarrCrop.store].vertical_dim ?? 'none'}</span>
+                          {' · '}{zarrCatalogue.stores[zarrCrop.store].access_means}
+                        </p>
+                        <p className="text-[10px] text-slate-500 mt-1 leading-relaxed">
+                          Chunking: {zarrCatalogue.stores[zarrCrop.store].chunks.method_means}
+                          {zarrCatalogue.stores[zarrCrop.store].chunks.measured_on
+                            ? ` (${zarrCatalogue.stores[zarrCrop.store].chunks.measured_on})` : ''}
+                          {zarrCatalogue.stores[zarrCrop.store].chunks.regional_amplification !== null
+                            ? ` — a regional crop measured ${zarrCatalogue.stores[zarrCrop.store].chunks.regional_amplification}x amplification.`
+                            : '.'}
+                        </p>
+                        <p className="text-[10px] text-slate-500 mt-1 leading-relaxed">
+                          {zarrCatalogue.stores[zarrCrop.store].note}
+                        </p>
+                      </>
                     )}
                   </div>
 

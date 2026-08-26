@@ -1028,11 +1028,20 @@ async def zarr_catalogue():
     The catalogue carries a `note` per store saying what it is good and bad *for*, because
     the difference between the 0.25 degree and 1.5 degree stores is not resolution alone: one
     is chunked one timestep at a time and is hostile to regional crops, the other is not.
+
+    Since TG10.1 it is generated from the `GRIDDED_STORES` registry rather than from a literal,
+    so a store added in a new file appears here with no edit to this function. Each entry also
+    now carries the **domain** it belongs to, its access requirement, its vertical axis name
+    and how its chunk figures were obtained - a store nobody has measured says so rather than
+    reading like one that was.
     """
+    from src.data_layer import stores as stores_module
     from src.data_layer import zarr_source as zarr_adapter
 
     return {
-        "stores": zarr_adapter.CATALOGUE,
+        "stores": zarr_adapter.catalogue_payload(),
+        "store_domains": stores_module.domains_with_stores(),
+        "access_requirements": stores_module.ACCESS_REQUIREMENTS,
         "network_enabled": zarr_adapter.network_enabled(),
         "network_env_var": zarr_adapter.NETWORK_ENV_VAR,
         "missing_dependencies": zarr_adapter.missing_dependencies(),

@@ -3148,6 +3148,69 @@ plot is a preview: nothing is mined, no claim exists, no rung moves (R22). And r
 not validating the data in it: finite, monotonic and regularly sampled says nothing about whether
 the values are right.
 
+### 3.6zo The gridded-store registry (`src/data_layer/stores.py`, TG10.1, `ed-dev`)
+
+`zarr_source.CATALOGUE` was four ERA5 stores in a module-level dictionary whose value shape was
+ERA5's own — `resolution_deg`, `cadence_hours`, `levels`. Standard E1 exists to forbid exactly
+that shape, and the cost was not hypothetical: a fifth store could not be added without editing
+`src/`, and the shape had nowhere to record which domain a store belonged to or what cropping it
+cost. `GRIDDED_STORES` is a `Registry[GriddedStore]`, `register_builtin_stores()` puts the four
+ERA5 entries in it eagerly and idempotently, and `CATALOGUE` survives as a **read-only mapping
+view** over the registry so the provenance, overlap and reporting readers are untouched.
+
+**What an entry is now obliged to say**, each because something went wrong without it:
+
+| Field | Why it is required |
+| --- | --- |
+| `domain` | Rule R17: a domain that violates nothing is not a second domain. A catalogue listing stores without saying whose they are invites three entries reading as three domains — the exact false confidence R17 refuses. Registration resolves the name against `DOMAIN_DECLARATIONS` and refuses one nothing has declared, so a store cannot be selectable and *then* fail where its refusals were needed |
+| `access` | One of `anonymous`, `credentials`, `local`. A deployment is told what a store will need before a request fails with a credential error |
+| `vertical_dim` | Declared, with **no default**, for the reason `AxisSpec.role` has none (E14). `level` was assumed of every store because every store so far was ERA5 |
+| `chunks` | `ChunkFacts` carries the figure, **how it was obtained**, and the date if a live inspection produced it. `not measured` may not quote a size, and a `live inspection` with no date is refused outright: an undated measurement of an archive that may rechunk describes nothing. D43 is what an unmeasured store treated as a known quantity costs, and its note is now attached to the store it is about |
+| `note` | Kept from the old catalogue and still required. The 0.25 and 1.5 degree stores differ by more than resolution, and a catalogue that does not say so sends a researcher to the wrong one |
+
+**The view is deliberately unwritable.** Every consumer of the old dictionary only ever asked
+whether a store was catalogued and what its URI was; none wrote. Keeping it read-only means a
+store cannot enter the catalogue without passing `register_store`, so the domain and chunk checks
+cannot be sidestepped by assigning a bare dictionary — which is what one test was doing, and now
+registers a `local` fixture store instead. `__getitem__` raises `KeyError` rather than the
+registry's `UnknownNameError`, because `CATALOGUE.get(store)` on an uncatalogued name is a
+supported question whose answer is "no": it is the path a raw URI takes.
+
+**`CropSpec` is generalised on exactly one axis.** `vertical_dim` names the store's vertical
+dimension — `level` for ERA5, `depth` for an ocean product — and `select()` applies the vertical
+selection to *that* name instead of a hard-coded `"level"`. Before this, a depth-axis store read
+through the ERA5 path selected no vertical subset at all and said nothing about it, because
+`"level" in subset.coords` was simply false; the full depth axis flowed into the cache while the
+manifest recorded the request. That silence is now a test. Nothing else about a region-and-time
+slice needed generalising: `select` already tolerates either latitude ordering, resolves
+`lat`/`latitude`, and refuses a meridian wrap rather than guessing.
+
+**The content key does not move, and that was a decision.** `vertical_dim` enters
+`canonical()` **only when it is not `level`**. Adding it unconditionally would change the key of
+every crop ever materialised, orphaning the local cache and making every recorded provenance
+record name a key that no longer resolves — a high price for a distinction that distinguishes
+nothing, since `store` is already in the key and a store determines its own vertical axis. One
+key is pinned to a literal in `test_stores.py`, taken by running the pre-TG10.1 module rather
+than by writing down what the new code produced, so a future change to the canonical form is a
+decision someone takes rather than a number someone updates. Older provenance records carry no
+`vertical_dim` key and still replay, defaulting to `level`.
+
+**Acceptance, executed literally.** `src/tests/store_plugin_example.py` registers a fifth store
+on a `depth` axis in a file no core module imports; the test asserts it reaches
+`GET /api/v1/data/zarr/catalogue` and that `zarr_source.py` and `main.py` are byte-identical
+afterwards, the method `test_registries.py` already uses for the data-source seam. The example
+declares `domain="reanalysis"` rather than a domain of its own, because a gridded store that
+breaks no inherited assumption is a source and not a second domain (R17), and it declares
+`method="not measured"` because nothing has opened it.
+
+**Claim boundary.** A store in a catalogue is **not data ingested**, and no live fetch was run
+for this slice. Registering a store is a declaration; nothing here opens a store, reaches the
+network, or verifies that a recorded figure is still true — TG10.3 is the slice that makes
+probing a recorded act and a precondition of registration. The generalisation reaches the
+*selection* path only: the cached-crop reader (`RegionalRecord`) still speaks in pressure levels
+and `level_hpa`, which is honest for the four ERA5 stores that exist and is the remaining half of
+the job when a real depth-axis store arrives.
+
 ### 3.11 Ground-Truth Benchmark Suite (`src/benchmarks/`)
 
 Added in T3.5.17 (standard E7). Twenty synthetic datasets whose correct answer is known
@@ -4252,7 +4315,7 @@ See `VERIFICATION.md` for the captured command output behind every statement her
 | Item | Status |
 |---|---|
 | Python venv + dependencies | installed (torch 2.13.0+cu130, numpy 2.2.6, pydantic 1.10.26, SQLAlchemy 2.0.52, xarray 2025.6.1, FastAPI 0.110.3) |
-| Backend test suite | **2420 passed, 1 xfailed** (plus 1 skipped: opt-in live GCS) (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17, 351 after T3.5.6, 379 after T3.5.15, 407 after T3.5.19, 449 after T4C.5, 709 after T4A.4, 781 after T4B.4, 855 after T4C.5, 859 after T4C.5c, 882 after T5.1a CPU acceptance, 883 after RTX acceptance, 890 after portable profiles, 911 after T5.1b/D44, 917 after T5.1c, 933 after T5.1d/D45, 946 after T5.1e, 955 after T5.2a, 957 after T5.2b, 962 after T5.3a, 969 after T5.3b, 981 after T5.2c offline acceptance, 985 after T5.2d, 1000 after T5.0a, 1008 after T5.0b, 1027 after T5.6a offline acceptance, 1042 after T5.6b cube acceptance, 1056 after T5.6c matched evaluation, 1070 after T5.6d truth matching, 1080 after T5.6e orchestration, 1089 after T5.6f portable jobs, 1094 after T5.6g reporting, 1095 after the licence guard, 1102 after T4C.5d gate readiness, 1104 after D50 storage preflight, 1106 after T4C.5e overlap evidence, 1112 after T4C.5f campaign acceptance, 1116 after T4C.5g physical preflight, 1117 after T4C.5h preregistration - the `master` freeze; then on `ed-dev`, 1375 after TG2.1, 1429 after TG2.2, 1477 after TG2.3, 1536 after TG2.4, 1577 after TG3.1, 1621 after TG3.2, 1686 after TG3.3, 1742 after TG3.4, 1787 after TG3.5, 1850 after TG4.1, 1922 after TG4.2, 1972 after TG4.3, 1986 after TG5.1, 2004 after TG5.2 and 2020 after TG5.3, 2044 after TG6.1, 2074 after TG6.2, 2112 after TG6.3, 2167 after TG7.1, 2217 after TG7.2, 2235 after TG7.3, 2236 after TG7.3 live acceptance, 2296 after TG7.4, 2321 after TG9.1/TG9.2 2334 after TG9.3, 2367 after TG8.1 and 2420 after TG8.4) |
+| Backend test suite | **2459 passed, 1 xfailed** (plus 1 skipped: opt-in live GCS) (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17, 351 after T3.5.6, 379 after T3.5.15, 407 after T3.5.19, 449 after T4C.5, 709 after T4A.4, 781 after T4B.4, 855 after T4C.5, 859 after T4C.5c, 882 after T5.1a CPU acceptance, 883 after RTX acceptance, 890 after portable profiles, 911 after T5.1b/D44, 917 after T5.1c, 933 after T5.1d/D45, 946 after T5.1e, 955 after T5.2a, 957 after T5.2b, 962 after T5.3a, 969 after T5.3b, 981 after T5.2c offline acceptance, 985 after T5.2d, 1000 after T5.0a, 1008 after T5.0b, 1027 after T5.6a offline acceptance, 1042 after T5.6b cube acceptance, 1056 after T5.6c matched evaluation, 1070 after T5.6d truth matching, 1080 after T5.6e orchestration, 1089 after T5.6f portable jobs, 1094 after T5.6g reporting, 1095 after the licence guard, 1102 after T4C.5d gate readiness, 1104 after D50 storage preflight, 1106 after T4C.5e overlap evidence, 1112 after T4C.5f campaign acceptance, 1116 after T4C.5g physical preflight, 1117 after T4C.5h preregistration - the `master` freeze; then on `ed-dev`, 1375 after TG2.1, 1429 after TG2.2, 1477 after TG2.3, 1536 after TG2.4, 1577 after TG3.1, 1621 after TG3.2, 1686 after TG3.3, 1742 after TG3.4, 1787 after TG3.5, 1850 after TG4.1, 1922 after TG4.2, 1972 after TG4.3, 1986 after TG5.1, 2004 after TG5.2 and 2020 after TG5.3, 2044 after TG6.1, 2074 after TG6.2, 2112 after TG6.3, 2167 after TG7.1, 2217 after TG7.2, 2235 after TG7.3, 2236 after TG7.3 live acceptance, 2296 after TG7.4, 2321 after TG9.1/TG9.2 2334 after TG9.3, 2367 after TG8.1, 2420 after TG8.4 and 2459 after TG10.1) |
 | Ground-Truth Benchmark Suite | **29 PASS, 0 FAIL, 0 NOT_YET_RUNNABLE** (`python -m src.benchmarks`, exit 0) |
 | Frontend `npm install` + `npm run build` | passes, emits 1,386 modules + real JS/CSS assets (was: 1 module, no assets) |
 | Backend server | starts, serves OpenAPI, all smoke-tested endpoints return 200 |
@@ -4546,7 +4609,8 @@ able to sit three slices out of date.
 | `test_findings_api.py` | 29 | TG9.1 the read-only claim surface: the wire guard refusing a bare confidence at any depth of any response body and passing one that travels with all six of R9's figures, with the guard's restated field list asserted to still agree with `AssociationFigures`; the acceptance test of the slice — every route served over a corpus that genuinely does report a confidence, with the test refusing to pass vacuously if none is present; a domain registered from the test module reaching `GET /domains` and `GET /glossaries/{name}` without editing `src/api/`; built-in glossaries registered eagerly at import rather than on first request (D35); a GET leaving the bundle bytes and the rung unchanged (R22); an unreadable bundle reported rather than skipped; an absent study root served as an empty list; unknown study and unknown glossary both 404; a blocked study reported as blocked; a partial figure set served as no figures rather than a subset; and one study in two vocabularies reading differently while serving identical `structural_keys` (R9, R22) |
 | `test_domain_onboarding.py` | 33 | TG8.1 the onboarding contract: the adapter recipe as a tuple the API serves, the checklist generates from and the tests assert against, so the documented contract and the enforced one cannot drift; the acceptance criterion of the slice — a third domain onboarded in one file outside `src/`, with the six files it would otherwise have had to touch hashed before and after and asserted byte-identical, live in all three registries and served by `GET /findings/domains`; the geometry/violation biconditional in all four combinations, refusing a domain that names a metric geometry while renouncing the metric and one that supplies neither, with `pixel` shown to sit on the renouncing side and an unregistered geometry refused by the registry that owns the vocabulary; atomicity, with a refused glossary, a refused geometry and an injected failure between the writes each leaving all three registries exactly as they were; re-onboarding refused by name until asked for explicitly, and a name the glossary would normalise differently refused as the half-onboarded state in a subtler form; a piecemeal domain audited as incomplete rather than passing for a checked one, and a declaration registered without wording still appearing in the listing — the TG9.1 omission with its halves swapped; the digest stable across equal declarations and moved by a single changed phrase; the built-ins held to the contract they document, either entry point registering the whole pair, and a half-registered built-in repaired rather than skipped; and the plugin domain asserted to break the two assumptions no registered domain had broken, with five deliberate mutations each caught (E13, E15, R17, R21) |
 | `test_channels_api.py` | 24 | TG8.4 the ingestion seam over HTTP: inspection reporting a record's columns, rows and clock while choosing neither a clock column nor a domain, and refusing to substitute a price column for a timestamp that runs backwards even though the price increases; an irregular clock turned into an obligation on whichever domain is chosen rather than filled in, and the aggregate obligation stated because no column declares itself one; the property the two-call shape rests on — the refusal inspection advertises and the refusal reading enforces are the same refusal — checked against a third domain onboarded for the purpose, because both built-ins agree about ragged clocks and could not show the difference; a loaded record carrying its domain's refusals, the attribution caveat and the sentence saying a plot is not an analysis; an aggregate channel marked and its declaration required; a gridded domain refused for a channel table in its own words including E14; the adapter's reasoning surviving to the researcher rather than becoming "invalid file"; a binary upload redirected to the route that reads binary; and a channel honestly named `confidence` served rather than mistaken for a bare claim, which is why channels are a list of named entries and not a mapping (E14, E15, R9, R17, R22) |
-| **total** | **2093** | |
+| `test_stores.py` | 29 | TG10.1 the gridded-store registry: four ERA5 stores registering eagerly and idempotently under a domain something has actually declared, a store naming an undeclared domain refused with the valid names and not left half-registered, and stores found by domain and by capability rather than by a hard-coded list (E1, E2); what an entry is now obliged to say, with eight malformed entries refused one per case — an undeclared access requirement, a missing note, a malformed grid, levels on an axis the store says it has not got, a blank vertical axis name, a network store with no URI scheme, and the narrow `local` exemption that lets a fixture path have none; chunk facts as an observation or an admission, with an unmeasured store refused permission to quote a size and an undated live inspection refused outright, and the measured 51.1x and 26.2x figures asserted to have survived the move from prose into fields with D43 still attached to the store it is about; the catalogue view reading through to the registry, keeping every key the dictionary carried, serialising, answering "no" for an uncatalogued name rather than raising, and refusing to be written to; the content key of an existing crop pinned to a literal taken from the pre-TG10.1 module, with a non-default vertical axis separating two otherwise identical crops and a record predating the field still replaying; selection on a `depth` axis, the error naming the declared axis, and the silent failure the slice removes — a depth store read as ERA5 selecting no vertical subset at all; and the acceptance criterion, a fifth store on a `depth` axis added in a file no core module imports, reaching the catalogue route with `zarr_source.py` and `main.py` hashed byte-identical afterwards (E1, E2, E14, R17) |
+| **total** | **2122** | |
 
 ### 7.2h A surrogate null that was not the null it claimed (T4C.5)
 

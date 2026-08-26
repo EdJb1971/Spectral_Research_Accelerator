@@ -5696,3 +5696,69 @@ README saying so. The preview plot is a preview - nothing is mined, no claim exi
 (R22). Refusing a file is not validating the data in it: finite, monotonic and regularly sampled
 says nothing about whether the values are right. Rendered browser inspection of tab 12 is
 **NOT RUN**, as it is for tabs 10 and 11.
+
+---
+
+## TG10.1 - The store catalogue becomes a registry (2026-08-27, `ed-dev`)
+
+**What was verified.** `GRIDDED_STORES` is a `Registry[GriddedStore]`; the four ERA5 stores
+register eagerly and idempotently; every registered store names a domain something has actually
+declared; and `zarr_source.CATALOGUE` survives as a read-only mapping view that keeps every key
+the old dictionary carried. `CropSpec` gained one declared field, `vertical_dim`, and `select()`
+applies the vertical selection to that name instead of a hard-coded `"level"`.
+
+**Acceptance criterion, executed literally.** `src/tests/store_plugin_example.py` registers a
+fifth store on a `depth` axis in a file no core module imports. The test asserts it reaches
+`GET /api/v1/data/zarr/catalogue`, and hashes `src/data_layer/zarr_source.py` and
+`src/api/main.py` before and after to assert both are byte-identical - the method
+`test_registries.py` uses for the data-source seam. The example file sits in `src/tests/` rather
+than literally outside `src/`, alongside `plugin_example.py` and `domain_plugin_example.py`; what
+is checked is the substance of the criterion, that no core file was edited.
+
+**Results.**
+
+```
+Full suite            2459 passed, 1 skipped, 1 xfailed
+test_stores.py        39 passed (29 test functions)
+adjacent suites       test_zarr_source, test_registries, test_evaluation_run,
+                      test_cds_source, test_evaluation_report - 122 passed, 1 skipped
+Documentation audit   19 passed
+```
+
+**Six deliberate mutations, each caught.**
+
+```
+M1  remove the domain check from register_store   -> 1 test failed
+M2  accept an undated live inspection             -> 1 test failed
+M3  let an unmeasured store quote a chunk size    -> 1 test failed
+M4  hard-code the level axis back into select()   -> 2 tests failed
+M5  put vertical_dim in the content key always    -> 2 tests failed
+M6  make the catalogue view writable              -> 1 test failed
+```
+
+**A silent failure found while building.** A store on a `depth` axis, read through the ERA5 path,
+selected **no vertical subset at all** and reported nothing wrong: `"level" in subset.coords` was
+simply false, so the vertical selection was skipped. The full depth axis flowed into the cache
+while the manifest recorded the request rather than what arrived. That is now
+`test_a_depth_store_read_as_though_it_were_era5_selects_no_vertical_subset`, which asserts the old
+behaviour explicitly so the reason for the change stays legible.
+
+**The content key was pinned, not recomputed.** `09d0e1b7cacc25b0` was obtained by running
+`git show HEAD:src/data_layer/zarr_source.py` against the spec and reading its answer, not by
+writing down what the new code produced - a pin copied from the code it guards guards nothing. It
+is unchanged because `vertical_dim` enters the canonical form only when it is not `level`, which
+is a compatibility decision taken deliberately: adding it unconditionally would orphan every
+materialised crop in the local cache and make every recorded provenance record name a key that no
+longer resolves.
+
+**Claim boundary.** **No store was opened and no live fetch was run.** Registering a store is a
+declaration; nothing in this slice reaches the network or verifies that a recorded chunk figure is
+still true, and TG10.3 is the slice that makes probing a recorded act and a precondition of
+registration. The recorded 51.1x and 26.2x amplifications are transcriptions of earlier live
+inspections (2026-08-20 and 2026-08-21), now carrying their method and date as fields rather than
+as prose; they were not re-measured here. The generalisation reaches the **selection** path only -
+the cached-crop reader still speaks in pressure levels and `level_hpa`, which is honest for the
+four ERA5 stores that exist and is the remaining half of the job when a real depth-axis store
+arrives. The fifth store in the acceptance test is a fixture URI that has never been opened, and
+says so through `method="not measured"`. Rendered browser inspection of the catalogue tab after
+this change is **NOT RUN**.

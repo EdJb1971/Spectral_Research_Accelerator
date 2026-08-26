@@ -392,15 +392,40 @@ export interface DataSourceInfo {
 
 // ---------------------------------------------------------------- ERA5 over Zarr (T3.5.18)
 
+export interface ZarrStoreChunkFacts {
+  megabytes_per_chunk: number | null;
+  /** "live inspection", "store metadata" or "not measured" - two observations and an admission. */
+  method: string;
+  method_means: string;
+  measured_on: string;
+  shape: number[] | null;
+  dims: string[] | null;
+  regional_amplification: number | null;
+  note: string;
+}
+
+export interface ZarrStore {
+  uri: string;
+  resolution_deg: number;
+  cadence_hours: number;
+  grid: number[];
+  levels: number;
+  note: string;
+  /** The declared domain this store belongs to (TG10.1). A gridded store that breaks no
+   *  inherited assumption is a SOURCE for a domain, never a second domain (R17). */
+  domain: string;
+  access: string;
+  access_means: string;
+  /** "level" for ERA5's pressure axis, "depth" for an ocean product; null for neither. */
+  vertical_dim: string | null;
+  chunks: ZarrStoreChunkFacts;
+  variables_note?: string;
+}
+
 export interface ZarrCatalogueResponse {
-  stores: Record<string, {
-    uri: string;
-    resolution_deg: number;
-    cadence_hours: number;
-    grid: number[];
-    levels: number;
-    note: string;
-  }>;
+  stores: Record<string, ZarrStore>;
+  store_domains: string[];
+  access_requirements: Record<string, string>;
   network_enabled: boolean;
   network_env_var: string;
   missing_dependencies: string[];

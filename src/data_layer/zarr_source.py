@@ -38,66 +38,35 @@ import os
 import time
 from collections.abc import MutableMapping
 from dataclasses import asdict, dataclass, field as dc_field
-from typing import Any, Dict, List, Optional, Sequence, Tuple
+from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
 
 from src.core.errors import DataSourceError, FieldTooSmallError, InvalidParameterError
 from src.core.level_axis import PRESSURE_HPA
+# `GriddedStore` and `store_for` are re-exported deliberately rather than used here: this
+# module is the adapter facade a caller already has in hand, and making them reach for a
+# second import to name the thing they just looked up is friction with no benefit (TG10.1).
+from src.data_layer.stores import (  # noqa: F401  (GriddedStore, store_for re-exported)
+    GRIDDED_STORES, CatalogueView, GriddedStore, catalogue_payload,
+    register_builtin_stores, store_for, uri_for)
 
 # --------------------------------------------------------------------------- catalogue
 
-#: Public WeatherBench 2 ERA5 stores, verified reachable anonymously on 2026-08-20 by
-#: listing `gs://weatherbench2/datasets/era5` (24 stores). Only the ones this platform has
-#: a use for are listed; `describe_store` works on any Zarr URI, listed or not.
+#: Public WeatherBench 2 ERA5 stores, and every other registered gridded store, as a
+#: **read-only mapping view** over `stores.GRIDDED_STORES` (TG10.1, standard E1).
 #:
-#: `chunk_time` and `chunk_hostile` are recorded from the store's own metadata rather than
-#: assumed, and they are what `assess_access_pattern` reasons about.
-CATALOGUE: Dict[str, Dict[str, Any]] = {
-    "era5_0p25_6h": {
-        "uri": ("gs://weatherbench2/datasets/era5/"
-                "1959-2023_01_10-wb13-6h-1440x721.zarr"),
-        "resolution_deg": 0.25,
-        "cadence_hours": 6,
-        "grid": (721, 1440),
-        "levels": 13,
-        "note": ("Full-resolution ERA5, 13 pressure levels. Chunked one timestep x all "
-                 "levels x whole globe (54.0 MB/chunk), so regional crops are severely "
-                 "chunk-hostile - measured 51.1x amplification. Use for the R13 spatial "
-                 "floor with a short window, not for long records."),
-    },
-    "era5_0p25_1h_full37": {
-        "uri": ("gs://weatherbench2/datasets/era5/"
-                "1959-2023_01_10-full_37-1h-0p25deg-chunk-1.zarr"),
-        "resolution_deg": 0.25,
-        "cadence_hours": 1,
-        "grid": (721, 1440),
-        "levels": 37,
-        "note": ("Hourly, 37 levels, 153.6 MB/chunk. The most chunk-hostile store in the "
-                 "catalogue for regional work; 561,264 timesteps."),
-    },
-    "era5_1p5_6h": {
-        "uri": ("gs://weatherbench2/datasets/era5/"
-                "1959-2023_01_10-6h-240x121_equiangular_with_poles_conservative.zarr"),
-        "resolution_deg": 1.5,
-        "cadence_hours": 6,
-        "grid": (121, 240),
-        "levels": 13,
-        "note": ("Coarse but chunked 8 timesteps deep (12.1 MB/chunk), so long records are "
-                 "cheap. Global grid is 121x240, which is BELOW the R13 256x256 floor - "
-                 "usable for whole-globe work, not for a regional cross-scale crop."),
-    },
-    "era5_0p7_6h": {
-        "uri": ("gs://weatherbench2/datasets/era5/"
-                "1959-2022-6h-512x256_equiangular_conservative.zarr"),
-        "resolution_deg": 0.703125,
-        "cadence_hours": 6,
-        "grid": (256, 512),
-        "levels": 13,
-        "note": ("Time chunks are eight frames deep, but each still spans every level and "
-                 "the full 512x256 globe. Live inspection on 2026-08-21 estimated 29.88 GB "
-                 "for a three-year, one-variable 255x255 crop (26.2x amplification). This "
-                 "is not a laptop-feasible long-record regional source for T4C.6 (D43)."),
-    },
-}
+#: This was a module-level dictionary of four ERA5 stores until TG10.1, which is why its
+#: value shape is ERA5's own. The entries now live in a registry, each declaring the domain
+#: it belongs to, how it is reached, its vertical axis name and how its chunk figures were
+#: obtained; `to_dict` keeps every key the dictionary carried, so the provenance, overlap
+#: and reporting readers below are unaffected. `describe_store` still works on any Zarr URI,
+#: listed or not, and an uncatalogued name is still passed through as a raw URI.
+#:
+#: The view does not support assignment. Writing to it would put a store in the catalogue
+#: without a domain, an access requirement or a chunk record, which are the three things
+#: `register_store` exists to require.
+CATALOGUE: Mapping[str, Dict[str, Any]] = CatalogueView()
+
+register_builtin_stores()
 
 #: Where materialised crops live. Content-addressed, so two identical specs share one entry.
 DEFAULT_CACHE_DIR = os.path.join("data", "zarr_cache")
@@ -233,6 +202,13 @@ class CropSpec:
     levels: Tuple[int, ...] = ()
     #: Declared analysis depth, used for the R13 floor check. Not part of the data selection.
     n_levels_analysis: int = 4
+    #: Name of the store's vertical dimension - `level` for ERA5's pressure levels, `depth`
+    #: for an ocean product. The one axis TG10.1 generalises, and the only generalisation the
+    #: crop path needs to accept a non-atmospheric gridded store: everything else about a
+    #: region-and-time slice is already store-agnostic. It keeps ERA5's default because every
+    #: catalogued store today is ERA5 and a required argument here would break every existing
+    #: provenance record, but a store that disagrees says so through `vertical_dim_for_store`.
+    vertical_dim: str = "level"
 
     def __post_init__(self) -> None:
         if not self.variables:
@@ -246,16 +222,19 @@ class CropSpec:
             raise InvalidParameterError(
                 "lon_min/lon_max", (self.lon_min, self.lon_max),
                 "lon_min < lon_max, in degrees east")
+        if not str(self.vertical_dim).strip():
+            raise InvalidParameterError(
+                "vertical_dim", self.vertical_dim,
+                "the name of the store's vertical dimension, e.g. 'level' or 'depth'")
 
     @property
     def uri(self) -> str:
         """Resolve a catalogue id, or pass a raw URI through unchanged."""
-        entry = CATALOGUE.get(self.store)
-        return entry["uri"] if entry else self.store
+        return uri_for(self.store) or self.store
 
     def canonical(self) -> Dict[str, Any]:
         """Order-independent, machine-independent form - the thing that gets hashed."""
-        return {
+        record: Dict[str, Any] = {
             "store": self.store,
             "uri": self.uri,
             "variables": sorted(self.variables),
@@ -264,6 +243,16 @@ class CropSpec:
             "bbox": [self.lat_min, self.lat_max, self.lon_min, self.lon_max],
             "levels": sorted(self.levels),
         }
+        # The vertical dimension name enters the key **only when it is not ERA5's**, and that
+        # is a compatibility decision taken deliberately rather than a purity lapse. Adding it
+        # unconditionally would change the content key of every crop ever materialised,
+        # orphaning the whole local cache and making every recorded provenance record resolve
+        # to a different key than the one it names - a high price for a distinction that
+        # distinguishes nothing, since `store` is already in the key and the store determines
+        # its own vertical axis. A store whose axis is not `level` is fully separated.
+        if self.vertical_dim != "level":
+            record["vertical_dim"] = self.vertical_dim
+        return record
 
     def content_key(self) -> str:
         """Stable 16-hex-character key. Sorted keys and separators so it cannot drift."""
@@ -288,15 +277,36 @@ class CropSpec:
         added to them.
         """
         fields = {"store", "variables", "time_start", "time_end", "lat_min", "lat_max",
-                  "lon_min", "lon_max", "levels", "n_levels_analysis"}
+                  "lon_min", "lon_max", "levels", "n_levels_analysis", "vertical_dim"}
         kwargs = {k: v for k, v in record.items() if k in fields}
-        missing = fields - set(kwargs) - {"levels", "n_levels_analysis"}
+        missing = fields - set(kwargs) - {"levels", "n_levels_analysis", "vertical_dim"}
         if missing:
             raise InvalidParameterError(
                 "record", sorted(record), "a crop record containing %s" % sorted(missing))
         kwargs["variables"] = tuple(kwargs["variables"])
         kwargs["levels"] = tuple(kwargs.get("levels", ()))
         return cls(**kwargs)
+
+
+def vertical_dim_for_store(store: str, default: str = "level") -> str:
+    """The vertical axis name a catalogued store declares, or `default` for a raw URI.
+
+    A convenience, not an inference: it reads a declaration a registration already made. For
+    an uncatalogued URI there is nothing to read, so the caller's default stands and the
+    caller remains responsible for it - a name guessed from the data would be exactly the
+    axis-role inference standard E14 exists to forbid.
+    """
+    if store in GRIDDED_STORES:
+        declared = GRIDDED_STORES.get(store).vertical_dim
+        if declared:
+            return declared
+    return default
+
+
+def crop_for_store(store: str, **kwargs: Any) -> "CropSpec":
+    """Build a `CropSpec` whose vertical axis comes from the store's own declaration."""
+    kwargs.setdefault("vertical_dim", vertical_dim_for_store(store))
+    return CropSpec(store=store, **kwargs)
 
 
 # --------------------------------------------------------------------------- byte counting
@@ -628,15 +638,16 @@ def select(dataset, spec: "CropSpec"):
             % (float(lon.min()), float(lon.max())))
     subset = subset.sel({lon_name: slice(lon_min, lon_max)})
 
-    if spec.levels and "level" in subset.coords:
-        available = set(int(v) for v in np.asarray(dataset["level"].values).tolist())
+    vertical = spec.vertical_dim
+    if spec.levels and vertical in subset.coords:
+        available = set(int(v) for v in np.asarray(dataset[vertical].values).tolist())
         unknown = [lev for lev in spec.levels if int(lev) not in available]
         if unknown:
             raise InvalidParameterError(
                 "levels", list(spec.levels),
-                "levels present in the store; %s not among %s"
-                % (unknown, sorted(available)))
-        subset = subset.sel(level=list(spec.levels))
+                "%s values present in the store; %s not among %s"
+                % (vertical, unknown, sorted(available)))
+        subset = subset.sel({vertical: list(spec.levels)})
 
     if "time" in subset.coords:
         subset = subset.sel(time=slice(spec.time_start, spec.time_end))
@@ -771,7 +782,7 @@ def materialise(spec: "CropSpec", cache_dir: Optional[str] = None,
 
         n_time = int(loaded.sizes.get("time", 1))
         chunking = {"time": int(time_chunk or n_time)}
-        for dim in (lat_name, lon_name, "level"):
+        for dim in (lat_name, lon_name, spec.vertical_dim):
             if dim in loaded.sizes:
                 chunking[dim] = int(loaded.sizes[dim])
         rechunked = loaded.chunk(chunking)
@@ -1213,7 +1224,7 @@ def _main(argv: Optional[Sequence[str]] = None) -> int:
     args = parser.parse_args(list(argv) if argv is not None else None)
 
     if args.command == "catalogue":
-        print(json.dumps(CATALOGUE, indent=2))
+        print(json.dumps(catalogue_payload(), indent=2))
         return 0
     if args.command == "cached":
         print(json.dumps([{"content_key": c["content_key"], "spec": c["spec"],
