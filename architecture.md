@@ -2796,6 +2796,68 @@ make an answer reproducible. This receipt says which paid route was used and wha
 reported consuming. It neither audits provider billing nor promotes, demotes or judges any
 claim; R22 and R23 remain wholly owned by the layers below.
 
+### 3.6zi Translation, bounded (`src/core/translation.py`, TG7.4, `ed-dev`)
+
+Every layer beneath this one speaks in the programme's vocabulary — rungs, gates, categories,
+statuses, digests. A domain scientist reading `candidate_precursor, blocked by
+robust_association.confounders_addressed` learns nothing. TG7.4 renders a finding in domain
+language, and it is the first point in the programme where text is produced for a human to act
+on. That is precisely why four rules break here at once if nothing stops them: domain prose
+reaches naturally for the semantic comparison R19 forbids; a bare confidence figure is the way R9
+says this platform is most likely to mislead its own author; causal verbs enter through sentences
+rather than through claim kinds (R7); and "candidate precursor" becomes "early warning signal" — a
+promotion carried out entirely in wording, with no gate touched (R22).
+
+**Translation is a projection, not a generation.** There is no model call. Domain wording arrives
+as declared, content-hashed data screened when it is registered, and the renderer emits only from
+closed template sets bound to structural facts — TG7.1's design, that the dangerous thing is
+*refused rather than recorded*, at the boundary, once.
+
+**R9 is given a structure it did not have.** The six figures R9 names — support, confidence, base
+rate, lift with an interval, and surrogate-corrected lift — had no structured home anywhere in
+`src` before this slice. `claim_ladder` asks only whether an `effect_sizes` entry *passes*; it
+never reads what is inside one, so the figures lived unvalidated in a payload mapping.
+`AssociationFigures` keeps all six together, refuses a partial set by name, and checks lift
+against `confidence / base_rate` rather than trusting it. Its `render` is the **only** method in
+the module that can format a percentage, so the roadmap's cautionary "82% of the time" is not
+banned but made honest: the base rate that decides whether 82% is a finding or noise is in the
+same string.
+
+**R19 holds by construction.** Two disjoint template sets, selected by `semantic_key` equality.
+The within-domain set may reference units, magnitude and the variable's identity; the cross-domain
+set may reference only `structural_signature()` — the dimensionless view built from the fields
+that survive being stripped of their units. A cross-domain magnitude sentence is not caught after
+the fact; it cannot be constructed, and widening `CROSS_DOMAIN_FIELDS` is a visible edit to a
+named constant rather than an invisible consequence of a filter.
+
+**R22 holds by signature.** `translate` takes a `FiveOutputs`, never a `ReviewedBundle`. Review
+commentary cannot reach the claim text because there is no parameter through which it could
+arrive; what a caller passes as `commentary` is carried in its own quarantined field, excluded
+from `claim_text()`, and rendered under a heading saying it moved nothing.
+
+A glossary is registered through the same `Registry` orientation conventions use, so a domain
+supplies one **without editing `src/`** — the TG8.1 onboarding condition met early. Registration
+refuses a partial map, any phrase carrying a term from `OUTSIDE_THE_LADDER`, any phrase carrying a
+digit, any comparative asserting a relation of size, and any rung phrase borrowing wording
+reserved to a higher rung. Each entitlement is welded into the same string as the claim it bounds,
+so a UI cannot render "this is a candidate precursor" while dropping "predictive utility is not
+shown".
+
+The causal guard scans each unit's *rendered* half and not its *licences*, because several
+entitlements name a causal term precisely in order to deny it — *"a statement about prediction,
+never about mechanism"*. Scanning those would refuse the sentence whose whole job is to hold the
+line, so the curated half and the authored half are scanned differently rather than together.
+
+**Claim boundary.** A translation is faithful to the **record**, not to the world. A glossary
+mapping a structural term to a misleading-but-non-causal domain word is accepted, because no
+structural check knows what "anomaly" means to an oceanographer; the defence is that the glossary
+is declared, hashed and reviewable, not that it is correct. Refusing causal *vocabulary* is not
+refusing causal *implication*, and a reader who reads "precursor" as "cause" is caught by nothing
+here. The R19 guard stops the *system* emitting a cross-domain comparison; it cannot stop a reader
+setting two within-domain renderings side by side and drawing one themselves, and layout is out of
+scope. Nothing here judges whether a finding was worth translating, or whether the domain words
+chosen are the ones a practitioner would use.
+
 ### 3.11 Ground-Truth Benchmark Suite (`src/benchmarks/`)
 
 Added in T3.5.17 (standard E7). Twenty synthetic datasets whose correct answer is known
@@ -3891,7 +3953,7 @@ See `VERIFICATION.md` for the captured command output behind every statement her
 | Item | Status |
 |---|---|
 | Python venv + dependencies | installed (torch 2.13.0+cu130, numpy 2.2.6, pydantic 1.10.26, SQLAlchemy 2.0.52, xarray 2025.6.1, FastAPI 0.110.3) |
-| Backend test suite | **2236 passed, 1 xfailed** (plus 1 skipped: opt-in live GCS) (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17, 351 after T3.5.6, 379 after T3.5.15, 407 after T3.5.19, 449 after T4C.5, 709 after T4A.4, 781 after T4B.4, 855 after T4C.5, 859 after T4C.5c, 882 after T5.1a CPU acceptance, 883 after RTX acceptance, 890 after portable profiles, 911 after T5.1b/D44, 917 after T5.1c, 933 after T5.1d/D45, 946 after T5.1e, 955 after T5.2a, 957 after T5.2b, 962 after T5.3a, 969 after T5.3b, 981 after T5.2c offline acceptance, 985 after T5.2d, 1000 after T5.0a, 1008 after T5.0b, 1027 after T5.6a offline acceptance, 1042 after T5.6b cube acceptance, 1056 after T5.6c matched evaluation, 1070 after T5.6d truth matching, 1080 after T5.6e orchestration, 1089 after T5.6f portable jobs, 1094 after T5.6g reporting, 1095 after the licence guard, 1102 after T4C.5d gate readiness, 1104 after D50 storage preflight, 1106 after T4C.5e overlap evidence, 1112 after T4C.5f campaign acceptance, 1116 after T4C.5g physical preflight, 1117 after T4C.5h preregistration - the `master` freeze; then on `ed-dev`, 1375 after TG2.1, 1429 after TG2.2, 1477 after TG2.3, 1536 after TG2.4, 1577 after TG3.1, 1621 after TG3.2, 1686 after TG3.3, 1742 after TG3.4, 1787 after TG3.5, 1850 after TG4.1, 1922 after TG4.2, 1972 after TG4.3, 1986 after TG5.1, 2004 after TG5.2 and 2020 after TG5.3, 2044 after TG6.1, 2074 after TG6.2, 2112 after TG6.3, 2167 after TG7.1, 2217 after TG7.2, 2235 after TG7.3 and 2236 after TG7.3 live acceptance) |
+| Backend test suite | **2296 passed, 1 xfailed** (plus 1 skipped: opt-in live GCS) (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17, 351 after T3.5.6, 379 after T3.5.15, 407 after T3.5.19, 449 after T4C.5, 709 after T4A.4, 781 after T4B.4, 855 after T4C.5, 859 after T4C.5c, 882 after T5.1a CPU acceptance, 883 after RTX acceptance, 890 after portable profiles, 911 after T5.1b/D44, 917 after T5.1c, 933 after T5.1d/D45, 946 after T5.1e, 955 after T5.2a, 957 after T5.2b, 962 after T5.3a, 969 after T5.3b, 981 after T5.2c offline acceptance, 985 after T5.2d, 1000 after T5.0a, 1008 after T5.0b, 1027 after T5.6a offline acceptance, 1042 after T5.6b cube acceptance, 1056 after T5.6c matched evaluation, 1070 after T5.6d truth matching, 1080 after T5.6e orchestration, 1089 after T5.6f portable jobs, 1094 after T5.6g reporting, 1095 after the licence guard, 1102 after T4C.5d gate readiness, 1104 after D50 storage preflight, 1106 after T4C.5e overlap evidence, 1112 after T4C.5f campaign acceptance, 1116 after T4C.5g physical preflight, 1117 after T4C.5h preregistration - the `master` freeze; then on `ed-dev`, 1375 after TG2.1, 1429 after TG2.2, 1477 after TG2.3, 1536 after TG2.4, 1577 after TG3.1, 1621 after TG3.2, 1686 after TG3.3, 1742 after TG3.4, 1787 after TG3.5, 1850 after TG4.1, 1922 after TG4.2, 1972 after TG4.3, 1986 after TG5.1, 2004 after TG5.2 and 2020 after TG5.3, 2044 after TG6.1, 2074 after TG6.2, 2112 after TG6.3, 2167 after TG7.1, 2217 after TG7.2, 2235 after TG7.3, 2236 after TG7.3 live acceptance and 2296 after TG7.4) |
 | Ground-Truth Benchmark Suite | **29 PASS, 0 FAIL, 0 NOT_YET_RUNNABLE** (`python -m src.benchmarks`, exit 0) |
 | Frontend `npm install` + `npm run build` | passes, emits 1,386 modules + real JS/CSS assets (was: 1 module, no assets) |
 | Backend server | starts, serves OpenAPI, all smoke-tested endpoints return 200 |
@@ -4180,7 +4242,8 @@ able to sit three slices out of date.
 | `test_recorded_call.py` | 50 | TG7.1 the recorded-call boundary: every call capturing the verbatim request, the verbatim response bytes, the exact model id, effort, API request id and both timestamps, chained by digest and labelled `recorded-not-reproducible`, with a loaded record claiming determinism refused by name; sampling parameters refused at any depth of the request; the declared schema sent as `output_config.format` with `additionalProperties` closed, and free text, a missing field, an undeclared `claim_level`, a value outside its enumeration, a wrong type and a parse disagreeing with the response bytes each refused, the check surviving a round trip rather than holding only at record time; commentary bound to one exact bundle revision, published beside the bundle and never over it, never overwritten, and refused when spliced from another bundle even where the chain would accept it; and the acceptance test of the phase — a corpus standing on all five rungs plus a blocked and a contradicted bundle, reviewed by all eight roles with commentary demanding promotion, whose every claim level is identical after deleting every LLM output — with a randomised sweep over 300 reviewed bundles, a second over 200 recorded chains, and the smuggling check that refuses recorded wording found inside the evidence chain (R22, R23) |
 | `test_round_robin.py` | 49 | TG7.2 the adversarial round-robin: the eight seats replayed turn by turn against the plan, with a role out of order, a seat answered by a model or at an effort the panel did not seat, an answer against the wrong schema, a second answer to one challenge and a ninth turn on a finished exchange each refused; a malformed turn recorded before it is refused, so nothing paid for is discarded (R23); dissent retired only by concession or by a rebuttal the independent reassessment declines to reopen, with the reassessment able to reopen a dissent but not originate one; the final synthesis refused when it drops an unresolved dissent, invents one, or reports calm while one stands; three agreeing challengers leaving the fourth's objection byte-identical, which is what a hidden count would have broken; a panel needing every seat filled and reporting reviewer overlap rather than refusing it; and a complete exchange over a corpus standing on all five rungs plus a blocked and a contradicted bundle, every seat arguing for promotion by name, moving no claim level — with a randomised sweep over 120 exchanges checking retained dissent against an independently written rule and a second over 80 randomly seated panels re-replaying each recorded chain (R22, R23) |
 | `test_review_cost.py` | 15 | TG7.3 provider-neutral cost control and Gemini 3.5 Flash Batch transport: fixed per-role effort routing; exact structured Batch request, poll and response mapping including the first live operation shape; current Batch response-format enum; API-key non-retention; visible-plus-thinking output accounting and raw/normalized token reconciliation; measured non-zero cache-hit acceptance and configured-but-missed refusal; standard-route, effort, identity, arithmetic, provider-error and tamper refusals; and content-addressed atomic no-overwrite receipt persistence over an eight-call review |
-| **total** | **1922** | |
+| `test_translation.py` | 47 | TG7.4 translation, bounded: the restated gate names checked against the ladder's own so the one line of duplication cannot drift; a glossary refused when partial, when it invents a term, and when a phrase carries causal vocabulary, a digit, a comparative asserting a relation of size, or wording reserved to a higher rung; R9's six figures given a structure they did not have, with each of the six load-bearing and a lift that is not confidence over base rate refused; the roadmap's own "82% of the time" rendered welded to the base rate that defuses it; two features of one variable described with their units while a cross-domain pair renders only `structural_signature`, asserted as the absence of variable, dataset and units; entitlements welded into the same string as the claims they bound; commentary quarantined outside the claim text and refused when reproduced inside it; a stale translation of a superseded revision refused; canonical no-overwrite persistence and a tampered document refused on load; a glossary registered from the test module outside `src/` (TG8.1); and the acceptance test of the phase — a corpus on all five rungs plus a blocked and a contradicted bundle, translated into an atmospheric and a financial vocabulary, reading completely differently and asserting identical facts — with three randomised sweeps and nine deliberate mutations of the module, each caught (R7, R9, R19, R22) |
+| **total** | **1969** | |
 
 ### 7.2h A surrogate null that was not the null it claimed (T4C.5)
 

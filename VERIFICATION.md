@@ -5261,3 +5261,64 @@ remain **NOT RUN**. The offline non-zero cache fixture tests the auditor, not Go
 **Claim boundary.** Cost routing and token accounting say nothing about whether a challenge is
 good. The receipt cannot reach the EvidenceBundle or any G6 gate, and caching does not make an LLM
 answer reproducible. R22 and R23 are unchanged.
+
+## TG7.4 - translation, bounded (`ed-dev`)
+
+`src/core/translation.py` renders a finding in domain language. It is the first point in the
+programme where text is produced for a human to act on, and therefore the point where four rules
+break at once if nothing stops them: R19's forbidden semantic comparison, R9's bare confidence
+figure, R7's causal verbs entering through prose rather than through claim kinds, and R22's
+promotion carried out entirely in wording.
+
+**No model is called.** Domain wording is declared, content-hashed data screened at registration;
+the renderer emits only from closed template sets bound to structural facts.
+
+**A gap closed on the way.** R9 names six figures - support, confidence, base rate, lift with an
+interval, and surrogate-corrected lift. None of them had a structured home anywhere in `src/`
+before this slice; `claim_ladder` asks only whether an `effect_sizes` entry passes and never reads
+what is inside one, so the figures lived unvalidated in a payload mapping. `AssociationFigures`
+keeps all six together, refuses a partial set by name, and checks lift against
+`confidence / base_rate` rather than trusting it. Its `render` is the only method in the module
+that can format a percentage:
+
+```text
+observed in 40 occurrences: 82.0% of the time, against a base rate of 40.0%
+(lift 2.05, interval 1.60 to 2.50, 1.90 after surrogate correction)
+```
+
+That is the roadmap's own cautionary example, made honest rather than banned.
+
+Three rules are structural rather than checked. **R19:** two disjoint template sets selected by
+`semantic_key` equality, the cross-domain set reaching only `structural_signature()`, so a
+cross-domain magnitude sentence cannot be constructed. **R9:** `AssociationFigures` cannot exist
+partially, and nothing else formats a percentage. **R22:** `translate` takes a `FiveOutputs`,
+never a `ReviewedBundle`, so commentary has no parameter through which to arrive.
+
+**Acceptance.** A corpus standing on all five rungs plus a blocked bundle and a contradicted one,
+translated into an atmospheric and a financial vocabulary, gives documents that read completely
+differently and assert an identical set of structural facts, with every claim digest unchanged. A
+hostile glossary attempting six promotions in wording alone is refused at registration, by name,
+for each one.
+
+**Evidence.** `src/tests/test_translation.py`, 47 tests (60 cases). Three randomised sweeps: 600
+documents over both vocabularies against an independently written restatement of the fact set; 400
+checking numeral containment, bare-confidence and causal-vocabulary refusal with and without
+figures; 300 feature pairs, half sharing a `semantic_key`, asserting no unit-bearing field ever
+leaves a cross-domain rendering.
+
+**Two mutations initially proved worthless, and that is recorded rather than tidied away.** Nine
+deliberate mutations were applied to the module itself. Seven were caught on the first attempt.
+The eighth - removing the causal guard - appeared to be caught, but the edit pattern never matched,
+so the run had been against unmutated source; re-applied correctly, it is caught. The ninth showed
+the two halves of `assert_no_bare_confidence` are **fully redundant**: removing either leaves the
+other catching every case. The per-unit loop is kept for its diagnostics and is now documented as
+redundant in the module, so a later reader does not mistake belt for braces.
+
+**Claim boundary.** A translation is faithful to the record, not to the world. A glossary mapping a
+structural term to a misleading-but-non-causal domain word is accepted, because no structural check
+knows what "anomaly" means to an oceanographer; the defence is that the glossary is declared,
+hashed and reviewable, not that it is correct. Refusing causal *vocabulary* is not refusing causal
+*implication*: a reader who reads "precursor" as "cause" is caught by nothing here. The R19 guard
+stops the system emitting a cross-domain comparison; it cannot stop a reader setting two
+within-domain renderings side by side and drawing one themselves, and layout is out of scope.
+Nothing judges whether a finding was worth translating.

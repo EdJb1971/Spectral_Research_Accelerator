@@ -1844,9 +1844,68 @@ cache floor and correctly reported zero cached tokens, so a real cache hit, full
 cost receipt remain **NOT RUN**. A cost receipt says what route and usage were recorded; it says
 nothing about review quality and cannot move a G6 claim.
 
-**TG7.4 Translation, bounded.** Rendering a finding in domain language for a reader. Under R19
-this may not introduce a semantic comparison the structural evidence does not support, and under
-R9 a bare confidence figure remains unrenderable.
+**TG7.4 Translation, bounded. DONE (`ed-dev`).** `src/core/translation.py` renders a finding in
+domain language for a reader. This is the first point in the programme where text is produced for
+a human to act on, and therefore the point where four rules break at once if nothing stops them:
+domain prose reaches naturally for the semantic comparison R19 forbids; a bare confidence figure
+is the way R9 says this platform is most likely to mislead its own author; causal verbs enter
+through sentences rather than through claim kinds (R7); and "candidate precursor" becomes "early
+warning signal" — a promotion carried out entirely in wording, with no gate touched (R22).
+
+**Translation is a projection, not a generation.** There is no model call. Domain wording arrives
+as declared, content-hashed data screened when it is registered, and the renderer emits only from
+closed template sets bound to structural facts.
+
+**R9 is given a structure it did not have.** The six figures R9 names had **no structured home
+anywhere in `src/`** before this slice: the ladder asks only whether an `effect_sizes` entry
+passes and never reads what is inside one, so support, confidence, base rate, lift, interval and
+surrogate-corrected lift lived unvalidated in a payload mapping. `AssociationFigures` keeps all
+six together, refuses a partial set by name, and checks lift against `confidence / base_rate`
+rather than trusting it. Its `render` is the only method that can format a percentage, so the
+roadmap's own cautionary "82% of the time" is not banned but made honest — the base rate that
+decides whether 82% is a finding or noise is in the same string.
+
+**R19 holds by construction, not by inspection.** Two disjoint template sets, selected by
+`semantic_key` equality: the within-domain set may reference units, magnitude and the variable;
+the cross-domain set may reference only `structural_signature()`. A cross-domain magnitude
+sentence cannot be constructed, and widening the cross-domain field set is a visible edit to a
+named constant. **R22 holds by signature:** `translate` takes a `FiveOutputs`, never a
+`ReviewedBundle`, so review commentary has no parameter through which to arrive; what a caller
+passes as commentary is quarantined, excluded from the claim text, and rendered under a heading
+saying it moved nothing.
+
+A glossary registers through the same `Registry` orientation conventions use, so a domain supplies
+one **without editing `src/`** — the TG8.1 condition met early. Registration refuses a partial map,
+causal vocabulary, any digit, any comparative asserting a relation of size, and any rung phrase
+borrowing wording reserved to a higher rung. Each entitlement is welded into the same string as
+the claim it bounds, so a UI cannot show "this is a candidate precursor" and drop "predictive
+utility is not shown".
+
+**Acceptance: a corpus standing on all five rungs, plus a blocked bundle and a contradicted one,
+translated into an atmospheric and a financial vocabulary, yields documents that read completely
+differently and assert an identical set of structural facts, with every claim digest unchanged;**
+and a hostile glossary attempting six promotions in wording alone is refused at registration, by
+name, for each one.
+
+**Evidence:** `src/tests/test_translation.py`, 47 tests (60 cases). Three randomised sweeps: 600
+documents over both vocabularies checked against an independently written restatement of the fact
+set; 400 more checking numeral containment, bare-confidence and causal-vocabulary refusal with and
+without figures attached; and 300 feature pairs, half sharing a `semantic_key` and half not,
+asserting no unit-bearing field ever leaves a cross-domain rendering. Nine deliberate mutations
+were applied to the module itself and each was caught — but only after the first attempt at two of
+them proved worthless: one pattern never matched, so the "mutation" ran against unmutated source,
+and the other showed the two halves of the bare-confidence guard are fully redundant, differing
+only in diagnostics. Both are recorded in the module rather than left as false assurance.
+
+**Claim boundary.** A translation is faithful to the **record**, not to the world. A glossary
+mapping a structural term to a misleading-but-non-causal domain word is accepted, because no
+structural check knows what "anomaly" means to an oceanographer; the defence is that the glossary
+is declared, hashed and reviewable, not that it is correct. Refusing causal *vocabulary* is not
+refusing causal *implication*, and a reader who reads "precursor" as "cause" is caught by nothing
+here. The R19 guard stops the *system* emitting a cross-domain comparison; it cannot stop a reader
+setting two within-domain renderings side by side and drawing one themselves, and layout is out of
+scope. Nothing judges whether a finding was worth translating, or whether the domain words chosen
+are the ones a practitioner would use.
 
 ---
 
