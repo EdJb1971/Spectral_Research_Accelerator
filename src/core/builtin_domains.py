@@ -13,11 +13,18 @@ tension visible rather than to look tidy:
     floor therefore exists. Precedence is admissible. Rule R17 permits an empty violation set
     here only because the domain floors something; a domain that broke nothing *and* floored
     nothing would be refused as not being a second domain at all.
-*   **order_book** breaks four assumptions and declares no lag policy. There is no length in
-    metres, nothing propagates, the channels have no ordering, and values are window aggregates
-    rather than instantaneous samples. Its lag policy is ``none``, which is the honest position
-    for a domain with no propagation mechanism and is **not** a failure state: association may
-    still be measured. What is refused is the lead-lag *interpretation* (R21).
+*   **order_book** breaks five assumptions and declares no lag policy. There is no length in
+    metres, nothing propagates, the channels have no ordering, values are window aggregates
+    rather than instantaneous samples, and the trading clock is not regularly spaced. Its lag
+    policy is ``none``, which is the honest position for a domain with no propagation mechanism
+    and is **not** a failure state: association may still be measured. What is refused is the
+    lead-lag *interpretation* (R21).
+
+    ``irregular_sampling`` was **missing until TG8.4 (defect D61)**. The description said
+    "irregular trading clock" from the first commit and the violation tuple did not say it, so
+    the declaration contradicted its own prose for four slices. Nothing caught it because
+    nothing had yet tried to *read data* under the declaration — which is precisely the point of
+    R17 and precisely what an ingestion seam is for.
 
 So the same study, read in the second vocabulary, is a study whose domain does not admit a
 precedence claim — and the refusal surface has to say so.
@@ -67,12 +74,14 @@ ORDER_BOOK = DomainDeclaration(
           AxisSpec(name="instrument", role="category", ordered=False)),
     licence="Venue market-data terms; redistribution of raw depth is generally prohibited.",
     violations=("no_physical_metric", "no_propagation_speed", "unordered_channels",
-                "aggregated_values"),
+                "aggregated_values", "irregular_sampling"),
     lag_policy="none",
     provenance={
         "declared_by": "src/core/builtin_domains.py",
         "note": ("lag_policy 'none' is the honest position for a domain with no propagation "
-                 "mechanism. Association remains measurable; precedence does not (R21)."),
+                 "mechanism. Association remains measurable; precedence does not (R21). "
+                 "'irregular_sampling' was added in TG8.4 (D61): the description declared an "
+                 "irregular clock and the violation tuple did not."),
     },
 )
 

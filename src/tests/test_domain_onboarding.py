@@ -131,7 +131,15 @@ def test_the_plugin_domain_is_attributed_to_the_file_that_onboarded_it():
 
 
 def test_the_plugin_domain_breaks_assumptions_no_registered_domain_had_broken():
-    """R17's reasoning, asserted: a domain that breaks nothing new proves nothing new."""
+    """R17's reasoning, asserted: a domain that breaks nothing new proves nothing new.
+
+    The set was `{"irregular_sampling", "non_stationary_support"}` when TG8.1 landed. TG8.4
+    found that `order_book` had described an "irregular trading clock" from its first commit
+    while omitting `irregular_sampling` from its violation tuple (**D61**), so half of what
+    Argo appeared to contribute was really a gap in an existing declaration. Corrected here
+    rather than left reading as though the coverage claim still held: what Argo uniquely breaks
+    is `non_stationary_support`, and that is still enough to satisfy R17.
+    """
     import src.tests.domain_plugin_example as plugin
 
     from src.core.builtin_domains import BUILTIN_DECLARATIONS
@@ -140,7 +148,9 @@ def test_the_plugin_domain_breaks_assumptions_no_registered_domain_had_broken():
     for declaration in BUILTIN_DECLARATIONS:
         already.update(declaration.violations)
     new = set(plugin.ARGO.violations) - already
-    assert new == {"irregular_sampling", "non_stationary_support"}
+    assert new == {"non_stationary_support"}, (
+        "Argo must still break something no built-in does, or it is not a third domain (R17)")
+    assert "irregular_sampling" in already, "D61's fix must stay fixed"
 
 
 def test_the_plugin_domain_is_the_first_with_an_irregular_clock_and_admissible_precedence():

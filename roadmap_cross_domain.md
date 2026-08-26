@@ -1934,20 +1934,32 @@ suite, benchmark and documentation evidence in `VERIFICATION.md`.
    that floor and a full eight-call review against the live transport. Sequenced *after* TG7.4
    deliberately: TG7.4 is entirely offline and does not depend on it, and spending real tokens on
    a full review before the translation layer existed would have bought nothing.
-2. **Phase G8** — TG8.1 (the onboarding contract) is **DONE**, with a third domain, Argo, live
-   from outside `src/`. TG8.2 (licence provenance) and TG8.3 (the domain ledger) remain, and
-   TG8.2 is sequenced before any further public archive lands: the `licence` field is required
-   but unchecked, and archive terms differ sharply. The probe described under *On auto-detecting
-   a domain from its data* is deferred until a second real adapter exists.
+2. **Phase G8** — TG8.1 (the onboarding contract) and TG8.4 (the ingestion seam) are **DONE**.
+   A third domain, Argo, is live from outside `src/`, and a channel record can be read under any
+   declared domain from tab 12. TG8.2 (licence provenance) is **deferred by decision** (see the
+   sequence note above); TG8.3 (the domain ledger) remains. **No public dataset has been
+   ingested** — the adapter reads local files and never fetches, so an archive adapter for Argo
+   or TESS is still its own act. The probe described under *On auto-detecting a domain from its
+   data* is partly built: `inspect` already converts observed facts into obligations, and what
+   remains is doing the same for a gridded file.
 3. **Phase G9 — the findings instrument.** TG9.1 (the read-only claim surface), TG9.2 (the
    findings view) and TG9.4 (accessibility of the new surface) are DONE. TG9.3 (the refusal surface) is DONE, carrying the half of TG9.1 that
    had been declared and not built. **Phase G9 is complete as declared.** Rendered browser
    inspection of the findings tab is **NOT RUN**, and no bundle records the domain that produced
    it, so `unadmitted_reading` describes a chosen vocabulary rather than a verified provenance.
 
+4. **Phases G10-G13 — acquisition, the workbench, and three domains.** Declared 2026-08-27 and
+   not started. G10 generalises the store catalogue and consolidates the data tabs; **G11 puts the
+   cross-domain engine in front of a person for the first time** — `domain_analysis` and eight
+   core modules currently have `api=0`, so TG8.4's records lead nowhere; G12 reaches the ocean,
+   gridded and then Argo; G13 reaches the sky and closes the violation vocabulary. **No public
+   dataset has been ingested by any of them yet.**
+
 **Open defects:** D43 (the real-data gate is not laptop-feasible through the catalogued
 WeatherBench layouts) and D18 (partial — CUDA-only device probing). Both predate this line and
-neither blocks G8.
+neither blocks G8. **TG12.1 may bear on D43**: an ocean product chunked more kindly than the
+WeatherBench layouts could make the gate reachable, which is a thing to measure rather than
+assume.
 
 ---
 
@@ -2000,6 +2012,43 @@ from complete, not self-enforcing.
 requirement and access terms in its provenance, and export refuses to emit a derived product
 whose source licence forbids it. Redistribution rules differ sharply across public archives and
 must be data, not folklore.
+
+**TG8.4 The ingestion seam. DONE (`ed-dev`).** A declaration is not a connection. TG8.1 made a
+domain declarable from outside `src/`; nothing could read a file under one. `src/api/channels.py`
+mounts two routes over `src/data_layer/tabular_source.py`, which had read delimited channel
+records since TG0.2 and was referenced **zero times** from `src/api/` and `frontend/src/`.
+
+**The rule the slice is built on:** *detection may create a required declaration; it may never
+satisfy one.* `POST /channels/inspect` reports a record's columns, rows and clock, converts what
+it finds into **obligations** on whichever domain the reader picks, and names for every onboarded
+domain whether it admits the file and the exact refusal if it does not. `POST /channels/read`
+reads it against a named domain or refuses by name, and a test asserts the advertised refusal and
+the enforced refusal are the same refusal.
+
+**Three refusals that had no enforcement.** A domain whose declared axes include a role a channel
+table cannot supply is refused (E14) — so `reanalysis` correctly cannot read a CSV. A channel
+given a parent-axis footprint above one sample obliges the domain to declare `aggregated_values`
+(E15/R17), which `_resolve_supports` had documented since TG0.2 and nothing had checked. A record
+above a declared ceiling is refused by name and **never thinned**.
+
+**Found while writing the tests, not designed in:** given a file whose clock ran backwards, the
+first implementation quietly promoted a price column that happened to increase. No column is
+substituted for a broken clock now; the candidates are named and the reader chooses.
+
+**Tab 12, *Domain Records*,** is a peer of the meteorological tab: one reads grids, the other
+reads channel tables for any declared domain. Three seeded fixtures ship in `data/channels/` —
+regular, irregular, and a clock that runs backwards — with a README saying plainly that they are
+fabricated and that no public dataset has been ingested.
+
+**D61, found by this slice.** `order_book` described "an irregular trading clock" and did not
+declare `irregular_sampling`. Four slices passed without it being noticed because nothing had yet
+tried to *read data* under a declaration. Corrected, with the knock-on recorded: half of what
+TG8.1 credited to Argo was really this gap.
+
+**Claim boundary.** Reading a file under a domain establishes that the domain's declaration
+admits the file's shape, and nothing more — not that the file came from it. The adapter never
+fetches. The preview plot is a preview: nothing is mined and no rung moves (R22). 72 tests across
+`test_channels_api.py` and `test_tabular_domain.py`, five deliberate mutations, each caught.
 
 **TG8.3 The domain ledger.** For each onboarded domain: which assumptions it violated (R17),
 which analyses it is therefore refused, and what onboarding cost. **If that cost is not falling
@@ -2086,9 +2135,16 @@ false one.
     fluently while declaring nothing about what it refuses. That is exactly the hole TG9.1
     shipped and TG9.3 patched, and onboarding several sources before the contract exists is
     several more chances to repeat it.
-2.  **TG8.2, licence provenance** — before any public archive lands rather than after. The
-    `licence` field is required but unchecked, and archive terms differ sharply.
+2.  **TG8.2, licence provenance** — **deferred by decision, 2026-08-27.** The sequence above
+    originally placed this before any archive adapter, on the assumption that redistribution
+    mattered. It does not here: this is a personal experiment, not a commercial tool, and it
+    will be exercised on public data that is not redistributed. Recorded as a scope decision
+    rather than an oversight, and reversible — `DomainDeclaration.licence` is still a required
+    field, so nothing has been removed. What is postponed is only the **export refusal** that
+    would check it. Revisit if derived products are ever published or shared.
 3.  **Argo, then TESS** — two domains, each justified by which unused violation it exercises.
+    Note that TG8.4's D61 shrank the gap Argo was said to fill: `order_book` should always have
+    declared `irregular_sampling`, so `non_stationary_support` is what Argo uniquely breaks.
 4.  **The probe** — after two real adapters exist, so it generalises from cases rather than
     guesses at them.
 5.  **TG8.3's ledger** — which measures whether onboarding cost is falling, and can only do that
@@ -2297,6 +2353,237 @@ document names, and it belongs to the atmospheric line's regional map rather tha
 cross-domain findings surface. Recorded here so its absence is not mistaken for oversight.
 
 ---
+
+---
+
+### Phases G10–G13 — Acquisition, the workbench, and three domains
+
+Declared 2026-08-27, after TG8.4 made a domain readable from a local file and the question became
+what it would take to reach real archives for the ocean and the sky. **Revised the same day**, when
+a survey of the twelve tabs showed the cross-domain engine had no surface at all: G11 (the
+workbench) was inserted before the two archive phases, which moved to G12 and G13. Acquiring data
+for three domains before anything could analyse it would have built three paths to a dead end.
+
+#### What decides the ordering, and it is not enthusiasm
+
+**Only one inherited assumption is still unbroken.** After D61, six of the seven entries in
+`KNOWN_VIOLATIONS` are declared by a registered domain. `no_natural_cycle` is declared by nothing.
+That fact settles which of the candidate domains is scientifically load-bearing and which is
+merely useful, and rule R17 requires the distinction be stated rather than blurred:
+
+| Candidate | Breaks what nothing else breaks | Therefore |
+| --- | --- | --- |
+| Gridded ocean (GLORYS/ECCO/OISST) | nothing | a **data source**, not a second domain. Its value is the export capability and a different physical medium — water advects two orders of magnitude slower than air, which is a real test of `lag_policy="advective"` |
+| **Argo profiles** | nothing new, but exercises `irregular_sampling` and `non_stationary_support` against **real data** for the first time | closes the gap between declaring a violation and demonstrating one |
+| **Celestial photometry** | **`no_natural_cycle`** | the last unbroken assumption; completes coverage of the vocabulary |
+
+**Three acquisition shapes, not one.** `CropSpec` expresses a region-and-time slice of a regular
+grid. Argo is a region, a time window and a depth range returning an irregular scatter of
+profiles. A light curve is a per-target series with sector gaps. Treating all three as crops is
+how an abstraction quietly stops being one, so each gets its own spec type and the shared
+machinery is shared deliberately rather than by force.
+
+**Decisions taken with the user, 2026-08-27.** Free archive accounts are acceptable, with
+credentials handled exactly as the Gemini key is — header-only, `.env.local`, redacted from `repr`
+and from provider errors, never serialised into an artefact. And the interface is **consolidated
+before** new domains land, so the sprawl of a tab per archive is never built and then undone.
+
+#### Phase G10 — The acquisition surface
+
+Generalise what tab 9 already does well. **No new archive in this phase.**
+
+**TG10.1 The store catalogue becomes a registry.** `zarr_source.CATALOGUE` is a plain dict of four
+ERA5 stores carrying ERA5-shaped fields (`resolution_deg`, `cadence_hours`, `levels`). Standard E1
+exists to forbid exactly that shape: a fifth store cannot be added from outside `src/`.
+`GRIDDED_STORES` becomes a registry whose entries declare the **domain** they belong to, their
+access requirement, and their *measured* chunk facts — the existing notes are the model, recording
+"measured 51.1x amplification" and a dated live inspection rather than an assumption. `CropSpec`
+is generalised on one axis only, the vertical dimension name (`level` for ERA5, `depth` for ocean
+products); `select()` already tolerates either latitude ordering, resolves `lat`/`latitude`, and
+refuses a meridian wrap rather than guessing, and that logic is reused untouched. `content_key()`
+stays machine-independent so the cache remains shareable and the provenance stays a reproduction
+recipe rather than a description.
+**Acceptance:** a fifth store registers from a file outside `src/` and reaches the catalogue
+route, by the method `test_registries.py` already uses.
+
+**TG10.2 The domain-first acquisition surface.** Data currently lives in tab 2, tab 9 and tab 12;
+ocean and sky would make five tabs. Instead: **choose a domain, see what can be acquired for it,
+make a selection.** One route family lists, per declared domain, its available acquisitions and
+each one's shape (`grid_crop`, `profile_query`, `channel_table`). Tab 9 becomes *Acquire*, and the
+roughly 255 lines of ERA5 UI presently inline in `App.tsx` move into a component as `FindingsView`
+and `ChannelRecords` already are. Every acquisition carries the domain's declared limits, reusing
+`refusals_for` and `DOMAIN_ATTRIBUTION_CAVEAT`.
+**Acceptance:** every existing ERA5 capability reachable with no regression, and the tab count
+does not grow when a domain is added.
+
+**TG10.3 Store probing as a recorded act.** Registering a store whose behaviour nobody measured is
+how D43 happened. A probe opens a URI and records its dims, variables, chunk shape, bytes per
+chunk and the amplification a stated crop would suffer — and **records the result either way**,
+including "unreachable" or "needs credentials", which are results rather than failures. No store
+may be registered without one.
+**Acceptance:** the four ERA5 stores' recorded notes are reproduced by the probe, and a
+deliberately hostile store is characterised as hostile before anyone crops it.
+
+#### Phase G11 — The workbench: making the engine reachable
+
+Declared 2026-08-27, and it exists because a survey of the twelve tabs found something the
+roadmap had not said out loud.
+
+**The application is two platforms sharing a shell.** Measured, not estimated:
+
+| Line | Tabs | Operates on |
+| --- | --- | --- |
+| Gridded physical field | 1 Synthetic, 2 Meteorological, 3 Boundary lab, 4 Spectral transforms, 5 Diagnostics, 9 ERA5 Zarr, 10 Forecast evaluation | `PhysicalField` / `GridSpec` — 2-D arrays with a metric |
+| Cross-domain channels | 11 Findings, 12 Domain records | `ChannelSeries` and the claim ladder |
+| Genuinely generic | 6 Experiment engine, 8 Platform & evidence | registries, health, device probing, benchmark listing |
+
+**Genericising the gridded line is the wrong goal and must not be attempted.** A two-dimensional
+dual-tree wavelet transform of an order book is not a cross-domain capability, it is a category
+error. Boundary conditions, advective floors and radial binning in physical wavenumber assume a
+spatial grid *correctly*; making them domain-agnostic would mean making them produce numbers where
+they have no basis, which is precisely what `no_physical_metric` exists to refuse. What that line
+needs is honest **labelling** — it is the gridded line, not the whole application — and the
+navigation currently implies otherwise.
+
+**The real gap is that the cross-domain engine has no surface at all.** Measured by reference
+count:
+
+```text
+analysis_engine/domain_analysis.py    api=0  ui=0
+core/cross_domain.py                  api=0
+core/motif.py  motif_freeze  motif_transfer  motif_relationship    api=0
+core/constellation.py  family.py  invariance.py  preregistration.py  api=0
+core/round_robin.py  recorded_call.py                              api=0
+```
+
+`domain_analysis` offers `analyse_precedence`, `association_only` and `run_domain_gate`, each
+taking a `ChannelSeriesLike` and a `DomainDeclaration`. That is the entire scientific payload for
+every non-gridded domain, it is tested, and **nothing can reach it**. TG8.4 therefore dead-ends: a
+researcher can load an order book or an Argo record and then do nothing whatever with it. Phase
+G10 gets data in across three domains and — stated plainly — gives them nothing to do with it.
+This phase is what makes acquisition lead somewhere, which is why it is sequenced **before** the
+ocean and the sky rather than after.
+
+**One encouraging finding.** The benchmark suite is already cross-domain: `GET /benchmarks`
+returns **11 `sequence`, 7 `field` and 2 `cross_domain`** entries, including
+`planted_precedence`, `precedence_null` and `coupled_cascade_sequence` — thirteen non-gridded
+benchmarks whose correct answer is known before analysis. A channel-analysis surface can therefore
+be validated against ground truth on the day it is built, which is unusual and must be exploited
+rather than wasted.
+
+**The governing rule of the phase**, and the reason it is not merely UI work:
+
+> **The interface may record evidence. It may never assert a rung.**
+
+A rung is always *derived* by `claim_ladder` from evidence the client supplied; no request body
+carries a claim level, exactly as `AssociationFigures.render` is the only thing in the programme
+that can format a percentage. Every write path added here is a place where a rung could move for
+the wrong reason (R22), so each is added one at a time and each gets the treatment the ladder got
+in G6.
+
+**TG11.0 Information architecture.** Twelve flat numbered tabs already read as a list rather than
+an instrument, and this phase adds more. Navigation is grouped into the sections the scientific
+workflow actually has — acquire, analyse, evidence, review, read, platform — with the gridded line
+labelled as the gridded line. Tab *count* is not the constraint; legibility is. A persistent
+selected record and study becomes the app's context, so a researcher chooses a record once rather
+than re-selecting it in every panel: this is the single largest usability win available and it
+costs almost nothing.
+
+**TG11.1 The analysis surface.** `domain_analysis` over HTTP: run a domain gate, an
+association-only analysis or a precedence analysis against a loaded record, with the domain's
+refusals enforced (R21 stops a precedence claim from a domain with no lag floor) and reported.
+Read-only compute — it stores nothing and moves no rung.
+**Acceptance:** the thirteen `sequence` and `cross_domain` benchmarks are reproduced **through the
+HTTP layer**, not merely in process, and every null benchmark still answers "there is nothing
+here". A surface that finds the planted coupling but also finds structure in the AR(1) nulls has
+found nothing (T4C.3).
+
+**TG11.2 Preregistration first.** R18 fixes the family before the sweep runs, and
+`core/preregistration.py` implements it with no way to reach it. The surface makes the ordering
+structural: a sweep cannot be launched against a partition whose preregistration record does not
+already exist. An interface that let a researcher look first and declare afterwards would defeat
+the module completely while appearing to use it.
+
+**TG11.3 The evidence write path.** The first place the interface writes anything that bears on a
+claim, and therefore the slice with the most R22 risk in the programme. One write — record an
+evidence entry into a bundle — with the rung recomputed by the ladder from the resulting evidence
+and never accepted from the client. Bundle revisions, digests and tamper-evidence already exist in
+`core/evidence.py`; this exposes them without weakening them.
+
+**TG11.4 Structure mining.** Motifs, constellations, declared families, invariance auditing and
+cross-domain transfer — `motif`, `constellation`, `family`, `invariance`, `cross_domain`,
+`motif_freeze`, `motif_transfer`. The largest body of unreachable capability in the codebase, and
+sequenced after the write path because its outputs are what the write path records.
+
+**TG11.5 The review surface.** The adversarial round-robin, its recorded calls and its cost
+receipts (`round_robin`, `recorded_call`, `review_cost`). Everything here is R23
+recorded-not-reproducible, so the surface must present it as recorded argument and never as
+something the record permits — the separation TG9.3 already enforces for commentary.
+
+**TG11.6 Accessibility, repaid rather than deferred.** Accessibility across `frontend/src` is
+**zero, measured** — no `aria-*` or `role` attributes and no keyboard handlers outside the
+findings and records views. TG9.4 stopped the new surfaces adding to that debt and explicitly did
+not repay it. "Professional" is the standard being asked for, so this phase repays it for the
+workflow above rather than leaving it as a permanent footnote.
+
+**Claim boundary.** Making a capability reachable is not evidence that it is correct; the
+benchmarks are what argue for correctness, and only for the thirteen cases they cover. A grouped
+navigation does not make the gridded line domain-general, and this phase deliberately does not try
+to. No write path added here may accept a rung, a claim level, or a confidence figure from a
+client.
+
+#### Phase G12 — The ocean
+
+**TG12.1 A gridded ocean product.** Candidates in preference order, chosen by TG10.3's probe
+rather than by reputation: GLORYS (Copernicus Marine, free account), ECCO (NASA Earthdata, free
+account), NOAA OISST (open). Declared honestly under R17 as **breaking nothing new** — a source,
+not a second domain — because a third catalogue entry that looked like a third domain would be
+the exact false confidence R17 exists to refuse. **It may bear on D43:** ocean products are often
+chunked more kindly than WeatherBench's one-timestep-deep layouts, so a laptop-feasible long
+regional record may exist here. Recorded as a possibility to measure, not a promise.
+
+**TG12.2 Argo profiles — a second acquisition shape.** The slice where `argo_float` stops being a
+declaration. `ProfileSpec` takes a region, a time window and a depth range and returns an
+irregular collection of profiles; content-addressed and machine-independent like `CropSpec`, but
+it cannot borrow it, because the result is a scatter rather than an array. It feeds a
+`ChannelSeries`, so everything TG8.4 built — the clock facts, the obligations, the aggregate check
+— applies unchanged. **`argo_float`'s declaration needs revisiting in the open:** it declares
+latitude, longitude *and* a pressure level, so TG8.4's E14 check correctly refuses it a flat
+channel table. Either the profile shape supplies those axes or the declaration is split, and that
+is a design decision to take visibly rather than paper over.
+**Acceptance:** a real Argo query produces a record whose irregular clock is reported as
+irregular, under a domain declaring `irregular_sampling` — the first time that refusal fires
+against data rather than a fixture.
+
+#### Phase G13 — The sky, and closing the vocabulary
+
+**TG13.1 Photometry, and the last unbroken assumption.** TESS or ZTF light curves via MAST/AWS.
+Breaks `no_natural_cycle`: there is no diurnal or annual forcing, so R11's harmonic climatology
+has nothing to remove and its default periods would fit noise. This is the only domain that
+exercises that refusal. It also breaks `irregular_sampling` and `non_stationary_support` through
+sector gaps and targets entering and leaving, and breaks the metric assumption *differently* from
+`order_book` — angular separation is a real metric that is not a length in metres. A third
+acquisition shape: per-target, sector-based.
+
+**TG13.2 The coverage claim, checked rather than asserted.** A test that every entry in
+`KNOWN_VIOLATIONS` is broken by at least one registered domain **with a real data path behind
+it**, not merely declared. The claim that the abstraction generalises then rests on something
+mechanical rather than on this document.
+
+**TG8.3 The domain ledger — finally measurable.** With five domains across three acquisition
+shapes there is at last a trend to read. *If onboarding cost is not falling, the abstraction is
+not working*, and the ledger must be able to say so.
+
+#### Claim boundary, written in advance
+
+*   A store in a catalogue is **not data ingested**. Each phase states plainly whether a live
+    fetch has been run, in the way TG7.3's live tail is still recorded as NOT RUN.
+*   A gridded ocean product breaks nothing new and must not be presented as evidence that the
+    abstraction generalises. Argo and photometry carry that claim.
+*   Reading a record under a domain never establishes that it came from that domain, however real
+    the archive (`DOMAIN_ATTRIBUTION_CAVEAT`).
+*   Network stays opt-in. Reaching the internet must never be a side effect of running a sweep.
+*   Credentials are never written to an artefact, a log, a provenance record or a `repr`.
 
 ## 6. Definition of Done
 

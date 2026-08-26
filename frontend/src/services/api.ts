@@ -293,6 +293,38 @@ export const apiService = {
       await fetch(`${BASE_URL}/evaluation/receipts/import`, { method: 'POST', body: form }));
   },
 
+  // ------------------------------------------------ channel records (TG8.4)
+  //
+  // Two calls, and the client makes neither choice for the researcher: `inspect` reports what a
+  // file is and which declared domains admit it, `read` loads it under the one they pick. Both
+  // send multipart, so no Content-Type header is set by hand.
+
+  async inspectChannelRecord(file: File, options: { delimiter?: string; timeColumn?: string }
+    = {}): Promise<types.ChannelInspection> {
+    const form = new FormData();
+    form.append('file', file);
+    if (options.delimiter) form.append('delimiter', options.delimiter);
+    if (options.timeColumn) form.append('time_column', options.timeColumn);
+    return handleResponse<types.ChannelInspection>(
+      await fetch(`${BASE_URL}/channels/inspect`, { method: 'POST', body: form }));
+  },
+
+  async readChannelRecord(file: File, domain: string, timeColumn: string,
+                          options: { delimiter?: string;
+                                     supportParentPx?: Record<string, number> } = {}
+  ): Promise<types.ChannelRecord> {
+    const form = new FormData();
+    form.append('file', file);
+    form.append('domain', domain);
+    form.append('time_column', timeColumn);
+    if (options.delimiter) form.append('delimiter', options.delimiter);
+    if (options.supportParentPx && Object.keys(options.supportParentPx).length > 0) {
+      form.append('support_parent_px', JSON.stringify(options.supportParentPx));
+    }
+    return handleResponse<types.ChannelRecord>(
+      await fetch(`${BASE_URL}/channels/read`, { method: 'POST', body: form }));
+  },
+
   // ------------------------------------------------ the findings surface (TG9.1)
   //
   // Read-only. None of these can change what may be claimed: a GET does not move a rung

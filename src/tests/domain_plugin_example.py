@@ -10,16 +10,24 @@ byte-identical afterwards.
 second domain.* The same reasoning refuses a domain that violates only what an existing one
 already violates — `physical_core/geometry.py` makes the point about geometries, where *"a fourth
 geometry that is merely `cartesian` with a different name proves nothing."* Of the seven entries
-in `KNOWN_VIOLATIONS`, the two registered domains between them break four; `irregular_sampling`
-and `non_stationary_support` had never been broken by any registered domain, so no refusal that
-depends on them had ever fired against a declared source.
+in `KNOWN_VIOLATIONS`, the two registered domains between them break five; `non_stationary_support`
+has never been broken by any registered domain, so no refusal that depends on it has ever fired
+against a declared source.
 
-Argo breaks exactly those two, and breaks them for reasons that are physically real rather than
+**Corrected after the fact, and worth reading as a lesson rather than a tidy-up.** This paragraph
+originally claimed *two* previously-unbroken violations, `irregular_sampling` among them. TG8.4
+found that `order_book` had described an "irregular trading clock" from its first commit while
+omitting `irregular_sampling` from its violation tuple (**D61**), so one of the two was really a
+gap in an existing declaration rather than a contribution from this one. Nothing caught it for
+four slices because nothing had yet tried to read data under the declaration.
+
+Argo declares both, and declares them for reasons that are physically real rather than
 contrived:
 
 *   **`irregular_sampling`** — a float parks at depth, drifts, and surfaces to report on a
     nominal cycle it does not keep precisely. The interval between two profiles is a property of
-    the float and the ocean, not of a clock anyone set.
+    the float and the ocean, not of a clock anyone set. (Shared with `order_book` since D61 was
+    fixed; still true of Argo, and still declared here on its own account.)
 *   **`non_stationary_support`** — floats are deployed, fail, run out of battery and are
     replaced throughout the record. Channels genuinely start and stop mid-series, so the
     effective sample size differs per float and per pair.

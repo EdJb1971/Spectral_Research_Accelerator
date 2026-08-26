@@ -3067,6 +3067,87 @@ still does not record one. `DOMAIN_ATTRIBUTION_CAVEAT` continues to travel with 
 limit. Rule R17's refusals remain enforced in the analysis layer; this makes the declarations
 they read from complete, not self-enforcing.
 
+### 3.6zn The ingestion seam (`src/api/channels.py`, TG8.4, `ed-dev`)
+
+TG8.1 made a domain **declarable** from outside `src/`. A declaration is not a connection. Until
+this slice there was no path from any file to any declared domain, so `/findings/domains`
+described vocabularies and limits for data nobody could load, and the platform could ingest three
+things — a local NetCDF, ERA5 crops from WeatherBench Zarr, and a fabricated field — all
+atmospheric, one of them not data.
+
+Most of what was needed already existed and was unreachable. `src/data_layer/tabular_source.py`
+has read delimited channel records since TG0.2: it refuses a non-monotonic clock, refuses an
+irregular one unless the domain declares `irregular_sampling`, refuses non-finite values, and
+digests the bytes. It called `register_source` nowhere, was referenced **zero times** from
+`src/api/` and `frontend/src/`, and its only importer was its own test. TG8.4 gives it a seam.
+
+**Not registered as a `DataSource`, deliberately.** `register_source` wraps a
+`can_serve(dataset_id)` / `fetch(...) -> xr.Dataset` protocol — an atmospheric grid-fetch
+contract. A channel table returns a `ChannelSeries` and is uploaded rather than named. Forcing it
+into `SOURCES` would misrepresent both and would put a CSV into the fallback chain that serves
+ERA5. It gets its own router.
+
+**Two calls, and the reason is the one `/import/inspect` already had.** That route exists because
+an ERA5 file is `(time, level, lat, lon)` and picking `[0, 0]` on the researcher's behalf imports
+a slice they did not choose while every statistic downstream describes that arbitrary timestep.
+Here the arbitrary choices are the **clock column** and the **domain**, and neither is made for
+the caller.
+
+`POST /channels/inspect` reports what the file is — columns, rows, which columns could serve as a
+clock, whether that clock is strictly increasing and regular — and converts those facts into
+**obligations**, under the rule this slice is built on:
+
+> **Detection may create a required declaration. It may never satisfy one.**
+
+An irregular clock does not acquire `irregular_sampling`; it acquires a *requirement* that
+whichever domain the reader picks already declare it. The report then names, for every onboarded
+domain, whether it admits this file and the exact wording of the refusal if it does not — so a
+refusal is visible before it is hit. `POST /channels/read` reads the record against a named
+onboarded domain, or refuses by name, and a test asserts that the refusal `inspect` advertises
+and the refusal `read` enforces are the **same** refusal.
+
+**No column is substituted for a broken clock.** This was found while writing the tests, not
+designed in: given a file whose `t` ran backwards, the first implementation quietly promoted
+`bid` — a price column that happened to increase — to be the clock, and every lag reported
+downstream would have described that substitution. Inspection now stops and names the candidates
+instead. A caller who knows their clock is in column three passes `time_column` explicitly.
+
+**Three refusals that had no enforcement before.** Two are new, one was prose:
+
+| Condition | Basis |
+|---|---|
+| the domain's declared axes include a role a channel table cannot supply | E14 — a domain declaring latitude and a pressure level has declared a record richer than the file, and reading it here would silently drop axes its results are indexed by. `reanalysis` is therefore refused for a CSV, correctly |
+| a channel is given a parent-axis footprint above one sample while the domain does not declare `aggregated_values` | E15/R17 — documented in `_resolve_supports` since TG0.2 and enforced by nothing. Declaring the footprint without the violation sets the lag floor correctly and leaves every other refusal that depends on it switched off |
+| rows × channels above a declared ceiling | refused by name, **never thinned**. A record silently reduced to fit a response body is indistinguishable from one that was always that size |
+
+**Stateless.** The series is returned and nothing is stored, exactly as `/import/field` returns a
+field the browser then holds. A server-side store would be a second place a record could go stale
+against the file it came from.
+
+**Tab 12, *Domain Records*,** is a peer of the meteorological tab rather than a section inside it:
+one tab reads grids, the other reads channel tables for any declared domain. The multi-domain
+interface is a structural fact there rather than a claim in a document. The view formats no
+scientific quantity — the clock facts, the refusals, the caveat and the preview note all arrive
+as strings or booleans and are rendered as given, Phase G9's rule applied to a tab G9 did not
+write. Row counts and raw data values are formatted, and neither is a claim.
+
+**D61, found by this slice.** `order_book` had described *"an irregular trading clock"* in its
+description from its first commit while omitting `irregular_sampling` from its violation tuple.
+Four slices passed without anyone noticing, because nothing had yet tried to **read data** under
+the declaration — which is exactly what R17 is for and exactly what an ingestion seam is for. The
+declaration is corrected here, and the consequence is recorded rather than smoothed over: half of
+what TG8.1 claimed Argo uniquely contributed was really a gap in an existing declaration, so the
+plugin's docstring and the coverage test both now say `non_stationary_support` alone.
+
+**Claim boundary.** Reading a file under a domain does **not** establish that the file came from
+that domain; it establishes that the domain's declaration admits the file's shape. That is the
+attribution gap `DOMAIN_ATTRIBUTION_CAVEAT` already records for findings, and the caveat is served
+with every inspection and every read. The adapter never fetches — pointing a domain at a real
+archive remains a separate, deliberate act, and no public dataset has been ingested. The preview
+plot is a preview: nothing is mined, no claim exists, no rung moves (R22). And refusing a file is
+not validating the data in it: finite, monotonic and regularly sampled says nothing about whether
+the values are right.
+
 ### 3.11 Ground-Truth Benchmark Suite (`src/benchmarks/`)
 
 Added in T3.5.17 (standard E7). Twenty synthetic datasets whose correct answer is known
@@ -3381,7 +3462,7 @@ reason in the test itself.
 
 ## 3.12 HTTP API Surface
 
-38 routes. Listed here because an undocumented endpoint is an untested contract.
+40 routes. Listed here because an undocumented endpoint is an untested contract.
 
 | Method | Route | Notes |
 |---|---|---|
@@ -3418,6 +3499,8 @@ reason in the test itself.
 | GET | `/api/v1/hypothesis/proposals` | generated follow-up configurations |
 | GET | `/api/v1/findings/domains` | every registered domain — the union of the wording and declaration registries — with what it refuses and whether its declaration is complete (TG9.1/TG9.3/TG8.1) |
 | GET | `/api/v1/findings/onboarding` | the adapter recipe itself, generated from `REQUIRED_DECLARATIONS`, plus each domain's audit (TG8.1) |
+| POST | `/api/v1/channels/inspect` | what an uploaded channel record is, and the violations a domain must already declare to read it; chooses no clock column and no domain (TG8.4) |
+| POST | `/api/v1/channels/read` | one channel record read against a declared domain, with that domain's refusals and the attribution caveat; refused by name where the declaration does not admit it (TG8.4) |
 | GET | `/api/v1/findings/glossaries/{name}` | one domain's wording for all 38 structural terms, published so it can be audited |
 | GET | `/api/v1/findings/studies` | published studies with the rung each stands on; unreadable files reported, not skipped |
 | GET | `/api/v1/findings/studies/{study_id}` | one evidence bundle whole, with its digests |
@@ -4169,7 +4252,7 @@ See `VERIFICATION.md` for the captured command output behind every statement her
 | Item | Status |
 |---|---|
 | Python venv + dependencies | installed (torch 2.13.0+cu130, numpy 2.2.6, pydantic 1.10.26, SQLAlchemy 2.0.52, xarray 2025.6.1, FastAPI 0.110.3) |
-| Backend test suite | **2367 passed, 1 xfailed** (plus 1 skipped: opt-in live GCS) (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17, 351 after T3.5.6, 379 after T3.5.15, 407 after T3.5.19, 449 after T4C.5, 709 after T4A.4, 781 after T4B.4, 855 after T4C.5, 859 after T4C.5c, 882 after T5.1a CPU acceptance, 883 after RTX acceptance, 890 after portable profiles, 911 after T5.1b/D44, 917 after T5.1c, 933 after T5.1d/D45, 946 after T5.1e, 955 after T5.2a, 957 after T5.2b, 962 after T5.3a, 969 after T5.3b, 981 after T5.2c offline acceptance, 985 after T5.2d, 1000 after T5.0a, 1008 after T5.0b, 1027 after T5.6a offline acceptance, 1042 after T5.6b cube acceptance, 1056 after T5.6c matched evaluation, 1070 after T5.6d truth matching, 1080 after T5.6e orchestration, 1089 after T5.6f portable jobs, 1094 after T5.6g reporting, 1095 after the licence guard, 1102 after T4C.5d gate readiness, 1104 after D50 storage preflight, 1106 after T4C.5e overlap evidence, 1112 after T4C.5f campaign acceptance, 1116 after T4C.5g physical preflight, 1117 after T4C.5h preregistration - the `master` freeze; then on `ed-dev`, 1375 after TG2.1, 1429 after TG2.2, 1477 after TG2.3, 1536 after TG2.4, 1577 after TG3.1, 1621 after TG3.2, 1686 after TG3.3, 1742 after TG3.4, 1787 after TG3.5, 1850 after TG4.1, 1922 after TG4.2, 1972 after TG4.3, 1986 after TG5.1, 2004 after TG5.2 and 2020 after TG5.3, 2044 after TG6.1, 2074 after TG6.2, 2112 after TG6.3, 2167 after TG7.1, 2217 after TG7.2, 2235 after TG7.3, 2236 after TG7.3 live acceptance, 2296 after TG7.4, 2321 after TG9.1/TG9.2 2334 after TG9.3 and 2367 after TG8.1) |
+| Backend test suite | **2420 passed, 1 xfailed** (plus 1 skipped: opt-in live GCS) (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17, 351 after T3.5.6, 379 after T3.5.15, 407 after T3.5.19, 449 after T4C.5, 709 after T4A.4, 781 after T4B.4, 855 after T4C.5, 859 after T4C.5c, 882 after T5.1a CPU acceptance, 883 after RTX acceptance, 890 after portable profiles, 911 after T5.1b/D44, 917 after T5.1c, 933 after T5.1d/D45, 946 after T5.1e, 955 after T5.2a, 957 after T5.2b, 962 after T5.3a, 969 after T5.3b, 981 after T5.2c offline acceptance, 985 after T5.2d, 1000 after T5.0a, 1008 after T5.0b, 1027 after T5.6a offline acceptance, 1042 after T5.6b cube acceptance, 1056 after T5.6c matched evaluation, 1070 after T5.6d truth matching, 1080 after T5.6e orchestration, 1089 after T5.6f portable jobs, 1094 after T5.6g reporting, 1095 after the licence guard, 1102 after T4C.5d gate readiness, 1104 after D50 storage preflight, 1106 after T4C.5e overlap evidence, 1112 after T4C.5f campaign acceptance, 1116 after T4C.5g physical preflight, 1117 after T4C.5h preregistration - the `master` freeze; then on `ed-dev`, 1375 after TG2.1, 1429 after TG2.2, 1477 after TG2.3, 1536 after TG2.4, 1577 after TG3.1, 1621 after TG3.2, 1686 after TG3.3, 1742 after TG3.4, 1787 after TG3.5, 1850 after TG4.1, 1922 after TG4.2, 1972 after TG4.3, 1986 after TG5.1, 2004 after TG5.2 and 2020 after TG5.3, 2044 after TG6.1, 2074 after TG6.2, 2112 after TG6.3, 2167 after TG7.1, 2217 after TG7.2, 2235 after TG7.3, 2236 after TG7.3 live acceptance, 2296 after TG7.4, 2321 after TG9.1/TG9.2 2334 after TG9.3, 2367 after TG8.1 and 2420 after TG8.4) |
 | Ground-Truth Benchmark Suite | **29 PASS, 0 FAIL, 0 NOT_YET_RUNNABLE** (`python -m src.benchmarks`, exit 0) |
 | Frontend `npm install` + `npm run build` | passes, emits 1,386 modules + real JS/CSS assets (was: 1 module, no assets) |
 | Backend server | starts, serves OpenAPI, all smoke-tested endpoints return 200 |
@@ -4269,6 +4352,7 @@ code paths that `architecture.md` previously described as implemented and rigoro
 
 | D59 | `benchmarks/sequences.py:build_advected_vortex`, `truth_advected_vortex` | **The recorded trajectory wraps and the field does not.** `truth_advected_vortex` takes the vortex position modulo `n`, so its known answer is a trajectory on a torus; `build_advected_vortex` draws the blob with a plain Euclidean Gaussian, which is clipped at the boundary rather than wrapped. At the benchmark's own parameters the vortex never reaches an edge, so the two have never disagreed and the `4D.position` check passes to better than a cell. Started near an edge, the recorded position and the measured centroid part company by several cells for the frames where the blob is clipped. This lands on TG2.3, whose acceptance criterion is *1 track, 1 birth, 0 deaths* on this sequence: a tracker run on a wrapping parameterisation would see the object fade out at one edge and appear at the other, and would be right, against a recorded answer that says neither happened. Left unfixed deliberately - making the builder periodic would move every number the benchmark produces, and TG2.1 is not the slice that gets to do that - and asserted by a test so the next slice meets it as a fact. Found by giving TG2.1's record a real user. **Fixed in TG2.3**: the topology is now a declared parameter (`periodic`) that the builder, the recorded answer and both checks read (standard E14), rather than the builder assuming one and the answer the other. At the registered parameters every number the benchmark produces is unchanged - the modulo was a no-op there, which is exactly why it hid. `track_count`, `births` and `deaths` are now **derived** from an analytic `mass_inside_frame` rather than asserted as the constants 1, 1 and 0, so a sequence that advects the vortex out of the frame records the death that actually happens; and a second registered benchmark, `advected_vortex_periodic_sequence`, declares a torus and draws one, which makes the seam-crossing case answerable for the first time. | **FIXED** TG2.3 (`ed-dev`) |
 | D60 | `core/review_cost.py:GeminiBatchTransport` | **The offline Gemini Batch fixture did not describe the live API.** A completed operation returns batch state/times in `metadata` and the `GenerateContentBatchOutput` separately in `response`; the first parser expected the reference's direct resource shape and refused a successful live batch. Worse, the legacy `responseMimeType` / `responseJsonSchema` fields were accepted but silently did not constrain Gemini 3.5 Flash, while current `responseFormat` requires protobuf enum `APPLICATION_JSON` on Batch even though synchronous REST examples show `application/json`. The first locally unvalidated smoke therefore returned valid JSON with the wrong fields. Live usage also separates visible candidates from billed thinking tokens. The parser now normalizes the real operation shape, uses the live-accepted enum dialect, validates output locally before success, and counts candidate plus thinking tokens as output while retaining raw usage. A subsequent live batch returned the exact declared `{status, note}` schema. | **FIXED** TG7.3 (`ed-dev`) |
+| D61 | `core/builtin_domains.py:ORDER_BOOK` | **A domain's description and its declared violations disagreed for four slices.** `order_book` has read *"per-instrument order-book channels on an irregular trading clock"* since its first commit while omitting `irregular_sampling` from its violation tuple, so the analysis layer would have accepted a ragged record from it as regularly sampled and reported every lag in frames as a duration. Nothing caught it because nothing had yet tried to **read data** under the declaration — which is what rule R17 exists for and what an ingestion seam is for. Found by TG8.4's `read_channels_for_domain`, whose cadence check consults the declaration. The tuple is corrected, and the consequence is recorded rather than smoothed over: half of what TG8.1 credited to Argo was really this gap, so the plugin docstring and the coverage test now claim `non_stationary_support` alone. | **FIXED** TG8.4 (`ed-dev`) |
 
 **Root cause common to D20, D23, D25 and D2:** the transform engine — the mathematical core of
 the platform — had **no test file at all**. `src/tests/test_transforms.py` now exists (36 cases
@@ -4417,7 +4501,7 @@ able to sit three slices out of date.
 | `test_channel_series.py` | 14 | TG0.1 channel-series contract: signature/plain-series result equivalence, the two protocol tiers, R21's no-support refusal, clock and shape validation |
 | `test_domain_gate.py` | 18 | TG0.3 negative control: PASS/FAIL/INVALID on a non-atmospheric domain, false-positive calibration, R6 embargoed split, gate-measure registry |
 | `test_sample_spine.py` | 28 | TG1.4 sibling sample spine: a rank-3 domain through the unmodified sweep and replication gate, the planted/AR(1) pair, `PhysicalField` still refusing non-2D input, the one-way bridge and its transpose refusal, declaration-not-inference refusals, and a fourth reduction registered from the test module |
-| `test_tabular_domain.py` | 27 | TG0.2 non-atmospheric domain: planted-coupling recovery and AR(1) null through the unmodified sweep, R21/R17 refusals, declaration and adapter validation |
+| `test_tabular_domain.py` | 48 | TG0.2 non-atmospheric domain: planted-coupling recovery and AR(1) null through the unmodified sweep, R21/R17 refusals, declaration and adapter validation |
 | `test_coefficient_field.py` | 40 | T4B.1 acceptance: parent-grid alignment, perfect reconstruction per family, lineage-safe summary; DTCWT upsampling declared; LevelBank and level slicing (T4B.4) |
 | `test_documentation.py` | 19 | architecture, roadmap and proprietary named-licence boundary against the code/repository |
 | `test_dtcwt.py` | 28 | Kingsbury q-shift DTCWT: primitives vs reference, two oracles, orientation, shift invariance, D1 head-to-heads |
@@ -4435,7 +4519,7 @@ able to sit three slices out of date.
 | `test_forecasting_artifact_evaluation.py` | 8 | T5.3b/T5.2d checkpoint/config integrity, artifact-bound lineage, persistence-relative metrics, physical-time reporting/refusals, undefined-skill handling and CPU/RTX vendor-neutral accelerator parity |
 | `test_forecasting_protocol.py` | 7 | T5.0a exact schema completeness, canonical identity, immutable nested configuration, evidence requirements, temporal/rollout consistency, persistence and tamper/drift refusal |
 | `test_forecasting_protocol_binding.py` | 4 | T5.0b exact dataset/protocol/checkpoint binding, recomputed coordinate/statistics identities, drift refusals and bound-evaluation cross-run isolation |
-| `test_frontend_contract.py` | 40 | the frontend/backend contract, including transform/dataset/cadence readiness claim boundaries, plus the UI integrity guards: no fabricated results, no unqualified validation claims, units and slope uncertainty displayed |
+| `test_frontend_contract.py` | 48 | the frontend/backend contract, including transform/dataset/cadence readiness claim boundaries, plus the UI integrity guards: no fabricated results, no unqualified validation claims, units and slope uncertainty displayed |
 | `test_gate_run.py` | 1 | T4C.5d frozen plan, local-only preflight, bounded train-only climatology/signatures, authenticated synthetic gate receipt, no-overwrite and tamper refusal |
 | `test_gate_campaign.py` | 6 | T4C.5f-h exact campaign identity, strict nested schema, canary/full/WeatherBench drift refusals, pre-transfer R13/physical-lag audit, aggregate storage/readiness, immutable freeze/load, pinned real preregistration and zero-network CLI (8 pytest cases) |
 | `test_grid_operators.py` | 64 | grid metrics, metric-aware gradient/Laplacian, area weighting, physical-wavenumber spectra, D26 |
@@ -4461,7 +4545,8 @@ able to sit three slices out of date.
 | `test_translation.py` | 47 | TG7.4 translation, bounded: the restated gate names checked against the ladder's own so the one line of duplication cannot drift; a glossary refused when partial, when it invents a term, and when a phrase carries causal vocabulary, a digit, a comparative asserting a relation of size, or wording reserved to a higher rung; R9's six figures given a structure they did not have, with each of the six load-bearing and a lift that is not confidence over base rate refused; the roadmap's own "82% of the time" rendered welded to the base rate that defuses it; two features of one variable described with their units while a cross-domain pair renders only `structural_signature`, asserted as the absence of variable, dataset and units; entitlements welded into the same string as the claims they bound; commentary quarantined outside the claim text and refused when reproduced inside it; a stale translation of a superseded revision refused; canonical no-overwrite persistence and a tampered document refused on load; a glossary registered from the test module outside `src/` (TG8.1); and the acceptance test of the phase — a corpus on all five rungs plus a blocked and a contradicted bundle, translated into an atmospheric and a financial vocabulary, reading completely differently and asserting identical facts — with three randomised sweeps and nine deliberate mutations of the module, each caught (R7, R9, R19, R22) |
 | `test_findings_api.py` | 29 | TG9.1 the read-only claim surface: the wire guard refusing a bare confidence at any depth of any response body and passing one that travels with all six of R9's figures, with the guard's restated field list asserted to still agree with `AssociationFigures`; the acceptance test of the slice — every route served over a corpus that genuinely does report a confidence, with the test refusing to pass vacuously if none is present; a domain registered from the test module reaching `GET /domains` and `GET /glossaries/{name}` without editing `src/api/`; built-in glossaries registered eagerly at import rather than on first request (D35); a GET leaving the bundle bytes and the rung unchanged (R22); an unreadable bundle reported rather than skipped; an absent study root served as an empty list; unknown study and unknown glossary both 404; a blocked study reported as blocked; a partial figure set served as no figures rather than a subset; and one study in two vocabularies reading differently while serving identical `structural_keys` (R9, R22) |
 | `test_domain_onboarding.py` | 33 | TG8.1 the onboarding contract: the adapter recipe as a tuple the API serves, the checklist generates from and the tests assert against, so the documented contract and the enforced one cannot drift; the acceptance criterion of the slice — a third domain onboarded in one file outside `src/`, with the six files it would otherwise have had to touch hashed before and after and asserted byte-identical, live in all three registries and served by `GET /findings/domains`; the geometry/violation biconditional in all four combinations, refusing a domain that names a metric geometry while renouncing the metric and one that supplies neither, with `pixel` shown to sit on the renouncing side and an unregistered geometry refused by the registry that owns the vocabulary; atomicity, with a refused glossary, a refused geometry and an injected failure between the writes each leaving all three registries exactly as they were; re-onboarding refused by name until asked for explicitly, and a name the glossary would normalise differently refused as the half-onboarded state in a subtler form; a piecemeal domain audited as incomplete rather than passing for a checked one, and a declaration registered without wording still appearing in the listing — the TG9.1 omission with its halves swapped; the digest stable across equal declarations and moved by a single changed phrase; the built-ins held to the contract they document, either entry point registering the whole pair, and a half-registered built-in repaired rather than skipped; and the plugin domain asserted to break the two assumptions no registered domain had broken, with five deliberate mutations each caught (E13, E15, R17, R21) |
-| **total** | **2040** | |
+| `test_channels_api.py` | 24 | TG8.4 the ingestion seam over HTTP: inspection reporting a record's columns, rows and clock while choosing neither a clock column nor a domain, and refusing to substitute a price column for a timestamp that runs backwards even though the price increases; an irregular clock turned into an obligation on whichever domain is chosen rather than filled in, and the aggregate obligation stated because no column declares itself one; the property the two-call shape rests on — the refusal inspection advertises and the refusal reading enforces are the same refusal — checked against a third domain onboarded for the purpose, because both built-ins agree about ragged clocks and could not show the difference; a loaded record carrying its domain's refusals, the attribution caveat and the sentence saying a plot is not an analysis; an aggregate channel marked and its declaration required; a gridded domain refused for a channel table in its own words including E14; the adapter's reasoning surviving to the researcher rather than becoming "invalid file"; a binary upload redirected to the route that reads binary; and a channel honestly named `confidence` served rather than mistaken for a bare claim, which is why channels are a list of named entries and not a mapping (E14, E15, R9, R17, R22) |
+| **total** | **2093** | |
 
 ### 7.2h A surrogate null that was not the null it claimed (T4C.5)
 

@@ -761,3 +761,79 @@ export interface UnadmittedReading {
   note: string;
   attribution_caveat: string;
 }
+
+// ------------------------------------------------------------------ channel records (TG8.4)
+
+/** What a clock *is*, stated without deciding what any domain may do about it. */
+export interface ClockFacts {
+  strictly_increasing: boolean;
+  regular: boolean;
+  interval_seconds_min: number | null;
+  interval_seconds_max: number | null;
+  /** Null for an irregular record. An irregular clock has no cadence, and a fabricated one
+   *  would turn every lag in frames into a duration nobody measured. */
+  cadence_seconds: number | null;
+}
+
+/** One onboarded domain's verdict on a file, with the refusal wording if it has one. */
+export interface DomainAdmission {
+  name: string;
+  admits: boolean;
+  refusals: string[];
+  violations: string[];
+  precedence_admissible: boolean;
+}
+
+/**
+ * The inspection half of TG8.4's rule: detection may create a required declaration, it may
+ * never satisfy one. `required_violations` is what a domain must *already* declare to read this
+ * file — never something filled in on the reader's behalf.
+ */
+export interface ChannelInspection {
+  source_name: string;
+  content_sha256: string;
+  delimiter: string;
+  columns: string[];
+  n_rows: number;
+  candidate_time_columns: string[];
+  time_column: string;
+  time_units: string;
+  readable: boolean;
+  refused_because: string | null;
+  channel_columns: string[];
+  clock: ClockFacts | null;
+  required_violations: string[];
+  domains: DomainAdmission[];
+  aggregate_note: string;
+  attribution_caveat: string;
+  row_cap: number;
+  cell_cap: number;
+}
+
+export interface ChannelEntry {
+  name: string;
+  support_parent_px: number;
+  is_aggregate: boolean;
+  values: number[];
+}
+
+export interface ChannelRecord {
+  source_name: string;
+  content_sha256: string;
+  domain: string;
+  onboarding_sha256: string | null;
+  n_rows: number;
+  preview_rows: number;
+  rows_withheld: number;
+  preview_note: string;
+  clock: ClockFacts;
+  times_seconds: number[];
+  channels: ChannelEntry[];
+  domain_limits: {
+    declared: Record<string, unknown>;
+    precedence_admissible: boolean;
+    refuses: { basis: string; consequence: string }[];
+    attribution_caveat: string;
+  };
+  provenance: Record<string, unknown>;
+}

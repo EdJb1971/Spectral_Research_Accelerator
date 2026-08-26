@@ -55,7 +55,7 @@ skill, show the counterexamples, or report that no robust relationship survives.
 ## 1. Honest Technical Status
 
 Verified against the code on 2026-08-22. Every claim here is backed by captured output in
-`VERIFICATION.md`; `architecture.md` Section 7 holds the full defect ledger (D1-D60, of which **58 fixed, 1 partial (D18), 1 open (D43)**).
+`VERIFICATION.md`; `architecture.md` Section 7 holds the full defect ledger (D1-D61, of which **59 fixed, 1 partial (D18), 1 open (D43)**).
 
 The numbers in this table are checked by `src/tests/test_documentation.py`, which parses them
 out of this file and compares them against the source. That guard exists because this table
@@ -67,8 +67,8 @@ status section, it is a memory.
 |---|---|
 | **Phase progress** | **Phase 3.5 complete** (25 tasks). **Phase 4A, 4B and the pre-gate 4C instrument are complete:** T4A.1-4, T4B.1-4, T4C.1-5h. T4C.5d-h make the real gate, independent-source check, two-stage acquisition, physical preflight and primary preregistration bounded and content-bound, but **T4C.6 has not run**. **T5.0 is partial:** T5.0a-b supplies the strict versioned/hashable protocol and runtime-binding gate, but the actual laboratory evidence/config has not been supplied or frozen. **T5.1 is partial:** T5.1a-e accepts raw/FFT/DCT/Haar/db2/SWT/DTCWT training representations, optimized and exposed with truthful UI readiness; mixed precision and remaining cross-device acceptance remain. **T5.2 is partial:** T5.2a-d implements the aligned, leakage-safe, train-normalised PyTorch dataset, bounded-memory worker-safe cache, bounded blockwise CDS cache publication, exact calendar splits and verified physical-time leads; the live CDS run, independent overlap and viable multi-year NZ crop remain blocked by D43. **T5.3 is partial:** T5.3a-b supplies the forecaster seam, persistence baseline, deterministic represented smoke run, verified model-artifact contract and persistence-relative evaluator; T5.3c and the actual laboratory model remain open. **T5.6 is partial:** T5.6a-g supplies the offline FCN3 identity, lazy canonical cube/import boundary, exact ERA5 truth bridge, matched ensemble metric engine, atomic reproducible run receipt, portable laptop/HPC runner and verified API/UI reporting; no worker, dependency, checkpoint, initial condition, real forecast or real truth evaluation has run, so the result UI is honestly empty. **Not done:** T4C.6, the real-ERA5 gate review; 4D-4H; T5.4-5, the remaining T5.6 inference/real-data work, T5.7, and the T5.8 irregular-observation/spatial-downscaling track. Per-task evidence blocks sit under each task below; a task without a **DONE** or **PARTIAL** label has not been started. |
 | Ownership / licence | **Declared in `LICENSE.md`.** Edward Jonathan Bentley retains the proprietary SpectralEarth core. Adam Frank Bentley has a named perpetual, worldwide, royalty-free grant for lawful personal, academic, research and commercial use/modification, without public redistribution or sublicensing of the core. Independent extensions and upstream contributions remain separately governed. This bespoke text has not been professionally reviewed. |
-| **Accessibility** | **Zero, measured.** `0` `aria-*` or `role` attributes and `0` keyboard handlers across `frontend/src`. No focus management. The UI is usable with a mouse and by nobody else. Not scheduled; recorded so it cannot be mistaken for an oversight. |
-| Backend test suite | **2367 passed, 1 xfailed.** Plus one explicit skip: the opt-in live-GCS check. Trajectory: 19 written / 1 failing / uncollectable -> 65 -> 152 -> 222 -> 271 -> 351 -> 407 -> 449 -> 478 -> 535 -> 548 -> 593 -> 642 -> 647 -> 709 -> 781 -> 855 -> 859 -> 882 -> 883 -> 890 -> 911 -> 917 -> 933 -> 946 -> 955 -> 957 -> 962 -> 969 -> 981 -> 985 -> 1000 -> 1008 -> 1027 -> 1042 -> 1056 -> 1070 -> 1080 -> 1089 -> 1094 -> 1095 -> 1102 -> 1104 -> 1106 -> 1112 -> 1116 -> 1117 (the `master` freeze) -> 1375 (TG2.1, `ed-dev`) -> 1429 (TG2.2, `ed-dev`) -> 1477 (TG2.3, `ed-dev`) -> 1536 (TG2.4, `ed-dev`) -> 1577 (TG3.1, `ed-dev`) -> 1621 (TG3.2, `ed-dev`) -> 1686 (TG3.3, `ed-dev`) -> 1742 (TG3.4, `ed-dev`) -> 1787 (TG3.5, `ed-dev`) -> 1850 (TG4.1, `ed-dev`) -> 1922 (TG4.2, `ed-dev`) -> 1972 (TG4.3, `ed-dev`) -> 1986 (TG5.1, `ed-dev`) -> 2004 (TG5.2, `ed-dev`) -> 2020 (TG5.3, `ed-dev`) -> 2044 (TG6.1, `ed-dev`) -> 2074 (TG6.2, `ed-dev`) -> 2112 (TG6.3, `ed-dev`) -> 2167 (TG7.1, `ed-dev`) -> 2217 (TG7.2, `ed-dev`) -> 2235 (TG7.3, `ed-dev`) -> 2236 (TG7.3 live acceptance, `ed-dev`) -> 2296 (TG7.4, `ed-dev`) -> 2321 (TG9.1/TG9.2, `ed-dev`) -> 2334 (TG9.3, `ed-dev`) -> 2367 (TG8.1, `ed-dev`). |
+| **Accessibility** | **Zero, measured**, outside the findings and domain-records views, which ship roles, labels and focus rings (TG9.4/TG8.4). Elsewhere: `0` `aria-*` or `role` attributes and `0` keyboard handlers across `frontend/src`, and no focus management — usable with a mouse and by nobody else. **Now scheduled: TG11.6** repays it for the cross-domain workflow (see `roadmap_cross_domain.md`); it was previously recorded as unscheduled so it could not be mistaken for an oversight. |
+| Backend test suite | **2420 passed, 1 xfailed.** Plus one explicit skip: the opt-in live-GCS check. Trajectory: 19 written / 1 failing / uncollectable -> 65 -> 152 -> 222 -> 271 -> 351 -> 407 -> 449 -> 478 -> 535 -> 548 -> 593 -> 642 -> 647 -> 709 -> 781 -> 855 -> 859 -> 882 -> 883 -> 890 -> 911 -> 917 -> 933 -> 946 -> 955 -> 957 -> 962 -> 969 -> 981 -> 985 -> 1000 -> 1008 -> 1027 -> 1042 -> 1056 -> 1070 -> 1080 -> 1089 -> 1094 -> 1095 -> 1102 -> 1104 -> 1106 -> 1112 -> 1116 -> 1117 (the `master` freeze) -> 1375 (TG2.1, `ed-dev`) -> 1429 (TG2.2, `ed-dev`) -> 1477 (TG2.3, `ed-dev`) -> 1536 (TG2.4, `ed-dev`) -> 1577 (TG3.1, `ed-dev`) -> 1621 (TG3.2, `ed-dev`) -> 1686 (TG3.3, `ed-dev`) -> 1742 (TG3.4, `ed-dev`) -> 1787 (TG3.5, `ed-dev`) -> 1850 (TG4.1, `ed-dev`) -> 1922 (TG4.2, `ed-dev`) -> 1972 (TG4.3, `ed-dev`) -> 1986 (TG5.1, `ed-dev`) -> 2004 (TG5.2, `ed-dev`) -> 2020 (TG5.3, `ed-dev`) -> 2044 (TG6.1, `ed-dev`) -> 2074 (TG6.2, `ed-dev`) -> 2112 (TG6.3, `ed-dev`) -> 2167 (TG7.1, `ed-dev`) -> 2217 (TG7.2, `ed-dev`) -> 2235 (TG7.3, `ed-dev`) -> 2236 (TG7.3 live acceptance, `ed-dev`) -> 2296 (TG7.4, `ed-dev`) -> 2321 (TG9.1/TG9.2, `ed-dev`) -> 2334 (TG9.3, `ed-dev`) -> 2367 (TG8.1, `ed-dev`) -> 2420 (TG8.4, `ed-dev`). |
 | Ground-Truth Benchmark Suite | **29 PASS, 0 FAIL, 0 NOT_YET_RUNNABLE.** Twenty datasets with declared known answers, twelve of them nulls. CI-ready via `python -m src.benchmarks` (exit 0). |
 | Backend compute modules | **Written, executed and tested.** `physical_core` carries `GridSpec` + metric-aware operators; `analysis_engine` gained `spectra.py` and `climatology.py`; `transform_engine` gained the undecimated `stationary.py` and a real `dtcwt.py`; `statistics/` and `core/` are new packages. |
 | Physical units and wavenumbers | **Correct as of T3.5.13.** Gradients metric-aware, spectra on a physical `k` axis, domain statistics area-weighted, and every quantity carries its units. Previously all of it was pixel-space and unlabelled (D13). |
@@ -152,6 +152,21 @@ of 4D-4H remain undone. See Section 4 for per-task evidence.
 it needs the verified transform core and a real-data resolution for D43, but does not wait for
 4D--4G. T5.5's comparison with `RepresentationScore` does need 4G. Phase 6 needs nothing, but
 makes 4B-4F and broad Phase 5 sweeps affordable at scale.
+
+---
+
+## 2b. The cross-domain line — this document is not the whole programme
+
+The phase map above covers the **gridded physical-field line** only. A second line has run on
+branch `ed-dev` since the `master` freeze at 1,117 tests and is now more than half the suite:
+declared domains and their violated assumptions, the claim ladder, the adversarial review layer,
+bounded translation into domain wording, the onboarding contract and the ingestion seam.
+
+**It is tracked in `roadmap_cross_domain.md`**, which is the primary planning document for it.
+Phases G0–G9 are complete; G10–G13 (the acquisition surface, the workbench, the ocean, the sky)
+are declared and not started. `architecture.md` remains the source of truth for what is
+implemented. Anyone picking this project up should read both documents, because nothing in this
+one would reveal that the other exists.
 
 ---
 

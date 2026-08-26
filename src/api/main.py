@@ -108,8 +108,13 @@ app.add_middleware(
 # handler, so glossary registration cannot depend on which route a researcher happens to visit
 # first - that was defect D35, and `DOMAIN_GLOSSARIES` has exactly the shape that caused it.
 from src.api.findings import router as findings_router  # noqa: E402
+from src.api.channels import router as channels_router  # noqa: E402
 
 app.include_router(findings_router)
+# TG8.4. Mounted here for the same reason the findings router is: registration must not depend
+# on which handler happened to run first (D35). A domain that appears only after a researcher
+# visits the right tab is a domain a record silently cannot be read under.
+app.include_router(channels_router)
 
 
 class HealthResponse(BaseModel):

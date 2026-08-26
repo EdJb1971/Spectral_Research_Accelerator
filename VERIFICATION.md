@@ -5607,3 +5607,92 @@ does not record one - `DOMAIN_ATTRIBUTION_CAVEAT` continues to travel with every
 the attribution gap recorded under TG9.3 is unchanged. R17's refusals remain enforced in the
 analysis layer; this makes the declarations they read from complete, not self-enforcing. No Argo
 data was fetched: the declaration is a declaration, and no adapter reads the archive.
+
+## TG8.4 - the ingestion seam (`ed-dev`)
+
+TG8.1 made a domain declarable from outside `src/`. This makes one readable. `src/api/channels.py`
+mounts two routes over `src/data_layer/tabular_source.py`, which had read delimited channel
+records since TG0.2 and was referenced **zero times** from `src/api/` and `frontend/src/`.
+
+**The rule the slice is built on.** *Detection may create a required declaration; it may never
+satisfy one.* Observation and decision are separate functions: `clock_facts` consults no domain
+and refuses nothing, `required_violations` turns what it found into obligations, and only
+`read_channels_for_domain` decides anything.
+
+**The two calls, on the three shipped fixtures:**
+
+```text
+                          readable  required                  admitted by
+order_book_regular.csv    yes       []                        order_book
+order_book_irregular.csv  yes       ['irregular_sampling']    order_book
+clock_runs_backwards.csv  no        -                         (none)
+```
+
+`reanalysis` refuses all three, and says why: it declares latitude and longitude, which a channel
+table cannot supply (E14). That refusal is the slice working, not a gap.
+
+**Acceptance met.**
+
+*   **(a)** `order_book_regular.csv` loads under `order_book` and is refused under `reanalysis`
+    by name, citing the declared axes.
+*   **(b)** `order_book_irregular.csv` is refused under `tidy_venue` (onboarded by the test,
+    lacking `irregular_sampling`) and loads under `order_book`, reporting
+    `cadence_seconds: null` rather than a fabricated number.
+*   **(c)** A channel given a footprint of 60 samples is refused unless the domain declares
+    `aggregated_values`, and marked `is_aggregate` where it is allowed.
+*   **(d)** For every fixture, every domain `inspect` reported as admitting returned 200 from
+    `read` and every domain it reported as refusing returned 400. Checked against a **third**
+    domain onboarded for the purpose: both built-ins agree about ragged clocks, so neither can
+    show the case where inspection and reading could diverge.
+*   **(e)** The same bytes yield the same `content_sha256` under two different filenames, and the
+    provenance names the file, the clock column, the domain and the onboarding digest.
+*   **(f)** Both routes are reachable from tab 12; `test_no_served_route_is_unreachable_from_the_ui`
+    passes with no new exemption.
+
+**Two things found while building, recorded rather than smoothed over.**
+
+*A price column was promoted to be the clock.* Given `clock_runs_backwards.csv`, whose `t` jumps
+backwards but whose `bid` increases monotonically, the first implementation picked `bid` as the
+clock and reported the file as readable. Every lag downstream would have described that
+substitution and nothing would have said so. Inspection now stops when the first column cannot
+serve, names the candidates, and requires the caller to choose. The test that caught it was
+written expecting a refusal and got `readable: True` — the code was changed, not the test.
+
+*D61: a declaration that contradicted its own prose.* `order_book` has described "an irregular
+trading clock" since its first commit while omitting `irregular_sampling` from its violation
+tuple. Four slices passed without it being noticed because nothing had yet tried to **read data**
+under a declaration. The knock-on is recorded rather than hidden: half of what TG8.1 credited to
+Argo was really this gap, so `domain_plugin_example.py` and the coverage test now claim
+`non_stationary_support` alone, and both say why.
+
+**Evidence.** 24 new tests in `src/tests/test_channels_api.py`, 21 added to
+`test_tabular_domain.py` (27 -> 48), 8 added to `test_frontend_contract.py` (40 -> 48). Five
+deliberate mutations, each caught:
+
+```text
+M1  drop the declared-axes check            -> 3 tests failed
+M2  drop the aggregate-declaration check    -> 1 test failed
+M3  stop reporting the clock obligation     -> 3 tests failed (2 before the cross-check
+                                               was strengthened; see below)
+M4  remove the size cap                     -> 2 tests failed
+M5  rebuild the declaration instead of
+    returning the onboarded one             -> 1 test failed
+```
+
+M3 initially failed only the two tests that read `required_violations` directly, and **not** the
+acceptance-(d) cross-check that exists to catch exactly that class of change. The reason was
+vacuity: with only `reanalysis` and `order_book` registered, every domain that admits an irregular
+record declares `irregular_sampling` and every domain that refuses one refuses it earlier on its
+axes, so the check agreed with itself no matter what. `tidy_venue` was added to the test and M3
+was re-run; it then failed the cross-check as intended. Recorded because a mutation that a guard
+*should* have caught and did not is evidence about the guard.
+
+**Claim boundary.** Reading a file under a domain establishes that the domain's declaration admits
+the file's shape - not that the file came from that domain, and no check here could establish
+that. `DOMAIN_ATTRIBUTION_CAVEAT` is served with every inspection and every read, and the view
+renders that sentence rather than restating it. **No public dataset has been ingested**: the
+adapter reads local files and never fetches, and the three fixtures are seeded fabrications with a
+README saying so. The preview plot is a preview - nothing is mined, no claim exists, no rung moves
+(R22). Refusing a file is not validating the data in it: finite, monotonic and regularly sampled
+says nothing about whether the values are right. Rendered browser inspection of tab 12 is
+**NOT RUN**, as it is for tabs 10 and 11.

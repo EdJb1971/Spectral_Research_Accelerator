@@ -368,3 +368,272 @@ def test_unknown_time_units_are_refused(tmp_path):
 def test_the_adapter_never_fetches(tmp_path):
     with pytest.raises(InvalidParameterError, match="never fetches"):
         _read(str(tmp_path / "absent.csv"))
+
+
+# ---------------------------------------------------------------------------------- TG8.4
+#
+# Reading a record **against a domain that already exists**, rather than against one the reader
+# invents from its own arguments. Everything below concerns the two new entry points and the
+# three checks that had no enforcement before the ingestion seam existed.
+
+from src.core.domain import DOMAIN_DECLARATIONS                            # noqa: E402
+from src.core.onboarding import DOMAIN_ONBOARDINGS, onboard_domain         # noqa: E402
+from src.core.registry import restore, snapshot                            # noqa: E402
+from src.core.translation import DOMAIN_GLOSSARIES                         # noqa: E402
+from src.data_layer.tabular_source import (                                # noqa: E402
+    MAX_CELLS, MAX_ROWS, _assert_within_caps, assert_domain_admits_channel_table, clock_facts,
+    inspect_delimited, read_channels_for_domain, required_violations, unsatisfiable_axes)
+
+REGULAR_CSV = "t,bid,ask\n0,1,2\n1,1.5,2.5\n2,2,3\n3,2.5,3.5\n"
+IRREGULAR_CSV = "t,bid,ask\n0,1,2\n1,1.5,2.5\n5,2,3\n9,2.5,3.5\n"
+BACKWARDS_CSV = "t,bid,ask\n0,1,2\n5,1.5,2.5\n3,2,3\n"
+
+
+@pytest.fixture()
+def domains():
+    """Snapshot the three domain registries, so a test may onboard and leave no trace."""
+    from src.core.builtin_domains import register_builtin_domains
+
+    before = (snapshot(DOMAIN_GLOSSARIES), snapshot(DOMAIN_DECLARATIONS),
+              snapshot(DOMAIN_ONBOARDINGS))
+    register_builtin_domains()
+    try:
+        yield
+    finally:
+        restore(DOMAIN_GLOSSARIES, before[0])
+        restore(DOMAIN_DECLARATIONS, before[1])
+        restore(DOMAIN_ONBOARDINGS, before[2])
+
+
+def _channel_domain(name, violations, **kwargs):
+    """An onboarded domain shaped like a channel table: one clock, one unordered category."""
+    from src.core.builtin_glossaries import ORDER_BOOK_PHRASES
+
+    declaration = DomainDeclaration(
+        name=name,
+        description="A channel-table domain declared by the tabular tests.",
+        axes=(AxisSpec(name="t", role="time", units="s"),
+              AxisSpec(name="channel", role="category", ordered=False)),
+        licence=LICENCE, violations=violations, lag_policy="none", **kwargs)
+    return onboard_domain(declaration, ORDER_BOOK_PHRASES, geometry=None,
+                          onboarded_by="src.tests.test_tabular_domain")
+
+
+# ------------------------------------------------------------------ observation, not decision
+
+
+def test_clock_facts_describe_the_clock_without_consulting_any_domain():
+    regular = clock_facts(np.array([0.0, 1.0, 2.0, 3.0]))
+    assert regular["strictly_increasing"] and regular["regular"]
+    assert regular["cadence_seconds"] == 1.0
+
+    ragged = clock_facts(np.array([0.0, 1.0, 5.0, 9.0]))
+    assert ragged["strictly_increasing"] and not ragged["regular"]
+    assert ragged["cadence_seconds"] is None
+    assert ragged["interval_seconds_min"] == 1.0 and ragged["interval_seconds_max"] == 4.0
+
+    assert clock_facts(np.array([0.0, 5.0, 3.0]))["strictly_increasing"] is False
+
+
+def test_an_irregular_clock_creates_an_obligation_rather_than_satisfying_one():
+    """TG8.4's rule: detection may create a required declaration, never satisfy one."""
+    facts = clock_facts(np.array([0.0, 1.0, 5.0, 9.0]))
+    assert required_violations(facts) == ["irregular_sampling"]
+    assert required_violations(clock_facts(np.array([0.0, 1.0, 2.0]))) == []
+
+
+def test_inspect_reports_candidates_and_chooses_no_clock_column():
+    report = inspect_delimited("t,u,v\n0,3,9\n1,5,8\n2,7,7\n", source_name="two.csv")
+    # `t` and `u` both increase strictly; `v` decreases. A file with two candidates is one only
+    # its author can disambiguate, so both are offered.
+    assert report["candidate_time_columns"] == ["t", "u"]
+    assert report["n_rows"] == 3
+
+
+def test_inspect_reports_a_non_monotonic_clock_as_unfixable_by_any_declaration():
+    report = inspect_delimited(BACKWARDS_CSV, source_name="back.csv")
+    assert report["readable"] is False
+    assert "not strictly increasing" in report["refused_because"]
+    assert all(not row["admits"] for row in report["domains"])
+
+
+def test_inspect_names_the_aggregate_obligation_it_cannot_detect():
+    """No column says it is a window aggregate, so this is stated rather than inferred."""
+    report = inspect_delimited(REGULAR_CSV, source_name="reg.csv")
+    assert "aggregated_values" in report["aggregate_note"]
+    assert "aggregated_values" not in report["required_violations"]
+
+
+def test_inspect_digest_matches_the_read_digest(domains):
+    report = inspect_delimited(REGULAR_CSV, source_name="reg.csv")
+    series, _ = read_channels_for_domain(REGULAR_CSV, source_name="reg.csv",
+                                         domain="order_book", time_column="t")
+    assert report["content_sha256"] == series.provenance["content_sha256"]
+
+
+# ------------------------------------------------------------------ declared axes (E14)
+
+
+def test_a_domain_declaring_space_or_level_cannot_read_a_channel_table(domains):
+    from src.core.domain import declaration_for
+
+    assert unsatisfiable_axes(declaration_for("order_book")) == []
+    unsatisfiable = unsatisfiable_axes(declaration_for("reanalysis"))
+    assert unsatisfiable and all("space" in item for item in unsatisfiable)
+
+    with pytest.raises(InvalidParameterError) as excinfo:
+        read_channels_for_domain(REGULAR_CSV, source_name="reg.csv",
+                                 domain="reanalysis", time_column="t")
+    assert "channel table" in str(excinfo.value)
+    assert "latitude" in str(excinfo.value)
+
+
+def test_the_axis_check_is_callable_on_its_own(domains):
+    from src.core.domain import declaration_for
+
+    assert_domain_admits_channel_table(declaration_for("order_book"))
+    with pytest.raises(InvalidParameterError):
+        assert_domain_admits_channel_table(declaration_for("reanalysis"))
+
+
+def test_inspect_predicts_exactly_the_refusal_the_read_enforces(domains):
+    """Acceptance (d): the advertised refusal and the enforced one are the same refusal."""
+    report = inspect_delimited(IRREGULAR_CSV, source_name="irr.csv")
+    assert any(row["admits"] for row in report["domains"]), "the case must not pass vacuously"
+    for row in report["domains"]:
+        if row["admits"]:
+            read_channels_for_domain(IRREGULAR_CSV, source_name="irr.csv",
+                                     domain=row["name"], time_column="t")
+        else:
+            with pytest.raises((InvalidParameterError, MissingParameterError)):
+                read_channels_for_domain(IRREGULAR_CSV, source_name="irr.csv",
+                                         domain=row["name"], time_column="t")
+
+
+# ------------------------------------------------------------------ irregular sampling (E15)
+
+
+def test_an_irregular_record_is_refused_by_a_domain_that_did_not_declare_it(domains):
+    _channel_domain("tidy_clock", violations=("no_physical_metric", "no_propagation_speed"))
+    with pytest.raises(InvalidParameterError) as excinfo:
+        read_channels_for_domain(IRREGULAR_CSV, source_name="irr.csv",
+                                 domain="tidy_clock", time_column="t")
+    assert "irregular_sampling" in str(excinfo.value)
+
+
+def test_an_irregular_record_loads_under_a_domain_that_declared_it(domains):
+    series, declaration = read_channels_for_domain(
+        IRREGULAR_CSV, source_name="irr.csv", domain="order_book", time_column="t")
+    assert "irregular_sampling" in declaration.violations
+    # Reported as absent rather than as a number: an irregular record has no cadence, and a
+    # fabricated one would turn every lag in frames into a duration nobody measured.
+    assert series.provenance["cadence_seconds"] is None
+
+
+# ------------------------------------------------------------------ aggregate support (E15)
+
+
+def test_an_aggregate_channel_requires_the_domain_to_declare_aggregated_values(domains):
+    _channel_domain("instantaneous_only",
+                    violations=("no_physical_metric", "no_propagation_speed"))
+    with pytest.raises(InvalidParameterError) as excinfo:
+        read_channels_for_domain(REGULAR_CSV, source_name="reg.csv",
+                                 domain="instantaneous_only", time_column="t",
+                                 support_parent_px={"bid": 60.0})
+    message = str(excinfo.value)
+    assert "aggregated_values" in message and "bid" in message
+    # The consequence text is drawn from `KNOWN_VIOLATIONS`, not restated, so what a reader is
+    # told here and what the analysis layer enforces cannot drift apart (R17).
+    assert "depends on more than one sample" in message
+
+
+def test_an_aggregate_channel_loads_where_the_domain_declared_it(domains):
+    series, _ = read_channels_for_domain(REGULAR_CSV, source_name="reg.csv",
+                                         domain="order_book", time_column="t",
+                                         support_parent_px={"bid": 60.0})
+    assert list(series.support_parent_px) == [60.0, 1.0]
+
+
+def test_a_support_of_exactly_one_is_not_an_aggregate(domains):
+    """The boundary matters: one sample of the parent axis is an instantaneous reading."""
+    _channel_domain("strictly_instantaneous",
+                    violations=("no_physical_metric", "no_propagation_speed"))
+    series, _ = read_channels_for_domain(REGULAR_CSV, source_name="reg.csv",
+                                         domain="strictly_instantaneous", time_column="t",
+                                         support_parent_px={"bid": 1.0})
+    assert list(series.support_parent_px) == [1.0, 1.0]
+
+
+# ------------------------------------------------------------------ the caps
+
+
+def test_a_record_above_the_cap_is_refused_rather_than_thinned():
+    """Checked on the counts rather than by materialising a 200,000-row string.
+
+    A test that spends a second writing CSV to prove an arithmetic guard is a test that gets
+    skipped, and the guard it protects is the one that keeps a record from being silently
+    thinned to fit a response body.
+    """
+    with pytest.raises(InvalidParameterError) as excinfo:
+        _assert_within_caps("big.csv", MAX_ROWS + 1, 4)
+    message = str(excinfo.value)
+    assert "refused rather than thinned" in message
+    assert str(MAX_ROWS) in message
+
+
+def test_the_cell_cap_bites_independently_of_the_row_cap():
+    _assert_within_caps("ok.csv", 1000, 10)
+    with pytest.raises(InvalidParameterError):
+        _assert_within_caps("wide.csv", 1000, MAX_CELLS // 1000 + 1)
+
+
+def test_a_record_within_the_caps_passes_the_same_gate(domains):
+    series, _ = read_channels_for_domain(REGULAR_CSV, source_name="small.csv",
+                                         domain="order_book", time_column="t")
+    assert len(series.channels) == 2
+
+
+# ------------------------------------------------------------------ the domain must exist
+
+
+def test_a_domain_that_was_never_onboarded_is_refused_and_points_at_the_contract(domains):
+    DOMAIN_DECLARATIONS.add(
+        "piecemeal_domain",
+        DomainDeclaration(name="piecemeal_domain",
+                          description="Registered without the contract.",
+                          axes=(AxisSpec(name="t", role="time", units="s"),
+                                AxisSpec(name="channel", role="category", ordered=False)),
+                          licence=LICENCE, violations=("no_physical_metric",),
+                          lag_policy="none"))
+    with pytest.raises(InvalidParameterError) as excinfo:
+        read_channels_for_domain(REGULAR_CSV, source_name="reg.csv",
+                                 domain="piecemeal_domain", time_column="t")
+    assert "onboarded through the contract" in str(excinfo.value)
+    assert "findings/onboarding" in str(excinfo.value)
+
+
+def test_the_provenance_names_the_domain_and_refuses_to_imply_attribution(domains):
+    series, _ = read_channels_for_domain(REGULAR_CSV, source_name="reg.csv",
+                                         domain="order_book", time_column="t")
+    assert series.provenance["domain"] == "order_book"
+    assert len(series.provenance["onboarding_sha256"]) == 64
+    assert "Nothing here establishes that it came from it" in \
+        series.provenance["domain_attribution"]
+    assert series.provenance["adapter"].endswith("read_channels_for_domain")
+
+
+def test_the_declaration_returned_is_the_onboarded_one_not_a_freshly_built_copy(domains):
+    from src.core.domain import declaration_for
+
+    _series, declaration = read_channels_for_domain(REGULAR_CSV, source_name="reg.csv",
+                                                    domain="order_book", time_column="t")
+    assert declaration is declaration_for("order_book")
+
+
+def test_reading_the_same_record_twice_yields_one_digest(domains):
+    first, _ = read_channels_for_domain(REGULAR_CSV, source_name="reg.csv",
+                                        domain="order_book", time_column="t")
+    second, _ = read_channels_for_domain(REGULAR_CSV, source_name="other_name.csv",
+                                         domain="order_book", time_column="t")
+    assert first.provenance["content_sha256"] == second.provenance["content_sha256"]
+    assert first.provenance["path_basename"] != second.provenance["path_basename"]

@@ -70,9 +70,14 @@ def _test_files():
 
 #: Modules that define routes, and the decorator prefix each uses. `main.py` decorates `@app`
 #: directly; a router module decorates `@router` and is mounted with `include_router`, and its
-#: `prefix=` is prepended to every path it declares.
+#: `prefix=` is prepended to every path it declares. **A new router must be
+#: added here or the guard stops covering it** — which happened once already (see `_routes`) and
+#: happened again in TG8.4, when `src/api/channels.py` was mounted and two real endpoints were
+#: invisible until the route count disagreed with the documented one. That disagreement is the
+#: only reason it was noticed, so the count claim is doing more work than it appears to.
 _ROUTE_SOURCES = (("src/api/main.py", "app", ""),
-                  ("src/api/findings.py", "router", "/api/v1/findings"))
+                  ("src/api/findings.py", "router", "/api/v1/findings"),
+                  ("src/api/channels.py", "router", "/api/v1/channels"))
 
 
 def _routes():

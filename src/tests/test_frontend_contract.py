@@ -629,3 +629,77 @@ def test_domain_limits_are_never_shown_without_the_attribution_caveat():
 def test_an_unregistered_domain_declaration_is_reported_not_rendered_as_no_limits():
     code = _findings_sources()
     assert "That is not the same as it refusing nothing." in code
+
+
+# ======================================================== domain records (TG8.4)
+
+
+def _channel_view() -> str:
+    return _read("components", "ChannelRecords.tsx")
+
+
+def test_the_domain_records_tab_is_wired(app_source):
+    """A twelfth tab, peer to the meteorological one rather than a section inside it."""
+    assert "12. Domain Records" in app_source
+    assert "activeTab === 'channels'" in app_source
+    assert "<ChannelRecords" in app_source
+
+
+def test_the_domain_records_view_renders_the_caveat_the_api_vouched_for(all_sources):
+    """Restating it in the component would let the two drift; the sentence must be rendered."""
+    view = _without_comments(_channel_view())
+    assert "domain_limits.attribution_caveat" in view
+    assert "does not record which domain produced it" not in view, (
+        "the caveat must be rendered from the payload, not restated in the component")
+
+
+def test_the_domain_records_view_renders_refusals_rather_than_deciding_them(all_sources):
+    view = _without_comments(_channel_view())
+    # Every refusal shown comes from the payload: the per-domain admission reasons, the
+    # inspection's own refusal, and the domain's declared limits.
+    assert "row.refusals" in view
+    assert "refused_because" in view
+    assert "domain_limits.refuses" in view
+    assert "refusal.consequence" in view
+
+
+def test_the_domain_records_view_does_not_decide_a_clock_or_a_domain(all_sources):
+    """Both choices are the researcher's, and both are rendered as controls."""
+    view = _without_comments(_channel_view())
+    assert "candidate_time_columns.map" in view, "the clock column must be chosen from candidates"
+    assert 'name="channel-domain"' in view, "the domain must be chosen, not inferred"
+    assert "disabled={!row.admits}" in view, "a refusing domain must not be selectable"
+
+
+def test_the_domain_records_view_says_a_plot_is_not_an_analysis(all_sources):
+    view = _without_comments(_channel_view())
+    assert "record.preview_note" in view
+    assert "not an analysis" not in view, (
+        "the boundary must be the sentence the API served, not one written here")
+
+
+def test_the_domain_records_view_reports_an_irregular_clock_as_declared(all_sources):
+    """`cadence_seconds` is null for an irregular record and must not be rendered as a number."""
+    view = _without_comments(_channel_view())
+    assert "irregular (declared)" in view
+    assert "cadence_seconds !== null" in view, (
+        "a cadence must be shown only where the backend reported one")
+
+
+def test_the_domain_records_view_reports_withheld_rows_rather_than_hiding_them(all_sources):
+    view = _without_comments(_channel_view())
+    assert "rows_withheld" in view
+    assert "nothing was thinned" in view
+
+
+def test_the_domain_records_view_formats_no_scientific_quantity(all_sources):
+    """Phase G9's rule, applied to a tab G9 did not write.
+
+    Row counts and raw data values are formatted here and neither is a claim. What must not
+    appear is a computed statistic or a percentage — those come from the backend or not at all.
+    """
+    view = _without_comments(_channel_view())
+    assert "toFixed" not in view
+    assert "%" not in view.replace("100%", ""), "no percentage may be composed in this view"
+    for field in ("confidence", "base_rate", "lift", "surrogate_corrected"):
+        assert field not in view, "the records view must read no claim-bearing field: %s" % field
