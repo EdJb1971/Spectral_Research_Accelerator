@@ -8,9 +8,11 @@ import { FieldImport } from './components/FieldImport';
 import { TrainingReadiness } from './components/TrainingReadiness';
 import { DTCWTScientificView } from './components/DTCWTScientificView';
 import { EvaluationEvidence } from './components/EvaluationEvidence';
+import FindingsView from './components/FindingsView';
 import { apiService } from './services/api';
 import * as types from './types/api';
 import {
+  BookOpen,
   Layers,
   Wind,
   Sliders,
@@ -690,7 +692,8 @@ export default function App() {
             { id: 'hypothesis', name: '7. Automated Hypotheses', icon: Lightbulb },
             { id: 'platform', name: '8. Platform & Evidence', icon: ShieldCheck },
             { id: 'era5', name: '9. Real ERA5 (Zarr)', icon: Cloud },
-            { id: 'evaluation', name: '10. Forecast Evaluation', icon: FileCheck2 }
+            { id: 'evaluation', name: '10. Forecast Evaluation', icon: FileCheck2 },
+            { id: 'findings', name: '11. Findings', icon: BookOpen }
           ].map(tab => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -2654,6 +2657,13 @@ export default function App() {
           {activeTab === 'evaluation' && (
             <EvaluationEvidence reports={evaluationReports} importing={receiptImporting}
               onImport={handleImportEvaluationReceipt} />
+          )}
+
+          {/* TAB 11: FINDINGS (TG9.2) -------------------------------------------------
+              The cross-domain claim surface. Everything scientific on this tab is a string
+              the backend produced; this file passes an error handler and nothing else. */}
+          {activeTab === 'findings' && (
+            <FindingsView onError={(message) => setError(message)} />
           )}
         </main>
       </div>

@@ -104,6 +104,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# TG9.1: the cross-domain claim surface. Imported eagerly at module scope, not lazily inside a
+# handler, so glossary registration cannot depend on which route a researcher happens to visit
+# first - that was defect D35, and `DOMAIN_GLOSSARIES` has exactly the shape that caused it.
+from src.api.findings import router as findings_router  # noqa: E402
+
+app.include_router(findings_router)
+
 
 class HealthResponse(BaseModel):
     status: str = Field(..., description="'ok' if the API and its database are reachable.")

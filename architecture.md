@@ -2858,6 +2858,88 @@ setting two within-domain renderings side by side and drawing one themselves, an
 scope. Nothing here judges whether a finding was worth translating, or whether the domain words
 chosen are the ones a practitioner would use.
 
+### 3.6zj The read-only claim surface (`src/api/findings.py`, TG9.1, `ed-dev`)
+
+Before this slice the cross-domain line had **no HTTP surface at all**. Every route in
+`api/main.py` belonged to the atmospheric/transform line, and all twelve G-line modules —
+`domain`, `feature`, `motif`, `evidence`, `claim_ladder`, `five_outputs`, `recorded_call`,
+`round_robin`, `translation`, `cross_domain`, `constellation`, `family` — had zero references
+there. Nothing a browser could reach knew a claim ladder existed.
+
+`src/api/findings.py` is that surface, mounted under `/api/v1/findings`, and it is **read-only**:
+nothing in it appends evidence, records a call or moves a rung, so a GET cannot change what may
+be claimed (R22). The surface is six read-only endpoints: registered domains, one glossary
+whole, published studies, one bundle, its five outputs, and its translation.
+
+**Phase G9's principle applied to the wire: a client computes and formats no scientific number.**
+A translation is served already rendered as `rendered_text`, beside its structured units and its
+`structural_keys`, so a client displays strings rather than assembling them. The five outputs are
+served untranslated as well, because a reader who wants to check that domain wording changed no
+fact needs to see both forms.
+
+**R9 is enforced on the wire rather than in each handler.** `refuse_bare_confidence` walks every
+response body, at any depth, and refuses a `confidence` key not accompanied by all six of R9's
+figures. The rule is usually described as a frontend constraint, which puts it in the one place
+it cannot be enforced; this is the last point before a client sees it. The guard **restates**
+R9's six field names rather than importing them from `AssociationFigures`, because a guard that
+imported its expectations from the thing it guards would agree with any change made to it — and
+a test asserts the two statements still agree. A partial figure set is served as no figures at
+all rather than as a subset: four of six is not four-sixths of a finding.
+
+**Registration is eager, and that is the point.** Defect D35 was a fallback chain that depended
+on browsing order, because source registration was an import side effect of a module imported
+lazily inside its own handler. `DOMAIN_GLOSSARIES` has exactly that shape, so
+`register_builtin_glossaries()` runs at module import rather than inside a handler, is
+idempotent, and returns the full built-in set so a caller can assert it rather than hope.
+`src/core/builtin_glossaries.py` supplies the first two vocabularies — reanalysis and order-book
+— written against TG7.4's four registration screens rather than fixed up afterwards.
+
+`StudyStore` is deliberately neither a database nor a cache. A bundle is a tamper-evident
+canonical file whose digest `load_evidence_bundle` rechecks on every read; holding a parsed copy
+would mean serving a claim state that no longer matches disk, which is the staleness the digests
+exist to prevent. A file that will not parse is reported as unreadable rather than skipped,
+because silently omitting it would let a corrupted bundle look like a study nobody ever ran.
+
+**Claim boundary.** A surface that cannot serve a bare confidence does not make the science behind
+it good; it removes one way of misreading it. Serving a finding in domain words does not make the
+finding true, and a fluent rendering of a weak result is more persuasive than a jargon-laden
+rendering of the same result — a risk this surface creates rather than removes. An empty
+"evidence against" section means nothing was recorded, not that nothing exists, and the rendered
+text says so in those words. Nothing here touches a gate, a rung or a digest.
+
+### 3.6zk The findings view (`frontend/src/components/FindingsView.tsx`, TG9.2/TG9.4, `ed-dev`)
+
+An eleventh tab rendering a `TranslatedFinding`: the five outputs as five sections, each claim
+welded to the bound that qualifies it, with panels for the untranslated claim state, the glossary
+that worded it and the evidence bundle itself. A domain selector renders one study through any
+registered vocabulary — the same study, different words, identical facts. Nothing in the existing
+transform workbench was refactored; six client methods were added to `services/api.ts`.
+
+**What the component does not contain is the point.** No `toFixed`, no percent literal, no
+arithmetic on a claim value, and no read of any of R9's six fields. `figures_text` — the line the
+backend assembled — is the only route to the association strength, so a bare confidence is not
+withheld by discipline here; there is no code that could produce one. Two contract tests assert
+this over the source, with comments stripped first so the component can document the constraint
+without appearing to breach it. Three deliberate mutations were each caught.
+
+**A gap found by writing the view.** The first draft interpolated `figures.support` into its own
+panel: no formatting, no arithmetic, and still wrong, because a view that builds that line from
+parts puts R9 back in the hands of whoever writes the JSX. The API now serves `figures_text` so
+the view has nothing to assemble, and the test was tightened from "formats no number" to "reads no
+claim-bearing field" as a result.
+
+**Accessibility (TG9.4) applies to this surface only.** The findings views carry
+`role="tablist"`/`role="tab"`, `aria-selected`, `aria-pressed`, `aria-label`, labels bound with
+`htmlFor`, visible focus rings and `aria-hidden` on decorative icons, asserted by test. The
+platform-wide measurement in `roadmap.md` §1 is unchanged: the legacy workbench was not touched,
+and this stops the new surface adding to that debt rather than repaying it.
+
+**Claim boundary.** `npx tsc --noEmit` is clean and `npm run build` succeeds, which proves the tab
+compiles, calls endpoints that exist and reads fields that are present. **Rendered appearance is NOT
+RUN**: no browser has displayed this tab and no screenshot exists in the repository, exactly as for
+the tenth tab before it. A view that cannot render a bare confidence does not make the finding it
+displays worth reading.
+
 ### 3.11 Ground-Truth Benchmark Suite (`src/benchmarks/`)
 
 Added in T3.5.17 (standard E7). Twenty synthetic datasets whose correct answer is known
@@ -3172,7 +3254,7 @@ reason in the test itself.
 
 ## 3.12 HTTP API Surface
 
-31 routes. Listed here because an undocumented endpoint is an untested contract.
+37 routes. Listed here because an undocumented endpoint is an untested contract.
 
 | Method | Route | Notes |
 |---|---|---|
@@ -3207,6 +3289,12 @@ reason in the test itself.
 | GET | `/api/v1/experiments/{id}/lineage` | lineage nodes and edges |
 | POST | `/api/v1/hypothesis/discover` | correlation + categorical scan (no FDR yet - D8) |
 | GET | `/api/v1/hypothesis/proposals` | generated follow-up configurations |
+| GET | `/api/v1/findings/domains` | registered domain glossaries, generated from the registry; a new domain appears without editing `src/api/` (TG9.1) |
+| GET | `/api/v1/findings/glossaries/{name}` | one domain's wording for all 38 structural terms, published so it can be audited |
+| GET | `/api/v1/findings/studies` | published studies with the rung each stands on; unreadable files reported, not skipped |
+| GET | `/api/v1/findings/studies/{study_id}` | one evidence bundle whole, with its digests |
+| GET | `/api/v1/findings/studies/{study_id}/outputs` | the five outputs untranslated, for checking the wording changed no fact |
+| GET | `/api/v1/findings/studies/{study_id}/translation` | the finding rendered in one domain's words; R9's six figures whole or absent |
 
 ## 3A. Phase 4A - The Time Axis and the Artifact Store
 
@@ -3922,7 +4010,7 @@ The architecture is highly modular and maintains clean boundaries at several cri
 
 ## 6. Front-End Technical Implementation
 
-The React frontend is fully written and structurally complete. It was installed and built in T3.5.0/T3.5.3 (`npm run build` emits hashed JS and CSS into `dist/`) and wired to the previously unreachable endpoints in T3.5.22. Its **rendered appearance was confirmed by the user on 2026-08-20** (T3.5.25): the platform was started, both servers came up, and the then-nine tabs were reported working. T5.6g adds a tenth tab which has compiled and built but has **not** been visually inspected in a browser. The earlier confirmation is a user report, not an artefact - **no screenshot per tab exists in this repository**, so T3.5.0's literal evidence clause remains outstanding. Contract tests prove all ten tabs compile, call routes that exist and read fields that are present; they do not prove rendered appearance.
+The React frontend is fully written and structurally complete. It was installed and built in T3.5.0/T3.5.3 (`npm run build` emits hashed JS and CSS into `dist/`) and wired to the previously unreachable endpoints in T3.5.22. Its **rendered appearance was confirmed by the user on 2026-08-20** (T3.5.25): the platform was started, both servers came up, and the then-nine tabs were reported working. T5.6g adds a tenth tab which has compiled and built but has **not** been visually inspected in a browser. The earlier confirmation is a user report, not an artefact - **no screenshot per tab exists in this repository**, so T3.5.0's literal evidence clause remains outstanding. TG9.2 adds an eleventh tab, the findings view, which also compiles and builds but has **not** been visually inspected. Contract tests prove all eleven tabs compile, call routes that exist and read fields that are present; they do not prove rendered appearance.
 
 *   **Component Visualizations:** `Heatmap2D.tsx` and `LineChart.tsx` wrap `react-plotly.js`; `LineageGraph.tsx` is a hand-rolled SVG node-link renderer with a tooltip inspector and no external graph dependency. All three take reactive props and render spatial fields, PSD curves, coherence ratios, and provenance DAGs.
 *   **Accessibility: zero, and measured rather than assumed.** `frontend/src` contains
@@ -3953,7 +4041,7 @@ See `VERIFICATION.md` for the captured command output behind every statement her
 | Item | Status |
 |---|---|
 | Python venv + dependencies | installed (torch 2.13.0+cu130, numpy 2.2.6, pydantic 1.10.26, SQLAlchemy 2.0.52, xarray 2025.6.1, FastAPI 0.110.3) |
-| Backend test suite | **2296 passed, 1 xfailed** (plus 1 skipped: opt-in live GCS) (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17, 351 after T3.5.6, 379 after T3.5.15, 407 after T3.5.19, 449 after T4C.5, 709 after T4A.4, 781 after T4B.4, 855 after T4C.5, 859 after T4C.5c, 882 after T5.1a CPU acceptance, 883 after RTX acceptance, 890 after portable profiles, 911 after T5.1b/D44, 917 after T5.1c, 933 after T5.1d/D45, 946 after T5.1e, 955 after T5.2a, 957 after T5.2b, 962 after T5.3a, 969 after T5.3b, 981 after T5.2c offline acceptance, 985 after T5.2d, 1000 after T5.0a, 1008 after T5.0b, 1027 after T5.6a offline acceptance, 1042 after T5.6b cube acceptance, 1056 after T5.6c matched evaluation, 1070 after T5.6d truth matching, 1080 after T5.6e orchestration, 1089 after T5.6f portable jobs, 1094 after T5.6g reporting, 1095 after the licence guard, 1102 after T4C.5d gate readiness, 1104 after D50 storage preflight, 1106 after T4C.5e overlap evidence, 1112 after T4C.5f campaign acceptance, 1116 after T4C.5g physical preflight, 1117 after T4C.5h preregistration - the `master` freeze; then on `ed-dev`, 1375 after TG2.1, 1429 after TG2.2, 1477 after TG2.3, 1536 after TG2.4, 1577 after TG3.1, 1621 after TG3.2, 1686 after TG3.3, 1742 after TG3.4, 1787 after TG3.5, 1850 after TG4.1, 1922 after TG4.2, 1972 after TG4.3, 1986 after TG5.1, 2004 after TG5.2 and 2020 after TG5.3, 2044 after TG6.1, 2074 after TG6.2, 2112 after TG6.3, 2167 after TG7.1, 2217 after TG7.2, 2235 after TG7.3, 2236 after TG7.3 live acceptance and 2296 after TG7.4) |
+| Backend test suite | **2321 passed, 1 xfailed** (plus 1 skipped: opt-in live GCS) (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17, 351 after T3.5.6, 379 after T3.5.15, 407 after T3.5.19, 449 after T4C.5, 709 after T4A.4, 781 after T4B.4, 855 after T4C.5, 859 after T4C.5c, 882 after T5.1a CPU acceptance, 883 after RTX acceptance, 890 after portable profiles, 911 after T5.1b/D44, 917 after T5.1c, 933 after T5.1d/D45, 946 after T5.1e, 955 after T5.2a, 957 after T5.2b, 962 after T5.3a, 969 after T5.3b, 981 after T5.2c offline acceptance, 985 after T5.2d, 1000 after T5.0a, 1008 after T5.0b, 1027 after T5.6a offline acceptance, 1042 after T5.6b cube acceptance, 1056 after T5.6c matched evaluation, 1070 after T5.6d truth matching, 1080 after T5.6e orchestration, 1089 after T5.6f portable jobs, 1094 after T5.6g reporting, 1095 after the licence guard, 1102 after T4C.5d gate readiness, 1104 after D50 storage preflight, 1106 after T4C.5e overlap evidence, 1112 after T4C.5f campaign acceptance, 1116 after T4C.5g physical preflight, 1117 after T4C.5h preregistration - the `master` freeze; then on `ed-dev`, 1375 after TG2.1, 1429 after TG2.2, 1477 after TG2.3, 1536 after TG2.4, 1577 after TG3.1, 1621 after TG3.2, 1686 after TG3.3, 1742 after TG3.4, 1787 after TG3.5, 1850 after TG4.1, 1922 after TG4.2, 1972 after TG4.3, 1986 after TG5.1, 2004 after TG5.2 and 2020 after TG5.3, 2044 after TG6.1, 2074 after TG6.2, 2112 after TG6.3, 2167 after TG7.1, 2217 after TG7.2, 2235 after TG7.3, 2236 after TG7.3 live acceptance, 2296 after TG7.4 and 2321 after TG9.1/TG9.2) |
 | Ground-Truth Benchmark Suite | **29 PASS, 0 FAIL, 0 NOT_YET_RUNNABLE** (`python -m src.benchmarks`, exit 0) |
 | Frontend `npm install` + `npm run build` | passes, emits 1,386 modules + real JS/CSS assets (was: 1 module, no assets) |
 | Backend server | starts, serves OpenAPI, all smoke-tested endpoints return 200 |
@@ -4219,7 +4307,7 @@ able to sit three slices out of date.
 | `test_forecasting_artifact_evaluation.py` | 8 | T5.3b/T5.2d checkpoint/config integrity, artifact-bound lineage, persistence-relative metrics, physical-time reporting/refusals, undefined-skill handling and CPU/RTX vendor-neutral accelerator parity |
 | `test_forecasting_protocol.py` | 7 | T5.0a exact schema completeness, canonical identity, immutable nested configuration, evidence requirements, temporal/rollout consistency, persistence and tamper/drift refusal |
 | `test_forecasting_protocol_binding.py` | 4 | T5.0b exact dataset/protocol/checkpoint binding, recomputed coordinate/statistics identities, drift refusals and bound-evaluation cross-run isolation |
-| `test_frontend_contract.py` | 31 | the frontend/backend contract, including transform/dataset/cadence readiness claim boundaries, plus the UI integrity guards: no fabricated results, no unqualified validation claims, units and slope uncertainty displayed |
+| `test_frontend_contract.py` | 36 | the frontend/backend contract, including transform/dataset/cadence readiness claim boundaries, plus the UI integrity guards: no fabricated results, no unqualified validation claims, units and slope uncertainty displayed |
 | `test_gate_run.py` | 1 | T4C.5d frozen plan, local-only preflight, bounded train-only climatology/signatures, authenticated synthetic gate receipt, no-overwrite and tamper refusal |
 | `test_gate_campaign.py` | 6 | T4C.5f-h exact campaign identity, strict nested schema, canary/full/WeatherBench drift refusals, pre-transfer R13/physical-lag audit, aggregate storage/readiness, immutable freeze/load, pinned real preregistration and zero-network CLI (8 pytest cases) |
 | `test_grid_operators.py` | 64 | grid metrics, metric-aware gradient/Laplacian, area weighting, physical-wavenumber spectra, D26 |
@@ -4243,7 +4331,8 @@ able to sit three slices out of date.
 | `test_round_robin.py` | 49 | TG7.2 the adversarial round-robin: the eight seats replayed turn by turn against the plan, with a role out of order, a seat answered by a model or at an effort the panel did not seat, an answer against the wrong schema, a second answer to one challenge and a ninth turn on a finished exchange each refused; a malformed turn recorded before it is refused, so nothing paid for is discarded (R23); dissent retired only by concession or by a rebuttal the independent reassessment declines to reopen, with the reassessment able to reopen a dissent but not originate one; the final synthesis refused when it drops an unresolved dissent, invents one, or reports calm while one stands; three agreeing challengers leaving the fourth's objection byte-identical, which is what a hidden count would have broken; a panel needing every seat filled and reporting reviewer overlap rather than refusing it; and a complete exchange over a corpus standing on all five rungs plus a blocked and a contradicted bundle, every seat arguing for promotion by name, moving no claim level — with a randomised sweep over 120 exchanges checking retained dissent against an independently written rule and a second over 80 randomly seated panels re-replaying each recorded chain (R22, R23) |
 | `test_review_cost.py` | 15 | TG7.3 provider-neutral cost control and Gemini 3.5 Flash Batch transport: fixed per-role effort routing; exact structured Batch request, poll and response mapping including the first live operation shape; current Batch response-format enum; API-key non-retention; visible-plus-thinking output accounting and raw/normalized token reconciliation; measured non-zero cache-hit acceptance and configured-but-missed refusal; standard-route, effort, identity, arithmetic, provider-error and tamper refusals; and content-addressed atomic no-overwrite receipt persistence over an eight-call review |
 | `test_translation.py` | 47 | TG7.4 translation, bounded: the restated gate names checked against the ladder's own so the one line of duplication cannot drift; a glossary refused when partial, when it invents a term, and when a phrase carries causal vocabulary, a digit, a comparative asserting a relation of size, or wording reserved to a higher rung; R9's six figures given a structure they did not have, with each of the six load-bearing and a lift that is not confidence over base rate refused; the roadmap's own "82% of the time" rendered welded to the base rate that defuses it; two features of one variable described with their units while a cross-domain pair renders only `structural_signature`, asserted as the absence of variable, dataset and units; entitlements welded into the same string as the claims they bound; commentary quarantined outside the claim text and refused when reproduced inside it; a stale translation of a superseded revision refused; canonical no-overwrite persistence and a tampered document refused on load; a glossary registered from the test module outside `src/` (TG8.1); and the acceptance test of the phase — a corpus on all five rungs plus a blocked and a contradicted bundle, translated into an atmospheric and a financial vocabulary, reading completely differently and asserting identical facts — with three randomised sweeps and nine deliberate mutations of the module, each caught (R7, R9, R19, R22) |
-| **total** | **1969** | |
+| `test_findings_api.py` | 20 | TG9.1 the read-only claim surface: the wire guard refusing a bare confidence at any depth of any response body and passing one that travels with all six of R9's figures, with the guard's restated field list asserted to still agree with `AssociationFigures`; the acceptance test of the slice — every route served over a corpus that genuinely does report a confidence, with the test refusing to pass vacuously if none is present; a domain registered from the test module reaching `GET /domains` and `GET /glossaries/{name}` without editing `src/api/`; built-in glossaries registered eagerly at import rather than on first request (D35); a GET leaving the bundle bytes and the rung unchanged (R22); an unreadable bundle reported rather than skipped; an absent study root served as an empty list; unknown study and unknown glossary both 404; a blocked study reported as blocked; a partial figure set served as no figures rather than a subset; and one study in two vocabularies reading differently while serving identical `structural_keys` (R9, R22) |
+| **total** | **1994** | |
 
 ### 7.2h A surrogate null that was not the null it claimed (T4C.5)
 

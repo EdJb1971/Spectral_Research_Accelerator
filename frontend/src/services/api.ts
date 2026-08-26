@@ -291,5 +291,46 @@ export const apiService = {
     form.append('file', file);
     return handleResponse<types.EvaluationReport>(
       await fetch(`${BASE_URL}/evaluation/receipts/import`, { method: 'POST', body: form }));
+  },
+
+  // ------------------------------------------------ the findings surface (TG9.1)
+  //
+  // Read-only. None of these can change what may be claimed: a GET does not move a rung
+  // (R22). The translation arrives already rendered, because Phase G9's rule is that this
+  // client displays strings rather than assembling them.
+
+  async listDomains(): Promise<types.DomainSummary[]> {
+    return handleResponse<types.DomainSummary[]>(
+      await fetch(`${BASE_URL}/findings/domains`, { method: 'GET' }));
+  },
+
+  async getGlossary(name: string): Promise<types.DomainGlossaryPayload> {
+    return handleResponse<types.DomainGlossaryPayload>(
+      await fetch(`${BASE_URL}/findings/glossaries/${encodeURIComponent(name)}`,
+        { method: 'GET' }));
+  },
+
+  async listStudies(): Promise<types.StudySummary[]> {
+    return handleResponse<types.StudySummary[]>(
+      await fetch(`${BASE_URL}/findings/studies`, { method: 'GET' }));
+  },
+
+  async getStudy(studyId: string): Promise<Record<string, unknown>> {
+    return handleResponse<Record<string, unknown>>(
+      await fetch(`${BASE_URL}/findings/studies/${encodeURIComponent(studyId)}`,
+        { method: 'GET' }));
+  },
+
+  async getStudyOutputs(studyId: string): Promise<Record<string, unknown>> {
+    return handleResponse<Record<string, unknown>>(
+      await fetch(`${BASE_URL}/findings/studies/${encodeURIComponent(studyId)}/outputs`,
+        { method: 'GET' }));
+  },
+
+  async getTranslation(studyId: string, glossary: string): Promise<types.TranslatedFinding> {
+    const query = new URLSearchParams({ glossary }).toString();
+    return handleResponse<types.TranslatedFinding>(
+      await fetch(`${BASE_URL}/findings/studies/${encodeURIComponent(studyId)}/translation?${query}`,
+        { method: 'GET' }));
   }
 };

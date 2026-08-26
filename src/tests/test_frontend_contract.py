@@ -494,3 +494,88 @@ def test_benchmarks_can_be_run_from_the_ui(all_sources):
     # The three outcomes must stay separate on screen too.
     assert "NOT YET RUNNABLE" in all_sources
     assert "null_failures" in all_sources
+
+
+# ======================================================== the findings view (TG9.2)
+#
+# Phase G9's rule is that the client computes and formats no scientific number. These assert it
+# over the source, because a rule enforced only by whoever writes the JSX is not enforced.
+
+FINDINGS_COMPONENTS = ("components/FindingsView.tsx",)
+
+
+def _findings_sources() -> str:
+    return "\n".join(_read(name) for name in FINDINGS_COMPONENTS)
+
+
+def _without_comments(source: str) -> str:
+    """Strip block and line comments, so prose *about* the rule is not read as breaking it.
+
+    The component's own docstring names `toFixed` in order to say it does not use one. A check
+    that could not tell those apart would forbid documenting the constraint, which is the
+    opposite of what is wanted.
+    """
+    source = re.sub(r"/\*.*?\*/", "", source, flags=re.DOTALL)
+    return re.sub(r"//[^\n]*", "", source)
+
+
+def test_the_findings_view_formats_no_scientific_number():
+    """TG9.2's acceptance criterion: R9 made mechanical on the frontend.
+
+    R9 calls a bare confidence percentage a hard constraint on the frontend, not only on the
+    mining code. The backend already refuses to serve one; this refuses to let a view build one.
+    Together they mean a bare confidence is not withheld by discipline, it is unobtainable.
+    """
+    code = _without_comments(_findings_sources())
+    assert "toFixed" not in code, "a findings component formatted a number itself"
+    assert "toPrecision" not in code
+    assert not re.search(r"\d\s*%", code), "a percent literal reached a findings component"
+
+
+def test_the_findings_view_reads_no_claim_bearing_field_directly():
+    """The stronger form: the six figures are never touched, only the assembled string is.
+
+    Reading `figures.confidence` is how a well-meaning author reintroduces the failure - the
+    number is right there and printing it looks harmless. So no member of `AssociationFigures`
+    may be read at all; `figures_text` is the only permitted route to the association strength.
+    """
+    code = _without_comments(_findings_sources())
+    for field in ("confidence", "base_rate", "lift", "surrogate_corrected_lift", "support"):
+        assert ".%s" % field not in code, (
+            "a findings component read figures.%s directly; only figures_text may be shown "
+            "(R9)" % field)
+    assert "figures_text" in code, "the assembled figure string must actually be rendered"
+
+
+def test_the_findings_view_never_shows_a_claim_without_its_bound():
+    """`rendered` and `licences` are one unit; showing the first alone is promotion by layout."""
+    code = _findings_sources()
+    assert "unit.rendered" in code and "unit.licences" in code
+    rendered_at = code.index("unit.rendered")
+    licences_at = code.index("unit.licences")
+    assert abs(licences_at - rendered_at) < 400, (
+        "the entitlement must be rendered beside the claim, not in a distant branch")
+
+
+def test_every_empty_findings_section_says_absence_is_not_evidence():
+    """Silence reads as reassurance, so an empty section states what it does not mean."""
+    code = _findings_sources()
+    assert code.count("that is not the same as none existing") >= 3
+
+
+def test_the_findings_view_is_operable_without_a_mouse(all_sources):
+    """TG9.4's condition for the new surface only.
+
+    Accessibility across `frontend/src` is zero, measured, and `roadmap.md` records that as
+    deliberate rather than overlooked. This does not change that measurement for the legacy
+    workbench. It requires that the surface added by Phase G9 does not add to the debt.
+    """
+    code = _findings_sources()
+    assert "role=\"tablist\"" in code and "role=\"tab\"" in code
+    assert "aria-selected" in code
+    assert "aria-label" in code
+    assert "aria-pressed" in code
+    assert "htmlFor" in code, "every control needs a label bound to it"
+    assert "focus:ring" in code, "keyboard focus must be visible"
+    assert "aria-hidden" in code, "decorative icons must be hidden from a screen reader"
+    assert "FindingsView" in all_sources, "the view must be mounted in the app"

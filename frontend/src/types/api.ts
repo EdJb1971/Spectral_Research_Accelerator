@@ -615,3 +615,87 @@ export interface EvaluationReport {
   provenance: Record<string, any>;
   claim_boundaries: string[];
 }
+
+// ---------------------------------------------------------------- findings (TG9.1/TG9.2)
+//
+// Phase G9's principle: the client computes and formats no scientific number. Every
+// claim-bearing string below arrives already rendered by the backend and is displayed
+// verbatim. `AssociationFigures` is the only thing that may carry a confidence, and it
+// carries all six of R9's figures or the backend does not send it at all.
+
+export interface DomainSummary {
+  name: string;
+  domain: string;
+  description: string;
+  glossary_sha256: string;
+  term_count: number;
+  capabilities: Record<string, unknown>;
+  defined_in: string;
+}
+
+export interface DomainGlossaryPayload {
+  schema: string;
+  domain: string;
+  phrases: Record<string, string>;
+  description: string;
+}
+
+export interface StudySummary {
+  study_id: string | null;
+  file: string;
+  readable: boolean;
+  refused_because?: string;
+  revision?: number;
+  bundle_sha256?: string;
+  hypothesis?: string;
+  rung?: string;
+  blocked?: boolean;
+  summary_sha256?: string;
+}
+
+/**
+ * R9's six figures. They travel together or not at all: the API refuses to serve a
+ * `confidence` without the other five, so this interface has no optional members.
+ */
+export interface AssociationFigures {
+  support: number;
+  confidence: number;
+  base_rate: number;
+  lift: number;
+  lift_interval: [number, number];
+  surrogate_corrected_lift: number;
+}
+
+/**
+ * One structural fact and its domain wording. `rendered` and `licences` are displayed
+ * together and never apart: showing a claim without the bound that qualifies it is the
+ * failure TG7.4 welded them into one unit to prevent.
+ */
+export interface TranslationUnit {
+  structural_key: string;
+  source_sha256: string;
+  rendered: string;
+  licences: string;
+}
+
+export interface TranslatedFinding {
+  schema: string;
+  study_id: string;
+  bundle_sha256: string;
+  revision: number;
+  summary_sha256: string;
+  domain: string;
+  glossary_sha256: string;
+  claimable: TranslationUnit[];
+  not_claimable: TranslationUnit[];
+  contradicting: TranslationUnit[];
+  alternatives: TranslationUnit[];
+  next_observation: TranslationUnit | null;
+  figures: AssociationFigures | null;
+  /** The assembled figure line. The only string a client may show for association strength. */
+  figures_text: string | null;
+  commentary: string[];
+  rendered_text: string;
+  structural_keys: string[];
+  translation_sha256: string;
+}

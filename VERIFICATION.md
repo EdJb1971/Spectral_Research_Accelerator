@@ -5322,3 +5322,113 @@ hashed and reviewable, not that it is correct. Refusing causal *vocabulary* is n
 stops the system emitting a cross-domain comparison; it cannot stop a reader setting two
 within-domain renderings side by side and drawing one themselves, and layout is out of scope.
 Nothing judges whether a finding was worth translating.
+
+## TG9.1 - the read-only claim surface (`ed-dev`)
+
+Before this slice the cross-domain line had **no HTTP surface at all**. All twelve G-line modules
+- `domain`, `feature`, `motif`, `evidence`, `claim_ladder`, `five_outputs`, `recorded_call`,
+`round_robin`, `translation`, `cross_domain`, `constellation`, `family` - had zero references in
+`src/api/`. Every existing route belonged to the atmospheric/transform line. Nothing a browser
+could reach knew a claim ladder existed, which is why Phase G9 is ordered API first.
+
+`src/api/findings.py` mounts six read-only routes under `/api/v1/findings`. Nothing appends
+evidence, records a call or moves a rung: a GET cannot change what may be claimed (R22), asserted
+over the bundle bytes on disk and the rung before and after.
+
+**R9 on the wire.** `refuse_bare_confidence` walks every response body at any depth and refuses a
+`confidence` key without all six of R9's figures. R9 is usually described as a frontend
+constraint, which puts it in the one place it cannot be enforced. The guard restates the six
+field names rather than importing them from `AssociationFigures`, because a guard that imported
+its expectations from the thing it guards would agree with any change made to it; a test asserts
+the two statements still agree. A partial figure set is served as no figures at all.
+
+**The D35 defence.** Registration is eager at module import, not an import side effect of a
+lazily imported handler module. D35 was exactly that: `GET /data/sources` returned
+`['netcdf_local', 'simulated']` on a fresh process and a longer list after the researcher visited
+the ERA5 tab, so which sources the fallback chain considered depended on browsing order.
+`DOMAIN_GLOSSARIES` has that shape. `register_builtin_glossaries()` is idempotent and returns the
+full built-in set so a caller can assert it rather than hope.
+
+**Two glossaries, written against the screens.** `src/core/builtin_glossaries.py` supplies
+reanalysis and order-book wording for all 38 structural terms each. Both passed TG7.4's four
+registration screens on the first attempt - no digit, nothing from `OUTSIDE_THE_LADDER`, no
+comparative asserting a relation of size, and no rung phrase borrowing wording reserved above it.
+
+**Acceptance, both criteria met.**
+
+1. *No route can serve a bare confidence.* Asserted over a corpus that genuinely does report one -
+   the test fails if no confidence is present anywhere, so it cannot pass vacuously.
+2. *A new domain reaches the API without editing `src/api/`.* A glossary registered from the test
+   module, outside `src/core` and `src/api` both, appears in `GET /domains` and is served whole by
+   `GET /glossaries/{name}`. TG8.1's condition carried onto the HTTP layer.
+
+One study served through both vocabularies reads completely differently and returns byte-identical
+`structural_keys`:
+
+```text
+reanalysis : "a link whose earlier and later parts are ordered in time and whose working
+              can be traced back to the archive it came from"
+order_book : "a link whose earlier and later parts are ordered in trading time and whose
+              working can be traced back to the venue feed"
+keys       : identical in both
+```
+
+**Evidence.** `src/tests/test_findings_api.py`, 20 tests.
+
+**Claim boundary.** A surface that cannot serve a bare confidence does not make the science behind
+it good; it removes one way of misreading it. A fluent rendering of a weak result is more
+persuasive than a jargon-laden rendering of the same result - a risk this surface creates rather
+than removes. An empty "evidence against" section means nothing was recorded, not that nothing
+exists. The store reads a directory; it does not establish that anything in it was worth
+publishing. No frontend exists yet: TG9.2 is where a person actually sees any of this.
+
+## TG9.2 / TG9.4 - the findings view (`ed-dev`)
+
+`frontend/src/components/FindingsView.tsx` is an eleventh tab rendering a `TranslatedFinding`:
+five outputs as five sections, each claim welded to its bound, with panels for the untranslated
+claim state, the glossary that worded it, and the evidence bundle. A domain selector renders one
+study through any registered vocabulary. Nothing in the existing workbench was refactored.
+
+**The acceptance criterion is asserted over the source.** R9 calls a bare confidence percentage a
+hard constraint on the frontend, not only on the mining code - a rule of that shape cannot be
+enforced by whoever writes the JSX remembering it. Two tests enforce it mechanically:
+
+* `test_the_findings_view_formats_no_scientific_number` - no `toFixed`, no `toPrecision`, no
+  percent literal.
+* `test_the_findings_view_reads_no_claim_bearing_field_directly` - no read of `confidence`,
+  `base_rate`, `lift`, `support` or `surrogate_corrected_lift`. `figures_text` is the only route
+  to the association strength.
+
+Comments are stripped before both checks, so the component can document the constraint without
+appearing to breach it.
+
+**A gap found by writing the view, recorded rather than quietly fixed.** The first draft
+interpolated `figures.support` into its own panel. No formatting, no arithmetic - and still wrong,
+because a view that builds that line from parts puts R9 back in the hands of the JSX author. The
+API now serves `figures_text`, the line the backend assembled, so the view has nothing to build.
+The test was tightened from "formats no number" to "reads no claim-bearing field" because of that
+mistake, not in anticipation of it.
+
+**Three deliberate mutations of the component, each caught:** a `toFixed` on a rendered value, a
+read of `figures.confidence`, and a bare percent literal.
+
+**A guard that had stopped covering new code.** `test_route_count_claim_matches_reality` scanned
+`@app.*` decorators in `main.py` alone. TG9.1 mounted the findings surface as an `APIRouter` in its
+own module, so six real endpoints were invisible to the guard whose entire job is refusing an
+undocumented endpoint - it passed while covering less than it claimed. `_routes()` now scans every
+route-defining module with its mount prefix, and the documented count moved from 31 to 37.
+
+**TG9.4 applies to this surface only.** The findings views carry `role="tablist"`/`role="tab"`,
+`aria-selected`, `aria-pressed`, `aria-label`, `htmlFor`-bound labels, visible focus rings and
+`aria-hidden` on decorative icons, asserted by test. `roadmap.md` §1's platform-wide measurement is
+unchanged: the legacy workbench was not touched. This stops the new surface adding to the debt; it
+does not repay it.
+
+**Evidence.** Five new tests in `src/tests/test_frontend_contract.py` (36 total). `npx tsc
+--noEmit` clean. `npm run build` succeeds.
+
+**Claim boundary. Rendered appearance is NOT RUN.** No browser has displayed this tab and no
+screenshot exists in this repository, exactly as for the tenth tab before it. The contract tests
+prove the tab compiles, calls routes that exist and reads fields that are present; they do not
+prove it renders, is legible, or is usable. A view that cannot render a bare confidence does not
+make the finding it displays worth reading.

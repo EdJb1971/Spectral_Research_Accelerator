@@ -1907,6 +1907,47 @@ setting two within-domain renderings side by side and drawing one themselves, an
 scope. Nothing judges whether a finding was worth translating, or whether the domain words chosen
 are the ones a practitioner would use.
 
+**Deliberately not built: a generative translation seat.** Rendering domain prose through the
+TG7.1 boundary as a ninth role was considered and rejected for this slice. A generated sentence
+would make every guard above a post-hoc text check instead of a structural impossibility, and it
+would put a non-deterministic step between the gates and the reader. The deterministic renderer is
+built first precisely so that a generative seat, if one is ever added, has something it must pass:
+it would have to satisfy the same four guards, and its output would be commentary under R23 rather
+than claim text. Authoring a glossary is correspondingly constrained — `RESERVED_WORDING` reserves
+"signal" to `candidate_precursor`, so common domain words are refused at lower rungs. That is the
+intended cost, not an oversight.
+
+---
+
+### Where this line stands, and what comes next
+
+Recorded so a reader arriving cold does not have to infer it from which entries say DONE.
+
+**Complete:** G0 through G7. Every slice from TG0.1 to TG7.4 is marked DONE on `ed-dev`, with
+suite, benchmark and documentation evidence in `VERIFICATION.md`.
+
+**Outstanding, in the order intended:**
+
+1. **TG7.3's live tail.** A real cache hit, a live eight-role review and a live cost receipt are
+   **NOT RUN**. The accepted smoke was 52 tokens, below Gemini 3.5 Flash's 4,096-token implicit
+   cache floor, so it correctly reported zero cached tokens. Closing this needs a prompt above
+   that floor and a full eight-call review against the live transport. Sequenced *after* TG7.4
+   deliberately: TG7.4 is entirely offline and does not depend on it, and spending real tokens on
+   a full review before the translation layer existed would have bought nothing.
+2. **Phase G8** — TG8.1 onboarding contract, TG8.2 licence provenance, TG8.3 the domain ledger.
+   TG8.1's condition, that a domain is reachable without editing `src/`, is already partially met:
+   `DOMAIN_GLOSSARIES` (TG7.4) takes a glossary registered from outside `src/`, and a test
+   registers one from the test module to prove it.
+3. **Phase G9 — the findings instrument.** TG9.1 (the read-only claim surface), TG9.2 (the
+   findings view) and TG9.4 (accessibility of the new surface) are DONE. **TG9.3, the refusal
+   surface, is the one slice of G9 still open**: showing which analyses a domain's declared
+   violations forbid, and rendering recorded commentary under its R23 label separated from claim
+   text. Rendered browser inspection of the findings tab is **NOT RUN**.
+
+**Open defects:** D43 (the real-data gate is not laptop-feasible through the catalogued
+WeatherBench layouts) and D18 (partial — CUDA-only device probing). Both predate this line and
+neither blocks G8.
+
 ---
 
 ### Phase G8 — Public dataset onboarding
@@ -1928,6 +1969,144 @@ must be data, not folklore.
 which analyses it is therefore refused, and what onboarding cost. **If that cost is not falling
 as domains accumulate, the abstraction is not working** — and the ledger is designed to make that
 visible rather than deniable.
+
+---
+
+### Phase G9 — The findings instrument
+
+Sits **above** G7 and may not reach past it. Where G7 ends, a finding exists as a
+`TranslatedFinding`: domain wording, welded entitlements, and R9's six figures or none. G9 puts
+that in front of a person.
+
+**The governing principle: the frontend computes and formats no scientific number.** Every
+claim-bearing string is produced by the backend and rendered verbatim. This is not a style
+preference — it is the only way R9's *"a bare confidence percentage must not be renderable in the
+UI; this is a hard constraint on the frontend, not only on the mining code"* becomes structural.
+Today that rule depends on whoever writes the JSX. Under this phase a bare confidence is
+**unobtainable**: `AssociationFigures.render` is the only thing that can format a percentage, and
+it cannot exist without a base rate. R19 and R7 inherit the same protection, and TG7.4's welded
+entitlements mean a view cannot show "this is a candidate precursor" while dropping "predictive
+utility is not shown", because they are one string.
+
+**The gap this phase starts from.** The cross-domain line has **no HTTP surface at all**. All
+twelve core modules — `domain`, `feature`, `motif`, `evidence`, `claim_ladder`, `five_outputs`,
+`recorded_call`, `round_robin`, `translation`, `cross_domain`, `constellation`, `family` — have
+zero references in `src/api/`. Every existing route belongs to the atmospheric/transform line
+(T3–T5). There is nothing for a UI to render until that is fixed, which is why this phase is
+ordered API first.
+
+**TG9.1 The read-only claim surface. DONE (`ed-dev`).** `src/api/findings.py` mounts six
+read-only routes under `/api/v1/findings`: registered domains, one glossary whole, published
+studies, one bundle, its five outputs, and its translation. Nothing appends evidence, records a
+call or moves a rung, so a GET cannot change what may be claimed (R22).
+
+**Phase G9's principle, applied to the wire.** A translation is served already rendered as
+`rendered_text` beside its structured units and `structural_keys`, so a client displays strings
+rather than assembling them. The five outputs are served untranslated as well, because a reader
+checking that domain wording changed no fact needs both forms.
+
+**R9 is enforced on the wire, not in each handler.** `refuse_bare_confidence` walks every
+response body at any depth and refuses a `confidence` key not accompanied by all six of R9's
+figures. The rule is usually described as a frontend constraint, which puts it in the one place
+it cannot be enforced. The guard **restates** the six field names rather than importing them
+from `AssociationFigures` — a guard that imported its expectations from the thing it guards
+would agree with any change made to it — and a test asserts the two statements still agree. A
+partial figure set is served as no figures at all: four of six is not four-sixths of a finding.
+
+**Registration is eager, and that is the point.** Defect D35 was a fallback chain that depended
+on browsing order, because registration was an import side effect of a lazily imported module.
+`DOMAIN_GLOSSARIES` has exactly that shape, so `register_builtin_glossaries()` runs at module
+import, is idempotent, and returns the full built-in set so a caller can assert it.
+`src/core/builtin_glossaries.py` supplies the first two vocabularies — reanalysis and
+order-book — written against TG7.4's four registration screens rather than fixed up afterwards.
+
+**Acceptance, both criteria met.** A response-shape test walks every route's JSON over a corpus
+that genuinely does report a confidence — the test refuses to pass vacuously if none is present —
+and no route can serve one without its five companions. And a glossary registered from the test
+module, outside `src/core` and `src/api` both, reaches `GET /domains` and `GET /glossaries/{name}`
+**without editing `src/api/`**: TG8.1's condition carried onto the HTTP layer.
+
+**Evidence:** `src/tests/test_findings_api.py`, 20 tests. One study served through the reanalysis
+and order-book vocabularies reads completely differently and returns byte-identical
+`structural_keys` — TG7.4's acceptance, now visible over HTTP, which is what the findings view
+will render. A GET leaves the bundle bytes and the rung unchanged; an unreadable bundle is
+reported rather than skipped; an absent study root is an empty list rather than an error.
+
+**Claim boundary.** A surface that cannot serve a bare confidence does not make the science good;
+it removes one way of misreading it. A fluent rendering of a weak result is more persuasive than
+a jargon-laden rendering of the same result, which is a risk this surface creates rather than
+removes. An empty "evidence against" section means nothing was recorded, not that nothing exists.
+The store reads a directory; it does not establish that anything in that directory was worth
+publishing.
+
+**TG9.2 The findings view. DONE (`ed-dev`).** `frontend/src/components/FindingsView.tsx` is an
+eleventh tab rendering a `TranslatedFinding`: the five outputs as five sections, each claim shown
+welded to the bound that qualifies it, with panels for the untranslated claim state, the glossary
+that worded it, and the evidence bundle itself. A domain selector renders one study through any
+registered vocabulary. Six client methods were added to `services/api.ts`; nothing in the existing
+workbench was refactored.
+
+**The rule is asserted over the source, not remembered.** `test_the_findings_view_formats_no_
+scientific_number` refuses `toFixed`, `toPrecision` and any percent literal in the findings
+components, and `test_the_findings_view_reads_no_claim_bearing_field_directly` refuses reading
+*any* of R9's six fields — `confidence`, `base_rate`, `lift`, `support` and the rest — leaving
+`figures_text` as the only route to the association strength. Comments are stripped before the
+check, so the component can document the constraint without appearing to break it.
+
+**A gap found while writing the view.** The first draft interpolated `figures.support` into its
+own panel — no formatting, no arithmetic, and still wrong, because the moment a view builds that
+line from parts R9 depends on the author remembering the base rate. The backend now serves
+`figures_text`, the assembled line, so the view has nothing to assemble. The stricter test came
+from that mistake rather than anticipating it.
+
+**Acceptance met.** One study through two vocabularies reads completely differently and carries
+identical `structural_keys`, served over HTTP and rendered verbatim. Three deliberate mutations of
+the component — a `toFixed`, a read of `figures.confidence`, and a bare percent literal — were
+each caught.
+
+**Evidence:** five new tests in `src/tests/test_frontend_contract.py` (36 total). `npx tsc
+--noEmit` clean; `npm run build` succeeds. **Rendered appearance is NOT RUN**: no browser has
+displayed this tab, and no screenshot exists, exactly as for the tenth tab before it.
+
+**TG9.4 Accessibility of the new surface. DONE for this surface (`ed-dev`).** The findings views
+ship with `role="tablist"`/`role="tab"`, `aria-selected`, `aria-pressed`, `aria-label`, labels
+bound with `htmlFor`, visible focus rings and `aria-hidden` on decorative icons, asserted by test.
+**The legacy measurement is unchanged and restated rather than quietly improved:** accessibility
+across `frontend/src` as a whole remains zero-derived and the transform workbench was not touched.
+This slice stops the new surface adding to that debt; it does not repay it.
+
+**TG9.3 The refusal surface.** What the instrument will not do, shown rather than hidden. Where a
+domain declares violations, the view states which analyses are therefore refused and why (R17,
+R21). LLM commentary renders under its R23 label, visually separated, never in the same container
+as claim text. **Acceptance:** a blocked bundle and a contradicted one each render their refusals;
+an automated check asserts no commentary string shares a container with a claim string.
+
+**TG9.4 Accessibility of the new surface.** Accessibility is **zero, measured** across
+`frontend/src` — `0` `aria-*` or `role` attributes and `0` keyboard handlers — and `roadmap.md` §1
+records it as deliberately unscheduled rather than overlooked. That position is honest for a
+mouse-driven transform workbench. It is harder to defend for something described as an instrument
+for reading scientific findings. **This phase does not fix the legacy workbench**, which stays as
+recorded. It does require that the findings views ship keyboard-navigable and semantically
+labelled, so the new surface does not add to the debt. **Acceptance:** the findings views are
+operable without a mouse, asserted by test; the legacy measurement is restated unchanged beside
+the new one, so the two are not confused.
+
+**Claim boundary.** A UI that cannot render a bare confidence does not make the science behind it
+good; it removes one way of misreading it. Rendering a finding in domain words does not make the
+finding true, and a fluent view of a weak result is more persuasive than a jargon-laden view of
+the same result — which is a risk this phase creates rather than removes. The instrument shows
+what was recorded: an empty "evidence against" panel means nothing was written down, not that
+nothing exists, and the view must say so in those words. Accessibility for the new views is not
+accessibility for the platform. Nothing here touches a gate, a rung or a digest (R22).
+
+**What would falsify this phase.** If the findings view cannot be made useful without computing
+something scientific in the frontend, the thin-renderer thesis is wrong and the R9 guarantee
+cannot be structural. That would be discovered in TG9.2 and is a result, not a failure.
+
+**Explicitly not in this phase.** The case-study explorer described in `roadmap.md` §9 — stepping
+through a rule's supporting historical instances frame by frame — is the most valuable view that
+document names, and it belongs to the atmospheric line's regional map rather than to the
+cross-domain findings surface. Recorded here so its absence is not mistaken for oversight.
 
 ---
 

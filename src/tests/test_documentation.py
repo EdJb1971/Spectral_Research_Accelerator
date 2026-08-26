@@ -68,10 +68,29 @@ def _test_files():
         for p in glob.glob(os.path.join(REPO_ROOT, "src", "tests", "test_*.py")))
 
 
+#: Modules that define routes, and the decorator prefix each uses. `main.py` decorates `@app`
+#: directly; a router module decorates `@router` and is mounted with `include_router`, and its
+#: `prefix=` is prepended to every path it declares.
+_ROUTE_SOURCES = (("src/api/main.py", "app", ""),
+                  ("src/api/findings.py", "router", "/api/v1/findings"))
+
+
 def _routes():
-    main = _read("src/api/main.py")
-    return [(v.upper(), r) for v, r in
-            re.findall(r'@app\.(get|post|put|delete)\("([^"]+)"', main)]
+    """Every served route, across `main.py` **and** every mounted router.
+
+    This originally read `main.py` alone. TG9.1 mounted the findings surface as an `APIRouter`
+    in its own module, and a decorator scan of `main.py` cannot see those - so six real
+    endpoints were invisible to the guard whose whole job is refusing an undocumented endpoint.
+    A guard that silently stops covering new code is worse than no guard, because its passing
+    is read as assurance.
+    """
+    found = []
+    for path, decorator, prefix in _ROUTE_SOURCES:
+        source = _read(path)
+        for verb, route in re.findall(
+                r'@%s\.(get|post|put|delete)\("([^"]+)"' % decorator, source):
+            found.append((verb.upper(), prefix + route))
+    return found
 
 
 # ============================================================== coverage
