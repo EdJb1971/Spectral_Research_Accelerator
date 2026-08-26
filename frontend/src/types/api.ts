@@ -627,11 +627,39 @@ export interface DomainSummary {
   name: string;
   domain: string;
   description: string;
-  glossary_sha256: string;
+  // Null when limits were registered without wording. The listing unions both registries, so a
+  // domain that declared what it refuses and never declared how it speaks is still visible.
+  glossary_sha256: string | null;
   term_count: number;
   capabilities: Record<string, unknown>;
   defined_in: string;
   declaration: DomainLimits | null;
+  onboarding: OnboardingAudit;
+}
+
+/**
+ * TG8.1. Whether a domain satisfied the whole adapter recipe in one atomic call, or was
+ * assembled from separate registrations and never checked as a whole. `complete: false` is a
+ * reportable state rather than an error: it is how a half-onboarded domain becomes visible
+ * instead of passing for a checked one.
+ */
+export interface OnboardingAudit {
+  name: string;
+  complete: boolean;
+  registered: Record<string, boolean>;
+  missing: string[];
+  required: { requirement: string; why: string }[];
+  onboarded_by?: string;
+  onboarding_sha256?: string;
+  geometry?: string | null;
+  note?: string;
+}
+
+export interface OnboardingContract {
+  schema: string;
+  required: { requirement: string; why: string }[];
+  onboarded: OnboardingAudit[];
+  attribution_caveat: string;
 }
 
 export interface DomainGlossaryPayload {

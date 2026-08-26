@@ -5503,3 +5503,107 @@ were written against it. **The attribution gap is real and unclosed:** until a b
 domain, `unadmitted_reading` is a statement about a vocabulary a reader chose, not about a study.
 Closing it means putting domain provenance into a G6 structure, which belongs to no declared slice.
 Rendered browser inspection remains **NOT RUN**.
+
+## TG8.1 - the onboarding contract (`ed-dev`)
+
+Makes a domain's declaration and its wording one indivisible act. `src/core/onboarding.py`
+registers glossary, declaration and contract record atomically through `onboard_domain`; every
+screen runs before the first `Registry.add`, and any failure restores all three registries.
+
+**The hole.** Wording and limits registered through two registries that knew nothing about each
+other, so either could exist alone. Wording without a declaration is a domain that speaks fluently
+and refuses nothing - not hypothetical, since TG9.1 shipped exactly that and served it for a slice
+before TG9.3 caught it. `register_builtin_domains` now goes through the contract and
+`register_builtin_glossaries` delegates to it, so no entry point can quietly reproduce that state;
+a built-in found half-registered is repaired rather than skipped.
+
+**The recipe is a tuple.** `REQUIRED_DECLARATIONS` carries the seven requirements with the reason
+for each. `OnboardedDomain.checklist()` generates from it, `GET /api/v1/findings/onboarding`
+serves it, the tests assert against it:
+
+```text
+axes | geometry | lag_policy | violations | licence | provenance | glossary
+```
+
+**The one check nothing else could make.** The geometry/violation biconditional, which no single
+object can see because the two facts live in different registries:
+
+```text
+geometry           physical_metric   violations                     verdict
+latlon             True              ()                             accepted   (reanalysis)
+None               -                 no_physical_metric, ...        accepted   (order_book)
+latlon             True              irregular_sampling, ...        accepted   (argo_float)
+pixel              False             no_physical_metric             accepted
+cartesian          True              no_physical_metric             REFUSED - metric supplied then renounced
+None               -                 irregular_sampling             REFUSED - lengths claimed, none available
+tripolar           unregistered      -                              REFUSED - UnknownNameError, by the registry that owns the vocabulary
+```
+
+Asked of the geometry's declared `physical_metric` capability rather than its name (E2), so a
+fourth geometry registered from outside `src/` answers for itself.
+
+**`/domains` now lists the union of both registries.** A domain that declared its limits and never
+declared its wording was invisible - the TG9.1 omission with its halves swapped. It now appears
+with `glossary_sha256: null`, `term_count: 0` and `onboarding.complete: false`. `audit_onboarding`
+reports a piecemeal domain as incomplete with what is missing and why, rather than letting it pass
+for one that was checked whole.
+
+**Acceptance met.** `src/tests/domain_plugin_example.py` onboards a third domain in one file
+outside `src/`. The six files a domain would otherwise have had to touch are hashed before and
+after the import and asserted byte-identical - the method `test_registries.py` uses for sources
+and actions:
+
+```text
+src/core/domain.py  src/core/onboarding.py  src/core/translation.py
+src/core/builtin_domains.py  src/core/builtin_glossaries.py  src/api/findings.py
+```
+
+The domain is **Argo profiling floats**, chosen by R17's reasoning rather than by sector. Of the
+seven entries in `KNOWN_VIOLATIONS` the two built-ins between them break four;
+`irregular_sampling` and `non_stationary_support` had never been broken by any registered domain,
+so no refusal depending on them had ever fired against a declared source. Argo breaks exactly
+those two, is the first declared domain where precedence is admissible while the clock is
+irregular, is the only one exercising `lag_policy="declared"` (floor: one park-and-profile cycle,
+with the basis recorded), and keeps a physical metric - the side of the biconditional neither
+built-in occupies. Its thirty-eight-term glossary passed TG7.4's four registration screens first
+time, written against them rather than fixed up afterwards.
+
+`onboarded_by` is captured from the calling frame, because `Entry.defined_in` records
+`value.__module__`, which for a `DomainGlossary` is always `src.core.translation` - the class's
+home, never the adapter's. The test asserts the plugin domain is attributed to
+`src.tests.domain_plugin_example` and not to anything under `src.core`.
+
+**Evidence.** 33 new tests in `src/tests/test_domain_onboarding.py`. Five deliberate mutations,
+each caught:
+
+```text
+M1  drop the metric-renunciation half of the biconditional   -> 3 tests failed
+M2  remove the rollback from onboard_domain                  -> 1 test failed
+M3  infer completeness from the declaration registry         -> 1 test failed
+M4  skip a half-registered built-in instead of repairing it   -> 1 test failed
+M5  list only the glossary registry in /domains              -> 1 test failed
+```
+
+M3 was caught by a different test than predicted: the piecemeal fixture registers only a glossary,
+so a declaration-derived `complete` is still false there, and the failure surfaced in the
+declaration-only listing test instead. Recorded rather than tidied, because a mutation caught by
+an unexpected test is evidence about the tests, not only about the code.
+
+The rollback test injects a failure between the writes with `monkeypatch`, since every ordinary
+refusal runs before the first write and would never reach that path. A rollback nobody executes is
+a rollback nobody has checked.
+
+`GET /api/v1/findings/onboarding` is a new route, so the frontend reachability guard fired
+(`test_no_served_route_is_unreachable_from_the_ui`). It was honoured rather than exempted: the
+findings view gains a sixth panel, *How this domain was declared*, rendering the recipe and each
+domain's audit, and the domain selector marks an incomplete declaration in the option text. The
+panel formats no number and reads no claim-bearing field. `npx tsc --noEmit` clean.
+
+**Claim boundary.** The contract checks a declaration for completeness and internal agreement. It
+reads no data file, so it cannot know whether a domain's declarations describe the source it
+names, nor whether the wording chosen means to a practitioner what it appears to mean. It
+establishes nothing about which domain produced any given `EvidenceBundle`, because a bundle still
+does not record one - `DOMAIN_ATTRIBUTION_CAVEAT` continues to travel with every served limit, and
+the attribution gap recorded under TG9.3 is unchanged. R17's refusals remain enforced in the
+analysis layer; this makes the declarations they read from complete, not self-enforcing. No Argo
+data was fetched: the declaration is a declaration, and no adapter reads the archive.

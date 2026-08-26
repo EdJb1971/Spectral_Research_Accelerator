@@ -189,24 +189,36 @@ BUILTIN_GLOSSARIES = (
      "glossary so the R19 boundary is visible to a reader."),
 )
 
+#: The same descriptions keyed by name, for `builtin_domains`, which onboards wording and
+#: declaration together and needs the description without unpacking a tuple of tuples.
+BUILTIN_GLOSSARY_DESCRIPTIONS: Dict[str, str] = {
+    name: description for name, _phrases, description in BUILTIN_GLOSSARIES
+}
+
 
 def register_builtin_glossaries() -> Tuple[str, ...]:
     """Register every built-in glossary, once, and return the names registered.
 
-    Idempotent by design: the API calls this at startup, and a test may call it again without
-    tripping the registry's duplicate-name refusal. It returns the full built-in set rather
-    than only the newly added ones, so a caller can assert what is available instead of
-    inferring it from whether it happened to be first.
+    **Since TG8.1 this delegates to `register_builtin_domains`, and that is the point.** A
+    glossary is no longer registrable on its own: `onboard_domain` writes wording, declaration
+    and contract record atomically, because wording without a declaration is a domain that
+    speaks fluently and refuses nothing — which TG9.1 shipped and served for a slice before
+    TG9.3 caught it. Keeping this function as a way in that quietly produced that state again
+    would leave the hole open beside the fix for it.
+
+    The name survives because callers use it and because "register the built-in glossaries" is
+    still what a reader means. The import is deferred to the call rather than taken at module
+    level: `builtin_domains` imports the phrase maps from *this* module, so a top-level import
+    in this direction would be a cycle.
+
+    Idempotent, and returns the full built-in set rather than only the newly added ones, so a
+    caller can assert what is available instead of inferring it from whether it happened to be
+    first.
     """
-    for name, phrases, description in BUILTIN_GLOSSARIES:
-        if name in DOMAIN_GLOSSARIES:
-            continue
-        DOMAIN_GLOSSARIES.add(
-            name, DomainGlossary(domain=name, phrases=phrases, description=description),
-            description=description,
-            capabilities={"builtin": True})
-    return tuple(name for name, _phrases, _description in BUILTIN_GLOSSARIES)
+    from src.core.builtin_domains import register_builtin_domains
+
+    return register_builtin_domains()
 
 
 __all__ = ["REANALYSIS_PHRASES", "ORDER_BOOK_PHRASES", "BUILTIN_GLOSSARIES",
-           "register_builtin_glossaries"]
+           "BUILTIN_GLOSSARY_DESCRIPTIONS", "register_builtin_glossaries"]

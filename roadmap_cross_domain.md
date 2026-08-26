@@ -1934,10 +1934,11 @@ suite, benchmark and documentation evidence in `VERIFICATION.md`.
    that floor and a full eight-call review against the live transport. Sequenced *after* TG7.4
    deliberately: TG7.4 is entirely offline and does not depend on it, and spending real tokens on
    a full review before the translation layer existed would have bought nothing.
-2. **Phase G8** — TG8.1 onboarding contract, TG8.2 licence provenance, TG8.3 the domain ledger.
-   TG8.1's condition, that a domain is reachable without editing `src/`, is already partially met:
-   `DOMAIN_GLOSSARIES` (TG7.4) takes a glossary registered from outside `src/`, and a test
-   registers one from the test module to prove it.
+2. **Phase G8** — TG8.1 (the onboarding contract) is **DONE**, with a third domain, Argo, live
+   from outside `src/`. TG8.2 (licence provenance) and TG8.3 (the domain ledger) remain, and
+   TG8.2 is sequenced before any further public archive lands: the `licence` field is required
+   but unchecked, and archive terms differ sharply. The probe described under *On auto-detecting
+   a domain from its data* is deferred until a second real adapter exists.
 3. **Phase G9 — the findings instrument.** TG9.1 (the read-only claim surface), TG9.2 (the
    findings view) and TG9.4 (accessibility of the new surface) are DONE. TG9.3 (the refusal surface) is DONE, carrying the half of TG9.1 that
    had been declared and not built. **Phase G9 is complete as declared.** Rendered browser
@@ -1954,11 +1955,46 @@ neither blocks G8.
 
 Only once G0--G4 have shown that domains can be added without touching the core.
 
-**TG8.1 The onboarding contract.** A documented adapter recipe: declare axes and roles (E14),
-declare geometry (E13), declare a lag policy (R21), declare violated assumptions (E15), supply
-provenance and a licence record.
-**Acceptance:** a domain is onboarded **without editing `src/`**, matching the existing
-third-party transform plugin test.
+**TG8.1 The onboarding contract. DONE (`ed-dev`).** `src/core/onboarding.py` makes the recipe a
+tuple rather than prose. `REQUIRED_DECLARATIONS` names the seven things a domain must declare —
+axes and roles (E14), geometry (E13), a lag policy (R21), violated assumptions (E15/R17), a
+licence, provenance, and a glossary (TG7.4) — each with the reason it is required.
+`OnboardedDomain.checklist()` is generated from it, `GET /api/v1/findings/onboarding` serves it,
+and the tests assert against it, so the documented contract and the enforced one are one object.
+
+**The hole it closes.** Wording and limits registered separately, and either could exist without
+the other. Wording without a declaration is a domain that speaks fluently and refuses nothing —
+which TG9.1 shipped and served for a slice before TG9.3 caught it. `onboard_domain` registers
+glossary, declaration and contract record **atomically**: every screen runs before the first
+write, and any failure restores all three registries. `register_builtin_domains` now goes through
+it and `register_builtin_glossaries` delegates to it, so no entry point can quietly reproduce the
+state the contract forbids; a built-in found half-registered is repaired rather than skipped.
+
+**The one check nothing else could make** is the biconditional between geometry and violations,
+which no single object can see because the two facts live in different registries: a domain
+declares `no_physical_metric` **if and only if** its geometry offers no physical metric, asked of
+the geometry's declared capability rather than its name (E2). `/domains` now lists the union of
+both registries, so limits registered without wording are visible rather than absent — the TG9.1
+omission with its halves swapped, closed in the same slice that could have reproduced it.
+`audit_onboarding` reports a piecemeal domain as `complete: false` with what is missing, instead
+of letting it pass for one that was checked whole.
+
+**Acceptance met:** `src/tests/domain_plugin_example.py` onboards a third domain in one file
+outside `src/`, and the test hashes the six files a domain would otherwise have had to touch and
+asserts they are byte-identical afterwards — the method `test_registries.py` uses for sources and
+actions. The domain is **Argo profiling floats**, chosen by the reasoning in *Which domains get
+onboarded* above rather than by sector: it breaks `irregular_sampling` and
+`non_stationary_support`, which no registered domain had broken, is the first declared domain
+where precedence is admissible while the clock is irregular, is the only one exercising
+`lag_policy="declared"`, and keeps a physical metric — the side of the biconditional neither
+built-in occupies. 33 tests, five deliberate mutations, each caught.
+
+**Claim boundary.** The contract checks a declaration for completeness and internal agreement. It
+reads no data file, so it cannot know whether a domain's declarations describe the source it
+names, nor whether the wording chosen is wording a practitioner would use. It establishes nothing
+about which domain produced any given `EvidenceBundle`, because a bundle still does not record
+one. R17's refusals remain enforced in the analysis layer; this makes the declarations they read
+from complete, not self-enforcing.
 
 **TG8.2 Licence and terms provenance.** Every public dataset carries its licence, attribution
 requirement and access terms in its provenance, and export refuses to emit a derived product
@@ -1969,6 +2005,94 @@ must be data, not folklore.
 which analyses it is therefore refused, and what onboarding cost. **If that cost is not falling
 as domains accumulate, the abstraction is not working** — and the ledger is designed to make that
 visible rather than deniable.
+
+#### Which domains get onboarded, and why the obvious list is the wrong one
+
+The question that prompted this section was whether to build ingestion for financial, crypto,
+oceanic, celestial, ecological and social sources at once, so a researcher gets a ready-made
+dropdown of domains. The dropdown is not the work: `GET /api/v1/findings/domains` is generated
+from the registry and a domain appears in it the moment it registers, with its refusals beside
+it (TG9.3). The expensive and load-bearing part is the declaration behind each entry, and rule
+R17 decides which ones are worth writing: *a domain that violates nothing is not a second
+domain.* Six domains that all break the same assumptions are one domain with six labels, and
+they would give false confidence that the abstraction generalises — the same trap
+`physical_core/geometry.py` names in its own docstring, where *"a fourth geometry that is
+merely `cartesian` with a different name proves nothing."*
+
+`KNOWN_VIOLATIONS` has seven entries. Coverage across the two registered domains:
+
+| Violation | reanalysis | order_book |
+| --- | --- | --- |
+| `no_physical_metric` | – | yes |
+| `no_propagation_speed` | – | yes |
+| `unordered_channels` | – | yes |
+| `aggregated_values` | – | yes |
+| `no_natural_cycle` | – | – |
+| `irregular_sampling` | – | – |
+| `non_stationary_support` | – | – |
+
+**Three assumptions have never been broken by any registered domain**, so the refusal machinery
+for them has never fired against a real source. That gap chooses the next two domains:
+
+*   **Oceanic — Argo float profiles.** Breaks `irregular_sampling` and `non_stationary_support`:
+    floats surface on their own schedule, drift, fail, and are replaced mid-record. It keeps a
+    physical metric and a real transport mechanism, so it is the first domain where **precedence
+    is admissible but the clock is not regular** — a combination neither current domain has, and
+    the sharpest available test of R21's floor against a source that is physical and untidy at
+    once. Openly licensed.
+*   **Celestial — TESS/ZTF photometry.** Breaks `no_natural_cycle`, `irregular_sampling` and
+    `non_stationary_support`, and breaks the metric assumption *differently* from `order_book`:
+    angular separation is a genuine metric that is not a length in metres. Open archives, no
+    terms problem.
+
+And two that are deliberately **not** onboarded:
+
+*   **Crypto** is `order_book` with a different venue: the same four violations, the same lag
+    policy, no refusal exercised that is not already exercised. Onboarding it would make TG8.3's
+    cost ledger fall for the wrong reason, which is worse than not having a ledger.
+*   **Social** is deferred rather than rejected. It contributes no violation Argo and TESS do not
+    already cover, and it carries the hardest redistribution and personal-data terms in the list.
+    It is a TG8.2 problem before it is a TG8.1 one. Financial equities fold into `order_book`.
+
+#### On auto-detecting a domain from its data
+
+Rejected in the form it is usually wanted, and accepted in a narrower one that is more useful.
+
+`src/core/domain.py` opens by saying the failure mode is the analysis layer *silently* not
+applying, and `DomainDeclaration.resolve_axes` therefore runs with `allow_name_inference=False`
+and `allow_positional_inference=False`: an axis called `lat` must not acquire a spatial geometry
+from its spelling. Inferring a whole domain from a file is that same inference at a larger
+scale, and it would put the inferred answer in the very fields — `violations`, `lag_policy`,
+`licence` — whose only purpose is to have an accountable author behind them.
+
+The rule that keeps ingestion intuitive without making it silent:
+
+> **Detection may create a required declaration. It may never satisfy one.**
+
+A probe reads a candidate source and reports observed facts — dimensions, dtypes, cadence
+regularity, gap structure, unit attributes, channel start and stop points — and then converts
+what it found into *obligations*. Irregular timestamps do not set `irregular_sampling`; they
+make the onboarding refuse to complete until the author either declares it or records why it
+does not apply. Channels that begin and end mid-record do the same for
+`non_stationary_support`. No unit attribute anywhere forces a geometry decision rather than
+defaulting to `pixel`. The provenance then records that the declaration was made by a person and
+*prompted* by a probe, which is a true statement; an auto-filled declaration would record a
+false one.
+
+#### Sequence
+
+1.  **TG8.1, the onboarding contract** — first and unchanged. A domain can half-exist today:
+    `builtin_glossaries` and `builtin_domains` register separately, so a domain can speak
+    fluently while declaring nothing about what it refuses. That is exactly the hole TG9.1
+    shipped and TG9.3 patched, and onboarding several sources before the contract exists is
+    several more chances to repeat it.
+2.  **TG8.2, licence provenance** — before any public archive lands rather than after. The
+    `licence` field is required but unchecked, and archive terms differ sharply.
+3.  **Argo, then TESS** — two domains, each justified by which unused violation it exercises.
+4.  **The probe** — after two real adapters exist, so it generalises from cases rather than
+    guesses at them.
+5.  **TG8.3's ledger** — which measures whether onboarding cost is falling, and can only do that
+    honestly if step 3 did not pad the list.
 
 ---
 

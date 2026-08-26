@@ -66,8 +66,10 @@ export default function FindingsView({ onError }: Props) {
   const [glossary, setGlossary] = useState<types.DomainGlossaryPayload | null>(null);
   const [outputs, setOutputs] = useState<Record<string, unknown> | null>(null);
   const [bundle, setBundle] = useState<Record<string, unknown> | null>(null);
+  const [contract, setContract] = useState<types.OnboardingContract | null>(null);
   const [panel, setPanel] =
-    useState<'finding' | 'refusals' | 'structural' | 'glossary' | 'bundle'>('finding');
+    useState<'finding' | 'refusals' | 'structural' | 'glossary' | 'onboarding'
+             | 'bundle'>('finding');
   const [busy, setBusy] = useState(false);
 
   const fail = useCallback((error: unknown) => {
@@ -115,6 +117,9 @@ export default function FindingsView({ onError }: Props) {
     if (panel === 'bundle' && studyId) {
       apiService.getStudy(studyId).then(setBundle).catch(fail);
     }
+    if (panel === 'onboarding') {
+      apiService.getOnboardingContract().then(setContract).catch(fail);
+    }
   }, [panel, glossaryName, studyId, fail]);
 
   const panels: Array<{ key: typeof panel; label: string }> = [
@@ -122,6 +127,7 @@ export default function FindingsView({ onError }: Props) {
     { key: 'refusals', label: 'What this domain refuses' },
     { key: 'structural', label: 'Untranslated claim state' },
     { key: 'glossary', label: 'The wording used' },
+    { key: 'onboarding', label: 'How this domain was declared' },
     { key: 'bundle', label: 'The evidence itself' },
   ];
 
@@ -161,7 +167,11 @@ export default function FindingsView({ onError }: Props) {
               className="w-full bg-slate-800 text-slate-100 text-sm rounded px-2 py-2
                          focus:outline-none focus:ring-2 focus:ring-teal-400"
             >
-              {domains.map((d) => <option key={d.name} value={d.name}>{d.domain}</option>)}
+              {domains.map((d) => (
+                <option key={d.name} value={d.name}>
+                  {d.onboarding.complete ? d.domain : `${d.domain} (declaration incomplete)`}
+                </option>
+              ))}
             </select>
             <p className="text-xs text-slate-500 mt-1">
               Changing this changes the words and nothing else. The facts below are identical in
@@ -394,6 +404,79 @@ export default function FindingsView({ onError }: Props) {
                   </div>
                 ))}
               </dl>
+            </div>
+          )}
+
+          {panel === 'onboarding' && contract && (
+            <div>
+              <p className="text-sm text-slate-400 mb-3">
+                What every domain must declare before anything may be read in its words, and
+                whether each registered domain satisfied all of it in one checked call. A domain
+                marked incomplete was assembled from separate registrations, so its geometry and
+                its declared violations were never checked against each other.
+              </p>
+
+              <section className="mb-5" aria-label="The onboarding contract">
+                <h5 className="text-xs uppercase tracking-wide text-slate-400 mb-2">
+                  Required of every domain
+                </h5>
+                <dl className="text-xs space-y-1">
+                  {contract.required.map((item) => (
+                    <div key={item.requirement}
+                      className="flex gap-3 border-b border-slate-800 py-1">
+                      <dt className="font-mono text-slate-500 w-1/4 shrink-0">
+                        {item.requirement}
+                      </dt>
+                      <dd className="text-slate-300">{item.why}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </section>
+
+              <section aria-label="Declared domains">
+                <h5 className="text-xs uppercase tracking-wide text-slate-400 mb-2">
+                  Domains declared through the contract
+                </h5>
+                <ul className="text-xs space-y-2">
+                  {contract.onboarded.map((row) => (
+                    <li key={row.name} className="border border-slate-800 rounded p-2">
+                      <div className="flex items-baseline justify-between gap-3">
+                        <span className="text-slate-200 font-medium">{row.name}</span>
+                        <span className={row.complete ? 'text-teal-400' : 'text-amber-400'}>
+                          {row.complete ? 'declared in full' : 'declaration incomplete'}
+                        </span>
+                      </div>
+                      {row.onboarded_by && (
+                        <p className="text-slate-500 mt-1">
+                          declared by <span className="font-mono">{row.onboarded_by}</span>
+                        </p>
+                      )}
+                      {row.geometry !== undefined && (
+                        <p className="text-slate-500">
+                          geometry:{' '}
+                          <span className="font-mono">{row.geometry ?? 'none declared'}</span>
+                        </p>
+                      )}
+                      {row.onboarding_sha256 && (
+                        <p className="text-slate-600 font-mono break-all">
+                          {row.onboarding_sha256}
+                        </p>
+                      )}
+                      {row.missing.length > 0 && (
+                        <p className="text-amber-400 mt-1">
+                          missing: {row.missing.join(', ')}
+                        </p>
+                      )}
+                      {row.note && <p className="text-amber-400/80 mt-1">{row.note}</p>}
+                    </li>
+                  ))}
+                </ul>
+              </section>
+
+              <p className="text-xs text-amber-300/90 mt-4 border border-amber-900/50 rounded
+                            p-2 bg-amber-950/20">
+                {contract.attribution_caveat}
+              </p>
             </div>
           )}
 

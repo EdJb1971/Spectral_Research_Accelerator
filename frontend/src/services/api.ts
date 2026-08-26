@@ -304,6 +304,13 @@ export const apiService = {
       await fetch(`${BASE_URL}/findings/domains`, { method: 'GET' }));
   },
 
+  // TG8.1: the adapter recipe the backend enforces, served rather than only documented, so
+  // the contract a reader is held to and the contract the code checks are one tuple.
+  async getOnboardingContract(): Promise<types.OnboardingContract> {
+    return handleResponse<types.OnboardingContract>(
+      await fetch(`${BASE_URL}/findings/onboarding`, { method: 'GET' }));
+  },
+
   async getGlossary(name: string): Promise<types.DomainGlossaryPayload> {
     return handleResponse<types.DomainGlossaryPayload>(
       await fetch(`${BASE_URL}/findings/glossaries/${encodeURIComponent(name)}`,

@@ -36,6 +36,8 @@ from src.core.errors import InvalidParameterError
 from src.core.evidence import EvidenceBundle, load_evidence_bundle
 from src.core.claim_ladder import CLAIM_RUNGS
 from src.core.five_outputs import summarise_evidence
+from src.core.onboarding import (ONBOARDING_SCHEMA, REQUIRED_DECLARATIONS,
+                                 audit_onboarding, onboarded_names)
 from src.core.translation import (
     DOMAIN_GLOSSARIES,
     AssociationFigures,
@@ -222,22 +224,49 @@ async def list_domains() -> List[Dict[str, Any]]:
     HTTP layer.
     """
     rows = []
-    for entry in DOMAIN_GLOSSARIES.entries():
-        glossary = entry.value
+    # The union of both registries, not just the glossaries. A domain that registered limits
+    # and no wording would otherwise be invisible here — the same class of omission as TG9.1's,
+    # with the halves swapped — and the row that is missing is the one carrying the refusals.
+    for name in sorted(set(DOMAIN_GLOSSARIES.names()) | set(DOMAIN_DECLARATIONS.names())):
+        entry = DOMAIN_GLOSSARIES.entry(name) if name in DOMAIN_GLOSSARIES else None
+        glossary = entry.value if entry is not None else None
         rows.append({
-            "name": entry.name,
-            "domain": glossary.domain,
-            "description": entry.description or glossary.description,
-            "glossary_sha256": glossary.glossary_sha256,
-            "term_count": len(glossary.phrases),
-            "capabilities": dict(entry.capabilities),
-            "defined_in": entry.defined_in,
+            "name": name,
+            "domain": glossary.domain if glossary is not None else name,
+            "description": ((entry.description or glossary.description)
+                            if glossary is not None
+                            else DOMAIN_DECLARATIONS.entry(name).description),
+            "glossary_sha256": glossary.glossary_sha256 if glossary is not None else None,
+            "term_count": len(glossary.phrases) if glossary is not None else 0,
+            "capabilities": dict(entry.capabilities) if entry is not None else {},
+            "defined_in": entry.defined_in if entry is not None else "",
             # TG9.3: what the domain refuses, beside how it speaks. `None` means a vocabulary
             # was registered without a declaration behind it, which is reported rather than
             # rendered as a domain that happens to forbid nothing.
-            "declaration": _declaration_payload(entry.name),
+            "declaration": _declaration_payload(name),
+            # TG8.1: whether the whole recipe was satisfied in one atomic call, and by which
+            # file. A domain assembled from separate registrations reports `complete: false`
+            # and names what is missing, rather than passing for one that was checked whole.
+            "onboarding": audit_onboarding(name),
         })
     return refuse_bare_confidence(rows, where="domains")
+
+
+@router.get("/onboarding")
+async def onboarding_contract() -> Dict[str, Any]:
+    """The adapter recipe itself, generated from `REQUIRED_DECLARATIONS` (TG8.1).
+
+    Served rather than only documented so the contract a reader is held to and the contract the
+    code enforces are the same tuple. A recipe that lives in prose beside the checks is a recipe
+    that drifts from them, which is the failure the documentation audit exists to catch.
+    """
+    return refuse_bare_confidence({
+        "schema": ONBOARDING_SCHEMA,
+        "required": [{"requirement": name, "why": why}
+                     for name, why in REQUIRED_DECLARATIONS],
+        "onboarded": [audit_onboarding(name) for name in onboarded_names()],
+        "attribution_caveat": DOMAIN_ATTRIBUTION_CAVEAT,
+    }, where="onboarding")
 
 
 @router.get("/glossaries/{name}")

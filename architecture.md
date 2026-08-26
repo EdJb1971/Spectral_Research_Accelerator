@@ -2988,6 +2988,85 @@ bundle records its domain, `unadmitted_reading` describes a vocabulary a reader 
 a verified provenance. Closing it means putting domain provenance into a G6 structure, which
 belongs to no slice yet declared.
 
+### 3.6zm The onboarding contract (`src/core/onboarding.py`, TG8.1, `ed-dev`)
+
+A domain reached this programme through two registries that knew nothing about each other:
+`DOMAIN_GLOSSARIES` (TG7.4) for its wording, `DOMAIN_DECLARATIONS` (TG9.3) for what it is and
+what it breaks. Either could be registered without the other, and the asymmetry is not neutral.
+**Wording without a declaration is a domain that speaks fluently and refuses nothing** — not a
+hypothetical, since TG9.1 shipped exactly that and served it for a slice before TG9.3 caught it.
+A declaration without wording fails quietly in the other direction: limits that exist and cannot
+be read.
+
+`onboard_domain` makes the pair the unit. Glossary, declaration and the record of the contract
+itself are registered **atomically**: every screen runs before the first `Registry.add`, and any
+failure restores all three registries to the state they had before the call. Registries are
+process-global, so a partial write would be a defect of exactly the D35 family — behaviour
+depending on which registration happened to have run.
+
+**The recipe is a tuple, not prose.** `REQUIRED_DECLARATIONS` names the seven things a domain
+must declare — axes (E14), geometry (E13), lag policy (R21), violations (E15/R17), licence,
+provenance, glossary (TG7.4) — each with the reason it is required. `OnboardedDomain.checklist()`
+is generated from it, `GET /api/v1/findings/onboarding` serves it, and the tests assert against
+it, so the contract a reader is held to and the contract the code enforces are one object rather
+than two lists that drift.
+
+**The one check nothing else could make.** Everything on that list is already validated by
+`DomainDeclaration` or `DomainGlossary` — except the relationship *between* the geometry and the
+violations, which no single object can see because the two facts live in different registries.
+The contract is a biconditional: a domain declares `no_physical_metric` **if and only if** its
+geometry offers no physical metric, asked of the geometry's declared `physical_metric` capability
+rather than of its name (E2). Both halves bite. A domain naming `cartesian` while declaring
+`no_physical_metric` has supplied a metre and then renounced it, so code asking the geometry is
+told metres while code asking the declaration is refused, and nothing reconciles the two answers.
+A domain supplying no geometry and *not* declaring `no_physical_metric` is claiming lengths it
+cannot produce — the same failure with the sign flipped, and the more common one, because it is
+what an adapter author writes before they have thought about it.
+
+**`audit_onboarding` reports the difference between complete and assembled.**
+`DOMAIN_DECLARATIONS` can only answer *does a declaration exist*; the question that matters
+downstream is *was this domain ever checked as a whole*. A domain registered piecemeal is
+reported `complete: false` with what is missing and a note saying its geometry and violations
+were never checked against each other, rather than passing for a checked one. `/domains` now
+lists the **union** of both registries, so a domain that declared its limits and never declared
+its wording is visible instead of absent — the TG9.1 omission with its halves swapped, closed in
+the same slice that could otherwise have reproduced it.
+
+**The built-ins are held to the contract they document.** `register_builtin_domains` goes through
+`onboard_domain` rather than adding to the registries directly, and
+`register_builtin_glossaries` delegates to it: a way in that quietly produced wording without
+limits would leave the hole open beside the fix for it. A built-in found half-registered is
+**repaired rather than skipped**, since a name present in some registries and not others is
+precisely the state the contract forbids. `reanalysis` declares `latlon`; `order_book` declares
+no geometry and `no_physical_metric` with it — the two sides of the biconditional.
+
+**Acceptance, in the form `test_registries.py` uses for sources and actions.**
+`src/tests/domain_plugin_example.py` onboards a third domain in one file, outside `src/`, and the
+test hashes the six files a domain would otherwise have had to touch and asserts they are
+byte-identical afterwards. The domain is Argo profiling floats, chosen by R17's reasoning rather
+than by sector: of the seven entries in `KNOWN_VIOLATIONS` the two built-ins between them break
+four, and `irregular_sampling` and `non_stationary_support` had never been broken by any
+registered domain, so no refusal depending on them had ever fired against a declared source. Argo
+breaks exactly those two, for reasons that are physically real — a float surfaces on a cycle it
+does not keep precisely, and floats are deployed, fail and are replaced mid-record. It is also
+the first declared domain in which **precedence is admissible while the clock is irregular**, it
+is the only one exercising `lag_policy="declared"`, and it keeps a physical metric, which is the
+side of the biconditional neither built-in occupies.
+
+`onboarding_sha256` binds declaration, wording and geometry into one citable digest, so a result
+attributed to a domain can name the exact contract it was read under rather than a name that may
+since have been re-registered with different words. `onboarded_by` captures the calling module,
+because `Entry.defined_in` records `value.__module__` — for a `DomainGlossary` that is always
+`src.core.translation`, the class's home and never the adapter's.
+
+**Claim boundary.** The contract checks a declaration for completeness and internal agreement. It
+reads no data file, so it cannot know whether a domain's declarations describe the source it
+names; it cannot know whether the wording chosen is wording a practitioner would use; and it
+establishes nothing about which domain produced any given `EvidenceBundle`, because a bundle
+still does not record one. `DOMAIN_ATTRIBUTION_CAVEAT` continues to travel with every served
+limit. Rule R17's refusals remain enforced in the analysis layer; this makes the declarations
+they read from complete, not self-enforcing.
+
 ### 3.11 Ground-Truth Benchmark Suite (`src/benchmarks/`)
 
 Added in T3.5.17 (standard E7). Twenty synthetic datasets whose correct answer is known
@@ -3302,7 +3381,7 @@ reason in the test itself.
 
 ## 3.12 HTTP API Surface
 
-37 routes. Listed here because an undocumented endpoint is an untested contract.
+38 routes. Listed here because an undocumented endpoint is an untested contract.
 
 | Method | Route | Notes |
 |---|---|---|
@@ -3337,7 +3416,8 @@ reason in the test itself.
 | GET | `/api/v1/experiments/{id}/lineage` | lineage nodes and edges |
 | POST | `/api/v1/hypothesis/discover` | correlation + categorical scan (no FDR yet - D8) |
 | GET | `/api/v1/hypothesis/proposals` | generated follow-up configurations |
-| GET | `/api/v1/findings/domains` | registered domain glossaries, generated from the registry; a new domain appears without editing `src/api/` (TG9.1) |
+| GET | `/api/v1/findings/domains` | every registered domain — the union of the wording and declaration registries — with what it refuses and whether its declaration is complete (TG9.1/TG9.3/TG8.1) |
+| GET | `/api/v1/findings/onboarding` | the adapter recipe itself, generated from `REQUIRED_DECLARATIONS`, plus each domain's audit (TG8.1) |
 | GET | `/api/v1/findings/glossaries/{name}` | one domain's wording for all 38 structural terms, published so it can be audited |
 | GET | `/api/v1/findings/studies` | published studies with the rung each stands on; unreadable files reported, not skipped |
 | GET | `/api/v1/findings/studies/{study_id}` | one evidence bundle whole, with its digests |
@@ -4089,7 +4169,7 @@ See `VERIFICATION.md` for the captured command output behind every statement her
 | Item | Status |
 |---|---|
 | Python venv + dependencies | installed (torch 2.13.0+cu130, numpy 2.2.6, pydantic 1.10.26, SQLAlchemy 2.0.52, xarray 2025.6.1, FastAPI 0.110.3) |
-| Backend test suite | **2334 passed, 1 xfailed** (plus 1 skipped: opt-in live GCS) (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17, 351 after T3.5.6, 379 after T3.5.15, 407 after T3.5.19, 449 after T4C.5, 709 after T4A.4, 781 after T4B.4, 855 after T4C.5, 859 after T4C.5c, 882 after T5.1a CPU acceptance, 883 after RTX acceptance, 890 after portable profiles, 911 after T5.1b/D44, 917 after T5.1c, 933 after T5.1d/D45, 946 after T5.1e, 955 after T5.2a, 957 after T5.2b, 962 after T5.3a, 969 after T5.3b, 981 after T5.2c offline acceptance, 985 after T5.2d, 1000 after T5.0a, 1008 after T5.0b, 1027 after T5.6a offline acceptance, 1042 after T5.6b cube acceptance, 1056 after T5.6c matched evaluation, 1070 after T5.6d truth matching, 1080 after T5.6e orchestration, 1089 after T5.6f portable jobs, 1094 after T5.6g reporting, 1095 after the licence guard, 1102 after T4C.5d gate readiness, 1104 after D50 storage preflight, 1106 after T4C.5e overlap evidence, 1112 after T4C.5f campaign acceptance, 1116 after T4C.5g physical preflight, 1117 after T4C.5h preregistration - the `master` freeze; then on `ed-dev`, 1375 after TG2.1, 1429 after TG2.2, 1477 after TG2.3, 1536 after TG2.4, 1577 after TG3.1, 1621 after TG3.2, 1686 after TG3.3, 1742 after TG3.4, 1787 after TG3.5, 1850 after TG4.1, 1922 after TG4.2, 1972 after TG4.3, 1986 after TG5.1, 2004 after TG5.2 and 2020 after TG5.3, 2044 after TG6.1, 2074 after TG6.2, 2112 after TG6.3, 2167 after TG7.1, 2217 after TG7.2, 2235 after TG7.3, 2236 after TG7.3 live acceptance, 2296 after TG7.4, 2321 after TG9.1/TG9.2 and 2334 after TG9.3) |
+| Backend test suite | **2367 passed, 1 xfailed** (plus 1 skipped: opt-in live GCS) (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17, 351 after T3.5.6, 379 after T3.5.15, 407 after T3.5.19, 449 after T4C.5, 709 after T4A.4, 781 after T4B.4, 855 after T4C.5, 859 after T4C.5c, 882 after T5.1a CPU acceptance, 883 after RTX acceptance, 890 after portable profiles, 911 after T5.1b/D44, 917 after T5.1c, 933 after T5.1d/D45, 946 after T5.1e, 955 after T5.2a, 957 after T5.2b, 962 after T5.3a, 969 after T5.3b, 981 after T5.2c offline acceptance, 985 after T5.2d, 1000 after T5.0a, 1008 after T5.0b, 1027 after T5.6a offline acceptance, 1042 after T5.6b cube acceptance, 1056 after T5.6c matched evaluation, 1070 after T5.6d truth matching, 1080 after T5.6e orchestration, 1089 after T5.6f portable jobs, 1094 after T5.6g reporting, 1095 after the licence guard, 1102 after T4C.5d gate readiness, 1104 after D50 storage preflight, 1106 after T4C.5e overlap evidence, 1112 after T4C.5f campaign acceptance, 1116 after T4C.5g physical preflight, 1117 after T4C.5h preregistration - the `master` freeze; then on `ed-dev`, 1375 after TG2.1, 1429 after TG2.2, 1477 after TG2.3, 1536 after TG2.4, 1577 after TG3.1, 1621 after TG3.2, 1686 after TG3.3, 1742 after TG3.4, 1787 after TG3.5, 1850 after TG4.1, 1922 after TG4.2, 1972 after TG4.3, 1986 after TG5.1, 2004 after TG5.2 and 2020 after TG5.3, 2044 after TG6.1, 2074 after TG6.2, 2112 after TG6.3, 2167 after TG7.1, 2217 after TG7.2, 2235 after TG7.3, 2236 after TG7.3 live acceptance, 2296 after TG7.4, 2321 after TG9.1/TG9.2 2334 after TG9.3 and 2367 after TG8.1) |
 | Ground-Truth Benchmark Suite | **29 PASS, 0 FAIL, 0 NOT_YET_RUNNABLE** (`python -m src.benchmarks`, exit 0) |
 | Frontend `npm install` + `npm run build` | passes, emits 1,386 modules + real JS/CSS assets (was: 1 module, no assets) |
 | Backend server | starts, serves OpenAPI, all smoke-tested endpoints return 200 |
@@ -4380,7 +4460,8 @@ able to sit three slices out of date.
 | `test_review_cost.py` | 15 | TG7.3 provider-neutral cost control and Gemini 3.5 Flash Batch transport: fixed per-role effort routing; exact structured Batch request, poll and response mapping including the first live operation shape; current Batch response-format enum; API-key non-retention; visible-plus-thinking output accounting and raw/normalized token reconciliation; measured non-zero cache-hit acceptance and configured-but-missed refusal; standard-route, effort, identity, arithmetic, provider-error and tamper refusals; and content-addressed atomic no-overwrite receipt persistence over an eight-call review |
 | `test_translation.py` | 47 | TG7.4 translation, bounded: the restated gate names checked against the ladder's own so the one line of duplication cannot drift; a glossary refused when partial, when it invents a term, and when a phrase carries causal vocabulary, a digit, a comparative asserting a relation of size, or wording reserved to a higher rung; R9's six figures given a structure they did not have, with each of the six load-bearing and a lift that is not confidence over base rate refused; the roadmap's own "82% of the time" rendered welded to the base rate that defuses it; two features of one variable described with their units while a cross-domain pair renders only `structural_signature`, asserted as the absence of variable, dataset and units; entitlements welded into the same string as the claims they bound; commentary quarantined outside the claim text and refused when reproduced inside it; a stale translation of a superseded revision refused; canonical no-overwrite persistence and a tampered document refused on load; a glossary registered from the test module outside `src/` (TG8.1); and the acceptance test of the phase — a corpus on all five rungs plus a blocked and a contradicted bundle, translated into an atmospheric and a financial vocabulary, reading completely differently and asserting identical facts — with three randomised sweeps and nine deliberate mutations of the module, each caught (R7, R9, R19, R22) |
 | `test_findings_api.py` | 29 | TG9.1 the read-only claim surface: the wire guard refusing a bare confidence at any depth of any response body and passing one that travels with all six of R9's figures, with the guard's restated field list asserted to still agree with `AssociationFigures`; the acceptance test of the slice — every route served over a corpus that genuinely does report a confidence, with the test refusing to pass vacuously if none is present; a domain registered from the test module reaching `GET /domains` and `GET /glossaries/{name}` without editing `src/api/`; built-in glossaries registered eagerly at import rather than on first request (D35); a GET leaving the bundle bytes and the rung unchanged (R22); an unreadable bundle reported rather than skipped; an absent study root served as an empty list; unknown study and unknown glossary both 404; a blocked study reported as blocked; a partial figure set served as no figures rather than a subset; and one study in two vocabularies reading differently while serving identical `structural_keys` (R9, R22) |
-| **total** | **2007** | |
+| `test_domain_onboarding.py` | 33 | TG8.1 the onboarding contract: the adapter recipe as a tuple the API serves, the checklist generates from and the tests assert against, so the documented contract and the enforced one cannot drift; the acceptance criterion of the slice — a third domain onboarded in one file outside `src/`, with the six files it would otherwise have had to touch hashed before and after and asserted byte-identical, live in all three registries and served by `GET /findings/domains`; the geometry/violation biconditional in all four combinations, refusing a domain that names a metric geometry while renouncing the metric and one that supplies neither, with `pixel` shown to sit on the renouncing side and an unregistered geometry refused by the registry that owns the vocabulary; atomicity, with a refused glossary, a refused geometry and an injected failure between the writes each leaving all three registries exactly as they were; re-onboarding refused by name until asked for explicitly, and a name the glossary would normalise differently refused as the half-onboarded state in a subtler form; a piecemeal domain audited as incomplete rather than passing for a checked one, and a declaration registered without wording still appearing in the listing — the TG9.1 omission with its halves swapped; the digest stable across equal declarations and moved by a single changed phrase; the built-ins held to the contract they document, either entry point registering the whole pair, and a half-registered built-in repaired rather than skipped; and the plugin domain asserted to break the two assumptions no registered domain had broken, with five deliberate mutations each caught (E13, E15, R17, R21) |
+| **total** | **2040** | |
 
 ### 7.2h A surrogate null that was not the null it claimed (T4C.5)
 
