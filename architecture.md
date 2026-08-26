@@ -2529,9 +2529,9 @@ different first-class field on disk is refused rather than silently re-filed.
 
 **Claim boundary.** This is a tamper-evident container and a routing discipline, not a judgement.
 It does not decide whether the evidence inside supports anything; TG6.2's ladder and TG6.3's five
-outputs own that — see 3.6zd for the ladder, 3.6ze for the five outputs and 3.6zf for the
-recorded-call boundary above them. Nor does it
-authenticate the author: hashes detect
+outputs own that — see 3.6zd for the ladder, 3.6ze for the five outputs, 3.6zf for the
+recorded-call boundary above them and 3.6zg for the round-robin that speaks through it. Nor does
+it authenticate the author: hashes detect
 edits to a published bundle, they do not prove who wrote it or that some evidence was never
 gathered and simply left out. Only what is appended can be weighed.
 
@@ -2689,6 +2689,69 @@ records a genuine-looking measurement in their own words — no structural check
 defence against that is the chain of provenance the gates already require, not this function.
 Determinism is not claimed anywhere in the layer: an identical request may return a different
 answer tomorrow, which is precisely why the answer is stored rather than recomputed.
+
+### 3.6zg The adversarial round-robin (`src/core/round_robin.py`, TG7.2, `ed-dev`)
+
+Eight seats speak in a fixed order over one frozen bundle: a candidate synthesis, four
+challengers, one response per dissent raised, an independent reassessment, and a bounded final
+synthesis. Every turn goes through the TG7.1 boundary, so the whole exchange is recorded
+verbatim beside the bundle and none of it can reach a claim level. Three things are enforced
+here that the boundary alone does not give.
+
+**The order is the protocol, and it is replayed rather than trusted.** `RoundRobin` recomputes,
+for every prefix of the recorded chain, the turn the protocol would have demanded at that point,
+and refuses a record whose role, target, response schema, model or effort is not the one that was
+due. A challenge cannot be synthesised over before it has been answered, each challenge is
+refused a second answer — which is what bounds the exchange, since a dissent left permanently open
+would keep demanding turns — a ninth turn cannot be appended to a finished exchange, and the panel
+is pinned seat by seat because a bundle reviewed by a different model is different evidence. A turn that comes back malformed is recorded first and
+refused second: `RecordedTurnRefused` carries the reviewed bundle *including* the offending call,
+so nothing that was paid for is discarded because it was disappointing (R23).
+
+**This is not majority voting.** Nothing in the module counts verdicts. A dissent is retired only
+by the candidate conceding it, or by a rebuttal that the independent reassessment declines to
+reopen — the candidate does not mark its own homework, and until the reassessment has spoken a
+rebuttal is provisional and the dissent stands. The reassessment may reopen a dissent but cannot
+originate one at that turn, because nothing downstream would answer it. Three challengers
+agreeing has no effect on the fourth's objection, and there is no value anywhere in `CLOSURES`
+meaning *outvoted*.
+
+**Unresolved dissent is retained, never reconciled.** The final synthesis must name exactly the
+unresolved dissents — no more, no fewer — and its `dissent_remains` flag must match whether any
+actually stands; a synthesis that drops one, invents one, or reports calm while one is open is
+refused. `RoundRobinOutcome` carries each retained dissent with the challenger's own argument and
+the alternatives it could not exclude, and `render()` prints them under the R23 declaration. The
+roadmap says dissent is retained *in the bundle*; R22 says no LLM output may be in the bundle at
+all. Both are honoured by retaining it in the review record, which is published beside the bundle
+and travels with it.
+
+**The panel.** `ReviewPanel` seats a model and an effort for each of the eight roles, digests the
+result, and pins it into the outcome. Reviewer overlap is **recorded, not refused**: one model in
+several seats is a weaker exchange than several — an independent reassessment by the model that
+wrote the candidate synthesis is not independent in the usual sense — but refusing it would make a
+single-provider panel impossible to run at all. So the overlap is computed, carried in the digest,
+and stated plainly by `render()` wherever the outcome is displayed. `close_round_robin` runs
+`verify_claim_independence` before building the outcome, so R22 is re-proved on the way out of
+every exchange.
+
+**Provider independence.** The module names no vendor and opens no socket; the transport is
+injected, `model_id` is any string, and `effort` is an abstract three-valued knob a later adapter
+translates (a thinking budget in tokens, for instance). The closed-response schema is enforced
+locally by `ResponseSchema.validate` on the parse, so an undeclared field is refused whether or
+not the provider honoured `additionalProperties: false`.
+
+**Claim boundary.** This slice conducts the exchange; it does not judge it. Nothing here measures
+whether a challenge was any good, whether a concession was warranted, or whether a rebuttal was
+honest — a fluent, false objection is retained as faithfully as a sound one, and a lazy panel that
+raises no dissent produces a clean outcome that means nothing. Independence is checked at the
+level of the model *id* and nothing deeper: `reassessment_is_independent` reports two different
+ids as independent, but two sizes of one family share training data, tokenizer and failure modes,
+so they differ in capability rather than in perspective — and it is the correlated blind spot that
+an adversarial exchange exists to catch. A tiered panel drawn from one provider buys cost control
+and a capability gradient, not the independence the word suggests; seating genuinely unrelated
+reviewers is a configuration decision this module records and does not make. Every test uses a recorded transport, so nothing here shows that a real client behaves
+as the protocol expects. And retention is not resolution: an outcome that carries four unresolved
+dissents is an honest record of an argument nobody won, not a finding.
 
 ### 3.11 Ground-Truth Benchmark Suite (`src/benchmarks/`)
 
@@ -3785,7 +3848,7 @@ See `VERIFICATION.md` for the captured command output behind every statement her
 | Item | Status |
 |---|---|
 | Python venv + dependencies | installed (torch 2.13.0+cu130, numpy 2.2.6, pydantic 1.10.26, SQLAlchemy 2.0.52, xarray 2025.6.1, FastAPI 0.110.3) |
-| Backend test suite | **2167 passed, 1 xfailed** (plus 1 skipped: opt-in live GCS) (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17, 351 after T3.5.6, 379 after T3.5.15, 407 after T3.5.19, 449 after T4C.5, 709 after T4A.4, 781 after T4B.4, 855 after T4C.5, 859 after T4C.5c, 882 after T5.1a CPU acceptance, 883 after RTX acceptance, 890 after portable profiles, 911 after T5.1b/D44, 917 after T5.1c, 933 after T5.1d/D45, 946 after T5.1e, 955 after T5.2a, 957 after T5.2b, 962 after T5.3a, 969 after T5.3b, 981 after T5.2c offline acceptance, 985 after T5.2d, 1000 after T5.0a, 1008 after T5.0b, 1027 after T5.6a offline acceptance, 1042 after T5.6b cube acceptance, 1056 after T5.6c matched evaluation, 1070 after T5.6d truth matching, 1080 after T5.6e orchestration, 1089 after T5.6f portable jobs, 1094 after T5.6g reporting, 1095 after the licence guard, 1102 after T4C.5d gate readiness, 1104 after D50 storage preflight, 1106 after T4C.5e overlap evidence, 1112 after T4C.5f campaign acceptance, 1116 after T4C.5g physical preflight, 1117 after T4C.5h preregistration - the `master` freeze; then on `ed-dev`, 1375 after TG2.1, 1429 after TG2.2, 1477 after TG2.3, 1536 after TG2.4, 1577 after TG3.1, 1621 after TG3.2, 1686 after TG3.3, 1742 after TG3.4, 1787 after TG3.5, 1850 after TG4.1, 1922 after TG4.2, 1972 after TG4.3, 1986 after TG5.1, 2004 after TG5.2 and 2020 after TG5.3, 2044 after TG6.1, 2074 after TG6.2, 2112 after TG6.3 and 2167 after TG7.1) |
+| Backend test suite | **2217 passed, 1 xfailed** (plus 1 skipped: opt-in live GCS) (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17, 351 after T3.5.6, 379 after T3.5.15, 407 after T3.5.19, 449 after T4C.5, 709 after T4A.4, 781 after T4B.4, 855 after T4C.5, 859 after T4C.5c, 882 after T5.1a CPU acceptance, 883 after RTX acceptance, 890 after portable profiles, 911 after T5.1b/D44, 917 after T5.1c, 933 after T5.1d/D45, 946 after T5.1e, 955 after T5.2a, 957 after T5.2b, 962 after T5.3a, 969 after T5.3b, 981 after T5.2c offline acceptance, 985 after T5.2d, 1000 after T5.0a, 1008 after T5.0b, 1027 after T5.6a offline acceptance, 1042 after T5.6b cube acceptance, 1056 after T5.6c matched evaluation, 1070 after T5.6d truth matching, 1080 after T5.6e orchestration, 1089 after T5.6f portable jobs, 1094 after T5.6g reporting, 1095 after the licence guard, 1102 after T4C.5d gate readiness, 1104 after D50 storage preflight, 1106 after T4C.5e overlap evidence, 1112 after T4C.5f campaign acceptance, 1116 after T4C.5g physical preflight, 1117 after T4C.5h preregistration - the `master` freeze; then on `ed-dev`, 1375 after TG2.1, 1429 after TG2.2, 1477 after TG2.3, 1536 after TG2.4, 1577 after TG3.1, 1621 after TG3.2, 1686 after TG3.3, 1742 after TG3.4, 1787 after TG3.5, 1850 after TG4.1, 1922 after TG4.2, 1972 after TG4.3, 1986 after TG5.1, 2004 after TG5.2 and 2020 after TG5.3, 2044 after TG6.1, 2074 after TG6.2, 2112 after TG6.3, 2167 after TG7.1 and 2217 after TG7.2) |
 | Ground-Truth Benchmark Suite | **29 PASS, 0 FAIL, 0 NOT_YET_RUNNABLE** (`python -m src.benchmarks`, exit 0) |
 | Frontend `npm install` + `npm run build` | passes, emits 1,386 modules + real JS/CSS assets (was: 1 module, no assets) |
 | Backend server | starts, serves OpenAPI, all smoke-tested endpoints return 200 |
@@ -4071,7 +4134,8 @@ able to sit three slices out of date.
 | `test_zarr_source.py` | 59 | R13 geometry, chunk-hostility, byte counting, streaming content identity, exact chunk-bounded frame reader, cache/provenance round trip, NetCDF engine and HTTP surface |
 | `test_five_outputs.py` | 38 | TG6.3 the five outputs as a pure function of the bundle: what can be claimed given as the reached rung and every rung beneath it with a fixed entitlement stating what that rung does not license; what cannot be claimed as the exact complement, each unreachable rung naming the gates that stand between, including the case where a rung's own gates all pass but a floor failure or a lower unmet gate blocks the climb; the evidence against carrying every `FAIL` and `INVALID` entry, every contradiction and failure state that is not `NOT_APPLICABLE`, and every passing null result, with `caps_at_observation` agreeing exactly with the ladder's blocking set so what merely argues against a claim is distinguished from what forbids it; eight structural alternatives mapped one-to-one and totally onto the climbing gates, each open exactly while its gate is unsatisfied, alongside alternatives someone recorded; the next observation following its stated precedence of unblock, then climb, then resolve, then nominate nothing and say so, verified over a randomised sweep in which every branch including the empty one occurs and all five rungs are reached; determinism to the digest and across a round trip through disk; labels, summaries and unread payload keys carried to the reader but moving no membership; causal claim kinds refused at every rung, naming R7 |
 | `test_recorded_call.py` | 50 | TG7.1 the recorded-call boundary: every call capturing the verbatim request, the verbatim response bytes, the exact model id, effort, API request id and both timestamps, chained by digest and labelled `recorded-not-reproducible`, with a loaded record claiming determinism refused by name; sampling parameters refused at any depth of the request; the declared schema sent as `output_config.format` with `additionalProperties` closed, and free text, a missing field, an undeclared `claim_level`, a value outside its enumeration, a wrong type and a parse disagreeing with the response bytes each refused, the check surviving a round trip rather than holding only at record time; commentary bound to one exact bundle revision, published beside the bundle and never over it, never overwritten, and refused when spliced from another bundle even where the chain would accept it; and the acceptance test of the phase — a corpus standing on all five rungs plus a blocked and a contradicted bundle, reviewed by all eight roles with commentary demanding promotion, whose every claim level is identical after deleting every LLM output — with a randomised sweep over 300 reviewed bundles, a second over 200 recorded chains, and the smuggling check that refuses recorded wording found inside the evidence chain (R22, R23) |
-| **total** | **1858** | |
+| `test_round_robin.py` | 49 | TG7.2 the adversarial round-robin: the eight seats replayed turn by turn against the plan, with a role out of order, a seat answered by a model or at an effort the panel did not seat, an answer against the wrong schema, a second answer to one challenge and a ninth turn on a finished exchange each refused; a malformed turn recorded before it is refused, so nothing paid for is discarded (R23); dissent retired only by concession or by a rebuttal the independent reassessment declines to reopen, with the reassessment able to reopen a dissent but not originate one; the final synthesis refused when it drops an unresolved dissent, invents one, or reports calm while one stands; three agreeing challengers leaving the fourth's objection byte-identical, which is what a hidden count would have broken; a panel needing every seat filled and reporting reviewer overlap rather than refusing it; and a complete exchange over a corpus standing on all five rungs plus a blocked and a contradicted bundle, every seat arguing for promotion by name, moving no claim level — with a randomised sweep over 120 exchanges checking retained dissent against an independently written rule and a second over 80 randomly seated panels re-replaying each recorded chain (R22, R23) |
+| **total** | **1907** | |
 
 ### 7.2h A surrogate null that was not the null it claimed (T4C.5)
 

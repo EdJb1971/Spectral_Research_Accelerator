@@ -5057,3 +5057,116 @@ measurement in their own words. No structural check can, and the defence against
 provenance the gates already require, not this function. Determinism is not claimed anywhere in
 the layer: an identical request may return a different answer tomorrow, which is exactly why the
 answer is stored rather than recomputed.
+
+## TG7.2 - the adversarial round-robin (`ed-dev`)
+
+`src/core/round_robin.py` runs the eight seats in their fixed order over one frozen bundle, every
+turn taken through the TG7.1 boundary and recorded verbatim beside it. The order is replayed
+rather than trusted, the panel is pinned seat by seat, dissent is retired by argument and never by
+arithmetic, and the final synthesis must carry every unresolved dissent by name.
+
+Focused acceptance:
+
+```text
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_round_robin.py -q
+50 passed, 1 warning in 7.17s
+```
+
+**The acceptance of the slice.** Two tests carry it.
+`test_a_complete_round_robin_over_a_corpus_of_bundles_changes_no_claim_level` runs a full
+eight-role exchange over seven bundles - one on each of the five rungs, one blocked by a failed
+replication, one carrying a standing contradiction - with the candidate and all four challengers
+naming the current rung and arguing it should be promoted to demonstrated predictive utility.
+Every claim level, claimable set and summary digest is identical afterwards, the corpus asserts
+its own coverage of the ladder, and `close_round_robin` re-runs `verify_claim_independence` on the
+way out. `test_three_agreeing_challengers_do_not_retire_the_fourths_objection` carries the other
+half: one challenger objects, is answered `unresolved`, and its argument and unexcluded
+alternatives survive into the outcome verbatim.
+
+**Not majority voting, made checkable.**
+`test_what_the_agreeing_challengers_said_makes_no_difference_at_all` runs the same exchange twice,
+changing the other three challengers' verdicts between runs, and asserts the retained dissent is
+byte-identical. If any count were happening anywhere in the module, that test would catch it.
+Three more tests refuse a final synthesis that drops an unresolved dissent, invents one nobody
+raised, or reports `dissent_remains: false` while one stands.
+
+**The closure rule.** A dissent is retired by the candidate conceding it, or by a rebuttal that
+the independent reassessment declines to reopen; until the reassessment has spoken a rebuttal is
+provisional, because the candidate does not get to mark its own homework. Four tests cover the
+four paths through that rule, and a fifth refuses a reassessment that tries to originate a dissent
+at a point where nothing downstream would answer it.
+
+**How the invariants were actually tested.** Two randomised sweeps. The first draws 120 exchanges
+with random verdicts, dissent flags, response outcomes and reopenings, computes the expected
+retained dissent from an independently written rule in the test, and asserts the claim digest,
+rung and five outputs are untouched; it requires all four rungs and at least three distinct
+dissent counts to occur, so it cannot pass on a degenerate sample. The second draws 80 exchanges
+over randomly seated panels and re-replays each finished record against the protocol, requiring
+every possible exchange length from seven to eleven turns to occur.
+
+**A missing guard the mutation run found by hanging.** The sixth mutation removed the check that a
+response answers the dissent currently on the floor. The suite did not fail: it hung. With that
+check gone, an answer naming the wrong challenger leaves the right one permanently unanswered, the
+plan keeps demanding the same turn, and the exchange never terminates. The ordering check had been
+carrying a termination guarantee that nothing stated. Each challenge is now refused a second
+answer, which bounds the exchange independently of the ordering check, and
+`test_a_dissent_answered_twice_is_refused_so_the_exchange_has_to_terminate` isolates it - the
+ordering check would otherwise mask it, exactly as the chain check masked a binding check in
+TG7.1. With the guard in place the sixth mutation fails cleanly.
+
+**Mutation check.** Six deliberate defects were introduced one at a time and the focused suite
+re-run; the file was restored between runs.
+
+```text
+let a dissent be retired by the candidate's own rebuttal alone -> 2 failed, 48 passed
+let the final synthesis drop an unresolved dissent            -> 2 failed, 48 passed
+stop pinning the panel to the seat that answered              -> 2 failed, 48 passed
+let a reassessment originate a dissent nothing will answer    -> 1 failed, 49 passed
+let a challenge find the claim unsupported without dissenting -> 2 failed, 48 passed
+answer dissents in any order rather than the order raised     -> 1 failed, 49 passed
+```
+
+Full acceptance:
+
+```text
+> .\.venv\Scripts\python.exe -m pytest -q
+2217 passed, 1 skipped, 1 xfailed, 6 warnings in 934.21s (0:15:34)
+
+> .\.venv\Scripts\python.exe -m src.benchmarks
+PASS 29   FAIL 0   NOT_YET_RUNNABLE 0
+```
+
+Documentation and inventory:
+
+```text
+> .\.venv\Scripts\python.exe tools\audit_docs.py
+undocumented modules : none
+undocumented routes  : none
+defects              : 59 defined, 57 fixed, partial ['D18'], open ['D43']
+test functions       : 1907
+stale inventory rows : none
+claimed suite totals : architecture (2217, 1) / roadmap (2217, 1)
+RESULT               : ok
+```
+
+**Provider independence.** The module names no vendor and opens no socket. `model_id` is any
+string, `effort` is an abstract three-valued knob a later adapter translates into whatever the
+provider takes, and the closed response schema is enforced locally by `ResponseSchema.validate` on
+the parse - so an undeclared field is refused whether or not the provider honoured
+`additionalProperties: false`. The tests seat two model ids and mix them across the panel, which
+exercises the pinning but proves nothing about any real client.
+
+**Claim boundary.** This slice conducts the exchange; it does not judge it. Nothing here measures
+whether a challenge was any good, whether a concession was warranted, or whether a rebuttal was
+honest - a fluent, false objection is retained as faithfully as a sound one, and a lazy panel that
+raises no dissent produces a clean outcome that means nothing at all. Independence is checked at
+the level of the model id and no deeper: `reassessment_is_independent` calls two different ids
+independent, but two sizes of one family share training data, tokenizer and failure modes, and it
+is the correlated blind spot that an adversarial exchange exists to catch. A tiered panel drawn
+from one provider - a lighter model challenging, a larger one synthesising - buys cost control and
+a capability gradient, not independence in the sense the word carries. Seating genuinely unrelated
+reviewers is a configuration decision the panel records and does not make, which is also why
+reviewer overlap is recorded rather than refused. Every test uses a recorded transport, so
+nothing here shows that a real client behaves as the protocol expects. And retention is not
+resolution: an outcome carrying four unresolved dissents is an honest record of an argument
+nobody won, not a finding.

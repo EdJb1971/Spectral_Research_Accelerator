@@ -1748,11 +1748,63 @@ it cannot detect a person who reads commentary, is persuaded, and records a genu
 measurement in their own words. No structural check can, and the defence against that is the
 provenance the gates already require.
 
-**TG7.2 Adversarial round-robin.** Candidate synthesis → statistical challenger → confounder and
-alternative-explanation challenger → domain-plausibility challenger → provenance and methodology
-challenger → response and revision → independent reassessment → bounded final synthesis. Not
-majority voting. **Unresolved dissent is retained in the bundle, never reconciled into
-consensus.**
+**TG7.2 Adversarial round-robin. DONE (`ed-dev`).** `src/core/round_robin.py` runs the eight
+seats in their fixed order over one frozen bundle — candidate synthesis, statistical challenger,
+confounder and alternative-explanation challenger, domain-plausibility challenger, provenance and
+methodology challenger, one response per dissent raised, independent reassessment, bounded final
+synthesis — with every turn taken through the TG7.1 boundary and recorded verbatim beside the
+bundle.
+
+The order is replayed rather than trusted: for every prefix of the recorded chain, `RoundRobin`
+recomputes the turn the protocol would have demanded and refuses a record whose role, target,
+response schema, model or effort is not the one that was due. A challenge cannot be synthesised
+over before it has been answered, and a ninth turn cannot be appended to a finished exchange. A
+malformed turn is recorded first and refused second — `RecordedTurnRefused` carries the reviewed
+bundle including the offending call, because it was made and cannot be regenerated (R23).
+
+**Not majority voting.** Nothing counts verdicts. A dissent is retired only by the candidate
+conceding it, or by a rebuttal the independent reassessment declines to reopen; the candidate does
+not mark its own homework, and until the reassessment has spoken a rebuttal is provisional. The
+reassessment may reopen a dissent but cannot originate one, because nothing downstream would
+answer it. **Unresolved dissent is retained in the published record, never reconciled into
+consensus:** the final synthesis must name exactly the unresolved dissents and its
+`dissent_remains` flag must match, so a synthesis that drops one, invents one, or reports calm
+while one stands is refused. The roadmap's *"retained in the bundle"* and R22's *"nothing in the
+bundle"* are both honoured by retaining it in the review record published beside the bundle.
+
+**Acceptance: a complete eight-role exchange over a corpus standing on all five rungs — plus a
+blocked bundle and a contradicted one — with every seat arguing for promotion by name, moves no
+claim level;** and three agreeing challengers do not retire the fourth's objection, which survives
+into the outcome with its own words and the alternatives it could not exclude. Changing what the
+three agreeing challengers said leaves the retained dissent byte-identical, which is what a hidden
+count would have broken. `close_round_robin` re-runs `verify_claim_independence` on the way out.
+
+`ReviewPanel` seats a model and effort per role, digests them, and pins them into the outcome.
+Reviewer overlap is **recorded, not refused** — a single-provider panel stays runnable, and
+`render()` says plainly when the reassessment was made by the model that wrote the synthesis. The
+module names no vendor and opens no socket: `model_id` is any string, `effort` is an abstract knob
+a later adapter translates, and the closed response schema is enforced locally on the parse rather
+than trusted to the provider.
+
+**Evidence:** `src/tests/test_round_robin.py`, 49 tests (50 cases). A randomised sweep over 120
+exchanges with random dissent, response and reopening patterns checks the retained dissent against
+an independently written rule and asserts its own coverage of rungs and dissent counts; a second
+sweep over 80 exchanges with randomly seated panels re-replays each recorded chain against the
+protocol. Six deliberate mutations of the protocol were each caught — the sixth only after a
+missing guard was added: removing the ordering check made the exchange non-terminating rather
+than wrong, so the mutation hung the suite instead of failing it. Each challenge is now refused a
+second answer, which bounds the exchange whatever else is removed.
+
+**Claim boundary.** This slice conducts the exchange; it does not judge it. Nothing measures
+whether a challenge was any good, whether a concession was warranted, or whether a rebuttal was
+honest, and a lazy panel that raises no dissent produces a clean outcome that means nothing. The
+protocol checks independence at the level of the model id and nothing deeper: two sizes of one
+family are reported as independent although they share training data and failure modes, so a
+tiered single-provider panel buys cost control and a capability gradient rather than the
+independence the word suggests. Seating genuinely unrelated reviewers is a configuration decision
+the panel records and does not make. Every test uses a recorded transport, so nothing here
+shows that a real client behaves as the protocol expects. Retention is not resolution: an outcome
+carrying four unresolved dissents is an honest record of an argument nobody won.
 
 **TG7.3 Cost control.** The review layer makes many small calls over a shared evidence corpus,
 which is the exact shape prompt caching is designed for: the bundle and rubric form a stable
