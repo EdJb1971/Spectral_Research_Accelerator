@@ -5380,7 +5380,23 @@ it good; it removes one way of misreading it. A fluent rendering of a weak resul
 persuasive than a jargon-laden rendering of the same result - a risk this surface creates rather
 than removes. An empty "evidence against" section means nothing was recorded, not that nothing
 exists. The store reads a directory; it does not establish that anything in it was worth
-publishing. No frontend exists yet: TG9.2 is where a person actually sees any of this.
+publishing.
+
+**Delivered short of the declaration, recorded rather than glossed.** The TG9.1 declaration said
+`GET /domains` would carry each domain's declared violations (E15) and lag policy (R21), "so a
+client can show what a domain refuses as readily as what it permits". It does not. The route lists
+registered **glossaries** - wording - not `DomainDeclaration`s: `src/api/findings.py` contains zero
+references to `violations`, `lag_policy`, `precedence_admissible` or `DomainDeclaration`. The two
+acceptance criteria above are genuinely met and the route is honestly named for what it serves, but
+the refusal half of the declared scope was not built, and is moved explicitly to TG9.3. Until then
+**a domain's refusals are unreachable from the API**: nothing a client can call reveals that a
+domain forbids a precedence claim.
+
+**This surface is read-only in the strong sense.** It has no write path at all - zero POST, PUT or
+DELETE routes - so nothing in the discovery pipeline is reachable through it: not mining, family
+declaration, preregistration, motif freezing, blind transfer, nor adversarial review. Twenty-two
+G-line modules remain without any HTTP surface; only `evidence`, `five_outputs` and `translation`
+are exposed. This renders claims that some other process already produced and published to disk.
 
 ## TG9.2 / TG9.4 - the findings view (`ed-dev`)
 
@@ -5432,3 +5448,58 @@ screenshot exists in this repository, exactly as for the tenth tab before it. Th
 prove the tab compiles, calls routes that exist and reads fields that are present; they do not
 prove it renders, is legible, or is usable. A view that cannot render a bare confidence does not
 make the finding it displays worth reading.
+
+## TG9.3 - the refusal surface (`ed-dev`)
+
+Delivers what the instrument will not do, and carries the half of TG9.1 that was declared and not
+built. `DOMAIN_DECLARATIONS` is a registry in `src/core/domain.py`; `src/core/builtin_domains.py`
+supplies the two declarations behind the built-in vocabularies.
+
+The pair is chosen to make the tension visible rather than to look tidy:
+
+```text
+reanalysis : violations = ()                      lag_policy = advective  precedence = True
+order_book : no_physical_metric, no_propagation_speed,
+             unordered_channels, aggregated_values lag_policy = none       precedence = False
+```
+
+`refusals_for` draws each consequence from `KNOWN_VIOLATIONS` rather than restating it, so what a
+reader is told and what the analysis layer enforces cannot drift (R17). A test asserts the two are
+the same string.
+
+**The constraint that shapes the slice.** An `EvidenceBundle` does not record which domain
+produced it - its fields are the hypothesis, the ten evidence categories and their digests, and
+nothing else. So nothing here checks a study against a domain. `DOMAIN_ATTRIBUTION_CAVEAT` travels
+with every served limit, and a contract test refuses a view that restates the caveat in its own
+words instead of rendering the sentence the API vouched for.
+
+**`unadmitted_reading`.** When a record stands at `candidate_precursor` or above and the selected
+vocabulary belongs to a domain declaring no lag floor, the surface reports it:
+
+```text
+glossary=reanalysis  -> unadmitted_reading: null
+glossary=order_book  -> "This record stands at a rung that asserts temporal ordering, and the
+                         order_book domain declares no admissible lag floor, so R21 does not
+                         permit a lead-lag reading from it. Nothing here changes the rung..."
+```
+
+Verified that this moves no claim: the summary digest and the rung are identical with and without
+the report. A rung below `candidate_precursor` reports no tension in either domain, so the check
+is not firing indiscriminately.
+
+**Acceptance met.** A blocked bundle and a contradicted one render their refusals. Commentary is
+rendered in its own `<section>`, and a structural test refuses any `TranslationUnit` field inside
+that container - recorded argument cannot be mistaken for what the record permits.
+
+**Evidence.** 9 new tests in `src/tests/test_findings_api.py` (29 total), 4 in
+`test_frontend_contract.py` (40 total). Two deliberate mutations of the view were each caught:
+claim text moved inside the commentary container, and the caveat restated in the component instead
+of rendered from the payload. `npx tsc --noEmit` clean; `npm run build` succeeds.
+
+**Claim boundary.** Showing what a domain refuses does not enforce it: R17's refusals live in the
+analysis layer and this displays the same facts rather than adding a check. A domain declaring no
+violations is not unconstrained - reanalysis breaks nothing only because the inherited assumptions
+were written against it. **The attribution gap is real and unclosed:** until a bundle records its
+domain, `unadmitted_reading` is a statement about a vocabulary a reader chose, not about a study.
+Closing it means putting domain provenance into a G6 structure, which belongs to no declared slice.
+Rendered browser inspection remains **NOT RUN**.

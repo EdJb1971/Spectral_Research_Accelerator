@@ -29,9 +29,12 @@ from typing import Any, Dict, List, Mapping, Optional, Tuple
 
 from fastapi import APIRouter, HTTPException, Query
 
+from src.core.builtin_domains import register_builtin_domains
 from src.core.builtin_glossaries import register_builtin_glossaries
+from src.core.domain import DOMAIN_DECLARATIONS, declaration_for, refusals_for
 from src.core.errors import InvalidParameterError
 from src.core.evidence import EvidenceBundle, load_evidence_bundle
+from src.core.claim_ladder import CLAIM_RUNGS
 from src.core.five_outputs import summarise_evidence
 from src.core.translation import (
     DOMAIN_GLOSSARIES,
@@ -160,6 +163,36 @@ router = APIRouter(prefix="/api/v1/findings", tags=["findings"])
 
 #: Eager, once, at import of this module rather than inside a handler (D35).
 REGISTERED_GLOSSARIES = register_builtin_glossaries()
+REGISTERED_DOMAINS = register_builtin_domains()
+
+#: Said wherever a domain's refusals are served, because the alternative is a reader concluding
+#: something the record cannot support.  An `EvidenceBundle` does not carry the domain that
+#: produced it - its fields are the hypothesis, the ten evidence categories and their digests -
+#: so selecting a vocabulary states what *that domain* refuses and establishes nothing whatever
+#: about the study being read through it.
+DOMAIN_ATTRIBUTION_CAVEAT = (
+    "An evidence bundle does not record which domain produced it. These limits describe the "
+    "selected domain; they are not a check that this study came from it, and no such check "
+    "exists.")
+
+
+def _declaration_payload(name: str) -> Optional[Dict[str, Any]]:
+    """A registered domain's declaration and what it refuses, or None if none is registered.
+
+    A glossary may exist without a declaration - wording is registered separately from what a
+    source is - so this returns None rather than inventing a declaration, and the route reports
+    the absence rather than implying a domain with no limits.
+    """
+    if name not in DOMAIN_DECLARATIONS:
+        return None
+    declaration = declaration_for(name)
+    return {
+        "declared": declaration.describe(),
+        "precedence_admissible": declaration.precedence_admissible,
+        "minimum_admissible_lag_frames": declaration.minimum_admissible_lag(),
+        "refuses": [dict(item) for item in refusals_for(declaration)],
+        "attribution_caveat": DOMAIN_ATTRIBUTION_CAVEAT,
+    }
 
 
 def _figures_for(bundle: EvidenceBundle) -> Optional[AssociationFigures]:
@@ -199,6 +232,10 @@ async def list_domains() -> List[Dict[str, Any]]:
             "term_count": len(glossary.phrases),
             "capabilities": dict(entry.capabilities),
             "defined_in": entry.defined_in,
+            # TG9.3: what the domain refuses, beside how it speaks. `None` means a vocabulary
+            # was registered without a declaration behind it, which is reported rather than
+            # rendered as a domain that happens to forbid nothing.
+            "declaration": _declaration_payload(entry.name),
         })
     return refuse_bare_confidence(rows, where="domains")
 
@@ -254,6 +291,44 @@ async def get_outputs(study_id: str) -> Dict[str, Any]:
         dict(outputs.to_mapping(), summary_sha256=outputs.summary_sha256), where="outputs")
 
 
+#: The rung at which a claim first asserts temporal ordering.  Below it, a domain that refuses
+#: precedence refuses nothing the claim is making.
+_PRECEDENCE_RUNG = "candidate_precursor"
+
+
+def _unadmitted_reading(rung: str, glossary_name: str) -> Optional[Dict[str, Any]]:
+    """Report when a rung asserts precedence and the selected domain does not admit one.
+
+    This is worth surfacing and easy to overstate, so the wording is careful. The ladder is
+    domain-agnostic: it grades the evidence appended to a bundle and knows nothing about where
+    that evidence came from. A bundle carries no domain either. So this is **not** a finding that
+    a study is wrong, and nothing here moves a rung (R22).
+
+    What it is: a reader has chosen to read a precedence claim in the words of a domain whose own
+    declaration says a lead-lag reading is inadmissible from it (R21). If the study really did
+    come from that domain, that is a contradiction someone needs to resolve. If it did not, the
+    vocabulary is simply the wrong one to read it in. The surface cannot tell which, and says so.
+    """
+    if glossary_name not in DOMAIN_DECLARATIONS:
+        return None
+    declaration = declaration_for(glossary_name)
+    if declaration.precedence_admissible:
+        return None
+    if CLAIM_RUNGS.index(rung) < CLAIM_RUNGS.index(_PRECEDENCE_RUNG):
+        return None
+    return {
+        "rung": rung,
+        "domain": declaration.name,
+        "lag_policy": declaration.lag_policy,
+        "note": (
+            "This record stands at a rung that asserts temporal ordering, and the %s domain "
+            "declares no admissible lag floor, so R21 does not permit a lead-lag reading from "
+            "it. Nothing here changes the rung: the ladder grades the evidence recorded, and "
+            "the evidence does not say which domain it came from." % declaration.name),
+        "attribution_caveat": DOMAIN_ATTRIBUTION_CAVEAT,
+    }
+
+
 @router.get("/studies/{study_id}/translation")
 async def get_translation(
         study_id: str,
@@ -277,6 +352,8 @@ async def get_translation(
     outputs = summarise_evidence(bundle)
     document = translate(outputs, wording, figures=_figures_for(bundle))
     payload = dict(document.to_mapping(),
+                   domain_limits=_declaration_payload(glossary),
+                   unadmitted_reading=_unadmitted_reading(outputs.rung, glossary),
                    rendered_text=document.render(),
                    # The assembled figure line, served so a client never has to build one from
                    # the parts. Without this a view wanting to show the association strength in

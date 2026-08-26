@@ -2940,6 +2940,54 @@ RUN**: no browser has displayed this tab and no screenshot exists in the reposit
 the tenth tab before it. A view that cannot render a bare confidence does not make the finding it
 displays worth reading.
 
+### 3.6zl The refusal surface (`src/core/builtin_domains.py`, TG9.3, `ed-dev`)
+
+TG9.1 shipped a `/domains` route listing **glossaries** — how a domain speaks — and nothing about
+what it refuses. That was half of what the slice declared, and the missing half is the more
+important one: a reader can be told a finding in fluent domain words while the domain those words
+belong to does not admit the claim being made. TG9.3 delivers it.
+
+`DOMAIN_DECLARATIONS` is a registry in `src/core/domain.py`, beside the type it holds, so a domain
+registers what it *is and breaks* the same way it registers its wording.
+`src/core/builtin_domains.py` supplies the two declarations behind the built-in vocabularies,
+chosen to make the tension visible rather than to look tidy. **reanalysis** breaks nothing and
+floors an advective lag, so precedence is admissible — R17 permits an empty violation set only
+because the domain floors something. **order_book** breaks `no_physical_metric`,
+`no_propagation_speed`, `unordered_channels` and `aggregated_values`, and declares
+`lag_policy="none"`, which is the honest position for a domain with no propagation mechanism and
+is not a failure state: association remains measurable, the lead-lag *interpretation* is refused
+(R21).
+
+`refusals_for` assembles what a domain forbids, drawing each consequence straight from
+`KNOWN_VIOLATIONS` rather than restating it, so the reason shown to a reader and the reason
+enforced in the analysis layer cannot drift apart (R17).
+
+**The constraint that shapes the slice: an `EvidenceBundle` does not record which domain produced
+it.** Its fields are the hypothesis, the ten evidence categories and their digests — there is no
+domain among them. So nothing here checks a study against a domain, and presenting the limits as
+such a check would fabricate one. `DOMAIN_ATTRIBUTION_CAVEAT` travels with every served limit, and
+a contract test refuses a view that restates it in its own words instead of rendering the sentence
+the API vouched for.
+
+**`unadmitted_reading`** is the one genuinely new report. When a record stands at
+`candidate_precursor` or above — the rung at which a claim first asserts temporal ordering — and
+the selected vocabulary belongs to a domain declaring no admissible lag floor, the surface says
+so. It is careful about what that means: the ladder is domain-agnostic, and nothing here moves a
+rung (R22). If the study did come from that domain it is a contradiction someone must resolve; if
+it did not, the vocabulary is simply the wrong one to read it in. The surface cannot tell which,
+and says so rather than choosing.
+
+Commentary is rendered in its own `<section>` with its own aria-label, and a structural test
+refuses any `TranslationUnit` field inside that container, so recorded argument (R23) can never be
+mistaken for what the record permits.
+
+**Claim boundary.** Showing what a domain refuses does not enforce it: R17's refusals are enforced
+in the analysis layer and this displays the same facts rather than adding a check. A domain
+declaring no violations is not thereby unconstrained. And the attribution gap is real: until a
+bundle records its domain, `unadmitted_reading` describes a vocabulary a reader chose rather than
+a verified provenance. Closing it means putting domain provenance into a G6 structure, which
+belongs to no slice yet declared.
+
 ### 3.11 Ground-Truth Benchmark Suite (`src/benchmarks/`)
 
 Added in T3.5.17 (standard E7). Twenty synthetic datasets whose correct answer is known
@@ -4041,7 +4089,7 @@ See `VERIFICATION.md` for the captured command output behind every statement her
 | Item | Status |
 |---|---|
 | Python venv + dependencies | installed (torch 2.13.0+cu130, numpy 2.2.6, pydantic 1.10.26, SQLAlchemy 2.0.52, xarray 2025.6.1, FastAPI 0.110.3) |
-| Backend test suite | **2321 passed, 1 xfailed** (plus 1 skipped: opt-in live GCS) (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17, 351 after T3.5.6, 379 after T3.5.15, 407 after T3.5.19, 449 after T4C.5, 709 after T4A.4, 781 after T4B.4, 855 after T4C.5, 859 after T4C.5c, 882 after T5.1a CPU acceptance, 883 after RTX acceptance, 890 after portable profiles, 911 after T5.1b/D44, 917 after T5.1c, 933 after T5.1d/D45, 946 after T5.1e, 955 after T5.2a, 957 after T5.2b, 962 after T5.3a, 969 after T5.3b, 981 after T5.2c offline acceptance, 985 after T5.2d, 1000 after T5.0a, 1008 after T5.0b, 1027 after T5.6a offline acceptance, 1042 after T5.6b cube acceptance, 1056 after T5.6c matched evaluation, 1070 after T5.6d truth matching, 1080 after T5.6e orchestration, 1089 after T5.6f portable jobs, 1094 after T5.6g reporting, 1095 after the licence guard, 1102 after T4C.5d gate readiness, 1104 after D50 storage preflight, 1106 after T4C.5e overlap evidence, 1112 after T4C.5f campaign acceptance, 1116 after T4C.5g physical preflight, 1117 after T4C.5h preregistration - the `master` freeze; then on `ed-dev`, 1375 after TG2.1, 1429 after TG2.2, 1477 after TG2.3, 1536 after TG2.4, 1577 after TG3.1, 1621 after TG3.2, 1686 after TG3.3, 1742 after TG3.4, 1787 after TG3.5, 1850 after TG4.1, 1922 after TG4.2, 1972 after TG4.3, 1986 after TG5.1, 2004 after TG5.2 and 2020 after TG5.3, 2044 after TG6.1, 2074 after TG6.2, 2112 after TG6.3, 2167 after TG7.1, 2217 after TG7.2, 2235 after TG7.3, 2236 after TG7.3 live acceptance, 2296 after TG7.4 and 2321 after TG9.1/TG9.2) |
+| Backend test suite | **2334 passed, 1 xfailed** (plus 1 skipped: opt-in live GCS) (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17, 351 after T3.5.6, 379 after T3.5.15, 407 after T3.5.19, 449 after T4C.5, 709 after T4A.4, 781 after T4B.4, 855 after T4C.5, 859 after T4C.5c, 882 after T5.1a CPU acceptance, 883 after RTX acceptance, 890 after portable profiles, 911 after T5.1b/D44, 917 after T5.1c, 933 after T5.1d/D45, 946 after T5.1e, 955 after T5.2a, 957 after T5.2b, 962 after T5.3a, 969 after T5.3b, 981 after T5.2c offline acceptance, 985 after T5.2d, 1000 after T5.0a, 1008 after T5.0b, 1027 after T5.6a offline acceptance, 1042 after T5.6b cube acceptance, 1056 after T5.6c matched evaluation, 1070 after T5.6d truth matching, 1080 after T5.6e orchestration, 1089 after T5.6f portable jobs, 1094 after T5.6g reporting, 1095 after the licence guard, 1102 after T4C.5d gate readiness, 1104 after D50 storage preflight, 1106 after T4C.5e overlap evidence, 1112 after T4C.5f campaign acceptance, 1116 after T4C.5g physical preflight, 1117 after T4C.5h preregistration - the `master` freeze; then on `ed-dev`, 1375 after TG2.1, 1429 after TG2.2, 1477 after TG2.3, 1536 after TG2.4, 1577 after TG3.1, 1621 after TG3.2, 1686 after TG3.3, 1742 after TG3.4, 1787 after TG3.5, 1850 after TG4.1, 1922 after TG4.2, 1972 after TG4.3, 1986 after TG5.1, 2004 after TG5.2 and 2020 after TG5.3, 2044 after TG6.1, 2074 after TG6.2, 2112 after TG6.3, 2167 after TG7.1, 2217 after TG7.2, 2235 after TG7.3, 2236 after TG7.3 live acceptance, 2296 after TG7.4, 2321 after TG9.1/TG9.2 and 2334 after TG9.3) |
 | Ground-Truth Benchmark Suite | **29 PASS, 0 FAIL, 0 NOT_YET_RUNNABLE** (`python -m src.benchmarks`, exit 0) |
 | Frontend `npm install` + `npm run build` | passes, emits 1,386 modules + real JS/CSS assets (was: 1 module, no assets) |
 | Backend server | starts, serves OpenAPI, all smoke-tested endpoints return 200 |
@@ -4307,7 +4355,7 @@ able to sit three slices out of date.
 | `test_forecasting_artifact_evaluation.py` | 8 | T5.3b/T5.2d checkpoint/config integrity, artifact-bound lineage, persistence-relative metrics, physical-time reporting/refusals, undefined-skill handling and CPU/RTX vendor-neutral accelerator parity |
 | `test_forecasting_protocol.py` | 7 | T5.0a exact schema completeness, canonical identity, immutable nested configuration, evidence requirements, temporal/rollout consistency, persistence and tamper/drift refusal |
 | `test_forecasting_protocol_binding.py` | 4 | T5.0b exact dataset/protocol/checkpoint binding, recomputed coordinate/statistics identities, drift refusals and bound-evaluation cross-run isolation |
-| `test_frontend_contract.py` | 36 | the frontend/backend contract, including transform/dataset/cadence readiness claim boundaries, plus the UI integrity guards: no fabricated results, no unqualified validation claims, units and slope uncertainty displayed |
+| `test_frontend_contract.py` | 40 | the frontend/backend contract, including transform/dataset/cadence readiness claim boundaries, plus the UI integrity guards: no fabricated results, no unqualified validation claims, units and slope uncertainty displayed |
 | `test_gate_run.py` | 1 | T4C.5d frozen plan, local-only preflight, bounded train-only climatology/signatures, authenticated synthetic gate receipt, no-overwrite and tamper refusal |
 | `test_gate_campaign.py` | 6 | T4C.5f-h exact campaign identity, strict nested schema, canary/full/WeatherBench drift refusals, pre-transfer R13/physical-lag audit, aggregate storage/readiness, immutable freeze/load, pinned real preregistration and zero-network CLI (8 pytest cases) |
 | `test_grid_operators.py` | 64 | grid metrics, metric-aware gradient/Laplacian, area weighting, physical-wavenumber spectra, D26 |
@@ -4331,8 +4379,8 @@ able to sit three slices out of date.
 | `test_round_robin.py` | 49 | TG7.2 the adversarial round-robin: the eight seats replayed turn by turn against the plan, with a role out of order, a seat answered by a model or at an effort the panel did not seat, an answer against the wrong schema, a second answer to one challenge and a ninth turn on a finished exchange each refused; a malformed turn recorded before it is refused, so nothing paid for is discarded (R23); dissent retired only by concession or by a rebuttal the independent reassessment declines to reopen, with the reassessment able to reopen a dissent but not originate one; the final synthesis refused when it drops an unresolved dissent, invents one, or reports calm while one stands; three agreeing challengers leaving the fourth's objection byte-identical, which is what a hidden count would have broken; a panel needing every seat filled and reporting reviewer overlap rather than refusing it; and a complete exchange over a corpus standing on all five rungs plus a blocked and a contradicted bundle, every seat arguing for promotion by name, moving no claim level — with a randomised sweep over 120 exchanges checking retained dissent against an independently written rule and a second over 80 randomly seated panels re-replaying each recorded chain (R22, R23) |
 | `test_review_cost.py` | 15 | TG7.3 provider-neutral cost control and Gemini 3.5 Flash Batch transport: fixed per-role effort routing; exact structured Batch request, poll and response mapping including the first live operation shape; current Batch response-format enum; API-key non-retention; visible-plus-thinking output accounting and raw/normalized token reconciliation; measured non-zero cache-hit acceptance and configured-but-missed refusal; standard-route, effort, identity, arithmetic, provider-error and tamper refusals; and content-addressed atomic no-overwrite receipt persistence over an eight-call review |
 | `test_translation.py` | 47 | TG7.4 translation, bounded: the restated gate names checked against the ladder's own so the one line of duplication cannot drift; a glossary refused when partial, when it invents a term, and when a phrase carries causal vocabulary, a digit, a comparative asserting a relation of size, or wording reserved to a higher rung; R9's six figures given a structure they did not have, with each of the six load-bearing and a lift that is not confidence over base rate refused; the roadmap's own "82% of the time" rendered welded to the base rate that defuses it; two features of one variable described with their units while a cross-domain pair renders only `structural_signature`, asserted as the absence of variable, dataset and units; entitlements welded into the same string as the claims they bound; commentary quarantined outside the claim text and refused when reproduced inside it; a stale translation of a superseded revision refused; canonical no-overwrite persistence and a tampered document refused on load; a glossary registered from the test module outside `src/` (TG8.1); and the acceptance test of the phase — a corpus on all five rungs plus a blocked and a contradicted bundle, translated into an atmospheric and a financial vocabulary, reading completely differently and asserting identical facts — with three randomised sweeps and nine deliberate mutations of the module, each caught (R7, R9, R19, R22) |
-| `test_findings_api.py` | 20 | TG9.1 the read-only claim surface: the wire guard refusing a bare confidence at any depth of any response body and passing one that travels with all six of R9's figures, with the guard's restated field list asserted to still agree with `AssociationFigures`; the acceptance test of the slice — every route served over a corpus that genuinely does report a confidence, with the test refusing to pass vacuously if none is present; a domain registered from the test module reaching `GET /domains` and `GET /glossaries/{name}` without editing `src/api/`; built-in glossaries registered eagerly at import rather than on first request (D35); a GET leaving the bundle bytes and the rung unchanged (R22); an unreadable bundle reported rather than skipped; an absent study root served as an empty list; unknown study and unknown glossary both 404; a blocked study reported as blocked; a partial figure set served as no figures rather than a subset; and one study in two vocabularies reading differently while serving identical `structural_keys` (R9, R22) |
-| **total** | **1994** | |
+| `test_findings_api.py` | 29 | TG9.1 the read-only claim surface: the wire guard refusing a bare confidence at any depth of any response body and passing one that travels with all six of R9's figures, with the guard's restated field list asserted to still agree with `AssociationFigures`; the acceptance test of the slice — every route served over a corpus that genuinely does report a confidence, with the test refusing to pass vacuously if none is present; a domain registered from the test module reaching `GET /domains` and `GET /glossaries/{name}` without editing `src/api/`; built-in glossaries registered eagerly at import rather than on first request (D35); a GET leaving the bundle bytes and the rung unchanged (R22); an unreadable bundle reported rather than skipped; an absent study root served as an empty list; unknown study and unknown glossary both 404; a blocked study reported as blocked; a partial figure set served as no figures rather than a subset; and one study in two vocabularies reading differently while serving identical `structural_keys` (R9, R22) |
+| **total** | **2007** | |
 
 ### 7.2h A surrogate null that was not the null it claimed (T4C.5)
 

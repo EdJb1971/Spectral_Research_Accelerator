@@ -1939,10 +1939,10 @@ suite, benchmark and documentation evidence in `VERIFICATION.md`.
    `DOMAIN_GLOSSARIES` (TG7.4) takes a glossary registered from outside `src/`, and a test
    registers one from the test module to prove it.
 3. **Phase G9 — the findings instrument.** TG9.1 (the read-only claim surface), TG9.2 (the
-   findings view) and TG9.4 (accessibility of the new surface) are DONE. **TG9.3, the refusal
-   surface, is the one slice of G9 still open**: showing which analyses a domain's declared
-   violations forbid, and rendering recorded commentary under its R23 label separated from claim
-   text. Rendered browser inspection of the findings tab is **NOT RUN**.
+   findings view) and TG9.4 (accessibility of the new surface) are DONE. TG9.3 (the refusal surface) is DONE, carrying the half of TG9.1 that
+   had been declared and not built. **Phase G9 is complete as declared.** Rendered browser
+   inspection of the findings tab is **NOT RUN**, and no bundle records the domain that produced
+   it, so `unadmitted_reading` describes a chosen vocabulary rather than a verified provenance.
 
 **Open defects:** D43 (the real-data gate is not laptop-feasible through the catalogued
 WeatherBench layouts) and D18 (partial — CUDA-only device probing). Both predate this line and
@@ -2020,6 +2020,15 @@ import, is idempotent, and returns the full built-in set so a caller can assert 
 `src/core/builtin_glossaries.py` supplies the first two vocabularies — reanalysis and
 order-book — written against TG7.4's four registration screens rather than fixed up afterwards.
 
+**Delivered short of what this slice declared, and recorded rather than glossed.** The TG9.1
+declaration said `GET /domains` would carry *"each domain's declared violations (E15) and lag
+policy (R21) so a client can show what a domain refuses as readily as what it permits"*. It does
+not. What was built lists **glossaries** — registered wording — not `DomainDeclaration`s, so
+violations, lag policy and `precedence_admissible` reach no client. The route is honestly named
+for what it serves and the acceptance criteria below are genuinely met, but the refusal half of
+the declaration was not built and is **moved explicitly to TG9.3**, which is where the rest of the
+refusal surface lives. A domain's refusals are still invisible from the API.
+
 **Acceptance, both criteria met.** A response-shape test walks every route's JSON over a corpus
 that genuinely does report a confidence — the test refuses to pass vacuously if none is present —
 and no route can serve one without its five companions. And a glossary registered from the test
@@ -2075,9 +2084,64 @@ bound with `htmlFor`, visible focus rings and `aria-hidden` on decorative icons,
 across `frontend/src` as a whole remains zero-derived and the transform workbench was not touched.
 This slice stops the new surface adding to that debt; it does not repay it.
 
+**TG9.3 The refusal surface. DONE (`ed-dev`).** What the instrument will not do, shown rather
+than hidden — and carrying the half of TG9.1 that was declared and not built.
+
+`DOMAIN_DECLARATIONS` is a registry in `src/core/domain.py`, beside the type it holds, so a domain
+registers *what it is and what it breaks* the same way it registers its wording.
+`src/core/builtin_domains.py` supplies the two declarations behind the built-in vocabularies, and
+they are chosen to make the tension visible rather than to look tidy: **reanalysis** breaks nothing
+and floors an advective lag, so precedence is admissible; **order_book** breaks four assumptions
+and declares `lag_policy="none"`, so a lead-lag reading is inadmissible from it (R21). `/domains`
+now serves each declaration, `refusals_for` assembles what it forbids, and the reason shown is
+drawn from `KNOWN_VIOLATIONS` rather than restated, so what a reader is told and what the analysis
+layer enforces cannot drift apart (R17).
+
+**The constraint that shapes the slice: a bundle does not record which domain produced it.** An
+`EvidenceBundle` carries a hypothesis, ten evidence categories and their digests, and nothing
+about provenance of domain. So nothing here checks a study against a domain, and presenting the
+limits as such a check would fabricate one. `DOMAIN_ATTRIBUTION_CAVEAT` travels with every served
+limit, and a contract test refuses a view that restates the caveat in its own words rather than
+rendering the one the API vouched for.
+
+**The one genuinely new report.** When a record stands at `candidate_precursor` or above — the
+rung at which a claim first asserts temporal ordering — and the selected vocabulary belongs to a
+domain declaring no admissible lag floor, `unadmitted_reading` says so. It is careful about what
+it means: the ladder is domain-agnostic and nothing here moves a rung (R22). If the study did come
+from that domain, it is a contradiction someone must resolve; if it did not, the vocabulary is the
+wrong one to read it in. **The surface cannot tell which, and says so.**
+
+**Acceptance met.** A blocked bundle and a contradicted one render their refusals; commentary is
+rendered in its own `<section>` and a structural test refuses any `TranslationUnit` field inside
+that container, so recorded argument can never be mistaken for what the record permits.
+
+**Evidence:** 9 new tests in `src/tests/test_findings_api.py` (29 total) and 4 in
+`test_frontend_contract.py` (40 total). Two deliberate mutations of the view — claim text moved
+inside the commentary container, and the caveat restated in the component instead of rendered from
+the payload — were each caught.
+
+**Claim boundary.** Showing what a domain refuses does not enforce it: R17's refusals are enforced
+in the analysis layer, and this displays the same facts rather than adding a check. A domain that
+declares no violations is not thereby unconstrained — reanalysis breaks nothing only because the
+inherited assumptions were written against it. And the attribution gap is real: until a bundle
+records its domain, `unadmitted_reading` is a statement about a vocabulary a reader chose, not
+about a study. Closing that gap means putting domain provenance in the bundle, which is a change
+to a G6 structure and belongs to no slice yet declared.
+
+**TG9.4 Accessibility of the new surface. DONE for this surface (`ed-dev`).** The findings views
+ship with `role="tablist"`/`role="tab"`, `aria-selected`, `aria-pressed`, `aria-label`, labels
+bound with `htmlFor`, visible focus rings and `aria-hidden` on decorative icons, asserted by test.
+**The legacy measurement is unchanged and restated rather than quietly improved:** accessibility
+across `frontend/src` as a whole remains zero-derived and the transform workbench was not touched.
+This slice stops the new surface adding to that debt; it does not repay it.
+
 **TG9.3 The refusal surface.** What the instrument will not do, shown rather than hidden. Where a
 domain declares violations, the view states which analyses are therefore refused and why (R17,
-R21). LLM commentary renders under its R23 label, visually separated, never in the same container
+R21). **This slice now also carries the half of TG9.1 that was declared and not built:** exposing
+`DomainDeclaration` — declared violations (E15), lag policy (R21) and `precedence_admissible`
+(R17) — over HTTP at all. TG9.1's `/domains` lists registered *glossaries* and nothing about what
+a domain refuses, so there is currently no route through which a client could learn that a domain
+forbids a precedence claim. LLM commentary renders under its R23 label, visually separated, never in the same container
 as claim text. **Acceptance:** a blocked bundle and a contradicted one each render their refusals;
 an automated check asserts no commentary string shares a container with a claim string.
 

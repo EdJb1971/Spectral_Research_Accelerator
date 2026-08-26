@@ -296,3 +296,114 @@ def test_the_store_reads_the_directory_it_is_pointed_at(store):
     assert path.name == "%s.json" % bundle.study_id
     with pytest.raises(KeyError):
         StudyStore(store).load("absent")
+
+
+# ------------------------------------------------------------ 5. the refusal surface (TG9.3)
+
+
+def test_a_domain_serves_what_it_refuses_beside_how_it_speaks(client):
+    """The half of TG9.1 that was declared and not built, delivered here.
+
+    `/domains` listed glossaries - wording - and nothing about limits. A reader could be told a
+    finding in fluent domain words with no way to learn that the domain forbids the reading.
+    """
+    rows = {row["name"]: row for row in client.get("/api/v1/findings/domains").json()}
+    order_book = rows["order_book"]["declaration"]
+    assert order_book is not None
+    assert order_book["precedence_admissible"] is False
+    bases = {item["basis"] for item in order_book["refuses"]}
+    assert "lag_policy:none" in bases
+    assert "violation:no_propagation_speed" in bases
+    for item in order_book["refuses"]:
+        assert item["consequence"].strip(), "a refusal with no stated reason is folklore"
+
+
+def test_a_domain_that_breaks_nothing_still_says_so_rather_than_showing_a_blank(client):
+    rows = {row["name"]: row for row in client.get("/api/v1/findings/domains").json()}
+    reanalysis = rows["reanalysis"]["declaration"]
+    assert reanalysis["precedence_admissible"] is True
+    assert reanalysis["refuses"] == []
+    assert reanalysis["declared"]["violations"] == {}
+
+
+def test_the_refusal_reason_is_the_one_the_analysis_layer_enforces(client):
+    """Drawn from `KNOWN_VIOLATIONS`, not restated, so displayed and enforced cannot drift."""
+    from src.core.domain import KNOWN_VIOLATIONS
+
+    rows = {row["name"]: row for row in client.get("/api/v1/findings/domains").json()}
+    for item in rows["order_book"]["declaration"]["refuses"]:
+        if item["basis"].startswith("violation:"):
+            name = item["basis"].split(":", 1)[1]
+            assert item["consequence"] == KNOWN_VIOLATIONS[name]
+
+
+def test_every_served_domain_limit_carries_the_attribution_caveat(client, store):
+    """A bundle does not record its domain, so presenting limits as a check would fabricate one.
+
+    This is the constraint that shapes the whole slice: nothing here verifies that a study came
+    from the domain whose words it is being read in, and the caveat must travel with the claim
+    rather than sitting in documentation nobody opens.
+    """
+    _publish(store, _climbed("candidate_precursor"))
+    rows = client.get("/api/v1/findings/domains").json()
+    for row in rows:
+        if row["declaration"]:
+            assert "does not record which domain produced it" in \
+                row["declaration"]["attribution_caveat"]
+    body = client.get("/api/v1/findings/studies/planted_precursor_v1/translation"
+                      "?glossary=order_book").json()
+    assert "does not record which domain produced it" in \
+        body["domain_limits"]["attribution_caveat"]
+    assert "does not record which domain produced it" in \
+        body["unadmitted_reading"]["attribution_caveat"]
+
+
+def test_a_precedence_rung_read_in_a_domain_that_forbids_one_is_reported(client, store):
+    """The tension worth surfacing: a rung asserting order, in words that cannot carry it."""
+    _publish(store, _climbed("candidate_precursor"))
+    base = "/api/v1/findings/studies/planted_precursor_v1/translation?glossary=%s"
+    forbidden = client.get(base % "order_book").json()["unadmitted_reading"]
+    assert forbidden is not None
+    assert forbidden["lag_policy"] == "none"
+    assert "R21" in forbidden["note"]
+    assert client.get(base % "reanalysis").json()["unadmitted_reading"] is None
+
+
+def test_a_rung_below_precedence_reports_no_tension_in_either_domain(client, store):
+    """Below the rung that asserts ordering, a domain refusing precedence refuses nothing said."""
+    bundle = _publish(store, _climbed("robust_association"))
+    for name in ("reanalysis", "order_book"):
+        body = client.get("/api/v1/findings/studies/%s/translation?glossary=%s"
+                          % (bundle.study_id, name)).json()
+        assert body["unadmitted_reading"] is None
+
+
+def test_reporting_an_unadmitted_reading_moves_no_claim(client, store):
+    """R22 holds through the refusal surface: it reports a tension, it does not resolve one."""
+    bundle = _publish(store, _climbed("candidate_precursor"))
+    before = summarise_evidence(bundle).summary_sha256
+    body = client.get("/api/v1/findings/studies/%s/translation?glossary=order_book"
+                      % bundle.study_id).json()
+    assert body["unadmitted_reading"] is not None
+    assert body["summary_sha256"] == before
+    assert summarise_evidence(bundle).rung == "candidate_precursor"
+
+
+def test_a_vocabulary_without_a_declaration_reports_the_absence(client):
+    """Unknown limits must not render as a domain that happens to forbid nothing."""
+    state = snapshot(DOMAIN_GLOSSARIES)
+    try:
+        DOMAIN_GLOSSARIES.add("wordsonly", DomainGlossary(
+            domain="wordsonly",
+            phrases={term: "the %s note" % term.split(".", 1)[1].replace("_", " ")
+                     for term in STRUCTURAL_VOCABULARY}))
+        rows = {row["name"]: row for row in client.get("/api/v1/findings/domains").json()}
+        assert rows["wordsonly"]["declaration"] is None
+    finally:
+        restore(DOMAIN_GLOSSARIES, state)
+
+
+def test_the_builtin_domains_are_registered_eagerly(client):
+    import importlib
+    module = importlib.import_module("src.api.findings")
+    assert set(module.REGISTERED_DOMAINS) == {"reanalysis", "order_book"}

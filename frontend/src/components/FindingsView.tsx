@@ -66,7 +66,8 @@ export default function FindingsView({ onError }: Props) {
   const [glossary, setGlossary] = useState<types.DomainGlossaryPayload | null>(null);
   const [outputs, setOutputs] = useState<Record<string, unknown> | null>(null);
   const [bundle, setBundle] = useState<Record<string, unknown> | null>(null);
-  const [panel, setPanel] = useState<'finding' | 'structural' | 'glossary' | 'bundle'>('finding');
+  const [panel, setPanel] =
+    useState<'finding' | 'refusals' | 'structural' | 'glossary' | 'bundle'>('finding');
   const [busy, setBusy] = useState(false);
 
   const fail = useCallback((error: unknown) => {
@@ -118,6 +119,7 @@ export default function FindingsView({ onError }: Props) {
 
   const panels: Array<{ key: typeof panel; label: string }> = [
     { key: 'finding', label: 'In domain words' },
+    { key: 'refusals', label: 'What this domain refuses' },
     { key: 'structural', label: 'Untranslated claim state' },
     { key: 'glossary', label: 'The wording used' },
     { key: 'bundle', label: 'The evidence itself' },
@@ -256,6 +258,22 @@ export default function FindingsView({ onError }: Props) {
                 </div>
               )}
 
+              {finding.unadmitted_reading && (
+                <section
+                  className="mb-5 border border-orange-800/60 rounded p-3 bg-orange-950/20"
+                  aria-label="Reading not admitted by the selected domain"
+                >
+                  <h4 className="text-xs uppercase tracking-wide text-orange-300 mb-2">
+                    <AlertTriangle size={12} className="inline mr-1" aria-hidden="true" />
+                    The selected domain does not admit this reading
+                  </h4>
+                  <p className="text-sm text-orange-100/90">{finding.unadmitted_reading.note}</p>
+                  <p className="text-xs text-orange-300/70 mt-2 italic">
+                    {finding.unadmitted_reading.attribution_caveat}
+                  </p>
+                </section>
+              )}
+
               <Section title="What cannot be said" units={finding.not_claimable}
                 emptyNote="No rung above the one reached is defined." />
               <Section title="What argues against it" units={finding.contradicting}
@@ -292,6 +310,58 @@ export default function FindingsView({ onError }: Props) {
                   {finding.rendered_text}
                 </pre>
               </details>
+            </div>
+          )}
+
+          {panel === 'refusals' && (
+            <div>
+              {finding?.domain_limits ? (
+                <>
+                  <p className="text-sm text-slate-400 mb-3">
+                    What this domain&apos;s own declaration forbids, and why. Each reason is the
+                    one the analysis layer enforces, not a restatement of it.
+                  </p>
+                  <p className="text-xs text-amber-300/90 mb-4 italic border-l-2
+                                border-amber-700 pl-2">
+                    {finding.domain_limits.attribution_caveat}
+                  </p>
+                  <dl className="space-y-2">
+                    <div className="flex gap-3 text-sm">
+                      <dt className="text-slate-500 w-56 shrink-0">Lead-lag reading (R21)</dt>
+                      <dd className={finding.domain_limits.precedence_admissible
+                        ? 'text-slate-300' : 'text-orange-300'}>
+                        {finding.domain_limits.precedence_admissible
+                          ? 'admissible: this domain declares a lag floor'
+                          : 'not admissible: this domain declares no lag floor'}
+                      </dd>
+                    </div>
+                  </dl>
+                  <h4 className="text-xs uppercase tracking-wide text-slate-400 mt-5 mb-2">
+                    Declared refusals
+                  </h4>
+                  {finding.domain_limits.refuses.length === 0 ? (
+                    <p className="text-sm text-slate-500 italic">
+                      This domain declares no assumption violations. That means the inherited
+                      assumptions were written against it, not that it is free of limits.
+                    </p>
+                  ) : (
+                    <ul className="space-y-2">
+                      {finding.domain_limits.refuses.map((refusal) => (
+                        <li key={refusal.basis}
+                          className="border-l-2 border-orange-800 pl-3 py-1">
+                          <p className="text-xs font-mono text-orange-400">{refusal.basis}</p>
+                          <p className="text-sm text-slate-300 mt-1">{refusal.consequence}</p>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </>
+              ) : (
+                <p className="text-sm text-slate-500 italic">
+                  This vocabulary has no domain declaration registered behind it, so what it
+                  refuses is unknown. That is not the same as it refusing nothing.
+                </p>
+              )}
             </div>
           )}
 

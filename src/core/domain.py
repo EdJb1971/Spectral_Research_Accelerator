@@ -32,17 +32,19 @@ someone onboarding a sensor archive.
 from __future__ import annotations
 
 from dataclasses import dataclass, field as dc_field
-from typing import Any, Dict, Mapping, Optional, Sequence
+from typing import Any, Dict, Mapping, Optional, Sequence, Tuple
 
 from src.core.axes import AXIS_ROLES
 from src.core.errors import InvalidParameterError, UnknownNameError
+from src.core.registry import Registry
 from src.core.lag_policy import LAG_POLICIES, lag_policy_for, policy_names
 
 #: Re-exported from `src.core.axes`, which owns the vocabulary and the resolution order since
 #: TG1.1. It stays importable from here because a domain declaration is where most callers
 #: meet it: `from src.core.domain import AxisSpec, AXIS_ROLES` is one import, not two.
-__all__ = ["AXIS_ROLES", "AxisSpec", "DomainDeclaration", "KNOWN_VIOLATIONS", "LAG_POLICIES",
-           "PrecedenceNotAdmissibleError", "lag_policy_for", "policy_names"]
+__all__ = ["AXIS_ROLES", "AxisSpec", "DOMAIN_DECLARATIONS", "DomainDeclaration",
+           "KNOWN_VIOLATIONS", "LAG_POLICIES", "PrecedenceNotAdmissibleError",
+           "declaration_for", "lag_policy_for", "policy_names", "refusals_for"]
 
 #: The assumptions the analysis layer inherited from the atmosphere, and what breaking each
 #: one costs. A domain names the ones it breaks; the analysis layer then refuses what those
@@ -253,3 +255,39 @@ class DomainDeclaration:
             "precedence_admissible": self.precedence_admissible,
             "provenance": dict(self.provenance),
         }
+
+
+#: Registered domain declarations (standard E1, TG9.3).  A domain registers what it is and what
+#: it breaks the same way it registers its wording, so both reach a reader without anyone editing
+#: `src/api/`.  This exists because TG9.1 shipped a `/domains` route that listed *glossaries* —
+#: how a domain speaks — and nothing about what it refuses, which is the more important half.
+DOMAIN_DECLARATIONS: Registry[DomainDeclaration] = Registry("domain declaration")
+
+
+def declaration_for(name: str) -> DomainDeclaration:
+    return DOMAIN_DECLARATIONS.get(name)
+
+
+def refusals_for(declaration: DomainDeclaration) -> Tuple[Dict[str, str], ...]:
+    """What this domain's own declarations forbid, in the words the vocabulary already uses.
+
+    Rule R17 requires that the analysis layer *demonstrably refuses* what a domain's violations
+    forbid, rather than relying on a reader to remember. That refusal is enforced deep in the
+    analysis layer, where nobody can see it. This assembles the same facts for display, drawing
+    the consequence text straight from `KNOWN_VIOLATIONS` rather than restating it, so the
+    reason shown to a reader and the reason enforced in code cannot drift apart.
+
+    Precedence is included separately because it is refused by the *lag policy* (R21) rather
+    than by a violation: a domain with no propagation mechanism has no geometric floor, so a
+    lead-lag reading is inadmissible however clean the statistics are.
+    """
+    refusals = [{"basis": "violation:%s" % name, "consequence": KNOWN_VIOLATIONS[name]}
+                for name in declaration.violations]
+    if not declaration.precedence_admissible:
+        refusals.append({
+            "basis": "lag_policy:%s" % declaration.lag_policy,
+            "consequence": (
+                "no admissible lag floor is declared, so a precedence or lead-lag reading is "
+                "inadmissible from this domain (R21). An association may still be measured; "
+                "what is refused is the interpretation")})
+    return tuple(refusals)

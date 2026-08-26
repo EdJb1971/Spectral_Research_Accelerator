@@ -579,3 +579,53 @@ def test_the_findings_view_is_operable_without_a_mouse(all_sources):
     assert "focus:ring" in code, "keyboard focus must be visible"
     assert "aria-hidden" in code, "decorative icons must be hidden from a screen reader"
     assert "FindingsView" in all_sources, "the view must be mounted in the app"
+
+
+def test_commentary_never_shares_a_container_with_claim_text():
+    """TG9.3: recorded argument is fenced off from what the record actually permits.
+
+    R23 commentary is the output of a non-deterministic process that moved nothing. Rendering it
+    in the same container as a claim would let a reader take a challenger's fluent assertion for
+    part of the finding - which is the failure the whole review layer was fenced to prevent.
+
+    Asserted structurally: `commentary` is rendered inside its own `<section>` carrying its own
+    aria-label, and no `TranslationUnit` field is rendered inside that section.
+    """
+    code = _findings_sources()
+    assert 'aria-label="Recorded commentary"' in code
+    start = code.index('aria-label="Recorded commentary"')
+    end = code.index("</section>", start)
+    block = code[start:end]
+    assert "finding.commentary" in block
+    for field in ("unit.rendered", "unit.licences", "claimable", "not_claimable"):
+        assert field not in block, (
+            "claim text (%s) was rendered inside the commentary container" % field)
+    assert "moved nothing above" in block, "the fence must be labelled, not merely present"
+
+
+def test_the_findings_view_shows_what_the_selected_domain_refuses():
+    """TG9.3's first acceptance criterion, on the frontend."""
+    code = _findings_sources()
+    assert "domain_limits" in code
+    assert "refuses" in code
+    assert "precedence_admissible" in code
+    assert "unadmitted_reading" in code
+
+
+def test_domain_limits_are_never_shown_without_the_attribution_caveat():
+    """A bundle does not record its domain, so limits must never read as a check on the study.
+
+    The caveat is rendered from the payload rather than written into the component, so the
+    sentence a reader sees is the one the API vouched for.
+    """
+    code = _findings_sources()
+    assert code.count("attribution_caveat") >= 2, (
+        "every place a domain limit is shown must render the caveat beside it")
+    assert "does not record which domain" not in code, (
+        "the caveat must come from the payload, not be restated in the view where it could "
+        "drift from what the API actually guarantees")
+
+
+def test_an_unregistered_domain_declaration_is_reported_not_rendered_as_no_limits():
+    code = _findings_sources()
+    assert "That is not the same as it refusing nothing." in code

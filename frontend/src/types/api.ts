@@ -631,6 +631,7 @@ export interface DomainSummary {
   term_count: number;
   capabilities: Record<string, unknown>;
   defined_in: string;
+  declaration: DomainLimits | null;
 }
 
 export interface DomainGlossaryPayload {
@@ -698,4 +699,37 @@ export interface TranslatedFinding {
   rendered_text: string;
   structural_keys: string[];
   translation_sha256: string;
+  /** What the selected domain refuses (TG9.3); null when no declaration is registered. */
+  domain_limits: DomainLimits | null;
+  /** Set when the rung asserts precedence and the selected domain does not admit one. */
+  unadmitted_reading: UnadmittedReading | null;
+}
+
+// ---------------------------------------------------------------- domain limits (TG9.3)
+
+export interface DomainRefusal {
+  /** `violation:<name>` (E15) or `lag_policy:<name>` (R21). */
+  basis: string;
+  consequence: string;
+}
+
+export interface DomainLimits {
+  declared: Record<string, unknown>;
+  precedence_admissible: boolean;
+  minimum_admissible_lag_frames: number | null;
+  refuses: DomainRefusal[];
+  /**
+   * A bundle does not record which domain produced it. These limits describe the selected
+   * domain and are not a check on the study, which is why the string is carried rather than
+   * written into the view: the caveat and the claim travel together.
+   */
+  attribution_caveat: string;
+}
+
+export interface UnadmittedReading {
+  rung: string;
+  domain: string;
+  lag_policy: string;
+  note: string;
+  attribution_caveat: string;
 }
