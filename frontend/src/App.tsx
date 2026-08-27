@@ -13,6 +13,7 @@ import AcquisitionView from './components/AcquisitionView';
 import DomainAnalysisView from './components/DomainAnalysisView';
 import PreregistrationView from './components/PreregistrationView';
 import EvidenceView from './components/EvidenceView';
+import StructureMiningView from './components/StructureMiningView';
 import { apiService } from './services/api';
 import * as types from './types/api';
 import {
@@ -58,6 +59,7 @@ const WORKFLOW_NAV = [
       { id: 'boundary', name: 'Boundary-condition lab', icon: Sliders, context: 'Gridded field line' },
       { id: 'spectral', name: 'Spectral transforms', icon: Activity, context: 'Gridded field line' },
       { id: 'analysis', name: 'Diagnostics', icon: BarChart2, context: 'Gridded field line' },
+      { id: 'mining', name: 'Structure mining', icon: Boxes },
       { id: 'hypothesis', name: 'Automated hypotheses', icon: Lightbulb },
     ],
   },
@@ -2440,6 +2442,15 @@ export default function App() {
           {activeTab === 'evidence' && (
             <EvidenceView selectedRecord={selectedRecord} studyId={selectedStudyId}
               onStudyId={setSelectedStudyId} onError={(message) => setError(message)} />
+          )}
+
+          {/* TG11.4: structure mining. Sits in Analyse rather than Evidence because what it
+              produces is a confirmation receipt, and recording one is the write path's job.
+              No control here can supply a feature or a tolerance: both are measured by the
+              server from an admitted field, so a shape cannot be drawn into a result. */}
+          {activeTab === 'mining' && (
+            <StructureMiningView studyId={selectedStudyId}
+              onError={(message) => setError(message)} />
           )}
 
           {/* TAB 10: VERIFIED FORECAST EVALUATION ------------------------------------ */}

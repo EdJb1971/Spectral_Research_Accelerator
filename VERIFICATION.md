@@ -6072,3 +6072,83 @@ instrument the evidence came from. This surface does not consult the held-out le
 precedence analysis over data preregistered as held out spends it outside the record, which the
 ledger cannot see and the capabilities note cannot prevent. Bundles are programme state under
 `data/studies`, not a cache.
+
+## TG11.4 - Structure mining (2026-08-27, `ed-dev`)
+
+**Implemented.** `src/api/mining.py` mounts `core/motif.py`, `core/constellation.py`,
+`core/family.py`, `core/invariance.py`, `core/motif_freeze.py` and `core/motif_transfer.py` on
+`/api/v1/mining`. Eleven endpoints: capabilities, admitting a field, listing what is admitted,
+pricing a family before mining it, calibrating a match tolerance, mining the training frames,
+freezing the confirmatory family, opening the held-out frames once, publishing a durable motif
+definition, transferring it into a second domain, and auditing every registered matcher against
+its own declared invariance. No matcher, null, correction, tolerance or p-value is implemented at
+the boundary; this is the wire boundary for about four thousand lines that nothing outside the
+test suite could previously call.
+
+Two things cannot be typed on this surface, and both are structural rather than reviewed. A motif
+is a configuration of extracted features, so no request model has a field for a feature, a
+coordinate or a graph: a caller admits a `.npy` stack of frames and the server extracts, under
+settings that become part of the record's digest. And the match tolerance - which decides what
+counts as the same shape - travels as the digest of a calibration the server performed, because
+one built the tempting way came out at 0.41 against a correct 0.0083 in this tree's own
+benchmark, wide enough that every triangle matched every other.
+
+The confirmatory run is driven from the seal. `/confirm` takes a seal digest and an optional
+published one; the record, the split, the size, the matcher, the tolerance, the ensemble, the
+correction and the seed are sealed as notes on the confirmatory specification, and the training
+candidates are re-derived by re-running the deterministic mining pass and checked label for label
+against what the seal froze. One additive core change made that possible:
+`motif.confirmatory_specification` and `motif.freeze_motifs` take an optional `notes` mapping,
+merged beside the notes they already write (E12). Mining seals are stored in TG11.2's seal store
+and spend TG11.2's held-out ledger.
+
+**Evidence.** The exact final tree reports:
+
+```text
+mining + frontend contract + documentation: test_mining_api.py 41 passed,
+  test_frontend_contract.py 73 passed, test_documentation.py 19 passed
+frontend production build: 1,393 modules transformed; JS/CSS assets emitted
+complete suite: 2619 passed, 2 skipped, 1 xfailed, 7 warnings in 4090.28s (1:08:10)
+```
+
+The acceptance is the pair of gates the mining phase was built against.
+`test_a_null_record_confirms_nothing` runs the whole chain - admit, calibrate, price, mine,
+freeze, open - over frames with nothing planted in them, using the same generator, the same
+feature count, the same family and the same ensemble as the planted record, and confirms nothing.
+`test_the_planted_motif_is_confirmed_on_frames_it_was_not_mined_from` shows the same pass finding
+what is there, at a corrected q below alpha on frames it was not mined from. Beside them,
+`test_no_route_on_this_surface_accepts_a_feature` and `test_the_tolerance_cannot_be_typed` are the
+structural pair, and
+`test_frames_that_disagree_about_how_many_features_they_hold_are_refused_not_trimmed` asserts that
+the refusal names the repair it is declining. `tsc --noEmit` is clean. Rendered browser inspection
+is **NOT RUN**.
+
+**One ordering mistake, found by asserting what a refusal costs.** `/confirm` first verified the
+published digest *after* running the confirmation, so a seal that disagreed with its published
+digest was refused - having already spent the held-out partition on a result nobody was then
+allowed to use. The check now runs before anything is opened, and the test asserts the
+consequence rather than the status code: after a refused confirmation, a correct one still
+succeeds. A refusal that costs the data it refused is worse than no refusal, because it looks
+like a guard.
+
+**One implementation note worth recording, because it looks like a fudge and is not.** A transfer
+record is refused unless `frozen_at < bound_at < opened_at`, and that ordering is the entire
+content of the record. A Windows clock ticks about every 15 ms, so two events that really did
+happen in that order can be issued one timestamp, and a correctly ordered transfer is then refused
+for a reason about the clock rather than about the science. `_now` advances an instant that would
+repeat or go backwards by one microsecond. Nothing waits and nothing is back-dated: the ordering
+reported is the ordering that happened, at a resolution the clock does not have.
+
+**Claim boundary.** Mining produces candidates. Support on the training frames is selection and
+not evidence: every exemplar is one of the occurrences it is counted among, so its support starts
+at one by construction, and it was ranked highly for having been counted often. A confirmed motif
+is a configuration that recurred on frames it was not mined from more often than the surrogate
+null placed it there - not a mechanism, not a cause, and not a claim until something records it,
+which is TG11.3's write path (R22). A motif reported `vacuous` was confirmed by an ensemble that
+could not have rejected it (R5). A transfer match count is descriptive rather than a corrected
+transfer result, and the transfer ledger establishes ordering inside this API only - it cannot
+show that nobody looked at the target before it was admitted. `core/cross_domain.py` is **not**
+routed by this slice and is carried as TG11.4b: its input is two channel tables on a common
+clock, not scenes, and it belongs beside the analysis surface. Admitted fields, calibrated
+tolerances, published definitions and the transfer ledger are programme state under `data/mining`,
+not a cache.

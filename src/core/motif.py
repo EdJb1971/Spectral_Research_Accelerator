@@ -830,13 +830,22 @@ def choose_candidates(result: MiningResult,
 def confirmatory_specification(chosen: Sequence[MotifCandidate], *, n_surrogates: int,
                                alpha: float = 0.05,
                                correction: str = "benjamini_yekutieli",
-                               study_id: str = "") -> SearchSpecification:
+                               study_id: str = "",
+                               notes: Optional[Mapping[str, Any]] = None
+                               ) -> SearchSpecification:
     """The frozen family: these motifs, named by the exemplar that defines each one.
 
     A motif *is* its exemplar, so the label that identifies it on the held-out partition is
     the label it had on train. That is what makes the confirmatory family a subset of the
     generated one - and it is also what makes redefinition visible, because a motif tested
     under a label whose exemplar has changed is a different signature under the same name.
+
+    `notes` are merged *beside* the two this function writes, never over them, and they are
+    part of the specification's fingerprint - so anything recorded there is sealed with the
+    family rather than stored next to it. TG11.4 needs that: a confirmatory run driven over
+    HTTP has to read every setting back out of the seal, and a setting kept in a file beside
+    the seal is a setting the seal does not bind (standard E12 - the parameter generalises
+    the function beside its existing behaviour and no caller that omits it sees a change).
     """
     labels = [c.label for c in chosen]
     if len(set(labels)) != len(labels):
@@ -847,16 +856,19 @@ def confirmatory_specification(chosen: Sequence[MotifCandidate], *, n_surrogates
         terms=(SearchTerm("product", (SearchAxis("motif", tuple(labels)),)),),
         n_surrogates=n_surrogates, alpha=alpha, correction=correction,
         label_format="{0}", study_id=study_id,
-        notes={"stage": "confirm",
-               "reading": ("each member is one motif, defined by the exemplar named in its "
-                           "label and tested on a partition it was not mined from")})
+        notes=dict(dict(notes or {}),
+                   stage="confirm",
+                   reading=("each member is one motif, defined by the exemplar named in its "
+                            "label and tested on a partition it was not mined from")))
 
 
 def freeze_motifs(result: MiningResult, *, held_out: PartitionIdentity, sealed_at: str,
                   n_surrogates: int, chosen: Optional[Sequence[MotifCandidate]] = None,
                   n_candidates: Optional[int] = None,
                   ledger: Optional[HeldOutLedger] = None,
-                  study_id: str = "") -> Tuple[Seal, Tuple[MotifCandidate, ...]]:
+                  study_id: str = "",
+                  notes: Optional[Mapping[str, Any]] = None
+                  ) -> Tuple[Seal, Tuple[MotifCandidate, ...]]:
     """Freeze the confirmatory family before the held-out partition is opened.
 
     Returns the seal *and* the candidates it froze, in the seal's own label order, because
@@ -868,7 +880,7 @@ def freeze_motifs(result: MiningResult, *, held_out: PartitionIdentity, sealed_a
         result, n_candidates=n_candidates)
     confirm = confirmatory_specification(
         picked, n_surrogates=n_surrogates, alpha=result.specification.alpha,
-        correction=result.specification.correction, study_id=study_id)
+        correction=result.specification.correction, study_id=study_id, notes=notes)
     seal = freeze_confirmatory_family(
         result.specification, confirm, held_out=held_out, sealed_at=sealed_at,
         study_id=study_id, ledger=ledger)

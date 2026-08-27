@@ -294,6 +294,86 @@ def test_the_append_form_shows_the_revision_it_is_extending():
     assert "Extending revision" in view
 
 
+def test_the_mining_panel_reaches_every_route_the_surface_serves(app_source, api_service):
+    """TG11.4. Eleven routes, and a panel that would be a catalogue if it called only some."""
+    view = _read("components", "StructureMiningView.tsx")
+    assert "name: 'Structure mining'" in app_source
+    assert "activeTab === 'mining'" in app_source
+    for call in ("getMiningCapabilities", "listMiningRecords", "admitRecord", "priceFamily",
+                 "calibrateTolerance", "generateMotifs", "freezeMotifs", "confirmMotifs",
+                 "publishMotif", "transferMotif", "auditInvariance"):
+        assert "apiService.%s" % call in view, call
+
+
+def test_no_request_this_client_can_send_carries_a_feature(api_service):
+    """The R22-shaped rule of TG11.4, checked on the wire shapes rather than on the panel.
+
+    A motif is a configuration of features. A client that could send one could draw the shape
+    it wanted the programme to confirm, and every number computed afterwards would be correct
+    and meaningless. The comments come out first: prose about the rule is not a breach of it.
+    """
+    section = api_service.split("structure mining (TG11.4)")[1].split(
+        "the findings surface")[0]
+    block = "\n".join(line for line in section.splitlines()
+                      if not line.strip().startswith("//"))
+    # `n_features` is how many the server found, which the pricing call needs and which
+    # cannot carry a shape. A coordinate can, so the distinction is a count against a value.
+    block = block.replace("n_features:", "n_found:")
+    for asserted in ("coordinate", "coords", "features:", "graph", "occurrence",
+                     "p_value", "rung", "support:"):
+        assert asserted not in block, "%r is measured by the server, not sent" % asserted
+
+
+def test_the_tolerance_travels_as_a_digest_and_never_as_a_number(api_service):
+    """It decides which configurations count as repeats; a typed one is where a wrong answer
+    enters looking like a measurement."""
+    types_source = _read("types", "api.ts")
+    request = types_source.split("export interface MiningRunRequest")[1].split("}")[0]
+    assert "tolerance_sha256" in request
+    assert "tolerance:" not in request, (
+        "a run must name a calibration, not carry a width")
+    view = _without_comments(_read("components", "StructureMiningView.tsx"))
+    assert "tolerance?.tolerance_sha256" in view
+
+
+def test_the_mining_panel_prices_the_search_before_it_runs_one():
+    """R18 made visible: the refusal is arithmetic, and it is shown before anything is mined."""
+    view = _without_comments(_read("components", "StructureMiningView.tsx"))
+    assert "split_is_not_optional" in view
+    assert "surrogates_required" in view
+    assert "priceIt" in view
+
+
+def test_the_mining_panel_presents_candidates_as_selection_not_as_findings():
+    view = _read("components", "StructureMiningView.tsx")
+    assert "generated.claim_boundary" in view
+    assert "confirmation.receipt.claim_boundary" in view
+    # A verdict composed here would be this file deciding what a mining pass was worth.
+    for invented in ("confirmed motif", "significant", "discovery"):
+        assert invented not in _without_comments(view).lower()
+
+
+def test_the_mining_panel_shows_a_vacuous_confirmation_as_not_one():
+    """R5 on the wire: an ensemble that could not have rejected anything did not check it."""
+    view = _read("components", "StructureMiningView.tsx")
+    assert "confirmation.vacuous" in view
+    assert "not confirmed by anything" in view
+
+
+def test_the_mining_panel_says_whose_claim_the_declared_transforms_are():
+    view = _read("components", "StructureMiningView.tsx")
+    assert "audit.declared_transforms_are_the_callers" in view
+    assert "report.overclaimed" in view
+
+
+def test_the_mining_panel_carries_the_origin_licence_into_a_transfer():
+    """A definition that crossed domains having forgotten where it came from is the erasure
+    R17 exists to prevent."""
+    view = _read("components", "StructureMiningView.tsx")
+    assert "published.origin_licence" in view
+    assert "seal.publication_note" in view
+
+
 def test_negative_evidence_is_presented_as_load_bearing():
     view = _read("components", "EvidenceView.tsx")
     assert "blocking_entries" in view

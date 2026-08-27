@@ -3530,6 +3530,120 @@ does not consult the held-out ledger - running a precedence analysis over data p
 held out spends it outside the record, which the ledger cannot see and the capabilities note
 cannot prevent. Rendered browser inspection of the new panel is **NOT RUN**.
 
+### 3.6zv Structure mining (`src/api/mining.py`, `frontend/src/components/StructureMiningView.tsx`, TG11.4, `ed-dev`)
+
+**The largest body of unreachable capability in the tree, made reachable.** `core/motif.py`,
+`core/constellation.py`, `core/family.py`, `core/invariance.py`, `core/motif_freeze.py` and
+`core/motif_transfer.py` are 4,211 lines that nothing outside the test suite could call. Eleven endpoints reach them. No matcher, null, correction, tolerance or p-value is
+implemented at the boundary; every number in every response is computed by the module that owns
+it, and the boundary's whole content is *what it refuses to accept*.
+
+**The client cannot draw a motif.** This is the R22-shaped risk of the slice and it is not about
+rungs. A motif is a configuration of extracted features, so a surface that accepted feature
+coordinates would let a caller type the shape they wanted confirmed - and every number computed
+downstream would then be arithmetically correct and scientifically empty, with nothing for an
+estimator to notice. No route accepts a feature. A caller admits a *field* - a 3-D `.npy` stack
+of frames - and the server extracts, under settings that become part of the record's identity.
+A record is addressed by the digest of its bytes **and** of the declaration they are read under,
+so re-reading one array as another variable is a different record, and an edited sidecar no
+longer hashes to the name it was stored under.
+
+**The client cannot choose what counts as the same shape either.** The match tolerance decides
+which configurations are repeats. Built the tempting way it came out at 0.41 against a correct
+0.0083 in this tree's own benchmark - fifty times too wide, wide enough that every triangle
+matched every other. `/generate` therefore takes a tolerance *digest*, never a number:
+`/tolerance` calibrates one with `invariance.calibrate_match_tolerance` over frames the caller
+declares to be replicates of one configuration. That declaration is the caller's and the server
+cannot check it, which the receipt says in as many words. What the server does check is that the
+calibration came through the same pipeline - domain, dataset, variable, units, representation and
+every extraction setting - and, when it was measured on the record being mined, that it was
+measured inside the training window.
+
+**Frames of unequal feature counts are refused, not trimmed.** The declared family is
+`scenes x C(n, k)` and scenes of different `n` have no such number. The obvious repair - keep the
+brightest six - is named in the refusal rather than offered as an option, because magnitude
+ordering moves between noise realisations, so "the brightest six" is a different configuration in
+every frame and a tolerance calibrated across frames that disagree about *which* features they
+hold measures that disagreement.
+
+**Nothing measured inside a held-out frame leaves before it is spent.** `/records` reports how
+many features each frame yielded and what the extractor rejected, which is admission geometry -
+exactly what a `PartitionIdentity` has always carried about a channel table, namely how many
+channels it has and what they are called. Nothing measured *from* a frame is reported: not a
+position, not a scale, not an amplitude, and not the calibrated threshold, which was removed from
+the per-frame rows for exactly this reason - the split is declared after admission, so a per-frame
+measurement would have been on screen while the split was being chosen. A test asserts that no
+held-out scene is named anywhere in a generation response, and another that no frame row carries a
+measured quantity. The residual is stated rather than closed: feature counts have to agree across
+frames or the record is refused, so the counts carry almost nothing, but a caller does admit first
+and split afterwards. Binding the split into the record's own declaration - so that it is fixed
+before extraction runs - is the stronger design and is not what this slice does.
+
+**The confirmatory run is read out of the seal.** TG11.2 established that for lag families; this
+extends it to mining. `/confirm` takes a seal digest and an optional published one, and nothing
+else: the record, the split, the size, the matcher, the tolerance, the ensemble, the correction
+and the seed are sealed as notes on the confirmatory specification, so an edit to any of them
+breaks the seal's digest instead of quietly producing a different analysis under the same name.
+The candidates are re-derived by re-running the same deterministic mining pass - the enumeration
+is combinatorial and randomness enters only at the surrogate ensemble - and `confirm_motifs`
+checks the labels against the ones the seal froze, so a redefined motif is refused rather than
+confirmed under an old name.
+
+**One core change, made beside rather than instead (E12).** `motif.confirmatory_specification`
+and `motif.freeze_motifs` gained an optional `notes` mapping, merged beside the two notes they
+already write and therefore inside the specification's fingerprint. Without it the run settings
+would have had to live in a file next to the seal, which is a setting the seal does not bind.
+No existing caller sees a change.
+
+**Seals and the ledger are shared, not duplicated.** A mining seal is a `Seal` and goes into
+TG11.2's store, so `GET /preregistration/seals` answers "what has this programme frozen" rather
+than "what has this surface frozen". The held-out ledger is TG11.2's ledger for the same reason:
+"this partition has been opened" is one fact about the programme, and two ledgers would let the
+same data be spent once on each. `held_out_ledger`, `store_seal` and `load_seal` were exported
+from `api/preregistration.py` to make that sharing explicit rather than incidental.
+
+**Transfer is the ordering, and the ordering is the record (R20).** `/motifs` publishes one
+frozen exemplar as a durable definition carrying its origin domain and that domain's licence -
+a definition that crossed domains having forgotten where it came from is the erasure R17 exists
+to prevent. `/transfer` commits the binding to the transfer ledger *before* the target frames
+are read, so a failure after that point still spends the target, which is the honest accounting:
+a caller who saw an error after the opener ran has still seen the target. Search takes no size,
+matcher, relation or tolerance argument; all four come from the verified `FrozenMotif`.
+
+**Why the server's clock is made strictly increasing.** A transfer record is refused unless
+`frozen_at < bound_at < opened_at`, and that ordering is the entire content of the record. A
+Windows clock ticks about every 15 ms, so two events that really did happen in that order can be
+issued one timestamp, and a correctly ordered transfer would then be refused for a reason about
+the clock rather than about the science. An instant that would repeat or go backwards is advanced
+by a microsecond. Nothing waits and nothing is back-dated: the ordering reported is the ordering
+that happened, at a resolution the clock does not have.
+
+**The invariance audit is reachable, and it is not a gate.** `/invariance` measures every
+registered matcher against its own declaration, and both directions fail: a matcher that
+overclaims makes every cross-scene match suspect, and one that understates makes a caller reach
+for a heavier matcher it did not need. Which transform each presentation underwent is the
+caller's declaration, because only whoever produced the frames knows. Invariance is necessary for
+recognising one configuration in two scenes and nowhere near sufficient - a constant signature is
+perfectly invariant to everything and matches everything - so what separates a matcher that
+measures something from one that does not is the surrogate null in `/confirm`, not this audit.
+
+**Operationally.** Admitted fields, calibrated tolerances, published definitions and the transfer
+ledger live under `data/mining`, overridable by `SPECTRAL_MINING_ROOT`. This is programme state,
+not a cache: a seal, a frozen motif and a confirmation receipt all name a record digest, and
+deleting the record makes those receipts uncheckable. Extraction is cached per process because it
+is a pure function of an immutable record, and `/confirm` re-derives the training candidates in
+order to check them against the seal.
+
+**Claim boundary.** Mining produces candidates. Support on the training frames is selection and
+not evidence: every exemplar is one of the occurrences it is counted among, so its support starts
+at one by construction, and it was ranked highly for having been counted often. A confirmed motif
+is a configuration that recurred on frames it was not mined from more often than the surrogate
+null placed it there - not a mechanism, not a cause, and not a claim until something records it,
+which is TG11.3's write path (R22). A motif reported `vacuous` was confirmed by an ensemble that
+could not have rejected it, which is not a confirmation (R5). A transfer match count is
+descriptive and is not a corrected transfer result. Rendered browser inspection of the new panel
+is **NOT RUN**.
+
 ### 3.11 Ground-Truth Benchmark Suite (`src/benchmarks/`)
 
 Added in T3.5.17 (standard E7). Twenty synthetic datasets whose correct answer is known
@@ -3844,7 +3958,7 @@ reason in the test itself.
 
 ## 3.12 HTTP API Surface
 
-56 routes. Listed here because an undocumented endpoint is an untested contract.
+67 routes. Listed here because an undocumented endpoint is an untested contract.
 
 | Method | Route | Notes |
 |---|---|---|
@@ -3874,6 +3988,17 @@ reason in the test itself.
 | GET | `/api/v1/evidence/studies/{study_id}/head` | the chain, the digest an append must name, and the recomputed ladder verdict |
 | POST | `/api/v1/evidence/studies/{study_id}/evidence` | append one entry, compare-and-swap on the head; the rung comes back computed |
 | POST | `/api/v1/evidence/studies/{study_id}/evidence/precedence` | run the precedence sweep here and record its verdict, `false` included |
+| GET | `/api/v1/mining` | matchers with their declared invariance, relations, extractors, minable domains, and what none of it is evidence of (TG11.4) |
+| POST | `/api/v1/mining/records` | admit one stack of frames and extract its features here; the record is addressed by its bytes **and** its declaration |
+| GET | `/api/v1/mining/records` | every admitted field by digest; reads no array and extracts nothing |
+| POST | `/api/v1/mining/price` | what a mining pass over a shape would cost, computed before anything is mined (R18) |
+| POST | `/api/v1/mining/tolerance` | calibrate the match tolerance from declared replicate frames; `/generate` takes its digest, never a number |
+| POST | `/api/v1/mining/generate` | mine the training frames; candidates, and explicitly no claims |
+| POST | `/api/v1/mining/freeze` | freeze the confirmatory family against held-out frames before they are opened; the seal lands in TG11.2's store |
+| POST | `/api/v1/mining/confirm` | open the held-out frames once and correct at the frozen size; takes a seal digest and no setting |
+| POST | `/api/v1/mining/motifs` | publish one frozen motif as a durable definition carrying its origin domain's licence |
+| POST | `/api/v1/mining/transfer` | bind a published motif, spend the target through the ledger, then open and search it once (R20) |
+| POST | `/api/v1/mining/invariance` | measure every registered matcher against its own declared invariance |
 | POST | `/api/v1/import/inspect` | describe an uploaded file without committing to a 2D slice of it (T3.5.24) |
 | POST | `/api/v1/import/field` | read one pinned 2D field out of an upload, with reconstructed provenance |
 | POST | `/api/v1/export/field` | a 2D field as CSV, JSON, NetCDF4 or a zipped Zarr store, provenance embedded (T3.5.23) |
@@ -4651,7 +4776,7 @@ See `VERIFICATION.md` for the captured command output behind every statement her
 | Item | Status |
 |---|---|
 | Python venv + dependencies | installed (torch 2.13.0+cu130, numpy 2.2.6, pydantic 1.10.26, SQLAlchemy 2.0.52, xarray 2025.6.1, FastAPI 0.110.3) |
-| Backend test suite | **2570 passed, 1 xfailed** (plus 2 skipped: the opt-in live GCS read and the opt-in live store probe) (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17, 351 after T3.5.6, 379 after T3.5.15, 407 after T3.5.19, 449 after T4C.5, 709 after T4A.4, 781 after T4B.4, 855 after T4C.5, 859 after T4C.5c, 882 after T5.1a CPU acceptance, 883 after RTX acceptance, 890 after portable profiles, 911 after T5.1b/D44, 917 after T5.1c, 933 after T5.1d/D45, 946 after T5.1e, 955 after T5.2a, 957 after T5.2b, 962 after T5.3a, 969 after T5.3b, 981 after T5.2c offline acceptance, 985 after T5.2d, 1000 after T5.0a, 1008 after T5.0b, 1027 after T5.6a offline acceptance, 1042 after T5.6b cube acceptance, 1056 after T5.6c matched evaluation, 1070 after T5.6d truth matching, 1080 after T5.6e orchestration, 1089 after T5.6f portable jobs, 1094 after T5.6g reporting, 1095 after the licence guard, 1102 after T4C.5d gate readiness, 1104 after D50 storage preflight, 1106 after T4C.5e overlap evidence, 1112 after T4C.5f campaign acceptance, 1116 after T4C.5g physical preflight, 1117 after T4C.5h preregistration - the `master` freeze; then on `ed-dev`, 1375 after TG2.1, 1429 after TG2.2, 1477 after TG2.3, 1536 after TG2.4, 1577 after TG3.1, 1621 after TG3.2, 1686 after TG3.3, 1742 after TG3.4, 1787 after TG3.5, 1850 after TG4.1, 1922 after TG4.2, 1972 after TG4.3, 1986 after TG5.1, 2004 after TG5.2 and 2020 after TG5.3, 2044 after TG6.1, 2074 after TG6.2, 2112 after TG6.3, 2167 after TG7.1, 2217 after TG7.2, 2235 after TG7.3, 2236 after TG7.3 live acceptance, 2296 after TG7.4, 2321 after TG9.1/TG9.2 2334 after TG9.3, 2367 after TG8.1, 2420 after TG8.4, 2459 after TG10.1, 2503 after TG10.3, 2509 after TG10.2 2511 after TG11.0, 2521 after TG11.1, 2543 after TG11.2 and 2570 after TG11.3) |
+| Backend test suite | **2619 passed, 1 xfailed** (plus 2 skipped: the opt-in live GCS read and the opt-in live store probe) (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17, 351 after T3.5.6, 379 after T3.5.15, 407 after T3.5.19, 449 after T4C.5, 709 after T4A.4, 781 after T4B.4, 855 after T4C.5, 859 after T4C.5c, 882 after T5.1a CPU acceptance, 883 after RTX acceptance, 890 after portable profiles, 911 after T5.1b/D44, 917 after T5.1c, 933 after T5.1d/D45, 946 after T5.1e, 955 after T5.2a, 957 after T5.2b, 962 after T5.3a, 969 after T5.3b, 981 after T5.2c offline acceptance, 985 after T5.2d, 1000 after T5.0a, 1008 after T5.0b, 1027 after T5.6a offline acceptance, 1042 after T5.6b cube acceptance, 1056 after T5.6c matched evaluation, 1070 after T5.6d truth matching, 1080 after T5.6e orchestration, 1089 after T5.6f portable jobs, 1094 after T5.6g reporting, 1095 after the licence guard, 1102 after T4C.5d gate readiness, 1104 after D50 storage preflight, 1106 after T4C.5e overlap evidence, 1112 after T4C.5f campaign acceptance, 1116 after T4C.5g physical preflight, 1117 after T4C.5h preregistration - the `master` freeze; then on `ed-dev`, 1375 after TG2.1, 1429 after TG2.2, 1477 after TG2.3, 1536 after TG2.4, 1577 after TG3.1, 1621 after TG3.2, 1686 after TG3.3, 1742 after TG3.4, 1787 after TG3.5, 1850 after TG4.1, 1922 after TG4.2, 1972 after TG4.3, 1986 after TG5.1, 2004 after TG5.2 and 2020 after TG5.3, 2044 after TG6.1, 2074 after TG6.2, 2112 after TG6.3, 2167 after TG7.1, 2217 after TG7.2, 2235 after TG7.3, 2236 after TG7.3 live acceptance, 2296 after TG7.4, 2321 after TG9.1/TG9.2 2334 after TG9.3, 2367 after TG8.1, 2420 after TG8.4, 2459 after TG10.1, 2503 after TG10.3, 2509 after TG10.2 2511 after TG11.0, 2521 after TG11.1, 2543 after TG11.2, 2570 after TG11.3 and 2619 after TG11.4) |
 | Ground-Truth Benchmark Suite | **29 PASS, 0 FAIL, 0 NOT_YET_RUNNABLE** (`python -m src.benchmarks`, exit 0) |
 | Frontend `npm install` + `npm run build` | passes, emits 1,386 modules + real JS/CSS assets (was: 1 module, no assets) |
 | Backend server | starts, serves OpenAPI, all smoke-tested endpoints return 200 |
@@ -4923,7 +5048,7 @@ able to sit three slices out of date.
 | `test_forecasting_artifact_evaluation.py` | 8 | T5.3b/T5.2d checkpoint/config integrity, artifact-bound lineage, persistence-relative metrics, physical-time reporting/refusals, undefined-skill handling and CPU/RTX vendor-neutral accelerator parity |
 | `test_forecasting_protocol.py` | 7 | T5.0a exact schema completeness, canonical identity, immutable nested configuration, evidence requirements, temporal/rollout consistency, persistence and tamper/drift refusal |
 | `test_forecasting_protocol_binding.py` | 4 | T5.0b exact dataset/protocol/checkpoint binding, recomputed coordinate/statistics identities, drift refusals and bound-evaluation cross-run isolation |
-| `test_frontend_contract.py` | 65 | the frontend/backend contract, including transform/dataset/cadence readiness claim boundaries, domain-driven acquisition, workflow-grouped navigation, persistent record/study context, the TG11.1 analysis panel's three engine operations, R21 disablement, three-valued verdict and re-read identity check, the TG11.2 preregistration panel's declare-never-decide split (no client-supplied digest, sealing time or p-value), its confirmation call carrying the record and nothing else, its published-digest caveat and its spent-is-not-failed presentation, and preservation of every ERA5 control, plus the UI integrity guards: no fabricated results, no unqualified validation claims, units and slope uncertainty displayed |
+| `test_frontend_contract.py` | 73 | the frontend/backend contract, including transform/dataset/cadence readiness claim boundaries, domain-driven acquisition, workflow-grouped navigation, persistent record/study context, the TG11.1 analysis panel's three engine operations, R21 disablement, three-valued verdict and re-read identity check, the TG11.2 preregistration panel's declare-never-decide split (no client-supplied digest, sealing time or p-value), its confirmation call carrying the record and nothing else, its published-digest caveat and its spent-is-not-failed presentation, and preservation of every ERA5 control, plus the UI integrity guards: no fabricated results, no unqualified validation claims, units and slope uncertainty displayed |
 | `test_gate_run.py` | 1 | T4C.5d frozen plan, local-only preflight, bounded train-only climatology/signatures, authenticated synthetic gate receipt, no-overwrite and tamper refusal |
 | `test_gate_campaign.py` | 6 | T4C.5f-h exact campaign identity, strict nested schema, canary/full/WeatherBench drift refusals, pre-transfer R13/physical-lag audit, aggregate storage/readiness, immutable freeze/load, pinned real preregistration and zero-network CLI (8 pytest cases) |
 | `test_grid_operators.py` | 64 | grid metrics, metric-aware gradient/Laplacian, area weighting, physical-wavenumber spectra, D26 |
@@ -4956,7 +5081,8 @@ able to sit three slices out of date.
 | `test_analysis_api.py` | 7 | TG11.1 the domain-analysis engine through HTTP: the read-only capability boundary, association over the full re-uploaded record, precedence admitted only by a declared floor, the R21 refusal reaching the caller before any computation, a three-valued gate verdict over server-derived record facts, an unknown configuration key refused rather than ignored, and the acceptance criterion — all thirteen `sequence` and `cross_domain` benchmarks reproduced through the live HTTP client with every null still answering "there is nothing here" |
 | `test_preregistration_api.py` | 17 | TG11.2 the generate/confirm split over HTTP: the sealed family matching the shape the sweep actually emits, a partition identity that ignores what the file was called (D65) and separates two splits of one record, sealing that narrows by lag and is timed by the server clock, a confirmatory lag that was never generated refused, an edited seal naming the field that changed, a wrong published digest refused, confirmation taking every setting from the seal and spending the partition, the same held-out data refused a second confirmation under a second individually honest seal, two seals frozen before any opening still buying only one look, a partition the seal did not name refused, a refused confirmation leaving the partition unspent, and TG11.1's gate refused on a spent partition |
 | `test_evidence_api.py` | 22 | TG11.3 the evidence write path: a study opened at revision zero claiming nothing, a second study under one identifier refused, an identifier that could traverse a directory refused, an append linked to the head it names, a stale head refused with nothing written, earlier revisions kept rather than rewritten, the read surface serving the latest revision and folding the earlier ones into one row (D66), a request carrying a rung refused rather than ignored, a payload asserting a rung refused at any depth, a payload asserting `temporal_precedence` refused and told which route computes it, the rung moving only because the evidence moved it, one FAIL entry capping the chain at observation through the wire, commentary refused a category, a bare confidence refused on the way in, an entry that cannot be back-dated, a causally worded hypothesis registered with the ceiling stated, the precedence verdict computed here and citing the bytes and the configuration it came from, an underpowered sweep recorded INCONCLUSIVE rather than as a negative, a domain with no admissible lag floor writing nothing, and a stale head refused before the sweep runs |
-| **total** | **2225** | |
+| `test_mining_api.py` | 41 | TG11.4 the structure-mining surface: no request model on it accepts a feature, a coordinate or a graph; a tolerance cannot be typed and travels as the digest of a calibration the server performed; a tolerance measured through another pipeline or on held-out frames refused; frames of unequal feature counts refused rather than trimmed, with the tempting repair named; a record addressed by its bytes and its declaration, and refused when the stored declaration is edited; a pickled array refused rather than loaded; a domain with no spatial extent refused; the frame split asserted against the row split it mirrors; a generation response carrying held-out geometry and nothing measured inside it; every sealed setting present in the seal, stored where every other seal is; a confirmation that takes a seal digest and nothing else; the planted motif confirmed on frames it was not mined from; the held-out frames opened once; a seal frozen by another surface refused; **a null record confirming nothing**; a published definition carrying its origin licence; a transfer target opened once whatever is transferred into it; a transfer into the origin domain refused as replication; and the invariance audit reporting an unsupported declaration as overclaimed |
+| **total** | **2274** | |
 
 ### 7.2h A surrogate null that was not the null it claimed (T4C.5)
 

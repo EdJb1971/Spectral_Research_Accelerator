@@ -113,6 +113,7 @@ from src.api.acquisitions import router as acquisitions_router  # noqa: E402
 from src.api.analysis import router as domain_analysis_router  # noqa: E402
 from src.api.preregistration import router as preregistration_router  # noqa: E402
 from src.api.evidence import router as evidence_router  # noqa: E402
+from src.api.mining import router as mining_router  # noqa: E402
 
 app.include_router(findings_router)
 # TG8.4. Mounted here for the same reason the findings router is: registration must not depend
@@ -133,6 +134,12 @@ app.include_router(preregistration_router)
 # what the earlier ones produce, and it is the only one that writes toward a claim: the rung
 # in every one of its responses is recomputed by the ladder and never accepted from a client.
 app.include_router(evidence_router)
+# TG11.4: structure mining. Mounted after the evidence router because its outputs are what that
+# router records, and because it depends on both of the routers above it - seals go into
+# TG11.2's store and the held-out ledger it reads is TG11.2's ledger. It accepts no feature and
+# no rung: scenes are extracted here from admitted fields, and a confirmation receipt is an
+# input to the write path rather than a claim (R22).
+app.include_router(mining_router)
 
 
 class HealthResponse(BaseModel):

@@ -147,6 +147,33 @@ def _stored_seals() -> List[Seal]:
     return seals
 
 
+def held_out_ledger() -> HeldOutLedger:
+    """The programme's one held-out ledger, exported for TG11.4.
+
+    Mining spends held-out *frames* where this module spends held-out *rows*, but "this
+    partition has been opened" is one fact about the programme rather than one per surface,
+    and two ledgers would let the same data be spent once on each.  Same file, same
+    single-process caveat as `_ledger`.
+    """
+    return _ledger()
+
+
+def store_seal(seal: Seal) -> Path:
+    """Publish a seal into the shared store, exported for TG11.4.
+
+    A motif seal and a lag-family seal are the same object and belong in the same drawer:
+    `GET /preregistration/seals` is meant to answer "what has this programme frozen", and an
+    answer that omitted every mining declaration would be wrong in the direction that
+    matters - it would show a study as having preregistered less than it did.
+    """
+    return _store_seal(seal)
+
+
+def load_seal(seal_sha256: str) -> Seal:
+    """One stored seal by digest, exported for TG11.4's confirmatory run."""
+    return _load_seal(seal_sha256)
+
+
 # ---------------------------------------------------------------------------- the record
 
 
@@ -616,4 +643,5 @@ def _sealed_lags(seal: Seal) -> Tuple[int, ...]:
                % seal.seal_sha256)
 
 
-__all__ = ["router", "held_out_identity_for", "ROOT_ENV", "DEFAULT_ROOT", "IDENTIFYING_PROVENANCE", "SEALED_RUN_KEYS"]
+__all__ = ["router", "held_out_identity_for", "held_out_ledger", "store_seal", "load_seal",
+           "ROOT_ENV", "DEFAULT_ROOT", "IDENTIFYING_PROVENANCE", "SEALED_RUN_KEYS"]

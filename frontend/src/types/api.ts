@@ -1213,3 +1213,225 @@ export interface EvidenceAppend {
   payload: Record<string, unknown>;
   source_sha256s?: string[];
 }
+
+// ----------------------------------------------------------- structure mining (TG11.4)
+//
+// Nothing in these types has a field for a feature, a coordinate or a graph, and that is
+// the point of the surface: a motif is a configuration of extracted features, so a client
+// that could send one could draw the shape it wanted the programme to confirm. Scenes are
+// addressed by the digest of the field they were extracted from. The tolerance is a digest
+// too, for the same reason: it decides which configurations count as repeats.
+
+export interface MiningMatcher {
+  name: string;
+  description: string;
+  declared_invariance: string[];
+  capabilities: Record<string, unknown>;
+}
+
+export interface MiningCapabilities {
+  schema: 'spectral.mining.http.v1';
+  sizes: Record<string, string>;
+  matchers: MiningMatcher[];
+  relations: { name: string; description: string; capabilities: Record<string, unknown> }[];
+  extractors: { name: string; description: string; capabilities: Record<string, unknown> }[];
+  transforms: string[];
+  minable_domains: string[];
+  input: string;
+  tolerance: string;
+  stores: string[];
+  moves_rung: false;
+  claim_boundary: string;
+}
+
+export interface AdmittedFrame {
+  frame: number;
+  scene: string;
+  n_features: number;
+  rejected: Record<string, number>;
+  threshold: number;
+}
+
+export interface AdmittedRecord {
+  record_id: string;
+  declaration: Record<string, unknown>;
+  n_frames: number;
+  frames: AdmittedFrame[];
+  feature_counts: number[];
+  minable: boolean;
+  why_not_minable: string | null;
+  note: string;
+  claim_boundary: string;
+}
+
+export interface FamilyPrice {
+  generate: {
+    family_size: number;
+    n_surrogates: number;
+    surrogates_required: number;
+    p_value_floor: number;
+    affordable: boolean;
+    correction: string;
+    alpha: number;
+    claim_boundary: string;
+  };
+  confirmatory_ceiling: {
+    max_affordable_family: number;
+    surrogates_for_one_member: number;
+    reading: string;
+  };
+  split_is_not_optional: boolean;
+  claim_boundary: string;
+}
+
+export interface ToleranceReceipt {
+  tolerance_sha256: string;
+  receipt: {
+    record_id: string;
+    frames: number[];
+    matcher: string;
+    declared_as_replicates_of: string;
+    calibrated_at: string;
+    tolerance: {
+      value: number;
+      n_replicates: number;
+      components: number;
+      worst_component: string;
+      basis: string;
+    };
+  };
+  note: string;
+  claim_boundary: string;
+}
+
+export interface MotifCandidateSummary {
+  label: string;
+  support: number;
+  n_occurrences: number;
+  scenes: string[];
+  specificity: number;
+}
+
+export interface MiningGeneration {
+  record_id: string;
+  split: Record<string, number[]>;
+  train: Record<string, unknown>;
+  held_out_identity: Record<string, unknown>;
+  held_out_spent: Record<string, unknown> | null;
+  mining: {
+    scenes: string[];
+    size: number;
+    matcher: string;
+    tolerance: number;
+    generate_family_size: number;
+    generate_sha256: string;
+    n_examined: number;
+    n_candidates: number;
+    intransitive_pairs: number;
+    affordable_in_one_stage: boolean;
+    top: MotifCandidateSummary[];
+    claim_boundary: string;
+  };
+  generation_report: Record<string, unknown>;
+  chosen: MotifCandidateSummary[];
+  confirmatory_ceiling: number;
+  next: string;
+  claim_boundary: string;
+}
+
+export interface MiningSeal {
+  seal_sha256: string;
+  seal: Record<string, unknown>;
+  frozen_labels: string[];
+  frozen: MotifCandidateSummary[];
+  publication_note: string;
+  sealed_settings: Record<string, unknown>;
+  next: string;
+  claim_boundary: string;
+}
+
+export interface MiningConfirmation {
+  receipt: {
+    seal_sha256: string;
+    correction_unit: number;
+    correction: string;
+    alpha: number;
+    labels: string[];
+    p_values: number[];
+    adjusted: number[];
+    rejected: boolean[];
+    rejected_labels: string[];
+    n_rejected: number;
+    supports: number[];
+    n_scenes: number;
+    motifs: Record<string, unknown>[];
+    vacuous: string[];
+    claim_boundary: string;
+  };
+  sealed_settings: Record<string, unknown>;
+  published_sha256: string | null;
+  publication_note: string;
+  vacuous: string[];
+  claim_boundary: string;
+}
+
+export interface PublishedMotif {
+  motif_sha256: string;
+  definition_sha256: string;
+  motif: Record<string, unknown>;
+  origin_licence: string;
+  publication_note: string;
+  claim_boundary: string;
+}
+
+export interface TransferReceipt {
+  receipt: {
+    motif_sha256: string;
+    source_domain: string;
+    target_partition_sha256: string;
+    n_scenes: number;
+    n_examined: number;
+    n_matches: number;
+    support: number;
+    matched_scenes: string[];
+    claim_boundary: string;
+  };
+  target_record_id: string;
+  note: string;
+  claim_boundary: string;
+}
+
+export interface InvarianceAudit {
+  record_id: string;
+  alpha: number;
+  reports: Record<string, {
+    matcher: string;
+    declared: string[];
+    measured: string[];
+    overclaimed: string[];
+    understated: string[];
+    honest: boolean;
+    vacuous: string[];
+    tests: Record<string, Record<string, unknown>>;
+  }>;
+  honest: string[];
+  overclaimed: Record<string, string[]>;
+  declared_transforms_are_the_callers: string;
+  claim_boundary: string;
+}
+
+/** What a mining run declares. There is no `tolerance` here, only its digest, and no
+ *  `features`: both are things the server measured rather than things a client may state. */
+export interface MiningRunRequest {
+  record_id: string;
+  tolerance_sha256: string;
+  size?: number;
+  matcher?: string;
+  n_surrogates?: number;
+  alpha?: number;
+  correction?: string;
+  seed?: number;
+  train_ratio?: number;
+  embargo_frames?: number;
+  study_id?: string;
+}

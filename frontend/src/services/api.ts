@@ -495,6 +495,129 @@ export const apiService = {
         { method: 'POST', body: form }));
   },
 
+  // ------------------------------------------------------ structure mining (TG11.4)
+  //
+  // The client that cannot draw a motif. `admitRecord` sends a field and receives what the
+  // server extracted from it; every other method addresses those features by the record's
+  // digest and never carries one. The tolerance travels as a digest for the same reason: a
+  // number typed here would decide which configurations count as repeats.
+
+  async getMiningCapabilities(): Promise<types.MiningCapabilities> {
+    return handleResponse<types.MiningCapabilities>(
+      await fetch(`${BASE_URL}/mining`, { method: 'GET' }));
+  },
+
+  async listMiningRecords(): Promise<{ records: { record_id: string; declaration: Record<string, unknown> }[]; note: string }> {
+    return handleResponse<{ records: { record_id: string; declaration: Record<string, unknown> }[]; note: string }>(
+      await fetch(`${BASE_URL}/mining/records`, { method: 'GET' }));
+  },
+
+  async admitRecord(file: File, domain: string, dataset: string, variable: string,
+                    representation: string, extraction: string): Promise<types.AdmittedRecord> {
+    const form = new FormData();
+    form.append('file', file);
+    form.append('domain', domain);
+    form.append('dataset', dataset);
+    form.append('variable', variable);
+    form.append('representation', representation);
+    form.append('extraction', extraction);
+    return handleResponse<types.AdmittedRecord>(
+      await fetch(`${BASE_URL}/mining/records`, { method: 'POST', body: form }));
+  },
+
+  async priceFamily(nScenes: number, nFeatures: number, size: number,
+                    nSurrogates: number): Promise<types.FamilyPrice> {
+    return handleResponse<types.FamilyPrice>(
+      await fetch(`${BASE_URL}/mining/price`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          n_scenes: nScenes, n_features: nFeatures, size, n_surrogates: nSurrogates
+        })
+      }));
+  },
+
+  async calibrateTolerance(recordId: string, frames: number[],
+                           declaredAs: string): Promise<types.ToleranceReceipt> {
+    return handleResponse<types.ToleranceReceipt>(
+      await fetch(`${BASE_URL}/mining/tolerance`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          record_id: recordId, frames, declared_as_replicates_of: declaredAs
+        })
+      }));
+  },
+
+  async generateMotifs(run: types.MiningRunRequest): Promise<types.MiningGeneration> {
+    return handleResponse<types.MiningGeneration>(
+      await fetch(`${BASE_URL}/mining/generate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(run)
+      }));
+  },
+
+  async freezeMotifs(run: types.MiningRunRequest): Promise<types.MiningSeal> {
+    return handleResponse<types.MiningSeal>(
+      await fetch(`${BASE_URL}/mining/freeze`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(run)
+      }));
+  },
+
+  // Takes a seal digest and an optional published one, and nothing else. Everything the
+  // confirmatory pass needs was sealed before the held-out frames existed to be looked at.
+  async confirmMotifs(sealSha256: string,
+                      publishedSha256?: string): Promise<types.MiningConfirmation> {
+    return handleResponse<types.MiningConfirmation>(
+      await fetch(`${BASE_URL}/mining/confirm`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          seal_sha256: sealSha256,
+          published_sha256: publishedSha256 ?? null
+        })
+      }));
+  },
+
+  async publishMotif(sealSha256: string, label: string): Promise<types.PublishedMotif> {
+    return handleResponse<types.PublishedMotif>(
+      await fetch(`${BASE_URL}/mining/motifs`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ seal_sha256: sealSha256, label })
+      }));
+  },
+
+  async transferMotif(motifSha256: string, publishedSha256: string, targetRecordId: string,
+                      targetDomain: string): Promise<types.TransferReceipt> {
+    return handleResponse<types.TransferReceipt>(
+      await fetch(`${BASE_URL}/mining/transfer`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          motif_sha256: motifSha256, published_sha256: publishedSha256,
+          target_record_id: targetRecordId, target_domain: targetDomain
+        })
+      }));
+  },
+
+  async auditInvariance(recordId: string, referenceFrame: number, replicateFrames: number[],
+                        presentations: { frame: number; transforms: string[]; name?: string }[]
+                       ): Promise<types.InvarianceAudit> {
+    return handleResponse<types.InvarianceAudit>(
+      await fetch(`${BASE_URL}/mining/invariance`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          record_id: recordId, reference_frame: referenceFrame,
+          replicate_frames: replicateFrames, presentations
+        })
+      }));
+  },
+
   // ------------------------------------------------ the findings surface (TG9.1)
   //
   // Read-only. None of these can change what may be claimed: a GET does not move a rung

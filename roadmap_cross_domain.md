@@ -2766,10 +2766,85 @@ out spends it outside the record, which the ledger cannot see and the capabiliti
 prevent. Commentary has no category here and prose is not evidence (R22). Bundles are programme
 state under `data/studies`, not a cache.
 
-**TG11.4 Structure mining.** Motifs, constellations, declared families, invariance auditing and
-cross-domain transfer — `motif`, `constellation`, `family`, `invariance`, `cross_domain`,
-`motif_freeze`, `motif_transfer`. The largest body of unreachable capability in the codebase, and
-sequenced after the write path because its outputs are what the write path records.
+**TG11.4 Structure mining. DONE** (2026-08-27; `src/api/mining.py`, `src/api/main.py`,
+`src/api/preregistration.py`, `src/core/motif.py`, `src/tests/test_mining_api.py`,
+`src/tests/test_frontend_contract.py`, `src/tests/test_documentation.py`,
+`frontend/src/components/StructureMiningView.tsx`, `frontend/src/App.tsx`,
+`frontend/src/services/api.ts`, `frontend/src/types/api.ts`; architecture.md 3.6zv;
+VERIFICATION.md)
+
+**Delivered.** Eleven endpoints over `core\motif.py`, `core\constellation.py`, `core\family.py`,
+`core\invariance.py`, `core\motif_freeze.py` and `core\motif_transfer.py` - 4,211 lines that
+nothing outside the test suite could call. Admit a field and extract its features;
+list what is admitted; price the family a mining pass would examine before mining it; calibrate
+a match tolerance; mine the training frames; freeze the confirmatory family against held-out
+frames; open those frames once; publish one motif as a durable definition; transfer it into a
+second domain through a ledger that spends the target before the target is read; and audit every
+registered matcher against its own declared invariance. No matcher, null, correction, tolerance
+or p-value is implemented at the boundary.
+
+**The two things that cannot be typed.** A motif is a configuration of extracted features, so a
+surface that accepted feature coordinates would let a caller draw the shape they wanted confirmed
+- and every number downstream would then be arithmetically correct and empty. No route accepts a
+feature: a caller admits a `.npy` stack of frames and the server extracts, under settings that
+become part of the record's digest. And the match tolerance decides which configurations count as
+repeats, so it travels as the digest of a calibration the server performed rather than as a
+number; measured the tempting way it came out fifty times too wide in this tree's own benchmark,
+wide enough that every triangle matched every other.
+
+**Refused rather than repaired.** Frames whose feature counts disagree are refused, and the
+refusal names the repair it is declining - keep the brightest six - because magnitude ordering
+moves between noise realisations, so "the brightest six" is a different configuration in every
+frame. A tolerance calibrated through another pipeline, or on frames past the training boundary,
+is refused for the same class of reason.
+
+**The confirmation is driven by the seal.** `/confirm` takes a seal digest and an optional
+published one and nothing else; the record, the split, the size, the matcher, the tolerance, the
+ensemble, the correction and the seed are sealed as notes on the confirmatory specification, and
+the training candidates are re-derived by re-running the deterministic mining pass and checked
+label for label against what the seal froze. One core change, made beside rather than instead
+(E12): `confirmatory_specification` and `freeze_motifs` take an optional `notes` mapping, merged
+beside the notes they already write, so the run settings are inside the seal's digest rather than
+in a file next to it. Mining seals go into TG11.2's seal store and spend TG11.2's held-out
+ledger, because "this partition has been opened" is one fact about the programme.
+
+**Acceptance met.** `test_a_null_record_confirms_nothing` runs the whole chain over frames with
+nothing planted in them - same generator, same feature count, same family, same ensemble - and
+confirms nothing, which is the gate this phase exists to pass. Beside it,
+`test_the_planted_motif_is_confirmed_on_frames_it_was_not_mined_from` shows the pass can still
+find what is there. `test_no_route_on_this_surface_accepts_a_feature` and
+`test_the_tolerance_cannot_be_typed` are the structural pair.
+
+**Not delivered here, and named rather than dropped: `cross_domain`.** The roadmap bullet listed
+`core\cross_domain.py` with the mining modules. It does not belong on this surface: its input is
+two channel tables aligned on an exact common clock, not scenes of extracted features, and its
+sweep is a lag family - the same shape `/api/v1/analysis` and `/api/v1/preregistration` already
+serve. Routing it here would have put a channel pipeline behind a scene vocabulary. It is
+carried as **TG11.4b** below, beside the analysis surface where its inputs already live.
+
+**Verified.** Full suite **2619 passed, 2 skipped, 1 xfailed** (4,090 s); `test_mining_api.py` 41;
+`test_frontend_contract.py` 65 -> 73; documentation guard 19 passing with the new router in
+`_ROUTE_SOURCES` and the route count moved to 67; frontend production build with JS/CSS emitted;
+`tsc --noEmit` clean. Rendered browser inspection is **NOT RUN**.
+
+**Claim boundary.** Mining produces candidates, and support on the training frames is selection:
+every exemplar is one of the occurrences it is counted among, so its support starts at one by
+construction and it was ranked highly for having been counted often. A confirmed motif is a
+configuration that recurred on frames it was not mined from more often than the surrogate null
+placed it there - not a mechanism, not a cause, and not a claim until something records it, which
+is TG11.3's write path (R22). A motif reported `vacuous` was confirmed by an ensemble that could
+not have rejected it, which is not a confirmation (R5). A transfer match count is descriptive.
+The transfer ledger establishes ordering inside this API and cannot show that nobody looked at
+the target before it was admitted. Admitted fields, tolerances, definitions and the transfer
+ledger are programme state under `data/mining`, not a cache.
+
+**TG11.4b The cross-domain record.** `core\cross_domain.py` - `align_exact`, `physical_lags`,
+`sweep_cross_domain`, `confirm_cross_domain`. Two channel tables from two declared domains,
+aligned on an exact common clock with no interpolation, swept over a lag family declared in
+*seconds* and converted to frames per domain. It belongs beside `/api/v1/analysis` rather than
+`/api/v1/mining` because its input is a record and its output is a lag result, and it is the
+slice where a lag family stops being expressible only in frames of one clock. Sequenced after
+TG11.4 because the seal and ledger plumbing it needs is the plumbing TG11.4 shared.
 
 **TG11.5 The review surface.** The adversarial round-robin, its recorded calls and its cost
 receipts (`round_robin`, `recorded_call`, `review_cost`). Everything here is R23
