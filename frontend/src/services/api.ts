@@ -194,6 +194,12 @@ export const apiService = {
     return handleResponse<types.DataSourceInfo[]>(response);
   },
 
+  // ------------------------------------------------ domain-first acquisition (TG10.2)
+  async listAcquisitions(): Promise<types.AcquisitionCatalogue> {
+    const response = await fetch(`${BASE_URL}/acquisitions`, { method: 'GET' });
+    return handleResponse<types.AcquisitionCatalogue>(response);
+  },
+
   // ---------------------------------------------------------------- ERA5 over Zarr
 
   async zarrCatalogue(): Promise<types.ZarrCatalogueResponse> {

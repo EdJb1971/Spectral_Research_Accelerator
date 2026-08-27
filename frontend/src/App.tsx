@@ -9,12 +9,11 @@ import { TrainingReadiness } from './components/TrainingReadiness';
 import { DTCWTScientificView } from './components/DTCWTScientificView';
 import { EvaluationEvidence } from './components/EvaluationEvidence';
 import FindingsView from './components/FindingsView';
-import ChannelRecords from './components/ChannelRecords';
+import AcquisitionView from './components/AcquisitionView';
 import { apiService } from './services/api';
 import * as types from './types/api';
 import {
   BookOpen,
-  Table2,
   Layers,
   Wind,
   Sliders,
@@ -38,16 +37,40 @@ import {
   ShieldCheck,
   AlertTriangle,
   Cloud,
-  HardDrive,
-  Search,
   WifiOff,
   Boxes,
   FileCheck2
 } from 'lucide-react';
 
+const WORKFLOW_NAV = [
+  { section: 'Acquire', items: [{ id: 'acquire', name: 'Acquire data', icon: Cloud }] },
+  {
+    section: 'Analyse', items: [
+      { id: 'synthetic', name: 'Synthetic generator', icon: Layers, context: 'Gridded field line' },
+      { id: 'meteorological', name: 'Meteorological data', icon: Wind, context: 'Gridded field line' },
+      { id: 'boundary', name: 'Boundary-condition lab', icon: Sliders, context: 'Gridded field line' },
+      { id: 'spectral', name: 'Spectral transforms', icon: Activity, context: 'Gridded field line' },
+      { id: 'analysis', name: 'Diagnostics', icon: BarChart2, context: 'Gridded field line' },
+      { id: 'hypothesis', name: 'Automated hypotheses', icon: Lightbulb },
+    ],
+  },
+  {
+    section: 'Evidence', items: [
+      { id: 'declarative', name: 'Experiment engine', icon: FileCode },
+      { id: 'evaluation', name: 'Forecast evaluation', icon: FileCheck2, context: 'Gridded field line' },
+    ],
+  },
+  { section: 'Review', note: 'Review surface arrives in TG11.5', items: [] },
+  { section: 'Read', items: [{ id: 'findings', name: 'Findings', icon: BookOpen }] },
+  { section: 'Platform', items: [{ id: 'platform', name: 'Platform & evidence', icon: ShieldCheck }] },
+] as const;
+
 export default function App() {
-  const [activeTab, setActiveTab] = useState('synthetic');
+  const [activeTab, setActiveTab] = useState('acquire');
   const [backendConnected, setBackendConnected] = useState<boolean | null>(null);
+  // TG11.0: context belongs to the shell, not to whichever workflow panel is mounted.
+  const [selectedRecord, setSelectedRecord] = useState<types.ChannelRecordSelection | null>(null);
+  const [selectedStudyId, setSelectedStudyId] = useState<string>('');
 
   // T3.5.22: platform status and the ERA5 crop tools. Every one of these endpoints existed
   // and had no consumer, so the platform could report its device, executor, schema revision,
@@ -55,13 +78,6 @@ export default function App() {
   const [health, setHealth] = useState<types.HealthResponse | null>(null);
   const [benchmarks, setBenchmarks] = useState<types.BenchmarkResponse[]>([]);
   const [dataSources, setDataSources] = useState<types.DataSourceInfo[]>([]);
-  const [zarrCatalogue, setZarrCatalogue] = useState<types.ZarrCatalogueResponse | null>(null);
-  const [zarrCached, setZarrCached] = useState<types.ZarrCachedResponse | null>(null);
-  const [zarrInspection, setZarrInspection] = useState<types.ZarrInspectResponse | null>(null);
-  // TG10.3: probing a store is a recorded act. `zarrProbes` is the ledger, `zarrProbeResult`
-  // the record from the last probe run here - including a refusal, which is a result.
-  const [zarrProbes, setZarrProbes] = useState<types.ZarrProbeLedgerResponse | null>(null);
-  const [zarrProbeResult, setZarrProbeResult] = useState<types.ZarrProbeRecord | null>(null);
   // T3.5.24: evidence a researcher can generate, and capabilities they can discover.
   const [benchmarkRun, setBenchmarkRun] = useState<types.BenchmarkSuiteResponse | null>(null);
   const [benchmarkSeed, setBenchmarkSeed] = useState(20260819);
@@ -71,17 +87,6 @@ export default function App() {
   const [evaluationReports, setEvaluationReports] = useState<types.EvaluationReport[]>([]);
   const [receiptImporting, setReceiptImporting] = useState(false);
   const [importedProvenance, setImportedProvenance] = useState<Record<string, any> | null>(null);
-  const [zarrCrop, setZarrCrop] = useState<types.ZarrCropRequest>({
-    store: 'era5_0p25_6h',
-    variables: ['temperature'],
-    time_start: '2020-06-01',
-    time_end: '2020-06-08',
-    // A 64-degree box at 0.25 degrees is 257x257, which clears the R13 four-level floor of
-    // 256. The default is a crop that is actually analysable rather than a round number.
-    lat_min: -4, lat_max: 60, lon_min: 0, lon_max: 64,
-    levels: [850, 700, 500, 300],
-    n_levels_analysis: 4,
-  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -615,57 +620,6 @@ export default function App() {
     setError(null);
   };
 
-  // TG10.3. The button reports whatever the probe concluded, refusals included: "this store
-  // wants credentials" and "network is switched off here" are results a researcher needs
-  // before planning a crop, not errors to be swallowed into a red banner.
-  const runZarrProbe = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const result = await apiService.zarrProbe({ uri: zarrCrop.store });
-      setZarrProbeResult(result.probe);
-      setZarrProbes(await apiService.zarrProbes());
-    } catch (e: any) {
-      setError(`Probe request refused: ${e.message}`);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadZarrCatalogue = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const [cat, cached, probes] = await Promise.all([
-        apiService.zarrCatalogue(),
-        apiService.zarrCached(),
-        apiService.zarrProbes(),
-      ]);
-      setZarrCatalogue(cat);
-      setZarrCached(cached);
-      setZarrProbes(probes);
-    } catch (e: any) {
-      setError(`Zarr catalogue unavailable: ${e.message}`);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleZarrInspect = async () => {
-    setLoading(true);
-    setError(null);
-    setZarrInspection(null);
-    try {
-      setZarrInspection(await apiService.zarrInspect(zarrCrop));
-    } catch (e: any) {
-      // A 409 here is the network gate, not a failure - it is reported verbatim because the
-      // message names the environment variable that turns it on.
-      setError(e.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
     if (activeTab === 'platform' && !health) loadPlatformStatus();
     if (activeTab === 'platform' && registryTransforms.length === 0) {
@@ -673,7 +627,6 @@ export default function App() {
         .then(([t, a]) => { setRegistryTransforms(t); setRegistryActions(a); })
         .catch(() => { /* the status load already reports an unreachable backend */ });
     }
-    if (activeTab === 'era5' && !zarrCatalogue) loadZarrCatalogue();
     if (activeTab === 'evaluation') loadEvaluationReports();
   }, [activeTab]);
 
@@ -703,44 +656,50 @@ export default function App() {
 
       <div className="flex-1 flex flex-col lg:flex-row">
         {/* Left Side Navigation bar */}
-        <nav className="w-full lg:w-72 border-r border-slate-800 bg-slate-900/10 p-4 space-y-1">
-          <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider px-3 mb-3">
-            Research Modules
-          </div>
-          {[
-            { id: 'synthetic', name: '1. Synthetic Generator', icon: Layers },
-            { id: 'meteorological', name: '2. Meteorological Data', icon: Wind },
-            { id: 'boundary', name: '3. Boundary-Condition Lab', icon: Sliders },
-            { id: 'spectral', name: '4. Spectral Transforms', icon: Activity },
-            { id: 'analysis', name: '5. Diagnostic & Analysis', icon: BarChart2 },
-            { id: 'declarative', name: '6. Experiment Engine', icon: FileCode },
-            { id: 'hypothesis', name: '7. Automated Hypotheses', icon: Lightbulb },
-            { id: 'platform', name: '8. Platform & Evidence', icon: ShieldCheck },
-            { id: 'era5', name: '9. Real ERA5 (Zarr)', icon: Cloud },
-            { id: 'evaluation', name: '10. Forecast Evaluation', icon: FileCheck2 },
-            { id: 'findings', name: '11. Findings', icon: BookOpen },
-            { id: 'channels', name: '12. Domain Records', icon: Table2 }
-          ].map(tab => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-all ${
-                  isActive
-                    ? 'bg-teal-500/10 text-teal-400 border border-teal-500/20 shadow-sm shadow-teal-500/5'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
-                }`}
-              >
-                <Icon className={`w-4 h-4 ${isActive ? 'text-teal-400' : 'text-slate-400'}`} />
-                {tab.name}
-              </button>
-            );
-          })}
+        <nav aria-label="Scientific workflow"
+          className="w-full lg:w-72 border-r border-slate-800 bg-slate-900/10 p-4 space-y-5">
+          {WORKFLOW_NAV.map(group => (
+            <section key={group.section} aria-labelledby={`nav-${group.section.toLowerCase()}`}>
+              <div className="px-3 mb-1">
+                <h2 id={`nav-${group.section.toLowerCase()}`}
+                  className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                  {group.section}
+                </h2>
+                {'note' in group && group.note && (
+                  <p className="text-[10px] text-slate-600 mt-0.5">{group.note}</p>
+                )}
+              </div>
+              <div className="space-y-1">
+                {group.items.map(tab => {
+                  const Icon = tab.icon;
+                  const isActive = activeTab === tab.id;
+                  return (
+                    <button key={tab.id} type="button" onClick={() => setActiveTab(tab.id)}
+                      aria-current={isActive ? 'page' : undefined}
+                      className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                        isActive
+                          ? 'bg-teal-500/10 text-teal-400 border border-teal-500/20 shadow-sm shadow-teal-500/5'
+                          : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+                      }`}>
+                      <Icon className={`w-4 h-4 ${isActive ? 'text-teal-400' : 'text-slate-400'}`}
+                        aria-hidden="true" />
+                      <span className="min-w-0 text-left">
+                        <span className="block">{tab.name}</span>
+                        {'context' in tab && (
+                          <span className="block text-[9px] uppercase tracking-wide text-slate-600">
+                            {tab.context}
+                          </span>
+                        )}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+          ))}
 
           <div className="pt-6 px-3 border-t border-slate-800 mt-6">
-            <span className="text-xs text-slate-500 uppercase font-semibold block mb-2">Primary Field Buffer</span>
+            <span className="text-xs text-slate-500 uppercase font-semibold block mb-2">Gridded field buffer</span>
             <div className="bg-slate-900/50 p-3 border border-slate-800 rounded-lg text-xs space-y-1 text-slate-400">
               <p><strong className="text-slate-300">Dimensions:</strong> {primaryField.length} x {primaryField[0]?.length || 0}</p>
               <p><strong className="text-slate-300">Origin:</strong> {primaryMetadata.type || 'In-Memory Grid'}</p>
@@ -751,6 +710,29 @@ export default function App() {
 
         {/* Core Main content section */}
         <main className="flex-1 p-6 overflow-y-auto space-y-6">
+          <section aria-label="Current research context"
+            className="bg-slate-900/60 border border-slate-800 rounded-lg px-4 py-3 flex flex-wrap gap-x-6 gap-y-2 text-xs">
+            <div className="flex items-center gap-2">
+              <span className="uppercase tracking-wide text-slate-500">Record</span>
+              {selectedRecord ? <>
+                <span className="text-slate-200">{selectedRecord.record.source_name}</span>
+                <span className="text-teal-400">{selectedRecord.record.domain}</span>
+                <span className="font-mono text-slate-600">
+                  {selectedRecord.record.content_sha256.slice(0, 12)}…
+                </span>
+                <button type="button" onClick={() => setSelectedRecord(null)}
+                  aria-label="Clear selected record" className="text-slate-500 hover:text-slate-200">×</button>
+              </> : <span className="text-slate-600">none selected</span>}
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="uppercase tracking-wide text-slate-500">Study</span>
+              {selectedStudyId ? <>
+                <span className="font-mono text-slate-200">{selectedStudyId}</span>
+                <button type="button" onClick={() => setSelectedStudyId('')}
+                  aria-label="Clear selected study" className="text-slate-500 hover:text-slate-200">×</button>
+              </> : <span className="text-slate-600">none selected</span>}
+            </div>
+          </section>
           {error && (
             <div className="bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded-lg p-4 flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -2424,318 +2406,10 @@ export default function App() {
             </div>
           )}
 
-          {/* TAB 9: REAL ERA5 OVER ZARR ------------------------------------------------- */}
-          {activeTab === 'era5' && (
-            <div className="space-y-6 animate-fadeIn">
-              <div className="flex flex-col gap-1">
-                <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                  <Cloud className="text-teal-400 w-5 h-5" /> Real ERA5 via Cloud Zarr
-                </h2>
-                <p className="text-sm text-slate-400">
-                  Regional crops streamed from public WeatherBench 2 Zarr on GCS. Inspect first: it reads
-                  metadata only and tells you what the transfer will actually cost before you commit to it.
-                </p>
-              </div>
-
-              {zarrCatalogue && !zarrCatalogue.network_enabled && (
-                <div className="bg-slate-900/50 border border-slate-800 rounded-lg p-4 flex gap-3 text-xs text-slate-400">
-                  <Server className="w-4 h-4 text-slate-500 flex-shrink-0 mt-0.5" />
-                  <span>
-                    Network access is <strong className="text-slate-200">off</strong>. Set{' '}
-                    <code className="text-teal-400">{zarrCatalogue.network_env_var}=1</code> before starting the
-                    backend to reach the archive. Reaching the internet is never a side effect of running a
-                    sweep, and a mistyped bounding box against a 0.25&deg; store moves tens of gigabytes.
-                    Crops already in the cache work with no network at all.
-                  </span>
-                </div>
-              )}
-
-              <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-                <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-5 space-y-4">
-                  <h3 className="text-sm font-semibold text-slate-200 border-b border-slate-800 pb-2">
-                    Crop Specification
-                  </h3>
-
-                  <div>
-                    <label className="text-xs text-slate-400 block mb-1">Store</label>
-                    <select
-                      value={zarrCrop.store}
-                      onChange={(e) => setZarrCrop({ ...zarrCrop, store: e.target.value })}
-                      className="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1.5 text-xs text-slate-200"
-                    >
-                      {Object.keys(zarrCatalogue?.stores || { era5_0p25_6h: null }).map(id => (
-                        <option key={id} value={id}>{id}</option>
-                      ))}
-                    </select>
-                    {zarrCatalogue?.stores?.[zarrCrop.store] && (
-                      <>
-                        {/* TG10.1: the catalogue now says whose domain a store is, how it is
-                            reached and whether anyone measured its chunking. A store nobody
-                            has measured says so rather than reading like one that was. */}
-                        <p className="text-[10px] text-slate-400 mt-1.5">
-                          Domain <span className="text-teal-400">{zarrCatalogue.stores[zarrCrop.store].domain}</span>
-                          {' · '}vertical axis <span className="text-teal-400">{zarrCatalogue.stores[zarrCrop.store].vertical_dim ?? 'none'}</span>
-                          {' · '}{zarrCatalogue.stores[zarrCrop.store].access_means}
-                        </p>
-                        <p className="text-[10px] text-slate-500 mt-1 leading-relaxed">
-                          Chunking: {zarrCatalogue.stores[zarrCrop.store].chunks.method_means}
-                          {zarrCatalogue.stores[zarrCrop.store].chunks.measured_on
-                            ? ` (${zarrCatalogue.stores[zarrCrop.store].chunks.measured_on})` : ''}
-                          {zarrCatalogue.stores[zarrCrop.store].chunks.regional_amplification !== null
-                            ? ` — a regional crop measured ${zarrCatalogue.stores[zarrCrop.store].chunks.regional_amplification}x amplification.`
-                            : '.'}
-                        </p>
-                        <p className="text-[10px] text-slate-500 mt-1 leading-relaxed">
-                          {zarrCatalogue.stores[zarrCrop.store].note}
-                        </p>
-                      </>
-                    )}
-                    {/* TG10.3: probing is a recorded act, so it has a button and a ledger. */}
-                    <div className="mt-2 flex items-center gap-2">
-                      <button
-                        onClick={runZarrProbe}
-                        disabled={loading}
-                        className="text-[10px] px-2 py-1 rounded border border-slate-700 text-slate-300 hover:bg-slate-800 disabled:opacity-40"
-                      >
-                        Probe this store
-                      </button>
-                      {zarrProbes && (
-                        <span className="text-[10px] text-slate-500">
-                          {zarrProbes.count} probe{zarrProbes.count === 1 ? '' : 's'} recorded
-                          {zarrProbes.transcribed > 0
-                            ? `, of which ${zarrProbes.transcribed} transcribed from inspections this code did not run`
-                            : ''}
-                        </span>
-                      )}
-                    </div>
-                    {zarrProbeResult && (
-                      <div className="mt-2 border border-slate-800 rounded p-2 bg-slate-950">
-                        <p className="text-[10px] text-slate-300">
-                          {zarrProbeResult.probed_on} — {zarrProbeResult.outcome_means}
-                        </p>
-                        {zarrProbeResult.refusal_detail && (
-                          <p className="text-[10px] text-amber-400 mt-1 leading-relaxed">
-                            {zarrProbeResult.refusal_detail}
-                          </p>
-                        )}
-                        {zarrProbeResult.megabytes_per_chunk !== null && (
-                          <p className="text-[10px] text-slate-500 mt-1">
-                            Largest chunk {zarrProbeResult.megabytes_per_chunk} MB
-                            {zarrProbeResult.chunk_hostile === null
-                              ? ' · no crop was stated, so no amplification was computed'
-                              : ` · ${zarrProbeResult.chunk_hostile ? 'chunk-hostile' : 'not chunk-hostile'} for the stated crop`}
-                          </p>
-                        )}
-                        <p className="text-[10px] text-slate-600 mt-1">
-                          {zarrProbeResult.evidence_means}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="text-xs text-slate-400 block mb-1">Variables (comma separated)</label>
-                    <input
-                      type="text"
-                      value={zarrCrop.variables.join(',')}
-                      onChange={(e) => setZarrCrop({ ...zarrCrop, variables: e.target.value.split(',').map(v => v.trim()).filter(Boolean) })}
-                      className="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1.5 text-xs text-slate-200 font-mono"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="text-xs text-slate-400 block mb-1">Start</label>
-                      <input type="date" value={zarrCrop.time_start}
-                        onChange={(e) => setZarrCrop({ ...zarrCrop, time_start: e.target.value })}
-                        className="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1.5 text-xs text-slate-200" />
-                    </div>
-                    <div>
-                      <label className="text-xs text-slate-400 block mb-1">End</label>
-                      <input type="date" value={zarrCrop.time_end}
-                        onChange={(e) => setZarrCrop({ ...zarrCrop, time_end: e.target.value })}
-                        className="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1.5 text-xs text-slate-200" />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2">
-                    {([['lat_min', 'Lat min'], ['lat_max', 'Lat max'], ['lon_min', 'Lon min'], ['lon_max', 'Lon max']] as const).map(([key, label]) => (
-                      <div key={key}>
-                        <label className="text-xs text-slate-400 block mb-1">{label}</label>
-                        <input type="number" value={zarrCrop[key]}
-                          onChange={(e) => setZarrCrop({ ...zarrCrop, [key]: parseFloat(e.target.value) })}
-                          className="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1.5 text-xs text-slate-200 font-mono" />
-                      </div>
-                    ))}
-                  </div>
-
-                  <div>
-                    <label className="text-xs text-slate-400 block mb-1">Pressure levels (hPa)</label>
-                    <input type="text" value={zarrCrop.levels.join(',')}
-                      onChange={(e) => setZarrCrop({ ...zarrCrop, levels: e.target.value.split(',').map(v => parseInt(v.trim(), 10)).filter(v => !isNaN(v)) })}
-                      className="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1.5 text-xs text-slate-200 font-mono" />
-                  </div>
-
-                  <div>
-                    <label className="text-xs text-slate-400 flex justify-between mb-1">
-                      <span>Wavelet levels to support (R13)</span>
-                      <span className="text-teal-400 font-mono">
-                        min {zarrCatalogue?.r13_minimum_crop?.[String(zarrCrop.n_levels_analysis)] ?? '?'} px
-                      </span>
-                    </label>
-                    <input type="range" min="1" max="6" step="1" value={zarrCrop.n_levels_analysis}
-                      onChange={(e) => setZarrCrop({ ...zarrCrop, n_levels_analysis: parseInt(e.target.value, 10) })}
-                      className="w-full accent-teal-500" />
-                    <p className="text-[10px] text-slate-500 mt-1 leading-relaxed">
-                      Coefficients within one filter support of an edge are contaminated, and they look
-                      exactly like strong oriented features. The crop must be large enough to leave a valid
-                      interior at the coarsest scale - constrain frames, never the grid.
-                    </p>
-                  </div>
-
-                  <button
-                    onClick={handleZarrInspect}
-                    disabled={loading}
-                    className="w-full bg-teal-600 hover:bg-teal-500 disabled:bg-slate-800 disabled:text-slate-500 text-white font-semibold py-2 px-4 rounded-lg flex items-center justify-center gap-2"
-                  >
-                    {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
-                    Inspect (metadata only)
-                  </button>
-                </div>
-
-                <div className="xl:col-span-2 space-y-6">
-                  {zarrInspection ? (
-                    <>
-                      <div className={`rounded-xl p-5 border ${
-                        zarrInspection.assessment.chunk_hostile
-                          ? 'bg-amber-500/5 border-amber-500/25'
-                          : 'bg-emerald-500/5 border-emerald-500/25'
-                      }`}>
-                        <div className="flex items-start gap-3">
-                          {zarrInspection.assessment.chunk_hostile
-                            ? <AlertTriangle className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
-                            : <CheckCircle className="w-5 h-5 text-emerald-400 flex-shrink-0 mt-0.5" />}
-                          <div className="space-y-2 min-w-0">
-                            <div className="flex items-baseline gap-3 flex-wrap">
-                              <span className={`text-2xl font-bold font-mono ${zarrInspection.assessment.chunk_hostile ? 'text-amber-400' : 'text-emerald-400'}`}>
-                                {zarrInspection.assessment.amplification.toFixed(1)}&times;
-                              </span>
-                              <span className="text-xs text-slate-400">
-                                amplification &mdash; {(zarrInspection.assessment.bytes_fetched_estimate / 1e9).toFixed(2)} GB fetched
-                                to deliver {(zarrInspection.assessment.bytes_wanted / 1e9).toFixed(2)} GB
-                              </span>
-                            </div>
-                            {zarrInspection.assessment.warning && (
-                              <p className="text-[11px] text-amber-300/90 leading-relaxed">{zarrInspection.assessment.warning}</p>
-                            )}
-                            {zarrInspection.assessment.advice.map((a, i) => (
-                              <p key={i} className="text-[11px] text-slate-400 leading-relaxed">&bull; {a}</p>
-                            ))}
-                            <p className="text-[10px] text-slate-600">{zarrInspection.assessment.byte_basis}</p>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-5 space-y-2">
-                          <h3 className="text-sm font-semibold text-slate-200 border-b border-slate-800 pb-2">Remote chunk structure</h3>
-                          {Object.entries(zarrInspection.structure.variables).map(([name, v]) => (
-                            <div key={name} className="text-[11px] font-mono space-y-0.5">
-                              <div className="text-slate-200">{name}</div>
-                              <div className="text-slate-500">shape [{v.shape.join(', ')}]</div>
-                              <div className="text-slate-400">chunks [{(v.chunks || []).join(', ')}] = {v.chunk_megabytes} MB</div>
-                            </div>
-                          ))}
-                          <div className="text-[11px] font-mono text-slate-500 pt-2 border-t border-slate-800">
-                            selection: {Object.entries(zarrInspection.assessment.selection).map(([k, v]) => `${k}=${v}`).join('  ')}
-                          </div>
-                        </div>
-
-                        <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-5 space-y-2">
-                          <h3 className="text-sm font-semibold text-slate-200 border-b border-slate-800 pb-2">R13 crop geometry</h3>
-                          {zarrInspection.geometry?.ok === false ? (
-                            <div className="text-[11px] text-rose-400 leading-relaxed">
-                              {zarrInspection.geometry.error}
-                            </div>
-                          ) : (
-                            <div className="text-[11px] font-mono space-y-1">
-                              {Object.entries(zarrInspection.geometry?.valid_interior_by_level || {}).map(([lvl, px]) => (
-                                <div key={lvl} className="flex justify-between">
-                                  <span className="text-slate-500">level {lvl}</span>
-                                  <span className={Number(px) > 0 ? 'text-slate-300' : 'text-rose-400'}>{String(px)} px valid</span>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="bg-slate-950 border border-slate-800 rounded-xl p-4">
-                        <p className="text-[11px] text-slate-500 mb-2">
-                          Materialisation is a minutes-to-hours job, so it runs from the command line rather
-                          than holding an HTTP connection open:
-                        </p>
-                        <code className="text-[10px] text-teal-400 font-mono break-all block leading-relaxed">
-                          {zarrInspection.cli}
-                        </code>
-                      </div>
-                    </>
-                  ) : (
-                    <div className="bg-slate-900 border border-slate-800 rounded-xl p-12 text-center text-slate-500 flex flex-col items-center justify-center min-h-[300px]">
-                      <Search className="w-12 h-12 text-slate-750 mb-3" />
-                      <p className="text-sm font-semibold text-slate-400">No crop inspected yet</p>
-                      <p className="text-xs text-slate-500 mt-1 max-w-sm">
-                        Inspect reads only the store&apos;s metadata. It is the call to make before committing
-                        to a download: the 0.25&deg; stores hand over 54 MB per chunk whatever you ask for.
-                      </p>
-                    </div>
-                  )}
-
-                  {zarrCached && zarrCached.count > 0 && (
-                    <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-5 space-y-2">
-                      <h3 className="text-sm font-semibold text-slate-200 border-b border-slate-800 pb-2 flex items-center gap-2">
-                        <HardDrive className="w-4 h-4 text-slate-400" /> Materialised crops ({zarrCached.count})
-                      </h3>
-                      {zarrCached.crops.map(c => (
-                        <div key={c.content_key} className="text-[11px] font-mono border border-slate-800 rounded p-2 bg-slate-950">
-                          <div className="flex items-center justify-between gap-2">
-                            <span className="text-slate-200">{c.content_key}</span>
-                            <span className={c.regional_forecast_readiness.structurally_eligible
-                              ? 'text-emerald-400' : 'text-amber-400'}>
-                              {c.regional_forecast_readiness.structurally_eligible
-                                ? 'T5.2 structure eligible' : 'T5.2 inputs incomplete'}
-                            </span>
-                          </div>
-                          <div className="text-slate-500">
-                            {Object.entries(c.shape || {}).map(([k, v]) => `${k}=${v}`).join(' ')} &bull;{' '}
-                            {c.megabytes_transferred} MB transferred in {c.elapsed_s}s
-                          </div>
-                          <div className="text-slate-400 mt-1">
-                            850 hPa {c.regional_forecast_readiness.level_available ? 'present' : 'missing'} &bull;{' '}
-                            t/q/u/v/z {c.regional_forecast_readiness.missing_variables.length === 0
-                              ? 'present' : `missing ${c.regional_forecast_readiness.missing_variables.join('/')}`}
-                          </div>
-                          <div className="text-amber-300/80 mt-1 font-sans leading-relaxed">
-                            Prepared dataset: NO &bull; train-only normalisation verified: NO &bull; independent ERA5 cross-check: NOT RUN
-                          </div>
-                          <div className="text-amber-300/80 mt-1 font-sans leading-relaxed">
-                            Split contract: {c.regional_forecast_readiness.split_mode === 'calendar_boundaries'
-                              ? `calendar (${c.regional_forecast_readiness.calendar_boundaries?.join(' → ')})`
-                              : 'ratios (dates not frozen)'} &bull;{' '}
-                            cadence: {c.regional_forecast_readiness.cadence_verified
-                              ? `${c.regional_forecast_readiness.expected_cadence_hours} h verified`
-                              : 'NOT VERIFIED'} &bull; physical lead labels: NOT AVAILABLE
-                          </div>
-                          <div className="text-slate-600 mt-1 font-sans leading-relaxed">
-                            {c.regional_forecast_readiness.claim_boundary}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
+          {/* TAB 9: DOMAIN-FIRST ACQUISITION (TG10.2) ---------------------------------- */}
+          {activeTab === 'acquire' && (
+            <AcquisitionView onError={(message) => setError(message)}
+              selectedRecord={selectedRecord} onSelectRecord={setSelectedRecord} />
           )}
 
           {/* TAB 10: VERIFIED FORECAST EVALUATION ------------------------------------ */}
@@ -2748,17 +2422,10 @@ export default function App() {
               The cross-domain claim surface. Everything scientific on this tab is a string
               the backend produced; this file passes an error handler and nothing else. */}
           {activeTab === 'findings' && (
-            <FindingsView onError={(message) => setError(message)} />
+            <FindingsView onError={(message) => setError(message)}
+              selectedStudyId={selectedStudyId} onSelectStudy={setSelectedStudyId} />
           )}
 
-          {/* TAB 12: DOMAIN RECORDS (TG8.4) -------------------------------------------
-              The ingestion seam for channel tables, peer to the meteorological tab rather
-              than a section inside it: one tab reads grids, this one reads channels for any
-              declared domain. The clock column and the domain are the researcher's choices
-              and neither is made here. */}
-          {activeTab === 'channels' && (
-            <ChannelRecords onError={(message) => setError(message)} />
-          )}
         </main>
       </div>
     </div>

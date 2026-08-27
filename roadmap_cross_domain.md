@@ -1948,9 +1948,12 @@ suite, benchmark and documentation evidence in `VERIFICATION.md`.
    inspection of the findings tab is **NOT RUN**, and no bundle records the domain that produced
    it, so `unadmitted_reading` describes a chosen vocabulary rather than a verified provenance.
 
-4. **Phases G10-G13 — acquisition, the workbench, and three domains.** Declared 2026-08-27 and
-   not started. G10 generalises the store catalogue and consolidates the data tabs; **G11 puts the
-   cross-domain engine in front of a person for the first time** — `domain_analysis` and eight
+4. **Phases G10-G13 — acquisition, the workbench, and three domains.** Declared 2026-08-27.
+   **G10 is complete:** the store catalogue is registered and probe-backed, and acquisition is
+   consolidated by domain. **G11 has begun: TG11.0 is complete**, replacing the flat numbered
+   navigation with workflow sections and making the selected record and study persistent shell
+   context. The remaining G11 slices put the cross-domain engine in front of a person for the
+   first time — `domain_analysis` and eight
    core modules currently have `api=0`, so TG8.4's records lead nowhere; G12 reaches the ocean,
    gridded and then Argo; G13 reaches the sky and closes the violation vocabulary. **No public
    dataset has been ingested by any of them yet.**
@@ -2429,9 +2432,10 @@ generalisation reaches the *selection* path only; the cached-crop reader still s
 levels and `level_hpa`, which is honest for the four ERA5 stores that exist and is the remaining
 half of the job when a real depth-axis store arrives in TG12.1.
 
-**TG10.2 The domain-first acquisition surface. NEXT — not started.** *(TG10.1 and TG10.3 are
-done; TG10.3 was deliberately taken ahead of this slice, so the DONE markers below are out of
-numeric order on purpose. It now has real probe records to render, which is why.)* Data
+**TG10.2 The domain-first acquisition surface. DONE** (2026-08-27;
+`src/api/acquisitions.py`, `frontend/src/components/AcquisitionView.tsx`,
+`src/tests/test_acquisitions_api.py`; architecture.md §3.6zq; VERIFICATION.md). TG10.3 was
+deliberately taken ahead of this slice, so the DONE markers are out of numeric order. Data
 currently lives in tab 2, tab 9 and tab 12;
 ocean and sky would make five tabs. Instead: **choose a domain, see what can be acquired for it,
 make a selection.** One route family lists, per declared domain, its available acquisitions and
@@ -2441,6 +2445,25 @@ and `ChannelRecords` already are. Every acquisition carries the domain's declare
 `refusals_for` and `DOMAIN_ATTRIBUTION_CAVEAT`.
 **Acceptance:** every existing ERA5 capability reachable with no regression, and the tab count
 does not grow when a domain is added.
+
+**Delivered.** `GET /api/v1/acquisitions` projects the existing registries rather than creating
+a parallel catalogue: every declared domain is listed first; registered stores become
+`grid_crop` acquisitions; and the E14 channel-table rule decides whether `channel_table` is
+available or is shown with its refusal. Every acquisition carries the domain declaration,
+derived refusals and attribution caveat. `profile_query` is vocabulary, not a claimed
+implementation before TG12.2.
+
+Tab 9 is now **Acquire**. The former Domain Records tab is embedded under a selected
+channel-table domain and removed from navigation, while the ERA5 crop fields, opt-in network
+gate, probe and transcription ledger, metadata-only inspection, cached-crop readiness claims
+and materialisation command remain reachable under grid crops. Navigation therefore remains
+eleven tabs when a domain registers; domains and acquisitions are mapped from the API rather
+than named in `App.tsx`. TypeScript and the production build pass. Rendered browser inspection
+is **NOT RUN**. The complete suite passes: **2509 passed, 2 skipped, 1 xfailed**.
+
+**Claim boundary.** This phase ran no live archive probe and fetched no public data. A listed
+path is a capability, not evidence that it ran, and selecting a domain does not establish that
+a local file came from it.
 
 **What TG10.3 left for it.** The probe ledger (`GET /api/v1/data/zarr/probes`) and the probe
 button now sit inline in the ERA5 tab, added there because a served route nobody can reach is a
@@ -2545,13 +2568,38 @@ that can format a percentage. Every write path added here is a place where a run
 the wrong reason (R22), so each is added one at a time and each gets the treatment the ladder got
 in G6.
 
-**TG11.0 Information architecture.** Twelve flat numbered tabs already read as a list rather than
+**TG11.0 Information architecture. DONE** (2026-08-27;
+`frontend/src/App.tsx`, `frontend/src/components/AcquisitionView.tsx`,
+`frontend/src/components/ChannelRecords.tsx`, `frontend/src/components/FindingsView.tsx`,
+`src/tests/test_frontend_contract.py`; architecture.md §3.6zr; VERIFICATION.md). Twelve flat
+numbered tabs already read as a list rather than
 an instrument, and this phase adds more. Navigation is grouped into the sections the scientific
 workflow actually has — acquire, analyse, evidence, review, read, platform — with the gridded line
 labelled as the gridded line. Tab *count* is not the constraint; legibility is. A persistent
 selected record and study becomes the app's context, so a researcher chooses a record once rather
 than re-selecting it in every panel: this is the single largest usability win available and it
 costs almost nothing.
+
+**Delivered.** The eleven destinations are no longer numbered or presented as peers. They sit
+under Acquire, Analyse, Evidence, Review, Read and Platform; the spatial-only tools are labelled
+**Gridded field line**, so the shell no longer implies that a wavelet transform or boundary
+condition applies to every domain. Review is an honest labelled waypoint for TG11.5, not a
+button to a surface that does not exist yet.
+
+`selectedRecord` and `selectedStudyId` now belong to `App`, appear in a persistent research-
+context strip and are passed into Acquire and Findings. The selected-record context retains the
+original browser `File`, clock choice and aggregate supports as well as the API's bounded preview,
+so TG11.1 need not analyze truncated preview data or ask for the file again. Loading a channel
+record updates shell context; returning to Acquire restores its domain and preview. Selecting
+a published study updates the same shell context and survives navigation. Both selections can
+be explicitly cleared. The default destination is Acquire, matching the workflow rather than
+the former implementation order. The production build and all 52 frontend contract tests pass;
+the complete suite passes **2511 passed, 2 skipped, 1 xfailed**. Rendered browser inspection is
+**NOT RUN**.
+
+**Claim boundary.** Grouping tools changes reachability and labelling only. It does not make the
+gridded line domain-general, and retaining an in-browser `File` is not durable evidence storage.
+TG11.0 adds no scientific compute, evidence write path, claim level or confidence figure.
 
 **TG11.1 The analysis surface.** `domain_analysis` over HTTP: run a domain gate, an
 association-only analysis or a precedence analysis against a loaded record, with the domain's

@@ -25,6 +25,8 @@ import * as types from '../types/api';
 
 interface Props {
   onError?: (message: string) => void;
+  selectedStudyId?: string;
+  onSelectStudy?: (studyId: string) => void;
 }
 
 /** One structural fact: its domain wording, inseparable from the bound that qualifies it. */
@@ -57,11 +59,12 @@ function Section(
   );
 }
 
-export default function FindingsView({ onError }: Props) {
+export default function FindingsView({
+  onError, selectedStudyId = '', onSelectStudy,
+}: Props) {
   const [domains, setDomains] = useState<types.DomainSummary[]>([]);
   const [studies, setStudies] = useState<types.StudySummary[]>([]);
   const [glossaryName, setGlossaryName] = useState<string>('');
-  const [studyId, setStudyId] = useState<string>('');
   const [finding, setFinding] = useState<types.TranslatedFinding | null>(null);
   const [glossary, setGlossary] = useState<types.DomainGlossaryPayload | null>(null);
   const [outputs, setOutputs] = useState<Record<string, unknown> | null>(null);
@@ -88,39 +91,39 @@ export default function FindingsView({ onError }: Props) {
       setStudies(studyRows);
       if (!glossaryName && domainRows.length > 0) setGlossaryName(domainRows[0].name);
       const readable = studyRows.find((row) => row.readable && row.study_id);
-      if (!studyId && readable && readable.study_id) setStudyId(readable.study_id);
+      if (!selectedStudyId && readable && readable.study_id) onSelectStudy?.(readable.study_id);
     } catch (error) {
       fail(error);
     } finally {
       setBusy(false);
     }
-  }, [fail, glossaryName, studyId]);
+  }, [fail, glossaryName, selectedStudyId, onSelectStudy]);
 
   useEffect(() => { void refresh(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    if (!studyId || !glossaryName) return;
+    if (!selectedStudyId || !glossaryName) return;
     setBusy(true);
-    apiService.getTranslation(studyId, glossaryName)
+    apiService.getTranslation(selectedStudyId, glossaryName)
       .then(setFinding)
       .catch(fail)
       .finally(() => setBusy(false));
-  }, [studyId, glossaryName, fail]);
+  }, [selectedStudyId, glossaryName, fail]);
 
   useEffect(() => {
     if (panel === 'glossary' && glossaryName) {
       apiService.getGlossary(glossaryName).then(setGlossary).catch(fail);
     }
-    if (panel === 'structural' && studyId) {
-      apiService.getStudyOutputs(studyId).then(setOutputs).catch(fail);
+    if (panel === 'structural' && selectedStudyId) {
+      apiService.getStudyOutputs(selectedStudyId).then(setOutputs).catch(fail);
     }
-    if (panel === 'bundle' && studyId) {
-      apiService.getStudy(studyId).then(setBundle).catch(fail);
+    if (panel === 'bundle' && selectedStudyId) {
+      apiService.getStudy(selectedStudyId).then(setBundle).catch(fail);
     }
     if (panel === 'onboarding') {
       apiService.getOnboardingContract().then(setContract).catch(fail);
     }
-  }, [panel, glossaryName, studyId, fail]);
+  }, [panel, glossaryName, selectedStudyId, fail]);
 
   const panels: Array<{ key: typeof panel; label: string }> = [
     { key: 'finding', label: 'In domain words' },
@@ -189,11 +192,11 @@ export default function FindingsView({ onError }: Props) {
                   {row.readable && row.study_id ? (
                     <button
                       type="button"
-                      onClick={() => setStudyId(row.study_id as string)}
-                      aria-pressed={studyId === row.study_id}
+                      onClick={() => onSelectStudy?.(row.study_id as string)}
+                      aria-pressed={selectedStudyId === row.study_id}
                       className={`w-full text-left px-2 py-2 rounded text-sm focus:outline-none
                                   focus:ring-2 focus:ring-teal-400 ${
-                        studyId === row.study_id
+                        selectedStudyId === row.study_id
                           ? 'bg-teal-900/40 text-teal-200'
                           : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}
                     >

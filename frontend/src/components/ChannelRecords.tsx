@@ -16,7 +16,7 @@
  * this file does is on a raw data value or a row count, neither of which is a claim.
  */
 
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { AlertTriangle, Ban, CheckCircle2, Database, Upload } from 'lucide-react';
 
 import { LineChart } from './LineChart';
@@ -25,16 +25,25 @@ import * as types from '../types/api';
 
 interface ChannelRecordsProps {
   onError?: (message: string) => void;
+  /** When supplied by Acquire, the researcher has already chosen the domain. */
+  domainName?: string;
+  /** TG11.0: shell-owned context survives navigation between workflow panels. */
+  selectedRecord?: types.ChannelRecordSelection | null;
+  onSelectRecord?: (record: types.ChannelRecordSelection | null) => void;
 }
 
-export const ChannelRecords: React.FC<ChannelRecordsProps> = ({ onError }) => {
+export const ChannelRecords: React.FC<ChannelRecordsProps> = ({
+  onError, domainName, selectedRecord = null, onSelectRecord,
+}) => {
   const [file, setFile] = useState<File | null>(null);
   const [inspection, setInspection] = useState<types.ChannelInspection | null>(null);
-  const [record, setRecord] = useState<types.ChannelRecord | null>(null);
+  const [record, setRecord] = useState<types.ChannelRecord | null>(selectedRecord?.record ?? null);
   const [timeColumn, setTimeColumn] = useState<string>('');
   const [domain, setDomain] = useState<string>('');
   const [supports, setSupports] = useState<Record<string, number>>({});
   const [busy, setBusy] = useState(false);
+
+  useEffect(() => { setRecord(selectedRecord?.record ?? null); }, [selectedRecord]);
 
   const fail = useCallback((error: unknown) => {
     onError?.(error instanceof Error ? error.message : String(error));
@@ -43,6 +52,7 @@ export const ChannelRecords: React.FC<ChannelRecordsProps> = ({ onError }) => {
   const reset = () => {
     setInspection(null);
     setRecord(null);
+    onSelectRecord?.(null);
     setTimeColumn('');
     setDomain('');
     setSupports({});
@@ -60,7 +70,9 @@ export const ChannelRecords: React.FC<ChannelRecordsProps> = ({ onError }) => {
       // The first admitting domain is offered as a *starting value the researcher can see and
       // change*, never as a silent default: the difference is that it appears on screen and is
       // recorded in the provenance of whatever is loaded.
-      const admitting = report.domains.find((d) => d.admits);
+      const admitting = domainName
+        ? report.domains.find((d) => d.name === domainName && d.admits)
+        : report.domains.find((d) => d.admits);
       setDomain(admitting ? admitting.name : '');
     } catch (error) {
       fail(error);
@@ -74,10 +86,13 @@ export const ChannelRecords: React.FC<ChannelRecordsProps> = ({ onError }) => {
     if (!file || !domain || !timeColumn) return;
     setBusy(true);
     try {
-      setRecord(await apiService.readChannelRecord(file, domain, timeColumn,
-        { supportParentPx: supports }));
+      const loaded = await apiService.readChannelRecord(file, domain, timeColumn,
+        { supportParentPx: supports });
+      setRecord(loaded);
+      onSelectRecord?.({ record: loaded, file, timeColumn, supportParentPx: supports });
     } catch (error) {
       setRecord(null);
+      onSelectRecord?.(null);
       fail(error);
     } finally {
       setBusy(false);
@@ -87,6 +102,7 @@ export const ChannelRecords: React.FC<ChannelRecordsProps> = ({ onError }) => {
   const reInspect = async (column: string) => {
     setTimeColumn(column);
     setRecord(null);
+    onSelectRecord?.(null);
     if (!file) return;
     setBusy(true);
     try {
@@ -221,10 +237,10 @@ export const ChannelRecords: React.FC<ChannelRecordsProps> = ({ onError }) => {
               aria-label="Declared domains and whether they admit this record">
               <h4 className="text-sm font-semibold text-slate-200 mb-3 flex items-center gap-2">
                 <Database className="w-4 h-4 text-teal-400" aria-hidden="true" />
-                Read it under which domain?
+                {domainName ? `Read it under ${domainName}` : 'Read it under which domain?'}
               </h4>
               <ul className="space-y-2">
-                {inspection.domains.map((row) => (
+                {inspection.domains.filter((row) => !domainName || row.name === domainName).map((row) => (
                   <li key={row.name}>
                     <label
                       className={`flex gap-3 items-start border rounded p-2 cursor-pointer ${
@@ -239,7 +255,11 @@ export const ChannelRecords: React.FC<ChannelRecordsProps> = ({ onError }) => {
                         value={row.name}
                         checked={domain === row.name}
                         disabled={!row.admits}
-                        onChange={() => { setDomain(row.name); setRecord(null); }}
+                        onChange={() => {
+                          setDomain(row.name);
+                          setRecord(null);
+                          onSelectRecord?.(null);
+                        }}
                         className="mt-1"
                       />
                       <span className="text-xs flex-1">
@@ -292,6 +312,7 @@ export const ChannelRecords: React.FC<ChannelRecordsProps> = ({ onError }) => {
                                 const parsed = Number(event.target.value);
                                 setSupports((current) => ({ ...current, [channel]: parsed }));
                                 setRecord(null);
+                                onSelectRecord?.(null);
                               }}
                               className="w-24 bg-slate-800 text-slate-100 rounded px-2 py-1
                                          focus:outline-none focus:ring-2 focus:ring-teal-400"

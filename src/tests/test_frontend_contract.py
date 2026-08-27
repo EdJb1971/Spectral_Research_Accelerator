@@ -121,6 +121,57 @@ def test_the_new_endpoints_are_actually_consumed(api_service):
     for path in ("/health", "/benchmarks", "/data/sources", "/data/zarr/catalogue",
                  "/data/zarr/cached", "/data/zarr/inspect"):
         assert path in api_service, "%s is served but the frontend never calls it" % path
+    assert "/acquisitions" in api_service
+
+
+def test_acquisition_navigation_is_domain_driven_and_does_not_grow_tabs(app_source):
+    view = _read("components", "AcquisitionView.tsx")
+    nav_ids = re.findall(r"\{ id: '([^']+)', name:", app_source)
+    assert nav_ids.count("acquire") == 1
+    assert "channels" not in nav_ids and "era5" not in nav_ids
+    assert "catalogue.domains.map" in view, "domains must come from the API, not a UI list"
+    assert "domain.acquisitions.map" in view, "acquisitions must come from the domain row"
+    assert "domainName={domain.name}" in view
+    assert "acquisition?.shape === 'grid_crop'" in view
+
+
+def test_navigation_follows_the_scientific_workflow_and_labels_the_grid_line(app_source):
+    """TG11.0 replaces a numbered feature list with the workflow it supports."""
+    assert "WORKFLOW_NAV" in app_source
+    for section in ("Acquire", "Analyse", "Evidence", "Review", "Read", "Platform"):
+        assert "section: '%s'" % section in app_source
+    assert "Gridded field line" in app_source
+    assert "Review surface arrives in TG11.5" in app_source
+    assert 'aria-label="Scientific workflow"' in app_source
+    assert re.search(r"name: '\d+\.", app_source) is None
+
+
+def test_record_and_study_are_shell_owned_persistent_context(app_source):
+    """A panel switch must not discard the record or study the researcher already chose."""
+    acquisition = _read("components", "AcquisitionView.tsx")
+    channels = _read("components", "ChannelRecords.tsx")
+    findings = _read("components", "FindingsView.tsx")
+    assert "selectedRecord" in app_source and "setSelectedRecord" in app_source
+    assert "selectedStudyId" in app_source and "setSelectedStudyId" in app_source
+    assert 'aria-label="Current research context"' in app_source
+    assert "selectedRecord={selectedRecord}" in app_source
+    assert "selectedStudyId={selectedStudyId}" in app_source
+    assert "onSelectRecord={onSelectRecord}" in acquisition
+    assert "file, timeColumn, supportParentPx: supports" in channels
+    assert "setRecord(selectedRecord?.record ?? null)" in channels, (
+        "clearing shell context must clear the panel")
+    assert "interface ChannelRecordSelection" in _read("types", "api.ts")
+    assert "onSelectStudy?.(row.study_id as string)" in findings
+
+
+def test_every_era5_control_survived_the_consolidation():
+    view = _read("components", "AcquisitionView.tsx")
+    for call in ("zarrCatalogue", "zarrCached", "zarrProbes", "zarrProbe", "zarrInspect"):
+        assert "apiService.%s" % call in view
+    for field in ("variables", "time_start", "time_end", "lat_min", "lat_max",
+                  "lon_min", "lon_max", "levels", "n_levels_analysis"):
+        assert field in view
+    assert "inspection.cli" in view, "materialisation guidance must remain reachable"
 
 
 def test_every_api_method_is_reachable_from_the_ui(api_service, all_sources):
@@ -296,7 +347,7 @@ def test_hypothesis_card_shows_a_warning_when_uncorrected(app_source):
 
 def test_every_tab_in_the_nav_has_a_body(app_source):
     """A nav entry with no matching panel is a button that does nothing."""
-    ids = re.findall(r"\{ id: '(\w+)', name: '[^']*', icon: \w+ \}", app_source)
+    ids = re.findall(r"\{ id: '(\w+)', name: '[^']*', icon: \w+", app_source)
     assert len(ids) >= 9, "expected at least nine research modules, found %s" % ids
     for tab_id in ids:
         assert "activeTab === '%s'" % tab_id in app_source, (
@@ -395,10 +446,10 @@ def test_dataset_simulated_flag_is_shown_where_the_data_is_used(app_source):
     assert "chosen.fallback_reason" in app_source
 
 
-def test_regional_forecast_ui_refuses_unverified_physical_time_claims(app_source):
-    assert "cadence: NOT VERIFIED" in app_source or "cadence_verified" in app_source
-    assert "physical lead labels: NOT AVAILABLE" in app_source
-    assert "ratios (dates not frozen)" in app_source
+def test_regional_forecast_ui_refuses_unverified_physical_time_claims(all_sources):
+    assert "cadence: NOT VERIFIED" in all_sources or "cadence_verified" in all_sources
+    assert "physical lead labels: NOT AVAILABLE" in all_sources
+    assert "ratios (dates not frozen)" in all_sources
 
 
 def test_units_and_spectral_convention_are_displayed(app_source):
@@ -639,10 +690,13 @@ def _channel_view() -> str:
 
 
 def test_the_domain_records_tab_is_wired(app_source):
-    """A twelfth tab, peer to the meteorological one rather than a section inside it."""
-    assert "12. Domain Records" in app_source
-    assert "activeTab === 'channels'" in app_source
-    assert "<ChannelRecords" in app_source
+    """TG10.2 consolidates records into Acquire instead of adding an archive tab."""
+    acquisition = _read("components", "AcquisitionView.tsx")
+    assert "name: 'Acquire data'" in app_source
+    assert "activeTab === 'acquire'" in app_source
+    assert "12. Domain Records" not in app_source
+    assert "<ChannelRecords" in acquisition
+    assert "domainName={domain.name}" in acquisition
 
 
 def test_the_domain_records_view_renders_the_caveat_the_api_vouched_for(all_sources):

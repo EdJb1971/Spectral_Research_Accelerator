@@ -5853,3 +5853,59 @@ amplifies 1x for a request that lines up with its chunks and 30x for one that st
 which is why an amplification is refused unless the crop travels with it. The registration gate
 proves that an entry cites a look; it does not prove the look was recent, or that the archive
 has not rechunked since. Rendered browser inspection of the probe panel is **NOT RUN**.
+
+## TG10.2 - Domain-first acquisition surface (2026-08-27, `ed-dev`)
+
+**Implemented.** `src/api/acquisitions.py` serves `GET /api/v1/acquisitions` as a projection of
+domain declarations, the gridded-store registry and the existing channel-table admission rule.
+Every acquisition carries its domain limits and attribution caveat. The React navigation now
+has one Acquire tab: it maps returned domains and acquisitions, embeds `ChannelRecords` for an
+admitted table domain, and retains ERA5 catalogue, crop, probe, inspection, cached-readiness
+and materialisation-command capability for grid crops. The standalone Domain Records tab was
+removed, so registering a domain cannot grow the tab list.
+
+**Evidence.** The acquisition, store, channel and frontend contract suites pass, and
+`npm run build` completes with 1,389 modules transformed and real JS/CSS assets. The complete
+suite for the TG10.2 implementation reports:
+
+```text
+2509 passed, 2 skipped, 1 xfailed, 6 warnings in 1357.52s (0:22:37)
+```
+
+The two skips remain the opt-in live GCS read and live store probe. The expected failure is the
+repository's declared xfail, not a TG10.2 regression. After recording that receipt, the final
+documentation-count correction and domain-switch remount guard pass their focused tests and
+`tsc --noEmit` remains clean.
+
+**Claim boundary.** No public data was fetched and no live archive probe was run. The endpoint
+publishes capability and refusals; it does not establish source attribution or executed
+acquisition. Rendered browser inspection is **NOT RUN**.
+
+## TG11.0 - Workflow information architecture (2026-08-27, `ed-dev`)
+
+**Implemented.** The eleven flat numbered destinations are grouped under Acquire, Analyse,
+Evidence, Review, Read and Platform. Spatial-only destinations carry the **Gridded field line**
+marker; Automated Hypotheses does not. Review is a labelled TG11.5 waypoint rather than a link
+to an invented surface. Acquire is the default workflow entry.
+
+The shell now owns the selected channel record and study. The channel selection retains the
+original browser `File`, clock choice and aggregate supports beside the API's bounded preview,
+so a later analysis panel can submit the admitted full input without a second chooser or using
+truncated preview values. Both contexts remain visible across panels, restore their respective
+Acquire/Findings state, and can be explicitly cleared.
+
+**Evidence.** The exact final tree reports:
+
+```text
+frontend + documentation: 71 passed, 5 warnings in 117.43s (0:01:57)
+frontend production build: 1,389 modules transformed; JS/CSS assets emitted
+complete suite: 2511 passed, 2 skipped, 1 xfailed, 6 warnings in 1292.03s (0:21:32)
+```
+
+The skips remain the opt-in live GCS read and live store probe; the xfail is the repository's
+declared expected failure. Vite's existing large-chunk warning remains non-fatal. Rendered
+browser inspection is **NOT RUN**.
+
+**Claim boundary.** This is workflow state and labelling, not scientific validation. It does
+not make gridded tools domain-general, persist an evidence bundle, run analysis, write evidence,
+or move a claim rung. A retained browser `File` disappears when the application session ends.

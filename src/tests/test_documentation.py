@@ -77,7 +77,8 @@ def _test_files():
 #: only reason it was noticed, so the count claim is doing more work than it appears to.
 _ROUTE_SOURCES = (("src/api/main.py", "app", ""),
                   ("src/api/findings.py", "router", "/api/v1/findings"),
-                  ("src/api/channels.py", "router", "/api/v1/channels"))
+                  ("src/api/channels.py", "router", "/api/v1/channels"),
+                  ("src/api/acquisitions.py", "router", "/api/v1/acquisitions"))
 
 
 def _routes():

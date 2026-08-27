@@ -481,6 +481,42 @@ export interface ZarrCatalogueResponse {
   note: string;
 }
 
+export type AcquisitionShape = 'grid_crop' | 'profile_query' | 'channel_table';
+
+export interface AcquisitionDomainLimits {
+  declaration: Record<string, any>;
+  refuses: Array<Record<string, string>>;
+  attribution_caveat: string;
+}
+
+export interface AcquisitionOption {
+  id: string;
+  name: string;
+  shape: AcquisitionShape;
+  available: boolean;
+  access: string;
+  access_means: string;
+  unavailable_reason?: string | null;
+  store?: ZarrStore;
+  domain_limits: AcquisitionDomainLimits;
+}
+
+export interface AcquisitionDomain {
+  name: string;
+  description: string;
+  licence: string;
+  onboarding: Record<string, any>;
+  domain_limits: AcquisitionDomainLimits;
+  acquisitions: AcquisitionOption[];
+}
+
+export interface AcquisitionCatalogue {
+  domains: AcquisitionDomain[];
+  shapes: Record<AcquisitionShape, string>;
+  attribution_caveat: string;
+  note: string;
+}
+
 export interface ZarrCropRequest {
   store: string;
   variables: string[];
@@ -908,4 +944,13 @@ export interface ChannelRecord {
     attribution_caveat: string;
   };
   provenance: Record<string, unknown>;
+}
+
+/** Browser-only TG11.0 context. The response is a bounded preview; the original File is kept
+ * so a later analysis panel can submit the admitted full record without a second file choice. */
+export interface ChannelRecordSelection {
+  record: ChannelRecord;
+  file: File;
+  timeColumn: string;
+  supportParentPx: Record<string, number>;
 }
