@@ -110,6 +110,8 @@ app.add_middleware(
 from src.api.findings import router as findings_router  # noqa: E402
 from src.api.channels import router as channels_router  # noqa: E402
 from src.api.acquisitions import router as acquisitions_router  # noqa: E402
+from src.api.analysis import router as domain_analysis_router  # noqa: E402
+from src.api.preregistration import router as preregistration_router  # noqa: E402
 
 app.include_router(findings_router)
 # TG8.4. Mounted here for the same reason the findings router is: registration must not depend
@@ -119,6 +121,13 @@ app.include_router(channels_router)
 # TG10.2: domain-first projection over the existing domain/source contracts. Mounted eagerly so
 # plugin registrations are visible without a researcher first visiting another route (D35).
 app.include_router(acquisitions_router)
+# TG11.1: stateless access to the existing domain-analysis engine. It re-reads the selected
+# full record, stores nothing and cannot move a claim rung (R22).
+app.include_router(domain_analysis_router)
+# TG11.2: the generate/confirm split (R18). Mounted after the analysis router because the
+# ordering it enforces is on that router's gate operation: a sweep may not be launched against
+# a held-out partition that has already been spent.
+app.include_router(preregistration_router)
 
 
 class HealthResponse(BaseModel):

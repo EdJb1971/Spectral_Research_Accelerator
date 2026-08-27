@@ -164,6 +164,90 @@ def test_record_and_study_are_shell_owned_persistent_context(app_source):
     assert "onSelectStudy?.(row.study_id as string)" in findings
 
 
+def test_domain_analysis_uses_the_persistent_full_record_and_cannot_write(app_source, api_service):
+    """TG11.1 must never substitute TG8.4's capped preview for the retained source file."""
+    view = _read("components", "DomainAnalysisView.tsx")
+    assert "name: 'Cross-domain analysis'" in app_source
+    assert "activeTab === 'domainWorkbench'" in app_source
+    assert "selectedRecord={selectedRecord}" in app_source
+    assert "form.append('file', selection.file)" in api_service
+    assert "/analysis/run" in api_service and "/analysis" in api_service
+    assert "runDomainAnalysis" in view and "getDomainAnalysisCapabilities" in view
+    assert "read_only" not in view, "the component must not fabricate the server's receipt"
+    assert "response.claim_boundary" in view
+
+
+def test_domain_analysis_exposes_r21_and_all_three_engine_operations():
+    view = _read("components", "DomainAnalysisView.tsx")
+    for operation in ("association", "precedence", "domain_gate"):
+        assert operation in view
+    assert "precedenceAdmissible" in view
+    assert "disabled={refused}" in view
+    assert "R21" in view
+    assert "PASS" in view and "FAIL" in view and "INVALID" in view
+
+
+def test_domain_analysis_checks_the_result_is_about_the_record_on_screen():
+    """The re-read is the design; an unchecked re-read is an assumption that it read the same thing."""
+    view = _read("components", "DomainAnalysisView.tsx")
+    assert "response.source.content_sha256 !== selectedRecord.record.content_sha256" in view
+    assert "response.source.frames !== selectedRecord.record.n_rows" in view
+
+
+def test_preregistration_declares_a_family_and_never_a_digest_or_a_p_value(app_source,
+                                                                            api_service):
+    """TG11.2. The client declares; the server decides what that hashes to and what it means.
+
+    A caller-supplied sealing time could be written after the partition was opened, and a
+    caller-supplied p-value is a scientific number this line does not let a client compute.
+    Both would make the seal a formality.
+    """
+    view = _read("components", "PreregistrationView.tsx")
+    assert "name: 'Preregistration'" in app_source
+    assert "activeTab === 'preregistration'" in app_source
+    assert "sealFamily" in view and "describePartition" in view and "confirmSeal" in view
+    assert "/preregistration/seal" in api_service
+    assert "/preregistration/partition" in api_service
+    assert "/confirm" in api_service
+    assert "sealed_at" not in api_service.split("preregistration (TG11.2)")[1].split(
+        "the findings surface")[0], "the client must not send a sealing time"
+    assert "p_value" not in view.replace("p_values[index]", "")
+
+
+def test_preregistration_confirmation_sends_the_record_and_nothing_else(api_service):
+    """Every setting of a confirmatory sweep was frozen; a knob left turnable is a choice made
+    after the declaration."""
+    block = api_service.split("async confirmSeal")[1].split("},")[0]
+    for tunable in ("lags", "n_surrogates", "alpha", "correction", "estimator", "bins",
+                    "seed", "train_ratio", "domain", "time_column"):
+        assert tunable not in block, "%r must come from the seal, not the caller" % tunable
+    assert "form.append('file', file)" in block
+
+
+def test_preregistration_says_a_seal_is_not_evidence_about_itself():
+    """A local copy hashes to itself by construction; the published digest is the real check."""
+    view = _read("components", "PreregistrationView.tsx")
+    assert "publishedSha" in view
+    assert "cannot rewrite" in view
+    assert "checked_against_publication" in view
+    assert "self-consistency only" in view
+
+
+def test_preregistration_shows_a_spent_partition_as_gone_rather_than_as_a_failure():
+    """Spent is not failed. A partition that has been tested is simply no longer available."""
+    view = _read("components", "PreregistrationView.tsx")
+    assert "row.spent" in view
+    assert "will not be tested again" in view
+    assert "already_opened" in view
+
+
+def test_preregistration_does_not_present_a_receipt_as_a_claim():
+    view = _read("components", "PreregistrationView.tsx")
+    assert "records no evidence and moves no rung" in view
+    assert "are not corrected for here and are" in view
+    assert "read_only" not in view, "the component must not fabricate the server's receipt"
+
+
 def test_every_era5_control_survived_the_consolidation():
     view = _read("components", "AcquisitionView.tsx")
     for call in ("zarrCatalogue", "zarrCached", "zarrProbes", "zarrProbe", "zarrInspect"):

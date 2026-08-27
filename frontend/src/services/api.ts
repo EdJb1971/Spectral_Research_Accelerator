@@ -345,6 +345,99 @@ export const apiService = {
       await fetch(`${BASE_URL}/channels/read`, { method: 'POST', body: form }));
   },
 
+  // ------------------------------------------------ analysis workbench (TG11.1)
+  // The original File, not the capped ChannelRecord preview, crosses this boundary. The backend
+  // re-admits it under the selected domain and derives record facts before calling the engine.
+  async getDomainAnalysisCapabilities(): Promise<types.DomainAnalysisCapabilities> {
+    return handleResponse<types.DomainAnalysisCapabilities>(
+      await fetch(`${BASE_URL}/analysis`, { method: 'GET' }));
+  },
+
+  async runDomainAnalysis(selection: types.ChannelRecordSelection,
+                          operation: types.DomainAnalysisOperation,
+                          configuration: Record<string, any>): Promise<types.DomainAnalysisResponse> {
+    const form = new FormData();
+    form.append('file', selection.file);
+    form.append('operation', operation);
+    form.append('domain', selection.record.domain);
+    form.append('time_column', selection.timeColumn);
+    form.append('configuration', JSON.stringify(configuration));
+    if (Object.keys(selection.supportParentPx).length > 0) {
+      form.append('support_parent_px', JSON.stringify(selection.supportParentPx));
+    }
+    return handleResponse<types.DomainAnalysisResponse>(
+      await fetch(`${BASE_URL}/analysis/run`, { method: 'POST', body: form }));
+  },
+
+  // ------------------------------------------------ preregistration (TG11.2)
+  //
+  // R18's ordering is the server's to enforce, not this file's to present. Nothing here sends
+  // a digest, a sealing time or a p-value: `describePartition` reads geometry and lineage
+  // only, `sealFamily` declares a family and is told what it hashes to, and `confirmSeal`
+  // sends the record and nothing else, because every setting the confirmatory sweep needs was
+  // frozen into the seal and a knob left turnable after sealing is a choice made after the
+  // declaration.
+
+  async getPreregistrationCapabilities(): Promise<types.PreregistrationCapabilities> {
+    return handleResponse<types.PreregistrationCapabilities>(
+      await fetch(`${BASE_URL}/preregistration`, { method: 'GET' }));
+  },
+
+  async describePartition(selection: types.ChannelRecordSelection,
+                          trainRatio: number,
+                          embargoFrames: number): Promise<types.PartitionDescription> {
+    const form = new FormData();
+    form.append('file', selection.file);
+    form.append('domain', selection.record.domain);
+    form.append('time_column', selection.timeColumn);
+    form.append('train_ratio', String(trainRatio));
+    form.append('embargo_frames', String(embargoFrames));
+    return handleResponse<types.PartitionDescription>(
+      await fetch(`${BASE_URL}/preregistration/partition`, { method: 'POST', body: form }));
+  },
+
+  async sealFamily(selection: types.ChannelRecordSelection,
+                   studyId: string,
+                   generate: types.FamilyDeclaration,
+                   confirm: types.FamilyDeclaration,
+                   trainRatio: number,
+                   embargoFrames: number): Promise<types.SealResponse> {
+    const form = new FormData();
+    form.append('file', selection.file);
+    form.append('domain', selection.record.domain);
+    form.append('time_column', selection.timeColumn);
+    form.append('study_id', studyId);
+    form.append('generate', JSON.stringify(generate));
+    form.append('confirm', JSON.stringify(confirm));
+    form.append('train_ratio', String(trainRatio));
+    form.append('embargo_frames', String(embargoFrames));
+    return handleResponse<types.SealResponse>(
+      await fetch(`${BASE_URL}/preregistration/seal`, { method: 'POST', body: form }));
+  },
+
+  async listSeals(): Promise<types.SealListing> {
+    return handleResponse<types.SealListing>(
+      await fetch(`${BASE_URL}/preregistration/seals`, { method: 'GET' }));
+  },
+
+  async readSeal(sealSha256: string, publishedSha256?: string): Promise<Record<string, any>> {
+    const query = publishedSha256
+      ? `?published_sha256=${encodeURIComponent(publishedSha256)}` : '';
+    return handleResponse<Record<string, any>>(
+      await fetch(`${BASE_URL}/preregistration/seals/${encodeURIComponent(sealSha256)}${query}`,
+        { method: 'GET' }));
+  },
+
+  async confirmSeal(sealSha256: string, file: File,
+                    publishedSha256?: string): Promise<types.ConfirmationResponse> {
+    const form = new FormData();
+    form.append('file', file);
+    if (publishedSha256) form.append('published_sha256', publishedSha256);
+    return handleResponse<types.ConfirmationResponse>(
+      await fetch(`${BASE_URL}/preregistration/seals/${encodeURIComponent(sealSha256)}/confirm`,
+        { method: 'POST', body: form }));
+  },
+
   // ------------------------------------------------ the findings surface (TG9.1)
   //
   // Read-only. None of these can change what may be claimed: a GET does not move a rung

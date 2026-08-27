@@ -10,6 +10,8 @@ import { DTCWTScientificView } from './components/DTCWTScientificView';
 import { EvaluationEvidence } from './components/EvaluationEvidence';
 import FindingsView from './components/FindingsView';
 import AcquisitionView from './components/AcquisitionView';
+import DomainAnalysisView from './components/DomainAnalysisView';
+import PreregistrationView from './components/PreregistrationView';
 import { apiService } from './services/api';
 import * as types from './types/api';
 import {
@@ -39,13 +41,16 @@ import {
   Cloud,
   WifiOff,
   Boxes,
-  FileCheck2
+  FileCheck2,
+  Lock
 } from 'lucide-react';
 
 const WORKFLOW_NAV = [
   { section: 'Acquire', items: [{ id: 'acquire', name: 'Acquire data', icon: Cloud }] },
   {
     section: 'Analyse', items: [
+      { id: 'domainWorkbench', name: 'Cross-domain analysis', icon: Globe },
+      { id: 'preregistration', name: 'Preregistration', icon: Lock },
       { id: 'synthetic', name: 'Synthetic generator', icon: Layers, context: 'Gridded field line' },
       { id: 'meteorological', name: 'Meteorological data', icon: Wind, context: 'Gridded field line' },
       { id: 'boundary', name: 'Boundary-condition lab', icon: Sliders, context: 'Gridded field line' },
@@ -2410,6 +2415,20 @@ export default function App() {
           {activeTab === 'acquire' && (
             <AcquisitionView onError={(message) => setError(message)}
               selectedRecord={selectedRecord} onSelectRecord={setSelectedRecord} />
+          )}
+
+          {/* TG11.1: the selected full channel record reaches domain_analysis without a write. */}
+          {activeTab === 'domainWorkbench' && (
+            <DomainAnalysisView selectedRecord={selectedRecord}
+              onError={(message) => setError(message)} onAcquire={() => setActiveTab('acquire')} />
+          )}
+
+          {/* TG11.2: the generate/confirm split. The panel makes the ordering legible; the
+              server is what enforces it — a confirmation against an unsealed or already-spent
+              partition is refused whatever this file renders (R18). */}
+          {activeTab === 'preregistration' && (
+            <PreregistrationView selectedRecord={selectedRecord}
+              onError={(message) => setError(message)} onAcquire={() => setActiveTab('acquire')} />
           )}
 
           {/* TAB 10: VERIFIED FORECAST EVALUATION ------------------------------------ */}

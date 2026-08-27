@@ -2601,7 +2601,11 @@ the complete suite passes **2511 passed, 2 skipped, 1 xfailed**. Rendered browse
 gridded line domain-general, and retaining an in-browser `File` is not durable evidence storage.
 TG11.0 adds no scientific compute, evidence write path, claim level or confidence figure.
 
-**TG11.1 The analysis surface.** `domain_analysis` over HTTP: run a domain gate, an
+**TG11.1 The analysis surface. DONE** (2026-08-27; `src/api/analysis.py`, `src/api/main.py`,
+`frontend/src/components/DomainAnalysisView.tsx`, `frontend/src/App.tsx`,
+`frontend/src/services/api.ts`, `frontend/src/types/api.ts`, `src/tests/test_analysis_api.py`,
+`src/tests/test_frontend_contract.py`, `src/tests/test_documentation.py`; architecture.md
+§3.6zs; VERIFICATION.md). `domain_analysis` over HTTP: run a domain gate, an
 association-only analysis or a precedence analysis against a loaded record, with the domain's
 refusals enforced (R21 stops a precedence claim from a domain with no lag floor) and reported.
 Read-only compute — it stores nothing and moves no rung.
@@ -2610,11 +2614,98 @@ HTTP layer**, not merely in process, and every null benchmark still answers "the
 here". A surface that finds the planted coupling but also finds structure in the AR(1) nulls has
 found nothing (T4C.3).
 
-**TG11.2 Preregistration first.** R18 fixes the family before the sweep runs, and
-`core/preregistration.py` implements it with no way to reach it. The surface makes the ordering
-structural: a sweep cannot be launched against a partition whose preregistration record does not
-already exist. An interface that let a researcher look first and declare afterwards would defeat
-the module completely while appearing to use it.
+**Delivered.** Two endpoints, no new science. `GET /api/v1/analysis` publishes the three operations
+and the claim boundary; `POST /api/v1/analysis/run` executes exactly one of them by calling
+`association_only`, `analyse_precedence` or `run_domain_gate` unmodified. No estimator,
+correction, lag floor, surrogate or verdict is reimplemented at the boundary, which is the only
+way the HTTP answer means what the in-process answer means.
+
+The surface re-reads the **original** admitted file that TG11.0 retained, never `/channels/read`'s
+bounded preview, and derives cadence, frame count, channel count, measure and source identity from
+it. The researcher declares only the hypothesis family and estimator settings. Four refusals fire
+before any computation: R21 for a domain with no admissible floor, with the engine's own wording
+and both remedies intact; an unknown configuration key, refused per operation rather than ignored;
+an irregular clock, because a lag in frames is not a physical duration on one; and a non-UTF-8
+upload. Every success states `stored: false` and `rung_moved: false` (R22).
+
+**Acceptance met.** All thirteen `sequence` and `cross_domain` benchmarks run through the live
+FastAPI test client on the existing `POST /benchmarks/run` route — no duplicate benchmark path —
+and report 13 PASS, 0 FAIL, 0 NOT_YET_RUNNABLE with an empty `null_failures` list. **Eight are
+nulls** and every check of every one of them answers "there is nothing here". The panel's verdict
+chip was corrected in the same slice: `INVALID` now has its own branch and its own sentence, since
+presenting a design that did not hold beside FAIL's "there is nothing here" would report a design
+error as evidence of absence.
+
+Full suite **2521 passed, 2 skipped, 1 xfailed**; frontend production build 1,390 modules with
+JS/CSS emitted; documentation guard passing with the new router registered in `_ROUTE_SOURCES`.
+Rendered browser inspection is **NOT RUN**.
+
+**D64, found by mounting the router.** The documentation guard's route scan used a `[^"]+`
+path pattern, so a route at its router's own prefix was invisible to it: `GET
+/api/v1/acquisitions` had been served and unseen since TG10.2, and the documented route count read
+42 against a served 43 while the check passed. Fixed here; the count is now 45.
+
+**Claim boundary.** Reachability is not correctness. The thirteen benchmarks argue for correctness
+on the thirteen cases they cover and on nothing else. This slice records no evidence, derives no
+rung, preregisters nothing and spends no held-out partition.
+
+**TG11.2 Preregistration first. DONE** (2026-08-27; `src/api/preregistration.py`,
+`src/api/main.py`, `src/api/analysis.py`, `src/tests/test_preregistration_api.py`,
+`src/tests/test_frontend_contract.py`, `src/tests/test_documentation.py`,
+`frontend/src/components/PreregistrationView.tsx`, `frontend/src/App.tsx`,
+`frontend/src/services/api.ts`, `frontend/src/types/api.ts`; architecture.md 3.6zt;
+VERIFICATION.md)
+
+**Delivered.** Six endpoints over `core/preregistration.py`, which was 574 lines nothing outside
+the tests could reach: capabilities, a partition description built from geometry and lineage
+without reading a measure value, sealing, a seal listing, a seal read with both digest layers
+recomputed, and the one-shot confirmation. No new science - every digest, refusal and correction
+is the module's.
+
+**The ordering is the server's.** A confirmation against a seal that does not exist is refused
+before the record is read; against a partition the seal did not name, by `PartitionMismatchError`;
+against a spent partition, by the ledger. The panel makes the ordering legible and enforces none of
+it. TG11.1's `domain_gate` is now gated too: it splits internally and returns a verdict on its own
+test partition, so it reads the ledger first and is refused `409` on data already spent.
+
+**The client cannot tune a confirmatory run.** `/confirm` takes the record and an optional
+published digest. Lags, ensemble size, alpha, correction, estimator, bins, seed, split, domain,
+clock and delimiter all come out of the seal, frozen as the confirmatory specification's `notes`,
+so editing one breaks the seal's digest instead of quietly running a different analysis under it.
+The sealing time is the server's, because a caller-supplied one could be written after the
+partition was opened.
+
+**Acceptance met.** A confirmation refused for want of a seal; an edited seal naming the field that
+changed; a wrong published digest refused; and the one that matters - the same held-out data
+refused a second confirmation under a second seal that is individually perfect, correctly hashed,
+correctly narrowed and affordable at its own size. Each such confirmation would be defensible
+alone; the pair would be uncorrected, and that is the arithmetic R18 exists to stop. A refused
+confirmation is also shown to leave the partition unspent.
+
+**D65.** The held-out ledger's "once" could be defeated by renaming a file.
+`PartitionIdentity.from_series` hashes provenance wholesale and an uploaded record carries
+`path_basename` in its provenance, so the same held-out bytes re-uploaded under another name
+hashed to another partition and the ledger did not fire. The domain the file was read under had the
+same problem for the same reason. Found while writing the double-spend acceptance, which passed
+against a same-name re-upload and would have passed for the wrong reason. The identity is now built
+at the boundary from the content digest, the clock, the columns and the split window.
+
+**Still unreachable, named rather than left quiet.** `report_generation` has no route. It checks
+that a candidate list was drawn from declared members and mined on train rather than on the
+held-out partition, and it needs a candidate list from a real training sweep - a mining surface
+rather than a preregistration one. A thin route for it here would have made the module look covered
+before the thing it guards exists. It belongs with TG11.4.
+
+**Verified.** Full suite **2543 passed, 2 skipped, 1 xfailed**; frontend production build with
+JS/CSS emitted; documentation guard passing with the new router registered in `_ROUTE_SOURCES` and
+the route count moved to 51. Rendered browser inspection is **NOT RUN**.
+
+**Claim boundary.** A seal is a promise about ordering, not a result: it says a family was fixed
+before a partition was opened, and nothing about whether the family is any good. A confirmation
+receipt records no evidence and moves no rung (R22); writing one into a bundle is TG11.3. The
+generated family is corrected for nowhere here and its members are not claims. Seals and the ledger
+are programme state under `data/preregistrations`, not a cache - deleting them destroys the record
+of what has been spent - and the JSON ledger has no lock, so "once" is once per server.
 
 **TG11.3 The evidence write path.** The first place the interface writes anything that bears on a
 claim, and therefore the slice with the most R22 risk in the programme. One write — record an

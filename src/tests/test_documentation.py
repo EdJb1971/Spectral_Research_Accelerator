@@ -78,11 +78,18 @@ def _test_files():
 _ROUTE_SOURCES = (("src/api/main.py", "app", ""),
                   ("src/api/findings.py", "router", "/api/v1/findings"),
                   ("src/api/channels.py", "router", "/api/v1/channels"),
-                  ("src/api/acquisitions.py", "router", "/api/v1/acquisitions"))
+                  ("src/api/acquisitions.py", "router", "/api/v1/acquisitions"),
+                  ("src/api/analysis.py", "router", "/api/v1/analysis"),
+                  ("src/api/preregistration.py", "router", "/api/v1/preregistration"))
 
 
 def _routes():
     """Every served route, across `main.py` **and** every mounted router.
+
+    The path pattern is `[^"]*`, not `[^"]+`: a router that declares its own prefix and mounts a
+    route at `""` serves a real endpoint, and a `+` quantifier cannot see it. TG11.1 hit that -
+    `GET /api/v1/analysis` was served and invisible here, and the count claim disagreed by one,
+    which is again the only reason it was noticed.
 
     This originally read `main.py` alone. TG9.1 mounted the findings surface as an `APIRouter`
     in its own module, and a decorator scan of `main.py` cannot see those - so six real
@@ -94,7 +101,7 @@ def _routes():
     for path, decorator, prefix in _ROUTE_SOURCES:
         source = _read(path)
         for verb, route in re.findall(
-                r'@%s\.(get|post|put|delete)\("([^"]+)"' % decorator, source):
+                r'@%s\.(get|post|put|delete)\("([^"]*)"' % decorator, source):
             found.append((verb.upper(), prefix + route))
     return found
 

@@ -5909,3 +5909,105 @@ browser inspection is **NOT RUN**.
 **Claim boundary.** This is workflow state and labelling, not scientific validation. It does
 not make gridded tools domain-general, persist an evidence bundle, run analysis, write evidence,
 or move a claim rung. A retained browser `File` disappears when the application session ends.
+
+## TG11.1 - The analysis surface (2026-08-27, `ed-dev`)
+
+**Implemented.** `src/api/analysis.py` mounts the cross-domain analysis engine on
+`/api/v1/analysis`, which had no HTTP boundary at all: `association_only`,
+`analyse_precedence` and `run_domain_gate` were unreachable from a browser. Two endpoints -
+capabilities and one stateless `POST /run` operation selector - and no new science; every
+estimator, correction, lag floor and verdict stays in `analysis_engine/domain_analysis.py`.
+
+The route re-reads the original uploaded record rather than `/channels/read`'s bounded preview,
+so the analysis is of the admitted file rather than of a truncation. Cadence, frames, channels,
+measure and source identity are derived server-side; the client supplies only the hypothesis
+family and estimator settings. Four refusals fire before any computation: an unknown
+configuration key, an irregular clock, a non-UTF-8 upload, and R21 propagated from the engine
+word for word. Every success carries `read_only: true`, `stored: false` and `rung_moved: false`.
+
+The workbench panel checks that the returned `content_sha256` and frame count are the selected
+record's before reading the result as being about it - an unchecked re-read is only a belief
+that the server read the same file. `INVALID` is named on screen as a design that did not hold
+rather than styled as a leftover beside `FAIL`.
+
+**Evidence.** The exact final tree reports:
+
+```text
+analysis + frontend contract + documentation: test_analysis_api.py 7 passed,
+  test_frontend_contract.py 55 passed, test_documentation.py 19 passed
+frontend production build: 1,390 modules transformed; JS/CSS assets emitted
+complete suite: 2521 passed, 2 skipped, 1 xfailed, 6 warnings in 1046.84s (0:17:26)
+```
+
+The acceptance is `test_all_thirteen_sequence_and_cross_domain_benchmarks_pass_through_http`:
+all thirteen `sequence` and `cross_domain` benchmarks run through the live FastAPI test client
+with `failed == 0`, `not_yet_runnable == 0` and `null_failures == []`, eight of the thirteen
+being nulls. `tsc --noEmit` is clean. Rendered browser inspection is **NOT RUN**.
+
+**D64, found by mounting the router.** The documentation guard's route scan matched
+`@router.<verb>("([^"]+)"`, so a route mounted at its own router's prefix - `@router.get("")` -
+was invisible to it. `GET /api/v1/acquisitions` had been served and unseen since TG10.2, and the
+documented count read 42 against a served 43 while the check passed. The quantifier is now
+`[^"]*` and the served count is 45.
+
+**Claim boundary.** Reachability is not correctness. The thirteen benchmarks argue for
+correctness on the thirteen cases they cover and on nothing else. This slice records no
+evidence, derives no rung, preregisters nothing and spends no held-out partition.
+
+## TG11.2 - Preregistration first (2026-08-27, `ed-dev`)
+
+**Implemented.** `src/api/preregistration.py` mounts `core/preregistration.py` - 574 lines that
+nothing outside the tests could reach - on `/api/v1/preregistration`. Six endpoints: capabilities,
+a partition description built from geometry and lineage without reading a measure value, sealing,
+a seal listing, a seal read with both digest layers recomputed, and the one-shot confirmation. No
+estimator, digest, correction or refusal is implemented here.
+
+The ordering R18 requires is enforced by the server rather than by the panel. A confirmation
+against a seal that does not exist is refused before the record is read; against a partition the
+seal did not name, by `PartitionMismatchError`; against a spent partition, by the ledger. TG11.1's
+`domain_gate` splits internally and returns a verdict on its own test partition, so it now reads
+the ledger before running and is refused `409` on data already spent.
+
+`/confirm` accepts the record and an optional published digest, and nothing else: lags, ensemble
+size, alpha, correction, estimator, bins, seed, split, domain, clock and delimiter are all read
+back out of the seal, where they were frozen as the confirmatory specification's `notes`. The
+sealing time is the server's, because a caller-supplied one could be written after the partition
+was opened.
+
+**Evidence.** The exact final tree reports:
+
+```text
+preregistration + frontend contract + documentation: test_preregistration_api.py 17 passed,
+  test_frontend_contract.py 60 passed, test_documentation.py 19 passed
+frontend production build: 1,391 modules transformed; JS/CSS assets emitted
+complete suite: 2543 passed, 2 skipped, 1 xfailed, 6 warnings in 981.29s (0:16:21)
+```
+
+The acceptance is the double-spend refusal in two forms. In the weaker form the second seal is
+written after the first confirmation; in the stronger,
+`test_two_seals_written_before_any_opening_still_buy_only_one_look` freezes both seals before
+anything is opened, so neither is post-hoc in any sense - no edit, no backdating, no narrowing
+chosen after a look - and the second confirmation is still refused, because two declarations over
+one held-out partition are two tests of it whose corrections were each computed as though it were
+the only one. `test_a_refused_confirmation_does_not_spend_the_partition` asserts the other half:
+a design error costs nothing and the partition is still spendable afterwards. `tsc --noEmit` is
+clean. Rendered browser inspection is **NOT RUN**.
+
+**D65, found while writing the double-spend acceptance.** `PartitionIdentity.from_series` hashes
+the series' provenance wholesale, and a record read from an upload carries `path_basename` there.
+The same held-out bytes re-uploaded as `data2.csv` hashed to a different partition, so
+`HeldOutLedger` - keyed on the partition precisely so a second honest seal cannot buy a second
+look - did not fire. The domain the file was read under had the same problem for the same reason.
+The acceptance passed against a same-name re-upload and would have passed for the wrong reason.
+The identity is now built at the boundary from `content_sha256`, the clock, the columns and the
+split window, and a test renames the file between two identical requests and asserts the digest
+does not move.
+
+**Claim boundary.** A seal is a promise about ordering, not a result: it says a family was fixed
+before a partition was opened and nothing about whether the family is any good. A confirmation
+receipt records no evidence and moves no rung (R22); writing one into a bundle is TG11.3. The
+generated family is corrected for nowhere here and its members are not claims. `report_generation`
+remains without a route and is named as such rather than covered by a thin one. Seals and the
+ledger are programme state under `data/preregistrations`, not a cache - deleting them destroys the
+record of what has been spent - and the JSON ledger takes no lock, so "once" is once per server
+and a multi-worker deployment needs a real store.

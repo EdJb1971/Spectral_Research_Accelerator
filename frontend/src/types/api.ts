@@ -954,3 +954,169 @@ export interface ChannelRecordSelection {
   timeColumn: string;
   supportParentPx: Record<string, number>;
 }
+
+// ------------------------------------------------------------------ analysis workbench (TG11.1)
+
+export type DomainAnalysisOperation = 'association' | 'precedence' | 'domain_gate';
+
+export interface DomainAnalysisCapabilities {
+  operations: Record<DomainAnalysisOperation, string>;
+  input: string;
+  measure: string;
+  read_only: true;
+  stores: false;
+  moves_rung: false;
+  claim_boundary: string;
+}
+
+export interface DomainAnalysisResponse {
+  schema: 'spectral.analysis.http.v1';
+  operation: DomainAnalysisOperation;
+  source: {
+    name: string;
+    content_sha256: string;
+    domain: string;
+    frames: number;
+    channels: string[];
+    cadence_seconds: number;
+  };
+  read_only: true;
+  stored: false;
+  rung_moved: false;
+  result: Record<string, any>;
+  claim_boundary: string;
+}
+
+// ------------------------------------------------------------------- preregistration (TG11.2)
+//
+// The generate/confirm split (R18). Nothing here is a result: a seal is a promise about
+// ordering, and a confirmation receipt is an input to the evidence write path rather than a
+// claim. The client declares a family; it never supplies a digest, a sealing time or a p-value.
+
+export interface PartitionIdentityPayload {
+  name: string;
+  n_times: number;
+  n_channels: number;
+  channel_labels: string[];
+  frames: [number, number];
+  provenance: Record<string, unknown>;
+  digest: string;
+}
+
+export interface HeldOutLedgerRecord {
+  partition_digest: string;
+  partition_name: string;
+  seal_sha256: string;
+  confirm_sha256: string;
+  family_size: number;
+  sealed_at: string;
+  opened_at: string;
+  study_id: string;
+}
+
+export interface PartitionDescription {
+  schema: 'spectral.preregistration.http.v1';
+  domain: string;
+  frames: number;
+  channels: string[];
+  cadence_seconds: number;
+  train: PartitionIdentityPayload;
+  held_out: PartitionIdentityPayload;
+  already_opened: boolean;
+  opened_record: HeldOutLedgerRecord | null;
+  read_only: true;
+  stored: false;
+  claim_boundary: string;
+}
+
+/** What a caller declares. The sealing time, the partition digest and the family labels are
+ *  all the server's; a caller-supplied sealing time could be written after the partition was
+ *  opened, which is the whole of what a seal claims. */
+export interface FamilyDeclaration {
+  lags: number[];
+  n_surrogates?: number;
+  alpha?: number;
+  correction?: string;
+  estimator?: string;
+  bins?: number;
+  seed?: number;
+}
+
+export interface SealResponse {
+  schema: 'spectral.preregistration.http.v1';
+  seal_sha256: string;
+  sealed_at: string;
+  sealed_at_source: string;
+  seal: Record<string, any>;
+  generate_family_size: number;
+  confirm_family_size: number;
+  confirm_labels: string[];
+  held_out_digest: string;
+  records_evidence: false;
+  rung_moved: false;
+  publication: string;
+  claim_boundary: string;
+}
+
+export interface SealSummary {
+  seal_sha256: string;
+  study_id: string;
+  sealed_at: string;
+  confirm_family_size: number;
+  generate_family_size: number;
+  held_out_digest: string;
+  held_out_frames: [number, number];
+  spent: boolean;
+  spent_by: string | null;
+}
+
+export interface SealListing {
+  schema: 'spectral.preregistration.http.v1';
+  seals: SealSummary[];
+  n_seals: number;
+  publication: string;
+}
+
+export interface ConfirmationReceipt {
+  schema: 'confirmation-receipt/v1';
+  stage: 'confirm';
+  seal_sha256: string;
+  published_sha256: string | null;
+  correction_unit: number;
+  correction: string;
+  dependence_assumption: string;
+  alpha: number;
+  generate_family_size: number;
+  labels: string[];
+  p_values: number[];
+  adjusted: number[];
+  rejected: boolean[];
+  rejected_labels: string[];
+  n_rejected: number;
+  held_out: Record<string, unknown>;
+  ledger_record: HeldOutLedgerRecord;
+  claim_boundary: string;
+}
+
+export interface ConfirmationResponse {
+  schema: 'spectral.preregistration.http.v1';
+  seal_sha256: string;
+  checked_against_publication: boolean;
+  receipt: ConfirmationReceipt;
+  sweep_warnings: string[];
+  records_evidence: false;
+  rung_moved: false;
+  publication: string;
+  claim_boundary: string;
+}
+
+export interface PreregistrationCapabilities {
+  schema: 'spectral.preregistration.http.v1';
+  steps: Record<'partition' | 'seal' | 'confirm', string>;
+  narrowing: string;
+  once_is_per: string;
+  records_evidence: false;
+  moves_rung: false;
+  publication: string;
+  claim_boundary: string;
+}
