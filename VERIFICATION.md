@@ -6011,3 +6011,64 @@ remains without a route and is named as such rather than covered by a thin one. 
 ledger are programme state under `data/preregistrations`, not a cache - deleting them destroys the
 record of what has been spent - and the JSON ledger takes no lock, so "once" is once per server
 and a multi-worker deployment needs a real store.
+
+## TG11.3 - The evidence write path (2026-08-27, `ed-dev`)
+
+**Implemented.** `src/api/evidence.py` mounts `core/evidence.py` and `core/claim_ladder.py` on
+`/api/v1/evidence`. Five endpoints: capabilities, opening a study at revision zero, reading the
+head, appending one entry, and appending a provenance entry whose precedence verdict is computed
+by the server. No digest, chain check or ladder gate is implemented here; this is the wire
+boundary for two modules the interface previously could only read through TG9.1.
+
+This is the first surface in the programme that writes anything bearing on a claim, so it is the
+first that could break R22. Three things enforce the rule structurally rather than by review.
+No request model has a field for a rung, a claim level or a confidence, and unknown fields are
+forbidden, so a body carrying one is refused rather than ignored. The rung in every response is
+`assess_claim_ladder` recomputed over the chain that was just written, and it is stored nowhere.
+And `temporal_precedence` - the single payload key the ladder reads, and the gate for
+`candidate_precursor` - is refused at any depth of a hand-written payload; the route that writes
+it runs `analyse_precedence` here and records what it returns, `false` included.
+
+Appends are compare-and-swap. Each states the `head_sha256` it extends, and because a bundle is
+immutable and `save_evidence_bundle` refuses to overwrite, each revision is published as its own
+file created exclusively - which makes the exclusive create the concurrency control. Two writers
+racing from one head produce one append and one `409` rather than a lost entry, which is
+deliberately stronger than TG11.2's unlocked ledger.
+
+**Evidence.** The exact final tree reports:
+
+```text
+evidence + frontend contract + documentation: test_evidence_api.py 22 passed,
+  test_frontend_contract.py 65 passed, test_documentation.py 19 passed
+frontend production build: 1,392 modules transformed; JS/CSS assets emitted
+complete suite: 2570 passed, 2 skipped, 1 xfailed, 6 warnings in 915.05s (0:15:15)
+```
+
+The acceptance is that the rung cannot be reached by typing. Two tests approach it from opposite
+sides: `test_a_request_carrying_a_rung_is_refused_rather_than_ignored` and
+`test_a_payload_asserting_temporal_precedence_is_refused_and_names_the_route`, the second of which
+is the one that mattered, because that key needs no arithmetic and no estimator would have noticed
+it. `test_the_rung_moves_because_the_evidence_moved_it` shows the ladder climbing to `association`
+through three appends that named nothing, and
+`test_one_failed_entry_caps_the_chain_at_observation_through_the_wire` shows a single `FAIL`
+pulling it back down over favourable evidence already recorded. `tsc --noEmit` is clean. Rendered
+browser inspection is **NOT RUN**.
+
+**D66, found by asserting through the read surface what the write surface had just returned.**
+`StudyStore.load` resolved a study by taking the first parseable file whose `study_id` matched,
+and `summaries` listed one row per file. That was correct while nothing wrote bundles: TG9.1 read
+a store a researcher populated by hand, one file per study. Revision-per-file makes it wrong -
+sorted first is `r00000`, so the read surface would have served revision zero for ever while the
+write path reported the revision it had just appended, and one study worked on five times would
+have listed as five studies. Resolution is now by chain rather than by name. The check that found
+it is deliberately cross-surface: two consistent halves of one store can agree with each other and
+both be wrong.
+
+**Claim boundary.** Recording evidence is not establishing a finding. The ladder grades what is in
+the chain, and a chain of one favourable observation earns `observation`. An underpowered sweep is
+recorded `INCONCLUSIVE` and opens no gate, because a family that could not have rejected anything
+did not check anything (R5). A bundle carries no domain, so nothing written here records which
+instrument the evidence came from. This surface does not consult the held-out ledger: running a
+precedence analysis over data preregistered as held out spends it outside the record, which the
+ledger cannot see and the capabilities note cannot prevent. Bundles are programme state under
+`data/studies`, not a cache.

@@ -80,7 +80,8 @@ _ROUTE_SOURCES = (("src/api/main.py", "app", ""),
                   ("src/api/channels.py", "router", "/api/v1/channels"),
                   ("src/api/acquisitions.py", "router", "/api/v1/acquisitions"),
                   ("src/api/analysis.py", "router", "/api/v1/analysis"),
-                  ("src/api/preregistration.py", "router", "/api/v1/preregistration"))
+                  ("src/api/preregistration.py", "router", "/api/v1/preregistration"),
+                  ("src/api/evidence.py", "router", "/api/v1/evidence"))
 
 
 def _routes():

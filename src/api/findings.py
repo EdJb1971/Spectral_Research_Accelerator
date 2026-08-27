@@ -119,22 +119,39 @@ class StudyStore:
         return sorted(path for path in self.root.glob("*.json") if path.is_file())
 
     def load(self, study_id: str) -> Tuple[EvidenceBundle, Path]:
+        """The study's **latest** revision, chosen by the chain and not by the filename (D66).
+
+        A bundle is immutable, so TG11.3 publishes each revision as its own file rather than
+        rewriting one. Returning the first file that happened to match would then serve
+        revision zero of a study for ever while the write path reported the revision it had
+        actually appended - a read surface disagreeing with the record it reads.
+        """
+        found: Optional[Tuple[EvidenceBundle, Path]] = None
         for path in self.paths():
             try:
                 bundle = load_evidence_bundle(path)
             except InvalidParameterError:
                 continue
-            if bundle.study_id == study_id:
-                return bundle, path
-        raise KeyError(study_id)
+            if bundle.study_id != study_id:
+                continue
+            if found is None or bundle.revision > found[0].revision:
+                found = (bundle, path)
+        if found is None:
+            raise KeyError(study_id)
+        return found
 
     def summaries(self) -> List[Dict[str, Any]]:
         """One row per readable study, with the unreadable ones reported rather than skipped.
 
         A file that will not parse is a fact about the store worth surfacing: silently omitting
         it would let a corrupted bundle look like a study nobody ever ran.
+
+        Earlier revisions of a study are not separate studies, so they are folded into the row
+        for their latest one (D66) and the count of revisions behind it is reported. Listing
+        them would turn one study that has been worked on into six that have not.
         """
         rows: List[Dict[str, Any]] = []
+        latest: Dict[str, int] = {}
         for path in self.paths():
             try:
                 bundle = load_evidence_bundle(path)
@@ -143,17 +160,27 @@ class StudyStore:
                              "refused_because": str(exc)})
                 continue
             outputs = summarise_evidence(bundle)
-            rows.append({
+            row = {
                 "study_id": bundle.study_id,
                 "file": path.name,
                 "readable": True,
                 "revision": bundle.revision,
+                "superseded_revisions": 0,
                 "bundle_sha256": bundle.bundle_sha256,
                 "hypothesis": bundle.hypothesis.statement,
                 "rung": outputs.rung,
                 "blocked": outputs.blocked,
                 "summary_sha256": outputs.summary_sha256,
-            })
+            }
+            index = latest.get(bundle.study_id)
+            if index is None:
+                latest[bundle.study_id] = len(rows)
+                rows.append(row)
+                continue
+            standing = rows[index]
+            superseded = standing["superseded_revisions"] + 1
+            rows[index] = (row if bundle.revision > standing["revision"] else standing)
+            rows[index]["superseded_revisions"] = superseded
         return rows
 
 

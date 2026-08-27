@@ -438,6 +438,63 @@ export const apiService = {
         { method: 'POST', body: form }));
   },
 
+  // ------------------------------------------------ the evidence write path (TG11.3)
+  //
+  // The only writing client in this application. Every method here sends what was observed
+  // and reads back a rung the server computed; none of them can send one. `appendPrecedence`
+  // sends a record and a lag family and receives a verdict it did not choose.
+
+  async getEvidenceCapabilities(): Promise<types.EvidenceCapabilities> {
+    return handleResponse<types.EvidenceCapabilities>(
+      await fetch(`${BASE_URL}/evidence`, { method: 'GET' }));
+  },
+
+  async openStudy(studyId: string, hypothesisId: string, statement: string,
+                  prediction: string): Promise<types.EvidenceState> {
+    return handleResponse<types.EvidenceState>(
+      await fetch(`${BASE_URL}/evidence/studies`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          study_id: studyId, hypothesis_id: hypothesisId,
+          statement, prediction
+        })
+      }));
+  },
+
+  async getEvidenceHead(studyId: string): Promise<types.EvidenceState> {
+    return handleResponse<types.EvidenceState>(
+      await fetch(`${BASE_URL}/evidence/studies/${encodeURIComponent(studyId)}/head`,
+        { method: 'GET' }));
+  },
+
+  async appendEvidence(studyId: string,
+                       append: types.EvidenceAppend): Promise<types.EvidenceState> {
+    return handleResponse<types.EvidenceState>(
+      await fetch(`${BASE_URL}/evidence/studies/${encodeURIComponent(studyId)}/evidence`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(append)
+      }));
+  },
+
+  async appendPrecedence(studyId: string, expectedHeadSha256: string, label: string,
+                         selection: types.ChannelRecordSelection, lags: string,
+                         nSurrogates: number): Promise<types.EvidenceState> {
+    const form = new FormData();
+    form.append('expected_head_sha256', expectedHeadSha256);
+    form.append('label', label);
+    form.append('file', selection.file);
+    form.append('domain', selection.record.domain);
+    form.append('time_column', selection.timeColumn);
+    form.append('lags', lags);
+    form.append('n_surrogates', String(nSurrogates));
+    return handleResponse<types.EvidenceState>(
+      await fetch(
+        `${BASE_URL}/evidence/studies/${encodeURIComponent(studyId)}/evidence/precedence`,
+        { method: 'POST', body: form }));
+  },
+
   // ------------------------------------------------ the findings surface (TG9.1)
   //
   // Read-only. None of these can change what may be claimed: a GET does not move a rung

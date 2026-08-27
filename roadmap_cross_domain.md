@@ -2707,11 +2707,64 @@ generated family is corrected for nowhere here and its members are not claims. S
 are programme state under `data/preregistrations`, not a cache - deleting them destroys the record
 of what has been spent - and the JSON ledger has no lock, so "once" is once per server.
 
-**TG11.3 The evidence write path.** The first place the interface writes anything that bears on a
-claim, and therefore the slice with the most R22 risk in the programme. One write — record an
-evidence entry into a bundle — with the rung recomputed by the ladder from the resulting evidence
-and never accepted from the client. Bundle revisions, digests and tamper-evidence already exist in
-`core/evidence.py`; this exposes them without weakening them.
+**TG11.3 The evidence write path. DONE** (2026-08-27; `src/api/evidence.py`, `src/api/main.py`,
+`src/api/findings.py`, `src/tests/test_evidence_api.py`, `src/tests/test_frontend_contract.py`,
+`src/tests/test_documentation.py`, `frontend/src/components/EvidenceView.tsx`,
+`frontend/src/App.tsx`, `frontend/src/services/api.ts`, `frontend/src/types/api.ts`;
+architecture.md 3.6zu; VERIFICATION.md)
+
+**Delivered.** Five endpoints over `core/evidence.py` and `core/claim_ladder.py`: capabilities,
+opening a study at revision zero, reading the head, appending one entry, and appending a
+provenance entry whose precedence verdict the server computes. No digest, chain check or ladder
+gate is reimplemented at the boundary. This is the first surface in the programme that writes
+toward a claim, so it is the first that could break R22, and the rule is enforced structurally
+rather than by review: no request model has a field for a rung, a claim level or a confidence,
+unknown fields are forbidden rather than ignored, and the rung in every response is the ladder
+recomputed over the chain that was just written and stored nowhere.
+
+**The key that could have climbed a rung by typing.** The ladder reads exactly one payload key -
+`temporal_precedence`, on passing `provenance` entries - and it gates `candidate_precursor`. A
+free-form payload would let a client assert its way up a rung with no arithmetic anywhere for an
+estimator to notice. It is refused at any depth of a hand-written payload and written only by
+`/evidence/precedence`, which runs `analyse_precedence` here and records what it returns, `false`
+included; the entry cites the record's `content_sha256` and the sweep's `analysis_config_sha256`,
+so what was recorded is checkable against what was computed. An underpowered sweep is recorded
+`INCONCLUSIVE` and opens no gate: a family that could not have rejected anything did not check
+anything (R5).
+
+**Append-only, and compare-and-swap.** Every append names the head it extends. A bundle is
+immutable and `save_evidence_bundle` refuses to overwrite, so each revision is published as its
+own file created exclusively - the exclusive create *is* the concurrency control, and two writers
+racing from one head produce one append and one 409 rather than a lost entry. Deliberately
+stronger than TG11.2's ledger, which takes no lock: evidence is the thing being protected.
+`recorded_at` is the server's clock and is on no request model, so an entry cannot be back-dated
+into an order it did not happen in.
+
+**Acceptance met.** The rung cannot be reached by typing, tested from both sides: a request
+carrying a rung is refused rather than ignored, and a payload asserting `temporal_precedence` is
+refused and told which route computes it. The ladder is then shown climbing to `association`
+through three appends that named nothing, and one `FAIL` entry pulling it back to `observation`
+over favourable evidence already recorded.
+
+**D66, found by asserting through the read surface what the write surface had just returned.**
+`StudyStore.load` resolved a study by taking the first parseable file whose `study_id` matched.
+Correct while nothing wrote bundles; wrong the moment revisions became separate files, because
+sorted-first is `r00000` - the read surface would have served revision zero for ever while the
+write path reported the revision it had appended, and one study worked on five times would have
+listed as five studies. Resolution is now by chain rather than by name. Two consistent halves of
+one store can agree with each other and both be wrong, which is why the check is cross-surface.
+
+**Verified.** Full suite **2570 passed, 2 skipped, 1 xfailed**; frontend production build 1,392
+modules with JS/CSS emitted; documentation guard passing with the new router registered in
+`_ROUTE_SOURCES` and the route count moved to 56. Rendered browser inspection is **NOT RUN**.
+
+**Claim boundary.** Recording evidence is not establishing a finding: the ladder grades what is in
+the chain, and a chain of one favourable observation earns `observation`. A bundle carries no
+domain, so nothing written here records which instrument the evidence came from. This surface does
+not consult the held-out ledger - running a precedence analysis over data preregistered as held
+out spends it outside the record, which the ledger cannot see and the capabilities note cannot
+prevent. Commentary has no category here and prose is not evidence (R22). Bundles are programme
+state under `data/studies`, not a cache.
 
 **TG11.4 Structure mining.** Motifs, constellations, declared families, invariance auditing and
 cross-domain transfer — `motif`, `constellation`, `family`, `invariance`, `cross_domain`,

@@ -112,6 +112,7 @@ from src.api.channels import router as channels_router  # noqa: E402
 from src.api.acquisitions import router as acquisitions_router  # noqa: E402
 from src.api.analysis import router as domain_analysis_router  # noqa: E402
 from src.api.preregistration import router as preregistration_router  # noqa: E402
+from src.api.evidence import router as evidence_router  # noqa: E402
 
 app.include_router(findings_router)
 # TG8.4. Mounted here for the same reason the findings router is: registration must not depend
@@ -128,6 +129,10 @@ app.include_router(domain_analysis_router)
 # ordering it enforces is on that router's gate operation: a sweep may not be launched against
 # a held-out partition that has already been spent.
 app.include_router(preregistration_router)
+# TG11.3: the evidence write path. Mounted last of the workflow routers because it records
+# what the earlier ones produce, and it is the only one that writes toward a claim: the rung
+# in every one of its responses is recomputed by the ladder and never accepted from a client.
+app.include_router(evidence_router)
 
 
 class HealthResponse(BaseModel):

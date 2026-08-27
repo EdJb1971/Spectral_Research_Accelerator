@@ -248,6 +248,59 @@ def test_preregistration_does_not_present_a_receipt_as_a_claim():
     assert "read_only" not in view, "the component must not fabricate the server's receipt"
 
 
+def test_the_evidence_panel_reaches_the_write_path_and_nothing_else(app_source, api_service):
+    """TG11.3. The only writing panel in the application, and the only one that could break R22."""
+    view = _read("components", "EvidenceView.tsx")
+    assert "name: 'Evidence record'" in app_source
+    assert "activeTab === 'evidence'" in app_source
+    for call in ("openStudy", "getEvidenceHead", "appendEvidence", "appendPrecedence",
+                 "getEvidenceCapabilities"):
+        assert "apiService.%s" % call in view
+    assert "/evidence/studies" in api_service
+
+
+def test_no_request_this_client_can_send_carries_a_rung(api_service):
+    """R22, checked on the wire shapes rather than trusted to the panel that fills them in."""
+    section = api_service.split("the evidence write path (TG11.3)")[1].split(
+        "the findings surface")[0]
+    # Prose about the rule is not a violation of it, so the comments come out first: what is
+    # being checked is what these methods put on the wire.
+    block = "\n".join(line for line in section.splitlines()
+                      if not line.strip().startswith("//"))
+    for asserted in ("rung", "claim_level", "temporal_precedence", "confidence", "blocked"):
+        assert asserted not in block, "%r must be computed by the server, not sent" % asserted
+    types_source = _read("types", "api.ts")
+    append = types_source.split("export interface EvidenceAppend")[1].split("}")[0]
+    for asserted in ("rung", "recorded_at", "temporal_precedence"):
+        assert asserted not in append
+
+
+def test_the_panel_presents_the_rung_as_computed_rather_than_as_recorded():
+    view = _read("components", "EvidenceView.tsx")
+    assert "recomputed by the claim ladder" in view
+    assert "state?.rung_source" in view
+    # The gates are rendered from the response; a hard-coded rung name would be this file
+    # deciding what a chain is worth.
+    assert "ladder.gates.map" in view
+    for rung in ("'robust_association'", "'candidate_precursor'",
+                 "'demonstrated_predictive_utility'"):
+        assert rung not in view
+
+
+def test_the_append_form_shows_the_revision_it_is_extending():
+    """A compare-and-swap refusal is only comprehensible if the head was on screen."""
+    view = _read("components", "EvidenceView.tsx")
+    assert "expected_head_sha256: state.head_sha256" in view
+    assert "Extending revision" in view
+
+
+def test_negative_evidence_is_presented_as_load_bearing():
+    view = _read("components", "EvidenceView.tsx")
+    assert "blocking_entries" in view
+    assert "no quantity of favourable" in view
+    assert "unblocked_rung" in view
+
+
 def test_every_era5_control_survived_the_consolidation():
     view = _read("components", "AcquisitionView.tsx")
     for call in ("zarrCatalogue", "zarrCached", "zarrProbes", "zarrProbe", "zarrInspect"):

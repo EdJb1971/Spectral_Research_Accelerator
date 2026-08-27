@@ -1120,3 +1120,96 @@ export interface PreregistrationCapabilities {
   publication: string;
   claim_boundary: string;
 }
+
+// ------------------------------------------------------- the evidence write path (TG11.3)
+//
+// Nothing in these types has a field for a rung, and that is the point: the ladder verdict
+// arrives computed from the chain the server just wrote, and no request shape here can carry
+// one back (R22). `temporal_precedence` is absent from the hand-written payload type for the
+// same reason - it is the one payload key the ladder reads.
+
+export type EvidenceCategory =
+  | 'observations' | 'effect_sizes' | 'uncertainty' | 'null_results' | 'replication_results'
+  | 'holdout_performance' | 'provenance' | 'confounders' | 'contradictory_evidence'
+  | 'failure_states';
+
+export type EvidenceStatus = 'PASS' | 'FAIL' | 'INVALID' | 'INCONCLUSIVE' | 'NOT_APPLICABLE';
+
+export interface EvidenceGate {
+  name: string;
+  rung: string;
+  satisfied: boolean;
+  requirement: string;
+}
+
+export interface ClaimLadderVerdict {
+  schema: string;
+  study_id: string;
+  hypothesis_sha256: string;
+  bundle_sha256: string;
+  revision: number;
+  rung: string;
+  rung_index: number;
+  unblocked_rung: string;
+  gates: EvidenceGate[];
+  blocking_entries: number[];
+}
+
+export interface EvidenceEntryRecord {
+  sequence: number;
+  category: EvidenceCategory;
+  label: string;
+  status: EvidenceStatus;
+  summary: string;
+  recorded_at: string;
+  payload: Record<string, unknown>;
+  source_sha256s: string[];
+  previous_sha256: string;
+  entry_sha256: string;
+}
+
+export interface EvidenceState {
+  schema: 'spectral.evidence.http.v1';
+  study_id: string;
+  revision: number;
+  head_sha256: string;
+  bundle_sha256: string;
+  hypothesis_sha256: string;
+  ladder: ClaimLadderVerdict;
+  assessment_sha256: string;
+  blocked: boolean;
+  unsatisfied_gates: string[];
+  rung_source: string;
+  entry?: EvidenceEntryRecord;
+  entries?: EvidenceEntryRecord[];
+  next_sequence?: number;
+  hypothesis?: Record<string, unknown>;
+  wording_note?: string | null;
+  computed_here?: boolean;
+  verdict_source?: string;
+}
+
+export interface EvidenceCapabilities {
+  schema: 'spectral.evidence.http.v1';
+  categories: EvidenceCategory[];
+  statuses: EvidenceStatus[];
+  append_only: true;
+  compare_and_swap: string;
+  rung_is_computed: true;
+  accepts_a_rung: false;
+  computed_not_accepted: Record<string, string>;
+  commentary: string;
+  claim_boundary: string;
+}
+
+/** What a hand-written append may say. No rung, no verdict, no recorded_at: the chronology
+ *  is the server's, so an entry cannot be back-dated into an order it did not happen in. */
+export interface EvidenceAppend {
+  expected_head_sha256: string;
+  category: EvidenceCategory;
+  label: string;
+  status: EvidenceStatus;
+  summary: string;
+  payload: Record<string, unknown>;
+  source_sha256s?: string[];
+}

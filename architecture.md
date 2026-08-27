@@ -3460,6 +3460,76 @@ receipt records no evidence and moves no rung (R22) - writing it into a bundle i
 generated family is not corrected for anywhere here and its members are not claims. Rendered
 browser inspection of the new panel is **NOT RUN**.
 
+### 3.6zu The evidence write path (`src/api/evidence.py`, `frontend/src/components/EvidenceView.tsx`, TG11.3, `ed-dev`)
+
+**The first surface that writes toward a claim.** Everything before it was read-only by
+construction: `api/analysis.py` computes and stores nothing, `api/preregistration.py` stores an
+ordering promise that records no evidence. This module writes into an `EvidenceBundle`, and a
+bundle is the thing the claim ladder grades, so this is where rule R22 stops being a property of
+the architecture and becomes a property of five handlers. No new science: every digest, chain
+check and gate is `core/evidence.py`'s and `core/claim_ladder.py`'s.
+
+**The rung is recomputed, never accepted.** No request model on this surface has a field for a
+rung, a claim level or a confidence, and unknown fields are forbidden rather than ignored, so
+`{"rung": "candidate_precursor"}` is a `422` rather than a key that silently does nothing. The
+rung in every response is `assess_claim_ladder` run over the chain that was just written, and it
+is recomputed per request rather than stored, because a stored rung is a figure that can disagree
+with the evidence beneath it.
+
+**The one payload key that could climb a rung by typing.** The ladder reads exactly one key out of
+an evidence payload - `temporal_precedence`, on passing `provenance` entries - and it is the gate
+for `candidate_precursor`. A free-form payload would therefore let a client assert its way up a
+rung, with no arithmetic anywhere for an estimator to notice. The boundary refuses that key at any
+depth of a hand-written payload and names the alternative: `POST
+/studies/{id}/evidence/precedence` runs `analyse_precedence` server-side and records whatever it
+returns, `false` included. The caller chooses the record and the lag family; it does not choose
+the answer. The entry cites two digests - the record's `content_sha256` and the sweep's
+`analysis_config_sha256` - so what was computed is checkable against what was recorded.
+
+**An underpowered sweep is `INCONCLUSIVE`, not a negative.** If `check_power` says the family
+could not have rejected anything after correction, the entry is recorded as `INCONCLUSIVE`, which
+opens neither the provenance gate nor the precedence one. A `PASS` there would have let a sweep
+that never looked stand in for a check that was made (R5).
+
+**Appends are compare-and-swap, and revisions are files.** An append names the `head_sha256` it
+believes it extends; a mismatch is a `409` and writes nothing. A bundle is immutable and
+`save_evidence_bundle` refuses to overwrite, so each revision is published as its own file
+(`{study_id}.r{NNNNN}.json`) created exclusively - which makes the exclusive create the
+concurrency control. Two writers racing from one head produce one append and one `409` rather
+than a lost entry. This is deliberately stronger than TG11.2's ledger, which takes no lock:
+evidence is the thing being protected.
+
+**Revision-per-file forced a read-surface fix (D66).** `StudyStore.load` returned the first file
+whose `study_id` matched, and `summaries` listed one row per file. Under a write path that
+publishes revisions as separate files, the read surface would have served revision zero of a
+study for ever while the write path reported the revision it had appended, and one study worked on
+five times would have listed as five studies. Resolution is now by chain rather than by filename:
+the highest revision wins, and earlier ones are folded into its row with `superseded_revisions`.
+
+**What it still cannot do.** It cannot delete, amend or reorder an entry - each entry carries its
+predecessor's digest, so an edit is detectable rather than merely discouraged. It cannot record
+commentary: the ten fields of `EVIDENCE_FIELDS` are the whole vocabulary and prose is not one of
+them (R22). It cannot back-date: `recorded_at` is the server's clock and is not a field on any
+request. And `refuse_bare_confidence` - TG9.1's wire guard - is applied to the payload on the way
+in as well as the body on the way out, so a bare confidence is refused by name rather than by a
+500 (R9).
+
+**A causally worded hypothesis is registered, with the ceiling stated.** A statement containing a
+word from `OUTSIDE_THE_LADDER` is not refused - it is a legitimate thing to want to test - but the
+response says once, at registration, that no revision of the bundle can reach that wording,
+because the ladder tops out at demonstrated predictive utility (R7).
+
+**Operationally.** Bundles live under `data/studies`, the directory TG9.1 already reads, and the
+root is overridable by `SPECTRAL_STUDY_ROOT` so a test never publishes evidence into a
+researcher's store. This is programme state, not a cache.
+
+**Claim boundary.** Recording evidence is not establishing a finding: the ladder grades what is in
+the chain, and a chain of one favourable observation earns `observation`. A bundle carries no
+domain, so nothing written here records which instrument the evidence came from. And this surface
+does not consult the held-out ledger - running a precedence analysis over data preregistered as
+held out spends it outside the record, which the ledger cannot see and the capabilities note
+cannot prevent. Rendered browser inspection of the new panel is **NOT RUN**.
+
 ### 3.11 Ground-Truth Benchmark Suite (`src/benchmarks/`)
 
 Added in T3.5.17 (standard E7). Twenty synthetic datasets whose correct answer is known
@@ -3774,7 +3844,7 @@ reason in the test itself.
 
 ## 3.12 HTTP API Surface
 
-51 routes. Listed here because an undocumented endpoint is an untested contract.
+56 routes. Listed here because an undocumented endpoint is an untested contract.
 
 | Method | Route | Notes |
 |---|---|---|
@@ -3799,6 +3869,11 @@ reason in the test itself.
 | GET | `/api/v1/preregistration/seals` | every stored seal, and whether its partition has been spent |
 | GET | `/api/v1/preregistration/seals/{seal_sha256}` | one seal with both digest layers recomputed, optionally against a published digest |
 | POST | `/api/v1/preregistration/seals/{seal_sha256}/confirm` | open the held-out partition **once**; every setting comes from the seal |
+| GET | `/api/v1/evidence` | the ten evidence categories, what is computed rather than accepted, and the claim boundary (TG11.3) |
+| POST | `/api/v1/evidence/studies` | register a hypothesis at revision zero, before any evidence exists to favour it |
+| GET | `/api/v1/evidence/studies/{study_id}/head` | the chain, the digest an append must name, and the recomputed ladder verdict |
+| POST | `/api/v1/evidence/studies/{study_id}/evidence` | append one entry, compare-and-swap on the head; the rung comes back computed |
+| POST | `/api/v1/evidence/studies/{study_id}/evidence/precedence` | run the precedence sweep here and record its verdict, `false` included |
 | POST | `/api/v1/import/inspect` | describe an uploaded file without committing to a 2D slice of it (T3.5.24) |
 | POST | `/api/v1/import/field` | read one pinned 2D field out of an upload, with reconstructed provenance |
 | POST | `/api/v1/export/field` | a 2D field as CSV, JSON, NetCDF4 or a zipped Zarr store, provenance embedded (T3.5.23) |
@@ -4544,14 +4619,14 @@ The architecture is highly modular and maintains clean boundaries at several cri
 
 ## 6. Front-End Technical Implementation
 
-The React frontend is fully written and structurally complete. It was installed and built in T3.5.0/T3.5.3 (`npm run build` emits hashed JS and CSS into `dist/`) and wired to the previously unreachable endpoints in T3.5.22. Its **rendered appearance was confirmed by the user on 2026-08-20** (T3.5.25): the platform was started, both servers came up, and the then-nine tabs were reported working. T5.6g added a tenth tab, TG9.2 an eleventh and TG8.4 briefly a twelfth Domain Records tab. TG10.2 consolidated that reader into Acquire, leaving eleven destinations; TG11.0 groups those destinations by workflow rather than numbering them, TG11.1 adds a twelfth, Cross-domain analysis, under Analyse, and TG11.2 a thirteenth, Preregistration, beside it. The post-T3.5.25 surfaces compile and build but have **not** been visually inspected in a browser. The earlier confirmation is a user report, not an artefact - **no screenshot per tab exists in this repository**, so T3.5.0's literal evidence clause remains outstanding. Contract tests prove all thirteen current destinations compile, call routes that exist and read fields that are present; they do not prove rendered appearance.
+The React frontend is fully written and structurally complete. It was installed and built in T3.5.0/T3.5.3 (`npm run build` emits hashed JS and CSS into `dist/`) and wired to the previously unreachable endpoints in T3.5.22. Its **rendered appearance was confirmed by the user on 2026-08-20** (T3.5.25): the platform was started, both servers came up, and the then-nine tabs were reported working. T5.6g added a tenth tab, TG9.2 an eleventh and TG8.4 briefly a twelfth Domain Records tab. TG10.2 consolidated that reader into Acquire, leaving eleven destinations; TG11.0 groups those destinations by workflow rather than numbering them, TG11.1 adds a twelfth, Cross-domain analysis, under Analyse, and TG11.2 a thirteenth, Preregistration, beside it, and TG11.3 a fourteenth, Evidence record, under Evidence. The post-T3.5.25 surfaces compile and build but have **not** been visually inspected in a browser. The earlier confirmation is a user report, not an artefact - **no screenshot per tab exists in this repository**, so T3.5.0's literal evidence clause remains outstanding. Contract tests prove all fourteen current destinations compile, call routes that exist and read fields that are present; they do not prove rendered appearance.
 
 *   **Component Visualizations:** `Heatmap2D.tsx` and `LineChart.tsx` wrap `react-plotly.js`; `LineageGraph.tsx` is a hand-rolled SVG node-link renderer with a tooltip inspector and no external graph dependency. All three take reactive props and render spatial fields, PSD curves, coherence ratios, and provenance DAGs.
 *   **Accessibility remains partial.** Findings, channel records, and TG11.0's workflow
     navigation/context strip have roles, labels, visible keyboard focus or native button
     semantics. The legacy gridded panels still carry the measured debt scheduled for TG11.6;
     grouped navigation is not a claim that the whole workbench is accessible.
-*   **Main Application (`App.tsx`):** shell state and the eleven destinations grouped under
+*   **Main Application (`App.tsx`):** shell state and the fourteen destinations grouped under
     Acquire, Analyse, Evidence, Review, Read and Platform, with persistent selected-record and
     selected-study context, loading indicators, dynamic controls and proposal adoption.
 *   **Platform & Evidence tab (T3.5.22):** the execution device, core and thread counts, executor backends with the measured rationale for the serial default, the SQLite pragmas actually in force, the stamped Alembic revision with an explicit warning when the schema is behind the code, the data-source fallback chain labelled observational/SIMULATED from each source's own declared flag, and the full Ground-Truth Benchmark Suite with its declared known answers and null benchmarks marked. All of this existed on the backend for several slices with no consumer.
@@ -4576,7 +4651,7 @@ See `VERIFICATION.md` for the captured command output behind every statement her
 | Item | Status |
 |---|---|
 | Python venv + dependencies | installed (torch 2.13.0+cu130, numpy 2.2.6, pydantic 1.10.26, SQLAlchemy 2.0.52, xarray 2025.6.1, FastAPI 0.110.3) |
-| Backend test suite | **2543 passed, 1 xfailed** (plus 2 skipped: the opt-in live GCS read and the opt-in live store probe) (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17, 351 after T3.5.6, 379 after T3.5.15, 407 after T3.5.19, 449 after T4C.5, 709 after T4A.4, 781 after T4B.4, 855 after T4C.5, 859 after T4C.5c, 882 after T5.1a CPU acceptance, 883 after RTX acceptance, 890 after portable profiles, 911 after T5.1b/D44, 917 after T5.1c, 933 after T5.1d/D45, 946 after T5.1e, 955 after T5.2a, 957 after T5.2b, 962 after T5.3a, 969 after T5.3b, 981 after T5.2c offline acceptance, 985 after T5.2d, 1000 after T5.0a, 1008 after T5.0b, 1027 after T5.6a offline acceptance, 1042 after T5.6b cube acceptance, 1056 after T5.6c matched evaluation, 1070 after T5.6d truth matching, 1080 after T5.6e orchestration, 1089 after T5.6f portable jobs, 1094 after T5.6g reporting, 1095 after the licence guard, 1102 after T4C.5d gate readiness, 1104 after D50 storage preflight, 1106 after T4C.5e overlap evidence, 1112 after T4C.5f campaign acceptance, 1116 after T4C.5g physical preflight, 1117 after T4C.5h preregistration - the `master` freeze; then on `ed-dev`, 1375 after TG2.1, 1429 after TG2.2, 1477 after TG2.3, 1536 after TG2.4, 1577 after TG3.1, 1621 after TG3.2, 1686 after TG3.3, 1742 after TG3.4, 1787 after TG3.5, 1850 after TG4.1, 1922 after TG4.2, 1972 after TG4.3, 1986 after TG5.1, 2004 after TG5.2 and 2020 after TG5.3, 2044 after TG6.1, 2074 after TG6.2, 2112 after TG6.3, 2167 after TG7.1, 2217 after TG7.2, 2235 after TG7.3, 2236 after TG7.3 live acceptance, 2296 after TG7.4, 2321 after TG9.1/TG9.2 2334 after TG9.3, 2367 after TG8.1, 2420 after TG8.4, 2459 after TG10.1, 2503 after TG10.3, 2509 after TG10.2 2511 after TG11.0, 2521 after TG11.1 and 2543 after TG11.2) |
+| Backend test suite | **2570 passed, 1 xfailed** (plus 2 skipped: the opt-in live GCS read and the opt-in live store probe) (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17, 351 after T3.5.6, 379 after T3.5.15, 407 after T3.5.19, 449 after T4C.5, 709 after T4A.4, 781 after T4B.4, 855 after T4C.5, 859 after T4C.5c, 882 after T5.1a CPU acceptance, 883 after RTX acceptance, 890 after portable profiles, 911 after T5.1b/D44, 917 after T5.1c, 933 after T5.1d/D45, 946 after T5.1e, 955 after T5.2a, 957 after T5.2b, 962 after T5.3a, 969 after T5.3b, 981 after T5.2c offline acceptance, 985 after T5.2d, 1000 after T5.0a, 1008 after T5.0b, 1027 after T5.6a offline acceptance, 1042 after T5.6b cube acceptance, 1056 after T5.6c matched evaluation, 1070 after T5.6d truth matching, 1080 after T5.6e orchestration, 1089 after T5.6f portable jobs, 1094 after T5.6g reporting, 1095 after the licence guard, 1102 after T4C.5d gate readiness, 1104 after D50 storage preflight, 1106 after T4C.5e overlap evidence, 1112 after T4C.5f campaign acceptance, 1116 after T4C.5g physical preflight, 1117 after T4C.5h preregistration - the `master` freeze; then on `ed-dev`, 1375 after TG2.1, 1429 after TG2.2, 1477 after TG2.3, 1536 after TG2.4, 1577 after TG3.1, 1621 after TG3.2, 1686 after TG3.3, 1742 after TG3.4, 1787 after TG3.5, 1850 after TG4.1, 1922 after TG4.2, 1972 after TG4.3, 1986 after TG5.1, 2004 after TG5.2 and 2020 after TG5.3, 2044 after TG6.1, 2074 after TG6.2, 2112 after TG6.3, 2167 after TG7.1, 2217 after TG7.2, 2235 after TG7.3, 2236 after TG7.3 live acceptance, 2296 after TG7.4, 2321 after TG9.1/TG9.2 2334 after TG9.3, 2367 after TG8.1, 2420 after TG8.4, 2459 after TG10.1, 2503 after TG10.3, 2509 after TG10.2 2511 after TG11.0, 2521 after TG11.1, 2543 after TG11.2 and 2570 after TG11.3) |
 | Ground-Truth Benchmark Suite | **29 PASS, 0 FAIL, 0 NOT_YET_RUNNABLE** (`python -m src.benchmarks`, exit 0) |
 | Frontend `npm install` + `npm run build` | passes, emits 1,386 modules + real JS/CSS assets (was: 1 module, no assets) |
 | Backend server | starts, serves OpenAPI, all smoke-tested endpoints return 200 |
@@ -4681,6 +4756,7 @@ code paths that `architecture.md` previously described as implemented and rigoro
 | D63 | `data_layer/zarr_source.py:CropSpec.to_provenance` | **A schema grew under an artefact that was already signed.** TG10.1 added `vertical_dim` to `CropSpec`, and `to_provenance` emits `asdict`, so every lineage record gained a key. That record is embedded in **authenticated** artefacts — a gate campaign's preregistration is fingerprinted over it — so a checked-in, signed preregistration written before the field existed stopped loading, and `_crop_from_mapping`'s exact-fields check refused it by name. The content key had been protected against exactly this and the provenance record had not, which is the same decision applied to one of two consumers. `to_provenance` now omits `vertical_dim` when it is `level`, as `canonical()` does, so an ERA5 record is byte-identical to its pre-TG10.1 form; the campaign reader additionally tolerates the field's absence rather than demanding it of an old record. Found by the full suite, **after TG10.1 was reported and committed** — the slice was reported on the strength of targeted suites while the full run was still going, which is how a one-test regression reached a commit. | **FIXED** TG10.3 (`ed-dev`) |
 | D64 | `tests/test_documentation.py:_routes` | **The guard that refuses an undocumented endpoint could not see an endpoint mounted at its router's own prefix.** Its path pattern was `[^"]+`, so `@router.get("")` - a real route at `/api/v1/<prefix>` - matched nothing. `GET /api/v1/acquisitions` had been served and invisible since TG10.2, and the documented route count read 42 against a served 43 while the count check passed, because the guard was comparing the claim against its own blind spot rather than against the API. TG11.1 added a second such route and the arithmetic was still self-consistent. Found by loosening the quantifier to `[^"]*` and watching the count move by two. This is the third time this guard has stopped covering new code silently, and its passing is read as assurance. | **FIXED** TG11.1 (`ed-dev`) |
 | D65 | `api/preregistration.py:_identity` | **The held-out ledger's "once" could be defeated by renaming a file.** `PartitionIdentity.from_series` hashes the series' provenance wholesale, and a record read from an upload carries `path_basename` in that provenance. In process that is honest lineage; across an HTTP boundary the same held-out bytes re-uploaded as `data2.csv` would hash to a different partition, and `HeldOutLedger` - which is keyed on the partition precisely so that a second honest seal cannot buy a second look - would not fire. The domain the file was read under had the same problem, for the same reason: two confirmations on the same bytes are two tests of them, however they were labelled. Found while writing the double-spend acceptance, which passed against a re-upload under the same name and would have passed for the wrong reason. The identity is now built at the boundary from `content_sha256`, the clock, the columns and the split window, and a test renames the file between two identical requests and asserts the digest does not move. | **FIXED** TG11.2 (`ed-dev`) |
+| D66 | `api/findings.py:StudyStore` | **The read surface resolved a study by filename, and a write path made that wrong.** `load` returned the first parseable file whose `study_id` matched and `summaries` listed one row per file. That was harmless while nothing wrote bundles - TG9.1 read a store that only a researcher populated, one file per study. TG11.3 publishes each revision as its own file, because a bundle is immutable and `save_evidence_bundle` refuses to overwrite, so the sorted-first match would have served `r00000` for ever while the write path reported the revision it had just appended, and one study worked on five times would have listed as five studies. Found by asserting through the read surface what the write surface had just returned, rather than trusting that two consistent stores agreed. Resolution is now by chain rather than by name: the highest revision wins, and superseded ones are counted into its row. | **FIXED** TG11.3 (`ed-dev`) |
 
 **Root cause common to D20, D23, D25 and D2:** the transform engine — the mathematical core of
 the platform — had **no test file at all**. `src/tests/test_transforms.py` now exists (36 cases
@@ -4847,7 +4923,7 @@ able to sit three slices out of date.
 | `test_forecasting_artifact_evaluation.py` | 8 | T5.3b/T5.2d checkpoint/config integrity, artifact-bound lineage, persistence-relative metrics, physical-time reporting/refusals, undefined-skill handling and CPU/RTX vendor-neutral accelerator parity |
 | `test_forecasting_protocol.py` | 7 | T5.0a exact schema completeness, canonical identity, immutable nested configuration, evidence requirements, temporal/rollout consistency, persistence and tamper/drift refusal |
 | `test_forecasting_protocol_binding.py` | 4 | T5.0b exact dataset/protocol/checkpoint binding, recomputed coordinate/statistics identities, drift refusals and bound-evaluation cross-run isolation |
-| `test_frontend_contract.py` | 60 | the frontend/backend contract, including transform/dataset/cadence readiness claim boundaries, domain-driven acquisition, workflow-grouped navigation, persistent record/study context, the TG11.1 analysis panel's three engine operations, R21 disablement, three-valued verdict and re-read identity check, the TG11.2 preregistration panel's declare-never-decide split (no client-supplied digest, sealing time or p-value), its confirmation call carrying the record and nothing else, its published-digest caveat and its spent-is-not-failed presentation, and preservation of every ERA5 control, plus the UI integrity guards: no fabricated results, no unqualified validation claims, units and slope uncertainty displayed |
+| `test_frontend_contract.py` | 65 | the frontend/backend contract, including transform/dataset/cadence readiness claim boundaries, domain-driven acquisition, workflow-grouped navigation, persistent record/study context, the TG11.1 analysis panel's three engine operations, R21 disablement, three-valued verdict and re-read identity check, the TG11.2 preregistration panel's declare-never-decide split (no client-supplied digest, sealing time or p-value), its confirmation call carrying the record and nothing else, its published-digest caveat and its spent-is-not-failed presentation, and preservation of every ERA5 control, plus the UI integrity guards: no fabricated results, no unqualified validation claims, units and slope uncertainty displayed |
 | `test_gate_run.py` | 1 | T4C.5d frozen plan, local-only preflight, bounded train-only climatology/signatures, authenticated synthetic gate receipt, no-overwrite and tamper refusal |
 | `test_gate_campaign.py` | 6 | T4C.5f-h exact campaign identity, strict nested schema, canary/full/WeatherBench drift refusals, pre-transfer R13/physical-lag audit, aggregate storage/readiness, immutable freeze/load, pinned real preregistration and zero-network CLI (8 pytest cases) |
 | `test_grid_operators.py` | 64 | grid metrics, metric-aware gradient/Laplacian, area weighting, physical-wavenumber spectra, D26 |
@@ -4879,7 +4955,8 @@ able to sit three slices out of date.
 | `test_acquisitions_api.py` | 4 | TG10.2 domain-first catalogue, complete ERA5 store reachability, channel-table E14 admission/refusal, and limits plus attribution caveat on every acquisition |
 | `test_analysis_api.py` | 7 | TG11.1 the domain-analysis engine through HTTP: the read-only capability boundary, association over the full re-uploaded record, precedence admitted only by a declared floor, the R21 refusal reaching the caller before any computation, a three-valued gate verdict over server-derived record facts, an unknown configuration key refused rather than ignored, and the acceptance criterion — all thirteen `sequence` and `cross_domain` benchmarks reproduced through the live HTTP client with every null still answering "there is nothing here" |
 | `test_preregistration_api.py` | 17 | TG11.2 the generate/confirm split over HTTP: the sealed family matching the shape the sweep actually emits, a partition identity that ignores what the file was called (D65) and separates two splits of one record, sealing that narrows by lag and is timed by the server clock, a confirmatory lag that was never generated refused, an edited seal naming the field that changed, a wrong published digest refused, confirmation taking every setting from the seal and spending the partition, the same held-out data refused a second confirmation under a second individually honest seal, two seals frozen before any opening still buying only one look, a partition the seal did not name refused, a refused confirmation leaving the partition unspent, and TG11.1's gate refused on a spent partition |
-| **total** | **2198** | |
+| `test_evidence_api.py` | 22 | TG11.3 the evidence write path: a study opened at revision zero claiming nothing, a second study under one identifier refused, an identifier that could traverse a directory refused, an append linked to the head it names, a stale head refused with nothing written, earlier revisions kept rather than rewritten, the read surface serving the latest revision and folding the earlier ones into one row (D66), a request carrying a rung refused rather than ignored, a payload asserting a rung refused at any depth, a payload asserting `temporal_precedence` refused and told which route computes it, the rung moving only because the evidence moved it, one FAIL entry capping the chain at observation through the wire, commentary refused a category, a bare confidence refused on the way in, an entry that cannot be back-dated, a causally worded hypothesis registered with the ceiling stated, the precedence verdict computed here and citing the bytes and the configuration it came from, an underpowered sweep recorded INCONCLUSIVE rather than as a negative, a domain with no admissible lag floor writing nothing, and a stale head refused before the sweep runs |
+| **total** | **2225** | |
 
 ### 7.2h A surrogate null that was not the null it claimed (T4C.5)
 

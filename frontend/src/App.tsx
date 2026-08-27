@@ -12,6 +12,7 @@ import FindingsView from './components/FindingsView';
 import AcquisitionView from './components/AcquisitionView';
 import DomainAnalysisView from './components/DomainAnalysisView';
 import PreregistrationView from './components/PreregistrationView';
+import EvidenceView from './components/EvidenceView';
 import { apiService } from './services/api';
 import * as types from './types/api';
 import {
@@ -42,6 +43,7 @@ import {
   WifiOff,
   Boxes,
   FileCheck2,
+  FilePlus2,
   Lock
 } from 'lucide-react';
 
@@ -61,6 +63,7 @@ const WORKFLOW_NAV = [
   },
   {
     section: 'Evidence', items: [
+      { id: 'evidence', name: 'Evidence record', icon: FilePlus2 },
       { id: 'declarative', name: 'Experiment engine', icon: FileCode },
       { id: 'evaluation', name: 'Forecast evaluation', icon: FileCheck2, context: 'Gridded field line' },
     ],
@@ -2429,6 +2432,14 @@ export default function App() {
           {activeTab === 'preregistration' && (
             <PreregistrationView selectedRecord={selectedRecord}
               onError={(message) => setError(message)} onAcquire={() => setActiveTab('acquire')} />
+          )}
+
+          {/* TG11.3: the evidence write path. The only writing panel in the application, and
+              the only one whose response carries a rung — recomputed by the ladder from the
+              chain the server just wrote, never sent by this file (R22). */}
+          {activeTab === 'evidence' && (
+            <EvidenceView selectedRecord={selectedRecord} studyId={selectedStudyId}
+              onStudyId={setSelectedStudyId} onError={(message) => setError(message)} />
           )}
 
           {/* TAB 10: VERIFIED FORECAST EVALUATION ------------------------------------ */}
