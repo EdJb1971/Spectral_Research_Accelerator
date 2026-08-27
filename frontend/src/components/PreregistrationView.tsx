@@ -142,7 +142,7 @@ const PreregistrationView: React.FC<Props> = ({ selectedRecord, onError, onAcqui
   const receipt = confirmation?.receipt;
 
   return (
-    <section className="space-y-5 animate-fadeIn" aria-labelledby="preregistration-title">
+    <section className="space-y-5 animate-fadeIn" aria-labelledby="preregistration-title" aria-busy={busy !== ''}>
       <header>
         <h2 id="preregistration-title" className="text-xl font-bold text-white flex items-center gap-2">
           <Lock className="text-teal-400 w-5 h-5" aria-hidden="true" /> Preregistration

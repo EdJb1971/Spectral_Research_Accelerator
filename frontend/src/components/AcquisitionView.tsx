@@ -116,7 +116,7 @@ export const AcquisitionView: React.FC<AcquisitionViewProps> = ({
     store?.vertical_dim ? `${store.vertical_dim} values` : 'Vertical selection';
 
   return (
-    <div className="space-y-6 animate-fadeIn">
+    <div className="space-y-6 animate-fadeIn" aria-busy={busy}>
       <header>
         <h2 className="text-xl font-bold text-white flex items-center gap-2">
           <Database className="text-teal-400 w-5 h-5" /> Acquire

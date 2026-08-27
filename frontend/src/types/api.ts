@@ -790,6 +790,59 @@ export interface StudySummary {
   summary_sha256?: string;
 }
 
+// ----------------------------------------------------------- recorded review (TG11.5)
+
+export interface ReviewArtifactRow {
+  file: string;
+  record: {
+    schema: string;
+    study_id: string;
+    bundle_sha256: string;
+    bundle_revision: number;
+    calls: Array<Record<string, any>>;
+    revision: number;
+    head_sha256: string;
+    record_sha256: string;
+  };
+  /** Backend-rendered record, including the R23 declaration. */
+  rendered: string;
+  outcomes: Array<{
+    file: string;
+    outcome: Record<string, any>;
+    /** Backend-rendered outcome, including every retained dissent. */
+    rendered: string;
+  }>;
+  cost_receipts: Array<{
+    file: string;
+    receipt: {
+      schema: string;
+      review_record_sha256: string;
+      policy_sha256: string;
+      call_count: number;
+      input_tokens: number;
+      output_tokens: number;
+      cached_input_tokens: number;
+      total_tokens: number;
+      batch_names: string[];
+      cache_hit_fraction: number;
+      receipt_sha256: string;
+    };
+  }>;
+}
+
+export interface ReviewSurface {
+  schema: 'review-surface/v1';
+  study_id: string;
+  bundle_file: string;
+  bundle_sha256: string;
+  bundle_revision: number;
+  declaration: string;
+  claim_boundary: string;
+  reviews: ReviewArtifactRow[];
+  unreadable: Array<{ file: string; refused_because: string }>;
+  absence_note: string | null;
+}
+
 /**
  * R9's six figures. They travel together or not at all: the API refuses to serve a
  * `confidence` without the other five, so this interface has no optional members.

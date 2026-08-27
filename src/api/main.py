@@ -115,6 +115,7 @@ from src.api.preregistration import router as preregistration_router  # noqa: E4
 from src.api.evidence import router as evidence_router  # noqa: E402
 from src.api.mining import router as mining_router  # noqa: E402
 from src.api.cross_domain import router as cross_domain_router  # noqa: E402
+from src.api.reviews import router as reviews_router  # noqa: E402
 
 app.include_router(findings_router)
 # TG8.4. Mounted here for the same reason the findings router is: registration must not depend
@@ -147,6 +148,10 @@ app.include_router(mining_router)
 # frames of a single record's clock. It aligns two native clocks by exact intersection and never
 # by interpolation, and it records no evidence and moves no rung (R22).
 app.include_router(cross_domain_router)
+# TG11.5: the review store is read only and stays outside the findings routes on purpose.
+# Recorded argument can be inspected beside a selected study, but never shares an endpoint or
+# a response object with translated claim text (R22/R23).
+app.include_router(reviews_router)
 
 
 class HealthResponse(BaseModel):

@@ -100,7 +100,7 @@ const DomainAnalysisView: React.FC<Props> = ({ selectedRecord, onError, onAcquir
   }
 
   return (
-    <section className="space-y-5 animate-fadeIn" aria-labelledby="analysis-workbench-title">
+    <section className="space-y-5 animate-fadeIn" aria-labelledby="analysis-workbench-title" aria-busy={busy}>
       <header>
         <h2 id="analysis-workbench-title" className="text-xl font-bold text-white flex items-center gap-2">
           <FlaskConical className="text-teal-400 w-5 h-5" aria-hidden="true" /> Cross-domain analysis

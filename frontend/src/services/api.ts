@@ -759,5 +759,13 @@ export const apiService = {
     return handleResponse<types.TranslatedFinding>(
       await fetch(`${BASE_URL}/findings/studies/${encodeURIComponent(studyId)}/translation?${query}`,
         { method: 'GET' }));
+  },
+
+  // ------------------------------------------------ recorded review (TG11.5)
+  // Read only. This fetches stored argument bound to the exact published bundle revision; it
+  // cannot start a model call, append evidence, or ask the server to accept a claim state.
+  async getStudyReview(studyId: string): Promise<types.ReviewSurface> {
+    return handleResponse<types.ReviewSurface>(
+      await fetch(`${BASE_URL}/reviews/studies/${encodeURIComponent(studyId)}`, { method: 'GET' }));
   }
 };

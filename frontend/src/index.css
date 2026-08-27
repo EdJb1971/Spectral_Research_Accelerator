@@ -5,3 +5,37 @@
 body {
   @apply bg-slate-950 text-slate-100 font-sans antialiased;
 }
+
+/* TG11.6: one focus contract for every legacy and cross-domain control.  Several older
+ * panels remove the browser outline locally; this later rule deliberately restores a
+ * high-contrast indicator without requiring every scientific control to grow its own class. */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 3px solid #2dd4bf !important;
+  outline-offset: 2px;
+}
+
+.skip-link {
+  position: fixed;
+  left: 1rem;
+  top: 1rem;
+  z-index: 100;
+  transform: translateY(-200%);
+  border-radius: 0.5rem;
+  background: #0f766e;
+  color: white;
+  padding: 0.75rem 1rem;
+  font-weight: 700;
+}
+
+.skip-link:focus {
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}

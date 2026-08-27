@@ -151,7 +151,7 @@ const CrossDomainRecordView: React.FC<Props> = ({ studyId, onError }) => {
     ? <Loader2 className="w-4 h-4 animate-spin inline mr-2" /> : null);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" aria-busy={busy !== ''}>
       <header className="flex items-start gap-3">
         <Globe className="w-6 h-6 text-indigo-300 mt-1" />
         <div>
@@ -179,27 +179,31 @@ const CrossDomainRecordView: React.FC<Props> = ({ studyId, onError }) => {
           </h3>
 
           {[{
-            label: 'First domain', file: firstFile, setFile: setFirstFile,
+            id: 'first', label: 'First domain', file: firstFile, setFile: setFirstFile,
             domain: firstDomain, setDomain: setFirstDomain,
             column: firstTimeColumn, setColumn: setFirstTimeColumn,
             channels: firstChannels, setChannels: setFirstChannels,
           }, {
-            label: 'Second domain', file: secondFile, setFile: setSecondFile,
+            id: 'second', label: 'Second domain', file: secondFile, setFile: setSecondFile,
             domain: secondDomain, setDomain: setSecondDomain,
             column: secondTimeColumn, setColumn: setSecondTimeColumn,
             channels: secondChannels, setChannels: setSecondChannels,
           }].map((side) => (
-            <div key={side.label} className="space-y-2 border-t border-slate-800 pt-3">
-              <label className={LABEL}>{side.label}</label>
-              <input type="file" accept=".csv,.tsv,.txt" className={FIELD}
+            <fieldset key={side.label} className="space-y-2 border-t border-slate-800 pt-3">
+              <legend className={LABEL}>{side.label}</legend>
+              <label htmlFor={`${side.id}-domain-file`} className="sr-only">{side.label} channel table</label>
+              <input id={`${side.id}-domain-file`} type="file" accept=".csv,.tsv,.txt" className={FIELD}
                 onChange={(event) => side.setFile(event.target.files?.[0] ?? null)} />
-              <input className={FIELD} placeholder="registered domain name"
+              <label htmlFor={`${side.id}-domain-name`} className="sr-only">{side.label} registered domain name</label>
+              <input id={`${side.id}-domain-name`} className={FIELD} placeholder="registered domain name"
                 value={side.domain} onChange={(e) => side.setDomain(e.target.value)} />
-              <input className={FIELD} placeholder="time column"
+              <label htmlFor={`${side.id}-time-column`} className="sr-only">{side.label} time column</label>
+              <input id={`${side.id}-time-column`} className={FIELD} placeholder="time column"
                 value={side.column} onChange={(e) => side.setColumn(e.target.value)} />
-              <textarea className={`${FIELD} font-mono text-xs h-28`} value={side.channels}
+              <label htmlFor={`${side.id}-channel-declarations`} className="sr-only">{side.label} channel semantics and units JSON</label>
+              <textarea id={`${side.id}-channel-declarations`} className={`${FIELD} font-mono text-xs h-28`} value={side.channels}
                 onChange={(e) => side.setChannels(e.target.value)} />
-            </div>
+            </fieldset>
           ))}
 
           <p className="text-xs text-slate-500">
@@ -207,7 +211,8 @@ const CrossDomainRecordView: React.FC<Props> = ({ studyId, onError }) => {
             compares no raw magnitude, and the receipt carries both operands' meanings back.
           </p>
 
-          <input className={FIELD} placeholder="study name for this alignment"
+          <label htmlFor="cross-domain-study-name" className="sr-only">Study name for this alignment</label>
+          <input id="cross-domain-study-name" className={FIELD} placeholder="study name for this alignment"
             value={name} onChange={(e) => setName(e.target.value)} />
           <button className={BUTTON} disabled={busy !== ''} onClick={onAlign}>
             {spinner('align')}Align on shared timestamps
@@ -234,14 +239,14 @@ const CrossDomainRecordView: React.FC<Props> = ({ studyId, onError }) => {
         {/* ------------------------------------------------------------- family and split */}
         <section className={CARD}>
           <h3 className="text-slate-200 text-sm">Family, in seconds</h3>
-          <label className={LABEL}>Lag durations (seconds, comma separated)</label>
-          <input className={FIELD} value={lagSeconds}
+          <label htmlFor="cross-domain-lags" className={LABEL}>Lag durations (seconds, comma separated)</label>
+          <input id="cross-domain-lags" className={FIELD} value={lagSeconds}
             onChange={(e) => setLagSeconds(e.target.value)} />
-          <label className={LABEL}>Surrogates</label>
-          <input className={FIELD} type="number" value={surrogates}
+          <label htmlFor="cross-domain-surrogates" className={LABEL}>Surrogates</label>
+          <input id="cross-domain-surrogates" className={FIELD} type="number" value={surrogates}
             onChange={(e) => setSurrogates(Number(e.target.value))} />
-          <label className={LABEL}>Training fraction</label>
-          <input className={FIELD} type="number" step="0.05" value={fraction}
+          <label htmlFor="cross-domain-training-fraction" className={LABEL}>Training fraction</label>
+          <input id="cross-domain-training-fraction" className={FIELD} type="number" step="0.05" value={fraction}
             onChange={(e) => setFraction(Number(e.target.value))} />
 
           <button className={BUTTON} disabled={busy !== ''} onClick={onPrice}>
@@ -323,8 +328,8 @@ const CrossDomainRecordView: React.FC<Props> = ({ studyId, onError }) => {
             </div>
           )}
 
-          <label className={LABEL}>Published seal digest (optional)</label>
-          <input className={FIELD} placeholder="the digest you published before sealing"
+          <label htmlFor="cross-domain-published-seal" className={LABEL}>Published seal digest (optional)</label>
+          <input id="cross-domain-published-seal" className={FIELD} placeholder="the digest you published before sealing"
             value={publishedDigest} onChange={(e) => setPublishedDigest(e.target.value)} />
 
           <button className={BUTTON} disabled={busy !== '' || !seal} onClick={onConfirm}>

@@ -6214,3 +6214,86 @@ files aligned under two different registered domains are two partitions to it an
 cannot detect that they hold the same rows (D65). Seals and the ledger are programme state under
 `data/preregistrations`, not a cache. After the complete run `data/` holds only `README.md`,
 `channels` and `store_probes`: this surface creates no directory as a side effect of being read.
+
+## TG11.6 - Workflow accessibility contract (2026-08-28, `ed-dev`)
+
+**Implemented.** Accessibility is no longer confined to the findings and channel-record islands.
+`App.tsx` now gives the workflow a skip link, a named main landmark and focus transfer to a
+programmatic workspace heading after navigation. The disconnected-backend retry is a native
+button rather than a clickable `span`; every visible label in the legacy gridded panels is bound
+to its control; shell errors are alerts; and shell plus acquire/analyse/evidence/read surfaces
+publish asynchronous busy state.
+
+`index.css` supplies a three-pixel high-contrast `:focus-visible` outline after Tailwind, so the
+older `focus:outline-none` classes cannot make keyboard focus disappear. Reduced-motion preference
+collapses animation and transition. Heat maps and line charts are labelled figures with text
+summaries of their carried shape, units, axes, series, scale and valid inset. SVG provenance nodes
+are named pressed-state controls with Enter and Space activation. Field import, evaluation receipt
+selection and both sides of the cross-domain record have programmatically associated names; the
+two cross-domain operands are fieldsets rather than one label visually covering eight controls.
+
+**Evidence.** The exact final tree reports:
+
+```text
+frontend contract: 86 passed, 5 warnings in 50.69s (six TG11.6 tests added)
+frontend production build: 1,394 modules transformed; JS/CSS assets emitted; tsc clean
+documentation + frontend contract: 105 passed, 5 warnings in 152.16s
+complete suite: 2667 passed, 2 skipped, 1 xfailed, 6 warnings in 1233.21s (0:20:33)
+```
+
+The six structural tests guard skip and route-focus behaviour, explicit legacy label bindings,
+global focus visibility and reduced motion, keyboard retry/lineage operation, figure text
+equivalents, and busy/alert/status semantics across every workflow surface. `git diff --check`
+passes. No API route, request shape, estimator, evidence category or claim-ladder input changed.
+
+**The rendered check was attempted and is not silently promoted.** The configured in-app browser
+runtime was initialised against `http://127.0.0.1:3000/`; discovery returned no available browser
+backend, including after the documented recovery check. No unrelated automation surface was
+substituted. Rendered keyboard traversal and screen-reader inspection therefore remain **NOT
+RUN**, even though TypeScript, Vite and the source contracts pass.
+
+**Claim boundary.** This slice establishes source semantics, keyboard activation paths and build
+integrity. It does not establish a WCAG conformance level, screen-reader quality, contrast in the
+rendered Plotly output or visual focus placement. A figure summary restates metadata carried by
+the application and does not interpret the scientific result.
+
+## TG11.5 - Recorded review surface (2026-08-28, `ed-dev`)
+
+**Implemented.** `src/api/reviews.py` adds one read-only endpoint,
+`GET /api/v1/reviews/studies/{study_id}`. It resolves the latest published evidence bundle, reads
+the dedicated review artifact directory, classifies JSON by declared schema, and reconstructs
+`ReviewRecord`, `RoundRobinOutcome` and `ReviewCostReceipt` through their core types so their
+content digests are rechecked. A record attaches only to the exact study, bundle digest and bundle
+revision it reviewed; outcomes and receipts additionally bind the review-record digest. Malformed,
+tampered and unknown artifacts are reported rather than skipped.
+
+`ReviewView.tsx` fills the Review waypoint introduced by TG11.0. It is separate from Findings,
+leads with the server's recorded-not-reproducible declaration and claim boundary, renders the
+core's complete call and round-robin text including retained dissent, and shows cost receipts as
+route/token audit without a price or quality claim. It can read a selected study and do nothing
+else: no control and no client method can run a panel, record a call, append evidence or move a
+rung. Empty record, outcome and receipt states each say what absence does not establish.
+
+**Focused evidence.** The new API tests and expanded frontend contracts report:
+
+```text
+test_reviews_api.py: 8 passed, 2 warnings in 4.42s
+test_frontend_contract.py + test_reviews_api.py: 100 passed, 5 warnings in 7.54s
+frontend production build: 1,395 modules transformed; JS/CSS assets emitted; tsc clean
+```
+
+The eight API tests cover explicit absence, the complete verified record/outcome/receipt payload,
+exact latest-revision binding, record-digest attachment, corrupt-artifact reporting, unknown-study
+404, GET-only routing and a read that leaves the evidence bundle byte-identical. Six frontend
+tests cover the separate workspace, GET-only service method, visible R23 fence, complete argument
+and cost display, non-reassuring empty states and the workflow accessibility contract.
+
+**Rendered inspection is NOT RUN.** The configured in-app browser runtime was initialised against
+`http://127.0.0.1:3000/`; discovery returned no available browser backend after the documented
+recovery check. No unrelated browser-control surface was substituted. TypeScript, Vite and source
+contracts are not evidence of rendered layout or keyboard traversal.
+
+**Claim boundary.** Every displayed call and outcome is R23 recorded-not-reproducible argument
+beside the evidence. It is not evidence, consensus, reproducible computation or permission to
+claim, and deleting it changes no claim level (R22, R23). The cost receipt establishes only the
+recorded route and token accounting; it says nothing about whether an argument is sound.

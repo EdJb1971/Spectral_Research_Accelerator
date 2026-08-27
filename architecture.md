@@ -3298,8 +3298,8 @@ supplied record came from it.
 The shell groups its eleven destinations by the scientific workflow: **Acquire, Analyse,
 Evidence, Review, Read, Platform**. The spatial generator, meteorological reader, boundary lab,
 spectral transforms and diagnostics are explicitly labelled the **Gridded field line**; grouping
-does not generalise them to channel domains. Review is labelled as a future TG11.5 surface and
-does not pretend an unimplemented panel exists.
+does not generalise them to channel domains. Review was initially an honest labelled waypoint;
+TG11.5 now fills it with recorded argument in a workspace separate from Findings.
 
 The selected channel record and study id are shell-owned context. Because the API response is a
 bounded preview, `ChannelRecordSelection` retains the original browser `File`, chosen clock and
@@ -3716,6 +3716,86 @@ no causal mechanism (R19, R21). A confirmation receipt records no evidence and m
 (R22); it is an input to TG11.3's write path exactly as a single-domain precedence receipt is.
 Rendered browser inspection of the new panel is **NOT RUN**.
 
+### 3.6zx Accessibility as a workflow contract (`frontend/src/App.tsx`, `index.css`, `Heatmap2D.tsx`, `LineChart.tsx`, `LineageGraph.tsx`, TG11.6, `ed-dev`)
+
+**The debt was interaction, not decoration.** The legacy panels had labels placed visually beside
+controls but not bound to them, removed the browser outline without supplying one consistently,
+left focus on the navigation control after changing workspaces, and made the disconnected-backend
+retry a clickable `span`. The application now has a first-focusable skip link into a named main
+landmark; changing workflow moves focus to a programmatic workspace heading; the current workspace
+and global asynchronous state are announced; and the retry is a native button. Every legacy
+control in `App.tsx` has an explicit `id`/`htmlFor` pair, including the experiment JSON editor and
+every range input whose visible value changes.
+
+**One focus rule covers both platforms.** `index.css` supplies a three-pixel high-contrast
+`:focus-visible` outline for links, buttons, form controls, summaries and explicit tab stops. It
+comes after Tailwind so the old `focus:outline-none` utilities cannot erase it. A reduced-motion
+media query collapses animations and transitions without changing any scientific state. The
+shell and each acquire/analyse/evidence/read surface expose `aria-busy`; errors are alerts and
+non-error progress is status, so waiting and failure are not conveyed by colour or animation
+alone.
+
+**Scientific graphics keep a textual door.** Heat maps and line charts are figures with labelled
+captions that report shape, series, units, axes, logarithmic scales and validity insets. The SVG
+lineage nodes remain spatially arranged, but each is now a named, pressed-state keyboard control
+activated by Enter or Space. The cross-domain pair is two fieldsets rather than one visual label
+over eight unnamed controls, and the older field import and evaluation receipt controls are
+programmatically bound.
+
+**What is verified.** Six TG11.6 contract tests guard skip/focus routing, legacy label bindings,
+the global focus and reduced-motion rules, the retry and SVG keyboard paths, figure text
+equivalents, and busy/alert/status semantics across the workflow. With TG11.5 added,
+`test_frontend_contract.py` passes 92 tests and the production build transforms 1,395 modules
+with real JS/CSS assets.
+Rendered keyboard and screen-reader inspection was attempted through the configured in-app
+browser, but the runtime reported no available browser backend; it remains **NOT RUN**, so this
+slice establishes source semantics and build integrity rather than WCAG conformance.
+
+**Claim boundary.** Accessibility metadata does not validate the scientific content it names.
+A text equivalent describes what the application knows about a figure; it does not independently
+interpret the plotted result. No conformance level is claimed without an assistive-technology and
+rendered-browser audit.
+
+### 3.6zy Recorded review, outside the claim surface (`src/api/reviews.py`, `frontend/src/components/ReviewView.tsx`, TG11.5, `ed-dev`)
+
+**Read, do not rerun.** `GET /api/v1/reviews/studies/{study_id}` is the review layer's only HTTP
+route and its only verb is GET. It cannot create a panel, call a model, append evidence or accept
+a claim state. It reads `ReviewRecord`, `RoundRobinOutcome` and `ReviewCostReceipt` artifacts from
+the dedicated `SPECTRAL_REVIEW_ROOT` (`data/reviews` by default), classifies them by their declared
+schema rather than their filename, and reconstructs each through its core type so every content
+digest is checked again on read. Unknown, malformed and tampered artifacts are reported by
+filename rather than silently disappearing.
+
+**Four bindings prevent stale commentary from looking current.** The route first resolves the
+latest immutable bundle revision through `StudyStore`. A review must match its study id, bundle
+digest and bundle revision; an outcome must additionally name that review-record digest; and a
+cost receipt must name it too. Commentary over an earlier evidence revision is therefore not
+served under the newer one merely because both files occupy the same directory. An exact revision
+with no review returns an explicit absence note: no recorded review is not evidence that nobody
+reviewed it or that no criticism exists.
+
+**The layout is part of the boundary.** Review is its own workflow workspace, not a panel inside
+Findings. The amber R23 declaration and R22/R23 claim boundary precede every record. Complete core-
+rendered calls and round-robin outcomes are shown as recorded argument, including retained
+dissent; cost receipts show the provider route's recorded token counts and digest, with no dollar
+price and no suggestion that cost measures review quality. The shared study id is navigation
+context only. There is no vote count, consensus badge, promotion control or action that can run a
+review.
+
+**What is verified.** `test_reviews_api.py` has eight tests for the empty state, the complete
+record/outcome/receipt surface, exact-revision binding, record-digest linkage, corrupt-artifact
+reporting, 404 behavior, GET-only routing and byte-identical bundle reads. Six additional frontend
+contracts guard routing and separation from Findings, the GET-only client, the visible R23 fence,
+complete argument/cost rendering, honest empty states and accessibility semantics.
+`test_frontend_contract.py` passes 92 tests and the production build transforms 1,395 modules.
+Rendered inspection was attempted through the configured in-app browser, whose runtime reported
+no available browser backend, so it remains **NOT RUN**.
+
+**Claim boundary.** A recorded argument is an observation of what a non-deterministic process said
+once. It is not reproducible computation, evidence, consensus or permission to claim; deleting it
+changes no claim level (R22, R23). A cost receipt proves only the recorded route and token
+accounting, not that the argument was good.
+
 ### 3.11 Ground-Truth Benchmark Suite (`src/benchmarks/`)
 
 Added in T3.5.17 (standard E7). Twenty synthetic datasets whose correct answer is known
@@ -4030,7 +4110,7 @@ reason in the test itself.
 
 ## 3.12 HTTP API Surface
 
-74 routes. Listed here because an undocumented endpoint is an untested contract.
+75 routes. Listed here because an undocumented endpoint is an untested contract.
 
 | Method | Route | Notes |
 |---|---|---|
@@ -4108,6 +4188,7 @@ reason in the test itself.
 | GET | `/api/v1/findings/studies/{study_id}` | one evidence bundle whole, with its digests |
 | GET | `/api/v1/findings/studies/{study_id}/outputs` | the five outputs untranslated, for checking the wording changed no fact |
 | GET | `/api/v1/findings/studies/{study_id}/translation` | the finding rendered in one domain's words; R9's six figures whole or absent |
+| GET | `/api/v1/reviews/studies/{study_id}` | verified recorded calls, round-robin outcomes and cost receipts bound to the latest exact bundle revision; read-only and never claim permission (TG11.5) |
 
 ## 3A. Phase 4A - The Time Axis and the Artifact Store
 
@@ -4823,13 +4904,14 @@ The architecture is highly modular and maintains clean boundaries at several cri
 
 ## 6. Front-End Technical Implementation
 
-The React frontend is fully written and structurally complete. It was installed and built in T3.5.0/T3.5.3 (`npm run build` emits hashed JS and CSS into `dist/`) and wired to the previously unreachable endpoints in T3.5.22. Its **rendered appearance was confirmed by the user on 2026-08-20** (T3.5.25): the platform was started, both servers came up, and the then-nine tabs were reported working. T5.6g added a tenth tab, TG9.2 an eleventh and TG8.4 briefly a twelfth Domain Records tab. TG10.2 consolidated that reader into Acquire, leaving eleven destinations; TG11.0 groups those destinations by workflow rather than numbering them, TG11.1 adds a twelfth, Cross-domain analysis, under Analyse, and TG11.2 a thirteenth, Preregistration, beside it, and TG11.3 a fourteenth, Evidence record, under Evidence. The post-T3.5.25 surfaces compile and build but have **not** been visually inspected in a browser. The earlier confirmation is a user report, not an artefact - **no screenshot per tab exists in this repository**, so T3.5.0's literal evidence clause remains outstanding. Contract tests prove all fourteen current destinations compile, call routes that exist and read fields that are present; they do not prove rendered appearance.
+The React frontend is fully written and structurally complete. It was installed and built in T3.5.0/T3.5.3 (`npm run build` emits hashed JS and CSS into `dist/`) and wired to the previously unreachable endpoints in T3.5.22. Its **rendered appearance was confirmed by the user on 2026-08-20** (T3.5.25): the platform was started, both servers came up, and the then-nine tabs were reported working. T5.6g added a tenth tab, TG9.2 an eleventh and TG8.4 briefly a twelfth Domain Records tab. TG10.2 consolidated that reader into Acquire, leaving eleven destinations; TG11.0 groups those destinations by workflow rather than numbering them. TG11.1-TG11.5 add Cross-domain analysis, Preregistration, Evidence record, Structure mining, Cross-domain record and Recorded review, bringing the workflow to sixteen destinations. The post-T3.5.25 surfaces compile and build but have **not** been visually inspected in a browser. The earlier confirmation is a user report, not an artefact - **no screenshot per tab exists in this repository**, so T3.5.0's literal evidence clause remains outstanding. Contract tests prove all sixteen current destinations compile, call routes that exist and read fields that are present; they do not prove rendered appearance.
 
 *   **Component Visualizations:** `Heatmap2D.tsx` and `LineChart.tsx` wrap `react-plotly.js`; `LineageGraph.tsx` is a hand-rolled SVG node-link renderer with a tooltip inspector and no external graph dependency. All three take reactive props and render spatial fields, PSD curves, coherence ratios, and provenance DAGs.
-*   **Accessibility remains partial.** Findings, channel records, and TG11.0's workflow
-    navigation/context strip have roles, labels, visible keyboard focus or native button
-    semantics. The legacy gridded panels still carry the measured debt scheduled for TG11.6;
-    grouped navigation is not a claim that the whole workbench is accessible.
+*   **Accessibility has a workflow-wide source contract (TG11.6).** The shell provides skip and
+    route-focus behaviour, every legacy gridded control is programmatically labelled, focus is
+    globally visible, reduced motion is honoured, asynchronous state is announced, figures have
+    text equivalents and SVG lineage nodes have keyboard operation. Rendered assistive-technology
+    inspection is still NOT RUN, so no WCAG conformance level is claimed.
 *   **Main Application (`App.tsx`):** shell state and the fourteen destinations grouped under
     Acquire, Analyse, Evidence, Review, Read and Platform, with persistent selected-record and
     selected-study context, loading indicators, dynamic controls and proposal adoption.
@@ -4855,9 +4937,9 @@ See `VERIFICATION.md` for the captured command output behind every statement her
 | Item | Status |
 |---|---|
 | Python venv + dependencies | installed (torch 2.13.0+cu130, numpy 2.2.6, pydantic 1.10.26, SQLAlchemy 2.0.52, xarray 2025.6.1, FastAPI 0.110.3) |
-| Backend test suite | **2661 passed, 1 xfailed** (plus 2 skipped: the opt-in live GCS read and the opt-in live store probe) (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17, 351 after T3.5.6, 379 after T3.5.15, 407 after T3.5.19, 449 after T4C.5, 709 after T4A.4, 781 after T4B.4, 855 after T4C.5, 859 after T4C.5c, 882 after T5.1a CPU acceptance, 883 after RTX acceptance, 890 after portable profiles, 911 after T5.1b/D44, 917 after T5.1c, 933 after T5.1d/D45, 946 after T5.1e, 955 after T5.2a, 957 after T5.2b, 962 after T5.3a, 969 after T5.3b, 981 after T5.2c offline acceptance, 985 after T5.2d, 1000 after T5.0a, 1008 after T5.0b, 1027 after T5.6a offline acceptance, 1042 after T5.6b cube acceptance, 1056 after T5.6c matched evaluation, 1070 after T5.6d truth matching, 1080 after T5.6e orchestration, 1089 after T5.6f portable jobs, 1094 after T5.6g reporting, 1095 after the licence guard, 1102 after T4C.5d gate readiness, 1104 after D50 storage preflight, 1106 after T4C.5e overlap evidence, 1112 after T4C.5f campaign acceptance, 1116 after T4C.5g physical preflight, 1117 after T4C.5h preregistration - the `master` freeze; then on `ed-dev`, 1375 after TG2.1, 1429 after TG2.2, 1477 after TG2.3, 1536 after TG2.4, 1577 after TG3.1, 1621 after TG3.2, 1686 after TG3.3, 1742 after TG3.4, 1787 after TG3.5, 1850 after TG4.1, 1922 after TG4.2, 1972 after TG4.3, 1986 after TG5.1, 2004 after TG5.2 and 2020 after TG5.3, 2044 after TG6.1, 2074 after TG6.2, 2112 after TG6.3, 2167 after TG7.1, 2217 after TG7.2, 2235 after TG7.3, 2236 after TG7.3 live acceptance, 2296 after TG7.4, 2321 after TG9.1/TG9.2 2334 after TG9.3, 2367 after TG8.1, 2420 after TG8.4, 2459 after TG10.1, 2503 after TG10.3, 2509 after TG10.2 2511 after TG11.0, 2521 after TG11.1, 2543 after TG11.2, 2570 after TG11.3, 2619 after TG11.4 and 2661 after TG11.4b) |
+| Backend test suite | **2681 passed, 1 xfailed** (plus 2 skipped: the opt-in live GCS read and the opt-in live store probe) (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17, 351 after T3.5.6, 379 after T3.5.15, 407 after T3.5.19, 449 after T4C.5, 709 after T4A.4, 781 after T4B.4, 855 after T4C.5, 859 after T4C.5c, 882 after T5.1a CPU acceptance, 883 after RTX acceptance, 890 after portable profiles, 911 after T5.1b/D44, 917 after T5.1c, 933 after T5.1d/D45, 946 after T5.1e, 955 after T5.2a, 957 after T5.2b, 962 after T5.3a, 969 after T5.3b, 981 after T5.2c offline acceptance, 985 after T5.2d, 1000 after T5.0a, 1008 after T5.0b, 1027 after T5.6a offline acceptance, 1042 after T5.6b cube acceptance, 1056 after T5.6c matched evaluation, 1070 after T5.6d truth matching, 1080 after T5.6e orchestration, 1089 after T5.6f portable jobs, 1094 after T5.6g reporting, 1095 after the licence guard, 1102 after T4C.5d gate readiness, 1104 after D50 storage preflight, 1106 after T4C.5e overlap evidence, 1112 after T4C.5f campaign acceptance, 1116 after T4C.5g physical preflight, 1117 after T4C.5h preregistration - the `master` freeze; then on `ed-dev`, 1375 after TG2.1, 1429 after TG2.2, 1477 after TG2.3, 1536 after TG2.4, 1577 after TG3.1, 1621 after TG3.2, 1686 after TG3.3, 1742 after TG3.4, 1787 after TG3.5, 1850 after TG4.1, 1922 after TG4.2, 1972 after TG4.3, 1986 after TG5.1, 2004 after TG5.2 and 2020 after TG5.3, 2044 after TG6.1, 2074 after TG6.2, 2112 after TG6.3, 2167 after TG7.1, 2217 after TG7.2, 2235 after TG7.3, 2236 after TG7.3 live acceptance, 2296 after TG7.4, 2321 after TG9.1/TG9.2 2334 after TG9.3, 2367 after TG8.1, 2420 after TG8.4, 2459 after TG10.1, 2503 after TG10.3, 2509 after TG10.2 2511 after TG11.0, 2521 after TG11.1, 2543 after TG11.2, 2570 after TG11.3, 2619 after TG11.4, 2661 after TG11.4b, 2667 after TG11.6 and 2681 after TG11.5) |
 | Ground-Truth Benchmark Suite | **29 PASS, 0 FAIL, 0 NOT_YET_RUNNABLE** (`python -m src.benchmarks`, exit 0) |
-| Frontend `npm install` + `npm run build` | passes, emits 1,386 modules + real JS/CSS assets (was: 1 module, no assets) |
+| Frontend `npm install` + `npm run build` | passes, emits 1,395 modules + real JS/CSS assets (was: 1 module, no assets) |
 | Backend server | starts, serves OpenAPI, all smoke-tested endpoints return 200 |
 | End-to-end experiment sweep | 9-run parameter sweep completes 9/9, writes 28 lineage nodes / 54 edges, hypothesis engine returns results |
 | Version control | active Git history captures implementation slices; scientific run receipts carry their own content identities rather than treating the current commit as data provenance |
@@ -5127,7 +5209,7 @@ able to sit three slices out of date.
 | `test_forecasting_artifact_evaluation.py` | 8 | T5.3b/T5.2d checkpoint/config integrity, artifact-bound lineage, persistence-relative metrics, physical-time reporting/refusals, undefined-skill handling and CPU/RTX vendor-neutral accelerator parity |
 | `test_forecasting_protocol.py` | 7 | T5.0a exact schema completeness, canonical identity, immutable nested configuration, evidence requirements, temporal/rollout consistency, persistence and tamper/drift refusal |
 | `test_forecasting_protocol_binding.py` | 4 | T5.0b exact dataset/protocol/checkpoint binding, recomputed coordinate/statistics identities, drift refusals and bound-evaluation cross-run isolation |
-| `test_frontend_contract.py` | 80 | the frontend/backend contract, including transform/dataset/cadence readiness claim boundaries, domain-driven acquisition, workflow-grouped navigation, persistent record/study context, the TG11.1 analysis panel's three engine operations, R21 disablement, three-valued verdict and re-read identity check, the TG11.2 preregistration panel's declare-never-decide split (no client-supplied digest, sealing time or p-value), its confirmation call carrying the record and nothing else, its published-digest caveat and its spent-is-not-failed presentation, and preservation of every ERA5 control, plus the UI integrity guards: no fabricated results, no unqualified validation claims, units and slope uncertainty displayed |
+| `test_frontend_contract.py` | 92 | the frontend/backend contract, including transform/dataset/cadence readiness claim boundaries, domain-driven acquisition, workflow-grouped navigation, persistent record/study context, the TG11.1 analysis panel's three engine operations, R21 disablement, three-valued verdict and re-read identity check, the TG11.2 preregistration panel's declare-never-decide split, TG11.5's separate GET-only recorded-review workspace with its visible R23 fence, complete argument/cost display and honest empty states, preservation of every ERA5 control, and TG11.6's skip/route focus, bound labels, global focus and reduced-motion rule, keyboard SVG lineage, figure text equivalents and asynchronous-state semantics, plus the UI integrity guards: no fabricated results, no unqualified validation claims, units and slope uncertainty displayed |
 | `test_gate_run.py` | 1 | T4C.5d frozen plan, local-only preflight, bounded train-only climatology/signatures, authenticated synthetic gate receipt, no-overwrite and tamper refusal |
 | `test_gate_campaign.py` | 6 | T4C.5f-h exact campaign identity, strict nested schema, canary/full/WeatherBench drift refusals, pre-transfer R13/physical-lag audit, aggregate storage/readiness, immutable freeze/load, pinned real preregistration and zero-network CLI (8 pytest cases) |
 | `test_grid_operators.py` | 64 | grid metrics, metric-aware gradient/Laplacian, area weighting, physical-wavenumber spectra, D26 |
@@ -5162,7 +5244,8 @@ able to sit three slices out of date.
 | `test_evidence_api.py` | 22 | TG11.3 the evidence write path: a study opened at revision zero claiming nothing, a second study under one identifier refused, an identifier that could traverse a directory refused, an append linked to the head it names, a stale head refused with nothing written, earlier revisions kept rather than rewritten, the read surface serving the latest revision and folding the earlier ones into one row (D66), a request carrying a rung refused rather than ignored, a payload asserting a rung refused at any depth, a payload asserting `temporal_precedence` refused and told which route computes it, the rung moving only because the evidence moved it, one FAIL entry capping the chain at observation through the wire, commentary refused a category, a bare confidence refused on the way in, an entry that cannot be back-dated, a causally worded hypothesis registered with the ceiling stated, the precedence verdict computed here and citing the bytes and the configuration it came from, an underpowered sweep recorded INCONCLUSIVE rather than as a negative, a domain with no admissible lag floor writing nothing, and a stale head refused before the sweep runs |
 | `test_mining_api.py` | 41 | TG11.4 the structure-mining surface: no request model on it accepts a feature, a coordinate or a graph; a tolerance cannot be typed and travels as the digest of a calibration the server performed; a tolerance measured through another pipeline or on held-out frames refused; frames of unequal feature counts refused rather than trimmed, with the tempting repair named; a record addressed by its bytes and its declaration, and refused when the stored declaration is edited; a pickled array refused rather than loaded; a domain with no spatial extent refused; the frame split asserted against the row split it mirrors; a generation response carrying held-out geometry and nothing measured inside it; every sealed setting present in the seal, stored where every other seal is; a confirmation that takes a seal digest and nothing else; the planted motif confirmed on frames it was not mined from; the held-out frames opened once; a seal frozen by another surface refused; **a null record confirming nothing**; a published definition carrying its origin licence; a transfer target opened once whatever is transferred into it; a transfer into the origin domain refused as replication; and the invariance audit reporting an unsupported declaration as overclaimed |
 | `test_cross_domain_api.py` | 35 | TG11.4b the cross-domain record: two native clocks intersected exactly, with what each side retained and discarded reported; clocks that share no observation refused rather than resampled, and the refusal naming interpolation as the thing it declines; an irregular native clock refusing precedence by name; a column whose semantics or units were not declared refused rather than defaulted (R19); an unknown reading setting refused rather than ignored; two records from one domain refused as not a cross-domain study; a family declared in seconds converted onto the common cadence; only pairs that cross the boundary counted as members; a duration below either domain’s physical floor refused rather than dropped and one the common clock cannot express refused rather than rounded; the price agreeing with the family the generate pass actually searches; the partition identity ignoring what the files were called (D65); generation reading nothing from the held-out partition and writing nothing; every run setting sealed inside the specification and the seal visible where the programme lists what it froze; the frozen members re-derived from the record rather than reconstructed from their labels; an edited seal refused at load and spending nothing; **the planted relationship confirmed on data it was not selected from and the same pipeline over an uncoupled pair confirming nothing**; both operands’ semantics and units restored to the receipt; the partition opened once; a wrong pair of records confirming nothing and costing nothing; a published digest that disagrees with the seal spending nothing; a seal frozen by another surface refused; the confirm route accepting the two records and nothing else; and no route on the surface accepting a lag in frames |
-| **total** | **2316** | |
+| `test_reviews_api.py` | 8 | TG11.5's read-only recorded-review boundary: explicit absence without reassurance, complete verified record/outcome/cost serving, exact latest-bundle binding, record-digest linkage, malformed and unknown artifacts reported rather than skipped, unknown-study 404, GET-only routing, and a read leaving the evidence bundle byte-identical (R22, R23) |
+| **total** | **2336** | |
 
 ### 7.2h A surrogate null that was not the null it claimed (T4C.5)
 

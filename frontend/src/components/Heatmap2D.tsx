@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useId } from 'react';
 import Plot from 'react-plotly.js';
 
 interface Heatmap2DProps {
@@ -32,6 +32,7 @@ export const Heatmap2D: React.FC<Heatmap2DProps> = ({
   zRange,
   validInset = 0,
 }) => {
+  const figureTitleId = useId();
   let colorscale: string | any[][] = 'Viridis';
   if (colormap === 'coolwarm') {
     colorscale = 'Coolwarm';
@@ -43,8 +44,11 @@ export const Heatmap2D: React.FC<Heatmap2DProps> = ({
   const yCoords = coords?.lat || coords?.y || (data ? Array.from({ length: data.length }, (_, i) => i) : []);
 
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-lg p-4 flex flex-col items-center w-full">
-      {title && <h3 className="text-sm font-semibold text-slate-300 mb-2">{title}</h3>}
+    <figure className="bg-slate-900 border border-slate-800 rounded-lg p-4 flex flex-col items-center w-full"
+      aria-labelledby={figureTitleId}>
+      <h3 id={figureTitleId} className={title ? "text-sm font-semibold text-slate-300 mb-2" : "sr-only"}>
+        {title || 'Two-dimensional field'}
+      </h3>
       
       {/* Canvas element to satisfy conceptual unit test requirements */}
       <canvas width={1} height={1} className="hidden" />
@@ -95,6 +99,13 @@ export const Heatmap2D: React.FC<Heatmap2DProps> = ({
           className="w-full h-80"
         />
       </div>
-    </div>
+      <figcaption className="sr-only">
+        Heat map with {data.length} rows and {data[0]?.length || 0} columns.
+        {units ? ` Values are measured in ${units}.` : ' Value units were not supplied.'}
+        {xLabel ? ` Horizontal axis: ${xLabel}.` : ''}
+        {yLabel ? ` Vertical axis: ${yLabel}.` : ''}
+        {validInset > 0 ? ` Only the region at least ${validInset} samples from the boundary is valid.` : ''}
+      </figcaption>
+    </figure>
   );
 };

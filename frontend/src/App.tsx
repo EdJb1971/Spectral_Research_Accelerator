@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Heatmap2D } from './components/Heatmap2D';
 import { LineChart } from './components/LineChart';
 import { LineageGraph } from './components/LineageGraph';
@@ -15,6 +15,7 @@ import PreregistrationView from './components/PreregistrationView';
 import EvidenceView from './components/EvidenceView';
 import StructureMiningView from './components/StructureMiningView';
 import CrossDomainRecordView from './components/CrossDomainRecordView';
+import ReviewView from './components/ReviewView';
 import { apiService } from './services/api';
 import * as types from './types/api';
 import {
@@ -47,7 +48,8 @@ import {
   Waypoints,
   FileCheck2,
   FilePlus2,
-  Lock
+  Lock,
+  MessageSquare
 } from 'lucide-react';
 
 const WORKFLOW_NAV = [
@@ -73,13 +75,17 @@ const WORKFLOW_NAV = [
       { id: 'evaluation', name: 'Forecast evaluation', icon: FileCheck2, context: 'Gridded field line' },
     ],
   },
-  { section: 'Review', note: 'Review surface arrives in TG11.5', items: [] },
+  { section: 'Review', note: 'Recorded argument; never claim permission', items: [
+    { id: 'review', name: 'Recorded review', icon: MessageSquare },
+  ] },
   { section: 'Read', items: [{ id: 'findings', name: 'Findings', icon: BookOpen }] },
   { section: 'Platform', items: [{ id: 'platform', name: 'Platform & evidence', icon: ShieldCheck }] },
 ] as const;
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('acquire');
+  const workspaceHeadingRef = useRef<HTMLHeadingElement>(null);
+  const hasMountedRef = useRef(false);
   const [backendConnected, setBackendConnected] = useState<boolean | null>(null);
   // TG11.0: context belongs to the shell, not to whichever workflow panel is mounted.
   const [selectedRecord, setSelectedRecord] = useState<types.ChannelRecordSelection | null>(null);
@@ -643,12 +649,23 @@ export default function App() {
     if (activeTab === 'evaluation') loadEvaluationReports();
   }, [activeTab]);
 
+  useEffect(() => {
+    if (hasMountedRef.current) workspaceHeadingRef.current?.focus();
+    hasMountedRef.current = true;
+  }, [activeTab]);
+
+  const activeWorkspace = (WORKFLOW_NAV as readonly {
+    items: readonly { id: string; name: string }[];
+  }[]).flatMap(group => group.items)
+    .find(item => item.id === activeTab)?.name || 'Scientific workbench';
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
+      <a href="#workspace-main" className="skip-link">Skip to workspace</a>
       {/* Top Banner / Navigation Header */}
       <header className="border-b border-slate-800 bg-slate-900/50 backdrop-blur px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Globe className="w-8 h-8 text-teal-400 animate-pulse" />
+          <Globe className="w-8 h-8 text-teal-400 animate-pulse" aria-hidden="true" />
           <div>
             <h1 className="text-lg font-bold tracking-tight text-white">SpectralEarth</h1>
             <p className="text-xs text-slate-400">Scientific Visual Research Workbench</p>
@@ -656,13 +673,14 @@ export default function App() {
         </div>
         <div className="flex items-center gap-4">
           {backendConnected ? (
-            <span className="text-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-3 py-1.5 rounded-full font-medium flex items-center gap-2">
-              <Server className="w-3.5 h-3.5" /> API Connected (SQLite DB Active)
+            <span role="status" className="text-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-3 py-1.5 rounded-full font-medium flex items-center gap-2">
+              <Server className="w-3.5 h-3.5" aria-hidden="true" /> API Connected (SQLite DB Active)
             </span>
           ) : (
-            <span className="text-xs bg-amber-500/10 text-amber-400 border border-amber-500/20 px-3 py-1.5 rounded-full font-medium flex items-center gap-2 cursor-pointer" onClick={checkConnection}>
-              <WifiOff className="w-3.5 h-3.5" /> Backend unreachable - no computation available (click to retry)
-            </span>
+            <button type="button" className="text-xs bg-amber-500/10 text-amber-400 border border-amber-500/20 px-3 py-1.5 rounded-full font-medium flex items-center gap-2"
+              onClick={checkConnection}>
+              <WifiOff className="w-3.5 h-3.5" aria-hidden="true" /> Backend unreachable - no computation available; retry
+            </button>
           )}
         </div>
       </header>
@@ -722,7 +740,15 @@ export default function App() {
         </nav>
 
         {/* Core Main content section */}
-        <main className="flex-1 p-6 overflow-y-auto space-y-6">
+        <main id="workspace-main" aria-labelledby="workspace-heading"
+          aria-busy={loading || benchmarkRunning || receiptImporting}
+          className="flex-1 p-6 overflow-y-auto space-y-6">
+          <h2 id="workspace-heading" ref={workspaceHeadingRef} tabIndex={-1} className="sr-only">
+            {activeWorkspace} workspace
+          </h2>
+          <p className="sr-only" role="status" aria-live="polite">
+            {loading || benchmarkRunning || receiptImporting ? `${activeWorkspace} is working` : `${activeWorkspace} is ready`}
+          </p>
           <section aria-label="Current research context"
             className="bg-slate-900/60 border border-slate-800 rounded-lg px-4 py-3 flex flex-wrap gap-x-6 gap-y-2 text-xs">
             <div className="flex items-center gap-2">
@@ -747,12 +773,12 @@ export default function App() {
             </div>
           </section>
           {error && (
-            <div className="bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded-lg p-4 flex items-center justify-between">
+            <div role="alert" className="bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded-lg p-4 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <XCircle className="w-5 h-5 flex-shrink-0" />
+                <XCircle className="w-5 h-5 flex-shrink-0" aria-hidden="true" />
                 <p className="text-sm font-medium">{error}</p>
               </div>
-              <button onClick={() => setError(null)} className="text-xs underline hover:text-rose-200">Dismiss</button>
+              <button type="button" onClick={() => setError(null)} className="text-xs underline hover:text-rose-200">Dismiss error</button>
             </div>
           )}
 
@@ -774,8 +800,9 @@ export default function App() {
                   </h3>
 
                   <div>
-                    <label className="text-xs text-slate-400 block mb-1">Field Type</label>
+                    <label htmlFor="synthetic-field-type" className="text-xs text-slate-400 block mb-1">Field Type</label>
                     <select
+                      id="synthetic-field-type"
                       value={genType}
                       onChange={(e) => setGenType(e.target.value)}
                       className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-sm text-slate-200 focus:outline-none focus:border-teal-500"
@@ -787,8 +814,9 @@ export default function App() {
                   </div>
 
                   <div>
-                    <label className="text-xs text-slate-400 block mb-1">Grid Size (N x N)</label>
+                    <label htmlFor="synthetic-grid-size" className="text-xs text-slate-400 block mb-1">Grid Size (N x N)</label>
                     <select
+                      id="synthetic-grid-size"
                       value={gridSize}
                       onChange={(e) => setGridSize(Number(e.target.value))}
                       className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-sm text-slate-200 focus:outline-none"
@@ -803,30 +831,33 @@ export default function App() {
                   {genType === 'sinusoid' && (
                     <div className="space-y-3">
                       <div>
-                        <label className="text-xs text-slate-400 flex justify-between mb-1">
+                        <label htmlFor="synthetic-frequency-x" className="text-xs text-slate-400 flex justify-between mb-1">
                           <span>X-Frequency (ωx): {freqX}</span>
                         </label>
                         <input
+                          id="synthetic-frequency-x"
                           type="range" min="0.5" max="8" step="0.5" value={freqX}
                           onChange={(e) => setFreqX(parseFloat(e.target.value))}
                           className="w-full accent-teal-500"
                         />
                       </div>
                       <div>
-                        <label className="text-xs text-slate-400 flex justify-between mb-1">
+                        <label htmlFor="synthetic-frequency-y" className="text-xs text-slate-400 flex justify-between mb-1">
                           <span>Y-Frequency (ωy): {freqY}</span>
                         </label>
                         <input
+                          id="synthetic-frequency-y"
                           type="range" min="0.5" max="8" step="0.5" value={freqY}
                           onChange={(e) => setFreqY(parseFloat(e.target.value))}
                           className="w-full accent-teal-500"
                         />
                       </div>
                       <div>
-                        <label className="text-xs text-slate-400 flex justify-between mb-1">
+                        <label htmlFor="synthetic-amplitude" className="text-xs text-slate-400 flex justify-between mb-1">
                           <span>Amplitude: {sinAmplitude}</span>
                         </label>
                         <input
+                          id="synthetic-amplitude"
                           type="range" min="0.5" max="5" step="0.5" value={sinAmplitude}
                           onChange={(e) => setSinAmplitude(parseFloat(e.target.value))}
                           className="w-full accent-teal-500"
@@ -839,16 +870,18 @@ export default function App() {
                     <div className="space-y-3">
                       <div className="grid grid-cols-2 gap-3">
                         <div>
-                          <label className="text-xs text-slate-400 block mb-1">Center X</label>
+                          <label htmlFor="vortex-center-x" className="text-xs text-slate-400 block mb-1">Center X</label>
                           <input
+                            id="vortex-center-x"
                             type="number" step="0.1" value={vortexCenterX}
                             onChange={(e) => setVortexCenterX(parseFloat(e.target.value))}
                             className="w-full bg-slate-950 border border-slate-800 rounded p-1.5 text-xs text-slate-200"
                           />
                         </div>
                         <div>
-                          <label className="text-xs text-slate-400 block mb-1">Center Y</label>
+                          <label htmlFor="vortex-center-y" className="text-xs text-slate-400 block mb-1">Center Y</label>
                           <input
+                            id="vortex-center-y"
                             type="number" step="0.1" value={vortexCenterY}
                             onChange={(e) => setVortexCenterY(parseFloat(e.target.value))}
                             className="w-full bg-slate-950 border border-slate-800 rounded p-1.5 text-xs text-slate-200"
@@ -856,20 +889,22 @@ export default function App() {
                         </div>
                       </div>
                       <div>
-                        <label className="text-xs text-slate-400 flex justify-between mb-1">
+                        <label htmlFor="vortex-amplitude" className="text-xs text-slate-400 flex justify-between mb-1">
                           <span>Amplitude: {vortexAmp}</span>
                         </label>
                         <input
+                          id="vortex-amplitude"
                           type="range" min="0.5" max="5" step="0.1" value={vortexAmp}
                           onChange={(e) => setVortexAmp(parseFloat(e.target.value))}
                           className="w-full accent-teal-500"
                         />
                       </div>
                       <div>
-                        <label className="text-xs text-slate-400 flex justify-between mb-1">
+                        <label htmlFor="vortex-core-radius" className="text-xs text-slate-400 flex justify-between mb-1">
                           <span>{"Core Radius (r_core): "}{vortexRadius}</span>
                         </label>
                         <input
+                          id="vortex-core-radius"
                           type="range" min="0.05" max="0.5" step="0.05" value={vortexRadius}
                           onChange={(e) => setVortexRadius(parseFloat(e.target.value))}
                           className="w-full accent-teal-500"
@@ -881,40 +916,44 @@ export default function App() {
                   {genType === 'front' && (
                     <div className="space-y-3">
                       <div>
-                        <label className="text-xs text-slate-400 flex justify-between mb-1">
+                        <label htmlFor="front-angle" className="text-xs text-slate-400 flex justify-between mb-1">
                           <span>Angle (Degrees): {frontAngle}°</span>
                         </label>
                         <input
+                          id="front-angle"
                           type="range" min="0" max="360" step="15" value={frontAngle}
                           onChange={(e) => setFrontAngle(parseFloat(e.target.value))}
                           className="w-full accent-teal-500"
                         />
                       </div>
                       <div>
-                        <label className="text-xs text-slate-400 flex justify-between mb-1">
+                        <label htmlFor="front-offset" className="text-xs text-slate-400 flex justify-between mb-1">
                           <span>Offset: {frontOffset}</span>
                         </label>
                         <input
+                          id="front-offset"
                           type="range" min="-0.5" max="0.5" step="0.1" value={frontOffset}
                           onChange={(e) => setFrontOffset(parseFloat(e.target.value))}
                           className="w-full accent-teal-500"
                         />
                       </div>
                       <div>
-                        <label className="text-xs text-slate-400 flex justify-between mb-1">
+                        <label htmlFor="front-width" className="text-xs text-slate-400 flex justify-between mb-1">
                           <span>Width Parameter: {frontWidth}</span>
                         </label>
                         <input
+                          id="front-width"
                           type="range" min="0.01" max="0.3" step="0.01" value={frontWidth}
                           onChange={(e) => setFrontWidth(parseFloat(e.target.value))}
                           className="w-full accent-teal-500"
                         />
                       </div>
                       <div>
-                        <label className="text-xs text-slate-400 flex justify-between mb-1">
+                        <label htmlFor="front-amplitude" className="text-xs text-slate-400 flex justify-between mb-1">
                           <span>Amplitude: {frontAmp}</span>
                         </label>
                         <input
+                          id="front-amplitude"
                           type="range" min="0.5" max="5" step="0.5" value={frontAmp}
                           onChange={(e) => setFrontAmp(parseFloat(e.target.value))}
                           className="w-full accent-teal-500"
@@ -971,8 +1010,9 @@ export default function App() {
                     
                     <div className="flex flex-wrap items-end gap-4 mb-4">
                       <div>
-                        <label className="text-xs text-slate-400 block mb-1">Perturbation Type</label>
+                        <label htmlFor="perturbation-type" className="text-xs text-slate-400 block mb-1">Perturbation Type</label>
                         <select
+                          id="perturbation-type"
                           value={newPertType}
                           onChange={(e) => setNewPertType(e.target.value)}
                           className="bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-slate-200 focus:outline-none"
@@ -985,8 +1025,9 @@ export default function App() {
 
                       {newPertType === 'rotation' && (
                         <div>
-                          <label className="text-xs text-slate-400 block mb-1">Rotation Angle (°)</label>
+                          <label htmlFor="perturbation-angle" className="text-xs text-slate-400 block mb-1">Rotation Angle (°)</label>
                           <input
+                            id="perturbation-angle"
                             type="number" value={newPertAngle}
                             onChange={(e) => setNewPertAngle(parseFloat(e.target.value))}
                             className="bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-slate-200 w-24"
@@ -997,16 +1038,18 @@ export default function App() {
                       {newPertType === 'translation' && (
                         <div className="flex gap-2">
                           <div>
-                            <label className="text-xs text-slate-400 block mb-1">Shift X</label>
+                            <label htmlFor="perturbation-shift-x" className="text-xs text-slate-400 block mb-1">Shift X</label>
                             <input
+                              id="perturbation-shift-x"
                               type="number" step="0.05" value={newPertShiftX}
                               onChange={(e) => setNewPertShiftX(parseFloat(e.target.value))}
                               className="bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-slate-200 w-20"
                             />
                           </div>
                           <div>
-                            <label className="text-xs text-slate-400 block mb-1">Shift Y</label>
+                            <label htmlFor="perturbation-shift-y" className="text-xs text-slate-400 block mb-1">Shift Y</label>
                             <input
+                              id="perturbation-shift-y"
                               type="number" step="0.05" value={newPertShiftY}
                               onChange={(e) => setNewPertShiftY(parseFloat(e.target.value))}
                               className="bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-slate-200 w-20"
@@ -1018,8 +1061,9 @@ export default function App() {
                       {newPertType === 'noise' && (
                         <div className="flex gap-2">
                           <div>
-                            <label className="text-xs text-slate-400 block mb-1">Noise Distribution</label>
+                            <label htmlFor="perturbation-noise-type" className="text-xs text-slate-400 block mb-1">Noise Distribution</label>
                             <select
+                              id="perturbation-noise-type"
                               value={newPertNoiseType}
                               onChange={(e) => setNewPertNoiseType(e.target.value)}
                               className="bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-slate-200"
@@ -1030,8 +1074,9 @@ export default function App() {
                             </select>
                           </div>
                           <div>
-                            <label className="text-xs text-slate-400 block mb-1">Level (σ)</label>
+                            <label htmlFor="perturbation-noise-level" className="text-xs text-slate-400 block mb-1">Level (σ)</label>
                             <input
+                              id="perturbation-noise-level"
                               type="number" step="0.05" value={newPertNoiseLevel}
                               onChange={(e) => setNewPertNoiseLevel(parseFloat(e.target.value))}
                               className="w-full accent-teal-500"
@@ -1059,8 +1104,9 @@ export default function App() {
                               {p.type === 'rotation' && <span>(θ: {p.angle}°)</span>}
                               {p.type === 'translation' && <span>(X: {p.shift_x}, Y: {p.shift_y})</span>}
                               {p.type === 'noise' && <span>({p.noise_type}, σ: {p.level})</span>}
-                              <button onClick={() => setPerturbations(perturbations.filter((_, i) => i !== idx))} className="text-rose-500 hover:text-rose-400">
-                                <Trash2 className="w-3 h-3" />
+                              <button type="button" aria-label={`Remove ${p.type} perturbation step ${idx + 1}`}
+                                onClick={() => setPerturbations(perturbations.filter((_, i) => i !== idx))} className="text-rose-500 hover:text-rose-400">
+                                <Trash2 className="w-3 h-3" aria-hidden="true" />
                               </button>
                             </span>
                           ))}
@@ -1129,8 +1175,9 @@ export default function App() {
                   </h3>
 
                   <div>
-                    <label className="text-xs text-slate-400 block mb-1">Active Dataset</label>
+                    <label htmlFor="active-dataset" className="text-xs text-slate-400 block mb-1">Active Dataset</label>
                     <select
+                      id="active-dataset"
                       value={selectedDatasetId}
                       onChange={(e) => {
                         const dId = e.target.value;
@@ -1214,8 +1261,9 @@ export default function App() {
                   })()}
 
                   <div>
-                    <label className="text-xs text-slate-400 block mb-1">Variable</label>
+                    <label htmlFor="dataset-variable" className="text-xs text-slate-400 block mb-1">Variable</label>
                     <select
+                      id="dataset-variable"
                       value={selectedVariable}
                       onChange={(e) => setSelectedVariable(e.target.value)}
                       className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-sm text-slate-200 focus:outline-none"
@@ -1228,8 +1276,9 @@ export default function App() {
 
                   {datasets.find(d => d.id === selectedDatasetId)?.pressure_levels && (
                     <div>
-                      <label className="text-xs text-slate-400 block mb-1">Pressure Level (hPa)</label>
+                      <label htmlFor="dataset-pressure-level" className="text-xs text-slate-400 block mb-1">Pressure Level (hPa)</label>
                       <select
+                        id="dataset-pressure-level"
                         value={selectedLevel}
                         onChange={(e) => setSelectedLevel(Number(e.target.value))}
                         className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-sm text-slate-200 focus:outline-none"
@@ -1245,15 +1294,17 @@ export default function App() {
                     <span className="text-xs text-slate-400 block font-semibold">Geographical Crop Coordinates</span>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="text-[10px] text-slate-500 block">Latitude Min</label>
+                        <label htmlFor="latitude-min" className="text-[10px] text-slate-500 block">Latitude Min</label>
                         <input
+                          id="latitude-min"
                           type="number" value={latMin} onChange={(e) => setLatMin(parseFloat(e.target.value))}
                           className="w-full bg-slate-950 border border-slate-800 rounded p-1.5 text-xs text-slate-200"
                         />
                       </div>
                       <div>
-                        <label className="text-[10px] text-slate-500 block">Latitude Max</label>
+                        <label htmlFor="latitude-max" className="text-[10px] text-slate-500 block">Latitude Max</label>
                         <input
+                          id="latitude-max"
                           type="number" value={latMax} onChange={(e) => setLatMax(parseFloat(e.target.value))}
                           className="w-full bg-slate-950 border border-slate-800 rounded p-1.5 text-xs text-slate-200"
                         />
@@ -1261,15 +1312,17 @@ export default function App() {
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="text-[10px] text-slate-500 block">Longitude Min</label>
+                        <label htmlFor="longitude-min" className="text-[10px] text-slate-500 block">Longitude Min</label>
                         <input
+                          id="longitude-min"
                           type="number" value={lonMin} onChange={(e) => setLonMin(parseFloat(e.target.value))}
                           className="w-full bg-slate-950 border border-slate-800 rounded p-1.5 text-xs text-slate-200"
                         />
                       </div>
                       <div>
-                        <label className="text-[10px] text-slate-500 block">Longitude Max</label>
+                        <label htmlFor="longitude-max" className="text-[10px] text-slate-500 block">Longitude Max</label>
                         <input
+                          id="longitude-max"
                           type="number" value={lonMax} onChange={(e) => setLonMax(parseFloat(e.target.value))}
                           className="w-full bg-slate-950 border border-slate-800 rounded p-1.5 text-xs text-slate-200"
                         />
@@ -1355,8 +1408,9 @@ export default function App() {
                   </h3>
 
                   <div>
-                    <label className="text-xs text-slate-400 block mb-1">Padding Treatment</label>
+                    <label htmlFor="boundary-treatment" className="text-xs text-slate-400 block mb-1">Padding Treatment</label>
                     <select
+                      id="boundary-treatment"
                       value={boundaryTreatment}
                       onChange={(e) => setBoundaryTreatment(e.target.value)}
                       className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-sm text-slate-200 focus:outline-none"
@@ -1369,10 +1423,11 @@ export default function App() {
                   </div>
 
                   <div>
-                    <label className="text-xs text-slate-400 flex justify-between mb-1">
+                    <label htmlFor="boundary-pad-width" className="text-xs text-slate-400 flex justify-between mb-1">
                       <span>Pad Width: {padWidth}px</span>
                     </label>
                     <input
+                      id="boundary-pad-width"
                       type="range" min="1" max="16" step="1" value={padWidth}
                       onChange={(e) => setPadWidth(parseInt(e.target.value))}
                       className="w-full accent-teal-500"
@@ -1380,8 +1435,9 @@ export default function App() {
                   </div>
 
                   <div>
-                    <label className="text-xs text-slate-400 block mb-1">Spectral Window Tapering</label>
+                    <label htmlFor="boundary-window" className="text-xs text-slate-400 block mb-1">Spectral Window Tapering</label>
                     <select
+                      id="boundary-window"
                       value={windowType}
                       onChange={(e) => setWindowType(e.target.value)}
                       className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-sm text-slate-200 focus:outline-none"
@@ -1395,10 +1451,11 @@ export default function App() {
 
                   {windowType === 'tukey' && (
                     <div>
-                      <label className="text-xs text-slate-400 flex justify-between mb-1">
+                      <label htmlFor="boundary-window-alpha" className="text-xs text-slate-400 flex justify-between mb-1">
                         <span>Tukey Alpha (α): {windowAlpha}</span>
                       </label>
                       <input
+                        id="boundary-window-alpha"
                         type="range" min="0" max="1" step="0.05" value={windowAlpha}
                         onChange={(e) => setWindowAlpha(parseFloat(e.target.value))}
                         className="w-full accent-teal-500"
@@ -1484,8 +1541,9 @@ export default function App() {
                   </h3>
 
                   <div>
-                    <label className="text-xs text-slate-400 block mb-1">Transform Operator</label>
+                    <label htmlFor="transform-operator" className="text-xs text-slate-400 block mb-1">Transform Operator</label>
                     <select
+                      id="transform-operator"
                       value={transformType}
                       onChange={(e) => setTransformType(e.target.value)}
                       className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-sm text-slate-200 focus:outline-none"
@@ -1501,10 +1559,11 @@ export default function App() {
 
                   {['dwt', 'swt', 'dtcwt'].includes(transformType) && (
                     <div>
-                      <label className="text-xs text-slate-400 flex justify-between mb-1">
+                      <label htmlFor="transform-levels" className="text-xs text-slate-400 flex justify-between mb-1">
                         <span>Wavelet Levels: {waveletLevels}</span>
                       </label>
                       <input
+                        id="transform-levels"
                         type="range" min="1" max="4" step="1" value={waveletLevels}
                         onChange={(e) => setWaveletLevels(parseInt(e.target.value))}
                         className="w-full accent-teal-500"
@@ -1514,8 +1573,9 @@ export default function App() {
 
                   {transformType === 'swt' && (
                     <div>
-                      <label className="text-xs text-slate-400 block mb-1">SWT Wavelet Family</label>
+                      <label htmlFor="swt-wavelet-family" className="text-xs text-slate-400 block mb-1">SWT Wavelet Family</label>
                       <select
+                        id="swt-wavelet-family"
                         value={waveletFamily}
                         onChange={(e) => setWaveletFamily(e.target.value)}
                         className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-sm text-slate-200 focus:outline-none"
@@ -1530,20 +1590,22 @@ export default function App() {
                   {transformType === 'hybrid' && (
                     <div className="space-y-3">
                       <div>
-                        <label className="text-xs text-slate-400 flex justify-between mb-1">
+                        <label htmlFor="hybrid-crossover" className="text-xs text-slate-400 flex justify-between mb-1">
                           <span>Crossover Frequency: {crossoverFreq}</span>
                         </label>
                         <input
+                          id="hybrid-crossover"
                           type="range" min="0.05" max="0.5" step="0.05" value={crossoverFreq}
                           onChange={(e) => setCrossoverFreq(parseFloat(e.target.value))}
                           className="w-full accent-teal-500"
                         />
                       </div>
                       <div>
-                        <label className="text-xs text-slate-400 flex justify-between mb-1">
+                        <label htmlFor="hybrid-mixing-weight" className="text-xs text-slate-400 flex justify-between mb-1">
                           <span>Mixing Weight: {mixingWeight}</span>
                         </label>
                         <input
+                          id="hybrid-mixing-weight"
                           type="range" min="0" max="1" step="0.1" value={mixingWeight}
                           onChange={(e) => setMixingWeight(parseFloat(e.target.value))}
                           className="w-full accent-teal-500"
@@ -1638,29 +1700,33 @@ export default function App() {
                   </p>
 
                   <div>
-                    <label className="text-xs text-slate-400 block mb-1">Noise seed</label>
+                    <label htmlFor="diagnostic-noise-seed" className="text-xs text-slate-400 block mb-1">Noise seed</label>
                     <div className="flex gap-2">
                       <input
+                        id="diagnostic-noise-seed"
                         type="number"
                         value={forecastSeed}
                         onChange={(e) => setForecastSeed(parseInt(e.target.value, 10) || 0)}
                         className="flex-1 bg-slate-950 border border-slate-800 rounded px-2 py-1.5 text-xs text-slate-200 font-mono"
                       />
                       <button
+                        type="button"
+                        aria-label="Draw a new diagnostic noise seed"
                         onClick={() => setForecastSeed(Math.floor(Math.random() * 2147483647))}
                         title="Draw a new seed. The value is recorded, so the run stays reproducible."
                         className="bg-slate-950 border border-slate-800 hover:bg-slate-900 text-slate-400 px-2 rounded"
                       >
-                        <RotateCcw className="w-3.5 h-3.5" />
+                        <RotateCcw className="w-3.5 h-3.5" aria-hidden="true" />
                       </button>
                     </div>
                   </div>
 
                   <div>
-                    <label className="text-xs text-slate-400 flex justify-between mb-1">
+                    <label htmlFor="diagnostic-noise-level" className="text-xs text-slate-400 flex justify-between mb-1">
                       <span>Forecast Noise StDev: {forecastNoise}</span>
                     </label>
                     <input
+                      id="diagnostic-noise-level"
                       type="range" min="0.05" max="0.5" step="0.05" value={forecastNoise}
                       onChange={(e) => setForecastNoise(parseFloat(e.target.value))}
                       className="w-full accent-teal-500"
@@ -1895,7 +1961,9 @@ export default function App() {
                     <Code className="w-4 h-4 text-teal-400" />
                   </h3>
 
+                  <label htmlFor="experiment-definition" className="sr-only">Experiment definition JSON</label>
                   <textarea
+                    id="experiment-definition"
                     value={experimentJson}
                     onChange={(e) => setExperimentJson(e.target.value)}
                     rows={18}
@@ -1994,10 +2062,11 @@ export default function App() {
                   </h3>
 
                   <div>
-                    <label className="text-xs text-slate-400 flex justify-between mb-1">
+                    <label htmlFor="hypothesis-threshold" className="text-xs text-slate-400 flex justify-between mb-1">
                       <span>Pearson Confidence Cutoff: {confidenceThreshold}</span>
                     </label>
                     <input
+                      id="hypothesis-threshold"
                       type="range" min="0.1" max="0.9" step="0.05" value={confidenceThreshold}
                       onChange={(e) => setConfidenceThreshold(parseFloat(e.target.value))}
                       className="w-full accent-teal-500"
@@ -2303,8 +2372,9 @@ export default function App() {
                       would let "all green" mean "we never looked". */}
                   <div className="flex items-end gap-3 flex-wrap border-b border-slate-800 pb-3">
                     <div>
-                      <label className="text-[10px] uppercase tracking-wider text-slate-500 block mb-1">Root seed</label>
+                      <label htmlFor="benchmark-root-seed" className="text-[10px] uppercase tracking-wider text-slate-500 block mb-1">Root seed</label>
                       <input
+                        id="benchmark-root-seed"
                         type="number" value={benchmarkSeed}
                         onChange={(e) => setBenchmarkSeed(parseInt(e.target.value, 10) || 0)}
                         className="bg-slate-950 border border-slate-800 rounded px-2 py-1.5 text-xs text-slate-200 font-mono w-36"
@@ -2480,6 +2550,14 @@ export default function App() {
           {activeTab === 'findings' && (
             <FindingsView onError={(message) => setError(message)}
               selectedStudyId={selectedStudyId} onSelectStudy={setSelectedStudyId} />
+          )}
+
+          {/* TG11.5: recorded-not-reproducible argument. This is a separate workspace from
+              Findings so commentary cannot become claim text by layout. It reads immutable
+              records only and offers no action that can run a panel or move a rung. */}
+          {activeTab === 'review' && (
+            <ReviewView selectedStudyId={selectedStudyId} onStudyId={setSelectedStudyId}
+              onError={(message) => setError(message)} />
           )}
 
         </main>

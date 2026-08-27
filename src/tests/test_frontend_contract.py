@@ -14,9 +14,9 @@ min_adjusted}`), so React would have thrown *"Objects are not valid as a React c
 *   every path `api.ts` fetches must be a route the app actually serves;
 *   every nested key the UI reads out of an untyped payload must exist in the real response.
 
-**What they still do not prove:** that anything *renders*. No browser is available in this
-environment, so visual verification of the nine tabs remains outstanding and is recorded as
-outstanding rather than implied by a green build.
+**What they still do not prove:** that anything *renders*. TG11.6 adds a separate rendered
+keyboard inspection; these source checks remain useful because they fail on semantic regressions
+without requiring a browser runtime.
 """
 
 from __future__ import annotations
@@ -141,9 +141,67 @@ def test_navigation_follows_the_scientific_workflow_and_labels_the_grid_line(app
     for section in ("Acquire", "Analyse", "Evidence", "Review", "Read", "Platform"):
         assert "section: '%s'" % section in app_source
     assert "Gridded field line" in app_source
-    assert "Review surface arrives in TG11.5" in app_source
+    assert "name: 'Recorded review'" in app_source
+    assert "Recorded argument; never claim permission" in app_source
     assert 'aria-label="Scientific workflow"' in app_source
     assert re.search(r"name: '\d+\.", app_source) is None
+
+
+def test_the_workflow_has_a_skip_link_and_moves_focus_when_the_workspace_changes(app_source):
+    """TG11.6: a route change must be announced where the new work begins, not leave keyboard
+    focus behind on a navigation control whose visible context has changed."""
+    assert 'href="#workspace-main"' in app_source
+    assert 'id="workspace-main"' in app_source
+    assert 'aria-labelledby="workspace-heading"' in app_source
+    assert "workspaceHeadingRef.current?.focus()" in app_source
+    assert 'tabIndex={-1}' in app_source
+
+
+def test_every_legacy_shell_label_is_programmatically_bound(app_source):
+    """The old gridded panels used adjacent labels, which look labelled but have no accessible
+    name. Their controls now use explicit id/htmlFor pairs; wrapper labels remain valid in the
+    newer components and are checked by their own contracts."""
+    labels = re.findall(r"<label\b([^>]*)>", app_source)
+    assert labels and all("htmlFor=" in attrs for attrs in labels)
+    ids = set(re.findall(r'\bid="([^"]+)"', app_source))
+    targets = re.findall(r'htmlFor="([^"]+)"', app_source)
+    assert not sorted(set(targets) - ids)
+
+
+def test_global_keyboard_focus_and_reduced_motion_are_not_panel_options():
+    css = _read("index.css")
+    assert ":focus-visible" in css and "outline: 3px solid" in css
+    assert ".skip-link:focus" in css
+    assert "prefers-reduced-motion: reduce" in css
+
+
+def test_retry_and_lineage_nodes_are_keyboard_operable(app_source):
+    """The only legacy click target that was not a native control was the connection retry;
+    SVG provenance nodes require an explicit keyboard equivalent because SVG has no button."""
+    lineage = _read("components", "LineageGraph.tsx")
+    assert "Backend unreachable - no computation available; retry" in app_source
+    assert re.search(r"<span[^>]+onClick=", app_source) is None
+    for token in ('role="button"', "tabIndex={0}", "onKeyDown", "event.key === 'Enter'",
+                  "event.key === ' '", "aria-pressed"):
+        assert token in lineage
+
+
+def test_visualisations_have_text_equivalents():
+    heatmap = _read("components", "Heatmap2D.tsx")
+    line = _read("components", "LineChart.tsx")
+    for source in (heatmap, line):
+        assert "<figure" in source and "aria-labelledby" in source
+        assert "<figcaption" in source and 'className="sr-only"' in source
+    assert "rows and" in heatmap and "Value units" in heatmap
+    assert "series.map(item => item.name).join" in line
+
+
+def test_async_workflow_surfaces_expose_busy_state(all_sources):
+    for name in ("AcquisitionView", "DomainAnalysisView", "PreregistrationView", "EvidenceView",
+                 "StructureMiningView", "CrossDomainRecordView", "FindingsView"):
+        source = _read("components", f"{name}.tsx")
+        assert "aria-busy=" in source, name
+    assert 'role="alert"' in all_sources and 'role="status"' in all_sources
 
 
 def test_record_and_study_are_shell_owned_persistent_context(app_source):
@@ -972,6 +1030,70 @@ def test_domain_limits_are_never_shown_without_the_attribution_caveat():
 def test_an_unregistered_domain_declaration_is_reported_not_rendered_as_no_limits():
     code = _findings_sources()
     assert "That is not the same as it refusing nothing." in code
+
+
+# ================================================= recorded review (TG11.5)
+
+
+def _review_view() -> str:
+    return _read("components", "ReviewView.tsx")
+
+
+def test_the_review_workspace_is_routed_and_kept_separate_from_findings(app_source):
+    assert "name: 'Recorded review'" in app_source
+    assert "activeTab === 'review'" in app_source
+    assert "<ReviewView" in app_source
+    review_start = app_source.index("activeTab === 'review'")
+    review_end = app_source.index(")}", review_start)
+    assert "FindingsView" not in app_source[review_start:review_end]
+
+
+def test_the_review_client_can_read_but_cannot_run_or_write_a_review():
+    service = _read("services", "api.ts")
+    start = service.index("async getStudyReview")
+    block = service[start:service.index("\n  }", start)]
+    assert "method: 'GET'" in block
+    assert "method: 'POST'" not in block
+    assert "fetch(" in block
+    assert "run" not in block.lower()
+
+
+def test_recorded_argument_is_visibly_fenced_from_any_claim_permission():
+    view = _review_view()
+    assert 'aria-label="Recorded-not-reproducible boundary"' in view
+    assert "surface.declaration" in view
+    assert "surface.claim_boundary" in view
+    assert "argument, not evidence and not permission to make a claim" in view
+    assert "Recorded, not reproducible" in view
+
+
+def test_the_complete_record_outcome_dissent_and_cost_audit_are_rendered():
+    view = _review_view()
+    assert "review.rendered" in view
+    assert "entry.rendered" in view
+    assert "review.cost_receipts" in view
+    for field in ("call_count", "input_tokens", "cached_input_tokens", "output_tokens",
+                  "total_tokens", "cache_hit_fraction", "receipt_sha256"):
+        assert "receipt.%s" % field in view
+    assert "no price or review-quality claim" in view
+
+
+def test_missing_review_artifacts_never_render_as_reassurance():
+    view = _review_view()
+    assert "surface.absence_note" in view
+    assert "not the same as no review existing" in view
+    assert "not evidence that no exchange occurred" in view
+    assert "not the same as the review costing nothing" in view
+
+
+def test_the_review_surface_preserves_the_workflow_accessibility_contract():
+    view = _review_view()
+    assert "aria-busy={busy}" in view
+    assert 'role="status"' in view
+    assert 'role="alert"' in view
+    assert 'htmlFor="review-study-id"' in view
+    assert 'id="review-study-id"' in view
+    assert view.count('aria-hidden="true"') >= 3
 
 
 # ======================================================== domain records (TG8.4)

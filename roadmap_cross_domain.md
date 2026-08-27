@@ -1949,14 +1949,11 @@ suite, benchmark and documentation evidence in `VERIFICATION.md`.
    it, so `unadmitted_reading` describes a chosen vocabulary rather than a verified provenance.
 
 4. **Phases G10-G13 — acquisition, the workbench, and three domains.** Declared 2026-08-27.
-   **G10 is complete:** the store catalogue is registered and probe-backed, and acquisition is
-   consolidated by domain. **G11 has begun: TG11.0 is complete**, replacing the flat numbered
-   navigation with workflow sections and making the selected record and study persistent shell
-   context. The remaining G11 slices put the cross-domain engine in front of a person for the
-   first time — `domain_analysis` and eight
-   core modules currently have `api=0`, so TG8.4's records lead nowhere; G12 reaches the ocean,
-   gridded and then Argo; G13 reaches the sky and closes the violation vocabulary. **No public
-   dataset has been ingested by any of them yet.**
+   **G10 and G11 are complete:** analysis, preregistration, evidence, motif mining, the
+   cross-domain record and recorded review are reachable, and TG11.6 repays the workflow-wide
+   accessibility source debt. G12 reaches the ocean, gridded and then Argo; G13 reaches
+   the sky and closes the violation vocabulary. **No public dataset has been ingested by any of
+   them yet.**
 
 **Open defects:** D43 (the real-data gate is not laptop-feasible through the catalogued
 WeatherBench layouts) and D18 (partial — CUDA-only device probing). Both predate this line and
@@ -2583,8 +2580,9 @@ costs almost nothing.
 **Delivered.** The eleven destinations are no longer numbered or presented as peers. They sit
 under Acquire, Analyse, Evidence, Review, Read and Platform; the spatial-only tools are labelled
 **Gridded field line**, so the shell no longer implies that a wavelet transform or boundary
-condition applies to every domain. Review is an honest labelled waypoint for TG11.5, not a
-button to a surface that does not exist yet.
+condition applies to every domain. Review was introduced here as an honest labelled waypoint for
+TG11.5 rather than a button to a surface that did not exist; TG11.5 now fills that waypoint
+without changing this navigation contract.
 
 `selectedRecord` and `selectedStudyId` now belong to `App`, appear in a persistent research-
 context strip and are passed into Acquire and Findings. The selected-record context retains the
@@ -2896,16 +2894,65 @@ different semantics and units and are never compared, and precedence identifies 
 mechanism (R19, R21). A confirmation receipt records no evidence and moves no rung (R22) - it is
 an input to TG11.3's write path. Rendered browser inspection of the new panel is **NOT RUN**.
 
-**TG11.5 The review surface.** The adversarial round-robin, its recorded calls and its cost
+**TG11.5 The review surface. DONE** (2026-08-28; `src/api/reviews.py`,
+`frontend/src/components/ReviewView.tsx`, `frontend/src/{services,types}/api.ts`, `src/api/main.py`,
+`src/tests/{test_reviews_api,test_frontend_contract}.py`; architecture.md §3.6zy;
+VERIFICATION.md). The adversarial round-robin, its recorded calls and its cost
 receipts (`round_robin`, `recorded_call`, `review_cost`). Everything here is R23
 recorded-not-reproducible, so the surface must present it as recorded argument and never as
 something the record permits — the separation TG9.3 already enforces for commentary.
 
-**TG11.6 Accessibility, repaid rather than deferred.** Accessibility across `frontend/src` is
-**zero, measured** — no `aria-*` or `role` attributes and no keyboard handlers outside the
-findings and records views. TG9.4 stopped the new surfaces adding to that debt and explicitly did
-not repay it. "Professional" is the standard being asked for, so this phase repays it for the
-workflow above rather than leaving it as a permanent footnote.
+**Delivered.** This is one GET-only surface under `/api/v1/reviews/studies/{study_id}`. Artifacts
+live in a dedicated review root and are classified by declared schema, not filename; every record,
+outcome and receipt is reconstructed through the core type so its digest is verified on read.
+Unreadable and unknown artifacts remain visible as refusals.
+
+The selected study resolves to its latest immutable bundle first. A record attaches only when
+study id, bundle digest and revision all match; an outcome and cost receipt must additionally bind
+the record digest. Commentary on an older revision therefore cannot appear current. The UI is a
+separate Review workspace rather than a Findings panel, leads with the backend's R23 declaration
+and claim boundary, shows the complete core-rendered calls and retained dissent, and presents the
+cost receipt as token/route audit with no price or quality claim. Missing records, outcomes and
+receipts each state what their absence does not establish.
+
+**Verified.** `test_reviews_api.py` 8 passed; `test_frontend_contract.py` 92 passed (six TG11.5
+contracts added); production `tsc` and Vite build pass with 1,395 modules transformed. Complete
+suite **2681 passed, 2 skipped, 1 xfailed**. Rendered inspection was attempted through the
+configured in-app browser, but its runtime reported no available browser backend; it is **NOT
+RUN**.
+
+**Claim boundary.** Everything on this surface is R23 recorded-not-reproducible: recorded
+argument, never evidence or something the record permits. No review output enters a bundle, no
+GET can move a rung, no vote count is performed, and deleting every review still changes no claim
+level (R22, R23). A cost receipt establishes route and token accounting only, not review quality.
+
+**TG11.6 Accessibility, repaid rather than deferred. DONE** (2026-08-28;
+`frontend/src/App.tsx`, `frontend/src/index.css`, `frontend/src/components/{Heatmap2D,LineChart,
+LineageGraph,FieldImport,EvaluationEvidence,CrossDomainRecordView}.tsx`, the seven workflow
+surfaces, `src/tests/test_frontend_contract.py`; architecture.md §3.6zx; VERIFICATION.md).
+
+**Delivered.** The application has one keyboard contract rather than accessible islands. A skip
+link reaches a named main landmark; workflow changes move focus to a programmatic workspace
+heading; the current workspace and asynchronous state are announced; and the unkeyboardable
+backend-retry `span` is a native button. Every legacy control in the monolithic gridded panels is
+bound to its visible label. One high-contrast `:focus-visible` rule wins even over the old
+`focus:outline-none` utilities, and reduced-motion preference collapses transitions and animation.
+
+The scientific graphics retain a text route: heat maps report their shape, units, axes and valid
+inset; line charts report series, axes and logarithmic scales; and every SVG lineage node is a
+named pressed-state control activated by Enter or Space. Cross-domain operands are fieldsets whose
+file, domain, clock and semantic declarations each have an accessible name. Acquire, Analyse,
+Evidence and Read surfaces expose their busy state; errors are alerts and progress is status.
+
+**Verified.** Six new contract tests make the source semantics executable:
+`test_frontend_contract.py` 86 passed (was 80); production `tsc` and Vite build pass with 1,394
+modules and emitted JS/CSS. Complete suite **2667 passed, 2 skipped, 1 xfailed**. Rendered keyboard
+inspection was attempted through the configured in-app browser, but its runtime reported no
+available browser backend; it is **NOT RUN**, stated rather than inferred from the build.
+
+**Claim boundary.** This establishes semantic wiring and keyboard paths in source; it does not
+establish a WCAG conformance level, screen-reader quality or visual focus placement in a rendered
+browser. Figure summaries describe carried metadata and do not interpret the scientific result.
 
 **Claim boundary.** Making a capability reachable is not evidence that it is correct; the
 benchmarks are what argue for correctness, and only for the thirteen cases they cover. A grouped
@@ -2996,8 +3043,9 @@ Recorded so that omission cannot be mistaken for oversight.
 * **Learned representations.** Admissible as a future registry entry; not in this programme.
 * **3D and spatiotemporal transforms.** `CoefficientField` remains 2D-per-frame. A 3D transform is
   a different and much more expensive object and calling the current one 3D would misdescribe it.
-* **Accessibility.** Measured at zero in `roadmap.md` §1 and unchanged here. Recorded, not
-  scheduled.
+* **Formal accessibility conformance certification.** TG11.6 supplies the workflow-wide source
+  and keyboard contract; an assistive-technology audit and WCAG conformance claim remain outside
+  this engineering programme until rendered inspection is available.
 * **The LLM layer before G6.** An adversarial review layer above a claim ladder that does not
   exist is a debating society with nothing to constrain it.
 

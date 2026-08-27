@@ -103,7 +103,7 @@ const EvidenceView: React.FC<Props> = ({ selectedRecord, studyId, onStudyId, onE
   const entries = state?.entries ?? (state?.entry ? [state.entry] : []);
 
   return (
-    <section className="space-y-5 animate-fadeIn" aria-labelledby="evidence-title">
+    <section className="space-y-5 animate-fadeIn" aria-labelledby="evidence-title" aria-busy={busy !== ''}>
       <header>
         <h2 id="evidence-title" className="text-xl font-bold text-white flex items-center gap-2">
           <FilePlus2 className="text-teal-400 w-5 h-5" aria-hidden="true" /> Evidence record

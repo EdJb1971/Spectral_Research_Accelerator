@@ -83,7 +83,8 @@ _ROUTE_SOURCES = (("src/api/main.py", "app", ""),
                   ("src/api/preregistration.py", "router", "/api/v1/preregistration"),
                   ("src/api/evidence.py", "router", "/api/v1/evidence"),
                   ("src/api/mining.py", "router", "/api/v1/mining"),
-                  ("src/api/cross_domain.py", "router", "/api/v1/cross-domain"))
+                  ("src/api/cross_domain.py", "router", "/api/v1/cross-domain"),
+                  ("src/api/reviews.py", "router", "/api/v1/reviews"))
 
 
 def _routes():

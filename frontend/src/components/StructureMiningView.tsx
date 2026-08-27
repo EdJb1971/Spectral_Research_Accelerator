@@ -169,7 +169,7 @@ const StructureMiningView: React.FC<Props> = ({ studyId, onError }) => {
   });
 
   return (
-    <section className="space-y-5 animate-fadeIn" aria-labelledby="mining-title">
+    <section className="space-y-5 animate-fadeIn" aria-labelledby="mining-title" aria-busy={busy !== ''}>
       <header>
         <h2 id="mining-title" className="text-xl font-bold text-white flex items-center gap-2">
           <Boxes className="text-indigo-400 w-5 h-5" aria-hidden="true" /> Structure mining

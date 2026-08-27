@@ -135,7 +135,7 @@ export default function FindingsView({
   ];
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" aria-busy={busy}>
       <header className="flex items-start justify-between gap-4">
         <div>
           <h3 className="text-lg font-semibold text-slate-100">Findings</h3>
