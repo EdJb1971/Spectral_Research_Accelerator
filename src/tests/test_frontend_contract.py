@@ -353,6 +353,81 @@ def test_the_mining_panel_presents_candidates_as_selection_not_as_findings():
         assert invented not in _without_comments(view).lower()
 
 
+def test_the_cross_domain_panel_reaches_every_route_the_surface_serves(app_source,
+                                                                      api_service):
+    """TG11.4b. Seven routes; a panel that called only some would be a catalogue of them."""
+    view = _read("components", "CrossDomainRecordView.tsx")
+    assert "name: 'Cross-domain record'" in app_source
+    assert "activeTab === 'crossDomainRecord'" in app_source
+    for call in ("getCrossDomainCapabilities", "alignDomains", "priceCrossDomainLags",
+                 "describeCrossDomainPartition", "generateCrossDomain", "sealCrossDomain",
+                 "confirmCrossDomain"):
+        assert "apiService.%s" % call in view, call
+
+
+def test_no_cross_domain_request_carries_a_lag_in_frames(api_service):
+    """The module exists because two clocks have two frame sizes.
+
+    A lag entered in frames here would be a duration on one of the two clocks and a different
+    duration on the other, and the family would mean something different to each domain. The
+    comments come out first: prose about the rule is not a breach of it.
+    """
+    section = api_service.split("the cross-domain record (TG11.4b)")[1].split(
+        "the findings surface")[0]
+    block = chr(10).join(line for line in section.splitlines()
+                         if not line.strip().startswith("//"))
+    assert "lag_seconds" in block
+    for asserted in ("lag_frames", "'lags'", "max_lag", "cadence_seconds"):
+        assert asserted not in block, "%r is the server's conversion, not the client's" % asserted
+
+
+def test_the_cross_domain_panel_declares_units_rather_than_defaulting_them(api_service):
+    """R19: a channel table carries names and numbers, and neither says what they mean."""
+    types_source = _read("types", "api.ts")
+    source_type = types_source.split("export interface CrossDomainSource")[1].split("}")[0]
+    assert "channels" in source_type
+    assert "?" not in source_type.split("channels")[1].split(";")[0], (
+        "the per-channel declaration must be required, not optional")
+    view = _without_comments(_read("components", "CrossDomainRecordView.tsx"))
+    assert "semantics" in view and "units" in view
+    for invented in ("'unknown'", '"unknown"', "arbitrary units"):
+        assert invented not in view
+
+
+def test_the_cross_domain_panel_offers_no_way_to_resample(api_service):
+    """The tempting repair for two clocks that do not line up, and it is not on the panel."""
+    view = _without_comments(_read("components", "CrossDomainRecordView.tsx"))
+    for offered in ("resample", "interpolate", "nearest", "reindex", "ffill"):
+        assert offered not in view.lower(), "%r must not be a control here" % offered
+    section = api_service.split("the cross-domain record (TG11.4b)")[1].split(
+        "the findings surface")[0]
+    assert "resample" not in section.lower()
+
+
+def test_the_cross_domain_confirmation_sends_the_records_and_nothing_else(api_service):
+    """A knob still turnable after the seal is a family member chosen after the declaration."""
+    call = api_service.split("async confirmCrossDomain")[1].split("},")[0]
+    for appended in re.findall(r"form\.append\('([^']+)'", call):
+        assert appended in ("first", "second", "published_sha256"), appended
+
+
+def test_the_cross_domain_panel_shows_what_the_alignment_discarded():
+    """A join that quietly kept a third of one record is a different study from the declared one."""
+    view = _read("components", "CrossDomainRecordView.tsx")
+    assert "discarded_native_observations" in view
+    assert "retained_native_observations" in view
+    assert "n_common_observations" in view
+
+
+def test_the_cross_domain_panel_presents_the_receipt_rather_than_a_verdict():
+    view = _read("components", "CrossDomainRecordView.tsx")
+    assert "confirmation.claim_boundary" in view
+    assert "confirmation.receipt.vacuous" in view
+    stripped = _without_comments(view).lower()
+    for invented in ("causes", "causal link", "significant"):
+        assert invented not in stripped
+
+
 def test_the_mining_panel_shows_a_vacuous_confirmation_as_not_one():
     """R5 on the wire: an ensemble that could not have rejected anything did not check it."""
     view = _read("components", "StructureMiningView.tsx")

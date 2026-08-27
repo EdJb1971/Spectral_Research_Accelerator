@@ -1435,3 +1435,157 @@ export interface MiningRunRequest {
   embargo_frames?: number;
   study_id?: string;
 }
+
+// ---------------------------------------------------- the cross-domain record (TG11.4b)
+//
+// A lag here is a duration, not a frame count: two native clocks have two frame sizes and a
+// family declared in either one is a family the other domain cannot read. Every request below
+// therefore carries `lag_seconds` and none carries `lags`.
+
+/** One side's reading. `channels` is required and has no default: R19 says a source's
+ *  semantics and units may never be dropped, and a channel table carries neither. */
+export interface CrossDomainSource {
+  domain: string;
+  time_column: string;
+  time_units?: string;
+  delimiter?: string;
+  channels: Record<string, { semantics: string; units: string }>;
+  aggregation_window_seconds?: number | null;
+}
+
+export interface CrossDomainCapabilities {
+  schema: string;
+  record_schema: string;
+  steps: Record<string, string>;
+  interpolation: string;
+  alignment: string;
+  minimum_common_observations: number;
+  lags_declared_in: string;
+  measure: string;
+  requires_per_channel: string[];
+  records_evidence: boolean;
+  moves_rung: boolean;
+  publication: string;
+  claim_boundary: string;
+}
+
+export interface CrossDomainAlignment {
+  schema: string;
+  name: string;
+  alignment: string;
+  interpolation: string;
+  clock_sha256: string;
+  clock_start_seconds: number;
+  clock_stop_seconds: number;
+  common_cadence_seconds: number;
+  n_common_observations: number;
+  physical_lag_floor_seconds: number;
+  retained_native_observations: Record<string, number>;
+  discarded_native_observations: Record<string, number>;
+  domains: Record<string, Record<string, unknown>>;
+  channels: Record<string, { domain: string; native_label: string; semantics: string; units: string }>;
+  statistic_units: string;
+}
+
+export interface CrossDomainAligned {
+  schema: string;
+  alignment: CrossDomainAlignment;
+  cross_domain_pairs: string[];
+  n_frames: number;
+  read_only: boolean;
+  stored: boolean;
+  claim_boundary: string;
+}
+
+export interface CrossDomainFamily {
+  lag_seconds: number[];
+  lag_frames: number[];
+  common_cadence_seconds: number;
+  cross_domain_pairs: string[];
+  n_pairs: number;
+  family_size: number;
+  n_surrogates: number;
+  affordable_member_count: number;
+  affordable: boolean;
+  required_surrogates: number;
+  reading: string;
+}
+
+export interface CrossDomainPrice {
+  schema: string;
+  alignment: CrossDomainAlignment;
+  family: CrossDomainFamily;
+  read_only: boolean;
+  stored: boolean;
+  claim_boundary: string;
+}
+
+export interface CrossDomainPartition {
+  schema: string;
+  alignment: CrossDomainAlignment;
+  train: { frames: number[]; n_frames: number; digest: string };
+  held_out: { frames: number[]; n_frames: number; digest: string };
+  embargo_frames: number;
+  recommended_embargo_frames: number;
+  already_opened: boolean;
+  opened_record: Record<string, unknown> | null;
+  read_only: boolean;
+  stored: boolean;
+  claim_boundary: string;
+}
+
+export interface CrossDomainCandidate {
+  label: string;
+  driver: string;
+  driven: string;
+  lag: number;
+  correlation: number;
+  n_pairs: number;
+  n_effective: number;
+  p_naive: number;
+  p_effective: number;
+  claim_boundary: string;
+}
+
+export interface CrossDomainGeneration {
+  schema: string;
+  alignment: CrossDomainAlignment;
+  family: Record<string, unknown>;
+  n_examined: number;
+  affordable_here: boolean;
+  candidates: CrossDomainCandidate[];
+  generation: Record<string, unknown>;
+  read_only: boolean;
+  stored: boolean;
+  claim_boundary: string;
+}
+
+export interface CrossDomainSeal {
+  schema: string;
+  seal_sha256: string;
+  sealed_at: string;
+  sealed_at_source: string;
+  seal: Record<string, unknown>;
+  generate_family_size: number;
+  confirm_family_size: number;
+  confirm_labels: string[];
+  frozen: CrossDomainCandidate[];
+  held_out_digest: string;
+  records_evidence: boolean;
+  rung_moved: boolean;
+  publication: string;
+  claim_boundary: string;
+}
+
+export interface CrossDomainConfirmation {
+  schema: string;
+  seal_sha256: string;
+  checked_against_publication: boolean;
+  alignment: CrossDomainAlignment;
+  receipt: Record<string, any>;
+  confirmed_labels: string[];
+  records_evidence: boolean;
+  rung_moved: boolean;
+  publication: string;
+  claim_boundary: string;
+}

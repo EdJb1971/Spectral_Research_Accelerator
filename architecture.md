@@ -3644,6 +3644,78 @@ could not have rejected it, which is not a confirmation (R5). A transfer match c
 descriptive and is not a corrected transfer result. Rendered browser inspection of the new panel
 is **NOT RUN**.
 
+### 3.6zw The cross-domain record (`src/api/cross_domain.py`, `frontend/src/components/CrossDomainRecordView.tsx`, TG11.4b, `ed-dev`)
+
+**The module that makes a lag stop being a frame count.** `core/cross_domain.py` is 505 lines
+that only the benchmarks could reach. Everywhere else in this programme a lag family is declared
+in frames of one record's clock, which is honest exactly as long as there is one clock. Two
+domains sampled hourly and three-hourly have two, and a family declared in frames of either is a
+family the other domain cannot read. Seven endpoints on `/api/v1/cross-domain` are where a lag is
+declared in **seconds** and converted per domain: capabilities, `align`, `lags`, `partition`,
+`generate`, `seal`, and one `confirm` addressed by seal digest. No estimator, null, correction or
+lag floor is implemented at the boundary.
+
+**It will not resample.** The two records are aligned by exact timestamp intersection. Where they
+share too few observations, or their intersection is irregular, the request is refused and the
+refusal names what it is declining: interpolation would manufacture values at times one source
+never observed and then let those manufactured values vote in a lagged relationship. Every
+response reports how many native observations each domain retained and discarded, because a join
+that quietly kept a third of one record is a different study from the one that was declared.
+
+**It will not default a unit (R19).** A channel table carries column names and numbers; it does
+not carry what its columns mean. Each side's reading must therefore declare `semantics` and
+`units` for every column in the file, and a table with an undeclared or over-declared column is
+refused rather than read under `"unknown"`. The statistic is dimensionless and compares no raw
+magnitude - what keeps that honest is that both magnitudes still say what they are, all the way
+into the confirmatory receipt, where each relationship carries its driver's and its driven
+operand's semantics and units beside the lead in seconds.
+
+**A duration is refused, never rounded.** `/lags` converts the declared family onto the exact
+common cadence. A duration below either domain's physical floor - each converted from that
+domain's own registered lag policy *before* the clocks were combined - is refused rather than
+dropped from the family, and one that is not a whole number of common frames is refused rather
+than rounded to the nearest, because a rounded lead is a lead the clock cannot express. The
+family is priced before any of it is measured, and it contains only ordered pairs that cross the
+declared boundary: a within-domain member would spend correction power on a question this surface
+does not ask.
+
+**The confirmation cannot be tuned.** As in TG11.2 and TG11.4, `/confirm` reads the domains, the
+columns, the delimiters, the declared units, the lag family in seconds, the split, the embargo,
+the ensemble, alpha, the correction and the seed back out of the seal; the caller supplies the
+two records and, optionally, the digest they published. Those records are checked twice over, by
+the seal's own digest - which an edit breaks at load - and by the held-out partition identity,
+which a different pair of files cannot reproduce. Both refusals happen before the ledger is
+written, and the published digest is compared before anything at all is read, so a refusal costs
+nothing. The frozen members are then re-derived by re-running the deterministic training sweep
+rather than reconstructed from their labels: a reconstruction built from a label matches that
+label by construction, and would let a later change to the selection rule confirm a stale family
+under its old names.
+
+**One additive core change (E12).** `precedence.confirmatory_specification` and
+`precedence.freeze_precedence` take an optional `notes` mapping, merged beside the notes they
+already write, so this surface's run settings sit *inside* the confirmatory specification's
+fingerprint rather than in a file beside the seal. No existing caller sees a change. The seals
+land in TG11.2's store and spend TG11.2's one held-out ledger, for the reason TG11.4's do.
+
+**Identity, and one residual (D65).** The held-out partition identity is the aligned record's
+own, which hashes its provenance wholesale. That is safe here because every field in that
+provenance is one this module put there - the two content digests, the two clocks, the shared
+clock digest, the retained and discarded counts, the split window and the embargo - and the
+filename is not among them, so the same held-out bytes re-uploaded under another name are the
+same partition. Each side's `dataset_id` is its content digest for the same reason. What *is*
+among them is each domain's declaration, and that is the residual: the same two files aligned
+under two different registered domains produce two partition digests, and the ledger would let
+them be opened twice. It is recorded rather than papered over - stripping the domain out of the
+identity would make two genuinely different analyses collide - and it is stated in the claim
+boundary every response on this surface returns.
+
+**Claim boundary.** A cross-domain result is a temporal association between structural series:
+one domain's series carries information about another's later series. The two records' raw
+magnitudes keep different semantics and units and are never compared, and precedence identifies
+no causal mechanism (R19, R21). A confirmation receipt records no evidence and moves no rung
+(R22); it is an input to TG11.3's write path exactly as a single-domain precedence receipt is.
+Rendered browser inspection of the new panel is **NOT RUN**.
+
 ### 3.11 Ground-Truth Benchmark Suite (`src/benchmarks/`)
 
 Added in T3.5.17 (standard E7). Twenty synthetic datasets whose correct answer is known
@@ -3958,7 +4030,7 @@ reason in the test itself.
 
 ## 3.12 HTTP API Surface
 
-67 routes. Listed here because an undocumented endpoint is an untested contract.
+74 routes. Listed here because an undocumented endpoint is an untested contract.
 
 | Method | Route | Notes |
 |---|---|---|
@@ -3999,6 +4071,13 @@ reason in the test itself.
 | POST | `/api/v1/mining/motifs` | publish one frozen motif as a durable definition carrying its origin domain's licence |
 | POST | `/api/v1/mining/transfer` | bind a published motif, spend the target through the ledger, then open and search it once (R20) |
 | POST | `/api/v1/mining/invariance` | measure every registered matcher against its own declared invariance |
+| GET | `/api/v1/cross-domain` | what is aligned, what is refused, and that nothing is interpolated (TG11.4b) |
+| POST | `/api/v1/cross-domain/align` | intersect two native clocks exactly; reports what each side retained and discarded |
+| POST | `/api/v1/cross-domain/lags` | convert a family declared in seconds onto the common cadence and price it before measuring any of it |
+| POST | `/api/v1/cross-domain/partition` | split the aligned record with an embargo and show both partition identities |
+| POST | `/api/v1/cross-domain/generate` | sweep every crossing direction at every declared duration on the training partition |
+| POST | `/api/v1/cross-domain/seal` | freeze the selected members against the held-out partition; the seal lands in TG11.2's store |
+| POST | `/api/v1/cross-domain/seals/{seal_sha256}/confirm` | open the held-out partition once on the frozen family; takes the two records and no setting |
 | POST | `/api/v1/import/inspect` | describe an uploaded file without committing to a 2D slice of it (T3.5.24) |
 | POST | `/api/v1/import/field` | read one pinned 2D field out of an upload, with reconstructed provenance |
 | POST | `/api/v1/export/field` | a 2D field as CSV, JSON, NetCDF4 or a zipped Zarr store, provenance embedded (T3.5.23) |
@@ -4776,7 +4855,7 @@ See `VERIFICATION.md` for the captured command output behind every statement her
 | Item | Status |
 |---|---|
 | Python venv + dependencies | installed (torch 2.13.0+cu130, numpy 2.2.6, pydantic 1.10.26, SQLAlchemy 2.0.52, xarray 2025.6.1, FastAPI 0.110.3) |
-| Backend test suite | **2619 passed, 1 xfailed** (plus 2 skipped: the opt-in live GCS read and the opt-in live store probe) (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17, 351 after T3.5.6, 379 after T3.5.15, 407 after T3.5.19, 449 after T4C.5, 709 after T4A.4, 781 after T4B.4, 855 after T4C.5, 859 after T4C.5c, 882 after T5.1a CPU acceptance, 883 after RTX acceptance, 890 after portable profiles, 911 after T5.1b/D44, 917 after T5.1c, 933 after T5.1d/D45, 946 after T5.1e, 955 after T5.2a, 957 after T5.2b, 962 after T5.3a, 969 after T5.3b, 981 after T5.2c offline acceptance, 985 after T5.2d, 1000 after T5.0a, 1008 after T5.0b, 1027 after T5.6a offline acceptance, 1042 after T5.6b cube acceptance, 1056 after T5.6c matched evaluation, 1070 after T5.6d truth matching, 1080 after T5.6e orchestration, 1089 after T5.6f portable jobs, 1094 after T5.6g reporting, 1095 after the licence guard, 1102 after T4C.5d gate readiness, 1104 after D50 storage preflight, 1106 after T4C.5e overlap evidence, 1112 after T4C.5f campaign acceptance, 1116 after T4C.5g physical preflight, 1117 after T4C.5h preregistration - the `master` freeze; then on `ed-dev`, 1375 after TG2.1, 1429 after TG2.2, 1477 after TG2.3, 1536 after TG2.4, 1577 after TG3.1, 1621 after TG3.2, 1686 after TG3.3, 1742 after TG3.4, 1787 after TG3.5, 1850 after TG4.1, 1922 after TG4.2, 1972 after TG4.3, 1986 after TG5.1, 2004 after TG5.2 and 2020 after TG5.3, 2044 after TG6.1, 2074 after TG6.2, 2112 after TG6.3, 2167 after TG7.1, 2217 after TG7.2, 2235 after TG7.3, 2236 after TG7.3 live acceptance, 2296 after TG7.4, 2321 after TG9.1/TG9.2 2334 after TG9.3, 2367 after TG8.1, 2420 after TG8.4, 2459 after TG10.1, 2503 after TG10.3, 2509 after TG10.2 2511 after TG11.0, 2521 after TG11.1, 2543 after TG11.2, 2570 after TG11.3 and 2619 after TG11.4) |
+| Backend test suite | **2661 passed, 1 xfailed** (plus 2 skipped: the opt-in live GCS read and the opt-in live store probe) (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17, 351 after T3.5.6, 379 after T3.5.15, 407 after T3.5.19, 449 after T4C.5, 709 after T4A.4, 781 after T4B.4, 855 after T4C.5, 859 after T4C.5c, 882 after T5.1a CPU acceptance, 883 after RTX acceptance, 890 after portable profiles, 911 after T5.1b/D44, 917 after T5.1c, 933 after T5.1d/D45, 946 after T5.1e, 955 after T5.2a, 957 after T5.2b, 962 after T5.3a, 969 after T5.3b, 981 after T5.2c offline acceptance, 985 after T5.2d, 1000 after T5.0a, 1008 after T5.0b, 1027 after T5.6a offline acceptance, 1042 after T5.6b cube acceptance, 1056 after T5.6c matched evaluation, 1070 after T5.6d truth matching, 1080 after T5.6e orchestration, 1089 after T5.6f portable jobs, 1094 after T5.6g reporting, 1095 after the licence guard, 1102 after T4C.5d gate readiness, 1104 after D50 storage preflight, 1106 after T4C.5e overlap evidence, 1112 after T4C.5f campaign acceptance, 1116 after T4C.5g physical preflight, 1117 after T4C.5h preregistration - the `master` freeze; then on `ed-dev`, 1375 after TG2.1, 1429 after TG2.2, 1477 after TG2.3, 1536 after TG2.4, 1577 after TG3.1, 1621 after TG3.2, 1686 after TG3.3, 1742 after TG3.4, 1787 after TG3.5, 1850 after TG4.1, 1922 after TG4.2, 1972 after TG4.3, 1986 after TG5.1, 2004 after TG5.2 and 2020 after TG5.3, 2044 after TG6.1, 2074 after TG6.2, 2112 after TG6.3, 2167 after TG7.1, 2217 after TG7.2, 2235 after TG7.3, 2236 after TG7.3 live acceptance, 2296 after TG7.4, 2321 after TG9.1/TG9.2 2334 after TG9.3, 2367 after TG8.1, 2420 after TG8.4, 2459 after TG10.1, 2503 after TG10.3, 2509 after TG10.2 2511 after TG11.0, 2521 after TG11.1, 2543 after TG11.2, 2570 after TG11.3, 2619 after TG11.4 and 2661 after TG11.4b) |
 | Ground-Truth Benchmark Suite | **29 PASS, 0 FAIL, 0 NOT_YET_RUNNABLE** (`python -m src.benchmarks`, exit 0) |
 | Frontend `npm install` + `npm run build` | passes, emits 1,386 modules + real JS/CSS assets (was: 1 module, no assets) |
 | Backend server | starts, serves OpenAPI, all smoke-tested endpoints return 200 |
@@ -5048,7 +5127,7 @@ able to sit three slices out of date.
 | `test_forecasting_artifact_evaluation.py` | 8 | T5.3b/T5.2d checkpoint/config integrity, artifact-bound lineage, persistence-relative metrics, physical-time reporting/refusals, undefined-skill handling and CPU/RTX vendor-neutral accelerator parity |
 | `test_forecasting_protocol.py` | 7 | T5.0a exact schema completeness, canonical identity, immutable nested configuration, evidence requirements, temporal/rollout consistency, persistence and tamper/drift refusal |
 | `test_forecasting_protocol_binding.py` | 4 | T5.0b exact dataset/protocol/checkpoint binding, recomputed coordinate/statistics identities, drift refusals and bound-evaluation cross-run isolation |
-| `test_frontend_contract.py` | 73 | the frontend/backend contract, including transform/dataset/cadence readiness claim boundaries, domain-driven acquisition, workflow-grouped navigation, persistent record/study context, the TG11.1 analysis panel's three engine operations, R21 disablement, three-valued verdict and re-read identity check, the TG11.2 preregistration panel's declare-never-decide split (no client-supplied digest, sealing time or p-value), its confirmation call carrying the record and nothing else, its published-digest caveat and its spent-is-not-failed presentation, and preservation of every ERA5 control, plus the UI integrity guards: no fabricated results, no unqualified validation claims, units and slope uncertainty displayed |
+| `test_frontend_contract.py` | 80 | the frontend/backend contract, including transform/dataset/cadence readiness claim boundaries, domain-driven acquisition, workflow-grouped navigation, persistent record/study context, the TG11.1 analysis panel's three engine operations, R21 disablement, three-valued verdict and re-read identity check, the TG11.2 preregistration panel's declare-never-decide split (no client-supplied digest, sealing time or p-value), its confirmation call carrying the record and nothing else, its published-digest caveat and its spent-is-not-failed presentation, and preservation of every ERA5 control, plus the UI integrity guards: no fabricated results, no unqualified validation claims, units and slope uncertainty displayed |
 | `test_gate_run.py` | 1 | T4C.5d frozen plan, local-only preflight, bounded train-only climatology/signatures, authenticated synthetic gate receipt, no-overwrite and tamper refusal |
 | `test_gate_campaign.py` | 6 | T4C.5f-h exact campaign identity, strict nested schema, canary/full/WeatherBench drift refusals, pre-transfer R13/physical-lag audit, aggregate storage/readiness, immutable freeze/load, pinned real preregistration and zero-network CLI (8 pytest cases) |
 | `test_grid_operators.py` | 64 | grid metrics, metric-aware gradient/Laplacian, area weighting, physical-wavenumber spectra, D26 |
@@ -5082,7 +5161,8 @@ able to sit three slices out of date.
 | `test_preregistration_api.py` | 17 | TG11.2 the generate/confirm split over HTTP: the sealed family matching the shape the sweep actually emits, a partition identity that ignores what the file was called (D65) and separates two splits of one record, sealing that narrows by lag and is timed by the server clock, a confirmatory lag that was never generated refused, an edited seal naming the field that changed, a wrong published digest refused, confirmation taking every setting from the seal and spending the partition, the same held-out data refused a second confirmation under a second individually honest seal, two seals frozen before any opening still buying only one look, a partition the seal did not name refused, a refused confirmation leaving the partition unspent, and TG11.1's gate refused on a spent partition |
 | `test_evidence_api.py` | 22 | TG11.3 the evidence write path: a study opened at revision zero claiming nothing, a second study under one identifier refused, an identifier that could traverse a directory refused, an append linked to the head it names, a stale head refused with nothing written, earlier revisions kept rather than rewritten, the read surface serving the latest revision and folding the earlier ones into one row (D66), a request carrying a rung refused rather than ignored, a payload asserting a rung refused at any depth, a payload asserting `temporal_precedence` refused and told which route computes it, the rung moving only because the evidence moved it, one FAIL entry capping the chain at observation through the wire, commentary refused a category, a bare confidence refused on the way in, an entry that cannot be back-dated, a causally worded hypothesis registered with the ceiling stated, the precedence verdict computed here and citing the bytes and the configuration it came from, an underpowered sweep recorded INCONCLUSIVE rather than as a negative, a domain with no admissible lag floor writing nothing, and a stale head refused before the sweep runs |
 | `test_mining_api.py` | 41 | TG11.4 the structure-mining surface: no request model on it accepts a feature, a coordinate or a graph; a tolerance cannot be typed and travels as the digest of a calibration the server performed; a tolerance measured through another pipeline or on held-out frames refused; frames of unequal feature counts refused rather than trimmed, with the tempting repair named; a record addressed by its bytes and its declaration, and refused when the stored declaration is edited; a pickled array refused rather than loaded; a domain with no spatial extent refused; the frame split asserted against the row split it mirrors; a generation response carrying held-out geometry and nothing measured inside it; every sealed setting present in the seal, stored where every other seal is; a confirmation that takes a seal digest and nothing else; the planted motif confirmed on frames it was not mined from; the held-out frames opened once; a seal frozen by another surface refused; **a null record confirming nothing**; a published definition carrying its origin licence; a transfer target opened once whatever is transferred into it; a transfer into the origin domain refused as replication; and the invariance audit reporting an unsupported declaration as overclaimed |
-| **total** | **2274** | |
+| `test_cross_domain_api.py` | 35 | TG11.4b the cross-domain record: two native clocks intersected exactly, with what each side retained and discarded reported; clocks that share no observation refused rather than resampled, and the refusal naming interpolation as the thing it declines; an irregular native clock refusing precedence by name; a column whose semantics or units were not declared refused rather than defaulted (R19); an unknown reading setting refused rather than ignored; two records from one domain refused as not a cross-domain study; a family declared in seconds converted onto the common cadence; only pairs that cross the boundary counted as members; a duration below either domain’s physical floor refused rather than dropped and one the common clock cannot express refused rather than rounded; the price agreeing with the family the generate pass actually searches; the partition identity ignoring what the files were called (D65); generation reading nothing from the held-out partition and writing nothing; every run setting sealed inside the specification and the seal visible where the programme lists what it froze; the frozen members re-derived from the record rather than reconstructed from their labels; an edited seal refused at load and spending nothing; **the planted relationship confirmed on data it was not selected from and the same pipeline over an uncoupled pair confirming nothing**; both operands’ semantics and units restored to the receipt; the partition opened once; a wrong pair of records confirming nothing and costing nothing; a published digest that disagrees with the seal spending nothing; a seal frozen by another surface refused; the confirm route accepting the two records and nothing else; and no route on the surface accepting a lag in frames |
+| **total** | **2316** | |
 
 ### 7.2h A surrogate null that was not the null it claimed (T4C.5)
 

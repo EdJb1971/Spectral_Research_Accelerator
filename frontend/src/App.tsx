@@ -14,6 +14,7 @@ import DomainAnalysisView from './components/DomainAnalysisView';
 import PreregistrationView from './components/PreregistrationView';
 import EvidenceView from './components/EvidenceView';
 import StructureMiningView from './components/StructureMiningView';
+import CrossDomainRecordView from './components/CrossDomainRecordView';
 import { apiService } from './services/api';
 import * as types from './types/api';
 import {
@@ -43,6 +44,7 @@ import {
   Cloud,
   WifiOff,
   Boxes,
+  Waypoints,
   FileCheck2,
   FilePlus2,
   Lock
@@ -60,6 +62,7 @@ const WORKFLOW_NAV = [
       { id: 'spectral', name: 'Spectral transforms', icon: Activity, context: 'Gridded field line' },
       { id: 'analysis', name: 'Diagnostics', icon: BarChart2, context: 'Gridded field line' },
       { id: 'mining', name: 'Structure mining', icon: Boxes },
+      { id: 'crossDomainRecord', name: 'Cross-domain record', icon: Waypoints },
       { id: 'hypothesis', name: 'Automated hypotheses', icon: Lightbulb },
     ],
   },
@@ -2450,6 +2453,18 @@ export default function App() {
               server from an admitted field, so a shape cannot be drawn into a result. */}
           {activeTab === 'mining' && (
             <StructureMiningView studyId={selectedStudyId}
+              onError={(message) => setError(message)} />
+          )}
+
+          {/* TG11.4b: the cross-domain record. Beside structure mining because it shares the
+              same seal store and the same held-out ledger, and in Analyse for the same reason:
+              what it produces is a confirmation receipt, and recording one is the write path's
+              job. It is the only panel whose lag family is entered in seconds - two native
+              clocks have two frame sizes, and a lag in frames of either is unreadable by the
+              other domain. Nothing here can resample: the two records are aligned on the
+              timestamps they actually share, or the request is refused. */}
+          {activeTab === 'crossDomainRecord' && (
+            <CrossDomainRecordView studyId={selectedStudyId}
               onError={(message) => setError(message)} />
           )}
 

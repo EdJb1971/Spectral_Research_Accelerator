@@ -43,6 +43,20 @@ async function downloadResponse(response: Response): Promise<types.ExportResult>
   return { blob: await response.blob(), filename: match ? match[1] : 'spectralearth-export' };
 }
 
+
+/** The four fields every cross-domain call shares. Kept in one place so a reading cannot
+ *  drift between the call that priced a family and the call that sealed it. */
+function crossDomainForm(first: File, second: File, firstSource: any, secondSource: any,
+                         name: string): FormData {
+  const form = new FormData();
+  form.append('first', first);
+  form.append('second', second);
+  form.append('first_source', JSON.stringify(firstSource));
+  form.append('second_source', JSON.stringify(secondSource));
+  form.append('name', name);
+  return form;
+}
+
 export const apiService = {
   // Spectral Transform Engine
   async applyTransform(payload: types.TransformRequest): Promise<types.TransformResponse> {
@@ -616,6 +630,87 @@ export const apiService = {
           replicate_frames: replicateFrames, presentations
         })
       }));
+  },
+
+  // -------------------------------------------- the cross-domain record (TG11.4b)
+  //
+  // Two files and two readings cross this boundary, and the reading has to say what each
+  // column means: a channel table carries names and numbers, not semantics and units, and
+  // R19 does not allow either to be defaulted. Every lag below is in seconds. The confirm
+  // call sends the two records and nothing else - the domains, the columns, the family, the
+  // split, the ensemble and the seed all come back out of the seal.
+
+  async getCrossDomainCapabilities(): Promise<types.CrossDomainCapabilities> {
+    return handleResponse<types.CrossDomainCapabilities>(
+      await fetch(`${BASE_URL}/cross-domain`, { method: 'GET' }));
+  },
+
+  async alignDomains(first: File, second: File, firstSource: types.CrossDomainSource,
+                     secondSource: types.CrossDomainSource,
+                     name: string): Promise<types.CrossDomainAligned> {
+    return handleResponse<types.CrossDomainAligned>(
+      await fetch(`${BASE_URL}/cross-domain/align`, {
+        method: 'POST',
+        body: crossDomainForm(first, second, firstSource, secondSource, name)
+      }));
+  },
+
+  async priceCrossDomainLags(first: File, second: File, firstSource: types.CrossDomainSource,
+                             secondSource: types.CrossDomainSource, name: string,
+                             lagSeconds: number[],
+                             nSurrogates: number): Promise<types.CrossDomainPrice> {
+    const form = crossDomainForm(first, second, firstSource, secondSource, name);
+    form.append('lag_seconds', JSON.stringify(lagSeconds));
+    form.append('n_surrogates', String(nSurrogates));
+    return handleResponse<types.CrossDomainPrice>(
+      await fetch(`${BASE_URL}/cross-domain/lags`, { method: 'POST', body: form }));
+  },
+
+  async describeCrossDomainPartition(first: File, second: File,
+                                     firstSource: types.CrossDomainSource,
+                                     secondSource: types.CrossDomainSource, name: string,
+                                     fraction: number): Promise<types.CrossDomainPartition> {
+    const form = crossDomainForm(first, second, firstSource, secondSource, name);
+    form.append('fraction', String(fraction));
+    return handleResponse<types.CrossDomainPartition>(
+      await fetch(`${BASE_URL}/cross-domain/partition`, { method: 'POST', body: form }));
+  },
+
+  async generateCrossDomain(first: File, second: File, firstSource: types.CrossDomainSource,
+                            secondSource: types.CrossDomainSource, name: string,
+                            lagSeconds: number[], studyId: string, nSurrogates: number,
+                            fraction: number): Promise<types.CrossDomainGeneration> {
+    const form = crossDomainForm(first, second, firstSource, secondSource, name);
+    form.append('lag_seconds', JSON.stringify(lagSeconds));
+    form.append('study_id', studyId);
+    form.append('n_surrogates', String(nSurrogates));
+    form.append('fraction', String(fraction));
+    return handleResponse<types.CrossDomainGeneration>(
+      await fetch(`${BASE_URL}/cross-domain/generate`, { method: 'POST', body: form }));
+  },
+
+  async sealCrossDomain(first: File, second: File, firstSource: types.CrossDomainSource,
+                        secondSource: types.CrossDomainSource, name: string,
+                        lagSeconds: number[], studyId: string, nSurrogates: number,
+                        fraction: number): Promise<types.CrossDomainSeal> {
+    const form = crossDomainForm(first, second, firstSource, secondSource, name);
+    form.append('lag_seconds', JSON.stringify(lagSeconds));
+    form.append('study_id', studyId);
+    form.append('n_surrogates', String(nSurrogates));
+    form.append('fraction', String(fraction));
+    return handleResponse<types.CrossDomainSeal>(
+      await fetch(`${BASE_URL}/cross-domain/seal`, { method: 'POST', body: form }));
+  },
+
+  async confirmCrossDomain(sealSha256: string, first: File, second: File,
+                           publishedSha256?: string): Promise<types.CrossDomainConfirmation> {
+    const form = new FormData();
+    form.append('first', first);
+    form.append('second', second);
+    if (publishedSha256) form.append('published_sha256', publishedSha256);
+    return handleResponse<types.CrossDomainConfirmation>(
+      await fetch(`${BASE_URL}/cross-domain/seals/${encodeURIComponent(sealSha256)}/confirm`,
+        { method: 'POST', body: form }));
   },
 
   // ------------------------------------------------ the findings surface (TG9.1)

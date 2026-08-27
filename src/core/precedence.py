@@ -1014,7 +1014,8 @@ def report_precedence_generation(result: SweepResult, *, train: PartitionIdentit
 def confirmatory_specification(chosen: Sequence[PrecedenceCandidate], *, n_surrogates: int,
                                alpha: float = 0.05,
                                correction: str = "benjamini_yekutieli",
-                               study_id: str = "") -> SearchSpecification:
+                               study_id: str = "",
+                               notes: Optional[Mapping[str, Any]] = None) -> SearchSpecification:
     """The frozen family: these band pairs, at these lags, and nothing else.
 
     Each member keeps the label it had in the generate family, which is what makes the
@@ -1034,9 +1035,10 @@ def confirmatory_specification(chosen: Sequence[PrecedenceCandidate], *, n_surro
         terms=(SearchTerm("product", (SearchAxis("relationship", tuple(labels)),)),),
         n_surrogates=n_surrogates, alpha=alpha, correction=correction,
         label_format="{0}", study_id=study_id,
-        notes={"stage": "confirm",
-               "reading": ("each member is one band pair at one lag, frozen before the "
-                           "held-out partition was opened and tested there once")})
+        notes=dict(dict(notes or {}),
+                   stage="confirm",
+                   reading=("each member is one band pair at one lag, frozen before the "
+                            "held-out partition was opened and tested there once")))
 
 
 def freeze_precedence(result: SweepResult, *, held_out: PartitionIdentity, sealed_at: str,
@@ -1044,7 +1046,9 @@ def freeze_precedence(result: SweepResult, *, held_out: PartitionIdentity, seale
                       chosen: Optional[Sequence[PrecedenceCandidate]] = None,
                       n_candidates: Optional[int] = None,
                       ledger: Optional[HeldOutLedger] = None,
-                      study_id: str = "") -> Tuple[Seal, Tuple[PrecedenceCandidate, ...]]:
+                      study_id: str = "",
+                      notes: Optional[Mapping[str, Any]] = None
+                      ) -> Tuple[Seal, Tuple[PrecedenceCandidate, ...]]:
     """Freeze the confirmatory family, or refuse to.
 
     One refusal beyond TG3.2's own: a held-out partition whose provenance records an embargo
@@ -1060,7 +1064,7 @@ def freeze_precedence(result: SweepResult, *, held_out: PartitionIdentity, seale
         result, n_candidates=n_candidates)
     confirm = confirmatory_specification(
         picked, n_surrogates=n_surrogates, alpha=result.specification.alpha,
-        correction=result.specification.correction, study_id=study_id)
+        correction=result.specification.correction, study_id=study_id, notes=notes)
     seal = freeze_confirmatory_family(
         result.specification, confirm, held_out=held_out, sealed_at=sealed_at,
         study_id=study_id, ledger=ledger)

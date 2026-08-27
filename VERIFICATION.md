@@ -6152,3 +6152,65 @@ routed by this slice and is carried as TG11.4b: its input is two channel tables 
 clock, not scenes, and it belongs beside the analysis surface. Admitted fields, calibrated
 tolerances, published definitions and the transfer ledger are programme state under `data/mining`,
 not a cache.
+
+## TG11.4b - The cross-domain record (2026-08-27, `ed-dev`)
+
+**Implemented.** `src/api/cross_domain.py` mounts `core/cross_domain.py` on
+`/api/v1/cross-domain`. Seven endpoints: capabilities, aligning two native clocks by exact
+timestamp intersection, pricing a lag family declared in seconds, splitting the aligned record
+with an embargo, sweeping every crossing direction on the training partition, freezing the
+confirmatory family, and opening the held-out partition once. This is the wire boundary for the
+505 lines that made a lag a duration rather than a frame count, and only the benchmarks could
+previously reach them.
+
+Three refusals are structural rather than reviewed. Nothing is resampled: two clocks are
+intersected exactly, and a pair that shares too few observations is refused with the refusal
+naming interpolation as what it declines - every response reports what each domain retained and
+discarded. Nothing is defaulted: each column must declare its `semantics` and `units` before the
+record can be read (R19), and both are carried into every confirmed relationship in the receipt
+alongside the lead in seconds. And nothing can be tuned at confirmation: `/confirm` takes the two
+records and, optionally, a published digest, and reads everything else back out of the seal.
+
+One additive core change made the last of those possible: `precedence.confirmatory_specification`
+and `precedence.freeze_precedence` take an optional `notes` mapping, merged beside the notes they
+already write (E12), so the run settings sit inside the specification's fingerprint rather than
+in a file beside the seal. Seals are stored in TG11.2's seal store and spend TG11.2's held-out
+ledger.
+
+**Evidence.** The exact final tree reports:
+
+```text
+cross-domain + frontend contract + documentation: test_cross_domain_api.py 35 passed,
+  test_frontend_contract.py 80 passed, test_documentation.py 19 passed
+frontend production build: 1,394 modules transformed; JS/CSS assets emitted
+complete suite: 2661 passed, 2 skipped, 1 xfailed, 6 warnings in 908.44s (0:15:08)
+```
+
+The acceptance is the planted/null pair the cross-domain phase was built against.
+`test_the_planted_relationship_is_confirmed_on_data_it_was_not_selected_from` runs the whole chain
+over an hourly domain and a three-hourly one carrying one delayed relationship across the
+boundary, and confirms exactly that relationship at exactly the planted duration on frames it was
+not selected from. `test_the_same_pipeline_over_an_uncoupled_pair_confirms_nothing` is the same
+builder with the coupling knob at zero and confirms nothing. Beside them,
+`test_a_column_whose_meaning_was_not_declared_is_refused_not_defaulted`,
+`test_clocks_that_share_no_observation_are_refused_rather_than_resampled` and
+`test_no_route_on_this_surface_accepts_a_lag_in_frames` are the structural three.
+`tsc --noEmit` is clean. Rendered browser inspection is **NOT RUN**.
+
+**One note on what a test could not reach, recorded because the alternative is overstating it.**
+`_candidates_from` refuses a frozen member the training partition does not select. No caller can
+reach that refusal: an edited seal fails its own digest at load, and a different pair of records
+produces a different held-out partition identity, which `confirm_on_held_out` refuses first. Both
+of those happen before the ledger is written, so a wrong upload costs nothing either way - which
+is what the tests assert, rather than asserting a refusal message that only the module's own
+future drift could produce.
+
+**Claim boundary.** A cross-domain result is a temporal association between structural series.
+The two records' raw magnitudes keep different semantics and units and are never compared, the
+statistic is dimensionless, and precedence identifies no causal mechanism (R19, R21). A
+confirmation receipt records no evidence and moves no rung (R22); it is an input to TG11.3's
+write path. The held-out ledger identifies a partition by the data and its split, so the same two
+files aligned under two different registered domains are two partitions to it and this surface
+cannot detect that they hold the same rows (D65). Seals and the ledger are programme state under
+`data/preregistrations`, not a cache. After the complete run `data/` holds only `README.md`,
+`channels` and `store_probes`: this surface creates no directory as a side effect of being read.

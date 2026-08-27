@@ -114,6 +114,7 @@ from src.api.analysis import router as domain_analysis_router  # noqa: E402
 from src.api.preregistration import router as preregistration_router  # noqa: E402
 from src.api.evidence import router as evidence_router  # noqa: E402
 from src.api.mining import router as mining_router  # noqa: E402
+from src.api.cross_domain import router as cross_domain_router  # noqa: E402
 
 app.include_router(findings_router)
 # TG8.4. Mounted here for the same reason the findings router is: registration must not depend
@@ -140,6 +141,12 @@ app.include_router(evidence_router)
 # no rung: scenes are extracted here from admitted fields, and a confirmation receipt is an
 # input to the write path rather than a claim (R22).
 app.include_router(mining_router)
+# TG11.4b: the cross-domain record. Mounted beside the mining router because it shares the same
+# two dependencies - TG11.2's seal store and its one held-out ledger - and last of the analysis
+# surfaces because it is the only one whose lag family is declared in seconds rather than in
+# frames of a single record's clock. It aligns two native clocks by exact intersection and never
+# by interpolation, and it records no evidence and moves no rung (R22).
+app.include_router(cross_domain_router)
 
 
 class HealthResponse(BaseModel):

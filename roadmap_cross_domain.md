@@ -2838,13 +2838,63 @@ The transfer ledger establishes ordering inside this API and cannot show that no
 the target before it was admitted. Admitted fields, tolerances, definitions and the transfer
 ledger are programme state under `data/mining`, not a cache.
 
-**TG11.4b The cross-domain record.** `core\cross_domain.py` - `align_exact`, `physical_lags`,
-`sweep_cross_domain`, `confirm_cross_domain`. Two channel tables from two declared domains,
-aligned on an exact common clock with no interpolation, swept over a lag family declared in
-*seconds* and converted to frames per domain. It belongs beside `/api/v1/analysis` rather than
-`/api/v1/mining` because its input is a record and its output is a lag result, and it is the
-slice where a lag family stops being expressible only in frames of one clock. Sequenced after
-TG11.4 because the seal and ledger plumbing it needs is the plumbing TG11.4 shared.
+**TG11.4b The cross-domain record. DONE** (2026-08-27; `src/api/cross_domain.py`,
+`src/api/main.py`, `src/core/precedence.py`, `frontend/src/components/CrossDomainRecordView.tsx`,
+`frontend/src/{App.tsx,services/api.ts,types/api.ts}`, `src/tests/test_cross_domain_api.py`,
+`src/tests/test_frontend_contract.py`, `src/tests/test_documentation.py`).
+
+**Delivered.** `core/cross_domain.py` - 505 lines nothing outside the benchmarks could call - is
+reachable on `/api/v1/cross-domain` through seven endpoints: capabilities, `align`, `lags`,
+`partition`, `generate`, `seal`, and `confirm` addressed by seal digest. This is the slice where
+a lag family stops being expressible only in frames of one clock: durations are declared in
+**seconds** and converted per domain against each domain's own registered floor, before the two
+clocks are combined. No estimator, null, correction or lag floor is implemented at the boundary.
+
+**Three things that cannot be typed here.** There is no resampling control: the records are
+aligned by exact timestamp intersection and a pair that shares too little is refused, with the
+refusal naming interpolation as the thing it declines. There is no defaulted unit: every column
+must carry its `semantics` and `units` before the record can be read, because a channel table
+carries neither and R19 does not permit either to be dropped - and both are restored to each
+confirmed relationship in the receipt. And there is no setting a caller can still turn after the
+seal: `/confirm` takes the two records and, optionally, a published digest.
+
+**Refused rather than repaired.** A duration below either domain's physical floor is refused
+rather than dropped from the declared family; one that is not a whole number of the exact common
+cadence is refused rather than rounded, because a rounded lead is a lead the clock cannot
+express; a within-domain pair is not a member at all. Every response reports what the alignment
+retained and discarded per domain.
+
+**Seal-driven confirmation.** The run settings are sealed *inside* the confirmatory
+specification, which needed one additive core change: `precedence.confirmatory_specification` and
+`precedence.freeze_precedence` take an optional `notes` mapping merged beside the notes they
+already write (E12; no existing caller sees a change). The frozen members are re-derived by
+re-running the deterministic training sweep rather than reconstructed from their labels. Seals
+land in TG11.2's store and spend TG11.2's one held-out ledger.
+
+**Acceptance.** `test_the_planted_relationship_is_confirmed_on_data_it_was_not_selected_from`
+runs the whole chain over an hourly domain and a three-hourly one with one delayed relationship
+planted across the boundary, and confirms exactly that relationship at exactly the planted
+duration on held-out frames. `test_the_same_pipeline_over_an_uncoupled_pair_confirms_nothing` is
+the same generator with the coupling knob at zero - same channels, same cadences, same family,
+same ensemble - and confirms nothing.
+
+**One residual, recorded not papered over (D65).** The held-out partition identity is built from
+the data: two content digests, both clocks, the shared clock digest, the retained and discarded
+counts, the split window and the embargo. The filename is not among them, so renaming a file does
+not create a second partition. Each domain's declaration *is* among them, so the same two files
+aligned under two different registered domains are two partitions to the ledger and could be
+opened twice. Stripping the domain out would make two genuinely different analyses collide, so
+the residual is stated in the claim boundary every response returns rather than removed.
+
+**Verified.** `test_cross_domain_api.py` 35 passed; `test_frontend_contract.py` 80 passed (was
+73); `test_documentation.py` 19 passed; complete suite 2661 passed, 2 skipped, 1 xfailed;
+frontend production build 1,394 modules transformed; `tsc --noEmit` clean.
+
+**Claim boundary.** A cross-domain result is a temporal association between structural series:
+one domain's series carries information about another's later series. Raw magnitudes keep
+different semantics and units and are never compared, and precedence identifies no causal
+mechanism (R19, R21). A confirmation receipt records no evidence and moves no rung (R22) - it is
+an input to TG11.3's write path. Rendered browser inspection of the new panel is **NOT RUN**.
 
 **TG11.5 The review surface.** The adversarial round-robin, its recorded calls and its cost
 receipts (`round_robin`, `recorded_call`, `review_cost`). Everything here is R23
