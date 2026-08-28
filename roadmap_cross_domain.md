@@ -2008,10 +2008,17 @@ about which domain produced any given `EvidenceBundle`, because a bundle still d
 one. R17's refusals remain enforced in the analysis layer; this makes the declarations they read
 from complete, not self-enforcing.
 
-**TG8.2 Licence and terms provenance.** Every public dataset carries its licence, attribution
-requirement and access terms in its provenance, and export refuses to emit a derived product
-whose source licence forbids it. Redistribution rules differ sharply across public archives and
-must be data, not folklore.
+**TG8.2 Licence and terms provenance. DESCOPED (2026-08-28).** This line is a personal research
+experiment over public data, not a commercial or redistributed product. There is no export path to
+a third party for a source licence to govern, so the enforcement this slice described would guard
+a boundary that does not exist here.
+
+**Recorded as a limit, not as done.** No dataset licence, attribution requirement or access term is
+carried in provenance, and no export refuses on licence grounds. The archives' own terms still bind
+whoever uses the data — descoping the *check* does not descope the *obligation*, and the
+attribution caveats already carried per domain are wording, not enforcement. Redistribution of a
+derived product, publication, or any commercial use reopens this slice **before** that happens,
+because the provenance it would have recorded cannot be reconstructed after the fact.
 
 **TG8.4 The ingestion seam. DONE (`ed-dev`).** A declaration is not a connection. TG8.1 made a
 domain declarable from outside `src/`; nothing could read a file under one. `src/api/channels.py`
@@ -2307,33 +2314,6 @@ inherited assumptions were written against it. And the attribution gap is real: 
 records its domain, `unadmitted_reading` is a statement about a vocabulary a reader chose, not
 about a study. Closing that gap means putting domain provenance in the bundle, which is a change
 to a G6 structure and belongs to no slice yet declared.
-
-**TG9.4 Accessibility of the new surface. DONE for this surface (`ed-dev`).** The findings views
-ship with `role="tablist"`/`role="tab"`, `aria-selected`, `aria-pressed`, `aria-label`, labels
-bound with `htmlFor`, visible focus rings and `aria-hidden` on decorative icons, asserted by test.
-**The legacy measurement is unchanged and restated rather than quietly improved:** accessibility
-across `frontend/src` as a whole remains zero-derived and the transform workbench was not touched.
-This slice stops the new surface adding to that debt; it does not repay it.
-
-**TG9.3 The refusal surface.** What the instrument will not do, shown rather than hidden. Where a
-domain declares violations, the view states which analyses are therefore refused and why (R17,
-R21). **This slice now also carries the half of TG9.1 that was declared and not built:** exposing
-`DomainDeclaration` — declared violations (E15), lag policy (R21) and `precedence_admissible`
-(R17) — over HTTP at all. TG9.1's `/domains` lists registered *glossaries* and nothing about what
-a domain refuses, so there is currently no route through which a client could learn that a domain
-forbids a precedence claim. LLM commentary renders under its R23 label, visually separated, never in the same container
-as claim text. **Acceptance:** a blocked bundle and a contradicted one each render their refusals;
-an automated check asserts no commentary string shares a container with a claim string.
-
-**TG9.4 Accessibility of the new surface.** Accessibility is **zero, measured** across
-`frontend/src` — `0` `aria-*` or `role` attributes and `0` keyboard handlers — and `roadmap.md` §1
-records it as deliberately unscheduled rather than overlooked. That position is honest for a
-mouse-driven transform workbench. It is harder to defend for something described as an instrument
-for reading scientific findings. **This phase does not fix the legacy workbench**, which stays as
-recorded. It does require that the findings views ship keyboard-navigable and semantically
-labelled, so the new surface does not add to the debt. **Acceptance:** the findings views are
-operable without a mouse, asserted by test; the legacy measurement is restated unchanged beside
-the new one, so the two are not confused.
 
 **Claim boundary.** A UI that cannot render a bare confidence does not make the science behind it
 good; it removes one way of misreading it. Rendering a finding in domain words does not make the
@@ -2962,13 +2942,45 @@ client.
 
 #### Phase G12 — The ocean
 
-**TG12.1 A gridded ocean product.** Candidates in preference order, chosen by TG10.3's probe
-rather than by reputation: GLORYS (Copernicus Marine, free account), ECCO (NASA Earthdata, free
-account), NOAA OISST (open). Declared honestly under R17 as **breaking nothing new** — a source,
-not a second domain — because a third catalogue entry that looked like a third domain would be
-the exact false confidence R17 exists to refuse. **It may bear on D43:** ocean products are often
-chunked more kindly than WeatherBench's one-timestep-deep layouts, so a laptop-feasible long
-regional record may exist here. Recorded as a possibility to measure, not a promise.
+**TG12.1 A gridded ocean product. IN PROGRESS (2026-08-28, `ed-dev`) - discovery done, nothing
+built.** Candidates in preference order, chosen by TG10.3's probe rather than by reputation:
+GLORYS (Copernicus Marine, free account), ECCO (NASA Earthdata, free account), NOAA OISST (open).
+Declared honestly under R17 as **breaking nothing new** - a source, not a second domain - because a
+third catalogue entry that looked like a third domain would be the exact false confidence R17
+exists to refuse. **It may bear on D43:** ocean products are often chunked more kindly than
+WeatherBench's one-timestep-deep layouts, so a laptop-feasible long regional record may exist here.
+Recorded as a possibility to measure, not a promise.
+
+#### What the probing established, and what is left
+
+Measurements and their claim boundary are in `VERIFICATION.md` under *TG12.1 - Ocean store probe*.
+In summary:
+
+*   **GLORYS is the only candidate that fits the existing machinery.** OISST is per-day netCDF and
+    ECCO is netCDF granules; `probe_store` opens Zarr. Only the Copernicus ARCO stores are Zarr, and
+    they probe **anonymously** - the `access="credentials"` assumption this slice was planned around
+    is wrong.
+*   **The D43 possibility holds, but only in one of two layouts.** `geoChunked.zarr` costs **2.2x**
+    for a three-year regional crop against **72.8x** for `timeChunked.zarr` and 26.2x for the ERA5
+    store D43 is open against. **The Copernicus service names are inverted relative to their
+    contents**, so the first ARCO URI the catalogue offers is the hostile one. A slice that trusts
+    the service name registers the wrong store and records a false negative against D43.
+*   **The vertical axis is `elevation`, not `depth`** - negative metres, 50 levels.
+    `KNOWN_VERTICAL_DIMENSIONS` needs the entry; `GriddedStore` does not need a schema change.
+*   **D67 was found here.** `assess_access_pattern` raises `MemoryError` on a store this size, which
+    is the function behind the Acquire tab's **Inspect** button.
+
+**Still to do, in order:** persist both probes to the ledger (keeping the 72.8x record, which is the
+evidence for why the other was chosen); add the `elevation` entry; register one store citing the
+`geoChunked` digest, through a module outside the core engine file per Definition of Done item 3;
+tests, including one asserting nothing in `src/` imports `copernicusmarine`; then decide whether D67
+blocks the Acquire tab for this store.
+
+**Environment already prepared.** `requirements-ocean.txt` adds `s3fs` and `earthaccess` to the main
+venv as pure additions. `copernicusmarine` **cannot** go there - it requires pydantic >= 2.9.1 and
+this project pins `pydantic < 2.0.0` for FastAPI 0.110, a `ResolutionImpossible` checked rather than
+assumed. It lives in an isolated `.venv-copernicus` and is invoked as an external command, never
+imported, which is the honest shape for a credential-minting tool anyway.
 
 **TG12.2 Argo profiles — a second acquisition shape.** The slice where `argo_float` stops being a
 declaration. `ProfileSpec` takes a region, a time window and a depth range and returns an

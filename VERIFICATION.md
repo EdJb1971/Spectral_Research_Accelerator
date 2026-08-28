@@ -6297,3 +6297,129 @@ contracts are not evidence of rendered layout or keyboard traversal.
 beside the evidence. It is not evidence, consensus, reproducible computation or permission to
 claim, and deleting it changes no claim level (R22, R23). The cost receipt establishes only the
 recorded route and token accounting; it says nothing about whether an argument is sound.
+
+---
+
+## TG11.5 addendum - rendered inspection, now RUN (2026-08-28, `ed-dev`)
+
+The TG11.5 entry above records rendered inspection as **NOT RUN**, because no browser backend was
+available at the time. It has since been run. That claim is superseded here rather than edited, so
+both the original limit and its lifting stay legible.
+
+**Method.** Playwright/Chromium driving a Vite dev server on port 3002 against a backend on 8001,
+with `SPECTRAL_STUDY_ROOT` and `SPECTRAL_REVIEW_ROOT` pointed at a scratch store seeded from the
+`_recorded_review()` fixture that `test_reviews_api.py` uses. Study `tg7_3_cost`. The developer's
+own 3000/8000 pair was left untouched, and nothing was written into the repository's `data/`.
+
+**Observed in the rendered page:**
+
+*   Empty state renders *"No study selected. That is not the same as no review existing."*
+*   The amber **Recorded, not reproducible** banner carries the R23 declaration and the claim
+    boundary together, bound to `tg7_3_cost`, bundle revision 0, with the full bundle digest.
+*   All eight recorded calls render with seat, model, effort, request id, timestamp, dissent flag
+    and finding.
+*   The round-robin outcome renders both honesty notes verbatim: that one model answered all eight
+    seats, and that the reassessment was made by the model that wrote the candidate synthesis.
+*   Route and token receipts render calls, input/cached/output/total tokens and cache-hit fraction
+    under *"Token and route audit only; no price or review-quality claim."* No price string appears
+    anywhere in the rendered output, matching the assertion in `test_reviews_api.py`.
+
+**Zero console errors, zero page errors, no failing API responses** across the session.
+
+**Claim boundary.** This establishes that the panel renders what the API vouched for, and nothing
+about whether the recorded argument is sound. Keyboard traversal was **not** measured here; the
+TG11.6 accessibility contract remains asserted by test rather than by rendered inspection.
+
+---
+
+## Launcher `.env.local` loading (2026-08-28, `ed-dev`)
+
+Shipped in commit `b621f8d` with no recorded verification. Recorded here after the fact.
+
+**The defect.** `SPECTRALEARTH_ALLOW_NETWORK` is read by `os.getenv` at
+`zarr_source.py:network_enabled`. Nothing loaded `.env.local`: `grep -rn "dotenv|load_dotenv" src/`
+returns no hits, and `python-dotenv` is neither in `requirements.txt` nor installed. Vite does not
+load it either - it reads env files from `frontend/` and exposes only `VITE_`-prefixed names to
+browser code. A flag set in `.env.local` was therefore inert, and the Acquire tab's "Network is off"
+banner was the visible symptom.
+
+**The fix.** `start_platform.ps1` promotes `.env.local` into its own process environment before
+launching, which the uvicorn `Start-Job` and `npm run dev` inherit as child processes. No new
+dependency, and the backend's config does not become cwd-dependent - which is the shape of defect
+D7 that this script already exists to fix.
+
+**Verified against a deliberately awkward fixture, in a clean `-NoProfile` shell:**
+
+```
+[*] Loading local environment from .env.local ...
+    Ignoring unparseable line: junkline-with-no-equals
+    Ignoring unparseable line: =leading-equals-is-junk
+    Loaded: GEMINI_API_KEY, SPECTRALEARTH_ALLOW_NETWORK, QUOTED_DOUBLE, QUOTED_SINGLE, SPACED_KEY
+    Already set in this shell, file ignored for: ALREADY_SET
+--- resulting values ---
+QUOTED_DOUBLE = [quoted value]      QUOTED_SINGLE = [single value]
+SPACED_KEY    = [spaced value]      ALREADY_SET   = [from-shell-should-win]
+--- child process inheritance (Start-Job) ---
+child sees NETWORK=[1] KEY_SET=[True]
+```
+
+End to end against the real file: `zarr network_enabled() -> True`, where it was `False` before.
+`Parser::ParseFile` reports no syntax errors. **Only variable names are printed, never values.**
+
+**Claim boundary.** Enabling network access is now a property of a gitignored file rather than of
+the command typed. That is what was asked for and it is visible on every launch, but it does mean
+the refusal message that guarded the opt-in no longer appears on this machine.
+
+---
+
+## TG12.1 - Ocean store probe (2026-08-28, `ed-dev`) - **IN PROGRESS, NOT COMPLETE**
+
+Discovery only. **No store has been registered and no code has been written.** Recorded so the
+measurements are not lost and the slice can be resumed by someone else.
+
+**Candidate triage, by probe rather than by reputation, as TG12.1 requires:**
+
+| Candidate | What it actually is | Probe outcome |
+|---|---|---|
+| NOAA OISST | bucket reachable; `data/v2.1/...` is **per-day netCDF** | `probe_store` opens Zarr; cannot open it |
+| ECCO | netCDF granules behind Earthdata | same, plus credentials |
+| **GLORYS** | **Zarr** - Copernicus Marine ARCO on CloudFerro | `described`, **anonymously** |
+
+**A correction to an earlier claim made in session:** GLORYS does **not** require credentials. An
+initial `403` came from a guessed bucket path, not a real one. The real ARCO stores return
+`HTTP 200` and probe anonymously. Copernicus credentials were needed only to *resolve* the URIs
+through the toolbox, so the store registers as `access="anonymous"`.
+
+**The two ARCO layouts, on an identical 3-year NZ-scale (20 x 20 degree) one-variable,
+one-level crop:**
+
+| Store | Chunking `[t, z, lat, lon]` | Amplification | Fetched for 0.25 GB wanted |
+|---|---|---|---|
+| ERA5 `0p25_6h` (**D43**) | 1 timestep deep | 26.2x | 29.88 GB |
+| GLORYS `timeChunked.zarr` | `[1, 1, 512, 2048]` | **72.8x** | 18.39 GB |
+| GLORYS `geoChunked.zarr` | `[2081, 1, 16, 16]` | **2.2x** | **0.55 GB** |
+
+**This bears on D43: a laptop-feasible long regional ocean record does exist.** But only in one of
+the two layouts, and **the Copernicus service names are inverted relative to their contents** -
+`arco-time-series` serves `geoChunked.zarr` (the time-deep one, 2.2x) while `arco-geo-series`
+serves `timeChunked.zarr` (72.8x). Taking the first ARCO URI the catalogue offers registers the
+hostile store and records a false negative against D43.
+
+**Probe digests:** `timeChunked` = `2e09a179579782bc`, `geoChunked` = `e6a37e750b58053a`. Neither
+is persisted to the probe ledger yet.
+
+**Store facts, measured:** dims `time=12227, latitude=2041, longitude=4320, elevation=50`; coverage
+1993-01-01 to 2026-06-23, daily, at 1/12 degree; 18 variables.
+
+**The vertical axis is named `elevation`, not `depth`,** with negative-metre values
+`-5727.917 .. -0.494`. `KNOWN_VERTICAL_DIMENSIONS` documents only `level` and `depth`, so the
+roadmap's assumption that an ocean product arrives on a `depth` axis is wrong for GLORYS. That dict
+is explicitly not a closed set, so this is an entry to add rather than a schema change.
+
+**D67 was found here** - `assess_access_pattern` raised `MemoryError` on this store. Every figure
+above was computed from the probed chunk shapes instead.
+
+**Claim boundary.** Metadata only: no ocean data has been transferred, cropped or analysed. A
+measured chunk layout is not evidence that a crop is scientifically useful. GLORYS breaks no
+analysis assumption - per R17 it is a source, not a second domain, and must not be presented as
+evidence that the abstraction generalises.

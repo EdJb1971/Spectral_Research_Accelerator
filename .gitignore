@@ -27,3 +27,9 @@ data/*.zarr/
 data/store_probes/*.json
 *.db-shm
 *.db-wal
+
+# Isolated interpreter for the Copernicus Marine Toolbox (see requirements-ocean.txt).
+.venv-copernicus/
+
+# Scratch Vite config for rendered inspection against a non-default backend port.
+frontend/vite.inspect.config.ts
