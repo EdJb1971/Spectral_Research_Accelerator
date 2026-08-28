@@ -277,6 +277,18 @@ export const AcquisitionView: React.FC<AcquisitionViewProps> = ({
                   <p className="text-[10px] text-slate-500">Materialise from the command line:</p>
                   <code className="text-[10px] text-teal-400 break-all">{inspection.cli}</code>
                 </div>
+                {/* Said before the transfer rather than discovered after it (D70): materialising
+                    is the end of the road for a store no analysis path reads yet. */}
+                {store && store.vertical_dim !== 'level' && <div className="border border-amber-900/60 bg-amber-950/20 rounded p-3">
+                  <p className="text-[11px] text-amber-300">
+                    Materialising is where this store currently stops. The crop will be cached,
+                    content-addressed and reproducible from the command above, and no analysis
+                    path reads a crop from it yet — the T5.2 regional-forecast route is
+                    atmospheric and asks for ERA5 variables on a pressure level. Registration and
+                    costing are what this store has so far; an analysis route for it is not
+                    built.
+                  </p>
+                </div>}
               </> : <div className="min-h-[260px] bg-slate-900 border border-slate-800 rounded-xl flex flex-col items-center justify-center text-slate-500">
                 <Search className="w-10 h-10 mb-2" /><p className="text-sm">No crop inspected yet</p>
               </div>}
@@ -287,23 +299,33 @@ export const AcquisitionView: React.FC<AcquisitionViewProps> = ({
                   className="mt-2 border border-slate-800 rounded p-2 text-[10px] font-mono text-slate-400">
                   <p className="text-slate-200">{item.content_key}</p>
                   <p>{Object.entries(item.shape || {}).map(([key, value]) => `${key}=${value}`).join(' ')}</p>
-                  <p className={item.regional_forecast_readiness.structurally_eligible
-                    ? 'text-emerald-400' : 'text-amber-400'}>
-                    {item.regional_forecast_readiness.structurally_eligible
-                      ? 'T5.2 structure eligible' : 'T5.2 inputs incomplete'}
-                  </p>
-                  <p className="text-amber-300 font-sans">Prepared dataset: NO · train-only normalisation verified: NO · independent ERA5 cross-check: NOT RUN</p>
-                  <p className="text-amber-300 font-sans">
-                    cadence: {item.regional_forecast_readiness.cadence_verified
-                      ? `${item.regional_forecast_readiness.expected_cadence_hours} h verified`
-                      : 'NOT VERIFIED'} · physical lead labels: NOT AVAILABLE
-                  </p>
-                  <p className="text-amber-300 font-sans">
-                    split contract: {item.regional_forecast_readiness.split_mode === 'calendar_boundaries'
-                      ? `calendar (${item.regional_forecast_readiness.calendar_boundaries?.join(' → ')})`
-                      : 'ratios (dates not frozen)'}
-                  </p>
-                  <p className="font-sans text-slate-600">{item.regional_forecast_readiness.claim_boundary}</p>
+                  {/* A crop from a non-pressure-level store is not a failed T5.2 candidate; the
+                      question does not apply to it, and reporting the atmospheric verdict over
+                      it read as though the crop had fallen short (D70). */}
+                  {item.regional_forecast_readiness.applicable ? <>
+                    <p className={item.regional_forecast_readiness.structurally_eligible
+                      ? 'text-emerald-400' : 'text-amber-400'}>
+                      {item.regional_forecast_readiness.structurally_eligible
+                        ? 'T5.2 structure eligible' : 'T5.2 inputs incomplete'}
+                    </p>
+                    <p className="text-amber-300 font-sans">Prepared dataset: NO · train-only normalisation verified: NO · independent ERA5 cross-check: NOT RUN</p>
+                    <p className="text-amber-300 font-sans">
+                      cadence: {item.regional_forecast_readiness.cadence_verified
+                        ? `${item.regional_forecast_readiness.expected_cadence_hours} h verified`
+                        : 'NOT VERIFIED'} · physical lead labels: NOT AVAILABLE
+                    </p>
+                    <p className="text-amber-300 font-sans">
+                      split contract: {item.regional_forecast_readiness.split_mode === 'calendar_boundaries'
+                        ? `calendar (${item.regional_forecast_readiness.calendar_boundaries?.join(' → ')})`
+                        : 'ratios (dates not frozen)'}
+                    </p>
+                    <p className="font-sans text-slate-600">{item.regional_forecast_readiness.claim_boundary}</p>
+                  </> : <>
+                    <p className="text-slate-400">
+                      T5.2 readiness: NOT APPLICABLE · vertical axis {item.regional_forecast_readiness.vertical_dim}
+                    </p>
+                    <p className="font-sans text-slate-500">{item.regional_forecast_readiness.not_applicable_reason}</p>
+                  </>}
                 </div>)}
               </div>}
             </div>

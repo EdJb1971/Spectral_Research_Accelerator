@@ -6445,3 +6445,46 @@ the architecture execution ledger after the final run.
 measured chunk layout is not evidence that a crop is scientifically useful. GLORYS breaks no
 analysis assumption - per R17 it is a source, not a second domain, and must not be presented as
 evidence that the abstraction generalises.
+
+---
+
+## TG12.1a - D70, readiness that declares what it is about (2026-08-28, `ed-dev`) - **COMPLETE**
+
+Found by use rather than by test: GLORYS was selected in Acquire, `Probe store` and `Inspect` both
+completed correctly, and the researcher asked what to do next. The honest answer is nothing -
+materialisation is CLI-only by design and TG12.1's claim boundary says no analysis consumes an
+ocean crop - but two things at that point were wrong rather than absent.
+
+**Reproduced before the fix**, against a manifest carrying GLORYS's own selection:
+
+```
+spec = {"variables": ["thetao"], "levels": [-0.49402499198913574], "vertical_dim": "elevation"}
+assess_manifest_readiness(spec) ->
+    structurally_eligible = False
+    missing_variables     = ['t', 'q', 'u', 'v', 'z']
+    required_level_hpa    = 850,  level_available = False
+```
+
+`int(-0.49402499198913574)` is `0`; the coercion raised nothing. The verdict therefore reported an
+ocean crop as an atmospheric candidate that had fallen short.
+
+**Fixed.** Levels compared as numbers with no coercion; `applicable` derived from the crop's own
+declared vertical axis (absent means `level`, per D63), so no store name is hardcoded; the
+not-applicable text states that the variable and level rows describe what T5.2 requires rather
+than anything this crop failed to supply; the Acquire panel renders that instead of the verdict;
+and `Inspect` now says before the transfer that materialising is where this store currently stops.
+
+**Verified.**
+
+*   `test_readiness_refuses_to_judge_a_crop_it_does_not_describe` asserts both halves: the GLORYS
+    crop reports `applicable=False`, `vertical_dim='elevation'` and an uncoerced level comparison,
+    **and** an ERA5 crop is unchanged in every field (`applicable=True`,
+    `not_applicable_reason=None`, `structurally_eligible=True`, `level_available=True`).
+*   `test_regional_forecast.py`, `test_stores.py` and `test_acquisitions_api.py`: 63 passed.
+*   Frontend `tsc --noEmit` clean; production build emitted 1,395 modules and real JS/CSS,
+    matching the module count recorded for TG12.1.
+
+**Claim boundary.** This changes what the workbench *says* about a crop. It transfers no ocean
+data, and it does not create an analysis route for GLORYS - it makes the absence of one explicit
+before a transfer is paid for rather than after. D62, D68 and D70 are one pattern recorded three
+times: the registry describing a store more confidently than the code behind it could deliver.

@@ -2991,18 +2991,373 @@ this project pins `pydantic < 2.0.0` for FastAPI 0.110, a `ResolutionImpossible`
 assumed. It lives in an isolated `.venv-copernicus` and is invoked as an external command, never
 imported, which is the honest shape for a credential-minting tool anyway.
 
-**TG12.2 Argo profiles — a second acquisition shape.** The slice where `argo_float` stops being a
-declaration. `ProfileSpec` takes a region, a time window and a depth range and returns an
-irregular collection of profiles; content-addressed and machine-independent like `CropSpec`, but
-it cannot borrow it, because the result is a scatter rather than an array. It feeds a
-`ChannelSeries`, so everything TG8.4 built — the clock facts, the obligations, the aggregate check
-— applies unchanged. **`argo_float`'s declaration needs revisiting in the open:** it declares
-latitude, longitude *and* a pressure level, so TG8.4's E14 check correctly refuses it a flat
-channel table. Either the profile shape supplies those axes or the declaration is split, and that
-is a design decision to take visibly rather than paper over.
+**TG12.1a D70 — readiness that declares what it is about. DONE (2026-08-28, `ed-dev`).** A
+follow-on found by using TG12.1 rather than by testing it: GLORYS was selected in Acquire, Probe
+and Inspect both behaved correctly, and the question was what to do next. The honest answer is
+nothing — materialisation is CLI-only by design, and TG12.1's claim boundary says no analysis
+consumes an ocean crop — but the workbench said something wrong rather than saying nothing. The
+T5.2 readiness line rendered against every materialised crop truncated GLORYS's fractional
+elevations with `int()` (`int(-0.494…)` is `0`, silently) and then reported the five ERA5
+variables as *missing*, which reads as a crop that nearly qualified. Levels are now compared as
+numbers; `applicable` is derived from the crop's own declared vertical axis; and Inspect states
+**before** a 51 GB transfer that materialising is where this store currently stops. ERA5 fields
+are unchanged, asserted. Recorded in `architecture.md` §3.6zpb and `VERIFICATION.md`.
+
+**Where this leaves G12.** GLORYS delivered the store seam, the coordinate-only cost estimator
+(D67) and a vertical axis the request layer can actually express (D68) — and no analysis route,
+because R17 admitted it as a *source* under `reanalysis`, not as a second domain. The analysis
+route is TG12.2's to build, which is why that slice carries more weight than its position
+suggests: it is the first end-to-end non-atmospheric path, archive to falsification layer.
+
+**TG12.2 Argo profiles — a second acquisition shape, and the reduction nobody had named.**
+The slice where `argo_float` stops being a declaration. It is planned in four parts because
+writing the design down turned up a prerequisite that has to land first, and a decision that was
+posed as a fork with two branches when the honest answer is neither of them.
+
+##### The decision, taken in the open
+
+The earlier note said: *either the profile shape supplies those axes or the declaration is
+split.* Having costed both, **neither is taken, and the reason is worth stating because it is the
+same reason D61 exists.**
+
+Start from what E14 is actually saying. `assert_domain_admits_channel_table` compares declared
+axis *roles* against `CHANNEL_TABLE_ROLES = ("time", "category")`. `argo_float` declares
+`latitude` and `longitude` as `space` and `pressure` as `level`, so three of its five axes are
+unsatisfiable. The refusal is not "you forgot some columns". It is *"you told me your results are
+indexed by position and depth, this container cannot index by them, and reading here would
+silently change what a result means."*
+
+So the question E14 is really asking is: **is an Argo analysis result indexed by latitude,
+longitude and pressure?** The answer depends entirely on a step the platform has never named —
+the **reduction** from a scatter of profiles to labelled scalar series. Three defensible
+reductions of the same query:
+
+| reduction | channel label | what happens to the other axes |
+|---|---|---|
+| **per-float scalar** — e.g. temperature at 100 dbar, or 0–200 m heat content | `float_id` | `pressure` consumed by the reduction; `latitude`/`longitude` become per-sample attributes, not indices |
+| **per-depth-bin array mean** | `pressure` bin (ordered) | `float_id` and position averaged over; creates `aggregated_values` |
+| **per-region mean** | region or grid cell | `float_id` and `pressure` averaged over |
+
+In every case the surviving index is `(time, channel)`. That is not a loophole around E14 — the
+reduction is *where the scientific content of the acquisition lives*, and until now it has had no
+name, no registration and no content key. Those three rows are different scientific records
+produced from the same bytes, and nothing in the platform could currently tell them apart in a
+provenance record.
+
+**Therefore:** `ProfileSpec` supplies the axes *at the acquisition layer* — the first branch is
+right about acquisition — and a **declared, registered reduction** consumes them on the way to a
+`ChannelSeries`, deriving the channel-series declaration from the parent rather than having a
+second one hand-written beside it, which is what the second branch would have produced.
+
+**Why derived and not hand-split.** A hand-written second declaration for "Argo as a flat series"
+would be a second description of one archive, maintained by hand, free to drift from the first.
+That is precisely D61: `order_book`'s description and its violation tuple disagreed for four
+slices because both were written by hand and nothing computed one from the other. Repeating that
+shape in the slice whose whole purpose is to make a declaration executable would be a poor joke.
+A derived declaration cannot drift, because it is computed from the parent declaration and the
+reduction's declared axis consumption.
+
+**E14's refusal stays, and gets a test.** `argo_float` continues to be refused a flat channel
+table, by name, and TG12.2 asserts that it still is. What changes is that there is now a
+legitimate route to a `ChannelSeries` that goes *through* a declared reduction rather than around
+the check.
+
+##### The finding that reorders the work: D69
+
+The justification for Argo, after D61 shrank it, is that it is the only domain breaking
+**`non_stationary_support`** — *"channels start and stop during the record, so the effective
+sample size differs per channel and per pair."* Floats are deployed, drift and die mid-record;
+that is the violation, exactly.
+
+Grepping `src/` for consumers of that violation returns **one hit, and it is the dictionary entry
+that defines it.** `irregular_sampling` is enforced in three places — `_validate_cadence` refuses
+a ragged clock without it, and `DomainTimeSeries.cadence_seconds` refuses a frame-to-duration
+conversion with it. `aggregated_values` is enforced in both directions: declare it and you must
+supply a physical window, omit it and you may not carry one. `non_stationary_support` is enforced
+**nowhere**. `refusals_for` displays its consequence text, and its own docstring says *"that
+refusal is enforced deep in the analysis layer"* — which for this violation is not true.
+
+It is worse than an unenforced rule, because the container cannot express the condition either.
+`ChannelSeries.usable` is `Optional[Sequence[bool]]` with **one entry per channel**, and
+`unusable_reason` is keyed by channel label. There is no per-*sample* presence mask anywhere in
+the contract. A float that reported for two years of a five-year record is either wholly usable
+or wholly unusable; "present here, absent there" is not sayable. `measures` finiteness is never
+validated, so the obvious workaround — a union clock with `NaN` where a float did not surface —
+would push `NaN` into an analysis layer that has never been asked what it does with one.
+
+So the missing enforcement and the missing representation are the same hole, and Argo cannot be
+delivered honestly on top of it: the acceptance criterion would reduce to *"a record whose
+declared violation nothing acts on."* **Logged as D69 and closed first.**
+
+##### The parts
+
+**TG12.2a — Close D69: per-sample presence in the channel-series contract.** The prerequisite,
+planned in full here because it changes `ChannelSeries`, which is the one interface the accepted
+falsification layer consumes. Everything downstream of it inherits whatever this slice gets wrong.
+
+##### What actually happens today, measured rather than assumed
+
+The tempting implementation is a union clock padded with `NaN`. Before designing anything, the
+question *"what does the analysis layer do with an absent sample?"* was put to the code. It does
+not raise. It returns numbers. Eight sites, each cited, each a distinct failure:
+
+**F1 — The estimators already mask, so nothing announces itself.** `mutual_information`
+(`cross_scale.py:370`) and `transfer_entropy` (`cross_scale.py:409`) each build a `finite` mask
+over their operands and compute on the intersection, returning `NaN` only below four and six
+finite samples respectively. A padded record therefore produces a complete, plausible,
+fully-populated result table. There is no error to notice.
+
+**F2 — Reported N is the padded length, and it drives the bias guard.** `per_cell = n_times /
+cells` at `cross_scale.py:573` takes `n_times` from `matrix.shape[0]`. That is the guard against
+an estimate dominated by its own bias — the `MIN_SAMPLES_PER_CELL` warning — and it would be
+computed from the padded clock while the estimate itself used the pairwise intersection. A pair
+overlapping in 40 of 100 frames gets the reassurance arithmetic of 100. `n_frames` in the returned
+record is padded for the same reason.
+
+**F3 — The Theiler window is computed on a series with its gaps closed up.**
+`decorrelation_frames` (`cross_scale.py:453`) does `a = a[np.isfinite(a)]` and then takes the
+autocorrelation over *adjacent entries of the compacted array*. Samples either side of a two-year
+gap are treated as neighbours. This understates the decorrelation length, which understates the
+Theiler window, which makes `admissible_shifts` admit shifts that are not real shuffles. The
+direction of the error is **toward false significance**, which is the direction that matters.
+
+**F4 — The surrogate ensemble rotates the presence pattern.** `_shift_null` (`cross_scale.py:520`)
+calls `np.roll(source, shift)` on the padded column, so the `NaN`s travel with the values. Each
+surrogate therefore overlaps the target in a *different* number of samples than the observed pair
+did: an observed statistic computed on 40 samples is referred to a null whose members were
+computed on anywhere between none and seventy. Entropy-estimator bias is a strong function of N,
+so this is not the observed statistic's null. The direction of the error is **unsigned and
+data-dependent**, which is worse than a bias with a known sign.
+
+**F5 — `admissible_shifts` counts padded frames.** Its `n` (`cross_scale.py:489`) is the padded
+length, so both exclusion windows, and the refusal that fires when no shift avoids them, are
+computed against a record longer than either channel really has.
+
+**F6 — `wrap=True` joins the ends across gaps.** `np.roll(t, -lag)` treats the record as
+circular. With gaps, a lag of *k* frames is not *k* frames of anything for a partially-present
+channel, and `wrap_fraction` (`cross_scale.py:658`) is measured against the padded `n`.
+
+**F7 — The split copies `usable` wholesale.** `split_channel_series` slices `measures` and
+`times_seconds` but passes `usable`, `support_parent_px` and `unusable_reason` through unchanged.
+A float deployed after the train/test boundary is wholly absent from the training partition while
+still marked usable, and `train_stop = int(n * train_ratio)` is a padded-frame index, so effective
+N per channel can differ arbitrarily between the two sides. R6's protection assumes partitions
+that are comparable.
+
+**F8 — The partition identity cannot see presence, which reopens D65.** `_identity`
+(`preregistration.py:229`) builds a `PartitionIdentity` from `n_times = stop - start`,
+`n_channels`, `channel_labels` and the identifying provenance keys. Two records with the same
+clock and the same labels but *different presence* hash identically, so `HeldOutLedger` — which is
+keyed on the partition precisely so that a second honest seal cannot buy a second look — would not
+fire between them. D65 fixed this class of defect by building the identity from what identifies
+the data; a new field that identifies the data must enter it, or the fix regresses.
+
+**The conclusion these eight support.** Padding with `NaN` and proceeding does not fail loudly, or
+even quietly. It produces a full result table of numbers computed on unrecorded and varying sample
+sizes, referred to a null whose bias differs from the observed statistic's, guarded by a
+bias-warning computed from a length nothing used, with a Theiler window derived from an
+autocorrelation that treats a two-year gap as one frame. That is the precise machine for
+generating confident noise, and it is the reason D69 is closed before any Argo bytes are fetched
+rather than after.
+
+##### The five decisions, taken here
+
+**A-D1 — Presence is declared, never inferred from `NaN`.** Deriving the mask from
+`~np.isfinite(measure)` would be one line and is refused for three reasons. A `NaN` in a measure
+already means something else — a value that was observed and failed QC — and conflating "not
+observed" with "observed and invalid" destroys exactly the distinction `usable` and R13 exist to
+preserve. Inferred presence would also depend on *which measure* you looked at, when presence is a
+property of the sample and shared by all of them. And E14's standing position is that meaning is
+declared and never read off an appearance; a mask inferred from a value pattern is the same
+mistake as a role inferred from an axis being called `lat`.
+
+**A-D2 — The mask is one `(time, channel)` boolean array per series, not one per measure.** A
+float either surfaced on a cycle or it did not; every measure derived from that ascent shares the
+fact. A measure that is `NaN` where presence is `True` keeps its current meaning — a value that
+exists and is not usable — and the two conditions stay distinguishable in the receipt.
+
+**A-D3 — Enforced in both directions, mirroring `aggregated_values` exactly.** A series whose
+domain declares `non_stationary_support` must supply a mask; a series whose domain does not
+declare it may not carry one. The precedent is `DomainTimeSeries.__post_init__`
+(`cross_domain.py:156-168`), which requires a positive physical window when `aggregated_values` is
+declared and refuses one when it is not. Copying an enforcement shape that already exists is
+worth more than inventing a second one, and it means the vocabulary's three data-shape violations
+are finally enforced alike.
+
+**A-D4 — Effective N is a pairwise quantity, computed from mask overlap, reported per test.** The
+violation's own consequence text says the effective sample size differs *"per channel and per
+pair"*, so a single per-series number would restate the defect. Every test in the family carries
+the overlap count it was actually computed on, and the bias guard of F2 is computed from that
+number rather than from the clock length.
+
+**A-D5 — The surrogate null is computed at fixed N, on the pairwise-present subsequence.** The
+overlap is taken *first*, then shifts are drawn within it, so every surrogate is computed on
+exactly the observed sample size and F4 closes. This has a consequence that must be stated rather
+than absorbed: the overlap subsequence is **not contiguous in clock time**, so a shift of *k*
+positions within it is not a lag of *k* frames of anything.
+
+That last point is the one genuinely open sub-decision in TG12.2a, and it is recorded as open
+rather than guessed:
+
+*   **Candidate 1 — run within maximal contiguous presence runs.** Admissible lags are evaluated
+    inside each maximal run of joint presence; a pair whose longest run does not support
+    `lag + theiler` is excluded by name, with the run lengths in the exclusion reason. Honest about
+    clock time; costs statistical power, possibly all of it, on a sparse float array.
+*   **Candidate 2 — refuse frame lags outright for a masked series.** A domain declaring
+    `non_stationary_support` alongside `irregular_sampling` arguably has no business reporting a
+    lag in frames at all — `DomainTimeSeries.cadence_seconds` already refuses the frame-to-duration
+    conversion for the second violation. This would make Argo an association-only domain until a
+    physical-time estimator exists.
+
+**These are decided by measurement, not by preference:** both are implemented behind the same seam
+and run against a synthetic float array with known injected coupling and a known presence pattern.
+Candidate 1 is adopted only if it recovers the injected coupling at a sparsity comparable to real
+Argo; otherwise Candidate 2 is adopted and the reduced claim is stated in the domain's refusals.
+The measurement and its parameters go in `VERIFICATION.md` whichever way it falls.
+
+##### The work, in order
+
+**A1 — The contract.** `ChannelSeries.present: Optional[np.ndarray]`, boolean, shape
+`(n_times, n_channels)`, validated against the clock and channel count with the existing
+`ShapeMismatchError` shape. A channel with fewer than two present samples is refused by name — one
+sample has no clock and no lag can be taken along it, which is the refusal `times_seconds` already
+makes for the series as a whole. `channel_records` gains a per-channel present-count so a receipt
+shows what each channel contributed. `ChannelGeometrySpec` is untouched: it is geometry without
+data, and presence is data.
+
+**A2 — The enforcement.** Both directions per A-D3, at the point where a series meets its
+declaration — `read_channels_for_domain` and the domain-analysis entry, not in `ChannelSeries`
+itself, which does not hold a declaration. `refusals_for` keeps publishing the consequence text,
+and its docstring's claim that the refusal is enforced in the analysis layer becomes true.
+**Acceptance:** a domain declaring the violation with no mask is refused, by name, naming the
+violation; a domain not declaring it that supplies a mask is refused, by name; and the existing
+`aggregated_values` refusals are shown to be unchanged.
+
+**A3 — Effective N and the bias guard.** Pairwise overlap replaces `n_times` in `per_cell`, in
+the `MIN_SAMPLES_PER_CELL` warning text, and in a new per-test `n_effective` field. `n_frames`
+stays in the result as the clock length, under a name that says so, so nothing that reads it today
+changes meaning.
+**Acceptance:** two channels overlapping in 40 of 100 frames report `n_effective` 40; the bias
+warning fires on the pair's own arithmetic, not the record's; a series with no mask reports
+`n_effective` equal to `n_frames` for every pair, which is what makes every existing result
+identical.
+
+**A4 — Gap-correct decorrelation.** `decorrelation_frames` stops compacting. Given a presence
+mask it computes the autocorrelation over pairs that are genuinely `lag` frames apart *and* both
+present, and refuses rather than guesses when too few such pairs exist at every candidate lag.
+Without a mask its behaviour is byte-identical, including the existing `a[np.isfinite(a)]` line
+for genuinely-NaN atmospheric input.
+**Acceptance:** a series with a gap reports a decorrelation length matching the same series with
+the gap absent from the clock entirely, rather than the shorter one compaction produces; a
+regression pins the atmospheric value.
+
+**A5 — The null, and the lag decision.** `_shift_null` and `admissible_shifts` operate on the
+pairwise-present subsequence at fixed N, and the F5/F6 padded counts follow it. The A-D5
+measurement runs here and its outcome is implemented.
+**Acceptance:** every surrogate in an ensemble is computed on the same number of samples as the
+observed statistic, asserted directly; `wrap_fraction` and the shift-exclusion windows are
+computed from the effective length; and the adopted lag candidate recovers a known injected
+coupling on the synthetic float array, or the domain refuses frame lags and says so.
+
+**A6 — Splits and identity.** `split_channel_series` slices the mask with the measures, recomputes
+per-partition usability, and refuses — rather than silently returning a degenerate partition — when
+a channel is wholly absent from one side. `_identity` takes the presence pattern into the
+`PartitionIdentity` digest so F8's collision cannot occur.
+**Acceptance:** a float present only after the boundary is refused by name at the split rather than
+appearing as a usable training channel; two records identical but for presence produce different
+partition digests, asserted by the same test shape D65 introduced.
+
+**A7 — Surfacing, and the byte-identity proof.** Presence counts reach the receipt, the
+`ChannelRecords` API response and the Acquire tab's channel table, because a per-channel sample
+count that only exists inside the estimator is a fact the reader cannot check.
+**Acceptance:** the full suite passes with every pinned hash unmoved, and every checked-in
+preregistration and evidence bundle loads. No built-in domain declares `non_stationary_support`
+today, so every mask is `None` and every existing path must be byte-identical; that is the
+strongest available proof that the change is additive, and it is the acceptance criterion rather
+than a hope.
+
+##### Edge-case register
+
+Worked through explicitly, so implementation meets them as decided cases rather than as surprises.
+
+| # | Case | Required behaviour |
+|---|---|---|
+| E1 | A channel present for fewer than two samples | Refused by name at construction (A1) |
+| E2 | A channel wholly absent from a partition after splitting | Refused by name at the split, not returned degenerate (A6) |
+| E3 | A pair whose presence never overlaps | Excluded from the family with that reason, and *counted* in `n_excluded`, never silently dropped |
+| E4 | A pair overlapping in fewer samples than the estimator's own floor (4 for MI, 6 for TE) | Excluded by name, distinguishing "too little overlap" from today's "estimator was not finite" |
+| E5 | `NaN` in a measure where presence is `True` | Keeps its existing meaning — observed and invalid — and stays distinguishable from absence in the receipt |
+| E6 | Presence `False` where the measure is finite | Refused: a value that was not observed cannot have a number, and permitting it makes the mask advisory |
+| E7 | Every channel present everywhere | Mask is all-`True`; results must equal the no-mask case exactly, asserted |
+| E8 | A domain declaring the violation on a record that turns out to be fully present | Permitted with a recorded note; the declaration is about the source, not about one query's luck |
+| E9 | `wrap=True` on a masked series | Follows the A-D5 outcome; must not silently wrap across a gap under either candidate |
+| E10 | The embargo window falls entirely inside a gap | The embargo is still real in clock time; recorded as such, not counted as effective frames |
+| E11 | Presence differs between two measures of one series | Impossible by A-D2; the mask is per series, and a caller supplying per-measure presence is refused |
+| E12 | An existing series constructed with no mask | Every downstream number byte-identical, which is A7's acceptance |
+| E13 | A masked series reaching a path that has not been audited | Refuses by name rather than proceeding; the audit list is F1–F8 and anything outside it must say so |
+| E14 | Presence supplied as an integer or float array | Refused; a boolean mask that accepts `0.5` is not a mask |
+| E15 | `support_parent_px` on a channel present in only part of the record | Unchanged — the footprint is a property of the representation, not of the sampling — but recorded alongside the present-count so a reader can see both |
+
+##### What TG12.2a does not do
+
+It does not fetch Argo, define `ProfileSpec`, or register a reduction. It does not claim that a
+masked series is *analysable* — A-D5's measurement may conclude that frame lags are inadmissible
+for such a series, and that refusal would itself be the deliverable. And it does not touch
+`ScaleSignature`: the atmospheric path has no absent samples, declares no such violation, and must
+end this slice byte-identical.
+
+**TG12.2b — `ProfileSpec` and the profile collection.** A region, a time window and a depth
+range, content-addressed and machine-independent like `CropSpec` and — as previously noted —
+unable to borrow it, because the result is a scatter rather than an array. It returns a
+`ProfileCollection` genuinely carrying per-profile time, latitude, longitude and a pressure
+vector, so the three axes `argo_float` declares are real objects rather than a claim.
+**Acceptance:** `assert_domain_admits_channel_table(argo_float)` still raises, by name, naming
+all three unsatisfiable axes; and an identical `ProfileSpec` produces an identical content key on
+a second machine.
+
+**TG12.2c — The declared reduction.** `ProfileReduction`: named, registered, carrying its own
+content key, and declaring which parent axes it consumes. The channel-series declaration is
+**derived** from the parent declaration and that consumption record. At least two reductions are
+registered, because a single one is indistinguishable from a hardcoded path and would not
+demonstrate that the concept exists.
+
+This is where the slice's sharpest scientific point lands, and it is recorded here rather than
+discovered later: **the choice of reduction determines whether Argo still delivers the violation
+it was justified by.** The per-float reduction preserves `non_stationary_support` exactly — floats
+really do start and stop. Depth-bin and regional averaging *average the non-stationarity away* and
+add `aggregated_values` instead. So the per-float reduction is not one option among three; it is
+the one TG12.2 is obliged to deliver, and the derived declaration must be shown to carry the
+violation through rather than quietly dropping it.
+
+The remaining sub-decision is the shared clock: floats do not surface together, and
+`ChannelSeries` requires one strictly increasing clock with full `(time, channel)` matrices. The
+union clock plus TG12.2a's presence mask is the intended answer — it is the *representation of*
+the violation rather than a workaround for it — but what the analysis layer does with an absent
+sample is to be **measured and recorded, not assumed**. Binning onto a common grid is the
+rejected alternative, and the rejection is recorded: it would create `aggregated_values` and
+destroy the irregular clock that was half the point of the domain.
+**Acceptance:** the derived declaration for the per-float reduction carries `irregular_sampling`
+and `non_stationary_support` and does *not* carry `aggregated_values`; the depth-bin reduction's
+derived declaration carries `aggregated_values` and a physical window; and two reductions of one
+`ProfileCollection` produce two different content keys.
+
+**TG12.2d — Real data, end to end.** A live Argo GDAC query through the acquisition seam, and
+`profile_query` surfaced in the Acquire tab beside `grid_crop`. `argo_float` is declared today in
+`src/tests/domain_plugin_example.py`, which an acquisition path may not import; it moves to an
+extension module registered the way `glorys_store.py` is, preserving TG8.1's
+declared-from-outside-`src/` acceptance rather than discarding it.
 **Acceptance:** a real Argo query produces a record whose irregular clock is reported as
 irregular, under a domain declaring `irregular_sampling` — the first time that refusal fires
-against data rather than a fixture.
+against data rather than a fixture — **and** whose per-channel presence differs across floats,
+under a domain declaring `non_stationary_support`, which after TG12.2a is a refusal with
+something behind it.
+
+##### Claim boundary, declared in advance
+
+TG12.2 delivers an acquisition, a reduction and two enforced violations. It does **not** claim an
+oceanographic result. A reduction being registered and content-keyed says the choice was recorded
+and is reproducible; it does not say the choice was right for any particular question, and no
+cross-scale finding is claimed from Argo in this slice.
 
 #### Phase G13 — The sky, and closing the vocabulary
 

@@ -577,6 +577,9 @@ export interface ZarrCachedResponse {
     megabytes_transferred: number;
     elapsed_s: number;
     regional_forecast_readiness: {
+      applicable: boolean;
+      not_applicable_reason: string | null;
+      vertical_dim: string;
       structurally_eligible: boolean;
       required_variables: string[];
       resolved_variables: Record<string, string>;
