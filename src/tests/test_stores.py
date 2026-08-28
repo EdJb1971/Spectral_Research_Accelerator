@@ -22,9 +22,11 @@ byte-identical afterwards.
 
 from __future__ import annotations
 
+import ast
 import hashlib
 import importlib
 import json
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -34,8 +36,11 @@ from src.core.domain import DOMAIN_DECLARATIONS
 from src.core.errors import InvalidParameterError, UnknownNameError
 from src.core.registry import restore, snapshot
 from src.data_layer import zarr_source as zs
+from src.data_layer import glorys_store
+from src.data_layer.store_probe import probe_by_digest
 from src.data_layer.stores import (ACCESS_REQUIREMENTS, BUILTIN_STORES, GRIDDED_STORES,
-                                   MEASUREMENT_METHODS, CatalogueView, ChunkFacts,
+                                   KNOWN_VERTICAL_DIMENSIONS, MEASUREMENT_METHODS,
+                                   CatalogueView, ChunkFacts,
                                    GriddedStore, catalogue_payload, domains_with_stores,
                                    register_builtin_stores, register_store, store_for,
                                    stores_for_domain, uri_for)
@@ -104,8 +109,8 @@ def test_a_store_is_discoverable_by_domain_and_by_capability(clean_stores):
     named = [e.name for e in GRIDDED_STORES.with_capability("requires_credentials", True)]
     assert named == ["paid_store"]
     measured = [e.name for e in GRIDDED_STORES.with_capability("chunk_measured", True)]
-    assert set(measured) == {s.name for s in BUILTIN_STORES}, (
-        "every ERA5 entry carries a measured chunk figure; the fixture store does not")
+    assert set(measured) == {s.name for s in BUILTIN_STORES} | {glorys_store.STORE_NAME}, (
+        "every ERA5 entry and GLORYS carry measured chunk figures; fixtures do not")
     assert "paid_store" not in measured
 
 
@@ -282,6 +287,50 @@ def test_the_vertical_axis_is_declared_and_separates_two_otherwise_identical_cro
     assert depth.canonical()["vertical_dim"] == "depth"
 
 
+def test_the_seen_vertical_vocabulary_includes_glorys_elevation():
+    assert "elevation" in KNOWN_VERTICAL_DIMENSIONS
+    assert "negative" in KNOWN_VERTICAL_DIMENSIONS["elevation"]
+
+
+def test_glorys_is_registered_by_its_extension_and_cites_the_persisted_probe():
+    entry = store_for(glorys_store.STORE_NAME)
+    probe = probe_by_digest(glorys_store.PROBE_DIGEST)
+    assert entry.uri == glorys_store.STORE_URI == probe.uri
+    assert entry.domain == "reanalysis", (
+        "R17: gridded ocean breaks nothing new, so it is a source rather than a domain")
+    assert entry.access == "anonymous"
+    assert entry.vertical_dim == "elevation"
+    assert entry.chunks.shape == (2081, 1, 16, 16)
+    assert entry.chunks.regional_amplification == pytest.approx(2.02)
+    assert probe.crop["vertical_dim"] == "elevation"
+    assert probe.crop["levels"] == [-0.49402499198913574]
+
+
+def test_the_hostile_glorys_layout_remains_in_the_probe_ledger():
+    hostile = probe_by_digest("f9a45764fcf52c2a")
+    assert hostile.uri.endswith("/timeChunked.zarr")
+    assert hostile.amplification == pytest.approx(72.52)
+    assert hostile.chunk_hostile is True
+
+
+def test_no_runtime_module_imports_the_copernicus_credential_client():
+    offenders = []
+    for path in Path("src").rglob("*.py"):
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        for node in ast.walk(tree):
+            names = []
+            if isinstance(node, ast.Import):
+                names = [alias.name for alias in node.names]
+            elif isinstance(node, ast.ImportFrom) and node.module:
+                names = [node.module]
+            if any(name == "copernicusmarine" or name.startswith("copernicusmarine.")
+                   for name in names):
+                offenders.append(str(path))
+    assert not offenders, (
+        "the pydantic-2 Copernicus client belongs in its isolated command environment: %s"
+        % offenders)
+
+
 def test_the_vertical_axis_round_trips_through_a_provenance_record():
     spec = zs.CropSpec(**dict(PINNED_KEY_SPEC, vertical_dim="depth"))
     record = spec.to_provenance()
@@ -352,6 +401,24 @@ def test_select_applies_the_vertical_selection_to_the_declared_axis():
     subset = zs.select(_depth_dataset(), _depth_spec())
     assert int(subset.sizes["depth"]) == 2
     assert subset.depth.values.tolist() == [0, 50]
+
+
+def test_fractional_negative_elevation_is_an_exact_vertical_selection():
+    """TG12.1: GLORYS levels are negative fractional metres, not integer depths."""
+    dataset = _depth_dataset().rename({"depth": "elevation"}).assign_coords(
+        elevation=np.array([-2.6456689834594727, -1.5413750410079956,
+                            -0.49402499198913574]))
+    spec = _depth_spec(
+        vertical_dim="elevation", levels=(-0.49402499198913574,))
+    subset = zs.select(dataset, spec)
+    assert int(subset.sizes["elevation"]) == 1
+    assert subset.elevation.values.tolist() == [-0.49402499198913574]
+
+
+def test_vertical_values_are_finite_numbers_not_boolean_flags():
+    for invalid in ((float("nan"),), (float("inf"),), (True,)):
+        with pytest.raises(InvalidParameterError):
+            _depth_spec(levels=invalid)
 
 
 def test_select_names_the_declared_axis_when_a_requested_value_is_absent():

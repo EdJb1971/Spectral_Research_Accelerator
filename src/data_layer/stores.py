@@ -65,6 +65,8 @@ MEASUREMENT_METHODS: Dict[str, str] = {
 KNOWN_VERTICAL_DIMENSIONS: Dict[str, str] = {
     "level": "pressure levels, in hPa, as ERA5 publishes them",
     "depth": "depth below the surface, in metres, as ocean reanalyses publish it",
+    "elevation": ("height relative to mean sea level, in metres; GLORYS publishes ocean "
+                  "levels as negative elevations"),
 }
 
 

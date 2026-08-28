@@ -9,8 +9,9 @@ import os
 
 from fastapi import FastAPI, HTTPException, Depends, BackgroundTasks, Query, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field, validator, root_validator
-from typing import List, Dict, Any, Optional, Tuple
+from pydantic import (BaseModel, Field, StrictFloat, StrictInt, root_validator,
+                      validator)
+from typing import List, Dict, Any, Optional, Tuple, Union
 from sqlalchemy.orm import Session
 
 from src.physical_core.field import PhysicalField
@@ -899,7 +900,10 @@ class ZarrCropRequest(BaseModel):
     lat_max: float = Field(..., description="Northern edge, degrees north.")
     lon_min: float = Field(..., description="Western edge, degrees east.")
     lon_max: float = Field(..., description="Eastern edge, degrees east.")
-    levels: List[int] = Field(default_factory=list, description="Pressure levels in hPa.")
+    levels: List[Union[StrictInt, StrictFloat]] = Field(
+        default_factory=list,
+        description=("Exact values on the store's declared vertical axis: integer pressure "
+                     "levels for ERA5 or fractional negative-metre elevations for GLORYS."))
     n_levels_analysis: int = Field(4, ge=1, le=8,
                                   description="Wavelet levels the crop must support (R13).")
 

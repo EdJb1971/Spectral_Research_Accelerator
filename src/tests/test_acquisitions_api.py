@@ -16,11 +16,12 @@ def test_domains_come_before_their_acquisitions(client):
     assert all("acquisitions" in row and "domain_limits" in row for row in body["domains"])
 
 
-def test_all_existing_era5_stores_are_reachable_under_reanalysis(client):
+def test_all_registered_grid_sources_are_reachable_under_reanalysis(client):
     domain = _by_name(client)["reanalysis"]
     grids = [item for item in domain["acquisitions"] if item["shape"] == "grid_crop"]
     assert {item["name"] for item in grids} == {
-        "era5_0p25_6h", "era5_0p25_1h_full37", "era5_1p5_6h", "era5_0p7_6h"
+        "era5_0p25_6h", "era5_0p25_1h_full37", "era5_1p5_6h", "era5_0p7_6h",
+        "glorys_phy_my_0p083deg_p1d",
     }
     assert all(item["available"] and item["store"]["domain"] == "reanalysis"
                for item in grids)

@@ -64,15 +64,18 @@ def _build_store(path, *, nt=24, nl=8, ny=128, nx=256, time_chunk=1,
     return str(path)
 
 
-@pytest.fixture()
-def hostile_store(tmp_path):
-    return _build_store(tmp_path / "hostile.zarr", time_chunk=1)
+@pytest.fixture(scope="module")
+def hostile_store(tmp_path_factory):
+    """One immutable archive per module; rebuilding 50 MB for every reader filled C:."""
+    return _build_store(tmp_path_factory.mktemp("zarr-source-stores") / "hostile.zarr",
+                        time_chunk=1)
 
 
-@pytest.fixture()
-def friendly_store(tmp_path):
+@pytest.fixture(scope="module")
+def friendly_store(tmp_path_factory):
     """Time-contiguous chunks: the layout the local cache is rechunked *into*."""
-    return _build_store(tmp_path / "friendly.zarr", time_chunk=24)
+    return _build_store(tmp_path_factory.mktemp("zarr-source-stores") / "friendly.zarr",
+                        time_chunk=24)
 
 
 def _spec(store, **overrides):
@@ -189,10 +192,10 @@ def test_inverted_bounding_box_is_refused_at_construction():
         _spec("s", lon_min=40.0, lon_max=10.0)
 
 
-def test_catalogue_entries_resolve_to_gcs_uris():
+def test_catalogue_entries_resolve_to_declared_remote_uris():
     assert zs.CATALOGUE, "the catalogue must not be empty"
     for name, entry in zs.CATALOGUE.items():
-        assert entry["uri"].startswith("gs://weatherbench2/"), name
+        assert "://" in entry["uri"], name
         assert entry["note"], "every store needs a note saying what it is good and bad for"
     # A raw URI must pass through unchanged, so an unlisted store is still usable.
     assert _spec("gs://elsewhere/x.zarr").uri == "gs://elsewhere/x.zarr"
@@ -253,7 +256,7 @@ def test_prediction_uses_the_same_selection_as_the_fetch(hostile_store):
     numpy while `select` handed the same strings to ``xarray.sel(slice(...))``, which treats a
     partial date as the whole day. They disagreed by 3 of 12 timesteps, so the hostility
     warning under-stated the transfer by 25%. A warning that under-states the cost is worse
-    than no warning at all, so the predictor now derives its sizes from `select` itself.
+    than no warning at all, so the predictor and materialiser now share their xarray indexers.
     """
     spec = _spec(hostile_store, time_start="2020-01-01", time_end="2020-01-03")
     dataset, _counter = zs.open_dataset(hostile_store, chunks={})
@@ -261,6 +264,24 @@ def test_prediction_uses_the_same_selection_as_the_fetch(hostile_store):
     actual = {str(k): int(v) for k, v in zs.select(dataset, spec).sizes.items()}
     assert predicted == actual
     assert actual["time"] == 12, "a partial end date covers the whole day"
+
+
+def test_costing_does_not_build_the_data_selection_graph(monkeypatch, hostile_store):
+    """D67: costing GLORYS must not slice its 12227 x 50 x 2041 x 4320 data graph.
+
+    The coordinate-only path and the materialising path share indexers, but the estimator must
+    never call the latter.  GLORYS is the first archive large enough for that otherwise harmless
+    call to exhaust memory before a single data byte is read.
+    """
+    dataset, _counter = zs.open_dataset(hostile_store, chunks={})
+
+    def data_selection_would_exhaust_memory(*_args, **_kwargs):
+        raise MemoryError("a GLORYS-sized dask graph was constructed")
+
+    monkeypatch.setattr(zs, "select", data_selection_would_exhaust_memory)
+    assessment = zs.assess_access_pattern(dataset, _spec(hostile_store))
+    assert assessment["selection"]["time"] == 12
+    assert assessment["bytes_fetched_estimate"] > 0
 
 
 def test_estimate_is_an_upper_bound_on_wire_bytes(hostile_store, tmp_path):

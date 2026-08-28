@@ -416,10 +416,14 @@ export interface ZarrStore {
   domain: string;
   access: string;
   access_means: string;
-  /** "level" for ERA5's pressure axis, "depth" for an ocean product; null for neither. */
+  /** The store-declared vertical coordinate name; null for no vertical axis. */
   vertical_dim: string | null;
   chunks: ZarrStoreChunkFacts;
   variables_note?: string;
+  extra?: {
+    acquisition_defaults?: Partial<ZarrCropRequest>;
+    [key: string]: unknown;
+  };
 }
 
 export interface ZarrProbeRecord {

@@ -1955,11 +1955,10 @@ suite, benchmark and documentation evidence in `VERIFICATION.md`.
    the sky and closes the violation vocabulary. **No public dataset has been ingested by any of
    them yet.**
 
-**Open defects:** D43 (the real-data gate is not laptop-feasible through the catalogued
-WeatherBench layouts) and D18 (partial — CUDA-only device probing). Both predate this line and
-neither blocks G8. **TG12.1 may bear on D43**: an ocean product chunked more kindly than the
-WeatherBench layouts could make the gate reachable, which is a thing to measure rather than
-assume.
+**Open defects:** D43 (the atmospheric real-data gate has not run through a feasible acquisition
+path) and D18 (partial — ROCm/MPS and whole-platform device parity remain unverified). Neither
+blocks this line. TG12.1 measured a laptop-feasible long regional *ocean* layout, but that does
+not close D43: it neither acquires ERA5 nor supplies the required cross-route overlap evidence.
 
 ---
 
@@ -2942,8 +2941,8 @@ client.
 
 #### Phase G12 — The ocean
 
-**TG12.1 A gridded ocean product. IN PROGRESS (2026-08-28, `ed-dev`) - discovery done, nothing
-built.** Candidates in preference order, chosen by TG10.3's probe rather than by reputation:
+**TG12.1 A gridded ocean product. DONE (2026-08-28, `ed-dev`).** Candidates were chosen by
+TG10.3's probe rather than by reputation:
 GLORYS (Copernicus Marine, free account), ECCO (NASA Earthdata, free account), NOAA OISST (open).
 Declared honestly under R17 as **breaking nothing new** - a source, not a second domain - because a
 third catalogue entry that looked like a third domain would be the exact false confidence R17
@@ -2960,21 +2959,31 @@ In summary:
     ECCO is netCDF granules; `probe_store` opens Zarr. Only the Copernicus ARCO stores are Zarr, and
     they probe **anonymously** - the `access="credentials"` assumption this slice was planned around
     is wrong.
-*   **The D43 possibility holds, but only in one of two layouts.** `geoChunked.zarr` costs **2.2x**
-    for a three-year regional crop against **72.8x** for `timeChunked.zarr` and 26.2x for the ERA5
-    store D43 is open against. **The Copernicus service names are inverted relative to their
-    contents**, so the first ARCO URI the catalogue offers is the hostile one. A slice that trusts
-    the service name registers the wrong store and records a false negative against D43.
-*   **The vertical axis is `elevation`, not `depth`** - negative metres, 50 levels.
-    `KNOWN_VERTICAL_DIMENSIONS` needs the entry; `GriddedStore` does not need a schema change.
-*   **D67 was found here.** `assess_access_pattern` raises `MemoryError` on a store this size, which
-    is the function behind the Acquire tab's **Inspect** button.
+*   **The D43 possibility holds, but only in one of two layouts.** The persisted exact probe now
+    costs `geoChunked.zarr` at **2.02x** for the sealed three-year regional crop against
+    **72.52x** for `timeChunked.zarr` and 26.2x for the ERA5
+    store D43 is open against. The asset names describe the narrowly chunked dimension rather
+    than the access pattern they make cheap, so choosing by name alone registers the hostile
+    store and records a false negative against D43.
+*   **The vertical axis is `elevation`, not `depth`** - fractional negative metres, 50 values.
+    `KNOWN_VERTICAL_DIMENSIONS`, `CropSpec` and the strict HTTP request now express it without
+    moving an integer ERA5 identity (D68).
+*   **D67 was found and closed here.** `assess_access_pattern` no longer constructs a dask data
+    graph: shared xarray indexers operate on coordinates and exact source chunk ids are counted.
+    The Acquire tab's **Inspect** path therefore costs GLORYS before a transfer as intended.
 
-**Still to do, in order:** persist both probes to the ledger (keeping the 72.8x record, which is the
-evidence for why the other was chosen); add the `elevation` entry; register one store citing the
-`geoChunked` digest, through a module outside the core engine file per Definition of Done item 3;
-tests, including one asserting nothing in `src/` imports `copernicusmarine`; then decide whether D67
-blocks the Acquire tab for this store.
+**Delivered.** Both live anonymous metadata probes are checked in under `data/store_probes`:
+`ccdb0625e7e8fb1d` for the selected `geoChunked` layout and `f9a45764fcf52c2a` for the rejected
+hostile layout. `src/data_layer/glorys_store.py` loads those records without network access and
+registers `glorys_phy_my_0p083deg_p1d`, citing the selected digest. Acquire reads the extension's
+exact surface-elevation crop defaults when the store changes. No module under `src/` imports
+`copernicusmarine`; the isolated environment remains a URI-discovery tool, not a runtime
+dependency.
+
+**Verified.** Live D67 acceptance completed against both 12227 x 50 x 2041 x 4320 assets without
+`MemoryError`; the selected layout returned 2.02x and the rejected layout 72.52x. Focused backend,
+frontend-contract and documentation verification is recorded in `VERIFICATION.md`; the production
+TypeScript/Vite build emitted 1,395 modules and real JS/CSS. No ocean field value was fetched.
 
 **Environment already prepared.** `requirements-ocean.txt` adds `s3fs` and `earthaccess` to the main
 venv as pure additions. `copernicusmarine` **cannot** go there - it requires pydantic >= 2.9.1 and

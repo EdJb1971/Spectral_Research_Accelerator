@@ -85,7 +85,13 @@ export const AcquisitionView: React.FC<AcquisitionViewProps> = ({
     setAcquisitionId(option.id);
     setInspection(null);
     setProbe(null);
-    if (option.shape === 'grid_crop') setCrop((current) => ({ ...current, store: option.name }));
+    if (option.shape === 'grid_crop') {
+      const base = option.store?.vertical_dim === 'level'
+        ? DEFAULT_CROP
+        : { ...DEFAULT_CROP, variables: [], levels: [] };
+      const defaults = option.store?.extra?.acquisition_defaults || {};
+      setCrop({ ...base, ...defaults, store: option.name });
+    }
   };
 
   const runProbe = async () => {

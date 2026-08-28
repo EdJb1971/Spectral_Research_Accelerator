@@ -34,11 +34,12 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 import os
 import time
 from collections.abc import MutableMapping
 from dataclasses import asdict, dataclass, field as dc_field
-from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
+from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple, Union
 
 from src.core.errors import DataSourceError, FieldTooSmallError, InvalidParameterError
 from src.core.level_axis import PRESSURE_HPA
@@ -48,6 +49,9 @@ from src.core.level_axis import PRESSURE_HPA
 from src.data_layer.stores import (  # noqa: F401  (GriddedStore, store_for re-exported)
     GRIDDED_STORES, CatalogueView, GriddedStore, catalogue_payload,
     register_builtin_stores, store_for, uri_for)
+# A real extension module, kept outside the catalogue and adapter implementations. It loads
+# checked-in probes and registers GLORYS without importing a credential-minting client.
+from src.data_layer import glorys_store as _glorys_store  # noqa: F401,E402
 
 # --------------------------------------------------------------------------- catalogue
 
@@ -197,7 +201,10 @@ class CropSpec:
     lat_max: float
     lon_min: float
     lon_max: float
-    levels: Tuple[int, ...] = ()
+    # Numeric values on the declared vertical axis. ERA5 uses integer pressure levels;
+    # GLORYS uses fractional negative-metre elevations. Keeping the historical field name
+    # preserves every existing crop identity while allowing the axis declaration to be real.
+    levels: Tuple[Union[int, float], ...] = ()
     #: Declared analysis depth, used for the R13 floor check. Not part of the data selection.
     n_levels_analysis: int = 4
     #: Name of the store's vertical dimension - `level` for ERA5's pressure levels, `depth`
@@ -224,6 +231,12 @@ class CropSpec:
             raise InvalidParameterError(
                 "vertical_dim", self.vertical_dim,
                 "the name of the store's vertical dimension, e.g. 'level' or 'depth'")
+        for value in self.levels:
+            if isinstance(value, bool) or not isinstance(value, (int, float)) \
+                    or not math.isfinite(float(value)):
+                raise InvalidParameterError(
+                    "levels", self.levels,
+                    "finite numeric values on the declared vertical axis")
 
     @property
     def uri(self) -> str:
@@ -511,7 +524,8 @@ def assess_access_pattern(dataset, spec: "CropSpec") -> Dict[str, Any]:
     lat_name = "latitude" if "latitude" in dataset.sizes else "lat"
     lon_name = "longitude" if "longitude" in dataset.sizes else "lon"
 
-    selection = _selection_sizes(dataset, spec, lat_name, lon_name)
+    selection, selected_positions = _selection_plan(
+        dataset, spec, lat_name, lon_name)
     per_variable: Dict[str, Any] = {}
     worst = 0.0
     total_fetch = 0
@@ -530,9 +544,13 @@ def assess_access_pattern(dataset, spec: "CropSpec") -> Dict[str, Any]:
         detail = {}
         for dim, size, chunk in zip(var.dims, var.shape, chunks):
             wanted = selection.get(dim, int(size))
-            # A selection of `wanted` contiguous elements touches this many whole chunks -
-            # at least one, and one more than the division whenever it straddles a boundary.
-            touched = int(np.ceil(wanted / chunk)) + (1 if wanted % chunk else 0)
+            positions = selected_positions.get(str(dim))
+            if positions is None:
+                touched = int(np.ceil(size / chunk))
+            else:
+                # Exact chunk-grid arithmetic. Counting only ``wanted`` cannot distinguish a
+                # selection inside one chunk from the same-width selection straddling two.
+                touched = len({int(position) // int(chunk) for position in positions})
             touched = max(1, min(touched, int(np.ceil(size / chunk))))
             want_elements *= max(1, wanted)
             fetch_elements *= touched * chunk
@@ -588,19 +606,114 @@ def assess_access_pattern(dataset, spec: "CropSpec") -> Dict[str, Any]:
     return result
 
 
-def _selection_sizes(dataset, spec: "CropSpec", lat_name: str, lon_name: str) -> Dict[str, int]:
-    """How many elements along each dimension the crop actually asks for.
+def _selection_plan(dataset, spec: "CropSpec", lat_name: str,
+                    lon_name: str) -> Tuple[Dict[str, int], Dict[str, Tuple[int, ...]]]:
+    """Selected sizes and source positions, computed from coordinate indexes alone.
 
-    Derived by running `select` on the lazy dataset and reading its dimension sizes, rather
-    than by re-deriving the selection arithmetic here. That is not tidiness: the first version
-    counted timestamps in ``[start, end]`` with numpy, while `select` hands the same strings to
-    ``xarray.sel(slice(...))``, which treats a partial date as the *whole day*. The two
-    disagreed by 3 of 12 timesteps on the very first test, so the assessment under-predicted
-    the transfer by 25% - a warning that under-states the cost is worse than no warning.
-    Selecting is index arithmetic on already-loaded coordinates, so this fetches no data.
+    Apply the same xarray indexers as :func:`select`, but only to the one-dimensional coordinate
+    arrays.  The old implementation ran ``select(dataset, spec)`` and therefore asked dask to
+    build a sliced task graph for every selected data variable merely to read ``subset.sizes``.
+    GLORYS made that graph large enough to raise ``MemoryError`` (D67), even though the answer is
+    entirely coordinate and chunk arithmetic.
+
+    Keeping xarray in this path is important: a partial date such as ``2020-01-01`` selects the
+    whole day, exactly as the materialising path does.  Reimplementing date comparisons with
+    numpy previously under-counted a twelve-step fixture by three frames.
     """
-    subset = select(dataset, spec)
-    return {str(k): int(v) for k, v in subset.sizes.items()}
+    _validate_requested_variables(dataset, spec)
+    indexers = _selection_indexers(dataset, spec, lat_name, lon_name)
+
+    selected_dims = {
+        str(dim)
+        for name in spec.variables
+        for dim in dataset[name].dims
+    }
+    sizes = {dim: int(dataset.sizes[dim]) for dim in selected_dims}
+    positions: Dict[str, Tuple[int, ...]] = {}
+    for dim, indexer in indexers.items():
+        if dim not in selected_dims:
+            continue
+        coordinate = dataset[dim]
+        selected = coordinate.sel({dim: indexer})
+        sizes[dim] = int(selected.size)
+        source_index = dataset.get_index(dim)
+        locations = source_index.get_indexer(selected.values)
+        if bool((locations < 0).any()):
+            raise DataSourceError(
+                "the selected %s coordinates could not be mapped back to the store's chunk "
+                "grid" % dim, dimension=dim)
+        positions[dim] = tuple(int(value) for value in locations.tolist())
+
+    _validate_nonempty_selection(dataset, spec, sizes, lat_name, lon_name)
+    return sizes, positions
+
+
+def _validate_requested_variables(dataset, spec: "CropSpec") -> None:
+    missing = [v for v in spec.variables if v not in dataset.data_vars]
+    if missing:
+        raise DataSourceError(
+            "the store does not contain %s. Available (first 15): %s"
+            % (", ".join(missing), ", ".join(sorted(dataset.data_vars)[:15])),
+            missing=missing)
+
+
+def _selection_indexers(dataset, spec: "CropSpec", lat_name: str,
+                        lon_name: str) -> Dict[str, Any]:
+    """Build the shared coordinate indexers without touching any data variable."""
+    import numpy as np
+
+    lat = np.asarray(dataset[lat_name].values)
+    descending = bool(lat.size > 1 and lat[0] > lat[-1])
+    lat_slice = (slice(spec.lat_max, spec.lat_min) if descending
+                 else slice(spec.lat_min, spec.lat_max))
+
+    lon = np.asarray(dataset[lon_name].values)
+    lon_min, lon_max = spec.lon_min, spec.lon_max
+    if float(lon.min()) >= 0.0 and lon_min < 0.0:
+        raise InvalidParameterError(
+            "lon_min", lon_min,
+            "a longitude in [0, 360) for this store, whose longitude axis runs %.2f..%.2f. "
+            "A region spanning the prime meridian must be requested as two crops and "
+            "joined, because one monotonic slice cannot express the wrap."
+            % (float(lon.min()), float(lon.max())))
+
+    indexers: Dict[str, Any] = {
+        lat_name: lat_slice,
+        lon_name: slice(lon_min, lon_max),
+    }
+    vertical = spec.vertical_dim
+    if spec.levels and vertical in dataset.coords:
+        available_values = np.asarray(dataset[vertical].values)
+        available = available_values.tolist()
+        unknown = [lev for lev in spec.levels
+                   if not bool(np.any(available_values == lev))]
+        if unknown:
+            raise InvalidParameterError(
+                "levels", list(spec.levels),
+                "%s values present in the store; %s not among %s"
+                % (vertical, unknown, sorted(available)))
+        indexers[vertical] = list(spec.levels)
+    if "time" in dataset.coords:
+        indexers["time"] = slice(spec.time_start, spec.time_end)
+    return indexers
+
+
+def _validate_nonempty_selection(dataset, spec: "CropSpec", sizes: Dict[str, int],
+                                 lat_name: str, lon_name: str) -> None:
+    if "time" in dataset.coords and int(sizes.get("time", 0)) == 0:
+        times = dataset["time"].values
+        raise InvalidParameterError(
+            "time_start/time_end", (spec.time_start, spec.time_end),
+            "a window inside the store's coverage, %s to %s"
+            % (str(times[0])[:16], str(times[-1])[:16]))
+    for dim, name in ((lat_name, "latitude"), (lon_name, "longitude")):
+        if int(sizes.get(dim, 0)) == 0:
+            raise InvalidParameterError(
+                name, (spec.lat_min, spec.lat_max) if dim == lat_name
+                else (spec.lon_min, spec.lon_max),
+                "a range overlapping the store's %s axis (%.3f to %.3f)"
+                % (name, float(dataset[dim].values.min()),
+                   float(dataset[dim].values.max())))
 
 
 # --------------------------------------------------------------------------- selection
@@ -613,68 +726,16 @@ def select(dataset, spec: "CropSpec"):
     rows**, which downstream looks like a region with no data rather than a reversed axis -
     so the direction is detected rather than assumed.
     """
-    import numpy as np
-
     lat_name = "latitude" if "latitude" in dataset.sizes else "lat"
     lon_name = "longitude" if "longitude" in dataset.sizes else "lon"
 
-    missing = [v for v in spec.variables if v not in dataset.data_vars]
-    if missing:
-        raise DataSourceError(
-            "the store does not contain %s. Available (first 15): %s"
-            % (", ".join(missing), ", ".join(sorted(dataset.data_vars)[:15])),
-            missing=missing)
-
+    _validate_requested_variables(dataset, spec)
+    indexers = _selection_indexers(dataset, spec, lat_name, lon_name)
     subset = dataset[list(spec.variables)]
-
-    lat = np.asarray(dataset[lat_name].values)
-    descending = bool(lat.size > 1 and lat[0] > lat[-1])
-    lat_slice = (slice(spec.lat_max, spec.lat_min) if descending
-                 else slice(spec.lat_min, spec.lat_max))
-    subset = subset.sel({lat_name: lat_slice})
-
-    lon = np.asarray(dataset[lon_name].values)
-    lon_min, lon_max = spec.lon_min, spec.lon_max
-    if float(lon.min()) >= 0.0 and lon_min < 0.0:
-        # Store uses 0..360, request uses -180..180. Converting a *negative* lower bound
-        # would produce lon_min > lon_max and select nothing, so this is rejected rather
-        # than guessed at - a wrapped request needs two selections concatenated.
-        raise InvalidParameterError(
-            "lon_min", lon_min,
-            "a longitude in [0, 360) for this store, whose longitude axis runs %.2f..%.2f. "
-            "A region spanning the prime meridian must be requested as two crops and "
-            "joined, because one monotonic slice cannot express the wrap."
-            % (float(lon.min()), float(lon.max())))
-    subset = subset.sel({lon_name: slice(lon_min, lon_max)})
-
-    vertical = spec.vertical_dim
-    if spec.levels and vertical in subset.coords:
-        available = set(int(v) for v in np.asarray(dataset[vertical].values).tolist())
-        unknown = [lev for lev in spec.levels if int(lev) not in available]
-        if unknown:
-            raise InvalidParameterError(
-                "levels", list(spec.levels),
-                "%s values present in the store; %s not among %s"
-                % (vertical, unknown, sorted(available)))
-        subset = subset.sel({vertical: list(spec.levels)})
-
-    if "time" in subset.coords:
-        subset = subset.sel(time=slice(spec.time_start, spec.time_end))
-        if int(subset.sizes.get("time", 0)) == 0:
-            times = dataset["time"].values
-            raise InvalidParameterError(
-                "time_start/time_end", (spec.time_start, spec.time_end),
-                "a window inside the store's coverage, %s to %s"
-                % (str(times[0])[:16], str(times[-1])[:16]))
-
-    for dim, name in ((lat_name, "latitude"), (lon_name, "longitude")):
-        if int(subset.sizes.get(dim, 0)) == 0:
-            raise InvalidParameterError(
-                name, (spec.lat_min, spec.lat_max) if dim == lat_name
-                else (spec.lon_min, spec.lon_max),
-                "a range overlapping the store's %s axis (%.3f to %.3f)"
-                % (name, float(dataset[dim].values.min()),
-                   float(dataset[dim].values.max())))
+    subset = subset.sel(indexers)
+    _validate_nonempty_selection(
+        dataset, spec, {str(k): int(v) for k, v in subset.sizes.items()},
+        lat_name, lon_name)
     return subset
 
 

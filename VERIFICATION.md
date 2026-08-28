@@ -6372,10 +6372,11 @@ the refusal message that guarded the opt-in no longer appears on this machine.
 
 ---
 
-## TG12.1 - Ocean store probe (2026-08-28, `ed-dev`) - **IN PROGRESS, NOT COMPLETE**
+## TG12.1 - GLORYS gridded ocean source (2026-08-28, `ed-dev`) - **COMPLETE**
 
-Discovery only. **No store has been registered and no code has been written.** Recorded so the
-measurements are not lost and the slice can be resumed by someone else.
+Discovery, implementation and verification. One GLORYS layout is registered from an extension
+module, both live metadata looks are persisted, and the cost estimator now completes on the real
+12227 x 50 x 2041 x 4320 archive without constructing a dask data graph.
 
 **Candidate triage, by probe rather than by reputation, as TG12.1 requires:**
 
@@ -6390,34 +6391,55 @@ initial `403` came from a guessed bucket path, not a real one. The real ARCO sto
 `HTTP 200` and probe anonymously. Copernicus credentials were needed only to *resolve* the URIs
 through the toolbox, so the store registers as `access="anonymous"`.
 
-**The two ARCO layouts, on an identical 3-year NZ-scale (20 x 20 degree) one-variable,
-one-level crop:**
+**The two ARCO layouts, on an identical 1993-01-01 through 1995-12-31, 50 S to 30 S,
+160 E to 180 E, `thetao`, surface-elevation crop:**
 
-| Store | Chunking `[t, z, lat, lon]` | Amplification | Fetched for 0.25 GB wanted |
+| Store | Chunking `[t, z, lat, lon]` | Amplification | Uncompressed fetched / wanted |
 |---|---|---|---|
-| ERA5 `0p25_6h` (**D43**) | 1 timestep deep | 26.2x | 29.88 GB |
-| GLORYS `timeChunked.zarr` | `[1, 1, 512, 2048]` | **72.8x** | 18.39 GB |
-| GLORYS `geoChunked.zarr` | `[2081, 1, 16, 16]` | **2.2x** | **0.55 GB** |
+| ERA5 `0p7_6h` (**D43**, earlier sealed crop) | `(8,13,512,256)` | 26.2x | 29.88 / 1.14 GB |
+| GLORYS `timeChunked.zarr` | `[1,1,512,2048]` | **72.52x** | 36.74 / 0.507 GB |
+| GLORYS `geoChunked.zarr` | `[2081,1,16,16]` | **2.02x** | **1.023 / 0.507 GB** |
 
 **This bears on D43: a laptop-feasible long regional ocean record does exist.** But only in one of
-the two layouts, and **the Copernicus service names are inverted relative to their contents** -
-`arco-time-series` serves `geoChunked.zarr` (the time-deep one, 2.2x) while `arco-geo-series`
-serves `timeChunked.zarr` (72.8x). Taking the first ARCO URI the catalogue offers registers the
-hostile store and records a false negative against D43.
+the two layouts. The asset names describe which dimension is chunked narrowly, not which query
+they make cheap: `geoChunked.zarr` is time-deep and costs 2.02x for many times over a small region,
+while `timeChunked.zarr` costs 72.52x. Taking the wrong asset registers the hostile store and
+records a false negative against D43.
 
-**Probe digests:** `timeChunked` = `2e09a179579782bc`, `geoChunked` = `e6a37e750b58053a`. Neither
-is persisted to the probe ledger yet.
+**Persisted probe digests:** `timeChunked` = `f9a45764fcf52c2a`, `geoChunked` =
+`ccdb0625e7e8fb1d`. The earlier exploratory digests were produced before D67's live path was
+repaired and were never persisted; these records were produced by `probe_store` itself after the
+fix and contain the exact crop, variable structure and coordinate declaration.
 
 **Store facts, measured:** dims `time=12227, latitude=2041, longitude=4320, elevation=50`; coverage
-1993-01-01 to 2026-06-23, daily, at 1/12 degree; 18 variables.
+1993-01-01 to 2026-06-23, daily, at 1/12 degree. The current asset exposes 11 data variables;
+the probe prices `thetao` and does not imply that every variable has the same storage encoding.
 
 **The vertical axis is named `elevation`, not `depth`,** with negative-metre values
-`-5727.917 .. -0.494`. `KNOWN_VERTICAL_DIMENSIONS` documents only `level` and `depth`, so the
-roadmap's assumption that an ocean product arrives on a `depth` axis is wrong for GLORYS. That dict
-is explicitly not a closed set, so this is an entry to add rather than a schema change.
+`-5727.917 .. -0.49402499198913574`. `KNOWN_VERTICAL_DIMENSIONS` now carries `elevation`.
+Making that declaration executable found D68: the request path accepted integer levels only.
+`CropSpec` and the strict HTTP model now preserve integer ERA5 values while admitting exact finite
+floats, and the frontend loads the registered GLORYS crop defaults instead of carrying 850 hPa
+across the store change.
 
-**D67 was found here** - `assess_access_pattern` raised `MemoryError` on this store. Every figure
-above was computed from the probed chunk shapes instead.
+**D67 live acceptance.** Before the fix, `assess_access_pattern` raised `MemoryError` in dask's
+`slice_slices_and_integers`. After the fix, both real assets completed in 14 seconds in one
+metadata-only command. The estimator applies the materialiser's xarray indexers to coordinate
+arrays, maps selected labels to source positions, and counts exact chunk ids. The offline
+regression replaces `select()` with a function that raises `MemoryError` and proves costing does
+not call it.
+
+**Registration.** `src/data_layer/glorys_store.py` loads the two checked-in records and registers
+`glorys_phy_my_0p083deg_p1d` with `access="anonymous"`, `vertical_dim="elevation"`, the selected
+probe digest, product/dataset/licence identity and the sealed acquisition defaults. Importing the
+module performs no network access. An AST test scans every runtime module and finds no import of
+`copernicusmarine`.
+
+**Verification.** Focused backend and contract run: **257 passed, 2 skipped** before the
+documentation inventory was updated; its only two failures were the expected missing-module and
+stale-count guards. After reconciliation those guards pass. Frontend production build:
+`tsc` clean, Vite **1,395 modules transformed**, emitted JS/CSS. Full-suite result is recorded in
+the architecture execution ledger after the final run.
 
 **Claim boundary.** Metadata only: no ocean data has been transferred, cropped or analysed. A
 measured chunk layout is not evidence that a crop is scientifically useful. GLORYS breaks no

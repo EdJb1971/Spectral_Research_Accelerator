@@ -46,14 +46,15 @@ def clean_ledgers():
     restore(st.GRIDDED_STORES, saved_stores)
 
 
-@pytest.fixture()
-def hostile_store(tmp_path):
+@pytest.fixture(scope="module")
+def hostile_store(tmp_path_factory):
     """One timestep per chunk, every level, the whole globe - the WeatherBench 0.25 layout."""
-    return _build_store(tmp_path / "hostile.zarr", time_chunk=1)
+    return _build_store(tmp_path_factory.mktemp("store-probe-stores") / "hostile.zarr",
+                        time_chunk=1)
 
 
-@pytest.fixture()
-def friendly_store(tmp_path):
+@pytest.fixture(scope="module")
+def friendly_store(tmp_path_factory):
     """Chunked small in space as well as in time - the layout a regional crop wants.
 
     `test_zarr_source.py`'s "friendly" store is time-contiguous but still spans the globe in
@@ -64,7 +65,7 @@ def friendly_store(tmp_path):
     """
     import numpy as np
 
-    path = tmp_path / "friendly.zarr"
+    path = tmp_path_factory.mktemp("store-probe-stores") / "friendly.zarr"
     rng = np.random.default_rng(99)
     dataset = xr.Dataset(
         {"temperature": (("time", "level", "latitude", "longitude"),
