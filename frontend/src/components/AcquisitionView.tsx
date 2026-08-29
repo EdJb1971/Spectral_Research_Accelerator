@@ -8,6 +8,8 @@ import { apiService } from '../services/api';
 import * as types from '../types/api';
 import ChannelRecords from './ChannelRecords';
 import ProfileAcquisition from './ProfileAcquisition';
+import LightCurveAcquisition from './LightCurveAcquisition';
+import GenericIngress from './GenericIngress';
 
 interface AcquisitionViewProps {
   onError?: (message: string) => void;
@@ -154,6 +156,7 @@ export const AcquisitionView: React.FC<AcquisitionViewProps> = ({
 
   return (
     <div className="space-y-6 animate-fadeIn" aria-busy={busy}>
+      <GenericIngress onError={onError} />
       <header>
         <h2 className="text-xl font-bold text-white flex items-center gap-2">
           <Database className="text-teal-400 w-5 h-5" /> Acquire
@@ -213,6 +216,11 @@ export const AcquisitionView: React.FC<AcquisitionViewProps> = ({
 
       {acquisition?.shape === 'profile_query' && acquisition.available && acquisition.profile_source && (
         <ProfileAcquisition key={acquisition.id} source={acquisition.profile_source}
+          onError={onError} />
+      )}
+
+      {acquisition?.shape === 'lightcurve_query' && acquisition.available && acquisition.lightcurve_source && (
+        <LightCurveAcquisition key={acquisition.id} source={acquisition.lightcurve_source}
           onError={onError} />
       )}
 

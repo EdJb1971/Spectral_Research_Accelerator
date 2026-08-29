@@ -491,7 +491,7 @@ export interface ZarrCatalogueResponse {
   note: string;
 }
 
-export type AcquisitionShape = 'grid_crop' | 'profile_query' | 'channel_table';
+export type AcquisitionShape = 'grid_crop' | 'profile_query' | 'lightcurve_query' | 'channel_table';
 
 export interface AcquisitionDomainLimits {
   declaration: Record<string, any>;
@@ -509,6 +509,7 @@ export interface AcquisitionOption {
   unavailable_reason?: string | null;
   store?: ZarrStore;
   profile_source?: ProfileSource;
+  lightcurve_source?: LightCurveSource;
   domain_limits: AcquisitionDomainLimits;
 }
 
@@ -524,6 +525,7 @@ export interface AcquisitionDomain {
 export interface AcquisitionCatalogue {
   domains: AcquisitionDomain[];
   shapes: Record<AcquisitionShape, string>;
+  violation_coverage: Record<string, Array<{ domain: string; shape: AcquisitionShape; path: string }>>;
   attribution_caveat: string;
   note: string;
 }
@@ -534,6 +536,125 @@ export interface ZarrAnalysisRequest {
   boundary_mode: 'periodic' | 'reflect';
   dtcwt_level1: string;
   dtcwt_qshift: string;
+}
+
+export interface LightCurveSource {
+  name: string;
+  domain: string;
+  access: string;
+  archive: string;
+  collection: string;
+  pipeline: string;
+  product_subgroup: string;
+  network_env_var: string;
+  metadata_preflight: boolean;
+  maximum_products: number;
+  maximum_download_bytes: number;
+}
+
+export interface LightCurveCapabilities {
+  schema: string;
+  domain: Record<string, unknown>;
+  refusals: Array<Record<string, unknown>>;
+  source: LightCurveSource;
+  workflow: string[];
+  claim_boundary: string;
+}
+
+export interface LightCurveSpecRequest {
+  target_id: string;
+  sectors: number[];
+  flux_column: 'PDCSAP_FLUX' | 'SAP_FLUX';
+  quality_policy: 'quality_zero' | 'retain_all';
+  max_products: number;
+  max_download_bytes: number;
+}
+
+export interface LightCurvePlan {
+  schema: string;
+  request_sha256: string;
+  target: { tic_id: string; ra_deg: number; dec_deg: number; frame: string };
+  candidate_products: number;
+  predicted_download_bytes: number;
+  within_product_cap: boolean;
+  within_byte_cap: boolean;
+  products: Array<{ filename: string; sector: number; size_bytes: number; data_uri: string }>;
+  metadata_only: true;
+  claim_boundary: string;
+}
+
+export interface LightCurveAcquisitionResponse {
+  schema: string;
+  collection: { collection_sha256: string; request_sha256: string; n_samples: number;
+    n_products: number; sectors: number[]; quality_admitted: number; quality_flagged: number;
+    time_scale: string; flux_column: string };
+  publication: { path: string; collection_sha256: string; bytes: number; publication: string };
+  analysis_readiness: Record<string, string>;
+  claim_boundary: string;
+}
+
+export type SampleRole = 'sample_id' | 'target' | 'nuisance' | 'feature' | 'group' |
+  'ordering' | 'ignore';
+
+export interface FileProbe {
+  schema: 'spectral.file-probe.v1';
+  filename: string;
+  content_sha256: string;
+  format: string;
+  delimiter: string;
+  n_rows: number;
+  n_columns: number;
+  semantic_inference: false;
+  columns: Array<{ name: string; storage_type: 'numeric' | 'text' | 'boolean';
+    missing_count: number; distinct_count: number; strictly_increasing: boolean;
+    minimum: number | null; maximum: number | null }>;
+  obligations: string[];
+  claim_boundary: string;
+}
+
+export interface SampleTableDeclaration {
+  roles: Record<string, SampleRole>;
+  sample_relationship: 'independent' | 'grouped' | 'ordered';
+  units: Record<string, string>;
+}
+
+export interface RepresentationAuditPlan {
+  schema: 'spectral.representation-audit-plan.v1';
+  content_sha256: string;
+  declaration: SampleTableDeclaration;
+  representations: string[];
+  pca_components: number;
+  bins: number;
+  permutations: number;
+  generate_fraction: number;
+  seed: number;
+  alpha: number;
+  correction: string;
+  candidates: string[];
+  n_tests_per_partition: number;
+  plan_sha256: string;
+  probe: FileProbe;
+  admissibility: Record<string, boolean>;
+  claim_boundary: string;
+}
+
+export interface RepresentationAuditResult {
+  schema: 'spectral.representation-audit.v1';
+  plan_sha256: string;
+  target: string;
+  declared_nuisances: string[];
+  partitions: { generate_n: number; confirm_n: number; split_seed: number;
+    held_out_opened_once: boolean };
+  family: { candidates: string[]; n_tests_per_partition: number; correction: string;
+    permutations: number; minimum_p_value: number };
+  structure: { feature_count: number; effective_dimension: number;
+    absolute_correlation: number[][]; pca_singular_values_generate: number[] };
+  candidates: Array<{ candidate: string; generate_mi_nats: number; generate_q_value: number;
+    confirm_mi_nats: number; confirm_q_value: number; survives_both: boolean;
+    nuisance_stability: Array<Record<string, any>> }>;
+  stored: false;
+  rung_moved: false;
+  claim_boundary: string;
 }
 
 export interface ProfileSource {

@@ -1,6 +1,7 @@
 """TG10.2 domain-first acquisition catalogue."""
 
 from src.api.findings import DOMAIN_ATTRIBUTION_CAVEAT
+from src.core.domain import KNOWN_VIOLATIONS
 
 
 def _by_name(client):
@@ -11,9 +12,22 @@ def _by_name(client):
 
 def test_domains_come_before_their_acquisitions(client):
     body = client.get("/api/v1/acquisitions").json()
-    assert set(body["shapes"]) == {"grid_crop", "profile_query", "channel_table"}
+    assert set(body["shapes"]) == {
+        "grid_crop", "profile_query", "lightcurve_query", "channel_table"}
     assert {row["name"] for row in body["domains"]} >= {"reanalysis", "order_book"}
     assert all("acquisitions" in row and "domain_limits" in row for row in body["domains"])
+
+
+def test_registered_lightcurve_source_is_reachable_only_under_tess(client):
+    domains = _by_name(client)
+    tess = [item for item in domains["tess_lightcurve"]["acquisitions"]
+            if item["shape"] == "lightcurve_query"]
+    assert len(tess) == 1
+    assert tess[0]["name"] == "mast_tess_spoc"
+    assert tess[0]["lightcurve_source"]["metadata_preflight"] is True
+    assert all(not any(item["shape"] == "lightcurve_query"
+                       for item in domain["acquisitions"])
+               for name, domain in domains.items() if name != "tess_lightcurve")
 
 
 def test_all_registered_grid_sources_are_reachable_under_reanalysis(client):
@@ -44,3 +58,13 @@ def test_every_acquisition_carries_limits_and_the_attribution_caveat(client):
             assert acquisition["domain_limits"] == domain["domain_limits"]
             assert acquisition["domain_limits"]["attribution_caveat"] == \
                 DOMAIN_ATTRIBUTION_CAVEAT
+
+
+def test_every_known_violation_has_a_registered_data_path_not_only_a_declaration(client):
+    body = client.get("/api/v1/acquisitions").json()
+    assert set(body["violation_coverage"]) == set(KNOWN_VIOLATIONS)
+    assert all(body["violation_coverage"][name] for name in KNOWN_VIOLATIONS)
+    assert {row["shape"] for row in body["violation_coverage"]["no_natural_cycle"]} == {
+        "lightcurve_query"}
+    assert {row["shape"] for row in body["violation_coverage"]["non_stationary_support"]} >= {
+        "profile_query", "lightcurve_query"}

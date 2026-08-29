@@ -235,6 +235,56 @@ export const apiService = {
       }));
   },
 
+  async inspectLightCurve(payload: types.LightCurveSpecRequest): Promise<types.LightCurvePlan> {
+    return handleResponse<types.LightCurvePlan>(
+      await fetch(`${BASE_URL}/lightcurves/inspect`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      }));
+  },
+
+  async lightCurveCapabilities(): Promise<types.LightCurveCapabilities> {
+    return handleResponse<types.LightCurveCapabilities>(
+      await fetch(`${BASE_URL}/lightcurves`, { method: 'GET' }));
+  },
+
+  async acquireLightCurve(payload: types.LightCurveSpecRequest): Promise<types.LightCurveAcquisitionResponse> {
+    return handleResponse<types.LightCurveAcquisitionResponse>(
+      await fetch(`${BASE_URL}/lightcurves/acquire`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      }));
+  },
+
+  async probeGenericFile(file: File, delimiter = ','): Promise<types.FileProbe> {
+    const form = new FormData();
+    form.append('file', file); form.append('delimiter', delimiter);
+    return handleResponse<types.FileProbe>(
+      await fetch(`${BASE_URL}/ingress/probe`, { method: 'POST', body: form }));
+  },
+
+  async planRepresentationAudit(file: File, declaration: types.SampleTableDeclaration,
+                                options: { delimiter?: string; pcaComponents?: number;
+                                  permutations?: number } = {}): Promise<types.RepresentationAuditPlan> {
+    const form = new FormData();
+    form.append('file', file); form.append('delimiter', options.delimiter ?? ',');
+    form.append('declaration', JSON.stringify(declaration));
+    form.append('representations', JSON.stringify(['identity', 'pca']));
+    form.append('pca_components', String(options.pcaComponents ?? 3));
+    form.append('permutations', String(options.permutations ?? 4999));
+    return handleResponse<types.RepresentationAuditPlan>(
+      await fetch(`${BASE_URL}/ingress/plan`, { method: 'POST', body: form }));
+  },
+
+  async runRepresentationAudit(file: File, plan: types.RepresentationAuditPlan,
+                               delimiter = ','): Promise<types.RepresentationAuditResult> {
+    const form = new FormData();
+    form.append('file', file); form.append('delimiter', delimiter);
+    form.append('plan', JSON.stringify(plan));
+    return handleResponse<types.RepresentationAuditResult>(
+      await fetch(`${BASE_URL}/ingress/audit`, { method: 'POST', body: form }));
+  },
+
   // ---------------------------------------------------------------- ERA5 over Zarr
 
   async zarrCatalogue(): Promise<types.ZarrCatalogueResponse> {
