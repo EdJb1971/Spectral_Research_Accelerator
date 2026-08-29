@@ -63,6 +63,21 @@ OPERATIONS: Dict[str, Operation] = {
                   "data need group-held-out benchmarked nulls; ordered data need blocked and "
                   "embargoed benchmarked nulls.",
                   "Declare whether samples are independent, grouped or ordered."),)),
+    "conditional_information_audit": Operation(
+        "Conditional-Information Audit",
+        "Frozen-family conditional association given one declared nuisance.", (
+            _need("sample_table", "declared sample table",
+                  "This representation is not an explicitly declared sample table.",
+                  "Declare the dataset representation before auditing it."),
+            _need("independent_samples", "independent samples",
+                  "This recipe uses a conditional-randomisation model over exchangeable "
+                  "rows. Grouped data need group-held-out benchmarked nulls; ordered data "
+                  "need blocked and embargoed benchmarked nulls.",
+                  "Declare whether samples are independent, grouped or ordered."),
+            _need("declared_nuisance", "researcher-declared nuisance",
+                  "This bounded recipe requires exactly one numeric column explicitly "
+                  "declared as nuisance.",
+                  "Declare whether one column has the nuisance role."),)),
     "cross_domain_analysis": Operation(
         "Cross-domain analysis", "Association and declared-lag analysis of channel series.", (
             _need("channel_series", "admitted channel series",
@@ -150,6 +165,7 @@ CORE_FACTS: Tuple[Tuple[str, str], ...] = (
     ("transform_compatible", "Requested transform compatible"),
     ("precedence_admissible", "Lag analysis admissible"),
     ("independent_samples", "Independent samples"),
+    ("declared_nuisance", "Declared nuisance"),
 )
 
 

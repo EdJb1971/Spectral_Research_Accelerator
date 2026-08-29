@@ -9,9 +9,11 @@ from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 
 from src.core.errors import SpectralEarthError, classify
 from src.data_layer.dataset_ingress import (SampleTableDeclaration,
+                                            plan_conditional_information_audit,
                                             plan_redundancy_structure_audit,
                                             plan_representation_audit,
                                             probe_delimited,
+                                            run_conditional_information_audit,
                                             run_redundancy_structure_audit,
                                             run_representation_audit,
                                             sample_table_capability_profile)
@@ -130,6 +132,37 @@ async def structure_audit(file: UploadFile = File(...), delimiter: str = Form(",
     frozen = _object(plan, "plan")
     try:
         return run_redundancy_structure_audit(
+            payload, filename=file.filename or "upload", delimiter=delimiter, plan=frozen)
+    except SpectralEarthError as error:
+        raise _handle(error)
+
+
+@router.post("/conditional/plan")
+async def conditional_plan(file: UploadFile = File(...), delimiter: str = Form(","),
+                           declaration: str = Form(...), bins: int = Form(3),
+                           permutations: int = Form(4999), seed: int = Form(16201),
+                           alpha: float = Form(0.05)) -> Dict[str, Any]:
+    payload = await file.read()
+    declared = _object(declaration, "declaration")
+    try:
+        return plan_conditional_information_audit(
+            payload, filename=file.filename or "upload", delimiter=delimiter,
+            declaration=SampleTableDeclaration(**declared), bins=bins,
+            permutations=permutations, seed=seed, alpha=alpha)
+    except TypeError:
+        raise HTTPException(status_code=400,
+                            detail="Declaration needs roles, sample_relationship and units.")
+    except SpectralEarthError as error:
+        raise _handle(error)
+
+
+@router.post("/conditional/audit")
+async def conditional_audit(file: UploadFile = File(...), delimiter: str = Form(","),
+                            plan: str = Form(...)) -> Dict[str, Any]:
+    payload = await file.read()
+    frozen = _object(plan, "plan")
+    try:
+        return run_conditional_information_audit(
             payload, filename=file.filename or "upload", delimiter=delimiter, plan=frozen)
     except SpectralEarthError as error:
         raise _handle(error)

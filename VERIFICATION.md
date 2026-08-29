@@ -6906,3 +6906,30 @@ noisy-copy redundancy power was 1.00 and 0.94; complementary and XOR power was 1
 independent false-claim rate was 0.02; and the four one-candidate conditioning safeguards made no
 pair claim. The full backend suite was not rerun; the clean 2745-pass G15 run remains the latest
 full-suite evidence.
+
+---
+
+## TG16.2 - Conditional-Information Audit (2026-08-30, `ed-dev`) - **COMPLETE**
+
+The registered operation freezes the complete raw-feature family, the single researcher-declared
+nuisance, equiprobable Miller-Madow conditional mutual information, overlap/effective-support and
+linear conditional-model admission, conditional-randomisation draws, seed, alpha and global
+Benjamini-Yekutieli correction. The null reconstructs target from the fitted target/nuisance
+relationship plus permuted residuals instead of globally permuting target. Responses report only
+conditional association and expressly decline confounding, collider, post-treatment and causal
+interpretations.
+
+```text
+> .\.venv\Scripts\python.exe -m pytest -q src/tests/test_conditional_information.py src/tests/test_dataset_ingress.py src/tests/test_representation_structure.py
+21 passed, 2 warnings in 4.68s
+
+> .\.venv\Scripts\python.exe -m src.benchmarks --name representation_structure_planted --name representation_structure_safeguards
+PASS 6   FAIL 0   NOT_YET_RUNNABLE 0
+```
+
+The benchmark command ran the frozen 200-replication family. Every applicable construction met
+the support/model admission rule. Signal-survival power and collider conditional-association
+detection were 1.00. Nuisance-only and conditional-null false-claim rates were 0.055 and 0.045,
+below the frozen 0.075 ceiling. The collider detection is a safeguard against causal overwording,
+not evidence that conditioning removed a confounder. The full backend suite was not rerun; the
+clean 2745-pass G15 run remains the latest full-suite evidence.

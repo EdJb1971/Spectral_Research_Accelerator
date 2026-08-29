@@ -18,6 +18,8 @@ from typing import Any, Dict, Mapping, Optional, Sequence, Tuple
 import numpy as np
 
 from src.analysis_engine.cross_scale import mutual_information
+from src.analysis_engine.conditional_information import (
+    audit_conditional_information, conditional_support)
 from src.analysis_engine.representation_structure import (audit_pair_structure,
                                                            candidate_pairs)
 from src.core.errors import InvalidParameterError
@@ -190,6 +192,8 @@ def sample_table_capability_profile(payload: bytes, *, filename: str, delimiter:
             "ordered_time_axis": relationship == "ordered", "regular_cadence": None,
             "irregular_support": None, "transform_compatible": False,
             "precedence_admissible": False, "independent_samples": relationship == "independent",
+            "declared_nuisance": sum(
+                role == "nuisance" for role in declaration.roles.values()) == 1,
         },
         basis={"filename": filename, "declaration": declaration.canonical(),
                "semantic_inference": False, "n_rows": probe["n_rows"]})
@@ -341,6 +345,160 @@ def run_redundancy_structure_audit(payload: bytes, *, filename: str, delimiter: 
         "method": {key: expected[key] for key in
                    ("estimator", "bins", "neighbourhood_policy", "null", "seed")},
         "structure_map": measured["pairs"],
+        "outcome_vocabulary": measured["outcome_vocabulary"],
+        "stored": False, "rung_moved": False,
+        "claim_boundary": measured["claim_boundary"],
+    }
+
+
+def plan_conditional_information_audit(
+        payload: bytes, *, filename: str, delimiter: str,
+        declaration: SampleTableDeclaration, bins: int = 3,
+        permutations: int = 4999, seed: int = 16201,
+        alpha: float = 0.05) -> Dict[str, Any]:
+    """Seal the complete raw-feature conditional-information family and support rule."""
+    probe = probe_delimited(payload, filename=filename, delimiter=delimiter)
+    declaration.validate(probe)
+    require_independent_samples(declaration, recipe="the conditional-information audit")
+    features = sorted(name for name, role in declaration.roles.items() if role == "feature")
+    nuisances = sorted(name for name, role in declaration.roles.items() if role == "nuisance")
+    if not 1 <= len(features) <= 6:
+        raise InvalidParameterError("feature family", len(features),
+                                    "1-6 predeclared raw features")
+    if len(nuisances) != 1:
+        raise InvalidParameterError(
+            "nuisance role", nuisances,
+            "exactly one researcher-declared nuisance in this bounded recipe")
+    if isinstance(bins, bool) or not 2 <= int(bins) <= 4:
+        raise InvalidParameterError("bins", bins, "an integer from 2 through 4")
+    if not 0 < float(alpha) < 1:
+        raise InvalidParameterError("alpha", alpha, "a value in (0, 1)")
+    minimum = required_surrogates(
+        len(features), float(alpha), "benjamini_yekutieli")
+    if not minimum <= int(permutations) <= 9999:
+        raise InvalidParameterError(
+            "permutations", permutations,
+            "%d-9999 fixed conditional-randomisation draws for this %d-test family; "
+            "the smallest attainable p-value must survive Benjamini-Yekutieli correction"
+            % (minimum, len(features)))
+    minimum_samples = 5 * int(bins) ** 3
+    if int(probe["n_rows"]) < minimum_samples:
+        raise InvalidParameterError(
+            "sample count", probe["n_rows"],
+            "at least %d rows under the frozen five-per-cell support rule"
+            % minimum_samples)
+    columns, _header = _numeric_table(payload, delimiter, declaration)
+    target = next(name for name, role in declaration.roles.items() if role == "target")
+    required = [target, nuisances[0], *features]
+    missing = {name: int(np.sum(~np.isfinite(columns[name]))) for name in required}
+    if any(missing.values()):
+        raise InvalidParameterError(
+            "missing analysis values", missing,
+            "complete target, nuisance and feature columns for this recipe")
+    support = conditional_support(
+        {name: columns[name] for name in features}, columns[target], columns[nuisances[0]],
+        bins=int(bins))
+    if not support["admitted"]:
+        raise InvalidParameterError(
+            "conditional overlap/effective support", support,
+            support["rule"])
+    body = {
+        "schema": "spectral.conditional-information-plan.v1",
+        "content_sha256": probe["content_sha256"],
+        "declaration": declaration.canonical(), "target": target,
+        "nuisance": nuisances[0], "candidates": features,
+        "family_policy": "every declared raw feature conditioned on the one declared nuisance",
+        "quantity": "I(candidate; target | declared nuisance)",
+        "estimator": "equiprobable-bin Miller-Madow conditional mutual information",
+        "bins": int(bins), "support_admission": support,
+        "null": ("linear conditional-randomisation model: fit target on the declared "
+                 "nuisance, permute residuals, reconstruct and rediscretise the target; "
+                 "preserves the fitted target/nuisance relationship"),
+        "permutations": int(permutations), "seed": int(seed),
+        "alpha": float(alpha), "correction": "benjamini_yekutieli",
+        "n_tests": len(features),
+    }
+    body["plan_sha256"] = hashlib.sha256(json.dumps(
+        body, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+    return {
+        **body, "probe": probe,
+        "claim_boundary": (
+            "This freezes the complete candidate family, declared nuisance, estimator, "
+            "support rule, conditional null, seed, alpha and correction. It computes no "
+            "conditional-association result."),
+    }
+
+
+def run_conditional_information_audit(
+        payload: bytes, *, filename: str, delimiter: str,
+        plan: Mapping[str, Any]) -> Dict[str, Any]:
+    """Run the exact sealed TG16.2 family without causal interpretation."""
+    expected = dict(plan)
+    supplied_digest = expected.pop("plan_sha256", "")
+    expected.pop("probe", None)
+    expected.pop("claim_boundary", None)
+    actual_digest = hashlib.sha256(json.dumps(
+        expected, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+    if supplied_digest != actual_digest:
+        raise InvalidParameterError(
+            "plan_sha256", supplied_digest,
+            "the digest of the complete frozen conditional-information plan")
+    if expected.get("schema") != "spectral.conditional-information-plan.v1":
+        raise InvalidParameterError(
+            "schema", expected.get("schema"),
+            "spectral.conditional-information-plan.v1")
+    if _sha(payload) != expected["content_sha256"]:
+        raise InvalidParameterError(
+            "content_sha256", _sha(payload),
+            "the exact file bytes the conditional-information plan sealed")
+    declaration = SampleTableDeclaration(**expected["declaration"])
+    probe = probe_delimited(payload, filename=filename, delimiter=delimiter)
+    declaration.validate(probe)
+    require_independent_samples(declaration, recipe="the conditional-information audit")
+    columns, _header = _numeric_table(payload, delimiter, declaration)
+    actual_target = next(name for name, role in declaration.roles.items() if role == "target")
+    actual_nuisances = sorted(name for name, role in declaration.roles.items()
+                              if role == "nuisance")
+    actual_candidates = sorted(name for name, role in declaration.roles.items()
+                               if role == "feature")
+    if (actual_target != expected["target"] or actual_nuisances != [expected["nuisance"]]
+            or actual_candidates != expected["candidates"]):
+        raise InvalidParameterError(
+            "conditional family",
+            {"target": actual_target, "nuisance": actual_nuisances,
+             "candidates": actual_candidates},
+            "the exact target, nuisance and candidate family sealed by the plan")
+    required = [actual_target, expected["nuisance"], *actual_candidates]
+    missing = {name: int(np.sum(~np.isfinite(columns[name]))) for name in required}
+    if any(missing.values()):
+        raise InvalidParameterError(
+            "missing analysis values", missing,
+            "complete target, nuisance and feature columns for this recipe")
+    support = conditional_support(
+        {name: columns[name] for name in actual_candidates}, columns[actual_target],
+        columns[expected["nuisance"]], bins=int(expected["bins"]))
+    if support != expected["support_admission"] or not support["admitted"]:
+        raise InvalidParameterError(
+            "conditional overlap/effective support", support,
+            "the exact admitted support assessment sealed by the plan")
+    measured = audit_conditional_information(
+        {name: columns[name] for name in actual_candidates}, columns[actual_target],
+        columns[expected["nuisance"]], bins=int(expected["bins"]),
+        permutations=int(expected["permutations"]), seed=int(expected["seed"]),
+        alpha=float(expected["alpha"]), correction=str(expected["correction"]))
+    return {
+        "schema": "spectral.conditional-information-audit.v1",
+        "plan_sha256": supplied_digest, "content_sha256": expected["content_sha256"],
+        "target": actual_target, "declared_nuisance": expected["nuisance"],
+        "sample_relationship": declaration.sample_relationship,
+        "family": {"candidates": actual_candidates, "n_tests": expected["n_tests"],
+                   "family_policy": expected["family_policy"],
+                   "correction": expected["correction"], "alpha": expected["alpha"],
+                   "permutations": expected["permutations"]},
+        "method": {key: expected[key] for key in
+                   ("quantity", "estimator", "bins", "null", "seed")},
+        "support_admission": measured["support"],
+        "conditional_associations": measured["candidates"],
         "outcome_vocabulary": measured["outcome_vocabulary"],
         "stored": False, "rung_moved": False,
         "claim_boundary": measured["claim_boundary"],
@@ -565,7 +723,8 @@ def run_representation_audit(payload: bytes, *, filename: str, delimiter: str,
 
 
 __all__ = ["AUDIT_REPRESENTATIONS", "MAX_UPLOAD_BYTES", "SAMPLE_RELATIONSHIPS",
-           "SAMPLE_ROLES", "SampleTableDeclaration", "plan_redundancy_structure_audit",
-           "plan_representation_audit", "probe_delimited", "require_independent_samples",
-           "run_redundancy_structure_audit", "run_representation_audit",
-           "sample_table_capability_profile"]
+           "SAMPLE_ROLES", "SampleTableDeclaration", "plan_conditional_information_audit",
+           "plan_redundancy_structure_audit", "plan_representation_audit",
+           "probe_delimited", "require_independent_samples",
+           "run_conditional_information_audit", "run_redundancy_structure_audit",
+           "run_representation_audit", "sample_table_capability_profile"]

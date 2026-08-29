@@ -3548,7 +3548,7 @@ and 0.94, complementary and XOR power is 1.00 each, and the independent false-cl
 All four one-candidate conditioning cases correctly produce no pair claim. The focused gate is 4
 PASS, 0 FAIL and 0 NOT_YET_RUNNABLE; the complete benchmark registry is now 33 checks.
 
-**TG16.2 Conditional-Information Audit. PLANNED.** Estimate the explicitly named quantity
+**TG16.2 Conditional-Information Audit. DONE (2026-08-30, `ed-dev`).** Estimate the explicitly named quantity
 `I(candidate; target | declared nuisance)` only where overlap and effective support meet a frozen
 admission rule. A global target permutation is not a conditional-independence null because it also
 destroys the target/nuisance relationship. Each estimator therefore brings a benchmarked
@@ -3557,6 +3557,26 @@ randomisation model — plus calibration and failure conditions. `nuisance` is a
 statistical role, not proof that the variable is a confounder: responses say **conditional
 association**, never “confounding removed”, “nuisance-free” or causal. Collider and post-treatment
 interpretations remain outside what the computation can decide.
+
+**Delivered.** The bounded recipe requires one researcher-declared nuisance and tests every one of
+one to six declared raw features. Its content-bound plan freezes equiprobable bins, Miller-Madow
+conditional mutual information, the complete candidate family, a five-rows-per-cell
+overlap/effective-support rule, a linear conditional-randomisation model, permutations, seed,
+alpha and global Benjamini-Yekutieli correction. The null fits target on the declared nuisance,
+permutes residuals, reconstructs and rediscretises the target, preserving the fitted
+target/nuisance relationship that a global target shuffle would destroy. Inadequate within-region
+levels, effective joint support, absolute quadratic residual correlation above 0.20, a
+nuisance-stratum residual-variance ratio above 4, inadequate permutation resolution, missing
+nuisance roles and dependent rows all refuse before a result.
+
+**Acceptance met.** Both paired G16 benchmarks now carry `G16.2.conditional_information`. Across
+200 frozen replications, support admission was 1.00 for every applicable case, signal-survival
+power and collider conditional-association detection were 1.00, and nuisance-only/conditional-null
+false-claim rates were 0.055/0.045, below the 0.075 ceiling. The collider result is deliberately
+reported as conditional association while its causal interpretation remains outside the
+computation. The focused paired gate is 6 PASS, 0 FAIL and 0 NOT_YET_RUNNABLE; the complete
+benchmark registry is now 35 checks. The operation is registered as
+`conditional_information_audit` and exposed through content-bound plan/run endpoints.
 
 **TG16.3 Stable-Subspace Generation. PLANNED.** Search a bounded linear family only. The complete
 dimension range, preprocessing, objective, nuisance-stability criterion, regularisation values,

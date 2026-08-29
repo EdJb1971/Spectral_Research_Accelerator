@@ -13,6 +13,7 @@ from typing import Any, Dict, Mapping, Tuple
 
 import numpy as np
 
+from src.analysis_engine.conditional_information import audit_conditional_information
 from src.analysis_engine.representation_structure import audit_pair_structure
 from src.benchmarks.core import Benchmark, CheckResult, Outcome, register_benchmark, stage_check
 from src.benchmarks.seeding import SeedBundle, derive
@@ -316,13 +317,99 @@ def _check_redundancy_nulls(data: RepresentationStructureData,
         measured)
 
 
+def _conditional_calibration(names: Tuple[str, ...], expected: Mapping[str, str],
+                             *, root_seed: int) -> Dict[str, Any]:
+    replications = int(ACCEPTANCE_POLICY["replications"])
+    counts = {name: 0 for name in names}
+    false_claims = {name: 0 for name in names}
+    admissions = {name: 0 for name in names}
+    for replication in range(replications):
+        bundle = derive("G16.2:%d" % replication, root_seed)
+        for case_index, name in enumerate(names):
+            case = _case(bundle, name, CALIBRATION_N_SAMPLES)
+            if case.nuisance is None:
+                continue
+            try:
+                measured = audit_conditional_information(
+                    case.features, case.target, case.nuisance, bins=CALIBRATION_BINS,
+                    permutations=CALIBRATION_PERMUTATIONS,
+                    seed=root_seed + 1000003 * (replication + 1) + 1009 * case_index,
+                    alpha=float(ACCEPTANCE_POLICY["alpha"]))
+            except ValueError:
+                continue
+            admissions[name] += 1
+            outcome = measured["candidates"][0]["outcome"]
+            counts[name] += int(outcome == expected[name])
+            false_claims[name] += int(
+                expected[name] == "unresolved" and outcome != "unresolved")
+    return {
+        "replications": replications, "n_samples_per_replication": CALIBRATION_N_SAMPLES,
+        "bins": CALIBRATION_BINS, "permutations": CALIBRATION_PERMUTATIONS,
+        "admission_rates": {name: admissions[name] / replications for name in names},
+        "detection_rates": {name: counts[name] / replications for name in names},
+        "false_claim_rates": {name: false_claims[name] / replications for name in names},
+    }
+
+
+@stage_check("G16.2.conditional_information")
+def _check_conditional_power(data: RepresentationStructureData,
+                             truth: Dict[str, Any]) -> CheckResult:
+    expected = {"signal_survives_conditioning": "supported_conditional_association"}
+    measured = _conditional_calibration(tuple(expected), expected, root_seed=16201)
+    minimum = float(ACCEPTANCE_POLICY["minimum_planted_detection_rate"])
+    rate = measured["detection_rates"]["signal_survives_conditioning"]
+    problems = []
+    if measured["admission_rates"]["signal_survives_conditioning"] < 1:
+        problems.append("the planted family did not always meet the frozen support rule")
+    if rate < minimum:
+        problems.append("conditional-signal power %.3f is below %.3f" % (rate, minimum))
+    return CheckResult(
+        "G16.2.conditional_information", Outcome.FAIL if problems else Outcome.PASS,
+        "; ".join(problems) if problems else
+        "the signal surviving declared-nuisance conditioning meets the frozen power floor",
+        measured)
+
+
+@stage_check("G16.2.conditional_information")
+def _check_conditional_safeguards(data: RepresentationStructureData,
+                                  truth: Dict[str, Any]) -> CheckResult:
+    expected = {
+        "nuisance_only_association": "unresolved",
+        "conditional_null": "unresolved",
+        # This is deliberately detected: the claim boundary must not call it confounding.
+        "collider_counterexample": "supported_conditional_association",
+    }
+    measured = _conditional_calibration(tuple(expected), expected, root_seed=26201)
+    ceiling = float(ACCEPTANCE_POLICY["maximum_null_rejection_rate"])
+    minimum = float(ACCEPTANCE_POLICY["minimum_planted_detection_rate"])
+    problems = []
+    for name in ("nuisance_only_association", "conditional_null"):
+        rate = measured["false_claim_rates"][name]
+        if rate > ceiling:
+            problems.append("%s false-claim rate %.3f exceeds %.3f" %
+                            (name, rate, ceiling))
+    collider_rate = measured["detection_rates"]["collider_counterexample"]
+    if collider_rate < minimum:
+        problems.append("collider conditional-association detection %.3f is below %.3f" %
+                        (collider_rate, minimum))
+    if min(measured["admission_rates"].values()) < 1:
+        problems.append("a safeguard family did not always meet the frozen support rule")
+    return CheckResult(
+        "G16.2.conditional_information", Outcome.FAIL if problems else Outcome.PASS,
+        "; ".join(problems) if problems else
+        "nuisance-only and conditional nulls stay calibrated; the collider association is "
+        "detected but remains explicitly outside causal interpretation",
+        measured)
+
+
 register_benchmark(Benchmark(
     name="representation_structure_planted", kind="sample_table",
     description="Five planted independent-sample structures spanning duplication, overlap, "
                 "complementarity, synergy and conditional survival.",
-    gates=("G16.0.benchmark_contract", "G16.1.redundancy_structure"),
+    gates=("G16.0.benchmark_contract", "G16.1.redundancy_structure",
+           "G16.2.conditional_information"),
     build=build_representation_structure, known_answer=representation_structure_truth,
-    checks=(_check_planted, _check_redundancy_power),
+    checks=(_check_planted, _check_redundancy_power, _check_conditional_power),
     params={"focus": "planted", "n": N_SAMPLES},
 ))
 
@@ -330,9 +417,11 @@ register_benchmark(Benchmark(
     name="representation_structure_safeguards", kind="sample_table",
     description="Four safeguards spanning independence, nuisance-only association, a "
                 "conditional null and a collider counterexample.",
-    gates=("G16.0.benchmark_contract", "G16.1.redundancy_structure"),
+    gates=("G16.0.benchmark_contract", "G16.1.redundancy_structure",
+           "G16.2.conditional_information"),
     build=build_representation_structure, known_answer=representation_structure_truth,
-    checks=(_check_safeguards, _check_redundancy_nulls),
+    checks=(_check_safeguards, _check_redundancy_nulls,
+            _check_conditional_safeguards),
     params={"focus": "safeguards", "n": N_SAMPLES},
 ))
 

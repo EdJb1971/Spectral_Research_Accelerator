@@ -4081,6 +4081,41 @@ complementary/XOR power is 1.00/1.00, the independent false-claim rate is 0.02, 
 one-candidate safeguard makes no pair claim. The focused gate reports 4 PASS, 0 FAIL, 0
 NOT_YET_RUNNABLE.
 
+### 3.6zzf Conditional-information audit (`src/analysis_engine/conditional_information.py`, `dataset_ingress.py`, `src/api/ingress.py`, TG16.2, `ed-dev`)
+
+The second G16 operation is `conditional_information_audit`. It explicitly estimates
+`I(candidate; target | declared nuisance)` for every one of one to six declared raw features and
+exactly one researcher-declared nuisance. The immutable plan binds the exact bytes and declaration
+and freezes the complete candidate family, equiprobable bins, Miller-Madow conditional mutual
+information, support rule, conditional null, permutations, seed, alpha and global
+Benjamini-Yekutieli correction. A surrogate count whose p-value floor cannot survive that complete
+family refuses before computation.
+
+The admission rule requires at least five rows per possible candidate/target cell in every
+nuisance stratum, at least two occupied candidate and target levels per stratum, and an average of
+at least five rows per occupied candidate/target/nuisance cell. Missing analysis values and any
+failure of that overlap/effective-support rule refuse at planning. The first bounded null is a
+sealed linear conditional-randomisation model: fit target on the declared nuisance, permute the
+model residuals, reconstruct the target and rediscretise it for each draw. This preserves the
+fitted target/nuisance relationship that an invalid global target permutation would destroy. Its
+frozen adequacy screen also refuses absolute quadratic residual correlation above 0.20 or a
+nuisance-stratum residual-variance ratio above 4; passing that bounded screen is not a general
+certificate that every conditional model is correctly specified.
+
+Outcomes are `supported_conditional_association` or `unresolved`. The nuisance label is a declared
+statistical role, not evidence that it is a confounder; responses never say "confounding removed",
+"nuisance-free" or causal. In particular, the collider control correctly produces supported
+conditional association while the response says collider and post-treatment interpretations are
+outside what the computation can decide. `POST /api/v1/ingress/conditional/plan` and
+`POST /api/v1/ingress/conditional/audit` expose the content-bound workflow and repeat the shared
+independent-sample refusal.
+
+The operation entered the capability registry after the paired 200-replication acceptance family.
+Every applicable case met support admission. Signal-survival and collider conditional-association
+detection were 1.00; nuisance-only and conditional-null false-claim rates were 0.055 and 0.045,
+below the frozen 0.075 ceiling. The focused paired gate reports 6 PASS, 0 FAIL and 0
+NOT_YET_RUNNABLE.
+
 ### 3.11 Ground-Truth Benchmark Suite (`src/benchmarks/`)
 
 Added in T3.5.17 (standard E7). Twenty-two synthetic datasets whose correct answer is known
@@ -4107,11 +4142,12 @@ offline and declares no truth.
 *   `representation_structure.py` - TG16.0's paired
     `representation_structure_planted` / `representation_structure_safeguards` sample-table
     family and the calibration/power thresholds later G16 operations must meet before
-    registration; TG16.1 adds the first operation-level calibration gate to both datasets.
+    registration; TG16.1 and TG16.2 add the redundancy-structure and conditional-information
+    operation-level calibration gates to both datasets.
 *   `runner.py`, `__main__.py` - report and CLI (`python -m src.benchmarks`, exit 1 on any
     failure, usable directly as a CI gate).
 
-Current status: **33 PASS, 0 FAIL, 0 NOT_YET_RUNNABLE**. See Section 7.2f.
+Current status: **35 PASS, 0 FAIL, 0 NOT_YET_RUNNABLE**. See Section 7.2f.
 
 ### 3.13 Cloud-Native ERA5 over Zarr (`src/data_layer/zarr_source.py`, T3.5.18)
 
@@ -5459,7 +5495,7 @@ able to sit three slices out of date.
 | `test_analysis_data.py` | 7 | diagnostics/data-layer endpoints and independent D17 boundary-ring oracle |
 | `test_artifact_store.py` | 33 | content addressing, checksum verification, handle budget, T4A.3 acceptance |
 | `test_api_infrastructure.py` | 16 | health, listing, pagination, CORS, data-source transparency, benchmark endpoints |
-| `test_benchmarks.py` | 47 | Ground-Truth Benchmark Suite, seed discipline, eager/streamed climatology agreement, D30 determinism, TG16.0 paired-family completeness, and TG16.1 gate registration |
+| `test_benchmarks.py` | 47 | Ground-Truth Benchmark Suite, seed discipline, eager/streamed climatology agreement, D30 determinism, TG16.0 paired-family completeness, and TG16.1/TG16.2 gate registration |
 | `test_boundary_synthetic.py` | 8 | boundary treatments, windowing, synthetic generators and independent Euclidean-ring oracle |
 | `test_cds_source.py` | 14 | T5.2c monthly CDS planning/CLI, grid-alignment/server-snap refusals, network consent, atomic resume, shard integrity, conservative storage refusal, bounded Zarr publication, plus PASS/FAIL independent-route receipt publication, replay and tamper refusal |
 | `test_geometry_registry.py` | 20 | TG1.2 geometry registry: the three builtins' metrics, crops, resamples and provenance unchanged; capability-driven `is_physical`/`length_units`/`latitudes`; a fourth geometry (`polar_scan`) registered from the test module with a non-uniform, non-spherical metric; the Cartesian Laplacian refusing it; `latitude`/`longitude` recognised as a sphere |
@@ -5548,7 +5584,8 @@ able to sit three slices out of date.
 | `test_photometry.py` | 9 | TG13.1 atomic TESS onboarding and precedence refusal, canonical bounded requests, metadata-only exact-product preflight, checksum-valid BJD_TDB parsing and value-bound identity, pre-download caps, immutable collection replay, source discovery, API claim boundaries, and an explicit opt-in bounded live MAST acceptance (E14, E15, R17, R21) |
 | `test_dataset_ingress.py` | 9 | G14/G15 file probing without semantic inference, explicit sample roles/relationships/units, content-bound routing with explained spatial refusals, grouped/ordered split-leakage refusal, TG16.0's shared independent-only admission contract, R18 family sealing and permutation-resolution refusal, planted generate/confirm recovery, changed-file and tampered-plan refusal, and the complete multipart HTTP workflow |
 | `test_representation_structure.py` | 6 | TG16.1 complete pair enumeration, joint redundancy/complementarity/XOR/null discrimination, sealed estimator/null/family and permutation-resolution refusal, content/tamper binding, non-removal claim boundary, earned capability registration, and multipart plan/run workflow |
-  | **total** | **2409** | |
+| `test_conditional_information.py` | 6 | TG16.2 conditional-signal/null/collider discrimination, overlap and effective-support admission, sealed conditional-randomisation family and permutation-resolution refusal, content/tamper binding, conditional-only claim boundary, earned nuisance capability, and multipart plan/run workflow |
+  | **total** | **2415** | |
 ### 7.2h A surrogate null that was not the null it claimed (T4C.5)
 
 The most instructive defect of the project so far, because it passed every structural check.
