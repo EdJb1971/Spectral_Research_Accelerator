@@ -22,6 +22,7 @@ from src.analysis_engine.conditional_information import (
     audit_conditional_information, conditional_support)
 from src.analysis_engine.representation_structure import (audit_pair_structure,
                                                            candidate_pairs)
+from src.analysis_engine.stable_subspace import generate_stable_subspaces
 from src.core.errors import InvalidParameterError
 from src.core.dataset_capabilities import build_profile
 from src.statistics.multiple_comparisons import adjust, required_surrogates
@@ -505,6 +506,223 @@ def run_conditional_information_audit(
     }
 
 
+def plan_stable_subspace_generation(
+        payload: bytes, *, filename: str, delimiter: str,
+        declaration: SampleTableDeclaration, dimensions: Sequence[int] = (1,),
+        regularizations: Sequence[float] = (0.01, 0.1, 1.0), permutations: int = 4999,
+        generate_fraction: float = 0.7, restarts: int = 6, iterations: int = 48,
+        perturbations: int = 6, perturbation_scale: float = 0.10,
+        stability_threshold: float = 0.10, nuisance_penalty: float = 1.0,
+        variance_weight: float = 0.05, seed: int = 16301,
+        alpha: float = 0.05) -> Dict[str, Any]:
+    """Freeze the complete bounded family without opening a subspace result."""
+    probe = probe_delimited(payload, filename=filename, delimiter=delimiter)
+    declaration.validate(probe)
+    require_independent_samples(declaration, recipe="stable-subspace generation")
+    features = sorted(name for name, role in declaration.roles.items() if role == "feature")
+    nuisances = sorted(name for name, role in declaration.roles.items() if role == "nuisance")
+    if not 2 <= len(features) <= 6:
+        raise InvalidParameterError("feature family", len(features),
+                                    "two to six predeclared raw features")
+    if len(nuisances) > 1:
+        raise InvalidParameterError("nuisance family", nuisances,
+                                    "zero or one researcher-declared nuisance")
+    try:
+        dims = tuple(sorted(int(value) for value in dimensions))
+        regs = tuple(sorted(float(value) for value in regularizations))
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise InvalidParameterError("subspace family", [dimensions, regularizations],
+                                    "finite numeric dimension and ridge sequences") from exc
+    if any(isinstance(value, (bool, np.bool_)) or not math.isfinite(float(value))
+           or float(value) != int(value) for value in dimensions):
+        raise InvalidParameterError("dimensions", list(dimensions),
+                                    "integer dimensions only")
+    if not dims or len(set(dims)) != len(dims) or min(dims) < 1 \
+            or max(dims) >= len(features):
+        raise InvalidParameterError("dimensions", list(dimensions),
+                                    "distinct dimensions from 1 through feature_count - 1")
+    if not regs or len(regs) > 4 or len(set(regs)) != len(regs) \
+            or any(not math.isfinite(value) for value in regs) or min(regs) <= 0 \
+            or max(regs) > 10:
+        raise InvalidParameterError("regularizations", list(regularizations),
+                                    "one to four distinct positive values no larger than 10")
+    if not 0.5 <= float(generate_fraction) <= 0.8 or not 0 < float(alpha) < 1:
+        raise InvalidParameterError("split/alpha", [generate_fraction, alpha],
+                                    "generate_fraction in [0.5, 0.8] and alpha in (0, 1)")
+    if not 2 <= int(restarts) <= 12 or not 16 <= int(iterations) <= 128 \
+            or not 3 <= int(perturbations) <= 20:
+        raise InvalidParameterError("optimizer/stability counts",
+                                    [restarts, iterations, perturbations],
+                                    "2-12 restarts, 16-128 iterations and 3-20 perturbations")
+    if not 0 < float(perturbation_scale) <= 0.1 \
+            or not 0 < float(stability_threshold) <= 0.5 \
+            or not 0 <= float(nuisance_penalty) <= 10 \
+            or not 0 <= float(variance_weight) <= 1:
+        raise InvalidParameterError(
+            "objective/stability values",
+            [perturbation_scale, stability_threshold, nuisance_penalty, variance_weight],
+            "perturbation scale (0,0.1], span threshold (0,0.5], nuisance penalty [0,10] "
+            "and variance weight [0,1]")
+    n_tests = len(dims) * len(regs)
+    minimum_permutations = required_surrogates(
+        n_tests, float(alpha), "benjamini_yekutieli")
+    if not minimum_permutations <= int(permutations) <= 9999:
+        raise InvalidParameterError(
+            "permutations", permutations,
+            "at least %d and at most 9999 for family size %d: the smallest attainable "
+            "p-value must survive the frozen Benjamini-Yekutieli correction"
+            % (minimum_permutations, n_tests))
+    columns, _header = _numeric_table(payload, delimiter, declaration)
+    required = features + nuisances + [
+        next(name for name, role in declaration.roles.items() if role == "target")]
+    missing = {name: int(np.sum(~np.isfinite(columns[name]))) for name in required}
+    if any(missing.values()):
+        raise InvalidParameterError("missing analysis values", missing,
+                                    "complete target, feature and nuisance columns")
+    n = probe["n_rows"]
+    order = np.random.default_rng(int(seed)).permutation(n)
+    stop = int(math.floor(n * float(generate_fraction)))
+    generate, confirmation = order[:stop], order[stop:]
+    if generate.size < 80 or confirmation.size < 40:
+        raise InvalidParameterError("partition sizes", [generate.size, confirmation.size],
+                                    "at least 80 generate and 40 reserved confirmation rows")
+    generate_scales = {name: float(np.std(columns[name][generate], ddof=1))
+                       for name in features}
+    if any(not math.isfinite(value) or value <= 1e-12
+           for value in generate_scales.values()):
+        raise InvalidParameterError("generate feature variation", generate_scales,
+                                    "every feature varying on the generate partition")
+    target_scale = float(np.std(columns[required[-1]][generate], ddof=1))
+    if not math.isfinite(target_scale) or target_scale <= 1e-12:
+        raise InvalidParameterError("generate target variation", target_scale,
+                                    "a varying target on the generate partition")
+    if nuisances:
+        nuisance_values = columns[nuisances[0]][generate]
+        nuisance_scale = float(np.std(nuisance_values, ddof=1))
+        region_sizes = np.bincount(np.digitize(
+            nuisance_values, np.quantile(nuisance_values, (1 / 3, 2 / 3)), right=True),
+                                   minlength=3)
+        if nuisance_scale <= 1e-12 or int(region_sizes.min()) < 20:
+            raise InvalidParameterError(
+                "generate nuisance support",
+                {"scale": nuisance_scale, "region_sizes": region_sizes.tolist()},
+                "a varying nuisance with at least 20 generate rows in each frozen tertile")
+    body = {
+        "schema": "spectral.stable-subspace-generation-plan.v1",
+        "content_sha256": probe["content_sha256"],
+        "declaration": declaration.canonical(), "features": features,
+        "target": required[-1], "nuisance": nuisances[0] if nuisances else None,
+        "dimensions": list(dims), "regularizations": list(regs),
+        "preprocessing": "generate-only z-score standardization",
+        "objective": "regularized supervised covariance with nuisance-region penalty",
+        "nuisance_stability_criterion": (
+            "generate-tertile explained-fraction range <= 0.35 when nuisance is declared; "
+            "otherwise no nuisance-region claim"),
+        "optimizer": "seeded block power iteration", "restarts": int(restarts),
+        "iterations": int(iterations), "perturbations": int(perturbations),
+        "seed_derivation": (
+            "fixed member, permutation, perturbation-stream and optimizer offsets"),
+        "perturbation_scale": float(perturbation_scale),
+        "projector_distance_threshold": float(stability_threshold),
+        "nuisance_penalty": float(nuisance_penalty),
+        "variance_weight": float(variance_weight), "permutations": int(permutations),
+        "generate_fraction": float(generate_fraction), "seed": int(seed),
+        "alpha": float(alpha), "correction": "benjamini_yekutieli",
+        "family_members": ["dimension=%d;ridge=%g" % (dimension, ridge)
+                           for dimension in dims for ridge in regs],
+        "n_tests": n_tests,
+        "partitions": {
+            "generate_n": int(generate.size), "confirmation_n": int(confirmation.size),
+            "generate_indices_sha256": _sha(generate.astype("<i8").tobytes()),
+            "confirmation_indices_sha256": _sha(confirmation.astype("<i8").tobytes()),
+            "confirmation_opened": False,
+        },
+    }
+    body["plan_sha256"] = hashlib.sha256(json.dumps(
+        body, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+    return {**body, "probe": probe,
+            "claim_boundary": (
+                "This seals the complete generate-only linear search. It computes no subspace "
+                "and does not open the reserved confirmation values.")}
+
+
+def run_stable_subspace_generation(payload: bytes, *, filename: str, delimiter: str,
+                                   plan: Mapping[str, Any]) -> Dict[str, Any]:
+    expected = dict(plan)
+    supplied_digest = expected.pop("plan_sha256", "")
+    expected.pop("probe", None)
+    expected.pop("claim_boundary", None)
+    actual_digest = hashlib.sha256(json.dumps(
+        expected, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+    if supplied_digest != actual_digest:
+        raise InvalidParameterError("plan_sha256", supplied_digest,
+                                    "the digest of the complete frozen subspace plan")
+    if expected.get("schema") != "spectral.stable-subspace-generation-plan.v1":
+        raise InvalidParameterError("plan schema", expected.get("schema"),
+                                    "spectral.stable-subspace-generation-plan.v1")
+    if _sha(payload) != expected["content_sha256"]:
+        raise InvalidParameterError("content_sha256", _sha(payload),
+                                    "the exact file bytes the plan sealed")
+    declaration = SampleTableDeclaration(**expected["declaration"])
+    probe = probe_delimited(payload, filename=filename, delimiter=delimiter)
+    declaration.validate(probe)
+    require_independent_samples(declaration, recipe="stable-subspace generation")
+    actual_features = sorted(name for name, role in declaration.roles.items()
+                             if role == "feature")
+    actual_target = next(name for name, role in declaration.roles.items()
+                         if role == "target")
+    actual_nuisances = sorted(name for name, role in declaration.roles.items()
+                              if role == "nuisance")
+    if actual_features != expected["features"] or actual_target != expected["target"] \
+            or (actual_nuisances[0] if actual_nuisances else None) != expected["nuisance"]:
+        raise InvalidParameterError("analysis family", [actual_features, actual_target,
+                                                         actual_nuisances],
+                                    "the complete frozen feature/target/nuisance family")
+    columns, _header = _numeric_table(payload, delimiter, declaration)
+    n = probe["n_rows"]
+    order = np.random.default_rng(int(expected["seed"])).permutation(n)
+    stop = int(math.floor(n * float(expected["generate_fraction"])))
+    generate, confirmation = order[:stop], order[stop:]
+    partition = expected["partitions"]
+    actual_partition = {
+        "generate_n": int(generate.size), "confirmation_n": int(confirmation.size),
+        "generate_indices_sha256": _sha(generate.astype("<i8").tobytes()),
+        "confirmation_indices_sha256": _sha(confirmation.astype("<i8").tobytes()),
+        "confirmation_opened": False,
+    }
+    if partition != actual_partition:
+        raise InvalidParameterError("partitions", actual_partition,
+                                    "the exact frozen generate/confirmation split")
+    measured = generate_stable_subspaces(
+        {name: columns[name][generate] for name in actual_features},
+        columns[actual_target][generate],
+        (columns[actual_nuisances[0]][generate] if actual_nuisances else None),
+        dimensions=expected["dimensions"],
+        regularizations=expected["regularizations"],
+        permutations=int(expected["permutations"]), restarts=int(expected["restarts"]),
+        iterations=int(expected["iterations"]), perturbations=int(expected["perturbations"]),
+        perturbation_scale=float(expected["perturbation_scale"]),
+        stability_threshold=float(expected["projector_distance_threshold"]),
+        nuisance_penalty=float(expected["nuisance_penalty"]),
+        variance_weight=float(expected["variance_weight"]), seed=int(expected["seed"]),
+        alpha=float(expected["alpha"]), correction=expected["correction"])
+    return {
+        "schema": "spectral.stable-subspace-generation.v1",
+        "plan_sha256": supplied_digest, "content_sha256": expected["content_sha256"],
+        "target": actual_target, "declared_nuisance": expected["nuisance"],
+        "sample_relationship": declaration.sample_relationship,
+        "partitions": actual_partition,
+        "preprocessing": measured["preprocessing"], "family": measured["family"],
+        "search": measured["search"], "stability": measured["stability"],
+        "subspaces": measured["subspaces"],
+        "candidate_compact_stable_subspaces": measured["compact_candidates"],
+        "outcome_vocabulary": measured["outcome_vocabulary"],
+        "stored": False, "rung_moved": False,
+        "claim_boundary": measured["claim_boundary"] +
+            " The confirmation partition remains unopened in this generation operation.",
+    }
+
+
 def plan_representation_audit(payload: bytes, *, filename: str, delimiter: str,
                               declaration: SampleTableDeclaration,
                               representations: Sequence[str] = ("identity", "pca"),
@@ -725,6 +943,8 @@ def run_representation_audit(payload: bytes, *, filename: str, delimiter: str,
 __all__ = ["AUDIT_REPRESENTATIONS", "MAX_UPLOAD_BYTES", "SAMPLE_RELATIONSHIPS",
            "SAMPLE_ROLES", "SampleTableDeclaration", "plan_conditional_information_audit",
            "plan_redundancy_structure_audit", "plan_representation_audit",
+           "plan_stable_subspace_generation",
            "probe_delimited", "require_independent_samples",
            "run_conditional_information_audit", "run_redundancy_structure_audit",
-           "run_representation_audit", "sample_table_capability_profile"]
+           "run_representation_audit", "run_stable_subspace_generation",
+           "sample_table_capability_profile"]

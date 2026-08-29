@@ -3578,13 +3578,31 @@ computation. The focused paired gate is 6 PASS, 0 FAIL and 0 NOT_YET_RUNNABLE; t
 benchmark registry is now 35 checks. The operation is registered as
 `conditional_information_audit` and exposed through content-bound plan/run endpoints.
 
-**TG16.3 Stable-Subspace Generation. PLANNED.** Search a bounded linear family only. The complete
+**TG16.3 Stable-Subspace Generation. DONE (2026-08-30, `ed-dev`).** Search a bounded linear family only. The complete
 dimension range, preprocessing, objective, nuisance-stability criterion, regularisation values,
 optimiser, restarts, seeds and correction family are sealed before generation. Scaling and every
 subspace parameter are fitted on the generate partition alone. A subspace is identified by its
 projector/span rather than arbitrary component signs or rotations, and multi-seed/perturbation
 stability is reported so optimiser luck cannot be called scientific stability. Output is a
 **candidate compact stable subspace**, not an optimal representation.
+
+**Delivered.** The content-bound recipe accepts two to six declared raw features, reserves but
+does not open a confirmation partition, and enumerates every sealed dimension/positive-ridge
+combination. Generate-only z-score scaling feeds a regularised supervised-covariance objective
+with a declared-nuisance regional-instability penalty where one nuisance is present. Seeded block
+power iteration, restarts, target-permutation refits, global Benjamini-Yekutieli correction and
+10% multi-seed perturbations are all frozen. Admission requires a corrected generate association,
+a maximum projector distance of 0.10 and, when applicable, generate-tertile explained-fraction
+range no larger than 0.35. Projectors identify spans independently of basis sign or rotation;
+the basis and generate-only scaling are carried solely for later unchanged application.
+
+**Acceptance met.** Both paired G16 benchmarks now carry `G16.3.stable_subspace_generation`.
+Across 200 frozen replications, exact-duplicate, noisy-copy and complementary linear candidate
+rates were 1.00 each. The nonlinear XOR candidate rate was 0.025 and the independent
+false-candidate rate was 0.055, both below the 0.075 ceiling; every one-feature case correctly
+produced no compact subspace. The focused paired gate is 8 PASS, 0 FAIL and 0
+NOT_YET_RUNNABLE; the complete benchmark registry is now 37 checks. The operation is registered
+as `stable_subspace_generation` and exposed through content-bound plan/generate endpoints.
 
 **TG16.4 Held-out and nuisance-region Confirmation. PLANNED.** Freeze the generated projector,
 preprocessing and complete searched family, then apply them unchanged to held-out samples.

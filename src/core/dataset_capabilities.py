@@ -78,6 +78,17 @@ OPERATIONS: Dict[str, Operation] = {
                   "This bounded recipe requires exactly one numeric column explicitly "
                   "declared as nuisance.",
                   "Declare whether one column has the nuisance role."),)),
+    "stable_subspace_generation": Operation(
+        "Stable-Subspace Generation",
+        "Generate bounded linear candidate spans on a reserved generate partition.", (
+            _need("sample_table", "declared sample table",
+                  "This representation is not an explicitly declared sample table.",
+                  "Declare the dataset representation before generating subspaces."),
+            _need("independent_samples", "independent samples",
+                  "This recipe reserves a row-random confirmation partition and is only "
+                  "admissible for independent samples. Grouped data need group-held-out "
+                  "generation/confirmation; ordered data need blocked and embargoed splits.",
+                  "Declare whether samples are independent, grouped or ordered."),)),
     "cross_domain_analysis": Operation(
         "Cross-domain analysis", "Association and declared-lag analysis of channel series.", (
             _need("channel_series", "admitted channel series",

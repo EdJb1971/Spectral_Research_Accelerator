@@ -4116,6 +4116,41 @@ detection were 1.00; nuisance-only and conditional-null false-claim rates were 0
 below the frozen 0.075 ceiling. The focused paired gate reports 6 PASS, 0 FAIL and 0
 NOT_YET_RUNNABLE.
 
+### 3.6zzg Stable-subspace generation (`src/analysis_engine/stable_subspace.py`, `dataset_ingress.py`, `src/api/ingress.py`, TG16.3, `ed-dev`)
+
+The third G16 operation is `stable_subspace_generation`. Its immutable plan binds the exact file
+and declaration, two to six raw features, every searched dimension/positive-ridge combination,
+generate fraction, preprocessing, objective, optional nuisance-stability rule, optimiser,
+restarts, iterations, perturbations, seeds, target-permutation ensemble, alpha and global
+Benjamini-Yekutieli correction. Dimensions must be compact: from one through feature count minus
+one. The plan deterministically reserves at least 40 confirmation rows, seals both partition-index
+digests and marks confirmation unopened; TG16.3 computes only on at least 80 generate rows.
+
+Generate-only means and sample standard deviations scale the features. The bounded linear
+objective combines supervised covariance, a small covariance-retention term and, when exactly one
+nuisance is declared, a penalty for target-covariance changes across nuisance tertiles. A seeded
+block power iteration runs the sealed restart/iteration family for each dimension and ridge.
+Target permutations refit the complete supervised search rather than testing a target-selected
+span as if it were fixed, and all members pay one BY correction. A member must survive that
+generate association test, a 10% Gaussian perturbation family with maximum normalised projector
+distance at most 0.10, and, where applicable, a generate-tertile explained-fraction range no
+larger than 0.35.
+
+Each span is identified by `P = QQ^T`; sign changes and within-span basis rotations therefore do
+not change its scientific identity. A basis is also returned only so the frozen transform can be
+applied unchanged by the later TG16.4 confirmation slice. The response calls passing members
+`candidate_compact_stable_subspace` and everything else `unresolved`; it says neither "optimal"
+nor confirmed and stores no evidence or claim-rung movement. Nuisance-region stability is
+generate-only description, not conditional information or evidence that nuisance was removed.
+`POST /api/v1/ingress/subspace/plan` and `POST /api/v1/ingress/subspace/generate` expose the
+workflow and repeat the authoritative independent-sample refusal.
+
+The paired 200-replication family measured exact-duplicate, noisy-copy and complementary linear
+candidate rates of 1.00 each. The nonlinear XOR rate is 0.025 and the independent false-candidate
+rate is 0.055, below the 0.075 ceiling; all one-feature cases produce no compact subspace. The
+focused paired gate reports 8 PASS, 0 FAIL and 0 NOT_YET_RUNNABLE. Confirmation remains unopened
+and is not implied by this gate.
+
 ### 3.11 Ground-Truth Benchmark Suite (`src/benchmarks/`)
 
 Added in T3.5.17 (standard E7). Twenty-two synthetic datasets whose correct answer is known
@@ -4142,12 +4177,13 @@ offline and declares no truth.
 *   `representation_structure.py` - TG16.0's paired
     `representation_structure_planted` / `representation_structure_safeguards` sample-table
     family and the calibration/power thresholds later G16 operations must meet before
-    registration; TG16.1 and TG16.2 add the redundancy-structure and conditional-information
-    operation-level calibration gates to both datasets.
+    registration; TG16.1, TG16.2 and TG16.3 add the redundancy-structure,
+    conditional-information and stable-subspace operation-level calibration gates to both
+    datasets.
 *   `runner.py`, `__main__.py` - report and CLI (`python -m src.benchmarks`, exit 1 on any
     failure, usable directly as a CI gate).
 
-Current status: **35 PASS, 0 FAIL, 0 NOT_YET_RUNNABLE**. See Section 7.2f.
+Current status: **37 PASS, 0 FAIL, 0 NOT_YET_RUNNABLE**. See Section 7.2f.
 
 ### 3.13 Cloud-Native ERA5 over Zarr (`src/data_layer/zarr_source.py`, T3.5.18)
 
@@ -5495,7 +5531,7 @@ able to sit three slices out of date.
 | `test_analysis_data.py` | 7 | diagnostics/data-layer endpoints and independent D17 boundary-ring oracle |
 | `test_artifact_store.py` | 33 | content addressing, checksum verification, handle budget, T4A.3 acceptance |
 | `test_api_infrastructure.py` | 16 | health, listing, pagination, CORS, data-source transparency, benchmark endpoints |
-| `test_benchmarks.py` | 47 | Ground-Truth Benchmark Suite, seed discipline, eager/streamed climatology agreement, D30 determinism, TG16.0 paired-family completeness, and TG16.1/TG16.2 gate registration |
+| `test_benchmarks.py` | 47 | Ground-Truth Benchmark Suite, seed discipline, eager/streamed climatology agreement, D30 determinism, TG16.0 paired-family completeness, and TG16.1-TG16.3 gate registration |
 | `test_boundary_synthetic.py` | 8 | boundary treatments, windowing, synthetic generators and independent Euclidean-ring oracle |
 | `test_cds_source.py` | 14 | T5.2c monthly CDS planning/CLI, grid-alignment/server-snap refusals, network consent, atomic resume, shard integrity, conservative storage refusal, bounded Zarr publication, plus PASS/FAIL independent-route receipt publication, replay and tamper refusal |
 | `test_geometry_registry.py` | 20 | TG1.2 geometry registry: the three builtins' metrics, crops, resamples and provenance unchanged; capability-driven `is_physical`/`length_units`/`latitudes`; a fourth geometry (`polar_scan`) registered from the test module with a non-uniform, non-spherical metric; the Cartesian Laplacian refusing it; `latitude`/`longitude` recognised as a sphere |
@@ -5585,7 +5621,8 @@ able to sit three slices out of date.
 | `test_dataset_ingress.py` | 9 | G14/G15 file probing without semantic inference, explicit sample roles/relationships/units, content-bound routing with explained spatial refusals, grouped/ordered split-leakage refusal, TG16.0's shared independent-only admission contract, R18 family sealing and permutation-resolution refusal, planted generate/confirm recovery, changed-file and tampered-plan refusal, and the complete multipart HTTP workflow |
 | `test_representation_structure.py` | 6 | TG16.1 complete pair enumeration, joint redundancy/complementarity/XOR/null discrimination, sealed estimator/null/family and permutation-resolution refusal, content/tamper binding, non-removal claim boundary, earned capability registration, and multipart plan/run workflow |
 | `test_conditional_information.py` | 6 | TG16.2 conditional-signal/null/collider discrimination, overlap and effective-support admission, sealed conditional-randomisation family and permutation-resolution refusal, content/tamper binding, conditional-only claim boundary, earned nuisance capability, and multipart plan/run workflow |
-  | **total** | **2415** | |
+| `test_stable_subspace.py` | 6 | TG16.3 span/projector invariance, planted linear and null discrimination, optional nuisance-region stability boundary, sealed complete family/optimizer/partition and permutation-resolution refusal, content/tamper binding, unopened confirmation, earned capability, and multipart plan/generate workflow |
+  | **total** | **2421** | |
 ### 7.2h A surrogate null that was not the null it claimed (T4C.5)
 
 The most instructive defect of the project so far, because it passed every structural check.

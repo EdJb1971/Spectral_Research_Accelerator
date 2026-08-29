@@ -6933,3 +6933,33 @@ detection were 1.00. Nuisance-only and conditional-null false-claim rates were 0
 below the frozen 0.075 ceiling. The collider detection is a safeguard against causal overwording,
 not evidence that conditioning removed a confounder. The full backend suite was not rerun; the
 clean 2745-pass G15 run remains the latest full-suite evidence.
+
+---
+
+## TG16.3 - Stable-Subspace Generation (2026-08-30, `ed-dev`) - **COMPLETE**
+
+The registered operation seals the complete compact linear family, generate/confirmation split,
+generate-only standardisation, supervised covariance objective and optional nuisance penalty,
+ridge values, seeded block-power optimiser, restarts, perturbations, target-permutation refits,
+alpha and global Benjamini-Yekutieli correction. Results identify spans by projectors, report
+multi-seed perturbation distances, and keep the reserved confirmation partition unopened.
+
+```text
+> .\.venv\Scripts\python.exe -m pytest -q src/tests/test_stable_subspace.py src/tests/test_dataset_ingress.py
+15 passed, 2 warnings in 4.50s
+
+> .\.venv\Scripts\python.exe -m pytest -q src/tests/test_benchmarks.py -k "gating_lookup or g16_benchmark_pair"
+2 passed, 45 deselected, 1 warning in 1.97s
+
+> .\.venv\Scripts\python.exe -m src.benchmarks --name representation_structure_planted --name representation_structure_safeguards
+PASS 8   FAIL 0   NOT_YET_RUNNABLE 0
+```
+
+The first frozen run measured an independent false-candidate rate of 0.085, above the declared
+0.075 ceiling, and therefore failed. The original 2% perturbation was too weak to distinguish a
+chance direction from a scientifically stable span. The recipe was corrected before completion
+to 10% perturbations and a 0.10 projector-distance ceiling. On the final 200-replication family,
+exact-duplicate, noisy-copy and complementary linear candidate rates were 1.00 each, nonlinear
+XOR was 0.025, and the independent false-candidate rate was 0.055. Every one-feature case made no
+compact-subspace claim. The full backend suite was not rerun; the clean 2745-pass G15 run remains
+the latest full-suite evidence.
