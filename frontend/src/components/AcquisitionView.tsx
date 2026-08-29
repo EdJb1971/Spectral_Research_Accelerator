@@ -19,6 +19,10 @@ const DEFAULT_CROP: types.ZarrCropRequest = {
   time_start: '2020-06-01', time_end: '2020-06-08',
   lat_min: -4, lat_max: 60, lon_min: 0, lon_max: 64,
   levels: [850, 700, 500, 300], n_levels_analysis: 4,
+  analysis: {
+    transform_family: 'dtcwt', wavelet: 'db2', boundary_mode: 'periodic',
+    dtcwt_level1: 'near_sym_b', dtcwt_qshift: 'qshift_b',
+  },
 };
 
 export const AcquisitionView: React.FC<AcquisitionViewProps> = ({
@@ -97,7 +101,9 @@ export const AcquisitionView: React.FC<AcquisitionViewProps> = ({
   const runProbe = async () => {
     setBusy(true);
     try {
-      const result = await apiService.zarrProbe({ uri: crop.store });
+      const result = await apiService.zarrProbe({
+        uri: crop.store, variables: crop.variables, crop,
+      });
       setProbe(result.probe);
       setProbes(await apiService.zarrProbes());
     } catch (error) { fail(error); } finally { setBusy(false); }
@@ -107,6 +113,30 @@ export const AcquisitionView: React.FC<AcquisitionViewProps> = ({
     setBusy(true);
     setInspection(null);
     try { setInspection(await apiService.zarrInspect(crop)); }
+    catch (error) { fail(error); }
+    finally { setBusy(false); }
+  };
+
+  const reviseCrop = (patch: Partial<types.ZarrCropRequest>) => {
+    setCrop((current) => ({ ...current, ...patch }));
+    setInspection(null);
+  };
+
+  const reviseAnalysis = (patch: Partial<types.ZarrAnalysisRequest>) => {
+    setCrop((current) => ({
+      ...current, analysis: { ...current.analysis, ...patch },
+    }));
+    setInspection(null);
+  };
+
+  const applyRecommendedBounds = async () => {
+    const bounds = inspection?.acquisition_plan.suggestions.recommended.bounds;
+    if (!bounds) return;
+    const planned = { ...crop, ...bounds };
+    setCrop(planned);
+    setInspection(null);
+    setBusy(true);
+    try { setInspection(await apiService.zarrInspect(planned)); }
     catch (error) { fail(error); }
     finally { setBusy(false); }
   };
@@ -203,16 +233,16 @@ export const AcquisitionView: React.FC<AcquisitionViewProps> = ({
 
               <label className="text-xs text-slate-400 block">Variables (comma separated)
                 <input value={crop.variables.join(',')}
-                  onChange={(e) => setCrop({ ...crop, variables: e.target.value.split(',').map(v => v.trim()).filter(Boolean) })}
+                  onChange={(e) => reviseCrop({ variables: e.target.value.split(',').map(v => v.trim()).filter(Boolean) })}
                   className="mt-1 w-full bg-slate-950 border border-slate-800 rounded p-2 font-mono" />
               </label>
               <div className="grid grid-cols-2 gap-2">
                 <label className="text-xs text-slate-400">Start
-                  <input type="date" value={crop.time_start} onChange={(e) => setCrop({ ...crop, time_start: e.target.value })}
+                  <input type="date" value={crop.time_start} onChange={(e) => reviseCrop({ time_start: e.target.value })}
                     className="mt-1 w-full bg-slate-950 border border-slate-800 rounded p-2" />
                 </label>
                 <label className="text-xs text-slate-400">End
-                  <input type="date" value={crop.time_end} onChange={(e) => setCrop({ ...crop, time_end: e.target.value })}
+                  <input type="date" value={crop.time_end} onChange={(e) => reviseCrop({ time_end: e.target.value })}
                     className="mt-1 w-full bg-slate-950 border border-slate-800 rounded p-2" />
                 </label>
               </div>
@@ -220,21 +250,71 @@ export const AcquisitionView: React.FC<AcquisitionViewProps> = ({
                 {([['lat_min', 'Lat min'], ['lat_max', 'Lat max'], ['lon_min', 'Lon min'], ['lon_max', 'Lon max']] as const)
                   .map(([key, label]) => <label key={key} className="text-xs text-slate-400">{label}
                     <input type="number" value={crop[key]}
-                      onChange={(e) => setCrop({ ...crop, [key]: Number(e.target.value) })}
+                      onChange={(e) => reviseCrop({ [key]: Number(e.target.value) })}
                       className="mt-1 w-full bg-slate-950 border border-slate-800 rounded p-2 font-mono" />
                   </label>)}
               </div>
               {store?.vertical_dim && <label className="text-xs text-slate-400 block">{verticalLabel}
                 <input value={crop.levels.join(',')}
-                  onChange={(e) => setCrop({ ...crop, levels: e.target.value.split(',').map(Number).filter(Number.isFinite) })}
+                  onChange={(e) => reviseCrop({ levels: e.target.value.split(',').map(Number).filter(Number.isFinite) })}
                   className="mt-1 w-full bg-slate-950 border border-slate-800 rounded p-2 font-mono" />
               </label>}
+              <div className="grid grid-cols-2 gap-2">
+                <label className="text-xs text-slate-400">Analysis transform
+                  <select value={crop.analysis.transform_family}
+                    onChange={(e) => reviseAnalysis({
+                      transform_family: e.target.value as 'swt' | 'dtcwt',
+                    })}
+                    className="mt-1 w-full bg-slate-950 border border-slate-800 rounded p-2">
+                    {Object.keys(zarrCatalogue?.analysis_transforms ?? { swt: {}, dtcwt: {} })
+                      .map((name) => <option key={name} value={name}>{name.toUpperCase()}</option>)}
+                  </select>
+                </label>
+                {crop.analysis.transform_family === 'swt' ?
+                  <label className="text-xs text-slate-400">Wavelet
+                    <select value={crop.analysis.wavelet}
+                      onChange={(e) => reviseAnalysis({
+                        wavelet: e.target.value as 'haar' | 'db2' | 'db3',
+                      })}
+                      className="mt-1 w-full bg-slate-950 border border-slate-800 rounded p-2">
+                      {['haar', 'db2', 'db3'].map((name) => <option key={name}>{name}</option>)}
+                    </select>
+                  </label> :
+                  <label className="text-xs text-slate-400">Q-shift filters
+                    <select value={crop.analysis.dtcwt_qshift}
+                      onChange={(e) => reviseAnalysis({ dtcwt_qshift: e.target.value })}
+                      className="mt-1 w-full bg-slate-950 border border-slate-800 rounded p-2">
+                      {['qshift_a', 'qshift_b', 'qshift_c', 'qshift_d']
+                        .map((name) => <option key={name}>{name}</option>)}
+                    </select>
+                  </label>}
+              </div>
+              {crop.analysis.transform_family === 'dtcwt' ?
+                <label className="text-xs text-slate-400 block">Level-1 filters
+                  <select value={crop.analysis.dtcwt_level1}
+                    onChange={(e) => reviseAnalysis({ dtcwt_level1: e.target.value })}
+                    className="mt-1 w-full bg-slate-950 border border-slate-800 rounded p-2">
+                    {['near_sym_a', 'near_sym_b', 'legall']
+                      .map((name) => <option key={name}>{name}</option>)}
+                  </select>
+                </label> :
+                <label className="text-xs text-slate-400 block">Boundary mode
+                  <select value={crop.analysis.boundary_mode}
+                    onChange={(e) => reviseAnalysis({
+                      boundary_mode: e.target.value as 'periodic' | 'reflect',
+                    })}
+                    className="mt-1 w-full bg-slate-950 border border-slate-800 rounded p-2">
+                    {['periodic', 'reflect'].map((name) => <option key={name}>{name}</option>)}
+                  </select>
+                </label>}
               <label className="text-xs text-slate-400 block">
-                Wavelet levels to support: {crop.n_levels_analysis} (minimum{' '}
-                {zarrCatalogue?.r13_minimum_crop[String(crop.n_levels_analysis)] ?? '?'} px)
+                Transform levels to support: {crop.n_levels_analysis}
                 <input type="range" min="1" max="6" value={crop.n_levels_analysis}
-                  onChange={(e) => setCrop({ ...crop, n_levels_analysis: Number(e.target.value) })}
+                  onChange={(e) => reviseCrop({ n_levels_analysis: Number(e.target.value) })}
                   className="mt-1 w-full accent-teal-500" />
+                <span className="text-[10px] text-slate-600">
+                  Inspect derives both crop thresholds from this exact transform configuration.
+                </span>
               </label>
               <div className="flex gap-2">
                 <button onClick={() => void runProbe()} disabled={busy}
@@ -268,6 +348,68 @@ export const AcquisitionView: React.FC<AcquisitionViewProps> = ({
                   {inspection.assessment.warning && <p className="text-xs text-amber-300 mt-2">{inspection.assessment.warning}</p>}
                   {inspection.assessment.advice.map((line, i) => <p key={i} className="text-xs text-slate-400 mt-1">· {line}</p>)}
                 </div>
+                <div className={`rounded-xl p-5 border ${inspection.geometry.meets_recommended_minimum
+                  ? 'border-emerald-500/30 bg-emerald-500/5'
+                  : inspection.geometry.meets_absolute_minimum
+                    ? 'border-amber-500/30 bg-amber-500/5'
+                    : 'border-rose-500/30 bg-rose-500/5'}`}>
+                  <div className="flex items-center gap-2">
+                    {inspection.geometry.meets_recommended_minimum
+                      ? <CheckCircle className="text-emerald-400 w-5 h-5" />
+                      : <AlertTriangle className="text-amber-400 w-5 h-5" />}
+                    <h4 className="text-sm font-semibold text-slate-100">
+                      {String(inspection.geometry.analysis.transform_family).toUpperCase()} ·{' '}
+                      {inspection.geometry.analysis.levels} levels ·{' '}
+                      {inspection.geometry.verdict === 'recommended' ? 'scientifically recommended'
+                        : inspection.geometry.verdict === 'technical_only'
+                          ? 'technical support only' : 'insufficient support'}
+                    </h4>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 mt-3 text-center text-[11px]">
+                    <div className="bg-slate-950/60 rounded p-2">
+                      <span className="block text-slate-500">Current native crop</span>
+                      <strong>{inspection.geometry.current_shape.join('×')}</strong>
+                    </div>
+                    <div className="bg-slate-950/60 rounded p-2">
+                      <span className="block text-slate-500">Absolute minimum</span>
+                      <strong>{inspection.geometry.absolute_minimum.shape.join('×')}</strong>
+                    </div>
+                    <div className="bg-slate-950/60 rounded p-2">
+                      <span className="block text-slate-500">Recommended minimum</span>
+                      <strong>{inspection.geometry.recommended_minimum.shape.join('×')}</strong>
+                    </div>
+                  </div>
+                  {!inspection.geometry.meets_recommended_minimum && <p className="text-xs text-amber-200 mt-3">
+                    A nonempty valid interior is not enough for a research result. Materialisation
+                    is gated on the recommended threshold; changing transform or depth changes the
+                    study and remains visible in the plan digest.
+                  </p>}
+                  {(() => {
+                    const suggestion = inspection.acquisition_plan.suggestions.recommended;
+                    if (!suggestion.feasible) return <p className="text-xs text-rose-300 mt-3">{suggestion.reason}</p>;
+                    if (inspection.geometry.meets_recommended_minimum || !suggestion.bounds) return null;
+                    return <div className="mt-3 border border-slate-700 rounded p-3 text-xs text-slate-300">
+                      <p>Suggested native-grid bounds: lat {suggestion.bounds.lat_min}…{suggestion.bounds.lat_max};{' '}
+                        lon {suggestion.bounds.lon_min}…{suggestion.bounds.lon_max}</p>
+                      <p className="text-slate-500 mt-1">Result {suggestion.actual_shape?.join('×')} · estimated{' '}
+                        {((suggestion.cost?.bytes_fetched_estimate ?? 0) / 1e9).toFixed(2)} GB fetched ·{' '}
+                        {suggestion.cost?.amplification.toFixed(1)}× amplification</p>
+                      <button type="button" onClick={() => void applyRecommendedBounds()} disabled={busy}
+                        className="mt-2 bg-teal-600 hover:bg-teal-500 disabled:opacity-50 rounded px-3 py-2 font-semibold">
+                        Use recommended bounds and re-inspect
+                      </button>
+                    </div>;
+                  })()}
+                  <details className="mt-3 text-[10px] text-slate-500">
+                    <summary className="cursor-pointer">Per-level support and audit identity</summary>
+                    {inspection.geometry.levels.map((level) => <p key={level.level} className="font-mono mt-1">
+                      L{level.level}: support {level.support_parent_px}px · margin {level.margin_parent_px}px/side ·{' '}
+                      native valid {level.valid_native_shape.join('×')}
+                    </p>)}
+                    <p className="font-mono mt-2 break-all">plan {inspection.acquisition_plan.plan_sha256}</p>
+                    <p className="mt-1">{inspection.acquisition_plan.claim_boundary}</p>
+                  </details>
+                </div>
                 <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4">
                   <h4 className="text-sm text-slate-200 mb-2">Remote chunk structure</h4>
                   {Object.entries(inspection.structure.variables).map(([name, value]) =>
@@ -276,6 +418,10 @@ export const AcquisitionView: React.FC<AcquisitionViewProps> = ({
                 <div className="bg-slate-950 border border-slate-800 rounded p-3">
                   <p className="text-[10px] text-slate-500">Materialise from the command line:</p>
                   <code className="text-[10px] text-teal-400 break-all">{inspection.cli}</code>
+                  {!inspection.geometry.meets_recommended_minimum && <p className="text-[10px] text-amber-300 mt-2">
+                    This command is complete and auditable, but it will refuse until the crop is
+                    re-inspected at the recommended size.
+                  </p>}
                 </div>
                 {/* Said before the transfer rather than discovered after it (D70): materialising
                     is the end of the road for a store no analysis path reads yet. */}

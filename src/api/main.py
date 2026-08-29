@@ -888,6 +888,16 @@ async def list_data_sources():
     """The data-source fallback chain, in priority order (standard E2)."""
     return data_sources.describe_sources()
 
+class ZarrAnalysisRequest(BaseModel):
+    """Transform identity used only to plan scientific crop support, not to select data."""
+
+    transform_family: str = Field("dtcwt", description="Registered transform with R13 support.")
+    wavelet: str = Field("db2", description="SWT wavelet: haar, db2 or db3.")
+    boundary_mode: str = Field("periodic", description="SWT boundary mode.")
+    dtcwt_level1: str = Field("near_sym_b", description="DTCWT level-1 filter family.")
+    dtcwt_qshift: str = Field("qshift_b", description="DTCWT q-shift filter family.")
+
+
 class ZarrCropRequest(BaseModel):
     """A regional crop of a cloud Zarr archive (T3.5.18)."""
 
@@ -906,6 +916,10 @@ class ZarrCropRequest(BaseModel):
                      "levels for ERA5 or fractional negative-metre elevations for GLORYS."))
     n_levels_analysis: int = Field(4, ge=1, le=8,
                                   description="Wavelet levels the crop must support (R13).")
+    analysis: ZarrAnalysisRequest = Field(
+        default_factory=ZarrAnalysisRequest,
+        description=("Transform/filter identity used for metadata-only R13 planning. It does "
+                     "not change which source values are selected."))
 
 
 class ZarrProbeRequest(BaseModel):
@@ -921,6 +935,20 @@ class ZarrProbeRequest(BaseModel):
                      "pattern, so it is only computed when the pattern is stated."))
     persist: bool = Field(
         True, description="Write the record to the probe directory as well as the ledger.")
+
+
+def _zarr_support_request(request: ZarrCropRequest):
+    """Bind the wire model to the implementation-owned transform support contract."""
+    from src.data_layer.crop_planner import TransformSupportRequest
+
+    return TransformSupportRequest(
+        transform_family=request.analysis.transform_family,
+        levels=request.n_levels_analysis,
+        wavelet=request.analysis.wavelet,
+        boundary_mode=request.analysis.boundary_mode,
+        dtcwt_level1=request.analysis.dtcwt_level1,
+        dtcwt_qshift=request.analysis.dtcwt_qshift,
+    )
 
 
 class ExportFieldRequest(BaseModel):
@@ -1093,6 +1121,16 @@ async def zarr_catalogue():
     """
     from src.data_layer import stores as stores_module
     from src.data_layer import zarr_source as zarr_adapter
+    from src.transform_engine.registry import TRANSFORMS
+
+    support_transforms = {}
+    for entry in TRANSFORMS.entries():
+        if entry.value.support is not None:
+            support_transforms[entry.name] = {
+                "description": entry.description,
+                "params": dict(entry.params),
+                "capabilities": dict(entry.capabilities),
+            }
 
     return {
         "stores": zarr_adapter.catalogue_payload(),
@@ -1104,6 +1142,10 @@ async def zarr_catalogue():
         "cache_dir": zarr_adapter.DEFAULT_CACHE_DIR,
         "r13_minimum_crop": {str(n): zarr_adapter.minimum_crop_size(n)
                              for n in range(1, 7)},
+        "analysis_transforms": support_transforms,
+        "r13_legacy_note": ("r13_minimum_crop is the pre-planner conservative 14-tap table "
+                            "kept for API compatibility. Use the request-specific acquisition "
+                            "plan returned by /inspect for a scientific decision."),
         "note": ("Network access is opt-in: reaching the internet must never be a side "
                  "effect of running a sweep, and a mistyped bounding box against a 0.25 "
                  "degree store can move tens of gigabytes."),
@@ -1218,15 +1260,17 @@ async def zarr_inspect(request: ZarrCropRequest):
     a connection open for two hours would be a worse answer than no endpoint.
     """
     from src.data_layer import zarr_source as zarr_adapter
+    from src.data_layer import crop_planner
 
     try:
-        spec = zarr_adapter.CropSpec(
-            store=request.store, variables=tuple(request.variables),
+        spec = zarr_adapter.crop_for_store(
+            request.store, variables=tuple(request.variables),
             time_start=request.time_start, time_end=request.time_end,
             lat_min=request.lat_min, lat_max=request.lat_max,
             lon_min=request.lon_min, lon_max=request.lon_max,
             levels=tuple(request.levels), n_levels_analysis=request.n_levels_analysis,
         )
+        analysis = _zarr_support_request(request)
     except SpectralEarthError as e:
         # classify() also returns `error` and `context`, which HTTPException does not take;
         # only the status and the client-safe detail cross the wire.
@@ -1250,25 +1294,23 @@ async def zarr_inspect(request: ZarrCropRequest):
     try:
         structure = zarr_adapter.describe_store(dataset, spec.variables)
         assessment = zarr_adapter.assess_access_pattern(dataset, spec)
-        selection = assessment["selection"]
-        lat_key = "latitude" if "latitude" in selection else "lat"
-        lon_key = "longitude" if "longitude" in selection else "lon"
-        try:
-            geometry = zarr_adapter.check_crop_size(
-                int(selection.get(lat_key, 0)), int(selection.get(lon_key, 0)),
-                request.n_levels_analysis)
-        except SpectralEarthError as e:
-            # A crop below the R13 floor is reported, not raised: the caller asked what this
-            # crop *would* cost, and "too small for four levels, minimum 256x256" is the most
-            # useful answer to that question.
-            geometry = {"ok": False, "error": str(e),
-                        "minimum_size": zarr_adapter.minimum_crop_size(
-                            request.n_levels_analysis)}
+        acquisition_plan = crop_planner.plan_acquisition(
+            dataset, spec, analysis, structure=structure)
+        geometry = acquisition_plan["geometry"]
     except SpectralEarthError as e:
         info = classify(e)
         raise HTTPException(status_code=info["status_code"], detail=info["detail"])
     finally:
         dataset.close()
+
+    analysis_flags = "--analysis-levels %d --analysis-transform %s" % (
+        request.n_levels_analysis, request.analysis.transform_family)
+    if request.analysis.transform_family == "swt":
+        analysis_flags += " --wavelet %s --boundary-mode %s" % (
+            request.analysis.wavelet, request.analysis.boundary_mode)
+    else:
+        analysis_flags += " --dtcwt-level1 %s --dtcwt-qshift %s" % (
+            request.analysis.dtcwt_level1, request.analysis.dtcwt_qshift)
 
     return {
         "spec": spec.to_provenance(),
@@ -1276,12 +1318,13 @@ async def zarr_inspect(request: ZarrCropRequest):
         "structure": structure,
         "assessment": assessment,
         "geometry": geometry,
+        "acquisition_plan": acquisition_plan,
         "cli": ("python -m src.data_layer.zarr_source materialise --store %s --variables %s "
-                "--start %s --end %s --lat %g %g --lon %g %g --levels %s"
+                "--start %s --end %s --lat %g %g --lon %g %g --levels %s %s"
                 % (request.store, ",".join(request.variables), request.time_start,
                    request.time_end, request.lat_min, request.lat_max,
                    request.lon_min, request.lon_max,
-                   ",".join(str(v) for v in request.levels))),
+                   ",".join(str(v) for v in request.levels), analysis_flags)),
     }
 
 

@@ -576,7 +576,8 @@ def test_data_source_payload_carries_the_observational_flag(client):
 
 def test_zarr_catalogue_payload_has_the_fields_the_form_reads(client):
     body = client.get("/api/v1/data/zarr/catalogue").json()
-    for key in ("stores", "network_enabled", "network_env_var", "r13_minimum_crop"):
+    for key in ("stores", "network_enabled", "network_env_var", "r13_minimum_crop",
+                "analysis_transforms", "r13_legacy_note"):
         assert key in body
     first = next(iter(body["stores"].values()))
     assert "note" in first, "the store picker shows the note; it must be present"
@@ -634,10 +635,14 @@ def test_zarr_inspect_payload_has_the_nested_keys_the_ui_reads(client, tmp_path)
         "store": path, "variables": ["temperature"],
         "time_start": "2020-01-01", "time_end": "2020-01-01",
         "lat_min": -10.0, "lat_max": 10.0, "lon_min": 0.0, "lon_max": 20.0,
-        "levels": [850, 500], "n_levels_analysis": 4,
+        "levels": [850, 500], "n_levels_analysis": 3,
+        "analysis": {"transform_family": "swt", "levels": 3,
+                     "wavelet": "db3", "boundary_mode": "reflect",
+                     "dtcwt_level1": "near_sym_b", "dtcwt_qshift": "qshift_b"},
     }).json()
 
-    for key in ("spec", "cached", "structure", "assessment", "geometry", "cli"):
+    for key in ("spec", "cached", "structure", "assessment", "geometry",
+                "acquisition_plan", "cli"):
         assert key in body
     for key in ("amplification", "chunk_hostile", "bytes_wanted",
                 "bytes_fetched_estimate", "warning", "advice", "byte_basis", "selection"):
@@ -645,10 +650,21 @@ def test_zarr_inspect_payload_has_the_nested_keys_the_ui_reads(client, tmp_path)
     variable = body["structure"]["variables"]["temperature"]
     for key in ("shape", "chunks", "chunk_megabytes"):
         assert key in variable, "structure.variables[].%s is read by the UI" % key
-    # A crop below the R13 floor reports `ok: False` with an `error` string, and the UI
-    # renders exactly those two keys.
-    assert body["geometry"]["ok"] is False
-    assert isinstance(body["geometry"]["error"], str)
+    # The UI renders both thresholds, the implementation-derived per-level geometry and the
+    # coordinate expansion/cost result rather than one generic error string.
+    geometry = body["geometry"]
+    for key in ("current_shape", "verdict", "meets_absolute_minimum",
+                "meets_recommended_minimum", "absolute_minimum", "recommended_minimum",
+                "levels", "analysis_sha256"):
+        assert key in geometry
+    plan = body["acquisition_plan"]
+    assert set(plan["suggestions"]) == {"absolute", "recommended"}
+    assert len(plan["plan_sha256"]) == 64
+    assert geometry["analysis"]["transform_family"] == "swt"
+    assert geometry["analysis"]["levels"] == 3
+    assert geometry["analysis"]["config"] == {"wavelet": "db3", "mode": "reflect"}
+    assert "--analysis-levels 3 --analysis-transform swt" in body["cli"]
+    assert "--wavelet db3 --boundary-mode reflect" in body["cli"]
     assert isinstance(body["assessment"]["advice"], list)
 
 

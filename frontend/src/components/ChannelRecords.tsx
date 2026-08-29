@@ -355,7 +355,7 @@ export const ChannelRecords: React.FC<ChannelRecordsProps> = ({
                 series={record.channels.map((channel) => ({
                   name: channel.name,
                   x: record.times_seconds,
-                  y: channel.values,
+                  y: channel.values.map((value) => value ?? Number.NaN),
                 }))}
                 title="Channel preview"
                 xLabel="clock (s)"
@@ -381,6 +381,8 @@ export const ChannelRecords: React.FC<ChannelRecordsProps> = ({
                         className="flex justify-between gap-3 border-b border-slate-800 py-1">
                         <span className="text-slate-200">{channel.name}</span>
                         <span className="text-slate-500">
+                          {channel.present_count}/{record.n_rows} present
+                          {' · '}
                           {channel.is_aggregate
                             ? `aggregate over ${channel.support_parent_px} samples`
                             : 'instantaneous'}

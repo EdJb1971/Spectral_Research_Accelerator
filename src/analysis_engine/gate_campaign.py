@@ -17,7 +17,6 @@ import math
 import os
 from pathlib import Path
 import shutil
-import tempfile
 from typing import Any, Dict, Mapping, Optional, Sequence, Tuple, Union
 from dataclasses import dataclass
 
@@ -26,6 +25,7 @@ import numpy as np
 from src.analysis_engine.gate_run import GateStudyPlan
 from src.analysis_engine.cross_scale import support_floor
 from src.core.errors import DataSourceError, InvalidParameterError
+from src.core.publication import publish_new_bytes
 from src.data_layer.cds_source import (
     MINIMUM_FREE_RESERVE_BYTES,
     CDSRegionalRequest,
@@ -356,27 +356,12 @@ class GateCampaign:
 
 def _atomic_write_new(path: Union[str, os.PathLike[str]], payload: bytes) -> None:
     target = Path(path)
-    target.parent.mkdir(parents=True, exist_ok=True)
-    descriptor, name = tempfile.mkstemp(
-        prefix=".%s." % target.name, suffix=".tmp", dir=str(target.parent))
-    temporary = Path(name)
     try:
-        with os.fdopen(descriptor, "wb") as handle:
-            handle.write(payload)
-            handle.flush()
-            os.fsync(handle.fileno())
-        try:
-            if os.name == "nt":
-                os.rename(temporary, target)
-            else:
-                os.link(temporary, target)
-        except FileExistsError:
-            raise FileExistsError("refusing to overwrite gate campaign at %s" % target) from None
-    finally:
-        try:
-            temporary.unlink()
-        except FileNotFoundError:
-            pass
+        publish_new_bytes(target, payload, "gate campaign")
+    except FileExistsError:
+        raise
+    except OSError as exc:
+        raise DataSourceError(str(exc), path=str(target), operation="immutable-publication") from exc
 
 
 def save_gate_campaign(path: Union[str, os.PathLike[str]], campaign: GateCampaign) -> str:

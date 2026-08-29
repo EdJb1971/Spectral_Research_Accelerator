@@ -41,6 +41,8 @@ import os
 from dataclasses import dataclass, field as dc_field
 from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
 
+import numpy as np
+
 from src.core.channel_series import _recordable
 from src.core.errors import InvalidParameterError
 from src.core.family import MAX_ENUMERATED, SearchSpecification
@@ -117,6 +119,23 @@ class PartitionIdentity:
         """Identify a partition from its geometry and lineage. Reads no measure values."""
         provenance = {str(key): _recordable(value)
                       for key, value in dict(series.provenance).items()}
+        present = getattr(series, "present", None)
+        if present is not None:
+            raw = np.asarray(present)
+            if raw.dtype != np.dtype(bool) or raw.shape != (int(series.n_times),
+                                                             int(series.n_channels)):
+                raise InvalidParameterError(
+                    "present", {"dtype": str(raw.dtype), "shape": list(raw.shape)},
+                    "a boolean presence array matching the partition geometry")
+            contiguous = np.ascontiguousarray(raw, dtype=np.uint8)
+            identity = hashlib.sha256()
+            identity.update(b"channel-presence/v1\0")
+            identity.update(_canonical(list(raw.shape)))
+            identity.update(b"\0")
+            identity.update(contiguous.tobytes(order="C"))
+            provenance["presence_sha256"] = identity.hexdigest()
+            provenance["present_count_by_channel"] = [
+                int(value) for value in raw.sum(axis=0, dtype=np.int64)]
         frames = provenance.get("split_frames")
         if not (isinstance(frames, (list, tuple)) and len(frames) == 2):
             frames = (0, int(series.n_times))

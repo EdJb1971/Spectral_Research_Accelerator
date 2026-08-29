@@ -38,6 +38,7 @@ import json
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
+import numpy as np
 
 from src.api.findings import DOMAIN_ATTRIBUTION_CAVEAT, refuse_bare_confidence
 from src.core.builtin_domains import register_builtin_domains
@@ -173,14 +174,26 @@ def _read_payload(series: Any, declaration: Any, domain: str) -> Dict[str, Any]:
     total_rows = int(values.shape[0])
     shown = min(total_rows, PREVIEW_ROWS)
     supports = list(series.support_parent_px or [1.0] * len(series.channels))
+    present = (None if getattr(series, "present", None) is None
+               else np.asarray(series.present, dtype=bool))
 
     entries: List[Dict[str, Any]] = []
     for index, name in enumerate(series.channels):
+        channel_present = (np.ones(total_rows, dtype=bool) if present is None
+                           else present[:, index])
+        present_count = int(channel_present.sum())
         entries.append({
             "name": str(name),
             "support_parent_px": float(supports[index]),
             "is_aggregate": float(supports[index]) > 1.0,
-            "values": [float(v) for v in values[:shown, index]],
+            "present_count": present_count,
+            "absent_count": total_rows - present_count,
+            "presence": (None if present is None
+                         else [bool(value) for value in channel_present[:shown]]),
+            # JSON has no NaN. `presence` distinguishes absent from observed-but-invalid;
+            # both render as a gap, but only the former reduces effective N.
+            "values": [float(value) if np.isfinite(value) else None
+                       for value in values[:shown, index]],
         })
 
     facts = clock_facts(series.times_seconds)

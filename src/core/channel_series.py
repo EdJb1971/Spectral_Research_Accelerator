@@ -189,6 +189,7 @@ class ChannelSeries:
     channels: Sequence[Any]
     times_seconds: np.ndarray
     measures: Mapping[str, np.ndarray]
+    present: Optional[np.ndarray] = None
     usable: Optional[Sequence[bool]] = None
     support_parent_px: Optional[Sequence[Optional[float]]] = None
     unusable_reason: Optional[Mapping[Any, str]] = None
@@ -246,6 +247,48 @@ class ChannelSeries:
                     fix="A per-channel mask must line up with `channels`, or the mask "
                         "applies to the wrong channel.")
 
+        if self.present is not None:
+            raw_present = np.asarray(self.present)
+            if raw_present.dtype != np.dtype(bool):
+                raise InvalidParameterError(
+                    "present", str(raw_present.dtype),
+                    "a boolean (time, channel) array. Presence is a recorded observation, "
+                    "not a weight or a threshold, so integer and floating masks are refused")
+            if raw_present.shape != (times.size, n_channels):
+                raise ShapeMismatchError(
+                    "present", raw_present.shape,
+                    "the (time, channel) grid", (times.size, n_channels),
+                    fix="Presence must state whether each channel surfaced on each clock "
+                        "sample; a per-channel mask cannot represent channels starting and "
+                        "stopping during the record.")
+
+            counts = raw_present.sum(axis=0, dtype=np.int64)
+            declared_usable = ([True] * n_channels if self.usable is None
+                               else [bool(value) for value in self.usable])
+            too_short = [str(self.channels[index]) for index, count in enumerate(counts)
+                         if declared_usable[index] and int(count) < 2]
+            if too_short:
+                raise InvalidParameterError(
+                    "present", too_short,
+                    "at least two present samples for every usable channel. One sample has "
+                    "no clock and no lag can be taken along it")
+
+            # Absence is not inferred from NaN, but the explicit declaration is binding in the
+            # other direction: a value cannot exist at a sample declared not observed. A NaN
+            # where presence is True remains an observed-but-invalid value (edge case E5).
+            for name, values in self.measures.items():
+                array = np.asarray(values, dtype=np.float64)
+                contradiction = (~raw_present) & np.isfinite(array)
+                if np.any(contradiction):
+                    row, column = np.argwhere(contradiction)[0]
+                    raise InvalidParameterError(
+                        "present", False,
+                        "a non-finite placeholder where a sample is absent. Measure %r carries "
+                        "a finite value at row %d for channel %r even though presence is false; "
+                        "per E14 the mask is declared meaning and cannot be inferred from or "
+                        "overruled by the value pattern"
+                        % (name, int(row), str(self.channels[int(column)])))
+
     # ------------------------------------------------------------------ the contract
 
     @property
@@ -270,6 +313,11 @@ class ChannelSeries:
                 support = self.support_parent_px[position]
                 if support is not None:
                     record["support_parent_px"] = support
+            if self.present is not None:
+                present = np.asarray(self.present, dtype=bool)
+                count = int(present[:, position].sum())
+                record["present_count"] = count
+                record["absent_count"] = int(present.shape[0] - count)
             records.append(record)
         return records
 
@@ -317,26 +365,49 @@ def split_channel_series(series: "ChannelSeries", *, train_ratio: float,
             "frames give train=%d and test=%d" % (embargo_frames, n, train_stop,
                                                   max(n - test_start, 0)))
 
-    def take(start: int, stop: int, label: str) -> "ChannelSeries":
+    def take(start: int, stop: int, label: str, *, require_viable: bool) -> "ChannelSeries":
         values = {name: np.asarray(m, dtype=np.float64)[start:stop]
                   for name, m in series.measures.items()}
+        present = (None if series.present is None
+                   else np.asarray(series.present, dtype=bool)[start:stop].copy())
+        usable = ([True] * series.n_channels if series.usable is None
+                  else [bool(value) for value in series.usable])
+        reasons = dict(series.unusable_reason or {})
+        if present is not None:
+            counts = present.sum(axis=0, dtype=np.int64)
+            insufficient = [str(series.channels[index]) for index, count in enumerate(counts)
+                            if usable[index] and int(count) < 2]
+            if insufficient and require_viable:
+                raise InvalidParameterError(
+                    "present", insufficient,
+                    "at least two present samples in the %s partition. A channel wholly "
+                    "absent, or present only once, is refused at the split rather than "
+                    "returned as a usable channel in a partition it does not occupy" % label,
+                    partition=label, present_counts=[int(value) for value in counts])
+            for index, count in enumerate(counts):
+                if int(count) < 2:
+                    usable[index] = False
+                    reasons[series.channels[index]] = (
+                        "fewer than two present samples in the %s partition" % label)
         return ChannelSeries(
             channels=list(series.channels),
             times_seconds=np.asarray(series.times_seconds, dtype=np.float64)[start:stop],
             measures=values,
-            usable=None if series.usable is None else list(series.usable),
+            present=present,
+            usable=(None if series.present is None and series.usable is None else usable),
             support_parent_px=(None if series.support_parent_px is None
                                else list(series.support_parent_px)),
-            unusable_reason=series.unusable_reason,
+            unusable_reason=(series.unusable_reason if present is None else reasons),
             provenance={**dict(series.provenance), "split": label,
                         "split_frames": [start, stop],
                         "split_train_ratio": float(train_ratio),
                         "split_embargo_frames": int(embargo_frames)})
 
-    return {"train": take(0, train_stop, "train"),
-            "embargo": take(train_stop, test_start, "embargo") if embargo_frames >= 2
+    return {"train": take(0, train_stop, "train", require_viable=True),
+            "embargo": take(train_stop, test_start, "embargo", require_viable=False)
+                       if embargo_frames >= 2
                        else None,
-            "test": take(test_start, n, "test")}
+            "test": take(test_start, n, "test", require_viable=True)}
 
 
 def _recordable(value: Any, depth: int = 0) -> Any:
@@ -360,7 +431,7 @@ def from_channel_series(series: ChannelSeriesLike) -> Dict[str, Any]:
     """Summarise any `ChannelSeriesLike` for a lineage record, without holding its arrays."""
     records = list(series.channel_records)
     provenance = dict(series.provenance)
-    return {
+    summary = {
         "n_channels": len(list(series.channels)),
         "channels": [str(label) for label in series.channels],
         "usable": [str(record.get("scale")) for record in records
@@ -376,3 +447,34 @@ def from_channel_series(series: ChannelSeriesLike) -> Dict[str, Any]:
         # arithmetic it describes.
         "provenance": {str(key): _recordable(value) for key, value in provenance.items()},
     }
+    present_counts = {str(record.get("scale")): int(record["present_count"])
+                      for record in records if "present_count" in record}
+    if present_counts:
+        summary["present_count_by_channel"] = present_counts
+    return summary
+
+
+def assert_presence_contract(series: ChannelSeriesLike, violations: Sequence[str],
+                             domain_name: str) -> None:
+    """Enforce ``non_stationary_support`` in both directions (D69, E15).
+
+    A declaration without a mask is an unenforced promise; a mask without the declaration is
+    undeclared semantics. This belongs at the point a series meets a domain because the generic
+    ``ChannelSeries`` can also represent fully observed atmospheric and synthetic records.
+    """
+    declared = "non_stationary_support" in tuple(str(value) for value in violations)
+    supplied = getattr(series, "present", None) is not None
+    if declared and not supplied:
+        raise InvalidParameterError(
+            "domain.violations", "non_stationary_support",
+            "a per-sample boolean presence mask for domain %r. The domain declares that "
+            "channels start and stop, but this record cannot say where; proceeding would "
+            "compute varying pairwise sample sizes under a clock-length bias guard" % domain_name,
+            domain=domain_name)
+    if supplied and not declared:
+        raise InvalidParameterError(
+            "present", "supplied",
+            "the declared violation 'non_stationary_support' for domain %r. A per-sample "
+            "mask changes effective N, decorrelation and the surrogate null, so it cannot "
+            "travel as undeclared metadata" % domain_name,
+            domain=domain_name)

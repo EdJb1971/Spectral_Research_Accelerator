@@ -6488,3 +6488,241 @@ and `Inspect` now says before the transfer that materialising is where this stor
 data, and it does not create an analysis route for GLORYS - it makes the absence of one explicit
 before a transfer is paid for rather than after. D62, D68 and D70 are one pattern recorded three
 times: the registry describing a store more confidently than the code behind it could deliver.
+
+---
+
+## TG12.1b - D72, the generated command uses the store it names (2026-08-29, `ed-dev`) - **COMPLETE**
+
+**Reproduced before the fix.** The Acquire panel's GLORYS materialisation command supplied
+`--levels -0.49402499198913574`. The CLI parsed every level with `int()`, raising before it could
+inspect or materialise anything. It also constructed `CropSpec` directly, so even an integral
+ocean coordinate selected ERA5's default `level` dimension rather than GLORYS's registered
+`elevation` dimension.
+
+**Fixed.** `_parse_level` is integer-first: `850` remains the integer `850`, preserving existing
+ERA5 content keys, while a non-integral finite literal remains a float. The CLI now calls
+`crop_for_store`, the registry-aware constructor already used by the HTTP path. A non-numeric
+coordinate is refused as `InvalidParameterError` with the accepted forms named.
+
+**Focused verification:**
+
+```text
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_documentation.py src/tests/test_zarr_source.py -q
+79 passed, 1 skipped, 5 warnings in 258.93s
+```
+
+The acceptance asserts the exact GLORYS fractional value and `vertical_dim="elevation"`, then
+asserts that ERA5's four pressure levels remain integers on `vertical_dim="level"`. No remote
+store was opened and no field value was transferred.
+
+**Claim boundary.** This verifies the command construction and parsing boundary. It does not
+show that a 51 GB ocean crop has been materialised or that any analysis path consumes one.
+
+---
+
+## TG12.1c - D71, portable immutable evidence publication (2026-08-29, `ed-dev`) - **COMPLETE**
+
+**Measured defect.** With pytest's base directory pinned to the repository drive, the two
+independent-overlap cases failed at `os.link` with `[WinError 1] Incorrect function`. `D:` is
+exFAT and does not support hard links. The original ledger wording said all five private writers
+failed this way; source inspection corrected that claim before the fix was recorded. Only
+`era5_overlap` called `os.link` unconditionally. Gate run, gate campaign, evaluation run and
+evaluation job already selected Windows rename, but duplicated the same scientific guarantee.
+
+**Implemented boundary.** `src/core/publication.py:publish_new_bytes` creates a random temporary
+beside the target, writes the complete byte payload, flushes and `fsync`s it, and then exposes it
+with one atomic no-replace namespace operation:
+
+* Windows: `rename`, which refuses an existing destination and works on the deployed exFAT drive;
+* Linux: `renameat2(RENAME_NOREPLACE)`;
+* macOS: `renamex_np(RENAME_EXCL)`;
+* remaining POSIX fallback: hard-link publication, which is one atomic create-if-absent operation.
+
+There is no existence-check-plus-rename path and no overwrite fallback. A filesystem unable to
+supply the contract raises rather than weakening receipt immutability. All five writers now call
+this primitive and retain their domain-specific `DataSourceError` / `ForecastContractError`
+translation outside it.
+
+**Acceptance on the deployed volume:**
+
+```text
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_publication.py -q
+4 passed, 1 warning in 7.53s
+
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_cds_source.py -q
+19 passed, 1 warning in 36.49s
+
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_publication.py src/tests/test_cds_source.py src/tests/test_gate_run.py src/tests/test_gate_campaign.py src/tests/test_evaluation_run.py src/tests/test_evaluation_job.py -q
+51 passed, 1 warning in 66.64s
+
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_documentation.py -q
+19 passed, 1 warning in 131.20s
+```
+
+`test_publication_race_has_exactly_one_complete_winner` launches eight spawned processes against
+one path under `.pytest-basetemp` on `D:`. Exactly one publishes its complete unique 53,248-byte
+payload and seven receive `FileExistsError`; no temporary survives. Separate cases prove an
+existing target remains byte-identical and an injected unsupported namespace operation leaves
+neither target nor temporary. The primitive reports `windows-rename-no-replace`, so the
+acceptance record identifies the mechanism it actually exercised.
+
+**Whole-platform verification:**
+
+```text
+> .\.venv\Scripts\python.exe -m pytest -q
+2694 passed, 2 skipped, 1 xfailed, 6 warnings in 1500.69s (0:25:00)
+
+> .\.venv\Scripts\python.exe -m src.benchmarks
+PASS 29   FAIL 0   NOT_YET_RUNNABLE 0
+
+> cd frontend
+> npm run build
+✓ 1395 modules transformed.
+dist/index.html                      0.65 kB │ gzip:     0.43 kB
+dist/assets/index-CYmlBRdW.css      28.76 kB │ gzip:     5.98 kB
+dist/assets/index-CyL6ppRC.js   10,148.38 kB │ gzip: 3,045.59 kB
+✓ built in 1m 55s
+```
+
+The two skips are the explicit opt-in live-GCS read and live store probe. The xfail is the
+retained strict historical transform case. The frontend's single 10.15 MB minified JavaScript
+chunk remains a measured usability debt; this slice does not call it acceptable merely because
+the build passed.
+
+**Claim boundary.** The tests establish complete-or-absent visibility, no replacement under an
+eight-process race, and successful publication on the deployed exFAT filesystem. They establish
+process-crash atomicity of the receipt namespace transition. They do **not** establish survival
+of a sudden power loss on every filesystem/storage device, and no such durability claim is made.
+
+---
+
+## TG12.2a - D69, explicit per-sample presence and the masked-lag decision (2026-08-29, `ed-dev`) - **COMPLETE**
+
+**Measured decision before inference.** A controlled Argo-like union clock was constructed from
+20 floats, 146 ten-day cycles and a distinct 12-hour surfacing offset for each float. It contains
+2,920 clock rows and 380 ordered channel pairs. Every pair has `n_effective=0`, longest contiguous
+joint-presence run 0, and no admissible requested lag. Candidate 1 (operate within maximal
+contiguous joint-presence runs) therefore cannot recover an injected coupling at this sampling
+shape without first binning or interpolating observations and inventing simultaneity. Candidate 2
+was selected: intermittently present records refuse frame-lag inference until a physical-time
+estimator exists.
+
+**Implemented contract.** `ChannelSeries.present` is an optional, exact boolean `(time, channel)`
+mask shared by all measures. It is declared rather than inferred from `NaN`: finite values where
+presence is false are contradictions and are refused; a non-finite value where presence is true
+remains the distinct observed-but-invalid state. `non_stationary_support` and the mask are
+enforced in both directions at the tabular/domain boundary. Present counts enter channel records,
+lineage, the channel API and UI. Splits slice the mask and recompute partition viability, including
+an embargo entirely inside a gap. `PartitionIdentity` hashes the exact presence pattern without
+reading measure values, so two held-out records differing only in sampling cannot collide.
+
+**Inference boundary.** `masked_frame_lag_assessment` reports pairwise effective N, longest joint
+run and admissible lags without compacting the clock. Presence-aware `decorrelation_frames` uses
+only pairs genuinely separated by each physical frame lag and refuses if no lag has enough pairs.
+The shift-null primitive can take a declared joint overlap before shifting, holding N constant for
+every surrogate, but this does not license a frame interpretation of the compacted positions.
+Consequently `cross_scale_dependency` refuses a partial mask before producing a statistic, bias
+warning, null or significance claim. An all-true mask takes the literal accepted path and is
+asserted result-identical to no mask.
+
+**Verification:**
+
+```text
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_presence.py -q
+14 passed, 2 warnings in 3.59s
+
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_presence.py src/tests/test_channel_series.py src/tests/test_cross_scale.py src/tests/test_domain_gate.py src/tests/test_preregistration.py src/tests/test_tabular_domain.py src/tests/test_channels_api.py src/tests/test_analysis_api.py src/tests/test_preregistration_api.py src/tests/test_mining_api.py src/tests/test_cross_domain_api.py src/tests/test_frontend_contract.py -q
+386 passed, 5 warnings in 249.57s (0:04:09)
+
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_documentation.py -q
+19 passed, 1 warning in 184.81s (0:03:04)
+
+> .\.venv\Scripts\python.exe tools/audit_docs.py
+defects              : 72 defined, 70 fixed, partial ['D18'], open ['D43']
+test functions       : 2362
+stale inventory rows : none
+claimed suite totals : architecture (2708, 1) / roadmap (2708, 1)
+RESULT               : ok
+
+> .\.venv\Scripts\python.exe -m pytest -q
+2708 passed, 2 skipped, 1 xfailed, 6 warnings in 1806.08s (0:30:06)
+
+> .\.venv\Scripts\python.exe -m src.benchmarks
+PASS 29   FAIL 0   NOT_YET_RUNNABLE 0
+```
+
+The two skips remain the explicit opt-in live-GCS read and live store probe; no public data was
+fetched by this slice. The expected xfail is the retained historical transform case. Frontend
+production build remained clean at 1,395 modules (`10,148.45 kB`, gzip `3,045.62 kB`).
+
+**Claim boundary.** TG12.2a makes intermittent observation support representable, content-bound
+and impossible to pass silently into the existing frame-lag estimator. It does not ingest Argo,
+construct simultaneous profiles, estimate dependence in physical time, or claim that sparse
+asynchronous floats support lagged inference. The refusal is the scientifically supported result.
+
+---
+
+## TG12.1d - D73, transform-derived acquisition planning (2026-08-29, `ed-dev`) - **COMPLETE**
+
+The acquisition planner is metadata-only and transform-owned. Four-level DTCWT with
+`near_sym_b`/`qshift_b` derives a coarsest parent margin of 97 pixels, native margin of 7,
+absolute minimum 240 x 240 and R13 recommended minimum 512 x 512. Four-level SWT/db2 derives
+margin 23, absolute minimum 47 x 47 and recommended minimum 256 x 256. Tests compare these
+values directly with the registered implementations' support functions; no copied filter length
+is accepted as an oracle.
+
+The 384 x 320 fixture request expands symmetrically to exactly 512 x 512 native cells, from
+latitude 36..547 and longitude 104..615, and is re-priced through the coordinate-only chunk
+counter. A source too small to supply the threshold says so. A transform lacking a support
+callback is refused before source access. Plan identity moves with the transform configuration
+or exact coordinate bytes and does not move when only field values change. Explicit
+materialisation below the recommendation is refused before constructing a field selection.
+
+The API/UI contract pins a non-default SWT/db3/reflect request at depth three through Inspect and
+into the generated CLI. Acquire renders both thresholds, per-level support and valid interiors,
+suggested bounds, revised bytes/amplification and the plan digest, and applies the recommendation
+in one action. The production build passes, but visual/assistive inspection is **NOT RUN**: the
+in-app browser bootstrap succeeded and then reported that no browser was available.
+
+```text
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_crop_planner.py src/tests/test_frontend_contract.py src/tests/test_zarr_source.py -q
+160 passed, 1 skipped, 5 warnings in 31.27s
+
+> cd frontend
+> npm run build
+✓ 1395 modules transformed.
+dist/index.html                      0.65 kB | gzip:     0.43 kB
+dist/assets/index-DmSYtdi0.css      28.88 kB | gzip:     6.00 kB
+dist/assets/index-a_MGaxn3.js   10,154.57 kB | gzip: 3,047.07 kB
+✓ built in 1m 15s
+
+> .\.venv\Scripts\python.exe tools/audit_docs.py
+undocumented modules : none
+undocumented routes  : none
+defects              : 73 defined, 71 fixed, partial ['D18'], open ['D43']
+test functions       : 2370
+stale inventory rows : none
+claimed suite totals : architecture (2716, 1) / roadmap (2716, 1)
+RESULT               : ok
+
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_documentation.py -q
+19 passed, 1 warning in 110.86s (0:01:50)
+
+> .\.venv\Scripts\python.exe -m pytest -q
+2716 passed, 2 skipped, 1 xfailed, 6 warnings in 1462.14s (0:24:22)
+
+> .\.venv\Scripts\python.exe -m src.benchmarks
+PASS 29   FAIL 0   NOT_YET_RUNNABLE 0
+```
+
+The two skips remain the explicit opt-in live-GCS read and live store probe. No public field
+values were fetched. The xfail is the retained historical transform case. The warnings are the
+six pre-existing SQLAlchemy, multipart, Python-version-support and empty-slice warnings; none is
+new to this slice. The 10.15 MB minified frontend chunk remains explicit performance/usability
+debt rather than being called acceptable because compilation passed.
+
+**Claim boundary.** The plan verifies transform support, native-coordinate feasibility and
+predicted chunk cost for one exact request. Its recommended threshold applies the named
+128-parent-cell R13 span policy; it is not an empirical power calculation and does not establish
+stationarity, physical relevance, successful transfer, valid returned field values or a future
+scientific finding.

@@ -331,6 +331,29 @@ def crop_for_store(store: str, **kwargs: Any) -> "CropSpec":
     return CropSpec(store=store, **kwargs)
 
 
+def _parse_level(text: str) -> Union[int, float]:
+    """One value on a store's vertical axis, integer-first (D72).
+
+    Integer-first is not a style choice. ERA5's pressure levels are integers and enter the
+    content key as integers, so parsing `850` as `850.0` would move every pinned crop identity
+    and orphan the cache. A value that is not an integer literal -- a GLORYS elevation such as
+    `-0.49402499198913574` -- is kept as a float, which `CropSpec.levels` has accepted since
+    D68 and which the CLI alone still refused.
+    """
+    stripped = text.strip()
+    try:
+        return int(stripped)
+    except ValueError:
+        pass
+    try:
+        return float(stripped)
+    except ValueError:
+        raise InvalidParameterError(
+            "--levels", stripped,
+            "a value on the store's declared vertical axis: an integer pressure level such as "
+            "850, or a fractional value such as an ocean elevation in metres") from None
+
+
 # --------------------------------------------------------------------------- byte counting
 
 class CountingStore(MutableMapping):
@@ -800,11 +823,44 @@ def streaming_content_hash(dataset, time_block: int = 32) -> str:
     return digest.hexdigest()[:32]
 
 
+def _raise_transform_crop_refusal(geometry: Mapping[str, Any],
+                                  plan: Optional[Mapping[str, Any]] = None) -> None:
+    """Translate a planner verdict into the established client-safe R13 refusal."""
+    current = tuple(int(v) for v in geometry["current_shape"])
+    required = tuple(int(v) for v in geometry["recommended_minimum"]["shape"])
+    analysis = geometry["analysis"]
+    suggestion = ((plan or {}).get("suggestions") or {}).get("recommended") or {}
+    bounds = suggestion.get("bounds")
+    remedy = (
+        "%s level %d leaves this crop below the statistically recommended R13 interior. "
+        "The absolute minimum %s is technical computability only; it is not licensed for "
+        "meaningful spatial statistics. "
+        % (analysis["transform_family"].upper(), int(analysis["levels"]),
+           tuple(geometry["absolute_minimum"]["shape"])))
+    if suggestion.get("feasible") and bounds:
+        remedy += (
+            "Expand on the store's native coordinate grid to lat %.12g..%.12g and lon "
+            "%.12g..%.12g, which yields %s; inspect that exact suggestion to review its "
+            "revised transfer and storage cost before materialising."
+            % (bounds["lat_min"], bounds["lat_max"], bounds["lon_min"], bounds["lon_max"],
+               tuple(suggestion["actual_shape"])))
+    else:
+        remedy += str(suggestion.get("reason") or
+                      "Use a larger crop, a shallower preregistered analysis, or another "
+                      "registered transform; do not weaken the grid after seeing the cost.")
+    raise FieldTooSmallError(
+        "%s level-%d statistically recommended cross-scale analysis"
+        % (analysis["transform_family"].upper(), int(analysis["levels"])),
+        current, required, remedy=remedy,
+        geometry=dict(geometry), acquisition_plan_sha256=(plan or {}).get("plan_sha256"))
+
+
 def materialise(spec: "CropSpec", cache_dir: Optional[str] = None,
-                storage_options: Optional[Dict[str, Any]] = None,
-                time_chunk: Optional[int] = None,
-                check_size: bool = True,
-                force: bool = False) -> Dict[str, Any]:
+                 storage_options: Optional[Dict[str, Any]] = None,
+                 time_chunk: Optional[int] = None,
+                 check_size: bool = True,
+                 force: bool = False,
+                 analysis: Any = None) -> Dict[str, Any]:
     """Fetch a crop once and write it to a local, time-contiguous Zarr cache.
 
     Parameters
@@ -815,7 +871,8 @@ def materialise(spec: "CropSpec", cache_dir: Optional[str] = None,
         read a single seek. This is the *inverse* of the remote layout, and reversing it is the
         entire justification for keeping a second copy.
     check_size
-        Enforce the R13 floor against ``spec.n_levels_analysis``. Off only for deliberately
+        Enforce the R13 floor against ``analysis`` when supplied, otherwise the legacy
+        conservative 14-tap check against ``spec.n_levels_analysis``. Off only for deliberately
         small test crops.
 
     Returns a manifest: the spec, the resolved shape, bytes transferred, the content hash and
@@ -827,6 +884,16 @@ def materialise(spec: "CropSpec", cache_dir: Optional[str] = None,
     if is_cached(spec, cache_dir) and not force:
         with open(manifest_path(spec, cache_dir), "r", encoding="utf-8") as handle:
             manifest = json.load(handle)
+        if check_size and analysis is not None:
+            from src.data_layer.crop_planner import assess_shape
+            shape = manifest.get("shape") or {}
+            lat_name = "latitude" if "latitude" in shape else "lat"
+            lon_name = "longitude" if "longitude" in shape else "lon"
+            geometry = assess_shape(int(shape.get(lat_name, 0)),
+                                    int(shape.get(lon_name, 0)), analysis)
+            if not geometry["meets_recommended_minimum"]:
+                _raise_transform_crop_refusal(geometry)
+            manifest["requested_analysis_geometry"] = geometry
         manifest["cache_hit"] = True
         # Zero, not "small". The claim being made is that a repeat costs no network at all.
         manifest["bytes_transferred"] = 0
@@ -837,14 +904,27 @@ def materialise(spec: "CropSpec", cache_dir: Optional[str] = None,
     try:
         structure = describe_store(dataset, spec.variables)
         assessment = assess_access_pattern(dataset, spec)
-        subset = select(dataset, spec)
+        acquisition_plan = None
+        if check_size and analysis is not None:
+            from src.data_layer.crop_planner import plan_acquisition
+            acquisition_plan = plan_acquisition(
+                dataset, spec, analysis, structure=structure)
+            geometry = acquisition_plan["geometry"]
+            if not geometry["meets_recommended_minimum"]:
+                _raise_transform_crop_refusal(geometry, acquisition_plan)
+        else:
+            selection = assessment["selection"]
+            lat_key = "latitude" if "latitude" in selection else "lat"
+            lon_key = "longitude" if "longitude" in selection else "lon"
+            geometry = (check_crop_size(
+                int(selection[lat_key]), int(selection[lon_key]), spec.n_levels_analysis)
+                        if check_size else {"ok": None, "skipped": "check_size=False"})
 
+        # The scientific geometry refusal above uses coordinate/chunk metadata only. Construct
+        # the data-variable selection only after it passes, and load values later still.
+        subset = select(dataset, spec)
         lat_name = "latitude" if "latitude" in subset.sizes else "lat"
         lon_name = "longitude" if "longitude" in subset.sizes else "lon"
-        height = int(subset.sizes[lat_name])
-        width = int(subset.sizes[lon_name])
-        geometry = (check_crop_size(height, width, spec.n_levels_analysis)
-                    if check_size else {"ok": None, "skipped": "check_size=False"})
 
         bytes_before = counter.bytes_read
         loaded = subset.load()
@@ -899,6 +979,11 @@ def materialise(spec: "CropSpec", cache_dir: Optional[str] = None,
                 "time-contiguous for this region, so reading all frames at one location is "
                 "one read instead of %d" % n_time),
         }
+        # Preserve the legacy manifest schema exactly unless the caller explicitly requested
+        # transform-aware planning. New science records get the complete immutable plan;
+        # historical callers do not acquire a semantically empty null field.
+        if acquisition_plan is not None:
+            manifest["acquisition_plan"] = acquisition_plan
         with open(manifest_path(spec, cache_dir), "w", encoding="utf-8") as handle:
             json.dump(manifest, handle, indent=2, sort_keys=True)
         return manifest
@@ -1287,6 +1372,11 @@ def _main(argv: Optional[Sequence[str]] = None) -> int:
                                  metavar=("MIN", "MAX"))
         crop_parser.add_argument("--levels", default="850,700,500,300")
         crop_parser.add_argument("--analysis-levels", type=int, default=4)
+        crop_parser.add_argument("--analysis-transform", default="dtcwt")
+        crop_parser.add_argument("--wavelet", default="db2")
+        crop_parser.add_argument("--boundary-mode", default="periodic")
+        crop_parser.add_argument("--dtcwt-level1", default="near_sym_b")
+        crop_parser.add_argument("--dtcwt-qshift", default="qshift_b")
         crop_parser.add_argument("--cache-dir", default=DEFAULT_CACHE_DIR)
         crop_parser.add_argument("--time-chunk", type=int, default=None)
         crop_parser.add_argument("--no-size-check", action="store_true")
@@ -1304,22 +1394,36 @@ def _main(argv: Optional[Sequence[str]] = None) -> int:
         parser.print_help()
         return 2
 
-    spec = CropSpec(
-        store=args.store,
+    # `crop_for_store`, not `CropSpec`, so the vertical axis comes from the store's own
+    # declaration rather than from ERA5's default -- the CLI was building a `level` selection
+    # for every store, including one whose axis is `elevation` (D72). Levels are parsed
+    # integer-first so that ERA5's `850,700,500,300` stays integral and every pinned content
+    # key is byte-identical, while a fractional GLORYS elevation is kept as a float instead of
+    # raising `invalid literal for int()`.
+    spec = crop_for_store(
+        args.store,
         variables=tuple(v.strip() for v in args.variables.split(",") if v.strip()),
         time_start=args.start, time_end=args.end,
         lat_min=args.lat[0], lat_max=args.lat[1],
         lon_min=args.lon[0], lon_max=args.lon[1],
-        levels=tuple(int(v) for v in args.levels.split(",") if v.strip()),
+        levels=tuple(_parse_level(v) for v in args.levels.split(",") if v.strip()),
         n_levels_analysis=args.analysis_levels,
     )
+    from src.data_layer.crop_planner import TransformSupportRequest, plan_acquisition
+    analysis = TransformSupportRequest(
+        transform_family=args.analysis_transform, levels=args.analysis_levels,
+        wavelet=args.wavelet, boundary_mode=args.boundary_mode,
+        dtcwt_level1=args.dtcwt_level1, dtcwt_qshift=args.dtcwt_qshift)
     if args.command == "inspect":
         dataset, _counter = open_dataset(spec.uri, chunks={})
         try:
+            structure = describe_store(dataset, spec.variables)
             report = {
                 "spec": spec.to_provenance(),
-                "structure": describe_store(dataset, spec.variables),
+                "structure": structure,
                 "assessment": assess_access_pattern(dataset, spec),
+                "acquisition_plan": plan_acquisition(
+                    dataset, spec, analysis, structure=structure),
             }
         finally:
             dataset.close()
@@ -1327,7 +1431,7 @@ def _main(argv: Optional[Sequence[str]] = None) -> int:
         return 0
 
     manifest = materialise(spec, cache_dir=args.cache_dir, time_chunk=args.time_chunk,
-                           check_size=not args.no_size_check)
+                           check_size=not args.no_size_check, analysis=analysis)
     print(json.dumps(manifest, indent=2, default=str))
     return 0
 

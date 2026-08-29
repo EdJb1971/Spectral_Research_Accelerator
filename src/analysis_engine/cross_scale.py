@@ -53,7 +53,7 @@ from typing import Any, Callable, Dict, List, Optional, Sequence
 import numpy as np
 
 from src.core.channel_series import ChannelSeriesLike, require_gate_measure
-from src.core.errors import InvalidParameterError
+from src.core.errors import InvalidParameterError, ShapeMismatchError
 from src.core.family import SearchAxis, SearchSpecification, SearchTerm
 from src.core.lag_policy import BoundLagPolicy, bind as bind_lag_policy, support_floor
 from src.statistics.multiple_comparisons import check_power
@@ -442,7 +442,71 @@ def lagged_mutual_information(source: Sequence[float], target: Sequence[float], 
 
 # ---------------------------------------------------------------- the dependency sweep
 
-def decorrelation_frames(x: Sequence[float]) -> int:
+def _presence_vector(present: Sequence[bool], size: int, name: str = "present") -> np.ndarray:
+    raw = np.asarray(present)
+    if raw.dtype != np.dtype(bool):
+        raise InvalidParameterError(name, str(raw.dtype), "a boolean presence vector")
+    if raw.shape != (size,):
+        raise ShapeMismatchError(name, raw.shape, "the series clock", (size,),
+                                 fix="Presence and values must describe the same samples.")
+    return raw
+
+
+def _longest_true_run(mask: np.ndarray) -> int:
+    padded = np.concatenate(([False], np.asarray(mask, dtype=bool), [False])).astype(np.int8)
+    edges = np.diff(padded)
+    starts = np.flatnonzero(edges == 1)
+    stops = np.flatnonzero(edges == -1)
+    return int(np.max(stops - starts)) if starts.size else 0
+
+
+def masked_frame_lag_assessment(present: np.ndarray, *, lags: Sequence[int],
+                                estimator: str, theiler: int = 1) -> Dict[str, Any]:
+    """Price Candidate 1 without pretending asynchronous observations are simultaneous.
+
+    A frame lag can only be evaluated inside a contiguous run where both channels are present.
+    This reports whether each ordered pair has such a run long enough for the estimator, the
+    requested lag and the shift-null exclusion windows. It does not bin, interpolate or compact
+    the clock. TG12.2a measured this candidate on an Argo-like union clock and selected refusal
+    because no float pair had even one jointly present sample.
+    """
+    raw = np.asarray(present)
+    if raw.dtype != np.dtype(bool) or raw.ndim != 2:
+        raise InvalidParameterError(
+            "present", {"dtype": str(raw.dtype), "shape": list(raw.shape)},
+            "a boolean (time, channel) presence array")
+    requested = [int(value) for value in lags]
+    if not requested or any(value < 1 for value in requested):
+        raise InvalidParameterError("lags", requested, "one or more positive frame lags")
+    minimum = 6 if estimator == "transfer_entropy" else 4
+    window = max(1, int(theiler))
+    rows: List[Dict[str, Any]] = []
+    for source in range(raw.shape[1]):
+        for target in range(raw.shape[1]):
+            if source == target:
+                continue
+            joint = raw[:, source] & raw[:, target]
+            longest = _longest_true_run(joint)
+            rows.append({
+                "source_index": int(source),
+                "target_index": int(target),
+                "n_effective": int(joint.sum()),
+                "longest_contiguous_joint_run": int(longest),
+                "admissible_lags": [
+                    lag for lag in requested
+                    if longest >= int(lag) + minimum + 2 * window],
+            })
+    return {
+        "candidate": "maximal_contiguous_joint_presence_runs",
+        "estimator_minimum_samples": minimum,
+        "theiler_window_frames": window,
+        "pairs": rows,
+        "n_pairs_with_any_admissible_lag": int(sum(bool(row["admissible_lags"])
+                                                   for row in rows)),
+    }
+
+
+def decorrelation_frames(x: Sequence[float], present: Optional[Sequence[bool]] = None) -> int:
     """First lag at which the autocorrelation falls below `1/e`, floored at 1.
 
     Used as a Theiler window, not as a claim about the physics: it is the distance beyond
@@ -450,18 +514,50 @@ def decorrelation_frames(x: Sequence[float]) -> int:
     to exceed before it counts as a shuffle.
     """
     a = np.asarray(x, dtype=np.float64)
-    a = a[np.isfinite(a)]
-    if a.size < 4:
-        return 1
-    centred = a - a.mean()
-    variance = float((centred ** 2).sum())
-    if variance <= 0:
-        return 1
+    if present is None:
+        # The accepted atmospheric path remains literally unchanged.
+        a = a[np.isfinite(a)]
+        if a.size < 4:
+            return 1
+        centred = a - a.mean()
+        variance = float((centred ** 2).sum())
+        if variance <= 0:
+            return 1
+        threshold = 1.0 / math.e
+        for lag in range(1, a.size // 2):
+            acf = float((centred[:-lag] * centred[lag:]).sum()) / variance
+            if abs(acf) < threshold:
+                return lag
+        return max(1, a.size // 2)
+
+    observed = _presence_vector(present, a.size) & np.isfinite(a)
+    if np.all(observed):
+        return decorrelation_frames(a)
+    if int(observed.sum()) < 4:
+        raise CrossScaleError(
+            "fewer than four observed finite samples remain, so no decorrelation window can "
+            "be measured without closing gaps")
+    mean = float(a[observed].mean())
+    centred = a - mean
     threshold = 1.0 / math.e
+    any_candidate = False
     for lag in range(1, a.size // 2):
-        acf = float((centred[:-lag] * centred[lag:]).sum()) / variance
+        paired = observed[:-lag] & observed[lag:]
+        if int(paired.sum()) < 4:
+            continue
+        any_candidate = True
+        left = centred[:-lag][paired]
+        right = centred[lag:][paired]
+        denominator = math.sqrt(float(np.sum(left ** 2)) * float(np.sum(right ** 2)))
+        if denominator <= 0:
+            return 1
+        acf = float(np.sum(left * right)) / denominator
         if abs(acf) < threshold:
             return lag
+    if not any_candidate:
+        raise CrossScaleError(
+            "no physical frame lag has four pairs that are both genuinely present. Closing "
+            "the gaps would invent adjacency, so the Theiler window is undefined")
     return max(1, a.size // 2)
 
 
@@ -504,7 +600,8 @@ def admissible_shifts(n: int, lag: int, theiler: int) -> np.ndarray:
 
 def _shift_null(source: np.ndarray, target: np.ndarray, lag: int, bins: int, wrap: bool,
                 statistic: Callable[..., float], n_surrogates: int, seed: int,
-                theiler: int = 1) -> np.ndarray:
+                theiler: int = 1,
+                joint_present: Optional[Sequence[bool]] = None) -> np.ndarray:
     """Circular-shift surrogates of the source series, outside the admissible-shift windows.
 
     The right null for a lagged coupling claim (rule R1's fourth bullet): each series keeps
@@ -513,6 +610,10 @@ def _shift_null(source: np.ndarray, target: np.ndarray, lag: int, bins: int, wra
     (rule R12), so leaving it intact is what makes the comparison mean anything - and
     `admissible_shifts` is what stops the ensemble quietly keeping an alignment as well.
     """
+    if joint_present is not None:
+        present = _presence_vector(joint_present, source.size, "joint_present")
+        source = np.asarray(source, dtype=np.float64)[present]
+        target = np.asarray(target, dtype=np.float64)[present]
     rng = np.random.default_rng(seed)
     shifts = admissible_shifts(source.size, lag, theiler)
     out = np.empty(n_surrogates, dtype=np.float64)
@@ -566,6 +667,25 @@ def cross_scale_dependency(
 
     matrix = signature.to_matrix(measure)
     n_times, n_scales = matrix.shape
+    present = getattr(signature, "present", None)
+    if present is not None:
+        raw_present = np.asarray(present)
+        if raw_present.dtype != np.dtype(bool) or raw_present.shape != matrix.shape:
+            raise InvalidParameterError(
+                "present", {"dtype": str(raw_present.dtype), "shape": list(raw_present.shape)},
+                "a boolean presence array with the same (time, channel) shape as the measure")
+        if not np.all(raw_present):
+            assessment = masked_frame_lag_assessment(
+                raw_present, lags=lags, estimator=estimator, theiler=1)
+            raise InvalidParameterError(
+                "lags", [int(value) for value in lags],
+                "no frame-lag inference for a record with intermittent per-sample presence. "
+                "On a union clock, a shift in observed positions is not a shift in physical "
+                "time, and compacting or binning would invent adjacency or simultaneity. Use "
+                "a future physical-time estimator; until then this record may be described "
+                "and reduced but not passed to the lagged dependency sweep",
+                masked_lag_decision="refuse_frame_lags",
+                contiguous_candidate=assessment)
     floors = lag_floor.floors(signature, cadence_seconds)
     warnings: List[str] = list(floors["warnings"])
 

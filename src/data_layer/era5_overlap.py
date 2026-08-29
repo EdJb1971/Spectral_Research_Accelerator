@@ -20,6 +20,7 @@ from typing import Any, Dict, Mapping, Optional, Sequence, Tuple, Union
 import numpy as np
 
 from src.core.errors import DataSourceError, InvalidParameterError
+from src.core.publication import publish_new_bytes
 from src.data_layer.regional_forecast import CANONICAL_VARIABLES, VARIABLE_ALIASES
 from src.data_layer.zarr_source import (
     CATALOGUE,
@@ -53,25 +54,12 @@ def overlap_receipt_path(spec: CropSpec, cache_dir: Optional[str] = None) -> Pat
 
 
 def _atomic_write_new(path: Path, payload: bytes) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    temporary = path.with_suffix(path.suffix + ".tmp")
     try:
-        with temporary.open("xb") as handle:
-            handle.write(payload)
-            handle.flush()
-            os.fsync(handle.fileno())
-        try:
-            os.link(temporary, path)
-        except FileExistsError:
-            raise FileExistsError("refusing to overwrite ERA5 overlap receipt at %s" % path) from None
-        except OSError as exc:
-            raise DataSourceError(
-                "cannot atomically publish ERA5 overlap receipt at %s: %s" % (path, exc)) from exc
-    finally:
-        try:
-            temporary.unlink()
-        except FileNotFoundError:
-            pass
+        publish_new_bytes(path, payload, "ERA5 overlap receipt")
+    except FileExistsError:
+        raise
+    except OSError as exc:
+        raise DataSourceError(str(exc), path=str(path), operation="immutable-publication") from exc
 
 
 def load_overlap_receipt(path: Union[str, os.PathLike[str]]) -> Dict[str, Any]:

@@ -11,12 +11,12 @@ from __future__ import annotations
 import hashlib
 import json
 import os
-import tempfile
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any, Dict, Mapping, Union
 
 from src.data_layer.zarr_source import CropSpec, open_cached_lazy
+from src.core.publication import publish_new_bytes
 from src.forecasting.adapter import ForecastContractError
 from src.forecasting.ensemble_evaluation import (
     DEFAULT_EVALUATION_TILE_BYTES,
@@ -179,34 +179,12 @@ def _run_request(
 def _atomic_write_new(path: Union[str, os.PathLike[str]], payload: bytes) -> None:
     """Publish complete bytes atomically and refuse an existing target, including races."""
     target = Path(path)
-    target.parent.mkdir(parents=True, exist_ok=True)
-    descriptor, temporary_name = tempfile.mkstemp(
-        prefix=".%s." % target.name, suffix=".tmp", dir=str(target.parent))
-    temporary = Path(temporary_name)
     try:
-        with os.fdopen(descriptor, "wb") as handle:
-            handle.write(payload)
-            handle.flush()
-            os.fsync(handle.fileno())
-        try:
-            if os.name == "nt":
-                # Windows rename is atomic and refuses an existing target. Unlike a hard link,
-                # it also works on common removable-drive filesystems that support atomic rename.
-                os.rename(temporary, target)
-            else:
-                # POSIX rename replaces its target, so publish with a same-filesystem hard link.
-                os.link(temporary, target)
-        except FileExistsError:
-            raise FileExistsError(
-                "refusing to overwrite evaluation run receipt at %s" % target) from None
-        except OSError as exc:
-            raise ForecastContractError(
-                "cannot atomically publish evaluation run receipt at %s: %s" % (target, exc)) from exc
-    finally:
-        try:
-            temporary.unlink()
-        except FileNotFoundError:
-            pass
+        publish_new_bytes(target, payload, "evaluation run receipt")
+    except FileExistsError:
+        raise
+    except OSError as exc:
+        raise ForecastContractError(str(exc)) from exc
 
 
 def save_evaluation_run_receipt(

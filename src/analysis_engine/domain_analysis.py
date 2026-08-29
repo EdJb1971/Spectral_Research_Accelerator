@@ -32,9 +32,12 @@ from __future__ import annotations
 
 from typing import Any, Dict, Mapping, Optional, Sequence
 
+import numpy as np
+
 from src.analysis_engine.cross_scale import (GateProtocol, cross_scale_dependency,
                                              evaluate_replication_gate)
-from src.core.channel_series import (ChannelSeries, ChannelSeriesLike, from_channel_series,
+from src.core.channel_series import (ChannelSeries, ChannelSeriesLike,
+                                     assert_presence_contract, from_channel_series,
                                      split_channel_series)
 from src.core.domain import DomainDeclaration
 from src.core.errors import InvalidParameterError
@@ -96,6 +99,7 @@ def _require_declared_support(series: ChannelSeriesLike, declaration: DomainDecl
 def _run(series: ChannelSeriesLike, declaration: DomainDeclaration, *, claim: str,
          lags: Sequence[int], cadence_seconds: float, measure: str,
          bound: BoundLagPolicy, **kwargs: Any) -> Dict[str, Any]:
+    assert_presence_contract(series, declaration.violations, declaration.name)
     _require_declared_support(series, declaration, bound)
     result = cross_scale_dependency(series, lags=lags, cadence_seconds=cadence_seconds,
                                     measure=measure, lag_floor=bound, **kwargs)
@@ -108,6 +112,12 @@ def _run(series: ChannelSeriesLike, declaration: DomainDeclaration, *, claim: st
     # should not have to know which policy writes which keys to find the number that set the
     # boundary of the study.
     result["applied_lag_floor"] = bound.applied_floor(result["support_floor"])
+    present = getattr(series, "present", None)
+    if present is not None and bool(np.all(np.asarray(present, dtype=bool))):
+        result["warnings"] = list(result.get("warnings", [])) + [
+            "domain %r declares 'non_stationary_support' and supplied the required mask; "
+            "this particular record is fully present. The declaration describes the source, "
+            "not a promise that every query contains a gap." % declaration.name]
     if claim == ASSOCIATION_CLAIM:
         result["warnings"] = list(result.get("warnings", [])) + [
             "domain %r declares no admissible lag floor (rule R21), so this result is an "

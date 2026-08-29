@@ -707,10 +707,13 @@ def test_inspect_endpoint_reports_hostility_without_transferring_data(client, ho
     assert "CHUNK-HOSTILE" in body["assessment"]["warning"]
     assert body["cached"] is False
     assert body["spec"]["content_key"]
-    # A crop below the R13 floor is *reported*, not raised: the caller asked what this crop
-    # would cost, and "too small, minimum 512x512" is the answer to that question.
-    assert body["geometry"]["ok"] is False
-    assert body["geometry"]["minimum_size"] == 512
+    # A crop below the R13 recommendation is *planned*, not raised: inspection reports the
+    # technical floor, the meaningful-statistics floor and native-grid expansion before data.
+    assert body["geometry"]["meets_recommended_minimum"] is False
+    assert body["geometry"]["recommended_minimum"]["shape"] == [512, 512]
+    assert body["geometry"]["absolute_minimum"]["shape"] == [240, 240]
+    assert body["acquisition_plan"]["suggestions"]["recommended"]["feasible"] is False
+    assert "--analysis-levels 4 --analysis-transform dtcwt" in body["cli"]
     # And the response hands back the command that would do it for real.
     assert "materialise" in body["cli"]
 
@@ -780,3 +783,36 @@ def test_live_weatherbench_store_matches_the_recorded_structure():
         assert assessment["amplification"] == pytest.approx(51.1, abs=0.5)
     finally:
         dataset.close()
+
+
+def test_cli_builds_a_crop_on_the_store_s_own_vertical_axis():
+    """The command the UI hands the researcher has to work on the store it names (D72).
+
+    Two defects in one generated line: `--levels` was parsed with `int()`, so a fractional
+    GLORYS elevation raised `invalid literal for int()`; and the spec was built with `CropSpec`
+    rather than `crop_for_store`, so every crop selected on ERA5's `level` axis whatever store
+    it named. Copy-pasting the Inspect panel's own command could not succeed.
+    """
+    from src.data_layer.zarr_source import _parse_level, crop_for_store
+
+    # Integer-first: ERA5 pressure levels stay integral so no pinned content key moves.
+    assert _parse_level("850") == 850 and isinstance(_parse_level("850"), int)
+    fractional = _parse_level(" -0.49402499198913574 ")
+    assert isinstance(fractional, float) and fractional == -0.49402499198913574
+    with pytest.raises(InvalidParameterError):
+        _parse_level("not-a-level")
+
+    ocean = crop_for_store(
+        "glorys_phy_my_0p083deg_p1d", variables=("thetao",),
+        time_start="1993-01-01", time_end="1995-12-31",
+        lat_min=-50, lat_max=-30, lon_min=160, lon_max=180, levels=(fractional,))
+    assert ocean.vertical_dim == "elevation"
+    assert ocean.levels == (-0.49402499198913574,)
+
+    atmospheric = crop_for_store(
+        "era5_0p25_6h", variables=("temperature",),
+        time_start="2020-01-01", time_end="2020-01-02",
+        lat_min=-50, lat_max=-30, lon_min=160, lon_max=180,
+        levels=tuple(_parse_level(v) for v in "850,700,500,300".split(",")))
+    assert atmospheric.vertical_dim == "level"
+    assert atmospheric.levels == (850, 700, 500, 300)

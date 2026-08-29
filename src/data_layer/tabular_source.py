@@ -42,7 +42,7 @@ from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
 
 import numpy as np
 
-from src.core.channel_series import ChannelSeries
+from src.core.channel_series import ChannelSeries, assert_presence_contract
 from src.core.domain import KNOWN_VIOLATIONS, AxisSpec, DomainDeclaration, declaration_for
 from src.core.errors import InvalidParameterError, MissingParameterError
 from src.core.onboarding import DOMAIN_ONBOARDINGS, is_onboarded
@@ -134,6 +134,7 @@ def read_tabular_channels(
         support_parent_px=[supports[name] for name in table.channel_columns],
         provenance=dict(declaration.provenance),
     )
+    assert_presence_contract(series, declaration.violations, declaration.name)
     return series, declaration
 
 
@@ -593,6 +594,7 @@ def read_channels_for_domain(
         support_parent_px=[supports[name] for name in table.channel_columns],
         provenance=provenance,
     )
+    assert_presence_contract(series, declaration.violations, declaration.name)
     return series, declaration
 
 

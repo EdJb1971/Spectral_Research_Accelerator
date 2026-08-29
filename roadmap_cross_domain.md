@@ -1955,9 +1955,12 @@ suite, benchmark and documentation evidence in `VERIFICATION.md`.
    the sky and closes the violation vocabulary. **No public dataset has been ingested by any of
    them yet.**
 
-**Open defects:** D43 (the atmospheric real-data gate has not run through a feasible acquisition
-path) and D18 (partial — ROCm/MPS and whole-platform device parity remain unverified). Neither
-blocks this line. TG12.1 measured a laptop-feasible long regional *ocean* layout, but that does
+**Open defect:** D43 (the atmospheric real-data gate has not run through a feasible acquisition
+path). D18 remains partial — ROCm/MPS and whole-platform device parity are unverified. D71 is
+closed by the shared portable immutable-publication boundary after the deployed exFAT volume
+exposed the independent-overlap writer's hard-link assumption. D69 is closed by TG12.2a's
+explicit presence contract and scientific refusal of asynchronous frame lags. TG12.1 measured a
+laptop-feasible long regional *ocean* layout, but that does
 not close D43: it neither acquires ERA5 nor supplies the required cross-route overlap evidence.
 
 ---
@@ -3003,6 +3006,45 @@ numbers; `applicable` is derived from the crop's own declared vertical axis; and
 **before** a 51 GB transfer that materialising is where this store currently stops. ERA5 fields
 are unchanged, asserted. Recorded in `architecture.md` §3.6zpb and `VERIFICATION.md`.
 
+**TG12.1b D72 — the generated materialisation command uses the store it names. DONE
+(2026-08-29, `ed-dev`).** The Inspect panel emitted a fractional GLORYS elevation that the CLI
+then parsed with `int()`, and the CLI constructed `CropSpec` directly so every store inherited
+ERA5's `level` axis. Levels now parse integer-first — preserving every integer ERA5 content key
+while retaining exact fractional ocean coordinates — and the command enters through
+`crop_for_store`, the same registry-aware constructor as the HTTP path. An invalid level is
+refused by name. Focused Zarr/documentation acceptance passes; no value transfer is claimed.
+
+**TG12.1c D71 — portable immutable evidence publication. DONE (2026-08-29, `ed-dev`).** Pinning
+pytest to the deployed `D:` volume exposed an unconditional hard-link assumption in the ERA5
+overlap receipt: exFAT supports atomic rename but not hard links. Five local implementations of
+the same scientific boundary are now one `core/publication.py` primitive. It flushes complete
+same-directory bytes and publishes with an OS atomic no-replace operation; it never falls back to
+check-then-rename or overwrite. The acceptance race launches eight spawned publishers on `D:`,
+gets exactly one complete winner and seven refusals, preserves an existing target byte-for-byte,
+and cleans up an injected unsupported-filesystem failure. The two CDS cases that found D71 now
+pass on exFAT. This establishes process-crash atomicity, not a claim about sudden-power-loss
+durability of every storage device.
+
+**TG12.1d D73 — transform-derived acquisition planning. DONE (2026-08-29, `ed-dev`).** A
+researcher should not learn that a crop has no defensible transform interior after paying for it.
+The store probe remains a source observation; a separate immutable plan now combines its
+metadata with the exact transform family, filters and depth. SWT and DTCWT publish their own
+support callbacks through the transform registry, so the acquisition layer contains no copied
+filter length and an external transform can join without a planner edit.
+
+The plan reports an absolute technical minimum and a named R13 recommended minimum, each derived
+from per-level valid interiors. It expands native coordinate indices symmetrically, shifts at
+edges, states when the source is too small, and re-prices the proposed bounds against actual
+chunks before transfer. Acquire renders all of this, exposes the exact configuration, and applies
+the recommended bounds in one action. The CLI preserves the same configuration—including the
+analysis depth that D73 found it had dropped—and explicit materialisation refuses below the
+recommended threshold before constructing a field selection. Four-level DTCWT currently derives
+240 x 240 absolute and 512 x 512 recommended; SWT/db2 derives 47 x 47 and 256 x 256. The
+recommendation is filter support plus a declared 128-parent-cell statistical-span policy, not a
+claim of power or discovery. No public value was transferred. Focused backend and production
+build acceptance pass; rendered browser inspection remains NOT RUN because no browser was
+available in the in-app runtime. Recorded in `architecture.md` §3.6zpc and `VERIFICATION.md`.
+
 **Where this leaves G12.** GLORYS delivered the store seam, the coordinate-only cost estimator
 (D67) and a vertical axis the request layer can actually express (D68) — and no analysis route,
 because R17 admitted it as a *source* under `reanalysis`, not as a second domain. The analysis
@@ -3091,7 +3133,8 @@ declared violation nothing acts on."* **Logged as D69 and closed first.**
 
 ##### The parts
 
-**TG12.2a — Close D69: per-sample presence in the channel-series contract.** The prerequisite,
+**TG12.2a — Close D69: per-sample presence in the channel-series contract. DONE
+(2026-08-29, `ed-dev`).** The prerequisite,
 planned in full here because it changes `ChannelSeries`, which is the one interface the accepted
 falsification layer consumes. Everything downstream of it inherits whatever this slice gets wrong.
 
@@ -3196,8 +3239,8 @@ exactly the observed sample size and F4 closes. This has a consequence that must
 than absorbed: the overlap subsequence is **not contiguous in clock time**, so a shift of *k*
 positions within it is not a lag of *k* frames of anything.
 
-That last point is the one genuinely open sub-decision in TG12.2a, and it is recorded as open
-rather than guessed:
+That last point was the one genuinely open sub-decision in TG12.2a, and was measured rather
+than guessed:
 
 *   **Candidate 1 — run within maximal contiguous presence runs.** Admissible lags are evaluated
     inside each maximal run of joint presence; a pair whose longest run does not support
@@ -3209,11 +3252,14 @@ rather than guessed:
     conversion for the second violation. This would make Argo an association-only domain until a
     physical-time estimator exists.
 
-**These are decided by measurement, not by preference:** both are implemented behind the same seam
-and run against a synthetic float array with known injected coupling and a known presence pattern.
-Candidate 1 is adopted only if it recovers the injected coupling at a sparsity comparable to real
-Argo; otherwise Candidate 2 is adopted and the reduced claim is stated in the domain's refusals.
-The measurement and its parameters go in `VERIFICATION.md` whichever way it falls.
+**Measured outcome: Candidate 2.** The controlled Argo-like clock contains 20 floats, 146
+ten-day cycles and a distinct 12-hour surfacing offset for each float. Its union has 2,920 rows
+and 380 ordered pairs. Pairwise overlap is zero throughout: no pair has one simultaneous sample,
+let alone the six required for transfer entropy plus a positive lag and Theiler exclusions.
+Candidate 1 therefore cannot recover an injected lag without first inventing simultaneity by
+binning or interpolation. The instrument refuses every frame-lag sweep on an intermittently
+present mask until a physical-time estimator exists. The complete measurement and refusal
+context are captured in `VERIFICATION.md`.
 
 ##### The work, in order
 
@@ -3299,6 +3345,14 @@ Worked through explicitly, so implementation meets them as decided cases rather 
 | E15 | `support_parent_px` on a channel present in only part of the record | Unchanged — the footprint is a property of the representation, not of the sampling — but recorded alongside the present-count so a reader can see both |
 
 ##### What TG12.2a does not do
+
+**Acceptance met.** The contract distinguishes absence from observed-invalid values, binds the
+mask in both declaration directions, recomputes partition viability, hashes presence into held-out
+identity without reading measures, reports present counts through lineage/API/UI, measures
+decorrelation only from genuinely lag-separated pairs and fixes the audit null's N before any
+shift. A partial mask refuses before any lag statistic is produced; an all-true mask returns the
+same dependency result as the no-mask path. The focused presence suite passes, the expanded
+cross-domain/API regression passes, and the full-suite result is recorded in `VERIFICATION.md`.
 
 It does not fetch Argo, define `ProfileSpec`, or register a reduction. It does not claim that a
 masked series is *analysable* — A-D5's measurement may conclude that frame lags are inadmissible

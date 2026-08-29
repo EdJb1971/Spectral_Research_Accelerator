@@ -482,6 +482,12 @@ export interface ZarrCatalogueResponse {
   missing_dependencies: string[];
   cache_dir: string;
   r13_minimum_crop: Record<string, number>;
+  analysis_transforms: Record<string, {
+    description: string;
+    params: Record<string, string>;
+    capabilities: Record<string, unknown>;
+  }>;
+  r13_legacy_note: string;
   note: string;
 }
 
@@ -521,6 +527,14 @@ export interface AcquisitionCatalogue {
   note: string;
 }
 
+export interface ZarrAnalysisRequest {
+  transform_family: 'swt' | 'dtcwt';
+  wavelet: 'haar' | 'db2' | 'db3';
+  boundary_mode: 'periodic' | 'reflect';
+  dtcwt_level1: string;
+  dtcwt_qshift: string;
+}
+
 export interface ZarrCropRequest {
   store: string;
   variables: string[];
@@ -532,6 +546,58 @@ export interface ZarrCropRequest {
   lon_max: number;
   levels: number[];
   n_levels_analysis: number;
+  analysis: ZarrAnalysisRequest;
+}
+
+export interface CropPlanSuggestion {
+  feasible: boolean;
+  target_shape: number[];
+  actual_shape?: number[];
+  bounds?: { lat_min: number; lat_max: number; lon_min: number; lon_max: number };
+  reason?: string;
+  cost?: {
+    bytes_wanted: number;
+    bytes_fetched_estimate: number;
+    megabytes_fetched_estimate: number;
+    amplification: number;
+    chunk_hostile: boolean;
+    byte_basis: string;
+  };
+}
+
+export interface CropGeometryPlan {
+  analysis: Record<string, any>;
+  analysis_sha256: string;
+  current_shape: number[];
+  verdict: 'insufficient' | 'technical_only' | 'recommended';
+  meets_absolute_minimum: boolean;
+  meets_recommended_minimum: boolean;
+  absolute_minimum: { shape: number[]; unrounded_required_side: number; basis: string };
+  recommended_minimum: {
+    shape: number[]; unrounded_required_side: number;
+    valid_parent_side_policy: number; basis: string;
+  };
+  alignment_cells: number;
+  support_source: string;
+  levels: Array<{
+    level: number;
+    support_parent_px: number;
+    margin_parent_px: number;
+    sampling_factor: number;
+    margin_native_px: number;
+    valid_parent_shape: number[];
+    native_shape: number[];
+    valid_native_shape: number[];
+  }>;
+}
+
+export interface TransformAcquisitionPlan {
+  schema: string;
+  plan_sha256: string;
+  source_observation_sha256: string;
+  geometry: CropGeometryPlan;
+  suggestions: { absolute: CropPlanSuggestion; recommended: CropPlanSuggestion };
+  claim_boundary: string;
 }
 
 export interface ZarrInspectResponse {
@@ -562,7 +628,8 @@ export interface ZarrInspectResponse {
     warning: string | null;
     advice: string[];
   };
-  geometry: Record<string, any>;
+  geometry: CropGeometryPlan;
+  acquisition_plan: TransformAcquisitionPlan;
   cli: string;
 }
 
@@ -982,7 +1049,10 @@ export interface ChannelEntry {
   name: string;
   support_parent_px: number;
   is_aggregate: boolean;
-  values: number[];
+  present_count: number;
+  absent_count: number;
+  presence: boolean[] | null;
+  values: (number | null)[];
 }
 
 export interface ChannelRecord {
