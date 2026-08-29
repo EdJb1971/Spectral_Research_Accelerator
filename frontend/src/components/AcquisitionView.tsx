@@ -7,6 +7,7 @@ import {
 import { apiService } from '../services/api';
 import * as types from '../types/api';
 import ChannelRecords from './ChannelRecords';
+import ProfileAcquisition from './ProfileAcquisition';
 
 interface AcquisitionViewProps {
   onError?: (message: string) => void;
@@ -208,6 +209,11 @@ export const AcquisitionView: React.FC<AcquisitionViewProps> = ({
         <ChannelRecords key={domain.name} domainName={domain.name} onError={onError}
           selectedRecord={selectedRecord?.record.domain === domain.name ? selectedRecord : null}
           onSelectRecord={onSelectRecord} />
+      )}
+
+      {acquisition?.shape === 'profile_query' && acquisition.available && acquisition.profile_source && (
+        <ProfileAcquisition key={acquisition.id} source={acquisition.profile_source}
+          onError={onError} />
       )}
 
       {acquisition?.shape === 'grid_crop' && acquisition.available && (

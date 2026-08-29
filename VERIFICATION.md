@@ -6726,3 +6726,32 @@ predicted chunk cost for one exact request. Its recommended threshold applies th
 128-parent-cell R13 span policy; it is not an empirical power calculation and does not establish
 stationarity, physical relevance, successful transfer, valid returned field values or a future
 scientific finding.
+
+---
+
+## TG12.2b-d - Irregular profiles, declared reductions and the Argo GDAC seam (2026-08-29, `ed-dev`) - **COMPLETE**
+
+The profile acquisition pathway introduces a `ProfileSpec` to content-address non-gridded profiles in a given region, time window, and depth range. `ProfileCollection` preserves the exact scatter representation, without grid assumptions, asserting that atmospheric structures cannot simply be forced onto ocean profiles. 
+
+The `ProfileReduction` registry provides explicitly declared methodologies (like per-float reduction and depth-bin aggregation), which dictate whether non-stationary support is preserved or whether aggregation causes an identity shift. The real Argo GDAC query runs through an isolated seam, strictly decoupled from the core, emitting actual profile data rather than fixtures, and rightfully declining operations missing necessary domain parameters. The UI (`ProfileAcquisition.tsx`) renders these declared irregularities honestly and appropriately blocks analysis requests that would otherwise interpolate or invent data.
+
+**Verification:**
+
+`	ext
+> .\venv\Scripts\python.exe -m pytest src/tests/test_profiles.py src/tests/test_frontend_contract.py -q
+10 passed, 1 skipped, 2 warnings in 7.57s
+
+> .\venv\Scripts\python.exe tools/audit_docs.py
+undocumented modules : none
+undocumented routes  : none
+defects              : 73 defined, 71 fixed, partial ['D18'], open ['D43']
+test functions       : 2380
+stale inventory rows : none
+claimed suite totals : architecture (2726, 1) / roadmap (2726, 1)
+RESULT               : ok
+
+> .\venv\Scripts\python.exe -m pytest -q
+2726 passed, 2 skipped, 1 xfailed, 6 warnings in 1465.18s (0:24:25)
+`
+
+**Claim boundary.** The reduction registration is fully documented and is demonstrably reproducible; it does not claim to validate any specific scientific assumption or cross-scale finding. The dataset simply represents recorded evidence of domain irregularities natively preserved within the analysis pipeline.

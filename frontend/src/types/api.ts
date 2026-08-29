@@ -508,6 +508,7 @@ export interface AcquisitionOption {
   access_means: string;
   unavailable_reason?: string | null;
   store?: ZarrStore;
+  profile_source?: ProfileSource;
   domain_limits: AcquisitionDomainLimits;
 }
 
@@ -533,6 +534,112 @@ export interface ZarrAnalysisRequest {
   boundary_mode: 'periodic' | 'reflect';
   dtcwt_level1: string;
   dtcwt_qshift: string;
+}
+
+export interface ProfileSource {
+  name: string;
+  domain: string;
+  shape: 'profile_query';
+  access: string;
+  description: string;
+  licence: string;
+  variables: string[];
+  defaults: Partial<ProfileSpecRequest>;
+}
+
+export interface ProfileSpecRequest {
+  source: string;
+  time_start: string;
+  time_end: string;
+  lat_min: number;
+  lat_max: number;
+  lon_min: number;
+  lon_max: number;
+  pressure_min_dbar: number;
+  pressure_max_dbar: number;
+  variables: string[];
+  max_profiles: number;
+}
+
+export interface ProfileReductionRequest {
+  name: 'per_float_at_pressure' | 'depth_bin_mean';
+  configuration: Record<string, any>;
+}
+
+export interface ProfileAcquisitionRequest {
+  spec: ProfileSpecRequest;
+  reduction: ProfileReductionRequest;
+}
+
+export interface ProfileCapabilities {
+  schema: string;
+  sources: ProfileSource[];
+  reductions: RegistryEntry[];
+  network_enabled: boolean;
+  network_env_var: string;
+  source_doi: string;
+  claim_boundary: string;
+}
+
+export interface ProfileQueryPlan {
+  schema: string;
+  request_sha256: string;
+  source: string;
+  source_doi: string;
+  candidate_profiles: number;
+  candidate_platforms: number;
+  within_profile_cap: boolean;
+  max_profiles: number;
+  profiles: Array<{ profile_id: string; platform_id: string; time: string;
+                    latitude: number; longitude: number }>;
+  profiles_withheld: number;
+  claim_boundary: string;
+  requested_reduction: Record<string, any>;
+}
+
+export interface ProfileAcquisitionResponse {
+  schema: string;
+  collection: {
+    collection_sha256: string;
+    request_sha256: string;
+    n_profiles: number;
+    n_platforms: number;
+    variables: string[];
+    valid_value_count: Record<string, number>;
+    pressure_range_dbar: number[];
+    qc_policy: Record<string, any>;
+  };
+  publication: { path: string; collection_sha256: string; bytes: number; publication: string };
+  reduction: {
+    reduction: Record<string, any>;
+    derived_declaration: Record<string, any>;
+    n_frames: number;
+    n_channels: number;
+    channels: string[];
+    channel_records: Array<Record<string, any>>;
+    clock: { strictly_increasing: boolean; regular: boolean; cadence_seconds: number | null };
+    content_sha256: string;
+    claim_boundary: string;
+  };
+  preview: {
+    measure: string;
+    n_rows: number;
+    preview_rows: number;
+    rows_withheld: number;
+    times_seconds: number[];
+    channels: Array<{ name: string; usable: boolean; present_count: number;
+                      absent_count: number; presence: boolean[] | null;
+                      values: Array<number | null> }>;
+  };
+  analysis_readiness: {
+    frame_lag_admissible: boolean;
+    decision: string;
+    basis: string[];
+    reason: string;
+    contiguous_candidate?: Record<string, any>;
+  };
+  source_doi: string;
+  claim_boundary: string;
 }
 
 export interface ZarrCropRequest {

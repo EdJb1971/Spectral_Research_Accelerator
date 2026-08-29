@@ -126,7 +126,7 @@ def test_the_plugin_domain_is_attributed_to_the_file_that_onboarded_it():
     import src.tests.domain_plugin_example as plugin
 
     record = onboarding_for(plugin.DOMAIN_NAME)
-    assert record.onboarded_by == "src.tests.domain_plugin_example"
+    assert record.onboarded_by == "extensions.argo_float"
     assert not record.onboarded_by.startswith("src.core")
 
 

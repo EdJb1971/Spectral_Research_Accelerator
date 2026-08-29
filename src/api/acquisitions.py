@@ -18,6 +18,8 @@ from src.core.onboarding import audit_onboarding, is_onboarded
 from src.data_layer.stores import (ACCESS_REQUIREMENTS, register_builtin_stores,
                                    stores_for_domain)
 from src.data_layer.tabular_source import unsatisfiable_axes
+from src.data_layer.argo_source import register_argo_source
+from src.data_layer.profiles import PROFILE_SOURCES
 
 
 router = APIRouter(prefix="/api/v1/acquisitions", tags=["acquisitions"])
@@ -29,6 +31,7 @@ ACQUISITION_SHAPES = {
 }
 
 # Eager registration keeps the response independent of route visitation order (D35).
+REGISTERED_PROFILE_SOURCE = register_argo_source()
 REGISTERED_DOMAINS = register_builtin_domains()
 REGISTERED_STORES = register_builtin_stores()
 
@@ -54,6 +57,24 @@ def _grid_acquisitions(domain: str, limits: Dict[str, Any]) -> List[Dict[str, An
             "access_means": ACCESS_REQUIREMENTS[store.access],
             "store": store.to_dict(),
             "domain_limits": limits,
+        })
+    return rows
+
+
+def _profile_acquisitions(domain: str, limits: Dict[str, Any]) -> List[Dict[str, Any]]:
+    rows: List[Dict[str, Any]] = []
+    for entry in PROFILE_SOURCES:
+        source = entry.value
+        if source.domain != domain:
+            continue
+        rows.append({
+            "id": "profile_query:%s" % source.name,
+            "name": source.name,
+            "shape": "profile_query", "available": True,
+            "access": source.access,
+            "access_means": ("Public network access through the official Argo GDAC view; "
+                             "explicit server opt-in is required."),
+            "profile_source": source.describe(), "domain_limits": limits,
         })
     return rows
 
@@ -96,6 +117,7 @@ async def list_acquisitions() -> Dict[str, Any]:
         declaration = declaration_for(name)
         limits = _limits(name)
         acquisitions = _grid_acquisitions(name, limits)
+        acquisitions.extend(_profile_acquisitions(name, limits))
         acquisitions.append(_channel_acquisition(name, limits))
         domains.append({
             "name": name,

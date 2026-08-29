@@ -214,6 +214,27 @@ export const apiService = {
     return handleResponse<types.AcquisitionCatalogue>(response);
   },
 
+  async profileCapabilities(): Promise<types.ProfileCapabilities> {
+    return handleResponse<types.ProfileCapabilities>(
+      await fetch(`${BASE_URL}/profiles`, { method: 'GET' }));
+  },
+
+  async inspectProfiles(payload: types.ProfileAcquisitionRequest): Promise<types.ProfileQueryPlan> {
+    return handleResponse<types.ProfileQueryPlan>(
+      await fetch(`${BASE_URL}/profiles/inspect`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      }));
+  },
+
+  async acquireProfiles(payload: types.ProfileAcquisitionRequest): Promise<types.ProfileAcquisitionResponse> {
+    return handleResponse<types.ProfileAcquisitionResponse>(
+      await fetch(`${BASE_URL}/profiles/acquire`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      }));
+  },
+
   // ---------------------------------------------------------------- ERA5 over Zarr
 
   async zarrCatalogue(): Promise<types.ZarrCatalogueResponse> {

@@ -111,6 +111,7 @@ app.add_middleware(
 from src.api.findings import router as findings_router  # noqa: E402
 from src.api.channels import router as channels_router  # noqa: E402
 from src.api.acquisitions import router as acquisitions_router  # noqa: E402
+from src.api.profiles import router as profiles_router  # noqa: E402
 from src.api.analysis import router as domain_analysis_router  # noqa: E402
 from src.api.preregistration import router as preregistration_router  # noqa: E402
 from src.api.evidence import router as evidence_router  # noqa: E402
@@ -126,6 +127,7 @@ app.include_router(channels_router)
 # TG10.2: domain-first projection over the existing domain/source contracts. Mounted eagerly so
 # plugin registrations are visible without a researcher first visiting another route (D35).
 app.include_router(acquisitions_router)
+app.include_router(profiles_router)
 # TG11.1: stateless access to the existing domain-analysis engine. It re-reads the selected
 # full record, stores nothing and cannot move a claim rung (R22).
 app.include_router(domain_analysis_router)
