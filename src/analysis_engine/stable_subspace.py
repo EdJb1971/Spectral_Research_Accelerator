@@ -10,6 +10,8 @@ from src.statistics.multiple_comparisons import adjust, required_surrogates
 
 
 SUBSPACE_OUTCOMES = ("candidate_compact_stable_subspace", "unresolved")
+CONFIRMATION_OUTCOMES = ("internally_replicated_candidate", "not_replicated",
+                         "not_a_generate_candidate")
 
 
 def projector(basis: np.ndarray) -> np.ndarray:
@@ -102,6 +104,130 @@ def _explained_fraction(x: np.ndarray, y: np.ndarray, basis: np.ndarray) -> floa
     if denominator <= 1e-15:
         raise ValueError("target must vary on the generate partition")
     return float(max(0.0, 1.0 - np.sum((y - fitted) ** 2) / denominator))
+
+
+def confirm_stable_subspaces(
+        features: Mapping[str, np.ndarray], target: np.ndarray, *,
+        preprocessing: Mapping[str, Sequence[float]],
+        frozen_subspaces: Sequence[Mapping[str, Any]],
+        family_members: Sequence[str], nuisance: np.ndarray | None = None,
+        nuisance_region_cuts: Sequence[float] | None = None,
+        permutations: int = 4999, seed: int = 16401, alpha: float = 0.05,
+        correction: str = "benjamini_yekutieli",
+        nuisance_stability_threshold: float = 0.35) -> Dict[str, Any]:
+    """Apply frozen generate spans once to an untouched confirmation partition."""
+    names = tuple(sorted(features))
+    arrays = [np.asarray(features[name], dtype=np.float64) for name in names]
+    y = np.asarray(target, dtype=np.float64)
+    z = None if nuisance is None else np.asarray(nuisance, dtype=np.float64)
+    if not names or y.ndim != 1 or any(value.ndim != 1 or value.size != y.size
+                                       for value in arrays) \
+            or (z is not None and (z.ndim != 1 or z.size != y.size)):
+        raise ValueError("features, target and nuisance must be same-length vectors")
+    if y.size < 40 or any(np.any(~np.isfinite(value)) for value in arrays + [y]) \
+            or (z is not None and np.any(~np.isfinite(z))):
+        raise ValueError("at least 40 finite confirmation rows are required")
+    mean = np.asarray(preprocessing.get("mean"), dtype=np.float64)
+    scale = np.asarray(preprocessing.get("scale"), dtype=np.float64)
+    if mean.shape != (len(names),) or scale.shape != (len(names),) \
+            or np.any(~np.isfinite(mean)) or np.any(~np.isfinite(scale)) \
+            or np.any(scale <= 1e-12):
+        raise ValueError("frozen preprocessing must provide one finite mean and scale per feature")
+    x = (np.column_stack(arrays) - mean) / scale
+    if float(np.std(y, ddof=1)) <= 1e-12:
+        raise ValueError("target must vary on the confirmation partition")
+    labels = tuple(str(value) for value in family_members)
+    rows_by_label = {str(row.get("label")): row for row in frozen_subspaces}
+    if not labels or len(set(labels)) != len(labels) or set(rows_by_label) != set(labels) \
+            or len(rows_by_label) != len(frozen_subspaces):
+        raise ValueError("frozen subspaces must cover the complete searched family exactly once")
+    if not isinstance(permutations, (int, np.integer)) or isinstance(permutations, (bool, np.bool_)):
+        raise ValueError("permutations must be an integer")
+    minimum_permutations = required_surrogates(len(labels), alpha, correction)
+    if not minimum_permutations <= permutations <= 9999:
+        raise ValueError("permutation count cannot resolve the corrected confirmation family")
+    if z is None:
+        if nuisance_region_cuts not in (None, (), []):
+            raise ValueError("nuisance cuts require a declared nuisance")
+        region_indices = (np.arange(y.size),)
+        cuts = None
+    else:
+        cuts_array = np.asarray(nuisance_region_cuts, dtype=np.float64)
+        if cuts_array.shape != (2,) or np.any(~np.isfinite(cuts_array)) \
+                or not cuts_array[0] < cuts_array[1]:
+            raise ValueError("two ordered generate-derived nuisance cuts are required")
+        cuts = cuts_array.tolist()
+        region_labels = np.digitize(z, cuts_array, right=True)
+        region_indices = tuple(np.flatnonzero(region_labels == index) for index in range(3))
+        largest_dimension = max(int(rows_by_label[label]["dimension"]) for label in labels)
+        minimum = max(10, 2 * (largest_dimension + 1))
+        sizes = [int(indices.size) for indices in region_indices]
+        if min(sizes) < minimum:
+            raise ValueError("every frozen nuisance region needs at least %d confirmation rows" % minimum)
+    observed = []
+    bases = []
+    for label in labels:
+        row = rows_by_label[label]
+        basis = np.asarray(row.get("basis_for_application"), dtype=np.float64)
+        dimension = int(row.get("dimension", 0))
+        if basis.shape != (len(names), dimension) or not 1 <= dimension < len(names) \
+                or np.any(~np.isfinite(basis)):
+            raise ValueError("every frozen basis must match its feature width and dimension")
+        recorded_projector = np.asarray(row.get("projector"), dtype=np.float64)
+        if recorded_projector.shape != (len(names), len(names)) \
+                or not np.allclose(projector(basis), recorded_projector, atol=1e-10):
+            raise ValueError("each frozen projector must identify the span of its application basis")
+        bases.append(basis)
+        observed.append(_explained_fraction(x, y, basis))
+    exceed = np.zeros(len(labels), dtype=np.int64)
+    rng = np.random.default_rng(seed)
+    for _permutation in range(permutations):
+        null_target = rng.permutation(y)
+        for index, basis in enumerate(bases):
+            exceed[index] += int(_explained_fraction(x, null_target, basis) >= observed[index])
+    p_values = ((exceed + 1) / (permutations + 1)).tolist()
+    corrected = adjust(p_values, method=correction, alpha=alpha,
+                       n_tests=len(labels), labels=list(labels))
+    results = []
+    for index, label in enumerate(labels):
+        frozen = rows_by_label[label]
+        regional = [_explained_fraction(x[indices], y[indices], bases[index])
+                    for indices in region_indices]
+        regional_range = (float(max(regional) - min(regional)) if z is not None else None)
+        region_stable = bool(z is None or regional_range <= nuisance_stability_threshold)
+        generated = frozen.get("outcome") == "candidate_compact_stable_subspace"
+        replicated = bool(generated and corrected["rejected"][index] and region_stable)
+        outcome = ("internally_replicated_candidate" if replicated else
+                   ("not_replicated" if generated else "not_a_generate_candidate"))
+        results.append({
+            "label": label, "dimension": int(frozen["dimension"]),
+            "regularization": float(frozen["regularization"]),
+            "generate_outcome": frozen["outcome"],
+            "confirmation_explained_fraction": observed[index],
+            "p_value": p_values[index], "q_value": corrected["adjusted"][index],
+            "nuisance_region_explained_fractions": regional,
+            "nuisance_region_range": regional_range,
+            "nuisance_region_stable": region_stable, "outcome": outcome,
+        })
+    return {
+        "features": list(names), "family_members": list(labels),
+        "correction_unit": len(labels), "correction": correction, "alpha": alpha,
+        "permutations": permutations,
+        "nuisance_regions": {
+            "definition": ("generate-derived tertile cut points applied unchanged"
+                           if z is not None else "not applicable: no nuisance declared"),
+            "cuts": cuts, "confirmation_sizes": [int(value.size) for value in region_indices],
+            "explained_fraction_range_threshold": nuisance_stability_threshold,
+        },
+        "subspaces": results,
+        "internally_replicated_candidates": [
+            row for row in results if row["outcome"] == "internally_replicated_candidate"],
+        "outcome_vocabulary": list(CONFIRMATION_OUTCOMES),
+        "claim_boundary": (
+            "Internal replication on one reserved partition of this dataset. It is not an "
+            "external replication certificate, an optimal or causal representation, or an "
+            "instruction to use or remove features."),
+    }
 
 
 def _region_diagnostics(x: np.ndarray, y: np.ndarray, nuisance: np.ndarray | None,
@@ -286,5 +412,5 @@ def generate_stable_subspaces(
     }
 
 
-__all__ = ["SUBSPACE_OUTCOMES", "generate_stable_subspaces", "projector",
-           "projector_distance"]
+__all__ = ["CONFIRMATION_OUTCOMES", "SUBSPACE_OUTCOMES", "confirm_stable_subspaces",
+           "generate_stable_subspaces", "projector", "projector_distance"]

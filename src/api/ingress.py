@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime, timezone
 from typing import Any, Dict
 
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 
 from src.core.errors import SpectralEarthError, classify
 from src.data_layer.dataset_ingress import (SampleTableDeclaration,
+                                            freeze_stable_subspace_confirmation,
                                             plan_conditional_information_audit,
                                             plan_redundancy_structure_audit,
                                             plan_representation_audit,
@@ -17,8 +19,11 @@ from src.data_layer.dataset_ingress import (SampleTableDeclaration,
                                             run_conditional_information_audit,
                                             run_redundancy_structure_audit,
                                             run_representation_audit,
+                                            run_stable_subspace_confirmation,
                                             run_stable_subspace_generation,
                                             sample_table_capability_profile)
+from src.api.preregistration import held_out_ledger, load_seal, store_seal
+from src.core.preregistration import Seal
 
 router = APIRouter(prefix="/api/v1/ingress", tags=["ingress"])
 
@@ -216,6 +221,49 @@ async def subspace_generate(file: UploadFile = File(...), delimiter: str = Form(
     try:
         return run_stable_subspace_generation(
             payload, filename=file.filename or "upload", delimiter=delimiter, plan=frozen)
+    except SpectralEarthError as error:
+        raise _handle(error)
+
+
+@router.post("/subspace/freeze")
+async def subspace_freeze(file: UploadFile = File(...), delimiter: str = Form(","),
+                          plan: str = Form(...), generation: str = Form(...),
+                          confirmation_permutations: int = Form(4999),
+                          confirmation_seed: int = Form(16401)) -> Dict[str, Any]:
+    """Freeze all confirmation settings before opening the reserved outcomes."""
+    payload = await file.read()
+    frozen_plan = _object(plan, "plan")
+    generated = _object(generation, "generation")
+    try:
+        result = freeze_stable_subspace_confirmation(
+            payload, filename=file.filename or "upload", delimiter=delimiter,
+            plan=frozen_plan, generation=generated,
+            sealed_at=datetime.now(timezone.utc).isoformat(),
+            confirmation_permutations=confirmation_permutations,
+            confirmation_seed=confirmation_seed, ledger=held_out_ledger())
+        store_seal(Seal.from_mapping(result["seal"]))
+        return result
+    except SpectralEarthError as error:
+        raise _handle(error)
+
+
+@router.post("/subspace/confirm")
+async def subspace_confirm(file: UploadFile = File(...), delimiter: str = Form(","),
+                           seal_sha256: str = Form(...),
+                           published_sha256: str | None = Form(None)) -> Dict[str, Any]:
+    """Apply the frozen family unchanged and spend its held-out partition once."""
+    payload = await file.read()
+    stored = load_seal(seal_sha256)
+    frozen = {
+        "schema": "spectral.stable-subspace-confirmation-seal.v1",
+        "seal": stored.to_mapping(), "seal_sha256": stored.seal_sha256,
+    }
+    try:
+        return run_stable_subspace_confirmation(
+            payload, filename=file.filename or "upload", delimiter=delimiter,
+            seal=frozen, ledger=held_out_ledger(),
+            opened_at=datetime.now(timezone.utc).isoformat(),
+            published_sha256=published_sha256)
     except SpectralEarthError as error:
         raise _handle(error)
 

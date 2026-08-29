@@ -22,9 +22,11 @@ from src.analysis_engine.conditional_information import (
     audit_conditional_information, conditional_support)
 from src.analysis_engine.representation_structure import (audit_pair_structure,
                                                            candidate_pairs)
-from src.analysis_engine.stable_subspace import generate_stable_subspaces
+from src.analysis_engine.stable_subspace import (confirm_stable_subspaces,
+                                                 generate_stable_subspaces, projector)
 from src.core.errors import InvalidParameterError
 from src.core.dataset_capabilities import build_profile
+from src.core.preregistration import HeldOutLedger, PartitionIdentity, Seal
 from src.statistics.multiple_comparisons import adjust, required_surrogates
 
 MAX_UPLOAD_BYTES = 16 * 1024 * 1024
@@ -38,6 +40,11 @@ AUDIT_REPRESENTATIONS = ("identity", "pca")
 
 def _sha(payload: bytes) -> str:
     return hashlib.sha256(payload).hexdigest()
+
+
+def _mapping_sha(value: Mapping[str, Any]) -> str:
+    return hashlib.sha256(json.dumps(
+        value, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()).hexdigest()
 
 
 def _delimiter(value: str) -> str:
@@ -706,7 +713,7 @@ def run_stable_subspace_generation(payload: bytes, *, filename: str, delimiter: 
         nuisance_penalty=float(expected["nuisance_penalty"]),
         variance_weight=float(expected["variance_weight"]), seed=int(expected["seed"]),
         alpha=float(expected["alpha"]), correction=expected["correction"])
-    return {
+    report = {
         "schema": "spectral.stable-subspace-generation.v1",
         "plan_sha256": supplied_digest, "content_sha256": expected["content_sha256"],
         "target": actual_target, "declared_nuisance": expected["nuisance"],
@@ -720,6 +727,234 @@ def run_stable_subspace_generation(payload: bytes, *, filename: str, delimiter: 
         "stored": False, "rung_moved": False,
         "claim_boundary": measured["claim_boundary"] +
             " The confirmation partition remains unopened in this generation operation.",
+    }
+    report["generation_sha256"] = _mapping_sha(report)
+    return report
+
+
+def freeze_stable_subspace_confirmation(
+        payload: bytes, *, filename: str, delimiter: str, plan: Mapping[str, Any],
+        generation: Mapping[str, Any], sealed_at: str,
+        confirmation_permutations: int = 4999, confirmation_seed: int = 16401,
+        ledger: Optional[HeldOutLedger] = None) -> Dict[str, Any]:
+    """Seal unchanged generated spans and generate-defined regions before confirmation."""
+    if not isinstance(sealed_at, str) or not sealed_at.strip():
+        raise InvalidParameterError("sealed_at", sealed_at,
+                                    "a server-recorded confirmation sealing time")
+    frozen_plan = dict(plan)
+    plan_sha = str(frozen_plan.get("plan_sha256", ""))
+    plan_body = dict(frozen_plan)
+    plan_body.pop("plan_sha256", None)
+    plan_body.pop("probe", None)
+    plan_body.pop("claim_boundary", None)
+    if plan_sha != _mapping_sha(plan_body) \
+            or plan_body.get("schema") != "spectral.stable-subspace-generation-plan.v1":
+        raise InvalidParameterError("plan_sha256", plan_sha,
+                                    "the digest of the complete frozen subspace plan")
+    if _sha(payload) != plan_body.get("content_sha256"):
+        raise InvalidParameterError("content_sha256", _sha(payload),
+                                    "the exact file bytes the plan sealed")
+    generated = dict(generation)
+    generation_sha = str(generated.pop("generation_sha256", ""))
+    if generation_sha != _mapping_sha(generated):
+        raise InvalidParameterError("generation_sha256", generation_sha,
+                                    "the digest of the complete generation result")
+    if generated.get("schema") != "spectral.stable-subspace-generation.v1" \
+            or generated.get("plan_sha256") != plan_sha \
+            or generated.get("content_sha256") != plan_body["content_sha256"]:
+        raise InvalidParameterError("generation binding", generated.get("plan_sha256"),
+                                    "a generation result bound to this exact plan and content")
+    family_members = list(plan_body["family_members"])
+    rows = list(generated.get("subspaces", []))
+    if [row.get("label") for row in rows] != family_members \
+            or generated.get("family", {}).get("members") != family_members:
+        raise InvalidParameterError("confirmation family", [row.get("label") for row in rows],
+                                    "the complete searched family in its frozen order")
+    width = len(plan_body["features"])
+    preprocessing = generated.get("preprocessing", {})
+    means = np.asarray(preprocessing.get("mean"), dtype=np.float64)
+    scales = np.asarray(preprocessing.get("scale"), dtype=np.float64)
+    if means.shape != (width,) or scales.shape != (width,) \
+            or np.any(~np.isfinite(means)) or np.any(~np.isfinite(scales)) \
+            or np.any(scales <= 1e-12):
+        raise InvalidParameterError("generated preprocessing", preprocessing,
+                                    "one finite generate-only mean and positive scale per feature")
+    for row in rows:
+        dimension = int(row.get("dimension", 0))
+        basis = np.asarray(row.get("basis_for_application"), dtype=np.float64)
+        frozen_projector = np.asarray(row.get("projector"), dtype=np.float64)
+        if basis.shape != (width, dimension) or frozen_projector.shape != (width, width) \
+                or np.any(~np.isfinite(basis)) or np.any(~np.isfinite(frozen_projector)) \
+                or not np.allclose(projector(basis), frozen_projector, atol=1e-10):
+            raise InvalidParameterError("generated span", row.get("label"),
+                                        "a finite basis and matching projector from generation")
+    candidates = [row.get("label") for row in rows
+                  if row.get("outcome") == "candidate_compact_stable_subspace"]
+    declared_candidates = [row.get("label") for row in
+                           generated.get("candidate_compact_stable_subspaces", [])]
+    if candidates != declared_candidates:
+        raise InvalidParameterError("generated candidates", declared_candidates,
+                                    "exactly the candidate members marked in the full family")
+    declaration = SampleTableDeclaration(**plan_body["declaration"])
+    probe = probe_delimited(payload, filename=filename, delimiter=delimiter)
+    declaration.validate(probe)
+    columns, _header = _numeric_table(payload, delimiter, declaration)
+    n = probe["n_rows"]
+    order = np.random.default_rng(int(plan_body["seed"])).permutation(n)
+    stop = int(math.floor(n * float(plan_body["generate_fraction"])))
+    generate, confirmation = order[:stop], order[stop:]
+    partition = plan_body["partitions"]
+    if _sha(generate.astype("<i8").tobytes()) != partition["generate_indices_sha256"] \
+            or _sha(confirmation.astype("<i8").tobytes()) != \
+            partition["confirmation_indices_sha256"]:
+        raise InvalidParameterError("partitions", partition,
+                                    "the exact frozen generate/confirmation split")
+    nuisance = plan_body["nuisance"]
+    nuisance_cuts = None
+    if nuisance is not None:
+        nuisance_values = columns[nuisance][generate]
+        nuisance_cuts = np.quantile(nuisance_values, (1 / 3, 2 / 3)).tolist()
+        if not nuisance_cuts[0] < nuisance_cuts[1]:
+            raise InvalidParameterError("generate nuisance regions", nuisance_cuts,
+                                        "two distinct generate-derived tertile cuts")
+    try:
+        minimum = required_surrogates(len(family_members), float(plan_body["alpha"]),
+                                      str(plan_body["correction"]))
+    except (TypeError, ValueError) as exc:
+        raise InvalidParameterError("confirmation family", family_members,
+                                    "a valid frozen correction family") from exc
+    if not minimum <= int(confirmation_permutations) <= 9999:
+        raise InvalidParameterError(
+            "confirmation_permutations", confirmation_permutations,
+            "at least %d and at most 9999 for the complete family" % minimum)
+    scientific_columns = [*plan_body["features"], plan_body["target"]]
+    if nuisance is not None:
+        scientific_columns.append(nuisance)
+    held_out = PartitionIdentity(
+        name="stable_subspace_confirmation", n_times=int(confirmation.size),
+        n_channels=len(scientific_columns), channel_labels=tuple(scientific_columns),
+        frames=(0, int(confirmation.size)), provenance={
+            "split": "held_out", "content_sha256": plan_body["content_sha256"],
+            "confirmation_indices_sha256": partition["confirmation_indices_sha256"],
+            "partition_seed": int(plan_body["seed"]), "n_rows": n,
+            "declaration": declaration.canonical(),
+        })
+    confirm = {
+        "schema": "spectral.stable-subspace-confirmation-contract.v1",
+        "plan_sha256": plan_sha, "generation_sha256": generation_sha,
+        "content_sha256": plan_body["content_sha256"],
+        "features": list(plan_body["features"]), "target": plan_body["target"],
+        "nuisance": nuisance, "preprocessing": preprocessing,
+        "subspaces": rows, "family_members": family_members,
+        "candidate_labels": candidates, "nuisance_region_cuts": nuisance_cuts,
+        "partition_seed": int(plan_body["seed"]),
+        "nuisance_region_definition": (
+            "generate-derived tertiles applied unchanged" if nuisance is not None
+            else "not applicable: no nuisance declared"),
+        "nuisance_stability_threshold": 0.35,
+        "permutations": int(confirmation_permutations),
+        "seed": int(confirmation_seed), "alpha": float(plan_body["alpha"]),
+        "correction": str(plan_body["correction"]),
+    }
+    seal = Seal(
+        study_id="stable-subspace:%s" % plan_sha[:16], sealed_at=sealed_at,
+        generate_sha256=generation_sha, generate_family_size=len(family_members),
+        confirm=confirm, confirm_sha256=_mapping_sha(confirm),
+        confirm_labels=tuple(family_members), confirm_family_size=len(family_members),
+        confirm_account={"family_size": len(family_members),
+                         "permutations": int(confirmation_permutations),
+                         "correction": str(plan_body["correction"])},
+        held_out=held_out)
+    if ledger is not None:
+        ledger.require_unopened(held_out, seal.seal_sha256)
+    return {
+        "schema": "spectral.stable-subspace-confirmation-seal.v1",
+        "seal": seal.to_mapping(), "seal_sha256": seal.seal_sha256,
+        "held_out_digest": held_out.digest(), "confirmation_opened": False,
+        "candidate_labels": candidates, "correction_unit": len(family_members),
+        "claim_boundary": (
+            "This freezes the generated spans, generate-only preprocessing and nuisance "
+            "regions before confirmation outcomes are opened. Self-consistency is not proof "
+            "of prior publication; publish seal_sha256 somewhere immutable before confirm."),
+    }
+
+
+def run_stable_subspace_confirmation(
+        payload: bytes, *, filename: str, delimiter: str, seal: Mapping[str, Any],
+        ledger: HeldOutLedger, opened_at: str,
+        published_sha256: Optional[str] = None) -> Dict[str, Any]:
+    """Open one reserved partition and test the complete frozen subspace family once."""
+    wrapped = dict(seal)
+    if wrapped.get("schema") != "spectral.stable-subspace-confirmation-seal.v1":
+        raise InvalidParameterError("seal schema", wrapped.get("schema"),
+                                    "spectral.stable-subspace-confirmation-seal.v1")
+    frozen = Seal.from_mapping(wrapped.get("seal", {}))
+    if wrapped.get("seal_sha256") != frozen.seal_sha256:
+        raise InvalidParameterError("seal_sha256", wrapped.get("seal_sha256"),
+                                    "the digest carried by the frozen confirmation seal")
+    if published_sha256 is None:
+        frozen.verify()
+    else:
+        frozen.verify_published(published_sha256)
+    confirm = dict(frozen.confirm)
+    if confirm.get("schema") != "spectral.stable-subspace-confirmation-contract.v1" \
+            or frozen.confirm_sha256 != _mapping_sha(confirm):
+        raise InvalidParameterError("confirmation contract", confirm.get("schema"),
+                                    "the intact stable-subspace confirmation contract")
+    if _sha(payload) != confirm["content_sha256"]:
+        raise InvalidParameterError("content_sha256", _sha(payload),
+                                    "the exact file bytes the confirmation seal bound")
+    declaration = SampleTableDeclaration(**frozen.held_out.provenance["declaration"])
+    probe = probe_delimited(payload, filename=filename, delimiter=delimiter)
+    declaration.validate(probe)
+    require_independent_samples(declaration, recipe="stable-subspace confirmation")
+    columns, _header = _numeric_table(payload, delimiter, declaration)
+    # Reconstruct the random split from the original plan seed, which is sealed in lineage.
+    plan_seed = int(frozen.held_out.provenance.get("partition_seed", -1))
+    if plan_seed < 0:
+        # TG16.4 seals created here identify the indices directly; recover them by matching
+        # the original plan seed carried in the contract when present.
+        plan_seed = int(confirm.get("partition_seed", -1))
+    if plan_seed < 0:
+        raise InvalidParameterError("partition seed", plan_seed,
+                                    "the frozen seed needed to reconstruct held-out rows")
+    order = np.random.default_rng(plan_seed).permutation(probe["n_rows"])
+    stop = probe["n_rows"] - frozen.held_out.n_times
+    confirmation = order[stop:]
+    presented = PartitionIdentity(
+        name=frozen.held_out.name, n_times=int(confirmation.size),
+        n_channels=frozen.held_out.n_channels,
+        channel_labels=frozen.held_out.channel_labels, frames=frozen.held_out.frames,
+        provenance=dict(frozen.held_out.provenance))
+    if presented.digest() != frozen.held_out.digest() \
+            or _sha(confirmation.astype("<i8").tobytes()) != \
+            frozen.held_out.provenance["confirmation_indices_sha256"]:
+        raise InvalidParameterError("held_out", presented.to_mapping(),
+                                    "the exact partition named by the confirmation seal")
+    ledger.require_unopened(presented, frozen.seal_sha256)
+    try:
+        measured = confirm_stable_subspaces(
+            {name: columns[name][confirmation] for name in confirm["features"]},
+            columns[confirm["target"]][confirmation],
+            preprocessing=confirm["preprocessing"],
+            frozen_subspaces=confirm["subspaces"],
+            family_members=confirm["family_members"],
+            nuisance=(columns[confirm["nuisance"]][confirmation]
+                      if confirm["nuisance"] is not None else None),
+            nuisance_region_cuts=confirm["nuisance_region_cuts"],
+            permutations=int(confirm["permutations"]), seed=int(confirm["seed"]),
+            alpha=float(confirm["alpha"]), correction=str(confirm["correction"]),
+            nuisance_stability_threshold=float(confirm["nuisance_stability_threshold"]))
+    except ValueError as exc:
+        raise InvalidParameterError("confirmation admission", str(exc),
+                                    "adequate overlap and the complete unchanged frozen family") from exc
+    record = ledger.open(frozen, presented, opened_at=opened_at)
+    return {
+        "schema": "spectral.stable-subspace-confirmation.v1",
+        "seal_sha256": frozen.seal_sha256,
+        "published_sha256": published_sha256, "content_sha256": confirm["content_sha256"],
+        "confirmation_opened": True, "ledger_record": record,
+        **measured, "stored": False, "rung_moved": False,
     }
 
 
@@ -941,10 +1176,12 @@ def run_representation_audit(payload: bytes, *, filename: str, delimiter: str,
 
 
 __all__ = ["AUDIT_REPRESENTATIONS", "MAX_UPLOAD_BYTES", "SAMPLE_RELATIONSHIPS",
-           "SAMPLE_ROLES", "SampleTableDeclaration", "plan_conditional_information_audit",
+           "SAMPLE_ROLES", "SampleTableDeclaration", "freeze_stable_subspace_confirmation",
+           "plan_conditional_information_audit",
            "plan_redundancy_structure_audit", "plan_representation_audit",
            "plan_stable_subspace_generation",
            "probe_delimited", "require_independent_samples",
            "run_conditional_information_audit", "run_redundancy_structure_audit",
-           "run_representation_audit", "run_stable_subspace_generation",
+           "run_representation_audit", "run_stable_subspace_confirmation",
+           "run_stable_subspace_generation",
            "sample_table_capability_profile"]

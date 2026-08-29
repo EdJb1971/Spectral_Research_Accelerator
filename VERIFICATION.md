@@ -6963,3 +6963,36 @@ exact-duplicate, noisy-copy and complementary linear candidate rates were 1.00 e
 XOR was 0.025, and the independent false-candidate rate was 0.055. Every one-feature case made no
 compact-subspace claim. The full backend suite was not rerun; the clean 2745-pass G15 run remains
 the latest full-suite evidence.
+
+---
+
+## TG16.4 - Held-out and Nuisance-region Confirmation (2026-08-30, `ed-dev`) - **COMPLETE**
+
+The confirmation workflow now freezes every TG16.3 family member's projector/application basis,
+generate-only preprocessing, candidate state, generate-derived nuisance-region cuts, correction
+unit, permutation ensemble and thresholds before held-out outcomes are used. Confirmation applies
+those values unchanged, corrects the complete searched family, refuses inadequate frozen-region
+overlap, and spends the content-and-index-bound partition once through the programme-wide durable
+held-out ledger. Its strongest result is internal replication within one dataset, not external
+certification, evidence storage, rung movement, optimality or causality.
+
+```text
+> .\.venv\Scripts\python.exe -m pytest -q src/tests/test_stable_subspace.py
+10 passed, 2 warnings in 4.56s
+
+> .\.venv\Scripts\python.exe -m pytest -q src/tests/test_stable_subspace.py src/tests/test_dataset_ingress.py src/tests/test_representation_structure.py src/tests/test_conditional_information.py
+31 passed, 2 warnings in 5.19s
+
+> .\.venv\Scripts\python.exe -m pytest -q src/tests/test_benchmarks.py -k "gating_lookup or g16_benchmark_pair"
+2 passed, 45 deselected, 1 warning in 1.97s
+
+> .\.venv\Scripts\python.exe -m src.benchmarks --name representation_structure_planted --name representation_structure_safeguards
+PASS 10   FAIL 0   NOT_YET_RUNNABLE 0
+```
+
+The paired gate ran 200 frozen replications with 156 generate and 68 confirmation rows.
+Exact-duplicate, noisy-copy and complementary-linear internal-replication rates were 1.000 each;
+nonlinear XOR was 0.005 and the independent null was 0.000, below the 0.075 ceiling. Every
+one-feature case remained outside the compact family. No acceptance setting was changed after
+this run. The full backend suite was not rerun; the clean 2745-pass G15 run remains the latest
+full-suite evidence.

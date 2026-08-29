@@ -15,7 +15,8 @@ import numpy as np
 
 from src.analysis_engine.conditional_information import audit_conditional_information
 from src.analysis_engine.representation_structure import audit_pair_structure
-from src.analysis_engine.stable_subspace import generate_stable_subspaces
+from src.analysis_engine.stable_subspace import (confirm_stable_subspaces,
+                                                 generate_stable_subspaces)
 from src.benchmarks.core import Benchmark, CheckResult, Outcome, register_benchmark, stage_check
 from src.benchmarks.seeding import SeedBundle, derive
 
@@ -475,15 +476,113 @@ def _check_subspace_safeguards(data: RepresentationStructureData,
         measured)
 
 
+def _subspace_confirmation_calibration(names: Tuple[str, ...], *,
+                                       root_seed: int) -> Dict[str, Any]:
+    replications = int(ACCEPTANCE_POLICY["replications"])
+    replicated = {name: 0 for name in names}
+    admitted = {name: 0 for name in names}
+    for replication in range(replications):
+        bundle = derive("G16.4:%d" % replication, root_seed)
+        for case_index, name in enumerate(names):
+            case = _case(bundle, name, SUBSPACE_CALIBRATION_N_SAMPLES)
+            if len(case.features) < 2:
+                continue
+            split_rng = np.random.default_rng(
+                root_seed + 3000017 * (replication + 1) + 1013 * case_index)
+            order = split_rng.permutation(SUBSPACE_CALIBRATION_N_SAMPLES)
+            generate_indices, confirm_indices = order[:156], order[156:]
+            generated = generate_stable_subspaces(
+                {key: value[generate_indices] for key, value in case.features.items()},
+                case.target[generate_indices],
+                (case.nuisance[generate_indices] if case.nuisance is not None else None),
+                dimensions=(1,), regularizations=(0.1,),
+                permutations=SUBSPACE_CALIBRATION_PERMUTATIONS,
+                restarts=3, iterations=24, perturbations=3,
+                perturbation_scale=0.10, stability_threshold=0.10,
+                seed=root_seed + 1000003 * (replication + 1) + 1009 * case_index,
+                alpha=float(ACCEPTANCE_POLICY["alpha"]))
+            cuts = (np.quantile(case.nuisance[generate_indices], (1 / 3, 2 / 3))
+                    if case.nuisance is not None else None)
+            try:
+                measured = confirm_stable_subspaces(
+                    {key: value[confirm_indices] for key, value in case.features.items()},
+                    case.target[confirm_indices], preprocessing=generated["preprocessing"],
+                    frozen_subspaces=generated["subspaces"],
+                    family_members=generated["family"]["members"],
+                    nuisance=(case.nuisance[confirm_indices]
+                              if case.nuisance is not None else None),
+                    nuisance_region_cuts=cuts,
+                    permutations=SUBSPACE_CALIBRATION_PERMUTATIONS,
+                    seed=root_seed + 2000003 * (replication + 1) + 1009 * case_index,
+                    alpha=float(ACCEPTANCE_POLICY["alpha"]))
+            except ValueError:
+                continue
+            admitted[name] += 1
+            replicated[name] += int(bool(measured["internally_replicated_candidates"]))
+    return {
+        "replications": replications, "generate_n": 156, "confirmation_n": 68,
+        "family": {"dimensions": [1], "regularizations": [0.1], "members": 1,
+                   "generate_permutations": SUBSPACE_CALIBRATION_PERMUTATIONS,
+                   "confirmation_permutations": SUBSPACE_CALIBRATION_PERMUTATIONS},
+        "admission_rates": {name: admitted[name] / replications for name in names},
+        "internal_replication_rates": {
+            name: replicated[name] / replications for name in names},
+    }
+
+
+@stage_check("G16.4.held_out_subspace_confirmation")
+def _check_subspace_confirmation_power(data: RepresentationStructureData,
+                                       truth: Dict[str, Any]) -> CheckResult:
+    names = ("exact_duplicate", "redundant_noisy_copies", "complementary_information",
+             "synergistic_pair", "signal_survives_conditioning")
+    measured = _subspace_confirmation_calibration(names, root_seed=16401)
+    rates = measured["internal_replication_rates"]
+    minimum = float(ACCEPTANCE_POLICY["minimum_planted_detection_rate"])
+    ceiling = float(ACCEPTANCE_POLICY["maximum_null_rejection_rate"])
+    problems = ["%s internal-replication power %.3f is below %.3f" %
+                (name, rates[name], minimum) for name in names[:3]
+                if rates[name] < minimum]
+    if rates["synergistic_pair"] > ceiling:
+        problems.append("the nonlinear XOR case was overclaimed on held-out data")
+    if rates["signal_survives_conditioning"] != 0:
+        problems.append("a one-feature case entered held-out subspace confirmation")
+    return CheckResult(
+        "G16.4.held_out_subspace_confirmation", Outcome.FAIL if problems else Outcome.PASS,
+        "; ".join(problems) if problems else
+        "the three planted linear spans internally replicate above the frozen power floor; "
+        "XOR and the one-feature case remain outside the bounded family", measured)
+
+
+@stage_check("G16.4.held_out_subspace_confirmation")
+def _check_subspace_confirmation_safeguards(data: RepresentationStructureData,
+                                            truth: Dict[str, Any]) -> CheckResult:
+    measured = _subspace_confirmation_calibration(SAFEGUARD_CASES, root_seed=26401)
+    rates = measured["internal_replication_rates"]
+    ceiling = float(ACCEPTANCE_POLICY["maximum_null_rejection_rate"])
+    problems = []
+    if rates["independent_features"] > ceiling:
+        problems.append("independent held-out false replication %.3f exceeds %.3f" %
+                        (rates["independent_features"], ceiling))
+    for name in SAFEGUARD_CASES[1:]:
+        if rates[name] != 0:
+            problems.append("one-feature safeguard %s entered confirmation" % name)
+    return CheckResult(
+        "G16.4.held_out_subspace_confirmation", Outcome.FAIL if problems else Outcome.PASS,
+        "; ".join(problems) if problems else
+        "the independent null remains calibrated and one-feature safeguards never enter the "
+        "held-out subspace family", measured)
+
+
 register_benchmark(Benchmark(
     name="representation_structure_planted", kind="sample_table",
     description="Five planted independent-sample structures spanning duplication, overlap, "
                 "complementarity, synergy and conditional survival.",
     gates=("G16.0.benchmark_contract", "G16.1.redundancy_structure",
-           "G16.2.conditional_information", "G16.3.stable_subspace_generation"),
+           "G16.2.conditional_information", "G16.3.stable_subspace_generation",
+           "G16.4.held_out_subspace_confirmation"),
     build=build_representation_structure, known_answer=representation_structure_truth,
     checks=(_check_planted, _check_redundancy_power, _check_conditional_power,
-            _check_subspace_power),
+            _check_subspace_power, _check_subspace_confirmation_power),
     params={"focus": "planted", "n": N_SAMPLES},
 ))
 
@@ -492,10 +591,12 @@ register_benchmark(Benchmark(
     description="Four safeguards spanning independence, nuisance-only association, a "
                 "conditional null and a collider counterexample.",
     gates=("G16.0.benchmark_contract", "G16.1.redundancy_structure",
-           "G16.2.conditional_information", "G16.3.stable_subspace_generation"),
+           "G16.2.conditional_information", "G16.3.stable_subspace_generation",
+           "G16.4.held_out_subspace_confirmation"),
     build=build_representation_structure, known_answer=representation_structure_truth,
     checks=(_check_safeguards, _check_redundancy_nulls,
-            _check_conditional_safeguards, _check_subspace_safeguards),
+            _check_conditional_safeguards, _check_subspace_safeguards,
+            _check_subspace_confirmation_safeguards),
     params={"focus": "safeguards", "n": N_SAMPLES},
 ))
 

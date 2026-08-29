@@ -9,12 +9,14 @@ import pytest
 from fastapi.testclient import TestClient
 
 from src.analysis_engine.stable_subspace import (
-    generate_stable_subspaces, projector, projector_distance)
+    confirm_stable_subspaces, generate_stable_subspaces, projector, projector_distance)
 from src.api.main import app
 from src.core.errors import InvalidParameterError
 from src.data_layer.dataset_ingress import (
-    SampleTableDeclaration, plan_stable_subspace_generation,
+    SampleTableDeclaration, freeze_stable_subspace_confirmation,
+    plan_stable_subspace_generation, run_stable_subspace_confirmation,
     run_stable_subspace_generation, sample_table_capability_profile)
+from src.core.preregistration import HeldOutLedger
 
 
 def _arrays(kind: str, *, seed: int = 83, n: int = 180):
@@ -149,6 +151,7 @@ def test_capability_and_multipart_plan_generation_workflow():
     profile = sample_table_capability_profile(
         payload, filename="linear.csv", delimiter=",", declaration=_declaration())
     assert profile["operations"]["stable_subspace_generation"]["available"] is True
+    assert profile["operations"]["stable_subspace_confirmation"]["available"] is True
     client = TestClient(app)
     planned = client.post(
         "/api/v1/ingress/subspace/plan",
@@ -164,3 +167,104 @@ def test_capability_and_multipart_plan_generation_workflow():
         data={"delimiter": ",", "plan": json.dumps(planned.json())})
     assert generated.status_code == 200, generated.text
     assert generated.json()["candidate_compact_stable_subspaces"]
+
+
+def test_confirmation_applies_frozen_span_and_corrects_complete_family():
+    first, second, target, _nuisance = _arrays("signal", n=220)
+    generated = generate_stable_subspaces(
+        {"first": first[:150], "second": second[:150]}, target[:150],
+        dimensions=(1,), regularizations=(0.1,), permutations=39,
+        restarts=3, iterations=24, perturbations=3, seed=201)
+    confirmed = confirm_stable_subspaces(
+        {"first": first[150:], "second": second[150:]}, target[150:],
+        preprocessing=generated["preprocessing"],
+        frozen_subspaces=generated["subspaces"],
+        family_members=generated["family"]["members"], permutations=39, seed=202)
+    assert confirmed["correction_unit"] == 1
+    assert confirmed["internally_replicated_candidates"]
+    assert confirmed["subspaces"][0]["outcome"] == "internally_replicated_candidate"
+    assert "not an external replication certificate" in confirmed["claim_boundary"]
+
+
+def test_confirmation_refuses_inadequate_frozen_nuisance_region_overlap():
+    first, second, target, nuisance = _arrays("nuisance_stable", n=180)
+    generated = generate_stable_subspaces(
+        {"first": first[:120], "second": second[:120]}, target[:120], nuisance[:120],
+        dimensions=(1,), regularizations=(0.1,), permutations=39,
+        restarts=3, iterations=24, perturbations=3, seed=203)
+    cuts = np.quantile(nuisance[:120], (1 / 3, 2 / 3))
+    with pytest.raises(ValueError, match="every frozen nuisance region"):
+        confirm_stable_subspaces(
+            {"first": first[120:], "second": second[120:]}, target[120:],
+            preprocessing=generated["preprocessing"],
+            frozen_subspaces=generated["subspaces"],
+            family_members=generated["family"]["members"],
+            nuisance=np.full(60, cuts[0] - 1), nuisance_region_cuts=cuts,
+            permutations=39, seed=204)
+
+
+def test_confirmation_seal_is_content_bound_and_partition_opens_once():
+    payload = _payload()
+    plan = plan_stable_subspace_generation(
+        payload, filename="linear.csv", delimiter=",", declaration=_declaration(),
+        dimensions=(1,), regularizations=(0.1,), permutations=39,
+        restarts=3, iterations=24, perturbations=3, seed=205)
+    generation = run_stable_subspace_generation(
+        payload, filename="linear.csv", delimiter=",", plan=plan)
+    ledger = HeldOutLedger()
+    seal = freeze_stable_subspace_confirmation(
+        payload, filename="linear.csv", delimiter=",", plan=plan,
+        generation=generation, sealed_at="2026-08-30T00:00:00Z",
+        confirmation_permutations=39, confirmation_seed=206, ledger=ledger)
+    assert seal["confirmation_opened"] is False and seal["correction_unit"] == 1
+    with pytest.raises(InvalidParameterError, match="published"):
+        run_stable_subspace_confirmation(
+            payload, filename="linear.csv", delimiter=",", seal=seal, ledger=ledger,
+            opened_at="2026-08-30T00:00:30Z", published_sha256="0" * 64)
+    assert not ledger.records
+    receipt = run_stable_subspace_confirmation(
+        payload, filename="linear.csv", delimiter=",", seal=seal, ledger=ledger,
+        opened_at="2026-08-30T00:01:00Z", published_sha256=seal["seal_sha256"])
+    assert receipt["confirmation_opened"] is True
+    assert receipt["internally_replicated_candidates"]
+    assert receipt["stored"] is False and receipt["rung_moved"] is False
+    with pytest.raises(InvalidParameterError, match="held-out partition that has not been tested"):
+        run_stable_subspace_confirmation(
+            payload, filename="linear.csv", delimiter=",", seal=seal, ledger=ledger,
+            opened_at="2026-08-30T00:02:00Z")
+    with pytest.raises(InvalidParameterError, match="complete generation result"):
+        freeze_stable_subspace_confirmation(
+            payload, filename="linear.csv", delimiter=",", plan=plan,
+            generation={**generation, "preprocessing": {}},
+            sealed_at="2026-08-30T00:03:00Z", confirmation_permutations=39)
+
+
+def test_multipart_confirmation_freeze_and_confirm_spend_once(tmp_path, monkeypatch):
+    monkeypatch.setenv("SPECTRAL_PREREGISTRATION_ROOT", str(tmp_path))
+    payload = _payload()
+    client = TestClient(app)
+    common_file = {"file": ("linear.csv", payload, "text/csv")}
+    planned = client.post(
+        "/api/v1/ingress/subspace/plan", files=common_file,
+        data={"delimiter": ",", "declaration": json.dumps(_declaration().canonical()),
+              "dimensions": "[1]", "regularizations": "[0.1]", "permutations": "39",
+              "restarts": "3", "iterations": "24", "perturbations": "3", "seed": "207"})
+    generated = client.post(
+        "/api/v1/ingress/subspace/generate", files=common_file,
+        data={"delimiter": ",", "plan": json.dumps(planned.json())})
+    frozen = client.post(
+        "/api/v1/ingress/subspace/freeze", files=common_file,
+        data={"delimiter": ",", "plan": json.dumps(planned.json()),
+              "generation": json.dumps(generated.json()),
+              "confirmation_permutations": "39", "confirmation_seed": "208"})
+    assert frozen.status_code == 200, frozen.text
+    confirmed = client.post(
+        "/api/v1/ingress/subspace/confirm", files=common_file,
+        data={"delimiter": ",", "seal_sha256": frozen.json()["seal_sha256"],
+              "published_sha256": frozen.json()["seal_sha256"]})
+    assert confirmed.status_code == 200, confirmed.text
+    repeated = client.post(
+        "/api/v1/ingress/subspace/confirm", files=common_file,
+        data={"delimiter": ",", "seal_sha256": frozen.json()["seal_sha256"]})
+    assert repeated.status_code == 400
+    assert "second confirmation" in repeated.text

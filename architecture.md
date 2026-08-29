@@ -4151,6 +4151,42 @@ rate is 0.055, below the 0.075 ceiling; all one-feature cases produce no compact
 focused paired gate reports 8 PASS, 0 FAIL and 0 NOT_YET_RUNNABLE. Confirmation remains unopened
 and is not implied by this gate.
 
+#### 3.6zzh Held-out stable-subspace confirmation (TG16.4)
+
+TG16.4 adds an explicit freeze/confirm boundary to TG16.3. The freeze operation accepts the exact
+content-bound generation plan and its digested generation response. It seals every searched
+member—not merely the passing candidates—including its projector, application basis and generate
+status; generate-only feature means and scales; the original feature/target/nuisance declaration;
+the complete-family Benjamini-Yekutieli correction; and a fresh bounded target-permutation
+ensemble. When nuisance is declared, its two tertile cuts are computed from generate rows and
+sealed with the unchanged explained-fraction-range threshold of 0.35. Confirmation outcomes
+therefore choose no threshold, region, dimension, regularization or family member.
+
+`confirm_stable_subspaces` applies the frozen standardization and bases to at least 40 untouched
+rows. Its statistic is held-out explained fraction in the fixed projected scores. Target
+permutations leave the projector fixed, because refitting it would be a second representation
+search on held-out data; p-values are nevertheless corrected over the complete TG16.3 family.
+With nuisance, the generate-derived cuts must leave at least `max(10, 2*(largest_dimension+1))`
+confirmation rows in every region or the operation refuses. A generated candidate must survive
+both the corrected association and the frozen nuisance-region stability rule to become
+`internally_replicated_candidate`; other outcomes are `not_replicated` and
+`not_a_generate_candidate`.
+
+`POST /api/v1/ingress/subspace/freeze` records server sealing time, returns the field-digested
+seal and stores it with the programme's existing preregistration records. `POST
+/api/v1/ingress/subspace/confirm` accepts the file, stored seal digest and optional independently
+published copy of that digest, but no scientific knobs. The held-out identity excludes filename and binds exact content,
+declaration and random index digest. The shared durable held-out ledger is keyed by that partition,
+not by the seal, so any later attempt under the same or another seal is refused. A completed
+receipt opens the partition once, stores no evidence and moves no rung. Its claim is internal
+replication within one dataset only—not external certification, optimality, causality or feature
+selection advice.
+
+The paired frozen benchmark uses 200 replications of 156 generate plus 68 confirmation rows. The
+exact-duplicate, noisy-copy and complementary-linear internal-replication rates are 1.000 each;
+XOR is 0.005 and the independent null is 0.000, both below 0.075. One-feature cases cannot enter
+the compact family. The focused paired gate is 10 PASS, 0 FAIL and 0 NOT_YET_RUNNABLE.
+
 ### 3.11 Ground-Truth Benchmark Suite (`src/benchmarks/`)
 
 Added in T3.5.17 (standard E7). Twenty-two synthetic datasets whose correct answer is known
@@ -4178,12 +4214,12 @@ offline and declares no truth.
     `representation_structure_planted` / `representation_structure_safeguards` sample-table
     family and the calibration/power thresholds later G16 operations must meet before
     registration; TG16.1, TG16.2 and TG16.3 add the redundancy-structure,
-    conditional-information and stable-subspace operation-level calibration gates to both
-    datasets.
+    conditional-information, stable-subspace generation and held-out confirmation
+    operation-level calibration gates to both datasets.
 *   `runner.py`, `__main__.py` - report and CLI (`python -m src.benchmarks`, exit 1 on any
     failure, usable directly as a CI gate).
 
-Current status: **37 PASS, 0 FAIL, 0 NOT_YET_RUNNABLE**. See Section 7.2f.
+Current status: **39 PASS, 0 FAIL, 0 NOT_YET_RUNNABLE**. See Section 7.2f.
 
 ### 3.13 Cloud-Native ERA5 over Zarr (`src/data_layer/zarr_source.py`, T3.5.18)
 
@@ -5531,7 +5567,7 @@ able to sit three slices out of date.
 | `test_analysis_data.py` | 7 | diagnostics/data-layer endpoints and independent D17 boundary-ring oracle |
 | `test_artifact_store.py` | 33 | content addressing, checksum verification, handle budget, T4A.3 acceptance |
 | `test_api_infrastructure.py` | 16 | health, listing, pagination, CORS, data-source transparency, benchmark endpoints |
-| `test_benchmarks.py` | 47 | Ground-Truth Benchmark Suite, seed discipline, eager/streamed climatology agreement, D30 determinism, TG16.0 paired-family completeness, and TG16.1-TG16.3 gate registration |
+| `test_benchmarks.py` | 47 | Ground-Truth Benchmark Suite, seed discipline, eager/streamed climatology agreement, D30 determinism, TG16.0 paired-family completeness, and TG16.1-TG16.4 gate registration |
 | `test_boundary_synthetic.py` | 8 | boundary treatments, windowing, synthetic generators and independent Euclidean-ring oracle |
 | `test_cds_source.py` | 14 | T5.2c monthly CDS planning/CLI, grid-alignment/server-snap refusals, network consent, atomic resume, shard integrity, conservative storage refusal, bounded Zarr publication, plus PASS/FAIL independent-route receipt publication, replay and tamper refusal |
 | `test_geometry_registry.py` | 20 | TG1.2 geometry registry: the three builtins' metrics, crops, resamples and provenance unchanged; capability-driven `is_physical`/`length_units`/`latitudes`; a fourth geometry (`polar_scan`) registered from the test module with a non-uniform, non-spherical metric; the Cartesian Laplacian refusing it; `latitude`/`longitude` recognised as a sphere |
@@ -5621,8 +5657,8 @@ able to sit three slices out of date.
 | `test_dataset_ingress.py` | 9 | G14/G15 file probing without semantic inference, explicit sample roles/relationships/units, content-bound routing with explained spatial refusals, grouped/ordered split-leakage refusal, TG16.0's shared independent-only admission contract, R18 family sealing and permutation-resolution refusal, planted generate/confirm recovery, changed-file and tampered-plan refusal, and the complete multipart HTTP workflow |
 | `test_representation_structure.py` | 6 | TG16.1 complete pair enumeration, joint redundancy/complementarity/XOR/null discrimination, sealed estimator/null/family and permutation-resolution refusal, content/tamper binding, non-removal claim boundary, earned capability registration, and multipart plan/run workflow |
 | `test_conditional_information.py` | 6 | TG16.2 conditional-signal/null/collider discrimination, overlap and effective-support admission, sealed conditional-randomisation family and permutation-resolution refusal, content/tamper binding, conditional-only claim boundary, earned nuisance capability, and multipart plan/run workflow |
-| `test_stable_subspace.py` | 6 | TG16.3 span/projector invariance, planted linear and null discrimination, optional nuisance-region stability boundary, sealed complete family/optimizer/partition and permutation-resolution refusal, content/tamper binding, unopened confirmation, earned capability, and multipart plan/generate workflow |
-  | **total** | **2421** | |
+| `test_stable_subspace.py` | 10 | TG16.3 span/projector invariance, planted linear and null discrimination, optional nuisance-region stability boundary, sealed complete family/optimizer/partition and permutation-resolution refusal, content/tamper binding and multipart plan/generate; TG16.4 unchanged held-out application, complete-family correction, nuisance-overlap refusal, content-bound seal, publication check, durable one-opening ledger, capability and multipart freeze/confirm workflow |
+  | **total** | **2425** | |
 ### 7.2h A surrogate null that was not the null it claimed (T4C.5)
 
 The most instructive defect of the project so far, because it passed every structural check.

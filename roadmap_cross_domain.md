@@ -3604,13 +3604,32 @@ produced no compact subspace. The focused paired gate is 8 PASS, 0 FAIL and 0
 NOT_YET_RUNNABLE; the complete benchmark registry is now 37 checks. The operation is registered
 as `stable_subspace_generation` and exposed through content-bound plan/generate endpoints.
 
-**TG16.4 Held-out and nuisance-region Confirmation. PLANNED.** Freeze the generated projector,
+**TG16.4 Held-out and nuisance-region Confirmation. DONE.** Freeze the generated projector,
 preprocessing and complete searched family, then apply them unchanged to held-out samples.
 Nuisance regions are defined from generate data or an external declaration before confirmation
 outcomes are opened; confirmation data may not choose thresholds, regions, dimensions or family
 members. The complete searched family is corrected on confirmation, empty regions and inadequate
 overlap refuse, and one held-out partition is opened once. Success is internal replication within
 one dataset, not an external certificate.
+
+**Delivered.** `/subspace/freeze` binds the TG16.3 result and its content/plan digests, every
+family member's projector and application basis, generate-only means/scales, generated-candidate
+status, generate-derived nuisance-tertile cuts, the unchanged 0.35 regional-stability threshold,
+the complete-family BY correction and confirmation permutation ensemble into a field-digested
+seal. `/subspace/confirm` accepts no scientific tuning input. It reconstructs the sealed random
+partition, applies every span and preprocessing value unchanged, tests fixed projected scores by
+target permutation, corrects over every searched member rather than only selected candidates,
+and refuses missing nuisance-region overlap. The shared programme ledger keys consumption by the
+content-and-index-bound held-out partition, so a second seal cannot reopen the same rows.
+
+**Acceptance met.** Both paired G16 benchmarks now carry
+`G16.4.held_out_subspace_confirmation`. Across 200 frozen replications with 156 generate and 68
+confirmation rows, exact-duplicate, noisy-copy and complementary-linear internal-replication
+rates were 1.000 each. Nonlinear XOR was 0.005 and the independent null was 0.000, below the
+0.075 ceiling; every one-feature case remained outside the compact family. The paired gate is
+10 PASS, 0 FAIL and 0 NOT_YET_RUNNABLE; the complete registry is 39 checks. A passing receipt is
+called `internally_replicated_candidate`: it stores no evidence, moves no rung and explicitly is
+not an external replication certificate.
 
 **TG16.5 External Certification Seam. PLANNED.** A published candidate may be tested against an
 independently acquired, content-addressed dataset under a separately frozen transfer contract.

@@ -143,6 +143,8 @@ def test_gating_lookup_finds_benchmarks_by_stage():
         "representation_structure_planted", "representation_structure_safeguards"}
     assert {b.name for b in benchmarks_gating("G16.3")} == {
         "representation_structure_planted", "representation_structure_safeguards"}
+    assert {b.name for b in benchmarks_gating("G16.4")} == {
+        "representation_structure_planted", "representation_structure_safeguards"}
 
 
 def test_g16_benchmark_pair_covers_the_complete_declared_family_and_acceptance_policy():
