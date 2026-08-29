@@ -3469,9 +3469,97 @@ reported descriptively on confirm, explicitly not as conditional MI. Results are
 representations, never certified invariants, causes or instructions to use a feature.
 
 **Next bounded extensions.** Parquet is the next sample-table adapter; NetCDF/Zarr continue through
-their typed gridded route rather than pretending every file is a table. Conditional MI, grouped
-resampling and learned representations remain separate benchmarked recipes, not UI labels over
-math that does not yet exist.
+their typed gridded route rather than pretending every file is a table. Group-aware and blocked
+resampling remain separate benchmarked recipes. Conditional information and bounded stable
+subspaces are specified in G16 below; their roadmap presence is not an implemented capability or
+a UI label over mathematics that does not yet exist.
+
+#### Phase G15 — Dataset capability routing
+
+**TG15.1 Content-bound capability profiles. DONE (2026-08-30, `ed-dev`).** A central operation
+registry derives scientific paths from the exact declared representation rather than source names
+or UI branches. Declared sample tables, admitted channel records, planned grid crops, acquired
+Argo reductions and acquired TESS collections emit a hashed profile with tri-state facts,
+operation status, stable reason code and explanation. Domain capability is only an upper bound;
+record cadence and transform support can narrow it.
+
+**TG15.2 Explained shell gating. DONE (2026-08-30, `ed-dev`).** The application shell owns the
+selected profile. Downstream navigation reads its operation decisions: inadmissible gridded,
+lagged or record-specific paths remain visible but disabled with the backend's reason. The same
+profile renders the fact matrix in Acquire/current context. Backend entry points remain
+authoritative refusals rather than trusting browser state.
+
+**Safety correction delivered with G15.** The first Representation Audit had accepted grouped
+and ordered declarations while using a row-random split. It now plans only independent samples.
+Grouped rows explicitly require group-held-out confirmation; ordered rows require blocked and
+embargoed confirmation. Neither dependency structure is silently broken to make the recipe run.
+
+#### Phase G16 — Representation Structure — **PLANNED**
+
+G14 finds raw or PCA candidates associated with a declared target and confirms them on a held-out
+partition. G16 asks the next bounded questions: whether candidates carry duplicate, complementary
+or unresolved information; whether a relationship remains after conditioning on a declared
+nuisance; and whether a small, frozen linear subspace retains its relationship across held-out
+samples and nuisance regions. This is a representation-structure programme, not automatic feature
+selection. Nothing in it deletes a column or instructs a researcher which representation to use.
+
+**TG16.0 Admission and benchmark prerequisites. PLANNED.** The first G16 recipes admit independent
+samples only. Grouped data remain unavailable until group-held-out nulls and confirmation exist;
+ordered data remain unavailable until blocked, embargoed equivalents exist. Before an operation
+enters the capability registry, paired known-answer benchmarks must cover exact duplicates,
+independent features, redundant noisy copies, complementary information, a synergistic pair that
+is weak individually, nuisance-only association, signal that survives conditioning, a null that
+does not, and a collider counterexample. Calibration on nulls and stated power on planted effects
+are acceptance criteria, not follow-up polish.
+
+**TG16.1 Redundancy Structure Audit. PLANNED.** Freeze the complete candidate pair/group family,
+estimator, discretisation or neighbourhood policy, null, seeds, alpha and correction before
+enumeration. Report a structure map whose outcomes distinguish supported redundancy,
+complementarity and unresolved relationships. Pairwise association alone must not be described as
+the number of independent pieces of information, and a synergistic pair must not be discarded
+because neither member ranks highly alone. Output is a **candidate redundancy structure**, never
+an instruction to remove features.
+
+**TG16.2 Conditional-Information Audit. PLANNED.** Estimate the explicitly named quantity
+`I(candidate; target | declared nuisance)` only where overlap and effective support meet a frozen
+admission rule. A global target permutation is not a conditional-independence null because it also
+destroys the target/nuisance relationship. Each estimator therefore brings a benchmarked
+conditional null — for example justified within-stratum/local permutation or a sealed conditional
+randomisation model — plus calibration and failure conditions. `nuisance` is a researcher-declared
+statistical role, not proof that the variable is a confounder: responses say **conditional
+association**, never “confounding removed”, “nuisance-free” or causal. Collider and post-treatment
+interpretations remain outside what the computation can decide.
+
+**TG16.3 Stable-Subspace Generation. PLANNED.** Search a bounded linear family only. The complete
+dimension range, preprocessing, objective, nuisance-stability criterion, regularisation values,
+optimiser, restarts, seeds and correction family are sealed before generation. Scaling and every
+subspace parameter are fitted on the generate partition alone. A subspace is identified by its
+projector/span rather than arbitrary component signs or rotations, and multi-seed/perturbation
+stability is reported so optimiser luck cannot be called scientific stability. Output is a
+**candidate compact stable subspace**, not an optimal representation.
+
+**TG16.4 Held-out and nuisance-region Confirmation. PLANNED.** Freeze the generated projector,
+preprocessing and complete searched family, then apply them unchanged to held-out samples.
+Nuisance regions are defined from generate data or an external declaration before confirmation
+outcomes are opened; confirmation data may not choose thresholds, regions, dimensions or family
+members. The complete searched family is corrected on confirmation, empty regions and inadequate
+overlap refuse, and one held-out partition is opened once. Success is internal replication within
+one dataset, not an external certificate.
+
+**TG16.5 External Certification Seam. PLANNED.** A published candidate may be tested against an
+independently acquired, content-addressed dataset under a separately frozen transfer contract.
+Preprocessing and the subspace remain unchanged unless adaptation was declared as a different
+family before target access. Only this boundary may report an external replication receipt, and
+even that receipt certifies the executed test and provenance rather than declaring a universally
+optimal or causal representation.
+
+**Capability and claim boundary.** G16 operations enter `DatasetCapabilityProfile` only when their
+backend recipe, refusal path and benchmarks exist. Until then their presence in this roadmap is
+not an available capability. Every response remains a candidate structure/relationship/subspace,
+stores no evidence and moves no claim rung unless a later evidence workflow explicitly admits its
+receipt. The intended progression is: **many measurements → informative candidates → mapped
+information structure → conditional relationships → compact stable candidates → held-out
+replication → external certification**.
 
 **TG8.3 The domain ledger — finally measurable.** With five domains across three acquisition
 shapes there is at last a trend to read. *If onboarding cost is not falling, the abstraction is
@@ -3503,6 +3591,11 @@ those hold **and**:
     claim changes (R22, TG7.1).
 14. The atmospheric line's accepted receipts remain bit-identical, or the divergence is a named,
     justified, documented defect.
+15. A conditional-information result names its estimand and benchmarked conditional null; a
+    global permutation or causal interpretation cannot satisfy G16.2.
+16. A stable-subspace result binds the complete search family before generation, fits only on the
+    generate partition, identifies the span independently of basis rotation/sign, and opens its
+    confirmation partition once.
 
 ---
 
@@ -3515,7 +3608,9 @@ Recorded so that omission cannot be mistaken for oversight.
 * **Transform implementations.** The transform *seam* generalises; the mathematics does not need
   to.
 * **Causal inference.** The ladder stops below it deliberately (R7).
-* **Learned representations.** Admissible as a future registry entry; not in this programme.
+* **Unbounded or neural learned representations.** G16 admits a bounded, sealed linear subspace
+  family only. Neural representation learning remains a future registry entry outside this
+  programme until it has its own leakage, multiplicity, calibration and transfer contracts.
 * **3D and spatiotemporal transforms.** `CoefficientField` remains 2D-per-frame. A 3D transform is
   a different and much more expensive object and calling the current one 3D would misdescribe it.
 * **Formal accessibility conformance certification.** TG11.6 supplies the workflow-wide source

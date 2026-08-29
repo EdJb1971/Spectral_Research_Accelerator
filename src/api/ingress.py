@@ -11,7 +11,8 @@ from src.core.errors import SpectralEarthError, classify
 from src.data_layer.dataset_ingress import (SampleTableDeclaration,
                                             plan_representation_audit,
                                             probe_delimited,
-                                            run_representation_audit)
+                                            run_representation_audit,
+                                            sample_table_capability_profile)
 
 router = APIRouter(prefix="/api/v1/ingress", tags=["ingress"])
 
@@ -70,6 +71,23 @@ async def plan(file: UploadFile = File(...), delimiter: str = Form(","),
             raise _handle(error)
         raise HTTPException(status_code=400,
                             detail="Declaration needs roles, sample_relationship and units.")
+
+
+@router.post("/capabilities")
+async def capabilities(file: UploadFile = File(...), delimiter: str = Form(","),
+                       declaration: str = Form(...)) -> Dict[str, Any]:
+    """Derive paths from explicit semantics and exact bytes; infer no column meaning."""
+    payload = await file.read()
+    declared = _object(declaration, "declaration")
+    try:
+        return sample_table_capability_profile(
+            payload, filename=file.filename or "upload", delimiter=delimiter,
+            declaration=SampleTableDeclaration(**declared))
+    except TypeError:
+        raise HTTPException(status_code=400,
+                            detail="Declaration needs roles, sample_relationship and units.")
+    except SpectralEarthError as error:
+        raise _handle(error)
 
 
 @router.post("/audit")

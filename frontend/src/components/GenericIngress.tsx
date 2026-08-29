@@ -4,12 +4,14 @@ import { FileSearch, Loader2, Play, ShieldCheck, Upload } from 'lucide-react';
 
 import { apiService } from '../services/api';
 import * as types from '../types/api';
+import DatasetCapabilityProfile from './DatasetCapabilityProfile';
 
 const ROLES: types.SampleRole[] = [
   'ignore', 'sample_id', 'target', 'nuisance', 'feature', 'group', 'ordering',
 ];
 
-const GenericIngress: React.FC<{ onError?: (message: string) => void }> = ({ onError }) => {
+const GenericIngress: React.FC<{ onError?: (message: string) => void;
+  onCapability?: (profile: types.DatasetCapabilityProfile | null) => void }> = ({ onError, onCapability }) => {
   const [file, setFile] = useState<File | null>(null);
   const [probe, setProbe] = useState<types.FileProbe | null>(null);
   const [roles, setRoles] = useState<Record<string, types.SampleRole>>({});
@@ -17,6 +19,7 @@ const GenericIngress: React.FC<{ onError?: (message: string) => void }> = ({ onE
   const [relationship, setRelationship] = useState<'independent' | 'grouped' | 'ordered'>('independent');
   const [plan, setPlan] = useState<types.RepresentationAuditPlan | null>(null);
   const [result, setResult] = useState<types.RepresentationAuditResult | null>(null);
+  const [capability, setCapability] = useState<types.DatasetCapabilityProfile | null>(null);
   const [busy, setBusy] = useState<'probe' | 'plan' | 'audit' | null>(null);
 
   const featureCount = useMemo(() => Object.values(roles).filter((role) => role === 'feature').length,
@@ -26,7 +29,7 @@ const GenericIngress: React.FC<{ onError?: (message: string) => void }> = ({ onE
 
   const inspect = async () => {
     if (!file) return;
-    setBusy('probe'); setPlan(null); setResult(null);
+    setBusy('probe'); setPlan(null); setResult(null); setCapability(null); onCapability?.(null);
     try {
       const found = await apiService.probeGenericFile(file);
       setProbe(found);
@@ -40,6 +43,11 @@ const GenericIngress: React.FC<{ onError?: (message: string) => void }> = ({ onE
     if (!file || !probe) return;
     setBusy('plan'); setResult(null);
     try {
+      const profile = await apiService.genericFileCapabilities(file, {
+        roles, units, sample_relationship: relationship,
+      });
+      setCapability(profile); onCapability?.(profile);
+      if (!profile.operations.representation_audit?.available) return;
       setPlan(await apiService.planRepresentationAudit(file, {
         roles, units, sample_relationship: relationship,
       }, { pcaComponents: Math.max(1, Math.min(3, featureCount)), permutations: 4999 }));
@@ -65,7 +73,7 @@ const GenericIngress: React.FC<{ onError?: (message: string) => void }> = ({ onE
     <div className="flex flex-col sm:flex-row gap-2">
       <label className="flex-1 text-xs text-slate-400">CSV or TSV sample table
         <input type="file" accept=".csv,.tsv,.txt,text/csv,text/tab-separated-values"
-          onChange={(event) => { setFile(event.target.files?.[0] ?? null); setProbe(null); setPlan(null); setResult(null); }}
+          onChange={(event) => { setFile(event.target.files?.[0] ?? null); setProbe(null); setPlan(null); setResult(null); setCapability(null); onCapability?.(null); }}
           className="mt-1 block w-full text-xs file:bg-slate-800 file:text-slate-200 file:border-0 file:rounded file:px-3 file:py-2" />
       </label>
       <button type="button" onClick={() => void inspect()} disabled={!file || busy !== null}
@@ -92,7 +100,7 @@ const GenericIngress: React.FC<{ onError?: (message: string) => void }> = ({ onE
             <td className="p-2 text-slate-500">{column.storage_type} · {column.missing_count} missing · {column.distinct_count} distinct</td>
             <td className="p-2"><label className="sr-only" htmlFor={`role-${column.name}`}>Role for {column.name}</label>
               <select id={`role-${column.name}`} value={roles[column.name] ?? 'ignore'}
-                onChange={(event) => { setRoles({ ...roles, [column.name]: event.target.value as types.SampleRole }); setPlan(null); setResult(null); }}
+                onChange={(event) => { setRoles({ ...roles, [column.name]: event.target.value as types.SampleRole }); setPlan(null); setResult(null); setCapability(null); onCapability?.(null); }}
                 className="bg-slate-950 border border-slate-700 rounded p-1.5">
                 {ROLES.map((role) => <option key={role}>{role}</option>)}
               </select></td>
@@ -100,14 +108,14 @@ const GenericIngress: React.FC<{ onError?: (message: string) => void }> = ({ onE
               <label className="sr-only" htmlFor={`unit-${column.name}`}>Units for {column.name}</label> : null}
               {column.storage_type === 'numeric' && roles[column.name] !== 'ignore' &&
                 <input id={`unit-${column.name}`} value={units[column.name] ?? ''}
-                  onChange={(event) => { setUnits({ ...units, [column.name]: event.target.value }); setPlan(null); setResult(null); }}
+                  onChange={(event) => { setUnits({ ...units, [column.name]: event.target.value }); setPlan(null); setResult(null); setCapability(null); onCapability?.(null); }}
                   className="w-32 bg-slate-950 border border-slate-700 rounded p-1.5" />}</td>
           </tr>)}</tbody>
         </table>
       </div>
       <div className="flex flex-col sm:flex-row gap-3 items-end">
         <label className="text-xs text-slate-400">How are rows related?
-          <select value={relationship} onChange={(event) => { setRelationship(event.target.value as typeof relationship); setPlan(null); setResult(null); }}
+          <select value={relationship} onChange={(event) => { setRelationship(event.target.value as typeof relationship); setPlan(null); setResult(null); setCapability(null); onCapability?.(null); }}
             className="mt-1 block bg-slate-950 border border-slate-700 rounded p-2">
             <option value="independent">Independent samples</option>
             <option value="grouped">Grouped samples</option>
@@ -117,11 +125,13 @@ const GenericIngress: React.FC<{ onError?: (message: string) => void }> = ({ onE
         <button type="button" onClick={() => void freeze()} disabled={busy !== null || featureCount < 1}
           className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 rounded px-4 py-2 text-xs font-semibold flex gap-2">
           {busy === 'plan' ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
-          Freeze audit family
+          Determine paths and freeze
         </button>
       </div>
       <p className="text-[10px] text-slate-500">{probe.claim_boundary}</p>
     </>}
+
+    {capability && <DatasetCapabilityProfile profile={capability} />}
 
     {plan && <div className="border border-indigo-500/30 bg-indigo-500/5 rounded-lg p-4 text-xs">
       <div className="flex justify-between gap-3 items-start">

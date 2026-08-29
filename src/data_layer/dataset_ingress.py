@@ -19,6 +19,7 @@ import numpy as np
 
 from src.analysis_engine.cross_scale import mutual_information
 from src.core.errors import InvalidParameterError
+from src.core.dataset_capabilities import build_profile
 from src.statistics.multiple_comparisons import adjust
 
 MAX_UPLOAD_BYTES = 16 * 1024 * 1024
@@ -173,6 +174,25 @@ class SampleTableDeclaration:
                 "units": dict(sorted(self.units.items()))}
 
 
+def sample_table_capability_profile(payload: bytes, *, filename: str, delimiter: str,
+                                    declaration: SampleTableDeclaration) -> Dict[str, Any]:
+    """Route a declared sample table without pretending grouped/ordered rows are independent."""
+    probe = probe_delimited(payload, filename=filename, delimiter=delimiter)
+    declaration.validate(probe)
+    relationship = declaration.sample_relationship
+    return build_profile(
+        kind="sample_table", phase="declared", identity=probe["content_sha256"],
+        facts={
+            "sample_table": True, "channel_series": False, "profile_collection": False,
+            "spatial_grid_2d": False, "physical_metric": False,
+            "ordered_time_axis": relationship == "ordered", "regular_cadence": None,
+            "irregular_support": None, "transform_compatible": False,
+            "precedence_admissible": False, "independent_samples": relationship == "independent",
+        },
+        basis={"filename": filename, "declaration": declaration.canonical(),
+               "semantic_inference": False, "n_rows": probe["n_rows"]})
+
+
 def _numeric_table(payload: bytes, delimiter: str, declaration: SampleTableDeclaration
                    ) -> Tuple[Dict[str, np.ndarray], Tuple[str, ...]]:
     header, rows = _rows(payload, delimiter)
@@ -196,6 +216,14 @@ def plan_representation_audit(payload: bytes, *, filename: str, delimiter: str,
                               seed: int = 1729, alpha: float = 0.05) -> Dict[str, Any]:
     probe = probe_delimited(payload, filename=filename, delimiter=delimiter)
     declaration.validate(probe)
+    if declaration.sample_relationship != "independent":
+        needed = ("group-held-out confirmation" if declaration.sample_relationship == "grouped"
+                  else "blocked and embargoed confirmation")
+        raise InvalidParameterError(
+            "sample_relationship", declaration.sample_relationship,
+            "'independent' for this first recipe. %s data require %s; a row-random split "
+            "would leak dependent samples across generate and confirm." %
+            (declaration.sample_relationship.capitalize(), needed))
     representations = tuple(dict.fromkeys(str(value) for value in representations))
     unknown = sorted(set(representations) - set(AUDIT_REPRESENTATIONS))
     if not representations or unknown:
@@ -406,4 +434,4 @@ def run_representation_audit(payload: bytes, *, filename: str, delimiter: str,
 
 __all__ = ["AUDIT_REPRESENTATIONS", "MAX_UPLOAD_BYTES", "SAMPLE_RELATIONSHIPS",
            "SAMPLE_ROLES", "SampleTableDeclaration", "plan_representation_audit",
-           "probe_delimited", "run_representation_audit"]
+           "probe_delimited", "run_representation_audit", "sample_table_capability_profile"]

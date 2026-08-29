@@ -16,6 +16,7 @@ import EvidenceView from './components/EvidenceView';
 import StructureMiningView from './components/StructureMiningView';
 import CrossDomainRecordView from './components/CrossDomainRecordView';
 import ReviewView from './components/ReviewView';
+import DatasetCapabilityProfile from './components/DatasetCapabilityProfile';
 import { apiService } from './services/api';
 import * as types from './types/api';
 import {
@@ -56,15 +57,15 @@ const WORKFLOW_NAV = [
   { section: 'Acquire', items: [{ id: 'acquire', name: 'Acquire data', icon: Cloud }] },
   {
     section: 'Analyse', items: [
-      { id: 'domainWorkbench', name: 'Cross-domain analysis', icon: Globe },
+      { id: 'domainWorkbench', name: 'Cross-domain analysis', icon: Globe, operation: 'cross_domain_analysis' },
       { id: 'preregistration', name: 'Preregistration', icon: Lock },
       { id: 'synthetic', name: 'Synthetic generator', icon: Layers, context: 'Gridded field line' },
       { id: 'meteorological', name: 'Meteorological data', icon: Wind, context: 'Gridded field line' },
-      { id: 'boundary', name: 'Boundary-condition lab', icon: Sliders, context: 'Gridded field line' },
-      { id: 'spectral', name: 'Spectral transforms', icon: Activity, context: 'Gridded field line' },
-      { id: 'analysis', name: 'Diagnostics', icon: BarChart2, context: 'Gridded field line' },
-      { id: 'mining', name: 'Structure mining', icon: Boxes },
-      { id: 'crossDomainRecord', name: 'Cross-domain record', icon: Waypoints },
+      { id: 'boundary', name: 'Boundary-condition lab', icon: Sliders, context: 'Gridded field line', operation: 'boundary_lab' },
+      { id: 'spectral', name: 'Spectral transforms', icon: Activity, context: 'Gridded field line', operation: 'dtcwt_spatial' },
+      { id: 'analysis', name: 'Diagnostics', icon: BarChart2, context: 'Gridded field line', operation: 'gridded_diagnostics' },
+      { id: 'mining', name: 'Structure mining', icon: Boxes, operation: 'structure_mining' },
+      { id: 'crossDomainRecord', name: 'Cross-domain record', icon: Waypoints, operation: 'cross_domain_analysis' },
       { id: 'hypothesis', name: 'Automated hypotheses', icon: Lightbulb },
     ],
   },
@@ -72,7 +73,7 @@ const WORKFLOW_NAV = [
     section: 'Evidence', items: [
       { id: 'evidence', name: 'Evidence record', icon: FilePlus2 },
       { id: 'declarative', name: 'Experiment engine', icon: FileCode },
-      { id: 'evaluation', name: 'Forecast evaluation', icon: FileCheck2, context: 'Gridded field line' },
+      { id: 'evaluation', name: 'Forecast evaluation', icon: FileCheck2, context: 'Gridded field line', operation: 'forecast_evaluation' },
     ],
   },
   { section: 'Review', note: 'Recorded argument; never claim permission', items: [
@@ -89,6 +90,7 @@ export default function App() {
   const [backendConnected, setBackendConnected] = useState<boolean | null>(null);
   // TG11.0: context belongs to the shell, not to whichever workflow panel is mounted.
   const [selectedRecord, setSelectedRecord] = useState<types.ChannelRecordSelection | null>(null);
+  const [selectedCapability, setSelectedCapability] = useState<types.DatasetCapabilityProfile | null>(null);
   const [selectedStudyId, setSelectedStudyId] = useState<string>('');
 
   // T3.5.22: platform status and the ERA5 crop tools. Every one of these endpoints existed
@@ -704,13 +706,19 @@ export default function App() {
                 {group.items.map(tab => {
                   const Icon = tab.icon;
                   const isActive = activeTab === tab.id;
+                  const decision = 'operation' in tab && selectedCapability
+                    ? selectedCapability.operations[tab.operation] : undefined;
+                  const unavailable = decision ? !decision.available : false;
                   return (
-                    <button key={tab.id} type="button" onClick={() => setActiveTab(tab.id)}
+                    <button key={tab.id} type="button" disabled={unavailable}
+                      onClick={() => setActiveTab(tab.id)}
                       aria-current={isActive ? 'page' : undefined}
+                      aria-describedby={unavailable ? `nav-reason-${tab.id}` : undefined}
                       className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
                         isActive
                           ? 'bg-teal-500/10 text-teal-400 border border-teal-500/20 shadow-sm shadow-teal-500/5'
-                          : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+                          : unavailable ? 'text-slate-600 cursor-not-allowed border border-slate-900'
+                            : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
                       }`}>
                       <Icon className={`w-4 h-4 ${isActive ? 'text-teal-400' : 'text-slate-400'}`}
                         aria-hidden="true" />
@@ -721,6 +729,10 @@ export default function App() {
                             {tab.context}
                           </span>
                         )}
+                        {unavailable && decision && <span id={`nav-reason-${tab.id}`}
+                          className="block text-[10px] font-normal leading-tight text-amber-500/80 mt-1">
+                          Unavailable — {decision.reason}
+                        </span>}
                       </span>
                     </button>
                   );
@@ -759,7 +771,7 @@ export default function App() {
                 <span className="font-mono text-slate-600">
                   {selectedRecord.record.content_sha256.slice(0, 12)}…
                 </span>
-                <button type="button" onClick={() => setSelectedRecord(null)}
+                <button type="button" onClick={() => { setSelectedRecord(null); setSelectedCapability(null); }}
                   aria-label="Clear selected record" className="text-slate-500 hover:text-slate-200">×</button>
               </> : <span className="text-slate-600">none selected</span>}
             </div>
@@ -772,6 +784,7 @@ export default function App() {
               </> : <span className="text-slate-600">none selected</span>}
             </div>
           </section>
+          {selectedCapability && <DatasetCapabilityProfile profile={selectedCapability} compact />}
           {error && (
             <div role="alert" className="bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded-lg p-4 flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -2492,7 +2505,8 @@ export default function App() {
           {/* TAB 9: DOMAIN-FIRST ACQUISITION (TG10.2) ---------------------------------- */}
           {activeTab === 'acquire' && (
             <AcquisitionView onError={(message) => setError(message)}
-              selectedRecord={selectedRecord} onSelectRecord={setSelectedRecord} />
+              selectedRecord={selectedRecord} onSelectRecord={setSelectedRecord}
+              onCapability={setSelectedCapability} />
           )}
 
           {/* TG11.1: the selected full channel record reaches domain_analysis without a write. */}

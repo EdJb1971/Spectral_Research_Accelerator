@@ -590,6 +590,7 @@ export interface LightCurveAcquisitionResponse {
     time_scale: string; flux_column: string };
   publication: { path: string; collection_sha256: string; bytes: number; publication: string };
   analysis_readiness: Record<string, string>;
+  capability_profile: DatasetCapabilityProfile;
   claim_boundary: string;
 }
 
@@ -616,6 +617,33 @@ export interface SampleTableDeclaration {
   roles: Record<string, SampleRole>;
   sample_relationship: 'independent' | 'grouped' | 'ordered';
   units: Record<string, string>;
+}
+
+export type CapabilityStatus = 'available' | 'unavailable' | 'needs_declaration' |
+  'needs_configuration' | 'insufficient_support';
+
+export interface DatasetOperationDecision {
+  name: string;
+  description: string;
+  status: CapabilityStatus;
+  available: boolean;
+  reason_code: string;
+  reason: string;
+  requirements: Array<{ fact: string; label: string; satisfied: boolean | null }>;
+}
+
+export interface DatasetCapabilityProfile {
+  schema: 'spectral.dataset-capability-profile.v1';
+  profile_sha256: string;
+  kind: string;
+  phase: 'probed' | 'declared' | 'planned' | 'acquired' | 'admitted';
+  identity: string;
+  domain: string | null;
+  facts: Record<string, boolean | null>;
+  capabilities: Array<{ name: string; label: string; value: boolean | null }>;
+  operations: Record<string, DatasetOperationDecision>;
+  basis: Record<string, unknown>;
+  claim_boundary: string;
 }
 
 export interface RepresentationAuditPlan {
@@ -759,6 +787,7 @@ export interface ProfileAcquisitionResponse {
     reason: string;
     contiguous_candidate?: Record<string, any>;
   };
+  capability_profile: DatasetCapabilityProfile;
   source_doi: string;
   claim_boundary: string;
 }
@@ -858,6 +887,7 @@ export interface ZarrInspectResponse {
   };
   geometry: CropGeometryPlan;
   acquisition_plan: TransformAcquisitionPlan;
+  capability_profile: DatasetCapabilityProfile;
   cli: string;
 }
 
@@ -1301,6 +1331,7 @@ export interface ChannelRecord {
     refuses: { basis: string; consequence: string }[];
     attribution_caveat: string;
   };
+  capability_profile: DatasetCapabilityProfile;
   provenance: Record<string, unknown>;
 }
 

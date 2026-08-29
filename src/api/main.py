@@ -28,6 +28,8 @@ from src.data_layer import builtin_sources as _builtin_sources  # noqa: F401
 # sources `resolve()` considered depended on the order the researcher clicked.
 from src.data_layer import zarr_source as _zarr_source  # noqa: F401
 from src.core.errors import InvalidParameterError, SpectralEarthError, classify
+from src.core.dataset_capabilities import build_profile
+from src.core.onboarding import DOMAIN_ONBOARDINGS, geometry_offers_metric
 from src.transform_engine import dtcwt as RealDTCWT
 from src.transform_engine import stationary as swt_engine
 from src.transform_engine.training import training_representation_catalogue, RepresentationError
@@ -1318,6 +1320,32 @@ async def zarr_inspect(request: ZarrCropRequest):
         analysis_flags += " --dtcwt-level1 %s --dtcwt-qshift %s" % (
             request.analysis.dtcwt_level1, request.analysis.dtcwt_qshift)
 
+    store_declaration = (zarr_adapter.store_for(request.store)
+                         if request.store in zarr_adapter.GRIDDED_STORES else None)
+    domain_name = store_declaration.domain if store_declaration is not None else None
+    onboarding = DOMAIN_ONBOARDINGS.get(domain_name) if domain_name is not None else None
+    capability_profile = build_profile(
+        kind="gridded_crop", phase="planned",
+        identity=acquisition_plan["plan_sha256"], domain=domain_name,
+        facts={
+            "sample_table": False, "channel_series": False, "profile_collection": False,
+            "spatial_grid_2d": True,
+            "physical_metric": (geometry_offers_metric(onboarding.geometry)
+                                if onboarding is not None else None),
+            "ordered_time_axis": True,
+            "regular_cadence": (bool(store_declaration.cadence_hours)
+                                if store_declaration is not None else None),
+            "irregular_support": False,
+            "transform_compatible": bool(geometry["meets_recommended_minimum"]),
+            "precedence_admissible": (store_declaration.declaration().precedence_admissible
+                                      if store_declaration is not None else None),
+            "independent_samples": False,
+        },
+        basis={"plan_sha256": acquisition_plan["plan_sha256"],
+               "source_observation_sha256": acquisition_plan["source_observation_sha256"],
+               "geometry": onboarding.geometry if onboarding is not None else None,
+               "crop_geometry": geometry,
+               "note": "Planned from metadata and coordinates; no field value was read."})
     return {
         "spec": spec.to_provenance(),
         "cached": zarr_adapter.is_cached(spec),
@@ -1325,6 +1353,7 @@ async def zarr_inspect(request: ZarrCropRequest):
         "assessment": assessment,
         "geometry": geometry,
         "acquisition_plan": acquisition_plan,
+        "capability_profile": capability_profile,
         "cli": ("python -m src.data_layer.zarr_source materialise --store %s --variables %s "
                 "--start %s --end %s --lat %g %g --lon %g %g --levels %s %s"
                 % (request.store, ",".join(request.variables), request.time_start,

@@ -10,6 +10,8 @@ from pydantic import BaseModel, Field, StrictInt, StrictStr, validator
 from extensions.tess_lightcurve import TESS, register as register_tess_domain
 from src.core.errors import SpectralEarthError, classify
 from src.core.domain import refusals_for
+from src.core.dataset_capabilities import build_profile
+from src.core.onboarding import DOMAIN_ONBOARDINGS, geometry_offers_metric
 from src.data_layer.lightcurves import LightCurveSpec, persist_collection
 from src.data_layer.tess_source import (acquire_tess, inspect_tess_query,
                                         register_tess_source)
@@ -70,6 +72,21 @@ async def acquire(request: LightCurveSpecRequest) -> Dict[str, Any]:
         publication = persist_collection(collection)
     except SpectralEarthError as error:
         raise _handle(error)
+    onboarding = DOMAIN_ONBOARDINGS.get(TESS.name)
+    profile = build_profile(
+        kind="lightcurve_collection", phase="acquired",
+        identity=collection.collection_sha256(), domain=TESS.name,
+        facts={
+            "sample_table": False, "channel_series": False, "profile_collection": False,
+            "spatial_grid_2d": False,
+            "physical_metric": geometry_offers_metric(onboarding.geometry),
+            "ordered_time_axis": True, "regular_cadence": False,
+            "irregular_support": True, "transform_compatible": False,
+            "precedence_admissible": False, "independent_samples": False,
+        },
+        basis={"collection_sha256": collection.collection_sha256(),
+               "geometry": onboarding.geometry, "time_scale": "BJD_TDB",
+               "quality_flags_retained": collection.describe()["quality_flagged"]})
     return {
         "schema": "spectral.lightcurve-acquisition.v1",
         "collection": collection.describe(), "publication": publication,
@@ -80,6 +97,7 @@ async def acquire(request: LightCurveSpecRequest) -> Dict[str, Any]:
             "frame_lags": "refused: irregular_sampling",
             "sector_gaps": "retained; never interpolated",
         },
+        "capability_profile": profile,
         "claim_boundary": (
             "This receipt identifies calibrated archive bytes and retained quality flags. "
             "It establishes no variability, period, association, precursor or mechanism."),

@@ -6820,3 +6820,39 @@ RESULT               : ok
 The four skips are intentionally opt-in live GCS, store-probe, Argo and TESS/MAST checks. The
 Argo check was separately exercised live above; the bounded TESS/MAST acceptance remains open.
 The warnings and oversized frontend chunk remain explicit maintenance debt.
+
+---
+
+## TG15.1-15.2 - Dataset capability routing and explained UI gating (2026-08-30, `ed-dev`) - **COMPLETE**
+
+`DatasetCapabilityProfile` binds operation decisions to an exact file, plan, collection or
+reduction identity. The same backend registry now routes declared sample tables, admitted channel
+records, planned grid crops, acquired Argo reductions and acquired TESS collections. The shell
+keeps unavailable paths visible and renders the returned reason rather than silently greying or
+hiding them. Backend entry points retain their own refusals.
+
+The implementation review found one safety defect in G14: grouped and ordered declarations could
+reach a row-random generate/confirm split. That path is now refused before plan creation. Grouped
+data name group-held-out confirmation as the missing recipe; ordered data name blocked and
+embargoed confirmation.
+
+```text
+> .\.venv\Scripts\python.exe -m pytest -q src/tests/test_dataset_ingress.py src/tests/test_channels_api.py src/tests/test_profiles.py src/tests/test_photometry.py src/tests/test_zarr_source.py -x
+109 passed, 3 skipped, 5 warnings in 23.08s
+
+> .\.venv\Scripts\python.exe -m pytest -q src/tests/test_frontend_contract.py -x
+94 passed, 5 warnings in 7.80s
+
+> cd frontend
+> npm run build
+✓ 1399 modules transformed.
+dist/assets/index-BUwU39Jz.js  10,185.28 kB | gzip: 3,052.89 kB
+✓ built in 53.36s
+
+> .\.venv\Scripts\python.exe -m pytest -q
+2745 passed, 4 skipped, 1 xfailed, 6 warnings in 1423.99s (0:23:43)
+```
+
+The four skips and one xfail have the same explicit meanings as the preceding finished-tree run.
+Capability availability means only that declared and verified prerequisites are present; it is
+not evidence that the operation ran, succeeded or established a scientific claim.

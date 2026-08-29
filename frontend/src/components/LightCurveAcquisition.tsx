@@ -5,7 +5,8 @@ import { apiService } from '../services/api';
 import * as types from '../types/api';
 
 const LightCurveAcquisition: React.FC<{ source: types.LightCurveSource;
-  onError?: (message: string) => void }> = ({ source, onError }) => {
+  onError?: (message: string) => void;
+  onCapability?: (profile: types.DatasetCapabilityProfile | null) => void }> = ({ source, onError, onCapability }) => {
   const [request, setRequest] = useState<types.LightCurveSpecRequest>({
     target_id: '261136679', sectors: [1], flux_column: 'PDCSAP_FLUX',
     quality_policy: 'quality_zero', max_products: 4, max_download_bytes: 64 * 1024 * 1024,
@@ -15,6 +16,7 @@ const LightCurveAcquisition: React.FC<{ source: types.LightCurveSource;
   const [capabilities, setCapabilities] = useState<types.LightCurveCapabilities | null>(null);
   const [busy, setBusy] = useState<'inspect' | 'acquire' | null>(null);
   const fail = (error: unknown) => onError?.(error instanceof Error ? error.message : String(error));
+  useEffect(() => { onCapability?.(null); }, [request]);
   useEffect(() => {
     let active = true;
     void apiService.lightCurveCapabilities()
@@ -25,7 +27,8 @@ const LightCurveAcquisition: React.FC<{ source: types.LightCurveSource;
   const inspect = async () => { setBusy('inspect'); setPlan(null); setResult(null);
     try { setPlan(await apiService.inspectLightCurve(request)); } catch (error) { fail(error); } finally { setBusy(null); } };
   const acquire = async () => { setBusy('acquire'); setResult(null);
-    try { setResult(await apiService.acquireLightCurve(request)); } catch (error) { fail(error); } finally { setBusy(null); } };
+    try { const acquired = await apiService.acquireLightCurve(request); setResult(acquired);
+      onCapability?.(acquired.capability_profile); } catch (error) { fail(error); } finally { setBusy(null); } };
 
   return <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
     <section className="bg-slate-900/50 border border-slate-800 rounded-xl p-5 space-y-3">

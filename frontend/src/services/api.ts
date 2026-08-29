@@ -276,6 +276,15 @@ export const apiService = {
       await fetch(`${BASE_URL}/ingress/plan`, { method: 'POST', body: form }));
   },
 
+  async genericFileCapabilities(file: File, declaration: types.SampleTableDeclaration,
+                                delimiter = ','): Promise<types.DatasetCapabilityProfile> {
+    const form = new FormData();
+    form.append('file', file); form.append('delimiter', delimiter);
+    form.append('declaration', JSON.stringify(declaration));
+    return handleResponse<types.DatasetCapabilityProfile>(
+      await fetch(`${BASE_URL}/ingress/capabilities`, { method: 'POST', body: form }));
+  },
+
   async runRepresentationAudit(file: File, plan: types.RepresentationAuditPlan,
                                delimiter = ','): Promise<types.RepresentationAuditResult> {
     const form = new FormData();

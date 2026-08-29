@@ -13,7 +13,8 @@ from src.core.errors import InvalidParameterError
 from src.data_layer.dataset_ingress import (SampleTableDeclaration,
                                             plan_representation_audit,
                                             probe_delimited,
-                                            run_representation_audit)
+                                            run_representation_audit,
+                                            sample_table_capability_profile)
 
 
 def dataset(seed: int = 17, n: int = 240) -> bytes:
@@ -73,6 +74,39 @@ def test_plan_freezes_complete_family_and_refuses_underpowered_permutation_resol
     assert plan["claim_boundary"].endswith("opens no held-out values.")
 
 
+def test_capability_profile_routes_independent_tables_and_explains_spatial_refusals():
+    profile = sample_table_capability_profile(
+        dataset(), filename="experiment.csv", delimiter=",", declaration=declaration())
+    assert profile["identity"] == probe_delimited(
+        dataset(), filename="experiment.csv")["content_sha256"]
+    assert profile["operations"]["representation_audit"]["available"] is True
+    boundary = profile["operations"]["boundary_lab"]
+    assert boundary["status"] == "unavailable"
+    assert boundary["reason_code"] == "requires_spatial_grid_2d"
+    assert "no declared 2D grid" in boundary["reason"]
+    assert len(profile["profile_sha256"]) == 64
+
+
+def test_grouped_and_ordered_tables_name_the_safe_split_they_need_and_never_plan():
+    payload = dataset()
+    for relationship, role, phrase in (
+        ("grouped", "group", "group-held-out confirmation"),
+        ("ordered", "ordering", "blocked and embargoed confirmation"),
+    ):
+        declared = SampleTableDeclaration(
+            roles={**declaration().roles, "sample": role},
+            sample_relationship=relationship, units=declaration().units)
+        profile = sample_table_capability_profile(
+            payload, filename="experiment.csv", delimiter=",", declaration=declared)
+        decision = profile["operations"]["representation_audit"]
+        assert decision["available"] is False
+        assert phrase in decision["reason"]
+        with pytest.raises(InvalidParameterError, match=phrase):
+            plan_representation_audit(
+                payload, filename="experiment.csv", delimiter=",", declaration=declared,
+                representations=("identity",), pca_components=1, permutations=99)
+
+
 def test_audit_finds_planted_candidate_on_generate_and_confirmation_without_claiming_truth():
     payload = dataset()
     plan = plan_representation_audit(
@@ -110,6 +144,12 @@ def test_http_workflow_is_file_first_and_reuses_the_exact_sealed_plan():
                         data={"delimiter": ","})
     assert probe.status_code == 200
     declared = declaration().canonical()
+    routed = client.post(
+        "/api/v1/ingress/capabilities",
+        files={"file": ("experiment.csv", payload, "text/csv")},
+        data={"delimiter": ",", "declaration": json.dumps(declared)})
+    assert routed.status_code == 200, routed.text
+    assert routed.json()["operations"]["representation_audit"]["available"] is True
     planned = client.post(
         "/api/v1/ingress/plan", files={"file": ("experiment.csv", payload, "text/csv")},
         data={"delimiter": ",", "declaration": json.dumps(declared),
