@@ -208,6 +208,28 @@ def _numeric_table(payload: bytes, delimiter: str, declaration: SampleTableDecla
     return values, header
 
 
+def require_independent_samples(declaration: SampleTableDeclaration, *, recipe: str) -> None:
+    """Authoritative admission rule for row-random independent-sample recipes.
+
+    G16 starts beside the existing sample-table spine.  Its first recipes must reuse this
+    refusal rather than each inventing a subtly different grouped/ordered fallback.
+    """
+    relationship = declaration.sample_relationship
+    if relationship not in SAMPLE_RELATIONSHIPS:
+        raise InvalidParameterError("sample_relationship", relationship,
+                                    "one of %s" % (SAMPLE_RELATIONSHIPS,))
+    if relationship == "independent":
+        return
+    needed = ("group-held-out confirmation with benchmarked nulls"
+              if relationship == "grouped"
+              else "blocked and embargoed confirmation with benchmarked nulls")
+    raise InvalidParameterError(
+        "sample_relationship", relationship,
+        "'independent' for %s. %s data require %s; treating dependent rows as exchangeable "
+        "would invalidate the null and leak samples across partitions." %
+        (recipe, relationship.capitalize(), needed))
+
+
 def plan_representation_audit(payload: bytes, *, filename: str, delimiter: str,
                               declaration: SampleTableDeclaration,
                               representations: Sequence[str] = ("identity", "pca"),
@@ -216,14 +238,7 @@ def plan_representation_audit(payload: bytes, *, filename: str, delimiter: str,
                               seed: int = 1729, alpha: float = 0.05) -> Dict[str, Any]:
     probe = probe_delimited(payload, filename=filename, delimiter=delimiter)
     declaration.validate(probe)
-    if declaration.sample_relationship != "independent":
-        needed = ("group-held-out confirmation" if declaration.sample_relationship == "grouped"
-                  else "blocked and embargoed confirmation")
-        raise InvalidParameterError(
-            "sample_relationship", declaration.sample_relationship,
-            "'independent' for this first recipe. %s data require %s; a row-random split "
-            "would leak dependent samples across generate and confirm." %
-            (declaration.sample_relationship.capitalize(), needed))
+    require_independent_samples(declaration, recipe="this first representation recipe")
     representations = tuple(dict.fromkeys(str(value) for value in representations))
     unknown = sorted(set(representations) - set(AUDIT_REPRESENTATIONS))
     if not representations or unknown:

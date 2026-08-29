@@ -52,14 +52,6 @@ OPERATIONS: Dict[str, Operation] = {
                   "admissible for independent samples. Grouped data need group-held-out "
                   "confirmation; ordered data need blocked and embargoed confirmation.",
                   "Declare whether samples are independent, grouped or ordered."),)),
-    "association_redundancy": Operation(
-        "Association and redundancy", "Contemporaneous association over independent samples.", (
-            _need("sample_table", "declared sample table",
-                  "This action belongs to the independent-sample table line.",
-                  "Declare the dataset representation first."),
-            _need("independent_samples", "independent samples",
-                  "This recipe does not account for grouped or ordered dependence.",
-                  "Declare how samples are related."),)),
     "cross_domain_analysis": Operation(
         "Cross-domain analysis", "Association and declared-lag analysis of channel series.", (
             _need("channel_series", "admitted channel series",

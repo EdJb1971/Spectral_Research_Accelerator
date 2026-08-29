@@ -92,7 +92,7 @@ def test_every_benchmark_declares_gates_and_a_known_answer():
     assert len(all_benchmarks()) >= 11
     for b in all_benchmarks():
         assert b.gates, "%s declares no gate" % b.name
-        assert b.kind in ("field", "sequence", "cross_domain")
+        assert b.kind in ("field", "sequence", "cross_domain", "sample_table")
         truth = b.truth()
         assert isinstance(truth, dict) and truth, "%s has an empty known answer" % b.name
         assert b.description
@@ -135,6 +135,20 @@ def test_gating_lookup_finds_benchmarks_by_stage():
     assert get_benchmark("advected_vortex_sequence") in benchmarks_gating("4D")
     assert get_benchmark("planted_configuration") in benchmarks_gating("4E")
     assert benchmarks_gating("4C")
+    assert {b.name for b in benchmarks_gating("G16.0")} == {
+        "representation_structure_planted", "representation_structure_safeguards"}
+
+
+def test_g16_benchmark_pair_covers_the_complete_declared_family_and_acceptance_policy():
+    planted = get_benchmark("representation_structure_planted").truth()
+    safeguards = get_benchmark("representation_structure_safeguards").truth()
+    covered = set(planted["cases"]) | set(safeguards["cases"])
+    assert covered == set(planted["complete_required_family"])
+    assert covered == set(safeguards["complete_required_family"])
+    policy = planted["acceptance_policy"]
+    assert policy == safeguards["acceptance_policy"]
+    assert policy["maximum_null_rejection_rate"] >= policy["alpha"]
+    assert policy["minimum_planted_detection_rate"] >= 0.8
 
 
 # ============================================================== the suite itself

@@ -61,7 +61,7 @@ class Benchmark:
     """A synthetic dataset with a known answer and the stages it gates."""
 
     name: str
-    kind: str                      # "field", "sequence", or a paired "cross_domain" record
+    kind: str                      # "field", "sequence", "cross_domain", or "sample_table"
     description: str
     gates: Tuple[str, ...]         # e.g. ("4C.alpha", "4C.surrogate_null")
     build: Callable[..., Any]      # (bundle, **params) -> field or sequence

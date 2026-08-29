@@ -6856,3 +6856,28 @@ dist/assets/index-BUwU39Jz.js  10,185.28 kB | gzip: 3,052.89 kB
 The four skips and one xfail have the same explicit meanings as the preceding finished-tree run.
 Capability availability means only that declared and verified prerequisites are present; it is
 not evidence that the operation ran, succeeded or established a scientific claim.
+
+---
+
+## TG16.0 - Representation-structure admission and benchmark prerequisites (2026-08-30, `ed-dev`) - **COMPLETE**
+
+The first G16 admission is independent-sample only, through the same authoritative refusal now
+used by the G14 representation plan. Grouped and ordered data remain unavailable until their
+respective null and confirmation schemes exist. The paired benchmark family freezes all nine
+declared planted/safeguard cases plus the later operation-level calibration and power thresholds.
+No G16 scientific operation was registered; the premature G15 `association_redundancy` entry was
+removed.
+
+```text
+> .\.venv\Scripts\python.exe -m pytest -q src/tests/test_dataset_ingress.py
+9 passed, 2 warnings in 4.41s
+
+> .\.venv\Scripts\python.exe -m src.benchmarks
+PASS 31   FAIL 0   NOT_YET_RUNNABLE 0
+```
+
+The focused benchmark/ingress run covering both files initially reported 55 passes and one
+failure because the strengthened grouped refusal no longer contained the existing public phrase
+`group-held-out confirmation`. The final wording preserves that phrase and adds the benchmarked
+null requirement; the rerun above passes. The full backend suite was not rerun for this bounded
+prerequisite slice; the clean 2745-pass G15 run remains the latest full-suite evidence.

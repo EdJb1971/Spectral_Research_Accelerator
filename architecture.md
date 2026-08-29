@@ -4028,9 +4028,31 @@ authoritative refusal, so editing browser state cannot license an inadmissible c
 column name is interpreted: generic-file profiles are derived only after the researcher supplies
 roles, units and the sample relationship.
 
+### 3.6zzd Representation-structure admission and benchmark contract (`src/benchmarks/representation_structure.py`, `dataset_ingress.py`, TG16.0, `ed-dev`)
+
+The first G16 recipes have one shared authoritative admission rule: only a declared
+`independent` sample relationship is accepted. Grouped samples name group-held-out confirmation
+with benchmarked nulls as the missing contract; ordered samples name blocked and embargoed
+confirmation with benchmarked nulls. The existing G14 representation plan now uses the same
+function, so a later G16 recipe cannot weaken the refusal by copying it.
+
+Two paired sample-table benchmarks freeze nine cases before any G16 estimator exists. The planted
+half contains an exact duplicate, distinct noisy copies, complementary candidates, an XOR pair
+that is weak individually, and signal that survives conditioning. The safeguard half contains
+independent features, nuisance-only marginal association, a conditional null, and a collider
+whose conditioning-induced association must never be described as nuisance removal. Each case
+uses its own seed-derived stream so adding one fixture cannot change the others.
+
+The acceptance contract fixes 200 replications, alpha 0.05, a maximum null rejection rate of
+0.075 and minimum planted-effect detection rate of 0.80 for later operation-level gates. TG16.0
+verifies the constructions with elementary independent oracles; it does **not** implement or
+validate redundancy, conditional-information or stable-subspace estimation. The premature
+`association_redundancy` capability added during G15 has therefore been removed. No G16 operation
+is advertised until its backend recipe, refusal, null calibration and planted power check exist.
+
 ### 3.11 Ground-Truth Benchmark Suite (`src/benchmarks/`)
 
-Added in T3.5.17 (standard E7). Twenty synthetic datasets whose correct answer is known
+Added in T3.5.17 (standard E7). Twenty-two synthetic datasets whose correct answer is known
 *before* analysis, of which **twelve are null benchmarks** whose answer is "there is nothing
 here". This is distinct from `synthetic_generator/`, which exists to keep the UI alive
 offline and declares no truth.
@@ -4041,7 +4063,7 @@ offline and declares no truth.
 *   `seeding.py` - `SeedSequence.spawn` derivation from a root seed and a **`zlib.crc32`**
     label hash (Python's `hash()` on a string is salted per process and would break
     cross-session reproducibility).
-*   `fields.py` / `sequences.py` - the fifteen datasets, including
+*   `fields.py` / `sequences.py` / `cross_domain.py` - the twenty pre-G16 datasets, including
     `advected_vortex_periodic_sequence`, added in TG2.3 so that a benchmark declaring a
     torus draws one (defect D59), and `planted_motif` / `motif_null`, the TG3.5 pair that
     differ only in whether anything was planted, and `planted_precedence` /
@@ -4051,10 +4073,14 @@ offline and declares no truth.
     refusals (Section 3.6x); and `planted_cross_domain` / `cross_domain_null`, TG4.3's paired
     records at coupling one and zero, carrying different units, semantics and native clocks
     through one exact-clock, held-out relationship pass (Section 3.6y).
+*   `representation_structure.py` - TG16.0's paired
+    `representation_structure_planted` / `representation_structure_safeguards` sample-table
+    family and the calibration/power thresholds later G16 operations must meet before
+    registration.
 *   `runner.py`, `__main__.py` - report and CLI (`python -m src.benchmarks`, exit 1 on any
     failure, usable directly as a CI gate).
 
-Current status: **29 PASS, 0 FAIL, 0 NOT_YET_RUNNABLE**. See Section 7.2f.
+Current status: **31 PASS, 0 FAIL, 0 NOT_YET_RUNNABLE**. See Section 7.2f.
 
 ### 3.13 Cloud-Native ERA5 over Zarr (`src/data_layer/zarr_source.py`, T3.5.18)
 
@@ -5402,7 +5428,7 @@ able to sit three slices out of date.
 | `test_analysis_data.py` | 7 | diagnostics/data-layer endpoints and independent D17 boundary-ring oracle |
 | `test_artifact_store.py` | 33 | content addressing, checksum verification, handle budget, T4A.3 acceptance |
 | `test_api_infrastructure.py` | 16 | health, listing, pagination, CORS, data-source transparency, benchmark endpoints |
-| `test_benchmarks.py` | 46 | Ground-Truth Benchmark Suite, seed discipline, eager/streamed climatology agreement, D30 determinism |
+| `test_benchmarks.py` | 47 | Ground-Truth Benchmark Suite, seed discipline, eager/streamed climatology agreement, D30 determinism, and TG16.0 paired-family/acceptance-policy completeness |
 | `test_boundary_synthetic.py` | 8 | boundary treatments, windowing, synthetic generators and independent Euclidean-ring oracle |
 | `test_cds_source.py` | 14 | T5.2c monthly CDS planning/CLI, grid-alignment/server-snap refusals, network consent, atomic resume, shard integrity, conservative storage refusal, bounded Zarr publication, plus PASS/FAIL independent-route receipt publication, replay and tamper refusal |
 | `test_geometry_registry.py` | 20 | TG1.2 geometry registry: the three builtins' metrics, crops, resamples and provenance unchanged; capability-driven `is_physical`/`length_units`/`latitudes`; a fourth geometry (`polar_scan`) registered from the test module with a non-uniform, non-spherical metric; the Cartesian Laplacian refusing it; `latitude`/`longitude` recognised as a sphere |
@@ -5489,8 +5515,8 @@ able to sit three slices out of date.
 | `test_reviews_api.py` | 8 | TG11.5's read-only recorded-review boundary: explicit absence without reassurance, complete verified record/outcome/cost serving, exact latest-bundle binding, record-digest linkage, malformed and unknown artifacts reported rather than skipped, unknown-study 404, GET-only routing, and a read leaving the evidence bundle byte-identical (R22, R23) |
 | `test_profiles.py` | 10 | TG12.2b-d immutable profiles, declared reductions, and bounded Argo seam: profile spec machine-independence and scatter preservation, preflight counts, observed-invalid distinction from absence, per-float reduction enforcing violations, depth-bin aggregation identity shifts, profile collection round trips, argo parent flat-channel refusal, profile reduction registry discoverability, and profile API contract refusal visibility (E15, R17) |
 | `test_photometry.py` | 9 | TG13.1 atomic TESS onboarding and precedence refusal, canonical bounded requests, metadata-only exact-product preflight, checksum-valid BJD_TDB parsing and value-bound identity, pre-download caps, immutable collection replay, source discovery, API claim boundaries, and an explicit opt-in bounded live MAST acceptance (E14, E15, R17, R21) |
-| `test_dataset_ingress.py` | 8 | G14/G15 file probing without semantic inference, explicit sample roles/relationships/units, content-bound routing with explained spatial refusals, grouped/ordered split-leakage refusal, R18 family sealing and permutation-resolution refusal, planted generate/confirm recovery, changed-file and tampered-plan refusal, and the complete multipart HTTP workflow |
-  | **total** | **2401** | |
+| `test_dataset_ingress.py` | 9 | G14/G15 file probing without semantic inference, explicit sample roles/relationships/units, content-bound routing with explained spatial refusals, grouped/ordered split-leakage refusal, TG16.0's shared independent-only admission contract, R18 family sealing and permutation-resolution refusal, planted generate/confirm recovery, changed-file and tampered-plan refusal, and the complete multipart HTTP workflow |
+  | **total** | **2403** | |
 ### 7.2h A surrogate null that was not the null it claimed (T4C.5)
 
 The most instructive defect of the project so far, because it passed every structural check.

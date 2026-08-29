@@ -3494,7 +3494,7 @@ and ordered declarations while using a row-random split. It now plans only indep
 Grouped rows explicitly require group-held-out confirmation; ordered rows require blocked and
 embargoed confirmation. Neither dependency structure is silently broken to make the recipe run.
 
-#### Phase G16 — Representation Structure — **PLANNED**
+#### Phase G16 — Representation Structure — **IN PROGRESS**
 
 G14 finds raw or PCA candidates associated with a declared target and confirms them on a held-out
 partition. G16 asks the next bounded questions: whether candidates carry duplicate, complementary
@@ -3503,7 +3503,7 @@ nuisance; and whether a small, frozen linear subspace retains its relationship a
 samples and nuisance regions. This is a representation-structure programme, not automatic feature
 selection. Nothing in it deletes a column or instructs a researcher which representation to use.
 
-**TG16.0 Admission and benchmark prerequisites. PLANNED.** The first G16 recipes admit independent
+**TG16.0 Admission and benchmark prerequisites. DONE (2026-08-30, `ed-dev`).** The first G16 recipes admit independent
 samples only. Grouped data remain unavailable until group-held-out nulls and confirmation exist;
 ordered data remain unavailable until blocked, embargoed equivalents exist. Before an operation
 enters the capability registry, paired known-answer benchmarks must cover exact duplicates,
@@ -3511,6 +3511,17 @@ independent features, redundant noisy copies, complementary information, a syner
 is weak individually, nuisance-only association, signal that survives conditioning, a null that
 does not, and a collider counterexample. Calibration on nulls and stated power on planted effects
 are acceptance criteria, not follow-up polish.
+
+**Delivered.** `require_independent_samples` is the one refusal used by the existing file-first
+recipe and reserved for the G16 recipes: grouped rows name group-held-out confirmation with
+benchmarked nulls, and ordered rows name blocked/embargoed confirmation with benchmarked nulls.
+`representation_structure.py` registers a planted/safeguard pair covering all nine cases above
+with separately derived random streams and independent construction oracles. The future
+operation-level acceptance family is frozen at 200 replications, alpha 0.05, null rejection rate
+at most 0.075 and planted detection power at least 0.80. The benchmark suite is 31 PASS, 0 FAIL,
+0 NOT_YET_RUNNABLE. This slice deliberately exposes no G16 operation; the premature
+`association_redundancy` G15 registry entry was removed. TG16.1 must earn its registry entry by
+running these cases, not merely by consuming their arrays.
 
 **TG16.1 Redundancy Structure Audit. PLANNED.** Freeze the complete candidate pair/group family,
 estimator, discretisation or neighbourhood policy, null, seeds, alpha and correction before
