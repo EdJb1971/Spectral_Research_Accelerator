@@ -1,0 +1,30 @@
+# Optional ocean acquisition for Phase G12 (TG12.1 gridded ocean product, TG12.2 Argo
+# profiles). The main application, every ERA5 workflow and all cached crops remain usable
+# without this file, exactly as requirements-cds.txt is optional for direct CDS acquisition.
+#
+#   s3fs        - the ocean stores are behind S3-compatible endpoints. gcsfs already covers
+#                 WeatherBench's gs:// URIs; nothing in the venv could open an s3:// one.
+#   earthaccess - authenticates NASA Earthdata for ECCO, and reads its netCDF granules.
+#
+# Both are pure additions to the main environment: installing them downgraded nothing.
+-r requirements.txt
+s3fs>=2024.6.0
+earthaccess>=0.11.0
+
+# ---------------------------------------------------------------------------------------
+# NOT INSTALLABLE HERE, AND WHY. `copernicusmarine` (the Copernicus Marine Toolbox, needed to
+# mint credentials for the GLORYS ARCO Zarr stores) requires pydantic >= 2.9.1. This project
+# pins `pydantic>=1.10.0,<2.0.0` because FastAPI 0.110 runs its whole API layer on pydantic
+# v1. `pip install` of the two together fails with ResolutionImpossible - checked, not
+# assumed - and upgrading pydantic to v2 to accommodate an optional data adapter would
+# rewrite the API layer for the sake of a source. That trade is refused.
+#
+# The toolbox therefore lives in its own interpreter at `.venv-copernicus`, created with:
+#
+#     python -m venv .venv-copernicus
+#     .venv-copernicus\Scripts\python.exe -m pip install copernicusmarine
+#
+# and is invoked as an external command, never imported. This is the honest shape of the
+# dependency anyway: the toolbox is a credential-minting *tool*, not a library the science
+# code calls. Nothing in `src/` may import it, and a test asserts that.
+# ---------------------------------------------------------------------------------------

@@ -27,9 +27,9 @@ export function EvaluationEvidence({ reports, importing, onImport }: {
           whose nested hashes and lineage were re-verified by the server at import and read time.
         </p>
       </div>
-      <label className="cursor-pointer bg-teal-600 hover:bg-teal-500 text-white text-sm font-semibold py-2 px-4 rounded-lg flex items-center gap-2">
-        <Upload className="w-4 h-4" /> {importing ? 'Verifying…' : 'Import receipt'}
-        <input type="file" accept="application/json,.json" className="hidden" disabled={importing}
+      <label htmlFor="evaluation-receipt" className="cursor-pointer bg-teal-600 hover:bg-teal-500 text-white text-sm font-semibold py-2 px-4 rounded-lg flex items-center gap-2">
+        <Upload className="w-4 h-4" aria-hidden="true" /> {importing ? 'Verifying…' : 'Import receipt'}
+        <input id="evaluation-receipt" type="file" accept="application/json,.json" className="sr-only" disabled={importing}
           onChange={async e => { const file = e.target.files?.[0]; if (file) await onImport(file); e.target.value = ''; }} />
       </label>
     </div>
@@ -61,8 +61,8 @@ export function EvaluationEvidence({ reports, importing, onImport }: {
 
       <div className="flex flex-col lg:flex-row gap-3 lg:items-end bg-slate-900/40 border border-slate-800 rounded-xl p-4">
         <div className="flex-1">
-          <label className="text-[10px] uppercase tracking-wider text-slate-500 block mb-1">Verified report</label>
-          <select value={selected.report_id} onChange={e => setSelectedId(e.target.value)}
+          <label htmlFor="verified-evaluation-report" className="text-[10px] uppercase tracking-wider text-slate-500 block mb-1">Verified report</label>
+          <select id="verified-evaluation-report" value={selected.report_id} onChange={e => setSelectedId(e.target.value)}
             className="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-xs font-mono text-slate-300">
             {reports.map(r => <option key={r.report_id} value={r.report_id}>{r.scope.split_start} — {r.scope.split_end} · {r.report_id.slice(0, 12)}</option>)}
           </select>

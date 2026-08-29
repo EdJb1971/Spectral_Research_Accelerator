@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useId } from 'react';
 import Plot from 'react-plotly.js';
 
 interface LineSeries {
@@ -30,6 +30,7 @@ export const LineChart: React.FC<LineChartProps> = ({
   logX,
   logY,
 }) => {
+  const figureTitleId = useId();
   if (!series || series.length === 0 || series.every(s => s.x.length === 0)) {
     return (
       <div className="bg-slate-900 border border-slate-800 rounded-lg p-6 flex items-center justify-center h-64 text-slate-500 w-full">
@@ -54,8 +55,11 @@ export const LineChart: React.FC<LineChartProps> = ({
   }));
 
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-lg p-4 relative w-full">
-      {title && <h3 className="text-sm font-semibold text-slate-300 mb-2">{title}</h3>}
+    <figure className="bg-slate-900 border border-slate-800 rounded-lg p-4 relative w-full"
+      aria-labelledby={figureTitleId}>
+      <h3 id={figureTitleId} className={title ? "text-sm font-semibold text-slate-300 mb-2" : "sr-only"}>
+        {title || 'Line chart'}
+      </h3>
       <div className="w-full overflow-hidden rounded">
         <Plot
           data={plotData}
@@ -94,6 +98,11 @@ export const LineChart: React.FC<LineChartProps> = ({
           className="w-full h-80"
         />
       </div>
-    </div>
+      <figcaption className="sr-only">
+        {series.length} series: {series.map(item => item.name).join(', ')}.
+        {xLabel ? ` Horizontal axis: ${xLabel}${logX ? ', logarithmic scale' : ''}.` : ''}
+        {yLabel ? ` Vertical axis: ${yLabel}${logY ? ', logarithmic scale' : ''}.` : ''}
+      </figcaption>
+    </figure>
   );
 };

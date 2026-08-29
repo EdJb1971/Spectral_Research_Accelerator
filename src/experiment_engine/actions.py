@@ -20,6 +20,7 @@ from typing import Any, Callable, Dict, NamedTuple, Optional
 import torch
 
 from src.core.errors import MissingParameterError
+from src.core.level_axis import PRESSURE_HPA
 from src.core.registry import Registry
 from src.analysis_engine.decomposition import ErrorDecompositionEngine
 from src.analysis_engine.diagnostics import SpectralSpatialAnalysisEngine
@@ -185,7 +186,14 @@ def perturb_field(args: Dict[str, Any], device: torch.device) -> Dict[str, Any]:
         elif p_type == "noise":
             noise_type = pert.get("noise_type", "gaussian")
             level = pert.get("level", 0.1)
-            current_field = PerturbationEngine.add_noise(current_field, noise_type, level)
+            # Defect D57: the action's declared params advertised that noise "accepts `seed`
+            # for reproducibility", and the seed was then dropped on the floor here. A user
+            # asking for a reproducible perturbation got an unreproducible one and no error -
+            # the worst shape a reproducibility defect can take, because the request looks
+            # honoured. Omitting it now falls back to the task's stream (D55), so a seeded
+            # sweep is reproducible either way.
+            current_field = PerturbationEngine.add_noise(
+                current_field, noise_type, level, seed=pert.get("seed"))
         else:
             raise ValueError(f"Unsupported perturbation type: {p_type}")
             
@@ -564,6 +572,9 @@ def decompose_bank(args: Dict[str, Any], device: torch.device) -> Dict[str, Any]
         field = select_orientations(field, combination.get("orientations"))
         if level_hpa is not None:
             field.level = float(level_hpa)
+            # TG1.5: the sweep parameter is named in hectopascals, so the field it
+            # stamps declares the pressure coordinate rather than leaving a bare number.
+            field.level_axis = PRESSURE_HPA
         handle = store.put(field, name="bank_%s_l%s" % (family, combination.get("levels")))
         results.append({
             "wavelet_family": family,

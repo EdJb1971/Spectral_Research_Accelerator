@@ -2,6 +2,7 @@ import torch
 import numpy as np
 from typing import Tuple, Dict, Any, Optional
 
+from src.core.axes import resolve_axis_roles
 from src.physical_core.grid import GridSpec
 
 class PhysicalField:
@@ -17,7 +18,10 @@ class PhysicalField:
         split: Optional[str] = None,  # "train", "val", "test"
         dtype: Optional[torch.dtype] = None,
         grid: Optional[GridSpec] = None,
-        units: Optional[str] = None
+        units: Optional[str] = None,
+        # TG1.1: which coordinate is the row and which the column, when the caller knows.
+        # Without it the names are consulted, exactly as before; with it they are labels.
+        axis_roles: Optional[Dict[str, str]] = None
     ):
         if len(data.shape) != 2:
             raise ValueError(f"PhysicalField data must be 2D. Got shape {data.shape}")
@@ -47,6 +51,7 @@ class PhysicalField:
         else:
             self.coords = coords
             
+        self.axis_roles = dict(axis_roles) if axis_roles else None
         self.metadata = metadata or {}
         if units is not None:
             self.metadata.setdefault("units", units)
@@ -69,6 +74,31 @@ class PhysicalField:
         else:
             self.grid = GridSpec.from_coords(self.coords, tuple(self.data.shape), self.metadata)
 
+    def _coordinate_axis(self, name: str) -> Optional[str]:
+        """``"row"``, ``"column"`` or ``None`` for a 1-D coordinate (TG1.1, standard E14).
+
+        This replaces two hardcoded name lists - ``["y","lat"]`` in `scale_resolution` and
+        ``["x","lon"]`` in `split_field` - with one resolution that a caller can override by
+        declaring `axis_roles`. Those lists disagreed with each other about what an
+        unrecognised coordinate was: the first treated it as a column, the second as a row.
+        Both quirks are preserved at the call sites, because a coordinate nobody has named or
+        declared is genuinely unknown and changing it silently would move existing results.
+
+        What does change: ``latitude``/``longitude`` (spelled in full, as CF and ERA5 spell
+        them) now resolve. Before, `latitude` fell through the ``["y","lat"]`` test and was
+        interpolated to the *column* count, and `longitude` fell through ``["x","lon"]`` and
+        was cloned rather than sliced by a split - leaving a coordinate vector that no longer
+        described its own data. That is defect **D56**, and it is fixed here.
+        """
+        resolution = resolve_axis_roles(tuple(self.coords), self.axis_roles,
+                                        allow_positional_inference=False)
+        row, column = resolution.spatial_pair()
+        if name == row:
+            return "row"
+        if name == column:
+            return "column"
+        return None
+
     @property
     def units(self) -> Optional[str]:
         """Units of the field *values* (e.g. "K"), distinct from the grid's length units."""
@@ -89,7 +119,10 @@ class PhysicalField:
         new_coords = {}
         for key, val in self.coords.items():
             if len(val.shape) == 1:
-                new_len = target_shape[0] if key in ["y", "lat"] else target_shape[1]
+                # An unresolved coordinate is treated as a column, which is what the
+                # hardcoded `key in ["y","lat"]` test did with everything it did not know.
+                new_len = (target_shape[0] if self._coordinate_axis(key) == "row"
+                           else target_shape[1])
                 temp_coord = val.unsqueeze(0).unsqueeze(0)
                 scaled_coord = torch.nn.functional.interpolate(
                     temp_coord, size=(new_len,), mode="linear", align_corners=True
@@ -103,7 +136,8 @@ class PhysicalField:
                 new_coords[key] = scaled_coord.squeeze(0).squeeze(0)
                 
         return PhysicalField(scaled_data, coords=new_coords, metadata=self.metadata,
-                             split=self.split, grid=self.grid.resampled(target_shape))
+                             split=self.split, grid=self.grid.resampled(target_shape),
+                             axis_roles=self.axis_roles)
 
     def split_field(self, train_ratio: float = 0.6, val_ratio: float = 0.2) -> Dict[str, "PhysicalField"]:
         """
@@ -125,7 +159,10 @@ class PhysicalField:
             sliced = {}
             for k, v in self.coords.items():
                 if len(v.shape) == 1:
-                    if k in ["x", "lon"]:
+                    # The split is along the column axis, so only the column coordinate is
+                    # cut. An unresolved coordinate is copied whole, as the hardcoded
+                    # `k in ["x","lon"]` test did with everything it did not know.
+                    if self._coordinate_axis(k) == "column":
                         sliced[k] = v[start:end]
                     else:
                         sliced[k] = v.clone()
@@ -136,13 +173,16 @@ class PhysicalField:
         return {
             "train": PhysicalField(train_data, coords=slice_coords(0, train_end),
                                    metadata=self.metadata, split="train",
-                                   grid=self.grid.subset(col_start=0, col_stop=train_end)),
+                                   grid=self.grid.subset(col_start=0, col_stop=train_end),
+                                   axis_roles=self.axis_roles),
             "val": PhysicalField(val_data, coords=slice_coords(train_end, val_end),
                                  metadata=self.metadata, split="val",
-                                 grid=self.grid.subset(col_start=train_end, col_stop=val_end)),
+                                 grid=self.grid.subset(col_start=train_end, col_stop=val_end),
+                                 axis_roles=self.axis_roles),
             "test": PhysicalField(test_data, coords=slice_coords(val_end, w),
                                   metadata=self.metadata, split="test",
-                                  grid=self.grid.subset(col_start=val_end, col_stop=w))
+                                  grid=self.grid.subset(col_start=val_end, col_stop=w),
+                                  axis_roles=self.axis_roles)
         }
 
     def validate_split_guardrails(self, other: "PhysicalField") -> bool:

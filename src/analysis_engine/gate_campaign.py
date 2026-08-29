@@ -17,7 +17,6 @@ import math
 import os
 from pathlib import Path
 import shutil
-import tempfile
 from typing import Any, Dict, Mapping, Optional, Sequence, Tuple, Union
 from dataclasses import dataclass
 
@@ -26,6 +25,7 @@ import numpy as np
 from src.analysis_engine.gate_run import GateStudyPlan
 from src.analysis_engine.cross_scale import support_floor
 from src.core.errors import DataSourceError, InvalidParameterError
+from src.core.publication import publish_new_bytes
 from src.data_layer.cds_source import (
     MINIMUM_FREE_RESERVE_BYTES,
     CDSRegionalRequest,
@@ -100,9 +100,17 @@ def _request_from_mapping(value: Any, label: str) -> CDSRegionalRequest:
     return request
 
 
+#: Fields a crop record may omit because they postdate records already written and signed.
+#: `vertical_dim` arrived with TG10.1; a preregistration written before it is authenticated by
+#: its fingerprint, so demanding the field would invalidate a signed artefact retroactively
+#: (defect D63). Absence means the ERA5 default, which is what those records meant.
+_OPTIONAL_CROP_FIELDS = frozenset({"vertical_dim"})
+
+
 def _crop_from_mapping(value: Any, label: str) -> CropSpec:
     fields = set(CropSpec.__dataclass_fields__) | {"uri", "content_key"}
-    record = _exact(value, fields, label)
+    supplied = set(value) if isinstance(value, Mapping) else set()
+    record = _exact(value, fields - (_OPTIONAL_CROP_FIELDS - supplied), label)
     crop = CropSpec.from_provenance(dict(record))
     if dict(record) != crop.to_provenance():
         raise InvalidParameterError(label, record,
@@ -136,14 +144,17 @@ def _scientific_review(campaign: "GateCampaign") -> Dict[str, Any]:
             "at least %d valid parent-grid pixels after the frozen transform support; "
             "failures=%s" % (MIN_VALID_INTERIOR, deficient))
 
-    from types import SimpleNamespace
+    from src.core.channel_series import ChannelGeometrySpec
     from src.physical_core.grid import GridSpec
     grid = GridSpec.latlon(
         (height, width), lat0=request.lat_max, dlat=-request.grid_degrees,
         lon0=request.lon_min, dlon=request.grid_degrees)
-    signature = SimpleNamespace(
-        scales=list(range(1, plan.protocol.n_scales + 1)),
-        interior=[{"support_parent_px": value} for value in supports],
+    # Declares the `ChannelGeometry` contract it satisfies instead of duck-typing it with a
+    # SimpleNamespace: this audit runs before any data exists, so it supplies the labels,
+    # per-channel filter support and grid provenance that a lag floor needs, and nothing else.
+    signature = ChannelGeometrySpec(
+        channels=list(range(1, plan.protocol.n_scales + 1)),
+        support_parent_px=list(supports),
         provenance={"grid": grid.to_provenance()})
     floors = support_floor(
         signature, plan.protocol.cadence_seconds, plan.advection_speed_m_s)
@@ -345,27 +356,12 @@ class GateCampaign:
 
 def _atomic_write_new(path: Union[str, os.PathLike[str]], payload: bytes) -> None:
     target = Path(path)
-    target.parent.mkdir(parents=True, exist_ok=True)
-    descriptor, name = tempfile.mkstemp(
-        prefix=".%s." % target.name, suffix=".tmp", dir=str(target.parent))
-    temporary = Path(name)
     try:
-        with os.fdopen(descriptor, "wb") as handle:
-            handle.write(payload)
-            handle.flush()
-            os.fsync(handle.fileno())
-        try:
-            if os.name == "nt":
-                os.rename(temporary, target)
-            else:
-                os.link(temporary, target)
-        except FileExistsError:
-            raise FileExistsError("refusing to overwrite gate campaign at %s" % target) from None
-    finally:
-        try:
-            temporary.unlink()
-        except FileNotFoundError:
-            pass
+        publish_new_bytes(target, payload, "gate campaign")
+    except FileExistsError:
+        raise
+    except OSError as exc:
+        raise DataSourceError(str(exc), path=str(target), operation="immutable-publication") from exc
 
 
 def save_gate_campaign(path: Union[str, os.PathLike[str]], campaign: GateCampaign) -> str:

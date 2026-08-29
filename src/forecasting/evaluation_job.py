@@ -13,12 +13,12 @@ import hashlib
 import json
 import os
 import sys
-import tempfile
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any, Dict, Mapping, Optional, Sequence, Union
 
 from src.core.errors import SpectralEarthError
+from src.core.publication import publish_new_bytes
 from src.data_layer.zarr_source import (
     CropSpec,
     cache_path,
@@ -84,30 +84,12 @@ def _read_json(path: Union[str, os.PathLike[str]], label: str) -> Any:
 
 def _atomic_write_new(path: Union[str, os.PathLike[str]], payload: bytes, label: str) -> None:
     target = Path(path)
-    target.parent.mkdir(parents=True, exist_ok=True)
-    descriptor, temporary_name = tempfile.mkstemp(
-        prefix=".%s." % target.name, suffix=".tmp", dir=str(target.parent))
-    temporary = Path(temporary_name)
     try:
-        with os.fdopen(descriptor, "wb") as handle:
-            handle.write(payload)
-            handle.flush()
-            os.fsync(handle.fileno())
-        try:
-            if os.name == "nt":
-                os.rename(temporary, target)
-            else:
-                os.link(temporary, target)
-        except FileExistsError:
-            raise FileExistsError("refusing to overwrite %s at %s" % (label, target)) from None
-        except OSError as exc:
-            raise ForecastContractError(
-                "cannot atomically publish %s at %s: %s" % (label, target, exc)) from exc
-    finally:
-        try:
-            temporary.unlink()
-        except FileNotFoundError:
-            pass
+        publish_new_bytes(target, payload, label)
+    except FileExistsError:
+        raise
+    except OSError as exc:
+        raise ForecastContractError(str(exc)) from exc
 
 
 @dataclass(frozen=True)

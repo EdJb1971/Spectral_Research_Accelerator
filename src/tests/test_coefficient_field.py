@@ -367,13 +367,18 @@ def test_mixed_families_in_one_level_bank_are_refused():
 
 def test_vertical_offsets_are_signed_and_name_their_direction():
     """`500 - 850 = -350` is *upward*: pressure decreases with height, and a reader who got
-    that backwards would invert every precursor relationship the bank is built to find."""
+    that backwards would invert every precursor relationship the bank is built to find.
+
+    The numbers are unchanged by TG1.5; the keys generalised and the rule that produced
+    `"upward"` moved into the declared coordinate.
+    """
     bank = LevelBank(make_level_banks())
-    offsets = {(p["from_level_hpa"], p["to_level_hpa"]): p for p in bank.vertical_offsets()}
+    offsets = {(p["from_level"], p["to_level"]): p for p in bank.vertical_offsets()}
 
     upward = offsets[(850.0, 500.0)]
-    assert upward["offset_hpa"] == -350.0
+    assert upward["offset"] == -350.0
     assert upward["direction"] == "upward"
+    assert upward["level_units"] == "hPa"
     assert offsets[(500.0, 850.0)]["direction"] == "downward"
 
 
@@ -381,7 +386,9 @@ def test_a_level_bank_states_that_it_is_not_a_3d_transform():
     """Scope discipline from the roadmap, asserted so a later reader cannot mistake it."""
     record = LevelBank(make_level_banks()).summary()
     assert "not a 3D wavelet transform" in record["scope"]
-    assert record["levels_hpa"] == [500.0, 850.0]
+    assert record["levels"] == [500.0, 850.0]
+    assert record["level_axis"] == "pressure_hpa"
+    assert record["level_units"] == "hPa"
 
 
 def test_an_empty_level_bank_is_refused():

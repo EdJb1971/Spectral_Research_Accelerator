@@ -31,6 +31,10 @@ class TransformSpec(NamedTuple):
     inverse: Callable[[Dict[str, Any], PhysicalField], PhysicalField]
     #: (coeffs) -> JSON-serialisable summary for an API response
     summarise: Callable[[Dict[str, Any]], Dict[str, Any]]
+    #: (levels, config) -> exact R13 support geometry, or None for transforms that do not
+    #: expose a multiscale boundary-support contract. Acquisition planning consumes this
+    #: callable rather than copying filter lengths into the data layer.
+    support: Optional[Callable[[int, Dict[str, Any]], Dict[str, Any]]] = None
 
 
 def register_transform(name: str, description: str = "", params: Optional[Dict] = None,
@@ -139,6 +143,24 @@ def _register_builtins() -> None:
             out[key] = {b: c[key][b].tolist() for b in ("LH", "HL", "HH")}
         return out
 
+    def _swt_support(levels, config):
+        wavelet = str(config.get("wavelet", "db2")).lower()
+        # Calling the implementation is also validation: an unknown wavelet is refused by the
+        # same table the transform itself uses, never accepted by a second planner allow-list.
+        rows = []
+        for level in range(1, int(levels) + 1):
+            margin = swt_mod.valid_interior_halfwidth(wavelet, level)
+            rows.append({
+                "level": level,
+                "support_parent_px": swt_mod.filter_support(wavelet, level),
+                "margin_parent_px": margin,
+                "sampling_factor": 1,
+                "margin_native_px": margin,
+            })
+        return {"transform_family": "swt", "config": {"wavelet": wavelet,
+                 "mode": str(config.get("mode", "periodic"))},
+                "alignment_cells": 1, "levels": rows}
+
     register_transform(
         "swt", description="Undecimated (a trous) stationary wavelet transform.",
         params={"levels": "int >= 1", "wavelet": "haar|db2|db3",
@@ -150,6 +172,7 @@ def _register_builtins() -> None:
         apply=_swt_apply,
         inverse=lambda c, f: swt_mod.inverse_swt2d(c),
         summarise=_swt_summary,
+        support=_swt_support,
     ))
 
     # ---------------------------------------------------------------- dtcwt
@@ -202,6 +225,23 @@ def _register_builtins() -> None:
             "coefficient_provenance": c["coefficient_provenance"],
         }
 
+    def _dtcwt_support(levels, config):
+        level1 = str(config.get("level1", "near_sym_b"))
+        qshift = str(config.get("qshift", "qshift_b"))
+        rows = []
+        for level in range(1, int(levels) + 1):
+            rows.append({
+                "level": level,
+                "support_parent_px": dtcwt_mod.filter_support(level, level1, qshift),
+                "margin_parent_px": dtcwt_mod.valid_interior_halfwidth(
+                    level, level1, qshift),
+                "sampling_factor": 2 ** level,
+                "margin_native_px": dtcwt_mod.native_halfwidth(level, level1, qshift),
+            })
+        return {"transform_family": "dtcwt", "config": {"level1": level1,
+                 "qshift": qshift}, "alignment_cells": 2 ** int(levels),
+                "levels": rows}
+
     register_transform(
         "dtcwt", description="Kingsbury q-shift dual-tree complex wavelet transform.",
         params={"levels": "int >= 1", "level1": "near_sym_a|near_sym_b|legall",
@@ -214,6 +254,7 @@ def _register_builtins() -> None:
         apply=_dtcwt_apply,
         inverse=lambda c, f: dtcwt_mod.inverse_dtcwt2d(c),
         summarise=_dtcwt_summary,
+        support=_dtcwt_support,
     ))
 
     # ---------------------------------------------------------------- hybrid

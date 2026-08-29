@@ -73,7 +73,8 @@ export const LineageGraph: React.FC<LineageGraphProps> = ({ nodes, edges }) => {
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 bg-slate-950 p-4 rounded-xl border border-slate-800 w-full">
       <div className="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-lg p-4 relative overflow-x-auto">
         <h3 className="text-sm font-semibold text-slate-300 mb-4">Provenance Lineage Graph</h3>
-        <svg viewBox={`0 0 ${width} ${height}`} className="min-w-[600px] w-full h-auto">
+        <svg viewBox={`0 0 ${width} ${height}`} className="min-w-[600px] w-full h-auto"
+          role="group" aria-label="Experiment provenance nodes and directed relations">
           {edges.map((edge, idx) => {
             const start = nodePositions[edge.source_id];
             const end = nodePositions[edge.target_id];
@@ -131,7 +132,17 @@ export const LineageGraph: React.FC<LineageGraphProps> = ({ nodes, edges }) => {
                 key={node.id}
                 transform={`translate(${pos.x}, ${pos.y})`}
                 className="cursor-pointer"
+                role="button"
+                tabIndex={0}
+                aria-label={`${node.name}, ${node.type} provenance node`}
+                aria-pressed={isSelected}
                 onClick={() => setSelectedNode(node)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    setSelectedNode(node);
+                  }
+                }}
               >
                 <circle
                   r={isSelected ? "18" : "14"}

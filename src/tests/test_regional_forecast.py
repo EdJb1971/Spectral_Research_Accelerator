@@ -304,3 +304,38 @@ def test_manifest_readiness_never_claims_value_checks_from_metadata():
     missing = dict(manifest, variables=["temperature"])
     missing["spec"] = dict(missing["spec"], variables=["temperature"])
     assert assess_manifest_readiness(missing, _config())["missing_variables"] == ["q", "u", "v", "z"]
+
+
+def test_readiness_refuses_to_judge_a_crop_it_does_not_describe():
+    """An ocean crop is not a failed atmospheric candidate (D70).
+
+    `assess_manifest_readiness` asks for five ERA5 variables on a pressure level. Asked about a
+    GLORYS crop it used to truncate the fractional negative-metre elevations with `int()` --
+    `int(-0.494...) == 0` -- and then report `level_available=False` and the five variables as
+    *missing*, which reads as a crop that nearly qualified. The question does not apply to it.
+    """
+    source = _dataset()
+    ocean = _manifest(source)
+    ocean["shape"] = {"time": 1096, "elevation": 1, "latitude": 4, "longitude": 5}
+    ocean["variables"] = ["thetao"]
+    ocean["spec"] = dict(ocean["spec"], variables=["thetao"], vertical_dim="elevation",
+                         levels=[-0.49402499198913574])
+
+    ready = assess_manifest_readiness(ocean, _config())
+    assert ready["applicable"] is False
+    assert ready["vertical_dim"] == "elevation"
+    assert ready["structurally_eligible"] is False
+    assert "does not apply" in ready["not_applicable_reason"]
+    # The fractional elevation is compared as a number and never coerced to 0.
+    assert ready["level_available"] is False
+
+    # An ERA5 crop is untouched: applicable, no reason, and still eligible.
+    atmospheric = _manifest(source)
+    atmospheric["shape"] = {"time": 50, "level": 1, "latitude": 4, "longitude": 5}
+    atmospheric["variables"] = list(source.data_vars)
+    era5 = assess_manifest_readiness(atmospheric, _config())
+    assert era5["applicable"] is True
+    assert era5["not_applicable_reason"] is None
+    assert era5["vertical_dim"] == "level"
+    assert era5["structurally_eligible"] is True
+    assert era5["level_available"] is True

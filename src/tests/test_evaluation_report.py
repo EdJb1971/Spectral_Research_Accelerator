@@ -6,6 +6,8 @@ import json
 
 import pytest
 
+from src.data_layer.stores import (GRIDDED_STORES, ChunkFacts, GriddedStore,
+                                   register_store)
 from src.data_layer.zarr_source import CATALOGUE, manifest_path
 from src.forecasting.adapter import ForecastContractError
 from src.forecasting.evaluation_report import (
@@ -16,6 +18,26 @@ from src.forecasting.evaluation_report import (
 )
 from src.forecasting.evaluation_run import load_evaluation_run_receipt, run_external_evaluation
 from src.tests.test_evaluation_run import _config, _inputs
+
+
+def _register_temporary_store(name: str) -> bool:
+    """Catalogue a fixture store for the duration of one test, or report it already was.
+
+    The receipt path under test distinguishes a *catalogued* source from an ad-hoc one, so
+    the test needs the fixture store to be catalogued. Its URI is the store name itself,
+    which is what keeps `CropSpec.content_key` - and therefore the manifest already written
+    on disk - identical to what it was before the entry existed.
+    """
+    if name in GRIDDED_STORES:
+        return False
+    register_store(GriddedStore(
+        name=name, uri=name, domain="reanalysis", access="local", vertical_dim="level",
+        grid=(2, 2), resolution_deg=0.25, cadence_hours=6, levels=1,
+        note="Offline fixture store, registered by a test and unregistered after it.",
+        chunks=ChunkFacts(megabytes_per_chunk=None, method="not measured",
+                          note="A fixture on local disk; there is no transfer to measure."),
+    ))
+    return True
 
 
 @pytest.fixture()
@@ -31,8 +53,10 @@ def receipt_payloads(tmp_path):
     manifest.pop("source_route")
     with open(manifest_file, "w", encoding="utf-8") as handle:
         json.dump(manifest, handle, sort_keys=True)
-    old = CATALOGUE.get(crop.store)
-    CATALOGUE[crop.store] = {"uri": crop.store}
+    # TG10.1: the catalogue is a read-only view over `GRIDDED_STORES`, so a temporary
+    # entry is registered rather than assigned. That is the point of the change - a store
+    # cannot enter the catalogue without a domain, an access requirement and a chunk record.
+    registered = _register_temporary_store(crop.store)
     official_path = tmp_path / "official.json"
     run_external_evaluation(
         forecast_artifact_path=artifact, forecast_request=request, forecast_result=result,
@@ -40,10 +64,8 @@ def receipt_payloads(tmp_path):
     try:
         yield synthetic_path.read_bytes(), official_path.read_bytes()
     finally:
-        if old is None:
-            CATALOGUE.pop(crop.store, None)
-        else:
-            CATALOGUE[crop.store] = old
+        if registered:
+            GRIDDED_STORES.unregister(crop.store)
 
 
 def test_report_flattens_exact_metrics_scope_provenance_and_claim_boundaries(receipt_payloads):

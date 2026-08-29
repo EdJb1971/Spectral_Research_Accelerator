@@ -52,7 +52,10 @@ from typing import Any, Callable, Dict, List, Optional, Sequence
 
 import numpy as np
 
-from src.core.errors import InvalidParameterError
+from src.core.channel_series import ChannelSeriesLike, require_gate_measure
+from src.core.errors import InvalidParameterError, ShapeMismatchError
+from src.core.family import SearchAxis, SearchSpecification, SearchTerm
+from src.core.lag_policy import BoundLagPolicy, bind as bind_lag_policy, support_floor
 from src.statistics.multiple_comparisons import check_power
 from src.statistics.significance import screen
 
@@ -92,6 +95,33 @@ class GateProtocol:
     def family_size(self) -> int:
         return self.n_scales * (self.n_scales - 1) * len(self.lags)
 
+    def search_specification(self) -> "SearchSpecification":
+        """This protocol expressed as a TG3.1 `SearchSpecification`.
+
+        The formula above is correct and describes exactly one search shape. A constellation
+        sweep is a different shape, and TG3.1's enumerator is where every shape is priced by
+        one piece of arithmetic instead of one formula per caller. This is the bridge: the
+        specification declares the same ordered distinct scale pairs crossed with the same
+        lags, renders the same `source->target@lag` labels the sweep emits, and a test
+        asserts both the count and the label set agree with a real sweep rather than only
+        with this formula.
+        """
+        return SearchSpecification(
+            terms=(
+                SearchTerm("ordered_pairs",
+                           (SearchAxis("scale", tuple(range(1, int(self.n_scales) + 1))),)),
+                SearchTerm("product",
+                           (SearchAxis("lag_frames", tuple(int(v) for v in self.lags)),)),
+            ),
+            n_surrogates=int(self.n_surrogates),
+            alpha=float(self.alpha),
+            correction=self.correction,
+            label_format="{0}->{1}@{2}",
+            study_id=self.study_id,
+            notes={"estimator": self.estimator, "measure": self.measure,
+                   "cadence_seconds": float(self.cadence_seconds)},
+        )
+
     @property
     def samples_per_joint_cell_required(self) -> int:
         dimensions = 3 if self.estimator == "transfer_entropy" else 2
@@ -126,11 +156,11 @@ class GateProtocol:
         if self.estimator not in ("transfer_entropy", "mutual_information"):
             raise InvalidParameterError("estimator", self.estimator,
                                         "'transfer_entropy' or 'mutual_information'")
-        if self.measure not in (
-                "energy_density", "energy_fraction", "participation_ratio", "gini"):
-            raise InvalidParameterError(
-                "measure", self.measure,
-                "a threshold-free scale measure; threshold_fraction is never a gate primary")
+        # Registered rather than hardcoded (E1). The previous four-name allow-list was a
+        # deny-rule in disguise: R3 forbids a measure that moves with a threshold, and a
+        # non-wavelet domain cannot satisfy a list of wavelet vocabulary. `threshold_fraction`
+        # is still refused, now by name and with its reason.
+        require_gate_measure(self.measure)
         if isinstance(self.bins, bool) or int(self.bins) != self.bins or self.bins < 2:
             raise InvalidParameterError("bins", self.bins, "an integer >= 2")
         if isinstance(self.n_surrogates, bool) or int(self.n_surrogates) != self.n_surrogates \
@@ -233,10 +263,18 @@ def evaluate_replication_gate(train: Dict[str, Any], test: Dict[str, Any],
             problems.append("%s surrogate count differs from the frozen protocol" % split_name)
         if not (result.get("power") or {}).get("can_reject_after_correction", False):
             problems.append("%s partition was underpowered after correction" % split_name)
+        # Naming the policy is the point here, not a leftover dispatch branch: the
+        # protocol froze *the advective floor*, and a floor from another policy is a
+        # different design (R18), however well justified it is on its own terms.
+        applied = result.get("support_floor") or {}
         if protocol.require_advection_floor and not (
-                result.get("support_floor") or {}).get("enforced", False):
-            problems.append("%s partition did not enforce the declared advection floor" %
-                            split_name)
+                applied.get("enforced", False)
+                and applied.get("policy", "advective") == "advective"):
+            problems.append(
+                "%s partition did not enforce the declared advection floor (policy %r, "
+                "enforced=%r). A floor from another policy is a floor, but it is not the one "
+                "this protocol froze, and rule R18 fixes the design before the run"
+                % (split_name, applied.get("policy"), applied.get("enforced")))
 
     if problems:
         return {"verdict": "INVALID", "problems": problems,
@@ -394,131 +432,81 @@ def lagged_mutual_information(source: Sequence[float], target: Sequence[float], 
     return mutual_information(s[:-lag], t[lag:], bins=bins)
 
 
-# ---------------------------------------------------------------- the support floor (R4)
-
-def support_floor(signature, cadence_seconds: float,
-                  advection_speed_m_s: Optional[float] = None) -> Dict[str, Any]:
-    """The minimum admissible lag per scale, and an honest account of where it comes from.
-
-    Rule R4 says a lag shorter than the transform's own support measures filter geometry
-    rather than weather. For a **spatial** transform applied frame by frame - which is what
-    Phase 4 uses, deliberately, since 3D wavelets are out of scope - the temporal support is
-    exactly zero, and quoting one would be an invention. What is real is that a structure
-    must cross the filter's spatial support before a change at that scale can be anything
-    other than the same air seen twice: `t_cross(s) = support(s) * dx / U`.
-
-    `advection_speed_m_s` is therefore required for a geometric floor and is **not given a
-    default**. A plausible-looking 10 m/s would silently set every floor in every result, and
-    a reader would have no way to know a number they never supplied was doing the work.
-    Without it the only floor applied is one frame, and the result says so in as many words.
-    """
-    if cadence_seconds <= 0:
-        raise InvalidParameterError("cadence_seconds", cadence_seconds,
-                                    "a positive sampling interval")
-    grid = signature.provenance.get("grid") or {}
-    spacing_m = None
-    spacing_basis = None
-    kind = grid.get("kind")
-    if kind in ("latlon", "cartesian"):
-        try:
-            from src.physical_core.grid import GridSpec
-            physical_grid = GridSpec.from_provenance(dict(grid))
-            # Support is expressed in parent-grid pixels. With no frozen flow direction,
-            # use the larger physical cell axis so an anisotropic/lat-lon grid cannot make
-            # the crossing floor anti-conservative. In particular, GridSpec.dx is degrees
-            # for lat/lon and must never be interpreted as metres (D53).
-            dx_values = physical_grid.dx_metres()
-            dy_values = physical_grid.dy_metres()
-            spacing_m = max(float(dx_values.max()), float(dy_values.max()))
-            spacing_basis = (
-                "maximum physical cell-axis spacing over the crop, reconstructed from "
-                "GridSpec; angular dx/dy are converted to metres"
-                if kind == "latlon" else
-                "maximum declared Cartesian cell-axis spacing in metres")
-        except (KeyError, TypeError, ValueError) as exc:
-            raise InvalidParameterError(
-                "signature.provenance.grid", grid,
-                "a complete physical GridSpec for an advective support floor: %s" % exc) from exc
-    else:
-        # Compatibility with older explicitly metric provenance. Deliberately do not read
-        # bare `dx`: its unit depends on grid kind and caused D53.
-        candidate = grid.get("representative_dx_metres") or grid.get("dx_metres")
-        if isinstance(candidate, (int, float)) and candidate \
-                and math.isfinite(candidate) and candidate > 0:
-            spacing_m = float(candidate)
-            spacing_basis = "legacy provenance field explicitly labelled in metres"
-    physical = (isinstance(spacing_m, (int, float)) and math.isfinite(spacing_m)
-                and spacing_m > 0)
-
-    floors: List[Dict[str, Any]] = []
-    warnings: List[str] = []
-    for position, scale in enumerate(signature.scales, start=1):
-        try:
-            level = int(scale)
-        except (TypeError, ValueError):
-            level = position
-        interior_record = (signature.interior[position - 1]
-                           if position - 1 < len(signature.interior) else {})
-        support_px = interior_record.get("support_parent_px")
-        if not isinstance(support_px, (int, float)) or support_px <= 0:
-            raise InvalidParameterError(
-                "signature.interior[%d].support_parent_px" % (position - 1), support_px,
-                "the transform's measured positive parent-grid filter support. Using 2**level "
-                "would understate the shared spatial footprint for longer filters")
-        record: Dict[str, Any] = {
-            "scale": str(scale),
-            "level": level,
-            "spatial_support_px": support_px,
-            "floor_frames": 1,
-            "basis": ("sampling cadence only: consecutive frames are the finest lag the "
-                      "record can express; spatial support is the transform's exact %d-pixel "
-                      "filter cascade" % support_px),
-        }
-        if physical and advection_speed_m_s:
-            support_m = support_px * float(spacing_m)
-            crossing = support_m / float(advection_speed_m_s)
-            frames = max(1, int(math.ceil(crossing / cadence_seconds)))
-            record.update({
-                "spatial_support_m": support_m,
-                "physical_spacing_m_per_parent_px": float(spacing_m),
-                "physical_spacing_basis": spacing_basis,
-                "crossing_time_s": crossing,
-                "floor_frames": frames,
-                "basis": ("advective crossing of the filter support: %.0f m at %.1f m/s is "
-                          "%.0f s, which is %d frame(s) at this cadence"
-                          % (support_m, advection_speed_m_s, crossing, frames)),
-            })
-        floors.append(record)
-
-    if not physical:
-        warnings.append(
-            "the signature's grid carries no physical spacing, so no advective floor could "
-            "be computed and the only floor applied is one frame. A lag floor in metres "
-            "derived from a pixel grid would be fabricated.")
-    if advection_speed_m_s is None:
-        warnings.append(
-            "no advection speed was supplied, so the geometric floor of rule R4 is not "
-            "enforced. This is reported rather than defaulted: a default speed would set "
-            "every floor in every result from a number the reader never chose.")
-
-    return {
-        "cadence_seconds": float(cadence_seconds),
-        "advection_speed_m_s": (None if advection_speed_m_s is None
-                                else float(advection_speed_m_s)),
-        "floors": floors,
-        "floor_by_scale": {record["scale"]: record["floor_frames"] for record in floors},
-        "enforced": bool(physical and advection_speed_m_s),
-        "temporal_support_note": (
-            "the transform is spatial and is applied frame by frame, so its temporal support "
-            "is zero. The floor below is advective, not filter-geometric, and it is the "
-            "honest version of rule R4 for a 2D-per-frame decomposition."),
-        "warnings": warnings,
-    }
+# ---------------------------------------------------------------- the lag floor (R4/R21)
+#
+# `support_floor` moved to `src.core.lag_policy` in TG1.3, unchanged, as the implementation of
+# the registered `advective` policy. It is re-exported here because `gate_run` and
+# `gate_campaign` call it directly to audit a frozen plan before any data exists, and those are
+# advective by construction: they are auditing an atmospheric acquisition.
 
 
 # ---------------------------------------------------------------- the dependency sweep
 
-def decorrelation_frames(x: Sequence[float]) -> int:
+def _presence_vector(present: Sequence[bool], size: int, name: str = "present") -> np.ndarray:
+    raw = np.asarray(present)
+    if raw.dtype != np.dtype(bool):
+        raise InvalidParameterError(name, str(raw.dtype), "a boolean presence vector")
+    if raw.shape != (size,):
+        raise ShapeMismatchError(name, raw.shape, "the series clock", (size,),
+                                 fix="Presence and values must describe the same samples.")
+    return raw
+
+
+def _longest_true_run(mask: np.ndarray) -> int:
+    padded = np.concatenate(([False], np.asarray(mask, dtype=bool), [False])).astype(np.int8)
+    edges = np.diff(padded)
+    starts = np.flatnonzero(edges == 1)
+    stops = np.flatnonzero(edges == -1)
+    return int(np.max(stops - starts)) if starts.size else 0
+
+
+def masked_frame_lag_assessment(present: np.ndarray, *, lags: Sequence[int],
+                                estimator: str, theiler: int = 1) -> Dict[str, Any]:
+    """Price Candidate 1 without pretending asynchronous observations are simultaneous.
+
+    A frame lag can only be evaluated inside a contiguous run where both channels are present.
+    This reports whether each ordered pair has such a run long enough for the estimator, the
+    requested lag and the shift-null exclusion windows. It does not bin, interpolate or compact
+    the clock. TG12.2a measured this candidate on an Argo-like union clock and selected refusal
+    because no float pair had even one jointly present sample.
+    """
+    raw = np.asarray(present)
+    if raw.dtype != np.dtype(bool) or raw.ndim != 2:
+        raise InvalidParameterError(
+            "present", {"dtype": str(raw.dtype), "shape": list(raw.shape)},
+            "a boolean (time, channel) presence array")
+    requested = [int(value) for value in lags]
+    if not requested or any(value < 1 for value in requested):
+        raise InvalidParameterError("lags", requested, "one or more positive frame lags")
+    minimum = 6 if estimator == "transfer_entropy" else 4
+    window = max(1, int(theiler))
+    rows: List[Dict[str, Any]] = []
+    for source in range(raw.shape[1]):
+        for target in range(raw.shape[1]):
+            if source == target:
+                continue
+            joint = raw[:, source] & raw[:, target]
+            longest = _longest_true_run(joint)
+            rows.append({
+                "source_index": int(source),
+                "target_index": int(target),
+                "n_effective": int(joint.sum()),
+                "longest_contiguous_joint_run": int(longest),
+                "admissible_lags": [
+                    lag for lag in requested
+                    if longest >= int(lag) + minimum + 2 * window],
+            })
+    return {
+        "candidate": "maximal_contiguous_joint_presence_runs",
+        "estimator_minimum_samples": minimum,
+        "theiler_window_frames": window,
+        "pairs": rows,
+        "n_pairs_with_any_admissible_lag": int(sum(bool(row["admissible_lags"])
+                                                   for row in rows)),
+    }
+
+
+def decorrelation_frames(x: Sequence[float], present: Optional[Sequence[bool]] = None) -> int:
     """First lag at which the autocorrelation falls below `1/e`, floored at 1.
 
     Used as a Theiler window, not as a claim about the physics: it is the distance beyond
@@ -526,18 +514,50 @@ def decorrelation_frames(x: Sequence[float]) -> int:
     to exceed before it counts as a shuffle.
     """
     a = np.asarray(x, dtype=np.float64)
-    a = a[np.isfinite(a)]
-    if a.size < 4:
-        return 1
-    centred = a - a.mean()
-    variance = float((centred ** 2).sum())
-    if variance <= 0:
-        return 1
+    if present is None:
+        # The accepted atmospheric path remains literally unchanged.
+        a = a[np.isfinite(a)]
+        if a.size < 4:
+            return 1
+        centred = a - a.mean()
+        variance = float((centred ** 2).sum())
+        if variance <= 0:
+            return 1
+        threshold = 1.0 / math.e
+        for lag in range(1, a.size // 2):
+            acf = float((centred[:-lag] * centred[lag:]).sum()) / variance
+            if abs(acf) < threshold:
+                return lag
+        return max(1, a.size // 2)
+
+    observed = _presence_vector(present, a.size) & np.isfinite(a)
+    if np.all(observed):
+        return decorrelation_frames(a)
+    if int(observed.sum()) < 4:
+        raise CrossScaleError(
+            "fewer than four observed finite samples remain, so no decorrelation window can "
+            "be measured without closing gaps")
+    mean = float(a[observed].mean())
+    centred = a - mean
     threshold = 1.0 / math.e
+    any_candidate = False
     for lag in range(1, a.size // 2):
-        acf = float((centred[:-lag] * centred[lag:]).sum()) / variance
+        paired = observed[:-lag] & observed[lag:]
+        if int(paired.sum()) < 4:
+            continue
+        any_candidate = True
+        left = centred[:-lag][paired]
+        right = centred[lag:][paired]
+        denominator = math.sqrt(float(np.sum(left ** 2)) * float(np.sum(right ** 2)))
+        if denominator <= 0:
+            return 1
+        acf = float(np.sum(left * right)) / denominator
         if abs(acf) < threshold:
             return lag
+    if not any_candidate:
+        raise CrossScaleError(
+            "no physical frame lag has four pairs that are both genuinely present. Closing "
+            "the gaps would invent adjacency, so the Theiler window is undefined")
     return max(1, a.size // 2)
 
 
@@ -580,7 +600,8 @@ def admissible_shifts(n: int, lag: int, theiler: int) -> np.ndarray:
 
 def _shift_null(source: np.ndarray, target: np.ndarray, lag: int, bins: int, wrap: bool,
                 statistic: Callable[..., float], n_surrogates: int, seed: int,
-                theiler: int = 1) -> np.ndarray:
+                theiler: int = 1,
+                joint_present: Optional[Sequence[bool]] = None) -> np.ndarray:
     """Circular-shift surrogates of the source series, outside the admissible-shift windows.
 
     The right null for a lagged coupling claim (rule R1's fourth bullet): each series keeps
@@ -589,6 +610,10 @@ def _shift_null(source: np.ndarray, target: np.ndarray, lag: int, bins: int, wra
     (rule R12), so leaving it intact is what makes the comparison mean anything - and
     `admissible_shifts` is what stops the ensemble quietly keeping an alignment as well.
     """
+    if joint_present is not None:
+        present = _presence_vector(joint_present, source.size, "joint_present")
+        source = np.asarray(source, dtype=np.float64)[present]
+        target = np.asarray(target, dtype=np.float64)[present]
     rng = np.random.default_rng(seed)
     shifts = admissible_shifts(source.size, lag, theiler)
     out = np.empty(n_surrogates, dtype=np.float64)
@@ -599,7 +624,7 @@ def _shift_null(source: np.ndarray, target: np.ndarray, lag: int, bins: int, wra
 
 
 def cross_scale_dependency(
-    signature,
+    signature: ChannelSeriesLike,
     *,
     lags: Sequence[int],
     cadence_seconds: float,
@@ -608,6 +633,7 @@ def cross_scale_dependency(
     bins: int = DEFAULT_BINS,
     wrap: bool = True,
     advection_speed_m_s: Optional[float] = None,
+    lag_floor: Optional[BoundLagPolicy] = None,
     n_surrogates: int = DEFAULT_SHIFT_SURROGATES,
     alpha: float = 0.05,
     correction: str = "benjamini_yekutieli",
@@ -618,7 +644,21 @@ def cross_scale_dependency(
     Returns the whole family - including the tests that were excluded by the support floor
     and why - because a sweep that silently drops what it cannot test looks identical to a
     sweep that had nothing to drop.
+
+    `lag_floor` is the bound lag policy that decides admissibility (TG1.3). It defaults to the
+    `advective` policy carrying `advection_speed_m_s`, which is what this function did
+    unconditionally before the seam existed, so every atmospheric result is unchanged. A
+    domain that justifies its floor another way passes its own bound policy, and then the
+    floor the sweep applies is the floor the domain declared - which, under
+    ``lag_policy='declared'``, it previously was not.
     """
+    if lag_floor is None:
+        lag_floor = bind_lag_policy("advective", advection_speed_m_s=advection_speed_m_s)
+    elif advection_speed_m_s is not None:
+        raise InvalidParameterError(
+            "advection_speed_m_s", advection_speed_m_s,
+            "None when an explicit lag_floor is supplied. Two floors from two different "
+            "bases would silently take one of them, and the result would not say which")
     if estimator not in ("transfer_entropy", "mutual_information"):
         raise InvalidParameterError("estimator", estimator,
                                     "'transfer_entropy' or 'mutual_information'")
@@ -627,7 +667,26 @@ def cross_scale_dependency(
 
     matrix = signature.to_matrix(measure)
     n_times, n_scales = matrix.shape
-    floors = support_floor(signature, cadence_seconds, advection_speed_m_s)
+    present = getattr(signature, "present", None)
+    if present is not None:
+        raw_present = np.asarray(present)
+        if raw_present.dtype != np.dtype(bool) or raw_present.shape != matrix.shape:
+            raise InvalidParameterError(
+                "present", {"dtype": str(raw_present.dtype), "shape": list(raw_present.shape)},
+                "a boolean presence array with the same (time, channel) shape as the measure")
+        if not np.all(raw_present):
+            assessment = masked_frame_lag_assessment(
+                raw_present, lags=lags, estimator=estimator, theiler=1)
+            raise InvalidParameterError(
+                "lags", [int(value) for value in lags],
+                "no frame-lag inference for a record with intermittent per-sample presence. "
+                "On a union clock, a shift in observed positions is not a shift in physical "
+                "time, and compacting or binning would invent adjacency or simultaneity. Use "
+                "a future physical-time estimator; until then this record may be described "
+                "and reduced but not passed to the lagged dependency sweep",
+                masked_lag_decision="refuse_frame_lags",
+                contiguous_candidate=assessment)
+    floors = lag_floor.floors(signature, cadence_seconds)
     warnings: List[str] = list(floors["warnings"])
 
     cells = bins ** (3 if estimator == "transfer_entropy" else 2)
@@ -640,12 +699,14 @@ def cross_scale_dependency(
             "but the raw value is not."
             % (n_times, cells, per_cell, MIN_SAMPLES_PER_CELL))
 
-    usable = {record["scale"] for record in signature.interior if record["usable"]}
+    usable = {record["scale"] for record in signature.channel_records
+              if record["usable"]}
+    channels = list(signature.channels)
     tests: List[Dict[str, Any]] = []
     excluded: List[Dict[str, Any]] = []
 
-    for source_index, source_scale in enumerate(signature.scales):
-        for target_index, target_scale in enumerate(signature.scales):
+    for source_index, source_scale in enumerate(channels):
+        for target_index, target_scale in enumerate(channels):
             if source_index == target_index:
                 continue
             if (str(source_scale) not in usable) or (str(target_scale) not in usable):
@@ -663,9 +724,7 @@ def cross_scale_dependency(
                     excluded.append({
                         "source_scale": str(source_scale),
                         "target_scale": str(target_scale), "lag_frames": int(lag),
-                        "reason": ("below the rule R4 support floor of %d frame(s); at this "
-                                   "lag the two scales are the same air seen twice through "
-                                   "overlapping filters" % floor)})
+                        "reason": lag_floor.exclusion_reason(floor)})
                     continue
                 observed = statistic(source, target, lag, bins, wrap)
                 theiler = max(decorrelation_frames(source), decorrelation_frames(target))
@@ -733,8 +792,11 @@ def cross_scale_dependency(
         "n_scales": int(n_scales),
         "lags_frames": [int(value) for value in lags],
         "cadence_seconds": float(cadence_seconds),
-        "advection_speed_m_s": (float(advection_speed_m_s)
-                                 if advection_speed_m_s is not None else None),
+        # The policy contributes its own fingerprint entries, so the hash records what set
+        # the floor rather than one hard-coded key that only the atmospheric policy uses.
+        # `advective` contributes exactly `advection_speed_m_s`, which is why every existing
+        # `analysis_config_sha256` is byte-identical across TG1.3.
+        **lag_floor.config_entries(),
         "n_surrogates": int(n_surrogates),
         "alpha": float(alpha),
         "correction": correction,

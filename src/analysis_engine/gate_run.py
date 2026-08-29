@@ -15,7 +15,6 @@ import json
 import math
 import os
 from pathlib import Path
-import tempfile
 from typing import Any, Dict, Mapping, Optional, Sequence, Tuple, Union
 
 import numpy as np
@@ -32,6 +31,7 @@ from src.analysis_engine.cross_scale import (
 )
 from src.analysis_engine.scale_signature import scale_signature, stream_scale_signature
 from src.core.errors import DataSourceError, InvalidParameterError
+from src.core.publication import publish_new_bytes
 from src.data_layer.zarr_source import CachedFieldReader, CropSpec, MIN_VALID_INTERIOR
 from src.transform_engine.coefficient_field import decompose_field
 
@@ -427,27 +427,9 @@ def load_gate_receipt(path: Union[str, os.PathLike[str]]) -> Dict[str, Any]:
 
 def _atomic_write_new(path: Union[str, os.PathLike[str]], payload: bytes, label: str) -> None:
     target = Path(path)
-    target.parent.mkdir(parents=True, exist_ok=True)
-    descriptor, temporary_name = tempfile.mkstemp(
-        prefix=".%s." % target.name, suffix=".tmp", dir=str(target.parent))
-    temporary = Path(temporary_name)
     try:
-        with os.fdopen(descriptor, "wb") as handle:
-            handle.write(payload)
-            handle.flush()
-            os.fsync(handle.fileno())
-        try:
-            if os.name == "nt":
-                os.rename(temporary, target)
-            else:
-                os.link(temporary, target)
-        except FileExistsError:
-            raise FileExistsError("refusing to overwrite %s at %s" % (label, target)) from None
-        except OSError as exc:
-            raise DataSourceError(
-                "cannot atomically publish %s at %s: %s" % (label, target, exc)) from exc
-    finally:
-        try:
-            temporary.unlink()
-        except FileNotFoundError:
-            pass
+        publish_new_bytes(target, payload, label)
+    except FileExistsError:
+        raise
+    except OSError as exc:
+        raise DataSourceError(str(exc), path=str(target), operation="immutable-publication") from exc

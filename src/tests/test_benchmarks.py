@@ -89,10 +89,10 @@ def test_seed_bundle_records_its_own_derivation():
 # ============================================================== registry
 
 def test_every_benchmark_declares_gates_and_a_known_answer():
-    assert len(all_benchmarks()) >= 8
+    assert len(all_benchmarks()) >= 11
     for b in all_benchmarks():
         assert b.gates, "%s declares no gate" % b.name
-        assert b.kind in ("field", "sequence")
+        assert b.kind in ("field", "sequence", "cross_domain")
         truth = b.truth()
         assert isinstance(truth, dict) and truth, "%s has an empty known answer" % b.name
         assert b.description
@@ -168,21 +168,31 @@ def test_pending_gates_are_reported_not_hidden(suite_results):
     start meaning "we did not look".
     """
     counts = summarise(suite_results)
-    # Was 3 pending; `4C.surrogate_null` became enforceable in T4C.5 when the surrogate
-    # machinery landed, so it moved from NOT_YET_RUNNABLE to PASS. That transition is the
-    # point of the three-valued outcome: a gate becoming real should change this number.
-    assert counts["NOT_YET_RUNNABLE"] >= 2
-    assert counts["PASS"] >= 12
+    # Was 3 pending, then 2, then 1, and now none. `4C.surrogate_null` became enforceable in
+    # T4C.5 when the surrogate machinery landed, `4D.tracking` in TG2.3 when the tracker did,
+    # and `4E.invariance` in TG3.4 when a matcher existed to put to it. That transition is
+    # the point of the three-valued outcome: a gate becoming real should change this number,
+    # and this test is what makes the change deliberate rather than incidental. It is now an
+    # equality, because there is nothing left to graduate and a new pending gate should have
+    # to be argued for here.
+    assert counts["NOT_YET_RUNNABLE"] == 0
+    assert counts["PASS"] >= 20
     report = format_report(suite_results)
-    assert "NOT_YET_RUNNABLE" in report
-    assert "Gates defined but not yet enforceable" in report
-    for stage in ("4D.tracking", "4E.invariance"):
-        assert stage in report
-    # ...and the one that graduated must now be a genuine PASS, not silently absent.
+    assert "Gates defined but not yet enforceable" not in report
+    assert "4E.invariance" in report
+    # ...and the ones that graduated must now be genuine PASSes, not silently absent.
     surrogate = [c for c in suite_results["fractional_brownian"]
                  if c.stage == "4C.surrogate_null"]
     assert surrogate and surrogate[0].outcome is Outcome.PASS, (
         "the fBm surrogate-null gate must be enforced, not pending")
+    for benchmark in ("advected_vortex_sequence", "advected_vortex_periodic_sequence"):
+        tracking = [c for c in suite_results[benchmark] if c.stage == "4D.tracking"]
+        assert tracking and tracking[0].outcome is Outcome.PASS, (
+            "4D.tracking must be enforced on %s, not pending" % benchmark)
+    audit = [c for c in suite_results["representation_null_field"]
+             if c.stage == "4E.representation_audit"]
+    assert audit and audit[0].outcome is Outcome.PASS, (
+        "TG2.4's representation audit must be enforced, not pending")
 
 
 def test_a_check_that_crashes_is_a_failure_not_an_error():

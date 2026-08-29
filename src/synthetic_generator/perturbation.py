@@ -58,10 +58,16 @@ class PerturbationEngine:
 
         Pass ``seed`` for a reproducible draw, or ``generator`` to thread an existing stream
         through (which is what lets a sweep derive one independent substream per run via
-        `SeedSequence.spawn` rather than reusing one global state). Passing neither keeps
-        the old global-RNG behaviour, and the returned metadata records ``seeded: False`` so
-        an unreproducible run is visibly labelled rather than silently indistinguishable
-        from a reproducible one.
+        `SeedSequence.spawn` rather than reusing one global state).
+
+        Passing neither now falls back to the *task's* stream when there is one (defect D55).
+        Inside an executor task that is the reproducible thing to do, and it is what the old
+        code achieved by accident - the executor had seeded the global generator that
+        `randn_like` happened to read. Outside a task there is still no stream, the draw is
+        still global, and the metadata still records ``seeded: False``, because an
+        unreproducible result must stay visibly distinguishable from a reproducible one.
+        The metadata names the source, so "which stream produced this" is answered by the
+        record rather than by reading this docstring.
         """
         if seed is not None and generator is not None:
             raise ValueError(
@@ -72,9 +78,16 @@ class PerturbationEngine:
         std_val = torch.std(data).item() if torch.std(data).item() > 0 else 1.0
 
         gen = generator
+        source = "generator" if generator is not None else "none"
         if seed is not None:
             gen = torch.Generator(device=data.device)
             gen.manual_seed(int(seed))
+            source = "seed"
+        if gen is None:
+            from src.core import randomness
+            gen = randomness.torch_generator(device=data.device)
+            if gen is not None:
+                source = "task"
 
         def _randn():
             return torch.randn(data.shape, generator=gen, dtype=data.dtype,
@@ -102,7 +115,8 @@ class PerturbationEngine:
             perturbed_data, coords=field.coords, grid=field.grid,
             metadata={**field.metadata, "perturbation": "noise", "noise_type": noise_type,
                       "level": level, "seed": seed,
-                      "seeded": seed is not None or generator is not None})
+                      "rng_source": source,
+                      "seeded": gen is not None})
 
     @staticmethod
     def compute_ssim(x: torch.Tensor, y: torch.Tensor) -> float:

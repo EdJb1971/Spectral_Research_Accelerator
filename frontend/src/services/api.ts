@@ -43,6 +43,20 @@ async function downloadResponse(response: Response): Promise<types.ExportResult>
   return { blob: await response.blob(), filename: match ? match[1] : 'spectralearth-export' };
 }
 
+
+/** The four fields every cross-domain call shares. Kept in one place so a reading cannot
+ *  drift between the call that priced a family and the call that sealed it. */
+function crossDomainForm(first: File, second: File, firstSource: any, secondSource: any,
+                         name: string): FormData {
+  const form = new FormData();
+  form.append('first', first);
+  form.append('second', second);
+  form.append('first_source', JSON.stringify(firstSource));
+  form.append('second_source', JSON.stringify(secondSource));
+  form.append('name', name);
+  return form;
+}
+
 export const apiService = {
   // Spectral Transform Engine
   async applyTransform(payload: types.TransformRequest): Promise<types.TransformResponse> {
@@ -194,6 +208,33 @@ export const apiService = {
     return handleResponse<types.DataSourceInfo[]>(response);
   },
 
+  // ------------------------------------------------ domain-first acquisition (TG10.2)
+  async listAcquisitions(): Promise<types.AcquisitionCatalogue> {
+    const response = await fetch(`${BASE_URL}/acquisitions`, { method: 'GET' });
+    return handleResponse<types.AcquisitionCatalogue>(response);
+  },
+
+  async profileCapabilities(): Promise<types.ProfileCapabilities> {
+    return handleResponse<types.ProfileCapabilities>(
+      await fetch(`${BASE_URL}/profiles`, { method: 'GET' }));
+  },
+
+  async inspectProfiles(payload: types.ProfileAcquisitionRequest): Promise<types.ProfileQueryPlan> {
+    return handleResponse<types.ProfileQueryPlan>(
+      await fetch(`${BASE_URL}/profiles/inspect`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      }));
+  },
+
+  async acquireProfiles(payload: types.ProfileAcquisitionRequest): Promise<types.ProfileAcquisitionResponse> {
+    return handleResponse<types.ProfileAcquisitionResponse>(
+      await fetch(`${BASE_URL}/profiles/acquire`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      }));
+  },
+
   // ---------------------------------------------------------------- ERA5 over Zarr
 
   async zarrCatalogue(): Promise<types.ZarrCatalogueResponse> {
@@ -204,6 +245,20 @@ export const apiService = {
   async zarrCached(): Promise<types.ZarrCachedResponse> {
     const response = await fetch(`${BASE_URL}/data/zarr/cached`, { method: 'GET' });
     return handleResponse<types.ZarrCachedResponse>(response);
+  },
+
+  async zarrProbes(): Promise<types.ZarrProbeLedgerResponse> {
+    const response = await fetch(`${BASE_URL}/data/zarr/probes`, { method: 'GET' });
+    return handleResponse<types.ZarrProbeLedgerResponse>(response);
+  },
+
+  async zarrProbe(payload: types.ZarrProbeRequest): Promise<types.ZarrProbeResponse> {
+    const response = await fetch(`${BASE_URL}/data/zarr/probe`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    return handleResponse<types.ZarrProbeResponse>(response);
   },
 
   async zarrInspect(payload: types.ZarrCropRequest): Promise<types.ZarrInspectResponse> {
@@ -291,5 +346,447 @@ export const apiService = {
     form.append('file', file);
     return handleResponse<types.EvaluationReport>(
       await fetch(`${BASE_URL}/evaluation/receipts/import`, { method: 'POST', body: form }));
+  },
+
+  // ------------------------------------------------ channel records (TG8.4)
+  //
+  // Two calls, and the client makes neither choice for the researcher: `inspect` reports what a
+  // file is and which declared domains admit it, `read` loads it under the one they pick. Both
+  // send multipart, so no Content-Type header is set by hand.
+
+  async inspectChannelRecord(file: File, options: { delimiter?: string; timeColumn?: string }
+    = {}): Promise<types.ChannelInspection> {
+    const form = new FormData();
+    form.append('file', file);
+    if (options.delimiter) form.append('delimiter', options.delimiter);
+    if (options.timeColumn) form.append('time_column', options.timeColumn);
+    return handleResponse<types.ChannelInspection>(
+      await fetch(`${BASE_URL}/channels/inspect`, { method: 'POST', body: form }));
+  },
+
+  async readChannelRecord(file: File, domain: string, timeColumn: string,
+                          options: { delimiter?: string;
+                                     supportParentPx?: Record<string, number> } = {}
+  ): Promise<types.ChannelRecord> {
+    const form = new FormData();
+    form.append('file', file);
+    form.append('domain', domain);
+    form.append('time_column', timeColumn);
+    if (options.delimiter) form.append('delimiter', options.delimiter);
+    if (options.supportParentPx && Object.keys(options.supportParentPx).length > 0) {
+      form.append('support_parent_px', JSON.stringify(options.supportParentPx));
+    }
+    return handleResponse<types.ChannelRecord>(
+      await fetch(`${BASE_URL}/channels/read`, { method: 'POST', body: form }));
+  },
+
+  // ------------------------------------------------ analysis workbench (TG11.1)
+  // The original File, not the capped ChannelRecord preview, crosses this boundary. The backend
+  // re-admits it under the selected domain and derives record facts before calling the engine.
+  async getDomainAnalysisCapabilities(): Promise<types.DomainAnalysisCapabilities> {
+    return handleResponse<types.DomainAnalysisCapabilities>(
+      await fetch(`${BASE_URL}/analysis`, { method: 'GET' }));
+  },
+
+  async runDomainAnalysis(selection: types.ChannelRecordSelection,
+                          operation: types.DomainAnalysisOperation,
+                          configuration: Record<string, any>): Promise<types.DomainAnalysisResponse> {
+    const form = new FormData();
+    form.append('file', selection.file);
+    form.append('operation', operation);
+    form.append('domain', selection.record.domain);
+    form.append('time_column', selection.timeColumn);
+    form.append('configuration', JSON.stringify(configuration));
+    if (Object.keys(selection.supportParentPx).length > 0) {
+      form.append('support_parent_px', JSON.stringify(selection.supportParentPx));
+    }
+    return handleResponse<types.DomainAnalysisResponse>(
+      await fetch(`${BASE_URL}/analysis/run`, { method: 'POST', body: form }));
+  },
+
+  // ------------------------------------------------ preregistration (TG11.2)
+  //
+  // R18's ordering is the server's to enforce, not this file's to present. Nothing here sends
+  // a digest, a sealing time or a p-value: `describePartition` reads geometry and lineage
+  // only, `sealFamily` declares a family and is told what it hashes to, and `confirmSeal`
+  // sends the record and nothing else, because every setting the confirmatory sweep needs was
+  // frozen into the seal and a knob left turnable after sealing is a choice made after the
+  // declaration.
+
+  async getPreregistrationCapabilities(): Promise<types.PreregistrationCapabilities> {
+    return handleResponse<types.PreregistrationCapabilities>(
+      await fetch(`${BASE_URL}/preregistration`, { method: 'GET' }));
+  },
+
+  async describePartition(selection: types.ChannelRecordSelection,
+                          trainRatio: number,
+                          embargoFrames: number): Promise<types.PartitionDescription> {
+    const form = new FormData();
+    form.append('file', selection.file);
+    form.append('domain', selection.record.domain);
+    form.append('time_column', selection.timeColumn);
+    form.append('train_ratio', String(trainRatio));
+    form.append('embargo_frames', String(embargoFrames));
+    return handleResponse<types.PartitionDescription>(
+      await fetch(`${BASE_URL}/preregistration/partition`, { method: 'POST', body: form }));
+  },
+
+  async sealFamily(selection: types.ChannelRecordSelection,
+                   studyId: string,
+                   generate: types.FamilyDeclaration,
+                   confirm: types.FamilyDeclaration,
+                   trainRatio: number,
+                   embargoFrames: number): Promise<types.SealResponse> {
+    const form = new FormData();
+    form.append('file', selection.file);
+    form.append('domain', selection.record.domain);
+    form.append('time_column', selection.timeColumn);
+    form.append('study_id', studyId);
+    form.append('generate', JSON.stringify(generate));
+    form.append('confirm', JSON.stringify(confirm));
+    form.append('train_ratio', String(trainRatio));
+    form.append('embargo_frames', String(embargoFrames));
+    return handleResponse<types.SealResponse>(
+      await fetch(`${BASE_URL}/preregistration/seal`, { method: 'POST', body: form }));
+  },
+
+  async listSeals(): Promise<types.SealListing> {
+    return handleResponse<types.SealListing>(
+      await fetch(`${BASE_URL}/preregistration/seals`, { method: 'GET' }));
+  },
+
+  async readSeal(sealSha256: string, publishedSha256?: string): Promise<Record<string, any>> {
+    const query = publishedSha256
+      ? `?published_sha256=${encodeURIComponent(publishedSha256)}` : '';
+    return handleResponse<Record<string, any>>(
+      await fetch(`${BASE_URL}/preregistration/seals/${encodeURIComponent(sealSha256)}${query}`,
+        { method: 'GET' }));
+  },
+
+  async confirmSeal(sealSha256: string, file: File,
+                    publishedSha256?: string): Promise<types.ConfirmationResponse> {
+    const form = new FormData();
+    form.append('file', file);
+    if (publishedSha256) form.append('published_sha256', publishedSha256);
+    return handleResponse<types.ConfirmationResponse>(
+      await fetch(`${BASE_URL}/preregistration/seals/${encodeURIComponent(sealSha256)}/confirm`,
+        { method: 'POST', body: form }));
+  },
+
+  // ------------------------------------------------ the evidence write path (TG11.3)
+  //
+  // The only writing client in this application. Every method here sends what was observed
+  // and reads back a rung the server computed; none of them can send one. `appendPrecedence`
+  // sends a record and a lag family and receives a verdict it did not choose.
+
+  async getEvidenceCapabilities(): Promise<types.EvidenceCapabilities> {
+    return handleResponse<types.EvidenceCapabilities>(
+      await fetch(`${BASE_URL}/evidence`, { method: 'GET' }));
+  },
+
+  async openStudy(studyId: string, hypothesisId: string, statement: string,
+                  prediction: string): Promise<types.EvidenceState> {
+    return handleResponse<types.EvidenceState>(
+      await fetch(`${BASE_URL}/evidence/studies`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          study_id: studyId, hypothesis_id: hypothesisId,
+          statement, prediction
+        })
+      }));
+  },
+
+  async getEvidenceHead(studyId: string): Promise<types.EvidenceState> {
+    return handleResponse<types.EvidenceState>(
+      await fetch(`${BASE_URL}/evidence/studies/${encodeURIComponent(studyId)}/head`,
+        { method: 'GET' }));
+  },
+
+  async appendEvidence(studyId: string,
+                       append: types.EvidenceAppend): Promise<types.EvidenceState> {
+    return handleResponse<types.EvidenceState>(
+      await fetch(`${BASE_URL}/evidence/studies/${encodeURIComponent(studyId)}/evidence`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(append)
+      }));
+  },
+
+  async appendPrecedence(studyId: string, expectedHeadSha256: string, label: string,
+                         selection: types.ChannelRecordSelection, lags: string,
+                         nSurrogates: number): Promise<types.EvidenceState> {
+    const form = new FormData();
+    form.append('expected_head_sha256', expectedHeadSha256);
+    form.append('label', label);
+    form.append('file', selection.file);
+    form.append('domain', selection.record.domain);
+    form.append('time_column', selection.timeColumn);
+    form.append('lags', lags);
+    form.append('n_surrogates', String(nSurrogates));
+    return handleResponse<types.EvidenceState>(
+      await fetch(
+        `${BASE_URL}/evidence/studies/${encodeURIComponent(studyId)}/evidence/precedence`,
+        { method: 'POST', body: form }));
+  },
+
+  // ------------------------------------------------------ structure mining (TG11.4)
+  //
+  // The client that cannot draw a motif. `admitRecord` sends a field and receives what the
+  // server extracted from it; every other method addresses those features by the record's
+  // digest and never carries one. The tolerance travels as a digest for the same reason: a
+  // number typed here would decide which configurations count as repeats.
+
+  async getMiningCapabilities(): Promise<types.MiningCapabilities> {
+    return handleResponse<types.MiningCapabilities>(
+      await fetch(`${BASE_URL}/mining`, { method: 'GET' }));
+  },
+
+  async listMiningRecords(): Promise<{ records: { record_id: string; declaration: Record<string, unknown> }[]; note: string }> {
+    return handleResponse<{ records: { record_id: string; declaration: Record<string, unknown> }[]; note: string }>(
+      await fetch(`${BASE_URL}/mining/records`, { method: 'GET' }));
+  },
+
+  async admitRecord(file: File, domain: string, dataset: string, variable: string,
+                    representation: string, extraction: string): Promise<types.AdmittedRecord> {
+    const form = new FormData();
+    form.append('file', file);
+    form.append('domain', domain);
+    form.append('dataset', dataset);
+    form.append('variable', variable);
+    form.append('representation', representation);
+    form.append('extraction', extraction);
+    return handleResponse<types.AdmittedRecord>(
+      await fetch(`${BASE_URL}/mining/records`, { method: 'POST', body: form }));
+  },
+
+  async priceFamily(nScenes: number, nFeatures: number, size: number,
+                    nSurrogates: number): Promise<types.FamilyPrice> {
+    return handleResponse<types.FamilyPrice>(
+      await fetch(`${BASE_URL}/mining/price`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          n_scenes: nScenes, n_features: nFeatures, size, n_surrogates: nSurrogates
+        })
+      }));
+  },
+
+  async calibrateTolerance(recordId: string, frames: number[],
+                           declaredAs: string): Promise<types.ToleranceReceipt> {
+    return handleResponse<types.ToleranceReceipt>(
+      await fetch(`${BASE_URL}/mining/tolerance`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          record_id: recordId, frames, declared_as_replicates_of: declaredAs
+        })
+      }));
+  },
+
+  async generateMotifs(run: types.MiningRunRequest): Promise<types.MiningGeneration> {
+    return handleResponse<types.MiningGeneration>(
+      await fetch(`${BASE_URL}/mining/generate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(run)
+      }));
+  },
+
+  async freezeMotifs(run: types.MiningRunRequest): Promise<types.MiningSeal> {
+    return handleResponse<types.MiningSeal>(
+      await fetch(`${BASE_URL}/mining/freeze`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(run)
+      }));
+  },
+
+  // Takes a seal digest and an optional published one, and nothing else. Everything the
+  // confirmatory pass needs was sealed before the held-out frames existed to be looked at.
+  async confirmMotifs(sealSha256: string,
+                      publishedSha256?: string): Promise<types.MiningConfirmation> {
+    return handleResponse<types.MiningConfirmation>(
+      await fetch(`${BASE_URL}/mining/confirm`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          seal_sha256: sealSha256,
+          published_sha256: publishedSha256 ?? null
+        })
+      }));
+  },
+
+  async publishMotif(sealSha256: string, label: string): Promise<types.PublishedMotif> {
+    return handleResponse<types.PublishedMotif>(
+      await fetch(`${BASE_URL}/mining/motifs`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ seal_sha256: sealSha256, label })
+      }));
+  },
+
+  async transferMotif(motifSha256: string, publishedSha256: string, targetRecordId: string,
+                      targetDomain: string): Promise<types.TransferReceipt> {
+    return handleResponse<types.TransferReceipt>(
+      await fetch(`${BASE_URL}/mining/transfer`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          motif_sha256: motifSha256, published_sha256: publishedSha256,
+          target_record_id: targetRecordId, target_domain: targetDomain
+        })
+      }));
+  },
+
+  async auditInvariance(recordId: string, referenceFrame: number, replicateFrames: number[],
+                        presentations: { frame: number; transforms: string[]; name?: string }[]
+                       ): Promise<types.InvarianceAudit> {
+    return handleResponse<types.InvarianceAudit>(
+      await fetch(`${BASE_URL}/mining/invariance`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          record_id: recordId, reference_frame: referenceFrame,
+          replicate_frames: replicateFrames, presentations
+        })
+      }));
+  },
+
+  // -------------------------------------------- the cross-domain record (TG11.4b)
+  //
+  // Two files and two readings cross this boundary, and the reading has to say what each
+  // column means: a channel table carries names and numbers, not semantics and units, and
+  // R19 does not allow either to be defaulted. Every lag below is in seconds. The confirm
+  // call sends the two records and nothing else - the domains, the columns, the family, the
+  // split, the ensemble and the seed all come back out of the seal.
+
+  async getCrossDomainCapabilities(): Promise<types.CrossDomainCapabilities> {
+    return handleResponse<types.CrossDomainCapabilities>(
+      await fetch(`${BASE_URL}/cross-domain`, { method: 'GET' }));
+  },
+
+  async alignDomains(first: File, second: File, firstSource: types.CrossDomainSource,
+                     secondSource: types.CrossDomainSource,
+                     name: string): Promise<types.CrossDomainAligned> {
+    return handleResponse<types.CrossDomainAligned>(
+      await fetch(`${BASE_URL}/cross-domain/align`, {
+        method: 'POST',
+        body: crossDomainForm(first, second, firstSource, secondSource, name)
+      }));
+  },
+
+  async priceCrossDomainLags(first: File, second: File, firstSource: types.CrossDomainSource,
+                             secondSource: types.CrossDomainSource, name: string,
+                             lagSeconds: number[],
+                             nSurrogates: number): Promise<types.CrossDomainPrice> {
+    const form = crossDomainForm(first, second, firstSource, secondSource, name);
+    form.append('lag_seconds', JSON.stringify(lagSeconds));
+    form.append('n_surrogates', String(nSurrogates));
+    return handleResponse<types.CrossDomainPrice>(
+      await fetch(`${BASE_URL}/cross-domain/lags`, { method: 'POST', body: form }));
+  },
+
+  async describeCrossDomainPartition(first: File, second: File,
+                                     firstSource: types.CrossDomainSource,
+                                     secondSource: types.CrossDomainSource, name: string,
+                                     fraction: number): Promise<types.CrossDomainPartition> {
+    const form = crossDomainForm(first, second, firstSource, secondSource, name);
+    form.append('fraction', String(fraction));
+    return handleResponse<types.CrossDomainPartition>(
+      await fetch(`${BASE_URL}/cross-domain/partition`, { method: 'POST', body: form }));
+  },
+
+  async generateCrossDomain(first: File, second: File, firstSource: types.CrossDomainSource,
+                            secondSource: types.CrossDomainSource, name: string,
+                            lagSeconds: number[], studyId: string, nSurrogates: number,
+                            fraction: number): Promise<types.CrossDomainGeneration> {
+    const form = crossDomainForm(first, second, firstSource, secondSource, name);
+    form.append('lag_seconds', JSON.stringify(lagSeconds));
+    form.append('study_id', studyId);
+    form.append('n_surrogates', String(nSurrogates));
+    form.append('fraction', String(fraction));
+    return handleResponse<types.CrossDomainGeneration>(
+      await fetch(`${BASE_URL}/cross-domain/generate`, { method: 'POST', body: form }));
+  },
+
+  async sealCrossDomain(first: File, second: File, firstSource: types.CrossDomainSource,
+                        secondSource: types.CrossDomainSource, name: string,
+                        lagSeconds: number[], studyId: string, nSurrogates: number,
+                        fraction: number): Promise<types.CrossDomainSeal> {
+    const form = crossDomainForm(first, second, firstSource, secondSource, name);
+    form.append('lag_seconds', JSON.stringify(lagSeconds));
+    form.append('study_id', studyId);
+    form.append('n_surrogates', String(nSurrogates));
+    form.append('fraction', String(fraction));
+    return handleResponse<types.CrossDomainSeal>(
+      await fetch(`${BASE_URL}/cross-domain/seal`, { method: 'POST', body: form }));
+  },
+
+  async confirmCrossDomain(sealSha256: string, first: File, second: File,
+                           publishedSha256?: string): Promise<types.CrossDomainConfirmation> {
+    const form = new FormData();
+    form.append('first', first);
+    form.append('second', second);
+    if (publishedSha256) form.append('published_sha256', publishedSha256);
+    return handleResponse<types.CrossDomainConfirmation>(
+      await fetch(`${BASE_URL}/cross-domain/seals/${encodeURIComponent(sealSha256)}/confirm`,
+        { method: 'POST', body: form }));
+  },
+
+  // ------------------------------------------------ the findings surface (TG9.1)
+  //
+  // Read-only. None of these can change what may be claimed: a GET does not move a rung
+  // (R22). The translation arrives already rendered, because Phase G9's rule is that this
+  // client displays strings rather than assembling them.
+
+  async listDomains(): Promise<types.DomainSummary[]> {
+    return handleResponse<types.DomainSummary[]>(
+      await fetch(`${BASE_URL}/findings/domains`, { method: 'GET' }));
+  },
+
+  // TG8.1: the adapter recipe the backend enforces, served rather than only documented, so
+  // the contract a reader is held to and the contract the code checks are one tuple.
+  async getOnboardingContract(): Promise<types.OnboardingContract> {
+    return handleResponse<types.OnboardingContract>(
+      await fetch(`${BASE_URL}/findings/onboarding`, { method: 'GET' }));
+  },
+
+  async getGlossary(name: string): Promise<types.DomainGlossaryPayload> {
+    return handleResponse<types.DomainGlossaryPayload>(
+      await fetch(`${BASE_URL}/findings/glossaries/${encodeURIComponent(name)}`,
+        { method: 'GET' }));
+  },
+
+  async listStudies(): Promise<types.StudySummary[]> {
+    return handleResponse<types.StudySummary[]>(
+      await fetch(`${BASE_URL}/findings/studies`, { method: 'GET' }));
+  },
+
+  async getStudy(studyId: string): Promise<Record<string, unknown>> {
+    return handleResponse<Record<string, unknown>>(
+      await fetch(`${BASE_URL}/findings/studies/${encodeURIComponent(studyId)}`,
+        { method: 'GET' }));
+  },
+
+  async getStudyOutputs(studyId: string): Promise<Record<string, unknown>> {
+    return handleResponse<Record<string, unknown>>(
+      await fetch(`${BASE_URL}/findings/studies/${encodeURIComponent(studyId)}/outputs`,
+        { method: 'GET' }));
+  },
+
+  async getTranslation(studyId: string, glossary: string): Promise<types.TranslatedFinding> {
+    const query = new URLSearchParams({ glossary }).toString();
+    return handleResponse<types.TranslatedFinding>(
+      await fetch(`${BASE_URL}/findings/studies/${encodeURIComponent(studyId)}/translation?${query}`,
+        { method: 'GET' }));
+  },
+
+  // ------------------------------------------------ recorded review (TG11.5)
+  // Read only. This fetches stored argument bound to the exact published bundle revision; it
+  // cannot start a model call, append evidence, or ask the server to accept a claim state.
+  async getStudyReview(studyId: string): Promise<types.ReviewSurface> {
+    return handleResponse<types.ReviewSurface>(
+      await fetch(`${BASE_URL}/reviews/studies/${encodeURIComponent(studyId)}`, { method: 'GET' }));
   }
 };

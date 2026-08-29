@@ -9,8 +9,9 @@ import os
 
 from fastapi import FastAPI, HTTPException, Depends, BackgroundTasks, Query, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field, validator, root_validator
-from typing import List, Dict, Any, Optional, Tuple
+from pydantic import (BaseModel, Field, StrictFloat, StrictInt, root_validator,
+                      validator)
+from typing import List, Dict, Any, Optional, Tuple, Union
 from sqlalchemy.orm import Session
 
 from src.physical_core.field import PhysicalField
@@ -103,6 +104,57 @@ app.add_middleware(
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
 )
+
+# TG9.1: the cross-domain claim surface. Imported eagerly at module scope, not lazily inside a
+# handler, so glossary registration cannot depend on which route a researcher happens to visit
+# first - that was defect D35, and `DOMAIN_GLOSSARIES` has exactly the shape that caused it.
+from src.api.findings import router as findings_router  # noqa: E402
+from src.api.channels import router as channels_router  # noqa: E402
+from src.api.acquisitions import router as acquisitions_router  # noqa: E402
+from src.api.profiles import router as profiles_router  # noqa: E402
+from src.api.analysis import router as domain_analysis_router  # noqa: E402
+from src.api.preregistration import router as preregistration_router  # noqa: E402
+from src.api.evidence import router as evidence_router  # noqa: E402
+from src.api.mining import router as mining_router  # noqa: E402
+from src.api.cross_domain import router as cross_domain_router  # noqa: E402
+from src.api.reviews import router as reviews_router  # noqa: E402
+
+app.include_router(findings_router)
+# TG8.4. Mounted here for the same reason the findings router is: registration must not depend
+# on which handler happened to run first (D35). A domain that appears only after a researcher
+# visits the right tab is a domain a record silently cannot be read under.
+app.include_router(channels_router)
+# TG10.2: domain-first projection over the existing domain/source contracts. Mounted eagerly so
+# plugin registrations are visible without a researcher first visiting another route (D35).
+app.include_router(acquisitions_router)
+app.include_router(profiles_router)
+# TG11.1: stateless access to the existing domain-analysis engine. It re-reads the selected
+# full record, stores nothing and cannot move a claim rung (R22).
+app.include_router(domain_analysis_router)
+# TG11.2: the generate/confirm split (R18). Mounted after the analysis router because the
+# ordering it enforces is on that router's gate operation: a sweep may not be launched against
+# a held-out partition that has already been spent.
+app.include_router(preregistration_router)
+# TG11.3: the evidence write path. Mounted last of the workflow routers because it records
+# what the earlier ones produce, and it is the only one that writes toward a claim: the rung
+# in every one of its responses is recomputed by the ladder and never accepted from a client.
+app.include_router(evidence_router)
+# TG11.4: structure mining. Mounted after the evidence router because its outputs are what that
+# router records, and because it depends on both of the routers above it - seals go into
+# TG11.2's store and the held-out ledger it reads is TG11.2's ledger. It accepts no feature and
+# no rung: scenes are extracted here from admitted fields, and a confirmation receipt is an
+# input to the write path rather than a claim (R22).
+app.include_router(mining_router)
+# TG11.4b: the cross-domain record. Mounted beside the mining router because it shares the same
+# two dependencies - TG11.2's seal store and its one held-out ledger - and last of the analysis
+# surfaces because it is the only one whose lag family is declared in seconds rather than in
+# frames of a single record's clock. It aligns two native clocks by exact intersection and never
+# by interpolation, and it records no evidence and moves no rung (R22).
+app.include_router(cross_domain_router)
+# TG11.5: the review store is read only and stays outside the findings routes on purpose.
+# Recorded argument can be inspected beside a selected study, but never shares an endpoint or
+# a response object with translated claim text (R22/R23).
+app.include_router(reviews_router)
 
 
 class HealthResponse(BaseModel):
@@ -838,6 +890,16 @@ async def list_data_sources():
     """The data-source fallback chain, in priority order (standard E2)."""
     return data_sources.describe_sources()
 
+class ZarrAnalysisRequest(BaseModel):
+    """Transform identity used only to plan scientific crop support, not to select data."""
+
+    transform_family: str = Field("dtcwt", description="Registered transform with R13 support.")
+    wavelet: str = Field("db2", description="SWT wavelet: haar, db2 or db3.")
+    boundary_mode: str = Field("periodic", description="SWT boundary mode.")
+    dtcwt_level1: str = Field("near_sym_b", description="DTCWT level-1 filter family.")
+    dtcwt_qshift: str = Field("qshift_b", description="DTCWT q-shift filter family.")
+
+
 class ZarrCropRequest(BaseModel):
     """A regional crop of a cloud Zarr archive (T3.5.18)."""
 
@@ -850,9 +912,45 @@ class ZarrCropRequest(BaseModel):
     lat_max: float = Field(..., description="Northern edge, degrees north.")
     lon_min: float = Field(..., description="Western edge, degrees east.")
     lon_max: float = Field(..., description="Eastern edge, degrees east.")
-    levels: List[int] = Field(default_factory=list, description="Pressure levels in hPa.")
+    levels: List[Union[StrictInt, StrictFloat]] = Field(
+        default_factory=list,
+        description=("Exact values on the store's declared vertical axis: integer pressure "
+                     "levels for ERA5 or fractional negative-metre elevations for GLORYS."))
     n_levels_analysis: int = Field(4, ge=1, le=8,
                                   description="Wavelet levels the crop must support (R13).")
+    analysis: ZarrAnalysisRequest = Field(
+        default_factory=ZarrAnalysisRequest,
+        description=("Transform/filter identity used for metadata-only R13 planning. It does "
+                     "not change which source values are selected."))
+
+
+class ZarrProbeRequest(BaseModel):
+    """Probe one store and record the result, whatever the result is (TG10.3)."""
+
+    uri: str = Field(..., description="Catalogue id, raw Zarr URI, or a local store path.")
+    variables: List[str] = Field(
+        default_factory=list,
+        description="Variables to describe. Empty means every variable the store carries.")
+    crop: Optional[ZarrCropRequest] = Field(
+        None,
+        description=("Optional crop to cost. An amplification is a fact about one access "
+                     "pattern, so it is only computed when the pattern is stated."))
+    persist: bool = Field(
+        True, description="Write the record to the probe directory as well as the ledger.")
+
+
+def _zarr_support_request(request: ZarrCropRequest):
+    """Bind the wire model to the implementation-owned transform support contract."""
+    from src.data_layer.crop_planner import TransformSupportRequest
+
+    return TransformSupportRequest(
+        transform_family=request.analysis.transform_family,
+        levels=request.n_levels_analysis,
+        wavelet=request.analysis.wavelet,
+        boundary_mode=request.analysis.boundary_mode,
+        dtcwt_level1=request.analysis.dtcwt_level1,
+        dtcwt_qshift=request.analysis.dtcwt_qshift,
+    )
 
 
 class ExportFieldRequest(BaseModel):
@@ -1016,17 +1114,40 @@ async def zarr_catalogue():
     The catalogue carries a `note` per store saying what it is good and bad *for*, because
     the difference between the 0.25 degree and 1.5 degree stores is not resolution alone: one
     is chunked one timestep at a time and is hostile to regional crops, the other is not.
+
+    Since TG10.1 it is generated from the `GRIDDED_STORES` registry rather than from a literal,
+    so a store added in a new file appears here with no edit to this function. Each entry also
+    now carries the **domain** it belongs to, its access requirement, its vertical axis name
+    and how its chunk figures were obtained - a store nobody has measured says so rather than
+    reading like one that was.
     """
+    from src.data_layer import stores as stores_module
     from src.data_layer import zarr_source as zarr_adapter
+    from src.transform_engine.registry import TRANSFORMS
+
+    support_transforms = {}
+    for entry in TRANSFORMS.entries():
+        if entry.value.support is not None:
+            support_transforms[entry.name] = {
+                "description": entry.description,
+                "params": dict(entry.params),
+                "capabilities": dict(entry.capabilities),
+            }
 
     return {
-        "stores": zarr_adapter.CATALOGUE,
+        "stores": zarr_adapter.catalogue_payload(),
+        "store_domains": stores_module.domains_with_stores(),
+        "access_requirements": stores_module.ACCESS_REQUIREMENTS,
         "network_enabled": zarr_adapter.network_enabled(),
         "network_env_var": zarr_adapter.NETWORK_ENV_VAR,
         "missing_dependencies": zarr_adapter.missing_dependencies(),
         "cache_dir": zarr_adapter.DEFAULT_CACHE_DIR,
         "r13_minimum_crop": {str(n): zarr_adapter.minimum_crop_size(n)
                              for n in range(1, 7)},
+        "analysis_transforms": support_transforms,
+        "r13_legacy_note": ("r13_minimum_crop is the pre-planner conservative 14-tap table "
+                            "kept for API compatibility. Use the request-specific acquisition "
+                            "plan returned by /inspect for a scientific decision."),
         "note": ("Network access is opt-in: reaching the internet must never be a side "
                  "effect of running a sweep, and a mistyped bounding box against a 0.25 "
                  "degree store can move tens of gigabytes."),
@@ -1058,6 +1179,76 @@ async def zarr_cached_crops():
     }
 
 
+@app.get("/api/v1/data/zarr/probes")
+async def zarr_probes():
+    """Every recorded probe, newest first, with the transcription debt stated (TG10.3).
+
+    `transcribed` counts records this code did not produce - inspections run before the probe
+    existed, transcribed rather than deleted or re-invented. It is published rather than kept
+    internal so the number can only fall where anyone can see it.
+    """
+    from src.data_layer import store_probe
+
+    ledger = store_probe.probe_ledger()
+    return {
+        "count": len(ledger),
+        "transcribed": len(store_probe.transcribed_probes()),
+        "probe_dir": store_probe.DEFAULT_PROBE_DIR,
+        "outcomes": store_probe.PROBE_OUTCOMES,
+        "evidence_kinds": store_probe.EVIDENCE_KINDS,
+        "probes": ledger,
+        "note": ("A probe records what a store is, and records `unreachable`, `needs "
+                 "credentials` or `network is switched off` just as readily - those are "
+                 "results about a store, not failures of the probe."),
+    }
+
+
+@app.post("/api/v1/data/zarr/probe")
+async def zarr_probe(request: ZarrProbeRequest):
+    """Open a store, record its structure and cost, and record the refusal if it will not open.
+
+    **Metadata only.** The store is opened lazily and an amplification is chunk arithmetic, so
+    nothing of the data crosses the wire. Unlike `/inspect`, this does **not** return 409 when
+    network access is off: "network is switched off here" is a recorded outcome, because a
+    deployment that cannot reach a store needs that written down rather than raised.
+
+    The one thing that is still an error is a request that makes no sense - an empty URI, or a
+    crop that is not a crop - because that is a fault in the request rather than a fact about
+    a store.
+    """
+    from src.data_layer import store_probe
+    from src.data_layer import zarr_source as zarr_adapter
+
+    crop = None
+    if request.crop is not None:
+        try:
+            crop = zarr_adapter.CropSpec(
+                store=request.crop.store, variables=tuple(request.crop.variables),
+                time_start=request.crop.time_start, time_end=request.crop.time_end,
+                lat_min=request.crop.lat_min, lat_max=request.crop.lat_max,
+                lon_min=request.crop.lon_min, lon_max=request.crop.lon_max,
+                levels=tuple(request.crop.levels),
+                n_levels_analysis=request.crop.n_levels_analysis,
+                vertical_dim=zarr_adapter.vertical_dim_for_store(request.crop.store),
+            )
+        except SpectralEarthError as e:
+            info = classify(e)
+            raise HTTPException(status_code=info["status_code"], detail=info["detail"])
+
+    uri = zarr_adapter.uri_for(request.uri) or request.uri
+    try:
+        probe = store_probe.probe_store(
+            uri, variables=list(request.variables) or None, crop=crop)
+    except SpectralEarthError as e:
+        info = classify(e)
+        raise HTTPException(status_code=info["status_code"], detail=info["detail"])
+
+    store_probe.record_probe(probe)
+    saved = store_probe.save_probe(probe) if request.persist else None
+    return {"probe": probe.to_dict(), "saved_to": saved,
+            "requested": request.uri, "resolved_uri": uri}
+
+
 @app.post("/api/v1/data/zarr/inspect")
 async def zarr_inspect(request: ZarrCropRequest):
     """Report a store's chunk structure and whether this crop is chunk-hostile.
@@ -1071,15 +1262,17 @@ async def zarr_inspect(request: ZarrCropRequest):
     a connection open for two hours would be a worse answer than no endpoint.
     """
     from src.data_layer import zarr_source as zarr_adapter
+    from src.data_layer import crop_planner
 
     try:
-        spec = zarr_adapter.CropSpec(
-            store=request.store, variables=tuple(request.variables),
+        spec = zarr_adapter.crop_for_store(
+            request.store, variables=tuple(request.variables),
             time_start=request.time_start, time_end=request.time_end,
             lat_min=request.lat_min, lat_max=request.lat_max,
             lon_min=request.lon_min, lon_max=request.lon_max,
             levels=tuple(request.levels), n_levels_analysis=request.n_levels_analysis,
         )
+        analysis = _zarr_support_request(request)
     except SpectralEarthError as e:
         # classify() also returns `error` and `context`, which HTTPException does not take;
         # only the status and the client-safe detail cross the wire.
@@ -1103,25 +1296,23 @@ async def zarr_inspect(request: ZarrCropRequest):
     try:
         structure = zarr_adapter.describe_store(dataset, spec.variables)
         assessment = zarr_adapter.assess_access_pattern(dataset, spec)
-        selection = assessment["selection"]
-        lat_key = "latitude" if "latitude" in selection else "lat"
-        lon_key = "longitude" if "longitude" in selection else "lon"
-        try:
-            geometry = zarr_adapter.check_crop_size(
-                int(selection.get(lat_key, 0)), int(selection.get(lon_key, 0)),
-                request.n_levels_analysis)
-        except SpectralEarthError as e:
-            # A crop below the R13 floor is reported, not raised: the caller asked what this
-            # crop *would* cost, and "too small for four levels, minimum 256x256" is the most
-            # useful answer to that question.
-            geometry = {"ok": False, "error": str(e),
-                        "minimum_size": zarr_adapter.minimum_crop_size(
-                            request.n_levels_analysis)}
+        acquisition_plan = crop_planner.plan_acquisition(
+            dataset, spec, analysis, structure=structure)
+        geometry = acquisition_plan["geometry"]
     except SpectralEarthError as e:
         info = classify(e)
         raise HTTPException(status_code=info["status_code"], detail=info["detail"])
     finally:
         dataset.close()
+
+    analysis_flags = "--analysis-levels %d --analysis-transform %s" % (
+        request.n_levels_analysis, request.analysis.transform_family)
+    if request.analysis.transform_family == "swt":
+        analysis_flags += " --wavelet %s --boundary-mode %s" % (
+            request.analysis.wavelet, request.analysis.boundary_mode)
+    else:
+        analysis_flags += " --dtcwt-level1 %s --dtcwt-qshift %s" % (
+            request.analysis.dtcwt_level1, request.analysis.dtcwt_qshift)
 
     return {
         "spec": spec.to_provenance(),
@@ -1129,12 +1320,13 @@ async def zarr_inspect(request: ZarrCropRequest):
         "structure": structure,
         "assessment": assessment,
         "geometry": geometry,
+        "acquisition_plan": acquisition_plan,
         "cli": ("python -m src.data_layer.zarr_source materialise --store %s --variables %s "
-                "--start %s --end %s --lat %g %g --lon %g %g --levels %s"
+                "--start %s --end %s --lat %g %g --lon %g %g --levels %s %s"
                 % (request.store, ",".join(request.variables), request.time_start,
                    request.time_end, request.lat_min, request.lat_max,
                    request.lon_min, request.lon_max,
-                   ",".join(str(v) for v in request.levels))),
+                   ",".join(str(v) for v in request.levels), analysis_flags)),
     }
 
 

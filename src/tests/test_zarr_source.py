@@ -64,15 +64,18 @@ def _build_store(path, *, nt=24, nl=8, ny=128, nx=256, time_chunk=1,
     return str(path)
 
 
-@pytest.fixture()
-def hostile_store(tmp_path):
-    return _build_store(tmp_path / "hostile.zarr", time_chunk=1)
+@pytest.fixture(scope="module")
+def hostile_store(tmp_path_factory):
+    """One immutable archive per module; rebuilding 50 MB for every reader filled C:."""
+    return _build_store(tmp_path_factory.mktemp("zarr-source-stores") / "hostile.zarr",
+                        time_chunk=1)
 
 
-@pytest.fixture()
-def friendly_store(tmp_path):
+@pytest.fixture(scope="module")
+def friendly_store(tmp_path_factory):
     """Time-contiguous chunks: the layout the local cache is rechunked *into*."""
-    return _build_store(tmp_path / "friendly.zarr", time_chunk=24)
+    return _build_store(tmp_path_factory.mktemp("zarr-source-stores") / "friendly.zarr",
+                        time_chunk=24)
 
 
 def _spec(store, **overrides):
@@ -189,10 +192,10 @@ def test_inverted_bounding_box_is_refused_at_construction():
         _spec("s", lon_min=40.0, lon_max=10.0)
 
 
-def test_catalogue_entries_resolve_to_gcs_uris():
+def test_catalogue_entries_resolve_to_declared_remote_uris():
     assert zs.CATALOGUE, "the catalogue must not be empty"
     for name, entry in zs.CATALOGUE.items():
-        assert entry["uri"].startswith("gs://weatherbench2/"), name
+        assert "://" in entry["uri"], name
         assert entry["note"], "every store needs a note saying what it is good and bad for"
     # A raw URI must pass through unchanged, so an unlisted store is still usable.
     assert _spec("gs://elsewhere/x.zarr").uri == "gs://elsewhere/x.zarr"
@@ -253,7 +256,7 @@ def test_prediction_uses_the_same_selection_as_the_fetch(hostile_store):
     numpy while `select` handed the same strings to ``xarray.sel(slice(...))``, which treats a
     partial date as the whole day. They disagreed by 3 of 12 timesteps, so the hostility
     warning under-stated the transfer by 25%. A warning that under-states the cost is worse
-    than no warning at all, so the predictor now derives its sizes from `select` itself.
+    than no warning at all, so the predictor and materialiser now share their xarray indexers.
     """
     spec = _spec(hostile_store, time_start="2020-01-01", time_end="2020-01-03")
     dataset, _counter = zs.open_dataset(hostile_store, chunks={})
@@ -261,6 +264,24 @@ def test_prediction_uses_the_same_selection_as_the_fetch(hostile_store):
     actual = {str(k): int(v) for k, v in zs.select(dataset, spec).sizes.items()}
     assert predicted == actual
     assert actual["time"] == 12, "a partial end date covers the whole day"
+
+
+def test_costing_does_not_build_the_data_selection_graph(monkeypatch, hostile_store):
+    """D67: costing GLORYS must not slice its 12227 x 50 x 2041 x 4320 data graph.
+
+    The coordinate-only path and the materialising path share indexers, but the estimator must
+    never call the latter.  GLORYS is the first archive large enough for that otherwise harmless
+    call to exhaust memory before a single data byte is read.
+    """
+    dataset, _counter = zs.open_dataset(hostile_store, chunks={})
+
+    def data_selection_would_exhaust_memory(*_args, **_kwargs):
+        raise MemoryError("a GLORYS-sized dask graph was constructed")
+
+    monkeypatch.setattr(zs, "select", data_selection_would_exhaust_memory)
+    assessment = zs.assess_access_pattern(dataset, _spec(hostile_store))
+    assert assessment["selection"]["time"] == 12
+    assert assessment["bytes_fetched_estimate"] > 0
 
 
 def test_estimate_is_an_upper_bound_on_wire_bytes(hostile_store, tmp_path):
@@ -686,10 +707,13 @@ def test_inspect_endpoint_reports_hostility_without_transferring_data(client, ho
     assert "CHUNK-HOSTILE" in body["assessment"]["warning"]
     assert body["cached"] is False
     assert body["spec"]["content_key"]
-    # A crop below the R13 floor is *reported*, not raised: the caller asked what this crop
-    # would cost, and "too small, minimum 512x512" is the answer to that question.
-    assert body["geometry"]["ok"] is False
-    assert body["geometry"]["minimum_size"] == 512
+    # A crop below the R13 recommendation is *planned*, not raised: inspection reports the
+    # technical floor, the meaningful-statistics floor and native-grid expansion before data.
+    assert body["geometry"]["meets_recommended_minimum"] is False
+    assert body["geometry"]["recommended_minimum"]["shape"] == [512, 512]
+    assert body["geometry"]["absolute_minimum"]["shape"] == [240, 240]
+    assert body["acquisition_plan"]["suggestions"]["recommended"]["feasible"] is False
+    assert "--analysis-levels 4 --analysis-transform dtcwt" in body["cli"]
     # And the response hands back the command that would do it for real.
     assert "materialise" in body["cli"]
 
@@ -759,3 +783,36 @@ def test_live_weatherbench_store_matches_the_recorded_structure():
         assert assessment["amplification"] == pytest.approx(51.1, abs=0.5)
     finally:
         dataset.close()
+
+
+def test_cli_builds_a_crop_on_the_store_s_own_vertical_axis():
+    """The command the UI hands the researcher has to work on the store it names (D72).
+
+    Two defects in one generated line: `--levels` was parsed with `int()`, so a fractional
+    GLORYS elevation raised `invalid literal for int()`; and the spec was built with `CropSpec`
+    rather than `crop_for_store`, so every crop selected on ERA5's `level` axis whatever store
+    it named. Copy-pasting the Inspect panel's own command could not succeed.
+    """
+    from src.data_layer.zarr_source import _parse_level, crop_for_store
+
+    # Integer-first: ERA5 pressure levels stay integral so no pinned content key moves.
+    assert _parse_level("850") == 850 and isinstance(_parse_level("850"), int)
+    fractional = _parse_level(" -0.49402499198913574 ")
+    assert isinstance(fractional, float) and fractional == -0.49402499198913574
+    with pytest.raises(InvalidParameterError):
+        _parse_level("not-a-level")
+
+    ocean = crop_for_store(
+        "glorys_phy_my_0p083deg_p1d", variables=("thetao",),
+        time_start="1993-01-01", time_end="1995-12-31",
+        lat_min=-50, lat_max=-30, lon_min=160, lon_max=180, levels=(fractional,))
+    assert ocean.vertical_dim == "elevation"
+    assert ocean.levels == (-0.49402499198913574,)
+
+    atmospheric = crop_for_store(
+        "era5_0p25_6h", variables=("temperature",),
+        time_start="2020-01-01", time_end="2020-01-02",
+        lat_min=-50, lat_max=-30, lon_min=160, lon_max=180,
+        levels=tuple(_parse_level(v) for v in "850,700,500,300".split(",")))
+    assert atmospheric.vertical_dim == "level"
+    assert atmospheric.levels == (850, 700, 500, 300)

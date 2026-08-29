@@ -4523,3 +4523,2235 @@ configuration absent and explicit network consent disabled. `client_constructed`
 This is protocol evidence only. No CDS credential was validated, no WeatherBench or CDS byte
 was transferred, no overlap receipt passed and no T4C.6 verdict exists. D43 remains open and
 4D--4H remain gated.
+
+## TG5.1 - durable motif freezing (`ed-dev`)
+
+`src/core/motif_freeze.py` closes the process boundary TG3.5 explicitly left open. A
+`FrozenMotif` serialises the exact dimensionless exemplar graph, matcher, configuration size
+and measured tolerance under `definition_sha256`. `motif_sha256` additionally binds the
+originating `DomainDeclaration`, every node's carried semantic record, the training partition
+and its digest, the generate-family identity and selection record, study identity and a
+timezone-bearing freeze time. Structure remains separate from carried domain meaning.
+
+The in-memory record recursively freezes nested mappings. Persistence emits canonical JSON,
+uses exclusive creation, flushes and `fsync`s, and refuses overwrite. Reload rejects schema
+drift, incomplete origin meaning, non-canonical bytes, an invalid reconstructed graph and any
+partition/definition/outer hash mismatch. A published-digest check distinguishes local
+self-consistency from evidence that the definition existed before a later operation. TG5.2,
+not this slice, must record that digest before opening the target domain.
+
+Focused acceptance after the final constructor hardening:
+
+```text
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_motif_freezing.py src/tests/test_motif.py src/tests/test_preregistration.py src/tests/test_cross_domain.py -q
+153 passed, 1 warning in 48.37s
+```
+
+The 14 TG5.1 tests cover structural/origin separation and dual hashes, exact graph round-trip,
+deterministic canonical bytes, nested immutability, no-overwrite publication, structural and
+semantic tamper detection, whole-artifact rewrite versus a published digest, held-out-source
+refusal, label/signature redefinition, origin laundering, explicit timezone, strict fields and
+non-canonical serialization.
+
+The final complete repository run, after architecture and roadmap updates:
+
+```text
+> .\.venv\Scripts\python.exe -m pytest -q
+1986 passed, 1 skipped, 1 xfailed, 6 warnings in 831.86s (0:13:51)
+```
+
+Standalone scientific gates and documentation audit:
+
+```text
+> .\.venv\Scripts\python.exe -m src.benchmarks
+PASS 29   FAIL 0   NOT_YET_RUNNABLE 0
+
+> .\.venv\Scripts\python.exe tools\audit_docs.py
+undocumented modules : none
+undocumented routes  : none
+defects              : 59 defined, 57 fixed, partial ['D18'], open ['D43']
+test functions       : 1684
+stale inventory rows : none
+claimed suite totals : architecture (1986, 1) / roadmap (1986, 1)
+RESULT               : ok
+```
+
+This is serialization, integrity and provenance evidence over synthetic motif fixtures. It is
+not a blind transfer: no target domain was opened, no transfer search was run and no real
+cross-domain scientific result exists. Those were deferred to TG5.2 at this checkpoint.
+
+## TG5.2 - bind, open, then search without redefinition (`ed-dev`)
+
+`src/core/motif_transfer.py` closes the chronological boundary left by TG5.1. The only target
+data entry is a callback. Before invoking it, `TransferLedger` verifies the frozen artifact
+against its externally published `motif_sha256`, requires strict timezone-bearing freeze/bind/
+open order, and durably writes the motif and definition identities plus the exact target
+partition and domain declarations. It treats the target as spent at that write even if target
+loading or validation later fails. Reload verifies canonical bytes, exact schemas, record,
+partition and declaration hashes, state and chronology.
+
+The subsequent exhaustive search exposes no size, matcher, relation or tolerance parameters;
+all come from the verified frozen definition. It refuses a matcher that has not declared
+cross-domain capability, a source domain presented as a target, mislabelled target features and
+a post-open subset of the frame count bound before access. Match reports retain both domains'
+carried semantics, and a content-addressed receipt records all examined/matching configurations,
+including a complete zero-match result.
+
+Focused and integrated acceptance:
+
+```text
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_motif_transfer.py -q
+18 passed, 1 warning in 0.77s
+
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_motif_transfer.py src/tests/test_motif_freezing.py src/tests/test_motif.py src/tests/test_preregistration.py src/tests/test_cross_domain.py -q
+171 passed, 1 warning in 47.19s
+```
+
+The 16 TG5.2 test functions (18 parametrized cases) cover durable pre-opener binding, strict
+chronology, absence of a definition-override surface, semantic separation, wrong published
+digest and non-cross-domain matcher refusal, one-use target identity across processes, failure
+spending, target-domain laundering, post-open subset refusal, complete null and exhaustive
+search receipts, canonical reload, nested ledger tampering and receipt identity.
+
+Final repository, documentation and scientific-gate verification:
+
+```text
+> .\.venv\Scripts\python.exe -m pytest -q
+2004 passed, 1 skipped, 1 xfailed, 6 warnings in 820.53s (0:13:40)
+
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_documentation.py -q
+19 passed, 1 warning in 102.61s (0:01:42)
+
+> .\.venv\Scripts\python.exe tools\audit_docs.py
+undocumented modules : none
+undocumented routes  : none
+defects              : 59 defined, 57 fixed, partial ['D18'], open ['D43']
+test functions       : 1700
+stale inventory rows : none
+claimed suite totals : architecture (2004, 1) / roadmap (2004, 1)
+RESULT               : ok
+
+> .\.venv\Scripts\python.exe -m src.benchmarks
+PASS 29   FAIL 0   NOT_YET_RUNNABLE 0
+```
+
+This establishes binding-before-opening for access performed through the API, not proof that an
+archive was never inspected by a person or another program; external access control must supply
+that fact. The acceptance target is synthetic and no real archive was opened. TG5.2 reports a
+descriptive motif transfer search only; corrected relationship transfer is supplied by TG5.3.
+
+## TG5.3 - corrected relationship transfer on target train and test (`ed-dev`)
+
+`src/core/motif_relationship.py` adds the corrected inferential layer deliberately excluded from
+TG5.2. `RelationshipPlan` binds the published frozen motif, target domain, ordered non-overlapping
+train/test identities, outcome x positive-lag `SearchSpecification`, one-sided mean-difference
+statistic, circular-shift null, ensemble, alpha, correction and seed. R21 precedence admission,
+the declared lag floor and G3 affordability are checked before the plan exists. Canonical
+no-overwrite persistence and a separately published plan digest protect the declaration across
+processes.
+
+Execution exposes no analysis override parameters. `RelationshipLedger` verifies both published
+digests and durably spends both partitions before either opener, globally refusing reuse of one
+partition even with a new counterpart. Every frozen family member is evaluated in both splits;
+non-estimable members remain at p=1. The full family is corrected independently in train and test,
+and only the same positive rejected label in both yields `PASS`. An adequately powered empty
+intersection yields the complete `FAIL` result required by the roadmap.
+
+Focused acceptance after final ledger and reload hardening:
+
+```text
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_motif_relationship.py -q
+16 passed, 1 warning in 2.46s
+```
+
+G3/G5 integration:
+
+```text
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_motif_relationship.py src/tests/test_motif_transfer.py src/tests/test_motif_freezing.py src/tests/test_motif.py src/tests/test_family_accounting.py src/tests/test_preregistration.py src/tests/test_cross_domain.py -q
+228 passed, 1 warning in 46.55s
+```
+
+The 16 TG5.3 tests cover the complete content-addressed family and split declaration, absence of
+an execution-time redefinition surface, both-opening precommit, same-label corrected replication,
+planted PASS and null FAIL, no-motif p=1 accounting, wrong published digest before access,
+failure spending, target subset/outcome laundering, split chronology, R21 and lag-floor refusal,
+family affordability, canonical plan round-trip, plan/ledger tampering, global partition reuse and
+receipt identity.
+
+Direct `RelationshipPlan` construction, factory construction and reload all execute the same
+domain reconstruction, R21/floor, split, family-identity and affordability checks; the public
+dataclass is not a bypass around its factory.
+
+Documentation and inventory:
+
+```text
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_documentation.py -q
+19 passed, 1 warning in 101.28s (0:01:41)
+
+> .\.venv\Scripts\python.exe tools\audit_docs.py
+undocumented modules : none
+undocumented routes  : none
+defects              : 59 defined, 57 fixed, partial ['D18'], open ['D43']
+test functions       : 1716
+stale inventory rows : none
+claimed suite totals : architecture (2020, 1) / roadmap (2020, 1)
+RESULT               : ok
+```
+
+Full acceptance:
+
+```text
+> .\.venv\Scripts\python.exe -m pytest -q
+2020 passed, 1 skipped, 1 xfailed, 6 warnings in 822.43s (0:13:42)
+
+> .\.venv\Scripts\python.exe -m src.benchmarks
+PASS 29   FAIL 0   NOT_YET_RUNNABLE 0
+```
+
+This is synthetic instrument evidence, not a real cross-domain relationship result. Circular
+shift protects the observed marginal series and destroys their alignment, but it does not rule
+out a shared driver. A `PASS` therefore supports replicated precedence/association only; it does
+not establish mechanism, causality or predictive utility. As in TG5.2, the ledger proves API
+ordering and external access control must establish that the archive was not inspected earlier.
+
+## TG6.1 - the hashed, append-only evidence bundle (`ed-dev`)
+
+`src/core/evidence.py` opens Phase G6 with the structure the claim ladder will read. An
+`EvidenceBundle` binds one `Hypothesis` - identifier, statement, prediction, timezone-bearing
+registration time and provenance - to an ordered chain of `EvidenceEntry` records under ten
+first-class scientific fields: `observations`, `effect_sizes`, `uncertainty`, `null_results`,
+`replication_results`, `holdout_performance`, `provenance`, `confounders`,
+`contradictory_evidence` and `failure_states`.
+
+`append()` returns the next immutable snapshot and leaves the receiver unchanged byte for byte,
+so a prior revision stays a citable object. Each entry hashes its own body including the previous
+entry's digest, anchored on a digest over schema, study id, creation time and hypothesis. Sequence
+numbers are gap-free, append chronology is non-decreasing, payloads are deep-frozen and required
+to be non-empty finite JSON, and every entry must name one of the ten fields. There is no
+`commentary`, `notes` or `interpretation` route, so free text cannot enter the structure the TG6.2
+gates read; TG7 may record adversarial commentary beside the bundle, never inside it (R22).
+
+Focused acceptance:
+
+```text
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_evidence_bundle.py -q
+24 passed, 1 warning in 2.30s
+```
+
+The 24 tests cover revision zero complete before any evidence; all ten fields routed and queryable;
+the receiver unchanged byte for byte across an append; the previous-digest chain; entries and
+nested payloads read-only; `contradictory_evidence` and `failure_states` carried on the same chain
+and undeletable by later appends; commentary, prose-only and empty payloads, non-finite and
+unserialisable values, invalid statuses, malformed or duplicated source digests and offset-less or
+backwards timestamps all refused; a hypothesis refused after the bundle it anchors and refused when
+swapped under an existing chain; edited, dropped, reordered, substituted and never-linked entries
+and a mismatched bundle digest all detected; canonical exclusive publication, no-overwrite,
+published-digest verification, reload refusing dropped, softened, relocated, unknown-field and
+reskinned files; process-independent reload continuing the same chain; and a digest sensitive to
+append order, not only content.
+
+One of these deserves naming. Dropping, reordering and duplicating entries are all caught by the
+sequence check alone, which means a test built only from those cases never exercises the hash link
+at all. `test_substituting_an_earlier_entry_breaks_the_link_the_later_entry_committed_to` supplies
+a well-formed replacement for entry 1 with the correct sequence, category and chronology but
+different content, and a successor whose sequence is right but which was never linked to its
+predecessor. Only the bound previous digest rejects these, so the chain property is tested as
+itself rather than as a side effect of numbering.
+
+Full acceptance:
+
+```text
+> .\.venv\Scripts\python.exe -m pytest -q
+2044 passed, 1 skipped, 1 xfailed, 6 warnings in 815.33s (0:13:35)
+
+> .\.venv\Scripts\python.exe -m src.benchmarks
+PASS 29   FAIL 0   NOT_YET_RUNNABLE 0
+```
+
+Documentation and inventory:
+
+```text
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_documentation.py -q
+19 passed, 1 warning in 99.32s (0:01:39)
+
+> .\.venv\Scripts\python.exe tools\audit_docs.py
+undocumented modules : none
+undocumented routes  : none
+defects              : 59 defined, 57 fixed, partial ['D18'], open ['D43']
+test functions       : 1740
+stale inventory rows : none
+claimed suite totals : architecture (2044, 1) / roadmap (2044, 1)
+RESULT               : ok
+```
+
+**An audit gap found while verifying this slice.** The first confirming full run returned
+`1 failed, 2043 passed`: the inventory's `| **total** |` row still said 1716 against an actual
+1740. `tools/audit_docs.py` had already reported `RESULT: ok` on that same tree. It checks the
+per-file inventory rows and the two claimed suite totals but never the inventory total row, so it
+can pass while `test_documentation.py::test_documented_test_counts_match_the_source` fails.
+Architecture 7.4 presents the tool as reporting the same facts outside a test run; on this row it
+does not. The row is corrected and the suite is green, but the tool remains the weaker of the two
+checks and should not be treated as sufficient on its own. Not fixed here - it is outside TG6.1
+and belongs in the defect register.
+
+**Claim boundary.** This is a tamper-evident container and a routing discipline, not a judgement.
+It does not decide whether the evidence inside supports anything: TG6.2's ladder and TG6.3's five
+outputs own that, and no rung logic exists yet. The hashes detect edits to a published bundle;
+they do not authenticate an author, and they cannot show that relevant evidence was gathered and
+simply never appended. Only what is appended can be weighed.
+
+## TG6.2 - the claim ladder (`ed-dev`)
+
+`src/core/claim_ladder.py` assigns `observation -> association -> robust association ->
+candidate precursor -> demonstrated predictive utility` from a TG6.1 bundle and nothing else.
+`assess_claim_ladder(bundle)` takes no second argument and reads no clock, filesystem,
+environment or random source, so the verdict is recomputable by anyone holding the published
+snapshot. Ten declarative gates decide the climb; only `PASS` advances one.
+
+Two gates sit on the floor rung and dominate the rest. Any `FAIL` or `INVALID` entry anywhere,
+and any `contradictory_evidence` or `failure_states` entry recorded as `PASS` - the bundle
+asserting that the contradiction or failure stands - caps the bundle at `observation`. Because
+TG6.1 entries are immutable, a failure cannot be appended away. Causal claim kinds are refused by
+`permits()` rather than answered `False`, naming R7.
+
+Focused acceptance:
+
+```text
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_claim_ladder.py -q
+30 passed, 1 warning in 2.46s
+```
+
+**How the purity requirement was actually tested.** Determinism to the digest; two separately
+built bundles with the same evidence agreeing; independence from append order over forty
+shuffles; a bundle whose labels read `DEFINITIVE PROOF OF CAUSATION` and whose payloads carry
+`interpretation: causal` and `rung: demonstrated_predictive_utility` receiving byte-identical
+gates to a plain one; and an identical rung after a round trip through `save_evidence_bundle` and
+`load_evidence_bundle`. The strongest of them restates the ladder rule independently, in the test
+file, and compares the two implementations over a randomised sweep of eight hundred bundles.
+
+**How the blocking requirement was actually tested.** Exhaustively over every first-class field
+at every status appended to a fully evidenced bundle - fifty cases, each asserted to block or not
+block exactly as the rule says - and over eight hundred randomised whole bundles. A blocked
+bundle stays on the floor as eleven further rounds of complete favourable evidence are piled on
+it, and a later `PASS` provenance entry claiming to supersede the failure does not lift it.
+
+**A weak property test found and replaced.** The first randomised sweep drew categories and
+statuses uniformly. Instrumenting it showed the result: all six hundred bundles landed on
+`observation`, four hundred and eighty-five of them blocked and the rest simply short of
+evidence. That sweep would have passed unchanged against a `assess_claim_ladder` that returned
+`"observation"` unconditionally, so it was testing almost nothing. The generator now seeds a
+random subset of the full evidence set before adding noise, and the tests assert their own
+coverage: all five rungs must occur in the agreement sweep, and both the blocked and the clear
+branch must occur more than a hundred times each in the blocking sweep.
+
+**Mutation check.** Four deliberate defects were introduced into the gate table one at a time and
+the focused suite re-run against each: ignoring standing contradictions (7 failures), removing the
+blocking cap so `rung` follows `unblocked_rung` (9), accepting a truthy precedence value instead
+of exactly `true` (2), and dropping the uncertainty gate (3). Each was caught, and the file was
+restored from a backup between runs.
+
+Full acceptance:
+
+```text
+> .\.venv\Scripts\python.exe -m pytest -q
+2074 passed, 1 skipped, 1 xfailed, 6 warnings in 801.61s (0:13:21)
+
+> .\.venv\Scripts\python.exe -m src.benchmarks
+PASS 29   FAIL 0   NOT_YET_RUNNABLE 0
+```
+
+Documentation and inventory:
+
+```text
+> .\.venv\Scripts\python.exe tools\audit_docs.py
+undocumented modules : none
+undocumented routes  : none
+defects              : 59 defined, 57 fixed, partial ['D18'], open ['D43']
+test functions       : 1770
+stale inventory rows : none
+claimed suite totals : architecture (2074, 1) / roadmap (2074, 1)
+RESULT               : ok
+```
+
+**Claim boundary.** The ladder grades the evidence that was appended and cannot know what was
+never gathered. It is a floor on rigour, not a certificate: reaching the top rung means a holdout
+result was recorded and passed, not that the design was sound, that the holdout was honestly held
+out, or that the effect transfers. Gate thresholds are deliberately structural - one passing entry
+of the right kind - and say nothing about the statistical adequacy of what that entry contains;
+TG5's instruments own that upstream. No rung of this ladder, including its top, licenses a causal
+reading.
+
+## TG6.3 - the five outputs of an evidence bundle (`ed-dev`)
+
+`src/core/five_outputs.py` closes Phase G6's deterministic layer. For any TG6.1 bundle,
+`summarise_evidence(bundle)` states what can be claimed, what cannot, what evidence contradicts
+it, which alternative explanations remain, and which single observation would most efficiently
+distinguish between them. It takes the bundle and nothing else - no clock, no filesystem, no
+environment, no randomness - so the report is recomputable by anyone holding the snapshot, and
+`summary_sha256` binds it to the exact revision it came from.
+
+Focused acceptance:
+
+```text
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_five_outputs.py -q
+38 passed, 1 warning in 3.27s
+```
+
+**How the invariants were actually tested.** Two randomised sweeps carry the phase, each over 600
+bundles drawn to land anywhere on the ladder. The first asserts that the claimable rungs are
+exactly those at or below the ladder's verdict; that claimable and not-claimable partition the
+ladder with every unreachable rung carrying a non-empty explanation; that the evidence against is
+exactly the adverse and contrary entries in append order and is a superset of the ladder's
+blocking set; and that the open structural alternatives mirror the unsatisfied climbing gates
+exactly. The second asserts the next observation follows its stated precedence - unblock, then
+climb, then resolve, then nominate nothing. Both sweeps assert their own coverage: the first
+requires all five rungs to occur, the second requires every branch of the precedence including the
+empty one, so neither can pass vacuously on a degenerate sample.
+
+**A defect the sweep found.** The first run of the partition sweep failed on
+`all(item.blocked_by for item in outputs.not_claimable)`. Because the ladder is climbed in order,
+a bundle can satisfy every gate a rung declares and still not reach it - evidence recorded out of
+order, so `robust_association`'s own gates pass while `association`'s do not. The original code
+named the floor gates in that case, which are satisfied here, and so reported an unreachable rung
+with an empty explanation. It now walks down from the rung to the floor and names the nearest rung
+that actually blocks the climb. `test_a_rung_whose_own_gates_all_pass_is_still_explained_by_the_gap_beneath_it`
+tests the case directly rather than leaving it to the sweep.
+
+**Mutation check.** Five deliberate defects were introduced one at a time and the focused suite
+re-run; the file was restored between runs.
+
+```text
+drop the null-result widening of output three               -> 2 failed, 36 passed
+climb before unblocking in output five                      -> 3 failed, 35 passed
+report structural alternatives their gate already closed    -> 4 failed, 34 passed
+claim one rung more than the ladder allows                  -> 4 failed, 34 passed
+nominate the last recorded alternative rather than the first -> 1 failed, 37 passed
+```
+
+Full acceptance:
+
+```text
+> .\.venv\Scripts\python.exe -m pytest -q
+2112 passed, 1 skipped, 1 xfailed, 6 warnings in 833.93s (0:13:53)
+
+> .\.venv\Scripts\python.exe -m src.benchmarks
+PASS 29   FAIL 0   NOT_YET_RUNNABLE 0
+```
+
+Documentation and inventory:
+
+```text
+> .\.venv\Scripts\python.exe tools\audit_docs.py
+undocumented modules : none
+undocumented routes  : none
+defects              : 59 defined, 57 fixed, partial ['D18'], open ['D43']
+test functions       : 1808
+stale inventory rows : none
+claimed suite totals : architecture (2112, 1) / roadmap (2112, 1)
+RESULT               : ok
+```
+
+**Claim boundary.** The fifth output is a precedence rule, not an experiment design. No expected
+information gain is computed, because the bundle carries no likelihoods to compute one from;
+"most efficient" means "the cheapest thing standing in the way", and a reader who wants a genuine
+design of experiments will not find one here. The fourth output can only name the eight
+alternatives its gates correspond to and the ones a person recorded, so a domain-specific rival
+explanation nobody wrote down is invisible to it - its absence from the report is not evidence of
+its absence in fact. The same holds of the third output, and the rendered text says "none
+recorded; that is not the same as none existing" rather than letting silence be read as
+reassurance. Nothing here grades the statistical adequacy of any entry, and no output, at any
+rung, licenses a causal reading (R7).
+
+## TG7.1 - the recorded-call boundary (`ed-dev`)
+
+`src/core/recorded_call.py` opens Phase G7. It is the only door through which the adversarial
+review layer may speak, and it is built so the layer cannot reach the G6 gates through it. Every
+call captures the verbatim request, the verbatim response bytes, the exact model id, the effort
+setting, the API request id and both timestamps, because an LLM output cannot be regenerated
+(R23); every response is constrained to a declared schema sent as `output_config.format`; and no
+recorded output is an input to any claim level (R22).
+
+Focused acceptance:
+
+```text
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_recorded_call.py -q
+55 passed, 1 warning in 1.80s
+```
+
+**The acceptance test of the phase.** `test_deleting_every_llm_output_from_a_corpus_of_bundles_changes_no_claim_level`
+builds a corpus of seven bundles - one standing on each of the five rungs, one blocked by a
+failed replication, one carrying a standing contradiction - and reviews each with all eight
+TG7.2 roles. The commentary is deliberately assertive: it returns `supported`, asserts the
+relationship is causal, and demands promotion to demonstrated predictive utility by name. Every
+claim level, every claimable set and every summary digest is identical after deleting the whole
+review, and the corpus asserts its own coverage, so it cannot pass by standing on one rung.
+
+`verify_claim_independence` makes the same guarantee executable outside the test. It compares the
+claim digest with the review present and deleted, re-derives it from the bundle's own canonical
+bytes, and refuses if any recorded phrase of at least `SMUGGLING_FLOOR` characters is found
+inside them. That last check is the one that could actually fail, and
+`test_recorded_commentary_found_inside_the_evidence_chain_is_refused` shows it firing on a bundle
+where a reviewer's argument has been copied into a confounders summary.
+
+**How the invariants were actually tested.** Two randomised sweeps carry the rest. The first
+draws 300 bundles landing anywhere on the ladder, attaches between zero and four calls of random
+role, effort and verdict, and asserts the claim digest, rung and blocking set are untouched and
+that the five outputs are byte-identical after stripping the review; it requires all five rungs
+to occur and at least one bundle to have been reviewed at all, so it cannot pass vacuously. The
+second draws 200 records of one to five calls and asserts the recorded chain stays self-checking
+and reloadable through canonical JSON, requiring every chain length to occur.
+
+**A masked check the mutation run found.** The fifth mutation - letting a call bind a bundle
+other than the one under review - passed all 54 tests at first. The test that should have caught
+it appended a call from another bundle, but that call's `previous_sha256` did not link up either,
+so the chain check refused it first and the binding check was never exercised.
+`test_a_call_bound_to_another_bundle_is_refused_even_when_the_chain_would_accept_it` now
+constructs a stray call whose digest does link up and whose subject does not, and the mutation is
+caught.
+
+**Mutation check.** Five deliberate defects were introduced one at a time and the focused suite
+re-run; the file was restored between runs.
+
+```text
+do not check the response against its declared schema        -> 4 failed, 50 passed
+accept an answer from a model that was not asked             -> 1 failed, 53 passed
+allow sampling parameters to be pinned                       -> 5 failed, 49 passed
+skip the smuggling check in verify_claim_independence        -> 1 failed, 53 passed
+let a call bind a bundle other than the one under review     -> 1 failed, 54 passed
+```
+
+The first four were run against the 54-test suite; the fifth against the 55 cases that include
+the isolating test described above.
+
+Full acceptance:
+
+```text
+> .\.venv\Scripts\python.exe -m pytest -q
+2167 passed, 1 skipped, 1 xfailed, 6 warnings in 1241.16s (0:20:41)
+
+> .\.venv\Scripts\python.exe -m src.benchmarks
+PASS 29   FAIL 0   NOT_YET_RUNNABLE 0
+```
+
+Documentation and inventory:
+
+```text
+> .\.venv\Scripts\python.exe tools\audit_docs.py
+undocumented modules : none
+undocumented routes  : none
+defects              : 59 defined, 57 fixed, partial ['D18'], open ['D43']
+test functions       : 1858
+stale inventory rows : none
+claimed suite totals : architecture (2167, 1) / roadmap (2167, 1)
+RESULT               : ok
+```
+
+**Claim boundary.** This slice records calls and fences them off; it does not conduct a review.
+No test here judges whether a challenge was any good, and a well-formed response saying something
+false is recorded exactly as faithfully as a true one. The transport is injected and every test
+uses a recorded one, so nothing here demonstrates that a real API client behaves as the boundary
+expects - that is TG7.3's problem, along with the `cache_read_input_tokens` assertion the usage
+block is being kept for. The smuggling check finds recorded wording reproduced in a bundle; it
+cannot detect a person who reads commentary, is persuaded by it, and records a genuine-looking
+measurement in their own words. No structural check can, and the defence against that is the
+provenance the gates already require, not this function. Determinism is not claimed anywhere in
+the layer: an identical request may return a different answer tomorrow, which is exactly why the
+answer is stored rather than recomputed.
+
+## TG7.2 - the adversarial round-robin (`ed-dev`)
+
+`src/core/round_robin.py` runs the eight seats in their fixed order over one frozen bundle, every
+turn taken through the TG7.1 boundary and recorded verbatim beside it. The order is replayed
+rather than trusted, the panel is pinned seat by seat, dissent is retired by argument and never by
+arithmetic, and the final synthesis must carry every unresolved dissent by name.
+
+Focused acceptance:
+
+```text
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_round_robin.py -q
+50 passed, 1 warning in 7.17s
+```
+
+**The acceptance of the slice.** Two tests carry it.
+`test_a_complete_round_robin_over_a_corpus_of_bundles_changes_no_claim_level` runs a full
+eight-role exchange over seven bundles - one on each of the five rungs, one blocked by a failed
+replication, one carrying a standing contradiction - with the candidate and all four challengers
+naming the current rung and arguing it should be promoted to demonstrated predictive utility.
+Every claim level, claimable set and summary digest is identical afterwards, the corpus asserts
+its own coverage of the ladder, and `close_round_robin` re-runs `verify_claim_independence` on the
+way out. `test_three_agreeing_challengers_do_not_retire_the_fourths_objection` carries the other
+half: one challenger objects, is answered `unresolved`, and its argument and unexcluded
+alternatives survive into the outcome verbatim.
+
+**Not majority voting, made checkable.**
+`test_what_the_agreeing_challengers_said_makes_no_difference_at_all` runs the same exchange twice,
+changing the other three challengers' verdicts between runs, and asserts the retained dissent is
+byte-identical. If any count were happening anywhere in the module, that test would catch it.
+Three more tests refuse a final synthesis that drops an unresolved dissent, invents one nobody
+raised, or reports `dissent_remains: false` while one stands.
+
+**The closure rule.** A dissent is retired by the candidate conceding it, or by a rebuttal that
+the independent reassessment declines to reopen; until the reassessment has spoken a rebuttal is
+provisional, because the candidate does not get to mark its own homework. Four tests cover the
+four paths through that rule, and a fifth refuses a reassessment that tries to originate a dissent
+at a point where nothing downstream would answer it.
+
+**How the invariants were actually tested.** Two randomised sweeps. The first draws 120 exchanges
+with random verdicts, dissent flags, response outcomes and reopenings, computes the expected
+retained dissent from an independently written rule in the test, and asserts the claim digest,
+rung and five outputs are untouched; it requires all four rungs and at least three distinct
+dissent counts to occur, so it cannot pass on a degenerate sample. The second draws 80 exchanges
+over randomly seated panels and re-replays each finished record against the protocol, requiring
+every possible exchange length from seven to eleven turns to occur.
+
+**A missing guard the mutation run found by hanging.** The sixth mutation removed the check that a
+response answers the dissent currently on the floor. The suite did not fail: it hung. With that
+check gone, an answer naming the wrong challenger leaves the right one permanently unanswered, the
+plan keeps demanding the same turn, and the exchange never terminates. The ordering check had been
+carrying a termination guarantee that nothing stated. Each challenge is now refused a second
+answer, which bounds the exchange independently of the ordering check, and
+`test_a_dissent_answered_twice_is_refused_so_the_exchange_has_to_terminate` isolates it - the
+ordering check would otherwise mask it, exactly as the chain check masked a binding check in
+TG7.1. With the guard in place the sixth mutation fails cleanly.
+
+**Mutation check.** Six deliberate defects were introduced one at a time and the focused suite
+re-run; the file was restored between runs.
+
+```text
+let a dissent be retired by the candidate's own rebuttal alone -> 2 failed, 48 passed
+let the final synthesis drop an unresolved dissent            -> 2 failed, 48 passed
+stop pinning the panel to the seat that answered              -> 2 failed, 48 passed
+let a reassessment originate a dissent nothing will answer    -> 1 failed, 49 passed
+let a challenge find the claim unsupported without dissenting -> 2 failed, 48 passed
+answer dissents in any order rather than the order raised     -> 1 failed, 49 passed
+```
+
+Full acceptance:
+
+```text
+> .\.venv\Scripts\python.exe -m pytest -q
+2217 passed, 1 skipped, 1 xfailed, 6 warnings in 934.21s (0:15:34)
+
+> .\.venv\Scripts\python.exe -m src.benchmarks
+PASS 29   FAIL 0   NOT_YET_RUNNABLE 0
+```
+
+Documentation and inventory:
+
+```text
+> .\.venv\Scripts\python.exe tools\audit_docs.py
+undocumented modules : none
+undocumented routes  : none
+defects              : 59 defined, 57 fixed, partial ['D18'], open ['D43']
+test functions       : 1907
+stale inventory rows : none
+claimed suite totals : architecture (2217, 1) / roadmap (2217, 1)
+RESULT               : ok
+```
+
+**Provider independence.** The module names no vendor and opens no socket. `model_id` is any
+string, `effort` is an abstract three-valued knob a later adapter translates into whatever the
+provider takes, and the closed response schema is enforced locally by `ResponseSchema.validate` on
+the parse - so an undeclared field is refused whether or not the provider honoured
+`additionalProperties: false`. The tests seat two model ids and mix them across the panel, which
+exercises the pinning but proves nothing about any real client.
+
+**Claim boundary.** This slice conducts the exchange; it does not judge it. Nothing here measures
+whether a challenge was any good, whether a concession was warranted, or whether a rebuttal was
+honest - a fluent, false objection is retained as faithfully as a sound one, and a lazy panel that
+raises no dissent produces a clean outcome that means nothing at all. Independence is checked at
+the level of the model id and no deeper: `reassessment_is_independent` calls two different ids
+independent, but two sizes of one family share training data, tokenizer and failure modes, and it
+is the correlated blind spot that an adversarial exchange exists to catch. A tiered panel drawn
+from one provider - a lighter model challenging, a larger one synthesising - buys cost control and
+a capability gradient, not independence in the sense the word carries. Seating genuinely unrelated
+reviewers is a configuration decision the panel records and does not make, which is also why
+reviewer overlap is recorded rather than refused. Every test uses a recorded transport, so
+nothing here shows that a real client behaves as the protocol expects. And retention is not
+resolution: an outcome carrying four unresolved dissents is an honest record of an argument
+nobody won, not a finding.
+
+## TG7.3 - cost-controlled review transport (`ed-dev`)
+
+`src/core/review_cost.py` adds a provider-neutral route/usage audit and the first concrete API
+transport. `GeminiBatchTransport` maps TG7.1 calls onto Gemini 3.5 Flash's asynchronous inlined
+Batch GenerateContent endpoint, polls the named operation, preserves the raw structured response
+and `usageMetadata`, and returns exactly the transport mapping `record_call` already accepts.
+The API key is header-only, has no serialisation path, and is redacted from `repr` and provider
+error messages.
+
+Official provider material reviewed 2026-08-26:
+
+* `https://ai.google.dev/gemini-api/docs/whats-new-gemini-3.5` - GA model id
+  `gemini-3.5-flash`, structured output, Batch/caching support, and low/medium/high thinking;
+* `https://ai.google.dev/gemini-api/docs/caching` - implicit caching on Gemini 2.5+, the
+  4,096-token floor for Gemini 3.5 Flash, and measured cached-token usage;
+* `https://ai.google.dev/api/batch-api` - inlined requests/responses, `batches/{id}`, polling and
+  terminal states; and
+* `https://ai.google.dev/gemini-api/docs/pricing` - Batch at 50% of standard token price.
+
+The cost policy fixes one real model id and every effort before the review: low for the four
+challengers, medium for the response, high for candidate synthesis, independent reassessment and
+final synthesis. `audit_review_cost` independently reconciles normalized input/output/cached/total
+counts against the raw provider object, requires the Batch route and at least one measured cache
+hit, and binds the aggregate to both the review-record and policy digests. The receipt persists
+atomically without overwrite and rechecks its content digest on load. It records tokens and the
+dated pricing source, not a dollar figure that would become false when a price changes.
+
+Focused acceptance:
+
+```text
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_review_cost.py -q
+19 passed, 1 warning in 1.67s
+
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_review_cost.py src/tests/test_recorded_call.py src/tests/test_round_robin.py -q
+124 passed, 1 warning in 8.67s
+```
+
+The 15 test functions (19 cases) cover the exact Batch payload, schema and thinking-level
+translation; submission and polling; both the reference and first live completed-operation
+shapes; structured response and raw usage preservation; visible-plus-thinking output accounting;
+header-only key handling; safe HTTP and failed-batch errors; an eight-call 90%-cache-hit receipt;
+and refusals for configured-but-zero cache, standard service, effort drift, raw/normalized
+disagreement, batch-id splicing, duplicate identities, invalid arithmetic, overwrite and tampering.
+
+Full acceptance:
+
+```text
+> .\.venv\Scripts\python.exe -m pytest -q
+2236 passed, 1 skipped, 1 xfailed, 6 warnings in 857.91s (0:14:17)
+
+> .\.venv\Scripts\python.exe -m src.benchmarks
+PASS 29   FAIL 0   NOT_YET_RUNNABLE 0
+
+> .\.venv\Scripts\python.exe tools\audit_docs.py
+undocumented modules : none
+undocumented routes  : none
+defects              : 60 defined, 58 fixed, partial ['D18'], open ['D43']
+test functions       : 1922
+stale inventory rows : none
+claimed suite totals : architecture (2236, 1) / roadmap (2236, 1)
+RESULT               : ok
+```
+
+**Live smoke, and D60.** After `GEMINI_API_KEY` was supplied through the ignored `.env.local`,
+three tiny calls were attempted. The first authenticated and completed but exposed that the
+operation's `metadata` and `response` are siblings rather than the direct resource shape used by
+the offline fixture. After that parser fix, the second completed and exposed a worse issue: the
+legacy structured-output fields were accepted but ignored, returning valid JSON outside the
+declared schema; it also showed that billed output is visible candidates plus thinking tokens.
+The current `responseFormat` field initially returned a safe 400 because Batch requires protobuf
+enum `APPLICATION_JSON`, not the synchronous REST example's `application/json`. With that dialect
+pinned and local response validation added, the final batch succeeded:
+
+```text
+batch        : batches/nd6n27...mb26
+model        : gemini-3.5-flash
+response     : {"note": "Structured Batch transport is operational for test TG7.3a live smoke.", "status": "ok"}
+usage        : 52 input, 32 candidate, 92 thinking, 176 total
+normalised   : 52 input, 124 output, 0 cached
+```
+
+The key was read from `.env.local`, which `git check-ignore` confirms is ignored, and was never
+printed or written into an artifact. Authentication, submission, polling, structured output and
+usage are therefore live-accepted. The smoke prompt is below Gemini 3.5 Flash's 4,096-token cache
+floor and correctly hit no cache, so a real cache hit, full eight-role review and live cost receipt
+remain **NOT RUN**. The offline non-zero cache fixture tests the auditor, not Google's cache.
+
+**Claim boundary.** Cost routing and token accounting say nothing about whether a challenge is
+good. The receipt cannot reach the EvidenceBundle or any G6 gate, and caching does not make an LLM
+answer reproducible. R22 and R23 are unchanged.
+
+## TG7.4 - translation, bounded (`ed-dev`)
+
+`src/core/translation.py` renders a finding in domain language. It is the first point in the
+programme where text is produced for a human to act on, and therefore the point where four rules
+break at once if nothing stops them: R19's forbidden semantic comparison, R9's bare confidence
+figure, R7's causal verbs entering through prose rather than through claim kinds, and R22's
+promotion carried out entirely in wording.
+
+**No model is called.** Domain wording is declared, content-hashed data screened at registration;
+the renderer emits only from closed template sets bound to structural facts.
+
+**A gap closed on the way.** R9 names six figures - support, confidence, base rate, lift with an
+interval, and surrogate-corrected lift. None of them had a structured home anywhere in `src/`
+before this slice; `claim_ladder` asks only whether an `effect_sizes` entry passes and never reads
+what is inside one, so the figures lived unvalidated in a payload mapping. `AssociationFigures`
+keeps all six together, refuses a partial set by name, and checks lift against
+`confidence / base_rate` rather than trusting it. Its `render` is the only method in the module
+that can format a percentage:
+
+```text
+observed in 40 occurrences: 82.0% of the time, against a base rate of 40.0%
+(lift 2.05, interval 1.60 to 2.50, 1.90 after surrogate correction)
+```
+
+That is the roadmap's own cautionary example, made honest rather than banned.
+
+Three rules are structural rather than checked. **R19:** two disjoint template sets selected by
+`semantic_key` equality, the cross-domain set reaching only `structural_signature()`, so a
+cross-domain magnitude sentence cannot be constructed. **R9:** `AssociationFigures` cannot exist
+partially, and nothing else formats a percentage. **R22:** `translate` takes a `FiveOutputs`,
+never a `ReviewedBundle`, so commentary has no parameter through which to arrive.
+
+**Acceptance.** A corpus standing on all five rungs plus a blocked bundle and a contradicted one,
+translated into an atmospheric and a financial vocabulary, gives documents that read completely
+differently and assert an identical set of structural facts, with every claim digest unchanged. A
+hostile glossary attempting six promotions in wording alone is refused at registration, by name,
+for each one.
+
+**Evidence.** `src/tests/test_translation.py`, 47 tests (60 cases). Three randomised sweeps: 600
+documents over both vocabularies against an independently written restatement of the fact set; 400
+checking numeral containment, bare-confidence and causal-vocabulary refusal with and without
+figures; 300 feature pairs, half sharing a `semantic_key`, asserting no unit-bearing field ever
+leaves a cross-domain rendering.
+
+**Two mutations initially proved worthless, and that is recorded rather than tidied away.** Nine
+deliberate mutations were applied to the module itself. Seven were caught on the first attempt.
+The eighth - removing the causal guard - appeared to be caught, but the edit pattern never matched,
+so the run had been against unmutated source; re-applied correctly, it is caught. The ninth showed
+the two halves of `assert_no_bare_confidence` are **fully redundant**: removing either leaves the
+other catching every case. The per-unit loop is kept for its diagnostics and is now documented as
+redundant in the module, so a later reader does not mistake belt for braces.
+
+**Claim boundary.** A translation is faithful to the record, not to the world. A glossary mapping a
+structural term to a misleading-but-non-causal domain word is accepted, because no structural check
+knows what "anomaly" means to an oceanographer; the defence is that the glossary is declared,
+hashed and reviewable, not that it is correct. Refusing causal *vocabulary* is not refusing causal
+*implication*: a reader who reads "precursor" as "cause" is caught by nothing here. The R19 guard
+stops the system emitting a cross-domain comparison; it cannot stop a reader setting two
+within-domain renderings side by side and drawing one themselves, and layout is out of scope.
+Nothing judges whether a finding was worth translating.
+
+## TG9.1 - the read-only claim surface (`ed-dev`)
+
+Before this slice the cross-domain line had **no HTTP surface at all**. All twelve G-line modules
+- `domain`, `feature`, `motif`, `evidence`, `claim_ladder`, `five_outputs`, `recorded_call`,
+`round_robin`, `translation`, `cross_domain`, `constellation`, `family` - had zero references in
+`src/api/`. Every existing route belonged to the atmospheric/transform line. Nothing a browser
+could reach knew a claim ladder existed, which is why Phase G9 is ordered API first.
+
+`src/api/findings.py` mounts six read-only routes under `/api/v1/findings`. Nothing appends
+evidence, records a call or moves a rung: a GET cannot change what may be claimed (R22), asserted
+over the bundle bytes on disk and the rung before and after.
+
+**R9 on the wire.** `refuse_bare_confidence` walks every response body at any depth and refuses a
+`confidence` key without all six of R9's figures. R9 is usually described as a frontend
+constraint, which puts it in the one place it cannot be enforced. The guard restates the six
+field names rather than importing them from `AssociationFigures`, because a guard that imported
+its expectations from the thing it guards would agree with any change made to it; a test asserts
+the two statements still agree. A partial figure set is served as no figures at all.
+
+**The D35 defence.** Registration is eager at module import, not an import side effect of a
+lazily imported handler module. D35 was exactly that: `GET /data/sources` returned
+`['netcdf_local', 'simulated']` on a fresh process and a longer list after the researcher visited
+the ERA5 tab, so which sources the fallback chain considered depended on browsing order.
+`DOMAIN_GLOSSARIES` has that shape. `register_builtin_glossaries()` is idempotent and returns the
+full built-in set so a caller can assert it rather than hope.
+
+**Two glossaries, written against the screens.** `src/core/builtin_glossaries.py` supplies
+reanalysis and order-book wording for all 38 structural terms each. Both passed TG7.4's four
+registration screens on the first attempt - no digit, nothing from `OUTSIDE_THE_LADDER`, no
+comparative asserting a relation of size, and no rung phrase borrowing wording reserved above it.
+
+**Acceptance, both criteria met.**
+
+1. *No route can serve a bare confidence.* Asserted over a corpus that genuinely does report one -
+   the test fails if no confidence is present anywhere, so it cannot pass vacuously.
+2. *A new domain reaches the API without editing `src/api/`.* A glossary registered from the test
+   module, outside `src/core` and `src/api` both, appears in `GET /domains` and is served whole by
+   `GET /glossaries/{name}`. TG8.1's condition carried onto the HTTP layer.
+
+One study served through both vocabularies reads completely differently and returns byte-identical
+`structural_keys`:
+
+```text
+reanalysis : "a link whose earlier and later parts are ordered in time and whose working
+              can be traced back to the archive it came from"
+order_book : "a link whose earlier and later parts are ordered in trading time and whose
+              working can be traced back to the venue feed"
+keys       : identical in both
+```
+
+**Evidence.** `src/tests/test_findings_api.py`, 20 tests.
+
+**Claim boundary.** A surface that cannot serve a bare confidence does not make the science behind
+it good; it removes one way of misreading it. A fluent rendering of a weak result is more
+persuasive than a jargon-laden rendering of the same result - a risk this surface creates rather
+than removes. An empty "evidence against" section means nothing was recorded, not that nothing
+exists. The store reads a directory; it does not establish that anything in it was worth
+publishing.
+
+**Delivered short of the declaration, recorded rather than glossed.** The TG9.1 declaration said
+`GET /domains` would carry each domain's declared violations (E15) and lag policy (R21), "so a
+client can show what a domain refuses as readily as what it permits". It does not. The route lists
+registered **glossaries** - wording - not `DomainDeclaration`s: `src/api/findings.py` contains zero
+references to `violations`, `lag_policy`, `precedence_admissible` or `DomainDeclaration`. The two
+acceptance criteria above are genuinely met and the route is honestly named for what it serves, but
+the refusal half of the declared scope was not built, and is moved explicitly to TG9.3. Until then
+**a domain's refusals are unreachable from the API**: nothing a client can call reveals that a
+domain forbids a precedence claim.
+
+**This surface is read-only in the strong sense.** It has no write path at all - zero POST, PUT or
+DELETE routes - so nothing in the discovery pipeline is reachable through it: not mining, family
+declaration, preregistration, motif freezing, blind transfer, nor adversarial review. Twenty-two
+G-line modules remain without any HTTP surface; only `evidence`, `five_outputs` and `translation`
+are exposed. This renders claims that some other process already produced and published to disk.
+
+## TG9.2 / TG9.4 - the findings view (`ed-dev`)
+
+`frontend/src/components/FindingsView.tsx` is an eleventh tab rendering a `TranslatedFinding`:
+five outputs as five sections, each claim welded to its bound, with panels for the untranslated
+claim state, the glossary that worded it, and the evidence bundle. A domain selector renders one
+study through any registered vocabulary. Nothing in the existing workbench was refactored.
+
+**The acceptance criterion is asserted over the source.** R9 calls a bare confidence percentage a
+hard constraint on the frontend, not only on the mining code - a rule of that shape cannot be
+enforced by whoever writes the JSX remembering it. Two tests enforce it mechanically:
+
+* `test_the_findings_view_formats_no_scientific_number` - no `toFixed`, no `toPrecision`, no
+  percent literal.
+* `test_the_findings_view_reads_no_claim_bearing_field_directly` - no read of `confidence`,
+  `base_rate`, `lift`, `support` or `surrogate_corrected_lift`. `figures_text` is the only route
+  to the association strength.
+
+Comments are stripped before both checks, so the component can document the constraint without
+appearing to breach it.
+
+**A gap found by writing the view, recorded rather than quietly fixed.** The first draft
+interpolated `figures.support` into its own panel. No formatting, no arithmetic - and still wrong,
+because a view that builds that line from parts puts R9 back in the hands of the JSX author. The
+API now serves `figures_text`, the line the backend assembled, so the view has nothing to build.
+The test was tightened from "formats no number" to "reads no claim-bearing field" because of that
+mistake, not in anticipation of it.
+
+**Three deliberate mutations of the component, each caught:** a `toFixed` on a rendered value, a
+read of `figures.confidence`, and a bare percent literal.
+
+**A guard that had stopped covering new code.** `test_route_count_claim_matches_reality` scanned
+`@app.*` decorators in `main.py` alone. TG9.1 mounted the findings surface as an `APIRouter` in its
+own module, so six real endpoints were invisible to the guard whose entire job is refusing an
+undocumented endpoint - it passed while covering less than it claimed. `_routes()` now scans every
+route-defining module with its mount prefix, and the documented count moved from 31 to 37.
+
+**TG9.4 applies to this surface only.** The findings views carry `role="tablist"`/`role="tab"`,
+`aria-selected`, `aria-pressed`, `aria-label`, `htmlFor`-bound labels, visible focus rings and
+`aria-hidden` on decorative icons, asserted by test. `roadmap.md` §1's platform-wide measurement is
+unchanged: the legacy workbench was not touched. This stops the new surface adding to the debt; it
+does not repay it.
+
+**Evidence.** Five new tests in `src/tests/test_frontend_contract.py` (36 total). `npx tsc
+--noEmit` clean. `npm run build` succeeds.
+
+**Claim boundary. Rendered appearance is NOT RUN.** No browser has displayed this tab and no
+screenshot exists in this repository, exactly as for the tenth tab before it. The contract tests
+prove the tab compiles, calls routes that exist and reads fields that are present; they do not
+prove it renders, is legible, or is usable. A view that cannot render a bare confidence does not
+make the finding it displays worth reading.
+
+## TG9.3 - the refusal surface (`ed-dev`)
+
+Delivers what the instrument will not do, and carries the half of TG9.1 that was declared and not
+built. `DOMAIN_DECLARATIONS` is a registry in `src/core/domain.py`; `src/core/builtin_domains.py`
+supplies the two declarations behind the built-in vocabularies.
+
+The pair is chosen to make the tension visible rather than to look tidy:
+
+```text
+reanalysis : violations = ()                      lag_policy = advective  precedence = True
+order_book : no_physical_metric, no_propagation_speed,
+             unordered_channels, aggregated_values lag_policy = none       precedence = False
+```
+
+`refusals_for` draws each consequence from `KNOWN_VIOLATIONS` rather than restating it, so what a
+reader is told and what the analysis layer enforces cannot drift (R17). A test asserts the two are
+the same string.
+
+**The constraint that shapes the slice.** An `EvidenceBundle` does not record which domain
+produced it - its fields are the hypothesis, the ten evidence categories and their digests, and
+nothing else. So nothing here checks a study against a domain. `DOMAIN_ATTRIBUTION_CAVEAT` travels
+with every served limit, and a contract test refuses a view that restates the caveat in its own
+words instead of rendering the sentence the API vouched for.
+
+**`unadmitted_reading`.** When a record stands at `candidate_precursor` or above and the selected
+vocabulary belongs to a domain declaring no lag floor, the surface reports it:
+
+```text
+glossary=reanalysis  -> unadmitted_reading: null
+glossary=order_book  -> "This record stands at a rung that asserts temporal ordering, and the
+                         order_book domain declares no admissible lag floor, so R21 does not
+                         permit a lead-lag reading from it. Nothing here changes the rung..."
+```
+
+Verified that this moves no claim: the summary digest and the rung are identical with and without
+the report. A rung below `candidate_precursor` reports no tension in either domain, so the check
+is not firing indiscriminately.
+
+**Acceptance met.** A blocked bundle and a contradicted one render their refusals. Commentary is
+rendered in its own `<section>`, and a structural test refuses any `TranslationUnit` field inside
+that container - recorded argument cannot be mistaken for what the record permits.
+
+**Evidence.** 9 new tests in `src/tests/test_findings_api.py` (29 total), 4 in
+`test_frontend_contract.py` (40 total). Two deliberate mutations of the view were each caught:
+claim text moved inside the commentary container, and the caveat restated in the component instead
+of rendered from the payload. `npx tsc --noEmit` clean; `npm run build` succeeds.
+
+**Claim boundary.** Showing what a domain refuses does not enforce it: R17's refusals live in the
+analysis layer and this displays the same facts rather than adding a check. A domain declaring no
+violations is not unconstrained - reanalysis breaks nothing only because the inherited assumptions
+were written against it. **The attribution gap is real and unclosed:** until a bundle records its
+domain, `unadmitted_reading` is a statement about a vocabulary a reader chose, not about a study.
+Closing it means putting domain provenance into a G6 structure, which belongs to no declared slice.
+Rendered browser inspection remains **NOT RUN**.
+
+## TG8.1 - the onboarding contract (`ed-dev`)
+
+Makes a domain's declaration and its wording one indivisible act. `src/core/onboarding.py`
+registers glossary, declaration and contract record atomically through `onboard_domain`; every
+screen runs before the first `Registry.add`, and any failure restores all three registries.
+
+**The hole.** Wording and limits registered through two registries that knew nothing about each
+other, so either could exist alone. Wording without a declaration is a domain that speaks fluently
+and refuses nothing - not hypothetical, since TG9.1 shipped exactly that and served it for a slice
+before TG9.3 caught it. `register_builtin_domains` now goes through the contract and
+`register_builtin_glossaries` delegates to it, so no entry point can quietly reproduce that state;
+a built-in found half-registered is repaired rather than skipped.
+
+**The recipe is a tuple.** `REQUIRED_DECLARATIONS` carries the seven requirements with the reason
+for each. `OnboardedDomain.checklist()` generates from it, `GET /api/v1/findings/onboarding`
+serves it, the tests assert against it:
+
+```text
+axes | geometry | lag_policy | violations | licence | provenance | glossary
+```
+
+**The one check nothing else could make.** The geometry/violation biconditional, which no single
+object can see because the two facts live in different registries:
+
+```text
+geometry           physical_metric   violations                     verdict
+latlon             True              ()                             accepted   (reanalysis)
+None               -                 no_physical_metric, ...        accepted   (order_book)
+latlon             True              irregular_sampling, ...        accepted   (argo_float)
+pixel              False             no_physical_metric             accepted
+cartesian          True              no_physical_metric             REFUSED - metric supplied then renounced
+None               -                 irregular_sampling             REFUSED - lengths claimed, none available
+tripolar           unregistered      -                              REFUSED - UnknownNameError, by the registry that owns the vocabulary
+```
+
+Asked of the geometry's declared `physical_metric` capability rather than its name (E2), so a
+fourth geometry registered from outside `src/` answers for itself.
+
+**`/domains` now lists the union of both registries.** A domain that declared its limits and never
+declared its wording was invisible - the TG9.1 omission with its halves swapped. It now appears
+with `glossary_sha256: null`, `term_count: 0` and `onboarding.complete: false`. `audit_onboarding`
+reports a piecemeal domain as incomplete with what is missing and why, rather than letting it pass
+for one that was checked whole.
+
+**Acceptance met.** `src/tests/domain_plugin_example.py` onboards a third domain in one file
+outside `src/`. The six files a domain would otherwise have had to touch are hashed before and
+after the import and asserted byte-identical - the method `test_registries.py` uses for sources
+and actions:
+
+```text
+src/core/domain.py  src/core/onboarding.py  src/core/translation.py
+src/core/builtin_domains.py  src/core/builtin_glossaries.py  src/api/findings.py
+```
+
+The domain is **Argo profiling floats**, chosen by R17's reasoning rather than by sector. Of the
+seven entries in `KNOWN_VIOLATIONS` the two built-ins between them break four;
+`irregular_sampling` and `non_stationary_support` had never been broken by any registered domain,
+so no refusal depending on them had ever fired against a declared source. Argo breaks exactly
+those two, is the first declared domain where precedence is admissible while the clock is
+irregular, is the only one exercising `lag_policy="declared"` (floor: one park-and-profile cycle,
+with the basis recorded), and keeps a physical metric - the side of the biconditional neither
+built-in occupies. Its thirty-eight-term glossary passed TG7.4's four registration screens first
+time, written against them rather than fixed up afterwards.
+
+`onboarded_by` is captured from the calling frame, because `Entry.defined_in` records
+`value.__module__`, which for a `DomainGlossary` is always `src.core.translation` - the class's
+home, never the adapter's. The test asserts the plugin domain is attributed to
+`src.tests.domain_plugin_example` and not to anything under `src.core`.
+
+**Evidence.** 33 new tests in `src/tests/test_domain_onboarding.py`. Five deliberate mutations,
+each caught:
+
+```text
+M1  drop the metric-renunciation half of the biconditional   -> 3 tests failed
+M2  remove the rollback from onboard_domain                  -> 1 test failed
+M3  infer completeness from the declaration registry         -> 1 test failed
+M4  skip a half-registered built-in instead of repairing it   -> 1 test failed
+M5  list only the glossary registry in /domains              -> 1 test failed
+```
+
+M3 was caught by a different test than predicted: the piecemeal fixture registers only a glossary,
+so a declaration-derived `complete` is still false there, and the failure surfaced in the
+declaration-only listing test instead. Recorded rather than tidied, because a mutation caught by
+an unexpected test is evidence about the tests, not only about the code.
+
+The rollback test injects a failure between the writes with `monkeypatch`, since every ordinary
+refusal runs before the first write and would never reach that path. A rollback nobody executes is
+a rollback nobody has checked.
+
+`GET /api/v1/findings/onboarding` is a new route, so the frontend reachability guard fired
+(`test_no_served_route_is_unreachable_from_the_ui`). It was honoured rather than exempted: the
+findings view gains a sixth panel, *How this domain was declared*, rendering the recipe and each
+domain's audit, and the domain selector marks an incomplete declaration in the option text. The
+panel formats no number and reads no claim-bearing field. `npx tsc --noEmit` clean.
+
+**Claim boundary.** The contract checks a declaration for completeness and internal agreement. It
+reads no data file, so it cannot know whether a domain's declarations describe the source it
+names, nor whether the wording chosen means to a practitioner what it appears to mean. It
+establishes nothing about which domain produced any given `EvidenceBundle`, because a bundle still
+does not record one - `DOMAIN_ATTRIBUTION_CAVEAT` continues to travel with every served limit, and
+the attribution gap recorded under TG9.3 is unchanged. R17's refusals remain enforced in the
+analysis layer; this makes the declarations they read from complete, not self-enforcing. No Argo
+data was fetched: the declaration is a declaration, and no adapter reads the archive.
+
+## TG8.4 - the ingestion seam (`ed-dev`)
+
+TG8.1 made a domain declarable from outside `src/`. This makes one readable. `src/api/channels.py`
+mounts two routes over `src/data_layer/tabular_source.py`, which had read delimited channel
+records since TG0.2 and was referenced **zero times** from `src/api/` and `frontend/src/`.
+
+**The rule the slice is built on.** *Detection may create a required declaration; it may never
+satisfy one.* Observation and decision are separate functions: `clock_facts` consults no domain
+and refuses nothing, `required_violations` turns what it found into obligations, and only
+`read_channels_for_domain` decides anything.
+
+**The two calls, on the three shipped fixtures:**
+
+```text
+                          readable  required                  admitted by
+order_book_regular.csv    yes       []                        order_book
+order_book_irregular.csv  yes       ['irregular_sampling']    order_book
+clock_runs_backwards.csv  no        -                         (none)
+```
+
+`reanalysis` refuses all three, and says why: it declares latitude and longitude, which a channel
+table cannot supply (E14). That refusal is the slice working, not a gap.
+
+**Acceptance met.**
+
+*   **(a)** `order_book_regular.csv` loads under `order_book` and is refused under `reanalysis`
+    by name, citing the declared axes.
+*   **(b)** `order_book_irregular.csv` is refused under `tidy_venue` (onboarded by the test,
+    lacking `irregular_sampling`) and loads under `order_book`, reporting
+    `cadence_seconds: null` rather than a fabricated number.
+*   **(c)** A channel given a footprint of 60 samples is refused unless the domain declares
+    `aggregated_values`, and marked `is_aggregate` where it is allowed.
+*   **(d)** For every fixture, every domain `inspect` reported as admitting returned 200 from
+    `read` and every domain it reported as refusing returned 400. Checked against a **third**
+    domain onboarded for the purpose: both built-ins agree about ragged clocks, so neither can
+    show the case where inspection and reading could diverge.
+*   **(e)** The same bytes yield the same `content_sha256` under two different filenames, and the
+    provenance names the file, the clock column, the domain and the onboarding digest.
+*   **(f)** Both routes are reachable from tab 12; `test_no_served_route_is_unreachable_from_the_ui`
+    passes with no new exemption.
+
+**Two things found while building, recorded rather than smoothed over.**
+
+*A price column was promoted to be the clock.* Given `clock_runs_backwards.csv`, whose `t` jumps
+backwards but whose `bid` increases monotonically, the first implementation picked `bid` as the
+clock and reported the file as readable. Every lag downstream would have described that
+substitution and nothing would have said so. Inspection now stops when the first column cannot
+serve, names the candidates, and requires the caller to choose. The test that caught it was
+written expecting a refusal and got `readable: True` — the code was changed, not the test.
+
+*D61: a declaration that contradicted its own prose.* `order_book` has described "an irregular
+trading clock" since its first commit while omitting `irregular_sampling` from its violation
+tuple. Four slices passed without it being noticed because nothing had yet tried to **read data**
+under a declaration. The knock-on is recorded rather than hidden: half of what TG8.1 credited to
+Argo was really this gap, so `domain_plugin_example.py` and the coverage test now claim
+`non_stationary_support` alone, and both say why.
+
+**Evidence.** 24 new tests in `src/tests/test_channels_api.py`, 21 added to
+`test_tabular_domain.py` (27 -> 48), 8 added to `test_frontend_contract.py` (40 -> 48). Five
+deliberate mutations, each caught:
+
+```text
+M1  drop the declared-axes check            -> 3 tests failed
+M2  drop the aggregate-declaration check    -> 1 test failed
+M3  stop reporting the clock obligation     -> 3 tests failed (2 before the cross-check
+                                               was strengthened; see below)
+M4  remove the size cap                     -> 2 tests failed
+M5  rebuild the declaration instead of
+    returning the onboarded one             -> 1 test failed
+```
+
+M3 initially failed only the two tests that read `required_violations` directly, and **not** the
+acceptance-(d) cross-check that exists to catch exactly that class of change. The reason was
+vacuity: with only `reanalysis` and `order_book` registered, every domain that admits an irregular
+record declares `irregular_sampling` and every domain that refuses one refuses it earlier on its
+axes, so the check agreed with itself no matter what. `tidy_venue` was added to the test and M3
+was re-run; it then failed the cross-check as intended. Recorded because a mutation that a guard
+*should* have caught and did not is evidence about the guard.
+
+**Claim boundary.** Reading a file under a domain establishes that the domain's declaration admits
+the file's shape - not that the file came from that domain, and no check here could establish
+that. `DOMAIN_ATTRIBUTION_CAVEAT` is served with every inspection and every read, and the view
+renders that sentence rather than restating it. **No public dataset has been ingested**: the
+adapter reads local files and never fetches, and the three fixtures are seeded fabrications with a
+README saying so. The preview plot is a preview - nothing is mined, no claim exists, no rung moves
+(R22). Refusing a file is not validating the data in it: finite, monotonic and regularly sampled
+says nothing about whether the values are right. Rendered browser inspection of tab 12 is
+**NOT RUN**, as it is for tabs 10 and 11.
+
+---
+
+## TG10.1 - The store catalogue becomes a registry (2026-08-27, `ed-dev`)
+
+**What was verified.** `GRIDDED_STORES` is a `Registry[GriddedStore]`; the four ERA5 stores
+register eagerly and idempotently; every registered store names a domain something has actually
+declared; and `zarr_source.CATALOGUE` survives as a read-only mapping view that keeps every key
+the old dictionary carried. `CropSpec` gained one declared field, `vertical_dim`, and `select()`
+applies the vertical selection to that name instead of a hard-coded `"level"`.
+
+**Acceptance criterion, executed literally.** `src/tests/store_plugin_example.py` registers a
+fifth store on a `depth` axis in a file no core module imports. The test asserts it reaches
+`GET /api/v1/data/zarr/catalogue`, and hashes `src/data_layer/zarr_source.py` and
+`src/api/main.py` before and after to assert both are byte-identical - the method
+`test_registries.py` uses for the data-source seam. The example file sits in `src/tests/` rather
+than literally outside `src/`, alongside `plugin_example.py` and `domain_plugin_example.py`; what
+is checked is the substance of the criterion, that no core file was edited.
+
+**Results.**
+
+```
+Full suite            2459 passed, 1 skipped, 1 xfailed
+test_stores.py        39 passed (29 test functions)
+adjacent suites       test_zarr_source, test_registries, test_evaluation_run,
+                      test_cds_source, test_evaluation_report - 122 passed, 1 skipped
+Documentation audit   19 passed
+```
+
+**Six deliberate mutations, each caught.**
+
+```
+M1  remove the domain check from register_store   -> 1 test failed
+M2  accept an undated live inspection             -> 1 test failed
+M3  let an unmeasured store quote a chunk size    -> 1 test failed
+M4  hard-code the level axis back into select()   -> 2 tests failed
+M5  put vertical_dim in the content key always    -> 2 tests failed
+M6  make the catalogue view writable              -> 1 test failed
+```
+
+**A silent failure found while building.** A store on a `depth` axis, read through the ERA5 path,
+selected **no vertical subset at all** and reported nothing wrong: `"level" in subset.coords` was
+simply false, so the vertical selection was skipped. The full depth axis flowed into the cache
+while the manifest recorded the request rather than what arrived. That is now
+`test_a_depth_store_read_as_though_it_were_era5_selects_no_vertical_subset`, which asserts the old
+behaviour explicitly so the reason for the change stays legible.
+
+**The content key was pinned, not recomputed.** `09d0e1b7cacc25b0` was obtained by running
+`git show HEAD:src/data_layer/zarr_source.py` against the spec and reading its answer, not by
+writing down what the new code produced - a pin copied from the code it guards guards nothing. It
+is unchanged because `vertical_dim` enters the canonical form only when it is not `level`, which
+is a compatibility decision taken deliberately: adding it unconditionally would orphan every
+materialised crop in the local cache and make every recorded provenance record name a key that no
+longer resolves.
+
+**Claim boundary.** **No store was opened and no live fetch was run.** Registering a store is a
+declaration; nothing in this slice reaches the network or verifies that a recorded chunk figure is
+still true, and TG10.3 is the slice that makes probing a recorded act and a precondition of
+registration. The recorded 51.1x and 26.2x amplifications are transcriptions of earlier live
+inspections (2026-08-20 and 2026-08-21), now carrying their method and date as fields rather than
+as prose; they were not re-measured here. The generalisation reaches the **selection** path only -
+the cached-crop reader still speaks in pressure levels and `level_hpa`, which is honest for the
+four ERA5 stores that exist and is the remaining half of the job when a real depth-axis store
+arrives. The fifth store in the acceptance test is a fixture URI that has never been opened, and
+says so through `method="not measured"`. Rendered browser inspection of the catalogue tab after
+this change is **NOT RUN**.
+
+---
+
+## TG10.3 - Store probing as a recorded act (2026-08-27, `ed-dev`)
+
+Taken **before** TG10.2 rather than after, because the acquisition surface renders what the
+probe produces and building it first would have meant rendering transcribed prose and revising
+it a week later.
+
+**Acceptance criterion, in two halves.**
+
+*   **"A deliberately hostile store is characterised as hostile before anyone crops it"** -
+    **MET, offline.** The load-bearing word is *before*, so the test asserts it: a hostile
+    fixture store is characterised as hostile with **nothing materialised**, no cache entry
+    created, and an amplification agreeing to within 1e-9 with what `assess_access_pattern`
+    predicts from chunk metadata alone.
+*   **"The four ERA5 stores' recorded notes are reproduced by the probe"** - **NOT MET, and
+    recorded as such.** The four notes are held as **transcriptions** (`evidence="prior
+    recorded inspection"`), not as probe runs. They are counted by `transcribed_probes()` and
+    the count is served by `GET /api/v1/data/zarr/probes`, so the debt is published rather
+    than hidden and the number can only fall in the open. The opt-in test that would check a
+    transcription against the live WeatherBench store is written and **NOT RUN**.
+
+**Results.**
+
+```
+Full suite            2503 passed, 2 skipped, 1 xfailed
+test_store_probe.py   43 passed, 1 skipped (34 test functions; the skip is the live probe)
+test_stores.py        31 passed
+adjacent suites       test_frontend_contract, test_zarr_source - 189 passed, 2 skipped
+Documentation audit   19 passed
+tsc --noEmit          clean
+npm run build         succeeds
+```
+
+The two skips are the two opt-in live checks: the WeatherBench GCS read from T3.5.18, and this
+slice's live probe. Both require `SPECTRALEARTH_ALLOW_NETWORK=1` and neither has been run.
+
+**Eight deliberate mutations. Six caught on the first pass, two survived.**
+
+```
+M1  drop the probe requirement from registration  -> SURVIVED, then 1 test failed
+M2  let a probe of any URI license any store      -> 1 test failed
+M3  let an entry quote a figure the probe denies  -> 1 test failed
+M4  raise on network-off instead of recording it  -> 2 tests failed
+M5  fold unknown amplification into "not hostile" -> 2 tests failed
+M6  drop the reason from an open failure          -> 6 tests failed
+M7  report the mean chunk rather than the worst   -> SURVIVED, then 1 test failed
+M8  let save_probe overwrite an existing record   -> 1 test failed
+```
+
+**Both survivors were weak tests, not weak guards, and the tests were fixed rather than the
+code.** M7 survived because the two-variable fixture it used carries two `float32` variables of
+identical shape, so the maximum and the mean are the same number and the assertion was
+decorative; it now probes a store whose variables differ in dtype, and asserts the two figures
+differ before comparing. M1 survived because the *next* check also raised - deleting "you must
+cite a probe" left "that digest is not in the ledger", which is true, unhelpful, and would send
+an author looking in the wrong place; the test now asserts the message names the claim being
+made, the remedy, and the honest alternative.
+
+**Two defects found and fixed, both introduced by TG10.1.**
+
+*   **D62** - `era5_0p7_6h` carried a per-chunk size of **8.0 MB that no inspection produced**,
+    in the registry built to refuse figures nobody measured. The 2026-08-21 note records an
+    amplification and an estimated total and no per-chunk size, and 8.0 does not even follow
+    from the chunk shape the note describes, which works out at 54.5 MB. It passed because
+    `ChunkFacts` *demanded* a positive figure for any method other than `not measured`, so
+    filling the field was the only way to record a real inspection - a validation rule that
+    made the dishonest entry the easy one. **Not recorded** is now a third state distinct from
+    **not measured**.
+*   **D63** - adding `vertical_dim` to `CropSpec` changed `to_provenance`, which is embedded in
+    **authenticated** artefacts: a gate campaign's preregistration is fingerprinted over it, so
+    a checked-in signed record written before the field existed stopped loading.
+    `to_provenance` now omits the field when it is `level`, as `canonical()` does, so an ERA5
+    record is byte-identical to its pre-TG10.1 form.
+
+**How D63 reached a commit, recorded because the process failure matters more than the bug.**
+TG10.1 was reported complete on the strength of targeted suites while the full run was still in
+progress, and the full run is what found it. The targeted suites were the wrong evidence for
+the claim that was made, and the honest statement at that point would have been "targeted
+suites pass, full suite still running".
+
+**Claim boundary.** **No live probe of a public archive has been run**, and
+`data/store_probes/` holds nothing produced by one. Every figure in the catalogue is still a
+transcription of an inspection this code did not run. A probe records structure and *predicted*
+cost from chunk metadata; it transfers no data, and it does not validate the data in a store. A
+store characterised as friendly is friendly **for the crop that was stated** - the same fixture
+amplifies 1x for a request that lines up with its chunks and 30x for one that straddles them,
+which is why an amplification is refused unless the crop travels with it. The registration gate
+proves that an entry cites a look; it does not prove the look was recent, or that the archive
+has not rechunked since. Rendered browser inspection of the probe panel is **NOT RUN**.
+
+## TG10.2 - Domain-first acquisition surface (2026-08-27, `ed-dev`)
+
+**Implemented.** `src/api/acquisitions.py` serves `GET /api/v1/acquisitions` as a projection of
+domain declarations, the gridded-store registry and the existing channel-table admission rule.
+Every acquisition carries its domain limits and attribution caveat. The React navigation now
+has one Acquire tab: it maps returned domains and acquisitions, embeds `ChannelRecords` for an
+admitted table domain, and retains ERA5 catalogue, crop, probe, inspection, cached-readiness
+and materialisation-command capability for grid crops. The standalone Domain Records tab was
+removed, so registering a domain cannot grow the tab list.
+
+**Evidence.** The acquisition, store, channel and frontend contract suites pass, and
+`npm run build` completes with 1,389 modules transformed and real JS/CSS assets. The complete
+suite for the TG10.2 implementation reports:
+
+```text
+2509 passed, 2 skipped, 1 xfailed, 6 warnings in 1357.52s (0:22:37)
+```
+
+The two skips remain the opt-in live GCS read and live store probe. The expected failure is the
+repository's declared xfail, not a TG10.2 regression. After recording that receipt, the final
+documentation-count correction and domain-switch remount guard pass their focused tests and
+`tsc --noEmit` remains clean.
+
+**Claim boundary.** No public data was fetched and no live archive probe was run. The endpoint
+publishes capability and refusals; it does not establish source attribution or executed
+acquisition. Rendered browser inspection is **NOT RUN**.
+
+## TG11.0 - Workflow information architecture (2026-08-27, `ed-dev`)
+
+**Implemented.** The eleven flat numbered destinations are grouped under Acquire, Analyse,
+Evidence, Review, Read and Platform. Spatial-only destinations carry the **Gridded field line**
+marker; Automated Hypotheses does not. Review is a labelled TG11.5 waypoint rather than a link
+to an invented surface. Acquire is the default workflow entry.
+
+The shell now owns the selected channel record and study. The channel selection retains the
+original browser `File`, clock choice and aggregate supports beside the API's bounded preview,
+so a later analysis panel can submit the admitted full input without a second chooser or using
+truncated preview values. Both contexts remain visible across panels, restore their respective
+Acquire/Findings state, and can be explicitly cleared.
+
+**Evidence.** The exact final tree reports:
+
+```text
+frontend + documentation: 71 passed, 5 warnings in 117.43s (0:01:57)
+frontend production build: 1,389 modules transformed; JS/CSS assets emitted
+complete suite: 2511 passed, 2 skipped, 1 xfailed, 6 warnings in 1292.03s (0:21:32)
+```
+
+The skips remain the opt-in live GCS read and live store probe; the xfail is the repository's
+declared expected failure. Vite's existing large-chunk warning remains non-fatal. Rendered
+browser inspection is **NOT RUN**.
+
+**Claim boundary.** This is workflow state and labelling, not scientific validation. It does
+not make gridded tools domain-general, persist an evidence bundle, run analysis, write evidence,
+or move a claim rung. A retained browser `File` disappears when the application session ends.
+
+## TG11.1 - The analysis surface (2026-08-27, `ed-dev`)
+
+**Implemented.** `src/api/analysis.py` mounts the cross-domain analysis engine on
+`/api/v1/analysis`, which had no HTTP boundary at all: `association_only`,
+`analyse_precedence` and `run_domain_gate` were unreachable from a browser. Two endpoints -
+capabilities and one stateless `POST /run` operation selector - and no new science; every
+estimator, correction, lag floor and verdict stays in `analysis_engine/domain_analysis.py`.
+
+The route re-reads the original uploaded record rather than `/channels/read`'s bounded preview,
+so the analysis is of the admitted file rather than of a truncation. Cadence, frames, channels,
+measure and source identity are derived server-side; the client supplies only the hypothesis
+family and estimator settings. Four refusals fire before any computation: an unknown
+configuration key, an irregular clock, a non-UTF-8 upload, and R21 propagated from the engine
+word for word. Every success carries `read_only: true`, `stored: false` and `rung_moved: false`.
+
+The workbench panel checks that the returned `content_sha256` and frame count are the selected
+record's before reading the result as being about it - an unchecked re-read is only a belief
+that the server read the same file. `INVALID` is named on screen as a design that did not hold
+rather than styled as a leftover beside `FAIL`.
+
+**Evidence.** The exact final tree reports:
+
+```text
+analysis + frontend contract + documentation: test_analysis_api.py 7 passed,
+  test_frontend_contract.py 55 passed, test_documentation.py 19 passed
+frontend production build: 1,390 modules transformed; JS/CSS assets emitted
+complete suite: 2521 passed, 2 skipped, 1 xfailed, 6 warnings in 1046.84s (0:17:26)
+```
+
+The acceptance is `test_all_thirteen_sequence_and_cross_domain_benchmarks_pass_through_http`:
+all thirteen `sequence` and `cross_domain` benchmarks run through the live FastAPI test client
+with `failed == 0`, `not_yet_runnable == 0` and `null_failures == []`, eight of the thirteen
+being nulls. `tsc --noEmit` is clean. Rendered browser inspection is **NOT RUN**.
+
+**D64, found by mounting the router.** The documentation guard's route scan matched
+`@router.<verb>("([^"]+)"`, so a route mounted at its own router's prefix - `@router.get("")` -
+was invisible to it. `GET /api/v1/acquisitions` had been served and unseen since TG10.2, and the
+documented count read 42 against a served 43 while the check passed. The quantifier is now
+`[^"]*` and the served count is 45.
+
+**Claim boundary.** Reachability is not correctness. The thirteen benchmarks argue for
+correctness on the thirteen cases they cover and on nothing else. This slice records no
+evidence, derives no rung, preregisters nothing and spends no held-out partition.
+
+## TG11.2 - Preregistration first (2026-08-27, `ed-dev`)
+
+**Implemented.** `src/api/preregistration.py` mounts `core/preregistration.py` - 574 lines that
+nothing outside the tests could reach - on `/api/v1/preregistration`. Six endpoints: capabilities,
+a partition description built from geometry and lineage without reading a measure value, sealing,
+a seal listing, a seal read with both digest layers recomputed, and the one-shot confirmation. No
+estimator, digest, correction or refusal is implemented here.
+
+The ordering R18 requires is enforced by the server rather than by the panel. A confirmation
+against a seal that does not exist is refused before the record is read; against a partition the
+seal did not name, by `PartitionMismatchError`; against a spent partition, by the ledger. TG11.1's
+`domain_gate` splits internally and returns a verdict on its own test partition, so it now reads
+the ledger before running and is refused `409` on data already spent.
+
+`/confirm` accepts the record and an optional published digest, and nothing else: lags, ensemble
+size, alpha, correction, estimator, bins, seed, split, domain, clock and delimiter are all read
+back out of the seal, where they were frozen as the confirmatory specification's `notes`. The
+sealing time is the server's, because a caller-supplied one could be written after the partition
+was opened.
+
+**Evidence.** The exact final tree reports:
+
+```text
+preregistration + frontend contract + documentation: test_preregistration_api.py 17 passed,
+  test_frontend_contract.py 60 passed, test_documentation.py 19 passed
+frontend production build: 1,391 modules transformed; JS/CSS assets emitted
+complete suite: 2543 passed, 2 skipped, 1 xfailed, 6 warnings in 981.29s (0:16:21)
+```
+
+The acceptance is the double-spend refusal in two forms. In the weaker form the second seal is
+written after the first confirmation; in the stronger,
+`test_two_seals_written_before_any_opening_still_buy_only_one_look` freezes both seals before
+anything is opened, so neither is post-hoc in any sense - no edit, no backdating, no narrowing
+chosen after a look - and the second confirmation is still refused, because two declarations over
+one held-out partition are two tests of it whose corrections were each computed as though it were
+the only one. `test_a_refused_confirmation_does_not_spend_the_partition` asserts the other half:
+a design error costs nothing and the partition is still spendable afterwards. `tsc --noEmit` is
+clean. Rendered browser inspection is **NOT RUN**.
+
+**D65, found while writing the double-spend acceptance.** `PartitionIdentity.from_series` hashes
+the series' provenance wholesale, and a record read from an upload carries `path_basename` there.
+The same held-out bytes re-uploaded as `data2.csv` hashed to a different partition, so
+`HeldOutLedger` - keyed on the partition precisely so a second honest seal cannot buy a second
+look - did not fire. The domain the file was read under had the same problem for the same reason.
+The acceptance passed against a same-name re-upload and would have passed for the wrong reason.
+The identity is now built at the boundary from `content_sha256`, the clock, the columns and the
+split window, and a test renames the file between two identical requests and asserts the digest
+does not move.
+
+**Claim boundary.** A seal is a promise about ordering, not a result: it says a family was fixed
+before a partition was opened and nothing about whether the family is any good. A confirmation
+receipt records no evidence and moves no rung (R22); writing one into a bundle is TG11.3. The
+generated family is corrected for nowhere here and its members are not claims. `report_generation`
+remains without a route and is named as such rather than covered by a thin one. Seals and the
+ledger are programme state under `data/preregistrations`, not a cache - deleting them destroys the
+record of what has been spent - and the JSON ledger takes no lock, so "once" is once per server
+and a multi-worker deployment needs a real store.
+
+## TG11.3 - The evidence write path (2026-08-27, `ed-dev`)
+
+**Implemented.** `src/api/evidence.py` mounts `core/evidence.py` and `core/claim_ladder.py` on
+`/api/v1/evidence`. Five endpoints: capabilities, opening a study at revision zero, reading the
+head, appending one entry, and appending a provenance entry whose precedence verdict is computed
+by the server. No digest, chain check or ladder gate is implemented here; this is the wire
+boundary for two modules the interface previously could only read through TG9.1.
+
+This is the first surface in the programme that writes anything bearing on a claim, so it is the
+first that could break R22. Three things enforce the rule structurally rather than by review.
+No request model has a field for a rung, a claim level or a confidence, and unknown fields are
+forbidden, so a body carrying one is refused rather than ignored. The rung in every response is
+`assess_claim_ladder` recomputed over the chain that was just written, and it is stored nowhere.
+And `temporal_precedence` - the single payload key the ladder reads, and the gate for
+`candidate_precursor` - is refused at any depth of a hand-written payload; the route that writes
+it runs `analyse_precedence` here and records what it returns, `false` included.
+
+Appends are compare-and-swap. Each states the `head_sha256` it extends, and because a bundle is
+immutable and `save_evidence_bundle` refuses to overwrite, each revision is published as its own
+file created exclusively - which makes the exclusive create the concurrency control. Two writers
+racing from one head produce one append and one `409` rather than a lost entry, which is
+deliberately stronger than TG11.2's unlocked ledger.
+
+**Evidence.** The exact final tree reports:
+
+```text
+evidence + frontend contract + documentation: test_evidence_api.py 22 passed,
+  test_frontend_contract.py 65 passed, test_documentation.py 19 passed
+frontend production build: 1,392 modules transformed; JS/CSS assets emitted
+complete suite: 2570 passed, 2 skipped, 1 xfailed, 6 warnings in 915.05s (0:15:15)
+```
+
+The acceptance is that the rung cannot be reached by typing. Two tests approach it from opposite
+sides: `test_a_request_carrying_a_rung_is_refused_rather_than_ignored` and
+`test_a_payload_asserting_temporal_precedence_is_refused_and_names_the_route`, the second of which
+is the one that mattered, because that key needs no arithmetic and no estimator would have noticed
+it. `test_the_rung_moves_because_the_evidence_moved_it` shows the ladder climbing to `association`
+through three appends that named nothing, and
+`test_one_failed_entry_caps_the_chain_at_observation_through_the_wire` shows a single `FAIL`
+pulling it back down over favourable evidence already recorded. `tsc --noEmit` is clean. Rendered
+browser inspection is **NOT RUN**.
+
+**D66, found by asserting through the read surface what the write surface had just returned.**
+`StudyStore.load` resolved a study by taking the first parseable file whose `study_id` matched,
+and `summaries` listed one row per file. That was correct while nothing wrote bundles: TG9.1 read
+a store a researcher populated by hand, one file per study. Revision-per-file makes it wrong -
+sorted first is `r00000`, so the read surface would have served revision zero for ever while the
+write path reported the revision it had just appended, and one study worked on five times would
+have listed as five studies. Resolution is now by chain rather than by name. The check that found
+it is deliberately cross-surface: two consistent halves of one store can agree with each other and
+both be wrong.
+
+**Claim boundary.** Recording evidence is not establishing a finding. The ladder grades what is in
+the chain, and a chain of one favourable observation earns `observation`. An underpowered sweep is
+recorded `INCONCLUSIVE` and opens no gate, because a family that could not have rejected anything
+did not check anything (R5). A bundle carries no domain, so nothing written here records which
+instrument the evidence came from. This surface does not consult the held-out ledger: running a
+precedence analysis over data preregistered as held out spends it outside the record, which the
+ledger cannot see and the capabilities note cannot prevent. Bundles are programme state under
+`data/studies`, not a cache.
+
+## TG11.4 - Structure mining (2026-08-27, `ed-dev`)
+
+**Implemented.** `src/api/mining.py` mounts `core/motif.py`, `core/constellation.py`,
+`core/family.py`, `core/invariance.py`, `core/motif_freeze.py` and `core/motif_transfer.py` on
+`/api/v1/mining`. Eleven endpoints: capabilities, admitting a field, listing what is admitted,
+pricing a family before mining it, calibrating a match tolerance, mining the training frames,
+freezing the confirmatory family, opening the held-out frames once, publishing a durable motif
+definition, transferring it into a second domain, and auditing every registered matcher against
+its own declared invariance. No matcher, null, correction, tolerance or p-value is implemented at
+the boundary; this is the wire boundary for about four thousand lines that nothing outside the
+test suite could previously call.
+
+Two things cannot be typed on this surface, and both are structural rather than reviewed. A motif
+is a configuration of extracted features, so no request model has a field for a feature, a
+coordinate or a graph: a caller admits a `.npy` stack of frames and the server extracts, under
+settings that become part of the record's digest. And the match tolerance - which decides what
+counts as the same shape - travels as the digest of a calibration the server performed, because
+one built the tempting way came out at 0.41 against a correct 0.0083 in this tree's own
+benchmark, wide enough that every triangle matched every other.
+
+The confirmatory run is driven from the seal. `/confirm` takes a seal digest and an optional
+published one; the record, the split, the size, the matcher, the tolerance, the ensemble, the
+correction and the seed are sealed as notes on the confirmatory specification, and the training
+candidates are re-derived by re-running the deterministic mining pass and checked label for label
+against what the seal froze. One additive core change made that possible:
+`motif.confirmatory_specification` and `motif.freeze_motifs` take an optional `notes` mapping,
+merged beside the notes they already write (E12). Mining seals are stored in TG11.2's seal store
+and spend TG11.2's held-out ledger.
+
+**Evidence.** The exact final tree reports:
+
+```text
+mining + frontend contract + documentation: test_mining_api.py 41 passed,
+  test_frontend_contract.py 73 passed, test_documentation.py 19 passed
+frontend production build: 1,393 modules transformed; JS/CSS assets emitted
+complete suite: 2619 passed, 2 skipped, 1 xfailed, 7 warnings in 4090.28s (1:08:10)
+```
+
+The acceptance is the pair of gates the mining phase was built against.
+`test_a_null_record_confirms_nothing` runs the whole chain - admit, calibrate, price, mine,
+freeze, open - over frames with nothing planted in them, using the same generator, the same
+feature count, the same family and the same ensemble as the planted record, and confirms nothing.
+`test_the_planted_motif_is_confirmed_on_frames_it_was_not_mined_from` shows the same pass finding
+what is there, at a corrected q below alpha on frames it was not mined from. Beside them,
+`test_no_route_on_this_surface_accepts_a_feature` and `test_the_tolerance_cannot_be_typed` are the
+structural pair, and
+`test_frames_that_disagree_about_how_many_features_they_hold_are_refused_not_trimmed` asserts that
+the refusal names the repair it is declining. `tsc --noEmit` is clean. Rendered browser inspection
+is **NOT RUN**.
+
+**One ordering mistake, found by asserting what a refusal costs.** `/confirm` first verified the
+published digest *after* running the confirmation, so a seal that disagreed with its published
+digest was refused - having already spent the held-out partition on a result nobody was then
+allowed to use. The check now runs before anything is opened, and the test asserts the
+consequence rather than the status code: after a refused confirmation, a correct one still
+succeeds. A refusal that costs the data it refused is worse than no refusal, because it looks
+like a guard.
+
+**One implementation note worth recording, because it looks like a fudge and is not.** A transfer
+record is refused unless `frozen_at < bound_at < opened_at`, and that ordering is the entire
+content of the record. A Windows clock ticks about every 15 ms, so two events that really did
+happen in that order can be issued one timestamp, and a correctly ordered transfer is then refused
+for a reason about the clock rather than about the science. `_now` advances an instant that would
+repeat or go backwards by one microsecond. Nothing waits and nothing is back-dated: the ordering
+reported is the ordering that happened, at a resolution the clock does not have.
+
+**Claim boundary.** Mining produces candidates. Support on the training frames is selection and
+not evidence: every exemplar is one of the occurrences it is counted among, so its support starts
+at one by construction, and it was ranked highly for having been counted often. A confirmed motif
+is a configuration that recurred on frames it was not mined from more often than the surrogate
+null placed it there - not a mechanism, not a cause, and not a claim until something records it,
+which is TG11.3's write path (R22). A motif reported `vacuous` was confirmed by an ensemble that
+could not have rejected it (R5). A transfer match count is descriptive rather than a corrected
+transfer result, and the transfer ledger establishes ordering inside this API only - it cannot
+show that nobody looked at the target before it was admitted. `core/cross_domain.py` is **not**
+routed by this slice and is carried as TG11.4b: its input is two channel tables on a common
+clock, not scenes, and it belongs beside the analysis surface. Admitted fields, calibrated
+tolerances, published definitions and the transfer ledger are programme state under `data/mining`,
+not a cache.
+
+## TG11.4b - The cross-domain record (2026-08-27, `ed-dev`)
+
+**Implemented.** `src/api/cross_domain.py` mounts `core/cross_domain.py` on
+`/api/v1/cross-domain`. Seven endpoints: capabilities, aligning two native clocks by exact
+timestamp intersection, pricing a lag family declared in seconds, splitting the aligned record
+with an embargo, sweeping every crossing direction on the training partition, freezing the
+confirmatory family, and opening the held-out partition once. This is the wire boundary for the
+505 lines that made a lag a duration rather than a frame count, and only the benchmarks could
+previously reach them.
+
+Three refusals are structural rather than reviewed. Nothing is resampled: two clocks are
+intersected exactly, and a pair that shares too few observations is refused with the refusal
+naming interpolation as what it declines - every response reports what each domain retained and
+discarded. Nothing is defaulted: each column must declare its `semantics` and `units` before the
+record can be read (R19), and both are carried into every confirmed relationship in the receipt
+alongside the lead in seconds. And nothing can be tuned at confirmation: `/confirm` takes the two
+records and, optionally, a published digest, and reads everything else back out of the seal.
+
+One additive core change made the last of those possible: `precedence.confirmatory_specification`
+and `precedence.freeze_precedence` take an optional `notes` mapping, merged beside the notes they
+already write (E12), so the run settings sit inside the specification's fingerprint rather than
+in a file beside the seal. Seals are stored in TG11.2's seal store and spend TG11.2's held-out
+ledger.
+
+**Evidence.** The exact final tree reports:
+
+```text
+cross-domain + frontend contract + documentation: test_cross_domain_api.py 35 passed,
+  test_frontend_contract.py 80 passed, test_documentation.py 19 passed
+frontend production build: 1,394 modules transformed; JS/CSS assets emitted
+complete suite: 2661 passed, 2 skipped, 1 xfailed, 6 warnings in 908.44s (0:15:08)
+```
+
+The acceptance is the planted/null pair the cross-domain phase was built against.
+`test_the_planted_relationship_is_confirmed_on_data_it_was_not_selected_from` runs the whole chain
+over an hourly domain and a three-hourly one carrying one delayed relationship across the
+boundary, and confirms exactly that relationship at exactly the planted duration on frames it was
+not selected from. `test_the_same_pipeline_over_an_uncoupled_pair_confirms_nothing` is the same
+builder with the coupling knob at zero and confirms nothing. Beside them,
+`test_a_column_whose_meaning_was_not_declared_is_refused_not_defaulted`,
+`test_clocks_that_share_no_observation_are_refused_rather_than_resampled` and
+`test_no_route_on_this_surface_accepts_a_lag_in_frames` are the structural three.
+`tsc --noEmit` is clean. Rendered browser inspection is **NOT RUN**.
+
+**One note on what a test could not reach, recorded because the alternative is overstating it.**
+`_candidates_from` refuses a frozen member the training partition does not select. No caller can
+reach that refusal: an edited seal fails its own digest at load, and a different pair of records
+produces a different held-out partition identity, which `confirm_on_held_out` refuses first. Both
+of those happen before the ledger is written, so a wrong upload costs nothing either way - which
+is what the tests assert, rather than asserting a refusal message that only the module's own
+future drift could produce.
+
+**Claim boundary.** A cross-domain result is a temporal association between structural series.
+The two records' raw magnitudes keep different semantics and units and are never compared, the
+statistic is dimensionless, and precedence identifies no causal mechanism (R19, R21). A
+confirmation receipt records no evidence and moves no rung (R22); it is an input to TG11.3's
+write path. The held-out ledger identifies a partition by the data and its split, so the same two
+files aligned under two different registered domains are two partitions to it and this surface
+cannot detect that they hold the same rows (D65). Seals and the ledger are programme state under
+`data/preregistrations`, not a cache. After the complete run `data/` holds only `README.md`,
+`channels` and `store_probes`: this surface creates no directory as a side effect of being read.
+
+## TG11.6 - Workflow accessibility contract (2026-08-28, `ed-dev`)
+
+**Implemented.** Accessibility is no longer confined to the findings and channel-record islands.
+`App.tsx` now gives the workflow a skip link, a named main landmark and focus transfer to a
+programmatic workspace heading after navigation. The disconnected-backend retry is a native
+button rather than a clickable `span`; every visible label in the legacy gridded panels is bound
+to its control; shell errors are alerts; and shell plus acquire/analyse/evidence/read surfaces
+publish asynchronous busy state.
+
+`index.css` supplies a three-pixel high-contrast `:focus-visible` outline after Tailwind, so the
+older `focus:outline-none` classes cannot make keyboard focus disappear. Reduced-motion preference
+collapses animation and transition. Heat maps and line charts are labelled figures with text
+summaries of their carried shape, units, axes, series, scale and valid inset. SVG provenance nodes
+are named pressed-state controls with Enter and Space activation. Field import, evaluation receipt
+selection and both sides of the cross-domain record have programmatically associated names; the
+two cross-domain operands are fieldsets rather than one label visually covering eight controls.
+
+**Evidence.** The exact final tree reports:
+
+```text
+frontend contract: 86 passed, 5 warnings in 50.69s (six TG11.6 tests added)
+frontend production build: 1,394 modules transformed; JS/CSS assets emitted; tsc clean
+documentation + frontend contract: 105 passed, 5 warnings in 152.16s
+complete suite: 2667 passed, 2 skipped, 1 xfailed, 6 warnings in 1233.21s (0:20:33)
+```
+
+The six structural tests guard skip and route-focus behaviour, explicit legacy label bindings,
+global focus visibility and reduced motion, keyboard retry/lineage operation, figure text
+equivalents, and busy/alert/status semantics across every workflow surface. `git diff --check`
+passes. No API route, request shape, estimator, evidence category or claim-ladder input changed.
+
+**The rendered check was attempted and is not silently promoted.** The configured in-app browser
+runtime was initialised against `http://127.0.0.1:3000/`; discovery returned no available browser
+backend, including after the documented recovery check. No unrelated automation surface was
+substituted. Rendered keyboard traversal and screen-reader inspection therefore remain **NOT
+RUN**, even though TypeScript, Vite and the source contracts pass.
+
+**Claim boundary.** This slice establishes source semantics, keyboard activation paths and build
+integrity. It does not establish a WCAG conformance level, screen-reader quality, contrast in the
+rendered Plotly output or visual focus placement. A figure summary restates metadata carried by
+the application and does not interpret the scientific result.
+
+## TG11.5 - Recorded review surface (2026-08-28, `ed-dev`)
+
+**Implemented.** `src/api/reviews.py` adds one read-only endpoint,
+`GET /api/v1/reviews/studies/{study_id}`. It resolves the latest published evidence bundle, reads
+the dedicated review artifact directory, classifies JSON by declared schema, and reconstructs
+`ReviewRecord`, `RoundRobinOutcome` and `ReviewCostReceipt` through their core types so their
+content digests are rechecked. A record attaches only to the exact study, bundle digest and bundle
+revision it reviewed; outcomes and receipts additionally bind the review-record digest. Malformed,
+tampered and unknown artifacts are reported rather than skipped.
+
+`ReviewView.tsx` fills the Review waypoint introduced by TG11.0. It is separate from Findings,
+leads with the server's recorded-not-reproducible declaration and claim boundary, renders the
+core's complete call and round-robin text including retained dissent, and shows cost receipts as
+route/token audit without a price or quality claim. It can read a selected study and do nothing
+else: no control and no client method can run a panel, record a call, append evidence or move a
+rung. Empty record, outcome and receipt states each say what absence does not establish.
+
+**Focused evidence.** The new API tests and expanded frontend contracts report:
+
+```text
+test_reviews_api.py: 8 passed, 2 warnings in 4.42s
+test_frontend_contract.py + test_reviews_api.py: 100 passed, 5 warnings in 7.54s
+frontend production build: 1,395 modules transformed; JS/CSS assets emitted; tsc clean
+```
+
+The eight API tests cover explicit absence, the complete verified record/outcome/receipt payload,
+exact latest-revision binding, record-digest attachment, corrupt-artifact reporting, unknown-study
+404, GET-only routing and a read that leaves the evidence bundle byte-identical. Six frontend
+tests cover the separate workspace, GET-only service method, visible R23 fence, complete argument
+and cost display, non-reassuring empty states and the workflow accessibility contract.
+
+**Rendered inspection is NOT RUN.** The configured in-app browser runtime was initialised against
+`http://127.0.0.1:3000/`; discovery returned no available browser backend after the documented
+recovery check. No unrelated browser-control surface was substituted. TypeScript, Vite and source
+contracts are not evidence of rendered layout or keyboard traversal.
+
+**Claim boundary.** Every displayed call and outcome is R23 recorded-not-reproducible argument
+beside the evidence. It is not evidence, consensus, reproducible computation or permission to
+claim, and deleting it changes no claim level (R22, R23). The cost receipt establishes only the
+recorded route and token accounting; it says nothing about whether an argument is sound.
+
+---
+
+## TG11.5 addendum - rendered inspection, now RUN (2026-08-28, `ed-dev`)
+
+The TG11.5 entry above records rendered inspection as **NOT RUN**, because no browser backend was
+available at the time. It has since been run. That claim is superseded here rather than edited, so
+both the original limit and its lifting stay legible.
+
+**Method.** Playwright/Chromium driving a Vite dev server on port 3002 against a backend on 8001,
+with `SPECTRAL_STUDY_ROOT` and `SPECTRAL_REVIEW_ROOT` pointed at a scratch store seeded from the
+`_recorded_review()` fixture that `test_reviews_api.py` uses. Study `tg7_3_cost`. The developer's
+own 3000/8000 pair was left untouched, and nothing was written into the repository's `data/`.
+
+**Observed in the rendered page:**
+
+*   Empty state renders *"No study selected. That is not the same as no review existing."*
+*   The amber **Recorded, not reproducible** banner carries the R23 declaration and the claim
+    boundary together, bound to `tg7_3_cost`, bundle revision 0, with the full bundle digest.
+*   All eight recorded calls render with seat, model, effort, request id, timestamp, dissent flag
+    and finding.
+*   The round-robin outcome renders both honesty notes verbatim: that one model answered all eight
+    seats, and that the reassessment was made by the model that wrote the candidate synthesis.
+*   Route and token receipts render calls, input/cached/output/total tokens and cache-hit fraction
+    under *"Token and route audit only; no price or review-quality claim."* No price string appears
+    anywhere in the rendered output, matching the assertion in `test_reviews_api.py`.
+
+**Zero console errors, zero page errors, no failing API responses** across the session.
+
+**Claim boundary.** This establishes that the panel renders what the API vouched for, and nothing
+about whether the recorded argument is sound. Keyboard traversal was **not** measured here; the
+TG11.6 accessibility contract remains asserted by test rather than by rendered inspection.
+
+---
+
+## Launcher `.env.local` loading (2026-08-28, `ed-dev`)
+
+Shipped in commit `b621f8d` with no recorded verification. Recorded here after the fact.
+
+**The defect.** `SPECTRALEARTH_ALLOW_NETWORK` is read by `os.getenv` at
+`zarr_source.py:network_enabled`. Nothing loaded `.env.local`: `grep -rn "dotenv|load_dotenv" src/`
+returns no hits, and `python-dotenv` is neither in `requirements.txt` nor installed. Vite does not
+load it either - it reads env files from `frontend/` and exposes only `VITE_`-prefixed names to
+browser code. A flag set in `.env.local` was therefore inert, and the Acquire tab's "Network is off"
+banner was the visible symptom.
+
+**The fix.** `start_platform.ps1` promotes `.env.local` into its own process environment before
+launching, which the uvicorn `Start-Job` and `npm run dev` inherit as child processes. No new
+dependency, and the backend's config does not become cwd-dependent - which is the shape of defect
+D7 that this script already exists to fix.
+
+**Verified against a deliberately awkward fixture, in a clean `-NoProfile` shell:**
+
+```
+[*] Loading local environment from .env.local ...
+    Ignoring unparseable line: junkline-with-no-equals
+    Ignoring unparseable line: =leading-equals-is-junk
+    Loaded: GEMINI_API_KEY, SPECTRALEARTH_ALLOW_NETWORK, QUOTED_DOUBLE, QUOTED_SINGLE, SPACED_KEY
+    Already set in this shell, file ignored for: ALREADY_SET
+--- resulting values ---
+QUOTED_DOUBLE = [quoted value]      QUOTED_SINGLE = [single value]
+SPACED_KEY    = [spaced value]      ALREADY_SET   = [from-shell-should-win]
+--- child process inheritance (Start-Job) ---
+child sees NETWORK=[1] KEY_SET=[True]
+```
+
+End to end against the real file: `zarr network_enabled() -> True`, where it was `False` before.
+`Parser::ParseFile` reports no syntax errors. **Only variable names are printed, never values.**
+
+**Claim boundary.** Enabling network access is now a property of a gitignored file rather than of
+the command typed. That is what was asked for and it is visible on every launch, but it does mean
+the refusal message that guarded the opt-in no longer appears on this machine.
+
+---
+
+## TG12.1 - GLORYS gridded ocean source (2026-08-28, `ed-dev`) - **COMPLETE**
+
+Discovery, implementation and verification. One GLORYS layout is registered from an extension
+module, both live metadata looks are persisted, and the cost estimator now completes on the real
+12227 x 50 x 2041 x 4320 archive without constructing a dask data graph.
+
+**Candidate triage, by probe rather than by reputation, as TG12.1 requires:**
+
+| Candidate | What it actually is | Probe outcome |
+|---|---|---|
+| NOAA OISST | bucket reachable; `data/v2.1/...` is **per-day netCDF** | `probe_store` opens Zarr; cannot open it |
+| ECCO | netCDF granules behind Earthdata | same, plus credentials |
+| **GLORYS** | **Zarr** - Copernicus Marine ARCO on CloudFerro | `described`, **anonymously** |
+
+**A correction to an earlier claim made in session:** GLORYS does **not** require credentials. An
+initial `403` came from a guessed bucket path, not a real one. The real ARCO stores return
+`HTTP 200` and probe anonymously. Copernicus credentials were needed only to *resolve* the URIs
+through the toolbox, so the store registers as `access="anonymous"`.
+
+**The two ARCO layouts, on an identical 1993-01-01 through 1995-12-31, 50 S to 30 S,
+160 E to 180 E, `thetao`, surface-elevation crop:**
+
+| Store | Chunking `[t, z, lat, lon]` | Amplification | Uncompressed fetched / wanted |
+|---|---|---|---|
+| ERA5 `0p7_6h` (**D43**, earlier sealed crop) | `(8,13,512,256)` | 26.2x | 29.88 / 1.14 GB |
+| GLORYS `timeChunked.zarr` | `[1,1,512,2048]` | **72.52x** | 36.74 / 0.507 GB |
+| GLORYS `geoChunked.zarr` | `[2081,1,16,16]` | **2.02x** | **1.023 / 0.507 GB** |
+
+**This bears on D43: a laptop-feasible long regional ocean record does exist.** But only in one of
+the two layouts. The asset names describe which dimension is chunked narrowly, not which query
+they make cheap: `geoChunked.zarr` is time-deep and costs 2.02x for many times over a small region,
+while `timeChunked.zarr` costs 72.52x. Taking the wrong asset registers the hostile store and
+records a false negative against D43.
+
+**Persisted probe digests:** `timeChunked` = `f9a45764fcf52c2a`, `geoChunked` =
+`ccdb0625e7e8fb1d`. The earlier exploratory digests were produced before D67's live path was
+repaired and were never persisted; these records were produced by `probe_store` itself after the
+fix and contain the exact crop, variable structure and coordinate declaration.
+
+**Store facts, measured:** dims `time=12227, latitude=2041, longitude=4320, elevation=50`; coverage
+1993-01-01 to 2026-06-23, daily, at 1/12 degree. The current asset exposes 11 data variables;
+the probe prices `thetao` and does not imply that every variable has the same storage encoding.
+
+**The vertical axis is named `elevation`, not `depth`,** with negative-metre values
+`-5727.917 .. -0.49402499198913574`. `KNOWN_VERTICAL_DIMENSIONS` now carries `elevation`.
+Making that declaration executable found D68: the request path accepted integer levels only.
+`CropSpec` and the strict HTTP model now preserve integer ERA5 values while admitting exact finite
+floats, and the frontend loads the registered GLORYS crop defaults instead of carrying 850 hPa
+across the store change.
+
+**D67 live acceptance.** Before the fix, `assess_access_pattern` raised `MemoryError` in dask's
+`slice_slices_and_integers`. After the fix, both real assets completed in 14 seconds in one
+metadata-only command. The estimator applies the materialiser's xarray indexers to coordinate
+arrays, maps selected labels to source positions, and counts exact chunk ids. The offline
+regression replaces `select()` with a function that raises `MemoryError` and proves costing does
+not call it.
+
+**Registration.** `src/data_layer/glorys_store.py` loads the two checked-in records and registers
+`glorys_phy_my_0p083deg_p1d` with `access="anonymous"`, `vertical_dim="elevation"`, the selected
+probe digest, product/dataset/licence identity and the sealed acquisition defaults. Importing the
+module performs no network access. An AST test scans every runtime module and finds no import of
+`copernicusmarine`.
+
+**Verification.** Focused backend and contract run: **257 passed, 2 skipped** before the
+documentation inventory was updated; its only two failures were the expected missing-module and
+stale-count guards. After reconciliation those guards pass. Frontend production build:
+`tsc` clean, Vite **1,395 modules transformed**, emitted JS/CSS. Full-suite result is recorded in
+the architecture execution ledger after the final run.
+
+**Claim boundary.** Metadata only: no ocean data has been transferred, cropped or analysed. A
+measured chunk layout is not evidence that a crop is scientifically useful. GLORYS breaks no
+analysis assumption - per R17 it is a source, not a second domain, and must not be presented as
+evidence that the abstraction generalises.
+
+---
+
+## TG12.1a - D70, readiness that declares what it is about (2026-08-28, `ed-dev`) - **COMPLETE**
+
+Found by use rather than by test: GLORYS was selected in Acquire, `Probe store` and `Inspect` both
+completed correctly, and the researcher asked what to do next. The honest answer is nothing -
+materialisation is CLI-only by design and TG12.1's claim boundary says no analysis consumes an
+ocean crop - but two things at that point were wrong rather than absent.
+
+**Reproduced before the fix**, against a manifest carrying GLORYS's own selection:
+
+```
+spec = {"variables": ["thetao"], "levels": [-0.49402499198913574], "vertical_dim": "elevation"}
+assess_manifest_readiness(spec) ->
+    structurally_eligible = False
+    missing_variables     = ['t', 'q', 'u', 'v', 'z']
+    required_level_hpa    = 850,  level_available = False
+```
+
+`int(-0.49402499198913574)` is `0`; the coercion raised nothing. The verdict therefore reported an
+ocean crop as an atmospheric candidate that had fallen short.
+
+**Fixed.** Levels compared as numbers with no coercion; `applicable` derived from the crop's own
+declared vertical axis (absent means `level`, per D63), so no store name is hardcoded; the
+not-applicable text states that the variable and level rows describe what T5.2 requires rather
+than anything this crop failed to supply; the Acquire panel renders that instead of the verdict;
+and `Inspect` now says before the transfer that materialising is where this store currently stops.
+
+**Verified.**
+
+*   `test_readiness_refuses_to_judge_a_crop_it_does_not_describe` asserts both halves: the GLORYS
+    crop reports `applicable=False`, `vertical_dim='elevation'` and an uncoerced level comparison,
+    **and** an ERA5 crop is unchanged in every field (`applicable=True`,
+    `not_applicable_reason=None`, `structurally_eligible=True`, `level_available=True`).
+*   `test_regional_forecast.py`, `test_stores.py` and `test_acquisitions_api.py`: 63 passed.
+*   Frontend `tsc --noEmit` clean; production build emitted 1,395 modules and real JS/CSS,
+    matching the module count recorded for TG12.1.
+
+**Claim boundary.** This changes what the workbench *says* about a crop. It transfers no ocean
+data, and it does not create an analysis route for GLORYS - it makes the absence of one explicit
+before a transfer is paid for rather than after. D62, D68 and D70 are one pattern recorded three
+times: the registry describing a store more confidently than the code behind it could deliver.
+
+---
+
+## TG12.1b - D72, the generated command uses the store it names (2026-08-29, `ed-dev`) - **COMPLETE**
+
+**Reproduced before the fix.** The Acquire panel's GLORYS materialisation command supplied
+`--levels -0.49402499198913574`. The CLI parsed every level with `int()`, raising before it could
+inspect or materialise anything. It also constructed `CropSpec` directly, so even an integral
+ocean coordinate selected ERA5's default `level` dimension rather than GLORYS's registered
+`elevation` dimension.
+
+**Fixed.** `_parse_level` is integer-first: `850` remains the integer `850`, preserving existing
+ERA5 content keys, while a non-integral finite literal remains a float. The CLI now calls
+`crop_for_store`, the registry-aware constructor already used by the HTTP path. A non-numeric
+coordinate is refused as `InvalidParameterError` with the accepted forms named.
+
+**Focused verification:**
+
+```text
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_documentation.py src/tests/test_zarr_source.py -q
+79 passed, 1 skipped, 5 warnings in 258.93s
+```
+
+The acceptance asserts the exact GLORYS fractional value and `vertical_dim="elevation"`, then
+asserts that ERA5's four pressure levels remain integers on `vertical_dim="level"`. No remote
+store was opened and no field value was transferred.
+
+**Claim boundary.** This verifies the command construction and parsing boundary. It does not
+show that a 51 GB ocean crop has been materialised or that any analysis path consumes one.
+
+---
+
+## TG12.1c - D71, portable immutable evidence publication (2026-08-29, `ed-dev`) - **COMPLETE**
+
+**Measured defect.** With pytest's base directory pinned to the repository drive, the two
+independent-overlap cases failed at `os.link` with `[WinError 1] Incorrect function`. `D:` is
+exFAT and does not support hard links. The original ledger wording said all five private writers
+failed this way; source inspection corrected that claim before the fix was recorded. Only
+`era5_overlap` called `os.link` unconditionally. Gate run, gate campaign, evaluation run and
+evaluation job already selected Windows rename, but duplicated the same scientific guarantee.
+
+**Implemented boundary.** `src/core/publication.py:publish_new_bytes` creates a random temporary
+beside the target, writes the complete byte payload, flushes and `fsync`s it, and then exposes it
+with one atomic no-replace namespace operation:
+
+* Windows: `rename`, which refuses an existing destination and works on the deployed exFAT drive;
+* Linux: `renameat2(RENAME_NOREPLACE)`;
+* macOS: `renamex_np(RENAME_EXCL)`;
+* remaining POSIX fallback: hard-link publication, which is one atomic create-if-absent operation.
+
+There is no existence-check-plus-rename path and no overwrite fallback. A filesystem unable to
+supply the contract raises rather than weakening receipt immutability. All five writers now call
+this primitive and retain their domain-specific `DataSourceError` / `ForecastContractError`
+translation outside it.
+
+**Acceptance on the deployed volume:**
+
+```text
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_publication.py -q
+4 passed, 1 warning in 7.53s
+
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_cds_source.py -q
+19 passed, 1 warning in 36.49s
+
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_publication.py src/tests/test_cds_source.py src/tests/test_gate_run.py src/tests/test_gate_campaign.py src/tests/test_evaluation_run.py src/tests/test_evaluation_job.py -q
+51 passed, 1 warning in 66.64s
+
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_documentation.py -q
+19 passed, 1 warning in 131.20s
+```
+
+`test_publication_race_has_exactly_one_complete_winner` launches eight spawned processes against
+one path under `.pytest-basetemp` on `D:`. Exactly one publishes its complete unique 53,248-byte
+payload and seven receive `FileExistsError`; no temporary survives. Separate cases prove an
+existing target remains byte-identical and an injected unsupported namespace operation leaves
+neither target nor temporary. The primitive reports `windows-rename-no-replace`, so the
+acceptance record identifies the mechanism it actually exercised.
+
+**Whole-platform verification:**
+
+```text
+> .\.venv\Scripts\python.exe -m pytest -q
+2694 passed, 2 skipped, 1 xfailed, 6 warnings in 1500.69s (0:25:00)
+
+> .\.venv\Scripts\python.exe -m src.benchmarks
+PASS 29   FAIL 0   NOT_YET_RUNNABLE 0
+
+> cd frontend
+> npm run build
+✓ 1395 modules transformed.
+dist/index.html                      0.65 kB │ gzip:     0.43 kB
+dist/assets/index-CYmlBRdW.css      28.76 kB │ gzip:     5.98 kB
+dist/assets/index-CyL6ppRC.js   10,148.38 kB │ gzip: 3,045.59 kB
+✓ built in 1m 55s
+```
+
+The two skips are the explicit opt-in live-GCS read and live store probe. The xfail is the
+retained strict historical transform case. The frontend's single 10.15 MB minified JavaScript
+chunk remains a measured usability debt; this slice does not call it acceptable merely because
+the build passed.
+
+**Claim boundary.** The tests establish complete-or-absent visibility, no replacement under an
+eight-process race, and successful publication on the deployed exFAT filesystem. They establish
+process-crash atomicity of the receipt namespace transition. They do **not** establish survival
+of a sudden power loss on every filesystem/storage device, and no such durability claim is made.
+
+---
+
+## TG12.2a - D69, explicit per-sample presence and the masked-lag decision (2026-08-29, `ed-dev`) - **COMPLETE**
+
+**Measured decision before inference.** A controlled Argo-like union clock was constructed from
+20 floats, 146 ten-day cycles and a distinct 12-hour surfacing offset for each float. It contains
+2,920 clock rows and 380 ordered channel pairs. Every pair has `n_effective=0`, longest contiguous
+joint-presence run 0, and no admissible requested lag. Candidate 1 (operate within maximal
+contiguous joint-presence runs) therefore cannot recover an injected coupling at this sampling
+shape without first binning or interpolating observations and inventing simultaneity. Candidate 2
+was selected: intermittently present records refuse frame-lag inference until a physical-time
+estimator exists.
+
+**Implemented contract.** `ChannelSeries.present` is an optional, exact boolean `(time, channel)`
+mask shared by all measures. It is declared rather than inferred from `NaN`: finite values where
+presence is false are contradictions and are refused; a non-finite value where presence is true
+remains the distinct observed-but-invalid state. `non_stationary_support` and the mask are
+enforced in both directions at the tabular/domain boundary. Present counts enter channel records,
+lineage, the channel API and UI. Splits slice the mask and recompute partition viability, including
+an embargo entirely inside a gap. `PartitionIdentity` hashes the exact presence pattern without
+reading measure values, so two held-out records differing only in sampling cannot collide.
+
+**Inference boundary.** `masked_frame_lag_assessment` reports pairwise effective N, longest joint
+run and admissible lags without compacting the clock. Presence-aware `decorrelation_frames` uses
+only pairs genuinely separated by each physical frame lag and refuses if no lag has enough pairs.
+The shift-null primitive can take a declared joint overlap before shifting, holding N constant for
+every surrogate, but this does not license a frame interpretation of the compacted positions.
+Consequently `cross_scale_dependency` refuses a partial mask before producing a statistic, bias
+warning, null or significance claim. An all-true mask takes the literal accepted path and is
+asserted result-identical to no mask.
+
+**Verification:**
+
+```text
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_presence.py -q
+14 passed, 2 warnings in 3.59s
+
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_presence.py src/tests/test_channel_series.py src/tests/test_cross_scale.py src/tests/test_domain_gate.py src/tests/test_preregistration.py src/tests/test_tabular_domain.py src/tests/test_channels_api.py src/tests/test_analysis_api.py src/tests/test_preregistration_api.py src/tests/test_mining_api.py src/tests/test_cross_domain_api.py src/tests/test_frontend_contract.py -q
+386 passed, 5 warnings in 249.57s (0:04:09)
+
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_documentation.py -q
+19 passed, 1 warning in 184.81s (0:03:04)
+
+> .\.venv\Scripts\python.exe tools/audit_docs.py
+defects              : 72 defined, 70 fixed, partial ['D18'], open ['D43']
+test functions       : 2362
+stale inventory rows : none
+claimed suite totals : architecture (2708, 1) / roadmap (2708, 1)
+RESULT               : ok
+
+> .\.venv\Scripts\python.exe -m pytest -q
+2708 passed, 2 skipped, 1 xfailed, 6 warnings in 1806.08s (0:30:06)
+
+> .\.venv\Scripts\python.exe -m src.benchmarks
+PASS 29   FAIL 0   NOT_YET_RUNNABLE 0
+```
+
+The two skips remain the explicit opt-in live-GCS read and live store probe; no public data was
+fetched by this slice. The expected xfail is the retained historical transform case. Frontend
+production build remained clean at 1,395 modules (`10,148.45 kB`, gzip `3,045.62 kB`).
+
+**Claim boundary.** TG12.2a makes intermittent observation support representable, content-bound
+and impossible to pass silently into the existing frame-lag estimator. It does not ingest Argo,
+construct simultaneous profiles, estimate dependence in physical time, or claim that sparse
+asynchronous floats support lagged inference. The refusal is the scientifically supported result.
+
+---
+
+## TG12.1d - D73, transform-derived acquisition planning (2026-08-29, `ed-dev`) - **COMPLETE**
+
+The acquisition planner is metadata-only and transform-owned. Four-level DTCWT with
+`near_sym_b`/`qshift_b` derives a coarsest parent margin of 97 pixels, native margin of 7,
+absolute minimum 240 x 240 and R13 recommended minimum 512 x 512. Four-level SWT/db2 derives
+margin 23, absolute minimum 47 x 47 and recommended minimum 256 x 256. Tests compare these
+values directly with the registered implementations' support functions; no copied filter length
+is accepted as an oracle.
+
+The 384 x 320 fixture request expands symmetrically to exactly 512 x 512 native cells, from
+latitude 36..547 and longitude 104..615, and is re-priced through the coordinate-only chunk
+counter. A source too small to supply the threshold says so. A transform lacking a support
+callback is refused before source access. Plan identity moves with the transform configuration
+or exact coordinate bytes and does not move when only field values change. Explicit
+materialisation below the recommendation is refused before constructing a field selection.
+
+The API/UI contract pins a non-default SWT/db3/reflect request at depth three through Inspect and
+into the generated CLI. Acquire renders both thresholds, per-level support and valid interiors,
+suggested bounds, revised bytes/amplification and the plan digest, and applies the recommendation
+in one action. The production build passes, but visual/assistive inspection is **NOT RUN**: the
+in-app browser bootstrap succeeded and then reported that no browser was available.
+
+```text
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_crop_planner.py src/tests/test_frontend_contract.py src/tests/test_zarr_source.py -q
+160 passed, 1 skipped, 5 warnings in 31.27s
+
+> cd frontend
+> npm run build
+✓ 1395 modules transformed.
+dist/index.html                      0.65 kB | gzip:     0.43 kB
+dist/assets/index-DmSYtdi0.css      28.88 kB | gzip:     6.00 kB
+dist/assets/index-a_MGaxn3.js   10,154.57 kB | gzip: 3,047.07 kB
+✓ built in 1m 15s
+
+> .\.venv\Scripts\python.exe tools/audit_docs.py
+undocumented modules : none
+undocumented routes  : none
+defects              : 73 defined, 71 fixed, partial ['D18'], open ['D43']
+test functions       : 2370
+stale inventory rows : none
+claimed suite totals : architecture (2716, 1) / roadmap (2716, 1)
+RESULT               : ok
+
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_documentation.py -q
+19 passed, 1 warning in 110.86s (0:01:50)
+
+> .\.venv\Scripts\python.exe -m pytest -q
+2716 passed, 2 skipped, 1 xfailed, 6 warnings in 1462.14s (0:24:22)
+
+> .\.venv\Scripts\python.exe -m src.benchmarks
+PASS 29   FAIL 0   NOT_YET_RUNNABLE 0
+```
+
+The two skips remain the explicit opt-in live-GCS read and live store probe. No public field
+values were fetched. The xfail is the retained historical transform case. The warnings are the
+six pre-existing SQLAlchemy, multipart, Python-version-support and empty-slice warnings; none is
+new to this slice. The 10.15 MB minified frontend chunk remains explicit performance/usability
+debt rather than being called acceptable because compilation passed.
+
+**Claim boundary.** The plan verifies transform support, native-coordinate feasibility and
+predicted chunk cost for one exact request. Its recommended threshold applies the named
+128-parent-cell R13 span policy; it is not an empirical power calculation and does not establish
+stationarity, physical relevance, successful transfer, valid returned field values or a future
+scientific finding.
+
+---
+
+## TG12.2b-d - Irregular profiles, declared reductions and the Argo GDAC seam (2026-08-29, `ed-dev`) - **COMPLETE**
+
+The profile acquisition pathway introduces a `ProfileSpec` to content-address non-gridded profiles in a given region, time window, and depth range. `ProfileCollection` preserves the exact scatter representation, without grid assumptions, asserting that atmospheric structures cannot simply be forced onto ocean profiles. 
+
+The `ProfileReduction` registry provides explicitly declared methodologies (like per-float reduction and depth-bin aggregation), which dictate whether non-stationary support is preserved or whether aggregation causes an identity shift. The real Argo GDAC query runs through an isolated seam, strictly decoupled from the core, emitting actual profile data rather than fixtures, and rightfully declining operations missing necessary domain parameters. The UI (`ProfileAcquisition.tsx`) renders these declared irregularities honestly and appropriately blocks analysis requests that would otherwise interpolate or invent data.
+
+**Verification:**
+
+`	ext
+> .\venv\Scripts\python.exe -m pytest src/tests/test_profiles.py src/tests/test_frontend_contract.py -q
+10 passed, 1 skipped, 2 warnings in 7.57s
+
+> .\venv\Scripts\python.exe tools/audit_docs.py
+undocumented modules : none
+undocumented routes  : none
+defects              : 73 defined, 71 fixed, partial ['D18'], open ['D43']
+test functions       : 2380
+stale inventory rows : none
+claimed suite totals : architecture (2726, 1) / roadmap (2726, 1)
+RESULT               : ok
+
+> .\venv\Scripts\python.exe -m pytest -q
+2726 passed, 2 skipped, 1 xfailed, 6 warnings in 1465.18s (0:24:25)
+`
+
+**Claim boundary.** The reduction registration is fully documented and is demonstrably reproducible; it does not claim to validate any specific scientific assumption or cross-scale finding. The dataset simply represents recorded evidence of domain irregularities natively preserved within the analysis pipeline.

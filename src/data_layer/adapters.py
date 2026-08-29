@@ -81,7 +81,12 @@ def create_simulated_gfs() -> xr.Dataset:
     for l_idx, lvl in enumerate(levels):
         wind_speed = 40.0 * (1.0 - np.abs(lvl - 300.0) / 1000.0)
         for t_idx in range(len(times)):
-            u_data[t_idx, l_idx] = wind_speed * np.exp(-(lat_grid - 45.0)**2 / 200.0) + 5.0 * np.random.randn(*lat_grid.shape)
+            # D55: this drew from the NumPy *global* generator, which the executor used to
+            # seed per task. It no longer does, so the fixture asks for the task's stream and
+            # falls back to a fixed one - a demo dataset that changes between identical runs
+            # is a worse default than one that is merely arbitrary.
+            u_data[t_idx, l_idx] = (wind_speed * np.exp(-(lat_grid - 45.0)**2 / 200.0)
+                                    + 5.0 * _fixture_rng().standard_normal(lat_grid.shape))
             v_data[t_idx, l_idx] = 10.0 * np.sin(4 * np.deg2rad(lon_grid)) * np.exp(-(lat_grid - 45.0)**2 / 200.0)
             
     ds = xr.Dataset(
@@ -95,6 +100,15 @@ def create_simulated_gfs() -> xr.Dataset:
         attrs={"description": "Simulated GFS Forecast Dataset for SpectralEarth"}
     )
     return ds
+
+def _fixture_rng() -> "np.random.Generator":
+    """The task's NumPy stream if there is one, otherwise a fixed generator.
+
+    Only the synthetic fixtures use this. Real data is read, not drawn.
+    """
+    from src.core import randomness
+    return randomness.numpy_generator() or np.random.default_rng(20260819)
+
 
 def create_simulated_toy() -> xr.Dataset:
     times = pd.date_range("2023-01-01", periods=10, freq="D")

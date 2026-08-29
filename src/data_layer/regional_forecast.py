@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 import os
 from dataclasses import asdict, dataclass
 from typing import Any, Dict, Mapping, Optional, Sequence, Tuple, Union
@@ -774,9 +775,20 @@ def assess_manifest_readiness(manifest: Mapping[str, Any],
 
     This deliberately reports structural eligibility, not successful preparation.  Means,
     standard deviations and sample boundaries can only be certified after opening the values.
+
+    **It is an atmospheric assessment, and since TG12.1 it says so (D70).**  The requirement it
+    checks is ERA5's: five canonical variables on a pressure level.  Asked about a crop from a
+    store whose vertical axis is not `level` it used to report `missing_variables=[t,q,u,v,z]`
+    and `level_available=False`, which reads as *this crop nearly qualified and lacks some
+    fields* when the truth is that the question does not apply to it.  `applicable` now carries
+    that distinction, and the caller is expected to lead with it rather than with the verdict.
     """
     config = config or RegionalForecastConfig()
     spec = manifest.get("spec", {})
+    # Per D63 the provenance record omits `vertical_dim` when it is ERA5's, so absent means
+    # `level`.  A store on any other axis cannot express a pressure-level requirement at all.
+    vertical_dim = str(spec.get("vertical_dim", "level") or "level")
+    applicable = vertical_dim == "level"
     available = set(manifest.get("variables", ())) | set(spec.get("variables", ()))
     resolved = {}
     missing = []
@@ -789,14 +801,29 @@ def assess_manifest_readiness(manifest: Mapping[str, Any],
             missing.append(canonical)
         else:
             ambiguous.append(canonical)
-    levels = [int(v) for v in spec.get("levels", ())]
-    level_available = config.level_hpa in levels
+    # Compared as numbers, never truncated to `int` (D70).  GLORYS elevations are fractional
+    # negative metres, and `int(-0.494...)` is `0` -- a silent coercion that turned "this axis
+    # is not a pressure axis" into "level 0 is present and 850 is not".  D68 taught the request
+    # and the spec to carry a float; this consumer had not been taught with them.
+    level_available = any(
+        math.isclose(float(value), float(config.level_hpa), rel_tol=0.0, abs_tol=1e-9)
+        for value in spec.get("levels", ()))
     n_frames = int(manifest.get("shape", {}).get("time", 0))
     minimum_frames = (config.history_frames + max(config.lead_frames) +
                       2 * config.embargo_frames + 3)
-    eligible = (bool(manifest.get("content_hash")) and not missing and not ambiguous
-                and level_available and n_frames >= minimum_frames)
+    eligible = (applicable and bool(manifest.get("content_hash")) and not missing
+                and not ambiguous and level_available and n_frames >= minimum_frames)
+    not_applicable_reason = None if applicable else (
+        "This is the T5.2 regional-forecast readiness check, and it is atmospheric: it asks for "
+        "the ERA5 variables %s on the %d hPa pressure level. This crop comes from a store whose "
+        "vertical axis is %r, so the question does not apply to it and the variable and level "
+        "rows below describe what T5.2 requires rather than anything this crop failed to "
+        "supply. No analysis route consumes a crop from this store yet."
+        % ("/".join(config.variables), config.level_hpa, vertical_dim))
     return {
+        "applicable": applicable,
+        "not_applicable_reason": not_applicable_reason,
+        "vertical_dim": vertical_dim,
         "structurally_eligible": eligible,
         "required_variables": list(config.variables), "resolved_variables": resolved,
         "missing_variables": missing, "ambiguous_variables": ambiguous,

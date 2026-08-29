@@ -52,6 +52,56 @@ if ($installDeps -eq "y" -or $installDeps -eq "Y") {
     Write-Host "[+] Dependencies updated." -ForegroundColor Green
 }
 
+# ---------------------------------------------------------------- Local environment
+# .env.local holds machine-local secrets and opt-in flags (GEMINI_API_KEY,
+# SPECTRALEARTH_ALLOW_NETWORK). Nothing in the Python source loads it: the backend reads
+# os.getenv directly (zarr_source.network_enabled) and python-dotenv is not a dependency.
+# Vite does not load it either - it reads env files from frontend/ and only exposes
+# VITE_-prefixed names to the browser. The launcher is therefore what makes the file real,
+# by promoting it into this process's environment, which the uvicorn job and `npm run dev`
+# both inherit as child processes.
+#
+# A variable already set in the calling shell wins over the file, so a one-off override
+# still works without editing anything.
+Write-Host "[*] Loading local environment from .env.local ..." -ForegroundColor White
+$EnvFile = Join-Path $ProjectRoot ".env.local"
+if (Test-Path $EnvFile) {
+    $loadedNames = @()
+    $skippedNames = @()
+    foreach ($line in Get-Content $EnvFile) {
+        $trimmed = $line.Trim()
+        if (-not $trimmed -or $trimmed.StartsWith("#")) { continue }
+        $split = $trimmed.IndexOf("=")
+        if ($split -lt 1) {
+            Write-Host "    Ignoring unparseable line: $trimmed" -ForegroundColor DarkGray
+            continue
+        }
+        $name = $trimmed.Substring(0, $split).Trim()
+        $value = $trimmed.Substring($split + 1).Trim()
+        # Strip one matched pair of surrounding quotes so KEY="v" and KEY=v agree.
+        if ($value.Length -ge 2 -and
+            (($value.StartsWith('"') -and $value.EndsWith('"')) -or
+             ($value.StartsWith("'") -and $value.EndsWith("'")))) {
+            $value = $value.Substring(1, $value.Length - 2)
+        }
+        if ([Environment]::GetEnvironmentVariable($name, "Process")) {
+            $skippedNames += $name
+            continue
+        }
+        [Environment]::SetEnvironmentVariable($name, $value, "Process")
+        $loadedNames += $name
+    }
+    # Names only. These values are secrets and must never reach the console or a log.
+    if ($loadedNames.Count -gt 0) {
+        Write-Host "    Loaded: $($loadedNames -join ', ')" -ForegroundColor Green
+    }
+    if ($skippedNames.Count -gt 0) {
+        Write-Host "    Already set in this shell, file ignored for: $($skippedNames -join ', ')" -ForegroundColor DarkGray
+    }
+} else {
+    Write-Host "    No .env.local found - network access stays disabled and no API keys are set." -ForegroundColor DarkGray
+}
+
 # ---------------------------------------------------------------- Backend
 Write-Host "==========================================================" -ForegroundColor Cyan
 Write-Host "                  Starting Services                       " -ForegroundColor Cyan

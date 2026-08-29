@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Heatmap2D } from './components/Heatmap2D';
 import { LineChart } from './components/LineChart';
 import { LineageGraph } from './components/LineageGraph';
@@ -8,9 +8,18 @@ import { FieldImport } from './components/FieldImport';
 import { TrainingReadiness } from './components/TrainingReadiness';
 import { DTCWTScientificView } from './components/DTCWTScientificView';
 import { EvaluationEvidence } from './components/EvaluationEvidence';
+import FindingsView from './components/FindingsView';
+import AcquisitionView from './components/AcquisitionView';
+import DomainAnalysisView from './components/DomainAnalysisView';
+import PreregistrationView from './components/PreregistrationView';
+import EvidenceView from './components/EvidenceView';
+import StructureMiningView from './components/StructureMiningView';
+import CrossDomainRecordView from './components/CrossDomainRecordView';
+import ReviewView from './components/ReviewView';
 import { apiService } from './services/api';
 import * as types from './types/api';
 import {
+  BookOpen,
   Layers,
   Wind,
   Sliders,
@@ -34,16 +43,53 @@ import {
   ShieldCheck,
   AlertTriangle,
   Cloud,
-  HardDrive,
-  Search,
   WifiOff,
   Boxes,
-  FileCheck2
+  Waypoints,
+  FileCheck2,
+  FilePlus2,
+  Lock,
+  MessageSquare
 } from 'lucide-react';
 
+const WORKFLOW_NAV = [
+  { section: 'Acquire', items: [{ id: 'acquire', name: 'Acquire data', icon: Cloud }] },
+  {
+    section: 'Analyse', items: [
+      { id: 'domainWorkbench', name: 'Cross-domain analysis', icon: Globe },
+      { id: 'preregistration', name: 'Preregistration', icon: Lock },
+      { id: 'synthetic', name: 'Synthetic generator', icon: Layers, context: 'Gridded field line' },
+      { id: 'meteorological', name: 'Meteorological data', icon: Wind, context: 'Gridded field line' },
+      { id: 'boundary', name: 'Boundary-condition lab', icon: Sliders, context: 'Gridded field line' },
+      { id: 'spectral', name: 'Spectral transforms', icon: Activity, context: 'Gridded field line' },
+      { id: 'analysis', name: 'Diagnostics', icon: BarChart2, context: 'Gridded field line' },
+      { id: 'mining', name: 'Structure mining', icon: Boxes },
+      { id: 'crossDomainRecord', name: 'Cross-domain record', icon: Waypoints },
+      { id: 'hypothesis', name: 'Automated hypotheses', icon: Lightbulb },
+    ],
+  },
+  {
+    section: 'Evidence', items: [
+      { id: 'evidence', name: 'Evidence record', icon: FilePlus2 },
+      { id: 'declarative', name: 'Experiment engine', icon: FileCode },
+      { id: 'evaluation', name: 'Forecast evaluation', icon: FileCheck2, context: 'Gridded field line' },
+    ],
+  },
+  { section: 'Review', note: 'Recorded argument; never claim permission', items: [
+    { id: 'review', name: 'Recorded review', icon: MessageSquare },
+  ] },
+  { section: 'Read', items: [{ id: 'findings', name: 'Findings', icon: BookOpen }] },
+  { section: 'Platform', items: [{ id: 'platform', name: 'Platform & evidence', icon: ShieldCheck }] },
+] as const;
+
 export default function App() {
-  const [activeTab, setActiveTab] = useState('synthetic');
+  const [activeTab, setActiveTab] = useState('acquire');
+  const workspaceHeadingRef = useRef<HTMLHeadingElement>(null);
+  const hasMountedRef = useRef(false);
   const [backendConnected, setBackendConnected] = useState<boolean | null>(null);
+  // TG11.0: context belongs to the shell, not to whichever workflow panel is mounted.
+  const [selectedRecord, setSelectedRecord] = useState<types.ChannelRecordSelection | null>(null);
+  const [selectedStudyId, setSelectedStudyId] = useState<string>('');
 
   // T3.5.22: platform status and the ERA5 crop tools. Every one of these endpoints existed
   // and had no consumer, so the platform could report its device, executor, schema revision,
@@ -51,9 +97,6 @@ export default function App() {
   const [health, setHealth] = useState<types.HealthResponse | null>(null);
   const [benchmarks, setBenchmarks] = useState<types.BenchmarkResponse[]>([]);
   const [dataSources, setDataSources] = useState<types.DataSourceInfo[]>([]);
-  const [zarrCatalogue, setZarrCatalogue] = useState<types.ZarrCatalogueResponse | null>(null);
-  const [zarrCached, setZarrCached] = useState<types.ZarrCachedResponse | null>(null);
-  const [zarrInspection, setZarrInspection] = useState<types.ZarrInspectResponse | null>(null);
   // T3.5.24: evidence a researcher can generate, and capabilities they can discover.
   const [benchmarkRun, setBenchmarkRun] = useState<types.BenchmarkSuiteResponse | null>(null);
   const [benchmarkSeed, setBenchmarkSeed] = useState(20260819);
@@ -63,17 +106,6 @@ export default function App() {
   const [evaluationReports, setEvaluationReports] = useState<types.EvaluationReport[]>([]);
   const [receiptImporting, setReceiptImporting] = useState(false);
   const [importedProvenance, setImportedProvenance] = useState<Record<string, any> | null>(null);
-  const [zarrCrop, setZarrCrop] = useState<types.ZarrCropRequest>({
-    store: 'era5_0p25_6h',
-    variables: ['temperature'],
-    time_start: '2020-06-01',
-    time_end: '2020-06-08',
-    // A 64-degree box at 0.25 degrees is 257x257, which clears the R13 four-level floor of
-    // 256. The default is a crop that is actually analysable rather than a round number.
-    lat_min: -4, lat_max: 60, lon_min: 0, lon_max: 64,
-    levels: [850, 700, 500, 300],
-    n_levels_analysis: 4,
-  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -607,38 +639,6 @@ export default function App() {
     setError(null);
   };
 
-  const loadZarrCatalogue = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const [cat, cached] = await Promise.all([
-        apiService.zarrCatalogue(),
-        apiService.zarrCached(),
-      ]);
-      setZarrCatalogue(cat);
-      setZarrCached(cached);
-    } catch (e: any) {
-      setError(`Zarr catalogue unavailable: ${e.message}`);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleZarrInspect = async () => {
-    setLoading(true);
-    setError(null);
-    setZarrInspection(null);
-    try {
-      setZarrInspection(await apiService.zarrInspect(zarrCrop));
-    } catch (e: any) {
-      // A 409 here is the network gate, not a failure - it is reported verbatim because the
-      // message names the environment variable that turns it on.
-      setError(e.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
     if (activeTab === 'platform' && !health) loadPlatformStatus();
     if (activeTab === 'platform' && registryTransforms.length === 0) {
@@ -646,16 +646,26 @@ export default function App() {
         .then(([t, a]) => { setRegistryTransforms(t); setRegistryActions(a); })
         .catch(() => { /* the status load already reports an unreachable backend */ });
     }
-    if (activeTab === 'era5' && !zarrCatalogue) loadZarrCatalogue();
     if (activeTab === 'evaluation') loadEvaluationReports();
   }, [activeTab]);
 
+  useEffect(() => {
+    if (hasMountedRef.current) workspaceHeadingRef.current?.focus();
+    hasMountedRef.current = true;
+  }, [activeTab]);
+
+  const activeWorkspace = (WORKFLOW_NAV as readonly {
+    items: readonly { id: string; name: string }[];
+  }[]).flatMap(group => group.items)
+    .find(item => item.id === activeTab)?.name || 'Scientific workbench';
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
+      <a href="#workspace-main" className="skip-link">Skip to workspace</a>
       {/* Top Banner / Navigation Header */}
       <header className="border-b border-slate-800 bg-slate-900/50 backdrop-blur px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Globe className="w-8 h-8 text-teal-400 animate-pulse" />
+          <Globe className="w-8 h-8 text-teal-400 animate-pulse" aria-hidden="true" />
           <div>
             <h1 className="text-lg font-bold tracking-tight text-white">SpectralEarth</h1>
             <p className="text-xs text-slate-400">Scientific Visual Research Workbench</p>
@@ -663,55 +673,64 @@ export default function App() {
         </div>
         <div className="flex items-center gap-4">
           {backendConnected ? (
-            <span className="text-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-3 py-1.5 rounded-full font-medium flex items-center gap-2">
-              <Server className="w-3.5 h-3.5" /> API Connected (SQLite DB Active)
+            <span role="status" className="text-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-3 py-1.5 rounded-full font-medium flex items-center gap-2">
+              <Server className="w-3.5 h-3.5" aria-hidden="true" /> API Connected (SQLite DB Active)
             </span>
           ) : (
-            <span className="text-xs bg-amber-500/10 text-amber-400 border border-amber-500/20 px-3 py-1.5 rounded-full font-medium flex items-center gap-2 cursor-pointer" onClick={checkConnection}>
-              <WifiOff className="w-3.5 h-3.5" /> Backend unreachable - no computation available (click to retry)
-            </span>
+            <button type="button" className="text-xs bg-amber-500/10 text-amber-400 border border-amber-500/20 px-3 py-1.5 rounded-full font-medium flex items-center gap-2"
+              onClick={checkConnection}>
+              <WifiOff className="w-3.5 h-3.5" aria-hidden="true" /> Backend unreachable - no computation available; retry
+            </button>
           )}
         </div>
       </header>
 
       <div className="flex-1 flex flex-col lg:flex-row">
         {/* Left Side Navigation bar */}
-        <nav className="w-full lg:w-72 border-r border-slate-800 bg-slate-900/10 p-4 space-y-1">
-          <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider px-3 mb-3">
-            Research Modules
-          </div>
-          {[
-            { id: 'synthetic', name: '1. Synthetic Generator', icon: Layers },
-            { id: 'meteorological', name: '2. Meteorological Data', icon: Wind },
-            { id: 'boundary', name: '3. Boundary-Condition Lab', icon: Sliders },
-            { id: 'spectral', name: '4. Spectral Transforms', icon: Activity },
-            { id: 'analysis', name: '5. Diagnostic & Analysis', icon: BarChart2 },
-            { id: 'declarative', name: '6. Experiment Engine', icon: FileCode },
-            { id: 'hypothesis', name: '7. Automated Hypotheses', icon: Lightbulb },
-            { id: 'platform', name: '8. Platform & Evidence', icon: ShieldCheck },
-            { id: 'era5', name: '9. Real ERA5 (Zarr)', icon: Cloud },
-            { id: 'evaluation', name: '10. Forecast Evaluation', icon: FileCheck2 }
-          ].map(tab => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-all ${
-                  isActive
-                    ? 'bg-teal-500/10 text-teal-400 border border-teal-500/20 shadow-sm shadow-teal-500/5'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
-                }`}
-              >
-                <Icon className={`w-4 h-4 ${isActive ? 'text-teal-400' : 'text-slate-400'}`} />
-                {tab.name}
-              </button>
-            );
-          })}
+        <nav aria-label="Scientific workflow"
+          className="w-full lg:w-72 border-r border-slate-800 bg-slate-900/10 p-4 space-y-5">
+          {WORKFLOW_NAV.map(group => (
+            <section key={group.section} aria-labelledby={`nav-${group.section.toLowerCase()}`}>
+              <div className="px-3 mb-1">
+                <h2 id={`nav-${group.section.toLowerCase()}`}
+                  className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                  {group.section}
+                </h2>
+                {'note' in group && group.note && (
+                  <p className="text-[10px] text-slate-600 mt-0.5">{group.note}</p>
+                )}
+              </div>
+              <div className="space-y-1">
+                {group.items.map(tab => {
+                  const Icon = tab.icon;
+                  const isActive = activeTab === tab.id;
+                  return (
+                    <button key={tab.id} type="button" onClick={() => setActiveTab(tab.id)}
+                      aria-current={isActive ? 'page' : undefined}
+                      className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                        isActive
+                          ? 'bg-teal-500/10 text-teal-400 border border-teal-500/20 shadow-sm shadow-teal-500/5'
+                          : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+                      }`}>
+                      <Icon className={`w-4 h-4 ${isActive ? 'text-teal-400' : 'text-slate-400'}`}
+                        aria-hidden="true" />
+                      <span className="min-w-0 text-left">
+                        <span className="block">{tab.name}</span>
+                        {'context' in tab && (
+                          <span className="block text-[9px] uppercase tracking-wide text-slate-600">
+                            {tab.context}
+                          </span>
+                        )}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+          ))}
 
           <div className="pt-6 px-3 border-t border-slate-800 mt-6">
-            <span className="text-xs text-slate-500 uppercase font-semibold block mb-2">Primary Field Buffer</span>
+            <span className="text-xs text-slate-500 uppercase font-semibold block mb-2">Gridded field buffer</span>
             <div className="bg-slate-900/50 p-3 border border-slate-800 rounded-lg text-xs space-y-1 text-slate-400">
               <p><strong className="text-slate-300">Dimensions:</strong> {primaryField.length} x {primaryField[0]?.length || 0}</p>
               <p><strong className="text-slate-300">Origin:</strong> {primaryMetadata.type || 'In-Memory Grid'}</p>
@@ -721,14 +740,45 @@ export default function App() {
         </nav>
 
         {/* Core Main content section */}
-        <main className="flex-1 p-6 overflow-y-auto space-y-6">
+        <main id="workspace-main" aria-labelledby="workspace-heading"
+          aria-busy={loading || benchmarkRunning || receiptImporting}
+          className="flex-1 p-6 overflow-y-auto space-y-6">
+          <h2 id="workspace-heading" ref={workspaceHeadingRef} tabIndex={-1} className="sr-only">
+            {activeWorkspace} workspace
+          </h2>
+          <p className="sr-only" role="status" aria-live="polite">
+            {loading || benchmarkRunning || receiptImporting ? `${activeWorkspace} is working` : `${activeWorkspace} is ready`}
+          </p>
+          <section aria-label="Current research context"
+            className="bg-slate-900/60 border border-slate-800 rounded-lg px-4 py-3 flex flex-wrap gap-x-6 gap-y-2 text-xs">
+            <div className="flex items-center gap-2">
+              <span className="uppercase tracking-wide text-slate-500">Record</span>
+              {selectedRecord ? <>
+                <span className="text-slate-200">{selectedRecord.record.source_name}</span>
+                <span className="text-teal-400">{selectedRecord.record.domain}</span>
+                <span className="font-mono text-slate-600">
+                  {selectedRecord.record.content_sha256.slice(0, 12)}…
+                </span>
+                <button type="button" onClick={() => setSelectedRecord(null)}
+                  aria-label="Clear selected record" className="text-slate-500 hover:text-slate-200">×</button>
+              </> : <span className="text-slate-600">none selected</span>}
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="uppercase tracking-wide text-slate-500">Study</span>
+              {selectedStudyId ? <>
+                <span className="font-mono text-slate-200">{selectedStudyId}</span>
+                <button type="button" onClick={() => setSelectedStudyId('')}
+                  aria-label="Clear selected study" className="text-slate-500 hover:text-slate-200">×</button>
+              </> : <span className="text-slate-600">none selected</span>}
+            </div>
+          </section>
           {error && (
-            <div className="bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded-lg p-4 flex items-center justify-between">
+            <div role="alert" className="bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded-lg p-4 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <XCircle className="w-5 h-5 flex-shrink-0" />
+                <XCircle className="w-5 h-5 flex-shrink-0" aria-hidden="true" />
                 <p className="text-sm font-medium">{error}</p>
               </div>
-              <button onClick={() => setError(null)} className="text-xs underline hover:text-rose-200">Dismiss</button>
+              <button type="button" onClick={() => setError(null)} className="text-xs underline hover:text-rose-200">Dismiss error</button>
             </div>
           )}
 
@@ -750,8 +800,9 @@ export default function App() {
                   </h3>
 
                   <div>
-                    <label className="text-xs text-slate-400 block mb-1">Field Type</label>
+                    <label htmlFor="synthetic-field-type" className="text-xs text-slate-400 block mb-1">Field Type</label>
                     <select
+                      id="synthetic-field-type"
                       value={genType}
                       onChange={(e) => setGenType(e.target.value)}
                       className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-sm text-slate-200 focus:outline-none focus:border-teal-500"
@@ -763,8 +814,9 @@ export default function App() {
                   </div>
 
                   <div>
-                    <label className="text-xs text-slate-400 block mb-1">Grid Size (N x N)</label>
+                    <label htmlFor="synthetic-grid-size" className="text-xs text-slate-400 block mb-1">Grid Size (N x N)</label>
                     <select
+                      id="synthetic-grid-size"
                       value={gridSize}
                       onChange={(e) => setGridSize(Number(e.target.value))}
                       className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-sm text-slate-200 focus:outline-none"
@@ -779,30 +831,33 @@ export default function App() {
                   {genType === 'sinusoid' && (
                     <div className="space-y-3">
                       <div>
-                        <label className="text-xs text-slate-400 flex justify-between mb-1">
+                        <label htmlFor="synthetic-frequency-x" className="text-xs text-slate-400 flex justify-between mb-1">
                           <span>X-Frequency (ωx): {freqX}</span>
                         </label>
                         <input
+                          id="synthetic-frequency-x"
                           type="range" min="0.5" max="8" step="0.5" value={freqX}
                           onChange={(e) => setFreqX(parseFloat(e.target.value))}
                           className="w-full accent-teal-500"
                         />
                       </div>
                       <div>
-                        <label className="text-xs text-slate-400 flex justify-between mb-1">
+                        <label htmlFor="synthetic-frequency-y" className="text-xs text-slate-400 flex justify-between mb-1">
                           <span>Y-Frequency (ωy): {freqY}</span>
                         </label>
                         <input
+                          id="synthetic-frequency-y"
                           type="range" min="0.5" max="8" step="0.5" value={freqY}
                           onChange={(e) => setFreqY(parseFloat(e.target.value))}
                           className="w-full accent-teal-500"
                         />
                       </div>
                       <div>
-                        <label className="text-xs text-slate-400 flex justify-between mb-1">
+                        <label htmlFor="synthetic-amplitude" className="text-xs text-slate-400 flex justify-between mb-1">
                           <span>Amplitude: {sinAmplitude}</span>
                         </label>
                         <input
+                          id="synthetic-amplitude"
                           type="range" min="0.5" max="5" step="0.5" value={sinAmplitude}
                           onChange={(e) => setSinAmplitude(parseFloat(e.target.value))}
                           className="w-full accent-teal-500"
@@ -815,16 +870,18 @@ export default function App() {
                     <div className="space-y-3">
                       <div className="grid grid-cols-2 gap-3">
                         <div>
-                          <label className="text-xs text-slate-400 block mb-1">Center X</label>
+                          <label htmlFor="vortex-center-x" className="text-xs text-slate-400 block mb-1">Center X</label>
                           <input
+                            id="vortex-center-x"
                             type="number" step="0.1" value={vortexCenterX}
                             onChange={(e) => setVortexCenterX(parseFloat(e.target.value))}
                             className="w-full bg-slate-950 border border-slate-800 rounded p-1.5 text-xs text-slate-200"
                           />
                         </div>
                         <div>
-                          <label className="text-xs text-slate-400 block mb-1">Center Y</label>
+                          <label htmlFor="vortex-center-y" className="text-xs text-slate-400 block mb-1">Center Y</label>
                           <input
+                            id="vortex-center-y"
                             type="number" step="0.1" value={vortexCenterY}
                             onChange={(e) => setVortexCenterY(parseFloat(e.target.value))}
                             className="w-full bg-slate-950 border border-slate-800 rounded p-1.5 text-xs text-slate-200"
@@ -832,20 +889,22 @@ export default function App() {
                         </div>
                       </div>
                       <div>
-                        <label className="text-xs text-slate-400 flex justify-between mb-1">
+                        <label htmlFor="vortex-amplitude" className="text-xs text-slate-400 flex justify-between mb-1">
                           <span>Amplitude: {vortexAmp}</span>
                         </label>
                         <input
+                          id="vortex-amplitude"
                           type="range" min="0.5" max="5" step="0.1" value={vortexAmp}
                           onChange={(e) => setVortexAmp(parseFloat(e.target.value))}
                           className="w-full accent-teal-500"
                         />
                       </div>
                       <div>
-                        <label className="text-xs text-slate-400 flex justify-between mb-1">
+                        <label htmlFor="vortex-core-radius" className="text-xs text-slate-400 flex justify-between mb-1">
                           <span>{"Core Radius (r_core): "}{vortexRadius}</span>
                         </label>
                         <input
+                          id="vortex-core-radius"
                           type="range" min="0.05" max="0.5" step="0.05" value={vortexRadius}
                           onChange={(e) => setVortexRadius(parseFloat(e.target.value))}
                           className="w-full accent-teal-500"
@@ -857,40 +916,44 @@ export default function App() {
                   {genType === 'front' && (
                     <div className="space-y-3">
                       <div>
-                        <label className="text-xs text-slate-400 flex justify-between mb-1">
+                        <label htmlFor="front-angle" className="text-xs text-slate-400 flex justify-between mb-1">
                           <span>Angle (Degrees): {frontAngle}°</span>
                         </label>
                         <input
+                          id="front-angle"
                           type="range" min="0" max="360" step="15" value={frontAngle}
                           onChange={(e) => setFrontAngle(parseFloat(e.target.value))}
                           className="w-full accent-teal-500"
                         />
                       </div>
                       <div>
-                        <label className="text-xs text-slate-400 flex justify-between mb-1">
+                        <label htmlFor="front-offset" className="text-xs text-slate-400 flex justify-between mb-1">
                           <span>Offset: {frontOffset}</span>
                         </label>
                         <input
+                          id="front-offset"
                           type="range" min="-0.5" max="0.5" step="0.1" value={frontOffset}
                           onChange={(e) => setFrontOffset(parseFloat(e.target.value))}
                           className="w-full accent-teal-500"
                         />
                       </div>
                       <div>
-                        <label className="text-xs text-slate-400 flex justify-between mb-1">
+                        <label htmlFor="front-width" className="text-xs text-slate-400 flex justify-between mb-1">
                           <span>Width Parameter: {frontWidth}</span>
                         </label>
                         <input
+                          id="front-width"
                           type="range" min="0.01" max="0.3" step="0.01" value={frontWidth}
                           onChange={(e) => setFrontWidth(parseFloat(e.target.value))}
                           className="w-full accent-teal-500"
                         />
                       </div>
                       <div>
-                        <label className="text-xs text-slate-400 flex justify-between mb-1">
+                        <label htmlFor="front-amplitude" className="text-xs text-slate-400 flex justify-between mb-1">
                           <span>Amplitude: {frontAmp}</span>
                         </label>
                         <input
+                          id="front-amplitude"
                           type="range" min="0.5" max="5" step="0.5" value={frontAmp}
                           onChange={(e) => setFrontAmp(parseFloat(e.target.value))}
                           className="w-full accent-teal-500"
@@ -947,8 +1010,9 @@ export default function App() {
                     
                     <div className="flex flex-wrap items-end gap-4 mb-4">
                       <div>
-                        <label className="text-xs text-slate-400 block mb-1">Perturbation Type</label>
+                        <label htmlFor="perturbation-type" className="text-xs text-slate-400 block mb-1">Perturbation Type</label>
                         <select
+                          id="perturbation-type"
                           value={newPertType}
                           onChange={(e) => setNewPertType(e.target.value)}
                           className="bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-slate-200 focus:outline-none"
@@ -961,8 +1025,9 @@ export default function App() {
 
                       {newPertType === 'rotation' && (
                         <div>
-                          <label className="text-xs text-slate-400 block mb-1">Rotation Angle (°)</label>
+                          <label htmlFor="perturbation-angle" className="text-xs text-slate-400 block mb-1">Rotation Angle (°)</label>
                           <input
+                            id="perturbation-angle"
                             type="number" value={newPertAngle}
                             onChange={(e) => setNewPertAngle(parseFloat(e.target.value))}
                             className="bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-slate-200 w-24"
@@ -973,16 +1038,18 @@ export default function App() {
                       {newPertType === 'translation' && (
                         <div className="flex gap-2">
                           <div>
-                            <label className="text-xs text-slate-400 block mb-1">Shift X</label>
+                            <label htmlFor="perturbation-shift-x" className="text-xs text-slate-400 block mb-1">Shift X</label>
                             <input
+                              id="perturbation-shift-x"
                               type="number" step="0.05" value={newPertShiftX}
                               onChange={(e) => setNewPertShiftX(parseFloat(e.target.value))}
                               className="bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-slate-200 w-20"
                             />
                           </div>
                           <div>
-                            <label className="text-xs text-slate-400 block mb-1">Shift Y</label>
+                            <label htmlFor="perturbation-shift-y" className="text-xs text-slate-400 block mb-1">Shift Y</label>
                             <input
+                              id="perturbation-shift-y"
                               type="number" step="0.05" value={newPertShiftY}
                               onChange={(e) => setNewPertShiftY(parseFloat(e.target.value))}
                               className="bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-slate-200 w-20"
@@ -994,8 +1061,9 @@ export default function App() {
                       {newPertType === 'noise' && (
                         <div className="flex gap-2">
                           <div>
-                            <label className="text-xs text-slate-400 block mb-1">Noise Distribution</label>
+                            <label htmlFor="perturbation-noise-type" className="text-xs text-slate-400 block mb-1">Noise Distribution</label>
                             <select
+                              id="perturbation-noise-type"
                               value={newPertNoiseType}
                               onChange={(e) => setNewPertNoiseType(e.target.value)}
                               className="bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-slate-200"
@@ -1006,8 +1074,9 @@ export default function App() {
                             </select>
                           </div>
                           <div>
-                            <label className="text-xs text-slate-400 block mb-1">Level (σ)</label>
+                            <label htmlFor="perturbation-noise-level" className="text-xs text-slate-400 block mb-1">Level (σ)</label>
                             <input
+                              id="perturbation-noise-level"
                               type="number" step="0.05" value={newPertNoiseLevel}
                               onChange={(e) => setNewPertNoiseLevel(parseFloat(e.target.value))}
                               className="w-full accent-teal-500"
@@ -1035,8 +1104,9 @@ export default function App() {
                               {p.type === 'rotation' && <span>(θ: {p.angle}°)</span>}
                               {p.type === 'translation' && <span>(X: {p.shift_x}, Y: {p.shift_y})</span>}
                               {p.type === 'noise' && <span>({p.noise_type}, σ: {p.level})</span>}
-                              <button onClick={() => setPerturbations(perturbations.filter((_, i) => i !== idx))} className="text-rose-500 hover:text-rose-400">
-                                <Trash2 className="w-3 h-3" />
+                              <button type="button" aria-label={`Remove ${p.type} perturbation step ${idx + 1}`}
+                                onClick={() => setPerturbations(perturbations.filter((_, i) => i !== idx))} className="text-rose-500 hover:text-rose-400">
+                                <Trash2 className="w-3 h-3" aria-hidden="true" />
                               </button>
                             </span>
                           ))}
@@ -1105,8 +1175,9 @@ export default function App() {
                   </h3>
 
                   <div>
-                    <label className="text-xs text-slate-400 block mb-1">Active Dataset</label>
+                    <label htmlFor="active-dataset" className="text-xs text-slate-400 block mb-1">Active Dataset</label>
                     <select
+                      id="active-dataset"
                       value={selectedDatasetId}
                       onChange={(e) => {
                         const dId = e.target.value;
@@ -1190,8 +1261,9 @@ export default function App() {
                   })()}
 
                   <div>
-                    <label className="text-xs text-slate-400 block mb-1">Variable</label>
+                    <label htmlFor="dataset-variable" className="text-xs text-slate-400 block mb-1">Variable</label>
                     <select
+                      id="dataset-variable"
                       value={selectedVariable}
                       onChange={(e) => setSelectedVariable(e.target.value)}
                       className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-sm text-slate-200 focus:outline-none"
@@ -1204,8 +1276,9 @@ export default function App() {
 
                   {datasets.find(d => d.id === selectedDatasetId)?.pressure_levels && (
                     <div>
-                      <label className="text-xs text-slate-400 block mb-1">Pressure Level (hPa)</label>
+                      <label htmlFor="dataset-pressure-level" className="text-xs text-slate-400 block mb-1">Pressure Level (hPa)</label>
                       <select
+                        id="dataset-pressure-level"
                         value={selectedLevel}
                         onChange={(e) => setSelectedLevel(Number(e.target.value))}
                         className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-sm text-slate-200 focus:outline-none"
@@ -1221,15 +1294,17 @@ export default function App() {
                     <span className="text-xs text-slate-400 block font-semibold">Geographical Crop Coordinates</span>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="text-[10px] text-slate-500 block">Latitude Min</label>
+                        <label htmlFor="latitude-min" className="text-[10px] text-slate-500 block">Latitude Min</label>
                         <input
+                          id="latitude-min"
                           type="number" value={latMin} onChange={(e) => setLatMin(parseFloat(e.target.value))}
                           className="w-full bg-slate-950 border border-slate-800 rounded p-1.5 text-xs text-slate-200"
                         />
                       </div>
                       <div>
-                        <label className="text-[10px] text-slate-500 block">Latitude Max</label>
+                        <label htmlFor="latitude-max" className="text-[10px] text-slate-500 block">Latitude Max</label>
                         <input
+                          id="latitude-max"
                           type="number" value={latMax} onChange={(e) => setLatMax(parseFloat(e.target.value))}
                           className="w-full bg-slate-950 border border-slate-800 rounded p-1.5 text-xs text-slate-200"
                         />
@@ -1237,15 +1312,17 @@ export default function App() {
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="text-[10px] text-slate-500 block">Longitude Min</label>
+                        <label htmlFor="longitude-min" className="text-[10px] text-slate-500 block">Longitude Min</label>
                         <input
+                          id="longitude-min"
                           type="number" value={lonMin} onChange={(e) => setLonMin(parseFloat(e.target.value))}
                           className="w-full bg-slate-950 border border-slate-800 rounded p-1.5 text-xs text-slate-200"
                         />
                       </div>
                       <div>
-                        <label className="text-[10px] text-slate-500 block">Longitude Max</label>
+                        <label htmlFor="longitude-max" className="text-[10px] text-slate-500 block">Longitude Max</label>
                         <input
+                          id="longitude-max"
                           type="number" value={lonMax} onChange={(e) => setLonMax(parseFloat(e.target.value))}
                           className="w-full bg-slate-950 border border-slate-800 rounded p-1.5 text-xs text-slate-200"
                         />
@@ -1331,8 +1408,9 @@ export default function App() {
                   </h3>
 
                   <div>
-                    <label className="text-xs text-slate-400 block mb-1">Padding Treatment</label>
+                    <label htmlFor="boundary-treatment" className="text-xs text-slate-400 block mb-1">Padding Treatment</label>
                     <select
+                      id="boundary-treatment"
                       value={boundaryTreatment}
                       onChange={(e) => setBoundaryTreatment(e.target.value)}
                       className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-sm text-slate-200 focus:outline-none"
@@ -1345,10 +1423,11 @@ export default function App() {
                   </div>
 
                   <div>
-                    <label className="text-xs text-slate-400 flex justify-between mb-1">
+                    <label htmlFor="boundary-pad-width" className="text-xs text-slate-400 flex justify-between mb-1">
                       <span>Pad Width: {padWidth}px</span>
                     </label>
                     <input
+                      id="boundary-pad-width"
                       type="range" min="1" max="16" step="1" value={padWidth}
                       onChange={(e) => setPadWidth(parseInt(e.target.value))}
                       className="w-full accent-teal-500"
@@ -1356,8 +1435,9 @@ export default function App() {
                   </div>
 
                   <div>
-                    <label className="text-xs text-slate-400 block mb-1">Spectral Window Tapering</label>
+                    <label htmlFor="boundary-window" className="text-xs text-slate-400 block mb-1">Spectral Window Tapering</label>
                     <select
+                      id="boundary-window"
                       value={windowType}
                       onChange={(e) => setWindowType(e.target.value)}
                       className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-sm text-slate-200 focus:outline-none"
@@ -1371,10 +1451,11 @@ export default function App() {
 
                   {windowType === 'tukey' && (
                     <div>
-                      <label className="text-xs text-slate-400 flex justify-between mb-1">
+                      <label htmlFor="boundary-window-alpha" className="text-xs text-slate-400 flex justify-between mb-1">
                         <span>Tukey Alpha (α): {windowAlpha}</span>
                       </label>
                       <input
+                        id="boundary-window-alpha"
                         type="range" min="0" max="1" step="0.05" value={windowAlpha}
                         onChange={(e) => setWindowAlpha(parseFloat(e.target.value))}
                         className="w-full accent-teal-500"
@@ -1460,8 +1541,9 @@ export default function App() {
                   </h3>
 
                   <div>
-                    <label className="text-xs text-slate-400 block mb-1">Transform Operator</label>
+                    <label htmlFor="transform-operator" className="text-xs text-slate-400 block mb-1">Transform Operator</label>
                     <select
+                      id="transform-operator"
                       value={transformType}
                       onChange={(e) => setTransformType(e.target.value)}
                       className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-sm text-slate-200 focus:outline-none"
@@ -1477,10 +1559,11 @@ export default function App() {
 
                   {['dwt', 'swt', 'dtcwt'].includes(transformType) && (
                     <div>
-                      <label className="text-xs text-slate-400 flex justify-between mb-1">
+                      <label htmlFor="transform-levels" className="text-xs text-slate-400 flex justify-between mb-1">
                         <span>Wavelet Levels: {waveletLevels}</span>
                       </label>
                       <input
+                        id="transform-levels"
                         type="range" min="1" max="4" step="1" value={waveletLevels}
                         onChange={(e) => setWaveletLevels(parseInt(e.target.value))}
                         className="w-full accent-teal-500"
@@ -1490,8 +1573,9 @@ export default function App() {
 
                   {transformType === 'swt' && (
                     <div>
-                      <label className="text-xs text-slate-400 block mb-1">SWT Wavelet Family</label>
+                      <label htmlFor="swt-wavelet-family" className="text-xs text-slate-400 block mb-1">SWT Wavelet Family</label>
                       <select
+                        id="swt-wavelet-family"
                         value={waveletFamily}
                         onChange={(e) => setWaveletFamily(e.target.value)}
                         className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-sm text-slate-200 focus:outline-none"
@@ -1506,20 +1590,22 @@ export default function App() {
                   {transformType === 'hybrid' && (
                     <div className="space-y-3">
                       <div>
-                        <label className="text-xs text-slate-400 flex justify-between mb-1">
+                        <label htmlFor="hybrid-crossover" className="text-xs text-slate-400 flex justify-between mb-1">
                           <span>Crossover Frequency: {crossoverFreq}</span>
                         </label>
                         <input
+                          id="hybrid-crossover"
                           type="range" min="0.05" max="0.5" step="0.05" value={crossoverFreq}
                           onChange={(e) => setCrossoverFreq(parseFloat(e.target.value))}
                           className="w-full accent-teal-500"
                         />
                       </div>
                       <div>
-                        <label className="text-xs text-slate-400 flex justify-between mb-1">
+                        <label htmlFor="hybrid-mixing-weight" className="text-xs text-slate-400 flex justify-between mb-1">
                           <span>Mixing Weight: {mixingWeight}</span>
                         </label>
                         <input
+                          id="hybrid-mixing-weight"
                           type="range" min="0" max="1" step="0.1" value={mixingWeight}
                           onChange={(e) => setMixingWeight(parseFloat(e.target.value))}
                           className="w-full accent-teal-500"
@@ -1614,29 +1700,33 @@ export default function App() {
                   </p>
 
                   <div>
-                    <label className="text-xs text-slate-400 block mb-1">Noise seed</label>
+                    <label htmlFor="diagnostic-noise-seed" className="text-xs text-slate-400 block mb-1">Noise seed</label>
                     <div className="flex gap-2">
                       <input
+                        id="diagnostic-noise-seed"
                         type="number"
                         value={forecastSeed}
                         onChange={(e) => setForecastSeed(parseInt(e.target.value, 10) || 0)}
                         className="flex-1 bg-slate-950 border border-slate-800 rounded px-2 py-1.5 text-xs text-slate-200 font-mono"
                       />
                       <button
+                        type="button"
+                        aria-label="Draw a new diagnostic noise seed"
                         onClick={() => setForecastSeed(Math.floor(Math.random() * 2147483647))}
                         title="Draw a new seed. The value is recorded, so the run stays reproducible."
                         className="bg-slate-950 border border-slate-800 hover:bg-slate-900 text-slate-400 px-2 rounded"
                       >
-                        <RotateCcw className="w-3.5 h-3.5" />
+                        <RotateCcw className="w-3.5 h-3.5" aria-hidden="true" />
                       </button>
                     </div>
                   </div>
 
                   <div>
-                    <label className="text-xs text-slate-400 flex justify-between mb-1">
+                    <label htmlFor="diagnostic-noise-level" className="text-xs text-slate-400 flex justify-between mb-1">
                       <span>Forecast Noise StDev: {forecastNoise}</span>
                     </label>
                     <input
+                      id="diagnostic-noise-level"
                       type="range" min="0.05" max="0.5" step="0.05" value={forecastNoise}
                       onChange={(e) => setForecastNoise(parseFloat(e.target.value))}
                       className="w-full accent-teal-500"
@@ -1871,7 +1961,9 @@ export default function App() {
                     <Code className="w-4 h-4 text-teal-400" />
                   </h3>
 
+                  <label htmlFor="experiment-definition" className="sr-only">Experiment definition JSON</label>
                   <textarea
+                    id="experiment-definition"
                     value={experimentJson}
                     onChange={(e) => setExperimentJson(e.target.value)}
                     rows={18}
@@ -1970,10 +2062,11 @@ export default function App() {
                   </h3>
 
                   <div>
-                    <label className="text-xs text-slate-400 flex justify-between mb-1">
+                    <label htmlFor="hypothesis-threshold" className="text-xs text-slate-400 flex justify-between mb-1">
                       <span>Pearson Confidence Cutoff: {confidenceThreshold}</span>
                     </label>
                     <input
+                      id="hypothesis-threshold"
                       type="range" min="0.1" max="0.9" step="0.05" value={confidenceThreshold}
                       onChange={(e) => setConfidenceThreshold(parseFloat(e.target.value))}
                       className="w-full accent-teal-500"
@@ -2279,8 +2372,9 @@ export default function App() {
                       would let "all green" mean "we never looked". */}
                   <div className="flex items-end gap-3 flex-wrap border-b border-slate-800 pb-3">
                     <div>
-                      <label className="text-[10px] uppercase tracking-wider text-slate-500 block mb-1">Root seed</label>
+                      <label htmlFor="benchmark-root-seed" className="text-[10px] uppercase tracking-wider text-slate-500 block mb-1">Root seed</label>
                       <input
+                        id="benchmark-root-seed"
                         type="number" value={benchmarkSeed}
                         onChange={(e) => setBenchmarkSeed(parseInt(e.target.value, 10) || 0)}
                         className="bg-slate-950 border border-slate-800 rounded px-2 py-1.5 text-xs text-slate-200 font-mono w-36"
@@ -2395,259 +2489,53 @@ export default function App() {
             </div>
           )}
 
-          {/* TAB 9: REAL ERA5 OVER ZARR ------------------------------------------------- */}
-          {activeTab === 'era5' && (
-            <div className="space-y-6 animate-fadeIn">
-              <div className="flex flex-col gap-1">
-                <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                  <Cloud className="text-teal-400 w-5 h-5" /> Real ERA5 via Cloud Zarr
-                </h2>
-                <p className="text-sm text-slate-400">
-                  Regional crops streamed from public WeatherBench 2 Zarr on GCS. Inspect first: it reads
-                  metadata only and tells you what the transfer will actually cost before you commit to it.
-                </p>
-              </div>
+          {/* TAB 9: DOMAIN-FIRST ACQUISITION (TG10.2) ---------------------------------- */}
+          {activeTab === 'acquire' && (
+            <AcquisitionView onError={(message) => setError(message)}
+              selectedRecord={selectedRecord} onSelectRecord={setSelectedRecord} />
+          )}
 
-              {zarrCatalogue && !zarrCatalogue.network_enabled && (
-                <div className="bg-slate-900/50 border border-slate-800 rounded-lg p-4 flex gap-3 text-xs text-slate-400">
-                  <Server className="w-4 h-4 text-slate-500 flex-shrink-0 mt-0.5" />
-                  <span>
-                    Network access is <strong className="text-slate-200">off</strong>. Set{' '}
-                    <code className="text-teal-400">{zarrCatalogue.network_env_var}=1</code> before starting the
-                    backend to reach the archive. Reaching the internet is never a side effect of running a
-                    sweep, and a mistyped bounding box against a 0.25&deg; store moves tens of gigabytes.
-                    Crops already in the cache work with no network at all.
-                  </span>
-                </div>
-              )}
+          {/* TG11.1: the selected full channel record reaches domain_analysis without a write. */}
+          {activeTab === 'domainWorkbench' && (
+            <DomainAnalysisView selectedRecord={selectedRecord}
+              onError={(message) => setError(message)} onAcquire={() => setActiveTab('acquire')} />
+          )}
 
-              <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-                <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-5 space-y-4">
-                  <h3 className="text-sm font-semibold text-slate-200 border-b border-slate-800 pb-2">
-                    Crop Specification
-                  </h3>
+          {/* TG11.2: the generate/confirm split. The panel makes the ordering legible; the
+              server is what enforces it — a confirmation against an unsealed or already-spent
+              partition is refused whatever this file renders (R18). */}
+          {activeTab === 'preregistration' && (
+            <PreregistrationView selectedRecord={selectedRecord}
+              onError={(message) => setError(message)} onAcquire={() => setActiveTab('acquire')} />
+          )}
 
-                  <div>
-                    <label className="text-xs text-slate-400 block mb-1">Store</label>
-                    <select
-                      value={zarrCrop.store}
-                      onChange={(e) => setZarrCrop({ ...zarrCrop, store: e.target.value })}
-                      className="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1.5 text-xs text-slate-200"
-                    >
-                      {Object.keys(zarrCatalogue?.stores || { era5_0p25_6h: null }).map(id => (
-                        <option key={id} value={id}>{id}</option>
-                      ))}
-                    </select>
-                    {zarrCatalogue?.stores?.[zarrCrop.store] && (
-                      <p className="text-[10px] text-slate-500 mt-1.5 leading-relaxed">
-                        {zarrCatalogue.stores[zarrCrop.store].note}
-                      </p>
-                    )}
-                  </div>
+          {/* TG11.3: the evidence write path. The only writing panel in the application, and
+              the only one whose response carries a rung — recomputed by the ladder from the
+              chain the server just wrote, never sent by this file (R22). */}
+          {activeTab === 'evidence' && (
+            <EvidenceView selectedRecord={selectedRecord} studyId={selectedStudyId}
+              onStudyId={setSelectedStudyId} onError={(message) => setError(message)} />
+          )}
 
-                  <div>
-                    <label className="text-xs text-slate-400 block mb-1">Variables (comma separated)</label>
-                    <input
-                      type="text"
-                      value={zarrCrop.variables.join(',')}
-                      onChange={(e) => setZarrCrop({ ...zarrCrop, variables: e.target.value.split(',').map(v => v.trim()).filter(Boolean) })}
-                      className="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1.5 text-xs text-slate-200 font-mono"
-                    />
-                  </div>
+          {/* TG11.4: structure mining. Sits in Analyse rather than Evidence because what it
+              produces is a confirmation receipt, and recording one is the write path's job.
+              No control here can supply a feature or a tolerance: both are measured by the
+              server from an admitted field, so a shape cannot be drawn into a result. */}
+          {activeTab === 'mining' && (
+            <StructureMiningView studyId={selectedStudyId}
+              onError={(message) => setError(message)} />
+          )}
 
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="text-xs text-slate-400 block mb-1">Start</label>
-                      <input type="date" value={zarrCrop.time_start}
-                        onChange={(e) => setZarrCrop({ ...zarrCrop, time_start: e.target.value })}
-                        className="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1.5 text-xs text-slate-200" />
-                    </div>
-                    <div>
-                      <label className="text-xs text-slate-400 block mb-1">End</label>
-                      <input type="date" value={zarrCrop.time_end}
-                        onChange={(e) => setZarrCrop({ ...zarrCrop, time_end: e.target.value })}
-                        className="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1.5 text-xs text-slate-200" />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2">
-                    {([['lat_min', 'Lat min'], ['lat_max', 'Lat max'], ['lon_min', 'Lon min'], ['lon_max', 'Lon max']] as const).map(([key, label]) => (
-                      <div key={key}>
-                        <label className="text-xs text-slate-400 block mb-1">{label}</label>
-                        <input type="number" value={zarrCrop[key]}
-                          onChange={(e) => setZarrCrop({ ...zarrCrop, [key]: parseFloat(e.target.value) })}
-                          className="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1.5 text-xs text-slate-200 font-mono" />
-                      </div>
-                    ))}
-                  </div>
-
-                  <div>
-                    <label className="text-xs text-slate-400 block mb-1">Pressure levels (hPa)</label>
-                    <input type="text" value={zarrCrop.levels.join(',')}
-                      onChange={(e) => setZarrCrop({ ...zarrCrop, levels: e.target.value.split(',').map(v => parseInt(v.trim(), 10)).filter(v => !isNaN(v)) })}
-                      className="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1.5 text-xs text-slate-200 font-mono" />
-                  </div>
-
-                  <div>
-                    <label className="text-xs text-slate-400 flex justify-between mb-1">
-                      <span>Wavelet levels to support (R13)</span>
-                      <span className="text-teal-400 font-mono">
-                        min {zarrCatalogue?.r13_minimum_crop?.[String(zarrCrop.n_levels_analysis)] ?? '?'} px
-                      </span>
-                    </label>
-                    <input type="range" min="1" max="6" step="1" value={zarrCrop.n_levels_analysis}
-                      onChange={(e) => setZarrCrop({ ...zarrCrop, n_levels_analysis: parseInt(e.target.value, 10) })}
-                      className="w-full accent-teal-500" />
-                    <p className="text-[10px] text-slate-500 mt-1 leading-relaxed">
-                      Coefficients within one filter support of an edge are contaminated, and they look
-                      exactly like strong oriented features. The crop must be large enough to leave a valid
-                      interior at the coarsest scale - constrain frames, never the grid.
-                    </p>
-                  </div>
-
-                  <button
-                    onClick={handleZarrInspect}
-                    disabled={loading}
-                    className="w-full bg-teal-600 hover:bg-teal-500 disabled:bg-slate-800 disabled:text-slate-500 text-white font-semibold py-2 px-4 rounded-lg flex items-center justify-center gap-2"
-                  >
-                    {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
-                    Inspect (metadata only)
-                  </button>
-                </div>
-
-                <div className="xl:col-span-2 space-y-6">
-                  {zarrInspection ? (
-                    <>
-                      <div className={`rounded-xl p-5 border ${
-                        zarrInspection.assessment.chunk_hostile
-                          ? 'bg-amber-500/5 border-amber-500/25'
-                          : 'bg-emerald-500/5 border-emerald-500/25'
-                      }`}>
-                        <div className="flex items-start gap-3">
-                          {zarrInspection.assessment.chunk_hostile
-                            ? <AlertTriangle className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
-                            : <CheckCircle className="w-5 h-5 text-emerald-400 flex-shrink-0 mt-0.5" />}
-                          <div className="space-y-2 min-w-0">
-                            <div className="flex items-baseline gap-3 flex-wrap">
-                              <span className={`text-2xl font-bold font-mono ${zarrInspection.assessment.chunk_hostile ? 'text-amber-400' : 'text-emerald-400'}`}>
-                                {zarrInspection.assessment.amplification.toFixed(1)}&times;
-                              </span>
-                              <span className="text-xs text-slate-400">
-                                amplification &mdash; {(zarrInspection.assessment.bytes_fetched_estimate / 1e9).toFixed(2)} GB fetched
-                                to deliver {(zarrInspection.assessment.bytes_wanted / 1e9).toFixed(2)} GB
-                              </span>
-                            </div>
-                            {zarrInspection.assessment.warning && (
-                              <p className="text-[11px] text-amber-300/90 leading-relaxed">{zarrInspection.assessment.warning}</p>
-                            )}
-                            {zarrInspection.assessment.advice.map((a, i) => (
-                              <p key={i} className="text-[11px] text-slate-400 leading-relaxed">&bull; {a}</p>
-                            ))}
-                            <p className="text-[10px] text-slate-600">{zarrInspection.assessment.byte_basis}</p>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-5 space-y-2">
-                          <h3 className="text-sm font-semibold text-slate-200 border-b border-slate-800 pb-2">Remote chunk structure</h3>
-                          {Object.entries(zarrInspection.structure.variables).map(([name, v]) => (
-                            <div key={name} className="text-[11px] font-mono space-y-0.5">
-                              <div className="text-slate-200">{name}</div>
-                              <div className="text-slate-500">shape [{v.shape.join(', ')}]</div>
-                              <div className="text-slate-400">chunks [{(v.chunks || []).join(', ')}] = {v.chunk_megabytes} MB</div>
-                            </div>
-                          ))}
-                          <div className="text-[11px] font-mono text-slate-500 pt-2 border-t border-slate-800">
-                            selection: {Object.entries(zarrInspection.assessment.selection).map(([k, v]) => `${k}=${v}`).join('  ')}
-                          </div>
-                        </div>
-
-                        <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-5 space-y-2">
-                          <h3 className="text-sm font-semibold text-slate-200 border-b border-slate-800 pb-2">R13 crop geometry</h3>
-                          {zarrInspection.geometry?.ok === false ? (
-                            <div className="text-[11px] text-rose-400 leading-relaxed">
-                              {zarrInspection.geometry.error}
-                            </div>
-                          ) : (
-                            <div className="text-[11px] font-mono space-y-1">
-                              {Object.entries(zarrInspection.geometry?.valid_interior_by_level || {}).map(([lvl, px]) => (
-                                <div key={lvl} className="flex justify-between">
-                                  <span className="text-slate-500">level {lvl}</span>
-                                  <span className={Number(px) > 0 ? 'text-slate-300' : 'text-rose-400'}>{String(px)} px valid</span>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="bg-slate-950 border border-slate-800 rounded-xl p-4">
-                        <p className="text-[11px] text-slate-500 mb-2">
-                          Materialisation is a minutes-to-hours job, so it runs from the command line rather
-                          than holding an HTTP connection open:
-                        </p>
-                        <code className="text-[10px] text-teal-400 font-mono break-all block leading-relaxed">
-                          {zarrInspection.cli}
-                        </code>
-                      </div>
-                    </>
-                  ) : (
-                    <div className="bg-slate-900 border border-slate-800 rounded-xl p-12 text-center text-slate-500 flex flex-col items-center justify-center min-h-[300px]">
-                      <Search className="w-12 h-12 text-slate-750 mb-3" />
-                      <p className="text-sm font-semibold text-slate-400">No crop inspected yet</p>
-                      <p className="text-xs text-slate-500 mt-1 max-w-sm">
-                        Inspect reads only the store&apos;s metadata. It is the call to make before committing
-                        to a download: the 0.25&deg; stores hand over 54 MB per chunk whatever you ask for.
-                      </p>
-                    </div>
-                  )}
-
-                  {zarrCached && zarrCached.count > 0 && (
-                    <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-5 space-y-2">
-                      <h3 className="text-sm font-semibold text-slate-200 border-b border-slate-800 pb-2 flex items-center gap-2">
-                        <HardDrive className="w-4 h-4 text-slate-400" /> Materialised crops ({zarrCached.count})
-                      </h3>
-                      {zarrCached.crops.map(c => (
-                        <div key={c.content_key} className="text-[11px] font-mono border border-slate-800 rounded p-2 bg-slate-950">
-                          <div className="flex items-center justify-between gap-2">
-                            <span className="text-slate-200">{c.content_key}</span>
-                            <span className={c.regional_forecast_readiness.structurally_eligible
-                              ? 'text-emerald-400' : 'text-amber-400'}>
-                              {c.regional_forecast_readiness.structurally_eligible
-                                ? 'T5.2 structure eligible' : 'T5.2 inputs incomplete'}
-                            </span>
-                          </div>
-                          <div className="text-slate-500">
-                            {Object.entries(c.shape || {}).map(([k, v]) => `${k}=${v}`).join(' ')} &bull;{' '}
-                            {c.megabytes_transferred} MB transferred in {c.elapsed_s}s
-                          </div>
-                          <div className="text-slate-400 mt-1">
-                            850 hPa {c.regional_forecast_readiness.level_available ? 'present' : 'missing'} &bull;{' '}
-                            t/q/u/v/z {c.regional_forecast_readiness.missing_variables.length === 0
-                              ? 'present' : `missing ${c.regional_forecast_readiness.missing_variables.join('/')}`}
-                          </div>
-                          <div className="text-amber-300/80 mt-1 font-sans leading-relaxed">
-                            Prepared dataset: NO &bull; train-only normalisation verified: NO &bull; independent ERA5 cross-check: NOT RUN
-                          </div>
-                          <div className="text-amber-300/80 mt-1 font-sans leading-relaxed">
-                            Split contract: {c.regional_forecast_readiness.split_mode === 'calendar_boundaries'
-                              ? `calendar (${c.regional_forecast_readiness.calendar_boundaries?.join(' → ')})`
-                              : 'ratios (dates not frozen)'} &bull;{' '}
-                            cadence: {c.regional_forecast_readiness.cadence_verified
-                              ? `${c.regional_forecast_readiness.expected_cadence_hours} h verified`
-                              : 'NOT VERIFIED'} &bull; physical lead labels: NOT AVAILABLE
-                          </div>
-                          <div className="text-slate-600 mt-1 font-sans leading-relaxed">
-                            {c.regional_forecast_readiness.claim_boundary}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
+          {/* TG11.4b: the cross-domain record. Beside structure mining because it shares the
+              same seal store and the same held-out ledger, and in Analyse for the same reason:
+              what it produces is a confirmation receipt, and recording one is the write path's
+              job. It is the only panel whose lag family is entered in seconds - two native
+              clocks have two frame sizes, and a lag in frames of either is unreadable by the
+              other domain. Nothing here can resample: the two records are aligned on the
+              timestamps they actually share, or the request is refused. */}
+          {activeTab === 'crossDomainRecord' && (
+            <CrossDomainRecordView studyId={selectedStudyId}
+              onError={(message) => setError(message)} />
           )}
 
           {/* TAB 10: VERIFIED FORECAST EVALUATION ------------------------------------ */}
@@ -2655,6 +2543,23 @@ export default function App() {
             <EvaluationEvidence reports={evaluationReports} importing={receiptImporting}
               onImport={handleImportEvaluationReceipt} />
           )}
+
+          {/* TAB 11: FINDINGS (TG9.2) -------------------------------------------------
+              The cross-domain claim surface. Everything scientific on this tab is a string
+              the backend produced; this file passes an error handler and nothing else. */}
+          {activeTab === 'findings' && (
+            <FindingsView onError={(message) => setError(message)}
+              selectedStudyId={selectedStudyId} onSelectStudy={setSelectedStudyId} />
+          )}
+
+          {/* TG11.5: recorded-not-reproducible argument. This is a separate workspace from
+              Findings so commentary cannot become claim text by layout. It reads immutable
+              records only and offers no action that can run a panel or move a rung. */}
+          {activeTab === 'review' && (
+            <ReviewView selectedStudyId={selectedStudyId} onStudyId={setSelectedStudyId}
+              onError={(message) => setError(message)} />
+          )}
+
         </main>
       </div>
     </div>

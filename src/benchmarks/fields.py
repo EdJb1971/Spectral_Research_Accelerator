@@ -9,7 +9,7 @@ rather than testing the synthesiser against itself.
 from __future__ import annotations
 
 import math
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 import numpy as np
 import torch
@@ -308,6 +308,141 @@ register_benchmark(Benchmark(
 ))
 
 
+# ------------------------------------------------- 5. structureless field, every lens
+
+#: A family-wise level over forty-five planes cannot be resolved by fewer. The audit refuses
+#: rather than quietly reporting at a level it cannot reach, so this number is load-bearing:
+#: 499 surrogates is a refusal, not a coarser answer.
+_AUDIT_SURROGATES = 999
+_AUDIT_SEED = 20260825
+
+#: 128 cells, not 256. Large enough that the dual-tree level-3 subbands still have a valid
+#: interior once their filters have taken six samples off every side, and small enough that
+#: a thousand decompositions of five representations run in a test suite.
+_AUDIT_N = 128
+
+
+def build_representation_null(bundle: SeedBundle, n: int = _AUDIT_N, hurst: float = 0.7,
+                              spacing_m: float = DEFAULT_SPACING_M) -> PhysicalField:
+    """The same scale-free fBm as benchmark 2, sized so every registered lens can be audited.
+
+    fBm rather than white noise on purpose. White noise has no structure *and* no
+    correlation, so a lens has very little to work with; fBm is smooth, correlated and
+    edge-bearing, which is exactly the material a boundary rule or a decimation phase can
+    turn into a localised artefact. It is the harder null, and the one rule R8 is about.
+    """
+    return build_fbm(bundle, n=n, hurst=hurst, spacing_m=spacing_m)
+
+
+def truth_representation_null(n: int = _AUDIT_N, hurst: float = 0.7,
+                              spacing_m: float = DEFAULT_SPACING_M) -> Dict[str, Any]:
+    return {
+        "hurst": hurst,
+        "has_organisation": False,
+        "expected_feature_count": 0,
+        "family_wise_alpha": 0.05,
+        "expected_uncovered_transforms": 0,
+        "minimum_planes_audited": 40,
+        "note": ("Scale-free by construction: no localised structure at any scale, so a "
+                 "feature reported in any plane of any registered representation was made "
+                 "by the representation and not found in the data (rule R8). The audit "
+                 "corrects for its own family, because forty-five planes tested at a "
+                 "nominal 0.05 each report something on roughly five structureless fields "
+                 "out of six."),
+    }
+
+
+@stage_check("4E.representation_audit")
+def _check_no_representation_manufactures_a_feature(field: PhysicalField,
+                                                    truth: Dict[str, Any]) -> CheckResult:
+    """**The false-positive floor for representations** (rule R8, roadmap TG2.4).
+
+    TG2.2 measured this floor on the raw array. This measures it on every plane of every
+    registered lens: the null is propagated *through* each representation, so an artefact
+    present in every realisation raises the cut instead of being reported, and the family of
+    planes is counted and paid for before any of them is read.
+
+    Three ways to pass without having looked, all of them failures here: a registered
+    transform with no plane builder (`uncovered`), a plane whose null nothing could exceed
+    (`vacuous`), and a plane whose valid interior is empty (refused, and struck from the
+    family). The report carries all three counts and the number of cells actually searched.
+    """
+    from src.core.domain import AxisSpec
+    from src.core.extraction import ExtractionField
+    from src.core.representation import audit_all
+
+    values = np.asarray(field.data.numpy(), dtype=np.float64)
+    axes = (AxisSpec("row", "space", units="cells", ordinal=0),
+            AxisSpec("col", "space", units="cells", ordinal=1))
+    frame = ExtractionField(
+        values=values, axes=axes, domain="synthetic", dataset="representation_null",
+        variable="amplitude", units=None, time=0.0, time_units="frames",
+        representation="identity")
+    report = audit_all(frame, alpha=float(truth["family_wise_alpha"]),
+                       n_surrogates=_AUDIT_SURROGATES, seed=_AUDIT_SEED)
+    summary = report.describe()
+    level = report.level
+    measured = {
+        "found": report.found,
+        "findings": summary["findings"],
+        "representations": summary["representations"],
+        "planes_audited": summary["planes_audited"],
+        "planes_refused": summary["planes_refused"],
+        "searchable_cells": report.searched,
+        "uncovered_transforms": summary["uncovered_transforms"],
+        "unauditable": summary["unauditable"],
+        "vacuous": summary["vacuous"],
+        "family_size": level.family_size,
+        "alpha_per_plane": level.alpha_per_plane,
+        "measured_fwer": level.measured_fwer,
+        "uncorrected_fwer": level.notes.get("uncorrected_fwer"),
+        "n_surrogates": _AUDIT_SURROGATES,
+    }
+    problems = []
+    if report.found:
+        problems.append("MANUFACTURED %d FEATURE(S) IN SCALE-FREE fBm: %s"
+                        % (report.found, summary["findings"]))
+    if summary["uncovered_transforms"]:
+        problems.append("registered transforms with no plane builder, so they were never "
+                        "audited: %s" % ", ".join(summary["uncovered_transforms"]))
+    if summary["planes_audited"] < int(truth["minimum_planes_audited"]):
+        problems.append("only %d planes could be audited, below the %d this benchmark "
+                        "expects; a clean result from too few planes is a pass earned by "
+                        "not looking"
+                        % (summary["planes_audited"], int(truth["minimum_planes_audited"])))
+    vacuous_audited = [p.plane.name for a in report.audits for p in a.audited_planes
+                       if p.vacuous]
+    if vacuous_audited:
+        problems.append("planes whose null nothing could exceed were counted as clean: %s"
+                        % ", ".join(vacuous_audited))
+    return CheckResult(
+        "4E.representation_audit",
+        Outcome.FAIL if problems else Outcome.PASS,
+        ("; ".join(problems)) if problems else
+        ("no feature in %d planes of %d representations, %d cells searched; family of %d "
+         "corrected to alpha %.4g per plane (measured FWER %.3f, %.3f uncorrected); %d "
+         "planes refused by name, %d transforms uncovered"
+         % (summary["planes_audited"], len(summary["representations"]), report.searched,
+            level.family_size, level.alpha_per_plane, level.measured_fwer,
+            level.notes.get("uncorrected_fwer", float("nan")),
+            summary["planes_refused"], len(summary["uncovered_transforms"]))),
+        measured)
+
+
+register_benchmark(Benchmark(
+    name="representation_null_field",
+    kind="field",
+    description=("Scale-free fBm audited through every registered representation; the "
+                 "false-positive floor rule R8 asks for."),
+    gates=("4E.representation_audit",),
+    build=build_representation_null,
+    known_answer=truth_representation_null,
+    checks=(_check_no_representation_manufactures_a_feature,),
+    params={"n": _AUDIT_N, "hurst": 0.7},
+    is_null=True,
+))
+
+
 # ------------------------------------------------------------------ 4. planted configuration
 
 def _gaussian_blob(n: int, cy: float, cx: float, sigma: float,
@@ -386,6 +521,14 @@ def truth_planted_configuration(
         # reported separately, which is exactly the toggle T4E needs.
         "invariant_signature": "equilateral triangle, 3 features",
         "scale_ratio_vs_reference": scale_factor,
+        # What the 4E.invariance check needs to rebuild this configuration under transforms
+        # and to measure its own noise floor. The minima are stated here, in the known
+        # answer, rather than inside the check: a gate that decides how hard to look at the
+        # moment it looks can always decide to look less hard.
+        "noise_amplitude": noise_amplitude,
+        "minimum_invariance_replicates": 10,
+        "minimum_scale_ratios_recovered": 3,
+        "invariance_transforms": ("rotation", "translation", "rescaling"),
     }
 
 
@@ -413,11 +556,169 @@ def _check_planted_features_present(field: PhysicalField, truth: Dict[str, Any])
         {"found": found, "positions": truth["positions_rowcol"]})
 
 
+_INVARIANCE_REPLICATES = 10
+_INVARIANCE_ROTATIONS = (37.0, 71.0, 211.0, 259.0)
+_INVARIANCE_TRANSLATIONS = ((25.0, -30.0), (-40.0, 15.0), (18.0, 22.0))
+_INVARIANCE_SCALES = (0.5, 0.75, 1.5, 2.0, 3.0)
+_INVARIANCE_SURROGATES = 99
+_INVARIANCE_SEED = 1234
+
+
+def _invariance_features(values, dataset: str = "planted_configuration"):
+    """Extract the configuration from one array, declared the way TG2.2 requires."""
+    from src.core.domain import AxisSpec
+    from src.core.extraction import ExtractionField, extract
+
+    frame = ExtractionField(
+        values=np.asarray(values, dtype=np.float64),
+        axes=(AxisSpec("row", "space", units="cells", ordinal=0),
+              AxisSpec("col", "space", units="cells", ordinal=1)),
+        domain="synthetic", dataset=dataset, variable="amplitude",
+        units=None, time=0.0, time_units="frames", representation="identity")
+    return list(extract(frame, n_surrogates=_INVARIANCE_SURROGATES, seed=_INVARIANCE_SEED))
+
+
 @stage_check("4E.invariance")
 def _check_planted_invariance(field: PhysicalField, truth: Dict[str, Any]) -> CheckResult:
-    raise NotImplementedError(
-        "4E.invariance: constellation matching with relative geometry (T4E) is not "
-        "implemented; the transformed variants and their expected match are recorded")
+    """**The 4E gate** (roadmap TG3.4): is the same configuration recognised as the same?
+
+    The check does not ask whether some matcher happens to match. It asks whether every
+    registered matcher's *declared* invariance is the invariance it has, which makes the
+    position-memorising control fail by the general rule rather than by a special case, and
+    makes a future matcher that overclaims fail the same way without an edit here.
+
+    Three things it refuses to accept as a pass. A noise floor measured from too few
+    replicates, because that floor is a maximum and a maximum over few samples is biased
+    low, in the direction that rejects a matcher which is invariant. A test whose smallest
+    possible p-value sits above its own alpha, which is TG2.4's vacuous rule - it would
+    report invariance because it could not have reported anything else. And a scale ratio
+    nobody recovered: a matcher blind to scale and a matcher that measures scale and states
+    it both match a rescaled triangle, and only one of them has said how much bigger it was.
+    """
+    from src.benchmarks.seeding import derive
+    from src.core.invariance import (
+        MATCHERS, TRANSFORMS, Presentation, audit_declared_invariance,
+    )
+
+    n = int(field.data.shape[0])
+    base = dict(n=n, triangle_side=float(truth["pairwise_distance_cells"]),
+                feature_sigma=float(truth["feature_sigma_cells"]),
+                noise_amplitude=float(truth["noise_amplitude"]))
+
+    def built(label, **overrides):
+        params = dict(base)
+        params.update(overrides)
+        bundle = derive("planted_configuration/%s" % label)
+        return _invariance_features(
+            build_planted_configuration(bundle, **params).data.numpy())
+
+    reference = _invariance_features(field.data.numpy())
+    replicates = [built("replicate/%d" % i) for i in range(_INVARIANCE_REPLICATES)]
+
+    presentations = []
+    for angle in _INVARIANCE_ROTATIONS:
+        name = "rotation/%g" % angle
+        presentations.append(
+            Presentation(name, ("rotation",), built(name, rotation_deg=angle)))
+    for shift in _INVARIANCE_TRANSLATIONS:
+        name = "translation/%g,%g" % shift
+        presentations.append(
+            Presentation(name, ("translation",), built(name, translation=shift)))
+    for factor in _INVARIANCE_SCALES:
+        name = "rescaling/%g" % factor
+        presentations.append(
+            Presentation(name, ("rescaling",), built(name, scale_factor=factor),
+                         expected_scale_ratio=factor))
+    combined = "combined/17deg+shift+1.5x"
+    presentations.append(Presentation(
+        combined, TRANSFORMS,
+        built(combined, rotation_deg=17.0, translation=(-20.0, 40.0), scale_factor=1.5),
+        expected_scale_ratio=1.5))
+
+    reports = audit_declared_invariance(reference, presentations, replicates)
+
+    problems = []
+    minimum = int(truth["minimum_invariance_replicates"])
+    if len(replicates) < minimum:
+        problems.append(
+            "the noise floor was measured from %d replicates, below the %d this benchmark "
+            "requires; that floor is a maximum, and a maximum over too few samples is "
+            "biased low in the direction that rejects a matcher which is invariant"
+            % (len(replicates), minimum))
+    for name, report in sorted(reports.items()):
+        if report.vacuous:
+            problems.append(
+                "matcher %r was passed on %s by a test that could not have failed"
+                % (name, ", ".join(report.vacuous)))
+        if report.overclaimed:
+            problems.append("matcher %r declares invariance to %s and does not have it"
+                            % (name, ", ".join(report.overclaimed)))
+        if report.understated:
+            problems.append("matcher %r survived %s without declaring it"
+                            % (name, ", ".join(report.understated)))
+
+    fully = sorted(name for name, report in reports.items()
+                   if tuple(report.measured) == TRANSFORMS)
+    if not fully:
+        problems.append("no registered matcher survived all of %s, which is the gate itself"
+                        % ", ".join(TRANSFORMS))
+    controls = sorted(name for name in reports
+                      if not MATCHERS.entry(name).capabilities.get("invariant_to", ()))
+    if not controls:
+        problems.append(
+            "no matcher declaring no invariance was audited, so nothing showed that this "
+            "configuration can be got wrong; a suite in which everything passes is a suite "
+            "that has not been shown able to fail")
+    for name in controls:
+        if reports[name].measured:
+            problems.append(
+                "the position-memorising control %r survived %s, so the presentations do "
+                "not move the configuration far enough to tell a matcher from a memory"
+                % (name, ", ".join(reports[name].measured)))
+
+    needed = int(truth["minimum_scale_ratios_recovered"])
+    recovered = 0
+    for name in fully:
+        recovery = reports[name].scale_recovery
+        if recovery is None:
+            problems.append(
+                "matcher %r was never asked how much bigger anything was; a matcher blind "
+                "to scale and one that measures scale and states it both match a rescaled "
+                "triangle, and only one of them produces the number" % name)
+            continue
+        recovered = max(recovered, len(recovery.errors))
+        if recovery.vacuous:
+            problems.append(
+                "matcher %r had its scale recovery passed by a test that could not have "
+                "failed" % name)
+        elif not recovery.accurate:
+            worst = max(range(len(recovery.errors)), key=lambda i: recovery.errors[i])
+            problems.append(
+                "matcher %r recovered scale ratios worse than its own noise floor "
+                "(p=%.4g at alpha %.4g); worst was %s, built %g times bigger and recovered "
+                "as %.4f"
+                % (name, recovery.p_value, recovery.alpha, recovery.presentations[worst],
+                   recovery.expected[worst], recovery.recovered[worst]))
+        if len(recovery.errors) < needed:
+            problems.append(
+                "only %d rescaled presentation(s) were put to matcher %r, below the %d "
+                "this benchmark requires" % (len(recovery.errors), name, needed))
+
+    summary = "; ".join(
+        "%s declared %s, survived %s"
+        % (name, ",".join(report.declared) or "nothing",
+           ",".join(report.measured) or "nothing")
+        for name, report in sorted(reports.items()))
+    return CheckResult(
+        "4E.invariance",
+        Outcome.FAIL if problems else Outcome.PASS,
+        ("; ".join(problems)) if problems else
+        ("%d matchers audited over %d presentations against %d replicates: %s; %d scale "
+         "ratio(s) recovered"
+         % (len(reports), len(presentations), len(replicates), summary, recovered)),
+        {"reports": {name: report.describe() for name, report in sorted(reports.items())},
+         "n_presentations": len(presentations), "n_replicates": len(replicates),
+         "scale_ratios_recovered": recovered})
 
 
 register_benchmark(Benchmark(
@@ -429,4 +730,406 @@ register_benchmark(Benchmark(
     known_answer=truth_planted_configuration,
     checks=(_check_planted_features_present, _check_planted_invariance),
     params={"n": 256, "triangle_side": 40.0},
+))
+
+
+# --------------------------------------------------------------------- 5. recurring motif
+
+#: The planted shape, as ratios of the three arm lengths. Deliberately scalene: an
+#: equilateral triangle is the shape a matcher is most likely to find by accident, because
+#: it is the centre of the space of triangles, and planting one would measure how common
+#: the centre is rather than whether mining works.
+_MOTIF_ARM_RATIOS = (0.62, 1.0, 1.45)
+_MOTIF_SIDE_CELLS = 60.0
+_MOTIF_SIGMA_CELLS = 6.0
+#: How close two features in a scene are allowed to be. Blobs closer than this overlap and
+#: the extractor returns one feature where two were placed, which would change the feature
+#: count between scenes and make the declared family a price for a search nobody ran.
+_MOTIF_MIN_SEPARATION_CELLS = 30.0
+_MOTIF_DISTRACTORS = 3
+_MOTIF_FEATURES_PER_SCENE = 3 + _MOTIF_DISTRACTORS
+_MOTIF_SCENES_PER_PARTITION = 6
+_MOTIF_CONFIGURATION_SIZE = 3
+#: The confirmatory ensemble. TG3.1's ceiling at 199 surrogates under BY at alpha 0.05 is
+#: four members, which is what caps the frozen family - and the p-value floor 1/200 leaves
+#: a family of four rejectable, which is what makes the confirmation a test rather than a
+#: formality.
+_MOTIF_SURROGATES = 199
+_MOTIF_TOLERANCE_REPLICATES = 6
+_MOTIF_EXTRACT_SURROGATES = 99
+_MOTIF_EXTRACT_SEED = 1234
+_MOTIF_NULL_SEED = 4242
+
+
+def _motif_positions(centre: Tuple[float, float], rotation_deg: float) \
+        -> List[Tuple[float, float]]:
+    """The planted configuration's three feature centres, rotated about `centre`."""
+    radius = _MOTIF_SIDE_CELLS / math.sqrt(3.0)
+    out = []
+    for index in range(3):
+        angle = math.radians(rotation_deg + 120.0 * index - 90.0)
+        arm = radius * _MOTIF_ARM_RATIOS[index]
+        out.append((centre[0] + arm * math.sin(angle), centre[1] + arm * math.cos(angle)))
+    return out
+
+
+def _motif_scene_positions(seed: int, *, plant: bool, n: int = 256) \
+        -> List[Tuple[float, float]]:
+    """One scene's feature centres: the motif somewhere, plus distractors.
+
+    The distractors are drawn under the same minimum separation the surrogate null uses,
+    so the arrangement the null draws from is the arrangement the data was drawn from. A
+    scene whose distractors could sit closer together than a surrogate's would make the
+    observed configurations a set the null cannot produce, and the p-value would then be
+    measuring the placement rule rather than the motif.
+    """
+    rng = np.random.default_rng(seed)
+    margin = 0.16 * n
+    positions: List[Tuple[float, float]] = []
+    if plant:
+        positions += _motif_positions(
+            (float(rng.uniform(0.35 * n, 0.65 * n)), float(rng.uniform(0.35 * n, 0.65 * n))),
+            float(rng.uniform(0.0, 360.0)))
+    for _ in range(2000):
+        if len(positions) >= _MOTIF_FEATURES_PER_SCENE:
+            break
+        candidate = (float(rng.uniform(margin, n - margin)),
+                     float(rng.uniform(margin, n - margin)))
+        if all(math.hypot(candidate[0] - p[0], candidate[1] - p[1])
+               >= _MOTIF_MIN_SEPARATION_CELLS for p in positions):
+            positions.append(candidate)
+    if len(positions) != _MOTIF_FEATURES_PER_SCENE:
+        raise RuntimeError(
+            "could not place %d features at least %.1f cells apart on a %d-cell grid"
+            % (_MOTIF_FEATURES_PER_SCENE, _MOTIF_MIN_SEPARATION_CELLS, n))
+    return positions
+
+
+def _motif_field(positions: Sequence[Tuple[float, float]], bundle: SeedBundle,
+                 n: int, noise_amplitude: float, spacing_m: float) -> PhysicalField:
+    data = torch.zeros(n, n, dtype=torch.float64)
+    for (ry, rx) in positions:
+        data = data + _gaussian_blob(n, ry, rx, _MOTIF_SIGMA_CELLS)
+    if noise_amplitude > 0:
+        data = data + noise_amplitude * torch.randn(
+            n, n, generator=bundle.torch_generator(), dtype=torch.float64)
+    return PhysicalField(data, grid=_grid(n, spacing_m), units="dimensionless")
+
+
+def build_planted_motif(bundle: SeedBundle, n: int = 256, scene_seed: int = 100,
+                        plant: bool = True, noise_amplitude: float = 0.05,
+                        spacing_m: float = DEFAULT_SPACING_M) -> PhysicalField:
+    """One scene: a scalene three-feature motif, plus distractors that are not it.
+
+    The benchmark's own field is the *first training scene*, not a decoration beside the
+    check: `_check_motif` mines it together with eleven more it builds, so the field the
+    suite reports on is one of the frames the result was computed from.
+    """
+    return _motif_field(_motif_scene_positions(scene_seed, plant=plant, n=n),
+                        bundle, n, noise_amplitude, spacing_m)
+
+
+def build_motif_null(bundle: SeedBundle, n: int = 256, scene_seed: int = 500,
+                     noise_amplitude: float = 0.05,
+                     spacing_m: float = DEFAULT_SPACING_M) -> PhysicalField:
+    """The same scenes with nothing planted: the same number of features, placed at random.
+
+    Not a field of noise. The features are real, the extractor finds all of them, and the
+    mining pass examines exactly the family it examines on the planted benchmark. The only
+    thing missing is the repetition, which is the only thing the gate is allowed to find.
+    """
+    return build_planted_motif(bundle, n=n, scene_seed=scene_seed, plant=False,
+                               noise_amplitude=noise_amplitude, spacing_m=spacing_m)
+
+
+def _truth_motif(*, planted: bool, scene_seed: int, expected_confirmed: int,
+                 n: int = 256, noise_amplitude: float = 0.05,
+                 spacing_m: float = DEFAULT_SPACING_M) -> Dict[str, Any]:
+    return {
+        "planted": planted,
+        "scene_seed": scene_seed,
+        "feature_count": _MOTIF_FEATURES_PER_SCENE,
+        "motif_arm_ratios": _MOTIF_ARM_RATIOS,
+        "motif_side_cells": _MOTIF_SIDE_CELLS,
+        "feature_sigma_cells": _MOTIF_SIGMA_CELLS,
+        "minimum_separation_cells": _MOTIF_MIN_SEPARATION_CELLS,
+        "noise_amplitude": noise_amplitude,
+        # What the gate needs, stated in the known answer rather than in the check: a gate
+        # that decides how hard to look at the moment it looks can always look less hard.
+        "scenes_per_partition": _MOTIF_SCENES_PER_PARTITION,
+        "configuration_size": _MOTIF_CONFIGURATION_SIZE,
+        "n_surrogates": _MOTIF_SURROGATES,
+        "minimum_tolerance_replicates": _MOTIF_TOLERANCE_REPLICATES,
+        "expected_confirmed_motifs": expected_confirmed,
+        "expected_held_out_support": _MOTIF_SCENES_PER_PARTITION if planted else 0,
+        "generate_family_affordable_in_one_stage": False,
+    }
+
+
+def truth_planted_motif(n: int = 256, scene_seed: int = 100, plant: bool = True,
+                        noise_amplitude: float = 0.05,
+                        spacing_m: float = DEFAULT_SPACING_M) -> Dict[str, Any]:
+    return _truth_motif(planted=plant, scene_seed=scene_seed,
+                        expected_confirmed=1 if plant else 0, n=n,
+                        noise_amplitude=noise_amplitude, spacing_m=spacing_m)
+
+
+def truth_motif_null(n: int = 256, scene_seed: int = 500, noise_amplitude: float = 0.05,
+                     spacing_m: float = DEFAULT_SPACING_M) -> Dict[str, Any]:
+    return _truth_motif(planted=False, scene_seed=scene_seed, expected_confirmed=0, n=n,
+                        noise_amplitude=noise_amplitude, spacing_m=spacing_m)
+
+
+def _motif_scene_from(values, name: str, expected: int):
+    """Extract one scene, refusing a frame that does not hold the features it was built with.
+
+    The count is checked rather than trimmed. Taking "the brightest six" would look like a
+    repair and would silently change which configuration a replicate is: magnitude ordering
+    moves between noise realisations, and a tolerance calibrated across replicates that
+    disagree about *which* features they contain measures that disagreement. Measured here,
+    that mistake put the tolerance at 0.41 instead of 0.0083 - fifty times too wide, and
+    wide enough that every triangle matched every other.
+    """
+    from src.core.motif import Scene
+
+    features = _invariance_features(values, dataset="planted_motif")
+    if len(features) != expected:
+        raise RuntimeError(
+            "scene %r yielded %d features where the generator planted %d"
+            % (name, len(features), expected))
+    return Scene(name, tuple(features))
+
+
+def _mine_and_confirm(field: PhysicalField, truth: Dict[str, Any]) -> Dict[str, Any]:
+    """The whole TG3.5 pass: calibrate, mine on train, freeze, open held-out once.
+
+    The order is the point. The tolerance is measured from replicates of one configuration
+    before anything is mined; the family is priced before it is enumerated; the
+    confirmatory set is frozen against the held-out partition's identity before that
+    partition is extracted; and the p-values are computed only inside `confirm_motifs`,
+    which spends the partition through the ledger.
+    """
+    from src.benchmarks.seeding import derive
+    from src.core.invariance import calibrate_match_tolerance
+    from src.core.motif import (
+        choose_candidates, confirm_motifs, freeze_motifs, mine,
+    )
+    from src.core.preregistration import HeldOutLedger, PartitionIdentity
+
+    n = int(field.data.shape[0])
+    plant = bool(truth["planted"])
+    noise = float(truth["noise_amplitude"])
+    scenes = int(truth["scenes_per_partition"])
+    size = int(truth["configuration_size"])
+    tag = "planted_motif" if plant else "motif_null"
+
+    def frame(label: str, positions):
+        return _motif_field(positions, derive("%s/%s" % (tag, label)), n, noise,
+                            DEFAULT_SPACING_M).data.numpy()
+
+    # The noise floor, from replicates of one three-feature configuration. Three features
+    # and not six: a replicate must be the same configuration under different noise, and a
+    # six-feature frame narrowed to three by brightness is a different configuration each
+    # time the brightest three change.
+    replicate_positions = _motif_positions((n / 2.0, n / 2.0), 0.0)
+    replicates = [
+        _motif_scene_from(frame("tolerance/%d" % index, replicate_positions),
+                          "tolerance%d" % index, 3).features
+        for index in range(int(truth["minimum_tolerance_replicates"]))]
+    tolerance = calibrate_match_tolerance(replicates, matcher="relative_geometry")
+
+    # Scene 0 of the training partition is the benchmark's own field.
+    seed0 = int(truth["scene_seed"])
+    train = [_motif_scene_from(field.data.numpy(), "train0",
+                               _MOTIF_FEATURES_PER_SCENE)]
+    for index in range(1, scenes):
+        train.append(_motif_scene_from(
+            frame("train/%d" % index,
+                  _motif_scene_positions(seed0 + index, plant=plant, n=n)),
+            "train%d" % index, _MOTIF_FEATURES_PER_SCENE))
+
+    result = mine(train, size=size, tolerance=tolerance.value,
+                  n_surrogates=int(truth["n_surrogates"]), study_id=tag)
+    chosen = choose_candidates(result)
+
+    held_id = PartitionIdentity(
+        "%s-held-out" % tag, scenes, 1, ("amplitude",), (scenes, 2 * scenes),
+        {"split": "test", "scene_seeds": [seed0 + 100 + i for i in range(scenes)]})
+    ledger = HeldOutLedger()
+    seal, frozen = freeze_motifs(
+        result, held_out=held_id, sealed_at="TG3.5/frozen-before-the-held-out-scenes-exist",
+        n_surrogates=int(truth["n_surrogates"]), chosen=chosen, ledger=ledger, study_id=tag)
+
+    held = [_motif_scene_from(
+        frame("held-out/%d" % index,
+              _motif_scene_positions(seed0 + 100 + index, plant=plant, n=n)),
+        "test%d" % index, _MOTIF_FEATURES_PER_SCENE) for index in range(scenes)]
+
+    receipt = confirm_motifs(
+        seal, frozen, scenes=held, held_out=held_id, ledger=ledger,
+        opened_at="TG3.5/opened-once", size=size, tolerance=tolerance.value,
+        seed=_MOTIF_NULL_SEED)
+    return {"tolerance": tolerance, "result": result, "chosen": chosen, "seal": seal,
+            "receipt": receipt, "n_train": len(train), "n_held_out": len(held)}
+
+
+def _motif_problems(truth: Dict[str, Any], run: Dict[str, Any]) -> List[str]:
+    """Everything both motif gates refuse, whatever they expect to find.
+
+    Shared deliberately. The null benchmark and the planted one differ in what they expect
+    to be confirmed and in nothing else: a null that reported nothing because it proposed
+    nothing, or because its family was empty, or because its ensemble could not have
+    rejected anything, is not a null result - it is a pass obtained by not looking.
+    """
+    result, receipt = run["result"], run["receipt"]
+    tolerance = run["tolerance"]
+    problems: List[str] = []
+
+    minimum = int(truth["minimum_tolerance_replicates"])
+    if tolerance.n_replicates < minimum:
+        problems.append(
+            "the match tolerance was calibrated from %d replicates, below the %d this "
+            "benchmark requires; that tolerance is a maximum, and a maximum over too few "
+            "samples is biased low in the direction that finds no motif at all"
+            % (tolerance.n_replicates, minimum))
+    if run["n_train"] != int(truth["scenes_per_partition"]) or \
+            run["n_held_out"] != int(truth["scenes_per_partition"]):
+        problems.append(
+            "the partitions held %d and %d scenes where this benchmark declares %d each"
+            % (run["n_train"], run["n_held_out"], truth["scenes_per_partition"]))
+    if result.n_examined != result.specification.family_size:
+        problems.append(
+            "the pass examined %d configurations against a family priced at %d"
+            % (result.n_examined, result.specification.family_size))
+    if result.affordable_here != bool(truth["generate_family_affordable_in_one_stage"]):
+        problems.append(
+            "the generate family of %d %s affordable in one stage, so this benchmark is "
+            "not exercising the split it exists to exercise"
+            % (result.specification.family_size,
+               "was" if result.affordable_here else "was not"))
+    if not run["chosen"]:
+        problems.append(
+            "no candidate was carried forward, so nothing was put to the held-out "
+            "partition; a confirmation of nothing cannot report a null result")
+    if receipt["vacuous"]:
+        problems.append(
+            "%d frozen motif(s) were tested by an ensemble whose smallest possible p-value "
+            "sits above the corrected alpha, so they could not have been rejected however "
+            "often they recurred: %s"
+            % (len(receipt["vacuous"]), ", ".join(receipt["vacuous"])))
+    if int(receipt["correction_unit"]) != len(run["chosen"]):
+        problems.append(
+            "the correction was computed over %d members and %d were frozen"
+            % (receipt["correction_unit"], len(run["chosen"])))
+    return problems
+
+
+@stage_check("4E.motif_recovery")
+def _check_motif_recovered(field: PhysicalField, truth: Dict[str, Any]) -> CheckResult:
+    """**The TG3.5 gate**: is a configuration that really recurs found, and confirmed?
+
+    Found is not enough. The motif has to survive being frozen before the held-out scenes
+    were extracted, tested against arrangements drawn at random under the separation the
+    data itself demonstrates, and corrected over the family that was frozen. What the gate
+    accepts is a *confirmation*, and the run that produced it having been unable to cheat.
+    """
+    run = _mine_and_confirm(field, truth)
+    receipt = run["receipt"]
+    problems = _motif_problems(truth, run)
+
+    expected = int(truth["expected_confirmed_motifs"])
+    if int(receipt["n_rejected"]) != expected:
+        problems.append(
+            "%d motif(s) survived correction on the held-out partition where this "
+            "benchmark planted %d: %s"
+            % (receipt["n_rejected"], expected, ", ".join(receipt["rejected_labels"])
+               or "none"))
+    wanted = int(truth["expected_held_out_support"])
+    supports = {m["label"]: int(m["support"]) for m in receipt["motifs"]}
+    for label in receipt["rejected_labels"]:
+        if supports.get(label, 0) != wanted:
+            problems.append(
+                "motif %r was confirmed on a support of %d where the configuration was "
+                "planted in all %d held-out scenes; a motif confirmed on fewer scenes than "
+                "it was planted in was confirmed for a reason this benchmark did not plant"
+                % (label, supports.get(label, 0), wanted))
+
+    return CheckResult(
+        "4E.motif_recovery",
+        Outcome.FAIL if problems else Outcome.PASS,
+        ("; ".join(problems)) if problems else
+        ("%d of %d configurations examined at tolerance %.4f; %d frozen from a generate "
+         "family of %d; %d confirmed on held-out at q=%.4f with support %s of %d"
+         % (run["result"].n_examined, run["result"].specification.family_size,
+            run["tolerance"].value, len(run["chosen"]),
+            run["result"].specification.family_size, receipt["n_rejected"],
+            min(receipt["adjusted"]), [supports[l] for l in receipt["rejected_labels"]],
+            truth["scenes_per_partition"])),
+        {"receipt": {key: receipt[key] for key in
+                     ("labels", "p_values", "adjusted", "rejected_labels",
+                      "correction_unit", "n_rejected")},
+         "tolerance": run["tolerance"].describe(),
+         "mining": run["result"].describe()})
+
+
+@stage_check("4E.motif_null")
+def _check_motif_null(field: PhysicalField, truth: Dict[str, Any]) -> CheckResult:
+    """**The load-bearing one.** Nothing was planted, so nothing may be confirmed.
+
+    Per the Definition of Done, a null benchmark returning null is the result that matters,
+    because the failure mode this whole phase is built against is a mining pass that finds
+    a motif in anything. This benchmark gives it every opportunity: the same feature count,
+    the same family, the same tolerance, the same ensemble, and candidates that really were
+    the most repeated shapes in the training scenes.
+    """
+    run = _mine_and_confirm(field, truth)
+    receipt = run["receipt"]
+    problems = _motif_problems(truth, run)
+
+    if int(receipt["n_rejected"]) != 0:
+        problems.append(
+            "%d motif(s) survived correction on scenes with nothing planted in them: %s. "
+            "A mining pass that confirms a motif in a random arrangement would confirm one "
+            "anywhere, and every result the phase can produce would be that"
+            % (receipt["n_rejected"], ", ".join(receipt["rejected_labels"])))
+    top = max((int(m["support"]) for m in receipt["motifs"]), default=0)
+
+    return CheckResult(
+        "4E.motif_null",
+        Outcome.FAIL if problems else Outcome.PASS,
+        ("; ".join(problems)) if problems else
+        ("%d candidate(s) frozen from a generate family of %d and none confirmed; best "
+         "held-out support %d of %d, smallest corrected q %.3f"
+         % (len(run["chosen"]), run["result"].specification.family_size, top,
+            truth["scenes_per_partition"], min(receipt["adjusted"]))),
+        {"receipt": {key: receipt[key] for key in
+                     ("labels", "p_values", "adjusted", "rejected_labels",
+                      "correction_unit", "n_rejected")},
+         "tolerance": run["tolerance"].describe(),
+         "mining": run["result"].describe()})
+
+
+register_benchmark(Benchmark(
+    name="planted_motif",
+    kind="field",
+    description=("Six scenes each holding one scalene three-feature motif among "
+                 "distractors; the TG3.5 mining target."),
+    gates=("4E.motif_recovery",),
+    build=build_planted_motif,
+    known_answer=truth_planted_motif,
+    checks=(_check_motif_recovered,),
+    params={"n": 256, "scene_seed": 100},
+))
+
+register_benchmark(Benchmark(
+    name="motif_null",
+    kind="field",
+    description=("The same scenes with nothing repeated: same feature count, same family, "
+                 "same ensemble, no planted motif."),
+    gates=("4E.motif_null",),
+    build=build_motif_null,
+    known_answer=truth_motif_null,
+    checks=(_check_motif_null,),
+    params={"n": 256, "scene_seed": 500},
+    is_null=True,
 ))

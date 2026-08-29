@@ -58,6 +58,7 @@ import numpy as np
 import torch
 
 from src.core.errors import InvalidParameterError
+from src.core.level_axis import require_pressure, units_of
 from src.analysis_engine.power_law import compare_exponent_to_null, loglog_fit
 
 MEASURES = ("energy_density", "energy_fraction", "participation_ratio", "gini",
@@ -152,9 +153,55 @@ class ScaleSignature:
     available: np.ndarray               # (S,) coefficients used, after the interior mask
     interior: List[Dict[str, Any]]
     source_variable: Optional[str] = None
-    level_hpa: Optional[float] = None
+    # TG1.5: the vertical level this signature was computed at, and the registered
+    # coordinate it is a value of. This was `level_hpa` - a unit baked into an
+    # attribute name on an otherwise generic record. Not to be confused with the
+    # `level` key inside an `interior` record, which is a wavelet decomposition level;
+    # that one is transform vocabulary and correctly stays where it is.
+    level: Optional[float] = None
+    level_axis: Optional[str] = None
     warnings: List[str] = dataclass_field(default_factory=list)
     provenance: Dict[str, Any] = dataclass_field(default_factory=dict)
+
+    # -- the domain-neutral channel-series contract (TG0.1) ----------------------------
+    #
+    # `ScaleSignature` satisfies `src.core.channel_series.ChannelSeriesLike` without being
+    # restructured to do so. These two aliases exist so the inference layer can speak the
+    # general vocabulary - a scale is one kind of channel, a valid interior is one kind of
+    # validity record - while this class keeps the wavelet names that are correct for it.
+    #
+    # The record *keys* inside `interior` are deliberately not renamed here: they are
+    # published in the `valid_interiors` block of every gate receipt, and TG0.1's acceptance
+    # criterion is a bit-identical receipt. That rename is TG1.5.
+
+    @property
+    def level_units(self) -> Optional[str]:
+        """Units of `level`, or `None` when no vertical coordinate was declared."""
+        return units_of(self.level_axis)
+
+    @property
+    def level_hpa(self) -> Optional[float]:
+        """The level, read as hectopascals - and a refusal when it is not one.
+
+        Kept because "the 850-hPa signature" is how the atmospheric line talks, and removing
+        the spelling would make every such reader carry the axis check itself. It refuses a
+        non-pressure axis rather than returning `None`, because a `None` here would read as
+        "this signature has no level" about a signature that has one.
+        """
+        if self.level is None:
+            return None
+        require_pressure(self.level_axis, "ScaleSignature.level_hpa")
+        return self.level
+
+    @property
+    def channels(self):
+        """The channel labels. For a signature these are the scales."""
+        return self.scales
+
+    @property
+    def channel_records(self):
+        """Per-channel validity and lag basis. For a signature these are the interiors."""
+        return self.interior
 
     @property
     def n_times(self) -> int:
@@ -204,7 +251,9 @@ class ScaleSignature:
             "type": "ScaleSignature",
             "wavelet_family": self.wavelet_family,
             "source_variable": self.source_variable,
-            "level_hpa": self.level_hpa,
+            "level": self.level,
+            "level_axis": self.level_axis,
+            "level_units": self.level_units,
             "n_times": self.n_times,
             "scales": [str(s) for s in self.scales],
             "measures": list(MEASURES),
@@ -432,7 +481,8 @@ def scale_signature(
         available=available,
         interior=interior_records,
         source_variable=field.source_variable,
-        level_hpa=field.level,
+        level=field.level,
+        level_axis=field.level_axis,
         warnings=warnings,
         provenance={
             "computed_from": "native coefficients",
@@ -488,6 +538,7 @@ def stream_scale_signature(
 
     first_signature: Optional[ScaleSignature] = None
     first_grid = first_coords = first_variable = first_level = first_units = None
+    first_level_axis = None
     threshold_free: Dict[str, List[np.ndarray]] = {
         name: [] for name in THRESHOLD_FREE
     }
@@ -498,7 +549,7 @@ def stream_scale_signature(
     def pass_digest(pass_index: int, collect: bool,
                     frozen_thresholds: Optional[np.ndarray] = None) -> List[np.ndarray]:
         nonlocal first_signature, first_grid, first_coords, first_variable, first_level
-        nonlocal first_units, peak_source_bytes, peak_coefficient_bytes
+        nonlocal first_units, first_level_axis, peak_source_bytes, peak_coefficient_bytes
         digest = hashlib.sha256()
         digest.update(np.asarray(raw_times).astype("datetime64[ns]").astype("int64").tobytes()
                       if raw_times.dtype.kind in "MOUS" else
@@ -520,15 +571,22 @@ def stream_scale_signature(
             }
             variable = frame.metadata.get("variable")
             level = frame.metadata.get("level")
+            # TG1.5: the coordinate is part of the frame's identity, not decoration.
+            # 500 on a pressure axis and 500 on a height axis are different frames, and
+            # a record that changed axis partway would pass every other check here.
+            level_axis = frame.metadata.get("level_axis")
             units = frame.units
             if first_grid is None:
                 first_grid, first_coords = grid_record, coord_record
                 first_variable, first_level, first_units = variable, level, units
+                first_level_axis = level_axis
             elif (grid_record != first_grid or coord_record != first_coords
-                  or variable != first_variable or level != first_level or units != first_units):
+                  or variable != first_variable or level != first_level
+                  or level_axis != first_level_axis or units != first_units):
                 raise InvalidParameterError(
                     "frame_reader(%d)" % index, "field identity drift",
-                    "the exact grid, coordinates, variable, level and units of frame 0")
+                    "the exact grid, coordinates, variable, level, vertical coordinate "
+                    "and units of frame 0")
 
             values = np.ascontiguousarray(frame.data.detach().cpu().numpy())
             digest.update(str(tuple(values.shape)).encode("utf-8"))
@@ -618,7 +676,8 @@ def stream_scale_signature(
         available=np.asarray(first_signature.available),
         interior=list(first_signature.interior),
         source_variable=first_signature.source_variable,
-        level_hpa=first_signature.level_hpa,
+        level=first_signature.level,
+        level_axis=first_signature.level_axis,
         warnings=sorted(set(warnings)),
         provenance=provenance,
     )

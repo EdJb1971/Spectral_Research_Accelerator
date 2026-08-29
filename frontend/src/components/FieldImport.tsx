@@ -85,7 +85,9 @@ export const FieldImport: React.FC<FieldImportProps> = ({ onLoaded, onError }) =
         anything this platform exported. The file is inspected before anything is loaded.
       </p>
 
+      <label htmlFor="field-import-file" className="sr-only">Field file to inspect</label>
       <input
+        id="field-import-file"
         ref={inputRef}
         type="file"
         accept=".nc,.nc4,.netcdf,.cdf,.csv,.json,.zip"
@@ -94,8 +96,8 @@ export const FieldImport: React.FC<FieldImportProps> = ({ onLoaded, onError }) =
       />
 
       {busy && (
-        <div className="flex items-center gap-2 text-[11px] text-slate-400">
-          <Loader2 className="w-3.5 h-3.5 animate-spin" /> Reading file…
+        <div role="status" aria-live="polite" className="flex items-center gap-2 text-[11px] text-slate-400">
+          <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden="true" /> Reading file…
         </div>
       )}
 
@@ -108,8 +110,9 @@ export const FieldImport: React.FC<FieldImportProps> = ({ onLoaded, onError }) =
           </div>
 
           <div>
-            <label className="text-xs text-slate-400 block mb-1">Variable</label>
+            <label htmlFor="field-import-variable" className="text-xs text-slate-400 block mb-1">Variable</label>
             <select
+              id="field-import-variable"
               value={variable}
               onChange={(e) => {
                 setVariable(e.target.value);
@@ -139,7 +142,7 @@ export const FieldImport: React.FC<FieldImportProps> = ({ onLoaded, onError }) =
               </div>
               {Object.entries(extraDims).map(([dim, size]) => (
                 <div key={dim}>
-                  <label className="text-xs text-slate-400 flex justify-between mb-1">
+                  <label htmlFor={`field-import-${dim}`} className="text-xs text-slate-400 flex justify-between mb-1">
                     <span className="font-mono">{dim}</span>
                     <span className="text-slate-500">
                       {selection[dim] ?? 0} of 0…{size - 1}
@@ -148,6 +151,7 @@ export const FieldImport: React.FC<FieldImportProps> = ({ onLoaded, onError }) =
                     </span>
                   </label>
                   <input
+                    id={`field-import-${dim}`}
                     type="range" min={0} max={size - 1} step={1}
                     value={selection[dim] ?? 0}
                     onChange={(e) => setSelection({ ...selection, [dim]: parseInt(e.target.value, 10) })}

@@ -34,69 +34,41 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 import os
 import time
 from collections.abc import MutableMapping
 from dataclasses import asdict, dataclass, field as dc_field
-from typing import Any, Dict, List, Optional, Sequence, Tuple
+from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple, Union
 
 from src.core.errors import DataSourceError, FieldTooSmallError, InvalidParameterError
+from src.core.level_axis import PRESSURE_HPA
+# `GriddedStore` and `store_for` are re-exported deliberately rather than used here: this
+# module is the adapter facade a caller already has in hand, and making them reach for a
+# second import to name the thing they just looked up is friction with no benefit (TG10.1).
+from src.data_layer.stores import (  # noqa: F401  (GriddedStore, store_for re-exported)
+    GRIDDED_STORES, CatalogueView, GriddedStore, catalogue_payload,
+    register_builtin_stores, store_for, uri_for)
+# A real extension module, kept outside the catalogue and adapter implementations. It loads
+# checked-in probes and registers GLORYS without importing a credential-minting client.
+from src.data_layer import glorys_store as _glorys_store  # noqa: F401,E402
 
 # --------------------------------------------------------------------------- catalogue
 
-#: Public WeatherBench 2 ERA5 stores, verified reachable anonymously on 2026-08-20 by
-#: listing `gs://weatherbench2/datasets/era5` (24 stores). Only the ones this platform has
-#: a use for are listed; `describe_store` works on any Zarr URI, listed or not.
+#: Public WeatherBench 2 ERA5 stores, and every other registered gridded store, as a
+#: **read-only mapping view** over `stores.GRIDDED_STORES` (TG10.1, standard E1).
 #:
-#: `chunk_time` and `chunk_hostile` are recorded from the store's own metadata rather than
-#: assumed, and they are what `assess_access_pattern` reasons about.
-CATALOGUE: Dict[str, Dict[str, Any]] = {
-    "era5_0p25_6h": {
-        "uri": ("gs://weatherbench2/datasets/era5/"
-                "1959-2023_01_10-wb13-6h-1440x721.zarr"),
-        "resolution_deg": 0.25,
-        "cadence_hours": 6,
-        "grid": (721, 1440),
-        "levels": 13,
-        "note": ("Full-resolution ERA5, 13 pressure levels. Chunked one timestep x all "
-                 "levels x whole globe (54.0 MB/chunk), so regional crops are severely "
-                 "chunk-hostile - measured 51.1x amplification. Use for the R13 spatial "
-                 "floor with a short window, not for long records."),
-    },
-    "era5_0p25_1h_full37": {
-        "uri": ("gs://weatherbench2/datasets/era5/"
-                "1959-2023_01_10-full_37-1h-0p25deg-chunk-1.zarr"),
-        "resolution_deg": 0.25,
-        "cadence_hours": 1,
-        "grid": (721, 1440),
-        "levels": 37,
-        "note": ("Hourly, 37 levels, 153.6 MB/chunk. The most chunk-hostile store in the "
-                 "catalogue for regional work; 561,264 timesteps."),
-    },
-    "era5_1p5_6h": {
-        "uri": ("gs://weatherbench2/datasets/era5/"
-                "1959-2023_01_10-6h-240x121_equiangular_with_poles_conservative.zarr"),
-        "resolution_deg": 1.5,
-        "cadence_hours": 6,
-        "grid": (121, 240),
-        "levels": 13,
-        "note": ("Coarse but chunked 8 timesteps deep (12.1 MB/chunk), so long records are "
-                 "cheap. Global grid is 121x240, which is BELOW the R13 256x256 floor - "
-                 "usable for whole-globe work, not for a regional cross-scale crop."),
-    },
-    "era5_0p7_6h": {
-        "uri": ("gs://weatherbench2/datasets/era5/"
-                "1959-2022-6h-512x256_equiangular_conservative.zarr"),
-        "resolution_deg": 0.703125,
-        "cadence_hours": 6,
-        "grid": (256, 512),
-        "levels": 13,
-        "note": ("Time chunks are eight frames deep, but each still spans every level and "
-                 "the full 512x256 globe. Live inspection on 2026-08-21 estimated 29.88 GB "
-                 "for a three-year, one-variable 255x255 crop (26.2x amplification). This "
-                 "is not a laptop-feasible long-record regional source for T4C.6 (D43)."),
-    },
-}
+#: This was a module-level dictionary of four ERA5 stores until TG10.1, which is why its
+#: value shape is ERA5's own. The entries now live in a registry, each declaring the domain
+#: it belongs to, how it is reached, its vertical axis name and how its chunk figures were
+#: obtained; `to_dict` keeps every key the dictionary carried, so the provenance, overlap
+#: and reporting readers below are unaffected. `describe_store` still works on any Zarr URI,
+#: listed or not, and an uncatalogued name is still passed through as a raw URI.
+#:
+#: The view does not support assignment. Writing to it would put a store in the catalogue
+#: without a domain, an access requirement or a chunk record, which are the three things
+#: `register_store` exists to require.
+CATALOGUE: Mapping[str, Dict[str, Any]] = CatalogueView()
 
 #: Where materialised crops live. Content-addressed, so two identical specs share one entry.
 DEFAULT_CACHE_DIR = os.path.join("data", "zarr_cache")
@@ -229,9 +201,19 @@ class CropSpec:
     lat_max: float
     lon_min: float
     lon_max: float
-    levels: Tuple[int, ...] = ()
+    # Numeric values on the declared vertical axis. ERA5 uses integer pressure levels;
+    # GLORYS uses fractional negative-metre elevations. Keeping the historical field name
+    # preserves every existing crop identity while allowing the axis declaration to be real.
+    levels: Tuple[Union[int, float], ...] = ()
     #: Declared analysis depth, used for the R13 floor check. Not part of the data selection.
     n_levels_analysis: int = 4
+    #: Name of the store's vertical dimension - `level` for ERA5's pressure levels, `depth`
+    #: for an ocean product. The one axis TG10.1 generalises, and the only generalisation the
+    #: crop path needs to accept a non-atmospheric gridded store: everything else about a
+    #: region-and-time slice is already store-agnostic. It keeps ERA5's default because every
+    #: catalogued store today is ERA5 and a required argument here would break every existing
+    #: provenance record, but a store that disagrees says so through `vertical_dim_for_store`.
+    vertical_dim: str = "level"
 
     def __post_init__(self) -> None:
         if not self.variables:
@@ -245,16 +227,25 @@ class CropSpec:
             raise InvalidParameterError(
                 "lon_min/lon_max", (self.lon_min, self.lon_max),
                 "lon_min < lon_max, in degrees east")
+        if not str(self.vertical_dim).strip():
+            raise InvalidParameterError(
+                "vertical_dim", self.vertical_dim,
+                "the name of the store's vertical dimension, e.g. 'level' or 'depth'")
+        for value in self.levels:
+            if isinstance(value, bool) or not isinstance(value, (int, float)) \
+                    or not math.isfinite(float(value)):
+                raise InvalidParameterError(
+                    "levels", self.levels,
+                    "finite numeric values on the declared vertical axis")
 
     @property
     def uri(self) -> str:
         """Resolve a catalogue id, or pass a raw URI through unchanged."""
-        entry = CATALOGUE.get(self.store)
-        return entry["uri"] if entry else self.store
+        return uri_for(self.store) or self.store
 
     def canonical(self) -> Dict[str, Any]:
         """Order-independent, machine-independent form - the thing that gets hashed."""
-        return {
+        record: Dict[str, Any] = {
             "store": self.store,
             "uri": self.uri,
             "variables": sorted(self.variables),
@@ -263,6 +254,16 @@ class CropSpec:
             "bbox": [self.lat_min, self.lat_max, self.lon_min, self.lon_max],
             "levels": sorted(self.levels),
         }
+        # The vertical dimension name enters the key **only when it is not ERA5's**, and that
+        # is a compatibility decision taken deliberately rather than a purity lapse. Adding it
+        # unconditionally would change the content key of every crop ever materialised,
+        # orphaning the whole local cache and making every recorded provenance record resolve
+        # to a different key than the one it names - a high price for a distinction that
+        # distinguishes nothing, since `store` is already in the key and the store determines
+        # its own vertical axis. A store whose axis is not `level` is fully separated.
+        if self.vertical_dim != "level":
+            record["vertical_dim"] = self.vertical_dim
+        return record
 
     def content_key(self) -> str:
         """Stable 16-hex-character key. Sorted keys and separators so it cannot drift."""
@@ -270,9 +271,20 @@ class CropSpec:
         return hashlib.sha256(blob.encode("utf-8")).hexdigest()[:16]
 
     def to_provenance(self) -> Dict[str, Any]:
+        """The lineage record. **Byte-identical to the pre-TG10.1 record for an ERA5 crop.**
+
+        `vertical_dim` is omitted when it is `level`, for the same reason `canonical()` omits
+        it and for one sharper reason found by defect D63: this record is embedded in
+        authenticated artefacts - a gate campaign's preregistration is fingerprinted over it -
+        so emitting a new key retroactively changed the fingerprint of a signed record that
+        was written before the field existed. A schema that grows under an artefact already
+        signed is not a schema; a store whose axis is not `level` still says so.
+        """
         record = dict(asdict(self))
         record["variables"] = list(self.variables)
         record["levels"] = list(self.levels)
+        if self.vertical_dim == "level":
+            record.pop("vertical_dim", None)
         record["uri"] = self.uri
         record["content_key"] = self.content_key()
         return record
@@ -287,15 +299,59 @@ class CropSpec:
         added to them.
         """
         fields = {"store", "variables", "time_start", "time_end", "lat_min", "lat_max",
-                  "lon_min", "lon_max", "levels", "n_levels_analysis"}
+                  "lon_min", "lon_max", "levels", "n_levels_analysis", "vertical_dim"}
         kwargs = {k: v for k, v in record.items() if k in fields}
-        missing = fields - set(kwargs) - {"levels", "n_levels_analysis"}
+        missing = fields - set(kwargs) - {"levels", "n_levels_analysis", "vertical_dim"}
         if missing:
             raise InvalidParameterError(
                 "record", sorted(record), "a crop record containing %s" % sorted(missing))
         kwargs["variables"] = tuple(kwargs["variables"])
         kwargs["levels"] = tuple(kwargs.get("levels", ()))
         return cls(**kwargs)
+
+
+def vertical_dim_for_store(store: str, default: str = "level") -> str:
+    """The vertical axis name a catalogued store declares, or `default` for a raw URI.
+
+    A convenience, not an inference: it reads a declaration a registration already made. For
+    an uncatalogued URI there is nothing to read, so the caller's default stands and the
+    caller remains responsible for it - a name guessed from the data would be exactly the
+    axis-role inference standard E14 exists to forbid.
+    """
+    if store in GRIDDED_STORES:
+        declared = GRIDDED_STORES.get(store).vertical_dim
+        if declared:
+            return declared
+    return default
+
+
+def crop_for_store(store: str, **kwargs: Any) -> "CropSpec":
+    """Build a `CropSpec` whose vertical axis comes from the store's own declaration."""
+    kwargs.setdefault("vertical_dim", vertical_dim_for_store(store))
+    return CropSpec(store=store, **kwargs)
+
+
+def _parse_level(text: str) -> Union[int, float]:
+    """One value on a store's vertical axis, integer-first (D72).
+
+    Integer-first is not a style choice. ERA5's pressure levels are integers and enter the
+    content key as integers, so parsing `850` as `850.0` would move every pinned crop identity
+    and orphan the cache. A value that is not an integer literal -- a GLORYS elevation such as
+    `-0.49402499198913574` -- is kept as a float, which `CropSpec.levels` has accepted since
+    D68 and which the CLI alone still refused.
+    """
+    stripped = text.strip()
+    try:
+        return int(stripped)
+    except ValueError:
+        pass
+    try:
+        return float(stripped)
+    except ValueError:
+        raise InvalidParameterError(
+            "--levels", stripped,
+            "a value on the store's declared vertical axis: an integer pressure level such as "
+            "850, or a fractional value such as an ocean elevation in metres") from None
 
 
 # --------------------------------------------------------------------------- byte counting
@@ -491,7 +547,8 @@ def assess_access_pattern(dataset, spec: "CropSpec") -> Dict[str, Any]:
     lat_name = "latitude" if "latitude" in dataset.sizes else "lat"
     lon_name = "longitude" if "longitude" in dataset.sizes else "lon"
 
-    selection = _selection_sizes(dataset, spec, lat_name, lon_name)
+    selection, selected_positions = _selection_plan(
+        dataset, spec, lat_name, lon_name)
     per_variable: Dict[str, Any] = {}
     worst = 0.0
     total_fetch = 0
@@ -510,9 +567,13 @@ def assess_access_pattern(dataset, spec: "CropSpec") -> Dict[str, Any]:
         detail = {}
         for dim, size, chunk in zip(var.dims, var.shape, chunks):
             wanted = selection.get(dim, int(size))
-            # A selection of `wanted` contiguous elements touches this many whole chunks -
-            # at least one, and one more than the division whenever it straddles a boundary.
-            touched = int(np.ceil(wanted / chunk)) + (1 if wanted % chunk else 0)
+            positions = selected_positions.get(str(dim))
+            if positions is None:
+                touched = int(np.ceil(size / chunk))
+            else:
+                # Exact chunk-grid arithmetic. Counting only ``wanted`` cannot distinguish a
+                # selection inside one chunk from the same-width selection straddling two.
+                touched = len({int(position) // int(chunk) for position in positions})
             touched = max(1, min(touched, int(np.ceil(size / chunk))))
             want_elements *= max(1, wanted)
             fetch_elements *= touched * chunk
@@ -568,19 +629,114 @@ def assess_access_pattern(dataset, spec: "CropSpec") -> Dict[str, Any]:
     return result
 
 
-def _selection_sizes(dataset, spec: "CropSpec", lat_name: str, lon_name: str) -> Dict[str, int]:
-    """How many elements along each dimension the crop actually asks for.
+def _selection_plan(dataset, spec: "CropSpec", lat_name: str,
+                    lon_name: str) -> Tuple[Dict[str, int], Dict[str, Tuple[int, ...]]]:
+    """Selected sizes and source positions, computed from coordinate indexes alone.
 
-    Derived by running `select` on the lazy dataset and reading its dimension sizes, rather
-    than by re-deriving the selection arithmetic here. That is not tidiness: the first version
-    counted timestamps in ``[start, end]`` with numpy, while `select` hands the same strings to
-    ``xarray.sel(slice(...))``, which treats a partial date as the *whole day*. The two
-    disagreed by 3 of 12 timesteps on the very first test, so the assessment under-predicted
-    the transfer by 25% - a warning that under-states the cost is worse than no warning.
-    Selecting is index arithmetic on already-loaded coordinates, so this fetches no data.
+    Apply the same xarray indexers as :func:`select`, but only to the one-dimensional coordinate
+    arrays.  The old implementation ran ``select(dataset, spec)`` and therefore asked dask to
+    build a sliced task graph for every selected data variable merely to read ``subset.sizes``.
+    GLORYS made that graph large enough to raise ``MemoryError`` (D67), even though the answer is
+    entirely coordinate and chunk arithmetic.
+
+    Keeping xarray in this path is important: a partial date such as ``2020-01-01`` selects the
+    whole day, exactly as the materialising path does.  Reimplementing date comparisons with
+    numpy previously under-counted a twelve-step fixture by three frames.
     """
-    subset = select(dataset, spec)
-    return {str(k): int(v) for k, v in subset.sizes.items()}
+    _validate_requested_variables(dataset, spec)
+    indexers = _selection_indexers(dataset, spec, lat_name, lon_name)
+
+    selected_dims = {
+        str(dim)
+        for name in spec.variables
+        for dim in dataset[name].dims
+    }
+    sizes = {dim: int(dataset.sizes[dim]) for dim in selected_dims}
+    positions: Dict[str, Tuple[int, ...]] = {}
+    for dim, indexer in indexers.items():
+        if dim not in selected_dims:
+            continue
+        coordinate = dataset[dim]
+        selected = coordinate.sel({dim: indexer})
+        sizes[dim] = int(selected.size)
+        source_index = dataset.get_index(dim)
+        locations = source_index.get_indexer(selected.values)
+        if bool((locations < 0).any()):
+            raise DataSourceError(
+                "the selected %s coordinates could not be mapped back to the store's chunk "
+                "grid" % dim, dimension=dim)
+        positions[dim] = tuple(int(value) for value in locations.tolist())
+
+    _validate_nonempty_selection(dataset, spec, sizes, lat_name, lon_name)
+    return sizes, positions
+
+
+def _validate_requested_variables(dataset, spec: "CropSpec") -> None:
+    missing = [v for v in spec.variables if v not in dataset.data_vars]
+    if missing:
+        raise DataSourceError(
+            "the store does not contain %s. Available (first 15): %s"
+            % (", ".join(missing), ", ".join(sorted(dataset.data_vars)[:15])),
+            missing=missing)
+
+
+def _selection_indexers(dataset, spec: "CropSpec", lat_name: str,
+                        lon_name: str) -> Dict[str, Any]:
+    """Build the shared coordinate indexers without touching any data variable."""
+    import numpy as np
+
+    lat = np.asarray(dataset[lat_name].values)
+    descending = bool(lat.size > 1 and lat[0] > lat[-1])
+    lat_slice = (slice(spec.lat_max, spec.lat_min) if descending
+                 else slice(spec.lat_min, spec.lat_max))
+
+    lon = np.asarray(dataset[lon_name].values)
+    lon_min, lon_max = spec.lon_min, spec.lon_max
+    if float(lon.min()) >= 0.0 and lon_min < 0.0:
+        raise InvalidParameterError(
+            "lon_min", lon_min,
+            "a longitude in [0, 360) for this store, whose longitude axis runs %.2f..%.2f. "
+            "A region spanning the prime meridian must be requested as two crops and "
+            "joined, because one monotonic slice cannot express the wrap."
+            % (float(lon.min()), float(lon.max())))
+
+    indexers: Dict[str, Any] = {
+        lat_name: lat_slice,
+        lon_name: slice(lon_min, lon_max),
+    }
+    vertical = spec.vertical_dim
+    if spec.levels and vertical in dataset.coords:
+        available_values = np.asarray(dataset[vertical].values)
+        available = available_values.tolist()
+        unknown = [lev for lev in spec.levels
+                   if not bool(np.any(available_values == lev))]
+        if unknown:
+            raise InvalidParameterError(
+                "levels", list(spec.levels),
+                "%s values present in the store; %s not among %s"
+                % (vertical, unknown, sorted(available)))
+        indexers[vertical] = list(spec.levels)
+    if "time" in dataset.coords:
+        indexers["time"] = slice(spec.time_start, spec.time_end)
+    return indexers
+
+
+def _validate_nonempty_selection(dataset, spec: "CropSpec", sizes: Dict[str, int],
+                                 lat_name: str, lon_name: str) -> None:
+    if "time" in dataset.coords and int(sizes.get("time", 0)) == 0:
+        times = dataset["time"].values
+        raise InvalidParameterError(
+            "time_start/time_end", (spec.time_start, spec.time_end),
+            "a window inside the store's coverage, %s to %s"
+            % (str(times[0])[:16], str(times[-1])[:16]))
+    for dim, name in ((lat_name, "latitude"), (lon_name, "longitude")):
+        if int(sizes.get(dim, 0)) == 0:
+            raise InvalidParameterError(
+                name, (spec.lat_min, spec.lat_max) if dim == lat_name
+                else (spec.lon_min, spec.lon_max),
+                "a range overlapping the store's %s axis (%.3f to %.3f)"
+                % (name, float(dataset[dim].values.min()),
+                   float(dataset[dim].values.max())))
 
 
 # --------------------------------------------------------------------------- selection
@@ -593,67 +749,16 @@ def select(dataset, spec: "CropSpec"):
     rows**, which downstream looks like a region with no data rather than a reversed axis -
     so the direction is detected rather than assumed.
     """
-    import numpy as np
-
     lat_name = "latitude" if "latitude" in dataset.sizes else "lat"
     lon_name = "longitude" if "longitude" in dataset.sizes else "lon"
 
-    missing = [v for v in spec.variables if v not in dataset.data_vars]
-    if missing:
-        raise DataSourceError(
-            "the store does not contain %s. Available (first 15): %s"
-            % (", ".join(missing), ", ".join(sorted(dataset.data_vars)[:15])),
-            missing=missing)
-
+    _validate_requested_variables(dataset, spec)
+    indexers = _selection_indexers(dataset, spec, lat_name, lon_name)
     subset = dataset[list(spec.variables)]
-
-    lat = np.asarray(dataset[lat_name].values)
-    descending = bool(lat.size > 1 and lat[0] > lat[-1])
-    lat_slice = (slice(spec.lat_max, spec.lat_min) if descending
-                 else slice(spec.lat_min, spec.lat_max))
-    subset = subset.sel({lat_name: lat_slice})
-
-    lon = np.asarray(dataset[lon_name].values)
-    lon_min, lon_max = spec.lon_min, spec.lon_max
-    if float(lon.min()) >= 0.0 and lon_min < 0.0:
-        # Store uses 0..360, request uses -180..180. Converting a *negative* lower bound
-        # would produce lon_min > lon_max and select nothing, so this is rejected rather
-        # than guessed at - a wrapped request needs two selections concatenated.
-        raise InvalidParameterError(
-            "lon_min", lon_min,
-            "a longitude in [0, 360) for this store, whose longitude axis runs %.2f..%.2f. "
-            "A region spanning the prime meridian must be requested as two crops and "
-            "joined, because one monotonic slice cannot express the wrap."
-            % (float(lon.min()), float(lon.max())))
-    subset = subset.sel({lon_name: slice(lon_min, lon_max)})
-
-    if spec.levels and "level" in subset.coords:
-        available = set(int(v) for v in np.asarray(dataset["level"].values).tolist())
-        unknown = [lev for lev in spec.levels if int(lev) not in available]
-        if unknown:
-            raise InvalidParameterError(
-                "levels", list(spec.levels),
-                "levels present in the store; %s not among %s"
-                % (unknown, sorted(available)))
-        subset = subset.sel(level=list(spec.levels))
-
-    if "time" in subset.coords:
-        subset = subset.sel(time=slice(spec.time_start, spec.time_end))
-        if int(subset.sizes.get("time", 0)) == 0:
-            times = dataset["time"].values
-            raise InvalidParameterError(
-                "time_start/time_end", (spec.time_start, spec.time_end),
-                "a window inside the store's coverage, %s to %s"
-                % (str(times[0])[:16], str(times[-1])[:16]))
-
-    for dim, name in ((lat_name, "latitude"), (lon_name, "longitude")):
-        if int(subset.sizes.get(dim, 0)) == 0:
-            raise InvalidParameterError(
-                name, (spec.lat_min, spec.lat_max) if dim == lat_name
-                else (spec.lon_min, spec.lon_max),
-                "a range overlapping the store's %s axis (%.3f to %.3f)"
-                % (name, float(dataset[dim].values.min()),
-                   float(dataset[dim].values.max())))
+    subset = subset.sel(indexers)
+    _validate_nonempty_selection(
+        dataset, spec, {str(k): int(v) for k, v in subset.sizes.items()},
+        lat_name, lon_name)
     return subset
 
 
@@ -718,11 +823,44 @@ def streaming_content_hash(dataset, time_block: int = 32) -> str:
     return digest.hexdigest()[:32]
 
 
+def _raise_transform_crop_refusal(geometry: Mapping[str, Any],
+                                  plan: Optional[Mapping[str, Any]] = None) -> None:
+    """Translate a planner verdict into the established client-safe R13 refusal."""
+    current = tuple(int(v) for v in geometry["current_shape"])
+    required = tuple(int(v) for v in geometry["recommended_minimum"]["shape"])
+    analysis = geometry["analysis"]
+    suggestion = ((plan or {}).get("suggestions") or {}).get("recommended") or {}
+    bounds = suggestion.get("bounds")
+    remedy = (
+        "%s level %d leaves this crop below the statistically recommended R13 interior. "
+        "The absolute minimum %s is technical computability only; it is not licensed for "
+        "meaningful spatial statistics. "
+        % (analysis["transform_family"].upper(), int(analysis["levels"]),
+           tuple(geometry["absolute_minimum"]["shape"])))
+    if suggestion.get("feasible") and bounds:
+        remedy += (
+            "Expand on the store's native coordinate grid to lat %.12g..%.12g and lon "
+            "%.12g..%.12g, which yields %s; inspect that exact suggestion to review its "
+            "revised transfer and storage cost before materialising."
+            % (bounds["lat_min"], bounds["lat_max"], bounds["lon_min"], bounds["lon_max"],
+               tuple(suggestion["actual_shape"])))
+    else:
+        remedy += str(suggestion.get("reason") or
+                      "Use a larger crop, a shallower preregistered analysis, or another "
+                      "registered transform; do not weaken the grid after seeing the cost.")
+    raise FieldTooSmallError(
+        "%s level-%d statistically recommended cross-scale analysis"
+        % (analysis["transform_family"].upper(), int(analysis["levels"])),
+        current, required, remedy=remedy,
+        geometry=dict(geometry), acquisition_plan_sha256=(plan or {}).get("plan_sha256"))
+
+
 def materialise(spec: "CropSpec", cache_dir: Optional[str] = None,
-                storage_options: Optional[Dict[str, Any]] = None,
-                time_chunk: Optional[int] = None,
-                check_size: bool = True,
-                force: bool = False) -> Dict[str, Any]:
+                 storage_options: Optional[Dict[str, Any]] = None,
+                 time_chunk: Optional[int] = None,
+                 check_size: bool = True,
+                 force: bool = False,
+                 analysis: Any = None) -> Dict[str, Any]:
     """Fetch a crop once and write it to a local, time-contiguous Zarr cache.
 
     Parameters
@@ -733,7 +871,8 @@ def materialise(spec: "CropSpec", cache_dir: Optional[str] = None,
         read a single seek. This is the *inverse* of the remote layout, and reversing it is the
         entire justification for keeping a second copy.
     check_size
-        Enforce the R13 floor against ``spec.n_levels_analysis``. Off only for deliberately
+        Enforce the R13 floor against ``analysis`` when supplied, otherwise the legacy
+        conservative 14-tap check against ``spec.n_levels_analysis``. Off only for deliberately
         small test crops.
 
     Returns a manifest: the spec, the resolved shape, bytes transferred, the content hash and
@@ -745,6 +884,16 @@ def materialise(spec: "CropSpec", cache_dir: Optional[str] = None,
     if is_cached(spec, cache_dir) and not force:
         with open(manifest_path(spec, cache_dir), "r", encoding="utf-8") as handle:
             manifest = json.load(handle)
+        if check_size and analysis is not None:
+            from src.data_layer.crop_planner import assess_shape
+            shape = manifest.get("shape") or {}
+            lat_name = "latitude" if "latitude" in shape else "lat"
+            lon_name = "longitude" if "longitude" in shape else "lon"
+            geometry = assess_shape(int(shape.get(lat_name, 0)),
+                                    int(shape.get(lon_name, 0)), analysis)
+            if not geometry["meets_recommended_minimum"]:
+                _raise_transform_crop_refusal(geometry)
+            manifest["requested_analysis_geometry"] = geometry
         manifest["cache_hit"] = True
         # Zero, not "small". The claim being made is that a repeat costs no network at all.
         manifest["bytes_transferred"] = 0
@@ -755,14 +904,27 @@ def materialise(spec: "CropSpec", cache_dir: Optional[str] = None,
     try:
         structure = describe_store(dataset, spec.variables)
         assessment = assess_access_pattern(dataset, spec)
-        subset = select(dataset, spec)
+        acquisition_plan = None
+        if check_size and analysis is not None:
+            from src.data_layer.crop_planner import plan_acquisition
+            acquisition_plan = plan_acquisition(
+                dataset, spec, analysis, structure=structure)
+            geometry = acquisition_plan["geometry"]
+            if not geometry["meets_recommended_minimum"]:
+                _raise_transform_crop_refusal(geometry, acquisition_plan)
+        else:
+            selection = assessment["selection"]
+            lat_key = "latitude" if "latitude" in selection else "lat"
+            lon_key = "longitude" if "longitude" in selection else "lon"
+            geometry = (check_crop_size(
+                int(selection[lat_key]), int(selection[lon_key]), spec.n_levels_analysis)
+                        if check_size else {"ok": None, "skipped": "check_size=False"})
 
+        # The scientific geometry refusal above uses coordinate/chunk metadata only. Construct
+        # the data-variable selection only after it passes, and load values later still.
+        subset = select(dataset, spec)
         lat_name = "latitude" if "latitude" in subset.sizes else "lat"
         lon_name = "longitude" if "longitude" in subset.sizes else "lon"
-        height = int(subset.sizes[lat_name])
-        width = int(subset.sizes[lon_name])
-        geometry = (check_crop_size(height, width, spec.n_levels_analysis)
-                    if check_size else {"ok": None, "skipped": "check_size=False"})
 
         bytes_before = counter.bytes_read
         loaded = subset.load()
@@ -770,7 +932,7 @@ def materialise(spec: "CropSpec", cache_dir: Optional[str] = None,
 
         n_time = int(loaded.sizes.get("time", 1))
         chunking = {"time": int(time_chunk or n_time)}
-        for dim in (lat_name, lon_name, "level"):
+        for dim in (lat_name, lon_name, spec.vertical_dim):
             if dim in loaded.sizes:
                 chunking[dim] = int(loaded.sizes[dim])
         rechunked = loaded.chunk(chunking)
@@ -817,6 +979,11 @@ def materialise(spec: "CropSpec", cache_dir: Optional[str] = None,
                 "time-contiguous for this region, so reading all frames at one location is "
                 "one read instead of %d" % n_time),
         }
+        # Preserve the legacy manifest schema exactly unless the caller explicitly requested
+        # transform-aware planning. New science records get the complete immutable plan;
+        # historical callers do not acquire a semantically empty null field.
+        if acquisition_plan is not None:
+            manifest["acquisition_plan"] = acquisition_plan
         with open(manifest_path(spec, cache_dir), "w", encoding="utf-8") as handle:
             json.dump(manifest, handle, indent=2, sort_keys=True)
         return manifest
@@ -1016,6 +1183,11 @@ class CachedFieldReader:
             metadata={
                 "variable": self.variable,
                 "level": self.level_hpa,
+                # TG1.5: the unit travels with the number from the one place that
+                # knows it. This reader selects an ERA5 pressure level by name, so it
+                # is entitled to declare the coordinate; nothing downstream has to
+                # infer hPa from an attribute name.
+                "level_axis": PRESSURE_HPA,
                 "units": self.units,
                 "source_content_hash": self.source_provenance["content_hash"],
                 "source_coordinate_sha256": self.source_provenance["coordinate_sha256"],
@@ -1200,6 +1372,11 @@ def _main(argv: Optional[Sequence[str]] = None) -> int:
                                  metavar=("MIN", "MAX"))
         crop_parser.add_argument("--levels", default="850,700,500,300")
         crop_parser.add_argument("--analysis-levels", type=int, default=4)
+        crop_parser.add_argument("--analysis-transform", default="dtcwt")
+        crop_parser.add_argument("--wavelet", default="db2")
+        crop_parser.add_argument("--boundary-mode", default="periodic")
+        crop_parser.add_argument("--dtcwt-level1", default="near_sym_b")
+        crop_parser.add_argument("--dtcwt-qshift", default="qshift_b")
         crop_parser.add_argument("--cache-dir", default=DEFAULT_CACHE_DIR)
         crop_parser.add_argument("--time-chunk", type=int, default=None)
         crop_parser.add_argument("--no-size-check", action="store_true")
@@ -1207,7 +1384,7 @@ def _main(argv: Optional[Sequence[str]] = None) -> int:
     args = parser.parse_args(list(argv) if argv is not None else None)
 
     if args.command == "catalogue":
-        print(json.dumps(CATALOGUE, indent=2))
+        print(json.dumps(catalogue_payload(), indent=2))
         return 0
     if args.command == "cached":
         print(json.dumps([{"content_key": c["content_key"], "spec": c["spec"],
@@ -1217,22 +1394,36 @@ def _main(argv: Optional[Sequence[str]] = None) -> int:
         parser.print_help()
         return 2
 
-    spec = CropSpec(
-        store=args.store,
+    # `crop_for_store`, not `CropSpec`, so the vertical axis comes from the store's own
+    # declaration rather than from ERA5's default -- the CLI was building a `level` selection
+    # for every store, including one whose axis is `elevation` (D72). Levels are parsed
+    # integer-first so that ERA5's `850,700,500,300` stays integral and every pinned content
+    # key is byte-identical, while a fractional GLORYS elevation is kept as a float instead of
+    # raising `invalid literal for int()`.
+    spec = crop_for_store(
+        args.store,
         variables=tuple(v.strip() for v in args.variables.split(",") if v.strip()),
         time_start=args.start, time_end=args.end,
         lat_min=args.lat[0], lat_max=args.lat[1],
         lon_min=args.lon[0], lon_max=args.lon[1],
-        levels=tuple(int(v) for v in args.levels.split(",") if v.strip()),
+        levels=tuple(_parse_level(v) for v in args.levels.split(",") if v.strip()),
         n_levels_analysis=args.analysis_levels,
     )
+    from src.data_layer.crop_planner import TransformSupportRequest, plan_acquisition
+    analysis = TransformSupportRequest(
+        transform_family=args.analysis_transform, levels=args.analysis_levels,
+        wavelet=args.wavelet, boundary_mode=args.boundary_mode,
+        dtcwt_level1=args.dtcwt_level1, dtcwt_qshift=args.dtcwt_qshift)
     if args.command == "inspect":
         dataset, _counter = open_dataset(spec.uri, chunks={})
         try:
+            structure = describe_store(dataset, spec.variables)
             report = {
                 "spec": spec.to_provenance(),
-                "structure": describe_store(dataset, spec.variables),
+                "structure": structure,
                 "assessment": assess_access_pattern(dataset, spec),
+                "acquisition_plan": plan_acquisition(
+                    dataset, spec, analysis, structure=structure),
             }
         finally:
             dataset.close()
@@ -1240,7 +1431,7 @@ def _main(argv: Optional[Sequence[str]] = None) -> int:
         return 0
 
     manifest = materialise(spec, cache_dir=args.cache_dir, time_chunk=args.time_chunk,
-                           check_size=not args.no_size_check)
+                           check_size=not args.no_size_check, analysis=analysis)
     print(json.dumps(manifest, indent=2, default=str))
     return 0
 

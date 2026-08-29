@@ -4,6 +4,9 @@ __pycache__/
 *.py[cod]
 .pytest_cache/
 
+# Local secrets and machine-specific environment settings
+.env.local
+
 # Database
 *.db
 
@@ -20,3 +23,30 @@ data/*.nc
 data/*.grib
 data/*.grib2
 data/*.zarr/
+# Probe records are reproducible observations, not source; the README stays.
+data/store_probes/*.json
+!data/store_probes/ccdb0625e7e8fb1d.json
+!data/store_probes/f9a45764fcf52c2a.json
+*.db-shm
+*.db-wal
+
+# Isolated interpreter for the Copernicus Marine Toolbox (see requirements-ocean.txt).
+.venv-copernicus/
+
+# Scratch Vite config for rendered inspection against a non-default backend port.
+frontend/vite.inspect.config.ts
+
+# Test scratch. Pytest's basetemp is pinned to the repo drive in pytest.ini, because the
+# machine's C: drive filled and every fixture that writes a Zarr store then errored with
+# `[Errno 28] No space left on device` -- 35 failures and 49 errors that looked exactly like
+# code regressions and were not. Directory patterns, not file lists: earlier runs appended
+# 11,490 individual temp paths here and buried the authored entries, including one that
+# ignored this file itself.
+.pytest-tmp/
+.pytest-tmp2/
+.pytest-current/
+.pytest-verify/
+.full-suite-tmp/
+.pytest-basetemp/
+_pt*.txt
+data/profile_collections/e7c8acc202a81169b705dce99fd9391ca4a8c9ee3ba1f54715e3e0943e1ad773.json

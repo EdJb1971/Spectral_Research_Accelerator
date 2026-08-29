@@ -14,9 +14,9 @@ min_adjusted}`), so React would have thrown *"Objects are not valid as a React c
 *   every path `api.ts` fetches must be a route the app actually serves;
 *   every nested key the UI reads out of an untyped payload must exist in the real response.
 
-**What they still do not prove:** that anything *renders*. No browser is available in this
-environment, so visual verification of the nine tabs remains outstanding and is recorded as
-outstanding rather than implied by a green build.
+**What they still do not prove:** that anything *renders*. TG11.6 adds a separate rendered
+keyboard inspection; these source checks remain useful because they fail on semantic regressions
+without requiring a browser runtime.
 """
 
 from __future__ import annotations
@@ -121,6 +121,407 @@ def test_the_new_endpoints_are_actually_consumed(api_service):
     for path in ("/health", "/benchmarks", "/data/sources", "/data/zarr/catalogue",
                  "/data/zarr/cached", "/data/zarr/inspect"):
         assert path in api_service, "%s is served but the frontend never calls it" % path
+    assert "/acquisitions" in api_service
+
+
+def test_acquisition_navigation_is_domain_driven_and_does_not_grow_tabs(app_source):
+    view = _read("components", "AcquisitionView.tsx")
+    nav_ids = re.findall(r"\{ id: '([^']+)', name:", app_source)
+    assert nav_ids.count("acquire") == 1
+    assert "channels" not in nav_ids and "era5" not in nav_ids
+    assert "catalogue.domains.map" in view, "domains must come from the API, not a UI list"
+    assert "domain.acquisitions.map" in view, "acquisitions must come from the domain row"
+    assert "domainName={domain.name}" in view
+    assert "acquisition?.shape === 'grid_crop'" in view
+
+
+def test_navigation_follows_the_scientific_workflow_and_labels_the_grid_line(app_source):
+    """TG11.0 replaces a numbered feature list with the workflow it supports."""
+    assert "WORKFLOW_NAV" in app_source
+    for section in ("Acquire", "Analyse", "Evidence", "Review", "Read", "Platform"):
+        assert "section: '%s'" % section in app_source
+    assert "Gridded field line" in app_source
+    assert "name: 'Recorded review'" in app_source
+    assert "Recorded argument; never claim permission" in app_source
+    assert 'aria-label="Scientific workflow"' in app_source
+    assert re.search(r"name: '\d+\.", app_source) is None
+
+
+def test_the_workflow_has_a_skip_link_and_moves_focus_when_the_workspace_changes(app_source):
+    """TG11.6: a route change must be announced where the new work begins, not leave keyboard
+    focus behind on a navigation control whose visible context has changed."""
+    assert 'href="#workspace-main"' in app_source
+    assert 'id="workspace-main"' in app_source
+    assert 'aria-labelledby="workspace-heading"' in app_source
+    assert "workspaceHeadingRef.current?.focus()" in app_source
+    assert 'tabIndex={-1}' in app_source
+
+
+def test_every_legacy_shell_label_is_programmatically_bound(app_source):
+    """The old gridded panels used adjacent labels, which look labelled but have no accessible
+    name. Their controls now use explicit id/htmlFor pairs; wrapper labels remain valid in the
+    newer components and are checked by their own contracts."""
+    labels = re.findall(r"<label\b([^>]*)>", app_source)
+    assert labels and all("htmlFor=" in attrs for attrs in labels)
+    ids = set(re.findall(r'\bid="([^"]+)"', app_source))
+    targets = re.findall(r'htmlFor="([^"]+)"', app_source)
+    assert not sorted(set(targets) - ids)
+
+
+def test_global_keyboard_focus_and_reduced_motion_are_not_panel_options():
+    css = _read("index.css")
+    assert ":focus-visible" in css and "outline: 3px solid" in css
+    assert ".skip-link:focus" in css
+    assert "prefers-reduced-motion: reduce" in css
+
+
+def test_retry_and_lineage_nodes_are_keyboard_operable(app_source):
+    """The only legacy click target that was not a native control was the connection retry;
+    SVG provenance nodes require an explicit keyboard equivalent because SVG has no button."""
+    lineage = _read("components", "LineageGraph.tsx")
+    assert "Backend unreachable - no computation available; retry" in app_source
+    assert re.search(r"<span[^>]+onClick=", app_source) is None
+    for token in ('role="button"', "tabIndex={0}", "onKeyDown", "event.key === 'Enter'",
+                  "event.key === ' '", "aria-pressed"):
+        assert token in lineage
+
+
+def test_visualisations_have_text_equivalents():
+    heatmap = _read("components", "Heatmap2D.tsx")
+    line = _read("components", "LineChart.tsx")
+    for source in (heatmap, line):
+        assert "<figure" in source and "aria-labelledby" in source
+        assert "<figcaption" in source and 'className="sr-only"' in source
+    assert "rows and" in heatmap and "Value units" in heatmap
+    assert "series.map(item => item.name).join" in line
+
+
+def test_async_workflow_surfaces_expose_busy_state(all_sources):
+    for name in ("AcquisitionView", "DomainAnalysisView", "PreregistrationView", "EvidenceView",
+                 "StructureMiningView", "CrossDomainRecordView", "FindingsView"):
+        source = _read("components", f"{name}.tsx")
+        assert "aria-busy=" in source, name
+    assert 'role="alert"' in all_sources and 'role="status"' in all_sources
+
+
+def test_record_and_study_are_shell_owned_persistent_context(app_source):
+    """A panel switch must not discard the record or study the researcher already chose."""
+    acquisition = _read("components", "AcquisitionView.tsx")
+    channels = _read("components", "ChannelRecords.tsx")
+    findings = _read("components", "FindingsView.tsx")
+    assert "selectedRecord" in app_source and "setSelectedRecord" in app_source
+    assert "selectedStudyId" in app_source and "setSelectedStudyId" in app_source
+    assert 'aria-label="Current research context"' in app_source
+    assert "selectedRecord={selectedRecord}" in app_source
+    assert "selectedStudyId={selectedStudyId}" in app_source
+    assert "onSelectRecord={onSelectRecord}" in acquisition
+    assert "file, timeColumn, supportParentPx: supports" in channels
+    assert "setRecord(selectedRecord?.record ?? null)" in channels, (
+        "clearing shell context must clear the panel")
+    assert "interface ChannelRecordSelection" in _read("types", "api.ts")
+    assert "onSelectStudy?.(row.study_id as string)" in findings
+
+
+def test_domain_analysis_uses_the_persistent_full_record_and_cannot_write(app_source, api_service):
+    """TG11.1 must never substitute TG8.4's capped preview for the retained source file."""
+    view = _read("components", "DomainAnalysisView.tsx")
+    assert "name: 'Cross-domain analysis'" in app_source
+    assert "activeTab === 'domainWorkbench'" in app_source
+    assert "selectedRecord={selectedRecord}" in app_source
+    assert "form.append('file', selection.file)" in api_service
+    assert "/analysis/run" in api_service and "/analysis" in api_service
+    assert "runDomainAnalysis" in view and "getDomainAnalysisCapabilities" in view
+    assert "read_only" not in view, "the component must not fabricate the server's receipt"
+    assert "response.claim_boundary" in view
+
+
+def test_domain_analysis_exposes_r21_and_all_three_engine_operations():
+    view = _read("components", "DomainAnalysisView.tsx")
+    for operation in ("association", "precedence", "domain_gate"):
+        assert operation in view
+    assert "precedenceAdmissible" in view
+    assert "disabled={refused}" in view
+    assert "R21" in view
+    assert "PASS" in view and "FAIL" in view and "INVALID" in view
+
+
+def test_domain_analysis_checks_the_result_is_about_the_record_on_screen():
+    """The re-read is the design; an unchecked re-read is an assumption that it read the same thing."""
+    view = _read("components", "DomainAnalysisView.tsx")
+    assert "response.source.content_sha256 !== selectedRecord.record.content_sha256" in view
+    assert "response.source.frames !== selectedRecord.record.n_rows" in view
+
+
+def test_preregistration_declares_a_family_and_never_a_digest_or_a_p_value(app_source,
+                                                                            api_service):
+    """TG11.2. The client declares; the server decides what that hashes to and what it means.
+
+    A caller-supplied sealing time could be written after the partition was opened, and a
+    caller-supplied p-value is a scientific number this line does not let a client compute.
+    Both would make the seal a formality.
+    """
+    view = _read("components", "PreregistrationView.tsx")
+    assert "name: 'Preregistration'" in app_source
+    assert "activeTab === 'preregistration'" in app_source
+    assert "sealFamily" in view and "describePartition" in view and "confirmSeal" in view
+    assert "/preregistration/seal" in api_service
+    assert "/preregistration/partition" in api_service
+    assert "/confirm" in api_service
+    assert "sealed_at" not in api_service.split("preregistration (TG11.2)")[1].split(
+        "the findings surface")[0], "the client must not send a sealing time"
+    assert "p_value" not in view.replace("p_values[index]", "")
+
+
+def test_preregistration_confirmation_sends_the_record_and_nothing_else(api_service):
+    """Every setting of a confirmatory sweep was frozen; a knob left turnable is a choice made
+    after the declaration."""
+    block = api_service.split("async confirmSeal")[1].split("},")[0]
+    for tunable in ("lags", "n_surrogates", "alpha", "correction", "estimator", "bins",
+                    "seed", "train_ratio", "domain", "time_column"):
+        assert tunable not in block, "%r must come from the seal, not the caller" % tunable
+    assert "form.append('file', file)" in block
+
+
+def test_preregistration_says_a_seal_is_not_evidence_about_itself():
+    """A local copy hashes to itself by construction; the published digest is the real check."""
+    view = _read("components", "PreregistrationView.tsx")
+    assert "publishedSha" in view
+    assert "cannot rewrite" in view
+    assert "checked_against_publication" in view
+    assert "self-consistency only" in view
+
+
+def test_preregistration_shows_a_spent_partition_as_gone_rather_than_as_a_failure():
+    """Spent is not failed. A partition that has been tested is simply no longer available."""
+    view = _read("components", "PreregistrationView.tsx")
+    assert "row.spent" in view
+    assert "will not be tested again" in view
+    assert "already_opened" in view
+
+
+def test_preregistration_does_not_present_a_receipt_as_a_claim():
+    view = _read("components", "PreregistrationView.tsx")
+    assert "records no evidence and moves no rung" in view
+    assert "are not corrected for here and are" in view
+    assert "read_only" not in view, "the component must not fabricate the server's receipt"
+
+
+def test_the_evidence_panel_reaches_the_write_path_and_nothing_else(app_source, api_service):
+    """TG11.3. The only writing panel in the application, and the only one that could break R22."""
+    view = _read("components", "EvidenceView.tsx")
+    assert "name: 'Evidence record'" in app_source
+    assert "activeTab === 'evidence'" in app_source
+    for call in ("openStudy", "getEvidenceHead", "appendEvidence", "appendPrecedence",
+                 "getEvidenceCapabilities"):
+        assert "apiService.%s" % call in view
+    assert "/evidence/studies" in api_service
+
+
+def test_no_request_this_client_can_send_carries_a_rung(api_service):
+    """R22, checked on the wire shapes rather than trusted to the panel that fills them in."""
+    section = api_service.split("the evidence write path (TG11.3)")[1].split(
+        "the findings surface")[0]
+    # Prose about the rule is not a violation of it, so the comments come out first: what is
+    # being checked is what these methods put on the wire.
+    block = "\n".join(line for line in section.splitlines()
+                      if not line.strip().startswith("//"))
+    for asserted in ("rung", "claim_level", "temporal_precedence", "confidence", "blocked"):
+        assert asserted not in block, "%r must be computed by the server, not sent" % asserted
+    types_source = _read("types", "api.ts")
+    append = types_source.split("export interface EvidenceAppend")[1].split("}")[0]
+    for asserted in ("rung", "recorded_at", "temporal_precedence"):
+        assert asserted not in append
+
+
+def test_the_panel_presents_the_rung_as_computed_rather_than_as_recorded():
+    view = _read("components", "EvidenceView.tsx")
+    assert "recomputed by the claim ladder" in view
+    assert "state?.rung_source" in view
+    # The gates are rendered from the response; a hard-coded rung name would be this file
+    # deciding what a chain is worth.
+    assert "ladder.gates.map" in view
+    for rung in ("'robust_association'", "'candidate_precursor'",
+                 "'demonstrated_predictive_utility'"):
+        assert rung not in view
+
+
+def test_the_append_form_shows_the_revision_it_is_extending():
+    """A compare-and-swap refusal is only comprehensible if the head was on screen."""
+    view = _read("components", "EvidenceView.tsx")
+    assert "expected_head_sha256: state.head_sha256" in view
+    assert "Extending revision" in view
+
+
+def test_the_mining_panel_reaches_every_route_the_surface_serves(app_source, api_service):
+    """TG11.4. Eleven routes, and a panel that would be a catalogue if it called only some."""
+    view = _read("components", "StructureMiningView.tsx")
+    assert "name: 'Structure mining'" in app_source
+    assert "activeTab === 'mining'" in app_source
+    for call in ("getMiningCapabilities", "listMiningRecords", "admitRecord", "priceFamily",
+                 "calibrateTolerance", "generateMotifs", "freezeMotifs", "confirmMotifs",
+                 "publishMotif", "transferMotif", "auditInvariance"):
+        assert "apiService.%s" % call in view, call
+
+
+def test_no_request_this_client_can_send_carries_a_feature(api_service):
+    """The R22-shaped rule of TG11.4, checked on the wire shapes rather than on the panel.
+
+    A motif is a configuration of features. A client that could send one could draw the shape
+    it wanted the programme to confirm, and every number computed afterwards would be correct
+    and meaningless. The comments come out first: prose about the rule is not a breach of it.
+    """
+    section = api_service.split("structure mining (TG11.4)")[1].split(
+        "the findings surface")[0]
+    block = "\n".join(line for line in section.splitlines()
+                      if not line.strip().startswith("//"))
+    # `n_features` is how many the server found, which the pricing call needs and which
+    # cannot carry a shape. A coordinate can, so the distinction is a count against a value.
+    block = block.replace("n_features:", "n_found:")
+    for asserted in ("coordinate", "coords", "features:", "graph", "occurrence",
+                     "p_value", "rung", "support:"):
+        assert asserted not in block, "%r is measured by the server, not sent" % asserted
+
+
+def test_the_tolerance_travels_as_a_digest_and_never_as_a_number(api_service):
+    """It decides which configurations count as repeats; a typed one is where a wrong answer
+    enters looking like a measurement."""
+    types_source = _read("types", "api.ts")
+    request = types_source.split("export interface MiningRunRequest")[1].split("}")[0]
+    assert "tolerance_sha256" in request
+    assert "tolerance:" not in request, (
+        "a run must name a calibration, not carry a width")
+    view = _without_comments(_read("components", "StructureMiningView.tsx"))
+    assert "tolerance?.tolerance_sha256" in view
+
+
+def test_the_mining_panel_prices_the_search_before_it_runs_one():
+    """R18 made visible: the refusal is arithmetic, and it is shown before anything is mined."""
+    view = _without_comments(_read("components", "StructureMiningView.tsx"))
+    assert "split_is_not_optional" in view
+    assert "surrogates_required" in view
+    assert "priceIt" in view
+
+
+def test_the_mining_panel_presents_candidates_as_selection_not_as_findings():
+    view = _read("components", "StructureMiningView.tsx")
+    assert "generated.claim_boundary" in view
+    assert "confirmation.receipt.claim_boundary" in view
+    # A verdict composed here would be this file deciding what a mining pass was worth.
+    for invented in ("confirmed motif", "significant", "discovery"):
+        assert invented not in _without_comments(view).lower()
+
+
+def test_the_cross_domain_panel_reaches_every_route_the_surface_serves(app_source,
+                                                                      api_service):
+    """TG11.4b. Seven routes; a panel that called only some would be a catalogue of them."""
+    view = _read("components", "CrossDomainRecordView.tsx")
+    assert "name: 'Cross-domain record'" in app_source
+    assert "activeTab === 'crossDomainRecord'" in app_source
+    for call in ("getCrossDomainCapabilities", "alignDomains", "priceCrossDomainLags",
+                 "describeCrossDomainPartition", "generateCrossDomain", "sealCrossDomain",
+                 "confirmCrossDomain"):
+        assert "apiService.%s" % call in view, call
+
+
+def test_no_cross_domain_request_carries_a_lag_in_frames(api_service):
+    """The module exists because two clocks have two frame sizes.
+
+    A lag entered in frames here would be a duration on one of the two clocks and a different
+    duration on the other, and the family would mean something different to each domain. The
+    comments come out first: prose about the rule is not a breach of it.
+    """
+    section = api_service.split("the cross-domain record (TG11.4b)")[1].split(
+        "the findings surface")[0]
+    block = chr(10).join(line for line in section.splitlines()
+                         if not line.strip().startswith("//"))
+    assert "lag_seconds" in block
+    for asserted in ("lag_frames", "'lags'", "max_lag", "cadence_seconds"):
+        assert asserted not in block, "%r is the server's conversion, not the client's" % asserted
+
+
+def test_the_cross_domain_panel_declares_units_rather_than_defaulting_them(api_service):
+    """R19: a channel table carries names and numbers, and neither says what they mean."""
+    types_source = _read("types", "api.ts")
+    source_type = types_source.split("export interface CrossDomainSource")[1].split("}")[0]
+    assert "channels" in source_type
+    assert "?" not in source_type.split("channels")[1].split(";")[0], (
+        "the per-channel declaration must be required, not optional")
+    view = _without_comments(_read("components", "CrossDomainRecordView.tsx"))
+    assert "semantics" in view and "units" in view
+    for invented in ("'unknown'", '"unknown"', "arbitrary units"):
+        assert invented not in view
+
+
+def test_the_cross_domain_panel_offers_no_way_to_resample(api_service):
+    """The tempting repair for two clocks that do not line up, and it is not on the panel."""
+    view = _without_comments(_read("components", "CrossDomainRecordView.tsx"))
+    for offered in ("resample", "interpolate", "nearest", "reindex", "ffill"):
+        assert offered not in view.lower(), "%r must not be a control here" % offered
+    section = api_service.split("the cross-domain record (TG11.4b)")[1].split(
+        "the findings surface")[0]
+    assert "resample" not in section.lower()
+
+
+def test_the_cross_domain_confirmation_sends_the_records_and_nothing_else(api_service):
+    """A knob still turnable after the seal is a family member chosen after the declaration."""
+    call = api_service.split("async confirmCrossDomain")[1].split("},")[0]
+    for appended in re.findall(r"form\.append\('([^']+)'", call):
+        assert appended in ("first", "second", "published_sha256"), appended
+
+
+def test_the_cross_domain_panel_shows_what_the_alignment_discarded():
+    """A join that quietly kept a third of one record is a different study from the declared one."""
+    view = _read("components", "CrossDomainRecordView.tsx")
+    assert "discarded_native_observations" in view
+    assert "retained_native_observations" in view
+    assert "n_common_observations" in view
+
+
+def test_the_cross_domain_panel_presents_the_receipt_rather_than_a_verdict():
+    view = _read("components", "CrossDomainRecordView.tsx")
+    assert "confirmation.claim_boundary" in view
+    assert "confirmation.receipt.vacuous" in view
+    stripped = _without_comments(view).lower()
+    for invented in ("causes", "causal link", "significant"):
+        assert invented not in stripped
+
+
+def test_the_mining_panel_shows_a_vacuous_confirmation_as_not_one():
+    """R5 on the wire: an ensemble that could not have rejected anything did not check it."""
+    view = _read("components", "StructureMiningView.tsx")
+    assert "confirmation.vacuous" in view
+    assert "not confirmed by anything" in view
+
+
+def test_the_mining_panel_says_whose_claim_the_declared_transforms_are():
+    view = _read("components", "StructureMiningView.tsx")
+    assert "audit.declared_transforms_are_the_callers" in view
+    assert "report.overclaimed" in view
+
+
+def test_the_mining_panel_carries_the_origin_licence_into_a_transfer():
+    """A definition that crossed domains having forgotten where it came from is the erasure
+    R17 exists to prevent."""
+    view = _read("components", "StructureMiningView.tsx")
+    assert "published.origin_licence" in view
+    assert "seal.publication_note" in view
+
+
+def test_negative_evidence_is_presented_as_load_bearing():
+    view = _read("components", "EvidenceView.tsx")
+    assert "blocking_entries" in view
+    assert "no quantity of favourable" in view
+    assert "unblocked_rung" in view
+
+
+def test_every_era5_control_survived_the_consolidation():
+    view = _read("components", "AcquisitionView.tsx")
+    for call in ("zarrCatalogue", "zarrCached", "zarrProbes", "zarrProbe", "zarrInspect"):
+        assert "apiService.%s" % call in view
+    for field in ("variables", "time_start", "time_end", "lat_min", "lat_max",
+                  "lon_min", "lon_max", "levels", "n_levels_analysis"):
+        assert field in view
+    assert "inspection.cli" in view, "materialisation guidance must remain reachable"
 
 
 def test_every_api_method_is_reachable_from_the_ui(api_service, all_sources):
@@ -175,7 +576,8 @@ def test_data_source_payload_carries_the_observational_flag(client):
 
 def test_zarr_catalogue_payload_has_the_fields_the_form_reads(client):
     body = client.get("/api/v1/data/zarr/catalogue").json()
-    for key in ("stores", "network_enabled", "network_env_var", "r13_minimum_crop"):
+    for key in ("stores", "network_enabled", "network_env_var", "r13_minimum_crop",
+                "analysis_transforms", "r13_legacy_note"):
         assert key in body
     first = next(iter(body["stores"].values()))
     assert "note" in first, "the store picker shows the note; it must be present"
@@ -233,10 +635,14 @@ def test_zarr_inspect_payload_has_the_nested_keys_the_ui_reads(client, tmp_path)
         "store": path, "variables": ["temperature"],
         "time_start": "2020-01-01", "time_end": "2020-01-01",
         "lat_min": -10.0, "lat_max": 10.0, "lon_min": 0.0, "lon_max": 20.0,
-        "levels": [850, 500], "n_levels_analysis": 4,
+        "levels": [850, 500], "n_levels_analysis": 3,
+        "analysis": {"transform_family": "swt", "levels": 3,
+                     "wavelet": "db3", "boundary_mode": "reflect",
+                     "dtcwt_level1": "near_sym_b", "dtcwt_qshift": "qshift_b"},
     }).json()
 
-    for key in ("spec", "cached", "structure", "assessment", "geometry", "cli"):
+    for key in ("spec", "cached", "structure", "assessment", "geometry",
+                "acquisition_plan", "cli"):
         assert key in body
     for key in ("amplification", "chunk_hostile", "bytes_wanted",
                 "bytes_fetched_estimate", "warning", "advice", "byte_basis", "selection"):
@@ -244,10 +650,21 @@ def test_zarr_inspect_payload_has_the_nested_keys_the_ui_reads(client, tmp_path)
     variable = body["structure"]["variables"]["temperature"]
     for key in ("shape", "chunks", "chunk_megabytes"):
         assert key in variable, "structure.variables[].%s is read by the UI" % key
-    # A crop below the R13 floor reports `ok: False` with an `error` string, and the UI
-    # renders exactly those two keys.
-    assert body["geometry"]["ok"] is False
-    assert isinstance(body["geometry"]["error"], str)
+    # The UI renders both thresholds, the implementation-derived per-level geometry and the
+    # coordinate expansion/cost result rather than one generic error string.
+    geometry = body["geometry"]
+    for key in ("current_shape", "verdict", "meets_absolute_minimum",
+                "meets_recommended_minimum", "absolute_minimum", "recommended_minimum",
+                "levels", "analysis_sha256"):
+        assert key in geometry
+    plan = body["acquisition_plan"]
+    assert set(plan["suggestions"]) == {"absolute", "recommended"}
+    assert len(plan["plan_sha256"]) == 64
+    assert geometry["analysis"]["transform_family"] == "swt"
+    assert geometry["analysis"]["levels"] == 3
+    assert geometry["analysis"]["config"] == {"wavelet": "db3", "mode": "reflect"}
+    assert "--analysis-levels 3 --analysis-transform swt" in body["cli"]
+    assert "--wavelet db3 --boundary-mode reflect" in body["cli"]
     assert isinstance(body["assessment"]["advice"], list)
 
 
@@ -296,7 +713,7 @@ def test_hypothesis_card_shows_a_warning_when_uncorrected(app_source):
 
 def test_every_tab_in_the_nav_has_a_body(app_source):
     """A nav entry with no matching panel is a button that does nothing."""
-    ids = re.findall(r"\{ id: '(\w+)', name: '[^']*', icon: \w+ \}", app_source)
+    ids = re.findall(r"\{ id: '(\w+)', name: '[^']*', icon: \w+", app_source)
     assert len(ids) >= 9, "expected at least nine research modules, found %s" % ids
     for tab_id in ids:
         assert "activeTab === '%s'" % tab_id in app_source, (
@@ -395,10 +812,10 @@ def test_dataset_simulated_flag_is_shown_where_the_data_is_used(app_source):
     assert "chosen.fallback_reason" in app_source
 
 
-def test_regional_forecast_ui_refuses_unverified_physical_time_claims(app_source):
-    assert "cadence: NOT VERIFIED" in app_source or "cadence_verified" in app_source
-    assert "physical lead labels: NOT AVAILABLE" in app_source
-    assert "ratios (dates not frozen)" in app_source
+def test_regional_forecast_ui_refuses_unverified_physical_time_claims(all_sources):
+    assert "cadence: NOT VERIFIED" in all_sources or "cadence_verified" in all_sources
+    assert "physical lead labels: NOT AVAILABLE" in all_sources
+    assert "ratios (dates not frozen)" in all_sources
 
 
 def test_units_and_spectral_convention_are_displayed(app_source):
@@ -494,3 +911,279 @@ def test_benchmarks_can_be_run_from_the_ui(all_sources):
     # The three outcomes must stay separate on screen too.
     assert "NOT YET RUNNABLE" in all_sources
     assert "null_failures" in all_sources
+
+
+# ======================================================== the findings view (TG9.2)
+#
+# Phase G9's rule is that the client computes and formats no scientific number. These assert it
+# over the source, because a rule enforced only by whoever writes the JSX is not enforced.
+
+FINDINGS_COMPONENTS = ("components/FindingsView.tsx",)
+
+
+def _findings_sources() -> str:
+    return "\n".join(_read(name) for name in FINDINGS_COMPONENTS)
+
+
+def _without_comments(source: str) -> str:
+    """Strip block and line comments, so prose *about* the rule is not read as breaking it.
+
+    The component's own docstring names `toFixed` in order to say it does not use one. A check
+    that could not tell those apart would forbid documenting the constraint, which is the
+    opposite of what is wanted.
+    """
+    source = re.sub(r"/\*.*?\*/", "", source, flags=re.DOTALL)
+    return re.sub(r"//[^\n]*", "", source)
+
+
+def test_the_findings_view_formats_no_scientific_number():
+    """TG9.2's acceptance criterion: R9 made mechanical on the frontend.
+
+    R9 calls a bare confidence percentage a hard constraint on the frontend, not only on the
+    mining code. The backend already refuses to serve one; this refuses to let a view build one.
+    Together they mean a bare confidence is not withheld by discipline, it is unobtainable.
+    """
+    code = _without_comments(_findings_sources())
+    assert "toFixed" not in code, "a findings component formatted a number itself"
+    assert "toPrecision" not in code
+    assert not re.search(r"\d\s*%", code), "a percent literal reached a findings component"
+
+
+def test_the_findings_view_reads_no_claim_bearing_field_directly():
+    """The stronger form: the six figures are never touched, only the assembled string is.
+
+    Reading `figures.confidence` is how a well-meaning author reintroduces the failure - the
+    number is right there and printing it looks harmless. So no member of `AssociationFigures`
+    may be read at all; `figures_text` is the only permitted route to the association strength.
+    """
+    code = _without_comments(_findings_sources())
+    for field in ("confidence", "base_rate", "lift", "surrogate_corrected_lift", "support"):
+        assert ".%s" % field not in code, (
+            "a findings component read figures.%s directly; only figures_text may be shown "
+            "(R9)" % field)
+    assert "figures_text" in code, "the assembled figure string must actually be rendered"
+
+
+def test_the_findings_view_never_shows_a_claim_without_its_bound():
+    """`rendered` and `licences` are one unit; showing the first alone is promotion by layout."""
+    code = _findings_sources()
+    assert "unit.rendered" in code and "unit.licences" in code
+    rendered_at = code.index("unit.rendered")
+    licences_at = code.index("unit.licences")
+    assert abs(licences_at - rendered_at) < 400, (
+        "the entitlement must be rendered beside the claim, not in a distant branch")
+
+
+def test_every_empty_findings_section_says_absence_is_not_evidence():
+    """Silence reads as reassurance, so an empty section states what it does not mean."""
+    code = _findings_sources()
+    assert code.count("that is not the same as none existing") >= 3
+
+
+def test_the_findings_view_is_operable_without_a_mouse(all_sources):
+    """TG9.4's condition for the new surface only.
+
+    Accessibility across `frontend/src` is zero, measured, and `roadmap.md` records that as
+    deliberate rather than overlooked. This does not change that measurement for the legacy
+    workbench. It requires that the surface added by Phase G9 does not add to the debt.
+    """
+    code = _findings_sources()
+    assert "role=\"tablist\"" in code and "role=\"tab\"" in code
+    assert "aria-selected" in code
+    assert "aria-label" in code
+    assert "aria-pressed" in code
+    assert "htmlFor" in code, "every control needs a label bound to it"
+    assert "focus:ring" in code, "keyboard focus must be visible"
+    assert "aria-hidden" in code, "decorative icons must be hidden from a screen reader"
+    assert "FindingsView" in all_sources, "the view must be mounted in the app"
+
+
+def test_commentary_never_shares_a_container_with_claim_text():
+    """TG9.3: recorded argument is fenced off from what the record actually permits.
+
+    R23 commentary is the output of a non-deterministic process that moved nothing. Rendering it
+    in the same container as a claim would let a reader take a challenger's fluent assertion for
+    part of the finding - which is the failure the whole review layer was fenced to prevent.
+
+    Asserted structurally: `commentary` is rendered inside its own `<section>` carrying its own
+    aria-label, and no `TranslationUnit` field is rendered inside that section.
+    """
+    code = _findings_sources()
+    assert 'aria-label="Recorded commentary"' in code
+    start = code.index('aria-label="Recorded commentary"')
+    end = code.index("</section>", start)
+    block = code[start:end]
+    assert "finding.commentary" in block
+    for field in ("unit.rendered", "unit.licences", "claimable", "not_claimable"):
+        assert field not in block, (
+            "claim text (%s) was rendered inside the commentary container" % field)
+    assert "moved nothing above" in block, "the fence must be labelled, not merely present"
+
+
+def test_the_findings_view_shows_what_the_selected_domain_refuses():
+    """TG9.3's first acceptance criterion, on the frontend."""
+    code = _findings_sources()
+    assert "domain_limits" in code
+    assert "refuses" in code
+    assert "precedence_admissible" in code
+    assert "unadmitted_reading" in code
+
+
+def test_domain_limits_are_never_shown_without_the_attribution_caveat():
+    """A bundle does not record its domain, so limits must never read as a check on the study.
+
+    The caveat is rendered from the payload rather than written into the component, so the
+    sentence a reader sees is the one the API vouched for.
+    """
+    code = _findings_sources()
+    assert code.count("attribution_caveat") >= 2, (
+        "every place a domain limit is shown must render the caveat beside it")
+    assert "does not record which domain" not in code, (
+        "the caveat must come from the payload, not be restated in the view where it could "
+        "drift from what the API actually guarantees")
+
+
+def test_an_unregistered_domain_declaration_is_reported_not_rendered_as_no_limits():
+    code = _findings_sources()
+    assert "That is not the same as it refusing nothing." in code
+
+
+# ================================================= recorded review (TG11.5)
+
+
+def _review_view() -> str:
+    return _read("components", "ReviewView.tsx")
+
+
+def test_the_review_workspace_is_routed_and_kept_separate_from_findings(app_source):
+    assert "name: 'Recorded review'" in app_source
+    assert "activeTab === 'review'" in app_source
+    assert "<ReviewView" in app_source
+    review_start = app_source.index("activeTab === 'review'")
+    review_end = app_source.index(")}", review_start)
+    assert "FindingsView" not in app_source[review_start:review_end]
+
+
+def test_the_review_client_can_read_but_cannot_run_or_write_a_review():
+    service = _read("services", "api.ts")
+    start = service.index("async getStudyReview")
+    block = service[start:service.index("\n  }", start)]
+    assert "method: 'GET'" in block
+    assert "method: 'POST'" not in block
+    assert "fetch(" in block
+    assert "run" not in block.lower()
+
+
+def test_recorded_argument_is_visibly_fenced_from_any_claim_permission():
+    view = _review_view()
+    assert 'aria-label="Recorded-not-reproducible boundary"' in view
+    assert "surface.declaration" in view
+    assert "surface.claim_boundary" in view
+    assert "argument, not evidence and not permission to make a claim" in view
+    assert "Recorded, not reproducible" in view
+
+
+def test_the_complete_record_outcome_dissent_and_cost_audit_are_rendered():
+    view = _review_view()
+    assert "review.rendered" in view
+    assert "entry.rendered" in view
+    assert "review.cost_receipts" in view
+    for field in ("call_count", "input_tokens", "cached_input_tokens", "output_tokens",
+                  "total_tokens", "cache_hit_fraction", "receipt_sha256"):
+        assert "receipt.%s" % field in view
+    assert "no price or review-quality claim" in view
+
+
+def test_missing_review_artifacts_never_render_as_reassurance():
+    view = _review_view()
+    assert "surface.absence_note" in view
+    assert "not the same as no review existing" in view
+    assert "not evidence that no exchange occurred" in view
+    assert "not the same as the review costing nothing" in view
+
+
+def test_the_review_surface_preserves_the_workflow_accessibility_contract():
+    view = _review_view()
+    assert "aria-busy={busy}" in view
+    assert 'role="status"' in view
+    assert 'role="alert"' in view
+    assert 'htmlFor="review-study-id"' in view
+    assert 'id="review-study-id"' in view
+    assert view.count('aria-hidden="true"') >= 3
+
+
+# ======================================================== domain records (TG8.4)
+
+
+def _channel_view() -> str:
+    return _read("components", "ChannelRecords.tsx")
+
+
+def test_the_domain_records_tab_is_wired(app_source):
+    """TG10.2 consolidates records into Acquire instead of adding an archive tab."""
+    acquisition = _read("components", "AcquisitionView.tsx")
+    assert "name: 'Acquire data'" in app_source
+    assert "activeTab === 'acquire'" in app_source
+    assert "12. Domain Records" not in app_source
+    assert "<ChannelRecords" in acquisition
+    assert "domainName={domain.name}" in acquisition
+
+
+def test_the_domain_records_view_renders_the_caveat_the_api_vouched_for(all_sources):
+    """Restating it in the component would let the two drift; the sentence must be rendered."""
+    view = _without_comments(_channel_view())
+    assert "domain_limits.attribution_caveat" in view
+    assert "does not record which domain produced it" not in view, (
+        "the caveat must be rendered from the payload, not restated in the component")
+
+
+def test_the_domain_records_view_renders_refusals_rather_than_deciding_them(all_sources):
+    view = _without_comments(_channel_view())
+    # Every refusal shown comes from the payload: the per-domain admission reasons, the
+    # inspection's own refusal, and the domain's declared limits.
+    assert "row.refusals" in view
+    assert "refused_because" in view
+    assert "domain_limits.refuses" in view
+    assert "refusal.consequence" in view
+
+
+def test_the_domain_records_view_does_not_decide_a_clock_or_a_domain(all_sources):
+    """Both choices are the researcher's, and both are rendered as controls."""
+    view = _without_comments(_channel_view())
+    assert "candidate_time_columns.map" in view, "the clock column must be chosen from candidates"
+    assert 'name="channel-domain"' in view, "the domain must be chosen, not inferred"
+    assert "disabled={!row.admits}" in view, "a refusing domain must not be selectable"
+
+
+def test_the_domain_records_view_says_a_plot_is_not_an_analysis(all_sources):
+    view = _without_comments(_channel_view())
+    assert "record.preview_note" in view
+    assert "not an analysis" not in view, (
+        "the boundary must be the sentence the API served, not one written here")
+
+
+def test_the_domain_records_view_reports_an_irregular_clock_as_declared(all_sources):
+    """`cadence_seconds` is null for an irregular record and must not be rendered as a number."""
+    view = _without_comments(_channel_view())
+    assert "irregular (declared)" in view
+    assert "cadence_seconds !== null" in view, (
+        "a cadence must be shown only where the backend reported one")
+
+
+def test_the_domain_records_view_reports_withheld_rows_rather_than_hiding_them(all_sources):
+    view = _without_comments(_channel_view())
+    assert "rows_withheld" in view
+    assert "nothing was thinned" in view
+
+
+def test_the_domain_records_view_formats_no_scientific_quantity(all_sources):
+    """Phase G9's rule, applied to a tab G9 did not write.
+
+    Row counts and raw data values are formatted here and neither is a claim. What must not
+    appear is a computed statistic or a percentage — those come from the backend or not at all.
+    """
+    view = _without_comments(_channel_view())
+    assert "toFixed" not in view
+    assert "%" not in view.replace("100%", ""), "no percentage may be composed in this view"
+    for field in ("confidence", "base_rate", "lift", "surrogate_corrected"):
+        assert field not in view, "the records view must read no claim-bearing field: %s" % field

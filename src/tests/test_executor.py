@@ -24,6 +24,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from src.core import device as device_policy
+from src.core import randomness
 from src.core import doctor as execution_doctor
 from src.core.errors import InvalidParameterError
 from src.core.executor import (
@@ -46,9 +47,49 @@ def double(item):
 
 
 def seeded_draw(item, seed):
-    """Draws from the seeded stream, so the result depends on the seed and nothing else."""
-    torch.manual_seed(seed)
-    return {"item": item, "value": float(torch.randn(4, dtype=torch.float64).sum())}
+    """Draws from the seeded stream, so the result depends on the seed and nothing else.
+
+    Defect D55: this used to call `torch.manual_seed(seed)` and draw from the process-global
+    generator. That is what a payload written against the old executor contract looked like,
+    and it is exactly what the thread backend corrupted - the seed and the draw are two
+    statements, and another worker's seed fits between them. It now asks the executor for
+    *this task's* stream, which no other worker can reach.
+
+    The values are unchanged: `torch.Generator().manual_seed(s)` produces the same sequence
+    as the global generator does after `torch.manual_seed(s)`.
+    """
+    generator = randomness.require("seeded_draw").torch_generator()
+    return {"item": item,
+            "value": float(torch.randn(4, generator=generator, dtype=torch.float64).sum())}
+
+
+def slow_seeded_draw(item, seed):
+    """`seeded_draw` with the seed-to-draw window held open by real work.
+
+    This is the D55 reproduction. With the window this wide the old process-global seeding
+    disagreed with serial in 10 of 10 trials at thread(8); a microsecond-long task disagreed
+    in 0 of 80, because such tasks effectively serialise. Real sweep payloads are the former,
+    which is why the property test passed for as long as it did.
+    """
+    generator = randomness.require("slow_seeded_draw").torch_generator()
+    time.sleep(0.01)
+    return {"item": item,
+            "value": float(torch.randn(4, generator=generator, dtype=torch.float64).sum())}
+
+
+def report_stream_identity(item, seed):
+    """Reports the seed this task can see, and the first draw it takes from it."""
+    streams = randomness.current()
+    time.sleep(0.01)
+    return {"seed": None if streams is None else streams.seed,
+            "first_draw": float(torch.randn(1, generator=streams.torch_generator(),
+                                            dtype=torch.float64))}
+
+
+def draw_without_seeding(item):
+    """A payload that never seeds anything. Must not inherit the previous task's stream."""
+    time.sleep(0.005)
+    return randomness.current() is None
 
 
 def slow_then_fast(item):
@@ -91,6 +132,61 @@ def test_a_runs_seed_does_not_depend_on_which_worker_took_it():
     thr = get_executor("thread", 4).map(seeded_draw, items, seeds)
     assert [r.value for r in ref] == [r.value for r in thr]
     assert [r.seed for r in ref] == [r.seed for r in thr] == seeds
+
+
+def test_the_thread_backend_agrees_with_serial_when_the_window_is_held_open():
+    """Defect D55, closed. This is the case that used to fail 10 times out of 10.
+
+    Eight workers, twelve tasks, and 10 ms between each task's seeding and its draw - so the
+    interleaving is not a race that might happen but one that certainly does. Under the old
+    process-global seeding the draws came from whichever seed was installed last.
+    """
+    items = list(range(12))
+    seeds = derive_seeds(4242, 12)
+    ref = get_executor("serial").map(slow_seeded_draw, items, seeds)
+    thr = get_executor("thread", 8).map(slow_seeded_draw, items, seeds)
+    assert all(r.ok for r in ref + thr)
+    assert [r.value for r in ref] == [r.value for r in thr]
+
+
+def test_each_task_sees_its_own_seed_and_draws_from_it():
+    """The mechanism, asserted against an independently computed expectation.
+
+    Twelve overlapping tasks on eight threads, each reading its seed *before* a 10 ms sleep
+    and drawing *after* it - so every task's seed-to-draw window contains several other
+    tasks' seedings. Each draw is then checked against the number that seed alone produces,
+    computed here in a single thread. Equal outputs across two backends could in principle be
+    luck; matching an externally computed value for all twelve cannot.
+    """
+    seeds = derive_seeds(7, 12)
+    results = get_executor("thread", 8).map(report_stream_identity, list(range(12)), seeds)
+    assert [r.value["seed"] for r in results] == seeds
+    for seed, result in zip(seeds, results):
+        expected = torch.Generator()
+        expected.manual_seed(int(seed))
+        assert result.value["first_draw"] == float(
+            torch.randn(1, generator=expected, dtype=torch.float64))
+
+
+def test_a_reused_thread_does_not_inherit_the_previous_task_s_stream():
+    """The binding is released with the task, not left for the next one.
+
+    `ThreadPoolExecutor` reuses threads. A context binding left in place would be inherited
+    by the next task on that thread - a quieter version of D55, visible only when a later
+    task forgets to seed, which is precisely when nobody is looking.
+    """
+    seeds = derive_seeds(11, 6)
+    get_executor("thread", 3).map(seeded_draw, list(range(6)), seeds)
+    after = get_executor("thread", 3).map(draw_without_seeding, list(range(6)))
+    assert all(r.value is True for r in after)
+
+
+def test_an_unseeded_task_is_left_unseeded_rather_than_given_a_stream():
+    """`seed=None` binds nothing. An unreproducible run must stay visibly unreproducible."""
+    assert randomness.current() is None
+    results = get_executor("serial").map(draw_without_seeding, list(range(3)))
+    assert all(r.value is True for r in results)
+    assert randomness.current() is None
 
 
 # --------------------------------------------------------------- ordering
@@ -382,6 +478,14 @@ def test_parallel_writers_do_not_hit_database_is_locked(tmp_path):
 
 # --------------------------------------------------------------- end-to-end sweep
 
+#: The sweep the byte-identity acceptance criterion runs on.
+#:
+#: The ``noise`` step is not decoration. Until D55 this pipeline was **entirely
+#: deterministic** - a vortex and a wavelet transform, no random draw anywhere - so the test
+#: that certified "a sweep is byte-identical across executor backends" was certifying it with
+#: a payload that had no seed-dependent behaviour to get wrong. It could not have caught D55,
+#: and did not. A reproducibility test whose payload never draws is a test of the ordering
+#: contract wearing a reproducibility label.
 SWEEP_CONFIG = {
     "parameter_matrix": {"lvl": [1, 2], "wname": ["haar", "db2"], "sz": [32, 48]},
     "pipeline": [
@@ -391,19 +495,23 @@ SWEEP_CONFIG = {
         {"name": "tf", "action": "apply_transform",
          "args": {"field_data": "{gen.field_data}", "transform_type": "swt",
                   "config": {"levels": "{lvl}", "wavelet": "{wname}"}}},
+        {"name": "noise", "action": "perturb_field",
+         "args": {"field_data": "{gen.field_data}",
+                  "perturbations": [{"type": "noise", "noise_type": "gaussian",
+                                     "level": 0.2}]}},
     ],
     "metadata": {"code_revision": "t3519"},
 }
 
 
-def _run_sweep(tmp_path, backend, n_workers, name):
+def _run_sweep(tmp_path, backend, n_workers, name, root_seed=20260819):
     engine = create_engine("sqlite:///%s" % (tmp_path / ("%s.db" % name)),
                            connect_args={"check_same_thread": False})
     Base.metadata.create_all(engine)
     factory = sessionmaker(bind=engine)
 
     config = json.loads(json.dumps(SWEEP_CONFIG))
-    config["execution"] = {"backend": backend, "n_workers": n_workers, "seed": 20260819}
+    config["execution"] = {"backend": backend, "n_workers": n_workers, "seed": root_seed}
 
     exp_id = str(uuid.uuid4())
     db = factory()
@@ -442,6 +550,21 @@ def test_sweep_is_byte_identical_across_backends(tmp_path):
         assert nodes == ref_nodes
         assert execution["backend"] == backend
         assert execution["n_workers"] == workers
+
+
+def test_the_acceptance_sweep_actually_draws_random_numbers(tmp_path):
+    """Guards the guard. Without this the byte-identity test can go vacuous again.
+
+    `SWEEP_CONFIG`'s noise step exists so that the reproducibility criterion has something
+    seed-dependent to be reproducible *about*. If a later edit removed it, or the perturbation
+    stopped drawing, `test_sweep_is_byte_identical_across_backends` would keep passing while
+    testing nothing but result ordering - which is exactly the state it was in when D55 was
+    live. So: change the root seed, and the persisted results must move.
+    """
+    reference, _, _ = _run_sweep(tmp_path, "serial", 1, "seed_a")
+    shifted, _, _ = _run_sweep(tmp_path, "serial", 1, "seed_b", root_seed=987654321)
+    assert [row[0] for row in reference] == [row[0] for row in shifted]   # same parameters
+    assert [row[3] for row in reference] != [row[3] for row in shifted]   # different results
 
 
 def test_every_run_records_its_seed_and_execution_context(tmp_path):

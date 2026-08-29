@@ -68,10 +68,46 @@ def _test_files():
         for p in glob.glob(os.path.join(REPO_ROOT, "src", "tests", "test_*.py")))
 
 
+#: Modules that define routes, and the decorator prefix each uses. `main.py` decorates `@app`
+#: directly; a router module decorates `@router` and is mounted with `include_router`, and its
+#: `prefix=` is prepended to every path it declares. **A new router must be
+#: added here or the guard stops covering it** — which happened once already (see `_routes`) and
+#: happened again in TG8.4, when `src/api/channels.py` was mounted and two real endpoints were
+#: invisible until the route count disagreed with the documented one. That disagreement is the
+#: only reason it was noticed, so the count claim is doing more work than it appears to.
+_ROUTE_SOURCES = (("src/api/main.py", "app", ""),
+                  ("src/api/findings.py", "router", "/api/v1/findings"),
+                  ("src/api/channels.py", "router", "/api/v1/channels"),
+                  ("src/api/acquisitions.py", "router", "/api/v1/acquisitions"),
+                  ("src/api/analysis.py", "router", "/api/v1/analysis"),
+                  ("src/api/preregistration.py", "router", "/api/v1/preregistration"),
+                  ("src/api/evidence.py", "router", "/api/v1/evidence"),
+                  ("src/api/mining.py", "router", "/api/v1/mining"),
+                  ("src/api/cross_domain.py", "router", "/api/v1/cross-domain"),
+                  ("src/api/reviews.py", "router", "/api/v1/reviews"))
+
+
 def _routes():
-    main = _read("src/api/main.py")
-    return [(v.upper(), r) for v, r in
-            re.findall(r'@app\.(get|post|put|delete)\("([^"]+)"', main)]
+    """Every served route, across `main.py` **and** every mounted router.
+
+    The path pattern is `[^"]*`, not `[^"]+`: a router that declares its own prefix and mounts a
+    route at `""` serves a real endpoint, and a `+` quantifier cannot see it. TG11.1 hit that -
+    `GET /api/v1/analysis` was served and invisible here, and the count claim disagreed by one,
+    which is again the only reason it was noticed.
+
+    This originally read `main.py` alone. TG9.1 mounted the findings surface as an `APIRouter`
+    in its own module, and a decorator scan of `main.py` cannot see those - so six real
+    endpoints were invisible to the guard whose whole job is refusing an undocumented endpoint.
+    A guard that silently stops covering new code is worse than no guard, because its passing
+    is read as assurance.
+    """
+    found = []
+    for path, decorator, prefix in _ROUTE_SOURCES:
+        source = _read(path)
+        for verb, route in re.findall(
+                r'@%s\.(get|post|put|delete)\("([^"]*)"' % decorator, source):
+            found.append((verb.upper(), prefix + route))
+    return found
 
 
 # ============================================================== coverage
@@ -169,9 +205,15 @@ def test_defect_ids_are_contiguous(architecture):
 
 
 def test_fixed_defects_name_the_task_that_fixed_them(architecture):
+    """`T3.5.24` or `T4C.5g` on the atmospheric line, `TG1.1` on the generalisation line.
+
+    The pattern was ``T`` plus a digit until TG1.1, which is a small example of what Phase G1 is for: a
+    guard that had quietly assumed the only task vocabulary there would ever be. It was found
+    by the first fork task to fix a defect rather than by reading.
+    """
     for line in architecture.splitlines():
         if line.startswith("| D") and "**FIXED**" in line:
-            assert re.search(r"\*\*FIXED\*\*\s*T\d", line), (
+            assert re.search(r"\*\*FIXED\*\*\s*TG?\d", line), (
                 "a FIXED defect must name the task that fixed it: %s" % line[:80])
 
 
