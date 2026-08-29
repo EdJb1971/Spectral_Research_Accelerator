@@ -13,13 +13,16 @@ from fastapi import APIRouter
 
 from src.api.findings import DOMAIN_ATTRIBUTION_CAVEAT, refuse_bare_confidence
 from src.core.builtin_domains import register_builtin_domains
-from src.core.domain import DOMAIN_DECLARATIONS, declaration_for, refusals_for
+from src.core.domain import (DOMAIN_DECLARATIONS, KNOWN_VIOLATIONS, declaration_for,
+                             refusals_for)
 from src.core.onboarding import audit_onboarding, is_onboarded
 from src.data_layer.stores import (ACCESS_REQUIREMENTS, register_builtin_stores,
                                    stores_for_domain)
 from src.data_layer.tabular_source import unsatisfiable_axes
 from src.data_layer.argo_source import register_argo_source
 from src.data_layer.profiles import PROFILE_SOURCES
+from src.data_layer.tess_source import register_tess_source
+from src.data_layer.lightcurves import LIGHTCURVE_SOURCES
 
 
 router = APIRouter(prefix="/api/v1/acquisitions", tags=["acquisitions"])
@@ -27,11 +30,13 @@ router = APIRouter(prefix="/api/v1/acquisitions", tags=["acquisitions"])
 ACQUISITION_SHAPES = {
     "grid_crop": "A bounded time, horizontal and optional vertical selection from a regular grid.",
     "profile_query": "A region, time window and vertical range returning irregular profiles.",
+    "lightcurve_query": "A per-target sequence of fluxes over one or more observational sectors.",
     "channel_table": "A local delimited file with one clock column and named value channels.",
 }
 
 # Eager registration keeps the response independent of route visitation order (D35).
 REGISTERED_PROFILE_SOURCE = register_argo_source()
+REGISTERED_LIGHTCURVE_SOURCE = register_tess_source()
 REGISTERED_DOMAINS = register_builtin_domains()
 REGISTERED_STORES = register_builtin_stores()
 
@@ -65,16 +70,34 @@ def _profile_acquisitions(domain: str, limits: Dict[str, Any]) -> List[Dict[str,
     rows: List[Dict[str, Any]] = []
     for entry in PROFILE_SOURCES:
         source = entry.value
+        if getattr(source, "domain", None) != domain:
+            continue
+        rows.append({
+            "id": "profile_query:%s" % getattr(source, "name", "unknown"),
+            "name": getattr(source, "name", "unknown"),
+            "shape": "profile_query", "available": True,
+            "access": getattr(source, "access", "anonymous"),
+            "access_means": ("Public network access through the official Argo GDAC view; "
+                             "explicit server opt-in is required."),
+            "profile_source": source.describe() if hasattr(source, "describe") else {}, "domain_limits": limits,
+        })
+    return rows
+
+
+def _lightcurve_acquisitions(domain: str, limits: Dict[str, Any]) -> List[Dict[str, Any]]:
+    rows: List[Dict[str, Any]] = []
+    for entry in LIGHTCURVE_SOURCES:
+        source = entry.value
         if source.domain != domain:
             continue
         rows.append({
-            "id": "profile_query:%s" % source.name,
+            "id": "lightcurve_query:%s" % source.name,
             "name": source.name,
-            "shape": "profile_query", "available": True,
+            "shape": "lightcurve_query", "available": True,
             "access": source.access,
-            "access_means": ("Public network access through the official Argo GDAC view; "
+            "access_means": ("Public network access through MAST/AWS; "
                              "explicit server opt-in is required."),
-            "profile_source": source.describe(), "domain_limits": limits,
+            "lightcurve_source": source.describe(), "domain_limits": limits,
         })
     return rows
 
@@ -118,6 +141,7 @@ async def list_acquisitions() -> Dict[str, Any]:
         limits = _limits(name)
         acquisitions = _grid_acquisitions(name, limits)
         acquisitions.extend(_profile_acquisitions(name, limits))
+        acquisitions.extend(_lightcurve_acquisitions(name, limits))
         acquisitions.append(_channel_acquisition(name, limits))
         domains.append({
             "name": name,
@@ -127,9 +151,17 @@ async def list_acquisitions() -> Dict[str, Any]:
             "domain_limits": limits,
             "acquisitions": acquisitions,
         })
+    coverage: Dict[str, List[Dict[str, str]]] = {name: [] for name in KNOWN_VIOLATIONS}
+    for domain in domains:
+        declared = declaration_for(domain["name"])
+        paths = [item for item in domain["acquisitions"] if item["available"]]
+        for violation in declared.violations:
+            coverage[violation].extend({"domain": domain["name"], "shape": item["shape"],
+                                        "path": item["id"]} for item in paths)
     return refuse_bare_confidence({
         "domains": domains,
         "shapes": ACQUISITION_SHAPES,
+        "violation_coverage": coverage,
         "attribution_caveat": DOMAIN_ATTRIBUTION_CAVEAT,
         "note": ("Choose a domain first. A catalogue entry is an available acquisition path, "
                  "not evidence that data was fetched or that a record came from that domain."),

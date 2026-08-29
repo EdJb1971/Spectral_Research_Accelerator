@@ -43,8 +43,10 @@ import numpy as np
 from src.api.findings import DOMAIN_ATTRIBUTION_CAVEAT, refuse_bare_confidence
 from src.core.builtin_domains import register_builtin_domains
 from src.core.domain import declaration_for, refusals_for
+from src.core.dataset_capabilities import build_profile
 from src.core.errors import SpectralEarthError, classify
-from src.core.onboarding import DOMAIN_ONBOARDINGS, is_onboarded
+from src.core.onboarding import (DOMAIN_ONBOARDINGS, geometry_offers_metric,
+                                 is_onboarded)
 from src.data_layer.tabular_source import (VALUE_MEASURE, clock_facts, inspect_delimited,
                                            read_channels_for_domain)
 
@@ -197,6 +199,26 @@ def _read_payload(series: Any, declaration: Any, domain: str) -> Dict[str, Any]:
         })
 
     facts = clock_facts(series.times_seconds)
+    onboarding = DOMAIN_ONBOARDINGS.get(domain) if is_onboarded(domain) else None
+    irregular_support = bool(present is not None and not np.all(present))
+    capability_profile = build_profile(
+        kind="channel_series", phase="admitted",
+        identity=str(series.provenance.get("content_sha256")), domain=domain,
+        facts={
+            "sample_table": False, "channel_series": True, "profile_collection": False,
+            "spatial_grid_2d": False,
+            "physical_metric": (geometry_offers_metric(onboarding.geometry)
+                                if onboarding is not None else None),
+            "ordered_time_axis": True, "regular_cadence": bool(facts["regular"]),
+            "irregular_support": irregular_support,
+            "transform_compatible": False,
+            "precedence_admissible": declaration.precedence_admissible,
+            "independent_samples": False,
+        },
+        basis={"onboarding_sha256": (onboarding.onboarding_sha256
+                                      if onboarding is not None else None),
+               "geometry": onboarding.geometry if onboarding is not None else None,
+               "clock": facts, "representation": "channel table"})
     return {
         "source_name": series.provenance.get("path_basename"),
         "content_sha256": series.provenance.get("content_sha256"),
@@ -218,6 +240,7 @@ def _read_payload(series: Any, declaration: Any, domain: str) -> Dict[str, Any]:
             "refuses": [dict(item) for item in refusals_for(declaration_for(domain))],
             "attribution_caveat": DOMAIN_ATTRIBUTION_CAVEAT,
         },
+        "capability_profile": capability_profile,
         "provenance": dict(series.provenance),
     }
 

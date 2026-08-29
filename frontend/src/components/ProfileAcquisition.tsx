@@ -8,6 +8,7 @@ import * as types from '../types/api';
 interface Props {
   source: types.ProfileSource;
   onError?: (message: string) => void;
+  onCapability?: (profile: types.DatasetCapabilityProfile | null) => void;
 }
 
 const fallback: types.ProfileSpecRequest = {
@@ -17,7 +18,7 @@ const fallback: types.ProfileSpecRequest = {
   variables: ['temperature'], max_profiles: 200,
 };
 
-export const ProfileAcquisition: React.FC<Props> = ({ source, onError }) => {
+export const ProfileAcquisition: React.FC<Props> = ({ source, onError, onCapability }) => {
   const [capabilities, setCapabilities] = useState<types.ProfileCapabilities | null>(null);
   const [spec, setSpec] = useState<types.ProfileSpecRequest>({
     ...fallback, ...source.defaults, source: source.name,
@@ -50,10 +51,10 @@ export const ProfileAcquisition: React.FC<Props> = ({ source, onError }) => {
 
   const revise = (change: Partial<types.ProfileSpecRequest>) => {
     setSpec((current) => ({ ...current, ...change }));
-    setPlan(null); setResult(null);
+    setPlan(null); setResult(null); onCapability?.(null);
   };
   const reviseReduction = (action: () => void) => {
-    action(); setPlan(null); setResult(null);
+    action(); setPlan(null); setResult(null); onCapability?.(null);
   };
   const fail = (error: unknown) => onError?.(error instanceof Error ? error.message : String(error));
 
@@ -65,7 +66,8 @@ export const ProfileAcquisition: React.FC<Props> = ({ source, onError }) => {
   };
   const acquire = async () => {
     setBusy('acquire');
-    try { setResult(await apiService.acquireProfiles(payload)); }
+    try { const acquired = await apiService.acquireProfiles(payload); setResult(acquired);
+      onCapability?.(acquired.capability_profile); }
     catch (error) { setResult(null); fail(error); }
     finally { setBusy(null); }
   };

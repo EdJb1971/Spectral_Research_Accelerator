@@ -534,6 +534,26 @@ def test_every_api_method_is_reachable_from_the_ui(api_service, all_sources):
         "endpoints behind them remain unreachable in the UI: %s" % unused)
 
 
+def test_dataset_capabilities_gate_navigation_with_visible_backend_reasons(app_source):
+    """Disabled scientific paths must teach rather than disappear or silently grey out."""
+    for operation in ("cross_domain_analysis", "boundary_lab", "dtcwt_spatial",
+                      "gridded_diagnostics", "structure_mining", "forecast_evaluation"):
+        assert "operation: '%s'" % operation in app_source
+    assert "selectedCapability.operations[tab.operation]" in app_source
+    assert "disabled={unavailable}" in app_source
+    assert "Unavailable" in app_source and "decision.reason" in app_source
+    assert "aria-describedby" in app_source
+
+
+def test_capability_profile_shows_yes_no_unknown_and_operation_refusals():
+    view = _read("components", "DatasetCapabilityProfile.tsx")
+    assert "profile.capabilities.map" in view
+    assert "profile.operations" in view
+    assert "not established" in view
+    assert "decision.reason" in view
+    assert "profile.profile_sha256" in view
+
+
 # ======================================================== payload shapes
 
 def test_health_payload_has_the_fields_the_status_tab_reads(client):

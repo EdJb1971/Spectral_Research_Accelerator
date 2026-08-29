@@ -10,6 +10,8 @@ from pydantic import BaseModel, Field
 
 from src.analysis_engine.cross_scale import masked_frame_lag_assessment
 from src.core.errors import SpectralEarthError, classify
+from src.core.dataset_capabilities import build_profile
+from src.core.onboarding import DOMAIN_ONBOARDINGS, geometry_offers_metric
 from src.data_layer.argo_source import (ARGO_DOI, NETWORK_ENV_VAR, acquire_profiles,
                                         inspect_profile_query, network_enabled,
                                         persist_collection, register_argo_source)
@@ -156,11 +158,30 @@ async def acquire(request: ProfileAcquisitionRequest) -> Dict[str, Any]:
                                  request.reduction.configuration)
     except SpectralEarthError as error:
         raise _handle(error)
+    readiness = _analysis_readiness(result)
+    onboarding = DOMAIN_ONBOARDINGS.get(result.declaration.name)
+    profile = build_profile(
+        kind="profile_collection", phase="acquired",
+        identity=str(result.describe()["content_sha256"]), domain=result.declaration.name,
+        facts={
+            "sample_table": False, "channel_series": False, "profile_collection": True,
+            "spatial_grid_2d": False,
+            "physical_metric": geometry_offers_metric(onboarding.geometry),
+            "ordered_time_axis": True,
+            "regular_cadence": bool(result.describe()["clock"]["regular"]),
+            "irregular_support": True, "transform_compatible": False,
+            "precedence_admissible": bool(readiness["frame_lag_admissible"]),
+            "independent_samples": False,
+        },
+        basis={"collection_sha256": collection.collection_sha256(),
+               "reduction": result.describe()["reduction"],
+               "geometry": onboarding.geometry,
+               "record_specific_lag_decision": readiness})
     return {
         "schema": "spectral.profile-acquisition.v1",
         "collection": collection.describe(), "publication": publication,
         "reduction": result.describe(), "preview": _preview(result),
-        "analysis_readiness": _analysis_readiness(result),
+        "analysis_readiness": readiness, "capability_profile": profile,
         "source_doi": ARGO_DOI,
         "claim_boundary": (
             "This receipt proves which public profile response was acquired, which QC policy "

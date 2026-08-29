@@ -30,10 +30,11 @@ interface ChannelRecordsProps {
   /** TG11.0: shell-owned context survives navigation between workflow panels. */
   selectedRecord?: types.ChannelRecordSelection | null;
   onSelectRecord?: (record: types.ChannelRecordSelection | null) => void;
+  onCapability?: (profile: types.DatasetCapabilityProfile | null) => void;
 }
 
 export const ChannelRecords: React.FC<ChannelRecordsProps> = ({
-  onError, domainName, selectedRecord = null, onSelectRecord,
+  onError, domainName, selectedRecord = null, onSelectRecord, onCapability,
 }) => {
   const [file, setFile] = useState<File | null>(null);
   const [inspection, setInspection] = useState<types.ChannelInspection | null>(null);
@@ -53,6 +54,7 @@ export const ChannelRecords: React.FC<ChannelRecordsProps> = ({
     setInspection(null);
     setRecord(null);
     onSelectRecord?.(null);
+    onCapability?.(null);
     setTimeColumn('');
     setDomain('');
     setSupports({});
@@ -90,9 +92,11 @@ export const ChannelRecords: React.FC<ChannelRecordsProps> = ({
         { supportParentPx: supports });
       setRecord(loaded);
       onSelectRecord?.({ record: loaded, file, timeColumn, supportParentPx: supports });
+      onCapability?.(loaded.capability_profile);
     } catch (error) {
       setRecord(null);
       onSelectRecord?.(null);
+      onCapability?.(null);
       fail(error);
     } finally {
       setBusy(false);
@@ -103,6 +107,7 @@ export const ChannelRecords: React.FC<ChannelRecordsProps> = ({
     setTimeColumn(column);
     setRecord(null);
     onSelectRecord?.(null);
+    onCapability?.(null);
     if (!file) return;
     setBusy(true);
     try {

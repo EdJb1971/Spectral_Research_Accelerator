@@ -1,0 +1,5 @@
+# Optional calibrated TESS light-curve acquisition (TG13.1).
+# Astropy supplies the reference FITS checksum/table reader. The core application and metadata
+# preflight remain importable without it; value acquisition refuses with this exact remedy.
+-r requirements.txt
+astropy>=6.0,<8.0

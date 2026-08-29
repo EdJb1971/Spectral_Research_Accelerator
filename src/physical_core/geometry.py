@@ -174,7 +174,8 @@ def capability(kind: str, key: str, default: Any = None) -> Any:
 
 def recognisers() -> Tuple[Geometry, ...]:
     """Registered geometries in the order `from_coords` should consult them."""
-    return tuple(sorted((e.value for e in GEOMETRIES.entries()),
+    return tuple(sorted((e.value for e in GEOMETRIES.entries()
+                         if e.capabilities.get("grid_compatible", True)),
                         key=lambda g: (g.coord_priority, g.name)))
 
 

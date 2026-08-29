@@ -8,11 +8,14 @@ import { apiService } from '../services/api';
 import * as types from '../types/api';
 import ChannelRecords from './ChannelRecords';
 import ProfileAcquisition from './ProfileAcquisition';
+import LightCurveAcquisition from './LightCurveAcquisition';
+import GenericIngress from './GenericIngress';
 
 interface AcquisitionViewProps {
   onError?: (message: string) => void;
   selectedRecord?: types.ChannelRecordSelection | null;
   onSelectRecord?: (record: types.ChannelRecordSelection | null) => void;
+  onCapability?: (profile: types.DatasetCapabilityProfile | null) => void;
 }
 
 const DEFAULT_CROP: types.ZarrCropRequest = {
@@ -27,7 +30,7 @@ const DEFAULT_CROP: types.ZarrCropRequest = {
 };
 
 export const AcquisitionView: React.FC<AcquisitionViewProps> = ({
-  onError, selectedRecord = null, onSelectRecord,
+  onError, selectedRecord = null, onSelectRecord, onCapability,
 }) => {
   const [catalogue, setCatalogue] = useState<types.AcquisitionCatalogue | null>(null);
   const [zarrCatalogue, setZarrCatalogue] = useState<types.ZarrCatalogueResponse | null>(null);
@@ -83,6 +86,7 @@ export const AcquisitionView: React.FC<AcquisitionViewProps> = ({
     setAcquisitionId(chosen?.acquisitions.find((item) => item.available)?.id || '');
     setInspection(null);
     setProbe(null);
+    onCapability?.(null);
   };
 
   const chooseAcquisition = (option: types.AcquisitionOption) => {
@@ -90,6 +94,7 @@ export const AcquisitionView: React.FC<AcquisitionViewProps> = ({
     setAcquisitionId(option.id);
     setInspection(null);
     setProbe(null);
+    onCapability?.(null);
     if (option.shape === 'grid_crop') {
       const base = option.store?.vertical_dim === 'level'
         ? DEFAULT_CROP
@@ -113,7 +118,8 @@ export const AcquisitionView: React.FC<AcquisitionViewProps> = ({
   const inspect = async () => {
     setBusy(true);
     setInspection(null);
-    try { setInspection(await apiService.zarrInspect(crop)); }
+    try { const inspected = await apiService.zarrInspect(crop); setInspection(inspected);
+      onCapability?.(inspected.capability_profile); }
     catch (error) { fail(error); }
     finally { setBusy(false); }
   };
@@ -121,6 +127,7 @@ export const AcquisitionView: React.FC<AcquisitionViewProps> = ({
   const reviseCrop = (patch: Partial<types.ZarrCropRequest>) => {
     setCrop((current) => ({ ...current, ...patch }));
     setInspection(null);
+    onCapability?.(null);
   };
 
   const reviseAnalysis = (patch: Partial<types.ZarrAnalysisRequest>) => {
@@ -128,6 +135,7 @@ export const AcquisitionView: React.FC<AcquisitionViewProps> = ({
       ...current, analysis: { ...current.analysis, ...patch },
     }));
     setInspection(null);
+    onCapability?.(null);
   };
 
   const applyRecommendedBounds = async () => {
@@ -137,7 +145,8 @@ export const AcquisitionView: React.FC<AcquisitionViewProps> = ({
     setCrop(planned);
     setInspection(null);
     setBusy(true);
-    try { setInspection(await apiService.zarrInspect(planned)); }
+    try { const inspected = await apiService.zarrInspect(planned); setInspection(inspected);
+      onCapability?.(inspected.capability_profile); }
     catch (error) { fail(error); }
     finally { setBusy(false); }
   };
@@ -154,6 +163,7 @@ export const AcquisitionView: React.FC<AcquisitionViewProps> = ({
 
   return (
     <div className="space-y-6 animate-fadeIn" aria-busy={busy}>
+      <GenericIngress onError={onError} onCapability={onCapability} />
       <header>
         <h2 className="text-xl font-bold text-white flex items-center gap-2">
           <Database className="text-teal-400 w-5 h-5" /> Acquire
@@ -208,12 +218,17 @@ export const AcquisitionView: React.FC<AcquisitionViewProps> = ({
       {acquisition?.shape === 'channel_table' && acquisition.available && (
         <ChannelRecords key={domain.name} domainName={domain.name} onError={onError}
           selectedRecord={selectedRecord?.record.domain === domain.name ? selectedRecord : null}
-          onSelectRecord={onSelectRecord} />
+          onSelectRecord={onSelectRecord} onCapability={onCapability} />
       )}
 
       {acquisition?.shape === 'profile_query' && acquisition.available && acquisition.profile_source && (
         <ProfileAcquisition key={acquisition.id} source={acquisition.profile_source}
-          onError={onError} />
+          onError={onError} onCapability={onCapability} />
+      )}
+
+      {acquisition?.shape === 'lightcurve_query' && acquisition.available && acquisition.lightcurve_source && (
+        <LightCurveAcquisition key={acquisition.id} source={acquisition.lightcurve_source}
+          onError={onError} onCapability={onCapability} />
       )}
 
       {acquisition?.shape === 'grid_crop' && acquisition.available && (
