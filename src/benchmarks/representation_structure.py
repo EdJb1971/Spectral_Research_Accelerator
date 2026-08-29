@@ -13,11 +13,15 @@ from typing import Any, Dict, Mapping, Tuple
 
 import numpy as np
 
+from src.analysis_engine.representation_structure import audit_pair_structure
 from src.benchmarks.core import Benchmark, CheckResult, Outcome, register_benchmark, stage_check
 from src.benchmarks.seeding import SeedBundle, derive
 
 
 N_SAMPLES = 4096
+CALIBRATION_N_SAMPLES = 320
+CALIBRATION_BINS = 3
+CALIBRATION_PERMUTATIONS = 109
 ACCEPTANCE_POLICY: Dict[str, Any] = {
     "replications": 200,
     "alpha": 0.05,
@@ -242,12 +246,83 @@ def _check_safeguards(data: RepresentationStructureData,
                        measured)
 
 
+def _structure_calibration(names: Tuple[str, ...], expected: Mapping[str, str],
+                           *, root_seed: int) -> Dict[str, Any]:
+    replications = int(ACCEPTANCE_POLICY["replications"])
+    counts = {name: 0 for name in names}
+    false_claims = {name: 0 for name in names}
+    for replication in range(replications):
+        bundle = derive("G16.1:%d" % replication, root_seed)
+        for case_index, name in enumerate(names):
+            case = _case(bundle, name, CALIBRATION_N_SAMPLES)
+            if len(case.features) < 2:
+                outcome = "unresolved"
+            else:
+                measured = audit_pair_structure(
+                    case.features, case.target, bins=CALIBRATION_BINS,
+                    permutations=CALIBRATION_PERMUTATIONS,
+                    seed=root_seed + 1000003 * (replication + 1) + 1009 * case_index,
+                    alpha=float(ACCEPTANCE_POLICY["alpha"]))
+                outcome = measured["pairs"][0]["outcome"]
+            counts[name] += int(outcome == expected[name])
+            false_claims[name] += int(expected[name] == "unresolved" and outcome != "unresolved")
+    return {
+        "replications": replications, "n_samples_per_replication": CALIBRATION_N_SAMPLES,
+        "bins": CALIBRATION_BINS, "permutations": CALIBRATION_PERMUTATIONS,
+        "detection_rates": {name: counts[name] / replications for name in names},
+        "false_claim_rates": {name: false_claims[name] / replications for name in names},
+    }
+
+
+@stage_check("G16.1.redundancy_structure")
+def _check_redundancy_power(data: RepresentationStructureData,
+                            truth: Dict[str, Any]) -> CheckResult:
+    expected = {
+        "exact_duplicate": "supported_redundancy",
+        "redundant_noisy_copies": "supported_redundancy",
+        "complementary_information": "supported_complementarity",
+        "synergistic_pair": "supported_complementarity",
+        "signal_survives_conditioning": "unresolved",
+    }
+    measured = _structure_calibration(tuple(expected), expected, root_seed=16101)
+    minimum = float(ACCEPTANCE_POLICY["minimum_planted_detection_rate"])
+    powered = {name: rate for name, rate in measured["detection_rates"].items()
+               if name != "signal_survives_conditioning"}
+    problems = ["%s power %.3f is below %.3f" % (name, rate, minimum)
+                for name, rate in powered.items() if rate < minimum]
+    if measured["false_claim_rates"]["signal_survives_conditioning"] > 0:
+        problems.append("a single-candidate case produced a pair-structure claim")
+    return CheckResult(
+        "G16.1.redundancy_structure", Outcome.FAIL if problems else Outcome.PASS,
+        "; ".join(problems) if problems else
+        "duplicate/noisy-copy redundancy and complementary/XOR structure meet the frozen "
+        "power floor; the single-candidate case produces no pair claim",
+        measured)
+
+
+@stage_check("G16.1.redundancy_structure")
+def _check_redundancy_nulls(data: RepresentationStructureData,
+                            truth: Dict[str, Any]) -> CheckResult:
+    expected = {name: "unresolved" for name in SAFEGUARD_CASES}
+    measured = _structure_calibration(tuple(expected), expected, root_seed=26101)
+    ceiling = float(ACCEPTANCE_POLICY["maximum_null_rejection_rate"])
+    problems = ["%s false-claim rate %.3f exceeds %.3f" % (name, rate, ceiling)
+                for name, rate in measured["false_claim_rates"].items() if rate > ceiling]
+    return CheckResult(
+        "G16.1.redundancy_structure", Outcome.FAIL if problems else Outcome.PASS,
+        "; ".join(problems) if problems else
+        "the independent null stays calibrated and every one-candidate safeguard produces "
+        "no pair-structure claim",
+        measured)
+
+
 register_benchmark(Benchmark(
     name="representation_structure_planted", kind="sample_table",
     description="Five planted independent-sample structures spanning duplication, overlap, "
                 "complementarity, synergy and conditional survival.",
-    gates=("G16.0.benchmark_contract",), build=build_representation_structure,
-    known_answer=representation_structure_truth, checks=(_check_planted,),
+    gates=("G16.0.benchmark_contract", "G16.1.redundancy_structure"),
+    build=build_representation_structure, known_answer=representation_structure_truth,
+    checks=(_check_planted, _check_redundancy_power),
     params={"focus": "planted", "n": N_SAMPLES},
 ))
 
@@ -255,14 +330,16 @@ register_benchmark(Benchmark(
     name="representation_structure_safeguards", kind="sample_table",
     description="Four safeguards spanning independence, nuisance-only association, a "
                 "conditional null and a collider counterexample.",
-    gates=("G16.0.benchmark_contract",), build=build_representation_structure,
-    known_answer=representation_structure_truth, checks=(_check_safeguards,),
+    gates=("G16.0.benchmark_contract", "G16.1.redundancy_structure"),
+    build=build_representation_structure, known_answer=representation_structure_truth,
+    checks=(_check_safeguards, _check_redundancy_nulls),
     params={"focus": "safeguards", "n": N_SAMPLES},
 ))
 
 
 __all__ = [
-    "ACCEPTANCE_POLICY", "ALL_CASES", "N_SAMPLES", "PLANTED_CASES", "SAFEGUARD_CASES",
+    "ACCEPTANCE_POLICY", "ALL_CASES", "CALIBRATION_BINS", "CALIBRATION_N_SAMPLES",
+    "CALIBRATION_PERMUTATIONS", "N_SAMPLES", "PLANTED_CASES", "SAFEGUARD_CASES",
     "RepresentationStructureData", "StructureCase", "build_representation_structure",
     "representation_structure_truth",
 ]

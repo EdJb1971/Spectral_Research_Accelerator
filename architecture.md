@@ -4050,6 +4050,37 @@ validate redundancy, conditional-information or stable-subspace estimation. The 
 `association_redundancy` capability added during G15 has therefore been removed. No G16 operation
 is advertised until its backend recipe, refusal, null calibration and planted power check exist.
 
+### 3.6zze Candidate redundancy structure (`src/analysis_engine/representation_structure.py`, `dataset_ingress.py`, `src/api/ingress.py`, TG16.1, `ed-dev`)
+
+The first G16 operation is `redundancy_structure_audit`. Its immutable plan is bound to the exact
+file bytes and declaration and freezes every unordered pair from two to six raw features. Group
+size is exactly two in this bounded recipe. Each pair pays for three hypotheses: positive
+interaction information and the conditional information increment of each member beyond the
+other. Equiprobable bins, Miller-Madow entropy correction, conditional nulls, permutation count,
+seed, alpha and Benjamini-Yekutieli correction are all sealed before enumeration. At least five
+rows per possible three-variable joint cell are required, and a permutation ensemble unable to
+survive the full correction is refused before computation.
+
+The redundancy null shuffles one candidate within target bins, preserving both candidate/target
+marginals while breaking their remaining arrangement. Each conditional-increment null shuffles
+the target within bins of the other candidate. Exact candidate identity is also recorded as
+deterministic structural evidence. A pair is `supported_redundancy` when identity or corrected
+positive interaction evidence supports it, `supported_complementarity` only when both corrected
+conditional increments survive, and otherwise `unresolved`. This ordering means noisy copies are
+not renamed complementary merely because each noisy measurement adds a small increment. The XOR
+control takes the other path: its singleton information is weak but both joint increments survive,
+so it remains visible as supported complementarity.
+
+This is deliberately not a partial-information decomposition. Interaction information is not
+reported as the number of independent information pieces, and no outcome removes, selects or
+recommends a feature. `POST /api/v1/ingress/structure/plan` and
+`POST /api/v1/ingress/structure/audit` expose the content-bound workflow; both retain the shared
+independent-sample refusal. The operation entered the capability registry only after the paired
+benchmarks ran the frozen 200-replication family. Exact-duplicate/noisy-copy power is 1.00/0.94,
+complementary/XOR power is 1.00/1.00, the independent false-claim rate is 0.02, and every
+one-candidate safeguard makes no pair claim. The focused gate reports 4 PASS, 0 FAIL, 0
+NOT_YET_RUNNABLE.
+
 ### 3.11 Ground-Truth Benchmark Suite (`src/benchmarks/`)
 
 Added in T3.5.17 (standard E7). Twenty-two synthetic datasets whose correct answer is known
@@ -4076,11 +4107,11 @@ offline and declares no truth.
 *   `representation_structure.py` - TG16.0's paired
     `representation_structure_planted` / `representation_structure_safeguards` sample-table
     family and the calibration/power thresholds later G16 operations must meet before
-    registration.
+    registration; TG16.1 adds the first operation-level calibration gate to both datasets.
 *   `runner.py`, `__main__.py` - report and CLI (`python -m src.benchmarks`, exit 1 on any
     failure, usable directly as a CI gate).
 
-Current status: **31 PASS, 0 FAIL, 0 NOT_YET_RUNNABLE**. See Section 7.2f.
+Current status: **33 PASS, 0 FAIL, 0 NOT_YET_RUNNABLE**. See Section 7.2f.
 
 ### 3.13 Cloud-Native ERA5 over Zarr (`src/data_layer/zarr_source.py`, T3.5.18)
 
@@ -5428,7 +5459,7 @@ able to sit three slices out of date.
 | `test_analysis_data.py` | 7 | diagnostics/data-layer endpoints and independent D17 boundary-ring oracle |
 | `test_artifact_store.py` | 33 | content addressing, checksum verification, handle budget, T4A.3 acceptance |
 | `test_api_infrastructure.py` | 16 | health, listing, pagination, CORS, data-source transparency, benchmark endpoints |
-| `test_benchmarks.py` | 47 | Ground-Truth Benchmark Suite, seed discipline, eager/streamed climatology agreement, D30 determinism, and TG16.0 paired-family/acceptance-policy completeness |
+| `test_benchmarks.py` | 47 | Ground-Truth Benchmark Suite, seed discipline, eager/streamed climatology agreement, D30 determinism, TG16.0 paired-family completeness, and TG16.1 gate registration |
 | `test_boundary_synthetic.py` | 8 | boundary treatments, windowing, synthetic generators and independent Euclidean-ring oracle |
 | `test_cds_source.py` | 14 | T5.2c monthly CDS planning/CLI, grid-alignment/server-snap refusals, network consent, atomic resume, shard integrity, conservative storage refusal, bounded Zarr publication, plus PASS/FAIL independent-route receipt publication, replay and tamper refusal |
 | `test_geometry_registry.py` | 20 | TG1.2 geometry registry: the three builtins' metrics, crops, resamples and provenance unchanged; capability-driven `is_physical`/`length_units`/`latitudes`; a fourth geometry (`polar_scan`) registered from the test module with a non-uniform, non-spherical metric; the Cartesian Laplacian refusing it; `latitude`/`longitude` recognised as a sphere |
@@ -5516,7 +5547,8 @@ able to sit three slices out of date.
 | `test_profiles.py` | 10 | TG12.2b-d immutable profiles, declared reductions, and bounded Argo seam: profile spec machine-independence and scatter preservation, preflight counts, observed-invalid distinction from absence, per-float reduction enforcing violations, depth-bin aggregation identity shifts, profile collection round trips, argo parent flat-channel refusal, profile reduction registry discoverability, and profile API contract refusal visibility (E15, R17) |
 | `test_photometry.py` | 9 | TG13.1 atomic TESS onboarding and precedence refusal, canonical bounded requests, metadata-only exact-product preflight, checksum-valid BJD_TDB parsing and value-bound identity, pre-download caps, immutable collection replay, source discovery, API claim boundaries, and an explicit opt-in bounded live MAST acceptance (E14, E15, R17, R21) |
 | `test_dataset_ingress.py` | 9 | G14/G15 file probing without semantic inference, explicit sample roles/relationships/units, content-bound routing with explained spatial refusals, grouped/ordered split-leakage refusal, TG16.0's shared independent-only admission contract, R18 family sealing and permutation-resolution refusal, planted generate/confirm recovery, changed-file and tampered-plan refusal, and the complete multipart HTTP workflow |
-  | **total** | **2403** | |
+| `test_representation_structure.py` | 6 | TG16.1 complete pair enumeration, joint redundancy/complementarity/XOR/null discrimination, sealed estimator/null/family and permutation-resolution refusal, content/tamper binding, non-removal claim boundary, earned capability registration, and multipart plan/run workflow |
+  | **total** | **2409** | |
 ### 7.2h A surrogate null that was not the null it claimed (T4C.5)
 
 The most instructive defect of the project so far, because it passed every structural check.

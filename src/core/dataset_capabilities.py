@@ -52,6 +52,17 @@ OPERATIONS: Dict[str, Operation] = {
                   "admissible for independent samples. Grouped data need group-held-out "
                   "confirmation; ordered data need blocked and embargoed confirmation.",
                   "Declare whether samples are independent, grouped or ordered."),)),
+    "redundancy_structure_audit": Operation(
+        "Redundancy Structure Audit",
+        "Frozen-family candidate redundancy and complementarity map.", (
+            _need("sample_table", "declared sample table",
+                  "This representation is not an explicitly declared sample table.",
+                  "Declare the dataset representation before auditing its structure."),
+            _need("independent_samples", "independent samples",
+                  "This recipe uses conditional permutations of exchangeable rows. Grouped "
+                  "data need group-held-out benchmarked nulls; ordered data need blocked and "
+                  "embargoed benchmarked nulls.",
+                  "Declare whether samples are independent, grouped or ordered."),)),
     "cross_domain_analysis": Operation(
         "Cross-domain analysis", "Association and declared-lag analysis of channel series.", (
             _need("channel_series", "admitted channel series",

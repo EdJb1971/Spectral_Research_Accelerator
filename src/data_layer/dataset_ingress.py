@@ -18,9 +18,11 @@ from typing import Any, Dict, Mapping, Optional, Sequence, Tuple
 import numpy as np
 
 from src.analysis_engine.cross_scale import mutual_information
+from src.analysis_engine.representation_structure import (audit_pair_structure,
+                                                           candidate_pairs)
 from src.core.errors import InvalidParameterError
 from src.core.dataset_capabilities import build_profile
-from src.statistics.multiple_comparisons import adjust
+from src.statistics.multiple_comparisons import adjust, required_surrogates
 
 MAX_UPLOAD_BYTES = 16 * 1024 * 1024
 MAX_ROWS = 100_000
@@ -228,6 +230,121 @@ def require_independent_samples(declaration: SampleTableDeclaration, *, recipe: 
         "'independent' for %s. %s data require %s; treating dependent rows as exchangeable "
         "would invalidate the null and leak samples across partitions." %
         (recipe, relationship.capitalize(), needed))
+
+
+def plan_redundancy_structure_audit(payload: bytes, *, filename: str, delimiter: str,
+                                    declaration: SampleTableDeclaration, bins: int = 4,
+                                    permutations: int = 4999, seed: int = 16101,
+                                    alpha: float = 0.05) -> Dict[str, Any]:
+    """Seal the complete raw-feature pair family before measuring any relationship."""
+    probe = probe_delimited(payload, filename=filename, delimiter=delimiter)
+    declaration.validate(probe)
+    require_independent_samples(declaration, recipe="the redundancy structure audit")
+    features = sorted(name for name, role in declaration.roles.items() if role == "feature")
+    if not 2 <= len(features) <= 6:
+        raise InvalidParameterError(
+            "feature family", len(features),
+            "2-6 predeclared raw features; this bounded recipe enumerates every pair")
+    if isinstance(bins, bool) or not 2 <= int(bins) <= 4:
+        raise InvalidParameterError("bins", bins, "an integer from 2 through 4")
+    if not 0 < float(alpha) < 1:
+        raise InvalidParameterError("alpha", alpha, "a value in (0, 1)")
+    pairs = [[first, second] for first, second in candidate_pairs(features)]
+    n_tests = 3 * len(pairs)
+    minimum = required_surrogates(n_tests, float(alpha), "benjamini_yekutieli")
+    if not minimum <= int(permutations) <= 9999:
+        raise InvalidParameterError(
+            "permutations", permutations,
+            "%d-9999 fixed conditional permutations for this %d-test family; the smallest "
+            "attainable p-value must survive Benjamini-Yekutieli correction"
+            % (minimum, n_tests))
+    minimum_samples = 5 * int(bins) ** 3
+    if int(probe["n_rows"]) < minimum_samples:
+        raise InvalidParameterError(
+            "sample count", probe["n_rows"],
+            "at least %d rows (five per possible %d-bin joint cell)" %
+            (minimum_samples, int(bins)))
+    body = {
+        "schema": "spectral.redundancy-structure-plan.v1",
+        "content_sha256": probe["content_sha256"],
+        "declaration": declaration.canonical(),
+        "candidates": features, "candidate_groups": pairs,
+        "group_policy": "all unordered raw-feature pairs; group size exactly 2",
+        "estimator": "equiprobable-bin Miller-Madow mutual information",
+        "bins": int(bins), "neighbourhood_policy": None,
+        "null": ("candidate-within-target-bin permutation for positive interaction "
+                 "information; target-within-other-candidate-bin permutation for each "
+                 "conditional increment"),
+        "permutations": int(permutations), "seed": int(seed),
+        "alpha": float(alpha), "correction": "benjamini_yekutieli",
+        "tests_per_group": 3, "n_tests": n_tests,
+    }
+    body["plan_sha256"] = hashlib.sha256(json.dumps(
+        body, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+    return {
+        **body, "probe": probe,
+        "claim_boundary": (
+            "This freezes every pair, estimator, discretisation, conditional null, seed, "
+            "alpha and correction before enumeration. It computes no structure result."),
+    }
+
+
+def run_redundancy_structure_audit(payload: bytes, *, filename: str, delimiter: str,
+                                   plan: Mapping[str, Any]) -> Dict[str, Any]:
+    """Run the exact sealed TG16.1 pair family without selecting or deleting features."""
+    expected = dict(plan)
+    supplied_digest = expected.pop("plan_sha256", "")
+    expected.pop("probe", None)
+    expected.pop("claim_boundary", None)
+    actual_digest = hashlib.sha256(json.dumps(
+        expected, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+    if supplied_digest != actual_digest:
+        raise InvalidParameterError("plan_sha256", supplied_digest,
+                                    "the digest of the complete frozen structure plan")
+    if expected.get("schema") != "spectral.redundancy-structure-plan.v1":
+        raise InvalidParameterError("schema", expected.get("schema"),
+                                    "spectral.redundancy-structure-plan.v1")
+    if _sha(payload) != expected["content_sha256"]:
+        raise InvalidParameterError("content_sha256", _sha(payload),
+                                    "the exact file bytes the structure plan sealed")
+    declaration = SampleTableDeclaration(**expected["declaration"])
+    probe = probe_delimited(payload, filename=filename, delimiter=delimiter)
+    declaration.validate(probe)
+    require_independent_samples(declaration, recipe="the redundancy structure audit")
+    columns, _header = _numeric_table(payload, delimiter, declaration)
+    target_name = next(name for name, role in declaration.roles.items() if role == "target")
+    required = [target_name] + list(expected["candidates"])
+    missing = {name: int(np.sum(~np.isfinite(columns[name]))) for name in required}
+    if any(missing.values()):
+        raise InvalidParameterError("missing analysis values", missing,
+                                    "complete target and feature columns for this recipe")
+    actual_candidates = sorted(name for name, role in declaration.roles.items()
+                               if role == "feature")
+    actual_pairs = [[first, second] for first, second in candidate_pairs(actual_candidates)]
+    if actual_candidates != expected["candidates"] or actual_pairs != expected["candidate_groups"]:
+        raise InvalidParameterError("candidate family", actual_pairs,
+                                    "the exact complete pair family sealed by the plan")
+    measured = audit_pair_structure(
+        {name: columns[name] for name in actual_candidates}, columns[target_name],
+        bins=int(expected["bins"]), permutations=int(expected["permutations"]),
+        seed=int(expected["seed"]), alpha=float(expected["alpha"]),
+        correction=str(expected["correction"]))
+    return {
+        "schema": "spectral.redundancy-structure-audit.v1",
+        "plan_sha256": supplied_digest, "content_sha256": expected["content_sha256"],
+        "target": target_name, "sample_relationship": declaration.sample_relationship,
+        "family": {"candidates": actual_candidates, "candidate_groups": actual_pairs,
+                   "group_policy": expected["group_policy"],
+                   "tests_per_group": expected["tests_per_group"],
+                   "n_tests": expected["n_tests"], "correction": expected["correction"],
+                   "alpha": expected["alpha"], "permutations": expected["permutations"]},
+        "method": {key: expected[key] for key in
+                   ("estimator", "bins", "neighbourhood_policy", "null", "seed")},
+        "structure_map": measured["pairs"],
+        "outcome_vocabulary": measured["outcome_vocabulary"],
+        "stored": False, "rung_moved": False,
+        "claim_boundary": measured["claim_boundary"],
+    }
 
 
 def plan_representation_audit(payload: bytes, *, filename: str, delimiter: str,
@@ -448,5 +565,7 @@ def run_representation_audit(payload: bytes, *, filename: str, delimiter: str,
 
 
 __all__ = ["AUDIT_REPRESENTATIONS", "MAX_UPLOAD_BYTES", "SAMPLE_RELATIONSHIPS",
-           "SAMPLE_ROLES", "SampleTableDeclaration", "plan_representation_audit",
-           "probe_delimited", "run_representation_audit", "sample_table_capability_profile"]
+           "SAMPLE_ROLES", "SampleTableDeclaration", "plan_redundancy_structure_audit",
+           "plan_representation_audit", "probe_delimited", "require_independent_samples",
+           "run_redundancy_structure_audit", "run_representation_audit",
+           "sample_table_capability_profile"]

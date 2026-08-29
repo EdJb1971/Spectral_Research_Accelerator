@@ -81,7 +81,7 @@ def test_capability_profile_routes_independent_tables_and_explains_spatial_refus
     assert profile["identity"] == probe_delimited(
         dataset(), filename="experiment.csv")["content_sha256"]
     assert profile["operations"]["representation_audit"]["available"] is True
-    assert "association_redundancy" not in profile["operations"]
+    assert profile["operations"]["redundancy_structure_audit"]["available"] is True
     boundary = profile["operations"]["boundary_lab"]
     assert boundary["status"] == "unavailable"
     assert boundary["reason_code"] == "requires_spatial_grid_2d"

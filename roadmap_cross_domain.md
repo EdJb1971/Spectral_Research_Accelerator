@@ -3523,13 +3523,30 @@ at most 0.075 and planted detection power at least 0.80. The benchmark suite is 
 `association_redundancy` G15 registry entry was removed. TG16.1 must earn its registry entry by
 running these cases, not merely by consuming their arrays.
 
-**TG16.1 Redundancy Structure Audit. PLANNED.** Freeze the complete candidate pair/group family,
+**TG16.1 Redundancy Structure Audit. DONE (2026-08-30, `ed-dev`).** Freeze the complete candidate pair/group family,
 estimator, discretisation or neighbourhood policy, null, seeds, alpha and correction before
 enumeration. Report a structure map whose outcomes distinguish supported redundancy,
 complementarity and unresolved relationships. Pairwise association alone must not be described as
 the number of independent pieces of information, and a synergistic pair must not be discarded
 because neither member ranks highly alone. Output is a **candidate redundancy structure**, never
 an instruction to remove features.
+
+**Delivered.** The first bounded recipe freezes every unordered pair from two to six declared raw
+features, three hypotheses per pair, equiprobable discretisation with Miller-Madow correction,
+the two conditional-permutation nulls, seed, alpha and Benjamini-Yekutieli family correction before
+opening a result. Positive calibrated interaction information supports redundancy; two corrected
+conditional increments support complementarity; everything else remains unresolved. Exact
+candidate identity is separately visible structural evidence. The joint estimator therefore keeps
+the XOR pair as supported complementarity even though both singleton mutual informations are weak.
+Responses explicitly deny a partial-information decomposition, a count of independent information
+pieces, and any instruction to remove or select a feature. The operation is now registered as
+`redundancy_structure_audit` and exposed through content-bound plan/run endpoints.
+
+**Acceptance met.** Both G16 known-answer benchmarks now carry `G16.1.redundancy_structure`.
+Across the frozen 200-replication family, exact-duplicate and noisy-copy redundancy power is 1.00
+and 0.94, complementary and XOR power is 1.00 each, and the independent false-claim rate is 0.02.
+All four one-candidate conditioning cases correctly produce no pair claim. The focused gate is 4
+PASS, 0 FAIL and 0 NOT_YET_RUNNABLE; the complete benchmark registry is now 33 checks.
 
 **TG16.2 Conditional-Information Audit. PLANNED.** Estimate the explicitly named quantity
 `I(candidate; target | declared nuisance)` only where overlap and effective support meet a frozen

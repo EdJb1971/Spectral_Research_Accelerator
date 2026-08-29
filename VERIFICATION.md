@@ -6881,3 +6881,28 @@ failure because the strengthened grouped refusal no longer contained the existin
 `group-held-out confirmation`. The final wording preserves that phrase and adds the benchmarked
 null requirement; the rerun above passes. The full backend suite was not rerun for this bounded
 prerequisite slice; the clean 2745-pass G15 run remains the latest full-suite evidence.
+
+---
+
+## TG16.1 - Redundancy Structure Audit (2026-08-30, `ed-dev`) - **COMPLETE**
+
+The registered operation now freezes the complete two-candidate group family, estimator,
+equiprobable discretisation, conditional-permutation nulls, seeds, alpha and
+Benjamini-Yekutieli correction before enumeration. Its structure map distinguishes supported
+redundancy, supported complementarity and unresolved pairs. The joint test preserves the XOR
+control despite weak singleton information, while the response explicitly denies a
+partial-information decomposition, feature-removal instruction or representation recommendation.
+
+```text
+> .\.venv\Scripts\python.exe -m pytest -q src/tests/test_representation_structure.py src/tests/test_dataset_ingress.py
+15 passed, 2 warnings in 4.55s
+
+> .\.venv\Scripts\python.exe -m src.benchmarks --name representation_structure_planted --name representation_structure_safeguards
+PASS 4   FAIL 0   NOT_YET_RUNNABLE 0
+```
+
+The benchmark command ran the frozen 200-replication power/calibration family. Exact-duplicate and
+noisy-copy redundancy power was 1.00 and 0.94; complementary and XOR power was 1.00 each; the
+independent false-claim rate was 0.02; and the four one-candidate conditioning safeguards made no
+pair claim. The full backend suite was not rerun; the clean 2745-pass G15 run remains the latest
+full-suite evidence.
