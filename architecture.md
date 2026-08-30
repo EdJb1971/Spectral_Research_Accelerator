@@ -4295,6 +4295,43 @@ yet** control names that boundary; TG17.2--TG17.6 fill it in without introducing
 scientific configuration. The receipt field is reserved to carry the same manifest digest when a
 receipt exists in TG17.9; TG17.1 does not manufacture one to satisfy a round-trip demonstration.
 
+#### 3.6zzl Canonical structural trajectory and inspectable contract (TG17.2)
+
+`src/core/structural_trajectory.py` defines the smallest record shared by later cross-domain
+mining. A `StructuralTrajectory` carries labelled, benchmark-defined structural channels; exact
+native `[start, end)` support and validity; a dimensionless structural-scale coordinate with its
+native-duration mapping; source, variable, native semantics and units; content-addressed native
+record identity and retained locator; adapter definition, version and configuration digests; all
+assumption violations; and per-channel lineage sufficient to reconstruct every canonical value.
+Its NumPy arrays and mappings are immutable copies. The content-addressed native record remains
+beside the projection and is never overwritten.
+
+`StructuralAdapterDeclaration` makes the scientific translation contract executable: required
+axes and roles, invariances, consumed information, output clock/support, missing-data behaviour,
+legitimate null family, leakage risks, refused operations and allowed channels are all declared.
+The first allowed channel, `standardized_level`, has the frozen known-answer definition
+`(native_value - valid_native_mean) / valid_native_population_std`; it remains explicitly a
+within-record dimensionless level and never licenses semantic equivalence or native-magnitude
+comparison. The definition is benchmark identified and content addressed. Convenience numbers
+cannot be added as unnamed channels.
+
+The TG17.2 conformance pass independently checks native/adapter/config digests, semantic and unit
+identity, the exact unchanged clock, intervals and gaps, structural-to-native scale mapping,
+assumption-violation propagation, one-to-one native indices and recomputed channel values. A
+semantic substitution, unbenchmarked channel, dropped limit, compaction, filling or undeclared
+interpolation fails. `mine_structural_peak` is the initial deliberately small domain-blind mining
+seam: the same function consumes the reanalysis, Argo and TESS known-answer trajectories without
+a domain switch.
+
+`src/benchmarks/structural_trajectory.py` supplies deterministic TG17-fixture declarations and
+the full-fidelity preview payload. `POST /api/v1/experiment-composer/manifests/representation-
+preview` binds that preview to the current manifest digest and returns every native interval,
+validity bit, unit, scale mapping, adapter/config/native digest and value lineage. The Composer's
+**Inspect structural contract** action renders the three domain cards with native support,
+coverage, units, scale, limits and identities. It labels the values as deterministic known-answer
+records, not acquired observations. Live acquisition translation, the fourth production adapter,
+cross-domain statistics, evidence and rung movement remain unavailable until later G17 slices.
+
 ### 3.11 Ground-Truth Benchmark Suite (`src/benchmarks/`)
 
 Added in T3.5.17 (standard E7). Twenty-four synthetic datasets whose correct answer is known
@@ -5715,6 +5752,7 @@ able to sit three slices out of date.
 | `test_executor.py` | 38 | Executor backends, seed derivation, ordering, portable CPU/accelerator/HPC profiles, doctor, device/thread policy, SQLite concurrency, byte-identical sweeps (now over a payload that actually draws), D55 thread/serial agreement with the seed-to-draw window held open |
 | `test_experiments.py` | 3 | declarative sweeps and lineage |
 | `test_experiment_manifest.py` | 12 | TG17.1 immutable cross-domain manifest, byte-stable API/run identity, explicit window family, native-support metadata planning, visible partial/refusal policy, content-addressed draft revisions, recipe/API round trip and no premature run route |
+| `test_structural_trajectory.py` | 10 | TG17.2 immutable canonical trajectory, exact native clock/support/gap preservation, domain-blind weather/Argo/TESS mining seam, complete value reconstruction, adapter declarations/digests, semantic-leakage and interpolation refusals, full-fidelity preview and visible API boundary |
 | `test_exports.py` | 32 | CSV/JSON/NetCDF4/Zarr round trips, embedded provenance, seeded perturbation (D34) |
 | `test_external_fcn3.py` | 9 | T5.6a offline FCN3 request/result schemas, exact global input and ensemble contracts, portability refusals, canonical persistence, file/tree identity and request/artifact tamper isolation |
 | `test_external_ensemble_evaluation.py` | 8 | T5.6c exact truth/initialization alignment, member/mean/persistence errors, analytic CRPS and spread, area-weighted fractional-tie ranks, bounded lazy reads, content identity and scientific refusal contracts |
@@ -5727,7 +5765,7 @@ able to sit three slices out of date.
 | `test_forecasting_artifact_evaluation.py` | 8 | T5.3b/T5.2d checkpoint/config integrity, artifact-bound lineage, persistence-relative metrics, physical-time reporting/refusals, undefined-skill handling and CPU/RTX vendor-neutral accelerator parity |
 | `test_forecasting_protocol.py` | 7 | T5.0a exact schema completeness, canonical identity, immutable nested configuration, evidence requirements, temporal/rollout consistency, persistence and tamper/drift refusal |
 | `test_forecasting_protocol_binding.py` | 4 | T5.0b exact dataset/protocol/checkpoint binding, recomputed coordinate/statistics identities, drift refusals and bound-evaluation cross-run isolation |
-| `test_frontend_contract.py` | 95 | the frontend/backend contract, including dataset-bound navigation gating with visible backend refusal reasons, capability profiles showing yes/no/not-established facts, transform/dataset/cadence readiness claim boundaries, domain-driven acquisition, workflow-grouped navigation, persistent record/study context, the TG11.1 analysis panel's three engine operations, R21 disablement, three-valued verdict and re-read identity check, the TG11.2 preregistration panel's declare-never-decide split, TG11.5's separate GET-only recorded-review workspace with its visible R23 fence, complete argument/cost display and honest empty states, TG17.1's manifest-driven save/reload/preflight Composer and disabled premature runner, preservation of every ERA5 control, and TG11.6's skip/route focus, bound labels, global focus and reduced-motion rule, keyboard SVG lineage, figure text equivalents and asynchronous-state semantics, plus the UI integrity guards: no fabricated results, no unqualified validation claims, units and slope uncertainty displayed |
+| `test_frontend_contract.py` | 96 | the frontend/backend contract, including dataset-bound navigation gating with visible backend refusal reasons, capability profiles showing yes/no/not-established facts, transform/dataset/cadence readiness claim boundaries, domain-driven acquisition, workflow-grouped navigation, persistent record/study context, the TG11.1 analysis panel's three engine operations, R21 disablement, three-valued verdict and re-read identity check, the TG11.2 preregistration panel's declare-never-decide split, TG11.5's separate GET-only recorded-review workspace with its visible R23 fence, complete argument/cost display and honest empty states, TG17.1's manifest-driven save/reload/preflight Composer, TG17.2's known-answer structural-contract inspector and disabled premature runner, preservation of every ERA5 control, and TG11.6's skip/route focus, bound labels, global focus and reduced-motion rule, keyboard SVG lineage, figure text equivalents and asynchronous-state semantics, plus the UI integrity guards: no fabricated results, no unqualified validation claims, units and slope uncertainty displayed |
 | `test_gate_run.py` | 1 | T4C.5d frozen plan, local-only preflight, bounded train-only climatology/signatures, authenticated synthetic gate receipt, no-overwrite and tamper refusal |
 | `test_gate_campaign.py` | 6 | T4C.5f-h exact campaign identity, strict nested schema, canary/full/WeatherBench drift refusals, pre-transfer R13/physical-lag audit, aggregate storage/readiness, immutable freeze/load, pinned real preregistration and zero-network CLI (8 pytest cases) |
 | `test_grid_operators.py` | 64 | grid metrics, metric-aware gradient/Laplacian, area weighting, physical-wavenumber spectra, D26 |

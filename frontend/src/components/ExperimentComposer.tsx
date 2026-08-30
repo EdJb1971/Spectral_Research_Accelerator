@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, CheckCircle2, FileLock2, Loader2, Save, Search } from 'lucide-react';
+import { Activity, AlertTriangle, CheckCircle2, FileLock2, Loader2, Save, Search } from 'lucide-react';
 import { apiService } from '../services/api';
 import * as types from '../types/api';
 
@@ -17,6 +17,7 @@ export default function ExperimentComposer({ onSelectStudy }: { onSelectStudy?: 
   const [manifest, setManifest] = useState<types.CrossDomainExperimentManifest | null>(null);
   const [identity, setIdentity] = useState<string>('');
   const [preflight, setPreflight] = useState<types.ExperimentPreflight | null>(null);
+  const [preview, setPreview] = useState<types.StructuralTrajectoryPreview | null>(null);
   const [contract, setContract] = useState<Record<string, any> | null>(null);
   const [recipes, setRecipes] = useState<{ recipe_id: string; title: string }[]>([]);
   const [busy, setBusy] = useState('');
@@ -48,7 +49,7 @@ export default function ExperimentComposer({ onSelectStudy }: { onSelectStudy?: 
     const windows = manifest.windows.map((row, rowIndex) => rowIndex === index
       ? { ...row, [field]: utcValue(value) } : row);
     setManifest({ ...manifest, windows });
-    setIdentity(''); setPreflight(null);
+    setIdentity(''); setPreflight(null); setPreview(null);
   };
 
   const validate = async () => {
@@ -86,6 +87,17 @@ export default function ExperimentComposer({ onSelectStudy }: { onSelectStudy?: 
     finally { setBusy(''); }
   };
 
+  const previewRepresentation = async () => {
+    if (!manifest) return;
+    setBusy('representation'); setMessage('');
+    try {
+      const result = await apiService.previewStructuralTrajectories(manifest);
+      setPreview(result); setIdentity(result.manifest_sha256);
+      setMessage('Canonical contract reconstructed and checked on deterministic known-answer records.');
+    } catch (error: any) { setMessage(error.message); }
+    finally { setBusy(''); }
+  };
+
   if (!manifest) return <div className="text-sm text-slate-400">Loading the saved experiment manifest…</div>;
 
   return (
@@ -104,7 +116,7 @@ export default function ExperimentComposer({ onSelectStudy }: { onSelectStudy?: 
           <div>
             <label htmlFor="composer-study" className="text-xs text-slate-400">Study identity</label>
             <input id="composer-study" value={manifest.study_id} onChange={(event) => {
-              setManifest({ ...manifest, study_id: event.target.value }); setIdentity(''); setPreflight(null);
+              setManifest({ ...manifest, study_id: event.target.value }); setIdentity(''); setPreflight(null); setPreview(null);
             }} className="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2 text-sm" />
           </div>
           <fieldset>
@@ -116,7 +128,7 @@ export default function ExperimentComposer({ onSelectStudy }: { onSelectStudy?: 
                     setManifest({ ...manifest, mode,
                       scale_normalization: mode === 'scale_shape_aligned'
                         ? (manifest.scale_normalization || { method: 'native_scale_ratio', reference: 'within_domain' }) : null });
-                    setIdentity(''); setPreflight(null);
+                    setIdentity(''); setPreflight(null); setPreview(null);
                   }} /> {mode === 'calendar_aligned' ? 'Calendar-aligned co-occurrence' : 'Scale/shape recurrence'}
               </label>
             ))}
@@ -133,7 +145,7 @@ export default function ExperimentComposer({ onSelectStudy }: { onSelectStudy?: 
                 const requirement = event.target.value as 'complete_required' | 'partial_permitted';
                 setManifest({ ...manifest, coverage_policy: { requirement,
                   minimum_fraction: requirement === 'complete_required' ? 1 : 0.5 } });
-                setIdentity(''); setPreflight(null);
+                setIdentity(''); setPreflight(null); setPreview(null);
               }} className="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2 text-sm">
               <option value="complete_required">Complete required</option>
               <option value="partial_permitted">Declared partial permitted</option>
@@ -187,6 +199,9 @@ export default function ExperimentComposer({ onSelectStudy }: { onSelectStudy?: 
           <button onClick={inspect} disabled={!!busy} className="px-4 py-2 rounded bg-teal-600 hover:bg-teal-500 disabled:opacity-50 text-sm flex gap-2 items-center">
             {busy === 'preflight' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />} Inspect metadata coverage
           </button>
+          <button onClick={previewRepresentation} disabled={!!busy} className="px-4 py-2 rounded bg-cyan-700 hover:bg-cyan-600 disabled:opacity-50 text-sm flex gap-2 items-center">
+            {busy === 'representation' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Activity className="w-4 h-4" />} Inspect structural contract
+          </button>
           <button disabled title="TG17.6 delivers the authenticated resumable runner" className="px-4 py-2 rounded bg-slate-800 text-slate-500 text-sm cursor-not-allowed">Run experiment — not available yet</button>
         </div>
         {identity && <p className="font-mono text-[11px] text-slate-500 mt-3 break-all">manifest sha256 {identity}</p>}
@@ -213,6 +228,34 @@ export default function ExperimentComposer({ onSelectStudy }: { onSelectStudy?: 
             {preflight.refusals.map((row, index) => <li key={index}>{row.domain ? `${row.domain}: ` : ''}{row.reason}</li>)}
           </ul>}
           <p className="text-xs text-slate-500 mt-4">{preflight.claim_boundary}</p>
+        </section>
+      )}
+
+      {preview && (
+        <section className="border border-cyan-500/40 bg-cyan-500/5 rounded-xl p-5">
+          <h3 className="font-semibold flex gap-2 items-center"><Activity className="w-5 h-5 text-cyan-400" /> Canonical StructuralTrajectory preview</h3>
+          <p className="text-xs text-cyan-100/70 mt-1">Deterministic known-answer records, not acquired observations. All three enter <span className="font-mono">{preview.mining_interface}</span> without a domain branch.</p>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 mt-4">
+            {preview.trajectories.map((row) => {
+              const valid = row.valid_mask.filter(Boolean).length;
+              return <div key={row.domain} className="bg-slate-950/70 border border-slate-800 rounded-lg p-4 space-y-2">
+                <div className="flex justify-between gap-2"><span className="font-semibold text-slate-100">{row.domain}</span><span className="text-[11px] text-cyan-300">{valid}/{row.valid_mask.length} valid</span></div>
+                <p className="text-xs text-slate-400">{row.native_semantics} · {row.native_units}</p>
+                <p className="text-xs text-slate-300">{row.channel} · {row.channel_units}</p>
+                <div className="h-2 rounded bg-slate-800 overflow-hidden" title="Validity coverage on the unchanged native clock">
+                  <div className="h-full bg-cyan-500" style={{ width: `${100 * valid / row.valid_mask.length}%` }} />
+                </div>
+                <dl className="text-[11px] text-slate-500 space-y-1">
+                  <div><dt className="inline text-slate-400">Support </dt><dd className="inline">{row.support_start_seconds.length} native [start, end) intervals</dd></div>
+                  <div><dt className="inline text-slate-400">Scale </dt><dd className="inline">1 structural = {row.structural_scales[0].native_value}s native</dd></div>
+                  <div className="break-all"><dt className="inline text-slate-400">Adapter </dt><dd className="inline font-mono">{row.adapter.definition_sha256}</dd></div>
+                  <div className="break-all"><dt className="inline text-slate-400">Native </dt><dd className="inline font-mono">{row.native_record.content_sha256} · retained</dd></div>
+                </dl>
+                {row.assumption_violations.length > 0 && <p className="text-[11px] text-amber-300">Limits: {row.assumption_violations.join(', ')}</p>}
+              </div>;
+            })}
+          </div>
+          <p className="text-xs text-slate-500 mt-4">{preview.claim_boundary}</p>
         </section>
       )}
     </div>

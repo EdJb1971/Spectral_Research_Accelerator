@@ -237,6 +237,18 @@ def test_g17_composer_is_visible_manifest_driven_and_honest_about_the_runner():
     assert "/experiment-composer/manifests/preflight" in service
 
 
+def test_g17_composer_exposes_honest_structural_contract_preview():
+    view = _read("components", "ExperimentComposer.tsx")
+    service = _read("services", "api.ts")
+    types = _read("types", "api.ts")
+    assert "Inspect structural contract" in view
+    assert "Deterministic known-answer records, not acquired observations" in view
+    assert "native_record.content_sha256" in view
+    assert "adapter.definition_sha256" in view
+    assert "/experiment-composer/manifests/representation-preview" in service
+    assert "StructuralTrajectoryPreview" in types
+
+
 def test_domain_analysis_uses_the_persistent_full_record_and_cannot_write(app_source, api_service):
     """TG11.1 must never substitute TG8.4's capped preview for the retained source file."""
     view = _read("components", "DomainAnalysisView.tsx")

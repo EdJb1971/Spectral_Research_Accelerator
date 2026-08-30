@@ -7103,3 +7103,32 @@ refresh and leaves Run disabled until TG17.6. It neither creates evidence nor mo
 
 The full suite was not rerun at the user's request; the clean 2745-pass G15 run remains the latest
 full-suite evidence.
+
+---
+
+## TG17.2 - Canonical Structural-Trajectory Contract (2026-08-30, `ed-dev`) - **COMPLETE**
+
+The immutable `StructuralTrajectory` retains exact native interval support, validity, semantic
+identity, units, structural/native scale mapping, native record identity and locator,
+adapter/version/config digests, assumption violations and reconstructable per-value lineage.
+Executable adapter declarations constrain channels to benchmarked definitions and declare axes,
+roles, invariances, consumed information, clock/support, missing-data behaviour, legitimate null,
+leakage risks and refused operations.
+
+Reanalysis, Argo and TESS known-answer records enter the same domain-blind mining seam. Focused
+conformance covers exact reconstruction, immutable raw/native separation, and mandatory refusal
+of semantic leakage and undeclared clock/support changes. The manifest-bound Composer preview
+shows the native clock/support, unit, scale, adapter/native digests and limits while stating that
+these are deterministic fixtures rather than acquired data. Live translation and scientific
+execution remain unavailable.
+
+```text
+> .\.venv\Scripts\python.exe -m pytest src\tests\test_structural_trajectory.py src\tests\test_experiment_manifest.py src\tests\test_frontend_contract.py -q
+118 passed, 5 warnings in 8.48s
+
+> cd frontend && npm run build
+✓ 1401 modules transformed; built in 1m 11s (TypeScript and Vite production bundle)
+```
+
+The full suite was not rerun at the user's request; the clean 2745-pass G15 run remains the latest
+full-suite evidence.

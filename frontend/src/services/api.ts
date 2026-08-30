@@ -865,6 +865,13 @@ export const apiService = {
       }));
   },
 
+  async previewStructuralTrajectories(manifest: types.CrossDomainExperimentManifest): Promise<types.StructuralTrajectoryPreview> {
+    return handleResponse<types.StructuralTrajectoryPreview>(
+      await fetch(`${BASE_URL}/experiment-composer/manifests/representation-preview`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(manifest)
+      }));
+  },
+
   async alignDomains(first: File, second: File, firstSource: types.CrossDomainSource,
                      secondSource: types.CrossDomainSource,
                      name: string): Promise<types.CrossDomainAligned> {

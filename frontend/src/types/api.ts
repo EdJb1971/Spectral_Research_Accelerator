@@ -2025,3 +2025,27 @@ export interface ExperimentPreflight {
   refusals: { domain: string | null; reason: string }[];
   claim_boundary: string;
 }
+
+export interface StructuralTrajectoryPreview {
+  schema: 'structural-trajectory-preview/v1';
+  kind: 'deterministic_known_answer_not_acquired_data';
+  seed: number;
+  manifest_sha256: string;
+  mining_interface: string;
+  domain_branch_in_mining: false;
+  selected_observations: string[];
+  trajectories: {
+    trajectory_id: string; domain: string; source_id: string; variable: string;
+    native_semantics: string; native_units: string;
+    support_start_seconds: number[]; support_end_seconds: number[]; valid_mask: boolean[];
+    channel: string; channel_semantics: string; channel_units: string; values: number[];
+    structural_scales: { coordinate: number; native_value: number; native_units: string; mapping: string }[];
+    adapter: { id: string; version: string; definition_sha256: string; config_sha256: string };
+    native_record: { content_sha256: string; locator: string; retained: boolean };
+    lineage: { operation: string; source_variable: string; source_indices: number[];
+      parameters: Record<string, number>; output_sha256: string };
+    assumption_violations: string[];
+    peak: { support_start_seconds: number; support_end_seconds: number; value: number; units: string };
+  }[];
+  claim_boundary: string;
+}

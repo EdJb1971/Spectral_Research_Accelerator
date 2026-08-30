@@ -3806,7 +3806,7 @@ TG17.1 does not claim TG17.2 translation or TG17.6 orchestration, and creates no
 evidence or rung movement. Twelve focused manifest/API tests and the frontend contract cover the
 slice; the production TypeScript/Vite build passes.
 
-**TG17.2 Canonical structural-trajectory contract — PLANNED.** Define the smallest shared record
+**TG17.2 Canonical structural-trajectory contract — DONE (2026-08-30, `ed-dev`).** Define the smallest shared record
 the mining layer actually needs, provisionally `StructuralTrajectory`: labelled dimensionless or
 unit-declared structural channels; native interval support and validity masks; structural scale
 coordinate and its mapping to native scale; domain/source/variable semantics and units;
@@ -3825,6 +3825,25 @@ make raw magnitudes comparable (R19).
 domain branch there, while provenance can reconstruct exactly how every canonical value arose.
 Semantic leakage and undeclared interpolation fail conformance. A canonical plot cannot lose the
 native clock, unit, support or adapter digest.
+
+Delivered as a vertical product slice. `StructuralTrajectory` preserves exact native interval
+support, validity, meaning and units, structural-to-native scale mapping, immutable native record
+identity/locator, adapter/version/config digests, assumption violations and reconstructable
+per-value lineage. `StructuralAdapterDeclaration` makes required axes/roles, invariances,
+consumed information, output support, gap behaviour, legitimate null, leakage risks, refusals and
+benchmark-authorized channels executable rather than prose. Its first deliberately narrow
+channel is a benchmarked within-record standardized level; it does not launder native semantics
+or magnitudes.
+
+Reanalysis, Argo and TESS deterministic known-answer records pass the same domain-blind mining
+function. Conformance independently rejects semantic/unit substitution, any changed clock,
+support or validity mask, unbenchmarked channels, changed scale mapping, dropped violations and
+values that cannot be rebuilt from their native indices and declared formula. The Composer now
+has an **Inspect structural contract** action whose manifest-bound preview visibly retains native
+support count, coverage, unit, scale, limits and native/adapter digests. It is explicitly labelled
+known-answer data, not acquired observations. Live adapter translation, order-book onboarding,
+analysis, evidence and rung movement remain later slices. Ten focused trajectory/API tests plus
+the frontend contract pass; the production TypeScript/Vite build passes.
 
 **TG17.3 Adapter registry, schema-driven controls and conformance kit — PLANNED.** Make acquisition
 plus structural translation a registered `DomainExperimentAdapter` contract rather than an
