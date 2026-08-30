@@ -3932,7 +3932,7 @@ cross-domain statistic runs, no evidence is written and no claim rung moves; the
 control makes the known-answer binding a visible manifest-recorded choice and the live binding
 refuses by naming TG17.6.
 
-**TG17.4 Clock, support and coverage semantics — PLANNED.** Calendar mode compares interval support,
+**TG17.4 Clock, support and coverage semantics — DONE (2026-08-31, `ed-dev`).** Calendar mode compares interval support,
 not equal row indices. Every structural observation carries `[start, end)` support and presence;
 pairwise overlap and effective sample size are computed from those declarations. No path silently
 bins, compacts, forward-fills or interpolates an irregular record to manufacture simultaneity.
@@ -3948,6 +3948,61 @@ modes declares both and pays for the combined corrected family.
 interrupted-light-curve and non-stationary-support fixtures either align as declared or refuse by
 name. Changing row density alone cannot manufacture support. The UI visualizes actual coverage
 before the freeze and the exact support used afterward.
+
+
+**Delivered.** `src/core/structural_alignment.py` compares half-open `[start, end)` support with
+interval arithmetic and nothing else. The invariant it exists to hold is one sentence —
+*changing row density alone cannot manufacture support* — and it is the load-bearing test:
+splitting every record into sixty times as many rows over the same support leaves the occupied
+duration, the overlap, the governing scale and the effective sample size identical. Effective
+sample size is overlap **duration** over the coarser of the two native scales, so a fine record
+cannot lend a coarse one resolution it does not have; the raw row count travels in every report
+and is used by nothing, printed beside the number that is actually evidence. Supports are
+unioned rather than summed, a zero-width support is refused, and `[a, b)` next to `[b, c)`
+overlaps in nothing — which under a closed convention would have been a coincidence at every
+boundary of every regularly sampled record.
+
+Nothing bins, compacts, forward-fills or interpolates by default. `exact_support_overlap` is the
+only kernel that runs unnamed, and it transforms nothing. Every other kernel is a declared
+adapter operation: frozen in the manifest's `AlignmentPolicy`, inside the manifest digest,
+admitted by *every* participating adapter through the adapter contract's new
+`admissible_kernels`, with no framework default for any parameter, and reporting in seconds how
+much of the resulting overlap it created rather than observed. A value-inventing kernel is
+refused outright over a domain declaring `irregular_sampling` or `aggregated_values`. Which
+kernels a domain admits is a domain judgement: reanalysis admits tolerance and grid aggregation,
+Argo admits tolerance but not a grid the array does not keep, TESS admits a grid but not a
+tolerance that would blur the observational gap deciding whether a target was observed at all,
+the bespoke family admits only the kernel that transforms nothing, and no adapter admits
+`carry_forward`.
+
+The two modes cannot borrow each other's vocabulary, and the manifest refuses the mismatch where
+the search is declared rather than where the result is worded. Scale/shape correspondences retain
+both native durations, so a match is reported as a shape recurring at 1.8 hours here and 46 days
+there. Declaring both modes prices the union of what was searched.
+
+Consequences are visible before the freeze. `preflight_manifest` gains an alignment block that
+binds the kernel against every participating adapter, states each window's true elapsed UTC
+seconds, and reports a pair as **bounded by the window** rather than inventing an overlap number
+where metadata cannot establish one — which, for three of the four flagship domains, is the
+honest answer. `POST .../manifests/alignment` then measures the support the known-answer records
+actually have, and `CoverageTimeline.tsx` draws it positioned by time rather than by index, with
+the gap count, governing scale, effective sample size, kernel-created seconds and the greyed-out
+row count beside them.
+
+**Acceptance met.** `src/benchmarks/alignment_fixtures.py` carries the six adversarial cases and
+their known answers: unequal cadence resolves to 28 effective observations rather than 168; the
+abutting boundary shares nothing and refuses by name; the daylight-saving day is 82,800 seconds,
+where a nominal denominator would have reported 95.8% coverage for a record covering the window
+completely; the sparse Argo profile shares 36 hours of nine ascents inside ninety days; the
+interrupted light curve's two-day downlink gap survives a continuous partner and the overlap
+comes back as two intervals; and non-stationary support has its effective sample size labelled an
+upper bound rather than corrected.
+
+**Evidence.** `test_structural_alignment.py` 45 functions / 56 cases; the TG17-adjacent suites,
+the benchmark and cross-domain suites, the frontend contract and the documentation audit at
+362 passed; production build 1,403 modules; `git diff --check` clean. Nothing acquired, no cross-domain statistic run, no evidence written, no claim rung
+moved.
+
 
 **TG17.5 Multi-domain family accounting and domain-legitimate nulls — PLANNED.** Freeze all tested
 domain pairs, triples, quartets, windows, durations, scales, motifs, lags and representations as

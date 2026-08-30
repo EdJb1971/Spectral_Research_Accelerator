@@ -4426,6 +4426,83 @@ This slice does not acquire a live archive, run a cross-domain statistic, write 
 claim rung. The `source_binding` control makes the deterministic known-answer binding a visible
 choice recorded in the manifest, and the live binding refuses by naming TG17.6.
 
+#### 3.6zzn Clock, Support and Coverage Semantics (TG17.4, `ed-dev`)
+
+`src/core/structural_alignment.py` replaces row-index comparison with interval arithmetic over
+the half-open `[start, end)` support that TG17.2's canonical record already preserved. Every
+number this module produces is derived from support, and the guarantee it exists to hold is one
+sentence: **changing row density alone cannot manufacture support.** Splitting every hourly
+record into sixty minutely rows over the same support produces sixty times the rows, the same
+occupied duration, the same overlap and the same effective sample size; a pipeline counting
+overlapping row *pairs* would have reported a 3600-fold increase in shared evidence for a file
+that gained no information at all. `effective_sample_size` is therefore overlap **duration**
+divided by the coarser of the two native scales, and the raw row count is carried into every
+report and used by nothing, so a reader can see the number they would have reached for next to
+the number that is evidence.
+
+Half-open bites at the boundary. `[a, b)` and `[b, c)` abut and do not overlap; a closed
+convention would have reported a coincidence at every boundary in every regularly sampled
+record. Supports are unioned rather than summed, so overlapping bins and shared sector months
+occupy the world once, and a zero-width support is refused outright rather than silently
+contributing nothing while still counting as an observation.
+
+**Nothing bins, compacts, forward-fills or interpolates by default.** The only kernel that runs
+without being named in the manifest is `exact_support_overlap`, which transforms nothing. Every
+other kernel - `symmetric_tolerance`, `common_grid_aggregate`, `carry_forward` - is a declared
+adapter operation: it is frozen in the manifest's new `AlignmentPolicy` and travels inside the
+manifest digest, it must be admitted by *every* participating adapter through the adapter
+contract's new `admissible_kernels`, its parameters have no framework defaults (a tolerance the
+framework picked is a scientific choice nobody made), and it reports in seconds how much of the
+resulting overlap it created rather than observed. A kernel that invents values is refused
+outright over a domain declaring `irregular_sampling` or `aggregated_values`, because
+interpolating across an irregular clock manufactures exactly the simultaneity the experiment
+exists to test for. Admissibility is a domain judgement rather than a framework one: reanalysis
+admits tolerance and grid aggregation because a gridded product declares a cadence and a valid
+interval per step; Argo admits tolerance but not a grid, because the array does not keep the
+nominal cycle a grid would assume; TESS admits a grid but not tolerance, because widening sector
+support would blur the observational gap that decides whether a target was observed at all; and
+the bespoke family admits only the kernel that transforms nothing. No adapter admits
+`carry_forward`.
+
+The two modes cannot borrow each other's vocabulary. `assert_mode_admits_relationship` is a name
+lookup rather than a convention: calendar mode may speak of co-occurrence, precedence and lead
+lag and may not silently search normalized scale ratios; scale/shape mode compares a normalized
+coordinate that retains its mapping back to each native duration - so a match is reported as a
+shape recurring at 1.8 hours here and 46 days there, never as an unqualified similarity - and
+may not emit simultaneity, precedence or causal language at any confidence. The manifest refuses
+a mode/relationship mismatch where the search is declared rather than where the result is
+worded, because by the latter point the search has already happened. A study wanting both modes
+declares both and `combined_family_multiplier` prices the union.
+
+The calendar is UTC seconds and nothing else. `elapsed_seconds` refuses a naive local timestamp
+by name, and `nominal_day_discrepancy` reports the difference between the window a researcher
+declared and the `days x 86400` a nominal denominator would assume - which is an hour, four
+percent, across a daylight-saving transition, in the direction that flatters coverage.
+
+Consequences are shown before the freeze and measured after it. `preflight_manifest` gains an
+`alignment` block that binds the declared kernel against every participating adapter, states the
+true elapsed seconds of each window, and reports each pair as either established from metadata
+or **bounded by the window** - a domain whose plan does not establish exact coverage is not
+given an overlap number that would later turn out to have been a guess, which for three of the
+four flagship domains is the honest answer. `POST /api/v1/experiment-composer/manifests/alignment`
+then measures the support the deterministic known-answer records actually have, stating the
+binding in every response, and `frontend/src/components/CoverageTimeline.tsx` draws it: bars
+positioned by time rather than by index, so a sparse record cannot look dense because it happens
+to have as many rows, with the gap count, the governing scale, the effective sample size, the
+seconds the kernel created and the row count greyed out beside them.
+
+`src/benchmarks/alignment_fixtures.py` carries the six adversarial cases and their known
+answers: unequal cadence (28 effective observations, not 168), abutting boundary (nothing),
+a daylight-saving day (82,800 seconds, where a nominal denominator would report 95.8% coverage
+for a record that covers the window completely), a sparse Argo-shaped profile (36 hours of nine
+ascents inside ninety days), an interrupted light curve (the two-day downlink gap survives a
+continuous partner, and the overlap is two intervals rather than one) and non-stationary support
+(the effective sample size is labelled an upper bound rather than corrected).
+
+This slice acquires nothing, runs no cross-domain statistic, writes no evidence and moves no
+claim rung.
+
+
 ### 3.11 Ground-Truth Benchmark Suite (`src/benchmarks/`)
 
 Added in T3.5.17 (standard E7). Twenty-four synthetic datasets whose correct answer is known
@@ -4750,7 +4827,7 @@ reason in the test itself.
 
 ## 3.12 HTTP API Surface
 
-107 routes. Listed here because an undocumented endpoint is an untested contract. The count and this table were both wrong until TG17.3 (defect D75): the guard enumerated a hand-maintained list of ten source files and could not see four mounted routers.
+109 routes. Listed here because an undocumented endpoint is an untested contract. The count and this table were both wrong until TG17.3 (defect D75): the guard enumerated a hand-maintained list of ten source files and could not see four mounted routers.
 
 | Method | Route | Notes |
 |---|---|---|
@@ -4856,8 +4933,10 @@ reason in the test itself.
 | GET | `/api/v1/experiment-composer/recipes/g17-flagship-calendar` | the TG17.0 quartet expressed in the manifest schema (TG17.1) |
 | GET | `/api/v1/experiment-composer/adapters` | every registered `DomainExperimentAdapter` and its typed control schema, generated from the registry (TG17.3) |
 | POST | `/api/v1/experiment-composer/adapters/{adapter_id}/conformance` | the conformance kit run against that adapter's deterministic known-answer record; declared-but-unprobed invariances report `NOT_PROBED` rather than passing (TG17.3) |
+| GET | `/api/v1/experiment-composer/alignment-kernels` | every declared alignment kernel and which registered adapters admit it; a kernel no adapter admits is visibly unusable rather than absent (TG17.4) |
+| POST | `/api/v1/experiment-composer/manifests/alignment` | the support this manifest's domains actually share, measured from the deterministic known-answer records and labelled as such (TG17.4) |
 | POST | `/api/v1/experiment-composer/manifests/validate` | one immutable manifest's content digest and run identity (TG17.1) |
-| POST | `/api/v1/experiment-composer/manifests/preflight` | metadata-only coverage planning from each domain's registered adapter; no network and no measurement values (TG17.1/TG17.3) |
+| POST | `/api/v1/experiment-composer/manifests/preflight` | metadata-only coverage planning from each domain's registered adapter, plus the alignment block: the frozen kernel, each window's true elapsed seconds and each pair's shared support or the reason metadata cannot establish it; no network and no measurement values (TG17.1/TG17.3/TG17.4) |
 | POST | `/api/v1/experiment-composer/manifests/representation-preview` | the canonical `StructuralTrajectory` contract on frozen fixtures, labelled as known-answer data (TG17.2) |
 | PUT | `/api/v1/experiment-composer/drafts/{draft_id}` | move a draft pointer to a new immutable content-addressed revision (TG17.1) |
 | GET | `/api/v1/experiment-composer/drafts/{draft_id}` | the manifest a saved draft currently points at (TG17.1) |
@@ -5882,6 +5961,7 @@ able to sit three slices out of date.
 | `test_experiments.py` | 3 | declarative sweeps and lineage |
 | `test_experiment_manifest.py` | 12 | TG17.1 immutable cross-domain manifest, byte-stable API/run identity, explicit window family, native-support metadata planning, visible partial/refusal policy, content-addressed draft revisions, recipe/API round trip and no premature run route |
 | `test_structural_trajectory.py` | 10 | TG17.2 immutable canonical trajectory, exact native clock/support/gap preservation, domain-blind weather/Argo/TESS mining seam, complete value reconstruction, adapter declarations/digests, semantic-leakage and interpolation refusals, full-fidelity preview and visible API boundary |
+| `test_structural_alignment.py` | 45 | TG17.4 clock, support and coverage semantics: the density invariance that row count alone cannot manufacture support, half-open boundaries and unioned rather than summed supports, the coarser scale governing effective sample size, non-stationary support labelled an upper bound, the true elapsed seconds of a daylight-saving day and the refusal of a naive local timestamp, the six adversarial fixtures against their known answers, declared kernels with no framework-default parameters and their manufactured-overlap accounting, kernel admissibility per adapter and the refusal of a value-inventing kernel over an irregular clock, the two mode vocabularies refusing each other at the manifest, and the preflight and API alignment surfaces (56 pytest cases) |
 | `test_adapter_registry.py` | 15 | TG17.3 registered adapter contract, typed control schemas and their refusal of undeclared parameters, the ten-check conformance kit including executed invariance probes and `NOT_PROBED` reporting, unreconstructable lineage refusal, coverage-honesty and byte-cap failures, the four flagship adapters, the two that register from outside `src`, the bespoke record family's TG8.4 fence, and the synthetic fifth adapter installed through the extension seam with no orchestrator, route or UI edit |
 | `test_exports.py` | 32 | CSV/JSON/NetCDF4/Zarr round trips, embedded provenance, seeded perturbation (D34) |
 | `test_external_fcn3.py` | 9 | T5.6a offline FCN3 request/result schemas, exact global input and ensemble contracts, portability refusals, canonical persistence, file/tree identity and request/artifact tamper isolation |
@@ -5895,7 +5975,7 @@ able to sit three slices out of date.
 | `test_forecasting_artifact_evaluation.py` | 8 | T5.3b/T5.2d checkpoint/config integrity, artifact-bound lineage, persistence-relative metrics, physical-time reporting/refusals, undefined-skill handling and CPU/RTX vendor-neutral accelerator parity |
 | `test_forecasting_protocol.py` | 7 | T5.0a exact schema completeness, canonical identity, immutable nested configuration, evidence requirements, temporal/rollout consistency, persistence and tamper/drift refusal |
 | `test_forecasting_protocol_binding.py` | 4 | T5.0b exact dataset/protocol/checkpoint binding, recomputed coordinate/statistics identities, drift refusals and bound-evaluation cross-run isolation |
-| `test_frontend_contract.py` | 101 | the frontend/backend contract, including dataset-bound navigation gating with visible backend refusal reasons, capability profiles showing yes/no/not-established facts, transform/dataset/cadence readiness claim boundaries, domain-driven acquisition, workflow-grouped navigation, persistent record/study context, the TG11.1 analysis panel's three engine operations, R21 disablement, three-valued verdict and re-read identity check, the TG11.2 preregistration panel's declare-never-decide split, TG11.5's separate GET-only recorded-review workspace with its visible R23 fence, complete argument/cost display and honest empty states, TG17.1's manifest-driven save/reload/preflight Composer, TG17.2's known-answer structural-contract inspector and disabled premature runner, preservation of every ERA5 control, TG17.3's schema-driven adapter controls with no per-domain branch in the generic composer, every registrable control kind having a renderer, and the adapter/conformance payload shapes, plus TG11.6's skip/route focus, bound labels, global focus and reduced-motion rule, keyboard SVG lineage, figure text equivalents and asynchronous-state semantics, plus the UI integrity guards: no fabricated results, no unqualified validation claims, units and slope uncertainty displayed |
+| `test_frontend_contract.py` | 108 | the frontend/backend contract, including dataset-bound navigation gating with visible backend refusal reasons, capability profiles showing yes/no/not-established facts, transform/dataset/cadence readiness claim boundaries, domain-driven acquisition, workflow-grouped navigation, persistent record/study context, the TG11.1 analysis panel's three engine operations, R21 disablement, three-valued verdict and re-read identity check, the TG11.2 preregistration panel's declare-never-decide split, TG11.5's separate GET-only recorded-review workspace with its visible R23 fence, complete argument/cost display and honest empty states, TG17.1's manifest-driven save/reload/preflight Composer, TG17.2's known-answer structural-contract inspector and disabled premature runner, preservation of every ERA5 control, TG17.3's schema-driven adapter controls with no per-domain branch in the generic composer, every registrable control kind having a renderer, and the adapter/conformance payload shapes, plus TG11.6's skip/route focus, bound labels, global focus and reduced-motion rule, keyboard SVG lineage, figure text equivalents and asynchronous-state semantics, plus the UI integrity guards: no fabricated results, no unqualified validation claims, units and slope uncertainty displayed |
 | `test_gate_run.py` | 1 | T4C.5d frozen plan, local-only preflight, bounded train-only climatology/signatures, authenticated synthetic gate receipt, no-overwrite and tamper refusal |
 | `test_gate_campaign.py` | 6 | T4C.5f-h exact campaign identity, strict nested schema, canary/full/WeatherBench drift refusals, pre-transfer R13/physical-lag audit, aggregate storage/readiness, immutable freeze/load, pinned real preregistration and zero-network CLI (8 pytest cases) |
 | `test_grid_operators.py` | 64 | grid metrics, metric-aware gradient/Laplacian, area weighting, physical-wavenumber spectra, D26 |
@@ -5939,7 +6019,7 @@ able to sit three slices out of date.
 | `test_representation_structure.py` | 6 | TG16.1 complete pair enumeration, joint redundancy/complementarity/XOR/null discrimination, sealed estimator/null/family and permutation-resolution refusal, content/tamper binding, non-removal claim boundary, earned capability registration, and multipart plan/run workflow |
 | `test_conditional_information.py` | 6 | TG16.2 conditional-signal/null/collider discrimination, overlap and effective-support admission, sealed conditional-randomisation family and permutation-resolution refusal, content/tamper binding, conditional-only claim boundary, earned nuisance capability, and multipart plan/run workflow |
 | `test_stable_subspace.py` | 13 | TG16.3 span/projector invariance, planted linear and null discrimination, optional nuisance-region stability boundary, sealed complete family/optimizer/partition and permutation-resolution refusal, content/tamper binding and multipart plan/generate; TG16.4 unchanged held-out application, complete-family correction, nuisance-overlap refusal, content-bound seal, publication check and durable one-opening ledger; TG16.5 published definitions, no-adaptation external contract, provenance/content binding, target spending, and multipart certification |
-  | **total** | **2476** | |
+  | **total** | **2528** | |
 ### 7.2h A surrogate null that was not the null it claimed (T4C.5)
 
 The most instructive defect of the project so far, because it passed every structural check.

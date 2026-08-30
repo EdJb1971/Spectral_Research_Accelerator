@@ -12,7 +12,9 @@ from src.adapters import register_all_adapters
 from src.benchmarks.structural_trajectory import known_answer_native, known_answer_preview
 from src.core.adapter_conformance import ConformanceCase, run_conformance
 from src.core.errors import SpectralEarthError
-from src.core.experiment_adapter import EXPERIMENT_ADAPTERS, adapter_for
+from src.core.experiment_adapter import EXPERIMENT_ADAPTERS, adapter_for, adapter_for_domain
+from src.core.structural_alignment import (ALIGNMENT_KERNELS, MODE_FORBIDS, MODE_RELATIONSHIPS,
+                                           alignment_report, bind_kernel, support_profile)
 from src.core.experiment_manifest import (CrossDomainExperimentSpec, ManifestStore,
                                           flagship_recipe, manifest_envelope,
                                           manifest_sha256, preflight_manifest)
@@ -41,6 +43,9 @@ async def composer_contract() -> Dict[str, Any]:
             "calendar_aligned": "Shared UTC support permits co-occurrence analysis only.",
             "scale_shape_aligned": "Normalized structural recurrence; no simultaneity or precedence.",
         },
+        "mode_forbids": dict(MODE_FORBIDS),
+        "mode_relationships": {name: list(group)
+                               for name, group in sorted(MODE_RELATIONSHIPS.items())},
         "duration_presets": ["week", "three_months", "six_months"],
         "domains": [{"domain": entry.value.domain, "adapter_id": entry.value.adapter_id,
                      "label": entry.value.declaration.description}
@@ -49,7 +54,8 @@ async def composer_contract() -> Dict[str, Any]:
                      "inspect canonical known-answer contract"],
         "available_now": ["manifest", "saved draft", "metadata-only preflight",
                           "StructuralTrajectory contract and known-answer preview",
-                          "registered domain adapters, their controls and conformance"],
+                          "registered domain adapters, their controls and conformance",
+                          "declared alignment kernels and the support they would share"],
         "not_yet_available": ["live adapter translation", "acquire quartet", "run experiment"],
         "claim_boundary": "A ready preflight is not acquisition, analysis, evidence or a result.",
     }
@@ -116,6 +122,81 @@ async def adapter_conformance(adapter_id: str,
         parameters=dict(parameters or {}), windows=[_Window()],
         maximum_planned_bytes=4 * 1024 ** 3, native_record=record))
     return {**report.describe(), "record_kind": "deterministic_known_answer_not_acquired_data"}
+
+
+@router.get("/alignment-kernels")
+async def alignment_kernels() -> Dict[str, Any]:
+    """Every declared alignment kernel, and which adapters admit each one (TG17.4).
+
+    Generated from the kernel registry and the adapter registry rather than listed, so a kernel
+    no adapter admits is visibly unusable instead of appearing as an available option.
+    """
+    admitted = {}
+    for entry in EXPERIMENT_ADAPTERS.entries():
+        for name in entry.value.admissible_kernels:
+            admitted.setdefault(name, []).append(entry.value.adapter_id)
+    rows = []
+    for entry in ALIGNMENT_KERNELS.entries():
+        rows.append({**entry.value.describe(),
+                     "admitted_by": sorted(admitted.get(entry.name, [])),
+                     "usable_across_all_registered_domains":
+                         len(admitted.get(entry.name, [])) == len(EXPERIMENT_ADAPTERS)})
+    return {"schema": "experiment-composer-alignment-kernels/v1", "kernels": rows,
+            "default": "exact_support_overlap",
+            "note": ("Only `exact_support_overlap` runs without being named in the manifest. "
+                     "Every other kernel widens, snaps or carries support, must be admitted by "
+                     "every participating adapter, and reports in seconds how much of the "
+                     "resulting overlap it created rather than observed."),
+            "claim_boundary": ("A kernel is a declared operation on support. Admitting one is "
+                               "not evidence that applying it is appropriate for a question.")}
+
+
+@router.post("/manifests/alignment")
+async def alignment(spec: CrossDomainExperimentSpec) -> Dict[str, Any]:
+    """The support this manifest's domains actually share, over the known-answer records.
+
+    Deliberately not the metadata plan: `POST /manifests/preflight` already reports what the
+    catalogue implies, and for three of the four flagship domains that is honestly "bounded by
+    the window". This route opens the deterministic benchmark records instead, so the coverage a
+    researcher sees before the freeze is measured support rather than a product description. The
+    binding is stated in every response and travels with anything derived from it.
+    """
+    profiles, extent = [], 0.0
+    for observation in spec.observations:
+        try:
+            item = adapter_for_domain(observation.domain)
+            record = known_answer_native(item.domain)
+        except (SpectralEarthError, KeyError) as error:
+            raise HTTPException(status_code=422, detail=(
+                "domain %r has no registered adapter with a deterministic known-answer record, "
+                "so its support cannot be shown without acquiring data: %s"
+                % (observation.domain, error))) from error
+        extent = max(extent, float(record.sample_times_seconds[-1])
+                     + float(record.native_scale_seconds))
+        profiles.append((observation.domain, record))
+    window = (0.0, extent)
+    try:
+        kernel = bind_kernel(
+            spec.alignment.kernel, spec.alignment.parameters,
+            declarations=[adapter_for_domain(domain).declaration for domain, _ in profiles],
+            admissible_by_adapter={adapter_for_domain(domain).adapter_id:
+                                   adapter_for_domain(domain).admissible_kernels
+                                   for domain, _ in profiles})
+    except SpectralEarthError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
+    built = [support_profile(
+        label=domain, domain=domain, starts=record.sample_times_seconds,
+        ends=record.sample_times_seconds + record.native_scale_seconds, window=window,
+        native_scale_seconds=float(record.native_scale_seconds),
+        valid=record.valid_mask) for domain, record in profiles]
+    report = alignment_report(built, mode=spec.mode, kernel=kernel,
+                              minimum_overlap_seconds=spec.alignment.minimum_overlap_seconds,
+                              minimum_effective_samples=spec.alignment.minimum_effective_samples,
+                              relationships=list(spec.family.relationships))
+    return {**report, "manifest_sha256": manifest_sha256(spec),
+            "record_binding": "benchmark_known_answer",
+            "record_kind": "deterministic_known_answer_not_acquired_data",
+            "window_seconds": extent}
 
 
 @router.post("/manifests/validate")

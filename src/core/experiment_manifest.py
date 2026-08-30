@@ -22,6 +22,7 @@ from src.core.publication import publish_new_bytes
 
 
 SCHEMA = "cross-domain-experiment/v1"
+ALIGNMENT_SCHEMA = "experiment-preflight-alignment/v1"
 PREFLIGHT_SCHEMA = "cross-domain-experiment-preflight/v1"
 STUDY_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
 
@@ -105,6 +106,20 @@ class NullDefinition(FrozenModel):
     parameters: Dict[str, Any] = Field(default_factory=dict)
 
 
+class AlignmentPolicy(FrozenModel):
+    """How support is compared, frozen before any measurement value is opened (TG17.4).
+
+    The default transforms nothing. Every other kernel widens, snaps or carries support, which
+    is a scientific choice: it is named here, its consequence in seconds is reported in
+    preflight, and every participating adapter must admit it.
+    """
+
+    kernel: str = "exact_support_overlap"
+    parameters: Dict[str, float] = Field(default_factory=dict)
+    minimum_overlap_seconds: float = Field(0.0, ge=0.0)
+    minimum_effective_samples: float = Field(0.0, ge=0.0)
+
+
 class ResourceCaps(FrozenModel):
     maximum_family_members: int = Field(..., gt=0)
     maximum_planned_bytes: int = Field(..., gt=0)
@@ -119,6 +134,7 @@ class CrossDomainExperimentSpec(FrozenModel):
     windows: List[ExplicitWindow] = Field(..., min_items=1)
     observations: List[ObservationContract] = Field(..., min_items=2)
     coverage_policy: CoveragePolicy
+    alignment: AlignmentPolicy = Field(default_factory=AlignmentPolicy)
     scale_normalization: Optional[Dict[str, Any]] = None
     family: FamilyDefinition
     nulls: List[NullDefinition] = Field(..., min_items=1)
@@ -146,12 +162,35 @@ class CrossDomainExperimentSpec(FrozenModel):
             raise ValueError("window names must be unique")
         if values.get("mode") == "scale_shape_aligned" and not values.get("scale_normalization"):
             raise ValueError("scale_shape_aligned requires scale_normalization")
+        _assert_relationships_belong_to_mode(values)
         family, caps = values.get("family"), values.get("resource_caps")
         if family and caps and family.maximum_members > caps.maximum_family_members:
             raise ValueError("family maximum exceeds the experiment resource cap")
         if not values.get("seeds"):
             raise ValueError("at least one labelled seed is required")
         return values
+
+
+def _assert_relationships_belong_to_mode(values: Dict[str, Any]) -> None:
+    """A mode may not borrow the other mode's vocabulary (TG17.4).
+
+    Calendar mode compares UTC support and may speak of co-occurrence; it may not silently
+    search normalized scale ratios. Scale/shape mode compares a normalized coordinate that
+    carries no clock, and may not emit simultaneity, precedence or causal language at any
+    confidence. Refused here rather than at the point a result is worded, because by then the
+    search has already happened.
+    """
+    from src.core.structural_alignment import (AlignmentRefusal,
+                                               assert_mode_admits_relationship)
+
+    mode, family = values.get("mode"), values.get("family")
+    if not mode or family is None:
+        return
+    for relationship in family.relationships:
+        try:
+            assert_mode_admits_relationship(mode, relationship)
+        except AlignmentRefusal as error:
+            raise ValueError(str(error))
 
 
 def canonical_bytes(spec: CrossDomainExperimentSpec) -> bytes:
@@ -268,6 +307,8 @@ def preflight_manifest(spec: CrossDomainExperimentSpec) -> Dict[str, Any]:
         refusals.append({"domain": None, "reason":
                          "declared windows plan %d bytes; cap is %d" %
                          (planned_bytes, spec.resource_caps.maximum_planned_bytes)})
+    alignment, alignment_refusals = _preflight_alignment(spec, rows)
+    refusals.extend(alignment_refusals)
     partial = [row["domain"] for row in rows if row["status"] == "PARTIAL"]
     if partial and spec.coverage_policy.requirement == "complete_required":
         refusals.append({"domain": None, "reason":
@@ -281,8 +322,117 @@ def preflight_manifest(spec: CrossDomainExperimentSpec) -> Dict[str, Any]:
                        "windows_are_one_family": len(spec.windows) > 1},
             "planned_bytes": planned_bytes,
             "maximum_planned_bytes": spec.resource_caps.maximum_planned_bytes,
+            "alignment": alignment,
             "coverage": rows, "refusals": refusals,
             "claim_boundary": "Coverage planning is not acquisition, analysis, evidence or a scientific result."}
+
+
+def _preflight_alignment(spec: CrossDomainExperimentSpec,
+                         rows: List[Dict[str, Any]]) -> Any:
+    """What the declared windows and clocks imply about shared support (TG17.4).
+
+    Metadata only, and it says so where it cannot say more. A domain whose plan does not
+    establish exact coverage cannot have its overlap stated before acquisition, so its pairs are
+    reported as bounded by the window rather than given a number that would later turn out to
+    have been a guess. That distinction is the entire point of showing this before the freeze.
+    """
+    from src.core.errors import SpectralEarthError
+    from src.core.experiment_adapter import adapter_for_domain
+    from src.core.structural_alignment import (MODE_FORBIDS, MODE_RELATIONSHIPS, bind_kernel,
+                                               combined_family_multiplier,
+                                               nominal_day_discrepancy, pairwise_overlap,
+                                               support_profile, window_bounds_seconds)
+
+    refusals: List[Dict[str, Any]] = []
+    declarations, admissible = [], {}
+    for row in rows:
+        try:
+            adapter = adapter_for_domain(row["domain"])
+        except SpectralEarthError:
+            continue
+        declarations.append(adapter.declaration)
+        admissible[adapter.adapter_id] = adapter.admissible_kernels
+    try:
+        kernel = bind_kernel(spec.alignment.kernel, spec.alignment.parameters,
+                             declarations=declarations, admissible_by_adapter=admissible)
+    except SpectralEarthError as error:
+        refusals.append({"domain": None, "reason": str(error)})
+        return ({"schema": ALIGNMENT_SCHEMA, "mode": spec.mode, "kernel": None,
+                 "kernel_refused": str(error), "windows": []}, refusals)
+
+    comparable = [row for row in rows if row["status"] != "REFUSED"]
+    names = [row["domain"] for row in comparable]
+    windows: List[Dict[str, Any]] = []
+    for window in spec.windows:
+        bounds = window_bounds_seconds(window.start_utc, window.end_utc)
+        profiles, unestablished = {}, {}
+        for row in comparable:
+            cadence = row.get("native_cadence_seconds")
+            planned = row.get("windows") or []
+            if not planned or not cadence or not planned[0]["coverage_exact"]:
+                unestablished[row["domain"]] = (
+                    "native support is %s; exact coverage of this window is established only "
+                    "after acquisition, so the shared support cannot be stated yet"
+                    % row.get("support_kind", "not planned"))
+                continue
+            profiles[row["domain"]] = support_profile(
+                label=row["domain"], domain=row["domain"], starts=[bounds[0]],
+                ends=[bounds[1]], window=bounds, native_scale_seconds=float(cadence))
+        pairs: List[Dict[str, Any]] = []
+        for index, left in enumerate(names):
+            for right in names[index + 1:]:
+                if left in profiles and right in profiles:
+                    pairs.append(_planned_pair(spec, window, kernel, profiles[left],
+                                               profiles[right], refusals))
+                    continue
+                blocked = [name for name in (left, right) if name in unestablished]
+                pairs.append({
+                    "left": left, "right": right, "status": "BOUNDED_BY_WINDOW",
+                    "overlap_seconds": None,
+                    "maximum_possible_overlap_seconds": bounds[1] - bounds[0],
+                    "effective_sample_size": None,
+                    "reason": "; ".join("%s: %s" % (name, unestablished[name])
+                                        for name in blocked)})
+        windows.append({
+            "name": window.name, "window_seconds": bounds[1] - bounds[0],
+            "clock": nominal_day_discrepancy(window.start_utc, window.end_utc),
+            "clock_note": ("elapsed UTC seconds, not days times 86400; a local calendar day "
+                           "spanning a daylight-saving transition is 23 or 25 hours"),
+            "pairs": pairs})
+    return ({"schema": ALIGNMENT_SCHEMA, "mode": spec.mode,
+             "mode_forbids": MODE_FORBIDS[spec.mode],
+             "admitted_relationships": list(MODE_RELATIONSHIPS[spec.mode]),
+             "declared_relationships": list(spec.family.relationships),
+             "kernel": kernel.describe(),
+             "minimum_overlap_seconds": spec.alignment.minimum_overlap_seconds,
+             "minimum_effective_samples": spec.alignment.minimum_effective_samples,
+             "family": combined_family_multiplier([spec.mode]),
+             "row_indices_were_not_compared": True,
+             "measurement_values_opened": False,
+             "windows": windows}, refusals)
+
+
+def _planned_pair(spec: CrossDomainExperimentSpec, window: Any, kernel: Any, left: Any,
+                  right: Any, refusals: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """One pair whose shared support metadata does establish, and the thresholds it must meet."""
+    from src.core.structural_alignment import pairwise_overlap
+
+    overlap = pairwise_overlap(left, right, kernel=kernel)
+    row = {**overlap.describe(), "status": "ESTABLISHED_FROM_METADATA"}
+    reason = None
+    if overlap.overlap_seconds < spec.alignment.minimum_overlap_seconds:
+        reason = ("planned shared support is %.1f s and the manifest requires at least %.1f s"
+                  % (overlap.overlap_seconds, spec.alignment.minimum_overlap_seconds))
+    elif overlap.effective_sample_size < spec.alignment.minimum_effective_samples:
+        reason = ("planned effective sample size is %.3f at the governing scale of %.1f s and "
+                  "the manifest requires at least %.3f"
+                  % (overlap.effective_sample_size, overlap.governing_scale_seconds,
+                     spec.alignment.minimum_effective_samples))
+    if reason:
+        row["status"], row["reason"] = "REFUSED", reason
+        refusals.append({"domain": None, "reason": "%s/%s in window %r: %s"
+                         % (left.label, right.label, window.name, reason)})
+    return row
 
 
 def _refused_row(observation: Any, reason: str) -> Any:

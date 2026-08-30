@@ -21,6 +21,7 @@ A `DomainExperimentAdapter` is the whole of what a domain must supply, in one re
 ``derive_capabilities``      what this record does and does not support, as facts
 ``build_null``               the domain-legitimate null this record admits
 ``render_provenance``        how a canonical value is shown to have arisen
+``admissible_kernels``       which alignment operations its support tolerates (TG17.4)
 ===========================  ==============================================================
 
 **Window arithmetic belongs to the framework, not to the adapter.** `plan_acquisition` returns
@@ -347,6 +348,11 @@ class DomainExperimentAdapter:
     derive_capabilities: Optional[Callable[..., Mapping[str, Any]]] = None
     build_null: Optional[Callable[..., Any]] = None
     render_provenance: Optional[Callable[..., Mapping[str, Any]]] = None
+    #: Which declared alignment kernels this domain admits over its own support (TG17.4).
+    #: The default admits only the kernel that transforms nothing. Widening, snapping or
+    #: carrying support is a claim about what an observation means, and the domain that knows
+    #: what its support means is the only place that claim can legitimately be made.
+    admissible_kernels: Tuple[str, ...] = ("exact_support_overlap",)
     onboarding_cost: Mapping[str, Any] = dc_field(default_factory=dict)
     definition_sha256: str = dc_field(init=False, default="")
 
@@ -361,6 +367,23 @@ class DomainExperimentAdapter:
                 "registrations was never checked as a whole, so what it refuses is unknown and "
                 "an adapter over it would inherit refusals nobody has verified exist"
                 % self.declaration.name)
+        from src.core.structural_alignment import ALIGNMENT_KERNELS
+
+        kernels = tuple(dict.fromkeys(self.admissible_kernels))
+        if "exact_support_overlap" not in kernels:
+            raise AdapterConformanceError(
+                self.adapter_id, "admissible_kernels",
+                "an adapter must admit `exact_support_overlap`. Refusing to be compared on the "
+                "support it actually declares, while admitting kernels that widen it, would "
+                "make the transformed comparison the only one available")
+        unknown = sorted(set(kernels) - set(ALIGNMENT_KERNELS.names()))
+        if unknown:
+            raise AdapterConformanceError(
+                self.adapter_id, "admissible_kernels",
+                "only registered alignment kernels; %s is not registered, and a manifest "
+                "naming it would be admitted by an adapter against a kernel that does not "
+                "exist" % ", ".join(repr(name) for name in unknown))
+        object.__setattr__(self, "admissible_kernels", kernels)
         object.__setattr__(self, "onboarding_cost",
                            MappingProxyType(dict(self.onboarding_cost)))
         object.__setattr__(self, "definition_sha256", _digest({
@@ -368,6 +391,7 @@ class DomainExperimentAdapter:
             "adapter_version": self.adapter_version,
             "declaration": self.declaration.describe(),
             "controls": self.controls.describe(),
+            "admissible_kernels": list(self.admissible_kernels),
             "code": {name: _callable_identity(getattr(self, name))
                      for name in ("plan_acquisition", "structural_declaration", "translate",
                                   "translator_config", "materialize", "derive_capabilities",
@@ -404,6 +428,7 @@ class DomainExperimentAdapter:
             "definition_sha256": self.definition_sha256,
             "controls": self.controls.describe(),
             "declaration": self.declaration.describe(),
+            "admissible_kernels": list(self.admissible_kernels),
             "implements": sorted(name for name in
                                  ("translator_config", "materialize", "derive_capabilities",
                                   "build_null", "render_provenance")

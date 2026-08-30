@@ -132,6 +132,10 @@ def register_adapter() -> Any:
         live_refusal=("a binding this slice can materialise. The Argo profile query exists "
                       "(see the Acquire tab) but is not yet wired to the canonical "
                       "translator; that is TG17.6's orchestrator."),
+        # A float ascends when it ascends. A declared tolerance around a profile time is a
+        # legitimate statement about how long an ascent takes; a fixed grid is not, because
+        # the array does not keep the nominal cycle a grid would assume.
+        admissible_kernels=("exact_support_overlap", "symmetric_tolerance"),
         domain_mathematics=(
             "the sparse point support and its consequences: a nominal cycle that the array "
             "does not keep means no expected sample count may be derived from an interval, "

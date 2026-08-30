@@ -152,7 +152,9 @@ def assert_record_admissible(declaration: DomainDeclaration,
 
 def build_bespoke_adapter(declaration: DomainDeclaration, *, accepted_semantics: str,
                           accepted_units: str, adapter_id: Optional[str] = None,
-                          fixture_domain: Optional[str] = None) -> DomainExperimentAdapter:
+                          fixture_domain: Optional[str] = None,
+                          admissible_kernels: tuple = ("exact_support_overlap",),
+                          ) -> DomainExperimentAdapter:
     """One bespoke domain's adapter. No code is written per domain; a declaration is."""
 
     def fixture(parameters: Mapping[str, Any]):
@@ -166,7 +168,7 @@ def build_bespoke_adapter(declaration: DomainDeclaration, *, accepted_semantics:
         declaration=declaration,
         adapter_id=adapter_id or "%s.%s" % (declaration.name, BESPOKE_FAMILY),
         accepted_semantics=accepted_semantics, accepted_units=accepted_units,
-        controls=CONTROLS, plan=bespoke_plan,
+        controls=CONTROLS, plan=bespoke_plan, admissible_kernels=admissible_kernels,
         fixture_record=fixture if fixture_domain or declaration.name else None,
         live_refusal=(
             "a binding this slice can materialise. %s Once bound, this domain reads its own "
@@ -181,6 +183,7 @@ def build_bespoke_adapter(declaration: DomainDeclaration, *, accepted_semantics:
 
 def register_bespoke_domain(declaration: DomainDeclaration, *, accepted_semantics: str,
                             accepted_units: str,
+                            admissible_kernels: tuple = ("exact_support_overlap",),
                             replace: bool = False) -> DomainExperimentAdapter:
     """Add a bespoke domain to the running server, through the supported seam.
 
@@ -190,7 +193,8 @@ def register_bespoke_domain(declaration: DomainDeclaration, *, accepted_semantic
     to add an adapter rather than as a statement about their domain.
     """
     adapter = build_bespoke_adapter(declaration, accepted_semantics=accepted_semantics,
-                                    accepted_units=accepted_units)
+                                    accepted_units=accepted_units,
+                                    admissible_kernels=admissible_kernels)
     return register_experiment_adapter(adapter, replace=replace)
 
 
@@ -198,6 +202,11 @@ def register_bespoke_domain(declaration: DomainDeclaration, *, accepted_semantic
 #: irregular aggregated clock, absent physical metric and `lag_policy="none"` falsify more of the
 #: abstraction than a second gridded product would. That reasoning is about the declaration, not
 #: about markets, and it is why this is a declaration rather than a module of its own.
+#: The bespoke family admits only `exact_support_overlap` by default (TG17.4). A record whose
+#: clock is whatever the depositor happened to write down has no cadence to snap to and no
+#: interval over which "the last value still held" is a statement about the world rather than
+#: about the file. A bespoke domain that has earned a wider kernel says so in its own
+#: registration; it does not inherit one.
 ADAPTER = build_bespoke_adapter(ORDER_BOOK, accepted_semantics="aggregated traded volume",
                                 accepted_units="shares")
 

@@ -1306,6 +1306,85 @@ def test_conformance_payload_has_the_fields_the_report_panel_reads(client):
         assert check["status"] in {"PASS", "FAIL", "NOT_APPLICABLE", "NOT_PROBED"}
 
 
+# ------------------------------------------------- TG17.4 clock, support and coverage
+
+
+def test_the_coverage_view_draws_support_by_time_and_not_by_index():
+    """A sparse record must not be able to look dense because it has as many rows.
+
+    Positions come from the support bounds and the window; nothing here indexes into an array
+    to decide where a bar starts. This is the visual half of the invariant the backend holds.
+    """
+    view = _strip_comments(_read("components", "CoverageTimeline.tsx"))
+    assert "window_end_seconds - row.window_start_seconds" in view
+    assert "row.intervals.map" in view
+    assert "raw_row_count" in view, "the row count is shown as the number that is not evidence"
+    assert "rows_are_not_evidence" in view
+
+
+def test_the_coverage_view_shows_manufactured_overlap_separately():
+    """Support a kernel created is never mixed into support the records contain."""
+    view = _read("components", "CoverageTimeline.tsx")
+    assert "manufactured_overlap_seconds" in view
+    assert "created by the declared kernel" in view
+    assert "effective_sample_size" in view and "governing_scale_seconds" in view
+
+
+def test_the_kernel_picker_offers_no_default_for_a_declared_parameter():
+    """A tolerance the form pre-filled is a scientific choice nobody made."""
+    picker = _read("components", "CoverageTimeline.tsx")
+    assert "no default — this is a scientific choice" in picker
+    assert "manufactures_simultaneity" in picker
+    assert "no registered adapter admits this" in picker
+
+
+def test_the_coverage_view_contains_no_domain_branch():
+    view = _strip_comments(_read("components", "CoverageTimeline.tsx"))
+    for domain in ("reanalysis", "argo", "tess", "order_book", "era5"):
+        assert domain not in view.lower(), (
+            "CoverageTimeline.tsx names the domain %r; coverage is drawn from declared support "
+            "and a fifth domain must reach it without this file being edited" % domain)
+
+
+def test_alignment_kernel_payload_has_the_fields_the_picker_reads(client):
+    body = client.get("/api/v1/experiment-composer/alignment-kernels").json()
+    assert body["kernels"], "the kernel selector reads this list"
+    for row in body["kernels"]:
+        assert {"name", "summary", "required_parameters", "manufactures_simultaneity",
+                "invents_values", "refused_over_violations", "admitted_by",
+                "usable_across_all_registered_domains"} <= set(row)
+    assert body["default"] == "exact_support_overlap"
+
+
+def test_alignment_payload_has_the_fields_the_coverage_view_reads(client):
+    recipe = client.get("/api/v1/experiment-composer/recipes/g17-flagship-calendar").json()
+    body = client.post("/api/v1/experiment-composer/manifests/alignment",
+                       json=recipe["canonical_manifest"]).json()
+    assert body["record_binding"] == "benchmark_known_answer"
+    assert body["row_indices_were_not_compared"] is True
+    for row in body["coverage"]:
+        assert {"label", "window_start_seconds", "window_end_seconds", "intervals", "gaps",
+                "gap_count", "covered_fraction", "raw_row_count", "valid_row_count",
+                "rows_are_not_evidence", "support_is_stationary",
+                "native_scale_seconds"} <= set(row)
+    for pair in body["pairs"]:
+        assert {"left", "right", "overlap_seconds", "manufactured_overlap_seconds",
+                "governing_scale_seconds", "effective_sample_size",
+                "effective_sample_size_basis", "row_counts_not_used", "status"} <= set(pair)
+
+
+def test_the_preflight_alignment_block_is_shaped_as_the_type_declares(client):
+    recipe = client.get("/api/v1/experiment-composer/recipes/g17-flagship-calendar").json()
+    body = client.post("/api/v1/experiment-composer/manifests/preflight",
+                       json=recipe["canonical_manifest"]).json()
+    alignment = body["alignment"]
+    assert alignment["measurement_values_opened"] is False
+    for window in alignment["windows"]:
+        assert {"name", "window_seconds", "clock", "clock_note", "pairs"} <= set(window)
+        assert {"elapsed_seconds", "nominal_seconds", "discrepancy_seconds",
+                "clock_is_uniform"} <= set(window["clock"])
+
+
 def test_the_composer_still_refuses_to_offer_a_runner():
     """TG17.3 adds controls and conformance; it does not acquire, run or claim anything."""
     composer = _read("components", "ExperimentComposer.tsx")

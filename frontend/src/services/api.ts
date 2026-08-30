@@ -878,6 +878,19 @@ export const apiService = {
       }));
   },
 
+// ------------------------------------------ clock, support and coverage (TG17.4)
+  async listAlignmentKernels(): Promise<types.AlignmentKernelList> {
+    return handleResponse<types.AlignmentKernelList>(
+      await fetch(`${BASE_URL}/experiment-composer/alignment-kernels`, { method: 'GET' }));
+  },
+
+  async experimentAlignment(manifest: types.CrossDomainExperimentManifest): Promise<types.AlignmentReport> {
+    return handleResponse<types.AlignmentReport>(
+      await fetch(`${BASE_URL}/experiment-composer/manifests/alignment`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(manifest)
+      }));
+  },
+
   async previewStructuralTrajectories(manifest: types.CrossDomainExperimentManifest): Promise<types.StructuralTrajectoryPreview> {
     return handleResponse<types.StructuralTrajectoryPreview>(
       await fetch(`${BASE_URL}/experiment-composer/manifests/representation-preview`, {

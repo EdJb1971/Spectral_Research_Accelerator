@@ -7196,3 +7196,53 @@ manifest-recorded choice; the live binding refuses by naming TG17.6.
 
 The full suite was not rerun at the user's request; the clean 2745-pass G15 run remains the latest
 full-suite evidence.
+
+## TG17.4 - Clock, Support and Coverage Semantics (2026-08-31, `ed-dev`) - **COMPLETE**
+
+Cross-domain comparison is interval arithmetic over half-open `[start, end)` support. Two records
+that arrive as arrays of equal length look aligned and are not; a row index is a position in a
+file and nothing in either file says the two were written on the same clock.
+
+The load-bearing guarantee is that **changing row density alone cannot manufacture support**.
+Rewriting every fixture with sixty times as many rows over identical support leaves occupied
+duration, overlap, governing scale and effective sample size unchanged. Effective sample size is
+overlap duration over the coarser of the two native scales; raw row counts are reported in every
+row and used by nothing. `[a, b)` and `[b, c)` abut and do not overlap.
+
+Only `exact_support_overlap` runs without being named, and it transforms nothing. Every widening,
+snapping or carrying kernel is frozen in the manifest's `AlignmentPolicy`, travels inside the
+manifest digest, must be admitted by every participating adapter through `admissible_kernels`,
+takes no framework-default parameter, and reports in seconds the overlap it created rather than
+observed. A value-inventing kernel is refused over a domain declaring `irregular_sampling` or
+`aggregated_values`. No registered adapter admits `carry_forward`.
+
+Calendar mode may not silently search normalized scale ratios and scale/shape mode may not emit
+simultaneity, precedence or causal language; the manifest refuses the mismatch where the search
+is declared. Scale/shape correspondences retain both native durations. `elapsed_seconds` refuses
+a naive local timestamp, and a daylight-saving day is 82,800 seconds rather than 86,400.
+
+Preflight binds the kernel and reports pairs as bounded by the window where metadata cannot
+establish an overlap, rather than offering a number that would later turn out to have been a
+guess. `POST /api/v1/experiment-composer/manifests/alignment` measures the known-answer records'
+actual support, stating that binding in every response, and the coverage view draws it by time
+rather than by index.
+
+The six adversarial fixtures each align as declared or refuse by name: unequal cadence, abutting
+boundary, daylight-saving day, sparse profile, interrupted light curve, non-stationary support.
+
+```text
+> .\.venv\Scripts\python.exe -m pytest src\tests\test_structural_alignment.py src\tests\test_frontend_contract.py src\tests\test_adapter_registry.py src\tests\test_experiment_manifest.py src\tests\test_structural_trajectory.py src\tests\test_domain_onboarding.py src\tests\test_acquisitions_api.py src\tests\test_benchmarks.py src\tests\test_cross_domain.py src\tests\test_documentation.py -q
+362 passed, 5 warnings in 539.08s (0:08:59)
+
+> cd frontend && npm run build
+1403 modules transformed; built in 55.38s (TypeScript and Vite production bundle)
+
+> git diff --check
+(clean)
+```
+
+No live archive is acquired, no cross-domain statistic runs, no evidence is written and no claim
+rung moves.
+
+The full suite was not rerun at the user's request; the clean 2745-pass G15 run remains the latest
+full-suite evidence.

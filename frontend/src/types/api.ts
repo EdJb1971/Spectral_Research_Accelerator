@@ -1992,6 +1992,7 @@ export interface CrossDomainExperimentManifest {
     adapter: { adapter_id: string; adapter_version: string; parameters: Record<string, any> };
   }[];
   coverage_policy: { requirement: 'complete_required' | 'partial_permitted'; minimum_fraction: number };
+  alignment: AlignmentPolicy;
   scale_normalization: Record<string, any> | null;
   family: { channels: string[]; scales: number[]; relationships: string[]; maximum_members: number };
   nulls: { name: string; method: string; replications: number; parameters: Record<string, any> }[];
@@ -2019,6 +2020,7 @@ export interface ExperimentPreflight {
   network_used: boolean;
   measurement_values_opened: boolean;
   family: { declared_members: number; maximum_members: number; windows_are_one_family: boolean };
+  alignment: PreflightAlignment;
   coverage: { domain: string; label?: string; source_id: string; measure?: string; status: string;
     reason: string; support_kind?: string; native_cadence_seconds?: number | null; access?: string;
     opens_measurement_values?: boolean; windows?: Record<string, any>[] }[];
@@ -2067,6 +2069,129 @@ export interface AdapterConformanceReport {
     detail: string; evidence: Record<string, any> }[];
   claim_boundary: string;
   record_kind: 'deterministic_known_answer_not_acquired_data';
+}
+
+// ------------------------------------------------- clock, support and coverage (TG17.4)
+
+/** How support is compared, frozen in the manifest before any value is opened. The default
+ *  kernel transforms nothing; every other one widens, snaps or carries support and must be
+ *  admitted by every participating adapter. */
+export interface AlignmentPolicy {
+  kernel: string;
+  parameters: Record<string, number>;
+  minimum_overlap_seconds: number;
+  minimum_effective_samples: number;
+}
+
+export interface AlignmentKernelDescription {
+  name: string;
+  summary: string;
+  required_parameters: string[];
+  manufactures_simultaneity: boolean;
+  invents_values: boolean;
+  refused_over_violations: string[];
+  admitted_by: string[];
+  usable_across_all_registered_domains: boolean;
+}
+
+export interface AlignmentKernelList {
+  schema: 'experiment-composer-alignment-kernels/v1';
+  kernels: AlignmentKernelDescription[];
+  default: string;
+  note: string;
+  claim_boundary: string;
+}
+
+/** One record's coverage of one window. `raw_row_count` is shown next to the numbers that are
+ *  actually evidence and is used by nothing: changing row density alone cannot change any other
+ *  field here. */
+export interface SupportCoverage {
+  schema: string;
+  label: string;
+  domain: string;
+  window_start_seconds: number;
+  window_end_seconds: number;
+  window_seconds: number;
+  occupied_seconds: number;
+  covered_fraction: number;
+  intervals: number[][];
+  gaps: number[][];
+  gap_count: number;
+  largest_gap_seconds: number;
+  native_scale_seconds: number;
+  raw_row_count: number;
+  valid_row_count: number;
+  rows_are_not_evidence: string;
+  support_is_stationary: boolean;
+  support_duration_min_seconds: number | null;
+  support_duration_max_seconds: number | null;
+  kernel: string;
+  kernel_parameters: Record<string, number>;
+  manufactured_seconds: number;
+}
+
+export interface PairwiseOverlapRow {
+  left: string;
+  right: string;
+  kernel: string;
+  kernel_parameters: Record<string, number>;
+  overlap_seconds: number;
+  exact_overlap_seconds: number;
+  manufactured_overlap_seconds: number;
+  lost_overlap_seconds: number;
+  overlap_intervals: number[][];
+  left_occupied_seconds: number;
+  right_occupied_seconds: number;
+  overlap_fraction_of_shorter: number;
+  governing_scale_seconds: number;
+  effective_sample_size: number;
+  effective_sample_size_basis: string;
+  row_counts_not_used: { left: number; right: number };
+  status: 'COMPARABLE' | 'REFUSED';
+  refusals: string[];
+}
+
+export interface AlignmentReport {
+  schema: 'structural-alignment/v1';
+  mode: 'calendar_aligned' | 'scale_shape_aligned';
+  mode_forbids: string;
+  admitted_relationships: string[];
+  kernel: AlignmentKernelDescription & { parameters?: Record<string, number>; freeze_sha256?: string };
+  coverage: SupportCoverage[];
+  pairs: PairwiseOverlapRow[];
+  refusals: { pair: string[] | null; relationship: string | null; reason: string }[];
+  status: 'COMPARABLE' | 'REFUSED';
+  row_indices_were_not_compared: true;
+  claim_boundary: string;
+  manifest_sha256: string;
+  record_binding: 'benchmark_known_answer';
+  record_kind: 'deterministic_known_answer_not_acquired_data';
+  window_seconds: number;
+}
+
+/** What the declared windows and clocks imply about shared support, from metadata only. A pair
+ *  whose coverage the catalogue cannot establish is reported as bounded by the window rather
+ *  than given a number that would later turn out to have been a guess. */
+export interface PreflightAlignment {
+  schema: 'experiment-preflight-alignment/v1';
+  mode: 'calendar_aligned' | 'scale_shape_aligned';
+  mode_forbids?: string;
+  admitted_relationships?: string[];
+  declared_relationships?: string[];
+  kernel: (AlignmentKernelDescription & { parameters?: Record<string, number>; freeze_sha256?: string }) | null;
+  kernel_refused?: string;
+  minimum_overlap_seconds?: number;
+  minimum_effective_samples?: number;
+  family?: { modes: string[]; multiplier: number; correction_scope: string; why: string };
+  row_indices_were_not_compared?: boolean;
+  measurement_values_opened?: boolean;
+  windows: {
+    name: string;
+    window_seconds: number;
+    clock: { elapsed_seconds: number; nominal_seconds: number; discrepancy_seconds: number; clock_is_uniform: boolean };
+    clock_note: string;
+    pairs: Record<string, any>[];
+  }[];
 }
 
 export interface StructuralTrajectoryPreview {

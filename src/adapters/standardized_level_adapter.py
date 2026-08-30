@@ -68,6 +68,7 @@ def build_standardized_level_adapter(
         extra_leakage_risks: Tuple[str, ...] = (),
         extra_refused_operations: Tuple[str, ...] = (),
         domain_mathematics: Tuple[str, ...] = (),
+        admissible_kernels: Tuple[str, ...] = ("exact_support_overlap",),
         adapter_version: str = ADAPTER_VERSION) -> DomainExperimentAdapter:
     """One conforming adapter over the benchmarked standardized-level channel."""
 
@@ -158,12 +159,14 @@ def build_standardized_level_adapter(
         translator_config=lambda parameters: {"ddof": 0},
         materialize=materialize, derive_capabilities=derive_capabilities,
         build_null=build_null, render_provenance=render_provenance,
+        admissible_kernels=admissible_kernels,
         onboarding_cost={
             "domain_mathematics": list(domain_mathematics),
             "framework_glue_lines": 0,
             "shared_from": "src/adapters/standardized_level_adapter.py",
             "supplied_by_domain": ["declaration", "controls", "acquisition plan",
-                                   "accepted semantics and units", "record binding"],
+                                   "accepted semantics and units", "record binding",
+                                   "admissible alignment kernels"],
         })
 
 

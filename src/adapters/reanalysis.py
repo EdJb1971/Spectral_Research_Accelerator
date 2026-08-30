@@ -67,6 +67,11 @@ ADAPTER = build_standardized_level_adapter(
     live_refusal=("a binding this slice can materialise. The ERA5 acquisition path exists "
                   "(see the Acquire tab) but is not yet wired to the canonical translator; "
                   "that is TG17.6's orchestrator, not a missing credential."),
+    # A gridded product declares a cadence and a valid interval per step, so snapping it
+    # onto a coarser shared grid or comparing it under a stated tolerance are still
+    # statements about the product. Carrying a value forward is not, and is not admitted.
+    admissible_kernels=("exact_support_overlap", "symmetric_tolerance",
+                        "common_grid_aggregate"),
     domain_mathematics=("none beyond the shared standardized-level channel: this domain "
                         "breaks no inherited assumption, which is why it is the cheapest "
                         "adapter and why it proves least about the seam",))

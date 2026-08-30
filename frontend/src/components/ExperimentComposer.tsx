@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Activity, AlertTriangle, CheckCircle2, FileLock2, Loader2, Save, Search, ShieldCheck } from 'lucide-react';
+import { Activity, AlertTriangle, CheckCircle2, FileLock2, Loader2, Save, Search, ShieldCheck, Waves } from 'lucide-react';
 import { apiService } from '../services/api';
 import { AdapterControlPanel } from './AdapterControls';
+import { AlignmentKernelPicker, CoverageTimeline } from './CoverageTimeline';
 import * as types from '../types/api';
 
 const SAVED_DRAFT_KEY = 'spectralearth.g17.composer.draft';
@@ -23,6 +24,8 @@ export default function ExperimentComposer({ onSelectStudy }: { onSelectStudy?: 
   const [recipes, setRecipes] = useState<{ recipe_id: string; title: string }[]>([]);
   const [adapters, setAdapters] = useState<types.DomainExperimentAdapterDescription[]>([]);
   const [conformance, setConformance] = useState<types.AdapterConformanceReport[]>([]);
+  const [kernels, setKernels] = useState<types.AlignmentKernelDescription[]>([]);
+  const [alignment, setAlignment] = useState<types.AlignmentReport | null>(null);
   const [busy, setBusy] = useState('');
   const [message, setMessage] = useState('');
 
@@ -30,6 +33,7 @@ export default function ExperimentComposer({ onSelectStudy }: { onSelectStudy?: 
     apiService.getExperimentComposerContract().then(setContract).catch(() => setContract(null));
     apiService.listExperimentRecipes().then((body) => setRecipes(body.recipes)).catch(() => setRecipes([]));
     apiService.listExperimentAdapters().then((body) => setAdapters(body.adapters)).catch(() => setAdapters([]));
+    apiService.listAlignmentKernels().then((body) => setKernels(body.kernels)).catch(() => setKernels([]));
     const draft = localStorage.getItem(SAVED_DRAFT_KEY);
     const request = draft ? apiService.loadExperimentDraft(draft) : apiService.getFlagshipRecipe();
     request.then((body) => {
@@ -54,7 +58,7 @@ export default function ExperimentComposer({ onSelectStudy }: { onSelectStudy?: 
     if (!manifest) return;
     setManifest({ ...manifest, observations: manifest.observations.map((row) => row.domain === domain
       ? { ...row, adapter: { ...row.adapter, parameters } } : row) });
-    setIdentity(''); setPreflight(null); setPreview(null); setConformance([]);
+    setIdentity(''); setPreflight(null); setPreview(null); setConformance([]); setAlignment(null);
   };
 
   const checkConformance = async () => {
@@ -112,6 +116,25 @@ export default function ExperimentComposer({ onSelectStudy }: { onSelectStudy?: 
       const result = await apiService.preflightExperimentManifest(manifest);
       setPreflight(result); setIdentity(result.manifest_sha256);
     } catch (error: any) { setMessage(error.message); }
+    finally { setBusy(''); }
+  };
+
+  const updateAlignment = (policy: types.AlignmentPolicy) => {
+    if (!manifest) return;
+    setManifest({ ...manifest, alignment: policy });
+    setIdentity(''); setPreflight(null); setAlignment(null);
+  };
+
+  const showSharedSupport = async () => {
+    if (!manifest) return;
+    setBusy('alignment'); setMessage('');
+    try {
+      const result = await apiService.experimentAlignment(manifest);
+      setAlignment(result); setIdentity(result.manifest_sha256);
+      setMessage(result.status === 'REFUSED'
+        ? 'These records do not share enough support for every declared pair.'
+        : 'Shared support measured from the declared supports. Row indices were not compared.');
+    } catch (error: any) { setAlignment(null); setMessage(error.message); }
     finally { setBusy(''); }
   };
 
@@ -220,6 +243,18 @@ export default function ExperimentComposer({ onSelectStudy }: { onSelectStudy?: 
               </div>
             </details>
           ))}
+          <div className="border-t border-slate-800 pt-3">
+            <h4 className="text-sm text-slate-200 mb-1">Alignment</h4>
+            <p className="text-xs text-slate-500 mb-2">Support is compared as
+              <span className="font-mono"> [start, end)</span> intervals, never as row indices.
+              Only the default kernel transforms nothing; anything else must be named here and
+              admitted by every domain above.</p>
+            <AlignmentKernelPicker kernels={kernels} policy={manifest.alignment}
+              onChange={updateAlignment} />
+            <p className="text-[11px] text-slate-500 mt-2">
+              {contract?.mode_forbids?.[manifest.mode] || ''}
+            </p>
+          </div>
           <div className="grid grid-cols-2 gap-2 text-xs">
             <div className="bg-slate-950 rounded p-3"><span className="text-slate-500 block">Family members</span>{declaredMembers}</div>
             <div className="bg-slate-950 rounded p-3"><span className="text-slate-500 block">Null replications</span>{manifest.nulls[0]?.replications}</div>
@@ -238,6 +273,9 @@ export default function ExperimentComposer({ onSelectStudy }: { onSelectStudy?: 
           </button>
           <button onClick={previewRepresentation} disabled={!!busy} className="px-4 py-2 rounded bg-cyan-700 hover:bg-cyan-600 disabled:opacity-50 text-sm flex gap-2 items-center">
             {busy === 'representation' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Activity className="w-4 h-4" />} Inspect structural contract
+          </button>
+          <button onClick={showSharedSupport} disabled={!!busy} className="px-4 py-2 rounded bg-sky-700 hover:bg-sky-600 disabled:opacity-50 text-sm flex gap-2 items-center">
+            {busy === 'alignment' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Waves className="w-4 h-4" />} Show shared support
           </button>
           <button onClick={checkConformance} disabled={!!busy} className="px-4 py-2 rounded bg-indigo-700 hover:bg-indigo-600 disabled:opacity-50 text-sm flex gap-2 items-center">
             {busy === 'conformance' ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />} Check adapter conformance
@@ -268,6 +306,15 @@ export default function ExperimentComposer({ onSelectStudy }: { onSelectStudy?: 
             {preflight.refusals.map((row, index) => <li key={index}>{row.domain ? `${row.domain}: ` : ''}{row.reason}</li>)}
           </ul>}
           <p className="text-xs text-slate-500 mt-4">{preflight.claim_boundary}</p>
+        </section>
+      )}
+
+      {alignment && (
+        <section className={`border rounded-xl p-5 ${alignment.status === 'REFUSED' ? 'border-amber-500/40 bg-amber-500/5' : 'border-sky-500/40 bg-sky-500/5'}`}>
+          <h3 className="font-semibold flex gap-2 items-center mb-3">
+            <Waves className="w-5 h-5 text-sky-400" /> Shared support
+          </h3>
+          <CoverageTimeline report={alignment} />
         </section>
       )}
 

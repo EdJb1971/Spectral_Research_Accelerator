@@ -154,6 +154,10 @@ def register_adapter() -> Any:
         live_refusal=("a binding this slice can materialise. The MAST light-curve query "
                       "exists (see the Acquire tab) but is not yet wired to the canonical "
                       "translator; that is TG17.6's orchestrator."),
+        # Cadence is a real property of a SPOC product, so binning to a coarser shared grid
+        # is a statement about it. A tolerance is not: widening sector support would blur
+        # exactly the observational gap that decides whether a target was observed at all.
+        admissible_kernels=("exact_support_overlap", "common_grid_aggregate"),
         domain_mathematics=(
             "sector-bounded observational support: coverage is established by which sectors "
             "actually observed a target, never by an interval intersecting a sector, and no "
