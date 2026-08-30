@@ -159,7 +159,7 @@ abstractions. Phase G0 exploits exactly this.
 
 ---
 
-## 3. Additional Standing Rules (R17--R23)
+## 3. Additional Standing Rules (R17--R24)
 
 Inherited: R1--R16 from `roadmap.md`, unchanged and unrestated. These add the constraints that
 only arise once more than one domain is in play.
@@ -240,9 +240,24 @@ regenerated**. The LLM layer is a recorded observation of a non-deterministic pr
 on the far side of every gate. This limitation is declared in the UI wherever LLM commentary is
 displayed.
 
+### R24. A scientific configuration is a first-class record, not one-off glue.
+
+If a defensible experiment requires a researcher to write a conversion script, call hidden
+endpoints in sequence, edit JSON by hand or move files between domain-specific tools, the
+cross-domain abstraction is unfinished. Every scientific choice must be expressible in one
+validated experiment manifest, reachable through both the public API and the UI, frozen before
+the affected data are opened, and carried into the receipt.
+
+Domain-specific mathematics remains legitimate; domain-specific orchestration does not. A new
+conforming domain adapter may add declarations, acquisition controls and a structural translator,
+but it may not require a branch in the experiment runner or a bespoke page. The acceptance test
+is operational: a scientist can preflight, freeze, run, inspect, resume and export a complete
+experiment from a clean browser session without a terminal, handwritten glue or undeclared
+defaults.
+
 ---
 
-## 4. Additional Engineering Standards (E12--E15)
+## 4. Additional Engineering Standards (E12--E17)
 
 ### E12. Generalise beside, never weaken.
 
@@ -285,6 +300,15 @@ and left assumed inside the sweep, so a domain's declared floor was enforced in 
 absent from the receipt. A refusal written where the reader will meet it and an assumption
 living where the number is computed are two different places, and localising one does not
 localise the other.
+
+### E17. One manifest drives the API, orchestrator, UI and receipt.
+
+The backend owns a versioned experiment schema. Adapter registrations contribute typed parameter
+schemas, defaults, units, validation, cost hints and refusal explanations; the UI renders those
+contracts rather than duplicating them in domain-specific forms. The same immutable manifest is
+accepted by the API, executed by the orchestrator, displayed by the run monitor and embedded in
+the evidence export. If any layer maintains a second interpretation of an experiment, schema
+drift has already occurred.
 
 ---
 
@@ -3494,7 +3518,7 @@ and ordered declarations while using a row-random split. It now plans only indep
 Grouped rows explicitly require group-held-out confirmation; ordered rows require blocked and
 embargoed confirmation. Neither dependency structure is silently broken to make the recipe run.
 
-#### Phase G16 — Representation Structure — **IN PROGRESS**
+#### Phase G16 — Representation Structure — **COMPLETE**
 
 G14 finds raw or PCA candidates associated with a declared target and confirms them on a held-out
 partition. G16 asks the next bounded questions: whether candidates carry duplicate, complementary
@@ -3631,12 +3655,32 @@ rates were 1.000 each. Nonlinear XOR was 0.005 and the independent null was 0.00
 called `internally_replicated_candidate`: it stores no evidence, moves no rung and explicitly is
 not an external replication certificate.
 
-**TG16.5 External Certification Seam. PLANNED.** A published candidate may be tested against an
+**TG16.5 External Certification Seam. DONE (2026-08-30, `ed-dev`).** A published candidate may be tested against an
 independently acquired, content-addressed dataset under a separately frozen transfer contract.
 Preprocessing and the subspace remain unchanged unless adaptation was declared as a different
 family before target access. Only this boundary may report an external replication receipt, and
 even that receipt certifies the executed test and provenance rather than declaring a universally
 optimal or causal representation.
+
+**Delivered.** `/subspace/publish` creates a content-addressed definition only from a generated
+candidate frozen by a TG16.4 seal. `/subspace/transfer/freeze` takes candidate digests and target
+metadata without target bytes, requires a different content digest plus acquisition identifier,
+time, source and an explicit independence declaration, and freezes the complete transfer family,
+target declaration and row count, no-adaptation policy, permutation ensemble, BY correction and
+target identity. `/subspace/transfer/certify` requires the independently published transfer-seal
+digest, spends the target in the shared durable ledger before target-dependent validation, applies
+source scaling, bases/projectors and nuisance regions unchanged, and corrects across the complete
+published family. A failed post-opening validation still spends the target. The receipt records
+declared provenance without pretending the software verified the truth of that declaration.
+
+**Acceptance met.** Both paired G16 benchmarks now carry
+`G16.5.external_subspace_certification`. Across 200 frozen replications with 156 source-generate,
+68 source-confirmation and 68 independently generated external rows, exact-duplicate, noisy-copy
+and complementary-linear external-replication rates were 1.000 each. XOR and the independent null
+were 0.000, and every one-feature case remained outside the compact family. The paired gate is 12
+PASS, 0 FAIL and 0 NOT_YET_RUNNABLE; the complete registry is 41 checks. The generic-file UI now
+exposes TG16.1 through TG16.5 as one progressive structure programme, closing the served-route
+reachability gap rather than exempting scientific endpoints from it.
 
 **Capability and claim boundary.** G16 operations enter `DatasetCapabilityProfile` only when their
 backend recipe, refusal path and benchmarks exist. Until then their presence in this roadmap is
@@ -3645,6 +3689,268 @@ stores no evidence and moves no claim rung unless a later evidence workflow expl
 receipt. The intended progression is: **many measurements → informative candidates → mapped
 information structure → conditional relationships → compact stable candidates → held-out
 replication → external certification**.
+
+#### Phase G17 — Configurable Multi-domain Structural Experiments — **IN PROGRESS**
+
+G17 closes the gap between having domain-capable parts and having an apparatus a scientist can
+actually operate. Its flagship experiment is the one the architecture has been promising: select
+a shared week, three months or six months; select four genuinely different domains; acquire each
+through its legitimate source; translate each into a common **structural** vocabulary; mine and
+compare the declared family under appropriate nulls; and inspect or export the result. The common
+vocabulary is not “weather”. Weather is its first adapter. Original units, meanings, clocks,
+missingness and provenance remain attached throughout (R19).
+
+This phase has two separate scientific modes and the UI must never blur them:
+
+* **Calendar-aligned:** what declared structures occurred during the same UTC observation
+  interval? Calendar overlap permits co-occurrence analysis only; precedence still requires every
+  participating domain to admit it under R21, and neither licenses causality.
+* **Scale/shape-aligned:** where does a frozen structural motif recur after an explicitly declared
+  normalization of structural scale, regardless of absolute duration? This mode cannot imply
+  simultaneity or lead/lag and must not inherit the calendar mode's language.
+
+The initial flagship family is reanalysis, Argo, TESS and one independently acquired fourth
+domain that breaks a different inherited assumption. The fourth domain and source are frozen in
+TG17.0; it may not be chosen after seeing which source gives the most interesting answer. A
+second gridded geophysical product does not satisfy R17. Live-source acceptance is recorded
+separately from deterministic fixture acceptance so a remote outage cannot be mistaken for a
+scientific failure.
+
+**Programme acceptance — the no-glue test.** Starting from a clean browser session, a researcher
+can choose or load an experiment, resolve coverage, understand every refusal, freeze the complete
+family, press **Run experiment**, leave and resume after refresh, inspect the domain-native and
+canonical results, and export a reproducible receipt. They use no terminal, notebook, handwritten
+JSON, manual CSV conversion, hidden endpoint or file-shuffling step. Authentication and explicit
+network consent may be supplied in the UI; they are not scientific glue. Until this test passes,
+G17 is not complete even if every backend endpoint exists.
+
+**Delivery rule:** this is a sequence of vertical product slices, not six backend slices followed
+by a UI project. TG17.1 establishes the Composer shell, saved draft and preflight view; TG17.2--6
+extend that same visible workflow as each contract becomes real. TG17.7 completes the guided
+workflow, recovery and accessibility qualification; it is not the first point at which a
+scientist sees G17. A slice with an unreachable backend route remains in progress.
+
+**TG17.0 Flagship contract and known-answer benchmarks — DONE (2026-08-30, `ed-dev`).** Freeze the scientific question,
+the four domain/source contracts, the two comparison modes and the acceptance thresholds before
+building the happy path. Known-answer fixtures cover: a shared structural event with different
+units and cadences; unrelated events in the same calendar interval; the same motif at different
+absolute durations; misleading similarity created by gaps; a lag-looking relationship where one
+domain refuses precedence; and a family large enough to exercise correction and power refusal.
+The planted construction oracle is independent from the implementation being tested.
+
+**Acceptance:** null calibration, planted-effect power, coverage/refusal expectations and maximum
+family/compute budgets are written before an operation is registered. The deterministic four-
+domain fixture is registered on the existing benchmark API/Platform surface; its saved Composer
+recipe lands with TG17.1's manifest rather than inventing a second temporary schema. A null result
+is a valid flagship result; changing the question after seeing it is not.
+
+**Delivered.** `multidomain_flagship.py` freezes reanalysis, Argo, TESS and the existing
+`order_book` declaration as the first quartet. Order book is a licensed, content-addressed user
+record, deliberately retained because its irregular aggregated clock, absent metric and explicit
+precedence refusal test more than another grid would. The contract separates calendar-aligned
+co-occurrence from scale/shape transfer; freezes week, three-month and six-month presets; and sets
+the later operation gates at 200 replications, alpha 0.05, null rejection at most 0.075, planted
+detection at least 0.80, 10,000 family members, 4 GiB and one hour of planned work.
+
+The independent construction family contains a shared calendar event, one normalized motif at
+different native durations and calendar positions, unrelated records sharing only an interval,
+independent values behind strongly shared gaps, an apparent event order that order book makes
+inadmissible as four-domain precedence, and a 24,576-member pre-acquisition budget refusal. Every
+case crosses four clocks, semantics and units and derives each domain from a distinct labelled
+random stream. The focused gate is 2 PASS, 0 FAIL and 0 NOT_YET_RUNNABLE; no G17 scientific
+operation or capability is registered by this prerequisite slice.
+
+**TG17.1 Versioned experiment manifest and observation contract — PLANNED.** Introduce one immutable
+`CrossDomainExperimentSpec` carrying mode, domains, acquisition identities, measures and roles,
+UTC start/end or declared scale-normalization family, window durations/stride, coverage policy,
+adapter versions and parameters, family definition, nulls, correction, seeds and resource caps.
+Week, three-month and six-month controls are presets that write explicit boundaries into the
+manifest, never ambiguous duration labels. Multiple durations form one declared family unless the
+researcher preregisters separate experiments.
+
+Metadata preflight resolves each archive's native addressing into the requested interval without
+opening measurement values. In particular, TESS sector/cadence coverage is resolved to an
+interval and never presented as exact merely because a sector intersects it; Argo profile
+coverage remains sparse point support; reanalysis coverage remains a grid/time extent. The result
+is a coverage matrix with expected samples, native cadence, gaps, cost/bytes, credentials/network
+needs and a stable reason for every refusal.
+
+**Acceptance:** the manifest round-trips byte-stably through API, saved recipe, URL/run identity
+and receipt. Browser refresh preserves every selection. Insufficient coverage refuses or remains
+an explicitly permitted partial domain according to the frozen policy; it never silently changes
+the interval, drops a domain or shrinks the family. The first Composer shell can create, save,
+reload and preflight this manifest using visible controls.
+
+**TG17.2 Canonical structural-trajectory contract — PLANNED.** Define the smallest shared record
+the mining layer actually needs, provisionally `StructuralTrajectory`: labelled dimensionless or
+unit-declared structural channels; native interval support and validity masks; structural scale
+coordinate and its mapping to native scale; domain/source/variable semantics and units;
+adapter/version/config digests; and every relevant assumption violation. It may carry declared
+energy concentration, persistence, entropy, recurrence, change-point, motif or information
+channels only where the producing adapter has a benchmarked definition. It is not a bag into
+which convenient domain numbers can be renamed.
+
+Each structural adapter declares required axes and roles, invariances, consumed information,
+output clock/support, missing-data behaviour, legitimate null family, leakage risks and operations
+it refuses. Raw/native records remain available for audit and are never overwritten by the
+canonical projection. A canonical representation does not erase the many-to-one translation or
+make raw magnitudes comparable (R19).
+
+**Acceptance:** weather, Argo and TESS known-answer objects enter the same mining interface with no
+domain branch there, while provenance can reconstruct exactly how every canonical value arose.
+Semantic leakage and undeclared interpolation fail conformance. A canonical plot cannot lose the
+native clock, unit, support or adapter digest.
+
+**TG17.3 Adapter registry, schema-driven controls and conformance kit — PLANNED.** Make acquisition
+plus structural translation a registered `DomainExperimentAdapter` contract rather than an
+orchestrator switch statement. A registration supplies the domain declaration, acquisition
+planner, typed UI schema, metadata preflight, materializer, canonical translator, capability
+derivation, null builder and provenance renderer. Deliver conforming adapters for reanalysis,
+Argo, TESS and the frozen fourth domain in that order, keeping each vertical slice runnable from
+the UI as it lands.
+
+The conformance kit tests deterministic translation, content addressing, axis/role validation,
+gap preservation, refusal propagation, declared invariances, null suitability, bounded resource
+planning and API/UI schema agreement. Domain-specific advanced controls are permitted only through
+the registration schema; hardcoded forms and `if domain == ...` branches in the generic composer
+or runner fail review.
+
+**Acceptance:** a synthetic fifth adapter installed through the supported extension seam appears
+in the domain selector with its controls, preflights and completes the fixture without editing the
+orchestrator, generic API routes or UI source. Onboarding-cost entries distinguish unavoidable
+domain mathematics from framework glue; glue must trend to zero rather than merely move files.
+
+**TG17.4 Clock, support and coverage semantics — PLANNED.** Calendar mode compares interval support,
+not equal row indices. Every structural observation carries `[start, end)` support and presence;
+pairwise overlap and effective sample size are computed from those declarations. No path silently
+bins, compacts, forward-fills or interpolates an irregular record to manufacture simultaneity.
+Any allowed aggregation, tolerance or resampling kernel is an adapter operation declared and
+frozen before values are opened, with consequences shown in preflight.
+
+Scale/shape mode uses a separate normalized structural-scale coordinate and retains its mapping
+back to each native duration/length. It cannot emit calendar coincidence, precedence or causal
+language. Calendar mode cannot silently search normalized scale ratios. A study wanting both
+modes declares both and pays for the combined corrected family.
+
+**Acceptance:** adversarial unequal-cadence, boundary, daylight/time-zone, sparse-profile,
+interrupted-light-curve and non-stationary-support fixtures either align as declared or refuse by
+name. Changing row density alone cannot manufacture support. The UI visualizes actual coverage
+before the freeze and the exact support used afterward.
+
+**TG17.5 Multi-domain family accounting and domain-legitimate nulls — PLANNED.** Freeze all tested
+domain pairs, triples, quartets, windows, durations, scales, motifs, lags and representations as
+one explicit hypothesis family before mining. The plan reports the family expansion in human
+terms and runs R18's resolution/power check before acquisition. Pairwise screens may generate
+candidates, but confirmation corrects over the complete search that produced them.
+
+Nulls are adapter-declared and mode-specific. They preserve the features that would otherwise
+create false structure: autocorrelation, seasonal/cyclic phase, irregular gaps, profile support,
+observation windows and any declared grouping. Calendar-co-occurrence nulls are distinct from
+scale/shape-similarity nulls. A global shuffle is not accepted merely because every domain can
+technically execute it.
+
+**Acceptance:** the TG17.0 false-alignment fixtures calibrate at the frozen family level and the
+planted cases meet stated power. Adding a domain or duration updates the visible family and
+resource requirement before freeze. A domain without a justified precedence policy can
+participate in structural association but makes the affected precedence family unavailable.
+
+**TG17.6 Content-addressed, resumable experiment orchestrator — PLANNED.** Execute one state machine:
+`DRAFT -> PREFLIGHTED -> FROZEN -> ACQUIRING -> TRANSLATING -> MINING -> CONFIRMING -> COMPLETE`,
+with explicit `REFUSED`, `FAILED` and `CANCELLED` outcomes. Every transition is idempotent and
+content-addressed; completed acquisitions and translations are safely reusable, while target
+openings and held-out partitions obey their existing ledgers. Retries cannot create a new
+scientific plan or reopen a spent target.
+
+Partial acquisition, remote timeout and adapter failure remain visible per domain. They never
+silently run a smaller experiment. The frozen policy alone decides whether a declared partial
+result is admissible, and the receipt lists every missing component. Progress events expose stage,
+domain, bounded work estimate, completed artefact digests and actionable remediation without
+leaking unopened results.
+
+**Acceptance:** kill/restart and browser-refresh tests resume the same run without duplicate
+network acquisition or scientific drift. A TESS timeout can be retried from the UI; a permanent
+coverage refusal returns to an editable copy rather than mutating the frozen run. Re-executing an
+identical complete manifest returns the same run identity and immutable artefacts.
+
+**TG17.7 Experiment Composer UI — PLANNED.** Build one guided workbench over the manifest rather
+than four acquisition pages plus instructions. The progressive path is:
+
+1. **Question:** calendar-aligned or scale/shape-aligned, with the claim boundary beside the choice.
+2. **Domains:** choose two or more sources and see which assumption each breaks.
+3. **Observation:** select explicit dates or week/three-month/six-month presets and domain-native
+   measures/roles through adapter-supplied controls.
+4. **Preflight:** inspect coverage, gaps, credentials, estimates, unavailable operations and
+   remedies in one comparison view.
+5. **Analysis:** choose a benchmarked recipe; inspect the expanded family, nulls, correction,
+   seed and confirmation design with advanced controls disclosed but never hidden.
+6. **Freeze and run:** review a plain-language preregistration summary, freeze it, then monitor,
+   pause safely where supported, retry operational failures and resume after refresh.
+7. **Interpret:** move from native records to canonical structure, corrected comparisons,
+   limitations and evidence export without losing the experiment context.
+
+The composer supports saved versioned recipes, clone-to-edit, an advanced manifest inspector and
+machine-readable import/export; direct JSON editing is never required. Dataset acquisition does
+not silently make a dataset “the study”: the UI distinguishes acquired material, an experiment
+run, a finding and admitted evidence, and always shows the next legitimate action.
+
+**Acceptance:** the complete TG17.0 flagship is executed in a browser automation test using only
+visible labelled controls. Keyboard navigation, focus, loading/empty/error/refusal states,
+responsive layout and destructive-action confirmation are tested. Every served G17 route is
+reachable from the shell; selection persists across navigation and refresh; unavailable choices
+remain visible with the backend's reason rather than disappearing.
+
+**TG17.8 Scientific comparison views — PLANNED.** Provide linked views that make the abstraction
+inspectable rather than magical: a cross-domain coverage timeline; native-record preview beside
+canonical trajectories; native-to-structural scale mapping; pair/triple/quartet result matrix;
+motif correspondence and transfer view; null distributions, corrected values and power/resolution;
+and provenance drill-down to source, adapter, parameters and support. Selecting an apparent match
+highlights its contributing native intervals in every domain.
+
+Raw magnitudes from different domains never share a quantitative axis. Colour, ordering and
+language distinguish generated candidates, held-out confirmations, external transfers, nulls and
+refusals. Accessible tables contain the numerical result behind every visual, and all views state
+what may and may not be concluded.
+
+**Acceptance:** TG17.0 semantic-trap fixtures cannot be rendered as magnitude equivalence,
+precedence or causality. Sparse or absent coverage is visually distinct from a measured zero.
+Every plotted point traces to an immutable artefact and every correction denominator is visible.
+
+**TG17.9 Receipt, methods report and evidence handoff — PLANNED.** A completed run exports an
+immutable bundle containing the exact manifest; coverage decision; source/acquisition identities;
+native and canonical artefact digests; adapter contracts; environment; family/null/correction;
+seeds; stage events; results; refusals; and software version. Produce both a machine-readable
+bundle and a scientist-readable methods/limitations report suitable for review, without claiming
+publication readiness or independent replication where those have not occurred.
+
+Completion creates an experiment receipt, not automatically a study, finding, EvidenceBundle or
+claim promotion. The UI offers explicit, reviewable handoffs into those existing workflows and
+shows which required evidence categories remain absent. Platform & evidence explains the entire
+G17 lineage and its claim limits from the same backend capability/receipt contracts, so the trust
+surface cannot lag behind the engine unnoticed.
+
+**Acceptance:** delete UI state and reconstruct the run from the exported bundle; all scientific
+identities and conclusions are unchanged. A platform-capability snapshot and documentation audit
+fail when a registered G17 operation, adapter, refusal or receipt field has no visible explanation.
+
+**TG17.10 Flagship qualification and no-glue release gate — PLANNED.** Run the frozen four-domain
+known-answer family for a week, three months and six months in both comparison modes, then record
+the live-source tail separately with exact dates, archive coverage and any operational refusal.
+Qualify the entire browser path, public API path and exported replay against the same manifests.
+Measure scientist actions, adapter-specific framework edits, recovery from one remote failure and
+time to understand why a requested analysis is unavailable.
+
+**Definition of done:**
+
+* The no-glue browser test passes exactly as stated at the start of G17.
+* The synthetic fifth-adapter test requires no generic runner, route or UI edit.
+* Calendar and scale/shape modes pass their separate calibration, power and language gates.
+* Week, three-month and six-month manifests retain explicit dates, coverage and complete-family
+  correction; no duration is selected after results are opened.
+* A refresh, process restart and recoverable acquisition failure resume without scientific drift.
+* The result can be replayed and audited from its receipt, and its evidence/claim status is
+  impossible to confuse with acquisition or experiment completion.
+* `architecture.md` describes only the G17 capabilities actually delivered; this roadmap records
+  live checks that were not run or did not pass instead of polishing them into availability.
 
 **TG8.3 The domain ledger — finally measurable.** With five domains across three acquisition
 shapes there is at last a trend to read. *If onboarding cost is not falling, the abstraction is
@@ -3681,6 +3987,15 @@ those hold **and**:
 16. A stable-subspace result binds the complete search family before generation, fits only on the
     generate partition, identifies the span independently of basis rotation/sign, and opens its
     confirmation partition once.
+17. A configurable multi-domain experiment is represented by one versioned manifest shared by
+    API, orchestrator, UI and receipt; no layer carries a second scientific configuration (R24,
+    E17).
+18. Calendar-aligned and scale/shape-aligned experiments have separate support semantics, nulls
+    and claim language. Neither shared time nor shared structure can be rendered as causality, and
+    raw cross-domain magnitudes are never compared (R19--R21).
+19. A complete G17 capability passes the clean-browser no-glue test and the synthetic fifth-
+    adapter test. Backend-only reachability, handwritten JSON or a domain branch in the generic
+    runner/UI cannot satisfy completion.
 
 ---
 

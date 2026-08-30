@@ -100,6 +100,17 @@ OPERATIONS: Dict[str, Operation] = {
                   "admissible for independent samples. Grouped data need group-held-out "
                   "confirmation; ordered data need blocked and embargoed confirmation.",
                   "Declare whether samples are independent, grouped or ordered."),)),
+    "external_subspace_certification": Operation(
+        "External Stable-Subspace Certification",
+        "Test an unchanged published span family once on an independently acquired target.", (
+            _need("sample_table", "declared sample table",
+                  "This representation is not an explicitly declared sample table.",
+                  "Declare the external target representation before certification."),
+            _need("independent_samples", "independent samples",
+                  "This first external recipe uses target permutations over exchangeable rows. "
+                  "Grouped targets need group-held-out transfer nulls; ordered targets need "
+                  "blocked and embargoed transfer nulls.",
+                  "Declare whether target samples are independent, grouped or ordered."),)),
     "cross_domain_analysis": Operation(
         "Cross-domain analysis", "Association and declared-lag analysis of channel series.", (
             _need("channel_series", "admitted channel series",

@@ -12,6 +12,8 @@ from src.statistics.multiple_comparisons import adjust, required_surrogates
 SUBSPACE_OUTCOMES = ("candidate_compact_stable_subspace", "unresolved")
 CONFIRMATION_OUTCOMES = ("internally_replicated_candidate", "not_replicated",
                          "not_a_generate_candidate")
+EXTERNAL_CERTIFICATION_OUTCOMES = ("external_replication_receipt",
+                                   "not_externally_replicated")
 
 
 def projector(basis: np.ndarray) -> np.ndarray:
@@ -230,6 +232,56 @@ def confirm_stable_subspaces(
     }
 
 
+def certify_external_subspaces(
+        features: Mapping[str, np.ndarray], target: np.ndarray, *,
+        preprocessing: Mapping[str, Sequence[float]],
+        frozen_subspaces: Sequence[Mapping[str, Any]],
+        family_members: Sequence[str], nuisance: np.ndarray | None = None,
+        nuisance_region_cuts: Sequence[float] | None = None,
+        permutations: int = 4999, seed: int = 16501, alpha: float = 0.05,
+        correction: str = "benjamini_yekutieli",
+        nuisance_stability_threshold: float = 0.35) -> Dict[str, Any]:
+    """Test published spans unchanged on an independently acquired target dataset."""
+    rows = []
+    for row in frozen_subspaces:
+        frozen = dict(row)
+        # Publication is the selection boundary: every transferred member has already
+        # internally replicated, so a caller cannot smuggle in a different selection state.
+        frozen["outcome"] = "candidate_compact_stable_subspace"
+        rows.append(frozen)
+    measured = confirm_stable_subspaces(
+        features, target, preprocessing=preprocessing, frozen_subspaces=rows,
+        family_members=family_members, nuisance=nuisance,
+        nuisance_region_cuts=nuisance_region_cuts, permutations=permutations,
+        seed=seed, alpha=alpha, correction=correction,
+        nuisance_stability_threshold=nuisance_stability_threshold)
+    certified = []
+    for row in measured["subspaces"]:
+        external = row["outcome"] == "internally_replicated_candidate"
+        item = dict(row)
+        item.pop("generate_outcome", None)
+        item["outcome"] = ("external_replication_receipt" if external
+                           else "not_externally_replicated")
+        certified.append(item)
+    return {
+        "features": measured["features"],
+        "family_members": measured["family_members"],
+        "correction_unit": measured["correction_unit"],
+        "correction": measured["correction"], "alpha": measured["alpha"],
+        "permutations": measured["permutations"],
+        "nuisance_regions": measured["nuisance_regions"],
+        "subspaces": certified,
+        "external_replication_receipts": [
+            row for row in certified if row["outcome"] == "external_replication_receipt"],
+        "outcome_vocabulary": list(EXTERNAL_CERTIFICATION_OUTCOMES),
+        "claim_boundary": (
+            "An external replication receipt certifies this executed, target-bound test of "
+            "the unchanged published span and its recorded provenance. It does not prove the "
+            "acquisition declaration, universal optimality, causality, transportability to "
+            "other populations, or that features should be used or removed."),
+    }
+
+
 def _region_diagnostics(x: np.ndarray, y: np.ndarray, nuisance: np.ndarray | None,
                         basis: np.ndarray) -> Dict[str, Any]:
     regions = _regions(nuisance, x.shape[0])
@@ -412,5 +464,7 @@ def generate_stable_subspaces(
     }
 
 
-__all__ = ["CONFIRMATION_OUTCOMES", "SUBSPACE_OUTCOMES", "confirm_stable_subspaces",
-           "generate_stable_subspaces", "projector", "projector_distance"]
+__all__ = ["CONFIRMATION_OUTCOMES", "EXTERNAL_CERTIFICATION_OUTCOMES",
+           "SUBSPACE_OUTCOMES", "certify_external_subspaces",
+           "confirm_stable_subspaces", "generate_stable_subspaces", "projector",
+           "projector_distance"]

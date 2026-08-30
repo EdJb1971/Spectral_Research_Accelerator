@@ -4187,10 +4187,77 @@ exact-duplicate, noisy-copy and complementary-linear internal-replication rates 
 XOR is 0.005 and the independent null is 0.000, both below 0.075. One-feature cases cannot enter
 the compact family. The focused paired gate is 10 PASS, 0 FAIL and 0 NOT_YET_RUNNABLE.
 
+#### 3.6zzi External stable-subspace certification (TG16.5)
+
+TG16.5 is the only stable-subspace boundary allowed to emit an
+`external_replication_receipt`. A published definition is derived from a generated candidate
+already frozen inside a TG16.4 seal and binds the source content/declaration, feature order,
+target and optional nuisance roles, generate-only means/scales, basis/projector, nuisance cuts
+and stability threshold. Publication itself is explicitly not a replication result.
+
+The separately frozen transfer contract is created without target bytes. It binds one to six
+distinct published candidates from one source family, a different target content digest, exact
+row count and sample-table declaration, acquisition identifier/time/source, the researcher's
+`independent_of_origin=true` declaration, a no-adaptation policy, target-permutation ensemble,
+alpha and complete-family Benjamini-Yekutieli correction. This first recipe requires identical
+column roles and units and permits no preprocessing, schema, unit or span adaptation. A later
+adaptive recipe would be a different frozen family, not an option on this one.
+
+Certification verifies the independently published transfer-seal digest before spending data.
+It then commits the whole content-addressed target to the shared durable ledger before any
+target-dependent validation, so a wrong digest, malformed file or inadequate nuisance-region
+support discovered after opening still consumes that target. Source scaling and every span are
+applied unchanged; projectors remain fixed under target permutation. The receipt certifies the
+executed test and records the declared acquisition provenance, but does not prove that declaration,
+universal optimality, causality, population transportability or a use/remove decision.
+
+The HTTP progression is `/subspace/publish`, `/subspace/transfer/freeze`, then
+`/subspace/transfer/certify`. The generic sample-table UI now presents TG16.1 through TG16.5 in
+that scientific order and exposes every served ingress route. It also labels Argo/TESS acquisitions
+as reproducible datasets rather than studies: a study still begins only through the evidence
+surface. Acquisition domain/path selection is browser-persistent, and the Argo measure control
+updates both archive projection and reduction so salinity cannot be requested from a
+temperature-only collection.
+
+The paired 200-replication gate uses 156 source-generate, 68 source-confirmation and 68 separately
+generated external rows. Exact-duplicate, noisy-copy and complementary-linear receipt rates are
+1.000 each; XOR, the independent null and every one-feature case are 0.000. The focused paired
+gate is 12 PASS, 0 FAIL and 0 NOT_YET_RUNNABLE.
+
+#### 3.6zzj Four-domain flagship benchmark contract (TG17.0)
+
+`src/benchmarks/multidomain_flagship.py` freezes the scientific and product target before a G17
+manifest, adapter or orchestrator exists. The flagship domains are reanalysis, Argo, TESS and the
+existing `order_book` domain. The order-book source contract is a licensed, content-addressed user
+record rather than a fabricated public feed; it is retained because irregular aggregated support,
+no physical metric and `lag_policy="none"` make it a stronger falsification of the abstraction
+than another gridded geophysical source.
+
+The contract separates `calendar_aligned` co-occurrence from `scale_shape_aligned` structural
+transfer and freezes week, three-month and six-month duration presets. It also fixes the later
+operation-level acceptance policy at 200 replications, alpha 0.05, maximum null rejection 0.075,
+minimum planted detection 0.80, at most 10,000 family members, 4 GiB planned materialization and
+one hour planned runtime. Those are qualification thresholds and resource ceilings, not an
+implemented multi-domain operation.
+
+The paired benchmarks contain six known-answer cases across four different clocks, meanings and
+units: one calendar-coincident event, one common motif at different calendar positions and native
+scales, independent records sharing only an outer interval, independent values with strongly
+shared gaps, an apparent event order that must refuse four-domain precedence because order book
+has no lag policy, and a 24,576-member family that must refuse before acquisition against the
+10,000-member cap. Random values use distinct labelled `SeedBundle` streams per case and domain;
+the null oracle is independent construction, not the statistically false demand that every finite
+null realization display near-zero sample correlation.
+
+The construction gate is 2 PASS, 0 FAIL and 0 NOT_YET_RUNNABLE. It emits no acquisition,
+translation, mining result, evidence or capability. Both records are automatically visible through
+the existing registry-backed benchmark API/UI; the saved Experiment Composer recipe belongs to
+TG17.1, where the manifest contract exists.
+
 ### 3.11 Ground-Truth Benchmark Suite (`src/benchmarks/`)
 
-Added in T3.5.17 (standard E7). Twenty-two synthetic datasets whose correct answer is known
-*before* analysis, of which **twelve are null benchmarks** whose answer is "there is nothing
+Added in T3.5.17 (standard E7). Twenty-four synthetic datasets whose correct answer is known
+*before* analysis, of which **thirteen are null benchmarks** whose answer is "there is nothing
 here". This is distinct from `synthetic_generator/`, which exists to keep the UI alive
 offline and declares no truth.
 
@@ -4214,12 +4281,16 @@ offline and declares no truth.
     `representation_structure_planted` / `representation_structure_safeguards` sample-table
     family and the calibration/power thresholds later G16 operations must meet before
     registration; TG16.1, TG16.2 and TG16.3 add the redundancy-structure,
-    conditional-information, stable-subspace generation and held-out confirmation
+    conditional-information, stable-subspace generation, held-out confirmation and external
+    no-adaptation certification
     operation-level calibration gates to both datasets.
+*   `multidomain_flagship.py` - TG17.0's paired four-domain construction contract: two planted
+    calendar/scale cases and four null or refusal safeguards, with thresholds fixed before the
+    first configurable experiment operation exists.
 *   `runner.py`, `__main__.py` - report and CLI (`python -m src.benchmarks`, exit 1 on any
     failure, usable directly as a CI gate).
 
-Current status: **39 PASS, 0 FAIL, 0 NOT_YET_RUNNABLE**. See Section 7.2f.
+Current status: **43 PASS, 0 FAIL, 0 NOT_YET_RUNNABLE**. See Section 7.2f.
 
 ### 3.13 Cloud-Native ERA5 over Zarr (`src/data_layer/zarr_source.py`, T3.5.18)
 
@@ -5509,9 +5580,9 @@ the float32 defect ships.
 
 ### 7.2f The false-positive floor (T3.5.17)
 
-`src/benchmarks/` holds twenty datasets whose correct answer is known before analysis.
-Twelve of them are **null benchmarks** - their answer is "there is nothing here". Current
-status: **29 PASS, 0 FAIL, 0 NOT_YET_RUNNABLE.**
+`src/benchmarks/` holds twenty-four datasets whose correct answer is known before analysis.
+Thirteen of them are **null benchmarks** - their answer is "there is nothing here". Current
+status: **43 PASS, 0 FAIL, 0 NOT_YET_RUNNABLE.**
 
 **Nothing is pending any more.** Three gates were defined before the stages that could
 answer them existed, and all three have now graduated to enforced PASSes: `4C.surrogate_null`
@@ -5567,7 +5638,7 @@ able to sit three slices out of date.
 | `test_analysis_data.py` | 7 | diagnostics/data-layer endpoints and independent D17 boundary-ring oracle |
 | `test_artifact_store.py` | 33 | content addressing, checksum verification, handle budget, T4A.3 acceptance |
 | `test_api_infrastructure.py` | 16 | health, listing, pagination, CORS, data-source transparency, benchmark endpoints |
-| `test_benchmarks.py` | 47 | Ground-Truth Benchmark Suite, seed discipline, eager/streamed climatology agreement, D30 determinism, TG16.0 paired-family completeness, and TG16.1-TG16.4 gate registration |
+| `test_benchmarks.py` | 50 | Ground-Truth Benchmark Suite, seed discipline, eager/streamed climatology agreement, D30 determinism, TG16.0 paired-family completeness, TG16.1-TG16.5 gate registration, and TG17.0 four-domain contract completeness/determinism/refusals |
 | `test_boundary_synthetic.py` | 8 | boundary treatments, windowing, synthetic generators and independent Euclidean-ring oracle |
 | `test_cds_source.py` | 14 | T5.2c monthly CDS planning/CLI, grid-alignment/server-snap refusals, network consent, atomic resume, shard integrity, conservative storage refusal, bounded Zarr publication, plus PASS/FAIL independent-route receipt publication, replay and tamper refusal |
 | `test_geometry_registry.py` | 20 | TG1.2 geometry registry: the three builtins' metrics, crops, resamples and provenance unchanged; capability-driven `is_physical`/`length_units`/`latitudes`; a fourth geometry (`polar_scan`) registered from the test module with a non-uniform, non-spherical metric; the Cartesian Laplacian refusing it; `latitude`/`longitude` recognised as a sphere |
@@ -5653,12 +5724,12 @@ able to sit three slices out of date.
 | `test_cross_domain_api.py` | 35 | TG11.4b the cross-domain record: two native clocks intersected exactly, with what each side retained and discarded reported; clocks that share no observation refused rather than resampled, and the refusal naming interpolation as the thing it declines; an irregular native clock refusing precedence by name; a column whose semantics or units were not declared refused rather than defaulted (R19); an unknown reading setting refused rather than ignored; two records from one domain refused as not a cross-domain study; a family declared in seconds converted onto the common cadence; only pairs that cross the boundary counted as members; a duration below either domain’s physical floor refused rather than dropped and one the common clock cannot express refused rather than rounded; the price agreeing with the family the generate pass actually searches; the partition identity ignoring what the files were called (D65); generation reading nothing from the held-out partition and writing nothing; every run setting sealed inside the specification and the seal visible where the programme lists what it froze; the frozen members re-derived from the record rather than reconstructed from their labels; an edited seal refused at load and spending nothing; **the planted relationship confirmed on data it was not selected from and the same pipeline over an uncoupled pair confirming nothing**; both operands’ semantics and units restored to the receipt; the partition opened once; a wrong pair of records confirming nothing and costing nothing; a published digest that disagrees with the seal spending nothing; a seal frozen by another surface refused; the confirm route accepting the two records and nothing else; and no route on the surface accepting a lag in frames |
 | `test_reviews_api.py` | 8 | TG11.5's read-only recorded-review boundary: explicit absence without reassurance, complete verified record/outcome/cost serving, exact latest-bundle binding, record-digest linkage, malformed and unknown artifacts reported rather than skipped, unknown-study 404, GET-only routing, and a read leaving the evidence bundle byte-identical (R22, R23) |
 | `test_profiles.py` | 10 | TG12.2b-d immutable profiles, declared reductions, and bounded Argo seam: profile spec machine-independence and scatter preservation, preflight counts, observed-invalid distinction from absence, per-float reduction enforcing violations, depth-bin aggregation identity shifts, profile collection round trips, argo parent flat-channel refusal, profile reduction registry discoverability, and profile API contract refusal visibility (E15, R17) |
-| `test_photometry.py` | 9 | TG13.1 atomic TESS onboarding and precedence refusal, canonical bounded requests, metadata-only exact-product preflight, checksum-valid BJD_TDB parsing and value-bound identity, pre-download caps, immutable collection replay, source discovery, API claim boundaries, and an explicit opt-in bounded live MAST acceptance (E14, E15, R17, R21) |
+| `test_photometry.py` | 10 | TG13.1 atomic TESS onboarding and precedence refusal, canonical bounded requests, metadata-only exact-product preflight, bounded transient-timeout retry, checksum-valid BJD_TDB parsing and value-bound identity, pre-download caps, immutable collection replay, source discovery, API claim boundaries, and an explicit opt-in bounded live MAST acceptance (E14, E15, R17, R21) |
 | `test_dataset_ingress.py` | 9 | G14/G15 file probing without semantic inference, explicit sample roles/relationships/units, content-bound routing with explained spatial refusals, grouped/ordered split-leakage refusal, TG16.0's shared independent-only admission contract, R18 family sealing and permutation-resolution refusal, planted generate/confirm recovery, changed-file and tampered-plan refusal, and the complete multipart HTTP workflow |
 | `test_representation_structure.py` | 6 | TG16.1 complete pair enumeration, joint redundancy/complementarity/XOR/null discrimination, sealed estimator/null/family and permutation-resolution refusal, content/tamper binding, non-removal claim boundary, earned capability registration, and multipart plan/run workflow |
 | `test_conditional_information.py` | 6 | TG16.2 conditional-signal/null/collider discrimination, overlap and effective-support admission, sealed conditional-randomisation family and permutation-resolution refusal, content/tamper binding, conditional-only claim boundary, earned nuisance capability, and multipart plan/run workflow |
-| `test_stable_subspace.py` | 10 | TG16.3 span/projector invariance, planted linear and null discrimination, optional nuisance-region stability boundary, sealed complete family/optimizer/partition and permutation-resolution refusal, content/tamper binding and multipart plan/generate; TG16.4 unchanged held-out application, complete-family correction, nuisance-overlap refusal, content-bound seal, publication check, durable one-opening ledger, capability and multipart freeze/confirm workflow |
-  | **total** | **2425** | |
+| `test_stable_subspace.py` | 13 | TG16.3 span/projector invariance, planted linear and null discrimination, optional nuisance-region stability boundary, sealed complete family/optimizer/partition and permutation-resolution refusal, content/tamper binding and multipart plan/generate; TG16.4 unchanged held-out application, complete-family correction, nuisance-overlap refusal, content-bound seal, publication check and durable one-opening ledger; TG16.5 published definitions, no-adaptation external contract, provenance/content binding, target spending, and multipart certification |
+  | **total** | **2432** | |
 ### 7.2h A surrogate null that was not the null it claimed (T4C.5)
 
 The most instructive defect of the project so far, because it passed every structural check.

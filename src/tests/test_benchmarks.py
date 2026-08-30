@@ -37,6 +37,7 @@ from src.benchmarks.core import (
 )
 from src.benchmarks.runner import failures, null_failures, summarise
 from src.benchmarks.seeding import DEFAULT_ROOT_SEED, derive, stable_label_hash
+from src.benchmarks.multidomain_flagship import ALL_CASES, DOMAIN_NAMES, EXPERIMENT_CONTRACT
 from src.benchmarks.sequences import effective_sample_size, correlation_p_value
 
 
@@ -145,6 +146,10 @@ def test_gating_lookup_finds_benchmarks_by_stage():
         "representation_structure_planted", "representation_structure_safeguards"}
     assert {b.name for b in benchmarks_gating("G16.4")} == {
         "representation_structure_planted", "representation_structure_safeguards"}
+    assert {b.name for b in benchmarks_gating("G16.5")} == {
+        "representation_structure_planted", "representation_structure_safeguards"}
+    assert {b.name for b in benchmarks_gating("G17.0")} == {
+        "multidomain_flagship_planted", "multidomain_flagship_safeguards"}
 
 
 def test_g16_benchmark_pair_covers_the_complete_declared_family_and_acceptance_policy():
@@ -157,6 +162,50 @@ def test_g16_benchmark_pair_covers_the_complete_declared_family_and_acceptance_p
     assert policy == safeguards["acceptance_policy"]
     assert policy["maximum_null_rejection_rate"] >= policy["alpha"]
     assert policy["minimum_planted_detection_rate"] >= 0.8
+
+
+def test_g17_flagship_pair_freezes_the_complete_four_domain_experiment_contract():
+    planted = get_benchmark("multidomain_flagship_planted").truth()
+    safeguards = get_benchmark("multidomain_flagship_safeguards").truth()
+    covered = set(planted["cases"]) | set(safeguards["cases"])
+    assert covered == set(ALL_CASES)
+    assert covered == set(planted["complete_required_family"])
+    assert covered == set(safeguards["complete_required_family"])
+    assert planted["experiment_contract"] == safeguards["experiment_contract"]
+    assert tuple(EXPERIMENT_CONTRACT["domains"]) == DOMAIN_NAMES
+    assert set(EXPERIMENT_CONTRACT["comparison_modes"]) == {
+        "calendar_aligned", "scale_shape_aligned"}
+    assert tuple(EXPERIMENT_CONTRACT["duration_presets"]) == (
+        "week", "three_months", "six_months")
+    policy = EXPERIMENT_CONTRACT["acceptance_policy"]
+    assert policy["maximum_null_rejection_rate"] >= policy["alpha"]
+    assert policy["minimum_planted_detection_rate"] >= 0.8
+    assert policy["maximum_family_members"] == 10_000
+
+
+def test_g17_flagship_native_records_are_reproducible_and_keep_distinct_streams():
+    benchmark = get_benchmark("multidomain_flagship_safeguards")
+    first, second = benchmark.make(), benchmark.make()
+    for name in first.cases:
+        first_case, second_case = first.cases[name], second.cases[name]
+        streams = set()
+        for domain in DOMAIN_NAMES:
+            left, right = first_case.domains[domain], second_case.domains[domain]
+            assert np.array_equal(left.sample_times_seconds, right.sample_times_seconds)
+            assert np.array_equal(left.values, right.values)
+            assert np.array_equal(left.valid_mask, right.valid_mask)
+            streams.add(left.construction_stream)
+        assert len(streams) == len(DOMAIN_NAMES)
+
+
+def test_g17_safeguards_freeze_refusal_not_a_convenient_positive_result():
+    safeguards = get_benchmark("multidomain_flagship_safeguards").make()
+    precedence = safeguards.cases["inadmissible_precedence"]
+    assert precedence.domains["order_book"].lag_policy == "none"
+    assert "no_propagation_speed" in precedence.domains["order_book"].violations
+    budget = safeguards.cases["family_budget_refusal"].oracle
+    assert budget["declared_family_members"] > budget["maximum_family_members"]
+    assert safeguards.cases["gap_alias"].expected_outcome.startswith("refuse")
 
 
 # ============================================================== the suite itself

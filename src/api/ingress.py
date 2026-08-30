@@ -3,20 +3,25 @@
 from __future__ import annotations
 
 import json
+import os
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any, Dict
 
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 
 from src.core.errors import SpectralEarthError, classify
 from src.data_layer.dataset_ingress import (SampleTableDeclaration,
+                                            freeze_external_subspace_transfer,
                                             freeze_stable_subspace_confirmation,
                                             plan_conditional_information_audit,
                                             plan_redundancy_structure_audit,
                                             plan_representation_audit,
                                             plan_stable_subspace_generation,
                                             probe_delimited,
+                                            publish_stable_subspace_candidate,
                                             run_conditional_information_audit,
+                                            run_external_subspace_certification,
                                             run_redundancy_structure_audit,
                                             run_representation_audit,
                                             run_stable_subspace_confirmation,
@@ -26,6 +31,30 @@ from src.api.preregistration import held_out_ledger, load_seal, store_seal
 from src.core.preregistration import Seal
 
 router = APIRouter(prefix="/api/v1/ingress", tags=["ingress"])
+
+
+def _candidate_root() -> Path:
+    return Path(os.environ.get("SPECTRAL_PREREGISTRATION_ROOT",
+                               str(Path("data") / "preregistrations"))) / "subspaces"
+
+
+def _store_candidate(candidate: Dict[str, Any]) -> None:
+    root = _candidate_root()
+    root.mkdir(parents=True, exist_ok=True)
+    path = root / (candidate["candidate_sha256"] + ".json")
+    if not path.exists():
+        path.write_text(json.dumps(candidate, indent=2, sort_keys=True), encoding="utf-8")
+
+
+def _load_candidate(candidate_sha256: str) -> Dict[str, Any]:
+    digest = str(candidate_sha256).lower()
+    if len(digest) != 64 or any(value not in "0123456789abcdef" for value in digest):
+        raise HTTPException(status_code=404, detail="Not a published candidate digest.")
+    path = _candidate_root() / (digest + ".json")
+    if not path.exists():
+        raise HTTPException(status_code=404,
+                            detail="No published subspace candidate %s is stored here." % digest)
+    return json.loads(path.read_text(encoding="utf-8"))
 
 
 def _handle(error: SpectralEarthError) -> HTTPException:
@@ -260,6 +289,74 @@ async def subspace_confirm(file: UploadFile = File(...), delimiter: str = Form("
     }
     try:
         return run_stable_subspace_confirmation(
+            payload, filename=file.filename or "upload", delimiter=delimiter,
+            seal=frozen, ledger=held_out_ledger(),
+            opened_at=datetime.now(timezone.utc).isoformat(),
+            published_sha256=published_sha256)
+    except SpectralEarthError as error:
+        raise _handle(error)
+
+
+@router.post("/subspace/publish")
+async def subspace_publish(seal_sha256: str = Form(...),
+                           label: str = Form(...)) -> Dict[str, Any]:
+    """Publish one generated candidate definition; this does not claim replication."""
+    try:
+        candidate = publish_stable_subspace_candidate(
+            confirmation_seal=load_seal(seal_sha256), label=label,
+            published_at=datetime.now(timezone.utc).isoformat())
+        _store_candidate(candidate)
+        return candidate
+    except SpectralEarthError as error:
+        raise _handle(error)
+
+
+@router.post("/subspace/transfer/freeze")
+async def subspace_transfer_freeze(
+        candidate_sha256: str = Form(...), target_content_sha256: str = Form(...),
+        target_n_rows: int = Form(...), target_declaration: str = Form(...),
+        target_provenance: str = Form(...), permutations: int = Form(4999),
+        seed: int = Form(16501), alpha: float = Form(0.05)) -> Dict[str, Any]:
+    """Bind published definitions to target metadata before target values are supplied."""
+    try:
+        digests = json.loads(candidate_sha256)
+    except json.JSONDecodeError as exc:
+        raise HTTPException(status_code=400,
+                            detail="`candidate_sha256` must be a JSON array.") from exc
+    if not isinstance(digests, list):
+        raise HTTPException(status_code=400,
+                            detail="`candidate_sha256` must be a JSON array.")
+    declared = _object(target_declaration, "target_declaration")
+    provenance = _object(target_provenance, "target_provenance")
+    try:
+        result = freeze_external_subspace_transfer(
+            candidates=[_load_candidate(str(value)) for value in digests],
+            target_content_sha256=target_content_sha256, target_n_rows=target_n_rows,
+            target_declaration=SampleTableDeclaration(**declared),
+            target_provenance=provenance,
+            sealed_at=datetime.now(timezone.utc).isoformat(), permutations=permutations,
+            seed=seed, alpha=alpha, ledger=held_out_ledger())
+        store_seal(Seal.from_mapping(result["seal"]))
+        return result
+    except TypeError:
+        raise HTTPException(status_code=400,
+                            detail="Target declaration needs roles, sample_relationship and units.")
+    except SpectralEarthError as error:
+        raise _handle(error)
+
+
+@router.post("/subspace/transfer/certify")
+async def subspace_transfer_certify(
+        file: UploadFile = File(...), delimiter: str = Form(","),
+        transfer_seal_sha256: str = Form(...),
+        published_sha256: str = Form(...)) -> Dict[str, Any]:
+    """Spend and open one target, then execute its no-adaptation transfer contract once."""
+    try:
+        stored = load_seal(transfer_seal_sha256)
+        frozen = {"schema": "spectral.external-subspace-transfer-seal.v1",
+                  "seal": stored.to_mapping(), "seal_sha256": stored.seal_sha256}
+        payload = await file.read()
+        return run_external_subspace_certification(
             payload, filename=file.filename or "upload", delimiter=delimiter,
             seal=frozen, ledger=held_out_ledger(),
             opened_at=datetime.now(timezone.utc).isoformat(),

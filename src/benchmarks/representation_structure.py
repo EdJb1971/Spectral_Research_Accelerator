@@ -15,7 +15,8 @@ import numpy as np
 
 from src.analysis_engine.conditional_information import audit_conditional_information
 from src.analysis_engine.representation_structure import audit_pair_structure
-from src.analysis_engine.stable_subspace import (confirm_stable_subspaces,
+from src.analysis_engine.stable_subspace import (certify_external_subspaces,
+                                                 confirm_stable_subspaces,
                                                  generate_stable_subspaces)
 from src.benchmarks.core import Benchmark, CheckResult, Outcome, register_benchmark, stage_check
 from src.benchmarks.seeding import SeedBundle, derive
@@ -573,16 +574,130 @@ def _check_subspace_confirmation_safeguards(data: RepresentationStructureData,
         "held-out subspace family", measured)
 
 
+def _external_subspace_calibration(names: Tuple[str, ...], *,
+                                   root_seed: int) -> Dict[str, Any]:
+    replications = int(ACCEPTANCE_POLICY["replications"])
+    admitted = {name: 0 for name in names}
+    certified = {name: 0 for name in names}
+    for replication in range(replications):
+        source_bundle = derive("G16.5:source:%d" % replication, root_seed)
+        target_bundle = derive("G16.5:external:%d" % replication, root_seed)
+        for case_index, name in enumerate(names):
+            source = _case(source_bundle, name, SUBSPACE_CALIBRATION_N_SAMPLES)
+            if len(source.features) < 2:
+                continue
+            target = _case(target_bundle, name, 68)
+            split_rng = np.random.default_rng(
+                root_seed + 3000017 * (replication + 1) + 1013 * case_index)
+            order = split_rng.permutation(SUBSPACE_CALIBRATION_N_SAMPLES)
+            generate_indices, confirm_indices = order[:156], order[156:]
+            generated = generate_stable_subspaces(
+                {key: value[generate_indices] for key, value in source.features.items()},
+                source.target[generate_indices],
+                (source.nuisance[generate_indices] if source.nuisance is not None else None),
+                dimensions=(1,), regularizations=(0.1,),
+                permutations=SUBSPACE_CALIBRATION_PERMUTATIONS,
+                restarts=3, iterations=24, perturbations=3,
+                perturbation_scale=0.10, stability_threshold=0.10,
+                seed=root_seed + 1000003 * (replication + 1) + 1009 * case_index,
+                alpha=float(ACCEPTANCE_POLICY["alpha"]))
+            cuts = (np.quantile(source.nuisance[generate_indices], (1 / 3, 2 / 3))
+                    if source.nuisance is not None else None)
+            try:
+                internal = confirm_stable_subspaces(
+                    {key: value[confirm_indices] for key, value in source.features.items()},
+                    source.target[confirm_indices], preprocessing=generated["preprocessing"],
+                    frozen_subspaces=generated["subspaces"],
+                    family_members=generated["family"]["members"],
+                    nuisance=(source.nuisance[confirm_indices]
+                              if source.nuisance is not None else None),
+                    nuisance_region_cuts=cuts,
+                    permutations=SUBSPACE_CALIBRATION_PERMUTATIONS,
+                    seed=root_seed + 2000003 * (replication + 1) + 1009 * case_index,
+                    alpha=float(ACCEPTANCE_POLICY["alpha"]))
+            except ValueError:
+                continue
+            if not internal["internally_replicated_candidates"]:
+                continue
+            admitted[name] += 1
+            try:
+                external = certify_external_subspaces(
+                    target.features, target.target, preprocessing=generated["preprocessing"],
+                    frozen_subspaces=generated["subspaces"],
+                    family_members=generated["family"]["members"],
+                    nuisance=target.nuisance, nuisance_region_cuts=cuts,
+                    permutations=SUBSPACE_CALIBRATION_PERMUTATIONS,
+                    seed=root_seed + 4000037 * (replication + 1) + 1019 * case_index,
+                    alpha=float(ACCEPTANCE_POLICY["alpha"]))
+            except ValueError:
+                continue
+            certified[name] += int(bool(external["external_replication_receipts"]))
+    return {
+        "replications": replications, "source_generate_n": 156,
+        "source_confirmation_n": 68, "external_target_n": 68,
+        "adaptation": "none", "permutations": SUBSPACE_CALIBRATION_PERMUTATIONS,
+        "published_candidate_rates": {
+            name: admitted[name] / replications for name in names},
+        "external_replication_rates": {
+            name: certified[name] / replications for name in names},
+    }
+
+
+@stage_check("G16.5.external_subspace_certification")
+def _check_external_subspace_power(data: RepresentationStructureData,
+                                   truth: Dict[str, Any]) -> CheckResult:
+    names = ("exact_duplicate", "redundant_noisy_copies", "complementary_information",
+             "synergistic_pair", "signal_survives_conditioning")
+    measured = _external_subspace_calibration(names, root_seed=16501)
+    rates = measured["external_replication_rates"]
+    minimum = float(ACCEPTANCE_POLICY["minimum_planted_detection_rate"])
+    ceiling = float(ACCEPTANCE_POLICY["maximum_null_rejection_rate"])
+    problems = ["%s external-replication power %.3f is below %.3f" %
+                (name, rates[name], minimum) for name in names[:3]
+                if rates[name] < minimum]
+    if rates["synergistic_pair"] > ceiling:
+        problems.append("the nonlinear XOR case received too many external receipts")
+    if rates["signal_survives_conditioning"] != 0:
+        problems.append("a one-feature case entered external subspace certification")
+    return CheckResult(
+        "G16.5.external_subspace_certification", Outcome.FAIL if problems else Outcome.PASS,
+        "; ".join(problems) if problems else
+        "unchanged linear spans replicate in independently generated targets; XOR and the "
+        "one-feature case remain outside the bounded family", measured)
+
+
+@stage_check("G16.5.external_subspace_certification")
+def _check_external_subspace_safeguards(data: RepresentationStructureData,
+                                        truth: Dict[str, Any]) -> CheckResult:
+    measured = _external_subspace_calibration(SAFEGUARD_CASES, root_seed=26501)
+    rates = measured["external_replication_rates"]
+    ceiling = float(ACCEPTANCE_POLICY["maximum_null_rejection_rate"])
+    problems = []
+    if rates["independent_features"] > ceiling:
+        problems.append("independent external false receipt %.3f exceeds %.3f" %
+                        (rates["independent_features"], ceiling))
+    for name in SAFEGUARD_CASES[1:]:
+        if rates[name] != 0:
+            problems.append("one-feature safeguard %s entered external certification" % name)
+    return CheckResult(
+        "G16.5.external_subspace_certification", Outcome.FAIL if problems else Outcome.PASS,
+        "; ".join(problems) if problems else
+        "the independently generated null stays calibrated and one-feature safeguards never "
+        "enter the external transfer family", measured)
+
+
 register_benchmark(Benchmark(
     name="representation_structure_planted", kind="sample_table",
     description="Five planted independent-sample structures spanning duplication, overlap, "
                 "complementarity, synergy and conditional survival.",
     gates=("G16.0.benchmark_contract", "G16.1.redundancy_structure",
            "G16.2.conditional_information", "G16.3.stable_subspace_generation",
-           "G16.4.held_out_subspace_confirmation"),
+           "G16.4.held_out_subspace_confirmation",
+           "G16.5.external_subspace_certification"),
     build=build_representation_structure, known_answer=representation_structure_truth,
     checks=(_check_planted, _check_redundancy_power, _check_conditional_power,
-            _check_subspace_power, _check_subspace_confirmation_power),
+            _check_subspace_power, _check_subspace_confirmation_power,
+            _check_external_subspace_power),
     params={"focus": "planted", "n": N_SAMPLES},
 ))
 
@@ -592,11 +707,13 @@ register_benchmark(Benchmark(
                 "conditional null and a collider counterexample.",
     gates=("G16.0.benchmark_contract", "G16.1.redundancy_structure",
            "G16.2.conditional_information", "G16.3.stable_subspace_generation",
-           "G16.4.held_out_subspace_confirmation"),
+           "G16.4.held_out_subspace_confirmation",
+           "G16.5.external_subspace_certification"),
     build=build_representation_structure, known_answer=representation_structure_truth,
     checks=(_check_safeguards, _check_redundancy_nulls,
             _check_conditional_safeguards, _check_subspace_safeguards,
-            _check_subspace_confirmation_safeguards),
+            _check_subspace_confirmation_safeguards,
+            _check_external_subspace_safeguards),
     params={"focus": "safeguards", "n": N_SAMPLES},
 ))
 

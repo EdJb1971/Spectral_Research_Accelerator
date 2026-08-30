@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import io
+import json
 import os
 from pathlib import Path
 
@@ -153,6 +154,30 @@ def test_source_is_registered_with_bounded_capabilities():
     source = register_tess_source()
     assert LIGHTCURVE_SOURCES.get("mast_tess_spoc") is source
     assert source.describe()["metadata_preflight"] is True
+
+
+def test_mast_metadata_query_retries_one_transient_transport_timeout(monkeypatch):
+    import src.data_layer.tess_source as source
+
+    class Response:
+        def __enter__(self): return self
+        def __exit__(self, *_args): return False
+        def read(self, _limit):
+            return json.dumps({"status": "COMPLETE", "data": []}).encode()
+
+    calls = []
+    def opened(_request, timeout):
+        calls.append(timeout)
+        if len(calls) == 1:
+            raise TimeoutError("transient MAST timeout")
+        return Response()
+
+    monkeypatch.setenv(source.NETWORK_ENV_VAR, "1")
+    monkeypatch.setattr(source, "urlopen", opened)
+    monkeypatch.setattr(source.time, "sleep", lambda _seconds: None)
+    result = source._mast_query({"service": "Mast.Caom.Filtered.Position", "params": {}})
+    assert result["status"] == "COMPLETE"
+    assert calls == [source.MAST_TIMEOUT_SECONDS, source.MAST_TIMEOUT_SECONDS]
 
 
 def test_api_exposes_refusals_and_never_claims_acquisition_is_a_finding(monkeypatch, tmp_path):

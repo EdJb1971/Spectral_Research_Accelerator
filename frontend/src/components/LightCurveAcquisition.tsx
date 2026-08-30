@@ -68,6 +68,11 @@ const LightCurveAcquisition: React.FC<{ source: types.LightCurveSource;
         <p>{result.collection.n_samples} samples · {result.collection.n_products} products · {result.collection.quality_flagged} flagged retained</p>
         <p className="font-mono text-[10px] break-all text-slate-500">{result.collection.collection_sha256}</p>
         {Object.entries(result.analysis_readiness).map(([k, v]) => <p key={k}><span className="text-slate-500">{k}:</span> {v}</p>)}
+        <div className="border border-sky-700/40 bg-sky-950/20 rounded p-3 text-[11px] text-sky-200">
+          <strong>Acquired dataset, not a study.</strong> The collection and capability profile
+          are reproducible. They do not silently create an evidence study or masquerade as a
+          generic channel record; only operations marked available above may consume it.
+        </div>
         <p className="text-[10px] text-slate-500">{result.claim_boundary}</p></div>}
     </section>
   </div>;

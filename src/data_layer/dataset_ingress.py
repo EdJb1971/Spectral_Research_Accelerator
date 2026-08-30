@@ -22,7 +22,8 @@ from src.analysis_engine.conditional_information import (
     audit_conditional_information, conditional_support)
 from src.analysis_engine.representation_structure import (audit_pair_structure,
                                                            candidate_pairs)
-from src.analysis_engine.stable_subspace import (confirm_stable_subspaces,
+from src.analysis_engine.stable_subspace import (certify_external_subspaces,
+                                                 confirm_stable_subspaces,
                                                  generate_stable_subspaces, projector)
 from src.core.errors import InvalidParameterError
 from src.core.dataset_capabilities import build_profile
@@ -958,6 +959,236 @@ def run_stable_subspace_confirmation(
     }
 
 
+def publish_stable_subspace_candidate(*, confirmation_seal: Seal, label: str,
+                                      published_at: str) -> Dict[str, Any]:
+    """Create a content-addressed transfer definition from a sealed generate candidate."""
+    confirmation_seal.verify()
+    confirm = dict(confirmation_seal.confirm)
+    if confirm.get("schema") != "spectral.stable-subspace-confirmation-contract.v1" \
+            or confirmation_seal.confirm_sha256 != _mapping_sha(confirm):
+        raise InvalidParameterError("confirmation seal", confirm.get("schema"),
+                                    "a TG16.4 stable-subspace confirmation seal")
+    if not isinstance(published_at, str) or not published_at.strip():
+        raise InvalidParameterError("published_at", published_at,
+                                    "a server-recorded publication time")
+    label = str(label)
+    if label not in confirm.get("candidate_labels", []):
+        raise InvalidParameterError(
+            "label", label,
+            "one of the generated candidate labels frozen by this seal: %s"
+            % list(confirm.get("candidate_labels", [])))
+    matching = [dict(row) for row in confirm["subspaces"] if row.get("label") == label]
+    if len(matching) != 1:
+        raise InvalidParameterError("label", label,
+                                    "exactly one matching member in the sealed family")
+    row = matching[0]
+    if row.get("outcome") != "candidate_compact_stable_subspace":
+        raise InvalidParameterError("candidate outcome", row.get("outcome"),
+                                    "candidate_compact_stable_subspace")
+    declaration = dict(confirmation_seal.held_out.provenance["declaration"])
+    body = {
+        "schema": "spectral.published-stable-subspace.v1",
+        "published_at": published_at,
+        "source_confirmation_seal_sha256": confirmation_seal.seal_sha256,
+        "source_content_sha256": confirm["content_sha256"],
+        "source_declaration": declaration,
+        "features": list(confirm["features"]), "target": confirm["target"],
+        "nuisance": confirm["nuisance"],
+        "preprocessing": dict(confirm["preprocessing"]),
+        "subspace": row, "label": label,
+        "nuisance_region_cuts": confirm["nuisance_region_cuts"],
+        "nuisance_stability_threshold": confirm["nuisance_stability_threshold"],
+        "adaptation": "none",
+    }
+    body["candidate_sha256"] = _mapping_sha(body)
+    return {**body,
+            "claim_boundary": (
+                "This is a published candidate definition, not a replication result. Its "
+                "source scaling, span and nuisance regions are immutable; external testing "
+                "is a separate target-bound contract.")}
+
+
+def _verify_published_candidate(candidate: Mapping[str, Any]) -> Dict[str, Any]:
+    frozen = dict(candidate)
+    frozen.pop("claim_boundary", None)
+    digest = str(frozen.pop("candidate_sha256", ""))
+    if frozen.get("schema") != "spectral.published-stable-subspace.v1" \
+            or digest != _mapping_sha(frozen):
+        raise InvalidParameterError("candidate_sha256", digest,
+                                    "the digest of an intact published subspace definition")
+    frozen["candidate_sha256"] = digest
+    return frozen
+
+
+def freeze_external_subspace_transfer(
+        *, candidates: Sequence[Mapping[str, Any]], target_content_sha256: str,
+        target_n_rows: int, target_declaration: SampleTableDeclaration,
+        target_provenance: Mapping[str, Any], sealed_at: str,
+        permutations: int = 4999, seed: int = 16501, alpha: float = 0.05,
+        ledger: Optional[HeldOutLedger] = None) -> Dict[str, Any]:
+    """Freeze published spans and an unopened external target without reading its values."""
+    if not isinstance(sealed_at, str) or not sealed_at.strip():
+        raise InvalidParameterError("sealed_at", sealed_at,
+                                    "a server-recorded transfer sealing time")
+    frozen_candidates = [_verify_published_candidate(value) for value in candidates]
+    if not 1 <= len(frozen_candidates) <= 6:
+        raise InvalidParameterError("candidate family", len(frozen_candidates),
+                                    "one to six published candidate definitions")
+    digests = [row["candidate_sha256"] for row in frozen_candidates]
+    labels = [str(row["label"]) for row in frozen_candidates]
+    if len(set(digests)) != len(digests) or len(set(labels)) != len(labels):
+        raise InvalidParameterError("candidate family", labels,
+                                    "distinct published definitions with distinct labels")
+    source_seals = {row["source_confirmation_seal_sha256"] for row in frozen_candidates}
+    if len(source_seals) != 1:
+        raise InvalidParameterError("candidate origins", sorted(source_seals),
+                                    "one source confirmation family per transfer contract")
+    first = frozen_candidates[0]
+    shared = ("source_content_sha256", "source_declaration", "features", "target",
+              "nuisance", "preprocessing", "nuisance_region_cuts",
+              "nuisance_stability_threshold", "adaptation")
+    for candidate in frozen_candidates[1:]:
+        if any(candidate.get(key) != first.get(key) for key in shared):
+            raise InvalidParameterError("candidate transfer family", labels,
+                                        "one unchanged preprocessing and feature contract")
+    if first["adaptation"] != "none":
+        raise InvalidParameterError("adaptation", first["adaptation"],
+                                    "none in this first external certification recipe")
+    if not isinstance(target_content_sha256, str) or len(target_content_sha256) != 64 \
+            or any(value not in "0123456789abcdef" for value in target_content_sha256.lower()):
+        raise InvalidParameterError("target_content_sha256", target_content_sha256,
+                                    "a 64-character hexadecimal content digest")
+    target_content_sha256 = target_content_sha256.lower()
+    if target_content_sha256 == first["source_content_sha256"]:
+        raise InvalidParameterError("target_content_sha256", target_content_sha256,
+                                    "bytes different from the source dataset")
+    if isinstance(target_n_rows, bool) or int(target_n_rows) < 40:
+        raise InvalidParameterError("target_n_rows", target_n_rows,
+                                    "at least 40 target rows declared before access")
+    if target_declaration.canonical() != first["source_declaration"]:
+        raise InvalidParameterError(
+            "target declaration", target_declaration.canonical(),
+            "the source column roles, independent-sample relationship and scientific units; "
+            "schema or unit adaptation is not implemented by this recipe")
+    require_independent_samples(target_declaration, recipe="external subspace certification")
+    provenance = dict(target_provenance)
+    required = ("acquisition_id", "acquired_at", "source")
+    missing = [key for key in required if not str(provenance.get(key, "")).strip()]
+    if missing or provenance.get("independent_of_origin") is not True:
+        raise InvalidParameterError(
+            "target_provenance", provenance,
+            "acquisition_id, acquired_at, source and independent_of_origin=true declared "
+            "before target access")
+    minimum = required_surrogates(len(labels), float(alpha), "benjamini_yekutieli")
+    if not minimum <= int(permutations) <= 9999:
+        raise InvalidParameterError("permutations", permutations,
+                                    "at least %d and at most 9999 for this family" % minimum)
+    columns = tuple(target_declaration.roles)
+    target = PartitionIdentity(
+        name="stable_subspace_external_target", n_times=int(target_n_rows),
+        n_channels=len(columns), channel_labels=columns, frames=(0, int(target_n_rows)),
+        provenance={"content_sha256": target_content_sha256,
+                    "declaration": target_declaration.canonical(),
+                    "acquisition": provenance})
+    contract = {
+        "schema": "spectral.external-subspace-transfer-contract.v1",
+        "candidate_sha256": digests, "candidate_labels": labels,
+        "candidates": frozen_candidates,
+        "target_content_sha256": target_content_sha256,
+        "target_n_rows": int(target_n_rows),
+        "target_declaration": target_declaration.canonical(),
+        "target_provenance": provenance,
+        "adaptation": "none", "permutations": int(permutations), "seed": int(seed),
+        "alpha": float(alpha), "correction": "benjamini_yekutieli",
+    }
+    seal = Seal(
+        study_id="external-subspace:%s" % next(iter(source_seals))[:16],
+        sealed_at=sealed_at, generate_sha256=_mapping_sha(
+            {"candidate_sha256": digests}), generate_family_size=len(labels),
+        confirm=contract, confirm_sha256=_mapping_sha(contract),
+        confirm_labels=tuple(labels), confirm_family_size=len(labels),
+        confirm_account={"family_size": len(labels), "permutations": int(permutations),
+                         "correction": "benjamini_yekutieli"}, held_out=target)
+    if ledger is not None:
+        ledger.require_unopened(target, seal.seal_sha256)
+    return {
+        "schema": "spectral.external-subspace-transfer-seal.v1",
+        "seal": seal.to_mapping(), "seal_sha256": seal.seal_sha256,
+        "target_partition_sha256": target.digest(), "target_opened": False,
+        "candidate_sha256": digests, "correction_unit": len(labels),
+        "publication_note": (
+            "Publish seal_sha256 somewhere immutable before the target file is supplied."),
+        "claim_boundary": (
+            "This binds an unchanged published candidate family and declared acquisition "
+            "provenance to one content-addressed target. It opens no target values."),
+    }
+
+
+def run_external_subspace_certification(
+        payload: bytes, *, filename: str, delimiter: str, seal: Mapping[str, Any],
+        ledger: HeldOutLedger, opened_at: str, published_sha256: str) -> Dict[str, Any]:
+    """Spend one external target, then test the frozen published family unchanged."""
+    wrapped = dict(seal)
+    if wrapped.get("schema") != "spectral.external-subspace-transfer-seal.v1":
+        raise InvalidParameterError("seal schema", wrapped.get("schema"),
+                                    "spectral.external-subspace-transfer-seal.v1")
+    frozen = Seal.from_mapping(wrapped.get("seal", {}))
+    if wrapped.get("seal_sha256") != frozen.seal_sha256:
+        raise InvalidParameterError("seal_sha256", wrapped.get("seal_sha256"),
+                                    "the digest carried by the transfer seal")
+    # Publication and contract checks happen before the target is spent.
+    frozen.verify_published(published_sha256)
+    contract = dict(frozen.confirm)
+    if contract.get("schema") != "spectral.external-subspace-transfer-contract.v1" \
+            or frozen.confirm_sha256 != _mapping_sha(contract) \
+            or contract.get("adaptation") != "none":
+        raise InvalidParameterError("transfer contract", contract.get("schema"),
+                                    "the intact no-adaptation external transfer contract")
+    candidates = [_verify_published_candidate(value) for value in contract["candidates"]]
+    if [row["candidate_sha256"] for row in candidates] != contract["candidate_sha256"] \
+            or [row["label"] for row in candidates] != list(frozen.confirm_labels):
+        raise InvalidParameterError("candidate family", contract.get("candidate_sha256"),
+                                    "the complete frozen published candidate family")
+    # From this point onward any refusal spends the target: values are about to be opened.
+    record = ledger.open(frozen, frozen.held_out, opened_at=opened_at)
+    if _sha(payload) != contract["target_content_sha256"]:
+        raise InvalidParameterError("target_content_sha256", _sha(payload),
+                                    "the exact independently acquired bytes the contract bound")
+    declaration = SampleTableDeclaration(**contract["target_declaration"])
+    probe = probe_delimited(payload, filename=filename, delimiter=delimiter)
+    declaration.validate(probe)
+    require_independent_samples(declaration, recipe="external subspace certification")
+    if probe["n_rows"] != int(contract["target_n_rows"]):
+        raise InvalidParameterError("target_n_rows", probe["n_rows"],
+                                    "the row count declared before target access")
+    columns, _header = _numeric_table(payload, delimiter, declaration)
+    first = candidates[0]
+    nuisance = first["nuisance"]
+    try:
+        measured = certify_external_subspaces(
+            {name: columns[name] for name in first["features"]}, columns[first["target"]],
+            preprocessing=first["preprocessing"],
+            frozen_subspaces=[row["subspace"] for row in candidates],
+            family_members=contract["candidate_labels"],
+            nuisance=(columns[nuisance] if nuisance is not None else None),
+            nuisance_region_cuts=first["nuisance_region_cuts"],
+            permutations=int(contract["permutations"]), seed=int(contract["seed"]),
+            alpha=float(contract["alpha"]), correction=str(contract["correction"]),
+            nuisance_stability_threshold=float(first["nuisance_stability_threshold"]))
+    except ValueError as exc:
+        raise InvalidParameterError("external target admission", str(exc),
+                                    "adequate target support for the frozen family") from exc
+    return {
+        "schema": "spectral.external-subspace-certification.v1",
+        "transfer_seal_sha256": frozen.seal_sha256,
+        "published_sha256": published_sha256,
+        "target_content_sha256": contract["target_content_sha256"],
+        "target_provenance": contract["target_provenance"],
+        "target_opened": True, "ledger_record": record,
+        **measured, "stored": False, "rung_moved": False,
+    }
+
+
 def plan_representation_audit(payload: bytes, *, filename: str, delimiter: str,
                               declaration: SampleTableDeclaration,
                               representations: Sequence[str] = ("identity", "pca"),
@@ -1176,11 +1407,13 @@ def run_representation_audit(payload: bytes, *, filename: str, delimiter: str,
 
 
 __all__ = ["AUDIT_REPRESENTATIONS", "MAX_UPLOAD_BYTES", "SAMPLE_RELATIONSHIPS",
-           "SAMPLE_ROLES", "SampleTableDeclaration", "freeze_stable_subspace_confirmation",
+           "SAMPLE_ROLES", "SampleTableDeclaration", "freeze_external_subspace_transfer",
+           "freeze_stable_subspace_confirmation",
            "plan_conditional_information_audit",
            "plan_redundancy_structure_audit", "plan_representation_audit",
            "plan_stable_subspace_generation",
-           "probe_delimited", "require_independent_samples",
+           "probe_delimited", "publish_stable_subspace_candidate",
+           "require_independent_samples", "run_external_subspace_certification",
            "run_conditional_information_audit", "run_redundancy_structure_audit",
            "run_representation_audit", "run_stable_subspace_confirmation",
            "run_stable_subspace_generation",

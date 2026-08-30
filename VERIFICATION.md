@@ -6996,3 +6996,80 @@ nonlinear XOR was 0.005 and the independent null was 0.000, below the 0.075 ceil
 one-feature case remained outside the compact family. No acceptance setting was changed after
 this run. The full backend suite was not rerun; the clean 2745-pass G15 run remains the latest
 full-suite evidence.
+
+---
+
+## TG16.5 - External Certification Seam and UI Integration (2026-08-30, `ed-dev`) - **COMPLETE**
+
+Published candidate definitions now retain exact TG16.4 lineage and source preprocessing/span.
+A separate no-adaptation contract binds them to a different content-addressed target and declared
+acquisition provenance before target access. Certification verifies the independently published
+contract digest, spends the whole target once, applies every source value unchanged, corrects the
+complete transfer family and emits the only `external_replication_receipt` in the programme. The
+receipt certifies the executed test and recorded provenance, not the truth of an independence
+declaration, optimality, causality or population-wide transportability.
+
+The integration audit also found eight committed TG16.1-TG16.4 routes that the UI could not call.
+The generic-file workbench now exposes the complete progressive structure programme, including
+the three TG16.5 routes. Argo's measure choice updates the acquisition projection as well as the
+reduction; acquisition domain/path survive rerenders and browser refresh; Argo/TESS receipts now
+say explicitly that an acquired dataset is not automatically an evidence study. MAST metadata
+long-polling uses a 90-second bounded transport window and retries one transient transport failure.
+
+```text
+> npm run build
+✓ built in 1m 6s
+
+> .\.venv\Scripts\python.exe -m pytest -q src/tests/test_frontend_contract.py src/tests/test_stable_subspace.py src/tests/test_photometry.py src/tests/test_profiles.py
+121 passed, 2 skipped, 5 warnings in 8.00s
+
+> .\.venv\Scripts\python.exe -m pytest -q src/tests/test_stable_subspace.py
+13 passed, 2 warnings in 4.86s
+
+> .\.venv\Scripts\python.exe -m src.benchmarks --name representation_structure_planted --name representation_structure_safeguards
+PASS 12   FAIL 0   NOT_YET_RUNNABLE 0
+
+> .\.venv\Scripts\python.exe -m pytest -q src/tests/test_photometry.py src/tests/test_profiles.py src/tests/test_acquisitions_api.py src/tests/test_frontend_contract.py src/tests/test_stable_subspace.py src/tests/test_benchmarks.py -k "not suite_results and not no_null_benchmark_ever_fails and not every_benchmark_passes_its_declared_gates"
+177 passed, 2 skipped, 1 deselected, 5 warnings in 306.15s
+
+> .\.venv\Scripts\python.exe -m pytest -q src/tests/test_documentation.py
+19 passed, 1 warning in 367.50s
+```
+
+Across 200 frozen replications, exact-duplicate, noisy-copy and complementary-linear external
+receipt rates were 1.000 each. XOR, the independent null and all one-feature safeguards were
+0.000. The two live-network tests remained opt-in and were skipped; the TESS retry itself is
+covered with a deterministic first-timeout/second-success test. The full suite was not rerun at
+the user's request; the clean 2745-pass G15 run remains the latest full-suite evidence.
+
+---
+
+## TG17.0 - Four-domain Flagship Contract and Known-answer Benchmarks (2026-08-30, `ed-dev`) - **COMPLETE**
+
+The flagship contract is frozen before any configurable experiment operation exists. Reanalysis,
+Argo, TESS and order book cross four distinct source/shape contracts; calendar-aligned and
+scale/shape-aligned questions remain separate; week, three-month and six-month presets form the
+initial duration family. Order book intentionally uses a licensed user-supplied content-addressed
+record and keeps `lag_policy="none"`, so an apparent event order exercises a mandatory precedence
+refusal instead of acquiring atmospheric semantics through the common workbench.
+
+The two registered benchmarks cover six independent-construction cases: shared calendar event,
+scale-shifted motif, same-window null, shared-gap alias, inadmissible precedence and an unaffordable
+24,576-member family. Later operation acceptance is frozen at 200 replications, alpha 0.05,
+maximum null rejection 0.075, minimum planted detection 0.80, maximum 10,000 family members,
+4 GiB planned bytes and one hour planned runtime. TG17.0 registers no experiment capability and
+emits no scientific result or evidence.
+
+```text
+> .\.venv\Scripts\python.exe -m pytest src\tests\test_benchmarks.py -k "g17 or gating_lookup" -q
+4 passed, 46 deselected, 1 warning in 2.12s
+
+> .\.venv\Scripts\python.exe -m src.benchmarks --name multidomain_flagship_planted --name multidomain_flagship_safeguards
+PASS 2   FAIL 0   NOT_YET_RUNNABLE 0
+```
+
+The focused gate measured a maximum 21,600-second peak separation for the shared event (inside
+one 43,200-second Argo interval), minimum native peak contrast 0.966, an 11.875-fold planted native
+width range, 0.994 shared-gap coverage correlation, the exact planted domain event order, and the
+24,576 versus 10,000 resource refusal. The full suite was not rerun at the user's request; the
+clean 2745-pass G15 run remains the latest full-suite evidence.

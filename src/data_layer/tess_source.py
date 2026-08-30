@@ -20,7 +20,8 @@ from src.data_layer.lightcurves import (LIGHTCURVE_SOURCES, LightCurveCollection
 NETWORK_ENV_VAR = "SPECTRALEARTH_ALLOW_NETWORK"
 MAST_INVOKE_URL = "https://mast.stsci.edu/api/v0/invoke"
 MAST_DOWNLOAD_URL = "https://mast.stsci.edu/api/v0.1/Download/file"
-MAST_TIMEOUT_SECONDS = 45
+MAST_TIMEOUT_SECONDS = 90
+MAST_TRANSPORT_ATTEMPTS = 2
 MAX_METADATA_ROWS = 200
 Query = Callable[[Mapping[str, Any]], Mapping[str, Any]]
 Download = Callable[[str, int], bytes]
@@ -44,7 +45,7 @@ def _mast_query(request: Mapping[str, Any]) -> Mapping[str, Any]:
     body.setdefault("format", "json")
     body.setdefault("pagesize", MAX_METADATA_ROWS)
     body.setdefault("page", 1)
-    body.setdefault("timeout", 30)
+    body.setdefault("timeout", 60)
     # A stable cachebreaker is required when polling: changing it creates another job.
     body.setdefault("cachebreaker", hashlib.sha256(
         json.dumps(body, sort_keys=True).encode("utf-8")).hexdigest()[:20])
@@ -54,12 +55,23 @@ def _mast_query(request: Mapping[str, Any]) -> Mapping[str, Any]:
                       headers={"Content-Type": "application/x-www-form-urlencoded",
                                "Accept": "application/json",
                                "User-Agent": "SpectralEarth/1.0 TG13.1"})
-        try:
-            with urlopen(req, timeout=MAST_TIMEOUT_SECONDS) as response:
-                payload = response.read(8 * 1024 * 1024 + 1)
-        except Exception as exc:
-            raise InvalidParameterError("MAST query", body.get("service"),
-                                        "a response within %d seconds" % MAST_TIMEOUT_SECONDS) from exc
+        failure: Exception | None = None
+        for transport_attempt in range(MAST_TRANSPORT_ATTEMPTS):
+            try:
+                with urlopen(req, timeout=MAST_TIMEOUT_SECONDS) as response:
+                    payload = response.read(8 * 1024 * 1024 + 1)
+                failure = None
+                break
+            except Exception as exc:
+                failure = exc
+                if transport_attempt + 1 < MAST_TRANSPORT_ATTEMPTS:
+                    time.sleep(0.5)
+        if failure is not None:
+            raise InvalidParameterError(
+                "MAST query", body.get("service"),
+                "a response after %d bounded transport attempts of %d seconds each; MAST "
+                "did not complete this metadata request, so no empty result was invented"
+                % (MAST_TRANSPORT_ATTEMPTS, MAST_TIMEOUT_SECONDS)) from failure
         if len(payload) > 8 * 1024 * 1024:
             raise InvalidParameterError("MAST metadata", len(payload),
                                         "at most 8 MiB; narrow the target or sector family")

@@ -294,6 +294,99 @@ export const apiService = {
       await fetch(`${BASE_URL}/ingress/audit`, { method: 'POST', body: form }));
   },
 
+  async planRedundancyStructure(file: File, declaration: types.SampleTableDeclaration,
+                                permutations = 4999): Promise<Record<string, any>> {
+    const form = new FormData(); form.append('file', file); form.append('delimiter', ',');
+    form.append('declaration', JSON.stringify(declaration));
+    form.append('permutations', String(permutations));
+    return handleResponse<Record<string, any>>(
+      await fetch(`${BASE_URL}/ingress/structure/plan`, { method: 'POST', body: form }));
+  },
+
+  async runRedundancyStructure(file: File, plan: Record<string, any>): Promise<Record<string, any>> {
+    const form = new FormData(); form.append('file', file); form.append('delimiter', ',');
+    form.append('plan', JSON.stringify(plan));
+    return handleResponse<Record<string, any>>(
+      await fetch(`${BASE_URL}/ingress/structure/audit`, { method: 'POST', body: form }));
+  },
+
+  async planConditionalInformation(file: File, declaration: types.SampleTableDeclaration,
+                                   permutations = 4999): Promise<Record<string, any>> {
+    const form = new FormData(); form.append('file', file); form.append('delimiter', ',');
+    form.append('declaration', JSON.stringify(declaration));
+    form.append('permutations', String(permutations));
+    return handleResponse<Record<string, any>>(
+      await fetch(`${BASE_URL}/ingress/conditional/plan`, { method: 'POST', body: form }));
+  },
+
+  async runConditionalInformation(file: File, plan: Record<string, any>): Promise<Record<string, any>> {
+    const form = new FormData(); form.append('file', file); form.append('delimiter', ',');
+    form.append('plan', JSON.stringify(plan));
+    return handleResponse<Record<string, any>>(
+      await fetch(`${BASE_URL}/ingress/conditional/audit`, { method: 'POST', body: form }));
+  },
+
+  async planStableSubspace(file: File, declaration: types.SampleTableDeclaration,
+                           permutations = 4999): Promise<Record<string, any>> {
+    const form = new FormData(); form.append('file', file); form.append('delimiter', ',');
+    form.append('declaration', JSON.stringify(declaration));
+    form.append('dimensions', JSON.stringify([1]));
+    form.append('regularizations', JSON.stringify([0.01, 0.1, 1.0]));
+    form.append('permutations', String(permutations));
+    return handleResponse<Record<string, any>>(
+      await fetch(`${BASE_URL}/ingress/subspace/plan`, { method: 'POST', body: form }));
+  },
+
+  async generateStableSubspace(file: File, plan: Record<string, any>): Promise<Record<string, any>> {
+    const form = new FormData(); form.append('file', file); form.append('delimiter', ',');
+    form.append('plan', JSON.stringify(plan));
+    return handleResponse<Record<string, any>>(
+      await fetch(`${BASE_URL}/ingress/subspace/generate`, { method: 'POST', body: form }));
+  },
+
+  async freezeStableSubspace(file: File, plan: Record<string, any>,
+                             generation: Record<string, any>, permutations = 4999): Promise<Record<string, any>> {
+    const form = new FormData(); form.append('file', file); form.append('delimiter', ',');
+    form.append('plan', JSON.stringify(plan)); form.append('generation', JSON.stringify(generation));
+    form.append('confirmation_permutations', String(permutations));
+    return handleResponse<Record<string, any>>(
+      await fetch(`${BASE_URL}/ingress/subspace/freeze`, { method: 'POST', body: form }));
+  },
+
+  async confirmStableSubspace(file: File, sealSha256: string): Promise<Record<string, any>> {
+    const form = new FormData(); form.append('file', file); form.append('delimiter', ',');
+    form.append('seal_sha256', sealSha256); form.append('published_sha256', sealSha256);
+    return handleResponse<Record<string, any>>(
+      await fetch(`${BASE_URL}/ingress/subspace/confirm`, { method: 'POST', body: form }));
+  },
+
+  async publishStableSubspace(sealSha256: string, label: string): Promise<Record<string, any>> {
+    const form = new FormData(); form.append('seal_sha256', sealSha256); form.append('label', label);
+    return handleResponse<Record<string, any>>(
+      await fetch(`${BASE_URL}/ingress/subspace/publish`, { method: 'POST', body: form }));
+  },
+
+  async freezeExternalSubspace(candidateSha256: string[], targetSha256: string,
+                               targetRows: number, declaration: types.SampleTableDeclaration,
+                               provenance: Record<string, any>): Promise<Record<string, any>> {
+    const form = new FormData();
+    form.append('candidate_sha256', JSON.stringify(candidateSha256));
+    form.append('target_content_sha256', targetSha256);
+    form.append('target_n_rows', String(targetRows));
+    form.append('target_declaration', JSON.stringify(declaration));
+    form.append('target_provenance', JSON.stringify(provenance));
+    return handleResponse<Record<string, any>>(
+      await fetch(`${BASE_URL}/ingress/subspace/transfer/freeze`, { method: 'POST', body: form }));
+  },
+
+  async certifyExternalSubspace(file: File, sealSha256: string): Promise<Record<string, any>> {
+    const form = new FormData(); form.append('file', file); form.append('delimiter', ',');
+    form.append('transfer_seal_sha256', sealSha256);
+    form.append('published_sha256', sealSha256);
+    return handleResponse<Record<string, any>>(
+      await fetch(`${BASE_URL}/ingress/subspace/transfer/certify`, { method: 'POST', body: form }));
+  },
+
   // ---------------------------------------------------------------- ERA5 over Zarr
 
   async zarrCatalogue(): Promise<types.ZarrCatalogueResponse> {

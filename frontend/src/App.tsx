@@ -2504,7 +2504,7 @@ export default function App() {
 
           {/* TAB 9: DOMAIN-FIRST ACQUISITION (TG10.2) ---------------------------------- */}
           {activeTab === 'acquire' && (
-            <AcquisitionView onError={(message) => setError(message)}
+            <AcquisitionView onError={setError}
               selectedRecord={selectedRecord} onSelectRecord={setSelectedRecord}
               onCapability={setSelectedCapability} />
           )}

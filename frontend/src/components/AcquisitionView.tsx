@@ -38,8 +38,10 @@ export const AcquisitionView: React.FC<AcquisitionViewProps> = ({
   const [probes, setProbes] = useState<types.ZarrProbeLedgerResponse | null>(null);
   const [probe, setProbe] = useState<types.ZarrProbeRecord | null>(null);
   const [inspection, setInspection] = useState<types.ZarrInspectResponse | null>(null);
-  const [domainName, setDomainName] = useState('');
-  const [acquisitionId, setAcquisitionId] = useState('');
+  const [domainName, setDomainName] = useState(() =>
+    window.localStorage.getItem('spectral.acquire.domain') || '');
+  const [acquisitionId, setAcquisitionId] = useState(() =>
+    window.localStorage.getItem('spectral.acquire.path') || '');
   const [crop, setCrop] = useState<types.ZarrCropRequest>(DEFAULT_CROP);
   const [busy, setBusy] = useState(false);
 
@@ -62,14 +64,21 @@ export const AcquisitionView: React.FC<AcquisitionViewProps> = ({
       const selectedDomain = selectedRecord
         ? acquisitions.domains.find((domain) => domain.name === selectedRecord.record.domain)
         : undefined;
-      const first = selectedDomain || acquisitions.domains.find((domain) =>
+      const remembered = acquisitions.domains.find((domain) => domain.name === domainName);
+      const first = selectedDomain || remembered || acquisitions.domains.find((domain) =>
         domain.acquisitions.some((item) => item.available));
       if (first) {
         setDomainName(first.name);
+        const rememberedOption = first.acquisitions.find((item) =>
+          item.id === acquisitionId && item.available);
         const option = selectedRecord
           ? first.acquisitions.find((item) => item.shape === 'channel_table' && item.available)
-          : first.acquisitions.find((item) => item.available);
-        if (option) setAcquisitionId(option.id);
+          : rememberedOption || first.acquisitions.find((item) => item.available);
+        if (option) {
+          setAcquisitionId(option.id);
+          window.localStorage.setItem('spectral.acquire.domain', first.name);
+          window.localStorage.setItem('spectral.acquire.path', option.id);
+        }
       }
     }).catch(fail).finally(() => { if (live) setBusy(false); });
     return () => { live = false; };
@@ -83,7 +92,10 @@ export const AcquisitionView: React.FC<AcquisitionViewProps> = ({
   const chooseDomain = (name: string) => {
     const chosen = catalogue?.domains.find((row) => row.name === name);
     setDomainName(name);
-    setAcquisitionId(chosen?.acquisitions.find((item) => item.available)?.id || '');
+    const next = chosen?.acquisitions.find((item) => item.available)?.id || '';
+    setAcquisitionId(next);
+    window.localStorage.setItem('spectral.acquire.domain', name);
+    window.localStorage.setItem('spectral.acquire.path', next);
     setInspection(null);
     setProbe(null);
     onCapability?.(null);
@@ -92,6 +104,8 @@ export const AcquisitionView: React.FC<AcquisitionViewProps> = ({
   const chooseAcquisition = (option: types.AcquisitionOption) => {
     if (!option.available) return;
     setAcquisitionId(option.id);
+    window.localStorage.setItem('spectral.acquire.domain', domainName);
+    window.localStorage.setItem('spectral.acquire.path', option.id);
     setInspection(null);
     setProbe(null);
     onCapability?.(null);
