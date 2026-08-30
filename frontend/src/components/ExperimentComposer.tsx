@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Activity, AlertTriangle, CheckCircle2, FileLock2, Loader2, Save, Search } from 'lucide-react';
+import { Activity, AlertTriangle, CheckCircle2, FileLock2, Loader2, Save, Search, ShieldCheck } from 'lucide-react';
 import { apiService } from '../services/api';
+import { AdapterControlPanel } from './AdapterControls';
 import * as types from '../types/api';
 
 const SAVED_DRAFT_KEY = 'spectralearth.g17.composer.draft';
@@ -20,12 +21,15 @@ export default function ExperimentComposer({ onSelectStudy }: { onSelectStudy?: 
   const [preview, setPreview] = useState<types.StructuralTrajectoryPreview | null>(null);
   const [contract, setContract] = useState<Record<string, any> | null>(null);
   const [recipes, setRecipes] = useState<{ recipe_id: string; title: string }[]>([]);
+  const [adapters, setAdapters] = useState<types.DomainExperimentAdapterDescription[]>([]);
+  const [conformance, setConformance] = useState<types.AdapterConformanceReport[]>([]);
   const [busy, setBusy] = useState('');
   const [message, setMessage] = useState('');
 
   useEffect(() => {
     apiService.getExperimentComposerContract().then(setContract).catch(() => setContract(null));
     apiService.listExperimentRecipes().then((body) => setRecipes(body.recipes)).catch(() => setRecipes([]));
+    apiService.listExperimentAdapters().then((body) => setAdapters(body.adapters)).catch(() => setAdapters([]));
     const draft = localStorage.getItem(SAVED_DRAFT_KEY);
     const request = draft ? apiService.loadExperimentDraft(draft) : apiService.getFlagshipRecipe();
     request.then((body) => {
@@ -43,6 +47,30 @@ export default function ExperimentComposer({ onSelectStudy }: { onSelectStudy?: 
     return (n * (n - 1) / 2) * manifest.family.channels.length * manifest.family.scales.length
       * manifest.windows.length * manifest.family.relationships.length;
   }, [manifest]);
+
+  const adapterFor = (adapterId: string) => adapters.find((row) => row.adapter_id === adapterId);
+
+  const updateAdapterParameters = (domain: string, parameters: Record<string, any>) => {
+    if (!manifest) return;
+    setManifest({ ...manifest, observations: manifest.observations.map((row) => row.domain === domain
+      ? { ...row, adapter: { ...row.adapter, parameters } } : row) });
+    setIdentity(''); setPreflight(null); setPreview(null); setConformance([]);
+  };
+
+  const checkConformance = async () => {
+    if (!manifest) return;
+    setBusy('conformance'); setMessage('');
+    try {
+      const reports = await Promise.all(manifest.observations.map((row) =>
+        apiService.runAdapterConformance(row.adapter.adapter_id, row.adapter.parameters)));
+      setConformance(reports);
+      const failing = reports.filter((row) => !row.conformant).length;
+      setMessage(failing
+        ? `${failing} adapter(s) do not honour their own declaration.`
+        : 'Every declared adapter contract was executed against its known-answer record.');
+    } catch (error: any) { setMessage(error.message); }
+    finally { setBusy(''); }
+  };
 
   const updateWindow = (index: number, field: 'start_utc' | 'end_utc', value: string) => {
     if (!manifest) return;
@@ -176,12 +204,21 @@ export default function ExperimentComposer({ onSelectStudy }: { onSelectStudy?: 
         </section>
 
         <section className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-4">
-          <h3 className="font-semibold text-slate-100">3. Declared quartet and family</h3>
+          <h3 className="font-semibold text-slate-100">3. Declared domains and family</h3>
+          <p className="text-xs text-slate-500">Every control below is rendered from its adapter's
+            registered schema. This panel contains no per-domain form: a newly registered adapter
+            appears here with its own controls without this view being edited.</p>
           {manifest.observations.map((row) => (
-            <div key={row.domain} className="border-b border-slate-800 pb-2">
-              <div className="text-sm text-slate-200">{row.label}</div>
-              <div className="text-xs text-slate-500">{row.measure} · {row.units} · {row.acquisition.source_id}</div>
-            </div>
+            <details key={row.domain} className="border border-slate-800 rounded-lg p-3">
+              <summary className="cursor-pointer text-sm text-slate-200">{row.label}
+                <span className="block text-xs text-slate-500">{row.measure} · {row.units} · {row.acquisition.source_id}</span>
+              </summary>
+              <div className="mt-3">
+                <AdapterControlPanel adapter={adapterFor(row.adapter.adapter_id)}
+                  parameters={row.adapter.parameters}
+                  onChange={(next) => updateAdapterParameters(row.domain, next)} />
+              </div>
+            </details>
           ))}
           <div className="grid grid-cols-2 gap-2 text-xs">
             <div className="bg-slate-950 rounded p-3"><span className="text-slate-500 block">Family members</span>{declaredMembers}</div>
@@ -201,6 +238,9 @@ export default function ExperimentComposer({ onSelectStudy }: { onSelectStudy?: 
           </button>
           <button onClick={previewRepresentation} disabled={!!busy} className="px-4 py-2 rounded bg-cyan-700 hover:bg-cyan-600 disabled:opacity-50 text-sm flex gap-2 items-center">
             {busy === 'representation' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Activity className="w-4 h-4" />} Inspect structural contract
+          </button>
+          <button onClick={checkConformance} disabled={!!busy} className="px-4 py-2 rounded bg-indigo-700 hover:bg-indigo-600 disabled:opacity-50 text-sm flex gap-2 items-center">
+            {busy === 'conformance' ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />} Check adapter conformance
           </button>
           <button disabled title="TG17.6 delivers the authenticated resumable runner" className="px-4 py-2 rounded bg-slate-800 text-slate-500 text-sm cursor-not-allowed">Run experiment — not available yet</button>
         </div>
@@ -228,6 +268,35 @@ export default function ExperimentComposer({ onSelectStudy }: { onSelectStudy?: 
             {preflight.refusals.map((row, index) => <li key={index}>{row.domain ? `${row.domain}: ` : ''}{row.reason}</li>)}
           </ul>}
           <p className="text-xs text-slate-500 mt-4">{preflight.claim_boundary}</p>
+        </section>
+      )}
+
+      {conformance.length > 0 && (
+        <section className="border border-indigo-500/40 bg-indigo-500/5 rounded-xl p-5">
+          <h3 className="font-semibold flex gap-2 items-center"><ShieldCheck className="w-5 h-5 text-indigo-400" /> Adapter conformance</h3>
+          <p className="text-xs text-indigo-100/70 mt-1">Each declared invariance, refusal and null was executed against a deterministic known-answer record. A claim with no executable probe is shown as NOT_PROBED rather than as passing.</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
+            {conformance.map((report) => (
+              <div key={report.adapter_id} className="bg-slate-950/70 border border-slate-800 rounded-lg p-4">
+                <div className="flex justify-between gap-2 text-sm">
+                  <span className="font-semibold text-slate-100">{report.domain}</span>
+                  <span className={report.conformant ? 'text-emerald-300 text-xs' : 'text-amber-300 text-xs'}>
+                    {report.conformant ? 'conformant' : 'NOT conformant'}
+                  </span>
+                </div>
+                <ul className="mt-2 space-y-1">
+                  {report.checks.map((check) => (
+                    <li key={check.check} className="text-[11px] flex gap-2">
+                      <span className={check.status === 'PASS' ? 'text-emerald-400'
+                        : check.status === 'FAIL' ? 'text-red-400' : 'text-slate-500'}>{check.status}</span>
+                      <span className="text-slate-400">{check.check}</span>
+                    </li>
+                  ))}
+                </ul>
+                <p className="text-[10px] text-slate-500 mt-2">{report.claim_boundary}</p>
+              </div>
+            ))}
+          </div>
         </section>
       )}
 

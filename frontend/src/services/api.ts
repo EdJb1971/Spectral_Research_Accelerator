@@ -865,6 +865,19 @@ export const apiService = {
       }));
   },
 
+// ------------------------------------------ registered domain adapters (TG17.3)
+  async listExperimentAdapters(): Promise<{ schema: string; adapters: types.DomainExperimentAdapterDescription[]; claim_boundary: string }> {
+    return handleResponse<{ schema: string; adapters: types.DomainExperimentAdapterDescription[]; claim_boundary: string }>(
+      await fetch(`${BASE_URL}/experiment-composer/adapters`, { method: 'GET' }));
+  },
+
+  async runAdapterConformance(adapterId: string, parameters: Record<string, any>): Promise<types.AdapterConformanceReport> {
+    return handleResponse<types.AdapterConformanceReport>(
+      await fetch(`${BASE_URL}/experiment-composer/adapters/${encodeURIComponent(adapterId)}/conformance`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(parameters)
+      }));
+  },
+
   async previewStructuralTrajectories(manifest: types.CrossDomainExperimentManifest): Promise<types.StructuralTrajectoryPreview> {
     return handleResponse<types.StructuralTrajectoryPreview>(
       await fetch(`${BASE_URL}/experiment-composer/manifests/representation-preview`, {

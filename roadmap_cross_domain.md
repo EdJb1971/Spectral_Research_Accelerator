@@ -3845,7 +3845,7 @@ known-answer data, not acquired observations. Live adapter translation, order-bo
 analysis, evidence and rung movement remain later slices. Ten focused trajectory/API tests plus
 the frontend contract pass; the production TypeScript/Vite build passes.
 
-**TG17.3 Adapter registry, schema-driven controls and conformance kit — PLANNED.** Make acquisition
+**TG17.3 Adapter registry, schema-driven controls and conformance kit — DONE (2026-08-30, `ed-dev`).** Make acquisition
 plus structural translation a registered `DomainExperimentAdapter` contract rather than an
 orchestrator switch statement. A registration supplies the domain declaration, acquisition
 planner, typed UI schema, metadata preflight, materializer, canonical translator, capability
@@ -3863,6 +3863,74 @@ or runner fail review.
 in the domain selector with its controls, preflights and completes the fixture without editing the
 orchestrator, generic API routes or UI source. Onboarding-cost entries distinguish unavoidable
 domain mathematics from framework glue; glue must trend to zero rather than merely move files.
+
+**Delivered.** `DomainExperimentAdapter` is one registration carrying the domain declaration,
+a typed `ControlSchema`, the acquisition planner, translator configuration, materializer,
+structural declaration and translator, capability derivation, null builder and provenance
+renderer. `EXPERIMENT_ADAPTERS` is an ordinary registry, so the domain selector, the Composer
+controls and the metadata preflight read one source. `preflight_manifest` lost its literal
+`source_plans` table and its `channel_table:local` special case; a manifest naming an
+unregistered domain, the wrong adapter, a source that adapter does not reach, or parameters its
+controls refuse now refuses by name before acquisition.
+
+Window arithmetic stayed in the framework. An adapter declares only support kind, native cadence,
+exactness, access and cost per day; `plan_windows` derives expected samples, bytes and gap status
+identically for all of them. That is the line the onboarding-cost entries are measured against:
+`src/adapters/reanalysis.py` is a declaration, two controls and one plan, and the shared
+standardized-level translation, null, capability derivation and provenance rendering are written
+once in `standardized_level_adapter.py`. Argo and TESS register through the public seam from
+`extensions/`, so the extension point is exercised by this programme rather than demonstrated.
+
+The conformance kit runs ten checks and *executes* what a declaration claims. `INVARIANCE_PROBES`
+applies each named invariance to the native record and compares every canonical channel, so an
+adapter claiming `native_value_positive_scaling` must have it. An invariance with no registered
+probe reports `NOT_PROBED` rather than `PASS`. All four flagship adapters pass 11 of 11 checks
+against their deterministic known-answer records, visibly, through
+`POST /api/v1/experiment-composer/adapters/{adapter_id}/conformance`.
+
+**The fourth domain became a family rather than a finance adapter.** Order book is now one saved
+declaration of `bespoke_record`, the seam for any record a researcher holds and no catalogue
+describes. Its fence is TG8.4's rule imported unchanged — *detection may create a required
+declaration; it may never satisfy one*: an observed irregular clock obliges `irregular_sampling`
+on a domain that has already passed `onboard_domain`, an aggregate footprint obliges
+`aggregated_values`, a flat record is refused under a domain declaring richer axes, and a domain
+with `lag_policy="none"` gets `precedence` added to its refused operations by construction. A new
+bespoke domain is added by declaration alone, with no code — demonstrated on a `clinic_appointments`
+domain in the test suite.
+
+That flexibility is deliberately **not** treated as the acceptance evidence. A data-driven
+instance tests an adapter's parameters, not the registry's extension point, so the acceptance test
+installs a synthetic fifth adapter with genuinely different structural mathematics — a monotone
+rank channel — from a module the application never imports. It reaches the registry, the control
+schema, the conformance kit and the domain-blind mining seam with no edit to the orchestrator, the
+generic API routes or the UI source.
+
+**Three defects this slice forced out.** TG17.2's `assert_structural_conformance` reconstructed
+values from a hardcoded standardized-level formula and compared every configuration digest against
+`{"ddof": 0}` — one domain's mathematics inside the domain-blind pass, which failed the fifth
+adapter for having different and correct arithmetic. `LINEAGE_RECONSTRUCTORS` now dispatches on the
+declared operation, and an unregistered operation fails rather than passes.
+
+The other two are in the documentation guard, and the second was hiding under the first. **D74**:
+the route-count regex matched the words "those routes" written into architecture.md by TG17.1,
+373 lines above the heading that carries the claim, so it parsed neither a numeral nor a spelled
+number and the comparison was never reached. Repairing it let the comparison run for the first
+time since TG17.1 — and it disagreed by far more than this slice had added. **D75**: `_routes()`
+enumerated a hand-maintained list of ten source files, and four mounted routers were missing from
+it, so **32 served endpoints were invisible to every check in that file**, the whole TG16 ingress
+surface among them. architecture.md claimed 75 routes, **107 are served**, and the table headed
+*"an undocumented endpoint is an untested contract"* was missing 21 rows. The list is deleted
+rather than corrected: routes now come from the application object, which cannot omit a mounted
+router. `test_frontend_contract.py` had enumerated `app.routes` since T3.5.22, so the two guards
+had disagreed about what the API is for four slices.
+
+`AdapterControls.tsx` renders the declared schema — its only switch is on a control's `kind` — and
+the Composer has no per-domain form. 18 focused adapter tests pass (15 functions, 4 parametrised),
+the TG17.1 and TG17.2 suites remain green with one deliberately updated refusal-wording assertion,
+and the production TypeScript/Vite build passes at 1,402 modules. No live archive is acquired, no
+cross-domain statistic runs, no evidence is written and no claim rung moves; the `source_binding`
+control makes the known-answer binding a visible manifest-recorded choice and the live binding
+refuses by naming TG17.6.
 
 **TG17.4 Clock, support and coverage semantics — PLANNED.** Calendar mode compares interval support,
 not equal row indices. Every structural observation carries `[start, end)` support and presence;

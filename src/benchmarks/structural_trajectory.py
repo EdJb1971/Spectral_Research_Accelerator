@@ -21,13 +21,14 @@ from src.core.structural_trajectory import (
 
 
 FIXTURE_TO_MANIFEST = {"reanalysis": "reanalysis", "argo": "argo_float",
-                       "tess": "tess_lightcurve"}
+                       "tess": "tess_lightcurve", "order_book": "order_book"}
 MANIFEST_TO_FIXTURE = {value: key for key, value in FIXTURE_TO_MANIFEST.items()}
 
 _NATIVE = {
     "reanalysis": ("air temperature anomaly", "K", "air_temperature"),
     "argo_float": ("practical salinity profile structure", "1e-3", "salinity"),
     "tess_lightcurve": ("relative stellar flux", "dimensionless", "relative_flux"),
+    "order_book": ("aggregated traded volume", "shares", "aggregated_volume"),
 }
 
 
@@ -70,6 +71,18 @@ def native_from_fixture(fixture: NativeDomainFixture) -> NativeStructuralRecord:
         native_locator="benchmark://multidomain_flagship/shared_calendar_event/%s" % fixture.domain,
         assumption_violations=fixture.violations,
     )
+
+
+def known_answer_native(domain: str, seed: int = 20260830) -> NativeStructuralRecord:
+    """The deterministic TG17.0 native record for one manifest domain (TG17.3).
+
+    Registered adapters bind to this by an explicit `source_binding` control, so a record that
+    carries a planted answer can never be mistaken for an acquired observation: the choice is
+    visible in the manifest and travels with every result derived from it.
+    """
+    fixture_domain = MANIFEST_TO_FIXTURE[domain]
+    data = build_multidomain_flagship(derive("g17.2-structural-preview", seed), focus="planted")
+    return native_from_fixture(data.cases["shared_calendar_event"].domains[fixture_domain])
 
 
 def known_answer_trajectories(seed: int = 20260830) -> Mapping[str, StructuralTrajectory]:
@@ -136,4 +149,5 @@ def known_answer_preview(seed: int = 20260830) -> Dict[str, Any]:
 
 
 __all__ = ["FIXTURE_TO_MANIFEST", "MANIFEST_TO_FIXTURE", "known_answer_declaration",
-           "known_answer_preview", "known_answer_trajectories", "native_from_fixture"]
+           "known_answer_native", "known_answer_preview", "known_answer_trajectories",
+           "native_from_fixture"]

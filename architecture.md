@@ -4332,6 +4332,100 @@ coverage, units, scale, limits and identities. It labels the values as determini
 records, not acquired observations. Live acquisition translation, the fourth production adapter,
 cross-domain statistics, evidence and rung movement remain unavailable until later G17 slices.
 
+#### 3.6zzm Adapter registry, schema-driven controls and conformance kit (TG17.3)
+
+`src/core/experiment_adapter.py` makes acquisition plus structural translation a registered
+`DomainExperimentAdapter` rather than an orchestrator switch. One registration supplies the
+domain declaration, a typed `ControlSchema`, the acquisition planner, the translator
+configuration, the materializer, the structural declaration and translator, capability
+derivation, the null builder and the provenance renderer. `EXPERIMENT_ADAPTERS` is an ordinary
+`Registry`, so the acquisition catalogue, the Composer controls and the metadata preflight all
+read one source rather than three hand-maintained lists.
+
+Window arithmetic is deliberately **not** an adapter responsibility. `plan_acquisition` returns
+only what the domain knows - support kind, native cadence, whether an extent establishes exact
+coverage, access, and cost per day - and the framework's `plan_windows` derives expected samples,
+bytes and gap status identically for every domain. Four adapters computing their own expected
+sample counts would have become four definitions of "expected" whose coverage-matrix columns
+could not be compared.
+
+An adapter cannot register over a domain that has not passed `onboard_domain`; it cannot claim
+exact coverage on sparse or sector-bounded support; and a domain whose lag policy declares no
+admissible floor has `precedence` added to its refused operations by construction rather than by
+an author remembering (R21).
+
+`src/core/adapter_conformance.py` executes what a declaration claims. Ten checks cover control
+schema agreement, coverage honesty, bounded resource planning, deterministic translation, content
+addressing, axis and role validation, gap preservation, refusal propagation, declared invariances
+and null suitability. The invariance checks are the interesting half: `INVARIANCE_PROBES` applies
+the named transform to the native record and compares every canonical channel, so an adapter
+claiming `native_value_positive_scaling` must actually have it. An invariance with no registered
+probe reports `NOT_PROBED` rather than `PASS` - silently passing an unexecuted claim is the
+failure the kit exists to prevent.
+
+`src/core/structural_nulls.py` supplies the domain-legitimate null in the framework rather than
+per adapter. `circular_clock_shift` rolls the canonical values by a seeded offset and leaves the
+native clock, interval support, gaps and marginal distribution exactly where they were, destroying
+only cross-record alignment. The surrogate is labelled as one: it carries a `null:` trajectory id
+and recomputed lineage and digests, so it cannot masquerade as a projection that reconstructs.
+
+**Two fixes this slice forced.** TG17.2's `assert_structural_conformance` reconstructed every
+canonical value from a hardcoded standardized-level formula and compared every configuration
+digest against `{"ddof": 0}`. That made the supposedly domain-blind conformance pass carry one
+domain's mathematics inside it: a second channel definition failed conformance for having
+different - correct - arithmetic. `LINEAGE_RECONSTRUCTORS` now dispatches on the operation the
+lineage itself declares, and an operation with no registered reconstructor **fails**, because a
+canonical value nobody can independently rebuild is not provenanced by carrying a digest. The
+translator configuration became a declared part of the adapter contract for the same reason.
+
+`src/adapters/standardized_level_adapter.py` is the onboarding-cost measurement. Four domains
+running the same benchmarked translation share one implementation; each domain module supplies
+only its declaration, controls, acquisition plan, accepted semantics and units, and record
+binding. `src/adapters/reanalysis.py` is that list and nothing else. `extensions/argo_float.py`
+and `extensions/tess_lightcurve.py` register through the same public seam from outside `src`,
+so the extension point is exercised by this programme's own adapters rather than demonstrated
+separately.
+
+**The bespoke record family.** `src/adapters/bespoke_record.py` generalises order book out of
+being a finance adapter. Three flagship domains reach a public archive with a documented
+addressing scheme; the fourth is whatever record a researcher holds - a venue's aggregated trade
+volume, a clinic's appointment log, a factory line's cycle counter. Writing the one example into
+the code would have left every other bespoke record needing another adapter, so the module is the
+family and `order_book` is its first saved declaration.
+
+Its fence is TG8.4's rule, imported rather than restated: *detection may create a required
+declaration; it may never satisfy one*. `assert_record_admissible` observes the clock with
+`clock_facts`, converts that into obligations with `required_violations`, and refuses until the
+researcher's domain has already declared them. `assert_domain_admits_channel_table` refuses a
+domain whose declared axes a flat record cannot supply; an aggregate footprint obliges
+`aggregated_values`; and identity is the record's sha256, never a filename, because a file edited
+in place keeps its name and becomes a different record. Until a record is bound the acquisition
+plan carries a refusal rather than a plan, which is why the flagship recipe still preflights as
+`REFUSED` - with wording no longer specific to order books.
+
+A bespoke domain is therefore added by declaration alone, with no code. That is **not** evidence
+that the adapter seam works: a data-driven instance tests an adapter's parameters, not the
+registry's extension point. TG17.3's acceptance is met by the synthetic fifth adapter in
+`src/tests/test_adapter_registry.py`, which carries genuinely different structural mathematics
+(a monotone rank channel), is defined outside `src/adapters` and `extensions` in a module the
+application never imports, and reaches the registry, the control schema, the conformance kit and
+the domain-blind mining seam without any edit to the orchestrator, the generic API routes or the
+UI.
+
+`src/api/experiment_composer.py` serves the registry at `GET .../adapters`
+and `POST .../adapters/{adapter_id}/conformance` - each list row already carries the whole
+adapter description, so a per-adapter route would have been an endpoint nothing reaches - and
+`preflight_manifest` now resolves every coverage row through the registered adapter - replacing
+the literal `source_plans` table and its `channel_table:local` special case. A manifest naming a
+domain with no registered adapter, an adapter its domain does not have, a source its adapter does
+not reach, or parameters its controls refuse now refuses by name at preflight rather than at run
+time. `frontend/src/components/AdapterControls.tsx` renders the declared schema; its only switch
+is on a control's `kind`, and the Composer contains no per-domain form.
+
+This slice does not acquire a live archive, run a cross-domain statistic, write evidence or move a
+claim rung. The `source_binding` control makes the deterministic known-answer binding a visible
+choice recorded in the manifest, and the live binding refuses by naming TG17.6.
+
 ### 3.11 Ground-Truth Benchmark Suite (`src/benchmarks/`)
 
 Added in T3.5.17 (standard E7). Twenty-four synthetic datasets whose correct answer is known
@@ -4656,7 +4750,7 @@ reason in the test itself.
 
 ## 3.12 HTTP API Surface
 
-75 routes. Listed here because an undocumented endpoint is an untested contract.
+107 routes. Listed here because an undocumented endpoint is an untested contract. The count and this table were both wrong until TG17.3 (defect D75): the guard enumerated a hand-maintained list of ten source files and could not see four mounted routers.
 
 | Method | Route | Notes |
 |---|---|---|
@@ -4735,6 +4829,39 @@ reason in the test itself.
 | GET | `/api/v1/findings/studies/{study_id}/outputs` | the five outputs untranslated, for checking the wording changed no fact |
 | GET | `/api/v1/findings/studies/{study_id}/translation` | the finding rendered in one domain's words; R9's six figures whole or absent |
 | GET | `/api/v1/reviews/studies/{study_id}` | verified recorded calls, round-robin outcomes and cost receipts bound to the latest exact bundle revision; read-only and never claim permission (TG11.5) |
+
+| GET | `/api/v1/profiles` | registered Argo profile sources and the access each needs (TG12.2) |
+| POST | `/api/v1/profiles/inspect` | what a profile query would return, from metadata; opens no values (TG12.2) |
+| POST | `/api/v1/profiles/acquire` | acquire profiles against an explicit network opt-in (TG12.2) |
+| GET | `/api/v1/lightcurves` | registered TESS/SPOC light-curve sources and the access each needs (TG12.3) |
+| POST | `/api/v1/lightcurves/inspect` | which sectors intersect a request, never reported as exact coverage (TG12.3) |
+| POST | `/api/v1/lightcurves/acquire` | acquire light curves against an explicit network opt-in (TG12.3) |
+| POST | `/api/v1/ingress/probe` | what an uploaded record is, stated without deciding what any domain may do about it (TG16.0) |
+| POST | `/api/v1/ingress/plan` | the declared representation plan for a probed record (TG16.0) |
+| POST | `/api/v1/ingress/capabilities` | paths derived from explicit semantics and exact bytes; infers no column meaning (TG16.0) |
+| POST | `/api/v1/ingress/audit` | the record's declared plan re-derived and compared (TG16.0) |
+| POST | `/api/v1/ingress/structure/plan` | the frozen structure-mining plan before any outcome is opened (TG16.1) |
+| POST | `/api/v1/ingress/structure/audit` | that plan re-derived from its own declaration (TG16.1) |
+| POST | `/api/v1/ingress/conditional/plan` | the conditional-dependence family and its correction, priced before it is run (TG16.2) |
+| POST | `/api/v1/ingress/conditional/audit` | that family re-derived and compared (TG16.2) |
+| POST | `/api/v1/ingress/subspace/plan` | the bounded sealed linear subspace family, priced before generation (TG16.3) |
+| POST | `/api/v1/ingress/subspace/generate` | generate-only scaling and fitting within the sealed family (TG16.3) |
+| POST | `/api/v1/ingress/subspace/freeze` | freeze all confirmation settings before opening the reserved outcomes (TG16.4) |
+| POST | `/api/v1/ingress/subspace/confirm` | apply the frozen family unchanged and spend its held-out partition once (TG16.4) |
+| POST | `/api/v1/ingress/subspace/publish` | publish one generated candidate definition; claims no replication (TG16.5) |
+| POST | `/api/v1/ingress/subspace/transfer/freeze` | bind published definitions to target metadata before target values are supplied (TG16.5) |
+| POST | `/api/v1/ingress/subspace/transfer/certify` | spend and open one target, then execute its no-adaptation transfer contract once (TG16.5) |
+| GET | `/api/v1/experiment-composer` | the comparison modes, duration presets, registered domains and the explicit boundary of what is not yet available (TG17.1/TG17.3) |
+| GET | `/api/v1/experiment-composer/recipes` | saved complete manifests, not code generators or hidden defaults (TG17.1) |
+| GET | `/api/v1/experiment-composer/recipes/g17-flagship-calendar` | the TG17.0 quartet expressed in the manifest schema (TG17.1) |
+| GET | `/api/v1/experiment-composer/adapters` | every registered `DomainExperimentAdapter` and its typed control schema, generated from the registry (TG17.3) |
+| POST | `/api/v1/experiment-composer/adapters/{adapter_id}/conformance` | the conformance kit run against that adapter's deterministic known-answer record; declared-but-unprobed invariances report `NOT_PROBED` rather than passing (TG17.3) |
+| POST | `/api/v1/experiment-composer/manifests/validate` | one immutable manifest's content digest and run identity (TG17.1) |
+| POST | `/api/v1/experiment-composer/manifests/preflight` | metadata-only coverage planning from each domain's registered adapter; no network and no measurement values (TG17.1/TG17.3) |
+| POST | `/api/v1/experiment-composer/manifests/representation-preview` | the canonical `StructuralTrajectory` contract on frozen fixtures, labelled as known-answer data (TG17.2) |
+| PUT | `/api/v1/experiment-composer/drafts/{draft_id}` | move a draft pointer to a new immutable content-addressed revision (TG17.1) |
+| GET | `/api/v1/experiment-composer/drafts/{draft_id}` | the manifest a saved draft currently points at (TG17.1) |
+| GET | `/api/v1/experiment-composer/manifests/{manifest_sha256}` | one immutable manifest revision by content digest (TG17.1) |
 
 ## 3A. Phase 4A - The Time Axis and the Artifact Store
 
@@ -5596,6 +5723,8 @@ code paths that `architecture.md` previously described as implemented and rigoro
 | D71 | `core/publication.py:publish_new_bytes`, `data_layer/era5_overlap.py`, `analysis_engine/gate_run.py`, `analysis_engine/gate_campaign.py`, `forecasting/evaluation_run.py`, `forecasting/evaluation_job.py` | **The independent ERA5 receipt could not be published on the drive the repository lives on, and the same scientific guarantee had five private implementations.** The measured failure was narrower than the first ledger wording: `era5_overlap` called `os.link` unconditionally and failed on `D:` because exFAT has no hard links; the other four already used Windows rename and therefore did not share that particular failure. They did share an unowned semantics boundary whose implementations had already drifted. `publish_new_bytes` now writes and fsyncs a random same-directory temporary, then uses an OS atomic no-replace primitive: Windows rename, Linux `renameat2(RENAME_NOREPLACE)`, macOS `renamex_np(RENAME_EXCL)`, or POSIX hard-link fallback. It never check-then-renames and never replaces. Eight spawned publishers on the actual repository volume produce exactly one complete winner; existing bytes survive, injected failure leaves neither target nor temporary, all five writer suites pass, and both previously failing CDS overlap cases publish and reload on exFAT. The claim is process-crash atomicity; sudden-power-loss durability remains a filesystem/device property. | **FIXED** TG12.1c (`ed-dev`) |
 | D72 | `data_layer/zarr_source.py:_main` | **The command the UI generates could not run against the store it names.** The Acquire tab's Inspect panel prints a ready-to-paste `materialise` line, and for GLORYS it failed twice over. `--levels` was parsed with `tuple(int(v) for v in ...)`, so the fractional elevation the panel itself supplied raised `ValueError: invalid literal for int() with base 10: '-0.49402499198913574'` before any work began; and the spec was built by calling `CropSpec(...)` directly rather than `crop_for_store(...)`, so `vertical_dim` took ERA5's default of `level` for every store, meaning even a corrected level would have been selected on an axis GLORYS does not have. `crop_for_store` already existed for exactly this and the HTTP route already used it (`api/main.py:1188`); only the CLI had been left behind. This is the **fourth** appearance of one defect: D68 taught `CropSpec` and `ZarrCropRequest` to carry a fractional level, D70 found the readiness assessment still truncating one with `int()`, and this is the entry point a researcher is actually told to use. Levels now parse integer-first, so ERA5's `850,700,500,300` stays integral and no pinned content key moves, while a non-integer literal is kept as a float and an unparseable one is refused by name. Found by a researcher running the command the UI gave them. | **FIXED** TG12.1b (`ed-dev`) |
 | D73 | `data_layer/zarr_source.py`, `data_layer/crop_planner.py`, `api/main.py`, `frontend/components/AcquisitionView.tsx` | **Acquisition discovered transform invalidity after the expensive step, and the command did not preserve the analysis it appeared to plan.** Inspect used one generic 14-tap margin and returned geometry the UI did not render; the generated command omitted `--analysis-levels`, so changing the requested analysis depth still materialised under the CLI default. Crop sizing was therefore a hidden global convention rather than a contract of the requested transform. `TransformSpec` now owns an optional implementation-derived support callback; a content-addressed metadata-only plan reports absolute and named research-policy thresholds, per-level valid interiors, feasible native-coordinate expansion and its re-priced chunk cost. Acquire renders exact transform/filter/depth controls and applies recommended bounds in one action; the generated CLI preserves every setting; explicit materialisation refuses below the recommended threshold before field selection or transfer. Legacy callers remain byte-compatible when no analysis request is supplied. | **FIXED** TG12.1d (`ed-dev`) |
+| D74 | `tests/test_documentation.py:test_route_count_claim_matches_reality` | **The route-count guard stopped reading the route count.** Its claim regex was `(\w+|\d+) routes` searched over the whole document, and TG17.1 wrote the words *"those routes"* into section 3.6zzk - 373 lines above the `## 3.12 HTTP API Surface` heading that carries the claim. From that commit the match was `"those"`, which parses as neither a numeral nor a spelled number, so the parsed value was `None` and the comparison against the served count was never reached. The claim was therefore unchecked from TG17.1 onward, and lifting the regex exposed a second and larger defect underneath it (D75). Fixed by anchoring the search to the section that carries the claim and by failing loudly when the claimed token cannot be parsed as a number: a claim this guard cannot read is a claim it is not checking, and that must fail rather than pass silently. | **FIXED** TG17.3 (`ed-dev`) |
+| D75 | `tests/test_documentation.py:_ROUTE_SOURCES` | **The route guard's coverage was a hand-maintained list, and four mounted routers were not on it.** `_routes()` parsed ten named source files. `src/api/main.py` mounts thirteen routers, and `profiles`, `lightcurves`, `ingress` and `experiment_composer` were absent — so **32 served endpoints were invisible to every check in this file**, including the entire TG16 ingress surface (`/subspace/freeze`, `/subspace/confirm`, `/subspace/transfer/certify` and thirteen more) that carries the held-out and transfer contracts. The count claim the guard validated was a count of the subset its own list named, which is why it read as consistent: architecture.md said 75 and **107 are served**, and the section 3.12 table — headed *"Listed here because an undocumented endpoint is an untested contract"* — was missing 21 rows. Found in TG17.3 while fixing D74: repairing the claim regex let the comparison run for the first time since TG17.1, and it disagreed by more than the routes that slice had added. `src/tests/test_frontend_contract.py` had enumerated `app.routes` since T3.5.22 and could see the composer surface throughout, so the two guards had disagreed about what the API is for four slices. Fixed by deleting the list: routes now come from the application object, which cannot omit a mounted router. The table is complete and the claim reads 107. | **FIXED** TG17.3 (`ed-dev`) |
 
 **Root cause common to D20, D23, D25 and D2:** the transform engine — the mathematical core of
 the platform — had **no test file at all**. `src/tests/test_transforms.py` now exists (36 cases
@@ -5753,6 +5882,7 @@ able to sit three slices out of date.
 | `test_experiments.py` | 3 | declarative sweeps and lineage |
 | `test_experiment_manifest.py` | 12 | TG17.1 immutable cross-domain manifest, byte-stable API/run identity, explicit window family, native-support metadata planning, visible partial/refusal policy, content-addressed draft revisions, recipe/API round trip and no premature run route |
 | `test_structural_trajectory.py` | 10 | TG17.2 immutable canonical trajectory, exact native clock/support/gap preservation, domain-blind weather/Argo/TESS mining seam, complete value reconstruction, adapter declarations/digests, semantic-leakage and interpolation refusals, full-fidelity preview and visible API boundary |
+| `test_adapter_registry.py` | 15 | TG17.3 registered adapter contract, typed control schemas and their refusal of undeclared parameters, the ten-check conformance kit including executed invariance probes and `NOT_PROBED` reporting, unreconstructable lineage refusal, coverage-honesty and byte-cap failures, the four flagship adapters, the two that register from outside `src`, the bespoke record family's TG8.4 fence, and the synthetic fifth adapter installed through the extension seam with no orchestrator, route or UI edit |
 | `test_exports.py` | 32 | CSV/JSON/NetCDF4/Zarr round trips, embedded provenance, seeded perturbation (D34) |
 | `test_external_fcn3.py` | 9 | T5.6a offline FCN3 request/result schemas, exact global input and ensemble contracts, portability refusals, canonical persistence, file/tree identity and request/artifact tamper isolation |
 | `test_external_ensemble_evaluation.py` | 8 | T5.6c exact truth/initialization alignment, member/mean/persistence errors, analytic CRPS and spread, area-weighted fractional-tie ranks, bounded lazy reads, content identity and scientific refusal contracts |
@@ -5765,7 +5895,7 @@ able to sit three slices out of date.
 | `test_forecasting_artifact_evaluation.py` | 8 | T5.3b/T5.2d checkpoint/config integrity, artifact-bound lineage, persistence-relative metrics, physical-time reporting/refusals, undefined-skill handling and CPU/RTX vendor-neutral accelerator parity |
 | `test_forecasting_protocol.py` | 7 | T5.0a exact schema completeness, canonical identity, immutable nested configuration, evidence requirements, temporal/rollout consistency, persistence and tamper/drift refusal |
 | `test_forecasting_protocol_binding.py` | 4 | T5.0b exact dataset/protocol/checkpoint binding, recomputed coordinate/statistics identities, drift refusals and bound-evaluation cross-run isolation |
-| `test_frontend_contract.py` | 96 | the frontend/backend contract, including dataset-bound navigation gating with visible backend refusal reasons, capability profiles showing yes/no/not-established facts, transform/dataset/cadence readiness claim boundaries, domain-driven acquisition, workflow-grouped navigation, persistent record/study context, the TG11.1 analysis panel's three engine operations, R21 disablement, three-valued verdict and re-read identity check, the TG11.2 preregistration panel's declare-never-decide split, TG11.5's separate GET-only recorded-review workspace with its visible R23 fence, complete argument/cost display and honest empty states, TG17.1's manifest-driven save/reload/preflight Composer, TG17.2's known-answer structural-contract inspector and disabled premature runner, preservation of every ERA5 control, and TG11.6's skip/route focus, bound labels, global focus and reduced-motion rule, keyboard SVG lineage, figure text equivalents and asynchronous-state semantics, plus the UI integrity guards: no fabricated results, no unqualified validation claims, units and slope uncertainty displayed |
+| `test_frontend_contract.py` | 101 | the frontend/backend contract, including dataset-bound navigation gating with visible backend refusal reasons, capability profiles showing yes/no/not-established facts, transform/dataset/cadence readiness claim boundaries, domain-driven acquisition, workflow-grouped navigation, persistent record/study context, the TG11.1 analysis panel's three engine operations, R21 disablement, three-valued verdict and re-read identity check, the TG11.2 preregistration panel's declare-never-decide split, TG11.5's separate GET-only recorded-review workspace with its visible R23 fence, complete argument/cost display and honest empty states, TG17.1's manifest-driven save/reload/preflight Composer, TG17.2's known-answer structural-contract inspector and disabled premature runner, preservation of every ERA5 control, TG17.3's schema-driven adapter controls with no per-domain branch in the generic composer, every registrable control kind having a renderer, and the adapter/conformance payload shapes, plus TG11.6's skip/route focus, bound labels, global focus and reduced-motion rule, keyboard SVG lineage, figure text equivalents and asynchronous-state semantics, plus the UI integrity guards: no fabricated results, no unqualified validation claims, units and slope uncertainty displayed |
 | `test_gate_run.py` | 1 | T4C.5d frozen plan, local-only preflight, bounded train-only climatology/signatures, authenticated synthetic gate receipt, no-overwrite and tamper refusal |
 | `test_gate_campaign.py` | 6 | T4C.5f-h exact campaign identity, strict nested schema, canary/full/WeatherBench drift refusals, pre-transfer R13/physical-lag audit, aggregate storage/readiness, immutable freeze/load, pinned real preregistration and zero-network CLI (8 pytest cases) |
 | `test_grid_operators.py` | 64 | grid metrics, metric-aware gradient/Laplacian, area weighting, physical-wavenumber spectra, D26 |
@@ -5809,7 +5939,7 @@ able to sit three slices out of date.
 | `test_representation_structure.py` | 6 | TG16.1 complete pair enumeration, joint redundancy/complementarity/XOR/null discrimination, sealed estimator/null/family and permutation-resolution refusal, content/tamper binding, non-removal claim boundary, earned capability registration, and multipart plan/run workflow |
 | `test_conditional_information.py` | 6 | TG16.2 conditional-signal/null/collider discrimination, overlap and effective-support admission, sealed conditional-randomisation family and permutation-resolution refusal, content/tamper binding, conditional-only claim boundary, earned nuisance capability, and multipart plan/run workflow |
 | `test_stable_subspace.py` | 13 | TG16.3 span/projector invariance, planted linear and null discrimination, optional nuisance-region stability boundary, sealed complete family/optimizer/partition and permutation-resolution refusal, content/tamper binding and multipart plan/generate; TG16.4 unchanged held-out application, complete-family correction, nuisance-overlap refusal, content-bound seal, publication check and durable one-opening ledger; TG16.5 published definitions, no-adaptation external contract, provenance/content binding, target spending, and multipart certification |
-  | **total** | **2432** | |
+  | **total** | **2476** | |
 ### 7.2h A surrogate null that was not the null it claimed (T4C.5)
 
 The most instructive defect of the project so far, because it passed every structural check.

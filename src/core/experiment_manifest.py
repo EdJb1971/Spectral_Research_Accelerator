@@ -178,23 +178,36 @@ def manifest_envelope(spec: CrossDomainExperimentSpec) -> Dict[str, Any]:
 
 
 def _flagship_observations() -> List[Dict[str, Any]]:
+    """TG17.0's quartet, addressed through the adapters registered for each domain.
+
+    The adapter identities are real registrations since TG17.3, not the ``planned-tg17.2``
+    placeholders TG17.1 carried, and each domain's request parameters live in the adapter's own
+    declared controls rather than in a free-form source dictionary. A manifest whose parameters
+    its adapter would refuse now refuses at preflight instead of at run time.
+    """
     rows = [
         ("reanalysis", "ERA5 reanalysis", "air_temperature", "air temperature", "K",
-         "grid_crop:era5_0p25_1h_full37", "CDS-era5", {"variable": "temperature", "level_hpa": 850}),
+         "grid_crop:era5_0p25_1h_full37", "CDS-era5", "reanalysis.standardized-level",
+         {"variable": "temperature", "level_hpa": 850}),
         ("argo_float", "Argo floats", "salinity", "practical salinity", "1e-3",
-         "profile_query:argo_gdac_erddap", "Argo-GDAC", {"pressure_dbar": 100}),
-        ("tess_lightcurve", "TESS light curves", "relative_flux", "relative stellar flux", "dimensionless",
-         "lightcurve_query:mast_tess_spoc", "MAST-TESS-SPOC", {"cadence": "short"}),
+         "profile_query:argo_gdac_erddap", "Argo-GDAC", "argo_float.standardized-level",
+         {"pressure_dbar": 100.0}),
+        ("tess_lightcurve", "TESS light curves", "relative_flux", "relative stellar flux",
+         "dimensionless", "lightcurve_query:mast_tess_spoc", "MAST-TESS-SPOC",
+         "tess_lightcurve.standardized-level", {"cadence": "short"}),
         ("order_book", "Order book", "aggregated_volume", "aggregated traded volume", "shares",
-         "channel_table:local", "user-supplied-v1", {"clock_column": "timestamp"}),
+         "channel_table:local", "user-supplied-v1", "order_book.bespoke_record",
+         {"time_column": "timestamp"}),
     ]
     return [{"domain": domain, "label": label, "role": "structural_observation",
              "measure": measure, "semantics": semantics, "units": units,
              "acquisition": {"source_id": source, "source_version": version,
-                             "identity": {"licence_scope": "source-declared"}, "parameters": params},
-             "adapter": {"adapter_id": "%s.structural" % domain, "adapter_version": "planned-tg17.2",
-                         "parameters": {}}}
-            for domain, label, measure, semantics, units, source, version, params in rows]
+                             "identity": {"licence_scope": "source-declared"},
+                             "parameters": {}},
+             "adapter": {"adapter_id": adapter_id, "adapter_version": "tg17.3-v1",
+                         "parameters": params}}
+            for domain, label, measure, semantics, units, source, version, adapter_id, params
+            in rows]
 
 
 def flagship_recipe() -> CrossDomainExperimentSpec:
@@ -225,69 +238,113 @@ def flagship_recipe() -> CrossDomainExperimentSpec:
 
 
 def preflight_manifest(spec: CrossDomainExperimentSpec) -> Dict[str, Any]:
-    """Plan archive coverage without network access or measurement-value reads."""
-    source_plans = {
-        "grid_crop:era5_0p25_1h_full37": ("regular_grid_extent", 3600, True, "credentials_required", 2_000_000),
-        "profile_query:argo_gdac_erddap": ("sparse_point_support", None, False, "public_network", 24_000),
-        "lightcurve_query:mast_tess_spoc": ("intersecting_observational_sectors", 120, False, "public_network", 80_000),
-        "channel_table:local": ("irregular_local_record", None, False, "local_file_binding", 0),
-    }
-    rows, refusals = [], []
+    """Plan archive coverage without network access or measurement-value reads.
+
+    Since TG17.3 every row comes from the domain's registered `DomainExperimentAdapter`. The
+    literal ``source_plans`` table this replaced was a fifth place a new domain had to be
+    remembered; it is now a place a new domain cannot be forgotten, because a manifest naming a
+    domain with no registered adapter refuses by name instead of falling through to a default.
+    """
+    from src.adapters import register_all_adapters
+    from src.core.experiment_adapter import adapter_for_domain, plan_windows
+
+    register_all_adapters()
+    rows: List[Dict[str, Any]] = []
+    refusals: List[Dict[str, Any]] = []
     for observation in spec.observations:
-        source = observation.acquisition.source_id
-        plan = source_plans.get(source)
-        if plan is None:
-            reason = "no metadata planner is registered for acquisition %s" % source
-            rows.append({"domain": observation.domain, "status": "REFUSED", "reason": reason,
-                         "source_id": source})
-            refusals.append({"domain": observation.domain, "reason": reason})
-            continue
-        support, cadence, exact, access, bytes_per_day = plan
-        local_missing = source == "channel_table:local" and not observation.acquisition.identity.get("content_sha256")
-        if local_missing:
-            status, reason = "REFUSED", "select a content-addressed local order-book record"
-            refusals.append({"domain": observation.domain, "reason": reason})
-        else:
-            status = "PARTIAL" if not exact else "READY"
-            reason = ("native support is sparse or sector-bounded; exact coverage is established only after acquisition"
-                      if not exact else "requested UTC extent is addressable from metadata")
-        windows = []
-        for window in spec.windows:
-            seconds = (window.end_utc - window.start_utc).total_seconds()
-            expected = int(seconds // cadence) if cadence else None
-            windows.append({"name": window.name, "start_utc": _json_value(window.start_utc),
-                            "end_utc": _json_value(window.end_utc), "expected_samples": expected,
-                            "expected_samples_basis": ("nominal product cadence if archive coverage exists"
-                                                       if cadence else "unknown for native sparse/irregular support"),
-                            "estimated_bytes": int(seconds / 86400 * bytes_per_day),
-                            "coverage_exact": exact,
-                            "gaps": ("not established until archive metadata is returned"
-                                     if not exact else "none implied by extent metadata")})
-        rows.append({"domain": observation.domain, "label": observation.label,
-                     "source_id": source, "measure": observation.measure, "status": status,
-                     "reason": reason, "support_kind": support,
-                     "native_cadence_seconds": cadence, "access": access,
-                     "native_addressing": {"source_version": observation.acquisition.source_version,
-                                           "identity": observation.acquisition.identity,
-                                           "parameters": observation.acquisition.parameters},
-                     "opens_measurement_values": False, "windows": windows})
+        row, refusal = _preflight_observation(spec, observation, adapter_for_domain, plan_windows)
+        rows.append(row)
+        if refusal:
+            refusals.append(refusal)
     family_members = (len(spec.observations) * (len(spec.observations) - 1) // 2
                       * len(spec.family.channels) * len(spec.family.scales)
                       * len(spec.windows) * len(spec.family.relationships))
     if family_members > spec.resource_caps.maximum_family_members:
         refusals.append({"domain": None, "reason": "declared family has %d members; cap is %d" %
                          (family_members, spec.resource_caps.maximum_family_members)})
+    planned_bytes = sum(int(window["estimated_bytes"])
+                        for row in rows for window in row.get("windows", []))
+    if planned_bytes > spec.resource_caps.maximum_planned_bytes:
+        refusals.append({"domain": None, "reason":
+                         "declared windows plan %d bytes; cap is %d" %
+                         (planned_bytes, spec.resource_caps.maximum_planned_bytes)})
     partial = [row["domain"] for row in rows if row["status"] == "PARTIAL"]
     if partial and spec.coverage_policy.requirement == "complete_required":
-        refusals.append({"domain": None, "reason": "complete coverage is required but metadata cannot establish it for %s" % ", ".join(partial)})
-    digest = manifest_sha256(spec)
-    return {"schema": PREFLIGHT_SCHEMA, "manifest_sha256": digest,
+        refusals.append({"domain": None, "reason":
+                         "complete coverage is required but metadata cannot establish it for %s"
+                         % ", ".join(partial)})
+    return {"schema": PREFLIGHT_SCHEMA, "manifest_sha256": manifest_sha256(spec),
             "status": "REFUSED" if refusals else ("PARTIAL" if partial else "READY"),
             "metadata_only": True, "network_used": False, "measurement_values_opened": False,
-            "family": {"declared_members": family_members, "maximum_members": spec.resource_caps.maximum_family_members,
+            "family": {"declared_members": family_members,
+                       "maximum_members": spec.resource_caps.maximum_family_members,
                        "windows_are_one_family": len(spec.windows) > 1},
+            "planned_bytes": planned_bytes,
+            "maximum_planned_bytes": spec.resource_caps.maximum_planned_bytes,
             "coverage": rows, "refusals": refusals,
             "claim_boundary": "Coverage planning is not acquisition, analysis, evidence or a scientific result."}
+
+
+def _refused_row(observation: Any, reason: str) -> Any:
+    return ({"domain": observation.domain, "label": observation.label,
+             "source_id": observation.acquisition.source_id, "measure": observation.measure,
+             "status": "REFUSED", "reason": reason, "opens_measurement_values": False,
+             "windows": []},
+            {"domain": observation.domain, "reason": reason})
+
+
+def _preflight_observation(spec: CrossDomainExperimentSpec, observation: Any,
+                           adapter_for_domain: Any, plan_windows: Any) -> Any:
+    """One domain's coverage row, or the exact reason it has none."""
+    from src.core.errors import SpectralEarthError
+
+    try:
+        adapter = adapter_for_domain(observation.domain)
+    except SpectralEarthError as error:
+        return _refused_row(observation, str(error))
+    try:
+        parameters = adapter.resolve(observation.adapter.parameters)
+    except SpectralEarthError as error:
+        return _refused_row(observation, "declared adapter parameters were refused: %s" % error)
+    if observation.adapter.adapter_id != adapter.adapter_id:
+        return _refused_row(observation, (
+            "the manifest names adapter %r for this domain and %r is registered. A result must "
+            "record which translation produced it, so the manifest is not silently reassigned"
+            % (observation.adapter.adapter_id, adapter.adapter_id)))
+    plan = adapter.plan_acquisition(parameters, dict(observation.acquisition.identity))
+    if plan.source_id != observation.acquisition.source_id:
+        return _refused_row(observation, (
+            "the manifest names source %r and this adapter plans %r; the manifest addresses an "
+            "archive its own adapter does not reach"
+            % (observation.acquisition.source_id, plan.source_id)))
+    if plan.refusal:
+        row, refusal = _refused_row(observation, plan.refusal)
+        row.update({"support_kind": plan.support_kind, "access": plan.access,
+                    "native_cadence_seconds": plan.native_cadence_seconds})
+        return row, refusal
+    status = "READY" if plan.coverage_exact else "PARTIAL"
+    reason = ("requested UTC extent is addressable from metadata" if plan.coverage_exact else
+              "native support is sparse or sector-bounded; exact coverage is established only "
+              "after acquisition")
+    return ({"domain": observation.domain, "label": observation.label,
+             "source_id": plan.source_id, "measure": observation.measure, "status": status,
+             "reason": reason, "support_kind": plan.support_kind,
+             "native_cadence_seconds": plan.native_cadence_seconds, "access": plan.access,
+             "access_means": plan.access_means,
+             "adapter": {"adapter_id": adapter.adapter_id,
+                         "adapter_version": adapter.adapter_version,
+                         "definition_sha256": adapter.definition_sha256,
+                         "parameters": _jsonable(parameters)},
+             "native_addressing": {"source_version": plan.source_version,
+                                   "identity": dict(plan.identity),
+                                   "parameters": _jsonable(parameters)},
+             "opens_measurement_values": plan.opens_measurement_values,
+             "windows": plan_windows(plan, spec.windows)}, None)
+
+
+def _jsonable(parameters: Dict[str, Any]) -> Dict[str, Any]:
+    return {name: (_json_value(value) if isinstance(value, datetime) else value)
+            for name, value in parameters.items()}
 
 
 class ManifestStore:

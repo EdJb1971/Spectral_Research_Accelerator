@@ -11,7 +11,7 @@ import hashlib
 import json
 from dataclasses import dataclass, field, replace
 from types import MappingProxyType
-from typing import Any, Mapping, Sequence, Tuple
+from typing import Any, Dict, Mapping, Sequence, Tuple
 
 import numpy as np
 
@@ -206,6 +206,83 @@ class StructuralTrajectory:
         object.__setattr__(self, "lineage", MappingProxyType(dict(self.lineage)))
 
 
+#: How each declared lineage operation rebuilds its canonical values from the native record.
+#: TG17.2 reconstructed values from a hardcoded standardized-level formula, which made
+#: `assert_structural_conformance` a domain-blind function with one domain's mathematics inside
+#: it: a second channel definition would have failed conformance for having different — correct —
+#: arithmetic. TG17.3 replaces that with a lookup on the operation the lineage itself declares.
+#:
+#: An operation with no registered reconstructor **fails** conformance rather than passing it. A
+#: canonical value nobody can independently rebuild is exactly the value a provenance chain is
+#: supposed to refuse, and defaulting to "assume it is fine" would have inverted the contract.
+LINEAGE_RECONSTRUCTORS: Dict[str, Any] = {}
+
+
+def register_lineage_reconstructor(operation: str, rebuild: Any) -> Any:
+    """Declare how one lineage operation is independently recomputed from the native record."""
+    if operation in LINEAGE_RECONSTRUCTORS and LINEAGE_RECONSTRUCTORS[operation] is not rebuild:
+        raise StructuralConformanceError(
+            "lineage operation %r already has a different reconstructor; a silent overwrite "
+            "would make conformance depend on import order" % operation)
+    LINEAGE_RECONSTRUCTORS[operation] = rebuild
+    return rebuild
+
+
+STANDARDIZED_LEVEL_OPERATION = "(native_value - valid_native_mean) / valid_native_population_std"
+
+register_lineage_reconstructor(
+    STANDARDIZED_LEVEL_OPERATION,
+    lambda values, parameters: ((values - parameters["valid_native_mean"])
+                                / parameters["valid_native_population_std"]))
+
+
+#: The one benchmarked channel this programme has so far. Held here rather than restated per
+#: adapter (TG17.3): four adapters each writing their own `StructuralChannelDefinition` would be
+#: four chances for the formula, the units or the benchmark id to drift, and the digest that
+#: makes a definition auditable would then differ between domains that are in fact running the
+#: identical translation.
+STANDARDIZED_LEVEL = StructuralChannelDefinition(
+    name="standardized_level",
+    semantics="within-record standardized structural level; native meaning is not erased",
+    units="dimensionless",
+    formula="(native_value - valid_native_mean) / valid_native_population_std",
+    benchmark_id="g17.2.standardized-level-v1",
+)
+
+
+def standardized_level_declaration(*, adapter_id: str, adapter_version: str, domain: str,
+                                   accepted_semantics: str, accepted_units: str,
+                                   required_axes: Tuple[str, ...] = ("native_time",),
+                                   required_roles: Tuple[str, ...] = ("observation", "validity"),
+                                   legitimate_null_family: str = "independent_native_clock_shift",
+                                   extra_leakage_risks: Tuple[str, ...] = (),
+                                   extra_refused_operations: Tuple[str, ...] = (),
+                                   ) -> StructuralAdapterDeclaration:
+    """The shared translation contract for the benchmarked standardized-level channel.
+
+    A domain supplies what only it knows — its identity, the native semantics and units it
+    accepts, the axes and roles it requires, and any leakage or refusal its own declaration
+    adds. Everything the translation itself guarantees is fixed here, so an adapter cannot
+    accidentally claim an invariance the translator does not have or omit one it does.
+    """
+    return StructuralAdapterDeclaration(
+        adapter_id=adapter_id, adapter_version=adapter_version, domain=domain,
+        accepted_semantics=accepted_semantics, accepted_units=accepted_units,
+        required_axes=required_axes, required_roles=required_roles,
+        invariances=("native_value_translation", "native_value_positive_scaling"),
+        consumed_information=("native_value", "native_time", "validity", "native_scale"),
+        output_clock="identity_native_clock",
+        output_support="[native_time_i, native_time_i + declared native scale)",
+        missing_data_behavior="preserve validity exactly; never fill, compact, bin or interpolate",
+        legitimate_null_family=legitimate_null_family,
+        leakage_risks=("semantic_equivalence", "native_magnitude_comparability",
+                       "coverage_pattern_similarity") + tuple(extra_leakage_risks),
+        refused_operations=("causality", "semantic_equivalence", "raw_magnitude_comparison",
+                            "undeclared_interpolation") + tuple(extra_refused_operations),
+        channels={STANDARDIZED_LEVEL.name: STANDARDIZED_LEVEL},
+    )
+
+
 def translate_standardized_level(record: NativeStructuralRecord,
                                  declaration: StructuralAdapterDeclaration,
                                  *, config: Mapping[str, Any] | None = None) -> StructuralTrajectory:
@@ -261,7 +338,8 @@ def translate_standardized_level(record: NativeStructuralRecord,
 
 def assert_structural_conformance(trajectory: StructuralTrajectory,
                                   native: NativeStructuralRecord,
-                                  declaration: StructuralAdapterDeclaration) -> None:
+                                  declaration: StructuralAdapterDeclaration,
+                                  *, config: Mapping[str, Any] | None = None) -> None:
     """Reconstruct every output and reject laundering of semantics, gaps or clock support."""
     if trajectory.schema_id != SCHEMA or not trajectory.native_record_retained:
         raise StructuralConformanceError("canonical projection must retain its native record")
@@ -269,7 +347,8 @@ def assert_structural_conformance(trajectory: StructuralTrajectory,
         raise StructuralConformanceError("native record digest cannot be reconstructed")
     if trajectory.adapter_definition_sha256 != declaration.definition_sha256:
         raise StructuralConformanceError("adapter definition digest does not match")
-    if trajectory.adapter_config_sha256 != _digest({"ddof": 0}):
+    if trajectory.adapter_config_sha256 != _digest(dict(config if config is not None
+                                                       else {"ddof": 0})):
         raise StructuralConformanceError("adapter configuration digest does not match")
     if (trajectory.native_semantics != native.semantics or
             trajectory.native_units != native.units or trajectory.domain != native.domain):
@@ -295,9 +374,14 @@ def assert_structural_conformance(trajectory: StructuralTrajectory,
         if lineage is None or not np.array_equal(lineage.source_indices,
                                                   np.arange(len(native.values))):
             raise StructuralConformanceError("every canonical value must retain its native index")
-        mean = lineage.parameters.get("valid_native_mean")
-        scale = lineage.parameters.get("valid_native_population_std")
-        rebuilt = (native.values - mean) / scale
+        rebuild = LINEAGE_RECONSTRUCTORS.get(lineage.operation)
+        if rebuild is None:
+            raise StructuralConformanceError(
+                "no registered reconstructor for lineage operation %r, so these canonical "
+                "values cannot be independently rebuilt from the native record. A value whose "
+                "derivation cannot be recomputed is not provenanced by having a digest"
+                % lineage.operation)
+        rebuilt = rebuild(native.values, dict(lineage.parameters))
         if not np.allclose(values, rebuilt, rtol=0.0, atol=1e-12):
             raise StructuralConformanceError("canonical values do not reconstruct from lineage")
         if lineage.output_sha256 != _array_digest(values):
@@ -326,8 +410,10 @@ def with_support_for_conformance_test(trajectory: StructuralTrajectory,
     return replace(trajectory, support_start_seconds=np.asarray(starts, dtype=np.float64))
 
 
-__all__ = ["SCHEMA", "ChannelLineage", "NativeStructuralRecord",
+__all__ = ["LINEAGE_RECONSTRUCTORS", "SCHEMA", "STANDARDIZED_LEVEL",
+           "STANDARDIZED_LEVEL_OPERATION", "register_lineage_reconstructor", "ChannelLineage", "NativeStructuralRecord",
            "StructuralAdapterDeclaration", "StructuralChannelDefinition",
            "StructuralConformanceError", "StructuralScale", "StructuralTrajectory",
            "assert_structural_conformance", "mine_structural_peak",
+           "standardized_level_declaration",
            "translate_standardized_level", "with_support_for_conformance_test"]

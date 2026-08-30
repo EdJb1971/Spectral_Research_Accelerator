@@ -7132,3 +7132,67 @@ execution remain unavailable.
 
 The full suite was not rerun at the user's request; the clean 2745-pass G15 run remains the latest
 full-suite evidence.
+
+## TG17.3 - Adapter Registry, Schema-Driven Controls and Conformance Kit (2026-08-30, `ed-dev`) - **COMPLETE**
+
+Acquisition plus structural translation is now a registered `DomainExperimentAdapter` rather than
+an orchestrator switch. One registration carries the domain declaration, a typed `ControlSchema`,
+the acquisition planner, translator configuration, materializer, structural declaration and
+translator, capability derivation, null builder and provenance renderer. `preflight_manifest` lost
+its literal `source_plans` table and its `channel_table:local` special case and resolves every
+coverage row through the registered adapter.
+
+Window arithmetic stayed in the framework: an adapter declares support kind, native cadence,
+exactness, access and cost per day, and `plan_windows` derives expected samples, bytes and gap
+status identically for every domain. Reanalysis and the bespoke family register from `src/adapters`;
+Argo and TESS register from `extensions/` through the same public seam.
+
+The conformance kit runs ten checks and executes what a declaration claims rather than trusting
+it. `INVARIANCE_PROBES` applies each declared invariance to the native record and compares every
+canonical channel; an invariance with no registered probe reports `NOT_PROBED` rather than `PASS`.
+All four flagship adapters pass 11 of 11 checks against their deterministic known-answer records,
+visibly through `POST /api/v1/experiment-composer/adapters/{adapter_id}/conformance`.
+
+Order book became one declaration of a bespoke record family rather than a finance adapter. Its
+fence is TG8.4's rule imported unchanged - detection may create a required declaration and may
+never satisfy one - so an observed irregular clock obliges `irregular_sampling` on an onboarded
+domain, an aggregate footprint obliges `aggregated_values`, a flat record is refused under a
+domain declaring richer axes, and `lag_policy="none"` adds `precedence` to the refused operations
+by construction. A bespoke domain is added by declaration alone with no code.
+
+That is explicitly not treated as the acceptance evidence. The acceptance test installs a synthetic
+fifth adapter with different structural mathematics - a monotone rank channel - from a module the
+application never imports, and it reaches the registry, the control schema, the conformance kit and
+the domain-blind mining seam with no edit to the orchestrator, the generic API routes or the UI.
+
+Three defects were forced out. TG17.2's `assert_structural_conformance` reconstructed values from a
+hardcoded standardized-level formula and compared every configuration digest against `{"ddof": 0}`,
+which failed the fifth adapter for having different and correct arithmetic; `LINEAGE_RECONSTRUCTORS`
+now dispatches on the declared operation and an unregistered operation fails rather than passes.
+
+**D74**: the route-count guard had matched the words "those routes" written into architecture.md
+by TG17.1 and had been unable to parse its own claim since. **D75**, found by fixing D74: the
+guard enumerated a hand-maintained list of ten source files and four mounted routers were missing
+from it — `profiles`, `lightcurves`, `ingress` and `experiment_composer` — so 32 served endpoints,
+including the whole TG16 ingress surface, were invisible to every check in that file. architecture.md
+claimed 75 routes; 107 are served, and the section 3.12 table was missing 21 rows. The list is
+deleted rather than corrected: routes now come from the application object. Both are fixed and the
+table is complete.
+
+```text
+> .\.venv\Scripts\python.exe -m pytest src\tests\test_adapter_registry.py src\tests\test_structural_trajectory.py src\tests\test_experiment_manifest.py src\tests\test_frontend_contract.py src\tests\test_domain_onboarding.py src\tests\test_acquisitions_api.py -q
+180 passed, 5 warnings in 6.94s
+
+> .\.venv\Scripts\python.exe -m pytest src\tests\test_documentation.py -q
+19 passed, 1 warning in 469.84s
+
+> cd frontend && npm run build
+1402 modules transformed; built in 51.34s (TypeScript and Vite production bundle)
+```
+
+No live archive is acquired, no cross-domain statistic runs, no evidence is written and no claim
+rung moves. The `source_binding` control makes the deterministic known-answer binding a visible
+manifest-recorded choice; the live binding refuses by naming TG17.6.
+
+The full suite was not rerun at the user's request; the clean 2745-pass G15 run remains the latest
+full-suite evidence.

@@ -2026,6 +2026,49 @@ export interface ExperimentPreflight {
   claim_boundary: string;
 }
 
+// ---------------------------------------------------------- registered adapters (TG17.3)
+
+/** One control a domain adapter declares. The Composer renders these and nothing else, so a
+ *  domain cannot require a widget only it understands, and a fifth adapter reaches the form
+ *  without the form learning its name. */
+export interface AdapterControlField {
+  name: string;
+  label: string;
+  kind: 'text' | 'integer' | 'number' | 'boolean' | 'enum' | 'utc_instant' | 'content_record';
+  help: string;
+  required: boolean;
+  default: any;
+  choices: any[];
+  minimum: number | null;
+  maximum: number | null;
+  units: string | null;
+}
+
+export interface DomainExperimentAdapterDescription {
+  schema: 'domain-experiment-adapter/v1';
+  adapter_id: string;
+  adapter_version: string;
+  domain: string;
+  definition_sha256: string;
+  controls: { schema: string; fields: AdapterControlField[] };
+  declaration: Record<string, any>;
+  implements: string[];
+  onboarding_cost: Record<string, any>;
+}
+
+export interface AdapterConformanceReport {
+  schema: 'domain-adapter-conformance/v1';
+  adapter_id: string;
+  domain: string;
+  definition_sha256: string;
+  conformant: boolean;
+  counts: Record<string, number>;
+  checks: { check: string; status: 'PASS' | 'FAIL' | 'NOT_APPLICABLE' | 'NOT_PROBED';
+    detail: string; evidence: Record<string, any> }[];
+  claim_boundary: string;
+  record_kind: 'deterministic_known_answer_not_acquired_data';
+}
+
 export interface StructuralTrajectoryPreview {
   schema: 'structural-trajectory-preview/v1';
   kind: 'deterministic_known_answer_not_acquired_data';

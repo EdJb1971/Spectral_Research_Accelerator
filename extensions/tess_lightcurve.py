@@ -2,13 +2,18 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict
+from typing import Any, Dict, Mapping
 
+from src.adapters.standardized_level_adapter import build_standardized_level_adapter
+from src.benchmarks.structural_trajectory import known_answer_native
 from src.core.domain import AxisSpec, DomainDeclaration
+from src.core.experiment_adapter import (AcquisitionPlan, ControlField, EXPERIMENT_ADAPTERS,
+                                         register_experiment_adapter)
 from src.core.onboarding import DOMAIN_ONBOARDINGS, onboard_domain
 from src.physical_core.geometry import GEOMETRIES, Geometry
 
 DOMAIN_NAME = "tess_lightcurve"
+ADAPTER_ID = "tess_lightcurve.standardized-level"
 
 TESS = DomainDeclaration(
     name=DOMAIN_NAME,
@@ -104,4 +109,57 @@ def register() -> Any:
                               "sectors and quality flags rather than the claim ladder."))
 
 
-__all__ = ["AngularSkyGeometry", "DOMAIN_NAME", "TESS", "TESS_PHRASES", "register"]
+# ---------------------------------------------------------------- TG17.3 experiment adapter
+
+#: A sector that intersects a requested window says an observation exists somewhere inside it,
+#: never that the window is covered. TG17.1 froze that distinction and the conformance kit's
+#: `coverage_honesty` check now enforces it: this plan may state its nominal short cadence and
+#: must still declare `coverage_exact=False`.
+TESS_BYTES_PER_DAY = 80_000
+SHORT_CADENCE_SECONDS = 120.0
+LONG_CADENCE_SECONDS = 1_800.0
+
+ADAPTER_CONTROLS = (
+    ControlField(name="cadence", label="Cadence", kind="enum", choices=("short", "long"),
+                 default="short",
+                 help=("Which SPOC product this observation reads. The cadence changes what "
+                       "structure is resolvable at all, so it is a scientific choice rather "
+                       "than a performance setting.")),
+)
+
+
+def adapter_plan(parameters: Mapping[str, Any],
+                 identity: Mapping[str, Any] | None = None) -> AcquisitionPlan:
+    cadence = (SHORT_CADENCE_SECONDS if parameters.get("cadence") == "short"
+               else LONG_CADENCE_SECONDS)
+    return AcquisitionPlan(
+        source_id="lightcurve_query:mast_tess_spoc", source_version="MAST-TESS-SPOC",
+        support_kind="intersecting_observational_sectors", access="public_network",
+        access_means="Public network access through MAST/AWS.",
+        coverage_exact=False, native_cadence_seconds=cadence,
+        estimated_bytes_per_day=TESS_BYTES_PER_DAY,
+        identity={"licence_scope": "source-declared", "cadence": parameters.get("cadence")})
+
+
+def register_adapter() -> Any:
+    """Register TESS's experiment adapter through the supported seam, from outside `src`."""
+    if ADAPTER_ID in EXPERIMENT_ADAPTERS:
+        return EXPERIMENT_ADAPTERS.get(ADAPTER_ID)
+    register()
+    return register_experiment_adapter(build_standardized_level_adapter(
+        declaration=TESS, adapter_id=ADAPTER_ID,
+        accepted_semantics="relative stellar flux", accepted_units="dimensionless",
+        controls=ADAPTER_CONTROLS, plan=adapter_plan,
+        fixture_record=lambda parameters: known_answer_native(DOMAIN_NAME),
+        live_refusal=("a binding this slice can materialise. The MAST light-curve query "
+                      "exists (see the Acquire tab) but is not yet wired to the canonical "
+                      "translator; that is TG17.6's orchestrator."),
+        domain_mathematics=(
+            "sector-bounded observational support: coverage is established by which sectors "
+            "actually observed a target, never by an interval intersecting a sector, and no "
+            "physical metric or propagation speed exists to floor a lag.",)))
+
+
+__all__ = ["ADAPTER_CONTROLS", "ADAPTER_ID", "AngularSkyGeometry", "DOMAIN_NAME",
+           "LONG_CADENCE_SECONDS", "SHORT_CADENCE_SECONDS", "TESS", "TESS_BYTES_PER_DAY",
+           "TESS_PHRASES", "adapter_plan", "register", "register_adapter"]

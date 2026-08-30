@@ -2,12 +2,17 @@
 
 from __future__ import annotations
 
-from typing import Dict
+from typing import Any, Dict, Mapping
 
+from src.adapters.standardized_level_adapter import build_standardized_level_adapter
+from src.benchmarks.structural_trajectory import known_answer_native
 from src.core.domain import AxisSpec, DomainDeclaration
+from src.core.experiment_adapter import (AcquisitionPlan, ControlField, EXPERIMENT_ADAPTERS,
+                                         register_experiment_adapter)
 from src.core.onboarding import DOMAIN_ONBOARDINGS, onboard_domain
 
 DOMAIN_NAME = "argo_float"
+ADAPTER_ID = "argo_float.standardized-level"
 
 ARGO = DomainDeclaration(
     name=DOMAIN_NAME,
@@ -83,4 +88,55 @@ else:
         glossary_description=("Profiling-float wording for the structural vocabulary, for a "
                               "reader who knows the array and not the claim ladder."))
 
-__all__ = ["ARGO", "ARGO_PHRASES", "DOMAIN_NAME", "ONBOARDED"]
+# ---------------------------------------------------------------- TG17.3 experiment adapter
+
+#: Argo's addressing is a sparse point support: floats report on a nominal park-and-profile
+#: cycle they do not keep exactly, so a requested interval cannot be turned into an expected
+#: sample count from a product description. `coverage_exact=False` and a `None` cadence are the
+#: honest answer, and the framework then reports "unknown for native sparse/irregular support"
+#: rather than inventing a number the array never promised.
+ARGO_BYTES_PER_DAY = 24_000
+
+ADAPTER_CONTROLS = (
+    ControlField(name="pressure_dbar", label="Pressure level", kind="number", units="dbar",
+                 help=("The pressure surface to read from each profile. A profile is indexed "
+                       "by pressure, so this is part of what a result is about."),
+                 default=100.0, minimum=0.0, maximum=6000.0),
+)
+
+
+def adapter_plan(parameters: Mapping[str, Any],
+                 identity: Mapping[str, Any] | None = None) -> AcquisitionPlan:
+    return AcquisitionPlan(
+        source_id="profile_query:argo_gdac_erddap", source_version="Argo-GDAC",
+        support_kind="sparse_point_support", access="public_network",
+        access_means="Public network access through the official Argo GDAC view.",
+        coverage_exact=False, native_cadence_seconds=None,
+        estimated_bytes_per_day=ARGO_BYTES_PER_DAY,
+        identity={"licence_scope": "source-declared",
+                  "pressure_dbar": parameters.get("pressure_dbar")})
+
+
+def register_adapter() -> Any:
+    """Register Argo's experiment adapter through the supported seam, from outside `src`."""
+    if ADAPTER_ID in EXPERIMENT_ADAPTERS:
+        return EXPERIMENT_ADAPTERS.get(ADAPTER_ID)
+    if DOMAIN_NAME not in DOMAIN_ONBOARDINGS:
+        onboard_domain(ARGO, ARGO_PHRASES, geometry="latlon",
+                       glossary_description="Profiling-float wording.")
+    return register_experiment_adapter(build_standardized_level_adapter(
+        declaration=ARGO, adapter_id=ADAPTER_ID,
+        accepted_semantics="practical salinity profile structure", accepted_units="1e-3",
+        controls=ADAPTER_CONTROLS, plan=adapter_plan,
+        fixture_record=lambda parameters: known_answer_native(DOMAIN_NAME),
+        live_refusal=("a binding this slice can materialise. The Argo profile query exists "
+                      "(see the Acquire tab) but is not yet wired to the canonical "
+                      "translator; that is TG17.6's orchestrator."),
+        domain_mathematics=(
+            "the sparse point support and its consequences: a nominal cycle that the array "
+            "does not keep means no expected sample count may be derived from an interval, "
+            "and non-stationary support means the effective sample size differs per float.",)))
+
+
+__all__ = ["ADAPTER_CONTROLS", "ADAPTER_ID", "ARGO", "ARGO_PHRASES", "ARGO_BYTES_PER_DAY",
+           "DOMAIN_NAME", "ONBOARDED", "adapter_plan", "register_adapter"]

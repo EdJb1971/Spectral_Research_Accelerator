@@ -35,6 +35,17 @@ def _read(*parts: str) -> str:
     return io.open(os.path.join(FRONTEND, *parts), encoding="utf-8").read()
 
 
+def _strip_comments(source: str) -> str:
+    """Source without its comments, for checks about code rather than about prose.
+
+    A doc comment that explains *why there is no domain branch here* must name a domain to say
+    so. Refusing the explanation would push the reasoning out of the file it belongs in, which
+    costs more than the check gains.
+    """
+    without_blocks = re.sub(r"/\*.*?\*/", "", source, flags=re.S)
+    return re.sub(r"^\s*//.*$", "", without_blocks, flags=re.M)
+
+
 @pytest.fixture(scope="module")
 def api_service() -> str:
     return _read("services", "api.ts")
@@ -1234,3 +1245,69 @@ def test_the_domain_records_view_formats_no_scientific_quantity(all_sources):
     assert "%" not in view.replace("100%", ""), "no percentage may be composed in this view"
     for field in ("confidence", "base_rate", "lift", "surrogate_corrected"):
         assert field not in view, "the records view must read no claim-bearing field: %s" % field
+
+# ---------------------------------------------------------- TG17.3 schema-driven controls
+
+
+def test_adapter_controls_contain_no_domain_branch():
+    """The review rule TG17.3 states: a hardcoded form in the generic composer fails.
+
+    Checked mechanically because it is the kind of rule that erodes one convenient special case
+    at a time. The panel may switch on a control's declared `kind`; it may not know that
+    reanalysis has a pressure level or that TESS has sectors.
+    """
+    panel = _strip_comments(_read("components", "AdapterControls.tsx"))
+    for domain in ("reanalysis", "argo", "tess", "order_book", "era5"):
+        assert domain not in panel.lower(), (
+            "AdapterControls.tsx names the domain %r; a fifth adapter would then need this "
+            "file edited, which is exactly what the registry exists to prevent" % domain)
+    composer = _strip_comments(_read("components", "ExperimentComposer.tsx"))
+    assert "AdapterControlPanel" in composer
+    for domain in ("era5", "argo_float", "tess_lightcurve", "order_book"):
+        assert domain not in composer, (
+            "ExperimentComposer.tsx names the domain %r rather than rendering the registered "
+            "schema" % domain)
+
+
+def test_adapter_controls_render_every_declared_control_kind():
+    """A control kind the backend can register and the UI cannot render is an unusable control."""
+    from src.core.experiment_adapter import CONTROL_KINDS
+
+    panel = _read("components", "AdapterControls.tsx")
+    for kind in CONTROL_KINDS:
+        if kind == "text":
+            continue  # the default branch
+        assert "'%s'" % kind in panel, (
+            "control kind %r can be registered but has no renderer, so an adapter declaring it "
+            "would produce a control a researcher cannot operate" % kind)
+
+
+def test_adapter_payload_has_the_fields_the_control_panel_reads(client):
+    body = client.get("/api/v1/experiment-composer/adapters").json()
+    assert body["adapters"], "the domain selector reads this list"
+    for row in body["adapters"]:
+        assert {"adapter_id", "domain", "definition_sha256", "controls",
+                "declaration", "implements", "onboarding_cost"} <= set(row)
+        for field in row["controls"]["fields"]:
+            assert {"name", "label", "kind", "help", "required", "default", "choices",
+                    "minimum", "maximum", "units"} <= set(field)
+            assert field["help"].strip(), "every control renders its declared help text"
+
+
+def test_conformance_payload_has_the_fields_the_report_panel_reads(client):
+    body = client.post(
+        "/api/v1/experiment-composer/adapters/reanalysis.standardized-level/conformance",
+        json={}).json()
+    assert {"adapter_id", "domain", "conformant", "counts", "checks",
+            "claim_boundary", "record_kind"} <= set(body)
+    assert body["record_kind"] == "deterministic_known_answer_not_acquired_data"
+    for check in body["checks"]:
+        assert {"check", "status", "detail", "evidence"} <= set(check)
+        assert check["status"] in {"PASS", "FAIL", "NOT_APPLICABLE", "NOT_PROBED"}
+
+
+def test_the_composer_still_refuses_to_offer_a_runner():
+    """TG17.3 adds controls and conformance; it does not acquire, run or claim anything."""
+    composer = _read("components", "ExperimentComposer.tsx")
+    assert "Run experiment — not available yet" in composer
+    assert "TG17.6" in composer

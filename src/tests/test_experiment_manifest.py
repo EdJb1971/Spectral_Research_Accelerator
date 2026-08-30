@@ -57,10 +57,19 @@ def test_native_support_is_not_laundered_into_exact_common_coverage():
 
 
 def test_missing_local_record_is_a_stable_visible_refusal():
+    """TG17.3 generalised this refusal out of being order-book-specific.
+
+    The wording changed deliberately: order book is now one declaration in the bespoke record
+    family, so a refusal naming "order-book record" would have been the family's one example
+    written into the framework. What stays stable is the refusal's *identity* — same domain,
+    same remedy, reachable before any acquisition — not a sentence about markets.
+    """
     report = preflight_manifest(flagship_recipe())
     assert report["status"] == "REFUSED"
-    assert report["refusals"] == [{"domain": "order_book",
-                                    "reason": "select a content-addressed local order-book record"}]
+    assert [row["domain"] for row in report["refusals"]] == ["order_book"]
+    reason = report["refusals"][0]["reason"]
+    assert reason.startswith("select a content-addressed local record")
+    assert "order-book" not in reason and "order book" not in reason
 
 
 def test_bound_record_permits_partial_coverage_only_under_the_frozen_policy():

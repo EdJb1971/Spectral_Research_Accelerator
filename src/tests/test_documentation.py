@@ -75,42 +75,34 @@ def _test_files():
 #: happened again in TG8.4, when `src/api/channels.py` was mounted and two real endpoints were
 #: invisible until the route count disagreed with the documented one. That disagreement is the
 #: only reason it was noticed, so the count claim is doing more work than it appears to.
-_ROUTE_SOURCES = (("src/api/main.py", "app", ""),
-                  ("src/api/findings.py", "router", "/api/v1/findings"),
-                  ("src/api/channels.py", "router", "/api/v1/channels"),
-                  ("src/api/acquisitions.py", "router", "/api/v1/acquisitions"),
-                  ("src/api/analysis.py", "router", "/api/v1/analysis"),
-                  ("src/api/preregistration.py", "router", "/api/v1/preregistration"),
-                  ("src/api/evidence.py", "router", "/api/v1/evidence"),
-                  ("src/api/mining.py", "router", "/api/v1/mining"),
-                  ("src/api/cross_domain.py", "router", "/api/v1/cross-domain"),
-                  ("src/api/reviews.py", "router", "/api/v1/reviews"))
+#: Defect D75 removed the hand-maintained router list that used to live here. It named ten
+#: source files, and four mounted routers were missing from it: `profiles`, `lightcurves`,
+#: `ingress` and `experiment_composer`. Thirty-two real endpoints - the whole TG16 ingress
+#: surface among them - were therefore invisible to every check in this file, and the count
+#: claim it validated was a count of the subset the list happened to name.
+#:
+#: The list is gone rather than corrected. A guard whose coverage is a literal that a new
+#: `include_router` call does not update is a guard that goes blind by default, and this file
+#: has now done so five times (D64, D74, D75 and the two D64 records). Routes come from the
+#: application object, which cannot omit a router that is mounted.
 
 
 def _routes():
-    """Every served route, across `main.py` **and** every mounted router.
+    """Every served route, taken from the application rather than from a list of files.
 
-    The path pattern is `[^"]*`, not `[^"]+`: a router that declares its own prefix and mounts a
-    route at `""` serves a real endpoint, and a `+` quantifier cannot see it. TG11.1 hit that -
-    `GET /api/v1/analysis` was served and invisible here, and the count claim disagreed by one,
-    which is again the only reason it was noticed.
-
-    This originally read `main.py` alone. TG9.1 mounted the findings surface as an `APIRouter`
-    in its own module, and a decorator scan of `main.py` cannot see those - so six real
-    endpoints were invisible to the guard whose whole job is refusing an undocumented endpoint.
-    A guard that silently stops covering new code is worse than no guard, because its passing
-    is read as assurance.
+    This originally parsed `main.py` alone, then a hand-maintained tuple of router sources. Both
+    forms shared one defect: adding a router did not add it here, so new endpoints were invisible
+    until something else disagreed. `src/tests/test_frontend_contract.py` had already enumerated
+    `app.routes` for exactly this reason, which is why *it* could see the experiment-composer
+    surface while this file could not.
     """
-    found = []
-    for path, decorator, prefix in _ROUTE_SOURCES:
-        source = _read(path)
-        for verb, route in re.findall(
-                r'@%s\.(get|post|put|delete)\("([^"]*)"' % decorator, source):
-            found.append((verb.upper(), prefix + route))
-    return found
+    from src.api.main import app
 
+    return sorted({(sorted(route.methods - {"HEAD", "OPTIONS"})[0], route.path)
+                   for route in app.routes
+                   if getattr(route, "path", "").startswith("/api")
+                   and getattr(route, "methods", None)})
 
-# ============================================================== coverage
 
 def test_every_source_module_appears_in_architecture(architecture):
     """A module nobody documented is a module nobody reviewed."""
@@ -140,13 +132,27 @@ def test_every_api_route_appears_in_architecture(architecture):
 
 
 def test_route_count_claim_matches_reality(architecture):
+    """Defect D74: this guard read the first "<word> routes" phrase in the whole document.
+
+    TG17.1 wrote the words "those routes" into section 3.6zzk, 373 lines above the API surface
+    heading, and from that commit the regex matched "those" — which parses as neither a numeral
+    nor a spelled number, so `value` was `None` and the comparison could never be reached. The
+    claim went stale by three routes and the guard reported nothing. That is the same failure as
+    D64 and it is the fourth time this file has stopped covering new code silently, so the search
+    is now anchored to the section that carries the claim rather than to the document.
+    """
     routes = _routes()
-    claimed = re.search(r"(\w+|\d+) routes", architecture)
-    assert claimed, "architecture.md should state how many routes the API serves"
+    heading = "## 3.12 HTTP API Surface"
+    assert heading in architecture, "architecture.md must carry the HTTP API surface section"
+    claimed = re.search(r"(\w+|\d+) routes", architecture.split(heading, 1)[1])
+    assert claimed, "the HTTP API surface section should state how many routes are served"
     words = {"seventeen": 17, "sixteen": 16, "eighteen": 18, "fifteen": 15,
              "nineteen": 19, "twenty": 20, "fourteen": 14}
     token = claimed.group(1).lower()
     value = words.get(token, int(token) if token.isdigit() else None)
+    assert value is not None, (
+        "the route count claim reads %r, which is neither a numeral nor a spelled number. A "
+        "claim this guard cannot parse is a claim it is not checking" % token)
     assert value == len(routes), (
         "architecture.md claims %r routes but %d are served" % (token, len(routes)))
 
