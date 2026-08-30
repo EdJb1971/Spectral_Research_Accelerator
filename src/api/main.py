@@ -122,6 +122,7 @@ from src.api.evidence import router as evidence_router  # noqa: E402
 from src.api.mining import router as mining_router  # noqa: E402
 from src.api.cross_domain import router as cross_domain_router  # noqa: E402
 from src.api.reviews import router as reviews_router  # noqa: E402
+from src.api.experiment_composer import router as experiment_composer_router  # noqa: E402
 
 app.include_router(findings_router)
 # TG8.4. Mounted here for the same reason the findings router is: registration must not depend
@@ -161,6 +162,9 @@ app.include_router(cross_domain_router)
 # Recorded argument can be inspected beside a selected study, but never shares an endpoint or
 # a response object with translated claim text (R22/R23).
 app.include_router(reviews_router)
+# TG17.1: the first no-glue experiment surface. It stores only content-addressed manifest
+# revisions and performs metadata-only planning; no route here acquires values or creates a claim.
+app.include_router(experiment_composer_router)
 
 
 class HealthResponse(BaseModel):

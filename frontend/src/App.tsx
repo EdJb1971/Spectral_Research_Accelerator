@@ -17,6 +17,7 @@ import StructureMiningView from './components/StructureMiningView';
 import CrossDomainRecordView from './components/CrossDomainRecordView';
 import ReviewView from './components/ReviewView';
 import DatasetCapabilityProfile from './components/DatasetCapabilityProfile';
+import ExperimentComposer from './components/ExperimentComposer';
 import { apiService } from './services/api';
 import * as types from './types/api';
 import {
@@ -49,6 +50,7 @@ import {
   Waypoints,
   FileCheck2,
   FilePlus2,
+  FileLock2,
   Lock,
   MessageSquare
 } from 'lucide-react';
@@ -72,7 +74,8 @@ const WORKFLOW_NAV = [
   {
     section: 'Evidence', items: [
       { id: 'evidence', name: 'Evidence record', icon: FilePlus2 },
-      { id: 'declarative', name: 'Experiment engine', icon: FileCode },
+      { id: 'experimentComposer', name: 'Experiment Composer', icon: FileLock2 },
+      { id: 'declarative', name: 'Legacy parameter sweeps', icon: FileCode, context: 'Gridded field line' },
       { id: 'evaluation', name: 'Forecast evaluation', icon: FileCheck2, context: 'Gridded field line', operation: 'forecast_evaluation' },
     ],
   },
@@ -2556,6 +2559,10 @@ export default function App() {
           {activeTab === 'evaluation' && (
             <EvaluationEvidence reports={evaluationReports} importing={receiptImporting}
               onImport={handleImportEvaluationReceipt} />
+          )}
+
+          {activeTab === 'experimentComposer' && (
+            <ExperimentComposer onSelectStudy={setSelectedStudyId} />
           )}
 
           {/* TAB 11: FINDINGS (TG9.2) -------------------------------------------------

@@ -1978,3 +1978,50 @@ export interface CrossDomainConfirmation {
   publication: string;
   claim_boundary: string;
 }
+
+// ------------------------------------------ configurable experiment manifest (TG17.1)
+export interface CrossDomainExperimentManifest {
+  schema_id: 'cross-domain-experiment/v1';
+  study_id: string;
+  title: string;
+  mode: 'calendar_aligned' | 'scale_shape_aligned';
+  windows: { name: string; start_utc: string; end_utc: string; stride_seconds: number }[];
+  observations: {
+    domain: string; label: string; role: string; measure: string; semantics: string; units: string;
+    acquisition: { source_id: string; source_version: string; identity: Record<string, any>; parameters: Record<string, any> };
+    adapter: { adapter_id: string; adapter_version: string; parameters: Record<string, any> };
+  }[];
+  coverage_policy: { requirement: 'complete_required' | 'partial_permitted'; minimum_fraction: number };
+  scale_normalization: Record<string, any> | null;
+  family: { channels: string[]; scales: number[]; relationships: string[]; maximum_members: number };
+  nulls: { name: string; method: string; replications: number; parameters: Record<string, any> }[];
+  correction: 'benjamini_yekutieli' | 'holm' | 'bonferroni';
+  alpha: number;
+  seeds: Record<string, number>;
+  resource_caps: { maximum_family_members: number; maximum_planned_bytes: number; maximum_runtime_seconds: number };
+  notes: Record<string, any>;
+}
+
+export interface ExperimentManifestEnvelope {
+  schema: string;
+  recipe_id?: string;
+  manifest_sha256: string;
+  run_identity: string;
+  canonical_manifest: CrossDomainExperimentManifest;
+  immutable: boolean;
+}
+
+export interface ExperimentPreflight {
+  schema: string;
+  manifest_sha256: string;
+  status: 'READY' | 'PARTIAL' | 'REFUSED';
+  metadata_only: boolean;
+  network_used: boolean;
+  measurement_values_opened: boolean;
+  family: { declared_members: number; maximum_members: number; windows_are_one_family: boolean };
+  coverage: { domain: string; label?: string; source_id: string; measure?: string; status: string;
+    reason: string; support_kind?: string; native_cadence_seconds?: number | null; access?: string;
+    opens_measurement_values?: boolean; windows?: Record<string, any>[] }[];
+  refusals: { domain: string | null; reason: string }[];
+  claim_boundary: string;
+}

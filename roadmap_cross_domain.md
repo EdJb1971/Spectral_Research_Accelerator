@@ -3760,7 +3760,7 @@ case crosses four clocks, semantics and units and derives each domain from a dis
 random stream. The focused gate is 2 PASS, 0 FAIL and 0 NOT_YET_RUNNABLE; no G17 scientific
 operation or capability is registered by this prerequisite slice.
 
-**TG17.1 Versioned experiment manifest and observation contract — PLANNED.** Introduce one immutable
+**TG17.1 Versioned experiment manifest and observation contract — DONE (2026-08-30, `ed-dev`).** Introduce one immutable
 `CrossDomainExperimentSpec` carrying mode, domains, acquisition identities, measures and roles,
 UTC start/end or declared scale-normalization family, window durations/stride, coverage policy,
 adapter versions and parameters, family definition, nulls, correction, seeds and resource caps.
@@ -3780,6 +3780,31 @@ and receipt. Browser refresh preserves every selection. Insufficient coverage re
 an explicitly permitted partial domain according to the frozen policy; it never silently changes
 the interval, drops a domain or shrinks the family. The first Composer shell can create, save,
 reload and preflight this manifest using visible controls.
+
+**Delivered.** `CrossDomainExperimentSpec` is now the only G17 scientific configuration and has a
+canonical byte encoding, content digest and run identity. It freezes the mode, exact UTC window
+boundaries/stride, complete quartet, source and planned-adapter identities, native measure,
+semantics and units, coverage rule, one duration-crossed family, domain-preserving null,
+correction, seeds and TG17.0 resource caps. The saved flagship recipe round-trips through the same
+schema. A draft name points to an immutable content-addressed revision, so saving an edit preserves
+the old manifest while browser refresh reloads the selected draft.
+
+The metadata-only preflight reports native addressing, support kind, nominal expected samples
+only where meaningful, unknown sparse/irregular counts, gap status, byte estimate and access need
+for every exact window. It does not call the network or open measurement values in this slice.
+ERA5 is a grid extent; Argo remains sparse point support; TESS remains sector-bounded and is never
+called exact from intersection alone. The recipe visibly refuses its deliberately absent local
+order-book content binding. Once bound, Argo/TESS remain explicit partial coverage under the
+recipe policy, while `complete_required` refuses; no path changes a window, drops a domain or
+shrinks the 288-member family.
+
+The separate Experiment Composer provides visible mode, coverage and exact-window controls,
+complete quartet/family inspection, validate, immutable save/reload and the coverage/refusal
+matrix. It preserves the shell study selection and the saved draft across refresh. The legacy
+gridded parameter-sweep engine remains available under its honest name. Run is visibly disabled:
+TG17.1 does not claim TG17.2 translation or TG17.6 orchestration, and creates no scientific result,
+evidence or rung movement. Twelve focused manifest/API tests and the frontend contract cover the
+slice; the production TypeScript/Vite build passes.
 
 **TG17.2 Canonical structural-trajectory contract — PLANNED.** Define the smallest shared record
 the mining layer actually needs, provisionally `StructuralTrajectory`: labelled dimensionless or

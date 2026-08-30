@@ -222,6 +222,21 @@ def test_record_and_study_are_shell_owned_persistent_context(app_source):
     assert "onSelectStudy?.(row.study_id as string)" in findings
 
 
+def test_g17_composer_is_visible_manifest_driven_and_honest_about_the_runner():
+    app = _read("App.tsx")
+    view = _read("components", "ExperimentComposer.tsx")
+    service = _read("services", "api.ts")
+    assert "Experiment Composer" in app
+    assert "<ExperimentComposer onSelectStudy={setSelectedStudyId}" in app
+    assert "getFlagshipRecipe" in view and "preflightExperimentManifest(manifest)" in view
+    assert "saveExperimentDraft(manifest.study_id, manifest)" in view
+    assert "loadExperimentManifest(result.manifest_sha256)" in view
+    assert "localStorage.getItem(SAVED_DRAFT_KEY)" in view
+    assert "No network used and no measurement values opened." in view
+    assert "Run experiment — not available yet" in view
+    assert "/experiment-composer/manifests/preflight" in service
+
+
 def test_domain_analysis_uses_the_persistent_full_record_and_cannot_write(app_source, api_service):
     """TG11.1 must never substitute TG8.4's capped preview for the retained source file."""
     view = _read("components", "DomainAnalysisView.tsx")

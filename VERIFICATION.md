@@ -7073,3 +7073,33 @@ one 43,200-second Argo interval), minimum native peak contrast 0.966, an 11.875-
 width range, 0.994 shared-gap coverage correlation, the exact planted domain event order, and the
 24,576 versus 10,000 resource refusal. The full suite was not rerun at the user's request; the
 clean 2745-pass G15 run remains the latest full-suite evidence.
+
+---
+
+## TG17.1 - Versioned Experiment Manifest and Composer Preflight (2026-08-30, `ed-dev`) - **COMPLETE**
+
+The first operable G17 product slice uses one immutable `CrossDomainExperimentSpec` from saved
+flagship recipe through API validation, content-addressed draft revision and metadata preflight.
+The canonical JSON bytes derive both manifest digest and future run identity. Exact UTC boundaries
+replace ambiguous duration labels, and all three duration windows form one 288-member family.
+
+Preflight uses no network and opens no measurement values. It retains reanalysis grid extent,
+Argo sparse point support and TESS sector-bounded support as different coverage facts, reports
+access/bytes/gap and expected-sample basis per exact window, and refuses the unbound local order-
+book record. A complete-coverage policy refuses unresolved sparse/sector coverage; it does not
+silently narrow the study. The visible Composer saves and reloads the exact manifest across browser
+refresh and leaves Run disabled until TG17.6. It neither creates evidence nor moves a claim rung.
+
+```text
+> .\.venv\Scripts\python.exe -m pytest src\tests\test_experiment_manifest.py -q
+12 passed, 2 warnings in 5.24s
+
+> .\.venv\Scripts\python.exe -m pytest src\tests\test_experiment_manifest.py src\tests\test_frontend_contract.py -q
+107 passed, 5 warnings in 8.51s
+
+> npm run build
+✓ 1401 modules transformed; built in 1m 31s (TypeScript and Vite production bundle)
+```
+
+The full suite was not rerun at the user's request; the clean 2745-pass G15 run remains the latest
+full-suite evidence.

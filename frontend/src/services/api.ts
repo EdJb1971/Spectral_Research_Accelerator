@@ -818,6 +818,53 @@ export const apiService = {
       await fetch(`${BASE_URL}/cross-domain`, { method: 'GET' }));
   },
 
+  // ------------------------------------------ configurable experiment manifest (TG17.1)
+  async getExperimentComposerContract(): Promise<Record<string, any>> {
+    return handleResponse<Record<string, any>>(
+      await fetch(`${BASE_URL}/experiment-composer`, { method: 'GET' }));
+  },
+
+  async listExperimentRecipes(): Promise<{ recipes: { recipe_id: string; title: string; mode: string; domains: string[]; manifest_sha256: string }[]; note: string }> {
+    return handleResponse<{ recipes: { recipe_id: string; title: string; mode: string; domains: string[]; manifest_sha256: string }[]; note: string }>(
+      await fetch(`${BASE_URL}/experiment-composer/recipes`, { method: 'GET' }));
+  },
+
+  async getFlagshipRecipe(): Promise<types.ExperimentManifestEnvelope> {
+    return handleResponse<types.ExperimentManifestEnvelope>(
+      await fetch(`${BASE_URL}/experiment-composer/recipes/g17-flagship-calendar`, { method: 'GET' }));
+  },
+
+  async validateExperimentManifest(manifest: types.CrossDomainExperimentManifest): Promise<types.ExperimentManifestEnvelope> {
+    return handleResponse<types.ExperimentManifestEnvelope>(
+      await fetch(`${BASE_URL}/experiment-composer/manifests/validate`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(manifest)
+      }));
+  },
+
+  async saveExperimentDraft(draftId: string, manifest: types.CrossDomainExperimentManifest): Promise<types.ExperimentManifestEnvelope & { draft_id: string }> {
+    return handleResponse<types.ExperimentManifestEnvelope & { draft_id: string }>(
+      await fetch(`${BASE_URL}/experiment-composer/drafts/${encodeURIComponent(draftId)}`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(manifest)
+      }));
+  },
+
+  async loadExperimentDraft(draftId: string): Promise<types.ExperimentManifestEnvelope & { draft_id: string }> {
+    return handleResponse<types.ExperimentManifestEnvelope & { draft_id: string }>(
+      await fetch(`${BASE_URL}/experiment-composer/drafts/${encodeURIComponent(draftId)}`, { method: 'GET' }));
+  },
+
+  async loadExperimentManifest(manifestSha256: string): Promise<types.ExperimentManifestEnvelope> {
+    return handleResponse<types.ExperimentManifestEnvelope>(
+      await fetch(`${BASE_URL}/experiment-composer/manifests/${encodeURIComponent(manifestSha256)}`, { method: 'GET' }));
+  },
+
+  async preflightExperimentManifest(manifest: types.CrossDomainExperimentManifest): Promise<types.ExperimentPreflight> {
+    return handleResponse<types.ExperimentPreflight>(
+      await fetch(`${BASE_URL}/experiment-composer/manifests/preflight`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(manifest)
+      }));
+  },
+
   async alignDomains(first: File, second: File, firstSource: types.CrossDomainSource,
                      secondSource: types.CrossDomainSource,
                      name: string): Promise<types.CrossDomainAligned> {

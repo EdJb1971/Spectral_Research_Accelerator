@@ -4254,6 +4254,47 @@ translation, mining result, evidence or capability. Both records are automatical
 the existing registry-backed benchmark API/UI; the saved Experiment Composer recipe belongs to
 TG17.1, where the manifest contract exists.
 
+#### 3.6zzk Versioned experiment manifest and Composer preflight (TG17.1)
+
+`src/core/experiment_manifest.py` defines the immutable `CrossDomainExperimentSpec`. It is the
+single scientific configuration for G17: comparison mode, exact offset-bearing UTC windows,
+observation roles and measures, source and adapter identities and parameters, coverage policy,
+family axes, nulls, correction, labelled seeds and hard resource caps all live in this record.
+`canonical_bytes` is the one sorted compact JSON encoding used to derive `manifest_sha256` and
+the `g17:{sha256}` run identity. A parsed canonical manifest serializes to the same bytes. Saved
+drafts are mutable pointers to immutable, content-addressed revisions; moving a draft pointer does
+not rewrite or remove the earlier revision.
+
+The built-in `g17-flagship-calendar` recipe expresses TG17.0's reanalysis, Argo, TESS and order-
+book quartet in that schema. Its week, three-month and six-month labels carry explicit start, end
+and stride values and jointly price one 288-member family. Measures, semantics and units remain
+native declarations. The recipe intentionally has no fabricated local order-book binding, so its
+first metadata preflight is `REFUSED` with the stable remedy to select a content-addressed record.
+
+`preflight_manifest` resolves the declared native addressing and reports each exact requested
+window, expected samples where a nominal product cadence makes that meaningful, unknown samples
+for sparse or irregular support, gap status, estimated bytes and access needs. Reanalysis remains
+a regular grid extent, Argo remains sparse point support, and TESS remains intersecting sector
+support whose exact coverage cannot be inferred merely from an intersection. The preflight reads
+no measurement values and uses no network in this shell slice. With a local binding, sparse and
+sector-bounded sources remain `PARTIAL` only when the frozen policy permits partial coverage;
+`complete_required` refuses instead. No interval, domain or family member is silently removed.
+
+`src/api/experiment_composer.py` exposes `GET /api/v1/experiment-composer`, the recipe list and
+`GET /api/v1/experiment-composer/recipes/g17-flagship-calendar`, `POST .../manifests/validate`,
+`POST .../manifests/preflight`, `PUT/GET .../drafts/{draft_id}`, and immutable
+`GET .../manifests/{manifest_sha256}`. The `ExperimentComposer` UI uses those routes through typed
+client methods. It provides visible mode, policy and exact-window controls, displays the complete
+quartet/family and per-domain coverage matrix, and remembers the saved draft pointer across a
+browser refresh. The shell-selected study id is updated on save. The legacy parameter-sweep UI
+remains separately named and available.
+
+This slice does not acquire the quartet, create a canonical structural trajectory, run a
+statistic, write evidence or move a claim rung. The disabled **Run experiment — not available
+yet** control names that boundary; TG17.2--TG17.6 fill it in without introducing a second
+scientific configuration. The receipt field is reserved to carry the same manifest digest when a
+receipt exists in TG17.9; TG17.1 does not manufacture one to satisfy a round-trip demonstration.
+
 ### 3.11 Ground-Truth Benchmark Suite (`src/benchmarks/`)
 
 Added in T3.5.17 (standard E7). Twenty-four synthetic datasets whose correct answer is known
@@ -5673,6 +5714,7 @@ able to sit three slices out of date.
 | `test_dtcwt.py` | 28 | Kingsbury q-shift DTCWT: primitives vs reference, two oracles, orientation, shift invariance, D1 head-to-heads |
 | `test_executor.py` | 38 | Executor backends, seed derivation, ordering, portable CPU/accelerator/HPC profiles, doctor, device/thread policy, SQLite concurrency, byte-identical sweeps (now over a payload that actually draws), D55 thread/serial agreement with the seed-to-draw window held open |
 | `test_experiments.py` | 3 | declarative sweeps and lineage |
+| `test_experiment_manifest.py` | 12 | TG17.1 immutable cross-domain manifest, byte-stable API/run identity, explicit window family, native-support metadata planning, visible partial/refusal policy, content-addressed draft revisions, recipe/API round trip and no premature run route |
 | `test_exports.py` | 32 | CSV/JSON/NetCDF4/Zarr round trips, embedded provenance, seeded perturbation (D34) |
 | `test_external_fcn3.py` | 9 | T5.6a offline FCN3 request/result schemas, exact global input and ensemble contracts, portability refusals, canonical persistence, file/tree identity and request/artifact tamper isolation |
 | `test_external_ensemble_evaluation.py` | 8 | T5.6c exact truth/initialization alignment, member/mean/persistence errors, analytic CRPS and spread, area-weighted fractional-tie ranks, bounded lazy reads, content identity and scientific refusal contracts |
@@ -5685,7 +5727,7 @@ able to sit three slices out of date.
 | `test_forecasting_artifact_evaluation.py` | 8 | T5.3b/T5.2d checkpoint/config integrity, artifact-bound lineage, persistence-relative metrics, physical-time reporting/refusals, undefined-skill handling and CPU/RTX vendor-neutral accelerator parity |
 | `test_forecasting_protocol.py` | 7 | T5.0a exact schema completeness, canonical identity, immutable nested configuration, evidence requirements, temporal/rollout consistency, persistence and tamper/drift refusal |
 | `test_forecasting_protocol_binding.py` | 4 | T5.0b exact dataset/protocol/checkpoint binding, recomputed coordinate/statistics identities, drift refusals and bound-evaluation cross-run isolation |
-| `test_frontend_contract.py` | 94 | the frontend/backend contract, including dataset-bound navigation gating with visible backend refusal reasons, capability profiles showing yes/no/not-established facts, transform/dataset/cadence readiness claim boundaries, domain-driven acquisition, workflow-grouped navigation, persistent record/study context, the TG11.1 analysis panel's three engine operations, R21 disablement, three-valued verdict and re-read identity check, the TG11.2 preregistration panel's declare-never-decide split, TG11.5's separate GET-only recorded-review workspace with its visible R23 fence, complete argument/cost display and honest empty states, preservation of every ERA5 control, and TG11.6's skip/route focus, bound labels, global focus and reduced-motion rule, keyboard SVG lineage, figure text equivalents and asynchronous-state semantics, plus the UI integrity guards: no fabricated results, no unqualified validation claims, units and slope uncertainty displayed |
+| `test_frontend_contract.py` | 95 | the frontend/backend contract, including dataset-bound navigation gating with visible backend refusal reasons, capability profiles showing yes/no/not-established facts, transform/dataset/cadence readiness claim boundaries, domain-driven acquisition, workflow-grouped navigation, persistent record/study context, the TG11.1 analysis panel's three engine operations, R21 disablement, three-valued verdict and re-read identity check, the TG11.2 preregistration panel's declare-never-decide split, TG11.5's separate GET-only recorded-review workspace with its visible R23 fence, complete argument/cost display and honest empty states, TG17.1's manifest-driven save/reload/preflight Composer and disabled premature runner, preservation of every ERA5 control, and TG11.6's skip/route focus, bound labels, global focus and reduced-motion rule, keyboard SVG lineage, figure text equivalents and asynchronous-state semantics, plus the UI integrity guards: no fabricated results, no unqualified validation claims, units and slope uncertainty displayed |
 | `test_gate_run.py` | 1 | T4C.5d frozen plan, local-only preflight, bounded train-only climatology/signatures, authenticated synthetic gate receipt, no-overwrite and tamper refusal |
 | `test_gate_campaign.py` | 6 | T4C.5f-h exact campaign identity, strict nested schema, canary/full/WeatherBench drift refusals, pre-transfer R13/physical-lag audit, aggregate storage/readiness, immutable freeze/load, pinned real preregistration and zero-network CLI (8 pytest cases) |
 | `test_grid_operators.py` | 64 | grid metrics, metric-aware gradient/Laplacian, area weighting, physical-wavenumber spectra, D26 |
