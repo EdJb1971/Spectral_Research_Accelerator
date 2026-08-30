@@ -13,8 +13,10 @@ from src.benchmarks.structural_trajectory import known_answer_native, known_answ
 from src.core.adapter_conformance import ConformanceCase, run_conformance
 from src.core.errors import SpectralEarthError
 from src.core.experiment_adapter import EXPERIMENT_ADAPTERS, adapter_for, adapter_for_domain
+from src.core.experiment_family import family_expansion
 from src.core.structural_alignment import (ALIGNMENT_KERNELS, MODE_FORBIDS, MODE_RELATIONSHIPS,
                                            alignment_report, bind_kernel, support_profile)
+from src.core.structural_nulls import NULL_FAMILIES, NULL_MODES
 from src.core.experiment_manifest import (CrossDomainExperimentSpec, ManifestStore,
                                           flagship_recipe, manifest_envelope,
                                           manifest_sha256, preflight_manifest)
@@ -55,7 +57,9 @@ async def composer_contract() -> Dict[str, Any]:
         "available_now": ["manifest", "saved draft", "metadata-only preflight",
                           "StructuralTrajectory contract and known-answer preview",
                           "registered domain adapters, their controls and conformance",
-                          "declared alignment kernels and the support they would share"],
+                          "declared alignment kernels and the support they would share",
+                          "the complete declared family, priced before acquisition",
+                          "declared null families and which domains admit each one"],
         "not_yet_available": ["live adapter translation", "acquire quartet", "run experiment"],
         "claim_boundary": "A ready preflight is not acquisition, analysis, evidence or a result.",
     }
@@ -149,6 +153,50 @@ async def alignment_kernels() -> Dict[str, Any]:
                      "resulting overlap it created rather than observed."),
             "claim_boundary": ("A kernel is a declared operation on support. Admitting one is "
                                "not evidence that applying it is appropriate for a question.")}
+
+
+@router.get("/null-families")
+async def null_families() -> Dict[str, Any]:
+    """Every declared null family, its mode, what it preserves, and who admits it (TG17.5).
+
+    Generated from the null registry and the adapter registry. A family no adapter admits is
+    visibly unusable rather than absent, and `global_value_shuffle` appears with its refusal
+    stated: an operation every domain can execute is exactly the one that needs to be refusable
+    by name rather than quietly missing.
+    """
+    admitted: Dict[str, Any] = {}
+    for entry in EXPERIMENT_ADAPTERS.entries():
+        for name in entry.value.admissible_nulls:
+            admitted.setdefault(name, []).append(entry.value.adapter_id)
+    rows = []
+    for entry in NULL_FAMILIES.entries():
+        rows.append({**entry.value.describe(),
+                     "admitted_by": sorted(admitted.get(entry.name, [])),
+                     "usable_across_all_registered_domains":
+                         len(admitted.get(entry.name, [])) == len(EXPERIMENT_ADAPTERS)})
+    return {"schema": "experiment-composer-null-families/v1", "families": rows,
+            "modes": list(NULL_MODES),
+            "note": ("A null belongs to a comparison mode. A clock shift is no null for a "
+                     "question that never referred to a clock, and a partner reassignment is "
+                     "no null for a question about a shared calendar interval."),
+            "claim_boundary": ("A null describes what a surrogate keeps and what it breaks. "
+                               "Calibrating against one is not evidence that it is the right "
+                               "null for a question.")}
+
+
+@router.post("/manifests/family")
+async def family(spec: CrossDomainExperimentSpec) -> Dict[str, Any]:
+    """The complete declared search, priced in human terms before anything is acquired.
+
+    Separate from `/manifests/preflight` on purpose. Preflight answers "can these archives be
+    read"; this answers "can this study reject anything, and what does one more domain cost" —
+    a question whose only useful answer arrives while the reply is still "declare something
+    else".
+    """
+    try:
+        return family_expansion(spec)
+    except SpectralEarthError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
 
 
 @router.post("/manifests/alignment")

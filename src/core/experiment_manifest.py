@@ -87,23 +87,65 @@ class CoveragePolicy(FrozenModel):
 
 
 class FamilyDefinition(FrozenModel):
+    """Every axis of the declared search, so the family can be priced before acquisition.
+
+    The axes a study is actually free to vary are the axes it must declare. Since TG17.5 that
+    includes which domain combinations are tested, at which lags, in which representations and
+    over which motifs: each was a knob that could be turned after seeing a result, and a family
+    priced without it is short by exactly the factor nobody wrote down.
+    """
+
     channels: List[str] = Field(..., min_items=1)
     scales: List[float] = Field(..., min_items=1)
     relationships: List[str] = Field(..., min_items=1)
+    #: Which sizes of domain combination are tested. Pairs by default; a study that also tests
+    #: triples has run both searches and pays for both.
+    domain_arities: List[int] = Field(default_factory=lambda: [2], min_items=1)
+    lags_seconds: List[float] = Field(default_factory=lambda: [0.0], min_items=1)
+    representations: List[str] = Field(default_factory=lambda: ["canonical"], min_items=1)
+    motifs: List[str] = Field(default_factory=lambda: ["none"], min_items=1)
     maximum_members: int = Field(..., gt=0)
 
-    @validator("channels", "relationships")
+    @validator("channels", "relationships", "representations", "motifs")
     def _unique_labels(cls, value):
         if len(value) != len(set(value)):
             raise ValueError("family labels must be unique")
         return value
 
+    @validator("domain_arities", "lags_seconds", "scales")
+    def _unique_numbers(cls, value):
+        if len(value) != len(set(value)):
+            raise ValueError("family axis values must be unique; a repeated value is a "
+                             "member counted twice and a test run once")
+        return value
+
 
 class NullDefinition(FrozenModel):
+    """One declared surrogate construction, named from the registry rather than described.
+
+    `method` must be a registered, admissible `NullFamily`. Free text here would let a study
+    declare "domain-preserving shuffle" and leave what it preserved to the reader; the registry
+    states the preserved features, and TG17.5 checks the family against the mode and against
+    every participating adapter before the manifest is frozen.
+    """
+
     name: str = Field(..., min_length=1)
     method: str = Field(..., min_length=1)
     replications: int = Field(..., ge=20)
     parameters: Dict[str, Any] = Field(default_factory=dict)
+
+    @validator("method")
+    def _registered_and_admissible(cls, value):
+        from src.core.structural_nulls import NULL_FAMILIES
+
+        if value not in NULL_FAMILIES:
+            raise ValueError("null method %r is not a registered family; registered: %s"
+                             % (value, NULL_FAMILIES.names()))
+        family = NULL_FAMILIES.get(value)
+        if not family.admissible:
+            raise ValueError("null method %r is refused: %s"
+                             % (value, family.inadmissible_reason))
+        return value
 
 
 class AlignmentPolicy(FrozenModel):
@@ -118,6 +160,52 @@ class AlignmentPolicy(FrozenModel):
     parameters: Dict[str, float] = Field(default_factory=dict)
     minimum_overlap_seconds: float = Field(0.0, ge=0.0)
     minimum_effective_samples: float = Field(0.0, ge=0.0)
+
+
+class ConfirmationPolicy(FrozenModel):
+    """Which stage this manifest declares, and therefore what R18 corrects over (TG17.5).
+
+    A four-domain search is large, and rule R18 admits exactly two remedies for a family the
+    declared ensemble cannot resolve: declare fewer members before the pass runs, or take
+    TG3.2's generate/confirm split. The split is not a cheaper family — the generate stage
+    still enumerates and still tests every declared member — it moves the correction onto a
+    confirmatory family frozen under a content hash *before* a held-out partition is opened.
+
+    Declaring the stage is what makes the difference checkable. A `confirmatory_only` study is
+    priced at its complete declared family and refused if it cannot resolve it. A
+    `generate_then_confirm` study is priced at the confirmatory family it names here, and its
+    generate stage is marked as producing candidates rather than claims — which is the honest
+    description of an uncorrected pass whose selection used the data.
+    """
+
+    stage: Literal["confirmatory_only", "generate_then_confirm"] = "confirmatory_only"
+    #: The partition the confirmation runs on. Named in the manifest so it can be shown to
+    #: have been closed while the candidates were chosen, which is the only thing it claims.
+    held_out_partition: Optional[str] = None
+    confirmatory_members: Optional[int] = Field(None, gt=0)
+
+    @root_validator
+    def _split_declares_what_it_needs(cls, values):
+        stage = values.get("stage")
+        partition = (values.get("held_out_partition") or "").strip()
+        members = values.get("confirmatory_members")
+        if stage == "generate_then_confirm":
+            if not partition:
+                raise ValueError(
+                    "a generate/confirm split must name its held-out partition. An unnamed "
+                    "one cannot be shown to have been closed while the candidates were "
+                    "chosen, and correcting over a small confirmatory family is legitimate "
+                    "only because it was")
+            if not members:
+                raise ValueError(
+                    "a generate/confirm split must declare how many members it will confirm. "
+                    "That number is the correction unit of the only stage that makes claims, "
+                    "and choosing it after seeing the candidates is the move R18 forbids")
+        elif partition or members:
+            raise ValueError(
+                "a confirmatory_only study declares neither a held-out partition nor a "
+                "confirmatory member count; it corrects over its complete declared family")
+        return values
 
 
 class ResourceCaps(FrozenModel):
@@ -138,6 +226,7 @@ class CrossDomainExperimentSpec(FrozenModel):
     scale_normalization: Optional[Dict[str, Any]] = None
     family: FamilyDefinition
     nulls: List[NullDefinition] = Field(..., min_items=1)
+    confirmation: ConfirmationPolicy = Field(default_factory=ConfirmationPolicy)
     correction: Literal["benjamini_yekutieli", "holm", "bonferroni"]
     alpha: float = Field(..., gt=0.0, lt=1.0)
     seeds: Dict[str, int]
@@ -163,6 +252,8 @@ class CrossDomainExperimentSpec(FrozenModel):
         if values.get("mode") == "scale_shape_aligned" and not values.get("scale_normalization"):
             raise ValueError("scale_shape_aligned requires scale_normalization")
         _assert_relationships_belong_to_mode(values)
+        _assert_nulls_belong_to_mode(values)
+        _assert_arities_fit_the_declared_domains(values)
         family, caps = values.get("family"), values.get("resource_caps")
         if family and caps and family.maximum_members > caps.maximum_family_members:
             raise ValueError("family maximum exceeds the experiment resource cap")
@@ -191,6 +282,35 @@ def _assert_relationships_belong_to_mode(values: Dict[str, Any]) -> None:
             assert_mode_admits_relationship(mode, relationship)
         except AlignmentRefusal as error:
             raise ValueError(str(error))
+
+
+def _assert_nulls_belong_to_mode(values: Dict[str, Any]) -> None:
+    """A calendar null is no null for a question that never referred to a clock (TG17.5)."""
+    from src.core.structural_nulls import NullRefusal, assert_null_admits_mode, NULL_FAMILIES
+
+    mode, nulls = values.get("mode"), values.get("nulls") or []
+    if not mode:
+        return
+    for null in nulls:
+        try:
+            assert_null_admits_mode(null.method, mode)
+            NULL_FAMILIES.get(null.method).resolve(null.parameters)
+        except NullRefusal as error:
+            raise ValueError(str(error))
+
+
+def _assert_arities_fit_the_declared_domains(values: Dict[str, Any]) -> None:
+    """A triple cannot be formed from two domains, and neither can it be priced."""
+    from src.core.errors import InvalidParameterError
+    from src.core.experiment_family import domain_set_labels
+
+    family, observations = values.get("family"), values.get("observations") or []
+    if family is None or not observations:
+        return
+    try:
+        domain_set_labels([item.domain for item in observations], family.domain_arities)
+    except InvalidParameterError as error:
+        raise ValueError(str(error))
 
 
 def canonical_bytes(spec: CrossDomainExperimentSpec) -> bytes:
@@ -265,8 +385,20 @@ def flagship_recipe() -> CrossDomainExperimentSpec:
         "family": {"channels": ["energy_concentration", "persistence", "entropy", "change_point"],
                    "scales": [1.0, 2.0, 4.0, 8.0], "relationships": ["co_occurrence"],
                    "maximum_members": 10000},
+        # `preserve_gaps` was declared here and read by nothing: the family preserves gaps by
+        # construction, and TG17.5's registry says so in `preserves` where a reader can check
+        # it. A parameter a researcher believes is in force and is not is worse than none.
         "nulls": [{"name": "domain_preserving_shift", "method": "independent_native_clock_shift",
-                   "replications": 200, "parameters": {"preserve_gaps": True}}],
+                   "replications": 200}],
+        # 288 declared tests cannot be corrected at 200 replications: rejecting one member
+        # of that family under Benjamini-Yekutieli needs about 35,953 surrogates. TG17.5's
+        # accounting made that visible before acquisition, which is what it is for. The
+        # flagship therefore declares what it actually is - a search that mines its complete
+        # family for candidates and confirms a frozen handful on a partition held closed
+        # throughout. Four members is exactly what 200 replications can resolve.
+        "confirmation": {"stage": "generate_then_confirm",
+                         "held_out_partition": "g17_flagship_heldout_v1",
+                         "confirmatory_members": 4},
         "correction": "benjamini_yekutieli", "alpha": 0.05,
         "seeds": {"family": 20260830, "nulls": 20260831},
         "resource_caps": {"maximum_family_members": 10000,
@@ -295,12 +427,8 @@ def preflight_manifest(spec: CrossDomainExperimentSpec) -> Dict[str, Any]:
         rows.append(row)
         if refusal:
             refusals.append(refusal)
-    family_members = (len(spec.observations) * (len(spec.observations) - 1) // 2
-                      * len(spec.family.channels) * len(spec.family.scales)
-                      * len(spec.windows) * len(spec.family.relationships))
-    if family_members > spec.resource_caps.maximum_family_members:
-        refusals.append({"domain": None, "reason": "declared family has %d members; cap is %d" %
-                         (family_members, spec.resource_caps.maximum_family_members)})
+    family = _preflight_family(spec, refusals)
+    family_members = int(family["declared_members"])
     planned_bytes = sum(int(window["estimated_bytes"])
                         for row in rows for window in row.get("windows", []))
     if planned_bytes > spec.resource_caps.maximum_planned_bytes:
@@ -309,6 +437,7 @@ def preflight_manifest(spec: CrossDomainExperimentSpec) -> Dict[str, Any]:
                          (planned_bytes, spec.resource_caps.maximum_planned_bytes)})
     alignment, alignment_refusals = _preflight_alignment(spec, rows)
     refusals.extend(alignment_refusals)
+    refusals.extend(_preflight_nulls(spec))
     partial = [row["domain"] for row in rows if row["status"] == "PARTIAL"]
     if partial and spec.coverage_policy.requirement == "complete_required":
         refusals.append({"domain": None, "reason":
@@ -317,14 +446,70 @@ def preflight_manifest(spec: CrossDomainExperimentSpec) -> Dict[str, Any]:
     return {"schema": PREFLIGHT_SCHEMA, "manifest_sha256": manifest_sha256(spec),
             "status": "REFUSED" if refusals else ("PARTIAL" if partial else "READY"),
             "metadata_only": True, "network_used": False, "measurement_values_opened": False,
-            "family": {"declared_members": family_members,
-                       "maximum_members": spec.resource_caps.maximum_family_members,
-                       "windows_are_one_family": len(spec.windows) > 1},
+            "family": family,
             "planned_bytes": planned_bytes,
             "maximum_planned_bytes": spec.resource_caps.maximum_planned_bytes,
             "alignment": alignment,
             "coverage": rows, "refusals": refusals,
             "claim_boundary": "Coverage planning is not acquisition, analysis, evidence or a scientific result."}
+
+
+def _preflight_family(spec: CrossDomainExperimentSpec,
+                      refusals: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """Price the complete declared search, and refuse it here rather than after acquisition.
+
+    Two separate refusals, because they are two different problems. A family over the resource
+    cap is too expensive to run; a family the declared ensemble cannot resolve is one that will
+    run happily, cost the full amount and be arithmetically incapable of rejecting anything -
+    which is the failure R18 exists for, and it is indistinguishable afterwards from a clean
+    negative result. Both are decided from metadata, before a byte is acquired.
+    """
+    from src.core.experiment_family import family_expansion
+
+    expansion = family_expansion(spec)
+    declared = int(expansion["family_size"])
+    if declared > spec.resource_caps.maximum_family_members:
+        refusals.append({"domain": None, "reason": "declared family has %d members; cap is %d"
+                         % (declared, spec.resource_caps.maximum_family_members)})
+    correction = expansion["correction"]
+    if not correction["affordable"]:
+        refusals.append({"domain": None, "reason":
+                         "R18: %d corrected tests at %d surrogates cannot reject anything under "
+                         "%s at alpha=%.3g; about %d surrogates are needed, or the declaration "
+                         "must lose members before the pass runs (the largest affordable family "
+                         "at this ensemble is %d). A generate/confirm split against a named "
+                         "held-out partition is the other remedy rule R18 admits."
+                         % (correction["correction_unit_members"],
+                            expansion["declared_surrogates"], spec.correction,
+                            spec.alpha, correction["surrogates_required"],
+                            expansion["largest_affordable_family"])})
+    return {**expansion,
+            "declared_members": declared,
+            "maximum_members": spec.resource_caps.maximum_family_members,
+            "windows_are_one_family": len(spec.windows) > 1}
+
+
+def _preflight_nulls(spec: CrossDomainExperimentSpec) -> List[Dict[str, Any]]:
+    """Every declared null, bound against every participating adapter (TG17.5)."""
+    from src.core.errors import SpectralEarthError
+    from src.core.experiment_adapter import adapter_for_domain
+    from src.core.structural_nulls import NullRefusal, bind_null
+
+    admissible: Dict[str, Any] = {}
+    for observation in spec.observations:
+        try:
+            adapter = adapter_for_domain(observation.domain)
+        except SpectralEarthError:
+            continue  # an unregistered domain is already refused by its coverage row
+        admissible[adapter.adapter_id] = adapter.admissible_nulls
+    refusals: List[Dict[str, Any]] = []
+    for null in spec.nulls:
+        try:
+            bind_null(null.method, null.parameters, mode=spec.mode,
+                      admissible_by_adapter=admissible)
+        except NullRefusal as error:
+            refusals.append({"domain": None, "reason": str(error)})
+    return refusals
 
 
 def _preflight_alignment(spec: CrossDomainExperimentSpec,

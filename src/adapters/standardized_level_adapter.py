@@ -69,6 +69,7 @@ def build_standardized_level_adapter(
         extra_refused_operations: Tuple[str, ...] = (),
         domain_mathematics: Tuple[str, ...] = (),
         admissible_kernels: Tuple[str, ...] = ("exact_support_overlap",),
+        admissible_nulls: Tuple[str, ...] = ("independent_native_clock_shift",),
         adapter_version: str = ADAPTER_VERSION) -> DomainExperimentAdapter:
     """One conforming adapter over the benchmarked standardized-level channel."""
 
@@ -146,7 +147,7 @@ def build_standardized_level_adapter(
             "structural_scales": [vars(scale) for scale in trajectory.structural_scales],
             "lineage": lineage,
             "assumption_violations": list(trajectory.assumption_violations),
-            "null_family": describe_null("independent_native_clock_shift"),
+            "null_family": describe_null(admissible_nulls[0]),
             "claim_boundary": (
                 "Provenance shows how each canonical value arose. It does not make native "
                 "magnitudes comparable across domains and does not license precedence."),
@@ -159,7 +160,7 @@ def build_standardized_level_adapter(
         translator_config=lambda parameters: {"ddof": 0},
         materialize=materialize, derive_capabilities=derive_capabilities,
         build_null=build_null, render_provenance=render_provenance,
-        admissible_kernels=admissible_kernels,
+        admissible_kernels=admissible_kernels, admissible_nulls=admissible_nulls,
         onboarding_cost={
             "domain_mathematics": list(domain_mathematics),
             "framework_glue_lines": 0,

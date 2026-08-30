@@ -1390,3 +1390,82 @@ def test_the_composer_still_refuses_to_offer_a_runner():
     composer = _read("components", "ExperimentComposer.tsx")
     assert "Run experiment — not available yet" in composer
     assert "TG17.6" in composer
+
+
+# ------------------------------------------ TG17.5 family accounting and declared nulls
+
+
+def test_the_browser_no_longer_computes_its_own_family_size():
+    """The fourth copy of the family formula, removed.
+
+    A product in the browser could disagree with the receipt — and it did: it multiplied pairs
+    by channels, scales, windows and relationships, and knew nothing of the arities, lags,
+    representations or motifs the manifest declares. The Composer now shows the number the
+    server priced, so a researcher cannot read the size of their own search two ways.
+    """
+    composer = _strip_comments(_read("components", "ExperimentComposer.tsx"))
+    assert "n * (n - 1) / 2" not in composer
+    assert "declaredFamily" in composer
+    assert "experimentFamily" in composer
+
+
+def test_the_family_panel_shows_the_multiplication_and_what_one_more_axis_costs():
+    view = _read("components", "FamilyPlan.tsx")
+    assert "in_human_terms" in view
+    assert "expansion_cost" in view
+    assert "what one more of each would cost, before the freeze" in view
+    assert "surrogates_required_after" in view
+
+
+def test_the_family_panel_keeps_the_correction_unit_beside_its_held_out_partition():
+    """A smaller correction unit is legitimate only because a partition was closed."""
+    view = _read("components", "FamilyPlan.tsx")
+    assert "correction_unit_members" in view
+    assert "held_out_partition" in view
+    assert "generate_then_confirm" in view
+
+
+def test_the_family_panel_reports_precedence_availability_without_shrinking_the_family():
+    view = _read("components", "FamilyPlan.tsx")
+    assert "unavailable_precedence_members" in view
+    assert "domains_without_precedence_policy" in view
+    assert "family_size" in view
+
+
+def test_a_refused_null_is_shown_disabled_with_its_reason_rather_than_hidden():
+    view = _read("components", "FamilyPlan.tsx")
+    assert "inadmissible_reason" in view
+    assert "disabled" in view
+    assert "preserves" in view and "destroys" in view
+
+
+def test_a_declared_null_parameter_is_offered_with_no_default():
+    view = _read("components", "FamilyPlan.tsx")
+    assert "no default — this is a scientific choice" in view
+
+
+def test_the_family_panel_has_no_domain_branch():
+    view = _strip_comments(_read("components", "FamilyPlan.tsx"))
+    for domain in ("reanalysis", "argo", "tess", "order_book"):
+        assert domain not in view
+
+
+def test_the_family_payload_is_shaped_as_the_type_declares(client):
+    recipe = client.get("/api/v1/experiment-composer/recipes/g17-flagship-calendar").json()
+    body = client.post("/api/v1/experiment-composer/manifests/family",
+                       json=recipe["canonical_manifest"]).json()
+    assert {"schema", "axes", "in_human_terms", "family_size", "declared_surrogates",
+            "account", "correction", "largest_affordable_family", "resource_requirement",
+            "expansion_cost", "screen_and_confirm", "precedence"} <= set(body)
+    assert {"stage", "declared_search_members", "correction_unit_members",
+            "held_out_partition", "surrogates_required", "affordable"} <= set(body["correction"])
+    assert {"axis", "declared_values", "examples", "contributes"} <= set(body["axes"][0])
+
+
+def test_the_null_family_payload_is_shaped_as_the_type_declares(client):
+    body = client.get("/api/v1/experiment-composer/null-families").json()
+    assert {"schema", "families", "modes", "note", "claim_boundary"} <= set(body)
+    family = body["families"][0]
+    assert {"name", "modes", "operates_on", "preserves", "destroys", "parameters",
+            "admissible", "inadmissible_reason", "admitted_by",
+            "usable_across_all_registered_domains"} <= set(family)

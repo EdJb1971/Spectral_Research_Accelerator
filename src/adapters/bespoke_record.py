@@ -154,6 +154,7 @@ def build_bespoke_adapter(declaration: DomainDeclaration, *, accepted_semantics:
                           accepted_units: str, adapter_id: Optional[str] = None,
                           fixture_domain: Optional[str] = None,
                           admissible_kernels: tuple = ("exact_support_overlap",),
+                          admissible_nulls: tuple = ("independent_native_clock_shift",),
                           ) -> DomainExperimentAdapter:
     """One bespoke domain's adapter. No code is written per domain; a declaration is."""
 
@@ -169,6 +170,7 @@ def build_bespoke_adapter(declaration: DomainDeclaration, *, accepted_semantics:
         adapter_id=adapter_id or "%s.%s" % (declaration.name, BESPOKE_FAMILY),
         accepted_semantics=accepted_semantics, accepted_units=accepted_units,
         controls=CONTROLS, plan=bespoke_plan, admissible_kernels=admissible_kernels,
+        admissible_nulls=admissible_nulls,
         fixture_record=fixture if fixture_domain or declaration.name else None,
         live_refusal=(
             "a binding this slice can materialise. %s Once bound, this domain reads its own "
@@ -184,6 +186,7 @@ def build_bespoke_adapter(declaration: DomainDeclaration, *, accepted_semantics:
 def register_bespoke_domain(declaration: DomainDeclaration, *, accepted_semantics: str,
                             accepted_units: str,
                             admissible_kernels: tuple = ("exact_support_overlap",),
+                            admissible_nulls: tuple = ("independent_native_clock_shift",),
                             replace: bool = False) -> DomainExperimentAdapter:
     """Add a bespoke domain to the running server, through the supported seam.
 
@@ -194,7 +197,8 @@ def register_bespoke_domain(declaration: DomainDeclaration, *, accepted_semantic
     """
     adapter = build_bespoke_adapter(declaration, accepted_semantics=accepted_semantics,
                                     accepted_units=accepted_units,
-                                    admissible_kernels=admissible_kernels)
+                                    admissible_kernels=admissible_kernels,
+                                    admissible_nulls=admissible_nulls)
     return register_experiment_adapter(adapter, replace=replace)
 
 
@@ -207,6 +211,14 @@ def register_bespoke_domain(declaration: DomainDeclaration, *, accepted_semantic
 #: interval over which "the last value still held" is a statement about the world rather than
 #: about the file. A bespoke domain that has earned a wider kernel says so in its own
 #: registration; it does not inherit one.
+#: The same reasoning applies to its nulls. A trading session is a genuine group, but this
+#: domain's clock is whatever the depositor wrote down: the framework cannot tell where one
+#: session ends without being told, and a group length it inferred would be a scientific choice
+#: nobody made. So only the plain shift is admitted, and a depositor who can state their session
+#: boundary says so in their own registration. Nor does it admit the scale/shape null: that
+#: family alters no record, but admitting it would claim this domain has a native duration
+#: worth comparing shapes across, and a bespoke record's native scale is whatever the
+#: depositor wrote down.
 ADAPTER = build_bespoke_adapter(ORDER_BOOK, accepted_semantics="aggregated traded volume",
                                 accepted_units="shares")
 

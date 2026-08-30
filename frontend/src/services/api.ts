@@ -891,6 +891,19 @@ export const apiService = {
       }));
   },
 
+// --------------------------- multi-domain family accounting and nulls (TG17.5)
+  async listNullFamilies(): Promise<types.NullFamilyList> {
+    return handleResponse<types.NullFamilyList>(
+      await fetch(`${BASE_URL}/experiment-composer/null-families`, { method: 'GET' }));
+  },
+
+  async experimentFamily(manifest: types.CrossDomainExperimentManifest): Promise<types.FamilyExpansion> {
+    return handleResponse<types.FamilyExpansion>(
+      await fetch(`${BASE_URL}/experiment-composer/manifests/family`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(manifest)
+      }));
+  },
+
   async previewStructuralTrajectories(manifest: types.CrossDomainExperimentManifest): Promise<types.StructuralTrajectoryPreview> {
     return handleResponse<types.StructuralTrajectoryPreview>(
       await fetch(`${BASE_URL}/experiment-composer/manifests/representation-preview`, {

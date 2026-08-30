@@ -158,6 +158,14 @@ def register_adapter() -> Any:
         # is a statement about it. A tolerance is not: widening sector support would blur
         # exactly the observational gap that decides whether a target was observed at all.
         admissible_kernels=("exact_support_overlap", "common_grid_aggregate"),
+        # A light curve is delivered per sector, and a sector is a real group: the
+        # instrument, the pointing and the systematics change at its boundary. A shift
+        # that moved flux across it would produce a curve no spacecraft could record.
+        # No annual cycle is claimed for a target, so the whole-cycle shift is not
+        # admitted: admitting a null whose preserved feature this domain does not have
+        # would let a study declare a seasonal guarantee nothing here supports.
+        admissible_nulls=("independent_native_clock_shift", "within_group_clock_shift",
+                          "scale_partner_reassignment"),
         domain_mathematics=(
             "sector-bounded observational support: coverage is established by which sectors "
             "actually observed a target, never by an interval intersecting a sector, and no "

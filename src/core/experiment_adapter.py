@@ -22,6 +22,7 @@ A `DomainExperimentAdapter` is the whole of what a domain must supply, in one re
 ``build_null``               the domain-legitimate null this record admits
 ``render_provenance``        how a canonical value is shown to have arisen
 ``admissible_kernels``       which alignment operations its support tolerates (TG17.4)
+``admissible_nulls``         which null families its support can carry (TG17.5)
 ===========================  ==============================================================
 
 **Window arithmetic belongs to the framework, not to the adapter.** `plan_acquisition` returns
@@ -353,6 +354,13 @@ class DomainExperimentAdapter:
     #: carrying support is a claim about what an observation means, and the domain that knows
     #: what its support means is the only place that claim can legitimately be made.
     admissible_kernels: Tuple[str, ...] = ("exact_support_overlap",)
+    #: Which declared null families this domain's support can carry (TG17.5). A null is the
+    #: thing a p-value is measured against, so admitting one is a claim that the surrogate is a
+    #: record this domain could have produced - which only this domain can say. The default
+    #: admits the plain clock shift and nothing else; a domain whose structure is seasonal or
+    #: grouped names the family that preserves that, and no adapter admits a global shuffle
+    #: because the registry refuses it outright.
+    admissible_nulls: Tuple[str, ...] = ("independent_native_clock_shift",)
     onboarding_cost: Mapping[str, Any] = dc_field(default_factory=dict)
     definition_sha256: str = dc_field(init=False, default="")
 
@@ -384,6 +392,32 @@ class DomainExperimentAdapter:
                 "naming it would be admitted by an adapter against a kernel that does not "
                 "exist" % ", ".join(repr(name) for name in unknown))
         object.__setattr__(self, "admissible_kernels", kernels)
+
+        from src.core.structural_nulls import NULL_FAMILIES
+
+        nulls = tuple(dict.fromkeys(self.admissible_nulls))
+        if not nulls:
+            raise AdapterConformanceError(
+                self.adapter_id, "admissible_nulls",
+                "at least one null family. A domain with no admissible null can be measured "
+                "and cannot be calibrated, and a comparison it takes part in has nothing to "
+                "compare its p-values against")
+        unregistered = sorted(set(nulls) - set(NULL_FAMILIES.names()))
+        if unregistered:
+            raise AdapterConformanceError(
+                self.adapter_id, "admissible_nulls",
+                "only registered null families; %s is not registered, and a manifest naming "
+                "it would be admitted by an adapter against a null that does not exist"
+                % ", ".join(repr(name) for name in unregistered))
+        refused = sorted(name for name in nulls if not NULL_FAMILIES.get(name).admissible)
+        if refused:
+            raise AdapterConformanceError(
+                self.adapter_id, "admissible_nulls",
+                "only null families this framework will run; %s %s refused: %s"
+                % (", ".join(repr(name) for name in refused),
+                   "is" if len(refused) == 1 else "are",
+                   NULL_FAMILIES.get(refused[0]).inadmissible_reason))
+        object.__setattr__(self, "admissible_nulls", nulls)
         object.__setattr__(self, "onboarding_cost",
                            MappingProxyType(dict(self.onboarding_cost)))
         object.__setattr__(self, "definition_sha256", _digest({
@@ -392,6 +426,7 @@ class DomainExperimentAdapter:
             "declaration": self.declaration.describe(),
             "controls": self.controls.describe(),
             "admissible_kernels": list(self.admissible_kernels),
+            "admissible_nulls": list(self.admissible_nulls),
             "code": {name: _callable_identity(getattr(self, name))
                      for name in ("plan_acquisition", "structural_declaration", "translate",
                                   "translator_config", "materialize", "derive_capabilities",
@@ -429,6 +464,8 @@ class DomainExperimentAdapter:
             "controls": self.controls.describe(),
             "declaration": self.declaration.describe(),
             "admissible_kernels": list(self.admissible_kernels),
+            "admissible_nulls": list(self.admissible_nulls),
+            "precedence_admissible": self.declaration.precedence_admissible,
             "implements": sorted(name for name in
                                  ("translator_config", "materialize", "derive_capabilities",
                                   "build_null", "render_provenance")

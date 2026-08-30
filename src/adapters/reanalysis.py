@@ -72,6 +72,14 @@ ADAPTER = build_standardized_level_adapter(
     # statements about the product. Carrying a value forward is not, and is not admitted.
     admissible_kernels=("exact_support_overlap", "symmetric_tolerance",
                         "common_grid_aggregate"),
+    # A reanalysis field is strongly seasonal, so the plain clock shift produces a surrogate
+    # this domain does not emit: one whose annual phase is wrong everywhere. The whole-cycle
+    # shift keeps every step at its own point of the year and destroys only which year it was.
+    # The scale/shape null alters no record at all, so admitting it is a claim only that
+    # this domain has a meaningful native duration to be compared across. A gridded
+    # product declares its cadence and its valid interval, so it does.
+    admissible_nulls=("independent_native_clock_shift", "whole_cycle_clock_shift",
+                      "scale_partner_reassignment"),
     domain_mathematics=("none beyond the shared standardized-level channel: this domain "
                         "breaks no inherited assumption, which is why it is the cheapest "
                         "adapter and why it proves least about the seam",))

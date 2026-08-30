@@ -4004,7 +4004,7 @@ the benchmark and cross-domain suites, the frontend contract and the documentati
 moved.
 
 
-**TG17.5 Multi-domain family accounting and domain-legitimate nulls — PLANNED.** Freeze all tested
+**TG17.5 Multi-domain family accounting and domain-legitimate nulls — DONE (2026-08-31, `ed-dev`).** Freeze all tested
 domain pairs, triples, quartets, windows, durations, scales, motifs, lags and representations as
 one explicit hypothesis family before mining. The plan reports the family expansion in human
 terms and runs R18's resolution/power check before acquisition. Pairwise screens may generate
@@ -4016,10 +4016,53 @@ observation windows and any declared grouping. Calendar-co-occurrence nulls are 
 scale/shape-similarity nulls. A global shuffle is not accepted merely because every domain can
 technically execute it.
 
-**Acceptance:** the TG17.0 false-alignment fixtures calibrate at the frozen family level and the
-planted cases meet stated power. Adding a domain or duration updates the visible family and
-resource requirement before freeze. A domain without a justified precedence policy can
-participate in structural association but makes the affected precedence family unavailable.
+**Delivered.** `src/core/experiment_family.py` turns a manifest into one `SearchSpecification`
+over eight declared axes — domain set, window, channel, scale, relationship, lag, representation
+and motif — replacing the product that was written inline in `preflight_manifest` and copied
+again into the browser. Domain combinations are unioned across declared arities rather than
+multiplied, so pairs and triples of four domains are 6 + 4 members. `FamilyDefinition` gained
+`domain_arities`, `lags_seconds`, `representations` and `motifs`, each inside the manifest
+digest. `family_expansion` renders the multiplication as a sentence, prices the same declaration
+with one more domain, duration, scale and channel, and reports the surrogate cost of each.
+`ScreenedSearch` holds the screen beside the complete search and refuses to correct over the
+survivors of a screen unless a held-out partition is named. `precedence_availability` counts the
+members an absent lag policy leaves untestable without reducing the family. `structural_nulls.py`
+became a registry of mode-tagged `NullFamily` objects with declared preserved and destroyed
+features, four admissible families and `global_value_shuffle` registered-and-refused; adapters
+declare `admissible_nulls`, and preflight binds the manifest's null against every participating
+adapter. Two routes (`GET .../null-families`, `POST .../manifests/family`) and
+`frontend/src/components/FamilyPlan.tsx` put all of it in front of the researcher before the
+freeze.
+
+**The arithmetic this forced out.** Pricing the flagship through `SearchSpecification.account()`
+for the first time showed that its 288 declared tests need about **35,953 surrogates** under
+Benjamini-Yekutieli at alpha 0.05, while the frozen acceptance policy declares 200 — at which the
+largest affordable family is **four**. The study could have run to completion, cost the full
+amount and been arithmetically incapable of rejecting anything (**D76**). The remedy is the one
+R18 already admits: the manifest gained a `ConfirmationPolicy`, a `confirmatory_only` study is
+priced at its complete family and refused when it cannot resolve it, and the flagship now
+declares `generate_then_confirm` against a named held-out partition with four confirmatory
+members — with every payload stating that its generate stage produces candidates and not claims.
+A second defect fell out of the same pass: the flagship's null carried a `preserve_gaps`
+parameter that nothing had ever read (**D77**).
+
+**Acceptance met.** `src/benchmarks/family_calibration.py` calibrates the TG17.0 fixtures at the
+frozen family level — six pairs, one Benjamini-Yekutieli correction, 999 replications, the
+declared null applied through `bind_null`, and a support-weighted statistic that inherits TG17.4's
+density invariance. The planted `shared_calendar_event` is confirmed on **6 of 6** pairs; the
+false-alignment fixtures `same_window_unrelated`, `gap_alias` and `inadmissible_precedence` each
+reject **0 of 6**, so an identical outer interval and a shared observation gap do not become
+shared structure. Adding a domain or a duration updates the visible family and its surrogate
+requirement before the freeze (288 → 480 and 288 → 384, with 35,953 → 64,819 and 50,143
+surrogates required). Two of the four flagship domains declare no justified lag policy: they take
+part in structural association, and the 240 precedence members that pair them are reported
+unavailable while the declared family size stays the correction unit.
+
+**Evidence.** `test_experiment_family.py` 54 functions / 57 cases; `test_frontend_contract.py`
+117; the TG17 suites, the benchmark and cross-domain suites and the documentation audit run
+together; production build clean. Nothing acquired, no confirmatory statistic run, no evidence
+written, no claim rung moved.
+
 
 **TG17.6 Content-addressed, resumable experiment orchestrator — PLANNED.** Execute one state machine:
 `DRAFT -> PREFLIGHTED -> FROZEN -> ACQUIRING -> TRANSLATING -> MINING -> CONFIRMING -> COMPLETE`,

@@ -7246,3 +7246,72 @@ rung moves.
 
 The full suite was not rerun at the user's request; the clean 2745-pass G15 run remains the latest
 full-suite evidence.
+
+## TG17.5 - Multi-Domain Family Accounting and Domain-Legitimate Nulls (2026-08-31, `ed-dev`) - **COMPLETE**
+
+A four-domain study is a search over domain combinations, windows, channels, scales,
+relationships, lags, representations and motifs. Every one of those is a knob that can be turned
+after seeing a result, so every one of them is declared, and the family is the product of all of
+them counted once. `src/core/experiment_family.py` builds that product as a `SearchSpecification`
+over eight axes and prices it before acquisition. The inline product in `preflight_manifest` and
+its copy in the browser are gone; a family size that could be read two ways is a family size that
+will be.
+
+Domain combinations are unioned across declared arities rather than multiplied: pairs and triples
+of four domains are 6 + 4 = 10 members, because a member is one combination.
+
+**The check found what it exists to find.** Priced for the first time, the flagship's 288 declared
+tests need about **35,953 surrogates** under Benjamini-Yekutieli at alpha 0.05. The frozen
+acceptance policy declares **200**, at which the largest affordable family is **four**. That
+study could have run to completion, cost the full amount and been arithmetically incapable of
+rejecting anything - reporting nothing for an arithmetic reason indistinguishable afterwards from
+a clean negative. It is logged as **D76**, and the manifest gained the `ConfirmationPolicy` that
+makes the two legitimate answers separable: a `confirmatory_only` study is priced at its complete
+declared family and refused when it cannot resolve it, and a `generate_then_confirm` study must
+name the held-out partition it will confirm on and how many members. The flagship declares the
+second. Its generate stage is labelled in every payload as producing candidates and not claims.
+**D77** fell out of the same pass: the flagship's null had carried a `preserve_gaps` parameter
+that nothing read since TG17.1.
+
+A pairwise screen never shrinks the correction unit. `correct_over_candidates` refuses the number
+of survivors by name and permits it only against a named held-out partition, because a
+confirmatory family is legitimately small only when it was frozen before that partition was
+opened.
+
+Two of the four flagship domains declare no justified lag policy. They take part in structural
+association; the 240 declared members that pair them at a precedence relationship are reported
+unavailable, and the declared family size is unchanged - a family narrowed to what survived is a
+family chosen after looking.
+
+Nulls became declared objects with a comparison mode and a named list of what they preserve and
+destroy. A calendar null is refused for a scale/shape question where the question is declared.
+Four admissible families are registered - the plain clock shift, a whole-cycle shift that keeps
+seasonal phase, a within-group shift that never moves a value across a declared group boundary,
+and a scale/shape partner reassignment that alters no record at all - and none of their parameters
+has a framework default. `global_value_shuffle` is **registered and refused**: every domain can
+execute it, which is exactly why it must be refusable by name rather than quietly absent. Which
+nulls a domain's support can carry is declared per adapter and bound against every participating
+adapter in preflight.
+
+The TG17.0 fixtures calibrate at the frozen family level - six pairs, one correction, 999
+replications, the declared null applied through `bind_null`, and a support-weighted statistic that
+inherits TG17.4's density invariance. The planted `shared_calendar_event` is confirmed on **6 of
+6** pairs. `same_window_unrelated`, `gap_alias` and `inadmissible_precedence` each reject **0 of
+6**: an identical outer interval and a shared observation gap do not become shared structure.
+
+```text
+> .\.venv\Scripts\python.exe -m pytest src\tests\test_experiment_family.py src\tests\test_structural_alignment.py src\tests\test_frontend_contract.py src\tests\test_adapter_registry.py src\tests\test_experiment_manifest.py src\tests\test_structural_trajectory.py src\tests\test_domain_onboarding.py src\tests\test_acquisitions_api.py src\tests\test_benchmarks.py src\tests\test_cross_domain.py src\tests\test_family_accounting.py src\tests\test_preregistration.py src\tests\test_documentation.py -q
+513 passed, 5 warnings in 556.20s (0:09:16)
+
+> cd frontend && npm run build
+built in 1m 17s (TypeScript and Vite production bundle)
+
+> git diff --check
+(clean)
+```
+
+No live archive is acquired, no confirmatory statistic runs, no evidence is written and no claim
+rung moves. A calibration on fixtures with known answers is not a result about any domain.
+
+The full suite was not rerun at the user's request; the clean 2745-pass G15 run remains the latest
+full-suite evidence.

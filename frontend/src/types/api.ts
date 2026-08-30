@@ -1994,13 +1994,131 @@ export interface CrossDomainExperimentManifest {
   coverage_policy: { requirement: 'complete_required' | 'partial_permitted'; minimum_fraction: number };
   alignment: AlignmentPolicy;
   scale_normalization: Record<string, any> | null;
-  family: { channels: string[]; scales: number[]; relationships: string[]; maximum_members: number };
+  family: FamilyDefinition;
+  confirmation: ConfirmationPolicy;
   nulls: { name: string; method: string; replications: number; parameters: Record<string, any> }[];
   correction: 'benjamini_yekutieli' | 'holm' | 'bonferroni';
   alpha: number;
   seeds: Record<string, number>;
   resource_caps: { maximum_family_members: number; maximum_planned_bytes: number; maximum_runtime_seconds: number };
   notes: Record<string, any>;
+}
+
+/** Every axis of the declared search (TG17.5). The axes a study is free to vary are the axes
+ *  it must declare: a family priced without one is short by exactly the factor nobody wrote
+ *  down. */
+export interface FamilyDefinition {
+  channels: string[];
+  scales: number[];
+  relationships: string[];
+  domain_arities: number[];
+  lags_seconds: number[];
+  representations: string[];
+  motifs: string[];
+  maximum_members: number;
+}
+
+/** Which stage the manifest declares, and therefore what R18 corrects over (TG17.5). */
+export interface ConfirmationPolicy {
+  stage: 'confirmatory_only' | 'generate_then_confirm';
+  held_out_partition: string | null;
+  confirmatory_members: number | null;
+}
+
+export interface FamilyExpansionAxis {
+  axis: string;
+  declared_values: number;
+  examples: string[];
+  contributes: string;
+}
+
+/** What one more value on an axis would cost, priced before the freeze rather than discovered
+ *  after acquisition. */
+export interface FamilyExpansionCost {
+  axis: string;
+  adds: string;
+  family_size_before: number;
+  family_size_after: number;
+  members_added: number;
+  surrogates_required_before: number;
+  surrogates_required_after: number;
+  declared_surrogates: number;
+  affordable_after: boolean;
+}
+
+export interface FamilyCorrectionPlan {
+  stage: 'confirmatory_only' | 'generate_then_confirm';
+  declared_search_members: number;
+  correction_unit_members: number;
+  held_out_partition: string | null;
+  n_surrogates: number;
+  surrogates_required: number;
+  p_value_floor: number;
+  affordable: boolean;
+  warning: string | null;
+  generate_stage_makes_claims: boolean | null;
+  note: string;
+}
+
+export interface PrecedenceAvailability {
+  schema: string;
+  declared_family_size: number;
+  precedence_relationships_declared: string[];
+  domains_without_precedence_policy: string[];
+  unavailable_precedence_members: number;
+  association_members_unaffected: number;
+  family_size_unchanged: boolean;
+  entire_family_unavailable: boolean;
+  basis: string;
+  note: string;
+}
+
+export interface FamilyExpansion {
+  schema: string;
+  study_id: string;
+  mode: string;
+  axes: FamilyExpansionAxis[];
+  in_human_terms: string;
+  family_size: number;
+  specification_sha256: string;
+  declared_surrogates: number;
+  declared_surrogates_basis: string;
+  account: Record<string, any>;
+  correction: FamilyCorrectionPlan;
+  largest_affordable_family: number;
+  resource_requirement: { surrogate_evaluations_declared: number;
+    surrogate_evaluations_required: number; note: string };
+  expansion_cost: FamilyExpansionCost[];
+  screen_and_confirm: { screen_family_size: number; complete_family_size: number;
+    correction_unit: number; screen_sha256: string; complete_sha256: string; rule: string };
+  precedence: PrecedenceAvailability;
+  claim_boundary: string;
+}
+
+/** One declared surrogate construction. `preserves` is the list of features that would
+ *  otherwise manufacture the structure under test, so a family that preserves fewer of them is
+ *  a weaker null and says so. */
+export interface NullFamilyDescription {
+  name: string;
+  modes: string[];
+  operates_on: string;
+  preserves: string[];
+  destroys: string[];
+  parameters: string[];
+  admissible: boolean;
+  inadmissible_reason: string | null;
+  definition: string;
+  claim_boundary: string;
+  admitted_by: string[];
+  usable_across_all_registered_domains: boolean;
+}
+
+export interface NullFamilyList {
+  schema: string;
+  families: NullFamilyDescription[];
+  modes: string[];
+  note: string;
+  claim_boundary: string;
 }
 
 export interface ExperimentManifestEnvelope {
@@ -2019,7 +2137,8 @@ export interface ExperimentPreflight {
   metadata_only: boolean;
   network_used: boolean;
   measurement_values_opened: boolean;
-  family: { declared_members: number; maximum_members: number; windows_are_one_family: boolean };
+  family: FamilyExpansion & { declared_members: number; maximum_members: number;
+    windows_are_one_family: boolean };
   alignment: PreflightAlignment;
   coverage: { domain: string; label?: string; source_id: string; measure?: string; status: string;
     reason: string; support_kind?: string; native_cadence_seconds?: number | null; access?: string;

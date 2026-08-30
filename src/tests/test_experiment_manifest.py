@@ -34,9 +34,16 @@ def test_canonical_round_trip_is_byte_stable_and_is_the_run_identity():
 
 
 def test_multiple_durations_are_one_declared_family():
+    """Three durations are three times the tests, and TG17.5 shows the multiplication."""
     report = preflight_manifest(flagship_recipe())
-    assert report["family"] == {"declared_members": 288, "maximum_members": 10000,
-                                "windows_are_one_family": True}
+    family = report["family"]
+    assert family["declared_members"] == 288
+    assert family["maximum_members"] == 10000
+    assert family["windows_are_one_family"] is True
+    assert family["in_human_terms"] == ("6 domain sets x 3 windows x 4 channels x 4 scales "
+                                        "x 1 relationship = 288 declared tests.")
+    window_cost = next(row for row in family["expansion_cost"] if row["axis"] == "window")
+    assert window_cost["members_added"] == 96
 
 
 def test_metadata_preflight_never_uses_network_or_opens_values():

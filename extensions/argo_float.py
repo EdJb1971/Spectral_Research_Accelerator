@@ -136,6 +136,12 @@ def register_adapter() -> Any:
         # legitimate statement about how long an ascent takes; a fixed grid is not, because
         # the array does not keep the nominal cycle a grid would assume.
         admissible_kernels=("exact_support_overlap", "symmetric_tolerance"),
+        # A float belongs to a deployment and reports in cycles, so its rows are grouped
+        # whether or not a study says so, and a shift across deployments would compare
+        # this array against one that does not exist. The seasonal shift is admitted too:
+        # a profile collection carries an annual cycle the plain shift would flatten.
+        admissible_nulls=("independent_native_clock_shift", "whole_cycle_clock_shift",
+                          "within_group_clock_shift", "scale_partner_reassignment"),
         domain_mathematics=(
             "the sparse point support and its consequences: a nominal cycle that the array "
             "does not keep means no expected sample count may be derived from an interval, "

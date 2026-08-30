@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Activity, AlertTriangle, CheckCircle2, FileLock2, Loader2, Save, Search, ShieldCheck, Waves } from 'lucide-react';
+import { Activity, AlertTriangle, CheckCircle2, Calculator, FileLock2, Loader2, Save, Search, ShieldCheck, Waves } from 'lucide-react';
 import { apiService } from '../services/api';
 import { AdapterControlPanel } from './AdapterControls';
 import { AlignmentKernelPicker, CoverageTimeline } from './CoverageTimeline';
+import { FamilyExpansionPanel, NullFamilyPicker } from './FamilyPlan';
 import * as types from '../types/api';
 
 const SAVED_DRAFT_KEY = 'spectralearth.g17.composer.draft';
@@ -26,6 +27,8 @@ export default function ExperimentComposer({ onSelectStudy }: { onSelectStudy?: 
   const [conformance, setConformance] = useState<types.AdapterConformanceReport[]>([]);
   const [kernels, setKernels] = useState<types.AlignmentKernelDescription[]>([]);
   const [alignment, setAlignment] = useState<types.AlignmentReport | null>(null);
+  const [nullFamilies, setNullFamilies] = useState<types.NullFamilyList | null>(null);
+  const [expansion, setExpansion] = useState<types.FamilyExpansion | null>(null);
   const [busy, setBusy] = useState('');
   const [message, setMessage] = useState('');
 
@@ -34,6 +37,7 @@ export default function ExperimentComposer({ onSelectStudy }: { onSelectStudy?: 
     apiService.listExperimentRecipes().then((body) => setRecipes(body.recipes)).catch(() => setRecipes([]));
     apiService.listExperimentAdapters().then((body) => setAdapters(body.adapters)).catch(() => setAdapters([]));
     apiService.listAlignmentKernels().then((body) => setKernels(body.kernels)).catch(() => setKernels([]));
+    apiService.listNullFamilies().then(setNullFamilies).catch(() => setNullFamilies(null));
     const draft = localStorage.getItem(SAVED_DRAFT_KEY);
     const request = draft ? apiService.loadExperimentDraft(draft) : apiService.getFlagshipRecipe();
     request.then((body) => {
@@ -45,12 +49,12 @@ export default function ExperimentComposer({ onSelectStudy }: { onSelectStudy?: 
     });
   }, []);
 
-  const declaredMembers = useMemo(() => {
-    if (!manifest) return 0;
-    const n = manifest.observations.length;
-    return (n * (n - 1) / 2) * manifest.family.channels.length * manifest.family.scales.length
-      * manifest.windows.length * manifest.family.relationships.length;
-  }, [manifest]);
+  // TG17.5 removed the product that used to be computed here. It was the third copy of the
+  // family formula in this repository and it ignored the arities, lags, representations and
+  // motifs the manifest now declares - so the browser could show a smaller family than the
+  // receipt, which is the one number a researcher must not be able to read two ways.
+  const declaredFamily = useMemo(
+    () => expansion || (preflight ? preflight.family : null), [expansion, preflight]);
 
   const adapterFor = (adapterId: string) => adapters.find((row) => row.adapter_id === adapterId);
 
@@ -123,6 +127,28 @@ export default function ExperimentComposer({ onSelectStudy }: { onSelectStudy?: 
     if (!manifest) return;
     setManifest({ ...manifest, alignment: policy });
     setIdentity(''); setPreflight(null); setAlignment(null);
+  };
+
+  const priceFamily = async () => {
+    if (!manifest) return;
+    setBusy('family'); setMessage('');
+    try {
+      const result = await apiService.experimentFamily(manifest);
+      setExpansion(result);
+      setMessage(result.correction.affordable
+        ? 'The declared family is priced. Affordability is not evidence.'
+        : 'This declaration cannot reject anything at the declared ensemble.');
+    } catch (error: any) { setExpansion(null); setMessage(error.message); }
+    finally { setBusy(''); }
+  };
+
+  const updateNull = (method: string, parameters: Record<string, any>) => {
+    if (!manifest) return;
+    const cleaned = Object.fromEntries(
+      Object.entries(parameters).filter(([, value]) => value !== undefined && value !== ''));
+    setManifest({ ...manifest, nulls: manifest.nulls.map((row, index) =>
+      index === 0 ? { ...row, method, parameters: cleaned } : row) });
+    setIdentity(''); setPreflight(null); setExpansion(null);
   };
 
   const showSharedSupport = async () => {
@@ -255,8 +281,19 @@ export default function ExperimentComposer({ onSelectStudy }: { onSelectStudy?: 
               {contract?.mode_forbids?.[manifest.mode] || ''}
             </p>
           </div>
+          <div className="border-t border-slate-800 pt-3">
+            <h4 className="text-sm text-slate-200 mb-1">Null</h4>
+            <p className="text-xs text-slate-500 mb-2">A null belongs to a comparison mode and
+              to a domain. What each family preserves is declared, because a surrogate that
+              destroys the autocorrelation, the cyclic phase or the gaps is one no domain here
+              emits — and a p-value measured against it is optimistic in a way the result does
+              not show.</p>
+            <NullFamilyPicker list={nullFamilies} mode={manifest.mode}
+              method={manifest.nulls[0]?.method || ''}
+              parameters={manifest.nulls[0]?.parameters || {}} onChange={updateNull} />
+          </div>
           <div className="grid grid-cols-2 gap-2 text-xs">
-            <div className="bg-slate-950 rounded p-3"><span className="text-slate-500 block">Family members</span>{declaredMembers}</div>
+            <div className="bg-slate-950 rounded p-3"><span className="text-slate-500 block">Family members</span>{declaredFamily ? declaredFamily.family_size.toLocaleString() : 'price it'}</div>
             <div className="bg-slate-950 rounded p-3"><span className="text-slate-500 block">Null replications</span>{manifest.nulls[0]?.replications}</div>
             <div className="bg-slate-950 rounded p-3"><span className="text-slate-500 block">Correction</span>{manifest.correction}</div>
             <div className="bg-slate-950 rounded p-3"><span className="text-slate-500 block">Cap</span>{manifest.resource_caps.maximum_family_members}</div>
@@ -273,6 +310,9 @@ export default function ExperimentComposer({ onSelectStudy }: { onSelectStudy?: 
           </button>
           <button onClick={previewRepresentation} disabled={!!busy} className="px-4 py-2 rounded bg-cyan-700 hover:bg-cyan-600 disabled:opacity-50 text-sm flex gap-2 items-center">
             {busy === 'representation' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Activity className="w-4 h-4" />} Inspect structural contract
+          </button>
+          <button onClick={priceFamily} disabled={!!busy} className="px-4 py-2 rounded bg-violet-700 hover:bg-violet-600 disabled:opacity-50 text-sm flex gap-2 items-center">
+            {busy === 'family' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Calculator className="w-4 h-4" />} Price the declared family
           </button>
           <button onClick={showSharedSupport} disabled={!!busy} className="px-4 py-2 rounded bg-sky-700 hover:bg-sky-600 disabled:opacity-50 text-sm flex gap-2 items-center">
             {busy === 'alignment' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Waves className="w-4 h-4" />} Show shared support
@@ -306,6 +346,16 @@ export default function ExperimentComposer({ onSelectStudy }: { onSelectStudy?: 
             {preflight.refusals.map((row, index) => <li key={index}>{row.domain ? `${row.domain}: ` : ''}{row.reason}</li>)}
           </ul>}
           <p className="text-xs text-slate-500 mt-4">{preflight.claim_boundary}</p>
+        </section>
+      )}
+
+      {declaredFamily && (
+        <section className={`border rounded-xl p-5 ${declaredFamily.correction.affordable
+          ? 'border-violet-500/40 bg-violet-500/5' : 'border-rose-500/40 bg-rose-500/5'}`}>
+          <h3 className="font-semibold flex gap-2 items-center mb-3">
+            <Calculator className="w-5 h-5 text-violet-400" /> Declared family
+          </h3>
+          <FamilyExpansionPanel expansion={declaredFamily} />
         </section>
       )}
 

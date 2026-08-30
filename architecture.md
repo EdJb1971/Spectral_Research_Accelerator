@@ -4503,6 +4503,102 @@ This slice acquires nothing, runs no cross-domain statistic, writes no evidence 
 claim rung.
 
 
+#### 3.6zzo Multi-Domain Family Accounting and Domain-Legitimate Nulls (TG17.5, `ed-dev`)
+
+`src/core/experiment_family.py` turns a manifest into the one thing rule R18 can act on: a
+declared search, enumerated as axes, priced exactly, before anything is acquired. Until this
+slice the family size was a product written inline in `preflight_manifest` - pairs x channels x
+scales x windows x relationships - which is the mistake `src/core/family.py`'s own docstring
+warns about, and there was a second copy of it in the browser. Both are gone. The family is now
+one `SearchSpecification` over eight declared axes: domain set, window, channel, scale,
+relationship, lag, representation and motif. Each was a knob a researcher can turn after seeing
+a result, and a family priced without one is short by exactly the factor nobody wrote down; the
+manifest's `FamilyDefinition` gained `domain_arities`, `lags_seconds`, `representations` and
+`motifs` so that turning any of them changes the number and the manifest digest together.
+
+Domain combinations are **unioned across arities, not multiplied**: a study testing pairs and
+triples of four domains declares 6 + 4 = 10 combinations, and the count is `sum C(n, k)` because
+a member is one combination. The flagship's declaration reads, in the words the Composer prints,
+*"6 domain sets x 3 windows x 4 channels x 4 scales x 1 relationship = 288 declared tests."*
+
+**The arithmetic this slice made visible was not comfortable.** 288 tests corrected under
+Benjamini-Yekutieli at alpha 0.05 need roughly **35,953 surrogates** before one member can be
+rejected; the TG17.0 acceptance policy declares 200 replications, at which the largest
+affordable family is **four members**. The flagship as written could have run to completion,
+cost the full amount and been arithmetically incapable of rejecting anything - reporting nothing
+for a reason that is not the data, and indistinguishable afterwards from a clean negative. This
+is D8 at four-domain scale, and finding it before acquisition is the entire purpose of the
+check. Two defects are logged against it (D76, D77). The remedy is the one R18 already admits
+and TG3.2 already implements, so the manifest gained a `ConfirmationPolicy`: a study declares
+itself either `confirmatory_only`, in which case it is priced at its complete declared family
+and refused if it cannot resolve it, or `generate_then_confirm`, in which case it must name the
+held-out partition it will confirm on and how many members it will confirm. The flagship now
+declares the second, and every payload states plainly that its generate stage produces
+candidates and not claims: the p-values there are uncorrected and the selection used the data.
+
+**A screen never shrinks the correction unit.** `ScreenedSearch` holds a pairwise screen and the
+complete search it lives inside, and `correct_over_candidates` refuses the number of survivors
+by name - the survivors were chosen by looking at the data, so correcting over them prices a
+family selected after the fact. The one thing that permits a smaller number is a *named*
+held-out partition, because a confirmatory family is legitimately small only when it was frozen
+before that partition was opened.
+
+**Precedence availability is reported beside the family, never subtracted from it.** Two of the
+four flagship domains declare no justified lag policy, so any member pairing them at a
+precedence relationship was never testable. `precedence_availability` counts those through
+`audit_admissibility` and leaves `family_size` alone: a family narrowed to what survived is a
+family chosen after looking. A domain without a precedence policy still takes part in structural
+association, and both facts appear on the receipt.
+
+`family_expansion` prices the same declaration with one more domain, one more duration, one more
+scale and one more channel, so the decision is available while it can still be made: a fifth
+domain takes the flagship from 288 to 480 tests and from 35,953 to 64,819 required surrogates.
+`frontend/src/components/FamilyPlan.tsx` draws the axes, the multiplication, the correction unit
+beside its held-out partition, and that expansion table.
+
+`src/core/structural_nulls.py` became a registry of declared `NullFamily` objects, each carrying
+the comparison **mode** it answers for and a named list of what it preserves and destroys.
+A calendar null is refused for a scale/shape question at the manifest, where the question is
+declared: a clock shift is no null for a comparison that never referred to a clock, and a
+partner reassignment is no null for a shared calendar interval. Four admissible families are
+registered - `independent_native_clock_shift`, `whole_cycle_clock_shift` (whole cycles only, so
+seasonal phase survives), `within_group_clock_shift` (never moves a value across a declared group
+boundary) and `scale_partner_reassignment` (alters no record at all; only the correspondence
+under test is broken) - and their parameters have no framework defaults, for the reason TG17.4
+gave for kernels. `global_value_shuffle` is **registered and refused**, with its reason stated:
+every domain can execute it, which is precisely why it needs to be refusable by name rather than
+quietly absent, and it destroys the autocorrelation, cyclic phase, gaps and profile support that
+would otherwise produce the apparent structure under test.
+
+Which nulls a domain's support can carry is a domain judgement, declared through the adapter
+contract's new `admissible_nulls` and checked against every participating adapter in preflight.
+Reanalysis admits the seasonal shift because a reanalysis field is strongly seasonal and the
+plain shift would produce a surrogate whose annual phase is wrong everywhere; Argo admits the
+grouped shift because a float belongs to a deployment whether or not a study says so; TESS admits
+the grouped shift but not the seasonal one, because a sector is a real boundary and no annual
+cycle is claimed for a target; the bespoke family admits only the plain shift, because its clock
+is whatever the depositor wrote down and a session length the framework inferred would be a
+scientific choice nobody made.
+
+`src/benchmarks/family_calibration.py` calibrates the TG17.0 fixtures **at the frozen family
+level**, which is the level the acceptance is stated at: six pairs, one correction, 999
+replications, and what is counted is rejections after correction rather than raw p-values. The
+statistic is a support-weighted correlation over the intersection of two records' declared
+`[start, end)` supports, weighted by the seconds they actually share - so it inherits TG17.4's
+invariant, and rewriting a record at twice the row density over identical support gives the
+identical number. The planted `shared_calendar_event` is confirmed on 6 of 6 pairs;
+`same_window_unrelated`, `gap_alias` and `inadmissible_precedence` each reject 0 of 6, so an
+identical outer interval and a shared observation gap do not become shared structure.
+
+Two new routes: `GET /api/v1/experiment-composer/null-families` generates the null catalogue from
+the null registry crossed with the adapter registry, so a family no domain admits is visibly
+unusable rather than absent; `POST /api/v1/experiment-composer/manifests/family` prices the
+declared search in human terms before acquisition.
+
+This slice acquires nothing, runs no confirmatory statistic, writes no evidence and moves no
+claim rung. A calibration on fixtures with known answers is not a result about any domain.
+
+
 ### 3.11 Ground-Truth Benchmark Suite (`src/benchmarks/`)
 
 Added in T3.5.17 (standard E7). Twenty-four synthetic datasets whose correct answer is known
@@ -4827,7 +4923,7 @@ reason in the test itself.
 
 ## 3.12 HTTP API Surface
 
-109 routes. Listed here because an undocumented endpoint is an untested contract. The count and this table were both wrong until TG17.3 (defect D75): the guard enumerated a hand-maintained list of ten source files and could not see four mounted routers.
+111 routes. Listed here because an undocumented endpoint is an untested contract. The count and this table were both wrong until TG17.3 (defect D75): the guard enumerated a hand-maintained list of ten source files and could not see four mounted routers.
 
 | Method | Route | Notes |
 |---|---|---|
@@ -4935,6 +5031,8 @@ reason in the test itself.
 | POST | `/api/v1/experiment-composer/adapters/{adapter_id}/conformance` | the conformance kit run against that adapter's deterministic known-answer record; declared-but-unprobed invariances report `NOT_PROBED` rather than passing (TG17.3) |
 | GET | `/api/v1/experiment-composer/alignment-kernels` | every declared alignment kernel and which registered adapters admit it; a kernel no adapter admits is visibly unusable rather than absent (TG17.4) |
 | POST | `/api/v1/experiment-composer/manifests/alignment` | the support this manifest's domains actually share, measured from the deterministic known-answer records and labelled as such (TG17.4) |
+| GET | `/api/v1/experiment-composer/null-families` | every declared null family, its comparison mode, what it preserves and destroys, and which registered adapters admit it; a refused family is shown with its reason rather than omitted (TG17.5) |
+| POST | `/api/v1/experiment-composer/manifests/family` | the complete declared search priced in human terms before acquisition: the multiplication, the R18 correction unit, what one more domain or duration would cost, and which precedence members are unavailable (TG17.5) |
 | POST | `/api/v1/experiment-composer/manifests/validate` | one immutable manifest's content digest and run identity (TG17.1) |
 | POST | `/api/v1/experiment-composer/manifests/preflight` | metadata-only coverage planning from each domain's registered adapter, plus the alignment block: the frozen kernel, each window's true elapsed seconds and each pair's shared support or the reason metadata cannot establish it; no network and no measurement values (TG17.1/TG17.3/TG17.4) |
 | POST | `/api/v1/experiment-composer/manifests/representation-preview` | the canonical `StructuralTrajectory` contract on frozen fixtures, labelled as known-answer data (TG17.2) |
@@ -5698,8 +5796,8 @@ See `VERIFICATION.md` for the captured command output behind every statement her
 
 Earlier revisions of this document and of `roadmap.md` claimed the platform was "validated"
 and "zero-error". It was not: the first real execution produced 8 test failures and a frontend
-that had never rendered. The ledger below has grown from 18 entries to **68** as a direct result
-of running the code and building tests against independent answers — **66 are fixed, D18 is
+that had never rendered. The ledger below has grown from 18 entries to **77** as a direct result
+of running the code and building tests against independent answers — **75 are fixed, D18 is
 partial, and D43 remains open**.
 
 Defects D26-D31 were all found *after* the code they concern was written and passing, by
@@ -5804,6 +5902,8 @@ code paths that `architecture.md` previously described as implemented and rigoro
 | D73 | `data_layer/zarr_source.py`, `data_layer/crop_planner.py`, `api/main.py`, `frontend/components/AcquisitionView.tsx` | **Acquisition discovered transform invalidity after the expensive step, and the command did not preserve the analysis it appeared to plan.** Inspect used one generic 14-tap margin and returned geometry the UI did not render; the generated command omitted `--analysis-levels`, so changing the requested analysis depth still materialised under the CLI default. Crop sizing was therefore a hidden global convention rather than a contract of the requested transform. `TransformSpec` now owns an optional implementation-derived support callback; a content-addressed metadata-only plan reports absolute and named research-policy thresholds, per-level valid interiors, feasible native-coordinate expansion and its re-priced chunk cost. Acquire renders exact transform/filter/depth controls and applies recommended bounds in one action; the generated CLI preserves every setting; explicit materialisation refuses below the recommended threshold before field selection or transfer. Legacy callers remain byte-compatible when no analysis request is supplied. | **FIXED** TG12.1d (`ed-dev`) |
 | D74 | `tests/test_documentation.py:test_route_count_claim_matches_reality` | **The route-count guard stopped reading the route count.** Its claim regex was `(\w+|\d+) routes` searched over the whole document, and TG17.1 wrote the words *"those routes"* into section 3.6zzk - 373 lines above the `## 3.12 HTTP API Surface` heading that carries the claim. From that commit the match was `"those"`, which parses as neither a numeral nor a spelled number, so the parsed value was `None` and the comparison against the served count was never reached. The claim was therefore unchecked from TG17.1 onward, and lifting the regex exposed a second and larger defect underneath it (D75). Fixed by anchoring the search to the section that carries the claim and by failing loudly when the claimed token cannot be parsed as a number: a claim this guard cannot read is a claim it is not checking, and that must fail rather than pass silently. | **FIXED** TG17.3 (`ed-dev`) |
 | D75 | `tests/test_documentation.py:_ROUTE_SOURCES` | **The route guard's coverage was a hand-maintained list, and four mounted routers were not on it.** `_routes()` parsed ten named source files. `src/api/main.py` mounts thirteen routers, and `profiles`, `lightcurves`, `ingress` and `experiment_composer` were absent — so **32 served endpoints were invisible to every check in this file**, including the entire TG16 ingress surface (`/subspace/freeze`, `/subspace/confirm`, `/subspace/transfer/certify` and thirteen more) that carries the held-out and transfer contracts. The count claim the guard validated was a count of the subset its own list named, which is why it read as consistent: architecture.md said 75 and **107 are served**, and the section 3.12 table — headed *"Listed here because an undocumented endpoint is an untested contract"* — was missing 21 rows. Found in TG17.3 while fixing D74: repairing the claim regex let the comparison run for the first time since TG17.1, and it disagreed by more than the routes that slice had added. `src/tests/test_frontend_contract.py` had enumerated `app.routes` since T3.5.22 and could see the composer surface throughout, so the two guards had disagreed about what the API is for four slices. Fixed by deleting the list: routes now come from the application object, which cannot omit a mounted router. The table is complete and the claim reads 107. | **FIXED** TG17.3 (`ed-dev`) |
+| D76 | `src/benchmarks/multidomain_flagship.py:EXPERIMENT_CONTRACT` and `experiment_manifest.flagship_recipe` | **The flagship study could have run to completion and been arithmetically incapable of rejecting anything.** TG17.0 froze an acceptance policy of 200 replications beside a family cap of 10,000 members, and TG17.1's flagship declared 288 tests (6 pairs x 3 windows x 4 channels x 4 scales). Rejecting one member of a family of 288 under Benjamini-Yekutieli at alpha 0.05 needs a raw p-value near `0.05 / (288 x H_288)` = 2.8e-5, so it needs about **35,953 surrogates**; 200 replications give a p-value floor of 1/201 and afford a family of **four**. The declared cap was therefore three orders of magnitude above what the declared ensemble could resolve, and nothing checked the two against each other: the family size was a product written inline in `preflight_manifest` and was compared only against the cap. A pass in that configuration returns an empty result for an arithmetic reason and is indistinguishable afterwards from a clean negative — D8 at four-domain scale. Found in TG17.5 the first time the manifest was priced through `SearchSpecification.account()`. Fixed by building the family from declared axes and running R18's check in preflight before acquisition, and by giving the manifest a `ConfirmationPolicy`: a study is either `confirmatory_only`, priced at its complete declared family and refused when it cannot resolve it, or `generate_then_confirm`, which must name the held-out partition it will confirm on and how many members — the remedy R18 already admitted and TG3.2 already implemented. The flagship now declares the split, four confirmatory members at 200 replications, and every payload states that its generate stage produces candidates and not claims. | **FIXED** TG17.5 (`ed-dev`) |
+| D77 | `experiment_manifest.flagship_recipe` nulls | **A declared null parameter that nothing read.** The flagship declared `"parameters": {"preserve_gaps": true}` on its null since TG17.1. `circular_clock_shift` takes a trajectory and a seed; the key was carried into the manifest digest, displayed as part of the frozen configuration and acted on by nothing — a setting a researcher believes is in force and is not, sitting inside every surrogate the study would have drawn. Found in TG17.5 when the null registry gained a `resolve` that refuses unknown parameters. Fixed by deleting it: the gap preservation it appeared to request is a property of the family, declared in `preserves` where a reader can check it, and an undeclared parameter now refuses by name rather than being ignored. | **FIXED** TG17.5 (`ed-dev`) |
 
 **Root cause common to D20, D23, D25 and D2:** the transform engine — the mathematical core of
 the platform — had **no test file at all**. `src/tests/test_transforms.py` now exists (36 cases
@@ -5962,6 +6062,7 @@ able to sit three slices out of date.
 | `test_experiment_manifest.py` | 12 | TG17.1 immutable cross-domain manifest, byte-stable API/run identity, explicit window family, native-support metadata planning, visible partial/refusal policy, content-addressed draft revisions, recipe/API round trip and no premature run route |
 | `test_structural_trajectory.py` | 10 | TG17.2 immutable canonical trajectory, exact native clock/support/gap preservation, domain-blind weather/Argo/TESS mining seam, complete value reconstruction, adapter declarations/digests, semantic-leakage and interpolation refusals, full-fidelity preview and visible API boundary |
 | `test_structural_alignment.py` | 45 | TG17.4 clock, support and coverage semantics: the density invariance that row count alone cannot manufacture support, half-open boundaries and unioned rather than summed supports, the coarser scale governing effective sample size, non-stationary support labelled an upper bound, the true elapsed seconds of a daylight-saving day and the refusal of a naive local timestamp, the six adversarial fixtures against their known answers, declared kernels with no framework-default parameters and their manufactured-overlap accounting, kernel admissibility per adapter and the refusal of a value-inventing kernel over an irregular clock, the two mode vocabularies refusing each other at the manifest, and the preflight and API alignment surfaces (56 pytest cases) |
+| `test_experiment_family.py` | 54 | TG17.5 multi-domain family accounting and mode-specific nulls: the complete declared search as eight priced axes, domain combinations unioned across arities, the lag and representation axes a family used to be short by, R18 refusing 288 tests at 200 replications before acquisition with both remedies priced, the generate/confirm stage and its named held-out partition, a screen that cannot shrink the correction unit and the refusal of correcting over survivors, precedence availability reported without reducing the family, every registered null's mode and preserved features asserted against what the surrogate actually does, the registered-and-refused global shuffle, per-adapter null admissibility, and the frozen-family calibration in which the planted event is confirmed on 6 of 6 pairs and each false-alignment fixture on 0 of 6 (57 pytest cases) |
 | `test_adapter_registry.py` | 15 | TG17.3 registered adapter contract, typed control schemas and their refusal of undeclared parameters, the ten-check conformance kit including executed invariance probes and `NOT_PROBED` reporting, unreconstructable lineage refusal, coverage-honesty and byte-cap failures, the four flagship adapters, the two that register from outside `src`, the bespoke record family's TG8.4 fence, and the synthetic fifth adapter installed through the extension seam with no orchestrator, route or UI edit |
 | `test_exports.py` | 32 | CSV/JSON/NetCDF4/Zarr round trips, embedded provenance, seeded perturbation (D34) |
 | `test_external_fcn3.py` | 9 | T5.6a offline FCN3 request/result schemas, exact global input and ensemble contracts, portability refusals, canonical persistence, file/tree identity and request/artifact tamper isolation |
@@ -5975,7 +6076,7 @@ able to sit three slices out of date.
 | `test_forecasting_artifact_evaluation.py` | 8 | T5.3b/T5.2d checkpoint/config integrity, artifact-bound lineage, persistence-relative metrics, physical-time reporting/refusals, undefined-skill handling and CPU/RTX vendor-neutral accelerator parity |
 | `test_forecasting_protocol.py` | 7 | T5.0a exact schema completeness, canonical identity, immutable nested configuration, evidence requirements, temporal/rollout consistency, persistence and tamper/drift refusal |
 | `test_forecasting_protocol_binding.py` | 4 | T5.0b exact dataset/protocol/checkpoint binding, recomputed coordinate/statistics identities, drift refusals and bound-evaluation cross-run isolation |
-| `test_frontend_contract.py` | 108 | the frontend/backend contract, including dataset-bound navigation gating with visible backend refusal reasons, capability profiles showing yes/no/not-established facts, transform/dataset/cadence readiness claim boundaries, domain-driven acquisition, workflow-grouped navigation, persistent record/study context, the TG11.1 analysis panel's three engine operations, R21 disablement, three-valued verdict and re-read identity check, the TG11.2 preregistration panel's declare-never-decide split, TG11.5's separate GET-only recorded-review workspace with its visible R23 fence, complete argument/cost display and honest empty states, TG17.1's manifest-driven save/reload/preflight Composer, TG17.2's known-answer structural-contract inspector and disabled premature runner, preservation of every ERA5 control, TG17.3's schema-driven adapter controls with no per-domain branch in the generic composer, every registrable control kind having a renderer, and the adapter/conformance payload shapes, plus TG11.6's skip/route focus, bound labels, global focus and reduced-motion rule, keyboard SVG lineage, figure text equivalents and asynchronous-state semantics, plus the UI integrity guards: no fabricated results, no unqualified validation claims, units and slope uncertainty displayed |
+| `test_frontend_contract.py` | 117 | the frontend/backend contract, including dataset-bound navigation gating with visible backend refusal reasons, capability profiles showing yes/no/not-established facts, transform/dataset/cadence readiness claim boundaries, domain-driven acquisition, workflow-grouped navigation, persistent record/study context, the TG11.1 analysis panel's three engine operations, R21 disablement, three-valued verdict and re-read identity check, the TG11.2 preregistration panel's declare-never-decide split, TG11.5's separate GET-only recorded-review workspace with its visible R23 fence, complete argument/cost display and honest empty states, TG17.1's manifest-driven save/reload/preflight Composer, TG17.2's known-answer structural-contract inspector and disabled premature runner, preservation of every ERA5 control, TG17.3's schema-driven adapter controls with no per-domain branch in the generic composer, every registrable control kind having a renderer, and the adapter/conformance payload shapes, plus TG11.6's skip/route focus, bound labels, global focus and reduced-motion rule, keyboard SVG lineage, figure text equivalents and asynchronous-state semantics, plus the UI integrity guards: no fabricated results, no unqualified validation claims, units and slope uncertainty displayed |
 | `test_gate_run.py` | 1 | T4C.5d frozen plan, local-only preflight, bounded train-only climatology/signatures, authenticated synthetic gate receipt, no-overwrite and tamper refusal |
 | `test_gate_campaign.py` | 6 | T4C.5f-h exact campaign identity, strict nested schema, canary/full/WeatherBench drift refusals, pre-transfer R13/physical-lag audit, aggregate storage/readiness, immutable freeze/load, pinned real preregistration and zero-network CLI (8 pytest cases) |
 | `test_grid_operators.py` | 64 | grid metrics, metric-aware gradient/Laplacian, area weighting, physical-wavenumber spectra, D26 |
@@ -6019,7 +6120,7 @@ able to sit three slices out of date.
 | `test_representation_structure.py` | 6 | TG16.1 complete pair enumeration, joint redundancy/complementarity/XOR/null discrimination, sealed estimator/null/family and permutation-resolution refusal, content/tamper binding, non-removal claim boundary, earned capability registration, and multipart plan/run workflow |
 | `test_conditional_information.py` | 6 | TG16.2 conditional-signal/null/collider discrimination, overlap and effective-support admission, sealed conditional-randomisation family and permutation-resolution refusal, content/tamper binding, conditional-only claim boundary, earned nuisance capability, and multipart plan/run workflow |
 | `test_stable_subspace.py` | 13 | TG16.3 span/projector invariance, planted linear and null discrimination, optional nuisance-region stability boundary, sealed complete family/optimizer/partition and permutation-resolution refusal, content/tamper binding and multipart plan/generate; TG16.4 unchanged held-out application, complete-family correction, nuisance-overlap refusal, content-bound seal, publication check and durable one-opening ledger; TG16.5 published definitions, no-adaptation external contract, provenance/content binding, target spending, and multipart certification |
-  | **total** | **2528** | |
+  | **total** | **2591** | |
 ### 7.2h A surrogate null that was not the null it claimed (T4C.5)
 
 The most instructive defect of the project so far, because it passed every structural check.
