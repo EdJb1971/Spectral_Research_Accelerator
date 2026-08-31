@@ -131,10 +131,23 @@ def test_unknown_configuration_is_refused_not_silently_ignored(client):
     assert "Unknown settings are refused rather than ignored" in response.json()["detail"]
 
 
-def test_all_thirteen_sequence_and_cross_domain_benchmarks_pass_through_http(client):
-    """TG11.1 acceptance: the scientific ground truth crosses the actual HTTP boundary."""
+def test_every_sequence_and_cross_domain_benchmark_passes_through_http(client):
+    """TG11.1 acceptance: the scientific ground truth crosses the actual HTTP boundary.
+
+    Defect **D78**: this read `assert len(names) == 13`, a literal written at TG11.1. TG17.0
+    registered `multidomain_flagship_planted` and `multidomain_flagship_safeguards`, the count
+    became 15, and the assertion aborted the test *before the HTTP call* - so the two benchmarks
+    that carry the four-domain flagship's planted and safeguard answers were never once exercised
+    across the API boundary this test exists to exercise. A guard whose coverage shrinks when new
+    work arrives is worse than no guard, because it reports a failure that looks like a stale
+    number and hides a gap that is not.
+
+    The count is now derived from the registry, with a floor so coverage cannot silently shrink,
+    and the flagship benchmarks are named because they are the ones the omission cost.
+    """
     names = [b.name for b in all_benchmarks() if b.kind in ("sequence", "cross_domain")]
-    assert len(names) == 13
+    assert len(names) >= 13, "sequence and cross-domain benchmark coverage has shrunk"
+    assert {"multidomain_flagship_planted", "multidomain_flagship_safeguards"} <= set(names)
     response = client.post("/api/v1/benchmarks/run",
                            params=[("name", name) for name in names])
     assert response.status_code == 200, response.text

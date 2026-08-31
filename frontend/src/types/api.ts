@@ -2336,3 +2336,119 @@ export interface StructuralTrajectoryPreview {
   }[];
   claim_boundary: string;
 }
+
+
+// ---------------------------------------------------------------- TG17.6 orchestrated runs
+
+/** The state machine as the backend enforces it, so the browser draws the transitions that
+ *  actually exist rather than a picture of them that drifts. */
+export interface RunStateMachine {
+  schema: string;
+  states: string[];
+  work_stages: string[];
+  terminal_states: string[];
+  transitions: Record<string, string[]>;
+  component_statuses: string[];
+  retryable_statuses: string[];
+  note: string;
+}
+
+/** A registered stage-worker suite. Everything registered today acquires nothing, and the
+ *  capabilities say so rather than the label implying it. */
+export interface RunWorkerSuite {
+  name: string;
+  description: string;
+  capabilities: Record<string, any>;
+  tags: string[];
+}
+
+export interface RunSummary {
+  run_id: string;
+  study_id: string;
+  title: string;
+  state: string;
+  manifest_sha256: string;
+  bounded_work: RunBoundedWork;
+}
+
+export interface RunContract {
+  schema: string;
+  state_machine: RunStateMachine;
+  worker_suites: RunWorkerSuite[];
+  runs: RunSummary[];
+  available_now: string[];
+  not_yet_available: string[];
+  claim_boundary: string;
+}
+
+/** Bounded because the plan is declared. A progress bar over a search whose size is discovered
+ *  as it runs is a progress bar that means nothing. */
+export interface RunBoundedWork {
+  completed_steps: number;
+  total_steps: number;
+  fraction: number;
+  bytes_read: number;
+}
+
+/** What a watcher may see mid-run. There is no field here for a measurement value, a statistic
+ *  or a p-value, because the backend type it comes from has none either. */
+export interface RunComponentProgress {
+  component: string;
+  status: string;
+  artifact_sha256: string | null;
+  remediation: string;
+  reused: boolean;
+}
+
+export interface RunProgress {
+  schema: string;
+  run_id: string;
+  state: string;
+  manifest_sha256: string;
+  stages: { stage: string; components: RunComponentProgress[] }[];
+  bounded_work: RunBoundedWork;
+  retryable: boolean;
+  results_visible: boolean;
+  claim_boundary: string;
+}
+
+export interface RunReceipt {
+  schema: string;
+  run_id: string;
+  run_sha256: string;
+  manifest_sha256: string;
+  study_id: string;
+  state: string;
+  history: { at: string; from: string; to: string; reason: string }[];
+  artefacts: Record<string, string>;
+  missing_components: { stage: string; component: string; status: string; detail: string;
+    remediation: string }[];
+  stage_decisions: { stage: string; verdict: string; reason: string }[];
+  bounded_work: RunBoundedWork;
+  coverage_policy: { requirement: string; minimum_fraction: number };
+  confirmation: Record<string, any>;
+  events: number;
+  claim_boundary: string;
+}
+
+/** Posting a manifest opens the run that manifest identifies. `resumed` says which of the two
+ *  happened, because "created" and "resumed" are the same request. */
+export interface RunIdentity {
+  schema: string;
+  manifest_sha256: string;
+  run_sha256: string;
+  run_id: string;
+  study_id: string;
+  resumed: boolean;
+  progress: RunProgress;
+  receipt: RunReceipt;
+}
+
+export interface RunEditableCopy {
+  draft_id: string;
+  manifest_sha256: string;
+  copied_from_run: string;
+  frozen_run_state: string;
+  frozen_run_untouched: boolean;
+  note: string;
+}

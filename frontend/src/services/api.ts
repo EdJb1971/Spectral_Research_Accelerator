@@ -1033,5 +1033,62 @@ export const apiService = {
   async getStudyReview(studyId: string): Promise<types.ReviewSurface> {
     return handleResponse<types.ReviewSurface>(
       await fetch(`${BASE_URL}/reviews/studies/${encodeURIComponent(studyId)}`, { method: 'GET' }));
+  },
+
+  // ------------------------------------------------ orchestrated runs (TG17.6)
+  // Posting a manifest opens the run that manifest identifies. It is not `create`: the identity
+  // is the content address of the plan, so a second post - a refreshed browser, a second tab, a
+  // retried request - resumes the same run instead of starting a rival copy of it.
+  async experimentRunContract(): Promise<types.RunContract> {
+    return handleResponse<types.RunContract>(
+      await fetch(`${BASE_URL}/experiment-runs`, { method: 'GET' }));
+  },
+
+  async openExperimentRun(spec: types.CrossDomainExperimentManifest): Promise<types.RunIdentity> {
+    return handleResponse<types.RunIdentity>(
+      await fetch(`${BASE_URL}/experiment-runs`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(spec) }));
+  },
+
+  async experimentRunProgress(runId: string): Promise<types.RunProgress> {
+    return handleResponse<types.RunProgress>(
+      await fetch(`${BASE_URL}/experiment-runs/${encodeURIComponent(runId)}/progress`,
+        { method: 'GET' }));
+  },
+
+  async experimentRunReceipt(runId: string): Promise<types.RunReceipt> {
+    return handleResponse<types.RunReceipt>(
+      await fetch(`${BASE_URL}/experiment-runs/${encodeURIComponent(runId)}`, { method: 'GET' }));
+  },
+
+  async executeExperimentRun(runId: string, workerSuite: string): Promise<types.RunReceipt> {
+    return handleResponse<types.RunReceipt>(
+      await fetch(`${BASE_URL}/experiment-runs/${encodeURIComponent(runId)}/execute`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ worker_suite: workerSuite }) }));
+  },
+
+  // Only an operational failure is retryable, and the server decides that, not this call.
+  async retryExperimentRun(runId: string, workerSuite: string): Promise<types.RunReceipt> {
+    return handleResponse<types.RunReceipt>(
+      await fetch(`${BASE_URL}/experiment-runs/${encodeURIComponent(runId)}/retry`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ worker_suite: workerSuite }) }));
+  },
+
+  async cancelExperimentRun(runId: string, reason: string): Promise<types.RunReceipt> {
+    return handleResponse<types.RunReceipt>(
+      await fetch(`${BASE_URL}/experiment-runs/${encodeURIComponent(runId)}/cancel`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason }) }));
+  },
+
+  // The remedy for a refusal. It writes a new editable draft; the frozen run is left as it is.
+  async experimentRunEditableCopy(runId: string, draftId: string): Promise<types.RunEditableCopy> {
+    return handleResponse<types.RunEditableCopy>(
+      await fetch(`${BASE_URL}/experiment-runs/${encodeURIComponent(runId)}/editable-copy`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ draft_id: draftId }) }));
   }
 };

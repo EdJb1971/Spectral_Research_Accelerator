@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Activity, AlertTriangle, CheckCircle2, Calculator, FileLock2, Loader2, Save, Search, ShieldCheck, Waves } from 'lucide-react';
+import { Activity, AlertTriangle, CheckCircle2, Calculator, FileLock2, Loader2, Play, Save, Search, ShieldCheck, Waves } from 'lucide-react';
 import { apiService } from '../services/api';
 import { AdapterControlPanel } from './AdapterControls';
 import { AlignmentKernelPicker, CoverageTimeline } from './CoverageTimeline';
 import { FamilyExpansionPanel, NullFamilyPicker } from './FamilyPlan';
+import { RunProgressPanel, RunWorkerSuitePicker } from './RunMonitor';
 import * as types from '../types/api';
 
 const SAVED_DRAFT_KEY = 'spectralearth.g17.composer.draft';
@@ -29,6 +30,10 @@ export default function ExperimentComposer({ onSelectStudy }: { onSelectStudy?: 
   const [alignment, setAlignment] = useState<types.AlignmentReport | null>(null);
   const [nullFamilies, setNullFamilies] = useState<types.NullFamilyList | null>(null);
   const [expansion, setExpansion] = useState<types.FamilyExpansion | null>(null);
+  const [runContract, setRunContract] = useState<types.RunContract | null>(null);
+  const [run, setRun] = useState<types.RunIdentity | null>(null);
+  const [receipt, setReceipt] = useState<types.RunReceipt | null>(null);
+  const [suite, setSuite] = useState('fixture_dry_run');
   const [busy, setBusy] = useState('');
   const [message, setMessage] = useState('');
 
@@ -149,6 +154,85 @@ export default function ExperimentComposer({ onSelectStudy }: { onSelectStudy?: 
     setManifest({ ...manifest, nulls: manifest.nulls.map((row, index) =>
       index === 0 ? { ...row, method, parameters: cleaned } : row) });
     setIdentity(''); setPreflight(null); setExpansion(null);
+  };
+
+  // Opening a run is posting the manifest. There is no "create": the identity is the content
+  // address of the plan, so this resumes whatever run that plan already has, including after a
+  // refresh, and the response says which of the two happened.
+  const openRun = async () => {
+    if (!manifest) return;
+    setBusy('run'); setMessage('');
+    try {
+      const contract = runContract || await apiService.experimentRunContract();
+      setRunContract(contract);
+      const opened = await apiService.openExperimentRun(manifest);
+      setRun(opened); setReceipt(opened.receipt); setIdentity(opened.manifest_sha256);
+      setMessage(opened.resumed
+        ? `Resumed run ${opened.run_id}. An identical manifest is the same run, not a second one.`
+        : `Opened run ${opened.run_id} at the content address of this manifest.`);
+    } catch (error: any) { setMessage(error.message); }
+    finally { setBusy(''); }
+  };
+
+  const refreshRun = async (next: types.RunReceipt) => {
+    setReceipt(next);
+    const progress = await apiService.experimentRunProgress(next.run_id);
+    setRun((current) => current ? { ...current, progress, receipt: next } : current);
+  };
+
+  // Re-reads the run from disk rather than from this tab's memory. A run can advance in another
+  // tab, in another process, or after this browser was closed, and the journal on the server is
+  // the only thing that knows.
+  const reloadRun = async () => {
+    if (!run) return;
+    setBusy('reload'); setMessage('');
+    try {
+      await refreshRun(await apiService.experimentRunReceipt(run.run_id));
+      setMessage('Reloaded from the run journal on the server.');
+    } catch (error: any) { setMessage(error.message); }
+    finally { setBusy(''); }
+  };
+
+  const executeRun = async () => {
+    if (!run) return;
+    setBusy('execute'); setMessage('');
+    try {
+      await refreshRun(await apiService.executeExperimentRun(run.run_id, suite));
+      setMessage('The declared plan was executed. A completed run is an executed plan, not evidence.');
+    } catch (error: any) { setMessage(error.message); }
+    finally { setBusy(''); }
+  };
+
+  // Offered only for an operational failure. A refusal is answered with an editable copy, and the
+  // server enforces that distinction whatever this button does.
+  const retryRun = async () => {
+    if (!run) return;
+    setBusy('retry'); setMessage('');
+    try {
+      await refreshRun(await apiService.retryExperimentRun(run.run_id, suite));
+      setMessage('Only the components that failed operationally were re-executed; the rest were replayed.');
+    } catch (error: any) { setMessage(error.message); }
+    finally { setBusy(''); }
+  };
+
+  const cancelRun = async () => {
+    if (!run) return;
+    setBusy('cancel'); setMessage('');
+    try {
+      await refreshRun(await apiService.cancelExperimentRun(run.run_id, 'cancelled from the composer'));
+      setMessage('Cancelled. A cancelled run is terminal and cannot be restarted.');
+    } catch (error: any) { setMessage(error.message); }
+    finally { setBusy(''); }
+  };
+
+  const copyRefusedRun = async () => {
+    if (!run || !manifest) return;
+    setBusy('copy'); setMessage('');
+    try {
+      const copy = await apiService.experimentRunEditableCopy(run.run_id, `${manifest.study_id}_copy`);
+      setMessage(`Editable draft ${copy.draft_id} written. The refused run is unchanged: ${copy.note}`);
+    } catch (error: any) { setMessage(error.message); }
+    finally { setBusy(''); }
   };
 
   const showSharedSupport = async () => {
@@ -320,7 +404,9 @@ export default function ExperimentComposer({ onSelectStudy }: { onSelectStudy?: 
           <button onClick={checkConformance} disabled={!!busy} className="px-4 py-2 rounded bg-indigo-700 hover:bg-indigo-600 disabled:opacity-50 text-sm flex gap-2 items-center">
             {busy === 'conformance' ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />} Check adapter conformance
           </button>
-          <button disabled title="TG17.6 delivers the authenticated resumable runner" className="px-4 py-2 rounded bg-slate-800 text-slate-500 text-sm cursor-not-allowed">Run experiment — not available yet</button>
+          <button onClick={openRun} disabled={!!busy} className="px-4 py-2 rounded bg-blue-700 hover:bg-blue-600 disabled:opacity-50 text-sm flex gap-2 items-center">
+            {busy === 'run' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />} Open or resume the run
+          </button>
         </div>
         {identity && <p className="font-mono text-[11px] text-slate-500 mt-3 break-all">manifest sha256 {identity}</p>}
         {message && <p role="status" className="text-sm text-slate-300 mt-3">{message}</p>}
@@ -356,6 +442,39 @@ export default function ExperimentComposer({ onSelectStudy }: { onSelectStudy?: 
             <Calculator className="w-5 h-5 text-violet-400" /> Declared family
           </h3>
           <FamilyExpansionPanel expansion={declaredFamily} />
+        </section>
+      )}
+
+      {run && receipt && runContract && (
+        <section className="border border-blue-500/40 bg-blue-500/5 rounded-xl p-5">
+          <h3 className="font-semibold flex gap-2 items-center mb-1">
+            <Play className="w-5 h-5 text-blue-400" /> Orchestrated run
+          </h3>
+          <p className="text-xs text-blue-100/70 mb-4">
+            The run identity is the manifest, so refreshing this page resumes the same run rather
+            than starting a second one. Completed steps are replayed from their content addresses
+            and are never requested again.
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 items-end">
+            <RunWorkerSuitePicker suites={runContract.worker_suites} selected={suite}
+                                  onSelect={setSuite} disabled={!!busy} />
+            <div className="flex gap-2">
+              <button onClick={executeRun} disabled={!!busy}
+                      className="px-3 py-1.5 rounded bg-blue-700 hover:bg-blue-600 disabled:opacity-50 text-xs">
+                Execute the frozen plan
+              </button>
+              <button onClick={reloadRun} disabled={!!busy}
+                      className="px-3 py-1.5 rounded bg-slate-700 hover:bg-slate-600 disabled:opacity-50 text-xs">
+                Reload from the journal
+              </button>
+            </div>
+            <p className="text-[11px] text-slate-500">
+              Not yet available: {runContract.not_yet_available.join(', ')}.
+            </p>
+          </div>
+          <RunProgressPanel progress={run.progress} receipt={receipt}
+                            machine={runContract.state_machine} busy={!!busy}
+                            onRetry={retryRun} onCancel={cancelRun} onEditableCopy={copyRefusedRun} />
         </section>
       )}
 

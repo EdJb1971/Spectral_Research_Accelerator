@@ -244,7 +244,6 @@ def test_g17_composer_is_visible_manifest_driven_and_honest_about_the_runner():
     assert "loadExperimentManifest(result.manifest_sha256)" in view
     assert "localStorage.getItem(SAVED_DRAFT_KEY)" in view
     assert "No network used and no measurement values opened." in view
-    assert "Run experiment — not available yet" in view
     assert "/experiment-composer/manifests/preflight" in service
 
 
@@ -1385,11 +1384,21 @@ def test_the_preflight_alignment_block_is_shaped_as_the_type_declares(client):
                 "clock_is_uniform"} <= set(window["clock"])
 
 
-def test_the_composer_still_refuses_to_offer_a_runner():
-    """TG17.3 adds controls and conformance; it does not acquire, run or claim anything."""
+def test_the_runner_the_composer_now_offers_still_acquires_nothing():
+    """The disabled "not available yet" button is gone; what replaced it must not overclaim.
+
+    Until TG17.6 this test asserted the composer refused to offer a runner at all. It now offers
+    one, so the check moved to the thing that was actually being protected: the runner executes
+    the declared state machine against registered suites that open no archive, and the browser
+    says so beside the button rather than leaving a researcher to infer it from a run that
+    completed.
+    """
     composer = _read("components", "ExperimentComposer.tsx")
-    assert "Run experiment — not available yet" in composer
-    assert "TG17.6" in composer
+    monitor = _read("components", "RunMonitor.tsx")
+    assert "Run experiment — not available yet" not in composer
+    assert "runContract.not_yet_available" in composer
+    assert "A completed run is an executed plan, not evidence." in composer
+    assert "this is a rehearsal, not data" in monitor
 
 
 # ------------------------------------------ TG17.5 family accounting and declared nulls
@@ -1469,3 +1478,91 @@ def test_the_null_family_payload_is_shaped_as_the_type_declares(client):
     assert {"name", "modes", "operates_on", "preserves", "destroys", "parameters",
             "admissible", "inadmissible_reason", "admitted_by",
             "usable_across_all_registered_domains"} <= set(family)
+
+
+# ------------------------------------------ TG17.6 the orchestrated, resumable run
+
+
+def test_the_browser_has_no_create_run_operation_only_open_or_resume():
+    """A "new run" button would be a second run of a plan that already has one.
+
+    The identity is the content address of the manifest, so posting it again resumes. The label
+    the researcher reads has to say that, because the whole guarantee is invisible otherwise.
+    """
+    composer = _read("components", "ExperimentComposer.tsx")
+    assert "Open or resume the run" in composer
+    assert "openExperimentRun" in composer
+    assert "Run experiment — not available yet" not in composer
+
+
+def test_the_runner_draws_the_state_machine_the_backend_enforces():
+    view = _read("components", "RunMonitor.tsx")
+    assert "machine.work_stages" in view
+    assert "machine.terminal_states" in view
+    assert "RunStateTrail" in view
+
+
+def test_a_retry_and_an_editable_copy_are_offered_for_different_failures():
+    """Asking the archive again is not the remedy for the archive saying no."""
+    view = _strip_comments(_read("components", "RunMonitor.tsx"))
+    assert "progress.retryable" in view
+    assert "progress.state === 'REFUSED'" in view
+    assert "Only an operational failure can be retried." in view
+    assert "The refused run is left exactly as it is." in view
+
+
+def test_the_progress_view_reports_replay_rather_than_re_request():
+    view = _read("components", "RunMonitor.tsx")
+    assert "replayed, not re-requested" in view
+    assert "component.reused" in view
+
+
+def test_the_progress_bar_is_bounded_by_the_declared_plan():
+    view = _read("components", "RunMonitor.tsx")
+    assert "bounded_work" in view
+    assert "declared steps" in view
+    assert 'aria-valuemax={work.total_steps}' in view
+
+
+def test_the_runner_names_every_component_the_run_did_not_produce():
+    view = _read("components", "RunMonitor.tsx")
+    assert "missing_components" in view
+    assert "Components this run did not produce" in view
+    assert "coverage_policy" in view
+
+
+def test_a_rehearsal_suite_is_labelled_as_acquiring_nothing():
+    view = _read("components", "RunMonitor.tsx")
+    assert "capabilities.acquires === false" in view
+    assert "this is a rehearsal, not data" in view
+
+
+def test_the_runner_has_no_domain_branch():
+    view = _strip_comments(_read("components", "RunMonitor.tsx"))
+    for domain in ("reanalysis", "argo", "tess", "order_book"):
+        assert domain not in view
+
+
+def test_the_run_contract_payload_is_shaped_as_the_type_declares(client):
+    body = client.get("/api/v1/experiment-runs").json()
+    assert {"schema", "state_machine", "worker_suites", "runs", "available_now",
+            "not_yet_available", "claim_boundary"} <= set(body)
+    assert {"states", "work_stages", "terminal_states", "transitions", "component_statuses",
+            "retryable_statuses"} <= set(body["state_machine"])
+    assert {"name", "description", "capabilities"} <= set(body["worker_suites"][0])
+
+
+def test_the_run_progress_and_receipt_payloads_are_shaped_as_the_types_declare(client):
+    recipe = client.get("/api/v1/experiment-composer/recipes/g17-flagship-calendar").json()
+    opened = client.post("/api/v1/experiment-runs", json=recipe["canonical_manifest"]).json()
+    assert {"run_id", "run_sha256", "manifest_sha256", "resumed", "progress",
+            "receipt"} <= set(opened)
+    progress = client.get("/api/v1/experiment-runs/%s/progress" % opened["run_id"]).json()
+    assert {"run_id", "state", "stages", "bounded_work", "retryable", "results_visible",
+            "claim_boundary"} <= set(progress)
+    assert {"stage", "components"} <= set(progress["stages"][0])
+    assert {"component", "status", "artifact_sha256", "remediation",
+            "reused"} <= set(progress["stages"][0]["components"][0])
+    receipt = client.get("/api/v1/experiment-runs/%s" % opened["run_id"]).json()
+    assert {"state", "history", "artefacts", "missing_components", "stage_decisions",
+            "bounded_work", "coverage_policy", "confirmation", "claim_boundary"} <= set(receipt)

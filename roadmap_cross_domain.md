@@ -4064,7 +4064,7 @@ together; production build clean. Nothing acquired, no confirmatory statistic ru
 written, no claim rung moved.
 
 
-**TG17.6 Content-addressed, resumable experiment orchestrator — PLANNED.** Execute one state machine:
+**TG17.6 Content-addressed, resumable experiment orchestrator — DONE (2026-08-31, `ed-dev`).** Execute one state machine:
 `DRAFT -> PREFLIGHTED -> FROZEN -> ACQUIRING -> TRANSLATING -> MINING -> CONFIRMING -> COMPLETE`,
 with explicit `REFUSED`, `FAILED` and `CANCELLED` outcomes. Every transition is idempotent and
 content-addressed; completed acquisitions and translations are safely reusable, while target
@@ -4081,6 +4081,63 @@ leaking unopened results.
 network acquisition or scientific drift. A TESS timeout can be retried from the UI; a permanent
 coverage refusal returns to an editable copy rather than mutating the frozen run. Re-executing an
 identical complete manifest returns the same run identity and immutable artefacts.
+
+**Delivered.** `src/core/experiment_run.py` holds the machine as a transition **table**, so what a
+run was allowed to do next is one dictionary rather than a chain of branches. Run identity is a
+content address over the schema and the manifest digest and nothing else — no clock, no UUID, no
+machine — so executing an identical manifest *is* the same run: `POST /api/v1/experiment-runs`
+resumes rather than creates, and the Composer has no "new run" control because there is no such
+operation. Each step is keyed by the digest of the run, the stage, the component and the digests of
+its declared inputs, published immutably through `publish_new_bytes` and replayed from disk, which
+is both the no-duplicate-acquisition guarantee and the drift check: a changed native artefact
+re-keys its translation instead of being paired with a stale one. Operational failures are
+deliberately not published under a step address, because a timeout is a fact about a network at a
+moment and not a function of the declared inputs.
+
+`decide_stage` is a pure function of the frozen `CoveragePolicy` and the component statuses, so the
+decision that turns a partial acquisition into either a smaller experiment or a refusal can be
+audited without reconstructing a run. `complete_required` refuses; `partial_permitted` admits the
+run only above its declared minimum fraction; the receipt names every missing component either way.
+A refusal outranks a failure and a failure outranks a missing component, because "we could not ask"
+is not "the answer is no". `runs/<run_id>/journal.jsonl` is the only state: append-only, fsync'd
+per line, folded on read, and a torn tail is skipped rather than raising. `HeldOutOpenings` records
+the run that first spent a partition and refuses a second one by name.
+
+`src/core/run_workers.py` registers the stage-worker suites rather than accepting behaviour from a
+request, and everything registered today **acquires nothing**: `fixture_dry_run` rehearses a frozen
+plan end to end, and `fixture_transient_failure` times out each acquisition component once and
+completes it on retry, reading "first attempt" from the run's journal so it behaves identically
+across a restart or four separate HTTP requests. Eight routes and
+`frontend/src/components/RunMonitor.tsx` put the machine in the browser: the declared state trail
+drawn from the backend's own table, per-component statuses and digests, a bounded progress bar,
+the components the run did not produce, and Retry and "open an editable copy" as two buttons that
+are never both live.
+
+**Acceptance met.** A killed run resumes and does not re-request the coverage it had already
+acquired; a torn journal tail is skipped and the run still resumes; re-executing an identical
+complete manifest returns the same run identity and byte-identical artefact digests, and requests
+nothing. A timed-out acquisition leaves the run `FAILED` with a remediation and is retried from the
+UI over HTTP, re-executing only that component while the rest are replayed; a retry carrying a
+different manifest is refused by digest. A permanent refusal is terminal, is not retryable, and is
+answered with `editable_copy`, which writes a new draft and leaves the frozen run's journal
+unchanged. `ComponentOutcome` has no field a result could occupy, so a progress feed watched during
+`MINING` cannot report what mining found.
+
+**A defect the widened verification set found (D78).** `test_analysis_api.py`'s TG11.1 acceptance
+test asserted `len(names) == 13` before posting every sequence and cross-domain benchmark to
+`/api/v1/benchmarks/run`. TG17.0 registered two more, so the assertion aborted the test **before
+the HTTP call**, and from that slice onward `multidomain_flagship_planted` and
+`multidomain_flagship_safeguards` - the benchmarks carrying the four-domain flagship's planted and
+safeguard answers - were never once exercised across the API boundary the test exists to exercise.
+It survived four slices because TG17.1-17.5 each verified against targeted suites that did not
+include that file. Fixed by deriving the count from the registry with a floor so coverage cannot
+shrink unnoticed, and by naming the two benchmarks explicitly.
+
+**Evidence.** `test_experiment_run.py` 80 tests; `test_frontend_contract.py` 127; the TG17 suites,
+the manifest, family, benchmark and cross-domain suites and the documentation audit run together;
+production build clean. Nothing acquired, no confirmatory statistic run, no evidence written, no
+claim rung moved — the registered suites are rehearsals, and a rehearsal that completes is not a
+result.
 
 **TG17.7 Experiment Composer UI — PLANNED.** Build one guided workbench over the manifest rather
 than four acquisition pages plus instructions. The progressive path is:

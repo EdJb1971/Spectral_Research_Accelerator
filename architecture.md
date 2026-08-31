@@ -4599,6 +4599,100 @@ This slice acquires nothing, runs no confirmatory statistic, writes no evidence 
 claim rung. A calibration on fixtures with known answers is not a result about any domain.
 
 
+#### 3.6zzp Content-Addressed, Resumable Experiment Orchestrator (TG17.6, `ed-dev`)
+
+`src/core/experiment_run.py` executes a frozen manifest as one state machine -
+`DRAFT -> PREFLIGHTED -> FROZEN -> ACQUIRING -> TRANSLATING -> MINING -> CONFIRMING -> COMPLETE`,
+with `REFUSED`, `FAILED` and `CANCELLED` as the explicit ways out. The transitions are a table
+rather than a sequence of branches, so the question a reviewer actually asks about a long run -
+what was allowed to happen next, and who says so - is answered by reading one dictionary.
+
+**The failure this component exists to prevent is not a crash.** A four-domain study is a long job
+over remote archives, and long jobs get interrupted: a laptop sleeps, a token expires, a browser is
+refreshed, TESS times out. Every interruption offers the same recovery - start again, and run
+whatever is available this time - and taking it substitutes a smaller experiment for the declared
+one while producing a receipt indistinguishable from a study that always intended to be that size.
+Three properties close that off.
+
+**Run identity is the manifest.** `run_sha256` is a content address over the schema and the
+manifest digest and nothing else: no clock, no UUID, no machine. Executing an identical manifest
+twice therefore *is* the same run, so `POST /api/v1/experiment-runs` resumes rather than creates,
+and a refreshed browser or a second tab cannot start a rival copy. The Composer has no "new run"
+control, because there is no such operation.
+
+**Every step is content-addressed and idempotent.** A step key is the digest of the run, the stage,
+the component and the digests of that step's declared inputs, and a completed step is published
+immutably through `src.core.publication.publish_new_bytes` and replayed from disk rather than
+recomputed. That is what "resume without duplicate network acquisition" means concretely. Because
+the key contains the input digests it is also the drift check: a changed native artefact re-keys
+its translation, so a resumed run cannot pair new data with a stale translation. Operational
+failures are deliberately *not* published under a step address - a timeout is a fact about a
+network at a moment, not a function of the declared inputs, and publishing it there would make a
+successful retry look like one address disagreeing with itself.
+
+**A retry may not author a new plan.** `retry` re-executes only the components whose recorded
+status was `FAILED` or `TIMED_OUT`, and both `execute` and `retry` refuse a manifest whose digest
+differs from the frozen one. The distinction the whole design turns on is between an operational
+failure and a refusal: `FAILED`/`TIMED_OUT` mean the archive could not be asked and are retryable;
+`REFUSED`/`MISSING` are the archive answering, and asking again is only asking until the answer is
+convenient. A refusal produces the terminal `REFUSED` state, and its remedy is `editable_copy`,
+which writes a new mutable draft and leaves the frozen run byte-identical. There is no `unfreeze`:
+a frozen run edited after seeing how it went is a plan chosen with knowledge of the result, and
+nothing in the artefacts recovers that six months later.
+
+**Partial acquisition is decided by the frozen `CoveragePolicy` and by nothing else.**
+`decide_stage` is a pure function of the manifest and the component statuses - deliberately, so the
+decision that turns a partial acquisition into either a smaller experiment or a refusal can be
+audited without reconstructing a run. `complete_required` refuses; `partial_permitted` admits the
+run only while the completed fraction stays at or above the declared minimum; and the receipt lists
+every missing component by name in both cases. A refusal outranks a failure, and a failure outranks
+a missing component, because "we could not ask" is not "the answer is no".
+
+**Progress cannot leak an unopened result, by construction rather than by discipline.** A
+`ComponentOutcome` carries a status, an artefact digest, a bounded work estimate and a remediation
+string, and has nowhere to put a measurement value - so a progress feed watched during `MINING`
+reports that mining is happening and cannot report what it found. The work estimate is bounded
+because the plan is declared: every step was named before the run started.
+
+The journal is the only state. `runs/<run_id>/journal.jsonl` is append-only and fsync'd per line,
+and the run's state, step outcomes, stage decisions and held-out openings are all folded from it,
+so there is no second state file to fall out of step with it and a crash can only lose the tail. A
+torn final line is skipped on replay rather than raising: a half-written event is an event that did
+not happen, and the step it described is still keyed by its content and will simply be executed.
+
+Held-out partitions obey their ledger. `HeldOutOpenings` records which run first opened a partition;
+re-opening within the same run is a resume, and a *different* run is refused by name with
+`SpentTargetError`. `src.core.preregistration` remains the authority on what an opening means - the
+sealed partition identity, the frozen confirmatory family, the digests that make the seal checkable
+- and this records only the fact a retry needs to consult.
+
+`src/core/run_workers.py` registers the stage-worker suites (standard E1) rather than letting a
+request supply behaviour, and **everything registered today acquires nothing**: `fixture_dry_run`
+completes every component so a frozen plan can be rehearsed end to end before a byte is requested,
+and `fixture_transient_failure` times out each acquisition component on its first attempt and
+completes it on retry, reading "first attempt" from the run's own journal so the rehearsal behaves
+identically across a restart or four separate HTTP requests. An operator who first meets the retry
+path on the night a remote archive times out is an operator who will reach for "start again". The
+domain workers that acquire and translate for real arrive with the slices that own them and
+register here beside these; the orchestrator does not change when they do.
+
+`src/api/experiment_runs.py` serves eight routes under `/api/v1/experiment-runs`, each idempotent
+in the same sense the machine is, and `frontend/src/components/RunMonitor.tsx` puts the
+machine in the browser: the declared state trail drawn from the backend's own table, per-component
+statuses and digests, a bounded progress bar, the components the run did not produce, and Retry and
+"open an editable copy" as two buttons that are never both live - because the answer to "the
+archive says no" is not "ask again".
+
+Widening the verification set to every suite that uses the shared `client` fixture also found
+**D78**, and the shared fixture itself gained the filesystem half of D24's reasoning: routes that
+persist fall back to `data/` when nothing binds them, and for a run that is worse than untidy,
+because a run identity is the content address of its manifest - an unbound test posting a manifest
+would resume, and then advance, whatever real run that manifest already had.
+
+This slice acquires nothing, runs no confirmatory statistic, writes no evidence and moves no claim
+rung. The registered suites are rehearsals, and a rehearsal that completes is not a result.
+
+
 ### 3.11 Ground-Truth Benchmark Suite (`src/benchmarks/`)
 
 Added in T3.5.17 (standard E7). Twenty-four synthetic datasets whose correct answer is known
@@ -4923,7 +5017,7 @@ reason in the test itself.
 
 ## 3.12 HTTP API Surface
 
-111 routes. Listed here because an undocumented endpoint is an untested contract. The count and this table were both wrong until TG17.3 (defect D75): the guard enumerated a hand-maintained list of ten source files and could not see four mounted routers.
+119 routes. Listed here because an undocumented endpoint is an untested contract. The count and this table were both wrong until TG17.3 (defect D75): the guard enumerated a hand-maintained list of ten source files and could not see four mounted routers.
 
 | Method | Route | Notes |
 |---|---|---|
@@ -5033,6 +5127,14 @@ reason in the test itself.
 | POST | `/api/v1/experiment-composer/manifests/alignment` | the support this manifest's domains actually share, measured from the deterministic known-answer records and labelled as such (TG17.4) |
 | GET | `/api/v1/experiment-composer/null-families` | every declared null family, its comparison mode, what it preserves and destroys, and which registered adapters admit it; a refused family is shown with its reason rather than omitted (TG17.5) |
 | POST | `/api/v1/experiment-composer/manifests/family` | the complete declared search priced in human terms before acquisition: the multiplication, the R18 correction unit, what one more domain or duration would cost, and which precedence members are unavailable (TG17.5) |
+| GET | `/api/v1/experiment-runs` | the run state machine as the backend enforces it, the registered stage-worker suites and what each acquires (nothing, today), and every run on disk (TG17.6) |
+| POST | `/api/v1/experiment-runs` | open or resume the run this manifest identifies; the identity is the manifest's content address, so posting it twice resumes rather than forking, and the response says which happened (TG17.6) |
+| GET | `/api/v1/experiment-runs/{run_id}` | the receipt: state history, artefact digests, every component the run did not produce, the stage decisions and the frozen coverage policy that made them (TG17.6) |
+| GET | `/api/v1/experiment-runs/{run_id}/progress` | stage, per-component status and digest, bounded work and remediation; there is no field here for a result, because the type it comes from has none (TG17.6) |
+| POST | `/api/v1/experiment-runs/{run_id}/execute` | drive the frozen plan with a registered worker suite, replaying every completed step from its content address (TG17.6) |
+| POST | `/api/v1/experiment-runs/{run_id}/retry` | re-execute only the components that failed operationally; a refusal is not retryable and a retry may not carry a new manifest (TG17.6) |
+| POST | `/api/v1/experiment-runs/{run_id}/cancel` | cancel a run that has not reached a terminal state, with its reason recorded (TG17.6) |
+| POST | `/api/v1/experiment-runs/{run_id}/editable-copy` | the remedy for a refusal: a new editable draft of the same manifest, leaving the frozen run untouched (TG17.6) |
 | POST | `/api/v1/experiment-composer/manifests/validate` | one immutable manifest's content digest and run identity (TG17.1) |
 | POST | `/api/v1/experiment-composer/manifests/preflight` | metadata-only coverage planning from each domain's registered adapter, plus the alignment block: the frozen kernel, each window's true elapsed seconds and each pair's shared support or the reason metadata cannot establish it; no network and no measurement values (TG17.1/TG17.3/TG17.4) |
 | POST | `/api/v1/experiment-composer/manifests/representation-preview` | the canonical `StructuralTrajectory` contract on frozen fixtures, labelled as known-answer data (TG17.2) |
@@ -5796,7 +5898,7 @@ See `VERIFICATION.md` for the captured command output behind every statement her
 
 Earlier revisions of this document and of `roadmap.md` claimed the platform was "validated"
 and "zero-error". It was not: the first real execution produced 8 test failures and a frontend
-that had never rendered. The ledger below has grown from 18 entries to **77** as a direct result
+that had never rendered. The ledger below has grown from 18 entries to **78** as a direct result
 of running the code and building tests against independent answers — **75 are fixed, D18 is
 partial, and D43 remains open**.
 
@@ -5904,6 +6006,7 @@ code paths that `architecture.md` previously described as implemented and rigoro
 | D75 | `tests/test_documentation.py:_ROUTE_SOURCES` | **The route guard's coverage was a hand-maintained list, and four mounted routers were not on it.** `_routes()` parsed ten named source files. `src/api/main.py` mounts thirteen routers, and `profiles`, `lightcurves`, `ingress` and `experiment_composer` were absent — so **32 served endpoints were invisible to every check in this file**, including the entire TG16 ingress surface (`/subspace/freeze`, `/subspace/confirm`, `/subspace/transfer/certify` and thirteen more) that carries the held-out and transfer contracts. The count claim the guard validated was a count of the subset its own list named, which is why it read as consistent: architecture.md said 75 and **107 are served**, and the section 3.12 table — headed *"Listed here because an undocumented endpoint is an untested contract"* — was missing 21 rows. Found in TG17.3 while fixing D74: repairing the claim regex let the comparison run for the first time since TG17.1, and it disagreed by more than the routes that slice had added. `src/tests/test_frontend_contract.py` had enumerated `app.routes` since T3.5.22 and could see the composer surface throughout, so the two guards had disagreed about what the API is for four slices. Fixed by deleting the list: routes now come from the application object, which cannot omit a mounted router. The table is complete and the claim reads 107. | **FIXED** TG17.3 (`ed-dev`) |
 | D76 | `src/benchmarks/multidomain_flagship.py:EXPERIMENT_CONTRACT` and `experiment_manifest.flagship_recipe` | **The flagship study could have run to completion and been arithmetically incapable of rejecting anything.** TG17.0 froze an acceptance policy of 200 replications beside a family cap of 10,000 members, and TG17.1's flagship declared 288 tests (6 pairs x 3 windows x 4 channels x 4 scales). Rejecting one member of a family of 288 under Benjamini-Yekutieli at alpha 0.05 needs a raw p-value near `0.05 / (288 x H_288)` = 2.8e-5, so it needs about **35,953 surrogates**; 200 replications give a p-value floor of 1/201 and afford a family of **four**. The declared cap was therefore three orders of magnitude above what the declared ensemble could resolve, and nothing checked the two against each other: the family size was a product written inline in `preflight_manifest` and was compared only against the cap. A pass in that configuration returns an empty result for an arithmetic reason and is indistinguishable afterwards from a clean negative — D8 at four-domain scale. Found in TG17.5 the first time the manifest was priced through `SearchSpecification.account()`. Fixed by building the family from declared axes and running R18's check in preflight before acquisition, and by giving the manifest a `ConfirmationPolicy`: a study is either `confirmatory_only`, priced at its complete declared family and refused when it cannot resolve it, or `generate_then_confirm`, which must name the held-out partition it will confirm on and how many members — the remedy R18 already admitted and TG3.2 already implemented. The flagship now declares the split, four confirmatory members at 200 replications, and every payload states that its generate stage produces candidates and not claims. | **FIXED** TG17.5 (`ed-dev`) |
 | D77 | `experiment_manifest.flagship_recipe` nulls | **A declared null parameter that nothing read.** The flagship declared `"parameters": {"preserve_gaps": true}` on its null since TG17.1. `circular_clock_shift` takes a trajectory and a seed; the key was carried into the manifest digest, displayed as part of the frozen configuration and acted on by nothing — a setting a researcher believes is in force and is not, sitting inside every surrogate the study would have drawn. Found in TG17.5 when the null registry gained a `resolve` that refuses unknown parameters. Fixed by deleting it: the gap preservation it appeared to request is a property of the family, declared in `preserves` where a reader can check it, and an undeclared parameter now refuses by name rather than being ignored. | **FIXED** TG17.5 (`ed-dev`) |
+| D78 | `tests/test_analysis_api.py:test_all_thirteen_sequence_and_cross_domain_benchmarks_pass_through_http` | **A hard-coded benchmark count turned an acceptance test into a guard that stopped before the thing it guards.** The test asserted `len(names) == 13` - a literal written at TG11.1 - and then posted those names to `/api/v1/benchmarks/run` to prove the ground truth crosses the HTTP boundary. TG17.0 registered `multidomain_flagship_planted` and `multidomain_flagship_safeguards`, so the count became 15 and the assertion aborted the test **before the HTTP call**. From that slice onward the two benchmarks carrying the four-domain flagship's planted and safeguard answers were never exercised across the API boundary, and the failure read as a stale number rather than as the coverage gap it was. It survived four slices because TG17.1-17.5 each verified against targeted suites that did not include `test_analysis_api.py`, which is the same shape as D64 and D74: a guard that stops covering new code silently. Found in TG17.6 when the verification set was widened to every suite that uses the shared `client` fixture. Fixed by deriving the count from the registry with a floor so coverage cannot shrink unnoticed, and by naming the two flagship benchmarks explicitly. | **FIXED** TG17.6 (`ed-dev`) |
 
 **Root cause common to D20, D23, D25 and D2:** the transform engine — the mathematical core of
 the platform — had **no test file at all**. `src/tests/test_transforms.py` now exists (36 cases
@@ -6063,6 +6166,7 @@ able to sit three slices out of date.
 | `test_structural_trajectory.py` | 10 | TG17.2 immutable canonical trajectory, exact native clock/support/gap preservation, domain-blind weather/Argo/TESS mining seam, complete value reconstruction, adapter declarations/digests, semantic-leakage and interpolation refusals, full-fidelity preview and visible API boundary |
 | `test_structural_alignment.py` | 45 | TG17.4 clock, support and coverage semantics: the density invariance that row count alone cannot manufacture support, half-open boundaries and unioned rather than summed supports, the coarser scale governing effective sample size, non-stationary support labelled an upper bound, the true elapsed seconds of a daylight-saving day and the refusal of a naive local timestamp, the six adversarial fixtures against their known answers, declared kernels with no framework-default parameters and their manufactured-overlap accounting, kernel admissibility per adapter and the refusal of a value-inventing kernel over an irregular clock, the two mode vocabularies refusing each other at the manifest, and the preflight and API alignment surfaces (56 pytest cases) |
 | `test_experiment_family.py` | 54 | TG17.5 multi-domain family accounting and mode-specific nulls: the complete declared search as eight priced axes, domain combinations unioned across arities, the lag and representation axes a family used to be short by, R18 refusing 288 tests at 200 replications before acquisition with both remedies priced, the generate/confirm stage and its named held-out partition, a screen that cannot shrink the correction unit and the refusal of correcting over survivors, precedence availability reported without reducing the family, every registered null's mode and preserved features asserted against what the surrogate actually does, the registered-and-refused global shuffle, per-adapter null admissibility, and the frozen-family calibration in which the planted event is confirmed on 6 of 6 pairs and each false-alignment fixture on 0 of 6 (57 pytest cases) |
+| `test_experiment_run.py` | 80 | TG17.6 the resumable orchestrator: the transition table checked against itself, run identity as the manifest and nothing else, a re-opened manifest resuming rather than forking, a step address keyed to the artefacts it consumed, a killed run resuming without re-requesting what it had already acquired, a torn journal tail skipped, a timeout leaving the run FAILED with a remediation and a retry re-executing only that component, a retry refusing a new plan and a refusal refusing a retry, an editable copy leaving the frozen run byte-identical, partial coverage decided by the frozen policy in all three directions, a held-out partition no second run can spend, progress with nowhere to carry a result, and the HTTP surface including a browser refresh that resumes the same run |
 | `test_adapter_registry.py` | 15 | TG17.3 registered adapter contract, typed control schemas and their refusal of undeclared parameters, the ten-check conformance kit including executed invariance probes and `NOT_PROBED` reporting, unreconstructable lineage refusal, coverage-honesty and byte-cap failures, the four flagship adapters, the two that register from outside `src`, the bespoke record family's TG8.4 fence, and the synthetic fifth adapter installed through the extension seam with no orchestrator, route or UI edit |
 | `test_exports.py` | 32 | CSV/JSON/NetCDF4/Zarr round trips, embedded provenance, seeded perturbation (D34) |
 | `test_external_fcn3.py` | 9 | T5.6a offline FCN3 request/result schemas, exact global input and ensemble contracts, portability refusals, canonical persistence, file/tree identity and request/artifact tamper isolation |
@@ -6076,7 +6180,7 @@ able to sit three slices out of date.
 | `test_forecasting_artifact_evaluation.py` | 8 | T5.3b/T5.2d checkpoint/config integrity, artifact-bound lineage, persistence-relative metrics, physical-time reporting/refusals, undefined-skill handling and CPU/RTX vendor-neutral accelerator parity |
 | `test_forecasting_protocol.py` | 7 | T5.0a exact schema completeness, canonical identity, immutable nested configuration, evidence requirements, temporal/rollout consistency, persistence and tamper/drift refusal |
 | `test_forecasting_protocol_binding.py` | 4 | T5.0b exact dataset/protocol/checkpoint binding, recomputed coordinate/statistics identities, drift refusals and bound-evaluation cross-run isolation |
-| `test_frontend_contract.py` | 117 | the frontend/backend contract, including dataset-bound navigation gating with visible backend refusal reasons, capability profiles showing yes/no/not-established facts, transform/dataset/cadence readiness claim boundaries, domain-driven acquisition, workflow-grouped navigation, persistent record/study context, the TG11.1 analysis panel's three engine operations, R21 disablement, three-valued verdict and re-read identity check, the TG11.2 preregistration panel's declare-never-decide split, TG11.5's separate GET-only recorded-review workspace with its visible R23 fence, complete argument/cost display and honest empty states, TG17.1's manifest-driven save/reload/preflight Composer, TG17.2's known-answer structural-contract inspector and disabled premature runner, preservation of every ERA5 control, TG17.3's schema-driven adapter controls with no per-domain branch in the generic composer, every registrable control kind having a renderer, and the adapter/conformance payload shapes, plus TG11.6's skip/route focus, bound labels, global focus and reduced-motion rule, keyboard SVG lineage, figure text equivalents and asynchronous-state semantics, plus the UI integrity guards: no fabricated results, no unqualified validation claims, units and slope uncertainty displayed |
+| `test_frontend_contract.py` | 127 | the frontend/backend contract, including dataset-bound navigation gating with visible backend refusal reasons, capability profiles showing yes/no/not-established facts, transform/dataset/cadence readiness claim boundaries, domain-driven acquisition, workflow-grouped navigation, persistent record/study context, the TG11.1 analysis panel's three engine operations, R21 disablement, three-valued verdict and re-read identity check, the TG11.2 preregistration panel's declare-never-decide split, TG11.5's separate GET-only recorded-review workspace with its visible R23 fence, complete argument/cost display and honest empty states, TG17.1's manifest-driven save/reload/preflight Composer, TG17.2's known-answer structural-contract inspector and disabled premature runner, preservation of every ERA5 control, TG17.3's schema-driven adapter controls with no per-domain branch in the generic composer, every registrable control kind having a renderer, and the adapter/conformance payload shapes, plus TG11.6's skip/route focus, bound labels, global focus and reduced-motion rule, keyboard SVG lineage, figure text equivalents and asynchronous-state semantics, plus the UI integrity guards: no fabricated results, no unqualified validation claims, units and slope uncertainty displayed |
 | `test_gate_run.py` | 1 | T4C.5d frozen plan, local-only preflight, bounded train-only climatology/signatures, authenticated synthetic gate receipt, no-overwrite and tamper refusal |
 | `test_gate_campaign.py` | 6 | T4C.5f-h exact campaign identity, strict nested schema, canary/full/WeatherBench drift refusals, pre-transfer R13/physical-lag audit, aggregate storage/readiness, immutable freeze/load, pinned real preregistration and zero-network CLI (8 pytest cases) |
 | `test_grid_operators.py` | 64 | grid metrics, metric-aware gradient/Laplacian, area weighting, physical-wavenumber spectra, D26 |
@@ -6120,7 +6224,7 @@ able to sit three slices out of date.
 | `test_representation_structure.py` | 6 | TG16.1 complete pair enumeration, joint redundancy/complementarity/XOR/null discrimination, sealed estimator/null/family and permutation-resolution refusal, content/tamper binding, non-removal claim boundary, earned capability registration, and multipart plan/run workflow |
 | `test_conditional_information.py` | 6 | TG16.2 conditional-signal/null/collider discrimination, overlap and effective-support admission, sealed conditional-randomisation family and permutation-resolution refusal, content/tamper binding, conditional-only claim boundary, earned nuisance capability, and multipart plan/run workflow |
 | `test_stable_subspace.py` | 13 | TG16.3 span/projector invariance, planted linear and null discrimination, optional nuisance-region stability boundary, sealed complete family/optimizer/partition and permutation-resolution refusal, content/tamper binding and multipart plan/generate; TG16.4 unchanged held-out application, complete-family correction, nuisance-overlap refusal, content-bound seal, publication check and durable one-opening ledger; TG16.5 published definitions, no-adaptation external contract, provenance/content binding, target spending, and multipart certification |
-  | **total** | **2591** | |
+  | **total** | **2681** | |
 ### 7.2h A surrogate null that was not the null it claimed (T4C.5)
 
 The most instructive defect of the project so far, because it passed every structural check.

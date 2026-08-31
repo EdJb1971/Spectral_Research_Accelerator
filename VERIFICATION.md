@@ -7315,3 +7315,86 @@ rung moves. A calibration on fixtures with known answers is not a result about a
 
 The full suite was not rerun at the user's request; the clean 2745-pass G15 run remains the latest
 full-suite evidence.
+
+## TG17.6 - Content-Addressed, Resumable Experiment Orchestrator (2026-08-31, `ed-dev`) - **COMPLETE**
+
+A four-domain study is a long job over remote archives, and long jobs get interrupted. Every
+interruption offers the same recovery - start again, and run whatever is available this time - and
+taking it substitutes a smaller experiment for the declared one while producing a receipt
+indistinguishable from a study that always intended to be that size. `src/core/experiment_run.py`
+executes a frozen manifest as one state machine, held as a transition **table**, so what a run was
+allowed to do next is one dictionary rather than a chain of branches.
+
+**Run identity is the manifest.** It is a content address over the schema and the manifest digest
+and nothing else - no clock, no UUID, no machine - so executing an identical manifest *is* the same
+run. `POST /api/v1/experiment-runs` resumes rather than creates, and the Composer has no "new run"
+control because there is no such operation.
+
+**Every step is content-addressed.** A step key is the digest of the run, the stage, the component
+and the digests of that step's declared inputs; a completed step is published immutably through
+`publish_new_bytes` and replayed from disk. That is the no-duplicate-acquisition guarantee and the
+drift check at once: a changed native artefact re-keys its translation rather than being paired
+with a stale one. Operational failures are deliberately *not* published under a step address, since
+a timeout is a fact about a network at a moment and not a function of the declared inputs - and
+publishing it there would make a successful retry look like one address disagreeing with itself.
+
+**A retry may not author a new plan.** `retry` re-executes only the components recorded `FAILED` or
+`TIMED_OUT`, and refuses a manifest whose digest differs from the frozen one. `REFUSED` and
+`MISSING` are the archive answering rather than failing, so they are terminal: the remedy is
+`editable_copy`, which writes a new mutable draft and leaves the frozen run's journal unchanged.
+There is no `unfreeze` - a frozen run edited after seeing how it went is a plan chosen with
+knowledge of the result.
+
+**Partial acquisition is the frozen policy's decision.** `decide_stage` is a pure function of the
+manifest and the component statuses, auditable without reconstructing a run: `complete_required`
+refuses, `partial_permitted` admits only above its declared minimum fraction, and the receipt names
+every missing component either way. A refusal outranks a failure and a failure outranks a missing
+component, because "we could not ask" is not "the answer is no".
+
+**Progress cannot leak an unopened result.** `ComponentOutcome` carries a status, a digest, a
+bounded work estimate and a remediation string, and has nowhere to put a measurement value - so a
+progress feed watched during `MINING` reports that mining is happening and cannot report what it
+found. `runs/<run_id>/journal.jsonl` is the only state: append-only, fsync'd per line, folded on
+read, with a torn tail skipped rather than raised.
+
+`src/core/run_workers.py` registers the stage-worker suites instead of accepting behaviour from a
+request, and everything registered today **acquires nothing**. `fixture_dry_run` rehearses a frozen
+plan end to end; `fixture_transient_failure` times out each acquisition component once and
+completes it on retry, reading "first attempt" from the run's own journal so the rehearsal behaves
+identically across a restart or four separate HTTP requests. Eight routes and
+`frontend/src/components/RunMonitor.tsx` put the machine in the browser, with Retry and "open an
+editable copy" as two buttons that are never both live.
+
+**Two things the widened verification set found.** `test_analysis_api.py`'s TG11.1 acceptance test
+asserted `len(names) == 13` before posting every sequence and cross-domain benchmark over HTTP;
+TG17.0 registered two more, so the assertion aborted the test *before the HTTP call* and the two
+four-domain flagship benchmarks were never exercised across the API boundary that test exists to
+exercise (**D78**, fixed by deriving the count with a floor and naming them). And the shared
+`client` fixture gained the filesystem half of D24's reasoning: persisting routes fall back to
+`data/` when nothing binds them, which for a content-addressed run means an unbound test posting a
+manifest would resume, and then advance, whatever real run that manifest already had.
+
+**Acceptance met.** A killed run resumes without re-requesting the coverage it had acquired; a torn
+journal tail is skipped and the run still resumes; re-executing an identical complete manifest
+returns the same run identity and byte-identical artefact digests and requests nothing. A timed-out
+acquisition leaves the run `FAILED` with a remediation and is retried over HTTP, re-executing only
+that component. A retry carrying a different manifest is refused by digest. A permanent refusal is
+terminal, is not retryable, and is answered with an editable copy that leaves the frozen run
+unchanged.
+
+```text
+> .\.venv\Scripts\python.exe -m pytest src\tests\test_experiment_run.py src\tests\test_experiment_manifest.py src\tests\test_experiment_family.py src\tests\test_frontend_contract.py src\tests\test_structural_alignment.py src\tests\test_adapter_registry.py src\tests\test_structural_trajectory.py src\tests\test_domain_onboarding.py src\tests\test_acquisitions_api.py src\tests\test_benchmarks.py src\tests\test_cross_domain.py src\tests\test_family_accounting.py src\tests\test_preregistration.py src\tests\test_api_infrastructure.py src\tests\test_analysis_api.py src\tests\test_channels_api.py src\tests\test_cross_domain_api.py src\tests\test_evidence_api.py src\tests\test_findings_api.py src\tests\test_mining_api.py src\tests\test_preregistration_api.py src\tests\test_profiles.py src\tests\test_reviews_api.py src\tests\test_documentation.py -q
+811 passed, 1 skipped, 5 warnings in 677.37s (0:11:17)
+
+> cd frontend && npm run build
+built in 1m 5s (TypeScript and Vite production bundle)
+
+> git diff --check
+(clean)
+```
+
+No live archive is acquired, no confirmatory statistic runs, no evidence is written and no claim
+rung moves. The registered suites are rehearsals, and a rehearsal that completes is not a result.
+
+The full suite was not rerun at the user's request; the clean 2745-pass G15 run remains the latest
+full-suite evidence.

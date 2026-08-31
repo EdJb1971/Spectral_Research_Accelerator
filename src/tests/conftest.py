@@ -61,7 +61,7 @@ def db_session(session_factory):
 
 
 @pytest.fixture(scope="function")
-def client(db_engine, db_session, session_factory):
+def client(db_engine, db_session, session_factory, tmp_path):
     """TestClient whose get_db dependency is bound to the test database.
 
     Entered as a context manager so the FastAPI lifespan actually runs; without this
@@ -79,7 +79,16 @@ def client(db_engine, db_session, session_factory):
     # own factory from app.state. Bind it to the test database or the sweep writes to
     # the real spectral_earth.db (or fails, if that file has no tables).
     app.state.session_factory = session_factory
+    # The same reasoning as D24, applied to the filesystem. Routes that persist - saved manifest
+    # revisions, and since TG17.6 the run journals - fall back to `data/` when nothing binds them,
+    # so an unbound test writes into the deployed data directory. For runs that is worse than
+    # untidy: a run identity is the content address of its manifest, so a test posting a manifest
+    # would resume, and then advance, whatever real run that manifest already had.
+    app.state.experiment_run_dir = str(tmp_path / 'experiment_runs')
+    app.state.experiment_manifest_dir = str(tmp_path / 'experiment_manifests')
     with TestClient(app) as c:
         yield c
     app.dependency_overrides.clear()
     app.state.session_factory = None
+    app.state.experiment_run_dir = None
+    app.state.experiment_manifest_dir = None
