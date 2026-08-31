@@ -55,7 +55,7 @@ skill, show the counterexamples, or report that no robust relationship survives.
 ## 1. Honest Technical Status
 
 Verified against the code on 2026-08-29. Every claim here is backed by captured output in
-`VERIFICATION.md`; `architecture.md` Section 7 holds the full defect ledger (D1-D83, of which **81 fixed, 1 partial (D18), 1 open (D43)**).
+`VERIFICATION.md`; `architecture.md` Section 7 holds the full defect ledger (D1-D84, of which **81 fixed, 1 partial (D18), 2 open (D43, D84)**).
 
 The numbers in this table are checked by `src/tests/test_documentation.py`, which parses them
 out of this file and compares them against the source. That guard exists because this table
@@ -65,7 +65,7 @@ status section, it is a memory.
 
 | Area | Real status |
 |---|---|
-| **Phase progress** | **Phase 3.5 complete** (25 tasks). **Phase 4A, 4B and the pre-gate 4C instrument are complete:** T4A.1-4, T4B.1-4, T4C.1-5h. T4C.5d-h make the real gate, independent-source check, two-stage acquisition, physical preflight and primary preregistration bounded and content-bound, but **T4C.6 has not run**. **T5.0 is partial:** T5.0a-b supplies the strict versioned/hashable protocol and runtime-binding gate, but the actual laboratory evidence/config has not been supplied or frozen. **T5.1 is partial:** T5.1a-e accepts raw/FFT/DCT/Haar/db2/SWT/DTCWT training representations, optimized and exposed with truthful UI readiness; mixed precision and remaining cross-device acceptance remain. **T5.2 is partial:** T5.2a-d implements the aligned, leakage-safe, train-normalised PyTorch dataset, bounded-memory worker-safe cache, bounded blockwise CDS cache publication, exact calendar splits and verified physical-time leads; the live CDS run, independent overlap and viable multi-year NZ crop remain blocked by D43. **T5.3 is partial:** T5.3a-b supplies the forecaster seam, persistence baseline, deterministic represented smoke run, verified model-artifact contract and persistence-relative evaluator; T5.3c and the actual laboratory model remain open. **T5.6 is partial:** T5.6a-g supplies the offline FCN3 identity, lazy canonical cube/import boundary, exact ERA5 truth bridge, matched ensemble metric engine, atomic reproducible run receipt, portable laptop/HPC runner and verified API/UI reporting; no worker, dependency, checkpoint, initial condition, real forecast or real truth evaluation has run, so the result UI is honestly empty. **Not done:** T4C.6, the real-ERA5 gate review; 4D-4H; T5.4-5, the remaining T5.6 inference/real-data work, T5.7, and the T5.8 irregular-observation/spatial-downscaling track. Per-task evidence blocks sit under each task below; a task without a **DONE** or **PARTIAL** label has not been started. |
+| **Phase progress** | **Phase 3.5 complete** (25 tasks). **Phase 4A, 4B and the pre-gate 4C instrument are complete:** T4A.1-4, T4B.1-4, T4C.1-5h. T4C.5d-h make the real gate, independent-source check, two-stage acquisition, physical preflight and primary preregistration bounded and content-bound, but **T4C.6 has not run**. **T5.0 is partial:** T5.0a-b supplies the strict versioned/hashable protocol and runtime-binding gate, but the actual laboratory evidence/config has not been supplied or frozen. **T5.1 is partial:** T5.1a-e accepts raw/FFT/DCT/Haar/db2/SWT/DTCWT training representations, optimized and exposed with truthful UI readiness; mixed precision and remaining cross-device acceptance remain. **T5.2 is partial:** T5.2a-d implements the aligned, leakage-safe, train-normalised PyTorch dataset, bounded-memory worker-safe cache, bounded blockwise CDS cache publication, exact calendar splits and verified physical-time leads; the live CDS run, independent overlap and viable multi-year NZ crop remain blocked by D43. **T5.3 is partial:** T5.3a-b supplies the forecaster seam, persistence baseline, deterministic represented smoke run, verified model-artifact contract and persistence-relative evaluator; T5.3c and the actual laboratory model remain open. **T5.6 is partial:** T5.6a-g supplies the offline FCN3 identity, lazy canonical cube/import boundary, exact ERA5 truth bridge, matched ensemble metric engine, atomic reproducible run receipt, portable laptop/HPC runner and verified API/UI reporting; no worker, dependency, checkpoint, initial condition, real forecast or real truth evaluation has run, so the result UI is honestly empty. **Not done:** T4C.5i, the derived spatial-power and FAIL/INVALID boundary (D84), which now blocks acquisition; T4C.6, the real-ERA5 gate review; 4D-4H; T5.4-5, the remaining T5.6 inference/real-data work, T5.7, and the T5.8 irregular-observation/spatial-downscaling track. Per-task evidence blocks sit under each task below; a task without a **DONE** or **PARTIAL** label has not been started. |
 | Ownership / licence | **Declared in `LICENSE.md`.** Edward Jonathan Bentley retains the proprietary SpectralEarth core. Adam Frank Bentley has a named perpetual, worldwide, royalty-free grant for lawful personal, academic, research and commercial use/modification, without public redistribution or sublicensing of the core. Independent extensions and upstream contributions remain separately governed. This bespoke text has not been professionally reviewed. |
 | **Accessibility** | **Workflow-wide source contract, TG11.6 DONE.** Skip and route focus, globally visible focus, bound legacy labels, reduced motion, announced asynchronous state, keyboard SVG lineage and figure text equivalents now cover both platform lines. Rendered assistive-technology inspection remains NOT RUN, so no WCAG conformance level is claimed (see `roadmap_cross_domain.md`). |
 | Backend test suite | **3106 passed, 1 xfailed.** Plus four explicit skips: the opt-in live-GCS check, opt-in live store probe, opt-in live Argo acceptance, and opt-in live TESS/MAST acceptance. Two further tests failed in that run and are not counted above: `test_claimed_test_count_is_at_least_the_function_count`, which was the stale 2745 claim this run replaced, and **D80**, a guard pinning a served capability claim that TG17.6 had made false. Both were fixed immediately afterwards and re-verified in a targeted 304-test run including the full documentation audit, so the next full run should read 3108. TG17.8 then added 65 test functions in `test_comparison_views.py`, ten in `test_frontend_contract.py` and 19 browser tests, all verified in targeted runs including the full documentation audit (387 passed) and a 30-test browser suite; the full suite has not been rerun since, so 3106 remains the last measured figure rather than a current one. Trajectory: 19 written / 1 failing / uncollectable -> 65 -> 152 -> 222 -> 271 -> 351 -> 407 -> 449 -> 478 -> 535 -> 548 -> 593 -> 642 -> 647 -> 709 -> 781 -> 855 -> 859 -> 882 -> 883 -> 890 -> 911 -> 917 -> 933 -> 946 -> 955 -> 957 -> 962 -> 969 -> 981 -> 985 -> 1000 -> 1008 -> 1027 -> 1042 -> 1056 -> 1070 -> 1080 -> 1089 -> 1094 -> 1095 -> 1102 -> 1104 -> 1106 -> 1112 -> 1116 -> 1117 (the `master` freeze) -> 1375 (TG2.1, `ed-dev`) -> 1429 (TG2.2, `ed-dev`) -> 1477 (TG2.3, `ed-dev`) -> 1536 (TG2.4, `ed-dev`) -> 1577 (TG3.1, `ed-dev`) -> 1621 (TG3.2, `ed-dev`) -> 1686 (TG3.3, `ed-dev`) -> 1742 (TG3.4, `ed-dev`) -> 1787 (TG3.5, `ed-dev`) -> 1850 (TG4.1, `ed-dev`) -> 1922 (TG4.2, `ed-dev`) -> 1972 (TG4.3, `ed-dev`) -> 1986 (TG5.1, `ed-dev`) -> 2004 (TG5.2, `ed-dev`) -> 2020 (TG5.3, `ed-dev`) -> 2044 (TG6.1, `ed-dev`) -> 2074 (TG6.2, `ed-dev`) -> 2112 (TG6.3, `ed-dev`) -> 2167 (TG7.1, `ed-dev`) -> 2217 (TG7.2, `ed-dev`) -> 2235 (TG7.3, `ed-dev`) -> 2236 (TG7.3 live acceptance, `ed-dev`) -> 2296 (TG7.4, `ed-dev`) -> 2321 (TG9.1/TG9.2, `ed-dev`) -> 2334 (TG9.3, `ed-dev`) -> 2367 (TG8.1, `ed-dev`) -> 2420 (TG8.4, `ed-dev`) -> 2459 (TG10.1, `ed-dev`) -> 2503 (TG10.3, `ed-dev`) -> 2509 (TG10.2, `ed-dev`) -> 2511 (TG11.0, `ed-dev`) -> 2521 (TG11.1, `ed-dev`) -> 2543 (TG11.2, `ed-dev`) -> 2570 (TG11.3, `ed-dev`) -> 2619 (TG11.4, `ed-dev`) -> 2661 (TG11.4b, `ed-dev`) -> 2667 (TG11.6, `ed-dev`) -> 2681 (TG11.5, `ed-dev`) -> 2694 (TG12.1b/TG12.1c, `ed-dev`) -> 2708 (TG12.2a, `ed-dev`) -> 2716 (TG12.1d, `ed-dev`) -> 2726 (TG12.2b-d, `ed-dev`) -> 2741 (TG13/G14 file-first ingress, `ed-dev`) -> 2745 (TG15 capability routing, `ed-dev`) -> 3106 (TG17.7, `ed-dev`; the first full-suite run since TG15, the G16/G17 slices between having verified against targeted suites). |
@@ -1248,6 +1248,145 @@ reserve against 1,180.06 GiB free on D:. It constructed no client and remains bl
 three expected local prerequisites: `cdsapi`, standard CDS credential configuration and explicit
 network consent; service-side licence acceptance remains unproven. No acquisition or atmospheric
 test ran in this task.
+
+**T4C.5i Derived spatial power and the FAIL/INVALID boundary *(fixes D84)* - PLANNED.** The
+frozen 161x161 crop passes its own preregistered geometry audit and is then refused by the
+acquisition layer. Both layers are computing R13 correctly and disagreeing about a constant, which
+is the signal that the constant is doing work it was never derived to do.
+
+The arithmetic, verified: db2 SWT level 3 has an accumulated support of 22 px, so 11 px per side
+are contaminated and a 161 px crop retains a 139 px valid interior. `MIN_VALID_INTERIOR` is 128,
+so 139 passes -- and `gate_campaign` checks exactly this, which is why `review` and `preflight`
+both returned clean. `zarr_source.minimum_crop_size` then takes the same 128, adds the 22 px of
+support to get a raw minimum of 150, and **rounds up to the next power of two**, giving 256. The
+161 px crop is refused against that 256, and the refusal text calls it *statistically recommended*.
+
+Neither number is a derivation. `MIN_VALID_INTERIOR`'s own comment says so -- *"this is a
+judgement"* -- and R13 calls it "the declared 128-pixel minimum". The rounding is justified in
+`minimum_crop_size` as *"because the dyadic transforms want one and because it matches how a
+researcher thinks about crop sizes"*: ergonomics and dyadic tidiness. SWT is undecimated and has no
+dyadic size requirement at all. So a preregistered study is currently blocked by a rounding step
+with no statistical standing, described to the caller as though it had one.
+
+**What the estimator actually consumes.** `transfer_entropy` takes 1-D sequences. Space is
+collapsed before it runs: `energy_density[t, s] = sum(coefficient**2) / values.size` over the valid
+interior -- one scalar per frame per scale. The joint histogram's samples are therefore **frames,
+not pixels**: `cells = bins**3 = 216`, giving 4,382/216 = 20.3 samples per cell on train and
+2,914/216 = 13.5 on test, both above `MIN_SAMPLES_PER_CELL` of 5.0. Temporal power is comfortable
+and is already checked.
+
+**So crop size beyond edge exclusion is a power question, not a validity question.** The valid
+interior does not supply samples; it sets the *precision* of the per-frame scalar. Fewer
+effectively-independent spatial structures means a noisier energy density, and measurement noise in
+source and target attenuates estimated MI and TE toward zero. The direction matters: an undersized
+crop **biases toward the null**. It cannot manufacture a false PASS by this route. It can
+manufacture a FAIL that is really *"the instrument was too noisy to see it"*. Edge contamination
+can manufacture a false positive, but that is R13 requirement (1), which is rigorous, separately
+enforced and unchanged by this task.
+
+The frozen decision rule already carries the right vocabulary -- *"an adequately powered absence is
+FAIL; any contract, source, geometry, overlap or power failure is INVALID"* -- but nothing in the
+system derives the spatial-precision term that separates those two verdicts. That is the hole, and
+it is not the crop constant.
+
+**Why this blocks acquisition rather than following it.** A negative T4C.6 is an explicitly
+permitted deliverable of this programme. A negative result with no power analysis is not
+publishable: the first question a reviewer asks is whether the instrument could have detected the
+effect being declared absent. Until the attenuation is measured, neither a FAIL nor a PASS can be
+defended, and the crop that 2.5 GB would be committed to has not been shown adequate for the
+frozen family.
+
+**The work:**
+
+1.  **Spatial decorrelation length per scale**, estimated from the **train partition only** -- the
+    direct analogue of `decorrelation_frames`, which already takes the first lag at which the
+    autocorrelation falls below 1/e, applied on the latitude and longitude axes instead of time.
+2.  **Effective spatial sample size** per scale: valid interior area divided by decorrelation area.
+    Raw pixel counts are never treated as independent, for the same reason a global shuffle is
+    never treated as a null.
+3.  **Attenuation measured, not modelled.** Recompute the transfer entropy over concentric
+    sub-crops of the same interior, holding frames, bins and lag fixed so only spatial precision
+    varies, and extrapolate to an unlimited crop. *Changed during implementation:* this step was
+    first specified as an analytic standard-error and noise-to-signal term. That was dropped
+    because the signal/sampling-noise split of the across-frame variance cannot be verified from
+    the data, and an unverifiable correction to a power claim is worse than none.
+4.  **Minimum detectable effect** at the declared 36-test family, BY correction at 0.05 and
+    4,999 surrogates, read off the measured ensemble rather than assumed. `detection_rank`
+    reduces the design to the largest exceedance count `k` that still clears the rank-1 corrected
+    level -- `k = 0` for this campaign, so the observation must beat every surrogate -- and
+    `minimum_detectable_effect` returns the `k + 1`-th largest value the ensemble produced. A
+    design that cannot reach the level at any `k` is reported as having no detection at all
+    rather than a very large threshold. *Changed during implementation:* no confidence interval
+    is attached. The surrogate seed is preregistered, so the ensemble is frozen and the order
+    statistic *is* the gate's decision boundary rather than an estimate of one; the two intervals
+    attempted before that was recognised are recorded in the Progress block below.
+5.  **Refuse on the derived quantity.** Inadequate power returns `INVALID`, names the deficit, and
+    states which of crop size, frame count or scale count would close it -- never a bare constant.
+6.  **Demote both constants.** `MIN_VALID_INTERIOR` and the power-of-two size become *reported
+    recommendations*, explicitly labelled as heuristics. The power-of-two rounding is removed from
+    the refusal path entirely and its "statistically recommended" wording corrected.
+7.  **Publish the derivation.** Decorrelation lengths, ESS, attenuation, minimum detectable effect
+    and the FAIL/INVALID boundary all enter the receipt, so a reviewer audits the power claim
+    rather than trusting a judgement.
+8.  **Re-freeze the campaign** against the derived criterion, recorded as a supersession of
+    `t4c6_nz_era5_temperature_850_v1` with its reason, not an edit of it.
+
+**Progress (2026-09-01, `ed-dev`).** Steps 1-4 are implemented in
+`src/analysis_engine/spatial_power.py` with 36 test functions (41 runs), all passing and
+order-stable, and
+196 passing alongside the cross-scale, scale-signature, statistics, gate and preregistration
+suites. Steps 5-8 -- wiring the refusal into the acquisition path, demoting the two constants,
+the receipt fields and the campaign supersession -- are not started.
+
+Three things were learned by building it, recorded so they are not re-derived:
+
+*   **The estimator caught a calibration error in its own test.** The first known-answer helper
+    built a field with a Gaussian kernel of `sigma = L/sqrt(2)` and expected the 1/e crossing at
+    `L`. A Gaussian autocorrelation of standard deviation `d` crosses 1/e at `d*sqrt(2)`, so the
+    module returned 12 where 8 was expected and was right. The tempting repair -- widening the
+    tolerance until the module agreed -- would have calibrated the estimator against the mistake.
+*   **A mean-centred window manufactures decorrelation.** Searching to half the interior, as the
+    temporal estimator safely does over thousands of frames, returns a confident 19 px length for
+    a 40 px interior of 60 px structure. `TRUST_HORIZON_FRACTION = 0.25` bounds the search and
+    saturation is reported instead.
+*   **A frozen design's decision boundary is not an estimate.** Step 4 twice tried to attach
+    uncertainty to the minimum detectable effect. A Clopper-Pearson bound on the threshold's
+    exceedance probability was unattainable by construction, comparing about
+    `(k + 1 + z*sqrt(k)) / n` against a required level of about `(k + 1) / n`. A bootstrap of the
+    order statistic was worse, being miscalibrated the dangerous way: at rank 1 no resample can
+    exceed the sample maximum, so the interval was one-sided and four independent ensembles of
+    4,999 draws all fell above it; rank 10 gave 3-in-20 coverage. Both were answering a question
+    about a study drawn with a different seed, which preregistering the seed exists to rule out.
+    The surrogate p-value `(1 + k) / (1 + n)` is exactly valid under exchangeability, and the
+    `k + 1`-th largest of the frozen ensemble *is* the boundary the gate applies.
+*   **The attenuation model has a stated domain and must refuse outside it.** Near the
+    `log(bins)` entropy ceiling the weak-dependence linearisation fails. Separately, a curve still
+    climbing at the largest crop yields a non-positive intercept with an excellent fit (R^2 0.999)
+    -- that is the strongest evidence of inadequacy available, and it is reported distinctly from
+    a fit failure rather than being softened into a number.
+
+**Definition of done:**
+
+*   The acquisition layer and `gate_campaign` agree on one geometry contract, and a crop admitted
+    by one cannot be refused by the other.
+*   No refusal in the sizing path cites a judgement constant; every refusal cites a measured or
+    derived quantity and names what would close the deficit.
+*   The power-of-two rounding appears nowhere in a refusal, and no heuristic is described to a
+    caller as statistically recommended.
+*   An adequately powered absence and an underpowered absence produce **different verdicts** on
+    the same input, demonstrated by a test that varies only the crop.
+*   Attenuation is validated against a planted synthetic effect: a known TE injected at a known
+    lag is recovered at full crop and measurably attenuated at a reduced one, with the predicted
+    attenuation matching the observed within a stated tolerance.
+*   The receipt carries the complete derivation, and re-running it from the receipt reproduces the
+    same verdict.
+*   The superseding campaign records why it supersedes, and the original remains readable.
+
+**Claim boundary.** This task decides only whether the declared family is adequately powered on a
+given crop. It is not a T4C.6 verdict, it does not adjudicate the cross-scale hypothesis, and a
+passed power check is not evidence of an effect. Measuring power is also not permission to reduce
+the sample requirement to fit an existing layout: if the derivation says the crop is inadequate,
+the crop grows or the family shrinks.
 
 **T4C.6 GATE REVIEW.** Written verdict: does cross-scale organisation exceed the surrogate ensemble at $q < 0.05$, at lags above the support floor, on real ERA5 data?
 *   **Pass** -> proceed to 4D.

@@ -7652,3 +7652,104 @@ The clean **3,240** replaces TG17.7's 3,106 as the last measured full-suite figu
 bring the served surface from 136 to 138; the inventory is 2,867 test functions. No live archive is
 acquired, no scientific statistic is run, no finding is recorded, no evidence is admitted and
 nothing is released by TG17.10. Five of the seven registered gates remain unpassed.
+
+---
+
+## T4C.6 acquisition attempted and stopped at D84 (2026-09-01, `ed-dev`)
+
+**The three long-standing external prerequisites are now satisfied.** `cdsapi` 0.7.7 is installed
+into `.venv` from `requirements-cds.txt`; a CDS personal access token is configured as
+`CDSAPI_URL`/`CDSAPI_KEY` in `.env.local`, which `start_platform.ps1` promotes into the process
+environment; the ERA5 licence for `reanalysis-era5-pressure-levels` has been accepted; and
+`SPECTRALEARTH_ALLOW_NETWORK` was already set. The campaign preflight returns
+`status: READY_FOR_CANARY` with `blockers: []`.
+
+The direct regional route also resolves D43's amplification: the full five-year record is 2.52 GB
+across 60 monthly shards against the catalogued route's 29.88 GB, the canary is 18 MB, and the
+9.75 GiB total requirement passes against 941 GiB free on `D:`.
+
+The preflight's own claim boundary still holds and is worth restating: `READY_FOR_CANARY` proves
+local contract, capacity, dependency, configuration-presence and consent only. It does not prove
+credential validity, licence acceptance or service availability. **No live CDS request has been
+made, so the token and licence remain unproven.**
+
+**Acquisition stopped before any data transfer, at D84.** Materialising the WeatherBench overlap
+was refused on crop geometry. The first attempt supplied no `TransformSupportRequest` and was
+correctly refused against the 4-level DTCWT default; that was a caller error, not a defect. Supplying
+the campaign's frozen transform (`swt`, `db2`, 3 scales) produced the real refusal: the 161x161
+crop retains a 139 px valid interior against `MIN_VALID_INTERIOR` of 128 and passes
+`gate_campaign`, while `minimum_crop_size` rounds the 150 px raw minimum up to 256 and refuses.
+
+Reading the estimator settled what the constant is standing in for. `transfer_entropy` consumes
+1-D series; `energy_density[t, s] = sum(coefficient**2) / values.size` collapses space to one
+scalar per frame per scale. The joint histogram's samples are frames: 4,382/216 = 20.3 per cell on
+train and 2,914/216 = 13.5 on test, both above the 5.0 minimum. Crop size beyond edge exclusion
+therefore governs the precision of the per-frame scalar, not the sample count -- a power
+criterion, not a validity one. It biases toward the null, so it cannot forge a PASS, but it can
+forge a FAIL that is really inadequate power, and the frozen decision rule's own FAIL/INVALID
+distinction cannot currently be made. Recorded as D84; fix specified as roadmap T4C.5i.
+
+```text
+> .\.venv\Scripts\python.exe -m pip install -r requirements-cds.txt
+Successfully installed cdsapi-0.7.7 ecmwf-datastores-client-0.5.3 multiurl-0.3.9
+
+> .\.venv\Scripts\python.exe -m src.analysis_engine.gate_campaign review ^
+    --campaign campaigns/t4c6_nz_era5_temperature_850_v1.json
+campaign_sha256 84f7b53fd25d555c8dcd57c6006288b95c5908f2a1d5c002d10a6572c7875975
+network_used false
+
+> .\.venv\Scripts\python.exe -m src.analysis_engine.gate_campaign preflight ...
+status READY_FOR_CANARY; blockers []; cdsapi_available true;
+credentials.configuration_present true; secret_values_inspected false;
+remote_validity_or_licence_acceptance_proven false;
+network_consent_enabled true; client_constructed false; network_used false
+
+> materialise(weatherbench_overlap, analysis=swt/db2/3)
+FieldTooSmallError: SWT level-3 ... needs at least (256, 256) ... field is (161, 161)
+```
+
+Network use in this session was limited to opening the WeatherBench store to read coordinate and
+chunk metadata. No measurement values were transferred, no shard was downloaded, no cache was
+written and no CDS request was issued. The defect ledger moves to D1-D84 with two open entries,
+D43 and D84.
+
+## T4C.5i steps 1-4 -- spatial sampling adequacy (2026-09-01, `ed-dev`)
+
+`src/analysis_engine/spatial_power.py` derives what `MIN_VALID_INTERIOR` was standing in for
+(D84): spatial decorrelation and effective sample size per interior, an attenuation curve measured
+by nested sub-cropping, an extrapolation to an unlimited crop, and the minimum detectable effect
+of the declared design. Steps 5-8 are not started, so D84 stays open.
+
+```text
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_spatial_power.py -q
+41 passed, 1 warning in 4.64s                     (36 test functions)
+
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_spatial_power.py ^
+    src/tests/test_cross_scale.py src/tests/test_scale_signature.py ^
+    src/tests/test_statistics.py src/tests/test_gate_campaign.py ^
+    src/tests/test_gate_run.py src/tests/test_preregistration.py -q
+196 passed, 1 warning in 54.55s
+
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_documentation.py -q
+20 passed, 2 warnings in 252.38s
+
+> git diff --check
+(clean)
+```
+
+For the frozen campaign -- 36 tests, Benjamini-Yekutieli at alpha 0.05, 4,999 circular shifts --
+the derived detection rank is `k = 0`: the observation must exceed **every** surrogate. The
+p-value floor of 1/5000 clears the required raw level of 3.327e-4 by a factor of 1.66, so the
+design detects, but with no margin for a single exceedance. A test pins that boundary to the
+gate's own `screen` over the declared family, and the rejection flips across it and nowhere else.
+
+No confidence interval is attached to the minimum detectable effect, and two attempts to attach
+one are recorded in `roadmap.md` as errors rather than removed silently. The surrogate seed is
+preregistered, so the ensemble is frozen and the order statistic is the decision boundary itself
+rather than an estimate of it. The measured miscalibration that exposed this: at rank 1 a
+bootstrap resample can never exceed the sample maximum, and four independent ensembles of 4,999
+draws all fell above the interval's upper limit; at rank 10, coverage was 3 in 20.
+
+The full backend suite has **not** been rerun since these additions, so 3106 remains the last
+measured full-suite figure. No network was used. The defect ledger is unchanged at D1-D84 with
+D43 and D84 open.

@@ -5016,6 +5016,104 @@ widened default had bought. The near-miss is recorded because the failure mode i
 central one: a framework default quietly making a scientific choice.
 
 
+### 3.6zzu Spatial sampling adequacy (`src/analysis_engine/spatial_power.py`, T4C.5i, `ed-dev`)
+
+R13's edge exclusion is exact and unchanged: coefficients within one filter support of a boundary
+are contaminated and never analysed. R13's *size floor* is a different thing -- `MIN_VALID_INTERIOR
+= 128` px, rounded up to a power of two -- and its own comment admits it is a judgement. This
+module replaces what that constant was standing in for (D84).
+
+The constant was guarding the wrong risk. `transfer_entropy` consumes 1-D series, and
+`scale_signature` collapses space first as `energy_density[t, s] = sum(coefficient**2) /
+values.size`. The joint histogram's samples are **frames, not pixels**, and their adequacy is
+already checked against `MIN_SAMPLES_PER_CELL`. The valid interior instead sets how many
+independent structures contribute to each per-frame scalar, which makes crop size beyond edge
+exclusion a **power** criterion. The direction is favourable: too few structures make the scalar a
+noisy summary, which attenuates a dependence estimate toward zero. An undersized crop cannot forge
+a PASS; it can forge a FAIL that is really *"the instrument could not have seen it"*.
+
+**Decorrelation and effective samples.** `spatial_decorrelation` reports, per axis, the first lag
+whose autocorrelation -- pooled over the perpendicular axis, so a 139x139 interior contributes 139
+lines to each estimate -- falls below `1/e`. That is deliberately the same convention
+`cross_scale.decorrelation_frames` uses for the Theiler window, and a test pins the two estimators
+to agree within 3 px on identical 1-D structure so they cannot drift apart.
+`effective_spatial_samples` then divides interior area by decorrelation area. Raw pixel counts are
+never treated as independent.
+
+**The trust horizon, and the artefact it refuses.** Centring a window on its own mean forces the
+sample autocorrelation to decay at long lags whether or not the field decorrelates. Measured: a
+40 px interior of a field with 60 px structure -- roughly one structure -- reports a confident
+"19 px decorrelation length" when searched to half its width, the convention the temporal
+estimator can afford over thousands of frames. That length is shorter than the real structure, so
+it inflates the sample count in the optimistic direction. `TRUST_HORIZON_FRACTION = 0.25` bounds
+the search; beyond it the honest report is **saturation**, and saturation returns `None` rather
+than the searched limit, because substituting "as far as we looked" converts ignorance into a
+number. Saturation is also the module's one model-free refusal: an interior that never decorrelates
+within itself holds about one structure, and no constant is needed to know that is not a sample.
+
+**Attenuation is measured, not modelled from assumptions.** `attenuation_curve` recomputes the
+transfer entropy over concentric sub-crops of the *same* interior. Frames, bins and lag are
+identical at every size, so the joint histogram's sample count is constant and the small-sample
+entropy bias is common to every row; only spatial precision varies, which is what makes the curve
+readable as attenuation at all.
+
+`extrapolate_attenuation` states its model so it can be disagreed with. Averaging over `E`
+independent structures leaves the per-frame scalar with sampling variance proportional to `1/E`;
+for weak dependence a transfer entropy behaves like a squared correlation, attenuated by a
+reliability factor `1/(1 + c/E)`. So `TE(E) = TE_inf / (1 + c/E)`, and `1/TE` is linear in `1/E`
+with intercept `1/TE_inf`. The fit uses the largest crops only, and produces **no number** in two
+distinct situations that must not be conflated:
+
+*   a **non-positive intercept** -- the fitted line reaches zero at a finite sample count, so the
+    curve is still climbing and no plateau is in view. The fit may be excellent (R^2 0.999 in the
+    pinned case); this is the strongest available evidence that the crop is inadequate, and
+    reporting it as a fit failure would misdiagnose it;
+*   a **poor fit** -- the weak-dependence approximation does not hold, which it does not near the
+    `log(bins)` entropy ceiling.
+
+**The verdict spends no threshold of its own.** `power_verdict` compares the measured and
+extrapolated effects against the study's already-frozen detection threshold. Both below it, the
+effect is absent whatever the crop and an absence is an adequately powered `FAIL`. Both above, the
+verdict stands on its own evidence. Straddling it, an unlimited crop would have detected what this
+one cannot, so the result is `INVALID` for inadequate power rather than a negative finding. That
+is the FAIL/INVALID separation the frozen T4C.6 decision rule always required and nothing derived.
+
+Everything is computed on the generate/train partition only; deciding whether the instrument is
+adequate must not spend the confirmatory partition.
+
+**The threshold the verdict spends is derived, not chosen.** `power_verdict` needs a detection
+threshold in nats, and nothing in the campaign states one: significance there is decided by a
+surrogate ensemble and a Benjamini-Yekutieli correction over a declared family, which is a
+statement about p-values. `detection_rank` converts the design to the one integer that governs
+its reach -- since a surrogate p-value is `(1 + k) / (1 + n)`, the whole question is the largest
+`k` that still clears the strictest corrected level in the family. That level is the one at
+**rank 1**, which is the honest case to plan for: a study looking for a single real effect cannot
+rely on the laxer thresholds a step-up procedure grants only once several tests are rejected.
+For the campaign's 36 tests, BY at 0.05 and 4,999 shifts, the answer is `k = 0` -- the observation
+must beat **every** surrogate, and the p-value floor of 1/5000 clears the required 3.33e-4 by a
+factor of only 1.66. A design that cannot reach the level at any `k` has no minimum detectable
+effect at all rather than a very large one, and is reported that way.
+
+`minimum_detectable_effect` then reads the threshold off the measured ensemble as its
+`k + 1`-th largest value. Nothing distributional enters: it is an order statistic of the same
+circular-shift ensemble the gate is referenced against, so it carries the estimator's small-sample
+entropy bias exactly as the observation does. A test pins the boundary to the gate's own
+machinery -- `screen` over the declared family -- and confirms the rejection flips across it and
+nowhere else.
+
+**Why no confidence interval is attached to it.** The surrogate seed is preregistered, so the
+ensemble is frozen and the `k + 1`-th largest of *that* ensemble is the literal decision boundary
+of the exact test that will run, not an estimate of one. Two earlier versions attached uncertainty
+anyway and both were wrong. A Clopper-Pearson bound on the threshold's exceedance probability
+compares quantities that can never meet, the bound being about `(k + 1 + z*sqrt(k)) / n` against a
+required level of about `(k + 1) / n`. A bootstrap of the order statistic was then miscalibrated
+in the dangerous direction: at rank 1 a resample can never exceed the sample maximum, so the
+interval is one-sided by construction, and four independent ensembles of 4,999 draws all landed
+above its upper limit -- raising the rank to 10 left coverage at 3 in 20. The fault was the
+question, not the estimator: an interval describes the same study drawn with a different seed,
+which is precisely what preregistering the seed exists to rule out.
+
+
 ### 3.11 Ground-Truth Benchmark Suite (`src/benchmarks/`)
 
 Added in T3.5.17 (standard E7). Twenty-four synthetic datasets whose correct answer is known
@@ -6360,6 +6458,7 @@ code paths that `architecture.md` previously described as implemented and rigoro
 | D81 | `core/experiment_receipt.py:_canonical` | **An untouched bundle failed after passing through the browser.** Python emitted an integral JSON number as `1.0`; JavaScript has one numeric type and emitted the same value as `1` after `JSON.parse`/`JSON.stringify`. The first bundle digest hashed Python's spelling rather than the JSON number model, so the TG17.9 acceptance path exported a valid bundle and immediately rejected it on import even though no scientific value changed. Source, API and production-build checks all passed; the rendered Playwright import found it. Canonical hashing now normalises integral numbers before serialisation, while booleans remain distinct and content identities stay strings. A focused spelling-loss test and the real browser export/replay path pin the correction. | **FIXED** TG17.9 (`ed-dev`) |
 | D82 | `frontend/src/components/ExperimentComposer.tsx` (analysis step) | **A plan composed in the browser could be executed exactly once, ever.** A held-out confirmation partition is confirmatory exactly once, and the frozen flagship manifest ships with one default partition name. The first run to open it spends it; every later plan derived in the Composer inherited the same name, was correctly refused at execution, and was told to declare a new partition - through a form that had no control for declaring one. The only escape was hand-editing a manifest, which is precisely what the G17 no-glue promise forbids. Found by the TG17.10 clean-browser acceptance test, which had passed preflight, family pricing and freeze before hitting the refusal. Fixed by giving the analysis step an explicit *Held-out confirmation partition* control, so the one-shot rule is enforced against a declaration the scientist can actually make. | **FIXED** TG17.10 (`ed-dev`) |
 | D83 | `core/experiment_adapter.py`, `adapters/standardized_level_adapter.py`, `adapters/bespoke_record.py` | **A framework default answered a scientific question on every adapter author's behalf.** TG17.10's first attempt at an admissible scale/shape matrix added `scale_partner_reassignment` to the *default* `admissible_nulls` in four places rather than declaring it per domain. Whether a domain's support can carry a surrogate family is exactly the judgement the adapter author is held to; the default overruled the order-book adapter's own documented refusal (its comment states that a depositor-supplied record has no native duration worth comparing shapes across) and would have pre-admitted the null for any future adapter. Every targeted suite, the production build and the full browser suite were green; only `test_experiment_family.py::test_each_flagship_adapter_declares_which_nulls_its_support_can_carry` objected, in a full-suite run. Reverted to the single plain shift; the three admitting domains declare the null individually with reasons; the qualification matrix now records three `REFUSED` cells instead of six passes. | **FIXED** TG17.10 (`ed-dev`) |
+| D84 | `data_layer/zarr_source.py:minimum_crop_size`, `crop_planner.py` vs `analysis_engine/gate_campaign.py` | **A preregistered crop is admitted by one geometry gate and refused by another, and the refusing constant is a judgement presented as a statistic.** db2 SWT level 3 has 22 px of accumulated support, so a 161 px crop retains a 139 px valid interior; `MIN_VALID_INTERIOR` is 128, and `gate_campaign` therefore passes the frozen T4C.6 crop, as `review` and `preflight` both reported. `minimum_crop_size` takes the same 128, adds the support to reach a raw minimum of 150, then **rounds up to the next power of two** to 256 and refuses the crop -- describing 256 to the caller as *statistically recommended*. Neither figure is derived: `MIN_VALID_INTERIOR`'s own comment says "this is a judgement", and the rounding is justified as dyadic tidiness and researcher ergonomics. SWT is undecimated and has no dyadic size requirement. The deeper fault is what the constant stands in for: because `transfer_entropy` consumes 1-D series and space is collapsed to one `energy_density` scalar per frame, crop size beyond edge exclusion controls the *precision* of that scalar, not the estimator's sample count. It is a power criterion, not a validity criterion -- an undersized crop attenuates TE toward zero and biases to the null, so it cannot forge a PASS but can forge a FAIL that is really inadequate power. Nothing currently derives that term, so the frozen decision rule's own distinction between an adequately powered FAIL and an underpowered INVALID cannot be made. Found while materialising the T4C.6 WeatherBench overlap; no values were transferred. Fix specified as roadmap T4C.5i. | **OPEN - blocks T4C.6 acquisition** |
 
 **Root cause common to D20, D23, D25 and D2:** the transform engine — the mathematical core of
 the platform — had **no test file at all**. `src/tests/test_transforms.py` now exists (36 cases
@@ -6580,8 +6679,9 @@ able to sit three slices out of date.
 | `test_stable_subspace.py` | 13 | TG16.3 span/projector invariance, planted linear and null discrimination, optional nuisance-region stability boundary, sealed complete family/optimizer/partition and permutation-resolution refusal, content/tamper binding and multipart plan/generate; TG16.4 unchanged held-out application, complete-family correction, nuisance-overlap refusal, content-bound seal, publication check and durable one-opening ledger; TG16.5 published definitions, no-adaptation external contract, provenance/content binding, target spending, and multipart certification |
 | `test_comparison_views.py` | 65 | TG17.8 the comparison views and the pictures they refuse to draw: a native-magnitude axis carrying two domains refusing to be constructed and `native_magnitude` asserted to be the only unshareable kind, `magnitude_equivalence` and `semantic_equivalence` refused in both modes, causality declarable by a manifest and drawable by no view, a declared causal relationship occupying its matrix cells as a refusal rather than vanishing, every role distinguishable in colour, marker and word with a duplicate in any one channel refused, a mark requiring exactly one of an artefact digest and a reason it has none, absent coverage as a named state that is never a measured zero, the bespoke domain keeping a refused row, one shared coordinate carrying different native durations per domain, every matrix cell showing its correction denominator, a manifest with no motif saying so rather than showing an empty grid, `results_exist` requiring a mining artefact rather than trusting a COMPLETE state, a linked selection answering per domain with no merged interval, and a rendered view that does not open the run it describes |
 | `test_experiment_receipt.py` | 21 | TG17.9 completed-only export, exact explained field set, self-hash, manifest/run/result/refusal identity through replay, reconstruction with no run store or UI state, changed bytes and unknown fields refused, a forged-and-rehashed receipt caught by semantic journal replay, impossible transitions refused, source and adapter identities, native/canonical/result role separation, full inference declaration, freeze-time environment identity, methods-report digest and claim boundary, evidence absences with no automatic action, idempotent immutable publication, generated trust contract, HTTP export/replay/report, non-complete refusal and the browser's integral-number spelling round trip (D81) |
+| `test_spatial_power.py` | 36 | T4C.5i spatial sampling adequacy: white noise decorrelating at one pixel, constructed correlation lengths of 4/8/16 px recovered, effective samples falling as structure grows, pixel count never treated as sample count, a crop that never decorrelates reporting saturation instead of a length, the searched limit never substituted for an unmeasured one, the mean-centring artefact demonstrated at half the interior and refused inside the trust horizon, a larger crop measuring what a smaller one could not, a constant interior counted as one sample, masked and 1-D inputs refused, the spatial and temporal 1/e conventions pinned to agree, a planted coupling attenuating as the crop shrinks, only spatial precision varying across the curve, the extrapolation exceeding every measured crop, a still-climbing curve refusing distinctly from a badly fitting one, and the same field yielding ADEQUATE and INVALID verdicts when only the crop changes; the campaign design admitting exactly one ranking, the BY dependence penalty pinned to the repository's own, the required level agreeing with `required_surrogates`, a design that cannot reject having no minimum detectable effect rather than a large one, the threshold sitting at the ensemble maximum at rank 1 and deeper for a smaller family, non-finite surrogates discarded and counted, the derived threshold driving the power verdict, and -- the load-bearing one -- the threshold falling exactly where `screen` over the declared family changes its mind |
 | `test_experiment_qualification.py` | 16 | TG17.10 the release gate itself: three durations by two modes with no cell missing, explicit dates and complete-family correction frozen before results, every matrix manifest preflighting without a refusal, the two modes carrying different relationship/null/language contracts, the order-book record bound by content rather than filename, every admissible cell executing/exporting/replaying with one manifest identity throughout, the scale/shape quartet refused before execution by the order book's own declaration with a refused cell opening no run and keeping its reason, the scale-partner null admitted per domain and never by framework default (D83), one timed-out acquisition retried alone across a process boundary, the single-failure suite registered as fixture-only, a fully green offline rehearsal still unable to make the verdict `RELEASEABLE`, scientist-action measurements reported as `NOT_MEASURED` rather than invented, the record self-hashed with tampering detected, a repeat qualification resuming identical runs, and the HTTP plan and rehearsal keeping the unrun gates visible |
-  | **total** | **2867** | |
+  | **total** | **2903** | |
 ### 7.2h A surrogate null that was not the null it claimed (T4C.5)
 
 The most instructive defect of the project so far, because it passed every structural check.
