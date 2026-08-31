@@ -7398,3 +7398,141 @@ rung moves. The registered suites are rehearsals, and a rehearsal that completes
 
 The full suite was not rerun at the user's request; the clean 2745-pass G15 run remains the latest
 full-suite evidence.
+
+## TG17.7 - The Guided Path, the Ladder, and the First Browser Test (2026-08-31, `ed-dev`) - **COMPLETE**
+
+The workbench before this slice was four acquisition surfaces and a Composer whose panels could be
+visited in any order. Nothing about that was broken, and that is the problem: the order of
+operations *is* the scientific discipline. A family priced after acquisition is priced knowing what
+the data looked like. A null admitted after the statistic exists is not a null. A UI that permits
+those in any order has not made an error - it has made the error **undetectable**, because no
+receipt can distinguish an experiment that was declared from one that was assembled.
+
+`src/core/composer_path.py` therefore holds the workflow as a registry rather than a layout.
+`COMPOSER_PATH` carries the seven steps, each a `PathStep` deciding its own status from the
+manifest, and `compose_state` returns exactly **one** `next_action`. The browser renders that; it
+does not compute it. Statuses are three-valued, because "you have not done this" and "this cannot
+be done yet" are different sentences and only one is the researcher's move. A blocked step keeps
+its tab and its reason: the whole flagship blocks at preflight naming `order_book`, rather than
+dropping the domain and reporting a complete three-domain study. `STAGE_LADDER` names acquired
+material, an executed run, a finding and admitted evidence, each with what it is **not** and its
+own gate; this surface moves a researcher across the first two and structurally cannot move them
+across the last two.
+
+Three things the path made honest. Duration presets resolve on the server in calendar terms and
+apply as the explicit instants they resolved to - writing them as fixed day counts was caught in
+test, because 182 days from the flagship's own anchor is 2026-07-02, so pressing the preset that
+described your own window would have moved its boundary and re-addressed the manifest. The domain
+menu filters nothing and returns a domain with no declared observation unselectable with the
+reason, since an adapter says how a domain is translated and not what is measured, in which units,
+in which role or from which record. `POST /path/state` looks for a run at the manifest's content
+address and never opens one, because `RunStore.open` publishes a frozen manifest and a read of
+where a draft stands must not be the thing that freezes it.
+
+**The first browser test in this repository.** Every other check here reads source or calls HTTP,
+and neither proves a page renders. `frontend/playwright.config.ts` serves the real API and the real
+frontend and drives Chromium; `frontend/e2e/composer-path.spec.ts` walks the path through roles and
+visible names only - no CSS class, no test id - because a test that clicks `.btn-primary` proves the
+DOM has a div, not that a person could declare an experiment. The complete flagship is deliberately
+**not** what is executed: `order_book` is bespoke and metadata cannot plan its coverage, so the
+browser drives into that refusal, resolves it through the visible domain menu, and runs the
+resulting three-domain plan.
+
+**Two defects, both found by evidence that did not exist before.**
+
+*   **D79**, found by the browser within minutes. The domain menu's checkbox was bound to the
+    server's echo of the selection rather than to the manifest, so it snapped back to its old value
+    and for ~200ms reported the **opposite** of the choice just made. Every source-level and HTTP
+    test passed throughout, because the manifest and the payload were both correct and nothing in
+    this repository rendered anything.
+*   **D80**, found by the first full-suite run since TG15. A test asserted that the composer
+    contract still called running an experiment unavailable - true at TG17.1, false from TG17.6,
+    and the assertion did not fail, it **held the stale claim in place** while the run contract on
+    the next router described the state machine that ran it.
+
+```text
+> .\.venv\Scripts\python.exe -m pytest src\tests -q -p no:randomly
+3106 passed, 2 failed, 4 skipped, 1 xfailed in 2617.52s (0:43:37)
+  the two failures are D80 and the stale 2745 test-count claim this run replaced
+
+> .\.venv\Scripts\python.exe -m pytest src\tests\test_composer_path.py src\tests\test_experiment_manifest.py src\tests\test_frontend_contract.py src\tests\test_experiment_run.py src\tests\test_documentation.py -q
+304 passed in 354.32s (0:05:54)          (after both fixes; includes the full documentation audit)
+
+> cd frontend && npx playwright test
+11 passed (52.2s)                        (Chromium, real API and real frontend)
+
+> cd frontend && npm run build
+built in 49.17s                          (TypeScript and Vite production bundle)
+```
+
+`test_composer_path.py` 49 tests; `test_frontend_contract.py` 127 -> 144; seven new routes,
+119 -> 126. Ledger D1-D80, 78 fixed.
+
+No archive is acquired, no statistic runs, no finding is recorded and no evidence is admitted.
+Every status this slice reports is a fact about a declaration.
+
+---
+
+## TG17.8 Scientific comparison views — COMPLETE (2026-08-31, `ed-dev`)
+
+Seven linked views over one manifest, held in a registry ordered by ordinal, each declaring its
+axes, its legend, what it may conclude and what it may not. Every earlier G17 slice refuses a bad
+**declaration**; this one refuses a bad **picture**, which is harder, because a picture is
+persuasive before it is read.
+
+The refusals are structural rather than advisory:
+
+*   `Axis` raises `MagnitudeEquivalenceError` when a `native_magnitude` coordinate is given more
+    than one domain — at **construction**, so a view that would put two units on one ruler never
+    finishes being built and cannot reach a browser, an export or a screenshot. There is no
+    plotting call to police.
+*   A coverage cell is a named state (`COVERED`/`SPARSE`/`ABSENT`/`REFUSED`) in the payload *and*
+    in the component, which draws from `CELL_STYLE` with no numeric path into it. Absent support
+    has no width to be zero, so it cannot be read as a measured zero.
+*   `Mark` requires exactly one of an artefact digest and a reason it has none.
+*   `register_encoding` refuses a role duplicating another's colour, marker *or* word, so the
+    candidate/confirmation distinction survives for a reader who cannot use colour.
+
+**What may be declared is not what may be drawn.** `calendar_aligned` admits `causality` as a
+declarable relationship and that stays correct — a study holding an external intervention design
+may test it. No view may draw it, because every alignment computed here is observational and the
+design that licenses the arrow has no field in the manifest. A manifest declaring `causality`
+still gets its matrix cells, occupied by the refusal and its reason.
+
+`ViewContext.results_exist` requires a `MINING/` artefact rather than trusting
+`state == "COMPLETE"`: TG17.6 lets a run complete under `partial_permitted` with mining components
+missing by name, and without this a run that mined nothing would render its matrix as measured and
+empty.
+
+**Found by the guards, not by inspection:**
+
+*   `test_every_api_method_is_reachable_from_the_ui` failed on **four** service methods with no
+    caller — the contract, the legend, the single-view render and the reading check were served
+    and invisible. They are now the legend, a *What these views will not draw* disclosure, a
+    per-view refresh, and a control that asks the server whether a reading can be drawn.
+*   Two `<details>` panels were exposed as groups with **no accessible name**, because a
+    `<details>` name is not computed from its `<summary>`. Found by role+name locators timing out
+    in the browser; fixed with explicit `aria-label`s.
+*   One full-suite browser run failed on the motif view where the helper waited only for the first
+    view to paint. The helper now waits for the seventh, so each test's assumption that the whole
+    set is present is stated once rather than raced on.
+
+```text
+> .\.venv\Scripts\python.exe -m pytest src\tests\test_comparison_views.py src\tests\test_frontend_contract.py ^
+    src\tests\test_experiment_manifest.py src\tests\test_composer_path.py ^
+    src\tests\test_experiment_run.py src\tests\test_documentation.py -q -p no:randomly
+387 passed in 341.21s (0:05:41)          (includes the full documentation audit)
+
+> cd frontend && npx playwright test
+30 passed (1.9m)                         (Chromium, real API and real frontend; 19 are TG17.8's)
+
+> cd frontend && npm run build
+built in 53.63s                          (TypeScript and Vite production bundle)
+```
+
+`test_comparison_views.py` 65 test functions (73 runs with parametrisation);
+`test_frontend_contract.py` 144 -> 154; six new routes, 126 -> 132. The full suite has **not**
+been rerun since TG17.7's 3106, so that figure remains the last measured one rather than a current
+one; the documented inventory total is 2822.
+
+No archive is acquired, no statistic runs, no finding is recorded and no evidence is admitted.

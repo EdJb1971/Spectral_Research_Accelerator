@@ -17,9 +17,13 @@ from src.core.experiment_family import family_expansion
 from src.core.structural_alignment import (ALIGNMENT_KERNELS, MODE_FORBIDS, MODE_RELATIONSHIPS,
                                            alignment_report, bind_kernel, support_profile)
 from src.core.structural_nulls import NULL_FAMILIES, NULL_MODES
+from src.core.composer_path import (compose_state, describe_path, domain_menu,
+                                    export_envelope, import_envelope,
+                                    preregistration_summary, window_presets)
 from src.core.experiment_manifest import (CrossDomainExperimentSpec, ManifestStore,
                                           flagship_recipe, manifest_envelope,
                                           manifest_sha256, preflight_manifest)
+from src.core.experiment_run import RunStore, run_identity
 
 
 router = APIRouter(prefix="/api/v1/experiment-composer", tags=["experiment-composer"])
@@ -28,6 +32,19 @@ router = APIRouter(prefix="/api/v1/experiment-composer", tags=["experiment-compo
 #: researcher opened first. A domain that appears only after some other route has run is a
 #: domain whose declared refusals can be missed.
 REGISTERED_ADAPTERS = register_all_adapters()
+
+
+def _run_store(request: Request) -> RunStore:
+    """The run journals, resolved exactly as `src.api.experiment_runs` resolves them.
+
+    The composer never asks the caller for a run id. A run identity *is* the content address of
+    its manifest, so "does this plan already have a run" is a question the plan answers itself -
+    and a composer that took a run id could be pointed at a run executing a different plan.
+    """
+    root = getattr(request.app.state, "experiment_run_dir", None)
+    if root is None:
+        root = os.getenv("EXPERIMENT_RUN_DIR", "data/experiment_runs")
+    return RunStore(Path(root))
 
 
 def _store(request: Request) -> ManifestStore:
@@ -52,15 +69,22 @@ async def composer_contract() -> Dict[str, Any]:
         "domains": [{"domain": entry.value.domain, "adapter_id": entry.value.adapter_id,
                      "label": entry.value.declaration.description}
                     for entry in EXPERIMENT_ADAPTERS.entries()],
-        "workflow": ["compose", "save immutable revision", "metadata preflight",
-                     "inspect canonical known-answer contract"],
+        # TG17.7: the workflow is no longer a list of words maintained here. It is the
+        # registered path, so this contract and the guided UI cannot describe different studies.
+        "workflow": [step["step_id"] for step in describe_path()["steps"]],
+        "path_route": "/api/v1/experiment-composer/path",
         "available_now": ["manifest", "saved draft", "metadata-only preflight",
                           "StructuralTrajectory contract and known-answer preview",
                           "registered domain adapters, their controls and conformance",
                           "declared alignment kernels and the support they would share",
                           "the complete declared family, priced before acquisition",
-                          "declared null families and which domains admit each one"],
-        "not_yet_available": ["live adapter translation", "acquire quartet", "run experiment"],
+                          "declared null families and which domains admit each one",
+                          "the guided path, its single next legitimate action and the ladder "
+                          "separating acquired material, an executed run, a finding and evidence",
+                          "server-resolved duration presets, a plain-language preregistration "
+                          "summary, and machine-readable manifest export and import"],
+        "not_yet_available": ["live adapter translation", "acquire quartet",
+                              "live acquisition and translation workers"],
         "claim_boundary": "A ready preflight is not acquisition, analysis, evidence or a result.",
     }
 
@@ -300,6 +324,97 @@ async def load_manifest(manifest_sha256: str, request: Request) -> Dict[str, Any
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail="immutable experiment manifest not found")
     return manifest_envelope(spec)
+
+
+# ------------------------------------------------------ TG17.7 the guided path
+
+
+@router.get("/path")
+async def composer_path() -> Dict[str, Any]:
+    """The seven steps, their questions and their claim boundaries, as served data.
+
+    The browser renders this. It does not hold a copy of the workflow, because two copies of an
+    order of operations is two orders of operations, and the one a researcher follows would not
+    be the one the receipt records.
+    """
+    return describe_path()
+
+
+@router.post("/path/state")
+async def composer_path_state(spec: CrossDomainExperimentSpec,
+                              request: Request) -> Dict[str, Any]:
+    """Where this manifest stands on the path, and the single next legitimate action.
+
+    Metadata only: this prices the family and reads the catalogue, opens no archive and reads no
+    measurement value. If a run already exists at this manifest's content address its receipt is
+    folded in, which is how a refreshed browser comes back to the same place in the same study.
+    """
+    run_receipt = None
+    saved = False
+    # Look, never open. `RunStore.open` publishes a frozen manifest and creates the run
+    # directory, and opening a run is a deliberate act a researcher takes at step six. A read
+    # of where the plan stands must not be the thing that starts it.
+    store = _run_store(request)
+    identity = run_identity(spec)
+    if (store.root / "runs" / identity["run_id"] / "manifest.json").exists():
+        try:
+            run_receipt = store.load(identity["run_id"]).receipt()
+        except (SpectralEarthError, OSError, ValueError):
+            run_receipt = None
+    try:
+        _store(request).load_manifest(manifest_sha256(spec))
+        saved = True
+    except (FileNotFoundError, ValueError, OSError):
+        saved = False
+    try:
+        return compose_state(spec, saved=saved, run=run_receipt)
+    except SpectralEarthError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
+
+
+@router.get("/window-presets")
+async def composer_window_presets(anchor_utc: str,
+                                  stride_seconds: int = 3600) -> Dict[str, Any]:
+    """Resolve `week`, `three_months` and `six_months` against one anchor, on the server."""
+    try:
+        return window_presets(anchor_utc, stride_seconds=stride_seconds)
+    except SpectralEarthError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
+
+
+@router.get("/domain-menu")
+async def composer_domain_menu(selected: str = "") -> Dict[str, Any]:
+    """Every registered domain with the assumptions it breaks, none of them filtered out."""
+    chosen = [name for name in selected.split(",") if name]
+    return domain_menu(selected=chosen)
+
+
+@router.post("/preregistration-summary")
+async def composer_preregistration_summary(
+        spec: CrossDomainExperimentSpec) -> Dict[str, Any]:
+    """The plan in sentences, generated from the bytes that are hashed."""
+    try:
+        return preregistration_summary(spec)
+    except SpectralEarthError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
+
+
+@router.post("/manifests/export")
+async def composer_export(spec: CrossDomainExperimentSpec) -> Dict[str, Any]:
+    """A machine-readable envelope of the canonical manifest and its digest."""
+    return export_envelope(spec)
+
+
+@router.post("/manifests/import")
+async def composer_import(payload: Dict[str, Any]) -> Dict[str, Any]:
+    """Accept an exported envelope, refusing one whose body disagrees with its digest."""
+    try:
+        return manifest_envelope(import_envelope(payload))
+    except SpectralEarthError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
+    except (TypeError, ValueError) as error:
+        raise HTTPException(status_code=422, detail=(
+            "this is not an exported experiment manifest envelope: %s" % error)) from error
 
 
 __all__ = ["router"]

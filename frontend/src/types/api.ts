@@ -2452,3 +2452,271 @@ export interface RunEditableCopy {
   frozen_run_untouched: boolean;
   note: string;
 }
+
+// ------------------------------------------------------- TG17.7 the guided path
+
+/** One step of the workflow, described by the server. The browser renders these; it holds no
+ *  copy of the order of operations, because two copies of an order of operations are two
+ *  different experiments waiting to happen. */
+export interface ComposerPathStep {
+  step_id: string;
+  ordinal: number;
+  title: string;
+  question: string;
+  settles: string;
+  controls: string[];
+  action_label: string;
+  action_route: string;
+  claim_boundary: string;
+}
+
+export interface ComposerLadderRung {
+  rung: string;
+  title: string;
+  is: string;
+  is_not: string;
+  gate: string;
+  reached?: boolean;
+  why_not?: string;
+}
+
+export interface ComposerPathContract {
+  schema: string;
+  steps: ComposerPathStep[];
+  step_statuses: string[];
+  duration_presets: string[];
+  ladder: ComposerLadderRung[];
+  note: string;
+  claim_boundary: string;
+}
+
+export interface ComposerStepState extends ComposerPathStep {
+  status: string;
+  reason: string;
+  detail: Record<string, any>;
+}
+
+/** `next_action` is one field on purpose. Two enabled controls meaning two different scientific
+ *  commitments cannot both be the next legitimate act. */
+export interface ComposerNextAction {
+  step_id: string;
+  label: string;
+  route: string;
+  status: string;
+  why: string;
+  blocked: boolean;
+}
+
+export interface ComposerPathState {
+  schema: string;
+  manifest_sha256: string;
+  study_id: string;
+  steps: ComposerStepState[];
+  satisfied: number;
+  next_action: ComposerNextAction | null;
+  ladder: ComposerLadderRung[];
+  run_state: string | null;
+  claim_boundary: string;
+}
+
+export interface ComposerWindowPreset {
+  preset: string;
+  unit: string;
+  amount: number;
+  days: number;
+  start_utc: string;
+  end_utc: string;
+  stride_seconds: number;
+  label: string;
+}
+
+export interface ComposerWindowPresets {
+  schema: string;
+  anchor_utc: string;
+  presets: ComposerWindowPreset[];
+  note: string;
+  claim_boundary: string;
+}
+
+export interface ComposerDomainOption {
+  domain: string;
+  adapter_id: string;
+  label: string;
+  licence: string;
+  breaks: string[];
+  lag_policy: string;
+  precedence_admissible: boolean;
+  admissible_kernels: string[];
+  admissible_nulls: string[];
+  selected: boolean;
+  selectable: boolean;
+  unavailable_reason: string;
+  /** The declared observation this domain would join the study with, or null when no recipe
+   *  declares one - in which case the row is offered disabled, with the reason. */
+  observation: Record<string, any> | null;
+  onboarding_cost: Record<string, any>;
+}
+
+export interface ComposerDomainMenu {
+  schema: string;
+  domains: ComposerDomainOption[];
+  minimum_domains: number;
+  note: string;
+  claim_boundary: string;
+}
+
+export interface ComposerPreregistrationSummary {
+  schema: string;
+  manifest_sha256: string;
+  study_id: string;
+  sentences: string[];
+  claim_boundary: string;
+}
+
+export interface ComposerManifestEnvelope {
+  schema: string;
+  manifest_sha256: string;
+  envelope_sha256: string;
+  exported_from: string;
+  manifest: Record<string, any>;
+  note: string;
+  claim_boundary: string;
+}
+
+// ------------------------------------------------------------ TG17.8 comparison views
+
+export interface ComparisonAxis {
+  name: string;
+  kind: string;
+  domains: string[];
+  units: string | null;
+  /** True when more than one domain occupies the axis. A `native_magnitude` axis can never be
+   *  shared: the server raises rather than returning one, so this pair is safe to render. */
+  shared: boolean;
+  why: string;
+}
+
+export interface ComparisonEncoding {
+  role: string;
+  /** The distinction is carried in three channels - `word`, `colour` and `marker` - so a reader
+   *  who cannot use one still has two. Never render the colour alone. */
+  word: string;
+  colour: string;
+  marker: string;
+  ordinal: number;
+  definition: string;
+  admits_claim: boolean;
+}
+
+export interface ComparisonMark {
+  label: string;
+  role: string;
+  word: string;
+  colour: string;
+  marker: string;
+  domain: string | null;
+  value: number | null;
+  display: string;
+  artifact_sha256: string | null;
+  no_artifact_reason: string;
+  admits_claim: boolean;
+}
+
+export interface ComparisonTable {
+  columns: string[];
+  rows: Record<string, any>[];
+}
+
+export interface ComparisonViewSummary {
+  view_id: string;
+  ordinal: number;
+  title: string;
+  question: string;
+  axes: ComparisonAxis[];
+  roles: string[];
+  may_conclude: string;
+  may_not_conclude: string[];
+  selectable: boolean;
+}
+
+export interface ComparisonViewsContract {
+  schema: string;
+  views: ComparisonViewSummary[];
+  encodings: ComparisonEncoding[];
+  axis_kinds: string[];
+  shared_axis_kinds: string[];
+  coverage_cells: string[];
+  readings: {
+    declarable_by_mode: Record<string, string[]>;
+    renderable_by_mode: Record<string, string[]>;
+    never_admissible: string[];
+    requires_external_design: string[];
+    why_two_lists: string;
+  };
+  mode_forbids: Record<string, string>;
+  refusals: Record<string, string>;
+  routes: Record<string, string>;
+  not_yet_available: string[];
+  claim_boundary: string;
+}
+
+export interface ComparisonView {
+  schema: string;
+  view_id: string;
+  ordinal: number;
+  title: string;
+  question: string;
+  mode: string;
+  manifest_sha256: string;
+  axes: ComparisonAxis[];
+  legend: ComparisonEncoding[];
+  body: Record<string, any>;
+  table: ComparisonTable;
+  results_exist: boolean;
+  run_state: string;
+  may_conclude: string;
+  may_not_conclude: string[];
+  mode_forbids: string;
+  claim_boundary: string;
+}
+
+export interface ComparisonViewSet {
+  schema: string;
+  mode: string;
+  manifest_sha256: string;
+  views: ComparisonView[];
+}
+
+export interface ComparisonContribution {
+  domain: string;
+  state: string;
+  reason: string;
+  native_interval: {
+    start_utc: string;
+    end_utc: string;
+    support_kind: string | null;
+    native_cadence_seconds: number | null;
+    coverage_exact: boolean;
+  };
+  contributes: boolean;
+}
+
+export interface ComparisonLinkedSelection {
+  schema: string;
+  window: string;
+  manifest_sha256: string;
+  contributions: ComparisonContribution[];
+  /** Always null. Each domain keeps its own native interval; one merged extent would show
+   *  agreement about coverage only one domain addresses. */
+  merged_interval: null;
+  why_not_merged: string;
+  claim_boundary: string;
+}
+
+export interface ComparisonReadingCheck {
+  mode: string;
+  reading: string;
+  renderable: boolean;
+  reason: string;
+  claim_boundary?: string;
+}

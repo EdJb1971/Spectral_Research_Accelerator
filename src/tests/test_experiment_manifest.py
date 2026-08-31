@@ -141,10 +141,33 @@ def test_composer_api_recipe_save_reload_and_preflight_share_one_identity(client
     assert preflight.json()["status"] == "REFUSED"
 
 
-def test_composer_api_has_no_run_route_and_says_what_is_not_yet_real(client):
+def test_the_composer_serves_no_run_route_and_is_honest_about_what_is_not_yet_real(client):
+    """Defect **D80**: this asserted `"run experiment" in not_yet_available`.
+
+    That was true when TG17.1 wrote it and false from TG17.6, which shipped the orchestrator and
+    put an *Open or resume the run* button in this very view. The assertion did not fail - it
+    **held the stale claim in place**, so for a whole slice the composer contract told every
+    client that running an experiment was unavailable while the run contract on the next router
+    described the state machine that ran it. Two served documents disagreeing about what the
+    system can do is the failure this field exists to prevent, and pinning the wrong one is worse
+    than not checking at all.
+
+    What is genuinely still true is the routing boundary: composing and running are different
+    surfaces, and the composer router serves no run route. That is asserted below, and the
+    capability claim is now asserted against the run contract rather than against a literal.
+    """
     contract = client.get("/api/v1/experiment-composer").json()
-    assert "run experiment" in contract["not_yet_available"]
     assert contract["claim_boundary"].startswith("A ready preflight is not")
+    assert "run experiment" not in contract["not_yet_available"], (
+        "runs have existed since TG17.6; a contract still calling them unavailable is lying")
+
+    # The two contracts must agree about what has not shipped, rather than each keeping a list.
+    run_contract = client.get("/api/v1/experiment-runs").json()
+    assert set(contract["not_yet_available"]) & set(run_contract["not_yet_available"]), (
+        "the composer and the runner must name the same missing capability, or a client can be "
+        "told two different things about the same system")
+
     routes = {(route.path, tuple(sorted(route.methods or [])))
               for route in client.app.routes if route.path.startswith("/api/v1/experiment-composer")}
-    assert all("run" not in path for path, _ in routes)
+    assert all("run" not in path for path, _ in routes), (
+        "composing and running are different surfaces; the run routes live on their own router")

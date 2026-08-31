@@ -50,3 +50,8 @@ frontend/vite.inspect.config.ts
 .pytest-basetemp/
 _pt*.txt
 data/profile_collections/e7c8acc202a81169b705dce99fd9391ca4a8c9ee3ba1f54715e3e0943e1ad773.json
+
+# Playwright (TG17.7): scratch backend state and browser artefacts, never committed
+.e2e-state/
+frontend/test-results/
+frontend/playwright-report/

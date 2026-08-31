@@ -1090,5 +1090,106 @@ export const apiService = {
       await fetch(`${BASE_URL}/experiment-runs/${encodeURIComponent(runId)}/editable-copy`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ draft_id: draftId }) }));
+  },
+
+  // ---------------------------------------------------- TG17.7 the guided path
+
+  async composerPath(): Promise<types.ComposerPathContract> {
+    return handleResponse<types.ComposerPathContract>(
+      await fetch(`${BASE_URL}/experiment-composer/path`, { method: 'GET' }));
+  },
+
+  // Where this manifest stands and what may legitimately be done next. Metadata only, and it
+  // deliberately does not open a run: it looks for one at the manifest's content address.
+  async composerPathState(spec: types.CrossDomainExperimentManifest): Promise<types.ComposerPathState> {
+    return handleResponse<types.ComposerPathState>(
+      await fetch(`${BASE_URL}/experiment-composer/path/state`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(spec) }));
+  },
+
+  // The preset arithmetic is the server's. A boundary computed twice is two boundaries.
+  async composerWindowPresets(anchorUtc: string, strideSeconds: number): Promise<types.ComposerWindowPresets> {
+    const query = new URLSearchParams({ anchor_utc: anchorUtc, stride_seconds: String(strideSeconds) });
+    return handleResponse<types.ComposerWindowPresets>(
+      await fetch(`${BASE_URL}/experiment-composer/window-presets?${query}`, { method: 'GET' }));
+  },
+
+  async composerDomainMenu(selected: string[]): Promise<types.ComposerDomainMenu> {
+    const query = new URLSearchParams({ selected: selected.join(',') });
+    return handleResponse<types.ComposerDomainMenu>(
+      await fetch(`${BASE_URL}/experiment-composer/domain-menu?${query}`, { method: 'GET' }));
+  },
+
+  async composerPreregistrationSummary(
+    spec: types.CrossDomainExperimentManifest): Promise<types.ComposerPreregistrationSummary> {
+    return handleResponse<types.ComposerPreregistrationSummary>(
+      await fetch(`${BASE_URL}/experiment-composer/preregistration-summary`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(spec) }));
+  },
+
+  async composerExportManifest(
+    spec: types.CrossDomainExperimentManifest): Promise<types.ComposerManifestEnvelope> {
+    return handleResponse<types.ComposerManifestEnvelope>(
+      await fetch(`${BASE_URL}/experiment-composer/manifests/export`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(spec) }));
+  },
+
+  // An envelope whose body disagrees with its digest is refused here rather than imported: a
+  // run identity is the content address of its plan.
+  async composerImportManifest(envelope: types.ComposerManifestEnvelope | Record<string, any>) {
+    return handleResponse<{ manifest_sha256: string; canonical_manifest: types.CrossDomainExperimentManifest }>(
+      await fetch(`${BASE_URL}/experiment-composer/manifests/import`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(envelope) }));
+  },
+
+  // ---------------------------------------------------------- TG17.8 comparison views
+
+  async comparisonViewsContract(): Promise<types.ComparisonViewsContract> {
+    return handleResponse<types.ComparisonViewsContract>(
+      await fetch(`${BASE_URL}/comparison-views`, { method: 'GET' }));
+  },
+
+  async comparisonEncodings(): Promise<{ schema: string; encodings: types.ComparisonEncoding[]; why_three_channels: string }> {
+    return handleResponse(await fetch(`${BASE_URL}/comparison-views/encodings`, { method: 'GET' }));
+  },
+
+  async comparisonRenderAll(
+    spec: types.CrossDomainExperimentManifest): Promise<types.ComparisonViewSet> {
+    return handleResponse<types.ComparisonViewSet>(
+      await fetch(`${BASE_URL}/comparison-views/render`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(spec) }));
+  },
+
+  async comparisonRenderView(
+    viewId: string, spec: types.CrossDomainExperimentManifest): Promise<types.ComparisonView> {
+    return handleResponse<types.ComparisonView>(
+      await fetch(`${BASE_URL}/comparison-views/render/${encodeURIComponent(viewId)}`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(spec) }));
+  },
+
+  // The answer is per-domain and stays that way. There is no route that returns one merged
+  // interval, because a merged one would show four domains agreeing about an extent that only
+  // one of them addresses.
+  async comparisonLinkedSelection(
+    spec: types.CrossDomainExperimentManifest, window: string,
+    domains: string[] = []): Promise<types.ComparisonLinkedSelection> {
+    return handleResponse<types.ComparisonLinkedSelection>(
+      await fetch(`${BASE_URL}/comparison-views/linked-selection`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ manifest: spec, window, domains }) }));
+  },
+
+  async comparisonCheckReading(
+    mode: string, reading: string): Promise<types.ComparisonReadingCheck> {
+    return handleResponse<types.ComparisonReadingCheck>(
+      await fetch(`${BASE_URL}/comparison-views/readings/check`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode, reading }) }));
   }
 };

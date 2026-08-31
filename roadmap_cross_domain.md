@@ -4139,7 +4139,7 @@ production build clean. Nothing acquired, no confirmatory statistic run, no evid
 claim rung moved — the registered suites are rehearsals, and a rehearsal that completes is not a
 result.
 
-**TG17.7 Experiment Composer UI — PLANNED.** Build one guided workbench over the manifest rather
+**TG17.7 Experiment Composer UI — DONE (2026-08-31, `ed-dev`).** Build one guided workbench over the manifest rather
 than four acquisition pages plus instructions. The progressive path is:
 
 1. **Question:** calendar-aligned or scale/shape-aligned, with the claim boundary beside the choice.
@@ -4166,7 +4166,67 @@ responsive layout and destructive-action confirmation are tested. Every served G
 reachable from the shell; selection persists across navigation and refresh; unavailable choices
 remain visible with the backend's reason rather than disappearing.
 
-**TG17.8 Scientific comparison views — PLANNED.** Provide linked views that make the abstraction
+**Delivered.** `src/core/composer_path.py` holds the workflow as a registry rather than a layout.
+`COMPOSER_PATH` carries the seven steps, each a `PathStep` that decides its own status from the
+manifest, and `compose_state` returns exactly **one** `next_action`. The browser renders that; it
+does not compute it. That is the whole slice: the order of operations *is* the scientific
+discipline - a family priced after acquisition is priced knowing what the data looked like, a null
+chosen after the statistic exists is not a null - and a UI that permits those in any order has not
+made an error, it has made the error undetectable, because no receipt can distinguish an
+experiment that was declared from one that was assembled.
+
+Statuses are three-valued, because "you have not done this" and "this cannot be done yet" are
+different sentences and only one of them is the researcher's move. A blocked step keeps its tab
+and its reason: the whole flagship blocks at preflight naming `order_book`, rather than dropping
+the domain and reporting a complete three-domain study. `STAGE_LADDER` names the four things a
+researcher can possess - acquired material, an executed run, a finding, admitted evidence - each
+with what it is, what it is **not** and its own gate; this surface can move a researcher across
+the first two and structurally cannot move them across the last two.
+
+Duration presets resolve on the server, in calendar terms, and apply as the explicit instants they
+resolved to. Writing them as fixed day counts was caught in test: 182 days from the flagship's own
+anchor is 2026-07-02, so a researcher pressing the preset that described their own window would
+have moved its boundary and re-addressed the manifest. The domain menu filters nothing and returns
+a domain with no declared observation unselectable with the reason. The preregistration summary is
+generated from the bytes that are hashed, since a preregistration signed after reading a summary
+the UI composed itself is a preregistration of the summary. `POST /path/state` deliberately looks
+for a run at the manifest's content address and never opens one, because `RunStore.open` publishes
+a frozen manifest and a read of where a draft stands must not be the thing that freezes it.
+
+**Acceptance met, in a real browser.** `frontend/e2e/composer-path.spec.ts` drives Chromium
+through `frontend/playwright.config.ts`, which serves the actual API and the actual frontend and
+points the backend at a scratch state directory for the same reason the pytest `client` fixture is
+bound to `tmp_path`. Eleven tests, and every locator is a role and a visible name - no CSS class,
+no test id - because a test that clicks `.btn-primary` proves the DOM has a div, not that a person
+could declare an experiment. They cover the seven ordered steps with blocked ones still reachable,
+exactly one next action naming its own route, arrow/Home/End keyboard navigation, the place kept
+across a browser refresh, the preflight refusal naming `order_book` and its reason, what each
+domain breaks shown before it is chosen, the ladder refusing to call a run a finding, empty panels
+that read as unasked questions, two-press destructive confirmation, the complete executable plan
+declared and run end to end, and a refresh that resumes the same run rather than starting a second.
+
+The one departure from the wording is that the **complete** flagship cannot be executed and should
+not be: `order_book` is bespoke, has no public archive, and metadata cannot plan its coverage, so
+the flagship blocks at preflight by design. The browser test drives that refusal, resolves it
+through the visible domain menu, and runs the resulting three-domain plan - which is the honest
+version of the acceptance rather than a weaker one.
+
+**The defect the browser found in its first minutes (D79).** The domain menu's checkbox was bound
+to `row.selected` from the `GET /domain-menu` payload rather than to the manifest. Unchecking a
+domain updated the plan at once, but the controlled input re-rendered from the previous payload,
+snapped back to checked, and flipped again ~200ms later when the refetch landed - so for that
+window the control reported the **opposite** of the choice just made. Every source-level and HTTP
+test passed throughout, because the manifest and the payload were both correct; only the rendered
+control was wrong, and until this slice nothing in this repository rendered anything. That is
+precisely the gap TG11.6 recorded and could not close. Fixed by driving the checkbox from the
+manifest the browser already holds.
+
+**Evidence.** `test_composer_path.py` 49 tests; `test_frontend_contract.py` 127 -> 144;
+`frontend/e2e/composer-path.spec.ts` 11 browser tests. Seven new routes, 119 -> 126. Production
+build clean. No archive is acquired, no statistic runs, no finding is recorded and no evidence is
+admitted.
+
+**TG17.8 Scientific comparison views — DONE (2026-08-31, `ed-dev`).** Provide linked views that make the abstraction
 inspectable rather than magical: a cross-domain coverage timeline; native-record preview beside
 canonical trajectories; native-to-structural scale mapping; pair/triple/quartet result matrix;
 motif correspondence and transfer view; null distributions, corrected values and power/resolution;
@@ -4181,6 +4241,63 @@ what may and may not be concluded.
 **Acceptance:** TG17.0 semantic-trap fixtures cannot be rendered as magnitude equivalence,
 precedence or causality. Sparse or absent coverage is visually distinct from a measured zero.
 Every plotted point traces to an immutable artefact and every correction denominator is visible.
+
+**Delivered.** `src/core/comparison_views.py` holds seven views in a registry ordered by ordinal -
+coverage timeline, native record beside canonical trajectory, native-to-structural scale mapping,
+pair/triple/quartet result matrix, motif correspondence and transfer, nulls with correction and
+resolution, and provenance drill-down - each declaring its axes, its legend roles, what it may
+conclude and what it may not. Six routes under `/api/v1/comparison-views` (126 -> 132) serve the
+contract, the legend, the set, one view, a linked selection and a reading check. The browser
+renders `frontend/src/components/ComparisonViews.tsx` inside the composer's Interpret step; it
+holds no boundary text of its own.
+
+**The refusals are structural, not advisory.** `Axis` raises `MagnitudeEquivalenceError` when a
+`native_magnitude` coordinate is given more than one domain - at *construction*, so a view that
+would put two units on one ruler never finishes being built and cannot reach a browser, an export
+or a screenshot. `Mark` requires exactly one of an artefact digest and a reason it has none.
+`register_encoding` refuses a role duplicating another's colour, marker *or* word, so the
+candidate/confirmation distinction survives for a reader who cannot use colour. A coverage cell is
+a named state (`COVERED`/`SPARSE`/`ABSENT`/`REFUSED`) in the payload and in the component, which
+draws from `CELL_STYLE` with no numeric path into it - absent support has no width to be zero.
+
+**The distinction the slice turns on.** `MODE_RELATIONSHIPS["calendar_aligned"]` admits
+`causality`, and that stays true: a study holding an external intervention design may declare and
+test it. No view may *draw* it, because every alignment computed here is observational and the
+design that licenses the arrow has no field in the manifest. Refusing the declaration would forbid
+a legitimate study; permitting the drawing would let any co-occurrence be read as a cause. So the
+contract serves `declarable_by_mode` and `renderable_by_mode` as two lists with the reason, and a
+manifest declaring `causality` still gets its matrix cells - occupied by the refusal, because a
+blank cell is indistinguishable from one nobody thought about. `magnitude_equivalence` and
+`semantic_equivalence` are refused in both modes.
+
+**Honest about what is not measured.** No stage worker produces values yet, so result and null
+cells read `NOT_YET_MEASURED` with the reason. `ViewContext.results_exist` requires a `MINING/`
+artefact rather than trusting `state == "COMPLETE"`, because TG17.6 lets a run complete under
+`partial_permitted` with mining components missing by name - without that, a run that completed
+having mined nothing would render its matrix as measured and empty. What *is* shown now is the
+correction denominator, the declared search size and the p-value floor: arithmetic about the
+declaration, computable before a byte exists, and worth reading before committing to the plan.
+Like the composer path, these routes look for a run at the manifest's content address and never
+open one.
+
+**What the reachability guard caught.** `test_every_api_method_is_reachable_from_the_ui` failed on
+four service methods with no caller - the contract, the legend, the single-view render and the
+reading check were served and invisible. They are now the legend at the top of the panel, a
+*What these views will not draw* disclosure carrying the three refusals, a per-view *Refresh*, and
+a control that asks the server whether a chosen reading can be drawn and prints the reason. That
+control is the TG17.0 semantic-trap acceptance made operable rather than only asserted.
+
+**Two a11y defects the browser found.** A `<details>` element is exposed as a group whose
+accessible name is *not* computed from its `<summary>`, so both disclosure panels were regions a
+screen-reader user would meet with no name at all. Found by `getByRole('group', { name })` timing
+out; fixed with explicit `aria-label`s. Separately, one full-suite run failed on the motif view
+where a helper waited only for the first view to paint; the helper now waits for the seventh, so
+each test's assumption that the whole set is present is stated once rather than raced on.
+
+**Evidence.** `test_comparison_views.py` 65 test functions (73 runs with parametrisation);
+`test_frontend_contract.py` 144 -> 154; `frontend/e2e/comparison-views.spec.ts` 19 browser tests,
+and the complete browser suite is 30. Six new routes, 126 -> 132. Production build clean. No
+archive is acquired, no statistic runs, no finding is recorded and no evidence is admitted.
 
 **TG17.9 Receipt, methods report and evidence handoff — PLANNED.** A completed run exports an
 immutable bundle containing the exact manifest; coverage decision; source/acquisition identities;

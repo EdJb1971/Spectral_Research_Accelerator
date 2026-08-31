@@ -1566,3 +1566,285 @@ def test_the_run_progress_and_receipt_payloads_are_shaped_as_the_types_declare(c
     receipt = client.get("/api/v1/experiment-runs/%s" % opened["run_id"]).json()
     assert {"state", "history", "artefacts", "missing_components", "stage_decisions",
             "bounded_work", "coverage_policy", "confirmation", "claim_boundary"} <= set(receipt)
+
+
+# ----------------------------------------------- TG17.7 the guided path in the browser
+
+
+def _composer() -> str:
+    return _read("components", "ExperimentComposer.tsx")
+
+
+def _path_view() -> str:
+    return _read("components", "ComposerPath.tsx")
+
+
+def test_the_composer_holds_no_copy_of_the_order_of_operations():
+    """The order of operations *is* the scientific discipline.
+
+    A family priced after acquisition is priced knowing what the data looked like. A component
+    that decided for itself which step comes next would be a second opinion about that, and the
+    one a researcher followed would not be the one the receipt records.
+    """
+    view = _strip_comments(_composer())
+    assert "composerPathState" in view
+    assert "pathState.steps" in view
+    for step_id in ("question", "domains", "observation", "preflight", "analysis",
+                    "freeze_and_run", "interpret"):
+        assert "panel('%s'" % step_id in view, step_id
+    assert "ordinal <" not in view and "ordinal >" not in view, (
+        "step order is the server's; comparing ordinals here would re-derive it")
+
+
+def test_exactly_one_next_action_is_rendered_and_it_comes_from_the_server():
+    view = _strip_comments(_path_view())
+    assert "state.next_action" in view
+    assert "Next legitimate action" in view
+    assert "Blocked before" in view
+    assert view.count("action.label") == 1, "one action means one label"
+
+
+def test_the_path_is_operable_without_a_mouse():
+    """TG9.4's condition, applied to the surface a whole experiment is declared through."""
+    view = _path_view()
+    assert 'role="tablist"' in view and 'role="tab"' in view
+    assert "aria-selected" in view and "aria-controls" in view
+    assert "ArrowRight" in view and "ArrowLeft" in view and "Home" in view and "End" in view
+    assert "tabIndex" in view, "only the active tab is in the tab order"
+    assert "focus:ring" in view, "keyboard focus must be visible"
+    assert 'aria-hidden="true"' in view, "decorative icons must be hidden from a screen reader"
+
+
+def test_every_step_panel_is_a_labelled_tabpanel():
+    view = _composer()
+    assert 'role="tabpanel"' in view
+    assert "aria-labelledby={`composer-tab-${stepId}`}" in view
+    assert "aria-busy={!!busy}" in view
+
+
+def test_a_blocked_step_stays_reachable_rather_than_disappearing():
+    """Hiding a blocked step hides the reason it is blocked, which is the useful part."""
+    view = _strip_comments(_path_view())
+    assert "steps.map(" in view
+    assert "disabled" not in view.split("role=\"tablist\"")[1].split("</div>")[0], (
+        "no step tab may be disabled; a step nobody can open is a refusal nobody can read")
+
+
+def test_the_researcher_keeps_their_place_across_navigation_and_refresh():
+    view = _composer()
+    assert "ACTIVE_STEP_KEY" in view
+    assert "localStorage.getItem(ACTIVE_STEP_KEY)" in view
+    assert "localStorage.setItem(ACTIVE_STEP_KEY" in view
+
+
+def test_an_unavailable_domain_is_shown_disabled_with_the_backend_s_reason():
+    """A control that vanishes when it becomes inadmissible is indistinguishable from one that
+    was never offered."""
+    view = _strip_comments(_path_view())
+    assert "row.selectable" in view
+    assert "row.unavailable_reason" in view
+    assert "Unavailable:" in view
+    assert ".filter(" not in view.split("menu.domains.map(")[0].split("<ul")[-1], (
+        "the menu is rendered whole; filtering it here would hide a refusal"
+    )
+
+
+def test_the_domain_menu_shows_what_each_domain_breaks_before_it_is_chosen():
+    view = _path_view()
+    assert "row.breaks" in view
+    assert "Breaks:" in view
+    assert "no declared assumption" in view
+
+
+def test_the_browser_never_invents_an_observation_for_a_domain():
+    """An adapter says how a domain is translated; it does not say what is measured, in which
+    units, in which role, or from which record."""
+    view = _strip_comments(_composer())
+    assert "option?.observation" in view
+    assert "option.observation as any" in view
+    assert "domainMenu.minimum_domains" in view
+
+
+def test_a_preset_is_applied_as_the_instants_the_server_resolved_it_to():
+    view = _strip_comments(_composer())
+    assert "composerWindowPresets" in view
+    assert "preset.start_utc" in view and "preset.end_utc" in view
+    assert "setDate" not in view and "getMonth" not in view, (
+        "a boundary computed twice is two boundaries"
+    )
+
+
+def test_the_preregistration_summary_is_the_server_s_sentences_not_the_ui_s():
+    view = _strip_comments(_path_view())
+    assert "summary.sentences" in view
+    assert "summary.manifest_sha256" in view
+    composer = _strip_comments(_composer())
+    assert "composerPreregistrationSummary" in composer
+
+
+def test_the_ladder_separates_acquisition_a_run_a_finding_and_evidence():
+    view = _path_view()
+    assert "StageLadder" in view
+    assert "rung.is_not" in view and "rung.gate" in view and "rung.why_not" in view
+    assert "Not:" in view
+
+
+def test_a_destructive_action_asks_twice_and_says_what_is_lost():
+    view = _path_view()
+    assert "ConfirmButton" in view
+    assert 'role="alertdialog"' in view
+    assert "confirmLabel" in view
+    composer = _composer()
+    assert "ConfirmButton" in composer
+
+
+def test_the_advanced_manifest_inspector_is_disclosed_and_never_required():
+    view = _path_view()
+    assert "ManifestInspector" in view
+    assert "<details" in view
+    assert "never requires editing this" in view
+    assert "composerExportManifest" in _composer()
+    assert "composerImportManifest" in _composer()
+
+
+def test_every_empty_panel_says_an_unasked_question_is_not_a_clean_result():
+    """An empty panel that reads as reassurance is the failure this whole programme is about."""
+    view = _composer()
+    assert "an unasked question, not a clean" in view
+    assert "not a null result" in view
+    assert "an unknown cost, not a small one" in view
+
+
+def test_the_path_view_has_no_domain_branch():
+    view = _strip_comments(_path_view())
+    for domain in ("reanalysis", "argo", "tess", "order_book"):
+        assert domain not in view
+
+
+def test_the_path_payloads_are_shaped_as_the_types_declare(client):
+    contract = client.get("/api/v1/experiment-composer/path").json()
+    assert {"schema", "steps", "step_statuses", "duration_presets", "ladder", "note",
+            "claim_boundary"} <= set(contract)
+    assert {"step_id", "ordinal", "title", "question", "settles", "controls", "action_label",
+            "action_route", "claim_boundary"} <= set(contract["steps"][0])
+    recipe = client.get("/api/v1/experiment-composer/recipes/g17-flagship-calendar").json()
+    state = client.post("/api/v1/experiment-composer/path/state",
+                        json=recipe["canonical_manifest"]).json()
+    assert {"schema", "manifest_sha256", "study_id", "steps", "satisfied", "next_action",
+            "ladder", "run_state", "claim_boundary"} <= set(state)
+    assert {"status", "reason", "detail"} <= set(state["steps"][0])
+    assert {"step_id", "label", "route", "status", "why", "blocked"} <= set(state["next_action"])
+    assert {"rung", "title", "is", "is_not", "gate", "reached", "why_not"} <= set(state["ladder"][0])
+
+
+# --------------------------------------------- TG17.8 the comparison views in the browser
+
+
+def _views() -> str:
+    return _read("components", "ComparisonViews.tsx")
+
+
+def test_the_view_component_holds_no_claim_boundary_of_its_own():
+    """What may be concluded is a scientific fact, so it is served rather than written here.
+
+    A boundary a component composed would be a second boundary, and the sentence a reader saw
+    under a chart would not be the sentence a receipt could show them afterwards.
+    """
+    view = _views()
+    assert "may_not_conclude" in view and "may_conclude" in view
+    assert "mode_forbids" in view
+    for invented in ("co-occurrence only", "carries no clock", "no common ruler"):
+        assert invented not in view, (
+            "the boundary text belongs to the server; %r here is a second copy" % invented)
+
+
+def test_the_coverage_cell_is_drawn_from_a_named_state_and_never_from_a_number():
+    """The graphical failure this slice exists for.
+
+    A cell whose width came from a fraction would draw absent support as a zero-width bar, and a
+    reader would see "we looked and found nothing" where the truth is "we could not look".
+    """
+    view = _strip_comments(_views())
+    assert "CELL_STYLE" in view
+    for state in ("COVERED", "SPARSE", "ABSENT", "REFUSED"):
+        assert state in view, state
+    assert "width:" not in view.replace(" ", "")
+    assert "cell.value" not in view
+    assert "is_measured_zero" not in view, (
+        "the component must not need the flag; it never has a number to mistake for a state")
+
+
+def test_every_role_is_drawn_in_its_colour_its_marker_and_its_word():
+    view = _views()
+    assert "item.colour" in view
+    assert "item.marker" in view
+    assert "item.word" in view
+
+
+def test_the_numbers_behind_every_view_are_reachable_from_the_view():
+    view = _views()
+    assert "AccessibleTable" in view
+    assert "payload.table" in view or "view.table" in view
+    assert "Show the numbers behind each view" in view
+    assert "<caption" in view
+
+
+def test_an_unregistered_view_renders_rather_than_breaking_the_page():
+    """A view the server registers and this build has no drawing for still shows its table,
+    its legend and its boundary. Falling through to a crash would make a new view look like a
+    broken one, which is the wrong signal in both directions."""
+    view = _views()
+    assert "default: return null;" in view
+
+
+def test_the_selection_is_cleared_when_the_plan_changes():
+    view = _views()
+    assert "setSelection(null)" in view
+    assert "why_not_merged" in view
+
+
+def test_the_views_have_no_domain_branch():
+    view = _strip_comments(_views())
+    for domain in ("reanalysis", "argo", "tess", "order_book"):
+        assert domain not in view
+
+
+def test_the_composer_shows_the_views_on_the_interpret_step():
+    composer = _composer()
+    assert "ComparisonViews" in composer
+    assert "Comparison views" in composer
+
+
+def test_the_view_payloads_are_shaped_as_the_types_declare(client):
+    contract = client.get("/api/v1/comparison-views").json()
+    assert {"schema", "views", "encodings", "axis_kinds", "shared_axis_kinds", "coverage_cells",
+            "readings", "mode_forbids", "refusals", "routes", "not_yet_available",
+            "claim_boundary"} <= set(contract)
+    assert {"view_id", "ordinal", "title", "question", "axes", "roles", "may_conclude",
+            "may_not_conclude", "selectable"} <= set(contract["views"][0])
+    assert {"role", "word", "colour", "marker", "ordinal", "definition",
+            "admits_claim"} <= set(contract["encodings"][0])
+    recipe = client.get("/api/v1/experiment-composer/recipes/g17-flagship-calendar").json()
+    manifest = recipe["canonical_manifest"]
+    rendered = client.post("/api/v1/comparison-views/render/coverage_timeline",
+                           json=manifest).json()
+    assert {"schema", "view_id", "ordinal", "title", "question", "mode", "manifest_sha256",
+            "axes", "legend", "body", "table", "results_exist", "run_state", "may_conclude",
+            "may_not_conclude", "mode_forbids", "claim_boundary"} <= set(rendered)
+    assert {"name", "kind", "domains", "units", "shared", "why"} <= set(rendered["axes"][0])
+    assert {"columns", "rows"} <= set(rendered["table"])
+    selection = client.post("/api/v1/comparison-views/linked-selection",
+                            json={"manifest": manifest, "window": "week"}).json()
+    assert {"schema", "window", "manifest_sha256", "contributions", "merged_interval",
+            "why_not_merged", "claim_boundary"} <= set(selection)
+    assert {"domain", "state", "reason", "native_interval",
+            "contributes"} <= set(selection["contributions"][0])
+
+
+def test_every_served_comparison_view_has_a_drawing_or_a_declared_fallback():
+    """The guard that catches a view registered on the server and forgotten in the browser."""
+    from src.core.comparison_views import ordered_views
+
+    view = _views()
+    for served in ordered_views():
+        assert "case '%s':" % served.view_id in view, served.view_id
