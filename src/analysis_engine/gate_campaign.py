@@ -118,6 +118,46 @@ def _crop_from_mapping(value: Any, label: str) -> CropSpec:
     return crop
 
 
+
+def _resolution_audit(protocol, train_frames: int, test_frames: int):
+    """Whether each partition holds enough distinct alignments to resolve the declared family.
+
+    T4C.5i step 5, wired ahead of the data rather than after it. The surrogate draw is *with
+    replacement* from `admissible_shifts`, so requesting 4,999 surrogates always returns 4,999
+    numbers and a nominal p-value floor of 1/5000 whether or not the record contains 4,999
+    distinct admissible shifts. `check_power` counts the draws and is satisfied; the exact test's
+    reference set is the shifts, and its attainable p-value is bounded by how many there are.
+
+    The Theiler window is not known before the series exists, so the audit uses the most
+    favourable window of one frame. A partition that fails here cannot be rescued by any window,
+    which is what makes it safe to refuse on before acquisition.
+    """
+    from src.analysis_engine.spatial_power import frames_for_resolution
+
+    lag = int(min(protocol.lags))
+    audits = {}
+    for name, frames in (("train", int(train_frames)), ("test", int(test_frames))):
+        audits[name] = frames_for_resolution(
+            n_frames=frames, lag=lag, theiler=1, n_tests=protocol.family_size,
+            alpha=protocol.alpha, correction=protocol.correction)
+    audits["adequate"] = all(audits[name]["resolves_corrected_level"]
+                             for name in ("train", "test"))
+    audits["basis"] = (
+        "distinct admissible circular shifts bound the exact test's attainable p-value; "
+        "surrogates are drawn with replacement from that set, so the ensemble size does not")
+    return audits
+
+
+def _resolution_refusal_text(audits) -> str:
+    failed = [name for name in ("train", "test")
+              if not audits[name]["resolves_corrected_level"]]
+    return (
+        "the %s partition cannot resolve the declared family: %s This is a frame-count deficit "
+        "and only a longer record closes it -- a larger crop adds no alignments to shuffle, and "
+        "reducing the declared family after the design was frozen is not a remedy."
+        % (" and ".join(failed), " ".join(audits[name]["reason"] for name in failed)))
+
+
 def _scientific_review(campaign: "GateCampaign") -> Dict[str, Any]:
     request, plan = campaign.full_acquisition, campaign.gate_plan
     height = int(round((request.lat_max - request.lat_min) / request.grid_degrees)) + 1
@@ -165,6 +205,8 @@ def _scientific_review(campaign: "GateCampaign") -> Dict[str, Any]:
             "lags at or above the pre-acquisition physical support floor of %d frames"
             % maximum_floor)
     design = plan.protocol.validate()
+    resolution = _resolution_audit(
+        plan.protocol, design["train_frames"], design["test_frames"])
     full_times = _times(request)
     train_stop = design["train_frames"]
     test_start = train_stop + plan.protocol.embargo_frames
@@ -186,6 +228,8 @@ def _scientific_review(campaign: "GateCampaign") -> Dict[str, Any]:
         "grid_shape": [height, width], "grid_degrees": request.grid_degrees,
         "valid_parent_interiors": interiors,
         "minimum_valid_parent_pixels": MIN_VALID_INTERIOR,
+        "surrogate_resolution": resolution,
+        "resolvable": bool(resolution["adequate"]),
         "physical_support_floor": floors,
         "full_frames": len(_times(request)),
         "train_frames": design["train_frames"], "test_frames": design["test_frames"],
@@ -423,6 +467,15 @@ def preflight_gate_campaign(
     minimum_free_reserve_bytes: int = MINIMUM_FREE_RESERVE_BYTES,
 ) -> Dict[str, Any]:
     """Perform a zero-network readiness and aggregate capacity check for the whole campaign."""
+    # T4C.5i step 5, and the reason this refusal sits here rather than in the review: a frozen
+    # campaign that cannot resolve its own declared family must remain loadable and reviewable,
+    # or the defect could not be recorded against it. What it must not do is spend 2.5 GB.
+    resolution = _scientific_review(campaign)["surrogate_resolution"]
+    if not resolution["adequate"]:
+        raise InvalidParameterError(
+            "campaign.gate_plan.protocol", resolution["test"]["n_frames"],
+            "a record long enough to resolve the declared family before any data is acquired: "
+            + _resolution_refusal_text(resolution))
     if isinstance(minimum_free_reserve_bytes, bool) \
             or int(minimum_free_reserve_bytes) != minimum_free_reserve_bytes \
             or minimum_free_reserve_bytes < 0:

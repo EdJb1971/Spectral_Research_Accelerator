@@ -12,7 +12,9 @@ import numpy as np
 import pytest
 
 from src.analysis_engine.spatial_power import (
+    AREA_EXPONENT_BOUNDS,
     DECORRELATION_THRESHOLD,
+    REMEDY_AXES,
     MIN_EFFECTIVE_SAMPLES,
     TRUST_HORIZON_FRACTION,
     assess_interior,
@@ -21,7 +23,11 @@ from src.analysis_engine.spatial_power import (
     effective_spatial_samples,
     energy_density_series,
     extrapolate_attenuation,
+    crop_for_effect,
     detection_rank,
+    family_for_effect,
+    frames_for_resolution,
+    spatial_power_refusal,
     minimum_detectable_effect,
     power_verdict,
     spatial_decorrelation,
@@ -520,3 +526,210 @@ def test_a_design_that_was_not_declared_is_refused(kwargs, match):
 def test_an_ensemble_too_small_to_order_is_refused():
     with pytest.raises(InvalidParameterError, match="at least two finite"):
         minimum_detectable_effect([0.1], n_tests=2)
+
+
+# ============================================ refusing on the derived quantity (T4C.5i step 5)
+
+# The frozen campaign's own split, from the preregistered protocol: 4,382 train frames and 2,914
+# test frames at a lag family starting at 6.
+CAMPAIGN_TRAIN_FRAMES = 4382
+CAMPAIGN_TEST_FRAMES = 2914
+CAMPAIGN_LAG = 6
+
+
+def test_a_refusal_may_only_name_an_axis_the_study_can_change():
+    assert REMEDY_AXES == ("crop_size", "frame_count", "scale_count")
+
+
+def test_the_train_partition_resolves_the_corrected_level():
+    resolution = frames_for_resolution(
+        n_frames=CAMPAIGN_TRAIN_FRAMES, lag=CAMPAIGN_LAG, theiler=24,
+        n_tests=CAMPAIGN_TESTS)
+    assert resolution["resolves_corrected_level"]
+    assert resolution["frames_required"] is None
+    assert resolution["attainable_exact_p"] < resolution["required_raw_p"]
+
+
+def test_the_test_partition_cannot_resolve_the_corrected_level():
+    """Defect D85, found by this step and recorded rather than repaired here.
+
+    The confirmatory half of the frozen campaign is 2,914 frames. Excluding the tested and
+    simultaneous alignments leaves fewer distinct admissible shifts than the declared 36-test
+    family needs, so the exact test's attainable p-value never reaches the corrected level --
+    however many of the 4,999 surrogates are drawn, because they are drawn *with replacement*
+    from that same small reference set. `check_power` does not see this: it counts draws.
+    """
+    resolution = frames_for_resolution(
+        n_frames=CAMPAIGN_TEST_FRAMES, lag=CAMPAIGN_LAG, theiler=24,
+        n_tests=CAMPAIGN_TESTS)
+    assert not resolution["resolves_corrected_level"]
+    assert resolution["attainable_exact_p"] > resolution["required_raw_p"]
+    assert resolution["frames_required"] > CAMPAIGN_TEST_FRAMES
+    assert "however many surrogates are drawn" in resolution["reason"]
+
+
+def test_the_unresolvable_partition_is_confirmed_by_the_gates_own_screen():
+    """The claim above is not this module's arithmetic; it is the gate's verdict.
+
+    Feeding the best p-value the test partition can attain into `screen` over the declared
+    family returns q = 0.0516 against alpha = 0.05 -- not significant. The same construction on
+    the train partition returns q = 0.0347 and is significant.
+    """
+    from src.analysis_engine.cross_scale import admissible_shifts
+    from src.statistics.significance import screen
+
+    def best_q(frames):
+        distinct = int(admissible_shifts(frames, CAMPAIGN_LAG, 24).size)
+        family = [{"label": "tested", "p_value": 1.0 / (1.0 + distinct)}] + [
+            {"label": "other%d" % i, "p_value": 1.0} for i in range(CAMPAIGN_TESTS - 1)]
+        result = screen(family, alpha=CAMPAIGN_ALPHA, method="benjamini_yekutieli")
+        return [row for row in result["results"] if row["label"] == "tested"][0]
+
+    assert best_q(CAMPAIGN_TRAIN_FRAMES)["significant"]
+    assert not best_q(CAMPAIGN_TEST_FRAMES)["significant"]
+
+
+def test_drawing_more_surrogates_does_not_repair_a_short_record():
+    """The distinction the whole function exists for: draws are not resolution."""
+    few = frames_for_resolution(n_frames=CAMPAIGN_TEST_FRAMES, lag=CAMPAIGN_LAG, theiler=24,
+                                n_tests=CAMPAIGN_TESTS)
+    assert few["distinct_admissible_shifts"] < few["distinct_shifts_required"]
+    # `check_power` is satisfied by the campaign's 4,999 requested draws on the same partition.
+    from src.statistics.multiple_comparisons import check_power
+    assert check_power(CAMPAIGN_SURROGATES, CAMPAIGN_TESTS, CAMPAIGN_ALPHA,
+                       "benjamini_yekutieli")["can_reject_after_correction"]
+
+
+def test_a_wider_decorrelation_window_costs_resolution():
+    narrow = frames_for_resolution(n_frames=3200, lag=CAMPAIGN_LAG, theiler=1,
+                                   n_tests=CAMPAIGN_TESTS)
+    wide = frames_for_resolution(n_frames=3200, lag=CAMPAIGN_LAG, theiler=120,
+                                 n_tests=CAMPAIGN_TESTS)
+    assert wide["distinct_admissible_shifts"] < narrow["distinct_admissible_shifts"]
+    assert wide["attainable_exact_p"] > narrow["attainable_exact_p"]
+
+
+def test_the_crop_that_would_close_the_deficit_is_larger_than_the_one_measured(planted):
+    extrapolated = extrapolate_attenuation(
+        planted["curve"])["extrapolated_transfer_entropy_nats"]
+    full = max(planted["curve"]["curve"], key=lambda row: row["interior_px"])
+    target = 0.5 * (full["transfer_entropy_nats"] + extrapolated)
+    crop = crop_for_effect(planted["curve"], target_nats=target)
+    assert crop["interior_px_required"] > crop["interior_px_now"]
+    assert crop["effective_samples_required"] > crop["effective_samples_now"]
+    assert AREA_EXPONENT_BOUNDS[0] <= crop["measured_area_exponent"] <= AREA_EXPONENT_BOUNDS[1]
+
+
+def test_a_target_above_the_ceiling_names_no_crop_at_all(planted):
+    """The refusal that matters most: no crop size closes an absence."""
+    extrapolated = extrapolate_attenuation(
+        planted["curve"])["extrapolated_transfer_entropy_nats"]
+    crop = crop_for_effect(planted["curve"], target_nats=extrapolated * 1.5)
+    assert crop["interior_px_required"] is None
+    assert "the effect is not attenuated, it is absent" in crop["reason"]
+
+
+def test_a_larger_target_needs_a_larger_crop(planted):
+    extrapolated = extrapolate_attenuation(
+        planted["curve"])["extrapolated_transfer_entropy_nats"]
+    full = max(planted["curve"]["curve"], key=lambda row: row["interior_px"])
+    low = crop_for_effect(planted["curve"],
+                          target_nats=0.3 * full["transfer_entropy_nats"]
+                          + 0.7 * extrapolated)
+    high = crop_for_effect(planted["curve"],
+                           target_nats=0.05 * full["transfer_entropy_nats"]
+                           + 0.95 * extrapolated)
+    assert high["interior_px_required"] > low["interior_px_required"]
+
+
+def test_reducing_the_declared_family_is_reported_and_refused():
+    null = _null()
+    measured = float(np.sort(null)[::-1][8])       # would clear a family of about nine
+    family = family_for_effect(null, measured_nats=measured, n_tests=CAMPAIGN_TESTS)
+    assert family["admissible_after_seeing_data"] is False
+    assert family["largest_family_that_would_detect"] < CAMPAIGN_TESTS
+    assert "how a null result is converted into a finding" in family["reason"]
+    # The reported family really is the largest that would have detected it.
+    largest = family["largest_family_that_would_detect"]
+    assert measured > minimum_detectable_effect(
+        null, n_tests=largest)["minimum_detectable_effect_nats"]
+    assert measured <= minimum_detectable_effect(
+        null, n_tests=largest + 1)["minimum_detectable_effect_nats"]
+
+
+def test_an_effect_no_family_would_detect_says_so():
+    null = _null()
+    family = family_for_effect(null, measured_nats=float(null.min()) * 0.5,
+                               n_tests=CAMPAIGN_TESTS)
+    assert family["largest_family_that_would_detect"] is None
+    assert "the design's reach is not what limited it" in family["reason"]
+
+
+def test_a_short_record_is_refused_before_the_threshold_is_consulted(planted):
+    """Resolution binds first: a record that cannot reach the level has no threshold to miss."""
+    refusal = spatial_power_refusal(
+        planted["curve"], null_nats=_null(), n_tests=CAMPAIGN_TESTS,
+        n_frames=CAMPAIGN_TEST_FRAMES, theiler=24)
+    assert refusal["verdict"] == "INVALID"
+    assert refusal["deficit"] == "resolution"
+    assert [remedy["axis"] for remedy in refusal["remedies"]] == ["frame_count"]
+    assert refusal["remedies"][0]["required"] > CAMPAIGN_TEST_FRAMES
+    assert "power_verdict" not in refusal
+
+
+def test_an_attenuation_deficit_names_the_crop_and_refuses_the_family(planted):
+    full = max(planted["curve"]["curve"], key=lambda row: row["interior_px"])
+    extrapolated = extrapolate_attenuation(
+        planted["curve"])["extrapolated_transfer_entropy_nats"]
+    straddle = 0.5 * (full["transfer_entropy_nats"] + extrapolated)
+    null = _null() * (straddle / float(_null().max()))
+    refusal = spatial_power_refusal(
+        planted["curve"], null_nats=null, n_tests=CAMPAIGN_TESTS,
+        n_frames=CAMPAIGN_TRAIN_FRAMES, theiler=24)
+    assert refusal["verdict"] == "INVALID"
+    assert refusal["deficit"] == "attenuation"
+    axes = {remedy["axis"]: remedy for remedy in refusal["remedies"]}
+    assert set(axes) == {"crop_size", "scale_count"}
+    assert axes["crop_size"]["required"] > axes["crop_size"]["current"]
+    assert axes["crop_size"]["admissible_after_seeing_data"] is True
+    assert axes["scale_count"]["admissible_after_seeing_data"] is False
+
+
+def test_an_adequate_crop_is_cleared_to_report_an_absence(planted):
+    """ADEQUATE is not a finding; it is permission to call an absence FAIL rather than INVALID."""
+    full = max(planted["curve"]["curve"], key=lambda row: row["interior_px"])
+    extrapolated = extrapolate_attenuation(
+        planted["curve"])["extrapolated_transfer_entropy_nats"]
+    null = _null() * ((extrapolated * 2.0) / float(_null().max()))
+    refusal = spatial_power_refusal(
+        planted["curve"], null_nats=null, n_tests=CAMPAIGN_TESTS,
+        n_frames=CAMPAIGN_TRAIN_FRAMES, theiler=24)
+    assert refusal["verdict"] == "ADEQUATE"
+    assert refusal["deficit"] is None
+    assert refusal["remedies"] == []
+    assert refusal["measured_transfer_entropy_nats"] == pytest.approx(
+        full["transfer_entropy_nats"])
+
+
+def test_no_refusal_this_module_produces_names_a_bare_constant(planted):
+    """T4C.5i's stated contract: a refusal names an axis to acquire, never a number to type."""
+    refusal = spatial_power_refusal(
+        planted["curve"], null_nats=_null(), n_tests=CAMPAIGN_TESTS,
+        n_frames=CAMPAIGN_TEST_FRAMES, theiler=24)
+    for remedy in refusal["remedies"]:
+        assert remedy["axis"] in REMEDY_AXES
+        assert remedy["unit"]
+        assert "MIN_VALID_INTERIOR" not in remedy["note"]
+        assert "power of two" not in remedy["note"]
+    assert "128" not in refusal["reason"]
+    assert "256" not in refusal["reason"]
+
+
+def test_a_record_too_short_to_shuffle_is_refused():
+    with pytest.raises(InvalidParameterError, match="at least three frames"):
+        frames_for_resolution(n_frames=2, lag=1, theiler=1, n_tests=CAMPAIGN_TESTS)
+
+
+def test_a_target_that_is_not_an_effect_is_refused(planted):
+    with pytest.raises(InvalidParameterError, match="positive transfer entropy"):
+        crop_for_effect(planted["curve"], target_nats=0.0)

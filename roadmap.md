@@ -55,7 +55,7 @@ skill, show the counterexamples, or report that no robust relationship survives.
 ## 1. Honest Technical Status
 
 Verified against the code on 2026-08-29. Every claim here is backed by captured output in
-`VERIFICATION.md`; `architecture.md` Section 7 holds the full defect ledger (D1-D84, of which **81 fixed, 1 partial (D18), 2 open (D43, D84)**).
+`VERIFICATION.md`; `architecture.md` Section 7 holds the full defect ledger (D1-D85, of which **81 fixed, 1 partial (D18), 3 open (D43, D84, D85)**).
 
 The numbers in this table are checked by `src/tests/test_documentation.py`, which parses them
 out of this file and compares them against the source. That guard exists because this table
@@ -65,7 +65,7 @@ status section, it is a memory.
 
 | Area | Real status |
 |---|---|
-| **Phase progress** | **Phase 3.5 complete** (25 tasks). **Phase 4A, 4B and the pre-gate 4C instrument are complete:** T4A.1-4, T4B.1-4, T4C.1-5h. T4C.5d-h make the real gate, independent-source check, two-stage acquisition, physical preflight and primary preregistration bounded and content-bound, but **T4C.6 has not run**. **T5.0 is partial:** T5.0a-b supplies the strict versioned/hashable protocol and runtime-binding gate, but the actual laboratory evidence/config has not been supplied or frozen. **T5.1 is partial:** T5.1a-e accepts raw/FFT/DCT/Haar/db2/SWT/DTCWT training representations, optimized and exposed with truthful UI readiness; mixed precision and remaining cross-device acceptance remain. **T5.2 is partial:** T5.2a-d implements the aligned, leakage-safe, train-normalised PyTorch dataset, bounded-memory worker-safe cache, bounded blockwise CDS cache publication, exact calendar splits and verified physical-time leads; the live CDS run, independent overlap and viable multi-year NZ crop remain blocked by D43. **T5.3 is partial:** T5.3a-b supplies the forecaster seam, persistence baseline, deterministic represented smoke run, verified model-artifact contract and persistence-relative evaluator; T5.3c and the actual laboratory model remain open. **T5.6 is partial:** T5.6a-g supplies the offline FCN3 identity, lazy canonical cube/import boundary, exact ERA5 truth bridge, matched ensemble metric engine, atomic reproducible run receipt, portable laptop/HPC runner and verified API/UI reporting; no worker, dependency, checkpoint, initial condition, real forecast or real truth evaluation has run, so the result UI is honestly empty. **Not done:** T4C.5i, the derived spatial-power and FAIL/INVALID boundary (D84), which now blocks acquisition; T4C.6, the real-ERA5 gate review; 4D-4H; T5.4-5, the remaining T5.6 inference/real-data work, T5.7, and the T5.8 irregular-observation/spatial-downscaling track. Per-task evidence blocks sit under each task below; a task without a **DONE** or **PARTIAL** label has not been started. |
+| **Phase progress** | **Phase 3.5 complete** (25 tasks). **Phase 4A, 4B and the pre-gate 4C instrument are complete:** T4A.1-4, T4B.1-4, T4C.1-5h. T4C.5d-h make the real gate, independent-source check, two-stage acquisition, physical preflight and primary preregistration bounded and content-bound, but **T4C.6 has not run**. **T5.0 is partial:** T5.0a-b supplies the strict versioned/hashable protocol and runtime-binding gate, but the actual laboratory evidence/config has not been supplied or frozen. **T5.1 is partial:** T5.1a-e accepts raw/FFT/DCT/Haar/db2/SWT/DTCWT training representations, optimized and exposed with truthful UI readiness; mixed precision and remaining cross-device acceptance remain. **T5.2 is partial:** T5.2a-d implements the aligned, leakage-safe, train-normalised PyTorch dataset, bounded-memory worker-safe cache, bounded blockwise CDS cache publication, exact calendar splits and verified physical-time leads; the live CDS run, independent overlap and viable multi-year NZ crop remain blocked by D43. **T5.3 is partial:** T5.3a-b supplies the forecaster seam, persistence baseline, deterministic represented smoke run, verified model-artifact contract and persistence-relative evaluator; T5.3c and the actual laboratory model remain open. **T5.6 is partial:** T5.6a-g supplies the offline FCN3 identity, lazy canonical cube/import boundary, exact ERA5 truth bridge, matched ensemble metric engine, atomic reproducible run receipt, portable laptop/HPC runner and verified API/UI reporting; no worker, dependency, checkpoint, initial condition, real forecast or real truth evaluation has run, so the result UI is honestly empty. **Not done:** T4C.5i, the derived spatial-power and FAIL/INVALID boundary (D84), which now blocks acquisition, and whose step 5 found D85 -- the frozen campaign's confirmatory partition cannot resolve its own declared family, so T4C.6 cannot PASS as frozen; T4C.6, the real-ERA5 gate review; 4D-4H; T5.4-5, the remaining T5.6 inference/real-data work, T5.7, and the T5.8 irregular-observation/spatial-downscaling track. Per-task evidence blocks sit under each task below; a task without a **DONE** or **PARTIAL** label has not been started. |
 | Ownership / licence | **Declared in `LICENSE.md`.** Edward Jonathan Bentley retains the proprietary SpectralEarth core. Adam Frank Bentley has a named perpetual, worldwide, royalty-free grant for lawful personal, academic, research and commercial use/modification, without public redistribution or sublicensing of the core. Independent extensions and upstream contributions remain separately governed. This bespoke text has not been professionally reviewed. |
 | **Accessibility** | **Workflow-wide source contract, TG11.6 DONE.** Skip and route focus, globally visible focus, bound legacy labels, reduced motion, announced asynchronous state, keyboard SVG lineage and figure text equivalents now cover both platform lines. Rendered assistive-technology inspection remains NOT RUN, so no WCAG conformance level is claimed (see `roadmap_cross_domain.md`). |
 | Backend test suite | **3106 passed, 1 xfailed.** Plus four explicit skips: the opt-in live-GCS check, opt-in live store probe, opt-in live Argo acceptance, and opt-in live TESS/MAST acceptance. Two further tests failed in that run and are not counted above: `test_claimed_test_count_is_at_least_the_function_count`, which was the stale 2745 claim this run replaced, and **D80**, a guard pinning a served capability claim that TG17.6 had made false. Both were fixed immediately afterwards and re-verified in a targeted 304-test run including the full documentation audit, so the next full run should read 3108. TG17.8 then added 65 test functions in `test_comparison_views.py`, ten in `test_frontend_contract.py` and 19 browser tests, all verified in targeted runs including the full documentation audit (387 passed) and a 30-test browser suite; the full suite has not been rerun since, so 3106 remains the last measured figure rather than a current one. Trajectory: 19 written / 1 failing / uncollectable -> 65 -> 152 -> 222 -> 271 -> 351 -> 407 -> 449 -> 478 -> 535 -> 548 -> 593 -> 642 -> 647 -> 709 -> 781 -> 855 -> 859 -> 882 -> 883 -> 890 -> 911 -> 917 -> 933 -> 946 -> 955 -> 957 -> 962 -> 969 -> 981 -> 985 -> 1000 -> 1008 -> 1027 -> 1042 -> 1056 -> 1070 -> 1080 -> 1089 -> 1094 -> 1095 -> 1102 -> 1104 -> 1106 -> 1112 -> 1116 -> 1117 (the `master` freeze) -> 1375 (TG2.1, `ed-dev`) -> 1429 (TG2.2, `ed-dev`) -> 1477 (TG2.3, `ed-dev`) -> 1536 (TG2.4, `ed-dev`) -> 1577 (TG3.1, `ed-dev`) -> 1621 (TG3.2, `ed-dev`) -> 1686 (TG3.3, `ed-dev`) -> 1742 (TG3.4, `ed-dev`) -> 1787 (TG3.5, `ed-dev`) -> 1850 (TG4.1, `ed-dev`) -> 1922 (TG4.2, `ed-dev`) -> 1972 (TG4.3, `ed-dev`) -> 1986 (TG5.1, `ed-dev`) -> 2004 (TG5.2, `ed-dev`) -> 2020 (TG5.3, `ed-dev`) -> 2044 (TG6.1, `ed-dev`) -> 2074 (TG6.2, `ed-dev`) -> 2112 (TG6.3, `ed-dev`) -> 2167 (TG7.1, `ed-dev`) -> 2217 (TG7.2, `ed-dev`) -> 2235 (TG7.3, `ed-dev`) -> 2236 (TG7.3 live acceptance, `ed-dev`) -> 2296 (TG7.4, `ed-dev`) -> 2321 (TG9.1/TG9.2, `ed-dev`) -> 2334 (TG9.3, `ed-dev`) -> 2367 (TG8.1, `ed-dev`) -> 2420 (TG8.4, `ed-dev`) -> 2459 (TG10.1, `ed-dev`) -> 2503 (TG10.3, `ed-dev`) -> 2509 (TG10.2, `ed-dev`) -> 2511 (TG11.0, `ed-dev`) -> 2521 (TG11.1, `ed-dev`) -> 2543 (TG11.2, `ed-dev`) -> 2570 (TG11.3, `ed-dev`) -> 2619 (TG11.4, `ed-dev`) -> 2661 (TG11.4b, `ed-dev`) -> 2667 (TG11.6, `ed-dev`) -> 2681 (TG11.5, `ed-dev`) -> 2694 (TG12.1b/TG12.1c, `ed-dev`) -> 2708 (TG12.2a, `ed-dev`) -> 2716 (TG12.1d, `ed-dev`) -> 2726 (TG12.2b-d, `ed-dev`) -> 2741 (TG13/G14 file-first ingress, `ed-dev`) -> 2745 (TG15 capability routing, `ed-dev`) -> 3106 (TG17.7, `ed-dev`; the first full-suite run since TG15, the G16/G17 slices between having verified against targeted suites). |
@@ -1322,6 +1322,19 @@ frozen family.
     attempted before that was recognised are recorded in the Progress block below.
 5.  **Refuse on the derived quantity.** Inadequate power returns `INVALID`, names the deficit, and
     states which of crop size, frame count or scale count would close it -- never a bare constant.
+    `spatial_power_refusal` combines the derived quantities into one verdict; `crop_for_effect`
+    inverts the reported attenuation fit to name the interior that would close an attenuation
+    deficit, and refuses to name one where a number would be an invention; `family_for_effect`
+    reports the family that would have detected the effect and marks it inadmissible after the
+    data are in. *Found while implementing:* `frames_for_resolution` exposed **D85** -- surrogates
+    are drawn with replacement, so the *distinct admissible shifts* in a record, not the number of
+    draws, bound the attainable p-value, and the frozen campaign's 2,914-frame confirmatory
+    partition supplies 2,912 against the 3,005 the declared family needs. The campaign therefore
+    cannot replicate at any effect size, and `check_power` reports it as adequately powered because
+    it counts draws. The resolution half of the refusal is wired: `review_gate_campaign` reports
+    it, `preflight_gate_campaign` refuses on it before any transfer, and `preflight_cached_gate`
+    refuses on it for the real gate role. The attenuation half needs the sub-cropped curve, whose
+    computation is the same work step 7's receipt fields need, and is built with them.
 6.  **Demote both constants.** `MIN_VALID_INTERIOR` and the power-of-two size become *reported
     recommendations*, explicitly labelled as heuristics. The power-of-two rounding is removed from
     the refusal path entirely and its "statistically recommended" wording corrected.
@@ -1331,12 +1344,13 @@ frozen family.
 8.  **Re-freeze the campaign** against the derived criterion, recorded as a supersession of
     `t4c6_nz_era5_temperature_850_v1` with its reason, not an edit of it.
 
-**Progress (2026-09-01, `ed-dev`).** Steps 1-4 are implemented in
-`src/analysis_engine/spatial_power.py` with 36 test functions (41 runs), all passing and
-order-stable, and
-196 passing alongside the cross-scale, scale-signature, statistics, gate and preregistration
-suites. Steps 5-8 -- wiring the refusal into the acquisition path, demoting the two constants,
-the receipt fields and the campaign supersession -- are not started.
+**Progress (2026-09-01, `ed-dev`).** Steps 1-4 and the resolution half of step 5 are implemented
+in `src/analysis_engine/spatial_power.py` with 53 test functions (58 runs), all passing and
+order-stable, and 215 passing alongside the cross-scale, scale-signature, statistics, gate and
+preregistration suites. Step 5's attenuation adjudication inside `run_cached_gate` is not wired,
+because it needs the sub-cropped curve that step 7's receipt fields also need and the two are
+built together. Steps 6-8 -- demoting the two constants, the receipt fields and the campaign
+supersession -- are not started. **D85 is open and blocks acquisition alongside D84.**
 
 Three things were learned by building it, recorded so they are not re-derived:
 
@@ -1349,6 +1363,13 @@ Three things were learned by building it, recorded so they are not re-derived:
     temporal estimator safely does over thousands of frames, returns a confident 19 px length for
     a 40 px interior of 60 px structure. `TRUST_HORIZON_FRACTION = 0.25` bounds the search and
     saturation is reported instead.
+*   **Draws are not resolution.** Surrogates are drawn *with replacement* from the admissible
+    circular shifts, so asking for 4,999 always returns 4,999 numbers and a nominal p-value floor
+    of 1/5000. The exact test's reference set is the shifts themselves, and its attainable
+    p-value is bounded by how many the record contains. Every power check in the repository
+    counted draws; none counted the reference set. The frozen campaign's confirmatory partition
+    turned out to be on the wrong side of that distinction (D85), which no amount of ensemble
+    size repairs.
 *   **A frozen design's decision boundary is not an estimate.** Step 4 twice tried to attach
     uncertainty to the minimum detectable effect. A Clopper-Pearson bound on the threshold's
     exceedance probability was unattainable by construction, comparing about

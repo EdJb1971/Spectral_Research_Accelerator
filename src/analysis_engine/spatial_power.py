@@ -348,6 +348,11 @@ def extrapolate_attenuation(curve: Mapping[str, Any]) -> Dict[str, Any]:
         "fit_r_squared": r_squared,
         "fitted_points": len(rows),
         "plateau_in_view": True,
+        # The fitted line itself, because step 5 inverts it: the crop that would close a
+        # power deficit is read off this same fit rather than off a second, unrelated model.
+        "fit_slope": float(slope),
+        "fit_intercept": float(intercept),
+        "fitted_effective_samples": [float(row["effective_samples"]) for row in rows],
         "model": "TE(E) = TE_inf / (1 + c/E); 1/TE linear in 1/E, intercept 1/TE_inf",
     }
 
@@ -534,7 +539,325 @@ def minimum_detectable_effect(null_nats: Any, *, n_tests: int, alpha: float = 0.
     return record
 
 
+# ================================================ refusing on the derived quantity (T4C.5i step 5)
+
+#: The three things a study can actually change, and the only vocabulary a refusal from this
+#: module is allowed to use. A refusal that names a constant tells the caller what to type; a
+#: refusal that names an axis tells them what to *acquire*, which is the difference between a
+#: threshold and a derivation.
+REMEDY_AXES = ("crop_size", "frame_count", "scale_count")
+
+#: The effective sample count of a fixed field grows as the interior *area* when the
+#: decorrelation length is a property of the field rather than of the window. Measuring an
+#: exponent far from 2 means the length is still growing with the crop -- the saturation this
+#: module refuses to extrapolate through -- so the geometric exponent is used for the
+#: extrapolation and the measured one is used only to decide whether that is allowed.
+AREA_EXPONENT = 2.0
+AREA_EXPONENT_BOUNDS = (1.6, 2.4)
+
+
+def _fit_area_exponent(curve: Mapping[str, Any]) -> Optional[float]:
+    """Measured d log(effective samples) / d log(interior px) across the sub-crops."""
+    rows = [row for row in curve["curve"]
+            if row["effective_samples"] is not None and row["effective_samples"] > 0]
+    if len(rows) < 3:
+        return None
+    x = np.log(np.array([float(row["interior_px"]) for row in rows]))
+    y = np.log(np.array([float(row["effective_samples"]) for row in rows]))
+    if float(np.ptp(x)) <= 0:
+        return None
+    slope, _ = np.polyfit(x, y, 1)
+    return float(slope)
+
+
+def crop_for_effect(curve: Mapping[str, Any], *, target_nats: float) -> Dict[str, Any]:
+    """The valid interior, in pixels per side, at which the measured attenuation reaches a target.
+
+    This inverts the *same* fit `extrapolate_attenuation` reports rather than introducing a second
+    model. ``1/TE = intercept + slope/E`` gives the effective sample count that would put the
+    transfer entropy at ``target_nats``::
+
+        E_required = slope / (1/target - intercept)
+
+    and the interior follows from geometry, ``E`` growing as the area of a fixed field, so
+    ``px_required = px_now * sqrt(E_required / E_now)``.
+
+    **Three ways this refuses instead of answering,** each of them a case where a number would be
+    an invention:
+
+    *   The target is at or above the unlimited-crop estimate. No crop closes that deficit,
+        because the effect is not there to be found at any size, and saying "a larger crop" would
+        be false comfort.
+    *   The largest sub-crop has no effective sample count, its decorrelation having saturated.
+        There is then no ``E_now`` to scale from.
+    *   The measured area exponent is outside ``AREA_EXPONENT_BOUNDS``. The field's decorrelation
+        length is still growing with the window, so area scaling would extrapolate through the
+        very saturation this module exists to catch.
+    """
+    if not isinstance(target_nats, (int, float)) or isinstance(target_nats, bool) \
+            or target_nats <= 0:
+        raise InvalidParameterError("target_nats", target_nats,
+                                    "a positive transfer entropy in nats")
+    extrapolation = extrapolate_attenuation(curve)
+    if extrapolation.get("fit_slope") is None:
+        return {"interior_px_required": None, "reason":
+                "the attenuation curve could not be fitted, so no crop can be named: "
+                + str(extrapolation.get("reason", ""))}
+    slope = float(extrapolation["fit_slope"])
+    intercept = float(extrapolation["fit_intercept"])
+    ceiling = float(extrapolation["extrapolated_transfer_entropy_nats"])
+    if target_nats >= ceiling:
+        return {"interior_px_required": None,
+                "extrapolated_transfer_entropy_nats": ceiling,
+                "reason": ("an unlimited crop of this field would measure %.4f nats, below the "
+                           "%.4f nats being asked of it, so no crop size closes this deficit -- "
+                           "the effect is not attenuated, it is absent"
+                           % (ceiling, float(target_nats)))}
+    full = max(curve["curve"], key=lambda row: row["interior_px"])
+    if full["effective_samples"] is None:
+        return {"interior_px_required": None, "reason":
+                ("the largest sub-crop has no effective sample count -- its decorrelation length "
+                 "is longer than the interior can measure -- so there is no measured sample "
+                 "count to scale a larger crop from")}
+    exponent = _fit_area_exponent(curve)
+    if exponent is None or not (AREA_EXPONENT_BOUNDS[0] <= exponent <= AREA_EXPONENT_BOUNDS[1]):
+        return {"interior_px_required": None, "measured_area_exponent": exponent,
+                "reason": ("effective samples grow as interior^%s across the measured sub-crops, "
+                           "not as the area a fixed field's structures would give. The "
+                           "decorrelation length is still growing with the window, so scaling a "
+                           "larger crop from this curve would extrapolate through exactly the "
+                           "saturation this refusal exists to catch"
+                           % ("%.2f" % exponent if exponent is not None else "an unmeasurable power"))}
+    required_samples = slope / (1.0 / float(target_nats) - intercept)
+    now_samples = float(full["effective_samples"])
+    now_px = float(full["interior_px"])
+    required_px = now_px * math.sqrt(max(required_samples, now_samples) / now_samples)
+    return {
+        "interior_px_required": int(math.ceil(required_px)),
+        "interior_px_now": int(now_px),
+        "effective_samples_required": float(required_samples),
+        "effective_samples_now": now_samples,
+        "measured_area_exponent": exponent,
+        "target_nats": float(target_nats),
+        "extrapolated_transfer_entropy_nats": ceiling,
+        "basis": ("E_required = slope / (1/target - intercept) from the reported attenuation fit; "
+                  "interior scaled as sqrt(E) because a fixed field's independent structures grow "
+                  "with area"),
+    }
+
+
+def frames_for_resolution(*, n_frames: int, lag: int, theiler: int, n_tests: int,
+                          alpha: float = 0.05,
+                          correction: str = "benjamini_yekutieli") -> Dict[str, Any]:
+    """Whether the record is long enough to *resolve* the corrected level, and what would be.
+
+    **The trap.** ``_shift_null`` draws its shifts with replacement from `admissible_shifts`, so
+    asking for 4,999 surrogates always yields 4,999 numbers and a nominal p-value floor of
+    1/5000 -- whether or not the record contains 4,999 distinct admissible shifts. The exact
+    test's reference set is the admissible shifts themselves, and it has ``D`` members. Its
+    smallest attainable p-value is therefore ``1 / (1 + D)`` no matter how many draws are taken;
+    beyond ``D``, extra surrogates buy resampling precision and no resolution at all.
+
+    So this compares ``1 / (1 + D)`` -- not ``1 / (1 + n_surrogates)`` -- against the level the
+    declared family requires, and when the record is short it names the frame count that would
+    supply enough distinct shifts. That is the one deficit only more data can close: no crop and
+    no re-declared family repairs a record that has too few alignments to shuffle.
+    """
+    from src.analysis_engine.cross_scale import admissible_shifts
+
+    rank = detection_rank(n_tests=n_tests, n_surrogates=max(2, int(n_frames)),
+                          alpha=alpha, correction=correction)
+    required_p = float(rank["required_raw_p"])
+    if int(n_frames) < 3:
+        raise InvalidParameterError("n_frames", n_frames,
+                                    "a record of at least three frames")
+    try:
+        distinct = int(admissible_shifts(int(n_frames), int(lag), int(theiler)).size)
+    except Exception as exc:                       # CrossScaleError: no admissible shift at all
+        distinct = 0
+        detail = str(exc)
+    else:
+        detail = None
+    attainable = 1.0 / (1.0 + distinct) if distinct > 0 else 1.0
+    # The smallest D whose exact floor clears the required level, then the shortest record that
+    # supplies it. `admissible_shifts` excludes two circular windows, so the relation between
+    # frames and distinct shifts is not a formula worth guessing -- it is searched.
+    needed_distinct = int(math.ceil(1.0 / required_p)) - 1
+    frames_required = None
+    if distinct < needed_distinct:
+        probe = max(int(n_frames), needed_distinct + 1)
+        for candidate in range(probe, probe + 8 * max(1, int(theiler)) + 16):
+            try:
+                if int(admissible_shifts(candidate, int(lag), int(theiler)).size) \
+                        >= needed_distinct:
+                    frames_required = candidate
+                    break
+            except Exception:
+                continue
+    return {
+        "n_frames": int(n_frames),
+        "lag": int(lag),
+        "theiler": int(theiler),
+        "distinct_admissible_shifts": distinct,
+        "attainable_exact_p": attainable,
+        "required_raw_p": required_p,
+        "resolves_corrected_level": distinct >= needed_distinct,
+        "distinct_shifts_required": needed_distinct,
+        "frames_required": frames_required,
+        "reason": None if distinct >= needed_distinct else (
+            "a %d-frame record leaves %d distinct admissible shifts once the tested and "
+            "simultaneous alignments are excluded, so the exact test cannot resolve below "
+            "p=%.4g however many surrogates are drawn, and the declared family needs %.4g. "
+            "%s%s" % (int(n_frames), distinct, attainable, required_p,
+                      "About %d frames would supply the %d distinct shifts required. "
+                      % (frames_required, needed_distinct) if frames_required else
+                      "No frame count within the searched range supplies them. ",
+                      detail or "")),
+    }
+
+
+def family_for_effect(null_nats: Any, *, measured_nats: float, alpha: float = 0.05,
+                      correction: str = "benjamini_yekutieli",
+                      n_tests: int) -> Dict[str, Any]:
+    """The largest declared family in which the measured effect would have cleared.
+
+    Reported, and **inadmissible**. Shrinking a preregistered family after seeing the data is the
+    canonical way to manufacture a finding, and this module will not present it as a fix. It is
+    here because a reviewer asking "how close was the design?" deserves the number, and because a
+    deficit that no achievable family closes is a stronger statement than one that does.
+    """
+    if not isinstance(measured_nats, (int, float)) or isinstance(measured_nats, bool):
+        raise InvalidParameterError("measured_nats", measured_nats,
+                                    "a transfer entropy in nats")
+    largest = None
+    for candidate in range(int(n_tests), 0, -1):
+        effect = minimum_detectable_effect(null_nats, n_tests=candidate, alpha=alpha,
+                                           correction=correction)
+        threshold = effect["minimum_detectable_effect_nats"]
+        if threshold is not None and float(measured_nats) > threshold:
+            largest = candidate
+            break
+    return {
+        "n_tests_declared": int(n_tests),
+        "largest_family_that_would_detect": largest,
+        "admissible_after_seeing_data": False,
+        "reason": ("reported for review only. Reducing a preregistered family after the data are "
+                   "in is not a remedy, it is how a null result is converted into a finding; the "
+                   "declared 36 tests stand." if largest is not None else
+                   "no family down to a single test would have detected this effect against this "
+                   "ensemble, so the design's reach is not what limited it"),
+    }
+
+
+def spatial_power_refusal(curve: Mapping[str, Any], *, null_nats: Any, n_tests: int,
+                          n_frames: int, theiler: int, alpha: float = 0.05,
+                          correction: str = "benjamini_yekutieli") -> Dict[str, Any]:
+    """The single record the gate consults before it is allowed to call an absence a result.
+
+    Combines the four derived quantities into one verdict, and -- this is the whole point of step
+    5 -- when the verdict is ``INVALID`` it names the deficit in the units of the thing that
+    caused it and states which of ``REMEDY_AXES`` would close it. No constant appears in any
+    refusal this returns.
+
+    ``ADEQUATE`` here does **not** mean the study found something. It means an absence measured on
+    this crop is a statement about the atmosphere rather than about the instrument, and may
+    therefore be recorded as ``FAIL``.
+    """
+    effect = minimum_detectable_effect(null_nats, n_tests=n_tests, alpha=alpha,
+                                       correction=correction)
+    resolution = frames_for_resolution(n_frames=n_frames, lag=int(curve["lag"]),
+                                       theiler=theiler, n_tests=n_tests, alpha=alpha,
+                                       correction=correction)
+    full = max(curve["curve"], key=lambda row: row["interior_px"])
+    measured = float(full["transfer_entropy_nats"])
+    record: Dict[str, Any] = {
+        "measured_transfer_entropy_nats": measured,
+        "minimum_detectable_effect": effect,
+        "resolution": resolution,
+        "remedy_axes": list(REMEDY_AXES),
+    }
+
+    # A record too short to resolve the corrected level is decided first: the threshold in nats
+    # is not the binding constraint when the p-value floor the record can reach is.
+    if not resolution["resolves_corrected_level"]:
+        record.update({
+            "verdict": "INVALID",
+            "deficit": "resolution",
+            "reason": ("the declared family cannot be resolved by this record: %s"
+                       % resolution["reason"]),
+            "remedies": [{
+                "axis": "frame_count",
+                "current": int(n_frames),
+                "required": resolution["frames_required"],
+                "unit": "frames",
+                "admissible_after_seeing_data": True,
+                "note": ("a longer record is the only fix; neither a larger crop nor a smaller "
+                         "family adds distinct alignments to shuffle"),
+            }],
+        })
+        return record
+
+    threshold = effect["minimum_detectable_effect_nats"]
+    if threshold is None:
+        record.update({
+            "verdict": "INVALID", "deficit": "detection",
+            "reason": str(effect.get("reason", "")),
+            "remedies": [{
+                "axis": "frame_count", "current": int(n_frames), "required": None,
+                "unit": "frames", "admissible_after_seeing_data": True,
+                "note": ("more surrogates, which a longer record makes meaningful, would give "
+                         "the design a rejection region it currently does not have"),
+            }],
+        })
+        return record
+
+    verdict = power_verdict(curve, detection_threshold_nats=threshold)
+    record["power_verdict"] = verdict
+    record["detection_threshold_nats"] = threshold
+    if verdict["verdict"] == "ADEQUATE":
+        record.update({"verdict": "ADEQUATE", "deficit": None, "remedies": [],
+                       "reason": verdict["reason"]})
+        return record
+
+    crop = crop_for_effect(curve, target_nats=threshold)
+    family = family_for_effect(null_nats, measured_nats=measured, alpha=alpha,
+                               correction=correction, n_tests=n_tests)
+    record.update({
+        "verdict": "INVALID",
+        "deficit": "attenuation",
+        "reason": verdict["reason"],
+        "crop_requirement": crop,
+        "family_requirement": family,
+        "remedies": [
+            {"axis": "crop_size",
+             "current": int(full["interior_px"]),
+             "required": crop["interior_px_required"],
+             "unit": "valid interior px per side",
+             "admissible_after_seeing_data": True,
+             "note": (crop.get("reason") or
+                      ("this is the crop at which the measured attenuation reaches the detection "
+                       "threshold. Re-running on it supersedes the invalid run rather than "
+                       "repeating it: the invalid run's statistics are discarded, not pooled")),
+             },
+            {"axis": "scale_count",
+             "current": int(n_tests),
+             "required": family["largest_family_that_would_detect"],
+             "unit": "declared tests",
+             "admissible_after_seeing_data": False,
+             "note": family["reason"]},
+        ],
+    })
+    return record
+
+
 __all__ = [
+    "spatial_power_refusal",
+    "family_for_effect",
+    "frames_for_resolution",
+    "crop_for_effect",
+    "REMEDY_AXES",
+    "AREA_EXPONENT_BOUNDS",
+    "AREA_EXPONENT",
     "AXIS_NAMES",
     "DECORRELATION_THRESHOLD",
     "DETECTION_PROCEDURES",

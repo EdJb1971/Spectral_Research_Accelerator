@@ -7753,3 +7753,80 @@ draws all fell above the interval's upper limit; at rank 10, coverage was 3 in 2
 The full backend suite has **not** been rerun since these additions, so 3106 remains the last
 measured full-suite figure. No network was used. The defect ledger is unchanged at D1-D84 with
 D43 and D84 open.
+
+## T4C.5i step 5 -- refusing on the derived quantity, and defect D85 (2026-09-01, `ed-dev`)
+
+Step 5 replaces the crop-size constant in the refusal path with the derived quantities from steps
+1-4. `spatial_power_refusal` returns one verdict and, when it is `INVALID`, names the deficit in
+the units of what caused it plus which of `REMEDY_AXES` -- crop size, frame count, scale count --
+would close it. `crop_for_effect` inverts the attenuation fit already reported rather than adding a
+second model, and refuses to name a crop where a number would be an invention: a target above the
+unlimited-crop ceiling, a saturated largest sub-crop, or an area exponent showing the decorrelation
+length still growing with the window. `family_for_effect` reports the family that would have
+detected the effect and marks it `admissible_after_seeing_data: False`.
+
+**Defect D85, found while wiring this and confirmed against the checked-in preregistration.**
+`_shift_null` draws its circular shifts with replacement from `admissible_shifts`, so requesting
+4,999 surrogates always returns 4,999 numbers. The exact test's reference set is the distinct
+admissible shifts the record contains, and its attainable p-value is bounded by `1 / (1 + D)`
+however many draws are taken. Measured on the frozen campaign's own split:
+
+```
+$ .venv/Scripts/python.exe -c "... frames_for_resolution ..."
+train 4382 frames, theiler 24: 4329 distinct shifts, attainable p 2.309e-4, required 3.327e-4, resolves
+test  2914 frames, theiler 24: 2861 distinct shifts, attainable p 3.494e-4, required 3.327e-4, does not
+test  2914 frames, theiler  1: 2912 distinct shifts, attainable p 3.433e-4, required 3.327e-4, does not
+      -> about 3007 frames would supply the 3005 distinct shifts required
+```
+
+Confirmed independently through the repository's own screening machinery rather than this module's
+arithmetic, by feeding the best attainable p-value of each partition into `screen` over the
+declared 36-test family:
+
+```
+train theiler 1  D 4380 p 0.00022826 q 0.034304 sig True
+train theiler 24 D 4329 p 0.00023095 q 0.034708 sig True
+test  theiler 1  D 2912 p 0.00034329 q 0.051591 sig False
+test  theiler 24 D 2861 p 0.00034941 q 0.052510 sig False
+```
+
+**The frozen T4C.6 campaign cannot replicate on its confirmatory half at any effect size**, and
+`check_power` reports it as adequately powered because it counts the 4,999 requested draws against
+the 3,005 required rather than counting the reference set. The margin is small -- q = 0.0516
+against alpha = 0.05 -- and on the wrong side. The campaign file is left frozen and unedited;
+re-freezing it is the recorded supersession specified as T4C.5i step 8, not a repair, and D85 is
+recorded as open.
+
+**Wiring.** `review_gate_campaign` reports the audit as `scientific_design.surrogate_resolution`
+with a `resolvable` flag; `preflight_gate_campaign` refuses on it before any transfer; and
+`preflight_cached_gate` refuses on it for the `real_era5_gate` role. The order is deliberate: a
+frozen campaign that cannot resolve its own family must stay loadable and reviewable, or the defect
+could not be recorded against it. The audit uses the most favourable Theiler window of one frame,
+so a partition that fails it cannot be rescued by any window, which is what makes refusing before
+acquisition safe. The `test_gate_campaign.py` orchestration fixture was lengthened from 120 to 200
+frames -- its 47-frame confirmatory partition genuinely could not resolve its own two-test family,
+and a fixture is not evidence.
+
+**Step 5 is not finished.** The attenuation half of the adjudication -- converting a FAIL into an
+INVALID inside `run_cached_gate` -- needs the sub-cropped attenuation curve, which means
+re-decomposing the train partition at six crop sizes. That is the same computation step 7's receipt
+fields need, and the two are built together rather than twice.
+
+Commands and results:
+
+```
+$ .venv/Scripts/python.exe -m pytest src/tests/test_spatial_power.py -q
+58 passed, 1 warning in 4.82s
+
+$ .venv/Scripts/python.exe -m pytest src/tests/test_spatial_power.py src/tests/test_cross_scale.py \
+    src/tests/test_scale_signature.py src/tests/test_statistics.py src/tests/test_gate_campaign.py \
+    src/tests/test_gate_run.py src/tests/test_preregistration.py -q
+215 passed, 1 warning in 50.73s
+
+$ .venv/Scripts/python.exe -m pytest src/tests/test_lag_policy_registry.py -q
+21 passed, 1 warning in 4.79s
+```
+
+No network was used and no data was acquired. The full backend suite has **not** been rerun since
+these additions, so **3106** remains the last measured full-suite figure. The defect ledger moves
+to D1-D85 with three open entries: D43, D84 and now D85.

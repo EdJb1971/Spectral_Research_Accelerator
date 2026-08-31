@@ -25,7 +25,7 @@ from src.data_layer.zarr_source import CropSpec
 
 def _request(**overrides):
     values = dict(
-        variables=("t",), date_start="2020-01-01", date_end="2020-01-30",
+        variables=("t",), date_start="2020-01-01", date_end="2020-02-19",
         hours_utc=(0, 6, 12, 18), lat_min=-60.0, lat_max=-20.0,
         lon_min=140.0, lon_max=180.0, pressure_levels=(850,),
         grid_degrees=0.25, n_levels_analysis=2)
@@ -38,7 +38,7 @@ def _campaign(**overrides):
     canary = overrides.pop("canary_acquisition", _request(date_end="2020-01-02"))
     protocol = GateProtocol(
         study_id="nz-era5-cross-scale-v1", n_scales=2, lags=(1,),
-        expected_frames=120, cadence_seconds=21600.0, train_ratio=0.6,
+        expected_frames=200, cadence_seconds=21600.0, train_ratio=0.6,
         embargo_frames=1, estimator="transfer_entropy", measure="energy_density",
         bins=2, n_surrogates=59, alpha=0.05,
         correction="benjamini_yekutieli", seed=4406)
@@ -106,6 +106,20 @@ def test_checked_in_real_campaign_is_an_authenticated_preregistration(capsys):
     assert design["hypothesis_family_size"] == 36
     assert design["power"]["surrogates_required"] == 3005
     assert design["power"]["can_reject_after_correction"] is True
+
+    # Defect D85, pinned here so the frozen campaign carries its own refutation. The two
+    # adjacent numbers count different things: `power` counts the 4,999 surrogates *requested*
+    # and is satisfied, while the exact test's reference set is the distinct admissible circular
+    # shifts the record contains. The confirmatory partition holds 2,912 of the 3,005 needed, so
+    # no draw from it can reach the corrected level. The campaign is left frozen and unedited;
+    # re-freezing it is a recorded supersession, not a repair.
+    resolution = design["surrogate_resolution"]
+    assert design["resolvable"] is False
+    assert resolution["train"]["resolves_corrected_level"] is True
+    assert resolution["test"]["resolves_corrected_level"] is False
+    assert resolution["test"]["distinct_admissible_shifts"] == 2912
+    assert resolution["test"]["distinct_shifts_required"] == 3005
+    assert resolution["test"]["frames_required"] == 3007
     assert min(design["primary_analysis"]["lags_frames"]) == max(
         item["floor_frames"] for item in
         design["physical_support_floor"]["floors"])
@@ -148,7 +162,7 @@ def test_campaign_refuses_bad_geometry_or_physical_lags_before_transfer():
     full = _request()
     protocol = GateProtocol(
         study_id="nz-era5-cross-scale-v1", n_scales=2, lags=(1,),
-        expected_frames=120, cadence_seconds=21600.0, train_ratio=0.6,
+        expected_frames=200, cadence_seconds=21600.0, train_ratio=0.6,
         embargo_frames=1, estimator="transfer_entropy", measure="energy_density",
         bins=2, n_surrogates=59, alpha=0.05,
         correction="benjamini_yekutieli", seed=4406)
@@ -222,3 +236,23 @@ def test_cli_freeze_and_preflight_are_machine_readable_and_zero_network(
     report = json.loads(capsys.readouterr().out)
     assert report["status"] == "BLOCKED" and report["network_used"] is False
     assert len(report["blockers"]) == 3
+
+
+def test_acquisition_refuses_the_unresolvable_frozen_campaign(tmp_path):
+    """D85 blocks acquisition, not review: the campaign stays readable, the 2.5 GB is not spent."""
+    path = (Path(__file__).parents[2] / "campaigns"
+            / "t4c6_nz_era5_temperature_850_v1.json")
+    campaign = load_gate_campaign(path)
+    with pytest.raises(InvalidParameterError, match="resolve the declared family"):
+        preflight_gate_campaign(
+            campaign, full_download_dir=tmp_path / "full",
+            canary_download_dir=tmp_path / "canary", cache_dir=tmp_path / "cache",
+            independent_cache_dir=tmp_path / "independent")
+
+
+def test_a_resolvable_campaign_is_not_blocked_by_the_new_audit(tmp_path, monkeypatch):
+    """The audit must refuse the short record and nothing else."""
+    campaign = _campaign()
+    design = review_gate_campaign(campaign)["scientific_design"]
+    assert design["resolvable"] is True
+    assert design["surrogate_resolution"]["adequate"] is True
