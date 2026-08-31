@@ -7589,3 +7589,66 @@ Four new routes bring the served surface from 132 to 136. The inventory is 2,847
 The full backend suite has not been rerun since TG17.7, so 3,106 remains the last measured full
 figure. No live archive is acquired, no scientific statistic is run, no finding is recorded and
 no evidence is admitted by TG17.9.
+
+---
+
+## TG17.10 Flagship qualification and no-glue release gate — APPARATUS GATE DELIVERED, RELEASE WITHHELD (2026-09-01, `ed-dev`)
+
+The frozen matrix is three declared durations crossed with the two comparison modes, derived from
+the single flagship recipe rather than a second configuration. Each cell keeps explicit UTC
+boundaries, the complete-family correction and `duration_selected_before_results`, and binds the
+order-book observation by the content digest of its known-answer record. `REFUSED` is a distinct
+cell and gate state from `FAIL`, and a refused cell opens no run.
+
+**The matrix does not go green, and that is the measurement.** `order_book.bespoke_record` declares
+that it cannot carry `scale_partner_reassignment`, so the four-domain quartet cannot be qualified
+in scale/shape mode at all. Three cells are refused before execution with their reason recorded,
+rendered and asserted. The Composer answers the same way in the browser rather than switching mode
+silently and failing later at execution.
+
+Two gates pass (`offline_matrix` is not one of them; it is `REFUSED`). `browser_no_glue` and
+`synthetic_fifth_adapter` are recorded `NOT_RUN` because a backend rehearsal must not award itself
+a gate measured by a rendered browser or a source-edit audit, even though both of those pass.
+`calendar_calibration` and `live_sources` are `NOT_RUN`; `scale_shape_calibration` is
+`NOT_IMPLEMENTED`. `scientist_actions` is `NOT_MEASURED` throughout. The verdict is
+`NOT_RELEASEABLE` and `verify_qualification_record` refuses a `RELEASEABLE` verdict carrying any
+non-passing gate.
+
+**D83.** TG17.10's first attempt widened the *framework default* `admissible_nulls` in four places
+instead of declaring the null per domain, silently overruling the order-book adapter's documented
+refusal and pre-admitting the null for any future adapter. Every targeted suite, the production
+build and the full 35-test browser suite were green. Only `test_experiment_family.py`'s pinned
+per-domain declaration objected, in a full-suite run. Reverted; the three admitting domains
+declare it individually with reasons.
+
+**D82.** A held-out confirmation partition is spent exactly once and the frozen flagship ships one
+default name, so any plan composed in the browser was executable at most once per deployment and
+the refusal told the scientist to declare a partition the form could not declare. The analysis
+step now carries an explicit *Held-out confirmation partition* control.
+
+```text
+> .\.venv\Scripts\python.exe -m pytest src/tests -q -p no:randomly
+3240 passed, 4 skipped, 1 xfailed in 2380.86s (0:39:40)
+
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_experiment_qualification.py ^
+    src/tests/test_experiment_family.py -q
+77 passed in 431.39s
+
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_documentation.py ^
+    src/tests/test_frontend_contract.py -q
+181 passed in 274.25s
+
+> cd frontend && npx playwright test          (after rm -rf .e2e-state)
+35 passed (2.7m)                  (real API, real frontend, Chromium; 2 are TG17.10)
+
+> cd frontend && npm run build
+1,409 modules transformed; production bundle clean
+
+> git diff --check
+clean
+```
+
+The clean **3,240** replaces TG17.7's 3,106 as the last measured full-suite figure. Two new routes
+bring the served surface from 136 to 138; the inventory is 2,867 test functions. No live archive is
+acquired, no scientific statistic is run, no finding is recorded, no evidence is admitted and
+nothing is released by TG17.10. Five of the seven registered gates remain unpassed.

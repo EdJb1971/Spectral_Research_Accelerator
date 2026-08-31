@@ -4360,7 +4360,7 @@ Chromium suite is 33/33, including three TG17.9 rendered tests; the production b
 full-suite figure. No live archive is acquired, no statistic runs, no finding is recorded and no
 evidence is admitted by this slice.
 
-**TG17.10 Flagship qualification and no-glue release gate — PLANNED.** Run the frozen four-domain
+**TG17.10 Flagship qualification and no-glue release gate — APPARATUS GATE DELIVERED, RELEASE WITHHELD (2026-08-31, `ed-dev`).** Run the frozen four-domain
 known-answer family for a week, three months and six months in both comparison modes, then record
 the live-source tail separately with exact dates, archive coverage and any operational refusal.
 Qualify the entire browser path, public API path and exported replay against the same manifests.
@@ -4379,6 +4379,98 @@ time to understand why a requested analysis is unavailable.
   impossible to confuse with acquisition or experiment completion.
 * `architecture.md` describes only the G17 capabilities actually delivered; this roadmap records
   live checks that were not run or did not pass instead of polishing them into availability.
+
+**Delivered.** `src/core/experiment_qualification.py` is a release gate rather than a scientific
+worker. It derives six frozen cells — `week`, `three_months` and `six_months` crossed with the two
+comparison modes — from the single flagship recipe, so no second scientific configuration exists.
+Each cell keeps explicit UTC boundaries, the complete-family correction and an explicit
+`duration_selected_before_results` marker, and binds the order-book observation by the content
+digest of its known-answer record rather than by a filename. Each mode carries its own
+relationship, null family and claim language: `co_occurrence` under
+`independent_native_clock_shift`, `shape_recurrence` under `scale_partner_reassignment`.
+
+`execute_offline_qualification` preflights every cell and executes only the admissible ones. A
+cell passes only when the preflight refuses nothing, the run completes, one manifest digest
+appears in the preflight, run identity, exported bundle and replayed receipt, integrity verifies,
+results are unmeasured with no artefacts, and every evidence category through `claim_promotion` is
+`ABSENT` with no automatic action. Repeating the qualification resumes the identical runs.
+
+**The headline result is a refusal, not a green matrix.** Three of the six cells come back
+`REFUSED` before anything executes. `order_book.bespoke_record` declares that it cannot carry
+`scale_partner_reassignment` — that null alters no record, so admitting it would claim the domain
+has a native duration worth comparing shapes across, and a depositor-supplied record's native
+scale is whatever the depositor wrote down. **The frozen four-domain quartet cannot be qualified
+in scale/shape mode at all.** The ledger records that with its reason instead of narrowing the
+quartet, and the browser answers the same way: asking for scale/shape in the Composer produces a
+written explanation and leaves the plan calendar-aligned, rather than switching silently and
+failing later at execution. `REFUSED` is kept distinct from `FAIL` in the record and on screen —
+both block release, but nothing in the apparatus broke. A refused cell opens no run, because a run
+identity for an experiment that was never conducted cannot later be told apart from an unexecuted
+one.
+
+Recovery is measured separately from the existing broad-outage rehearsal.
+`fixture_single_remote_failure` times out exactly one remote-shaped acquisition and completes the
+other three; the run is then reloaded through a fresh `RunStore`, which is the real process
+boundary. The retry must name only the failed component, that component must show two attempts
+against one for each other, the run identity must be unchanged, and the recovered run must still
+export a bundle that replays as `VERIFIED`.
+
+**What is deliberately not delivered.** The ledger registers seven gates and passes two. It
+records `browser_no_glue` and `synthetic_fifth_adapter` as `NOT_RUN` because a backend rehearsal
+must not award a gate only a rendered browser test and a source-edit audit can measure;
+`calendar_calibration` as `NOT_RUN`; `scale_shape_calibration` as `NOT_IMPLEMENTED`, because no
+registered scale/shape mining calibration produces a scientific statistic at all; and
+`live_sources` as `NOT_RUN`, because network stays opt-in and archive coverage with its
+operational refusals needs a separately dated live record. `scientist_actions` reports
+`NOT_MEASURED` for the action count, adapter-specific framework edits and refusal-explanation
+time rather than inventing them. The verdict is `NOT_RELEASEABLE` and cannot be otherwise while
+any gate is unpassed: `verify_qualification_record` re-derives the record digest *and* refuses a
+`RELEASEABLE` verdict carrying a non-passing gate.
+
+Two of those gates are measured, just not here. The no-glue browser test now passes in Chromium,
+and `test_adapter_registry.py`'s synthetic fifth adapter — TG17.3's acceptance test — passes with
+its 17 siblings. Both gates nevertheless read `NOT_RUN` in the ledger, because a deterministic
+backend rehearsal cannot observe a rendered browser or a source-edit audit and must not award
+itself a gate on someone else's evidence. What stands between this slice and a completed TG17.10
+is therefore: a trustworthy channel that feeds those two external results into the record, the
+calendar calibration run, a scale/shape mining calibration that does not yet exist at all, and
+the dated live-source tail.
+
+**D83, caught by the full suite rather than by this slice.** Making the scale/shape cells
+admissible in the first place was done by widening the *framework default* `admissible_nulls` in
+four places — the `DomainExperimentAdapter` dataclass and the three adapter builders. Every
+targeted suite, the production build and the entire browser suite passed. What that change did was
+answer, for every adapter author including one who has not written their adapter yet, a question
+only an adapter author can answer; and it silently overruled the order-book adapter's own
+documented refusal. The only objection came from `test_experiment_family.py`'s pinned per-domain
+declaration, in an 11-hour full-suite run — which is the argument for running it. The defaults are
+reverted, the three domains that do admit the null declare it individually with stated reasons,
+and the matrix now reports the refusal the declarations actually imply. This is worth recording
+because it is the programme's central failure mode in miniature: a framework default quietly
+making a scientific choice, with every fast check green.
+
+**D82, found by the clean-browser gate.** The acceptance test composed a four-domain scale/shape
+plan through visible controls and was refused at execution. A held-out confirmation partition is
+confirmatory exactly once; the frozen flagship ships with one default partition name; the first
+run to open it spends it. Every later plan derived in the Composer inherited that spent name, was
+correctly refused, and was told to declare a new partition — through a form with no control for
+declaring one. A browser-composed plan was therefore executable at most once per deployment, and
+the only escape was hand-editing a manifest, which is exactly what the no-glue promise forbids.
+The analysis step now carries an explicit *Held-out confirmation partition* control. Two smaller
+findings came from the same test: the observation disclosure panels were `<details>` groups with
+no accessible name (the TG17.8 defect recurring in a second view, fixed with `aria-label`), and
+the acceptance test's own `addInitScript` cleared `localStorage` on *every* navigation, so the
+refresh it called a resume was really a new browser.
+
+**Evidence.** `test_experiment_qualification.py` has 16 test functions (21 runs with
+parametrisation); with `test_experiment_family.py` that is 77 passing tests. The complete Chromium
+suite is 35/35 from a cleaned `.e2e-state`, including the two TG17.10 browser tests; the production
+build transforms 1,409 modules; two new routes bring 136 to 138. The full backend suite was rerun
+twice for this slice: **3,238 passed with 1 failed** before D83 was fixed, and **3,240 passed, 4
+skipped, 1 xfailed, 0 failed in 39m 40s** after. That clean 3,240 replaces TG17.7's 3,106 as the
+last measured full-suite figure. No archive is acquired, no statistic runs, no finding is
+recorded, no evidence is admitted and nothing is released by this slice.
+
 
 **TG8.3 The domain ledger — finally measurable.** With five domains across three acquisition
 shapes there is at last a trend to read. *If onboarding cost is not falling, the abstraction is

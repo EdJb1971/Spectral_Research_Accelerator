@@ -2514,6 +2514,53 @@ export interface ExperimentReceiptReplay {
   bundle: ExperimentReplayBundle;
 }
 
+// -------------------------------------------------- TG17.10 release qualification
+
+export interface ExperimentQualificationGate {
+  gate_id: string;
+  title: string;
+  /** `REFUSED` is not `FAIL`. Nothing in the apparatus broke: a domain's declared contract
+   *  forbids the plan. Both block release, and collapsing them would hide which one happened. */
+  status: 'PASS' | 'FAIL' | 'REFUSED' | 'NOT_RUN' | 'NOT_IMPLEMENTED';
+  blocking: boolean;
+  detail: string;
+}
+
+export interface ExperimentQualificationCell {
+  cell_id: string;
+  duration: 'week' | 'three_months' | 'six_months';
+  mode: 'calendar_aligned' | 'scale_shape_aligned';
+  start_utc: string;
+  end_utc: string;
+  manifest_sha256: string;
+  family_correction: string;
+  record_kind: string;
+  status: 'PASS' | 'FAIL' | 'REFUSED' | 'NOT_RUN';
+  /** Absent on a refused cell: a plan the declarations refuse opens no run. */
+  run_id?: string;
+  bundle_sha256?: string;
+  preflight_status?: string;
+  checks?: Record<string, boolean>;
+  refusals?: { domain?: string; reason: string }[];
+}
+
+export interface ExperimentQualificationRecord {
+  schema: string;
+  qualification_sha256: string;
+  verdict: 'RELEASEABLE' | 'NOT_RELEASEABLE';
+  record_kind: string;
+  matrix: ExperimentQualificationCell[];
+  gates: ExperimentQualificationGate[];
+  recovery?: {
+    status: 'PASS' | 'FAIL'; run_id: string; failed_component: string;
+    attempts_before_restart: Record<string, number>;
+    attempts_after_retry: Record<string, number>;
+    checks: Record<string, boolean>;
+  };
+  scientist_actions: Record<string, string>;
+  claim_boundary: string;
+}
+
 // ------------------------------------------------------- TG17.7 the guided path
 
 /** One step of the workflow, described by the server. The browser renders these; it holds no

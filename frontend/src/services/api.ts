@@ -1119,6 +1119,16 @@ export const apiService = {
     return response.text();
   },
 
+  async experimentQualificationPlan(): Promise<types.ExperimentQualificationRecord> {
+    return handleResponse<types.ExperimentQualificationRecord>(
+      await fetch(`${BASE_URL}/experiment-qualification`, { method: 'GET' }));
+  },
+
+  async rehearseExperimentQualification(): Promise<types.ExperimentQualificationRecord> {
+    return handleResponse<types.ExperimentQualificationRecord>(
+      await fetch(`${BASE_URL}/experiment-qualification/rehearse`, { method: 'POST' }));
+  },
+
   // ---------------------------------------------------- TG17.7 the guided path
 
   async composerPath(): Promise<types.ComposerPathContract> {

@@ -95,6 +95,39 @@ def transient_failure_suite(run: Any = None) -> Dict[str, Any]:
     return suite
 
 
+def single_remote_failure_suite(run: Any = None) -> Dict[str, Any]:
+    """Time out exactly one remote-shaped component once; complete everything else.
+
+    The all-components transient suite rehearses a broad outage.  TG17.10 additionally needs
+    the more discriminating recovery invariant: after one archive fails, a process restart must
+    not request the three acquisitions that already completed.  TESS is the stable target in
+    the frozen quartet; a non-flagship manifest falls back to its first acquisition component.
+    """
+    seen: Set[str] = set()
+    target = "tess_lightcurve"
+
+    def already_attempted(request: StepRequest) -> bool:
+        if run is not None:
+            return run.attempts(request.stage, request.component) > 0
+        return request.step_sha256 in seen
+
+    def acquire(request: StepRequest) -> ComponentOutcome:
+        should_fail = request.component == target
+        if should_fail and not already_attempted(request):
+            seen.add(request.step_sha256)
+            return ComponentOutcome(
+                status="TIMED_OUT",
+                detail="rehearsal: the %s remote request exceeded its deadline" % request.component,
+                remediation="Retry this run. Only this failed component is requested again; "
+                            "completed acquisitions remain bound to their content addresses.",
+                network_used=False)
+        return _complete(request)
+
+    suite = {stage: _complete for stage in WORK_STAGES}
+    suite["ACQUIRING"] = acquire
+    return suite
+
+
 WORKER_SUITES.add("fixture_dry_run", dry_run_suite,
                   description="Completes every stage without acquiring anything, so a frozen plan "
                               "can be rehearsed end to end before a byte is requested.",
@@ -106,6 +139,14 @@ WORKER_SUITES.add("fixture_transient_failure", transient_failure_suite,
                               "exercises it.",
                   capabilities={"acquires": False, "network_used": False, "fixture": True,
                                 "fails_first_attempt": True})
+
+WORKER_SUITES.add("fixture_single_remote_failure", single_remote_failure_suite,
+                  description="Times out the TESS acquisition once while the other three "
+                              "complete, proving restart recovery does not request completed "
+                              "archive components again.",
+                  capabilities={"acquires": False, "network_used": False, "fixture": True,
+                                "fails_first_attempt": True,
+                                "failed_components_per_rehearsal": 1})
 
 
 def build_suite(name: str, run: Any = None) -> Mapping[str, Any]:
@@ -123,4 +164,4 @@ def describe_suites() -> Tuple[Dict[str, Any], ...]:
 
 
 __all__ = ["FIXTURE_DETAIL", "WORKER_SUITES", "build_suite", "describe_suites",
-           "dry_run_suite", "transient_failure_suite"]
+           "dry_run_suite", "single_remote_failure_suite", "transient_failure_suite"]

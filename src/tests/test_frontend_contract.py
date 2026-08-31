@@ -1882,3 +1882,47 @@ def test_tg17_receipt_wire_shapes_cover_export_replay_and_the_generated_contract
     for shape in ("ExperimentReceiptCapabilities", "ExperimentReplayBundle",
                   "ExperimentReceiptExport", "ExperimentReceiptReplay"):
         assert "interface %s" % shape in typescript
+
+
+def test_tg17_qualification_gate_is_reachable_and_never_hides_blockers():
+    view = _read("components", "ExperimentQualification.tsx")
+    app = _read("App.tsx")
+    assert "<ExperimentQualificationPanel" in app
+    assert "record.gates.map" in view
+    assert "record.matrix.map" in view
+    assert "record.verdict" in view
+    assert "Run offline qualification" in view
+    assert "live-source acceptance are different gates" in view
+
+
+def test_mode_switch_changes_relationship_null_and_language_as_one_revision():
+    composer = _read("components", "ExperimentComposer.tsx")
+    assert "const switchMode" in composer
+    assert "mode_relationships?.[mode]" in composer
+    assert "row.modes.includes(mode)" in composer
+    assert "selectedAdapters.every" in composer
+    assert "family: { ...manifest.family, relationships: [relationships[0]] }" in composer
+    assert "method: family.name, parameters: {}" in composer
+    assert "onChange={() => switchMode(mode)}" in composer
+
+
+def test_qualification_wire_shapes_match_the_served_plan(client):
+    plan = client.get("/api/v1/experiment-qualification").json()
+    assert {"schema", "qualification_sha256", "verdict", "record_kind", "matrix", "gates",
+            "scientist_actions", "claim_boundary"} <= set(plan)
+    assert len(plan["matrix"]) == 6
+    assert {"cell_id", "duration", "mode", "start_utc", "end_utc", "manifest_sha256",
+            "family_correction", "record_kind", "status"} <= set(plan["matrix"][0])
+    assert {"gate_id", "title", "status", "blocking", "detail"} <= set(plan["gates"][0])
+    typescript = _read("types", "api.ts")
+    for shape in ("ExperimentQualificationGate", "ExperimentQualificationCell",
+                  "ExperimentQualificationRecord"):
+        assert "interface %s" % shape in typescript
+
+
+def test_qualification_client_uses_only_the_two_public_routes():
+    service = _read("services", "api.ts")
+    assert "experimentQualificationPlan" in service
+    assert "rehearseExperimentQualification" in service
+    assert "`${BASE_URL}/experiment-qualification`" in service
+    assert "`${BASE_URL}/experiment-qualification/rehearse`" in service

@@ -269,12 +269,45 @@ export default function ExperimentComposer({ onSelectStudy, onEvidenceHandoff }:
     finally { setBusy(''); }
   };
 
+  // A held-out confirmation partition is spent exactly once, so a plan edited in the browser
+  // needs its own. Without this control the only composable plan is the flagship default, whose
+  // partition the first run to open it consumes -- and the second scientist would be told to
+  // "declare a new partition" with no way to declare one (D82).
+  const updateHeldOutPartition = (value: string) => {
+    if (!manifest) return;
+    invalidate({ ...manifest, confirmation: { ...manifest.confirmation,
+      held_out_partition: value.trim() || null } });
+  };
+
   const updateNull = (method: string, parameters: Record<string, any>) => {
     if (!manifest) return;
     const cleaned = Object.fromEntries(
       Object.entries(parameters).filter(([, value]) => value !== undefined && value !== ''));
     invalidate({ ...manifest, nulls: manifest.nulls.map((row, index) =>
       index === 0 ? { ...row, method, parameters: cleaned } : row) });
+  };
+
+  const switchMode = (mode: 'calendar_aligned' | 'scale_shape_aligned') => {
+    if (!manifest) return;
+    const relationships = contract?.mode_relationships?.[mode] || [];
+    const selectedAdapters = manifest.observations.map((row) => row.adapter.adapter_id);
+    const family = nullFamilies?.families.find((row) => row.admissible
+      && row.modes.includes(mode)
+      && selectedAdapters.every((adapterId) => row.admitted_by.includes(adapterId)));
+    if (!relationships.length || !family) {
+      setMessage(`The registered contracts do not yet admit a complete ${mode} plan for every selected domain.`);
+      return;
+    }
+    invalidate({ ...manifest, mode,
+      scale_normalization: mode === 'scale_shape_aligned'
+        ? (manifest.scale_normalization || { method: 'native_scale_ratio', reference: 'within_domain' }) : null,
+      family: { ...manifest.family, relationships: [relationships[0]] },
+      nulls: manifest.nulls.map((row, index) => index === 0
+        ? { ...row, method: family.name, parameters: {} } : row),
+      notes: { ...manifest.notes, claim_boundary: mode === 'calendar_aligned'
+        ? 'co-occurrence only'
+        : 'shape recurrence only; no simultaneity, precedence or causality' },
+    });
   };
 
   const showPreregistration = async () => {
@@ -480,9 +513,7 @@ export default function ExperimentComposer({ onSelectStudy, onEvidenceHandoff }:
                 <label key={mode} className="flex gap-2 text-sm text-slate-200 mb-2">
                   <input type="radio" name="composer-mode" checked={manifest.mode === mode}
                     className="focus:outline-none focus:ring-2 focus:ring-teal-400"
-                    onChange={() => invalidate({ ...manifest, mode,
-                      scale_normalization: mode === 'scale_shape_aligned'
-                        ? (manifest.scale_normalization || { method: 'native_scale_ratio', reference: 'within_domain' }) : null })}
+                    onChange={() => switchMode(mode)}
                   /> {mode === 'calendar_aligned' ? 'Calendar-aligned co-occurrence' : 'Scale/shape recurrence'}
                 </label>
               ))}
@@ -567,8 +598,11 @@ export default function ExperimentComposer({ onSelectStudy, onEvidenceHandoff }:
             <p className="text-xs text-slate-500 mb-3">Every control below is rendered from its
               adapter's registered schema. This panel contains no per-domain form: a newly
               registered adapter appears here with its own controls without this view being edited.</p>
+            {/* A `<details>` is exposed as a group whose accessible name is not computed from
+                its `<summary>`, so each panel names itself explicitly (the TG17.8 a11y defect). */}
             {manifest.observations.map((row) => (
-              <details key={row.domain} className="border border-slate-800 rounded-lg p-3 mb-2">
+              <details key={row.domain} aria-label={row.label}
+                       className="border border-slate-800 rounded-lg p-3 mb-2">
                 <summary className="cursor-pointer text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-400">
                   {row.label}
                   <span className="block text-xs text-slate-500">{row.measure} · {row.units} · {row.acquisition.source_id}</span>
@@ -646,6 +680,18 @@ export default function ExperimentComposer({ onSelectStudy, onEvidenceHandoff }:
                 method={manifest.nulls[0]?.method || ''}
                 parameters={manifest.nulls[0]?.parameters || {}} onChange={updateNull} />
             </div>
+          </div>
+          <div>
+            <label htmlFor="composer-heldout" className="text-sm text-slate-200">
+              Held-out confirmation partition
+            </label>
+            <p className="text-xs text-slate-500 mt-1 mb-2">Opened once, by one run. A plan that
+              edits the frozen default must name its own partition here; reusing a spent one is
+              refused rather than quietly re-confirmed.</p>
+            <input id="composer-heldout" type="text" className="w-full max-w-md bg-slate-950 border border-slate-700
+                   rounded px-2 py-1.5 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-teal-400"
+              value={manifest.confirmation.held_out_partition || ''}
+              onChange={(event) => updateHeldOutPartition(event.target.value)} />
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
             <div className="bg-slate-950 rounded p-3"><span className="text-slate-500 block">Family members</span>{declaredFamily ? declaredFamily.family_size.toLocaleString() : 'price it'}</div>

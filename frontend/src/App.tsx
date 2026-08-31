@@ -19,6 +19,7 @@ import ReviewView from './components/ReviewView';
 import DatasetCapabilityProfile from './components/DatasetCapabilityProfile';
 import ExperimentComposer from './components/ExperimentComposer';
 import { ExperimentReceiptPanel } from './components/ExperimentReceipt';
+import { ExperimentQualificationPanel } from './components/ExperimentQualification';
 import { apiService } from './services/api';
 import * as types from './types/api';
 import {
@@ -2253,6 +2254,7 @@ export default function App() {
               </div>
 
               <ExperimentReceiptPanel trustOnly />
+              <ExperimentQualificationPanel />
 
               {health && (
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
