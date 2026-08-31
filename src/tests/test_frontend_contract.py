@@ -1848,3 +1848,37 @@ def test_every_served_comparison_view_has_a_drawing_or_a_declared_fallback():
     view = _views()
     for served in ordered_views():
         assert "case '%s':" % served.view_id in view, served.view_id
+
+
+def test_tg17_receipt_trust_surface_is_reachable_in_composer_and_platform():
+    receipt = _read("components", "ExperimentReceipt.tsx")
+    composer = _read("components", "ExperimentComposer.tsx")
+    app = _read("App.tsx")
+    assert "<ExperimentReceiptPanel runId={receipt?.run_id}" in composer
+    assert "<ExperimentReceiptPanel trustOnly" in app
+    assert "setActiveTab('evidence')" in app
+    for key in ("operations", "adapters", "refusals", "receipt_fields", "lineage",
+                "claim_boundary"):
+        assert "capabilities.%s" % key in receipt or key == "adapters", key
+
+
+def test_tg17_receipt_import_is_read_only_and_shows_every_evidence_absence():
+    receipt = _read("components", "ExperimentReceipt.tsx")
+    assert "replayExperimentReceipt" in receipt
+    assert "openEvidence" not in receipt
+    assert "automatic_actions" not in receipt  # there is deliberately no renderer that executes them
+    assert "evidence_handoff.categories.map" in receipt
+    assert "Open a separate evidence-study draft" in receipt
+
+
+def test_tg17_receipt_wire_shapes_cover_export_replay_and_the_generated_contract(client):
+    capabilities = client.get("/api/v1/experiment-receipts").json()
+    assert {"schema", "software_version", "operations", "adapters", "refusals",
+            "receipt_fields", "lineage", "claim_boundary"} <= set(capabilities)
+    assert capabilities["operations"] and capabilities["adapters"]
+    assert all({"name", "label", "meaning"} <= set(row)
+               for row in capabilities["receipt_fields"])
+    typescript = _read("types", "api.ts")
+    for shape in ("ExperimentReceiptCapabilities", "ExperimentReplayBundle",
+                  "ExperimentReceiptExport", "ExperimentReceiptReplay"):
+        assert "interface %s" % shape in typescript

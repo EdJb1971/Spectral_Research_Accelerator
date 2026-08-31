@@ -125,6 +125,7 @@ from src.api.reviews import router as reviews_router  # noqa: E402
 from src.api.experiment_composer import router as experiment_composer_router  # noqa: E402
 from src.api.experiment_runs import router as experiment_runs_router  # noqa: E402
 from src.api.comparison_views import router as comparison_views_router  # noqa: E402
+from src.api.experiment_receipts import router as experiment_receipts_router  # noqa: E402
 
 app.include_router(findings_router)
 # TG8.4. Mounted here for the same reason the findings router is: registration must not depend
@@ -172,6 +173,7 @@ app.include_router(experiment_runs_router)
 # that manifest's address, its run receipt. No route here opens a run, acquires a value or admits
 # evidence; a view that would put two domains' native magnitudes on one axis refuses instead.
 app.include_router(comparison_views_router)
+app.include_router(experiment_receipts_router)
 
 
 class HealthResponse(BaseModel):

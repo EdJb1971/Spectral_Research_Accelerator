@@ -55,7 +55,7 @@ skill, show the counterexamples, or report that no robust relationship survives.
 ## 1. Honest Technical Status
 
 Verified against the code on 2026-08-29. Every claim here is backed by captured output in
-`VERIFICATION.md`; `architecture.md` Section 7 holds the full defect ledger (D1-D80, of which **78 fixed, 1 partial (D18), 1 open (D43)**).
+`VERIFICATION.md`; `architecture.md` Section 7 holds the full defect ledger (D1-D81, of which **79 fixed, 1 partial (D18), 1 open (D43)**).
 
 The numbers in this table are checked by `src/tests/test_documentation.py`, which parses them
 out of this file and compares them against the source. That guard exists because this table

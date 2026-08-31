@@ -564,8 +564,15 @@ class ExperimentRun:
             return {"run_id": self.run_id, "state": state, "repeated": True,
                     "manifest_sha256": self.manifest_sha256}
         self._transition("FROZEN", reason="manifest frozen at %s" % self.manifest_sha256)
+        # Imported lazily to keep the TG17.6 state machine independent of export transport while
+        # ensuring the archival environment is captured at execution time, not guessed later on
+        # whichever machine happens to export the run.
+        from src.core.experiment_receipt import capture_archival_context
+        archival_context = capture_archival_context(self.spec)
         self._emit("freeze", manifest_sha256=self.manifest_sha256,
-                   manifest_bytes=len(canonical_bytes(self.spec)))
+                   manifest_bytes=len(canonical_bytes(self.spec)),
+                   environment=archival_context["environment"],
+                   archival_context=archival_context)
         return {"run_id": self.run_id, "state": self.state, "repeated": False,
                 "manifest_sha256": self.manifest_sha256}
 

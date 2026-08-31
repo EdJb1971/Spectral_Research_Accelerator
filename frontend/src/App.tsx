@@ -18,6 +18,7 @@ import CrossDomainRecordView from './components/CrossDomainRecordView';
 import ReviewView from './components/ReviewView';
 import DatasetCapabilityProfile from './components/DatasetCapabilityProfile';
 import ExperimentComposer from './components/ExperimentComposer';
+import { ExperimentReceiptPanel } from './components/ExperimentReceipt';
 import { apiService } from './services/api';
 import * as types from './types/api';
 import {
@@ -2251,6 +2252,8 @@ export default function App() {
                 </button>
               </div>
 
+              <ExperimentReceiptPanel trustOnly />
+
               {health && (
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-5 space-y-3">
@@ -2562,7 +2565,9 @@ export default function App() {
           )}
 
           {activeTab === 'experimentComposer' && (
-            <ExperimentComposer onSelectStudy={setSelectedStudyId} />
+            <ExperimentComposer onSelectStudy={setSelectedStudyId} onEvidenceHandoff={(studyId) => {
+              setSelectedStudyId(studyId); setActiveTab('evidence');
+            }} />
           )}
 
           {/* TAB 11: FINDINGS (TG9.2) -------------------------------------------------

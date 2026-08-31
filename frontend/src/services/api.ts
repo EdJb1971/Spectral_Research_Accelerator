@@ -1092,6 +1092,33 @@ export const apiService = {
         body: JSON.stringify({ draft_id: draftId }) }));
   },
 
+  // ------------------------------------------------ immutable experiment receipts (TG17.9)
+  async experimentReceiptCapabilities(): Promise<types.ExperimentReceiptCapabilities> {
+    return handleResponse<types.ExperimentReceiptCapabilities>(
+      await fetch(`${BASE_URL}/experiment-receipts`, { method: 'GET' }));
+  },
+
+  async exportExperimentReceipt(runId: string): Promise<types.ExperimentReceiptExport> {
+    return handleResponse<types.ExperimentReceiptExport>(
+      await fetch(`${BASE_URL}/experiment-receipts/runs/${encodeURIComponent(runId)}/export`,
+        { method: 'POST' }));
+  },
+
+  async replayExperimentReceipt(bundle: types.ExperimentReplayBundle): Promise<types.ExperimentReceiptReplay> {
+    return handleResponse<types.ExperimentReceiptReplay>(
+      await fetch(`${BASE_URL}/experiment-receipts/replay`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(bundle) }));
+  },
+
+  async experimentMethodsReport(runId: string): Promise<string> {
+    const response = await fetch(
+      `${BASE_URL}/experiment-receipts/runs/${encodeURIComponent(runId)}/methods`,
+      { method: 'GET' });
+    if (!response.ok) throw new Error(await response.text());
+    return response.text();
+  },
+
   // ---------------------------------------------------- TG17.7 the guided path
 
   async composerPath(): Promise<types.ComposerPathContract> {

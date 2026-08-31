@@ -10,6 +10,7 @@ import { ConfirmButton, DomainMenuPanel, ManifestInspector, NextActionBanner, Pa
          WindowPresetPicker } from './ComposerPath';
 import { FamilyExpansionPanel, NullFamilyPicker } from './FamilyPlan';
 import { RunProgressPanel, RunWorkerSuitePicker } from './RunMonitor';
+import { ExperimentReceiptPanel } from './ExperimentReceipt';
 import * as types from '../types/api';
 
 /**
@@ -37,7 +38,10 @@ function utcValue(value: string): string {
   return new Date(value.endsWith('Z') ? value : `${value}:00Z`).toISOString();
 }
 
-export default function ExperimentComposer({ onSelectStudy }: { onSelectStudy?: (id: string) => void }) {
+export default function ExperimentComposer({ onSelectStudy, onEvidenceHandoff }: {
+  onSelectStudy?: (id: string) => void;
+  onEvidenceHandoff?: (id: string) => void;
+}) {
   const [manifest, setManifest] = useState<types.CrossDomainExperimentManifest | null>(null);
   const [identity, setIdentity] = useState<string>('');
   const [preflight, setPreflight] = useState<types.ExperimentPreflight | null>(null);
@@ -763,6 +767,8 @@ export default function ExperimentComposer({ onSelectStudy }: { onSelectStudy?: 
             <h4 className="text-sm font-semibold text-slate-100">Comparison views</h4>
             <ComparisonViews manifest={manifest} />
           </div>
+          <ExperimentReceiptPanel runId={receipt?.run_id} runState={receipt?.state}
+                                  onEvidenceHandoff={onEvidenceHandoff} />
         </div>
       ))}
 

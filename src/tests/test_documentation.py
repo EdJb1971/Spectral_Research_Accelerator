@@ -382,3 +382,23 @@ def test_status_sections_agree_on_the_defect_ledger(architecture, roadmap):
     assert ids(claim.group(4)) == partial
     assert int(claim.group(5)) == len(open_ids)
     assert ids(claim.group(6)) == open_ids
+
+
+def test_every_registered_tg17_receipt_capability_has_a_documented_explanation(architecture):
+    """The Platform trust surface and source-of-truth document are one generated contract.
+
+    An operation, adapter, refusal or export field added without prose would otherwise be usable
+    before a scientist could learn what it means. Backticks make this an identity check rather
+    than an accidental substring match.
+    """
+    from src.core.experiment_receipt import capability_snapshot
+
+    snapshot = capability_snapshot()
+    names = ([row["name"] for row in snapshot["operations"]]
+             + [row["adapter_id"] for row in snapshot["adapters"]]
+             + [row["name"] for row in snapshot["refusals"]]
+             + [row["name"] for row in snapshot["receipt_fields"]])
+    missing = sorted(name for name in names if "`%s`" % name not in architecture)
+    assert not missing, (
+        "registered TG17 receipt capabilities have no visible architecture explanation: %s"
+        % missing)

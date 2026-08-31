@@ -2453,6 +2453,67 @@ export interface RunEditableCopy {
   note: string;
 }
 
+// ------------------------------------------------ TG17.9 portable experiment receipt
+
+export interface ExperimentReceiptField {
+  name: string;
+  label: string;
+  meaning: string;
+}
+
+export interface ExperimentReceiptCapabilities {
+  schema: string;
+  software_version: string;
+  operations: { name: string; effect: string; writes_evidence: boolean }[];
+  adapters: DomainExperimentAdapterDescription[];
+  refusals: { name: string; reason: string }[];
+  receipt_fields: ExperimentReceiptField[];
+  lineage: string[];
+  claim_boundary: string;
+}
+
+export interface ExperimentEvidenceHandoff {
+  run_complete: boolean;
+  eligible_actions: string[];
+  automatic_actions: string[];
+  categories: { category: string; status: 'PRESENT' | 'ABSENT'; source: string | null }[];
+  proposed_study_id: string;
+  claim_boundary: string;
+}
+
+export interface ExperimentReplayBundle extends Record<string, any> {
+  schema: 'cross-domain-experiment-bundle/v1';
+  bundle_sha256: string;
+  run_receipt: RunReceipt;
+  evidence_handoff: ExperimentEvidenceHandoff;
+  methods_report: { schema: string; format: string; sha256: string; text: string };
+  claim_boundary: string;
+}
+
+export interface ExperimentReceiptExport {
+  schema: string;
+  integrity: 'VERIFIED';
+  bundle_sha256: string;
+  report_sha256: string;
+  bundle: ExperimentReplayBundle;
+  claim_boundary: string;
+}
+
+export interface ExperimentReceiptReplay {
+  schema: string;
+  integrity: 'VERIFIED';
+  bundle_sha256: string;
+  manifest: CrossDomainExperimentManifest;
+  run_identity: Record<string, string>;
+  run_receipt: RunReceipt;
+  results: Record<string, any>;
+  refusals: Record<string, any>[];
+  evidence_handoff: ExperimentEvidenceHandoff;
+  methods_report: { schema: string; format: string; sha256: string; text: string };
+  claim_boundary: string;
+  bundle: ExperimentReplayBundle;
+}
+
 // ------------------------------------------------------- TG17.7 the guided path
 
 /** One step of the workflow, described by the server. The browser renders these; it holds no

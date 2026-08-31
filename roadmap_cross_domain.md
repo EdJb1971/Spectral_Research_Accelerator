@@ -4299,7 +4299,7 @@ each test's assumption that the whole set is present is stated once rather than 
 and the complete browser suite is 30. Six new routes, 126 -> 132. Production build clean. No
 archive is acquired, no statistic runs, no finding is recorded and no evidence is admitted.
 
-**TG17.9 Receipt, methods report and evidence handoff — PLANNED.** A completed run exports an
+**TG17.9 Receipt, methods report and evidence handoff — DONE (2026-08-31, `ed-dev`).** A completed run exports an
 immutable bundle containing the exact manifest; coverage decision; source/acquisition identities;
 native and canonical artefact digests; adapter contracts; environment; family/null/correction;
 seeds; stage events; results; refusals; and software version. Produce both a machine-readable
@@ -4315,6 +4315,50 @@ surface cannot lag behind the engine unnoticed.
 **Acceptance:** delete UI state and reconstruct the run from the exported bundle; all scientific
 identities and conclusions are unchanged. A platform-capability snapshot and documentation audit
 fail when a registered G17 operation, adapter, refusal or receipt field has no visible explanation.
+
+**Delivered.** `src/core/experiment_receipt.py` distinguishes TG17.6's live journal projection
+from the archival `cross-domain-experiment-bundle/v1`. A completed export carries the exact
+manifest and derived run identity; metadata preflight and coverage decision; acquisition identity
+beside source plan; full registered adapter contract and translator configuration; native,
+canonical, mining and confirmation digests in separate roles; family, nulls, correction, alpha,
+confirmation policy and labelled seeds; freeze-time environment; the exact event sequence;
+refusals; result identities; evidence-category census; methods report; and claim boundary. The
+bundle and Markdown report are content-addressed and published through the no-overwrite boundary.
+
+Replay is semantic, not merely a checksum. It reconstructs the manifest, run identity, transition
+history, component outcomes, artefacts, decisions, bounded work and terminal state from the event
+sequence and requires the embedded receipt to agree exactly. A caller that forges a state or
+artefact and recomputes the outer digest is still refused. An unknown top-level field is refused
+rather than accepted as an unexplained claim. Only COMPLETE runs export; a refusal or failure
+keeps its honest live receipt.
+
+The first Chromium import found **D81**: Python emitted an integral JSON value as `1.0`, while a
+browser round trip emitted the same JSON number as `1`, so the original digest rejected an
+untouched bundle. Canonical hashing now normalises integral numbers according to the JSON data
+model, with both a focused spelling-loss regression and the real browser export/replay path.
+
+`frontend/src/components/ExperimentReceipt.tsx` is mounted in Interpret and Platform & evidence.
+It renders the backend's operation, adapter, refusal, lineage and field registry; exports JSON and
+Markdown; and can discard all browser state then reconstruct the exact run from a user-selected
+bundle. The handoff displays `registered_hypothesis`, `admitted_evidence`,
+`independent_replication` and `claim_promotion` as absent. Its only action navigates to the
+separate evidence-study draft; `automatic_actions` is empty and no evidence route is called.
+The current registered rehearsal's mining and confirmation markers remain `fixture_artefacts`;
+they do not satisfy `measured_results`, because no measurement value was opened.
+
+The documentation audit imports the generated capability snapshot and requires every registered
+operation, adapter, refusal and receipt field to have an explicit backticked explanation in
+`architecture.md`. This is the same contract the two browser surfaces render, so a new capability
+cannot become usable while remaining invisible on the trust surface.
+
+**Evidence.** `test_experiment_receipt.py` has 21 test functions; the TG17.9 additions bring
+`test_frontend_contract.py` to 157 and `test_documentation.py` to 20, while all 80 TG17.6
+orchestrator tests remain green. Those four suites account for 278 focused tests. The full
+Chromium suite is 33/33, including three TG17.9 rendered tests; the production build transforms
+1,408 modules; four new routes bring 132 to 136; and the documented test-function inventory is
+2,847. The full backend suite has not been rerun since TG17.7, so 3,106 remains the last measured
+full-suite figure. No live archive is acquired, no statistic runs, no finding is recorded and no
+evidence is admitted by this slice.
 
 **TG17.10 Flagship qualification and no-glue release gate — PLANNED.** Run the frozen four-domain
 known-answer family for a week, three months and six months in both comparison modes, then record

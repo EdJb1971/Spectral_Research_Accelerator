@@ -7469,6 +7469,7 @@ built in 49.17s                          (TypeScript and Vite production bundle)
 119 -> 126. Ledger D1-D80, 78 fixed.
 
 No archive is acquired, no statistic runs, no finding is recorded and no evidence is admitted.
+
 Every status this slice reports is a fact about a declaration.
 
 ---
@@ -7536,3 +7537,55 @@ been rerun since TG17.7's 3106, so that figure remains the last measured one rat
 one; the documented inventory total is 2822.
 
 No archive is acquired, no statistic runs, no finding is recorded and no evidence is admitted.
+
+---
+
+## TG17.9 Portable receipt, methods report and evidence handoff — COMPLETE (2026-08-31, `ed-dev`)
+
+The completed-run export is now a separate immutable object from TG17.6's live receipt. It seals
+the exact manifest, preflight, acquisition/source identities, freeze-time adapter contracts and
+environment, role-separated artefacts, inference declaration, event sequence, results, refusals,
+methods report and explicit evidence-category census. Registry-derived context is captured when
+the run freezes. Legacy runs are exportable only if current re-derivation agrees with their
+recorded preflight digest.
+
+Import verifies the outer content address, exact field set, manifest-derived run identity, every
+journal transition and step component, the receipt reconstructed from those events, and the
+Markdown digest. Recomputing an outer digest after forging the embedded state therefore does not
+pass. Replay writes no run, study or EvidenceBundle.
+
+The Composer and Platform & evidence render the same generated capability snapshot. The
+documentation guard imports it and requires every registered operation, adapter, refusal and
+receipt field to be explained in `architecture.md`. The rendered handoff displays absent
+hypothesis/evidence/replication/promotion categories before navigating to a separate study draft;
+it makes no evidence call.
+
+**D81.** The first real browser import rejected its own untouched export because Python wrote an
+integral JSON number as `1.0` and JavaScript re-emitted it as `1`. Canonical hashing now normalises
+integral JSON numbers. The focused regression and the Chromium export/replay path both pass.
+
+```text
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_experiment_receipt.py -q
+21 passed in 35.33s
+
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_frontend_contract.py ^
+    src/tests/test_experiment_run.py -q -p no:randomly
+237 passed in 66.35s
+
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_documentation.py -q
+20 passed                         (verified in the widened targeted run; all documentation checks green)
+
+> cd frontend && npx playwright test
+33 passed (2.2m)                  (real API, real frontend, Chromium; 3 are TG17.9)
+
+> cd frontend && npm run build
+1,408 modules transformed; production bundle clean
+
+> git diff --check
+clean
+```
+
+Four new routes bring the served surface from 132 to 136. The inventory is 2,847 test functions.
+The full backend suite has not been rerun since TG17.7, so 3,106 remains the last measured full
+figure. No live archive is acquired, no scientific statistic is run, no finding is recorded and
+no evidence is admitted by TG17.9.
