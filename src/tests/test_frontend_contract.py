@@ -1996,3 +1996,16 @@ def test_the_gate_panel_never_shows_one_verdict_without_the_other():
     assert "Replication rule returned" in view
     assert "openReceipt.power_adjudication.reason" in view
     assert "power_applied" in view
+
+
+def test_the_gate_panel_shows_an_undeclared_agreement_rule_as_a_refusal():
+    """D86. A campaign that never preregistered the rule authorising its own acquisition must
+    say so on the row. An empty cell would read as a formatting gap rather than as the reason
+    that design may not be acquired at all."""
+    view = _read("components", "GateRecordView.tsx")
+    assert "Agreement rule" in view
+    assert "row.overlap_criterion === null" in view
+    assert "not preregistered" in view
+    # And the rule that is declared is shown in the unit it is actually applied in, because a
+    # bound in Kelvin is what D86 was.
+    assert "encoding step" in view

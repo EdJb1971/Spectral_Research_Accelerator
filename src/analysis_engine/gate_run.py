@@ -254,7 +254,8 @@ def _resolution_refusal_text(audits) -> str:
         % (" and ".join(failed), " ".join(audits[name]["reason"] for name in failed)))
 
 
-def _preflight_with_reader(plan: GateStudyPlan, reader: CachedFieldReader) -> Dict[str, Any]:
+def _preflight_with_reader(plan: GateStudyPlan, reader: CachedFieldReader,
+                           overlap_criterion: str = "absolute") -> Dict[str, Any]:
     design = plan.protocol.validate()
     if len(reader) != plan.protocol.expected_frames:
         raise DataSourceError(
@@ -270,7 +271,8 @@ def _preflight_with_reader(plan: GateStudyPlan, reader: CachedFieldReader) -> Di
             raise DataSourceError("real gate source is not the direct regional CDS route")
         from src.data_layer.era5_overlap import validate_overlap_evidence
         validate_overlap_evidence(
-            reader.source_provenance, variable=plan.variable, level_hpa=plan.level_hpa)
+            reader.source_provenance, variable=plan.variable, level_hpa=plan.level_hpa,
+            criterion=overlap_criterion)
         if reader.units.lower() == "unknown":
             raise DataSourceError("real gate variable units are unknown")
     sample = reader.read_frame(0)
@@ -324,6 +326,9 @@ def _preflight_with_reader(plan: GateStudyPlan, reader: CachedFieldReader) -> Di
         "status": "READY",
         "plan_sha256": plan.fingerprint(),
         "evidence_role": plan.evidence_role,
+        # D87. Which rule admitted this record is part of what the receipt has to show; a
+        # reviewer cannot re-derive it from the numbers.
+        "overlap_criterion": overlap_criterion,
         "source": dict(reader.source_provenance),
         "transform": {"family": plan.transform_family, **plan.transform_config()},
         "valid_interiors": one.interior,
@@ -663,14 +668,21 @@ def run_cached_gate(
     cache_dir: Optional[str] = None,
     receipt_path: Optional[Union[str, os.PathLike[str]]] = None,
     maximum_source_chunk_bytes: int = 512 * 1024 * 1024,
+    overlap_criterion: str = "absolute",
 ) -> Dict[str, Any]:
+    # D87. Defaults to the criterion the pre-D86 designs meant, so a record judged under a
+    # different rule is refused here rather than admitted by a rule nobody declared. Campaign
+    # runs supply this from the frozen envelope; see gate_campaign.run_campaign_gate.
+    if overlap_criterion not in ("absolute", "encoding_relative"):
+        raise InvalidParameterError(
+            "overlap_criterion", overlap_criterion, "absolute or encoding_relative")
     if receipt_path is not None and Path(receipt_path).exists():
         raise FileExistsError("refusing to overwrite gate receipt at %s" % receipt_path)
     with CachedFieldReader(
             plan.crop, plan.variable, level_hpa=plan.level_hpa,
             cache_dir=cache_dir,
             maximum_source_chunk_bytes=maximum_source_chunk_bytes) as reader:
-        preflight = _preflight_with_reader(plan, reader)
+        preflight = _preflight_with_reader(plan, reader, overlap_criterion)
         design = plan.protocol.validate()
         train_stop = design["train_frames"]
         test_start = train_stop + plan.protocol.embargo_frames

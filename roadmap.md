@@ -55,7 +55,7 @@ skill, show the counterexamples, or report that no robust relationship survives.
 ## 1. Honest Technical Status
 
 Verified against the code on 2026-08-29. Every claim here is backed by captured output in
-`VERIFICATION.md`; `architecture.md` Section 7 holds the full defect ledger (D1-D85, of which **81 fixed, 1 partial (D18), 3 open (D43, D84, D85)**).
+`VERIFICATION.md`; `architecture.md` Section 7 holds the full defect ledger (D1-D87, of which **84 fixed, 1 partial (D18), 2 open (D84, D85)**).
 
 The numbers in this table are checked by `src/tests/test_documentation.py`, which parses them
 out of this file and compares them against the source. That guard exists because this table
@@ -65,7 +65,7 @@ status section, it is a memory.
 
 | Area | Real status |
 |---|---|
-| **Phase progress** | **Phase 3.5 complete** (25 tasks). **Phase 4A, 4B and the pre-gate 4C instrument are complete:** T4A.1-4, T4B.1-4, T4C.1-5h. T4C.5d-h make the real gate, independent-source check, two-stage acquisition, physical preflight and primary preregistration bounded and content-bound, but **T4C.6 has not run**. **T5.0 is partial:** T5.0a-b supplies the strict versioned/hashable protocol and runtime-binding gate, but the actual laboratory evidence/config has not been supplied or frozen. **T5.1 is partial:** T5.1a-e accepts raw/FFT/DCT/Haar/db2/SWT/DTCWT training representations, optimized and exposed with truthful UI readiness; mixed precision and remaining cross-device acceptance remain. **T5.2 is partial:** T5.2a-d implements the aligned, leakage-safe, train-normalised PyTorch dataset, bounded-memory worker-safe cache, bounded blockwise CDS cache publication, exact calendar splits and verified physical-time leads; the live CDS run, independent overlap and viable multi-year NZ crop remain blocked by D43. **T5.3 is partial:** T5.3a-b supplies the forecaster seam, persistence baseline, deterministic represented smoke run, verified model-artifact contract and persistence-relative evaluator; T5.3c and the actual laboratory model remain open. **T5.6 is partial:** T5.6a-g supplies the offline FCN3 identity, lazy canonical cube/import boundary, exact ERA5 truth bridge, matched ensemble metric engine, atomic reproducible run receipt, portable laptop/HPC runner and verified API/UI reporting; no worker, dependency, checkpoint, initial condition, real forecast or real truth evaluation has run, so the result UI is honestly empty. **T4C.5i is complete (steps 1-8):** the derived spatial-power quantities, the demoted crop constants, the receipt that publishes the derivation, the FAIL/INVALID boundary that refuses to record an inadequately powered absence as a negative finding, and the checked supersession retiring the frozen campaign for a six-year successor that resolves its own declared family. **No real gate has run**, so nothing has been adjudicated by the new boundary and no data has been acquired for either campaign. Its step 5 found D85 -- the frozen campaign's confirmatory partition cannot resolve its own declared family, so T4C.6 cannot PASS as frozen. **T4C.5j is complete:** the T4C gate record is served read-only over seven GET routes and rendered as a workflow destination, so a retired design, its checked retirement and the FAIL/INVALID boundary are readable without opening a file; it adds no science and no receipt has ever been served, because none exists. **Not done:** T4C.6, the real-ERA5 gate review, and the acquisition D43 blocks; 4D-4H; T5.4-5, the remaining T5.6 inference/real-data work, T5.7, and the T5.8 irregular-observation/spatial-downscaling track. Per-task evidence blocks sit under each task below; a task without a **DONE** or **PARTIAL** label has not been started. |
+| **Phase progress** | **Phase 3.5 complete** (25 tasks). **Phase 4A, 4B and the pre-gate 4C instrument are complete:** T4A.1-4, T4B.1-4, T4C.1-5h. T4C.5d-h make the real gate, independent-source check, two-stage acquisition, physical preflight and primary preregistration bounded and content-bound, but **T4C.6 has now run and returned PASS on the real record (T4C.5m)**. **T5.0 is partial:** T5.0a-b supplies the strict versioned/hashable protocol and runtime-binding gate, but the actual laboratory evidence/config has not been supplied or frozen. **T5.1 is partial:** T5.1a-e accepts raw/FFT/DCT/Haar/db2/SWT/DTCWT training representations, optimized and exposed with truthful UI readiness; mixed precision and remaining cross-device acceptance remain. **T5.2 is partial:** T5.2a-d implements the aligned, leakage-safe, train-normalised PyTorch dataset, bounded-memory worker-safe cache, bounded blockwise CDS cache publication, exact calendar splits and verified physical-time leads; the live CDS run, independent overlap and multi-year NZ crop are all now done, D43 having been closed by T4C.5m. **T5.3 is partial:** T5.3a-b supplies the forecaster seam, persistence baseline, deterministic represented smoke run, verified model-artifact contract and persistence-relative evaluator; T5.3c and the actual laboratory model remain open. **T5.6 is partial:** T5.6a-g supplies the offline FCN3 identity, lazy canonical cube/import boundary, exact ERA5 truth bridge, matched ensemble metric engine, atomic reproducible run receipt, portable laptop/HPC runner and verified API/UI reporting; no worker, dependency, checkpoint, initial condition, real forecast or real truth evaluation has run, so the result UI is honestly empty. **T4C.5i is complete (steps 1-8):** the derived spatial-power quantities, the demoted crop constants, the receipt that publishes the derivation, the FAIL/INVALID boundary that refuses to record an inadequately powered absence as a negative finding, and the checked supersession retiring the frozen campaign for a six-year successor that resolves its own declared family. **No real gate has run**, so nothing has been adjudicated by the new boundary and no data has been acquired for either campaign. Its step 5 found D85 -- the frozen campaign's confirmatory partition cannot resolve its own declared family, so T4C.6 cannot PASS as frozen. **T4C.5j is complete:** the T4C gate record is served read-only over seven GET routes and rendered as a workflow destination, so a retired design, its checked retirement and the FAIL/INVALID boundary are readable without opening a file; it adds no science and no receipt has ever been served, because none exists. **T4C.5k is complete and T4C.5m closes D43:** the mandatory acquisition order has now run end to end. Steps 1-3 gave a recorded store probe, the eight-frame WeatherBench overlap, the first live CDS request in the programme's history, and a cross-route check judged in units of the primary route's own GRIB packing step rather than in Kelvin; that check stopped the campaign on its first attempt and found D86 -- the declared tolerance was finer than the CDS route can express, and the rule authorising the spend was not part of the frozen design -- both halves of which are fixed, with campaign v3 freezing the criterion. Steps 4-6 then ran: **the 8,764-frame record was acquired** (72 monthly shards, 338.905 MB, 5,853.7 s, `content_key a07c23ec89f953c1`), the full-cache overlap passed at 0.71875 of a packing step, and **T4C.6 returned PASS** in 753.9 s with ten links replicated in train and test. Step 6 found D87 -- the gate could not admit a record its own campaign had legitimately verified, because the admission path read the absolute criterion's manifest fields and the reader carried only those three names -- fixed by naming the criterion and by running the gate through `run_campaign_gate`, so the rule reaches it from the frozen envelope rather than from the caller. **D84 and D85 remain open and did not gate this result**; they govern whether an absence was detectable, and a PASS does not route through them. **T4C.5n** then audited the record's interior against a second WeatherBench window at 2021-07-01/02, passing at 0.46875 of a packing step; it authorises nothing by construction, because the campaign names exactly one overlap window and this is not it. Two windows out of 8,764 frames are independently verified; the rest is guaranteed structurally rather than against a second archive. **Not done:** the real-ERA5 gate *review*; 4D-4H; T5.4-5, the remaining T5.6 inference/real-data work, T5.7, and the T5.8 irregular-observation/spatial-downscaling track. Per-task evidence blocks sit under each task below; a task without a **DONE** or **PARTIAL** label has not been started. |
 | Ownership / licence | **Declared in `LICENSE.md`.** Edward Jonathan Bentley retains the proprietary SpectralEarth core. Adam Frank Bentley has a named perpetual, worldwide, royalty-free grant for lawful personal, academic, research and commercial use/modification, without public redistribution or sublicensing of the core. Independent extensions and upstream contributions remain separately governed. This bespoke text has not been professionally reviewed. |
 | **Accessibility** | **Workflow-wide source contract, TG11.6 DONE.** Skip and route focus, globally visible focus, bound legacy labels, reduced motion, announced asynchronous state, keyboard SVG lineage and figure text equivalents now cover both platform lines. Rendered assistive-technology inspection remains NOT RUN, so no WCAG conformance level is claimed (see `roadmap_cross_domain.md`). |
 | Backend test suite | **3106 passed, 1 xfailed.** Plus four explicit skips: the opt-in live-GCS check, opt-in live store probe, opt-in live Argo acceptance, and opt-in live TESS/MAST acceptance. Two further tests failed in that run and are not counted above: `test_claimed_test_count_is_at_least_the_function_count`, which was the stale 2745 claim this run replaced, and **D80**, a guard pinning a served capability claim that TG17.6 had made false. Both were fixed immediately afterwards and re-verified in a targeted 304-test run including the full documentation audit, so the next full run should read 3108. TG17.8 then added 65 test functions in `test_comparison_views.py`, ten in `test_frontend_contract.py` and 19 browser tests, all verified in targeted runs including the full documentation audit (387 passed) and a 30-test browser suite; the full suite has not been rerun since, so 3106 remains the last measured figure rather than a current one. Trajectory: 19 written / 1 failing / uncollectable -> 65 -> 152 -> 222 -> 271 -> 351 -> 407 -> 449 -> 478 -> 535 -> 548 -> 593 -> 642 -> 647 -> 709 -> 781 -> 855 -> 859 -> 882 -> 883 -> 890 -> 911 -> 917 -> 933 -> 946 -> 955 -> 957 -> 962 -> 969 -> 981 -> 985 -> 1000 -> 1008 -> 1027 -> 1042 -> 1056 -> 1070 -> 1080 -> 1089 -> 1094 -> 1095 -> 1102 -> 1104 -> 1106 -> 1112 -> 1116 -> 1117 (the `master` freeze) -> 1375 (TG2.1, `ed-dev`) -> 1429 (TG2.2, `ed-dev`) -> 1477 (TG2.3, `ed-dev`) -> 1536 (TG2.4, `ed-dev`) -> 1577 (TG3.1, `ed-dev`) -> 1621 (TG3.2, `ed-dev`) -> 1686 (TG3.3, `ed-dev`) -> 1742 (TG3.4, `ed-dev`) -> 1787 (TG3.5, `ed-dev`) -> 1850 (TG4.1, `ed-dev`) -> 1922 (TG4.2, `ed-dev`) -> 1972 (TG4.3, `ed-dev`) -> 1986 (TG5.1, `ed-dev`) -> 2004 (TG5.2, `ed-dev`) -> 2020 (TG5.3, `ed-dev`) -> 2044 (TG6.1, `ed-dev`) -> 2074 (TG6.2, `ed-dev`) -> 2112 (TG6.3, `ed-dev`) -> 2167 (TG7.1, `ed-dev`) -> 2217 (TG7.2, `ed-dev`) -> 2235 (TG7.3, `ed-dev`) -> 2236 (TG7.3 live acceptance, `ed-dev`) -> 2296 (TG7.4, `ed-dev`) -> 2321 (TG9.1/TG9.2, `ed-dev`) -> 2334 (TG9.3, `ed-dev`) -> 2367 (TG8.1, `ed-dev`) -> 2420 (TG8.4, `ed-dev`) -> 2459 (TG10.1, `ed-dev`) -> 2503 (TG10.3, `ed-dev`) -> 2509 (TG10.2, `ed-dev`) -> 2511 (TG11.0, `ed-dev`) -> 2521 (TG11.1, `ed-dev`) -> 2543 (TG11.2, `ed-dev`) -> 2570 (TG11.3, `ed-dev`) -> 2619 (TG11.4, `ed-dev`) -> 2661 (TG11.4b, `ed-dev`) -> 2667 (TG11.6, `ed-dev`) -> 2681 (TG11.5, `ed-dev`) -> 2694 (TG12.1b/TG12.1c, `ed-dev`) -> 2708 (TG12.2a, `ed-dev`) -> 2716 (TG12.1d, `ed-dev`) -> 2726 (TG12.2b-d, `ed-dev`) -> 2741 (TG13/G14 file-first ingress, `ed-dev`) -> 2745 (TG15 capability routing, `ed-dev`) -> 3106 (TG17.7, `ed-dev`; the first full-suite run since TG15, the G16/G17 slices between having verified against targeted suites). |
@@ -1435,6 +1435,92 @@ absence of runs rather than of findings. A receipt is served with both verdicts 
 adjudication that separates them.
 *What it does not do:* it adds no science, closes no defect, reads no field and touches no
 network. **No receipt has ever been served, because none exists.**
+
+**T4C.5k -- the first live acquisition, and what agreement means. DONE.**
+The mandatory order is `materialise_weatherbench_overlap`, `materialise_cds_canary`,
+`require_canary_overlap_PASS_or_stop`, `materialise_full_cds_record`,
+`require_full_cache_overlap_PASS_or_stop`, `preflight_and_run_T4C.6`. Steps 1 to 3 have now run
+live and passed; the 3.03 GB record has not been requested.
+*What now exists that did not before:* a dated probe of the 0.25-degree WeatherBench store
+recorded before anything was read from it; the eight-frame independent overlap in the local
+cache; **the first live CDS request this programme has ever made**, proving credentials, licence
+acceptance, download, NetCDF normalisation and canonical Zarr conversion end to end; a second
+independent window acquired purely to derive a criterion without tuning it to the window it
+judges; and campaign **v3**, which freezes the agreement rule the earlier designs left implicit.
+*What step 3 found first, and why it was not patched away:* the two routes agreed to 7.324e-4 K
+against a declared tolerance of 1e-4 K, and the check failed. ERA5 arrives through CDS packed
+per GRIB field, each frame on its own binary lattice -- 2^-10 K and 2^-9 K in this canary -- so
+the tolerance asked for more precision than the route can express. Recorded as **D86** and fixed
+by changing the unit rather than the number: `encoding_step` measures the lattice a frame
+actually occupies and the criterion allows one step, half for round-to-nearest and half for the
+independent route's undocumented pipeline. Declared, not fitted; the two measured windows reach
+0.72 and 0.44 steps.
+*The half that mattered more:* the rule authorising a multi-gigabyte transfer lived in module
+code, so the one decision in the campaign that no supersession governed was the decision to
+spend. It now lives in the campaign envelope, `preflight` blocks without it, and an
+unsatisfiable absolute tolerance cannot be preregistered either. v1 and v2 keep the exact
+fingerprints they were sealed under, pinned by test.
+*What it did not establish, and what T4C.5m then did:* at the close of T4C.5k the 8,764-frame
+record had not been acquired, no crop had been frozen against real data, T4C.6 had not run and
+no gate verdict existed. All four are now false; see T4C.5m below. The canary remains two days
+of one variable at one level. D84 and D85 remain open.
+
+**T4C.5m -- the record, and the first verdict. DONE; D43 closed.**
+Steps 4 to 6 of the mandatory order, run live.
+*What now exists that did not before:* a complete regional ERA5 record in the canonical cache --
+**8,764 frames** of 161x161 at 850 hPa for 2018-01-01 to 2023-12-31, assembled from 72 monthly
+CDS shards for **338.905 MB** in **5,853.7 s**, `content_key a07c23ec89f953c1`, `content_hash
+e488f5c3d480f072c834dceae1eeea2a`; a full-cache overlap receipt binding it to the WeatherBench
+route at **0.71875** of a packing step against 1.0 allowed, zero mismatches over 207,368 values;
+and the programme's **first gate receipt**, served from the checked-in store -- **PASS**, ten
+links replicated in train and test, no problems, 753.9 s.
+*Why the transfer came in 9x under budget:* the 3.03 GB preflight figure assumes float32 with a
+2x safety factor and no compression credit. A bound that refuses to promise is not a prediction,
+and the quantity actually checked is the frame count, which is verified exactly at conversion
+against the complete expected calendar.
+*What step 6 found, and why it was not worked around:* the gate refused the record. D86 had moved
+the agreement rule into the campaign envelope and taught the acquisition to use it, but nothing
+had taught the admission path, which still read the unsuffixed manifest fields belonging to the
+absolute criterion; underneath, `CachedFieldReader.source_provenance` hardcoded those same three
+names, so criterion-specific evidence never reached the gate at all. Recorded as **D87**. An
+instrument that will not accept properly verified data is as broken as one that accepts
+unverified data, and the symmetric hazard is worse: an absolute PASS would have admitted a
+record whose campaign declared something else.
+*The half that mattered more:* a plan does not carry the agreement rule and the envelope does,
+so passing the criterion in from the call site would let the rule that admits a record be chosen
+after the record is in hand -- the precise failure D86 exists to prevent. `run_campaign_gate`
+takes the campaign, refuses one that declares no criterion, refuses one a supplied supersession
+has retired, and hands the frozen rule down; `run_cached_gate` defaults to `absolute` so an
+undeclared run refuses. No fingerprint changed -- a code defect, not a design change.
+*What it does not establish:* the verdict adjudicates the frozen T4C.6 relationship family on
+this exact crop -- one variable, one level, one region, six years. It is not causality, not
+universality, not forecast skill, not operational readiness. The independent cross-route check
+covers eight of the 8,764 frames, which is the window the frozen design specifies; the other
+8,756 are guaranteed structurally -- exact equality against the complete expected calendar,
+cross-shard coordinate and variable identity, finiteness, and a content hash over the published
+store -- rather than against a second archive. A second independent window mid-record would
+close that and has not been acquired. **D84 and D85 remain open and did not gate this result**;
+they govern whether an absence was detectable, and a PASS does not route through them.
+
+**T4C.5n -- the audit window. DONE.**
+The frozen campaign names one overlap window and it is the record's first two days, so the
+record's values were independently verified only at their start. This adds a second WeatherBench
+window at **2021-07-01/02**, 3.5 years in: 237.7 MB in 62.9 s, `content_key 19c03cdcde90ceb2`,
+**passed at 0.46875** of a packing step with zero mismatches over 207,368 values, receipt
+`0f32c89a`.
+*It is also a third test of D86's diagnosis, on data that had no part in deriving the rule:* all
+eight frames sit on 2^-9 K, so the window disagrees **more** in Kelvin than the gate window does
+(9.155e-4 against 7.324e-4) while agreeing **better** in steps. This is the first reproduction of
+that inversion on a window acquired after the rule was frozen, so it cannot be an artefact of
+the derivation.
+*Why it authorises nothing:* it was compared after the record was admitted and gated. A labelled
+receipt binds under its own manifest fields; `validate_overlap_evidence` accepts only the two
+bare criterion names and cannot read a labelled one; the receipt says `authorises: "nothing..."`
+in its own body; and a label that could pass for a criterion is refused. Allowing otherwise
+would let the evidence admitting a record be chosen after the record was in hand.
+*What it does not establish:* two windows out of 8,764 frames is two windows. The rest still
+rests on exact calendar equality, cross-shard coordinate identity, finiteness and the content
+hash rather than on a second archive.
 
 Three things were learned by building it, recorded so they are not re-derived:
 

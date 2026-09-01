@@ -157,6 +157,10 @@ async def list_campaigns(request: Request) -> Dict[str, Any]:
             "expected_frames": design["full_frames"],
             "resolvable": design["resolvable"],
             "hypothesis_family_size": design["hypothesis_family_size"],
+            # D86: a campaign that declares no criterion cannot be acquired, so the absence
+            # belongs on the row rather than three clicks away inside the review.
+            "overlap_criterion": (campaign.overlap_criterion.to_mapping()
+                                  if campaign.overlap_criterion is not None else None),
         })
     return {"schema": "cross-scale-gate-campaign-index/v1", "campaigns": entries,
             "unreadable": unreadable, "network_used": False}

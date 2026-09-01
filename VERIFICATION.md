@@ -8131,3 +8131,270 @@ not evidence about the atmosphere. The panel compiles and builds; as with every 
 T3.5.25, its **rendered appearance has not been inspected in a browser** and no screenshot
 exists in this repository. The full backend suite has not been rerun, so **3106** remains the
 last measured full-suite figure; the inventory total is now 2967 by AST count.
+
+## T4C.5k -- the first live ERA5 acquisition, stopped at the cross-route gate (2026-09-01, ed-dev)
+
+The mandatory acquisition order was executed live against campaign v2 for the first time. Steps
+1 and 2 passed; **step 3 failed and stopped the campaign**, so the 3.03 GB full record was never
+requested. Every figure below was measured on this machine on this date.
+
+**Preflight (zero network).** `python -m src.analysis_engine.gate_campaign preflight --campaign
+campaigns/t4c6_nz_era5_temperature_850_v2.json --supersession
+campaigns/t4c6_nz_era5_temperature_850_v1_superseded_by_v2.json ...` returned
+`status: READY_FOR_CANARY`, rc 0, `blockers: []`, `network_used: false`,
+`client_constructed: false`. Credentials were reported present from the
+`CDSAPI_URL`/`CDSAPI_KEY` environment with `secret_values_inspected: false`; no secret value was
+read or displayed at any point in this work. Storage: 6.11 GB working requirement against 1,012
+GB free on `D:`. Full record upper bound 3,025,332,704 bytes over 72 monthly shards; canary
+18,436,160 bytes over 1.
+
+**Step 0, the recorded probe.** `store_probe.probe_store` opened
+`gs://weatherbench2/datasets/era5/1959-2023_01_10-wb13-6h-1440x721.zarr` with `chunks={}` and
+transferred no values. Recorded as digest `1a28d5980c97a38e` in `data/store_probes/`. Chunks are
+`(1, 13, 721, 1440)` float32, 53,988,480 bytes each; 93,544 time steps. Amplification for the
+eight-frame overlap crop: **520.7x**. This confirms the original D43 diagnosis at the
+0.25-degree store, and by the same arithmetic the 8,764-frame record would cost roughly 473 GB
+through this route -- which is why the record comes from CDS.
+
+**Step 1, `materialise_weatherbench_overlap`.** 8 frames, 1 level, 161x161. Transferred
+**237,476,444 bytes in 61.9 s** for 829,472 bytes of wanted values -- 286x realised against the
+520.7x chunk-arithmetic bound, the difference being compression. Content hash
+`fb7f6a261ae3bb1941c3b28eb6b892c2`, cache key `a5ff06f93a0e8f6f`.
+
+**Step 2, `materialise_cds_canary`.** **The first live CDS request in this programme's
+history.** Request ID `34e8fd4c-e007-4d16-9d95-e9289f057c84`, accepted then successful in 26 s
+of queue, 339 KB downloaded, 45.4 s wall total. Content hash
+`417c005f9355e1d7a42f9301e44285e6`, cache key `a4f2304e05985fd7`, shape
+`{time: 8, latitude: 161, level: 1, longitude: 161}`. This establishes that the credential
+configuration, licence acceptance, download, shard integrity check, NetCDF normalisation and
+canonical Zarr conversion all work end to end against the live service. It establishes nothing
+about the atmosphere: it is two days of one variable.
+
+**Step 3, `require_canary_overlap_PASS_or_stop` -- FAILED, campaign stopped.** Receipt
+`5acf466052195974adc21637724cc47984c3843919e0ae3904efe22b5272224d`, written immutably to
+`data/era5_cache/a4f2304e05985fd7.overlap.json`, records `passed: false` with
+`coordinates_exact: true`, `units_compatible: true`, `network_used: false` and
+`maximum_frames_per_source_in_memory: 8`. For `t`: `max_abs_error` 7.324e-4 K, `rmse` 3.399e-4,
+`mean_abs_error` 2.856e-4, `mismatch_count` 62,163 of 207,368 against `atol` 1e-4 and `rtol`
+1e-6. **The full acquisition was not started.**
+
+**Why it failed, tested rather than assumed.** The CDS route delivers 850 hPa temperature
+quantised to 2.44140625e-4 K (2^-12); the WeatherBench route to 3.0517578125e-5 K (2^-15).
+Neither file carries `scale_factor`/`add_offset`; both are float32. The declared 1e-4 K
+tolerance is therefore 0.41 of the primary route's own representation step. The difference
+between the routes is commensurate with the primary route's encoding rather than with the
+atmosphere, on four independent checks: it is bounded at **exactly 3.000 CDS quanta**; its mean is flat across latitude (-0.620 to -0.454 quanta) and
+longitude (-0.618 to -0.425); it is uncorrelated with the field value (-0.0002) and with the
+spatial gradient (0.0008), where regridding or interpolation error would track the gradient
+strongly; and registration is exact, a one-cell roll raising the maximum difference from 7.3e-4
+K to 12.6 K in longitude or 30.8 K in latitude. The residual -0.533 quantum mean bias varies
+per frame from -0.133 to -0.883, which is the signature of per-field GRIB packing.
+
+**The magnitude is not fully explained, and that is recorded rather than smoothed over.**
+Co-quantising a single underlying value at the two observed steps bounds the difference at
+`q_cds/2 + q_wb/2` = 1.37e-4 K; adding the per-frame offset reaches roughly 1.5 quanta.
+The observation is 3.000. Misregistration and interpolation are excluded and the scale is
+set by the CDS encoding, but about a factor of two remains unaccounted for. This is a
+second reason not to pick a constant now: a tolerance chosen to clear 7.324e-4 K would
+also clear whatever is producing the unexplained part.
+
+**Correction to the figures first published above.** The "3.000 quanta" and the "factor of
+about two unexplained" were artefacts of pooling eight frames that are on *different* lattices.
+Each CDS frame is packed separately: frames 0, 1, 4 and 5 of the canary sit on 2^-10 K and
+frames 2, 3, 6 and 7 on 2^-9 K, each exactly. Measured against its own frame's step the worst
+disagreement is **0.72 steps**, not 3.0, and nothing is unaccounted for. The pooled 2^-12 K
+"quantum" was the interference pattern between two lattices, not a step either route uses.
+
+**The independent window, acquired to derive a criterion without tuning it to its own test.**
+A second canary at 2019-06-01/02 -- different season, different year, outside the campaign, in
+its own directories -- cost 341,999 bytes from CDS and 237,738,102 bytes from WeatherBench. All
+eight of its frames sit on 2^-9 K, and its signed error lies wholly within +/-0.5 steps
+(min -0.4375, max +0.3125): exact round-to-nearest re-quantisation of the same numbers, with no
+residual at all. It disagrees *more* in Kelvin than the gate window does -- 8.545e-4 against
+7.324e-4 -- while being the cleaner of the two, which is the clearest available demonstration
+that Kelvin is the wrong unit for this question. Both windows are `expver 0001`, so this is
+final ERA5 against final ERA5, not ERA5 against ERA5T.
+
+**Recorded as D86, and repaired by changing the unit rather than the number.** Widening `DEFAULT_ATOL` to admit
+7.324e-4 K would have tuned the criterion to the first measurement it was ever asked to judge,
+making the independent-route check ornamental. The repair was a criterion derived from the two
+routes' declared encodings and frozen into the campaign envelope -- which is the second half of
+D86, since the constant lived in module code and could therefore be changed without a
+supersession, outside the preregistration discipline that governs everything else in this line.
+Both halves were carried out in the continuation section below.
+
+**What this does not establish.** No multi-year record was acquired. No crop was frozen. T4C.6
+has not run and no gate verdict exists. D43 is **not closed**: its acquisition route is now
+proven live for an eight-frame canary, but the multi-year record and its cross-route check
+remain unrun. D84 and D85 are
+untouched. No test suite was rerun as part of this work, so **3106** remains the last measured
+full-suite figure.
+
+
+## T4C.5k continued -- the encoding-relative criterion and campaign v3 (2026-09-02, ed-dev)
+
+**The criterion.** `era5_overlap.encoding_step` returns the largest binary step on which every
+value of a frame lies exactly, or `None`. `verify_cached_era5_overlap` gains
+`criterion="encoding_relative"` with `steps_allowed`, judging each value against its own
+frame's step. Receipts are criterion-keyed, so the earlier FAIL is preserved beside the PASS
+rather than overwritten: a cache is a fact about what the archive returned, a verdict is a
+judgement under a stated rule.
+
+**A refusal that could never fire, found by testing it.** The first `encoding_step` accepted any
+binary lattice. Every float32 value lies on one -- the one its own exponent defines -- so the
+function would always succeed and would judge an unpacked route against its representation
+error. It now requires the step to be at least two bits coarser than float32's spacing in that
+range. Measured against the real caches: the CDS frames report 2^-10 and 2^-9; **both
+WeatherBench windows report `None`**, correctly, because their values sit exactly at the float32
+ulp. The criterion is therefore applied to the primary route only.
+
+**Measured verdicts under the new criterion**, on caches already on disk:
+
+| window | worst error | steps allowed | verdict |
+| --- | --- | --- | --- |
+| gate 2018-01-01/02 | 0.71875 steps | 1.0 | PASS, `mismatch_count` 0 |
+| independent 2019-06-01/02 | 0.4375 steps | 1.0 | PASS, `mismatch_count` 0 |
+
+Receipt `0ccf02243ef9b93c1fae7afb384ed4012b2d1127936e891b7b979bf3a6424de9`, schema
+`era5-independent-overlap/v2`. The manifest now records `independent_overlap_check` FAIL and
+`independent_overlap_check_encoding_relative` PASS side by side.
+
+**Campaign v3, frozen as a checked supersession of v2.** Campaign sha256
+`1c96e49b6717bf0d99da9f5048cea84f7a9af28b60d9c0c173a93056c0a0e24b`; supersession sha256
+`cdf49d81bb8d9b2b6cc4bf3f46ecd4cd2310d93206a724fef047ac7887363905`. Its single reason cites D86
+and re-runs `overlap_criterion_declared` against both designs -- v2 fails it, v3 passes. v2's
+six whole calendar years and its D85 repair are recorded as preserved; D84, D85 and D43 are
+carried as deferred to the run. **v1 and v2 keep the exact fingerprints they were sealed under**
+(`84f7b53f...` and `c66284d6...`), verified after the schema change and pinned by test, because
+the optional field is omitted from the mapping when absent.
+
+**Preflight.** `preflight` on v3 with both supersessions returns `READY_FOR_CANARY`, rc 0,
+`blockers: []`, with `overlap_criterion` `{name: encoding_relative, steps_allowed: 1.0}` and
+`canary_cache_present: true`, `weatherbench_overlap_cache_present: true`,
+`full_cache_present: false`. Preflight on **v2 is now refused outright** as retired by the new
+supersession. A campaign with no declared criterion reports `BLOCKED` naming D86.
+
+**Tests.** `test_cds_source.py` 14 -> 20 functions (25 collected, all passing);
+`test_gate_campaign.py` 17 -> 22 (24 collected); `test_frontend_contract.py` 167 -> 168.
+Final combined run against the tree as it stands, of `test_gate_api.py test_gate_campaign.py
+test_cds_source.py test_frontend_contract.py test_regional_forecast.py test_imports.py`:
+**291 passed** in 793.26 s, exit code 0. `test_documentation.py` **20 passed** in 246.37 s
+against the same tree (an earlier documentation run of the same 20 took 274.63 s; the 246.37 s
+is the one that judged the tree as it now stands). `git diff --check` clean. Frontend production build clean at **1,410
+modules**. Inventory total 2967 -> 2979.
+
+One earlier combined run reported 297 passed, but it was started before the residual-tolerance
+fix and the magnitude test were added and therefore describes a tree that no longer exists; the
+291 above is the figure for the current one.
+
+**What this does not establish.** The 8,764-frame record has not been acquired; the full-cache
+overlap has not run; no crop has been frozen against real data; T4C.6 has not executed and no
+gate verdict exists. The canary is two days of one variable at one level, and a criterion
+validated on two two-day windows is validated on two two-day windows. D43, D84 and D85 remain
+open. The gate panel's new column compiles and builds but its **rendered appearance has not been
+inspected in a browser**. The full backend suite has not been rerun, so **3106** remains the
+last measured full-suite figure.
+
+## T4C.5m -- the multi-year record, and the first gate verdict (D43 closed; D87 found and fixed)
+
+**Preflight before spending.** `gate_campaign preflight` on campaign v3 with the v2 supersession
+supplied: `status READY_FOR_CANARY`, `blockers []`, `overlap_criterion {name:
+encoding_relative, steps_allowed: 1.0}`, `campaign_sha256
+1c96e49b6717bf0d99da9f5048cea84f7a9af28b60d9c0c173a93056c0a0e24b`, exit code 0. The step-3
+receipt on disk reads `passed: true` at **0.71875** steps with zero mismatches over 207,368
+values.
+
+**Step 4, `materialise_full_cds_record`.** 72/72 monthly CDS shards. `content_key
+a07c23ec89f953c1`, `content_hash e488f5c3d480f072c834dceae1eeea2a`, `shape {time: 8764, level:
+1, latitude: 161, longitude: 161}`, `bytes_transferred 338,905,211` (**338.905 MB**),
+`wall_seconds 5,853.7`, `cache_hit false`, exit code 0. Against a 3,025,332,704-byte preflight
+upper bound, which assumes float32 x2 with no compression credit; the checked quantity is the
+frame count, verified exactly against the complete expected calendar at conversion.
+
+**Step 5, `require_full_cache_overlap_PASS_or_stop`.** `passed True`, `max_error_in_steps
+0.71875` against `steps_allowed 1.0`, `encoding_steps [2^-10, 2^-9]`, `max_abs_error
+7.32421875e-4`, `rmse 3.398889796464777e-4`, `mismatch_count 0`, `value_count 207,368`,
+`receipt_sha256 bdfd9c8a00a41d4b3dcd95c244cedd17c1078f675ef758f04fa2a2e0c494b0dc`. Identical to
+the canary's figure because the record's first eight frames come through the same route; this
+establishes the 72-shard concatenation, not a new fact about agreement.
+
+**D87, found by running it.** Step 6 refused the record: `independent WeatherBench overlap
+evidence is not a recorded PASS`. The manifest holds `independent_overlap_check_encoding_relative
+= PASS` and `independent_overlap_check = NOT RUN`, and `validate_overlap_evidence` read only the
+unsuffixed fields. Fixing that surfaced a second layer -- `CachedFieldReader.source_provenance`
+hardcoded the same three names, so the evidence never reached the gate. Both fixed. Checked in
+both directions on the real manifest before re-running: admitted under `encoding_relative` at
+0.71875 steps, and **refused** under `absolute` with `not a recorded PASS under the absolute
+criterion`.
+
+**Step 6, `preflight_and_run_T4C.6`.** Run through `run_campaign_gate`, so the criterion came
+from the frozen envelope. `campaign 1c96e49b`, `plan dd9fc47c25df1b32ca18e6c01873421854063d5add
+ddb977d1026b66f1b7d2f5`, `crop a07c23ec89f953c1`, `criterion encoding_relative`.
+**`scientific_verdict PASS`**, `gate.verdict PASS`, `problems []`, **10 replicated links**,
+`wall_seconds 753.9`. Receipt at `data/gate_receipts/t4c6-nz-era5-temperature-850-v3.json`
+(128 KB), `schema cross-scale-gate-receipt/v1`, with `preflight.overlap_criterion
+encoding_relative`. Representative link `2->1@3` (18 h): train observed 0.021457982912114204
+nats against surrogate mean 0.0019260827780943593, effect size 10.814231699653089, p 0.0006, q
+0.015028413108460698; test observed 0.018884626612145183 against 0.0035527403383150834, effect
+size 5.457797843730858, p 0.0012, q 0.02576299390021834; 4,999 surrogates, Theiler window 6,
+Benjamini-Yekutieli. `power_adjudication` `power_applied false`: *"a PASS verdict is not an
+absence, and spatial imprecision biases toward the null, so the derived power record cannot
+overturn it."*
+
+**A tripwire fired as designed.** `test_the_repository_store_serves_the_real_campaigns_and_their_retirement`
+asserted `measurement_status == "NOT_YET_MEASURED"` with the note *"if this ever fails, a
+receipt exists and the docs must say so"*. It failed. Updated to `MEASURED`, and the test now
+also asserts the receipt is served from the checked-in store and that its `plan_sha256` binds to
+campaign v3's plan.
+
+**Tests.** `test_cds_source.py` 20 -> 22 functions; `test_gate_campaign.py` 22 -> 25.
+`test_gate_campaign.py` **27 passed** in 15.26 s. `test_gate_api.py` **13 passed** in 17.39 s
+after the tripwire update. Combined `test_cds_source.py test_gate_run.py test_zarr_source.py
+test_gate_api.py`: **106 passed, 1 skipped, 1 failed** in 66.12 s -- the single failure was the
+tripwire above, re-run green afterwards. Inventory total 2979 -> 2984.
+
+**What this does not establish.** The verdict adjudicates the frozen T4C.6 relationship family on
+this exact crop only -- one variable, one level, one region, six years -- and is not causality,
+universality, forecast skill or operational readiness. The independent cross-route check covers
+**eight of the 8,764 frames**, the window the frozen design specifies; the other 8,756 are
+guaranteed structurally rather than against a second archive, and no mid-record independent
+window has been acquired. **D84 and D85 remain open** and did not gate this result. The gate
+panel's agreement-rule column still has **not been inspected in a browser**. The full backend
+suite has not been rerun since these changes, so **3106** remains the last measured full-suite
+figure, and the documentation audit has not yet been re-run against this tree.
+
+## T4C.5n -- the mid-record audit window
+
+**Acquisition.** WeatherBench `era5_0p25_6h`, 2021-07-01T00:00 to 2021-07-02T18:00, same region,
+level, variable and eight-frame length as the frozen window; only the dates move. `content_key
+19c03cdcde90ceb2`, **237,731,669 bytes** in **62.9 s**.
+
+**Audit.** `passed True`, `role audit`, `max_error_in_steps` **0.46875** against `steps_allowed
+1.0`, `encoding_steps [2^-9]` with all eight frames on that step, `max_abs_error
+9.1552734375e-4`, `rmse 4.1482507906808234e-4`, `mismatch_count 0`, `value_count 207,368`,
+`receipt_sha256 0f32c89a600b9759133df68a2b0943ef7e459a086f4acfd814fe83390dc65a8f`. Receipt at
+`data/era5_cache/a07c23ec89f953c1.overlap.encoding_relative.midrecord2021.json`.
+
+**The Kelvin inversion, reproduced on new data.** The audit window disagrees more in Kelvin than
+the gate window (9.155e-4 against 7.324e-4) and less in steps (0.469 against 0.719). This is the
+first reproduction of that inversion on a window acquired *after* the criterion was frozen, so
+it cannot be an artefact of the derivation.
+
+**A defect caught by the tests during this slice.** The new `label` parameter collided with an
+existing loop variable of the same name inside `verify_cached_era5_overlap`, so every receipt
+bound as `..._encoding_relative_independent` -- evidence filed under the wrong name by a change
+that otherwise looked correct. Caught because the tests assert on manifest field names rather
+than only on `passed`. Loop variable renamed to `side`.
+
+**Tests.** `test_cds_source.py` 22 -> 24 functions. Clean run of `test_cds_source.py
+test_gate_campaign.py test_gate_api.py test_gate_run.py test_zarr_source.py`: **136 passed, 1
+skipped** in 95.02 s. Inventory total 2984 -> 2986.
+
+**Full backend suite.** **3362 passed, 4 skipped, 1 xfailed** in 2,289.91 s (38:09), exit code 0.
+This supersedes **3106** as the last measured full-suite figure. It was launched before the
+T4C.5n label work, so it measures the tree as of the D87 fix; the 136-test clean run above covers
+the T4C.5n changes, and the full suite has not been re-run since them.
+
+**What this does not establish.** Two independently verified windows out of 8,764 frames. The
+audit authorises nothing and does not revisit the gate verdict. D84 and D85 remain open. The
+gate panel's agreement-rule column still has not been inspected in a browser.

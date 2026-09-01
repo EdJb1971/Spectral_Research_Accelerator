@@ -16,12 +16,14 @@ from src.analysis_engine.gate_campaign import (
     load_gate_campaign,
     load_gate_campaign_supersession,
     main,
+    OverlapCriterion,
     preflight_gate_campaign,
     review_gate_campaign,
     review_gate_campaign_supersession,
     save_gate_campaign,
     save_gate_campaign_supersession,
 )
+from src.analysis_engine import gate_campaign
 from src.analysis_engine.gate_run import GateStudyPlan
 from src.core.errors import DataSourceError, InvalidParameterError
 from src.data_layer.cds_source import CDSRegionalRequest
@@ -58,10 +60,15 @@ def _campaign(**overrides):
         lat_min=-60.0, lat_max=-20.0, lon_min=140.0, lon_max=180.0,
         levels=(850,), n_levels_analysis=2))
     expected_overlap_frames = overrides.pop("expected_overlap_frames", 8)
+    # D86: a campaign that intends to spend declares the rule by which the two routes are
+    # judged to agree. Tests about a campaign that does not are explicit about it.
+    criterion = overrides.pop(
+        "overlap_criterion", OverlapCriterion(name="encoding_relative", steps_allowed=1.0))
     return GateCampaign(
         campaign_id="nz-era5-cross-scale-campaign-v1", full_acquisition=full,
         canary_acquisition=canary, weatherbench_overlap=overlap,
-        expected_overlap_frames=expected_overlap_frames, gate_plan=plan, **overrides)
+        expected_overlap_frames=expected_overlap_frames, gate_plan=plan,
+        overlap_criterion=criterion, **overrides)
 
 
 def test_campaign_is_exact_hashable_atomic_and_tamper_detecting(tmp_path):
@@ -491,3 +498,136 @@ def test_the_supersession_is_reviewable_and_blocks_acquisition_from_the_command_
     assert report["campaign_sha256"] == supersession.successor.fingerprint()
     assert report["status"] in ("READY_FOR_CANARY", "BLOCKED")
     assert not any("supersede" in str(blocker) for blocker in report["blockers"])
+
+
+# ================================ D86: the rule that authorises the spend is part of the design
+
+CAMPAIGNS_DIR = Path(__file__).resolve().parents[2] / "campaigns"
+
+
+def test_a_campaign_that_does_not_say_what_agreement_means_may_not_spend(tmp_path):
+    """The acquisition is authorised by the cross-route check, so a campaign that leaves that
+    rule to module code has not preregistered the decision to transfer several gigabytes."""
+    campaign = _campaign(overlap_criterion=None)
+    report = preflight_gate_campaign(
+        campaign, full_download_dir=tmp_path / "full", canary_download_dir=tmp_path / "canary",
+        cache_dir=tmp_path / "cache", independent_cache_dir=tmp_path / "independent")
+    assert report["status"] == "BLOCKED"
+    assert report["overlap_criterion"] is None
+    assert any("D86" in blocker for blocker in report["blockers"])
+    # And it stays loadable and reviewable: the record of what was frozen is the point.
+    assert review_gate_campaign(campaign)["campaign_sha256"] == campaign.fingerprint()
+
+
+def test_a_criterion_must_be_one_kind_of_thing_or_the_other():
+    with pytest.raises(InvalidParameterError, match="steps_allowed"):
+        OverlapCriterion(name="encoding_relative")
+    with pytest.raises(InvalidParameterError, match="steps_allowed"):
+        OverlapCriterion(name="absolute", atol={"t": 1e-3}, steps_allowed=1.0)
+    with pytest.raises(InvalidParameterError, match="atol"):
+        OverlapCriterion(name="encoding_relative", steps_allowed=1.0, atol={"t": 1e-3})
+    with pytest.raises(InvalidParameterError, match="absolute or encoding_relative"):
+        OverlapCriterion(name="whatever_passes", steps_allowed=1.0)
+    for bad in (0.0, -1.0, float("nan"), True):
+        with pytest.raises(InvalidParameterError, match="steps_allowed"):
+            OverlapCriterion(name="encoding_relative", steps_allowed=bad)
+
+
+def test_an_unsatisfiable_absolute_tolerance_cannot_be_preregistered():
+    """A tolerance finer than the primary route's packing step is a design that refuses itself,
+    and the supersession check is where that has to be caught: it is the gate on freezing one."""
+    from src.analysis_engine.gate_campaign import _run_supersession_check
+
+    step = 2.0 ** -10
+    too_fine = _campaign(overlap_criterion=OverlapCriterion(name="absolute", atol={"t": 1e-4}))
+    assert not _run_supersession_check(
+        "overlap_criterion_declared", {"finest_primary_step": step}, too_fine)["passes"]
+    expressible = _campaign(
+        overlap_criterion=OverlapCriterion(name="absolute", atol={"t": 2 * step}))
+    assert _run_supersession_check(
+        "overlap_criterion_declared", {"finest_primary_step": step}, expressible)["passes"]
+    relative = _campaign()
+    assert _run_supersession_check(
+        "overlap_criterion_declared", {"finest_primary_step": step}, relative)["passes"]
+
+
+def test_the_frozen_campaigns_keep_the_fingerprints_they_were_frozen_under():
+    """Adding an optional field to the schema must not restate what was already sealed. If
+    these ever change, every recorded sha256 in the documentation is silently wrong."""
+    v1 = load_gate_campaign(CAMPAIGNS_DIR / "t4c6_nz_era5_temperature_850_v1.json")
+    v2 = load_gate_campaign(CAMPAIGNS_DIR / "t4c6_nz_era5_temperature_850_v2.json")
+    v3 = load_gate_campaign(CAMPAIGNS_DIR / "t4c6_nz_era5_temperature_850_v3.json")
+    assert v1.fingerprint() == (
+        "84f7b53fd25d555c8dcd57c6006288b95c5908f2a1d5c002d10a6572c7875975")
+    assert v2.fingerprint() == (
+        "c66284d619d7439638ec5e1886671894df4d12708ab3cdced245d7e5f80fa23c")
+    assert v1.overlap_criterion is None and v2.overlap_criterion is None
+    assert v3.overlap_criterion == OverlapCriterion(
+        name="encoding_relative", steps_allowed=1.0)
+    # v3 is v2 plus the criterion and its identity, and nothing else.
+    assert v3.full_acquisition == v2.full_acquisition
+    assert v3.canary_acquisition == v2.canary_acquisition
+    assert v3.weatherbench_overlap == v2.weatherbench_overlap
+    assert v3.gate_plan.crop == v2.gate_plan.crop
+    assert v3.gate_plan.protocol.expected_frames == v2.gate_plan.protocol.expected_frames
+
+
+def test_the_checked_in_supersession_retires_v2_for_the_reason_it_states():
+    record = load_gate_campaign_supersession(
+        CAMPAIGNS_DIR / "t4c6_nz_era5_temperature_850_v2_superseded_by_v3.json")
+    review = review_gate_campaign_supersession(record)
+    assert [reason["defect"] for reason in record.reasons] == ["D86"]
+    assert record.reasons[0]["check"] == "overlap_criterion_declared"
+    # The reason is re-run against both designs rather than believed.
+    checked = review["reasons"][0]
+    assert checked["superseded"]["passes"] is False
+    assert checked["successor"]["passes"] is True
+    # D43 is carried forward, not closed by a design change.
+    assert "D43" in {entry["defect"] for entry in record.deferred_to_run}
+
+
+def test_the_gate_runs_under_the_rule_the_campaign_froze(monkeypatch):
+    """D87. The criterion reaches the gate from the envelope, never from the caller.
+
+    `run_cached_gate` takes a plan, and a plan does not carry the agreement rule -- D86 put it
+    in the campaign so that no acquisition could be authorised by a rule outside the frozen
+    design. If the gate took it as an argument instead, the rule admitting a record could be
+    chosen after the record was in hand, which is the thing D86 exists to prevent.
+    """
+    seen = {}
+
+    def fake_run(plan, **kwargs):
+        seen.update(kwargs)
+        seen["plan"] = plan.fingerprint()
+        return {"scientific_verdict": "PASS"}
+
+    monkeypatch.setattr(gate_campaign, "run_cached_gate", fake_run)
+    campaign = _campaign()
+    assert gate_campaign.run_campaign_gate(
+        campaign, cache_dir="somewhere")["scientific_verdict"] == "PASS"
+    assert seen["overlap_criterion"] == "encoding_relative"
+    assert seen["plan"] == campaign.gate_plan.fingerprint()
+
+
+def test_a_campaign_with_no_declared_rule_cannot_produce_a_verdict(monkeypatch):
+    monkeypatch.setattr(gate_campaign, "run_cached_gate",
+                        lambda plan, **kwargs: pytest.fail("the gate must not have run"))
+    with pytest.raises(InvalidParameterError, match="declared agreement rule"):
+        gate_campaign.run_campaign_gate(_campaign(overlap_criterion=None))
+
+
+def test_a_retired_campaign_cannot_produce_a_verdict_either(monkeypatch):
+    """Retirement bites at the verdict as well as at the spend.
+
+    A retired design stays loadable and reviewable -- that is the record -- but a verdict
+    carries forward as evidence in a way a review does not, so it must not be produced from a
+    design a supersession has withdrawn.
+    """
+    monkeypatch.setattr(gate_campaign, "run_cached_gate",
+                        lambda plan, **kwargs: pytest.fail("the gate must not have run"))
+    superseded = _campaign()
+    # The refusal under test is the fingerprint match, so the stub carries that identity and
+    # nothing else; whether a supersession is *admissible* is asserted on elsewhere.
+    stub = SimpleNamespace(superseded=superseded, supersession_id="stub")
+    with pytest.raises(InvalidParameterError, match="retired"):
+        gate_campaign.run_campaign_gate(superseded, supersessions=[stub])

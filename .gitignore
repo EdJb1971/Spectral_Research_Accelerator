@@ -27,6 +27,21 @@ data/*.zarr/
 data/store_probes/*.json
 !data/store_probes/ccdb0625e7e8fb1d.json
 !data/store_probes/f9a45764fcf52c2a.json
+!data/store_probes/1a28d5980c97a38e.json
+
+# Acquired ERA5 caches and CDS shards are reproducible from the frozen request,
+# and large. The immutable cross-route overlap receipt is evidence, so it stays.
+data/cds_downloads/
+data/era5_cache/
+data/wb_cache/
+!data/era5_cache/
+data/era5_cache/*
+!data/era5_cache/*.overlap.json
+!data/era5_cache/*.overlap.*.json
+
+# The 2019 window exists to derive a criterion without tuning it to the
+# window it judges. It is reproducible from the frozen request.
+data/diagnostics/
 *.db-shm
 *.db-wal
 

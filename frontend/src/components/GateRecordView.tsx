@@ -159,7 +159,7 @@ export default function GateRecordView({ onError }: { onError?: (message: string
           <table className="w-full text-[11px]" aria-label="Preregistered gate campaigns">
             <thead><tr className="text-left text-slate-500 border-b border-slate-800">
               <th className="py-2">Campaign</th><th>Record</th><th>Frames</th>
-              <th>Resolves its family</th><th>Status</th><th />
+              <th>Resolves its family</th><th>Agreement rule</th><th>Status</th><th />
             </tr></thead>
             <tbody>
               {campaigns.map((row) => (
@@ -170,6 +170,20 @@ export default function GateRecordView({ onError }: { onError?: (message: string
                   <td className={`pr-3 font-semibold ${
                     row.resolvable ? 'text-emerald-300' : 'text-rose-300'}`}>
                     {row.resolvable ? 'yes' : 'no'}
+                  </td>
+                  {/* D86: a campaign with no declared rule cannot be acquired at all, so the
+                      absence is shown as a refusal rather than as an empty cell. */}
+                  <td className="pr-3">
+                    {row.overlap_criterion === null ? (
+                      <span className="text-rose-300 font-semibold">not preregistered</span>
+                    ) : row.overlap_criterion.name === 'encoding_relative' ? (
+                      <span className="text-slate-400">
+                        within {row.overlap_criterion.steps_allowed} encoding step
+                        {row.overlap_criterion.steps_allowed === 1 ? '' : 's'}
+                      </span>
+                    ) : (
+                      <span className="text-slate-400">absolute tolerance</span>
+                    )}
                   </td>
                   <td className="pr-3">
                     <span className={`px-2 py-0.5 rounded border text-[10px] font-semibold ${

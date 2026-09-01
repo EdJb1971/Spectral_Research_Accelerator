@@ -32,6 +32,8 @@ CAMPAIGNS = Path(__file__).resolve().parents[2] / "campaigns"
 V1 = CAMPAIGNS / "t4c6_nz_era5_temperature_850_v1.json"
 V2 = CAMPAIGNS / "t4c6_nz_era5_temperature_850_v2.json"
 SUPERSESSION = CAMPAIGNS / "t4c6_nz_era5_temperature_850_v1_superseded_by_v2.json"
+V3 = CAMPAIGNS / "t4c6_nz_era5_temperature_850_v3.json"
+SUPERSESSION_V3 = CAMPAIGNS / "t4c6_nz_era5_temperature_850_v2_superseded_by_v3.json"
 
 
 @pytest.fixture
@@ -258,15 +260,32 @@ def test_the_repository_store_serves_the_real_campaigns_and_their_retirement():
     app.state.gate_receipt_dir = None
     with TestClient(app) as instance:
         head = instance.get("/api/v1/gate").json()
-        assert head["campaigns"] == 2 and head["retired_campaigns"] == 1
-        assert head["measurement_status"] == "NOT_YET_MEASURED", (
-            "no gate has run; if this ever fails, a receipt exists and the docs must say so")
+        # Three designs, two of them retired: v1 for D85, then v2 for D86. The chain is the
+        # record, so a reviewer sees every design that was ever frozen and why each was left.
+        assert head["campaigns"] == 3 and head["retired_campaigns"] == 2
+        # D43. This assertion was NOT_YET_MEASURED for the whole life of the panel, with a note
+        # saying that if it ever changed a receipt existed and the documentation had to say so.
+        # It has changed: the real multi-year record was acquired and the gate ran on it.
+        assert head["measurement_status"] == "MEASURED"
         rows = {row["campaign_id"]: row for row in
                 instance.get("/api/v1/gate/campaigns").json()["campaigns"]}
+        receipts = instance.get("/api/v1/gate/receipts").json()
+        assert receipts["status"] == "MEASURED" and not receipts["unreadable"]
+        served = [record for record in receipts["receipts"]
+                  if record["receipt_id"] == "t4c6-nz-era5-temperature-850-v3"]
+        assert len(served) == 1, "the real gate receipt is served from the checked-in store"
+        # Bound to the design that authorised it, not merely present beside it.
+        assert served[0]["plan_sha256"] == load_gate_campaign(V3).gate_plan.fingerprint()
     assert rows["t4c6-nz-era5-temperature-850-campaign-v1"]["campaign_sha256"] == (
         load_gate_campaign(V1).fingerprint())
     assert rows["t4c6-nz-era5-temperature-850-campaign-v2"]["campaign_sha256"] == (
         load_gate_campaign(V2).fingerprint())
+    assert rows["t4c6-nz-era5-temperature-850-campaign-v3"]["campaign_sha256"] == (
+        load_gate_campaign(V3).fingerprint())
     assert (rows["t4c6-nz-era5-temperature-850-campaign-v1"]["retired_by"]["supersession_id"]
             == load_gate_campaign_supersession(SUPERSESSION).supersession_id)
+    assert (rows["t4c6-nz-era5-temperature-850-campaign-v2"]["retired_by"]["supersession_id"]
+            == load_gate_campaign_supersession(SUPERSESSION_V3).supersession_id)
+    # The one still standing is the only one that may be acquired.
+    assert rows["t4c6-nz-era5-temperature-850-campaign-v3"]["retired_by"] is None
     assert save_gate_campaign  # the write path exists in the module and is not routed

@@ -2881,6 +2881,19 @@ export interface GateCampaignSummary {
    *  `false` here and is still served, because that is the defect being recorded. */
   resolvable: boolean;
   hypothesis_family_size: number;
+  /** D86. The rule by which the two ERA5 routes are declared to agree, frozen with the design.
+   *  `null` means the campaign never preregistered one, which is why it may not be acquired:
+   *  the decision to spend would rest on a constant in module code that no supersession
+   *  governs. It is not a display preference and there is no default to fall back to. */
+  overlap_criterion: GateOverlapCriterion | null;
+}
+
+export interface GateOverlapCriterion {
+  /** `encoding_relative` judges agreement in units of the primary route's own packing step,
+   *  which changes frame to frame; `absolute` judges it in the variable's units. */
+  name: 'absolute' | 'encoding_relative';
+  steps_allowed?: number;
+  atol?: Record<string, number>;
 }
 
 export interface GateCampaignIndex {

@@ -446,8 +446,10 @@ canonical variables, pressure levels and grid spacing. It plans monthly requests
 explicit network consent, downloads atomically, resumes only hash-verified shards and converts
 the result into the same local Zarr cache used by `RegionalForecastDataset`. Credentials remain
 in the standard CDS client configuration and never enter provenance. The offline acquisition,
-resume and conversion contracts pass; **a real CDS request, multi-year NZ crop and independent
-WeatherBench overlap check have NOT RUN**, so D43 remains open.
+resume and conversion contracts pass. A **real CDS request has now run**: the eight-frame canary
+for campaign v3, checked against an independently acquired WeatherBench window and agreeing to
+within one step of the CDS route's own GRIB packing. **The multi-year NZ crop has NOT been
+acquired and T4C.6 has NOT run**, so D43 remains open.
 
 Planning is network-free and prints the exact monthly CDS payloads before anything is queued:
 
@@ -524,8 +526,17 @@ that are re-run against both, so a reason is admissible only where v1 fails it a
 Passing `--supersession` to `preflight` makes the retirement bite where the transfer would
 happen; `review` still reads v1 and still reports its defect, which is the point of keeping it.
 The supersession's `deferred_to_run` block names what the re-freeze does **not** settle: D84
-(the crop is carried through unchanged), D85's derived Theiler window, and D43. No data has been
-acquired for either campaign.
+(the crop is carried through unchanged), D85's derived Theiler window, and D43.
+
+`..._v3.json` and `..._v2_superseded_by_v3.json` continue the chain for D86. v2 froze the
+record, the crop and the protocol but not the rule by which the two ERA5 routes are declared to
+agree -- that lived in `era5_overlap.DEFAULT_ATOL` as 1e-4 K, so the one decision authorising a
+multi-gigabyte transfer was the one no supersession governed. It was also unsatisfiable: ERA5
+arrives through CDS packed per GRIB field, each frame on its own binary lattice, and 1e-4 K is
+finer than the step the route can express. v3 freezes an `overlap_criterion` instead --
+agreement within one step of the lattice the primary frame actually occupies -- and `preflight`
+now refuses any campaign that declares none. The eight-frame canary has been acquired and
+passes it; **the 8,764-frame record has not been acquired and no gate has run.**
 
 Both campaigns, the retirement and any published receipts are also readable in the browser under
 **Review -> Atmospheric gate record**, served by seven `GET /api/v1/gate/...` routes. That

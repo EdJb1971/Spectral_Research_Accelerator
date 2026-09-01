@@ -1169,7 +1169,15 @@ class CachedFieldReader:
             self.units = str(self.array.attrs.get("units", "unknown"))
             source_is_portable = (spec.store in CATALOGUE or "://" in spec.store
                                   or spec.store.startswith("cds:"))
+            # D87. Every criterion that has judged this cache travels with it. Naming only the
+            # unsuffixed fields here silently dropped the evidence a campaign's own agreement
+            # rule had produced, so the gate could not admit a record that was properly
+            # verified. The reader carries what the manifest holds; deciding which of them
+            # authorises a run belongs to the campaign, not to the reader.
+            overlap_fields = {key: value for key, value in manifest.items()
+                              if key.startswith("independent_overlap_")}
             self.source_provenance = {
+                **overlap_fields,
                 "content_key": manifest.get("content_key"),
                 "content_hash": manifest.get("content_hash"),
                 "crop_spec": manifest.get("spec"),

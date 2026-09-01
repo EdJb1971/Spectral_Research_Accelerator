@@ -22,7 +22,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from src.analysis_engine.gate_run import GateStudyPlan
+from src.analysis_engine.gate_run import GateStudyPlan, run_cached_gate
 from src.analysis_engine.cross_scale import support_floor
 from src.core.errors import DataSourceError, InvalidParameterError
 from src.core.publication import publish_new_bytes
@@ -259,6 +259,12 @@ def review_gate_campaign(campaign: "GateCampaign") -> Dict[str, Any]:
         "campaign_sha256": campaign.fingerprint(),
         "study_plan_sha256": campaign.gate_plan.fingerprint(),
         "scientific_design": _scientific_review(campaign),
+        # D86. Published with the design rather than left to the module that happens to run the
+        # comparison, because a verdict on whether two archives agree is unreadable without the
+        # rule it was reached under. `null` is itself the finding for a campaign frozen before
+        # the rule was preregistered, and the acquisition boundary refuses on it.
+        "overlap_criterion": (campaign.overlap_criterion.to_mapping()
+                              if campaign.overlap_criterion is not None else None),
         "decision_rule": (
             "PASS requires the same positive q<=%.9g directed scale/lag relationship in "
             "both frozen partitions; an adequately powered absence is FAIL; any contract, "
@@ -273,6 +279,68 @@ def review_gate_campaign(campaign: "GateCampaign") -> Dict[str, Any]:
 
 
 @dataclass(frozen=True)
+class OverlapCriterion:
+    """The rule by which the two ERA5 routes are declared to agree, frozen with the design.
+
+    D86. Before this existed the rule lived in `era5_overlap.DEFAULT_ATOL`, so the test that
+    authorises a multi-gigabyte transfer could be changed without superseding anything - the
+    one decision in the campaign that was not preregistered was the decision to acquire.
+    """
+
+    name: str
+    steps_allowed: Optional[float] = None
+    atol: Optional[Mapping[str, float]] = None
+
+    def __post_init__(self) -> None:
+        if self.name not in ("absolute", "encoding_relative"):
+            raise InvalidParameterError("overlap_criterion.name", self.name,
+                                        "absolute or encoding_relative")
+        if self.name == "encoding_relative":
+            if self.atol is not None:
+                raise InvalidParameterError(
+                    "overlap_criterion.atol", self.atol,
+                    "omitted: an encoding-relative criterion judges in units of the primary "
+                    "route's own packing step, not in the variable's units")
+            if not isinstance(self.steps_allowed, (int, float)) \
+                    or isinstance(self.steps_allowed, bool) \
+                    or not math.isfinite(float(self.steps_allowed)) \
+                    or float(self.steps_allowed) <= 0:
+                raise InvalidParameterError("overlap_criterion.steps_allowed",
+                                            self.steps_allowed,
+                                            "a finite positive number of encoding steps")
+        else:
+            if self.steps_allowed is not None:
+                raise InvalidParameterError("overlap_criterion.steps_allowed",
+                                            self.steps_allowed,
+                                            "omitted for an absolute criterion")
+            if not isinstance(self.atol, Mapping) or not self.atol or any(
+                    not isinstance(value, (int, float)) or isinstance(value, bool)
+                    or not math.isfinite(float(value)) or float(value) <= 0
+                    for value in self.atol.values()):
+                raise InvalidParameterError(
+                    "overlap_criterion.atol", self.atol,
+                    "one finite positive tolerance per compared variable")
+
+    def to_mapping(self) -> Dict[str, Any]:
+        record: Dict[str, Any] = {"name": self.name}
+        if self.steps_allowed is not None:
+            record["steps_allowed"] = float(self.steps_allowed)
+        if self.atol is not None:
+            record["atol"] = {str(k): float(v) for k, v in sorted(self.atol.items())}
+        return record
+
+    @classmethod
+    def from_mapping(cls, value: Mapping[str, Any]) -> "OverlapCriterion":
+        if not isinstance(value, Mapping) or "name" not in value \
+                or set(value) - {"name", "steps_allowed", "atol"}:
+            raise InvalidParameterError(
+                "overlap_criterion", sorted(value) if isinstance(value, Mapping) else value,
+                "a mapping of name and exactly one of steps_allowed or atol")
+        return cls(name=value["name"], steps_allowed=value.get("steps_allowed"),
+                   atol=value.get("atol"))
+
+
+@dataclass(frozen=True)
 class GateCampaign:
     """Machine-independent identity and mandatory ordering for one atmospheric gate."""
 
@@ -282,6 +350,10 @@ class GateCampaign:
     weatherbench_overlap: CropSpec
     expected_overlap_frames: int
     gate_plan: GateStudyPlan
+    # Optional so that v1 and v2 stay loadable and reviewable exactly as frozen: they are the
+    # record of what was preregistered, and a campaign that omits the criterion is refused at
+    # the acquisition boundary rather than made unreadable.
+    overlap_criterion: Optional[OverlapCriterion] = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.campaign_id, str) or not self.campaign_id.strip():
@@ -366,7 +438,7 @@ class GateCampaign:
         _scientific_review(self)
 
     def to_mapping(self) -> Dict[str, Any]:
-        return {
+        record = {
             "schema": CAMPAIGN_SCHEMA,
             "campaign_id": self.campaign_id,
             "full_acquisition": self.full_acquisition.to_provenance(),
@@ -375,16 +447,25 @@ class GateCampaign:
             "expected_overlap_frames": int(self.expected_overlap_frames),
             "gate_plan": self.gate_plan.to_mapping(),
         }
+        # Omitted when absent, so every campaign frozen before D86 keeps the exact fingerprint
+        # it was frozen under. A supersession is how a design changes; a schema migration that
+        # silently restated old fingerprints would destroy the evidence it claims to preserve.
+        if self.overlap_criterion is not None:
+            record["overlap_criterion"] = self.overlap_criterion.to_mapping()
+        return record
 
     def fingerprint(self) -> str:
         return _sha256(self.to_mapping())
 
     @classmethod
     def from_mapping(cls, value: Mapping[str, Any]) -> "GateCampaign":
-        record = _exact(value, {
+        fields = {
             "schema", "campaign_id", "full_acquisition", "canary_acquisition",
             "weatherbench_overlap", "expected_overlap_frames", "gate_plan",
-        }, "gate campaign")
+        }
+        if isinstance(value, Mapping) and "overlap_criterion" in value:
+            fields = fields | {"overlap_criterion"}
+        record = _exact(value, fields, "gate campaign")
         if record["schema"] != CAMPAIGN_SCHEMA:
             raise InvalidParameterError("schema", record["schema"], CAMPAIGN_SCHEMA)
         return cls(
@@ -397,6 +478,9 @@ class GateCampaign:
                 record["weatherbench_overlap"], "weatherbench_overlap"),
             expected_overlap_frames=record["expected_overlap_frames"],
             gate_plan=GateStudyPlan.from_mapping(record["gate_plan"]),
+            overlap_criterion=(
+                OverlapCriterion.from_mapping(record["overlap_criterion"])
+                if "overlap_criterion" in record else None),
         )
 
 
@@ -514,10 +598,44 @@ def _supersession_check_whole_annual_cycles(campaign: "GateCampaign",
             "date_start": start, "date_end": end, "annual_cycles": years}
 
 
+def _supersession_check_overlap_criterion_declared(
+        campaign: "GateCampaign", parameters: Mapping[str, Any]) -> Dict[str, Any]:
+    """Whether the campaign preregisters the rule that authorises its own acquisition (D86).
+
+    An `absolute` criterion is additionally required to be expressible by the primary route.
+    ERA5 arrives through CDS packed per field, and a tolerance finer than that packing step
+    cannot be met by any pair of archives however well they agree, so declaring one is a
+    design that refuses itself.
+    """
+    _exact(parameters, {"finest_primary_step"}, "overlap_criterion_declared parameters")
+    finest = parameters["finest_primary_step"]
+    if isinstance(finest, bool) or not isinstance(finest, (int, float)) \
+            or not math.isfinite(float(finest)) or float(finest) <= 0:
+        raise InvalidParameterError("finest_primary_step", finest,
+                                    "a positive quantisation step in the variable's units")
+    criterion = campaign.overlap_criterion
+    if criterion is None:
+        return {"passes": False, "declared": False, "reason": (
+            "no overlap criterion is frozen with the design, so the rule authorising "
+            "acquisition sits outside the preregistration")}
+    if criterion.name == "encoding_relative":
+        return {"passes": True, "declared": True, "name": criterion.name,
+                "steps_allowed": float(criterion.steps_allowed),
+                "reason": "judged in units of the primary route's own packing step"}
+    satisfiable = {name: float(value) >= float(finest)
+                   for name, value in (criterion.atol or {}).items()}
+    return {"passes": all(satisfiable.values()) if satisfiable else False,
+            "declared": True, "name": criterion.name,
+            "finest_primary_step": float(finest), "satisfiable": satisfiable,
+            "reason": ("an absolute tolerance is satisfiable only where it is no finer than "
+                       "the primary route's quantisation step")}
+
+
 _SUPERSESSION_CHECKS = {
     "surrogate_resolution": _supersession_check_surrogate_resolution,
     "resolution_margin": _supersession_check_resolution_margin,
     "whole_annual_cycles": _supersession_check_whole_annual_cycles,
+    "overlap_criterion_declared": _supersession_check_overlap_criterion_declared,
 }
 
 
@@ -857,6 +975,14 @@ def preflight_gate_campaign(
         blockers.append("standard CDS credential configuration is absent")
     if not consent:
         blockers.append("explicit network consent is disabled")
+    # D86. The acquisition is authorised by the cross-route check at step 3, so a campaign that
+    # does not say what agreement means has not preregistered the decision to spend. Refused
+    # here rather than at step 3 because discovering it after the canary has been fetched is
+    # discovering it too late to matter.
+    if campaign.overlap_criterion is None:
+        blockers.append(
+            "the campaign declares no overlap criterion, so the rule that authorises "
+            "acquisition is not part of the frozen design (D86)")
 
     full_cached = is_cached(campaign.full_acquisition.to_crop_spec(), str(cache_dir))
     canary_cached = is_cached(campaign.canary_acquisition.to_crop_spec(), str(cache_dir))
@@ -870,6 +996,8 @@ def preflight_gate_campaign(
         "dependency": {"cdsapi_available": dependency},
         "credentials": credentials,
         "network_consent_enabled": consent,
+        "overlap_criterion": (campaign.overlap_criterion.to_mapping()
+                              if campaign.overlap_criterion is not None else None),
         "storage": {
             "basis": "all canary/full NetCDF and Zarr artifacts plus WeatherBench overlap; no compression credit",
             "full": full, "canary": canary,
@@ -897,6 +1025,40 @@ def preflight_gate_campaign(
             "and consent checks only. It does not validate credentials, licence acceptance, CDS "
             "service availability, ERA5 values or the T4C.6 hypothesis."),
     }
+
+
+def run_campaign_gate(
+    campaign: "GateCampaign",
+    *,
+    cache_dir: Optional[str] = None,
+    receipt_path: Optional[Union[str, os.PathLike[str]]] = None,
+    supersessions: Sequence["CampaignSupersession"] = (),
+    **kwargs: Any,
+) -> Dict[str, Any]:
+    """Run the frozen T4C.6 gate under the agreement rule the campaign froze.
+
+    D87. `run_cached_gate` takes a plan, and a plan does not carry the criterion -- that lives
+    in the campaign envelope, where D86 put it so that no acquisition could be authorised by a
+    rule outside the frozen design. The consequence, found by running the real record, was that
+    the gate could not admit data its own campaign had legitimately admitted. This is the
+    entry point that closes the loop: the criterion reaches the gate from the envelope rather
+    than from a caller, so it cannot be chosen after the record is in hand.
+    """
+    retired = [record for record in supersessions
+               if record.superseded.fingerprint() == campaign.fingerprint()]
+    if retired:
+        raise InvalidParameterError(
+            "campaign", campaign.campaign_id,
+            "a campaign no supplied supersession has retired; a retired design must not "
+            "produce a gate verdict any more than it may spend")
+    if campaign.overlap_criterion is None:
+        raise InvalidParameterError(
+            "campaign.overlap_criterion", None,
+            "a declared agreement rule -- a record admitted by a rule that is not part of the "
+            "frozen design has not been independently verified in any reviewable sense (D86)")
+    return run_cached_gate(
+        campaign.gate_plan, cache_dir=cache_dir, receipt_path=receipt_path,
+        overlap_criterion=campaign.overlap_criterion.name, **kwargs)
 
 
 def _parser() -> argparse.ArgumentParser:
