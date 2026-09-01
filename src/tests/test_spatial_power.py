@@ -17,9 +17,11 @@ from src.analysis_engine.spatial_power import (
     REMEDY_AXES,
     MIN_EFFECTIVE_SAMPLES,
     TRUST_HORIZON_FRACTION,
+    StreamedAttenuation,
     assess_interior,
     attenuation_curve,
     centred_subcrop,
+    subcrop_sizes,
     effective_spatial_samples,
     energy_density_series,
     extrapolate_attenuation,
@@ -733,3 +735,75 @@ def test_a_record_too_short_to_shuffle_is_refused():
 def test_a_target_that_is_not_an_effect_is_refused(planted):
     with pytest.raises(InvalidParameterError, match="positive transfer entropy"):
         crop_for_effect(planted["curve"], target_nats=0.0)
+
+
+# ======================================================= streaming the curve (T4C.5i step 7)
+
+
+def _stream(source, target, *, lag, bins):
+    """Build the same curve one frame at a time, as a gate run has to."""
+    accumulator = StreamedAttenuation(
+        interior_px=int(min(source.shape[1], source.shape[2])),
+        n_frames=int(source.shape[0]), lag=lag, bins=bins)
+    for index in range(source.shape[0]):
+        accumulator.add(index, [source[index]], [target[index]])
+    return accumulator.curve()
+
+
+def test_the_streamed_curve_is_the_array_curve_exactly(planted):
+    """Not "close to": the same dict.
+
+    The gate cannot hold the stack -- 4,382 frames of a 139 px interior is 677 MB per scale
+    before the orientations are counted -- so it builds the curve by accumulation. That path is
+    only trustworthy if it computes the quantity this module's other tests characterise, and the
+    honest way to establish it is equality rather than a tolerance.
+    """
+    assert _stream(planted["source"], planted["target"], lag=3, bins=4) == planted["curve"]
+
+
+def test_orientations_collapse_the_way_a_signature_collapses_them(planted):
+    """Several planes per frame reduce to the mean of squares over the concatenation.
+
+    `scale_signature` concatenates every orientation's interior and takes one mean of squares
+    over the whole thing, so a scale with three orientations is not three measurements. Feeding
+    the same plane twice must therefore change nothing at all.
+    """
+    source, target = planted["source"], planted["target"]
+    accumulator = StreamedAttenuation(
+        interior_px=int(min(source.shape[1], source.shape[2])),
+        n_frames=int(source.shape[0]), lag=3, bins=4)
+    for index in range(source.shape[0]):
+        accumulator.add(index, [source[index], source[index]],
+                        [target[index], target[index]])
+    doubled = accumulator.curve()
+    single = _stream(source, target, lag=3, bins=4)
+    assert [row["transfer_entropy_nats"] for row in doubled["curve"]] == \
+        [row["transfer_entropy_nats"] for row in single["curve"]]
+
+
+def test_a_curve_cannot_be_read_from_a_subset_of_the_record():
+    """A partial curve is a different measurement wearing the same name."""
+    rng = np.random.default_rng(77)
+    accumulator = StreamedAttenuation(interior_px=16, n_frames=8, lag=1, bins=3)
+    for index in range(5):
+        accumulator.add(index, [rng.standard_normal((16, 16))],
+                        [rng.standard_normal((16, 16))])
+    with pytest.raises(InvalidParameterError, match="every declared frame"):
+        accumulator.curve()
+
+
+def test_a_frame_cannot_be_counted_twice():
+    rng = np.random.default_rng(78)
+    accumulator = StreamedAttenuation(interior_px=16, n_frames=4, lag=1, bins=3)
+    accumulator.add(0, [rng.standard_normal((16, 16))], [rng.standard_normal((16, 16))])
+    with pytest.raises(InvalidParameterError, match="not already recorded"):
+        accumulator.add(0, [rng.standard_normal((16, 16))], [rng.standard_normal((16, 16))])
+
+
+def test_the_two_paths_cannot_choose_different_sizes():
+    """`subcrop_sizes` exists so a shared curve cannot be built on unshared rows."""
+    assert subcrop_sizes(100) == (25, 40, 55, 70, 85, 100)
+    # Duplicates collapse rather than repeat, so a small interior yields fewer rows.
+    assert subcrop_sizes(6) == (4, 5, 6)
+    with pytest.raises(InvalidParameterError, match="at least four pixels"):
+        subcrop_sizes(3)

@@ -38,13 +38,20 @@ the constant it replaces.
 
 Everything here is computed on the generate/train partition only. Spending the confirmatory
 partition to decide whether the instrument is adequate would spend it twice.
+
+**Who consumes it.** T4C.5i step 7 wired the whole module into `gate_run.run_cached_gate`, which
+measures the curve on the train partition, publishes every quantity here in the receipt, and
+refuses to record an inadequately powered absence as a negative finding. `StreamedAttenuation`
+exists for that caller: the gate cannot hold the stack `attenuation_curve` takes, so it
+accumulates the identical record one frame at a time, and a test asserts equality rather than
+agreement.
 """
 
 from __future__ import annotations
 
 import math
 from dataclasses import dataclass, field as dc_field
-from typing import Any, Dict, Mapping, Optional, Sequence, Tuple
+from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
 
 import numpy as np
 
@@ -209,6 +216,23 @@ EXTRAPOLATION_POINTS = 4
 MIN_EXTRAPOLATION_FIT = 0.8
 
 
+def subcrop_sizes(interior_px: int,
+                  size_fractions: Sequence[float] = DEFAULT_SIZE_FRACTIONS) -> Tuple[int, ...]:
+    """The sub-crop sizes an interior of this width is measured at.
+
+    Factored out of `attenuation_curve` in T4C.5i step 7 so the array and streaming paths cannot
+    choose different sizes and produce two curves that look comparable and are not. Duplicates
+    collapse, so a small interior yields fewer rows rather than repeated ones, and nothing is
+    measured below four pixels.
+    """
+    interior = int(interior_px)
+    if interior < 4:
+        raise InvalidParameterError("interior_px", interior_px,
+                                    "an interior of at least four pixels per side")
+    return tuple(sorted({max(4, int(round(interior * float(fraction))))
+                         for fraction in size_fractions}))
+
+
 def centred_subcrop(bands: Any, size: int) -> np.ndarray:
     """The concentric ``size x size`` window of a ``(T, H, W)`` stack."""
     values = np.asarray(bands, dtype=np.float64)
@@ -247,6 +271,16 @@ def _median_effective_samples(bands: np.ndarray, *, frames: int = 16) -> Optiona
     for index in indices:
         assessment = effective_spatial_samples(spatial_decorrelation(bands[index]))
         measured.append(assessment["effective_samples"])
+    return median_present(measured)
+
+
+def median_present(measured: Sequence[Optional[float]]) -> Optional[float]:
+    """The median of the counts that exist, or ``None`` if half or more saturated.
+
+    A saturated estimate is not a large number, it is the absence of one, so it can neither be
+    dropped silently nor replaced by a bound. When the majority of samples saturate, the honest
+    report is that the stack has no count.
+    """
     present = [value for value in measured if value is not None]
     if len(present) * 2 <= len(measured):
         return None
@@ -272,7 +306,7 @@ def attenuation_curve(source_bands: Any, target_bands: Any, *, lag: int,
         raise InvalidParameterError("target_bands", target.shape,
                                     "the same (frames, height, width) shape as source_bands")
     interior = int(min(source.shape[1], source.shape[2]))
-    sizes = sorted({max(4, int(round(interior * fraction))) for fraction in size_fractions})
+    sizes = subcrop_sizes(interior, size_fractions)
     rows = []
     for size in sizes:
         source_crop = centred_subcrop(source, size)
@@ -288,6 +322,108 @@ def attenuation_curve(source_bands: Any, target_bands: Any, *, lag: int,
     return {"lag": int(lag), "bins": int(bins), "full_interior_px": interior, "curve": rows,
             "basis": ("concentric sub-crops of one interior; frames, bins and lag identical at "
                       "every size, so only spatial precision varies")}
+
+
+class StreamedAttenuation:
+    """`attenuation_curve` for a record that will not fit in memory (T4C.5i step 7).
+
+    The array form takes two ``(frames, height, width)`` stacks. The gate's train partition is
+    thousands of frames of several orientations, and holding it would cost more than the
+    acquisition it audits -- 4,382 frames of a 139 px interior is 677 MB per scale before the
+    orientations are counted -- so this accumulates the same curve one frame at a time. The only
+    state retained is one energy-density series per sub-crop size, which is a few kilobytes, plus
+    the decorrelation counts of an evenly spaced frame subsample.
+
+    The result is *identical* to `attenuation_curve`'s, not merely comparable: both take their
+    sizes from `subcrop_sizes` and their statistic from `energy_density_series`, and a test pins
+    the two against each other on the same field. That equality is what allows the cheap path to
+    be trusted, because the expensive path is the one the module's own tests characterise.
+
+    Frames arrive as a *sequence of orientation planes* rather than one plane, because that is
+    what `scale_signature` reduces: it concatenates every orientation's valid interior and takes
+    one mean of squares over the concatenation. Since a scale's orientations share a shape,
+    sub-cropping each concentrically and averaging the per-orientation means reproduces that
+    exactly.
+
+    Source and target planes need not have the same interior -- different levels lose different
+    margins to the same filter -- but every sub-crop is concentric and square, so both series are
+    measured on windows of the same size at every row. Only the sizes the *smaller* interior can
+    supply are measured, which is what keeps the row a statement about spatial precision rather
+    than about which scale happened to be wider.
+    """
+
+    def __init__(self, *, interior_px: int, n_frames: int, lag: int, bins: int = 6,
+                 size_fractions: Sequence[float] = DEFAULT_SIZE_FRACTIONS,
+                 decorrelation_frames: int = 16) -> None:
+        if int(n_frames) < 1:
+            raise InvalidParameterError("n_frames", n_frames, "at least one frame")
+        self.interior_px = int(interior_px)
+        self.n_frames = int(n_frames)
+        self.lag = int(lag)
+        self.bins = int(bins)
+        self.sizes = subcrop_sizes(self.interior_px, size_fractions)
+        self._source = {size: np.full(self.n_frames, np.nan) for size in self.sizes}
+        self._target = {size: np.full(self.n_frames, np.nan) for size in self.sizes}
+        self._seen = np.zeros(self.n_frames, dtype=bool)
+        sampled = np.unique(np.linspace(
+            0, self.n_frames - 1, min(int(decorrelation_frames), self.n_frames)).astype(int))
+        self._sampled = set(int(value) for value in sampled.tolist())
+        self._effective: Dict[int, List[Optional[float]]] = {size: [] for size in self.sizes}
+
+    @staticmethod
+    def _stack(planes: Any, label: str) -> np.ndarray:
+        values = np.asarray([np.asarray(plane, dtype=np.float64) for plane in planes])
+        if values.ndim != 3 or values.shape[0] < 1:
+            raise InvalidParameterError(label, getattr(values, "shape", None),
+                                        "a non-empty sequence of 2-D orientation planes")
+        return values
+
+    def add(self, index: int, source_planes: Any, target_planes: Any) -> None:
+        """Record one frame's contribution at every size."""
+        position = int(index)
+        if not 0 <= position < self.n_frames:
+            raise InvalidParameterError("index", index,
+                                        "a frame position below the declared frame count")
+        if self._seen[position]:
+            raise InvalidParameterError("index", index, "a frame position not already recorded")
+        source = self._stack(source_planes, "source_planes")
+        target = self._stack(target_planes, "target_planes")
+        for size in self.sizes:
+            source_crop = centred_subcrop(source, size)
+            self._source[size][position] = float(
+                energy_density_series(source_crop).mean())
+            self._target[size][position] = float(
+                energy_density_series(centred_subcrop(target, size)).mean())
+            if position in self._sampled:
+                for plane in source_crop:
+                    self._effective[size].append(
+                        effective_spatial_samples(spatial_decorrelation(plane))
+                        ["effective_samples"])
+        self._seen[position] = True
+
+    def curve(self) -> Dict[str, Any]:
+        """The same record `attenuation_curve` returns, once every frame has been added."""
+        from src.analysis_engine.cross_scale import transfer_entropy
+
+        missing = int(np.count_nonzero(~self._seen))
+        if missing:
+            raise InvalidParameterError(
+                "frames", missing,
+                "every declared frame recorded before the curve is read; a curve built from a "
+                "subset of the record is a different measurement wearing the same name")
+        rows = []
+        for size in self.sizes:
+            rows.append({
+                "interior_px": size,
+                "fraction_of_interior": size / self.interior_px,
+                "effective_samples": median_present(self._effective[size]),
+                "transfer_entropy_nats": float(transfer_entropy(
+                    self._source[size], self._target[size], self.lag, bins=self.bins)),
+            })
+        return {"lag": self.lag, "bins": self.bins, "full_interior_px": self.interior_px,
+                "curve": rows,
+                "basis": ("concentric sub-crops of one interior; frames, bins and lag identical "
+                          "at every size, so only spatial precision varies")}
 
 
 def extrapolate_attenuation(curve: Mapping[str, Any]) -> Dict[str, Any]:
@@ -867,6 +1003,9 @@ __all__ = [
     "EXTRAPOLATION_POINTS",
     "MIN_EXTRAPOLATION_FIT",
     "attenuation_curve",
+    "median_present",
+    "StreamedAttenuation",
+    "subcrop_sizes",
     "centred_subcrop",
     "energy_density_series",
     "extrapolate_attenuation",

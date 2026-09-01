@@ -15,9 +15,10 @@ import json
 import math
 import os
 from pathlib import Path
-from typing import Any, Dict, Mapping, Optional, Sequence, Tuple, Union
+from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple, Union
 
 import numpy as np
+import torch
 
 from src.analysis_engine.climatology import (
     DEFAULT_PERIODS_HOURS,
@@ -30,6 +31,12 @@ from src.analysis_engine.cross_scale import (
     support_floor,
 )
 from src.analysis_engine.scale_signature import scale_signature, stream_scale_signature
+from src.analysis_engine.spatial_power import (
+    StreamedAttenuation,
+    assess_interior,
+    median_present,
+    spatial_power_refusal,
+)
 from src.core.errors import DataSourceError, InvalidParameterError
 from src.core.publication import publish_new_bytes
 from src.data_layer.zarr_source import CachedFieldReader, CropSpec, MIN_VALID_INTERIOR
@@ -352,6 +359,304 @@ def preflight_cached_gate(
         return _preflight_with_reader(plan, reader)
 
 
+#: Frames whose spatial decorrelation is measured for the receipt. Every frame is another
+#: decomposition and one frame's length is a noisy estimate, so an evenly spaced subsample is
+#: taken and the median reported -- the same compromise `spatial_power` makes internally, stated
+#: here because the receipt publishes the number and a reader is entitled to know how many
+#: frames it came from.
+DECORRELATION_SAMPLE_FRAMES = 16
+
+
+def _audited_test(results: Sequence[Mapping[str, Any]]) -> Optional[Mapping[str, Any]]:
+    """The family's best shot on the train partition, which is the one worth auditing.
+
+    A spatial-power audit answers one question: if this run reports an absence, could the
+    instrument have seen the effect? The test that came closest to surviving is the binding case
+    -- if even that one is attenuated below the detection threshold, the absence is a statement
+    about the crop. Ranking is by p-value, then by excess, then by label so that ties resolve the
+    same way on every machine.
+
+    This selects on the **train** partition, which the design already treats as exploratory. The
+    same selection on the test partition would be choosing what to audit after seeing the
+    held-out result, which is the move the train/test split exists to prevent.
+    """
+    rows = [row for row in results
+            if np.isfinite(float(row.get("observed_nats", float("nan"))))]
+    if not rows:
+        return None
+    return min(rows, key=lambda row: (float(row["p_value"]),
+                                      -float(row.get("excess_nats", 0.0)),
+                                      str(row["label"])))
+
+
+def _interior_planes(field, interiors: Sequence[Mapping[str, Any]]) -> List[List[np.ndarray]]:
+    """Every scale's valid interior for one decomposed frame, one 2-D plane per orientation.
+
+    This is the same reduction `scale_signature` performs -- magnitude, then the per-scale
+    boundary margin removed -- stopped one step earlier. The signature concatenates the
+    orientations and collapses them to a single mean of squares; the attenuation curve needs the
+    planes still shaped, because it has to crop them concentrically before collapsing.
+    """
+    planes: List[List[np.ndarray]] = []
+    for index, scale in enumerate(field.scales):
+        record = interiors[index]
+        if not record.get("usable"):
+            planes.append([])
+            continue
+        margin = int(record["halfwidth_native"])
+        per_orientation: List[np.ndarray] = []
+        for orientation in field.orientations:
+            band = field.native_band(0, scale, orientation)
+            magnitude = torch.abs(band) if torch.is_complex(band) else band
+            array = magnitude.to(torch.float64).numpy()
+            if margin:
+                array = array[margin:array.shape[0] - margin,
+                              margin:array.shape[1] - margin]
+            per_orientation.append(np.ascontiguousarray(array))
+        planes.append(per_orientation)
+    return planes
+
+
+def _interior_power_records(samples: Mapping[int, List[Dict[str, Any]]],
+                            interiors: Sequence[Mapping[str, Any]]) -> List[Dict[str, Any]]:
+    """Per-scale decorrelation length and effective sample size: T4C.5i steps 1 and 2.
+
+    Measured on the train partition only. These are the quantities the removed judgement was
+    standing in for, so they are published whether or not they end up moving a verdict: a
+    reviewer asked to accept an absence needs to see how many independent structures the crop
+    actually held, not a constant that says 128.
+    """
+    records = []
+    for index, interior in enumerate(interiors):
+        measured = samples.get(index) or []
+        if not measured:
+            records.append({
+                "scale": interior.get("scale"),
+                "interior_shape": interior.get("interior_shape"),
+                "measured": False,
+                "reason": ("no valid interior at this scale, so it carries no spatial "
+                           "decorrelation to measure"),
+            })
+            continue
+        effective = [record["effective_samples"]["effective_samples"] for record in measured]
+        rows = [record["decorrelation"]["axes"] for record in measured]
+        saturated = sum(1 for record in measured if record["decorrelation"]["saturated"])
+        per_axis = []
+        for axis in (0, 1):
+            lengths = [(None if axes[axis]["saturated"]
+                        else float(axes[axis]["decorrelation_px"])) for axes in rows]
+            per_axis.append(median_present(lengths))
+        records.append({
+            "scale": interior.get("scale"),
+            "interior_shape": interior.get("interior_shape"),
+            "measured": True,
+            "samples": len(measured),
+            "median_decorrelation_px_per_axis": per_axis,
+            "median_effective_samples": median_present(effective),
+            "saturated_fraction": saturated / len(measured),
+            "basis": ("median over an evenly spaced subsample of train frames and every "
+                      "orientation of the scale; a saturated interior contributes no length "
+                      "rather than the length that was searched to"),
+        })
+    return records
+
+
+#: Transform families whose scales share a native grid. For an undecimated family a concentric
+#: window of N native pixels is the same patch of atmosphere at every scale, which is what lets
+#: one sub-crop size describe both series in an attenuation row.
+UNDECIMATED_FAMILIES = ("swt",)
+
+
+def _audit_limitations(plan: GateStudyPlan) -> List[str]:
+    """What the attenuation curve does not establish, carried in the record that reports it.
+
+    A power claim that travels without its caveats is the failure mode this whole task exists to
+    remove, so the limitations are a field rather than a docstring.
+    """
+    limitations = [
+        "the curve is a within-field trend over nested sub-crops of one record, not a set of "
+        "independent measurements, and nothing infers across sizes",
+        "it characterises the single audited test, so it bounds the family's best case rather "
+        "than every member of it",
+    ]
+    if plan.transform_family not in UNDECIMATED_FAMILIES:
+        limitations.append(
+            "the %s family decimates, so the two scales' native interiors span different "
+            "physical extents and a shared sub-crop size is not a shared area. The rows remain "
+            "readable as a precision trend, but the matched window is a coefficient-count match "
+            "rather than a geographic one. The frozen T4C.6 transform is undecimated and is not "
+            "affected." % plan.transform_family)
+    return limitations
+
+
+def _spatial_power_audit(plan: GateStudyPlan, climatology, indices: Sequence[int],
+                         signature, result: Mapping[str, Any],
+                         interiors: Sequence[Mapping[str, Any]]) -> Dict[str, Any]:
+    """The derived power record the receipt publishes and the verdict may consult.
+
+    T4C.5i step 7, and with it the attenuation half of step 5 that was deferred because it needs
+    exactly this curve. The work is a second pass over the train partition: for the family's best
+    test, transfer entropy is recomputed over concentric sub-crops of the same interiors with the
+    frames, bins and lag held fixed, so the only thing varying across the curve is spatial
+    precision.
+
+    The detection threshold is not invented here. It is the ``k + 1``-th largest value of the
+    surrogate ensemble the sweep itself used, recovered by reseeding
+    `cross_scale.shift_null_ensemble` with the sweep's own seed -- and the record reports whether
+    that reproduction matched the summary the sweep published, because a threshold read off a
+    different ensemble would not be this study's decision boundary.
+    """
+    from src.analysis_engine.cross_scale import shift_null_ensemble, surrogate_seed
+
+    row = _audited_test(result.get("results", []))
+    if row is None:
+        return {"status": "NOT_AUDITED",
+                "reason": ("no test survived the support floor and the interior mask, so the "
+                           "family has no best case whose power could be characterised")}
+
+    channels = [str(value) for value in signature.channels]
+    source_index = channels.index(str(row["source_scale"]))
+    target_index = channels.index(str(row["target_scale"]))
+    lag = int(row["lag_frames"])
+    theiler = int(row["theiler_window_frames"])
+    matrix = signature.to_matrix(plan.protocol.measure)
+    seed = surrogate_seed(plan.protocol.seed, lag, source_index)
+    null = shift_null_ensemble(
+        matrix[:, source_index], matrix[:, target_index], lag,
+        bins=plan.protocol.bins, wrap=True, estimator=plan.protocol.estimator,
+        n_surrogates=plan.protocol.n_surrogates, seed=seed, theiler=theiler)
+    finite = null[np.isfinite(null)]
+    reproduced = bool(
+        finite.size == int(row["n_surrogates"])
+        and math.isclose(float(finite.mean()), float(row["surrogate_mean_nats"]),
+                         rel_tol=1e-12, abs_tol=0.0))
+
+    sides = [int(min(interiors[index]["interior_shape"]))
+             for index in (source_index, target_index)]
+    matched = int(min(sides))
+    accumulator = StreamedAttenuation(
+        interior_px=matched, n_frames=len(indices), lag=lag, bins=plan.protocol.bins)
+    sampled = set(int(value) for value in np.unique(np.linspace(
+        0, len(indices) - 1,
+        min(DECORRELATION_SAMPLE_FRAMES, len(indices))).astype(int)).tolist())
+    samples: Dict[int, List[Dict[str, Any]]] = {}
+    for position, global_index in enumerate(indices):
+        field = decompose_field(
+            climatology.anomaly(int(global_index)), family=plan.transform_family,
+            config=plan.transform_config(), keep_native=True)
+        planes = _interior_planes(field, interiors)
+        accumulator.add(position, planes[source_index], planes[target_index])
+        if position in sampled:
+            for index, scale_planes in enumerate(planes):
+                for plane in scale_planes:
+                    samples.setdefault(index, []).append(assess_interior(plane))
+
+    curve = accumulator.curve()
+    refusal = spatial_power_refusal(
+        curve, null_nats=finite, n_tests=plan.protocol.family_size, n_frames=len(indices),
+        theiler=theiler, alpha=plan.protocol.alpha, correction=plan.protocol.correction)
+    full = max(curve["curve"], key=lambda entry: entry["interior_px"])
+    return {
+        "status": "MEASURED",
+        "partition": "train",
+        "audited_test": {
+            "label": str(row["label"]),
+            "source_scale": str(row["source_scale"]),
+            "target_scale": str(row["target_scale"]),
+            "lag_frames": lag,
+            "theiler_window_frames": theiler,
+            "p_value": float(row["p_value"]),
+            "observed_nats": float(row["observed_nats"]),
+            "selection": ("the train partition's smallest p-value; for an absence the family's "
+                          "best case is the binding one"),
+        },
+        "surrogate_ensemble": {
+            "reproduces_sweep_summary": reproduced,
+            "n_surrogates": int(finite.size),
+            "seed": int(seed),
+            "basis": ("the sweep's own ensemble, recomputed from its seed, because the minimum "
+                      "detectable effect is an order statistic no summary preserves"),
+        },
+        "matched_interior_px": matched,
+        "interior_sides_px": {"source": sides[0], "target": sides[1]},
+        "limitations": _audit_limitations(plan),
+        "matched_interior_note": (
+            "the two scales lose different margins to the same filter, so the curve is measured "
+            "on the concentric window both interiors can supply. Where those interiors differ, "
+            "the curve's largest row is therefore not the sweep's own estimate, which used each "
+            "scale's full interior. Both numbers are reported rather than reconciled, because "
+            "an adjustment between them would be a correction nothing measured."),
+        "sweep_observed_nats": float(row["observed_nats"]),
+        "matched_full_interior_nats": float(full["transfer_entropy_nats"]),
+        "attenuation": curve,
+        "interiors": _interior_power_records(samples, interiors),
+        "refusal": refusal,
+        "verdict": refusal["verdict"],
+    }
+
+
+def _power_adjudication(plan: GateStudyPlan, gate: Mapping[str, Any],
+                        power: Mapping[str, Any]) -> Dict[str, Any]:
+    """How the derived power record is allowed to move the gate's verdict.
+
+    Only one direction is open to it. Spatial imprecision attenuates an estimate *toward* the
+    null, so an undersized crop cannot manufacture a PASS -- it can only manufacture an absence
+    that is a property of the instrument. A PASS therefore stands on its own and an absence does
+    not, and that asymmetry is the whole of the FAIL/INVALID boundary step 5 deferred.
+
+    The gate's own verdict is left exactly as `evaluate_replication_gate` returned it. What this
+    decides is the *scientific* verdict, which is the one a reviewer reads, so the receipt shows
+    both and says which rule moved which.
+    """
+    if plan.evidence_role != "real_era5_gate":
+        return {
+            "scientific_verdict": "NOT_ESTABLISHED",
+            "power_applied": False,
+            "reason": ("synthetic acceptance adjudicates orchestration, not the atmosphere, so "
+                       "the derived power record is published for inspection and adjudicates "
+                       "nothing"),
+        }
+    verdict = str(gate["verdict"])
+    if verdict != "FAIL":
+        return {
+            "scientific_verdict": verdict,
+            "power_applied": False,
+            "reason": ("a %s verdict is not an absence, and spatial imprecision biases toward "
+                       "the null, so the derived power record cannot overturn it" % verdict),
+        }
+    if power.get("status") != "MEASURED":
+        return {
+            "scientific_verdict": "INVALID",
+            "power_applied": True,
+            "reason": ("an absence was reported but its power could not be characterised: %s"
+                       % power.get("reason", "the audit did not run")),
+        }
+    if not power["surrogate_ensemble"]["reproduces_sweep_summary"]:
+        return {
+            "scientific_verdict": "INVALID",
+            "power_applied": True,
+            "reason": ("the audit could not reproduce the sweep's surrogate ensemble, so the "
+                       "detection threshold it derived is not this study's decision boundary "
+                       "and the absence cannot be shown adequately powered"),
+        }
+    if power["verdict"] != "ADEQUATE":
+        return {
+            "scientific_verdict": "INVALID",
+            "power_applied": True,
+            "deficit": power["refusal"].get("deficit"),
+            "remedies": power["refusal"].get("remedies", []),
+            "reason": ("the absence is not adequately powered, so it is not a negative finding: "
+                       "%s" % power["refusal"].get("reason", "")),
+        }
+    return {
+        "scientific_verdict": "FAIL",
+        "power_applied": True,
+        "reason": ("the absence is adequately powered on the derived criterion, so it is a "
+                   "negative finding about the atmosphere rather than about the crop: %s"
+                   % power["refusal"].get("reason", "")),
+    }
+
+
 def run_cached_gate(
     plan: GateStudyPlan,
     *,
@@ -417,6 +722,14 @@ def run_cached_gate(
         train_result = dependency(train_signature, plan.protocol.seed)
         test_result = dependency(test_signature, plan.protocol.seed + 1)
         gate = evaluate_replication_gate(train_result, test_result, plan.protocol)
+        # T4C.5i step 7. This runs inside the reader's lifetime because it needs the train
+        # anomalies a second time, and it runs unconditionally because the receipt publishes
+        # the derivation whether or not it moves this particular verdict -- a power record that
+        # appeared only when it changed the answer would be a record nobody could calibrate.
+        spatial_power = _spatial_power_audit(
+            plan, climatology, train_indices, train_signature, train_result,
+            preflight["valid_interiors"])
+    adjudication = _power_adjudication(plan, gate, spatial_power)
 
     receipt = _json_safe({
         "schema": RECEIPT_SCHEMA,
@@ -434,13 +747,17 @@ def run_cached_gate(
         "train": train_result,
         "test": test_result,
         "gate": gate,
-        "scientific_verdict": (gate["verdict"]
-                               if plan.evidence_role == "real_era5_gate" else "NOT_ESTABLISHED"),
+        "spatial_power": spatial_power,
+        "power_adjudication": adjudication,
+        "scientific_verdict": adjudication["scientific_verdict"],
         "claim_boundary": (
             "Synthetic acceptance proves orchestration only; it is not atmospheric evidence."
             if plan.evidence_role == "synthetic_acceptance" else
             "PASS/FAIL adjudicates only the frozen T4C.6 relationship family on this exact "
-            "ERA5 crop; it is not causality, universality, forecast skill or operational readiness."),
+            "ERA5 crop; it is not causality, universality, forecast skill or operational "
+            "readiness. FAIL is reported only where the derived spatial-power record shows the "
+            "absence was detectable; where it does not, the run is INVALID and is not a "
+            "negative finding."),
         "network_used": False,
         "machine_paths_included": bool(
             preflight["source"].get("machine_paths_included")),

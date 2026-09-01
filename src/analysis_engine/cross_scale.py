@@ -598,6 +598,42 @@ def admissible_shifts(n: int, lag: int, theiler: int) -> np.ndarray:
     return admissible
 
 
+def surrogate_seed(seed: int, lag: int, source_index: int) -> int:
+    """The seed one test in a sweep draws its surrogates from.
+
+    A single expression, named because T4C.5i step 7 has to *reproduce* a sweep's ensemble
+    rather than draw a fresh one: the minimum detectable effect is an order statistic of the
+    ensemble the gate actually used, so an audit that reseeded would be characterising a
+    different null and reporting it as the study's decision boundary. The multiplier is a prime
+    so that neighbouring lags do not collide with neighbouring source indices.
+    """
+    return int(seed) + 7919 * int(lag) + int(source_index)
+
+
+def shift_null_ensemble(source: Sequence[float], target: Sequence[float], lag: int, *,
+                        bins: int = DEFAULT_BINS, wrap: bool = True,
+                        estimator: str = "transfer_entropy",
+                        n_surrogates: int = DEFAULT_SHIFT_SURROGATES,
+                        seed: int = 20260821, theiler: int = 1) -> np.ndarray:
+    """The circular-shift null ensemble for one pair, as the sweep computes it.
+
+    `cross_scale_dependency` keeps only the ensemble's summary -- mean, standard deviation, the
+    exceedance count and the p-value -- because carrying 4,999 numbers per test through every
+    receipt would multiply their size by two orders of magnitude for a quantity nothing read.
+    Step 7 reads it: the minimum detectable effect is the ``k + 1``-th largest value the ensemble
+    produced, which no summary recovers. This is the supported way to recompute it, and given
+    the same series, seed and Theiler window it returns the identical ensemble.
+    """
+    if estimator not in ("transfer_entropy", "mutual_information"):
+        raise InvalidParameterError("estimator", estimator,
+                                    "'transfer_entropy' or 'mutual_information'")
+    statistic = (transfer_entropy if estimator == "transfer_entropy"
+                 else lagged_mutual_information)
+    return _shift_null(np.asarray(source, dtype=np.float64),
+                       np.asarray(target, dtype=np.float64), int(lag), int(bins), bool(wrap),
+                       statistic, int(n_surrogates), int(seed), theiler=int(theiler))
+
+
 def _shift_null(source: np.ndarray, target: np.ndarray, lag: int, bins: int, wrap: bool,
                 statistic: Callable[..., float], n_surrogates: int, seed: int,
                 theiler: int = 1,
@@ -729,7 +765,8 @@ def cross_scale_dependency(
                 observed = statistic(source, target, lag, bins, wrap)
                 theiler = max(decorrelation_frames(source), decorrelation_frames(target))
                 null = _shift_null(source, target, lag, bins, wrap, statistic,
-                                   n_surrogates, seed + 7919 * lag + source_index,
+                                   n_surrogates,
+                                   surrogate_seed(seed, lag, source_index),
                                    theiler=theiler)
                 finite = null[np.isfinite(null)]
                 if not np.isfinite(observed) or finite.size == 0:

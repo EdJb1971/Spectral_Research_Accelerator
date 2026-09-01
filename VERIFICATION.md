@@ -7905,3 +7905,86 @@ $ npm run build            # frontend
 No network was used and no data was acquired. The full backend suite has **not** been rerun since
 these changes, so **3106** remains the last measured full-suite figure. The ledger is unchanged at
 D1-D85 with three open entries: D43, D84 and D85.
+
+## T4C.5i step 7 -- publishing the derivation, and the FAIL/INVALID boundary (2026-09-01, `ed-dev`)
+
+Steps 1-4 produced derived spatial-power quantities that nothing consulted. Step 7 runs them
+inside `run_cached_gate`, publishes every one of them in the receipt, and lets them decide whether
+an absence is a negative finding -- which is also step 5's deferred attenuation half, deferred
+precisely because it needed this curve.
+
+`run_cached_gate` now takes one further bounded pass over the train partition. The receipt gains
+a `spatial_power` block -- per-scale median decorrelation length per axis and effective sample
+count, the attenuation curve over concentric sub-crops, the sweep-derived minimum detectable
+effect, the `spatial_power_refusal` record with its remedy axes, and a `limitations` list -- and a
+`power_adjudication` block naming the rule that produced the scientific verdict. The gate's own
+verdict is left exactly as `evaluate_replication_gate` returned it, so the receipt records the
+protocol decision and the power decision separately rather than presenting one as the other.
+
+**The boundary.** In the real gate role a FAIL survives as a negative finding only where the
+derived record returns ADEQUATE. Where it returns INVALID, could not be measured, or could not
+reproduce the sweep's surrogate ensemble, the run is INVALID and names its deficit and remedy
+axis. A PASS is never downgraded and the receipt says why: spatial imprecision attenuates toward
+the null, so an undersized crop cannot manufacture a positive -- only an absence that belongs to
+the instrument. Under synthetic acceptance the block is computed and published in full and
+adjudicates nothing.
+
+**Three things recorded in the receipt rather than in a docstring.**
+
+*   The audited test is the **train** partition's smallest-p case. Selecting what to audit after
+    seeing the held-out result is the move the split exists to prevent.
+*   Where two scales lose different margins to the same filter, the curve is measured on the
+    window both interiors can supply, so its largest row is *not* the sweep's own estimate. Both
+    numbers are published and neither is adjusted into the other; the adjustment between them
+    would be a correction nothing measured. On the synthetic fixture the interiors are 60 and 54
+    px and the matched window is 54.
+*   A decimated family's shared sub-crop size is a coefficient-count match, not a shared area.
+    SWT -- which the frozen T4C.6 campaign uses -- is undecimated and unaffected, and the record
+    says so for the families that are.
+
+**Two seams added rather than shortcuts taken.** `cross_scale.shift_null_ensemble` and
+`surrogate_seed` let the audit reconstruct the ensemble the sweep actually used: the minimum
+detectable effect is an order statistic, the sweep keeps only that ensemble's summary, and an
+audit that reseeded would be characterising a different null and reporting it as this study's
+decision boundary. The receipt records whether the reconstruction matched the published summary,
+and a mismatch is INVALID rather than a quiet threshold. `spatial_power.StreamedAttenuation`
+builds the curve one frame at a time, because the array form would need 677 MB per scale on the
+frozen crop before the orientations are counted; a test asserts it **equals** `attenuation_curve`
+rather than approximating it.
+
+Commands and results:
+
+```
+$ .venv/Scripts/python.exe -m pytest src/tests/test_gate_run.py -q
+6 passed, 1 warning in 13.34s
+
+$ .venv/Scripts/python.exe -m pytest src/tests/test_spatial_power.py -q
+63 passed, 1 warning in 5.47s
+
+$ .venv/Scripts/python.exe -m pytest src/tests/test_cross_scale.py src/tests/test_spatial_power.py \
+    src/tests/test_gate_run.py src/tests/test_gate_campaign.py src/tests/test_imports.py \
+    src/tests/test_preregistration.py -q
+199 passed, 2 warnings in 1182.67s
+
+$ .venv/Scripts/python.exe -m pytest src/tests/test_gate_campaign.py src/tests/test_preregistration.py \
+    src/tests/test_frontend_contract.py src/tests/test_imports.py src/tests/test_scale_signature.py -q
+298 passed, 5 warnings in 796.84s
+
+$ .venv/Scripts/python.exe -m pytest src/tests/test_documentation.py -q
+20 passed, 2 warnings in 258.62s
+```
+
+The 298-test run predates the `limitations` field and the module-docstring change; the 199-test
+run and the documentation audit were both taken against the final tree.
+
+**What this does not establish.** No real gate has run. No atmospheric absence has been adjudicated
+by the new boundary, and no measured attenuation curve for the frozen 161 px ERA5 crop exists --
+every branch is exercised on the synthetic acceptance fixture and on unit-level records. D84's
+remaining half, whether 139 px of valid interior is *enough*, now has an apparatus that will answer
+it rather than an unanswered question, but the answer waits on acquisition, which step 8's campaign
+supersession and D85 still block.
+
+No network was used and no data was acquired. The full backend suite has **not** been rerun since
+these changes, so **3106** remains the last measured full-suite figure. The ledger is unchanged at
+D1-D85 with three open entries: D43, D84 and D85. No frontend change was needed: gate receipts are
+not surfaced by the API or the UI, so the receipt is the artefact this step delivers.
