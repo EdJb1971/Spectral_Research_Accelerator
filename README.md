@@ -496,20 +496,36 @@ the mandatory canary-first order:
 
 ```powershell
 python -m src.analysis_engine.gate_campaign review `
-  --campaign campaigns/t4c6_nz_era5_temperature_850_v1.json
+  --campaign campaigns/t4c6_nz_era5_temperature_850_v2.json
+python -m src.analysis_engine.gate_campaign review-supersession `
+  --supersession campaigns/t4c6_nz_era5_temperature_850_v1_superseded_by_v2.json
 python -m src.analysis_engine.gate_campaign preflight `
-  --campaign campaigns/t4c6_nz_era5_temperature_850_v1.json `
+  --campaign campaigns/t4c6_nz_era5_temperature_850_v2.json `
+  --supersession campaigns/t4c6_nz_era5_temperature_850_v1_superseded_by_v2.json `
   --full-download-dir data/cds/full --canary-download-dir data/cds/canary `
   --cache-dir data/zarr_cache --independent-cache-dir data/zarr_cache
 ```
 
-The checked-in campaign is the preregistered T4C.6 primary analysis, not an example: five
-complete years (2018--2022), 0.25-degree 20--60 S / 140--180 E, 850-hPa temperature, three
+The checked-in campaign is the preregistered T4C.6 primary analysis, not an example: six
+complete years (2018--2023), 0.25-degree 20--60 S / 140--180 E, 850-hPa temperature, three
 db2 SWT scales and 18--48-hour transfer-entropy lags. Its campaign SHA-256 is pinned by a test;
 the review command emits exact calendar partitions, transform interiors, physical lag floors,
 the 36-test BY family and surrogate resolution without touching the network. A ready preflight
 still does not prove credentials, licence acceptance, remote service availability, ERA5
 agreement or the hypothesis.
+
+**`..._v1.json` is retired and must not be acquired.** It preregistered 2018--2022, and defect
+D85 established that its 2,914-frame confirmatory partition holds 2,912 distinct admissible
+circular shifts against the 3,005 its own 36-test BY family needs -- so it could not have
+produced a PASS at any effect size. It is left frozen and unedited, because editing a
+preregistration destroys the record of what was actually declared. `..._v1_superseded_by_v2.json`
+is the retirement: it names both campaigns by content hash and states its reasons as *checks*
+that are re-run against both, so a reason is admissible only where v1 fails it and v2 passes.
+Passing `--supersession` to `preflight` makes the retirement bite where the transfer would
+happen; `review` still reads v1 and still reports its defect, which is the point of keeping it.
+The supersession's `deferred_to_run` block names what the re-freeze does **not** settle: D84
+(the crop is carried through unchanged), D85's derived Theiler window, and D43. No data has been
+acquired for either campaign.
 Before reporting readiness it now derives the exact grid shape and chosen transform supports,
 requires at least 128 valid parent-grid pixels at every scale, converts lat/lon degrees to
 physical metres for the advection floor, refuses shorter lags, and reports temporal split,

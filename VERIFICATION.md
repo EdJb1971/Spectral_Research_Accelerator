@@ -7988,3 +7988,94 @@ No network was used and no data was acquired. The full backend suite has **not**
 these changes, so **3106** remains the last measured full-suite figure. The ledger is unchanged at
 D1-D85 with three open entries: D43, D84 and D85. No frontend change was needed: gate receipts are
 not surfaced by the API or the UI, so the receipt is the artefact this step delivers.
+
+## T4C.5i step 8 -- retiring a frozen campaign by checked supersession (2026-09-01, `ed-dev`)
+
+D85 established that `t4c6_nz_era5_temperature_850_v1` could not resolve its own declared family
+on its confirmatory partition. A frozen design that cannot reach its own decision cannot simply
+be corrected in place: editing it destroys the record that the original rule existed, and leaves
+a reader unable to tell a correction from a result-driven revision. Step 8 records the retirement
+as a third immutable artifact instead.
+
+`CampaignSupersession` names both campaigns by content hash and states its reasons as **checks**.
+Recording it runs every check against both campaigns: a reason is admissible only where the
+superseded campaign genuinely fails it and the successor genuinely passes. Properties the
+predecessor already held are declared under `preserved` and must hold for **both**. A reason
+naming a check the registry does not implement is refused outright. The consequence is that the
+record cannot be written for a defect that was not real, cannot claim a repair that did not
+happen, cannot be a rename, and cannot quietly drop a design property it was not repairing.
+
+The successor `t4c6-nz-era5-temperature-850-campaign-v2` extends the record to six whole calendar
+years, 2018--2023: 8,764 frames, a 5,258/3,498 split, 3,496 distinct admissible shifts against
+the 3,005 required. Crop, variable, level, transform, the family of 36, lags, embargo, seed,
+correction, canary and WeatherBench overlap are unchanged, and a test asserts that rather than
+trusting the diff.
+
+**The minimal repair was refused by the record's own checks.** This is the substantive finding of
+the step. `frames_for_resolution` reported that 3,007 confirmatory frames would close D85, and it
+was right about the question it was asked -- it audits the most favourable Theiler window of one
+frame, because the window is derived from a series that does not exist before acquisition. The
+sweep sets that window from the measured temporal decorrelation of the series under test. Measured
+here:
+
+```
+record                              frames  train  test   max Theiler window still resolving
+2022-12-31 (superseded v1)            7304   4382  2914   -- (does not resolve at all)
+2023-02-27 (the minimal repair)       7536   4521  3007   1
+2023-12-31 (successor v2)             8764   5258  3498   245
+```
+
+A design built to the reported number resolves at a window of one frame and nothing larger, so it
+would have reproduced D85 at run time after the 2.8 GB transfer rather than before it. The
+`resolution_margin` check states the margin as an admissibility condition against a declared floor
+of 16 frames -- four days at this cadence -- and a test pins that the minimal design is refused by
+it. The check is a *designed margin, not a prediction*: the guarantee remains the run-time refusal,
+which re-runs the resolution audit at the measured window and returns INVALID.
+
+The supersession bites at the **acquisition** boundary, not the reading boundary.
+`review_gate_campaign` still loads the retired v1 and still reports its defect -- otherwise the
+defect could not be recorded against the artifact it belongs to -- while
+`preflight_gate_campaign(..., supersessions=[...])` and `gate_campaign preflight --supersession`
+refuse to spend on it. `gate_campaign review-supersession` re-runs every check against both
+campaigns and prints the outcomes side by side.
+
+Commands and results:
+
+```
+$ .venv/Scripts/python.exe -m pytest src/tests/test_gate_campaign.py -q
+19 passed, 1 warning in 7.46s
+
+$ .venv/Scripts/python.exe -m src.analysis_engine.gate_campaign review-supersession \
+    --supersession campaigns/t4c6_nz_era5_temperature_850_v1_superseded_by_v2.json
+  reasons: surrogate_resolution   superseded=False successor=True
+           resolution_margin(16)  superseded=False successor=True
+  preserved: whole_annual_cycles  superseded=True  successor=True
+  deferred_to_run: D84, D85, D43
+  network_used: false
+```
+
+Artifact hashes, published immutably and pinned by test:
+
+```
+superseded campaign   84f7b53fd25d555c8dcd57c6006288b95c5908f2a1d5c002d10a6572c7875975
+successor campaign    c66284d619d7439638ec5e1886671894df4d12708ab3cdced245d7e5f80fa23c
+supersession record   054592339d99141a1560b8fbecad6daaf02844a9813513331b982722f10e6711
+```
+
+**What this does not establish**, as the record's own `deferred_to_run` block says and the review
+republishes. **D84 is not closed**: the crop is carried through unchanged, and whether 139 px of
+valid interior suffices is a question about a field that does not exist, left to step 7's
+`power_adjudication` at run time. **D85 is not closed**: the declared margin is a design decision,
+not a measurement of the window the sweep will derive. **D43 is untouched**: no data has been
+acquired for either campaign, no network was used, and the successor is a design rather than a
+record. The successor's own preflight on this machine reports BLOCKED on the absent `cdsapi`
+dependency, absent CDS credential configuration and disabled network consent -- unchanged from
+v1, and unrelated to the supersession. A supersession is not a result and does not by itself
+license the successor's acquisition.
+
+The full backend suite has **not** been rerun, so **3106** remains the last measured full-suite
+figure. The ledger is unchanged at D1-D85 with three open entries: D43, D84 and D85. **No part
+of this line is surfaced in the API or the UI:** there is no gate or campaign route, no client
+method and no component that reads a campaign, a supersession or a gate receipt. The T4C
+artifacts are CLI-and-file only, and the frontend's preregistration and evidence panels belong
+to the separate cross-domain line in `roadmap_cross_domain.md`.

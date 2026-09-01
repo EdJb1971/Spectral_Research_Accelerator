@@ -39,6 +39,8 @@ CAMPAIGN_SCHEMA = "cross-scale-gate-campaign/v1"
 CAMPAIGN_ENVELOPE_SCHEMA = "cross-scale-gate-campaign-envelope/v1"
 PREFLIGHT_SCHEMA = "cross-scale-gate-campaign-preflight/v1"
 SCIENTIFIC_REVIEW_SCHEMA = "cross-scale-gate-scientific-review/v1"
+SUPERSESSION_SCHEMA = "cross-scale-gate-campaign-supersession/v1"
+SUPERSESSION_ENVELOPE_SCHEMA = "cross-scale-gate-campaign-supersession-envelope/v1"
 
 
 def _canonical_json(value: Any) -> bytes:
@@ -433,6 +435,316 @@ def load_gate_campaign(path: Union[str, os.PathLike[str]]) -> GateCampaign:
     return campaign
 
 
+# --------------------------------------------------------------------------------------
+# T4C.5i step 8: superseding a frozen campaign
+#
+# A frozen design that turns out to be incapable of its own decision cannot simply be edited.
+# Editing it destroys the only record that the original decision rule existed, and leaves a
+# reader unable to tell a correction from a result-driven revision. The supersession is
+# therefore a third artifact that names both campaigns by content and states why.
+#
+# What makes it more than a note is that every stated reason is a *check*, and recording the
+# supersession runs it against both campaigns. A reason is admissible only if the superseded
+# campaign genuinely fails it and the successor genuinely passes, so a supersession cannot be
+# written for a defect that was not real, cannot claim a fix that did not happen, and cannot
+# be back-dated onto a campaign it does not describe. Properties the predecessor already had
+# are declared separately and must hold for *both*, because a repair that quietly drops a
+# design property it was not repairing is a second change wearing the first one's reason.
+# --------------------------------------------------------------------------------------
+
+
+def _supersession_check_surrogate_resolution(campaign: "GateCampaign",
+                                             parameters: Mapping[str, Any]) -> Dict[str, Any]:
+    """Whether both partitions hold enough distinct alignments to resolve the declared family."""
+    _exact(parameters, set(), "surrogate_resolution parameters")
+    audit = _scientific_review(campaign)["surrogate_resolution"]
+    return {"passes": bool(audit["adequate"]),
+            "train": dict(audit["train"]), "test": dict(audit["test"])}
+
+
+def _supersession_check_resolution_margin(campaign: "GateCampaign",
+                                          parameters: Mapping[str, Any]) -> Dict[str, Any]:
+    """Whether both partitions still resolve at a declared, less favourable Theiler window.
+
+    `surrogate_resolution` audits the most favourable window of one frame, because the window
+    is derived from a series that does not exist before acquisition. That is the right refusal
+    to spend money on, and the wrong margin to design to: `cross_scale`'s sweep sets the window
+    from the measured temporal decorrelation of the very series being tested, so a record that
+    resolves *only* at one frame will fail at run time under any real autocorrelation.
+
+    This check does not predict the derived window and does not certify the run -- the run-time
+    refusal, which uses the measured window, is the guarantee. It states a margin the design was
+    required to carry, so that the deficit is discovered before the transfer rather than after.
+    """
+    record = _exact(parameters, {"minimum_theiler_frames"}, "resolution_margin parameters")
+    window = record["minimum_theiler_frames"]
+    if isinstance(window, bool) or int(window) != window or int(window) < 1:
+        raise InvalidParameterError("minimum_theiler_frames", window,
+                                    "a positive integer frame count")
+    from src.analysis_engine.spatial_power import frames_for_resolution
+
+    protocol = campaign.gate_plan.protocol
+    design = protocol.validate()
+    lag = int(min(protocol.lags))
+    partitions = {
+        name: frames_for_resolution(
+            n_frames=int(design["%s_frames" % name]), lag=lag, theiler=int(window),
+            n_tests=protocol.family_size, alpha=protocol.alpha, correction=protocol.correction)
+        for name in ("train", "test")}
+    return {
+        "passes": all(partitions[name]["resolves_corrected_level"]
+                      for name in ("train", "test")),
+        "minimum_theiler_frames": int(window),
+        "train": partitions["train"], "test": partitions["test"],
+        "basis": ("the sweep derives its Theiler window from the measured temporal "
+                  "decorrelation of the tested series; this is the margin the design carries "
+                  "against that, not a prediction of it"),
+    }
+
+
+def _supersession_check_whole_annual_cycles(campaign: "GateCampaign",
+                                            parameters: Mapping[str, Any]) -> Dict[str, Any]:
+    """Whether the acquisition spans a whole number of calendar years."""
+    _exact(parameters, set(), "whole_annual_cycles parameters")
+    request = campaign.full_acquisition
+    start, end = str(request.date_start), str(request.date_end)
+    whole = start.endswith("-01-01") and end.endswith("-12-31")
+    years = int(end[:4]) - int(start[:4]) + 1 if whole else None
+    return {"passes": bool(whole and years is not None and years >= 1),
+            "date_start": start, "date_end": end, "annual_cycles": years}
+
+
+_SUPERSESSION_CHECKS = {
+    "surrogate_resolution": _supersession_check_surrogate_resolution,
+    "resolution_margin": _supersession_check_resolution_margin,
+    "whole_annual_cycles": _supersession_check_whole_annual_cycles,
+}
+
+
+def _run_supersession_check(name: Any, parameters: Any,
+                            campaign: "GateCampaign") -> Dict[str, Any]:
+    if name not in _SUPERSESSION_CHECKS:
+        raise InvalidParameterError(
+            "check", name,
+            "one of the verifiable supersession checks %s -- a reason that cannot be checked "
+            "against both campaigns is a note, and a note cannot retire a frozen design"
+            % sorted(_SUPERSESSION_CHECKS))
+    if not isinstance(parameters, Mapping):
+        raise InvalidParameterError("parameters", parameters, "a mapping of check parameters")
+    return _SUPERSESSION_CHECKS[name](campaign, parameters)
+
+
+@dataclass(frozen=True)
+class CampaignSupersession:
+    """A content-bound record retiring one frozen campaign in favour of another."""
+
+    supersession_id: str
+    superseded: GateCampaign
+    successor: GateCampaign
+    reasons: Tuple[Mapping[str, Any], ...]
+    preserved: Tuple[Mapping[str, Any], ...] = ()
+    deferred_to_run: Tuple[Mapping[str, Any], ...] = ()
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.supersession_id, str) or not self.supersession_id.strip():
+            raise InvalidParameterError("supersession_id", self.supersession_id,
+                                        "a non-empty identifier")
+        if self.superseded.campaign_id == self.successor.campaign_id:
+            raise InvalidParameterError(
+                "successor.campaign_id", self.successor.campaign_id,
+                "an identifier distinct from the superseded campaign's -- a supersession that "
+                "reuses the retired identity is an edit")
+        # Compared with the identity removed, because the identity is what already differs.
+        # Two campaigns alike in everything but their name are a rename, and a rename repairs
+        # nothing while looking in the ledger exactly like a correction.
+        without_id = [{key: value for key, value in record.to_mapping().items()
+                       if key != "campaign_id"}
+                      for record in (self.superseded, self.successor)]
+        if without_id[0] == without_id[1]:
+            raise InvalidParameterError(
+                "successor", self.successor.campaign_id,
+                "a campaign whose design differs from the superseded one; these differ only "
+                "in their identifier, which is a rename rather than a supersession")
+        if not self.reasons:
+            raise InvalidParameterError(
+                "reasons", self.reasons,
+                "at least one checked reason -- a frozen design is not retired by assertion")
+
+        for index, reason in enumerate(self.reasons):
+            record = _exact(reason, {"defect", "check", "parameters", "statement"},
+                            "reasons[%d]" % index)
+            for field in ("defect", "statement"):
+                if not isinstance(record[field], str) or not record[field].strip():
+                    raise InvalidParameterError("reasons[%d].%s" % (index, field),
+                                                record[field], "a non-empty string")
+            before = _run_supersession_check(
+                record["check"], record["parameters"], self.superseded)
+            after = _run_supersession_check(
+                record["check"], record["parameters"], self.successor)
+            if before["passes"]:
+                raise InvalidParameterError(
+                    "reasons[%d].check" % index, record["check"],
+                    "a check the superseded campaign actually fails; %s passes it, so this "
+                    "reason does not describe a defect in it"
+                    % self.superseded.campaign_id)
+            if not after["passes"]:
+                raise InvalidParameterError(
+                    "reasons[%d].check" % index, record["check"],
+                    "a check the successor actually passes; %s fails it too, so this "
+                    "supersession does not repair what it claims to"
+                    % self.successor.campaign_id)
+
+        for index, entry in enumerate(self.preserved):
+            record = _exact(entry, {"check", "parameters", "statement"},
+                            "preserved[%d]" % index)
+            if not isinstance(record["statement"], str) or not record["statement"].strip():
+                raise InvalidParameterError("preserved[%d].statement" % index,
+                                            record["statement"], "a non-empty string")
+            for role, campaign in (("superseded", self.superseded),
+                                   ("successor", self.successor)):
+                outcome = _run_supersession_check(
+                    record["check"], record["parameters"], campaign)
+                if not outcome["passes"]:
+                    raise InvalidParameterError(
+                        "preserved[%d].check" % index, record["check"],
+                        "a property both campaigns hold; the %s campaign does not, so this is "
+                        "a change rather than a preserved invariant" % role)
+
+        for index, entry in enumerate(self.deferred_to_run):
+            record = _exact(entry, {"defect", "statement", "adjudicated_by"},
+                            "deferred_to_run[%d]" % index)
+            for field in ("defect", "statement", "adjudicated_by"):
+                if not isinstance(record[field], str) or not record[field].strip():
+                    raise InvalidParameterError("deferred_to_run[%d].%s" % (index, field),
+                                                record[field], "a non-empty string")
+
+    def to_mapping(self) -> Dict[str, Any]:
+        return {
+            "schema": SUPERSESSION_SCHEMA,
+            "supersession_id": self.supersession_id,
+            "superseded": {
+                "campaign_id": self.superseded.campaign_id,
+                "campaign_sha256": self.superseded.fingerprint(),
+                "study_plan_sha256": self.superseded.gate_plan.fingerprint(),
+            },
+            "successor": {
+                "campaign_id": self.successor.campaign_id,
+                "campaign_sha256": self.successor.fingerprint(),
+                "study_plan_sha256": self.successor.gate_plan.fingerprint(),
+            },
+            "reasons": [dict(reason) for reason in self.reasons],
+            "preserved": [dict(entry) for entry in self.preserved],
+            "deferred_to_run": [dict(entry) for entry in self.deferred_to_run],
+        }
+
+    def fingerprint(self) -> str:
+        return _sha256(self.to_mapping())
+
+
+def review_gate_campaign_supersession(
+        supersession: CampaignSupersession) -> Dict[str, Any]:
+    """Return the zero-network evidence that this supersession's stated reasons are real.
+
+    The constructor already refuses an inadmissible reason. This re-runs every check against
+    both campaigns and publishes the two outcomes side by side, so a reviewer reads the numbers
+    that made the retirement admissible rather than the fact that a constructor allowed it.
+    """
+    findings = []
+    for reason in supersession.reasons:
+        findings.append({
+            "defect": reason["defect"],
+            "check": reason["check"],
+            "parameters": dict(reason["parameters"]),
+            "statement": reason["statement"],
+            "superseded": _run_supersession_check(
+                reason["check"], reason["parameters"], supersession.superseded),
+            "successor": _run_supersession_check(
+                reason["check"], reason["parameters"], supersession.successor),
+        })
+    invariants = []
+    for entry in supersession.preserved:
+        invariants.append({
+            "check": entry["check"],
+            "parameters": dict(entry["parameters"]),
+            "statement": entry["statement"],
+            "superseded": _run_supersession_check(
+                entry["check"], entry["parameters"], supersession.superseded),
+            "successor": _run_supersession_check(
+                entry["check"], entry["parameters"], supersession.successor),
+        })
+    return {
+        "schema": SUPERSESSION_SCHEMA,
+        "supersession_id": supersession.supersession_id,
+        "supersession_sha256": supersession.fingerprint(),
+        "superseded_campaign_sha256": supersession.superseded.fingerprint(),
+        "successor_campaign_sha256": supersession.successor.fingerprint(),
+        "reasons": findings,
+        "preserved": invariants,
+        "deferred_to_run": [dict(entry) for entry in supersession.deferred_to_run],
+        "successor_review": review_gate_campaign(supersession.successor),
+        "claim_boundary": (
+            "This record establishes that the superseded design could not resolve what it "
+            "declared and that the successor can. It is not a result, does not license the "
+            "successor's acquisition on its own, and does not adjudicate any defect listed "
+            "under deferred_to_run."),
+        "network_used": False,
+    }
+
+
+def save_gate_campaign_supersession(
+        path: Union[str, os.PathLike[str]],
+        supersession: CampaignSupersession) -> str:
+    """Publish a supersession immutably beside the two campaigns it binds."""
+    envelope = {
+        "schema": SUPERSESSION_ENVELOPE_SCHEMA,
+        "supersession": supersession.to_mapping(),
+        "superseded_campaign": supersession.superseded.to_mapping(),
+        "successor_campaign": supersession.successor.to_mapping(),
+        "supersession_sha256": supersession.fingerprint(),
+    }
+    _atomic_write_new(path, _canonical_json(envelope) + b"\n")
+    return supersession.fingerprint()
+
+
+def load_gate_campaign_supersession(
+        path: Union[str, os.PathLike[str]]) -> CampaignSupersession:
+    """Load a supersession, re-running every stated check against both bound campaigns."""
+    try:
+        envelope = json.loads(Path(path).read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise DataSourceError("gate campaign supersession is unreadable: %s" % exc) from exc
+    record = _exact(envelope, {"schema", "supersession", "superseded_campaign",
+                               "successor_campaign", "supersession_sha256"},
+                    "gate campaign supersession envelope")
+    if record["schema"] != SUPERSESSION_ENVELOPE_SCHEMA:
+        raise DataSourceError("unsupported gate campaign supersession envelope schema")
+    body = _exact(record["supersession"], {
+        "schema", "supersession_id", "superseded", "successor", "reasons", "preserved",
+        "deferred_to_run"}, "gate campaign supersession")
+    if body["schema"] != SUPERSESSION_SCHEMA:
+        raise DataSourceError("unsupported gate campaign supersession schema")
+    superseded = GateCampaign.from_mapping(record["superseded_campaign"])
+    successor = GateCampaign.from_mapping(record["successor_campaign"])
+    for role, campaign, stated in (("superseded", superseded, body["superseded"]),
+                                   ("successor", successor, body["successor"])):
+        reference = _exact(stated, {"campaign_id", "campaign_sha256", "study_plan_sha256"},
+                           "%s reference" % role)
+        if (reference["campaign_id"] != campaign.campaign_id
+                or reference["campaign_sha256"] != campaign.fingerprint()
+                or reference["study_plan_sha256"] != campaign.gate_plan.fingerprint()):
+            raise DataSourceError(
+                "the %s campaign in this supersession is not the one it names" % role)
+    supersession = CampaignSupersession(
+        supersession_id=body["supersession_id"],
+        superseded=superseded, successor=successor,
+        reasons=tuple(body["reasons"]),
+        preserved=tuple(body["preserved"]),
+        deferred_to_run=tuple(body["deferred_to_run"]))
+    if record["supersession_sha256"] != supersession.fingerprint():
+        raise DataSourceError("supersession hash does not authenticate its contents")
+    return supersession
+
+
 def _probe_volume(path: Path) -> Tuple[str, Path]:
     candidate = path.expanduser().absolute()
     while not candidate.exists() and candidate != candidate.parent:
@@ -465,8 +777,22 @@ def preflight_gate_campaign(
     cache_dir: Union[str, os.PathLike[str]],
     independent_cache_dir: Union[str, os.PathLike[str]],
     minimum_free_reserve_bytes: int = MINIMUM_FREE_RESERVE_BYTES,
+    supersessions: Sequence["CampaignSupersession"] = (),
 ) -> Dict[str, Any]:
     """Perform a zero-network readiness and aggregate capacity check for the whole campaign."""
+    # T4C.5i step 8. A retired campaign stays loadable and reviewable -- the record of what was
+    # frozen and why it was wrong is the point -- but the acquisition boundary is where a
+    # supersession has to bite, because that is where the retired design would spend.
+    retired = [record for record in supersessions
+               if record.superseded.fingerprint() == campaign.fingerprint()]
+    if retired:
+        raise InvalidParameterError(
+            "campaign", campaign.campaign_id,
+            "a campaign no supplied supersession has retired; %s supersedes it in favour of "
+            "%s for: %s" % (
+                retired[0].supersession_id, retired[0].successor.campaign_id,
+                "; ".join("%s (%s)" % (reason["defect"], reason["check"])
+                          for reason in retired[0].reasons)))
     # T4C.5i step 5, and the reason this refusal sits here rather than in the review: a frozen
     # campaign that cannot resolve its own declared family must remain loadable and reviewable,
     # or the defect could not be recorded against it. What it must not do is spend 2.5 GB.
@@ -583,8 +909,13 @@ def _parser() -> argparse.ArgumentParser:
     freeze.add_argument("--out", required=True, help="new immutable campaign envelope")
     review = commands.add_parser("review")
     review.add_argument("--campaign", required=True)
+    supersede = commands.add_parser("review-supersession")
+    supersede.add_argument("--supersession", required=True)
     preflight = commands.add_parser("preflight")
     preflight.add_argument("--campaign", required=True)
+    preflight.add_argument(
+        "--supersession", action="append", default=[],
+        help="a supersession record; acquisition is refused if it retires this campaign")
     preflight.add_argument("--full-download-dir", required=True)
     preflight.add_argument("--canary-download-dir", required=True)
     preflight.add_argument("--cache-dir", required=True)
@@ -607,12 +938,18 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         campaign = load_gate_campaign(args.campaign)
         result = review_gate_campaign(campaign)
         code = 0
+    elif args.command == "review-supersession":
+        result = review_gate_campaign_supersession(
+            load_gate_campaign_supersession(args.supersession))
+        code = 0
     else:
         campaign = load_gate_campaign(args.campaign)
         result = preflight_gate_campaign(
             campaign, full_download_dir=args.full_download_dir,
             canary_download_dir=args.canary_download_dir, cache_dir=args.cache_dir,
-            independent_cache_dir=args.independent_cache_dir)
+            independent_cache_dir=args.independent_cache_dir,
+            supersessions=[load_gate_campaign_supersession(path)
+                           for path in args.supersession])
         code = 0 if result["status"] == "READY_FOR_CANARY" else 2
     print(json.dumps(result, indent=2, sort_keys=True))
     return code

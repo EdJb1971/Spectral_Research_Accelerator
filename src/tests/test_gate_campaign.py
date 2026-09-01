@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import dataclasses
 import json
 from pathlib import Path
 from types import SimpleNamespace
@@ -10,12 +11,16 @@ import pytest
 
 from src.analysis_engine.cross_scale import GateProtocol
 from src.analysis_engine.gate_campaign import (
+    CampaignSupersession,
     GateCampaign,
     load_gate_campaign,
+    load_gate_campaign_supersession,
     main,
     preflight_gate_campaign,
     review_gate_campaign,
+    review_gate_campaign_supersession,
     save_gate_campaign,
+    save_gate_campaign_supersession,
 )
 from src.analysis_engine.gate_run import GateStudyPlan
 from src.core.errors import DataSourceError, InvalidParameterError
@@ -256,3 +261,233 @@ def test_a_resolvable_campaign_is_not_blocked_by_the_new_audit(tmp_path, monkeyp
     design = review_gate_campaign(campaign)["scientific_design"]
     assert design["resolvable"] is True
     assert design["surrogate_resolution"]["adequate"] is True
+
+# --------------------------------------------------------------------------------------
+# T4C.5i step 8 -- superseding a frozen campaign
+# --------------------------------------------------------------------------------------
+
+_CAMPAIGNS = Path(__file__).parents[2] / "campaigns"
+_V1 = _CAMPAIGNS / "t4c6_nz_era5_temperature_850_v1.json"
+_V2 = _CAMPAIGNS / "t4c6_nz_era5_temperature_850_v2.json"
+_SUPERSESSION = _CAMPAIGNS / "t4c6_nz_era5_temperature_850_v1_superseded_by_v2.json"
+
+
+def _relength(campaign, *, date_end, expected_frames, suffix):
+    """The same frozen design over a different record length."""
+    full = dataclasses.replace(campaign.full_acquisition, date_end=date_end)
+    protocol = dataclasses.replace(
+        campaign.gate_plan.protocol,
+        study_id="t4c6-nz-era5-temperature-850-%s" % suffix,
+        expected_frames=expected_frames)
+    plan = dataclasses.replace(
+        campaign.gate_plan, study_id=protocol.study_id,
+        crop=full.to_crop_spec(), protocol=protocol)
+    return GateCampaign(
+        campaign_id="t4c6-nz-era5-temperature-850-campaign-%s" % suffix,
+        full_acquisition=full, canary_acquisition=campaign.canary_acquisition,
+        weatherbench_overlap=campaign.weatherbench_overlap,
+        expected_overlap_frames=campaign.expected_overlap_frames, gate_plan=plan)
+
+
+def _reason(**overrides):
+    record = {
+        "defect": "D85", "check": "surrogate_resolution", "parameters": {},
+        "statement": "the confirmatory partition cannot resolve the declared family",
+    }
+    record.update(overrides)
+    return record
+
+
+def test_the_checked_in_supersession_retires_v1_for_a_resolvable_v2():
+    """The three artifacts are one record: what was frozen, what replaces it, and why."""
+    superseded, successor = load_gate_campaign(_V1), load_gate_campaign(_V2)
+    supersession = load_gate_campaign_supersession(_SUPERSESSION)
+
+    # The retired campaign is not edited. Its own review still carries its defect, which is
+    # the entire reason a supersession is a third file rather than a change to the first.
+    assert superseded.fingerprint() == (
+        "84f7b53fd25d555c8dcd57c6006288b95c5908f2a1d5c002d10a6572c7875975")
+    assert review_gate_campaign(superseded)["scientific_design"]["resolvable"] is False
+
+    assert successor.fingerprint() == (
+        "c66284d619d7439638ec5e1886671894df4d12708ab3cdced245d7e5f80fa23c")
+    design = review_gate_campaign(successor)["scientific_design"]
+    assert design["full_frames"] == 8764
+    assert (design["train_frames"], design["test_frames"]) == (5258, 3498)
+    assert design["resolvable"] is True
+    assert design["surrogate_resolution"]["test"]["distinct_admissible_shifts"] == 3496
+    assert design["surrogate_resolution"]["test"]["distinct_shifts_required"] == 3005
+    # Everything the defect was not about is unchanged, including the crop D84 is open on.
+    assert successor.gate_plan.protocol.family_size == 36
+    assert successor.gate_plan.crop.lat_min == superseded.gate_plan.crop.lat_min
+    assert successor.gate_plan.protocol.lags == superseded.gate_plan.protocol.lags
+    assert successor.canary_acquisition == superseded.canary_acquisition
+
+    review = review_gate_campaign_supersession(supersession)
+    assert review["network_used"] is False
+    assert review["superseded_campaign_sha256"] == superseded.fingerprint()
+    assert review["successor_campaign_sha256"] == successor.fingerprint()
+    assert [finding["check"] for finding in review["reasons"]] == [
+        "surrogate_resolution", "resolution_margin"]
+    for finding in review["reasons"]:
+        assert finding["defect"] == "D85"
+        assert finding["superseded"]["passes"] is False
+        assert finding["successor"]["passes"] is True
+    for entry in review["preserved"]:
+        assert entry["superseded"]["passes"] is True
+        assert entry["successor"]["passes"] is True
+    # D84 is named as unresolved rather than quietly carried along by the re-freeze.
+    assert {entry["defect"] for entry in review["deferred_to_run"]} == {"D84", "D85", "D43"}
+    assert "does not establish" in [
+        entry["statement"] for entry in review["deferred_to_run"]
+        if entry["defect"] == "D84"][0]
+
+
+def test_a_reason_must_be_a_defect_the_retired_design_actually_has():
+    """A supersession cannot be written for a problem the superseded campaign does not have."""
+    successor = load_gate_campaign(_V2)
+    later = _relength(successor, date_end="2024-12-31", expected_frames=8764 + 1464,
+                      suffix="v3")
+    with pytest.raises(InvalidParameterError, match="does not describe a defect"):
+        CampaignSupersession(
+            supersession_id="v2-to-v3", superseded=successor, successor=later,
+            reasons=(_reason(),))
+
+
+def test_a_supersession_cannot_claim_a_repair_that_did_not_happen():
+    """The minimal repair clears the audit and fails the margin, so it cannot state the margin.
+
+    2023-02-27 gives exactly the 3,007 confirmatory frames `frames_required` asked for, and
+    resolves only at the most favourable Theiler window of one frame. The reason that says the
+    successor carries a margin is refused against it, which is what stopped the re-freeze from
+    being a design that would have failed again after the transfer.
+    """
+    superseded = load_gate_campaign(_V1)
+    minimal = _relength(superseded, date_end="2023-02-27", expected_frames=7536,
+                        suffix="minimal")
+    assert review_gate_campaign(minimal)["scientific_design"]["resolvable"] is True
+
+    # The audit-level reason is admissible, because the minimal record does repair that.
+    CampaignSupersession(
+        supersession_id="v1-to-minimal", superseded=superseded, successor=minimal,
+        reasons=(_reason(),))
+    with pytest.raises(InvalidParameterError, match="does not repair what it claims"):
+        CampaignSupersession(
+            supersession_id="v1-to-minimal", superseded=superseded, successor=minimal,
+            reasons=(_reason(check="resolution_margin",
+                             parameters={"minimum_theiler_frames": 16}),))
+
+
+def test_a_preserved_property_the_repair_drops_is_not_preserved():
+    """The minimal repair spans five years and 58 days, and cannot claim whole annual cycles."""
+    superseded = load_gate_campaign(_V1)
+    minimal = _relength(superseded, date_end="2023-02-27", expected_frames=7536,
+                        suffix="minimal")
+    with pytest.raises(InvalidParameterError, match="a change rather than a preserved"):
+        CampaignSupersession(
+            supersession_id="v1-to-minimal", superseded=superseded, successor=minimal,
+            reasons=(_reason(),),
+            preserved=({"check": "whole_annual_cycles", "parameters": {},
+                        "statement": "five whole calendar years"},))
+
+
+def test_an_unverifiable_reason_cannot_retire_a_frozen_design():
+    superseded, successor = load_gate_campaign(_V1), load_gate_campaign(_V2)
+    with pytest.raises(InvalidParameterError, match="cannot be checked"):
+        CampaignSupersession(
+            supersession_id="v1-to-v2", superseded=superseded, successor=successor,
+            reasons=(_reason(check="the design felt wrong"),))
+    with pytest.raises(InvalidParameterError, match="not retired by assertion"):
+        CampaignSupersession(
+            supersession_id="v1-to-v2", superseded=superseded, successor=successor,
+            reasons=())
+
+
+def test_a_supersession_is_not_an_edit_wearing_a_new_name():
+    superseded = load_gate_campaign(_V1)
+    successor = load_gate_campaign(_V2)
+    renamed = dataclasses.replace(successor, campaign_id=superseded.campaign_id)
+    with pytest.raises(InvalidParameterError, match="an identifier distinct"):
+        CampaignSupersession(
+            supersession_id="v1-to-v1", superseded=superseded, successor=renamed,
+            reasons=(_reason(),))
+    with pytest.raises(InvalidParameterError, match="rename rather than a supersession"):
+        CampaignSupersession(
+            supersession_id="v1-to-v1", superseded=superseded,
+            successor=dataclasses.replace(superseded, campaign_id="other"),
+            reasons=(_reason(),))
+
+
+def test_a_supersession_is_atomic_hashable_and_refuses_a_swapped_campaign(tmp_path):
+    supersession = load_gate_campaign_supersession(_SUPERSESSION)
+    target = tmp_path / "supersession.json"
+    assert save_gate_campaign_supersession(target, supersession) == supersession.fingerprint()
+    with pytest.raises(FileExistsError):
+        save_gate_campaign_supersession(target, supersession)
+    assert load_gate_campaign_supersession(target).fingerprint() == supersession.fingerprint()
+
+    envelope = json.loads(target.read_text(encoding="utf-8"))
+    envelope["superseded_campaign"] = envelope["successor_campaign"]
+    swapped = tmp_path / "swapped.json"
+    swapped.write_text(json.dumps(envelope), encoding="utf-8")
+    with pytest.raises(DataSourceError, match="not the one it names"):
+        load_gate_campaign_supersession(swapped)
+
+    envelope = json.loads(target.read_text(encoding="utf-8"))
+    envelope["supersession"]["reasons"][0]["statement"] = "a different story"
+    edited = tmp_path / "edited.json"
+    edited.write_text(json.dumps(envelope), encoding="utf-8")
+    with pytest.raises(DataSourceError, match="does not authenticate"):
+        load_gate_campaign_supersession(edited)
+
+
+def test_acquisition_refuses_a_retired_campaign_and_admits_its_successor(tmp_path, monkeypatch):
+    """The supersession bites where the money is spent, not where the record is read."""
+    supersession = load_gate_campaign_supersession(_SUPERSESSION)
+    directories = dict(
+        full_download_dir=tmp_path / "full", canary_download_dir=tmp_path / "canary",
+        cache_dir=tmp_path / "cache", independent_cache_dir=tmp_path / "independent")
+
+    # Reading the retired campaign is still allowed, and still reports its own defect.
+    assert review_gate_campaign(supersession.superseded)["scientific_design"][
+        "resolvable"] is False
+    with pytest.raises(InvalidParameterError, match="no supplied supersession has retired"):
+        preflight_gate_campaign(
+            supersession.superseded, supersessions=[supersession], **directories)
+
+    monkeypatch.setattr(
+        "src.analysis_engine.gate_campaign.shutil.disk_usage",
+        lambda path: SimpleNamespace(total=1 << 50, used=0, free=1 << 50))
+    report = preflight_gate_campaign(
+        supersession.successor, supersessions=[supersession], **directories)
+    assert report["network_used"] is False
+
+def test_the_supersession_is_reviewable_and_blocks_acquisition_from_the_command_line(
+        tmp_path, capsys, monkeypatch):
+    supersession = load_gate_campaign_supersession(_SUPERSESSION)
+    assert main(["review-supersession", "--supersession", str(_SUPERSESSION)]) == 0
+    emitted = json.loads(capsys.readouterr().out)
+    assert emitted["supersession_sha256"] == supersession.fingerprint()
+    assert emitted["successor_review"]["scientific_design"]["resolvable"] is True
+
+    monkeypatch.setattr(
+        "src.analysis_engine.gate_campaign.shutil.disk_usage",
+        lambda path: SimpleNamespace(total=1 << 50, used=0, free=1 << 50))
+    arguments = [
+        "preflight", "--full-download-dir", str(tmp_path / "full"),
+        "--canary-download-dir", str(tmp_path / "canary"),
+        "--cache-dir", str(tmp_path / "cache"),
+        "--independent-cache-dir", str(tmp_path / "independent"),
+        "--supersession", str(_SUPERSESSION)]
+    with pytest.raises(InvalidParameterError, match="no supplied supersession has retired"):
+        main(arguments + ["--campaign", str(_V1)])
+    # The successor is not retired, so preflight proceeds to the readiness checks and reports
+    # whatever this machine actually is. On a machine without the CDS client or a recorded
+    # consent that is BLOCKED, and the point of the assertion is that it is blocked on
+    # readiness rather than on the supersession.
+    assert main(arguments + ["--campaign", str(_V2)]) in (0, 2)
+    report = json.loads(capsys.readouterr().out)
+    assert report["network_used"] is False and report["client_constructed"] is False
+    assert report["campaign_sha256"] == supersession.successor.fingerprint()
+    assert report["status"] in ("READY_FOR_CANARY", "BLOCKED")
+    assert not any("supersede" in str(blocker) for blocker in report["blockers"])
