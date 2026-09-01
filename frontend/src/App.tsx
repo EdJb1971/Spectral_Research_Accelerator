@@ -16,6 +16,7 @@ import EvidenceView from './components/EvidenceView';
 import StructureMiningView from './components/StructureMiningView';
 import CrossDomainRecordView from './components/CrossDomainRecordView';
 import ReviewView from './components/ReviewView';
+import GateRecordView from './components/GateRecordView';
 import DatasetCapabilityProfile from './components/DatasetCapabilityProfile';
 import ExperimentComposer from './components/ExperimentComposer';
 import { ExperimentReceiptPanel } from './components/ExperimentReceipt';
@@ -54,6 +55,7 @@ import {
   FilePlus2,
   FileLock2,
   Lock,
+  Landmark,
   MessageSquare
 } from 'lucide-react';
 
@@ -83,6 +85,7 @@ const WORKFLOW_NAV = [
   },
   { section: 'Review', note: 'Recorded argument; never claim permission', items: [
     { id: 'review', name: 'Recorded review', icon: MessageSquare },
+    { id: 'gate', name: 'Atmospheric gate record', icon: Landmark, context: 'Gridded field line' },
   ] },
   { section: 'Read', items: [{ id: 'findings', name: 'Findings', icon: BookOpen }] },
   { section: 'Platform', items: [{ id: 'platform', name: 'Platform & evidence', icon: ShieldCheck }] },
@@ -2586,6 +2589,15 @@ export default function App() {
           {activeTab === 'review' && (
             <ReviewView selectedStudyId={selectedStudyId} onStudyId={setSelectedStudyId}
               onError={(message) => setError(message)} />
+          )}
+
+          {/* T4C.5j: the atmospheric gate record. It sits in Review because it is read-only
+              about frozen artifacts and can grant no permission: a retired design is shown
+              retired, and a receipt is shown with both its verdicts. It offers no acquisition
+              control, because acquisition is a 2.8 GB spend gated on a mandatory order that a
+              browser button cannot represent. */}
+          {activeTab === 'gate' && (
+            <GateRecordView onError={(message) => setError(message)} />
           )}
 
         </main>

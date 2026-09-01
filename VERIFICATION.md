@@ -8079,3 +8079,55 @@ of this line is surfaced in the API or the UI:** there is no gate or campaign ro
 method and no component that reads a campaign, a supersession or a gate receipt. The T4C
 artifacts are CLI-and-file only, and the frontend's preregistration and evidence panels belong
 to the separate cross-domain line in `roadmap_cross_domain.md`.
+
+## T4C.5j -- the gate record served read-only (2026-09-01, `ed-dev`)
+
+The T4C line had no API route, no client method and no component. Every campaign, supersession
+and receipt was CLI-and-file only, so the two distinctions the line exists to draw -- a retired
+design that must not be acquired, and an inadequately powered absence that is INVALID rather
+than FAIL -- could be checked only by knowing which file to open. `src/api/gate.py` serves seven
+GET routes and `frontend/src/components/GateRecordView.tsx` renders them under Review.
+
+The surface is read-only as a property of the routing table: a test collects every method served
+under `/api/v1/gate` and asserts the set is exactly `{"GET"}`. There is no preflight route and no
+acquisition route, and the four refusals are served as data and rendered, so a reader who cannot
+find an acquire button is told why rather than left to infer the apparatus is unfinished.
+
+Retirement is derived from content. A campaign is RETIRED here if and only if a supersession in
+the store names it by fingerprint -- the same comparison `preflight_gate_campaign` refuses on --
+so the surface and the spend agree by construction. A test installs all three artifacts under
+different file names and asserts the retirement survives; another installs v1 and v2 with no
+supersession and asserts both are ACTIVE while v1 still reports `resolvable: false`, because not
+being retired is not being sound. A tampered envelope is listed as unreadable rather than
+dropped, and the surface summary reports it.
+
+Commands and results:
+
+```
+$ .venv/Scripts/python.exe -m pytest src/tests/test_gate_api.py -q
+13 passed, 2 warnings in 10.05s
+
+$ .venv/Scripts/python.exe -m pytest src/tests/test_frontend_contract.py -q
+167 passed, 5 warnings in 7.23s
+
+$ .venv/Scripts/python.exe -m pytest src/tests/test_documentation.py -q
+20 passed, 2 warnings in 253.77s
+
+$ cd frontend && npm run build
+tsc clean; 1410 modules transformed; built in 1m 11s
+```
+
+Served against the repository's own store, `GET /api/v1/gate` reports 2 campaigns, 1
+supersession, 1 retired campaign, 0 receipts and `measurement_status: NOT_YET_MEASURED`;
+`/gate/campaigns` labels `...-v1` RETIRED with `resolvable: false` and `...-v2` ACTIVE with
+`resolvable: true`; `/gate/supersessions/...v1-to-v2` re-runs both reasons and reports
+`superseded=false successor=true` for each, with `deferred_to_run` carrying D84, D85 and D43.
+
+**What this does not establish.** It adds no science and closes no defect. D43, D84 and D85
+remain open and unchanged. Nothing here reads a field or touches a network. **The receipt route
+has never served a real receipt, because no gate has run**; the receipt tests use a fabricated
+transport fixture that authenticates, which is a test of what the route shows a reviewer and is
+not evidence about the atmosphere. The panel compiles and builds; as with every surface after
+T3.5.25, its **rendered appearance has not been inspected in a browser** and no screenshot
+exists in this repository. The full backend suite has not been rerun, so **3106** remains the
+last measured full-suite figure; the inventory total is now 2967 by AST count.

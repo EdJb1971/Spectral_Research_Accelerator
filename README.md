@@ -526,6 +526,14 @@ happen; `review` still reads v1 and still reports its defect, which is the point
 The supersession's `deferred_to_run` block names what the re-freeze does **not** settle: D84
 (the crop is carried through unchanged), D85's derived Theiler window, and D43. No data has been
 acquired for either campaign.
+
+Both campaigns, the retirement and any published receipts are also readable in the browser under
+**Review -> Atmospheric gate record**, served by seven `GET /api/v1/gate/...` routes. That
+surface is read-only by construction: it serves no other HTTP verb, has no preflight or
+acquisition route, and publishes the reasons for those refusals rather than leaving a missing
+button to be read as an unfinished panel. It shows a retired design in full with its defect
+visible, and reports an empty receipt store as an absence of *runs* rather than of findings --
+no gate has run.
 Before reporting readiness it now derives the exact grid shape and chosen transform supports,
 requires at least 128 valid parent-grid pixels at every scale, converts lat/lon degrees to
 physical metres for the advection floor, refuses shorter lags, and reports temporal split,

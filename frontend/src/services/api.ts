@@ -1228,5 +1228,41 @@ export const apiService = {
       await fetch(`${BASE_URL}/comparison-views/readings/check`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ mode, reading }) }));
+  },
+
+  // T4C.5j: the atmospheric gate record. Every method below is a GET and there is no other
+  // kind, which is the contract rather than an unfinished section. The two write-shaped things
+  // a reader might look for - preflight and acquisition - are deliberately absent: the first
+  // reports on a machine rather than on the science, and the second spends a 2.8 GB transfer.
+  async gateSurface(): Promise<types.GateSurface> {
+    return handleResponse<types.GateSurface>(await fetch(`${BASE_URL}/gate`));
+  },
+
+  async listGateCampaigns(): Promise<types.GateCampaignIndex> {
+    return handleResponse<types.GateCampaignIndex>(await fetch(`${BASE_URL}/gate/campaigns`));
+  },
+
+  async gateCampaignReview(campaignId: string): Promise<types.GateCampaignReview> {
+    return handleResponse<types.GateCampaignReview>(
+      await fetch(`${BASE_URL}/gate/campaigns/${encodeURIComponent(campaignId)}`));
+  },
+
+  async listGateSupersessions(): Promise<types.GateSupersessionIndex> {
+    return handleResponse<types.GateSupersessionIndex>(
+      await fetch(`${BASE_URL}/gate/supersessions`));
+  },
+
+  async gateSupersessionReview(supersessionId: string): Promise<types.GateSupersessionReview> {
+    return handleResponse<types.GateSupersessionReview>(
+      await fetch(`${BASE_URL}/gate/supersessions/${encodeURIComponent(supersessionId)}`));
+  },
+
+  async listGateReceipts(): Promise<types.GateReceiptIndex> {
+    return handleResponse<types.GateReceiptIndex>(await fetch(`${BASE_URL}/gate/receipts`));
+  },
+
+  async gateReceipt(receiptId: string): Promise<types.GateReceiptView> {
+    return handleResponse<types.GateReceiptView>(
+      await fetch(`${BASE_URL}/gate/receipts/${encodeURIComponent(receiptId)}`));
   }
 };

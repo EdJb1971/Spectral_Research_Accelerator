@@ -2834,3 +2834,162 @@ export interface ComparisonReadingCheck {
   reason: string;
   claim_boundary?: string;
 }
+
+/* ---------------------------------------------------------------- T4C.5j: the gate record
+ *
+ * The atmospheric gate line is read-only from the browser. There is no request type here
+ * because there is no request: every one of these is the shape of a GET response, and the
+ * absence of a mutation type is the contract rather than an omission.
+ */
+
+/** Why the surface has no acquire button, stated by the server rather than assumed by the UI. */
+export interface GateSurface {
+  schema: string;
+  campaigns: number;
+  supersessions: number;
+  retired_campaigns: number;
+  receipts: number;
+  measurement_status: 'MEASURED' | 'NOT_YET_MEASURED';
+  unreadable: Record<string, string>[];
+  refusals: string[];
+  claim_boundary: string;
+  network_used: boolean;
+}
+
+/** Present only on a retired campaign; `null` is the whole of "this design is still live". */
+export interface GateRetirement {
+  supersession_id: string;
+  successor_campaign_id: string;
+  successor_campaign_sha256: string;
+  acquisition: string;
+  statement: string;
+}
+
+export interface GateCampaignSummary {
+  campaign_id: string;
+  campaign_sha256: string;
+  study_plan_sha256: string;
+  file: string;
+  status: 'ACTIVE' | 'RETIRED';
+  retired_by: GateRetirement | null;
+  variable: string;
+  level_hpa: number;
+  date_start: string;
+  date_end: string;
+  expected_frames: number;
+  /** Whether the design can resolve its own declared family. A retired campaign reports
+   *  `false` here and is still served, because that is the defect being recorded. */
+  resolvable: boolean;
+  hypothesis_family_size: number;
+}
+
+export interface GateCampaignIndex {
+  schema: string;
+  campaigns: GateCampaignSummary[];
+  unreadable: Record<string, string>[];
+  network_used: boolean;
+}
+
+export interface GateCampaignReview {
+  schema: string;
+  campaign_id: string;
+  campaign_sha256: string;
+  study_plan_sha256: string;
+  scientific_design: Record<string, any>;
+  decision_rule: string;
+  claim_boundary: string;
+  network_used: boolean;
+  file: string;
+  status: 'ACTIVE' | 'RETIRED';
+  retired_by: GateRetirement | null;
+  refusals: string[];
+}
+
+export interface GateSupersessionSummary {
+  supersession_id: string;
+  supersession_sha256: string;
+  file: string;
+  superseded_campaign_id: string;
+  successor_campaign_id: string;
+  defects: string[];
+  reason_count: number;
+  preserved_count: number;
+  deferred_to_run: string[];
+}
+
+export interface GateSupersessionIndex {
+  schema: string;
+  supersessions: GateSupersessionSummary[];
+  unreadable: Record<string, string>[];
+  network_used: boolean;
+}
+
+/** One stated reason, re-run against both campaigns. `passes` is the check's own outcome, so a
+ *  reason is admissible exactly where superseded is false and successor is true. */
+export interface GateSupersessionOutcome {
+  passes: boolean;
+  [key: string]: any;
+}
+
+export interface GateSupersessionFinding {
+  defect?: string;
+  check: string;
+  parameters: Record<string, any>;
+  statement: string;
+  superseded: GateSupersessionOutcome;
+  successor: GateSupersessionOutcome;
+}
+
+export interface GateSupersessionReview {
+  schema: string;
+  supersession_id: string;
+  supersession_sha256: string;
+  superseded_campaign_sha256: string;
+  successor_campaign_sha256: string;
+  superseded_campaign_id: string;
+  successor_campaign_id: string;
+  reasons: GateSupersessionFinding[];
+  preserved: GateSupersessionFinding[];
+  /** What the re-freeze does *not* settle. An empty list would be a claim, not a convenience. */
+  deferred_to_run: { defect: string; statement: string; adjudicated_by: string }[];
+  successor_review: GateCampaignReview;
+  claim_boundary: string;
+  network_used: boolean;
+  file: string;
+  refusals: string[];
+}
+
+export interface GateReceiptSummary {
+  receipt_id: string;
+  receipt_sha256: string;
+  plan_sha256: string;
+  study_id: string | null;
+  evidence_role: string | null;
+  /** What the replication rule returned. */
+  gate_verdict: string;
+  /** What a reviewer should read. These differ exactly where the derived power record moved it. */
+  scientific_verdict: string;
+  power_applied: boolean;
+}
+
+export interface GateReceiptIndex {
+  schema: string;
+  receipts: GateReceiptSummary[];
+  unreadable: Record<string, string>[];
+  /** `NOT_YET_MEASURED` is an absence of runs. It is not a finding of no relationship. */
+  status: 'MEASURED' | 'NOT_YET_MEASURED';
+  statement: string;
+  network_used: boolean;
+}
+
+export interface GateReceiptView {
+  schema: string;
+  receipt_id: string;
+  integrity: string;
+  receipt: Record<string, any>;
+  gate_verdict: string;
+  scientific_verdict: string;
+  power_adjudication: Record<string, any>;
+  claim_boundary: string;
+  network_used: boolean;
+}

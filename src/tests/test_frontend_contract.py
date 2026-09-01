@@ -209,7 +209,8 @@ def test_visualisations_have_text_equivalents():
 
 def test_async_workflow_surfaces_expose_busy_state(all_sources):
     for name in ("AcquisitionView", "DomainAnalysisView", "PreregistrationView", "EvidenceView",
-                 "StructureMiningView", "CrossDomainRecordView", "FindingsView"):
+                 "StructureMiningView", "CrossDomainRecordView", "FindingsView",
+                 "GateRecordView"):
         source = _read("components", f"{name}.tsx")
         assert "aria-busy=" in source, name
     assert 'role="alert"' in all_sources and 'role="status"' in all_sources
@@ -1929,3 +1930,69 @@ def test_qualification_client_uses_only_the_two_public_routes():
     assert "rehearseExperimentQualification" in service
     assert "`${BASE_URL}/experiment-qualification`" in service
     assert "`${BASE_URL}/experiment-qualification/rehearse`" in service
+
+
+# ======================================================== T4C.5j: the atmospheric gate record
+
+def _gate_client_section(api_service: str) -> str:
+    """The gate methods only. Everything after the marker comment is this surface."""
+    marker = "T4C.5j: the atmospheric gate record"
+    assert marker in api_service, "the gate client section must be identifiable"
+    return api_service.split(marker, 1)[1]
+
+
+def test_the_gate_panel_reaches_every_route_the_surface_serves(app_source, api_service):
+    """A served route with no consumer is the gap this whole slice was opened to close."""
+    for path in ("/gate`", "/gate/campaigns`", "/gate/campaigns/$", "/gate/supersessions`",
+                 "/gate/supersessions/$", "/gate/receipts`", "/gate/receipts/$"):
+        assert path in api_service, path
+    assert "GateRecordView" in app_source
+    assert "activeTab === 'gate'" in app_source
+    assert "id: 'gate', name: 'Atmospheric gate record'" in app_source
+
+
+def test_no_gate_request_this_client_can_send_changes_anything(api_service):
+    """Read-only must be a property of the client too, not only of the routing table.
+
+    A panel that can only read is what makes the missing acquire button a refusal rather than an
+    omission a later slice might casually fill in.
+    """
+    section = _gate_client_section(api_service)
+    for verb in ("'POST'", "'PUT'", "'PATCH'", "'DELETE'", "FormData"):
+        assert verb not in section, verb
+
+
+def test_the_gate_panel_shows_a_retirement_before_the_design_it_retires():
+    """A reader who has reached the calendar split is already reading the design as live."""
+    view = _read("components", "GateRecordView.tsx")
+    assert view.index("openCampaign.retired_by &&") < view.index("Decision rule"), (
+        "the retirement banner must precede the design body, not follow it")
+    assert "acquisition {openCampaign.retired_by.acquisition}" in view
+    assert "surface.refusals.map" in view, (
+        "the refusals must be rendered from the server's list, not implied by absent buttons")
+
+
+def test_the_gate_panel_shows_a_retired_design_rather_than_hiding_it():
+    """Hiding the retired design would erase the record of what was actually preregistered."""
+    view = _read("components", "GateRecordView.tsx")
+    assert "Read design" in view
+    assert "row.resolvable ? 'yes' : 'no'" in view, (
+        "the defect that retired a design must be visible on the row that names it")
+    assert "openSupersession.deferred_to_run.map" in view, (
+        "a retirement must show what it did not settle as prominently as its reasons")
+
+
+def test_the_gate_panel_names_an_empty_receipt_list_as_an_absence_of_runs():
+    """Rendered bare, an empty list reads as an absence of findings - the opposite claim."""
+    view = _read("components", "GateRecordView.tsx")
+    assert "NOT_YET_MEASURED" in view
+    assert "receipts.statement" in view
+
+
+def test_the_gate_panel_never_shows_one_verdict_without_the_other():
+    """The FAIL/INVALID boundary is only legible if both verdicts and the rule are on screen."""
+    view = _read("components", "GateRecordView.tsx")
+    assert "openReceipt.gate_verdict" in view and "openReceipt.scientific_verdict" in view
+    assert "Replication rule returned" in view
+    assert "openReceipt.power_adjudication.reason" in view
+    assert "power_applied" in view

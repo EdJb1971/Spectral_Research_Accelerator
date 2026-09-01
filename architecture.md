@@ -5567,7 +5567,7 @@ reason in the test itself.
 
 ## 3.12 HTTP API Surface
 
-138 routes. Listed here because an undocumented endpoint is an untested contract. The count and this table were both wrong until TG17.3 (defect D75): the guard enumerated a hand-maintained list of ten source files and could not see four mounted routers.
+145 routes. Listed here because an undocumented endpoint is an untested contract. The count and this table were both wrong until TG17.3 (defect D75): the guard enumerated a hand-maintained list of ten source files and could not see four mounted routers.
 
 | Method | Route | Notes |
 |---|---|---|
@@ -5710,6 +5710,13 @@ reason in the test itself.
 | POST | `/api/v1/experiment-composer/preregistration-summary` | the frozen plan in generated sentences, rendered from the bytes that are hashed so the browser cannot paraphrase it (TG17.7) |
 | POST | `/api/v1/experiment-composer/manifests/export` | a machine-readable envelope carrying the canonical manifest and its digest (TG17.7) |
 | POST | `/api/v1/experiment-composer/manifests/import` | accept an exported envelope, refusing one whose body disagrees with its declared digest (TG17.7) |
+| GET | `/api/v1/gate` | what the gate store holds, and the four things this surface refuses to do (T4C.5j) |
+| GET | `/api/v1/gate/campaigns` | every preregistered ERA5 gate design, each labelled ACTIVE or RETIRED from the store's own supersessions |
+| GET | `/api/v1/gate/campaigns/{campaign_id}` | one zero-network preregistration review; a retired design is served in full with its defect intact |
+| GET | `/api/v1/gate/supersessions` | every checked retirement, with the defects it names and what it defers to the run |
+| GET | `/api/v1/gate/supersessions/{supersession_id}` | re-runs every stated reason against both campaigns and publishes the outcomes side by side |
+| GET | `/api/v1/gate/receipts` | published runs; an empty store reports NOT_YET_MEASURED as an absence of runs, not of findings |
+| GET | `/api/v1/gate/receipts/{receipt_id}` | one hash-verified receipt with the gate verdict, the scientific verdict and the rule that moved it |
 
 ## 3A. Phase 4A - The Time Axis and the Artifact Store
 
@@ -6346,6 +6353,61 @@ design decision, not a measurement of the derived window. D43 is untouched: no d
 acquired for either campaign, and the successor is a design rather than a record. The
 supersession is not a result and does not by itself license the successor's acquisition.
 
+### 3C.5j The gate record as a read-only surface (`src/api/gate.py`, `frontend/src/components/GateRecordView.tsx`, T4C.5j)
+
+Everything above this line was reachable only from the command line and the filesystem. A
+reviewer had to know which file to open, and the two distinctions the T4C line exists to draw
+were the two buried deepest: that a **retired** design is still readable but must not be
+acquired, and that a FAIL is a negative finding only where the derived spatial-power record
+shows the absence was detectable. Neither can be checked by being told it holds. T4C.5j serves
+them, and nothing else.
+
+**Seven GET routes and no other verb.** `GET /api/v1/gate` publishes what the store holds and
+what the surface refuses; `/gate/campaigns` and `/gate/campaigns/{id}` serve the index and the
+zero-network preregistration review; `/gate/supersessions` and `/gate/supersessions/{id}` serve
+the retirements; `/gate/receipts` and `/gate/receipts/{id}` serve published runs. There is
+deliberately **no preflight route and no acquisition route**. A preflight probes local storage
+and credential configuration, which is a fact about a machine rather than about the science, and
+an acquisition spends a 2.8 GB transfer under a mandatory order that a browser button cannot
+represent. That the surface is read-only is a property of the routing table, and a test asserts
+the served method set for the whole prefix is exactly `{"GET"}` -- not a property of the
+handlers behaving well.
+
+**A refusal is rendered, not implied.** The four refusals are served as data and displayed by
+the panel, because a reader who cannot find the acquire button is otherwise left to conclude the
+apparatus is unfinished. This is the same reasoning as TG17.10's refused qualification cells.
+
+**Retirement is derived from content.** A campaign is retired here if and only if some
+supersession in the store names it by **fingerprint** -- not by identifier, not by file name,
+and not by a flag, which a frozen artifact could not carry without being edited. This is the
+same comparison `preflight_gate_campaign` refuses on, so the surface and the spend agree by
+construction rather than by transcription. A test renames all three files and asserts the
+retirement survives, because a retirement defeated by `cp` is not a scientific record.
+
+**The retired design is served in full, and its retirement precedes it.** Hiding it would
+destroy the record of what was actually preregistered, and `resolvable: false` is the defect
+itself; the panel therefore shows v1 with its failure visible on the row that names it. The
+retirement banner is rendered **above** the design body, and a contract test asserts that
+ordering by source position: a researcher who has scrolled as far as the calendar split has
+already begun reading the plan as live.
+
+**An empty receipt list is labelled.** The store holds no receipts, because no gate has run. An
+empty table rendered bare reads as *no relationship was found*, which is the opposite claim and
+the more attractive one, so the route returns `NOT_YET_MEASURED` with the sentence "This is an
+absence of runs, not an absence of findings" and the panel shows it as a banner rather than as
+whitespace. A receipt that does not authenticate is refused with 409 and listed as unreadable;
+a store holding only such a file still reports `NOT_YET_MEASURED`.
+
+**Both verdicts, always.** `/gate/receipts/{id}` serves `gate_verdict`, `scientific_verdict` and
+the `power_adjudication` that separates them, and the panel renders the pair side by side with
+the reason. Serving the scientific verdict alone would hide the FAIL/INVALID boundary; serving
+the gate's alone would publish an absence that is a property of the crop as a negative finding
+about the atmosphere.
+
+**What this does not do.** It adds no science. It cannot acquire, run, edit, re-freeze or
+promote anything, it reads no field and touches no network, and it does not close D43, D84 or
+D85. The receipt route has never served a real receipt, because none exists.
+
 ## 4. Database Schema and State Tracking (`src/database/models.py`, `session.py`, `migrate.py`)
 
 The database layer (`src/database/`) is fully configured using SQLAlchemy and targets a persistent or in-memory SQLite database (`spectral_earth.db`). 
@@ -6486,7 +6548,7 @@ The architecture is highly modular and maintains clean boundaries at several cri
 
 ## 6. Front-End Technical Implementation
 
-The React frontend is fully written and structurally complete. It was installed and built in T3.5.0/T3.5.3 (`npm run build` emits hashed JS and CSS into `dist/`) and wired to the previously unreachable endpoints in T3.5.22. Its **rendered appearance was confirmed by the user on 2026-08-20** (T3.5.25): the platform was started, both servers came up, and the then-nine tabs were reported working. T5.6g added a tenth tab, TG9.2 an eleventh and TG8.4 briefly a twelfth Domain Records tab. TG10.2 consolidated that reader into Acquire, leaving eleven destinations; TG11.0 groups those destinations by workflow rather than numbering them. TG11.1-TG11.5 add Cross-domain analysis, Preregistration, Evidence record, Structure mining, Cross-domain record and Recorded review, bringing the workflow to sixteen destinations. The post-T3.5.25 surfaces compile and build but have **not** been visually inspected in a browser. The earlier confirmation is a user report, not an artefact - **no screenshot per tab exists in this repository**, so T3.5.0's literal evidence clause remains outstanding. Contract tests prove all sixteen current destinations compile, call routes that exist and read fields that are present; they do not prove rendered appearance.
+The React frontend is fully written and structurally complete. It was installed and built in T3.5.0/T3.5.3 (`npm run build` emits hashed JS and CSS into `dist/`) and wired to the previously unreachable endpoints in T3.5.22. Its **rendered appearance was confirmed by the user on 2026-08-20** (T3.5.25): the platform was started, both servers came up, and the then-nine tabs were reported working. T5.6g added a tenth tab, TG9.2 an eleventh and TG8.4 briefly a twelfth Domain Records tab. TG10.2 consolidated that reader into Acquire, leaving eleven destinations; TG11.0 groups those destinations by workflow rather than numbering them. TG11.1-TG11.5 add Cross-domain analysis, Preregistration, Evidence record, Structure mining, Cross-domain record and Recorded review, bringing the workflow to sixteen destinations. T4C.5j adds a seventeenth, the read-only Atmospheric gate record, under Review. The post-T3.5.25 surfaces compile and build but have **not** been visually inspected in a browser. The earlier confirmation is a user report, not an artefact - **no screenshot per tab exists in this repository**, so T3.5.0's literal evidence clause remains outstanding. Contract tests prove all seventeen current destinations compile, call routes that exist and read fields that are present; they do not prove rendered appearance.
 
 *   **Component Visualizations:** `Heatmap2D.tsx` and `LineChart.tsx` wrap `react-plotly.js`; `LineageGraph.tsx` is a hand-rolled SVG node-link renderer with a tooltip inspector and no external graph dependency. All three take reactive props and render spatial fields, PSD curves, coherence ratios, and provenance DAGs.
 *   **Accessibility has a workflow-wide source contract (TG11.6).** The shell provides skip and
@@ -6824,8 +6886,9 @@ able to sit three slices out of date.
 | `test_forecasting_artifact_evaluation.py` | 8 | T5.3b/T5.2d checkpoint/config integrity, artifact-bound lineage, persistence-relative metrics, physical-time reporting/refusals, undefined-skill handling and CPU/RTX vendor-neutral accelerator parity |
 | `test_forecasting_protocol.py` | 7 | T5.0a exact schema completeness, canonical identity, immutable nested configuration, evidence requirements, temporal/rollout consistency, persistence and tamper/drift refusal |
 | `test_forecasting_protocol_binding.py` | 4 | T5.0b exact dataset/protocol/checkpoint binding, recomputed coordinate/statistics identities, drift refusals and bound-evaluation cross-run isolation |
-| `test_frontend_contract.py` | 161 | the frontend/backend contract, including dataset-bound navigation gating with visible backend refusal reasons, capability profiles showing yes/no/not-established facts, transform/dataset/cadence readiness claim boundaries, domain-driven acquisition, workflow-grouped navigation, persistent record/study context, the TG11.1 analysis panel's three engine operations, R21 disablement, three-valued verdict and re-read identity check, the TG11.2 preregistration panel's declare-never-decide split, TG11.5's separate GET-only recorded-review workspace with its visible R23 fence, complete argument/cost display and honest empty states, TG17.1's manifest-driven save/reload/preflight Composer, TG17.2's known-answer structural-contract inspector and disabled premature runner, preservation of every ERA5 control, TG17.3's schema-driven adapter controls with no per-domain branch in the generic composer, every registrable control kind having a renderer, and the adapter/conformance payload shapes, plus TG17.7's guided path rendered entirely from the served contract with no order of operations held in a component, one next action, blocked steps that stay reachable with their reason, a tablist operable by keyboard, a place kept across navigation and refresh, presets applied as the instants the server resolved, and empty panels that read as unasked questions rather than clean results, TG17.8's comparison views with their structural visual refusals, and TG17.9's generated trust surface mounted in Composer and Platform, read-only replay, evidence-category absences and explicit navigation-only handoff, plus TG11.6's accessibility and the UI integrity guards |
+| `test_frontend_contract.py` | 167 | the frontend/backend contract, including dataset-bound navigation gating with visible backend refusal reasons, capability profiles showing yes/no/not-established facts, transform/dataset/cadence readiness claim boundaries, domain-driven acquisition, workflow-grouped navigation, persistent record/study context, the TG11.1 analysis panel's three engine operations, R21 disablement, three-valued verdict and re-read identity check, the TG11.2 preregistration panel's declare-never-decide split, TG11.5's separate GET-only recorded-review workspace with its visible R23 fence, complete argument/cost display and honest empty states, TG17.1's manifest-driven save/reload/preflight Composer, TG17.2's known-answer structural-contract inspector and disabled premature runner, preservation of every ERA5 control, TG17.3's schema-driven adapter controls with no per-domain branch in the generic composer, every registrable control kind having a renderer, and the adapter/conformance payload shapes, plus TG17.7's guided path rendered entirely from the served contract with no order of operations held in a component, one next action, blocked steps that stay reachable with their reason, a tablist operable by keyboard, a place kept across navigation and refresh, presets applied as the instants the server resolved, and empty panels that read as unasked questions rather than clean results, TG17.8's comparison views with their structural visual refusals, and TG17.9's generated trust surface mounted in Composer and Platform, read-only replay, evidence-category absences and explicit navigation-only handoff, plus TG11.6's accessibility and the UI integrity guards |
 | `test_gate_run.py` | 6 | T4C.5d frozen plan, local-only preflight, bounded train-only climatology/signatures, authenticated synthetic gate receipt, no-overwrite and tamper refusal; and for T4C.5i step 7 the derived power record in the receipt -- per-scale decorrelation and effective samples, the attenuation curve measured on the window both interiors supply, the sweep's own surrogate ensemble reproduced, the family's best case selected from train and non-finite rows excluded from it, and every branch of the FAIL/INVALID boundary including the PASS that is deliberately not downgraded, and a decimated family declaring that its matched window is a coefficient-count match rather than a shared area |
+| `test_gate_api.py` | 13 | T4C.5j read-only transport for the gate record: the surface publishing its own four refusals; the whole `/api/v1/gate` prefix asserted to serve `GET` and nothing else, so read-only is a property of the routing table; a retired campaign labelled RETIRED and still served in full with `resolvable: false` intact; retirement matched on fingerprint and therefore surviving a rename of all three files; an older campaign no supersession names left ACTIVE while its defect is still reported, because not being retired is not being sound; a tampered envelope listed as unreadable rather than silently dropped; the supersession review re-run against both campaigns with every reason failing for the retired design and passing for the successor and `deferred_to_run` carrying D84/D85/D43; an empty receipt store reported as an absence of runs rather than of findings; a receipt served with both verdicts and the rule that moved the second; an edited receipt refused with 409 and a store holding only it still NOT_YET_MEASURED; a receipt id that cannot escape its store; and the repository's own store served as a reviewer would open it (D43, D84, D85) |
 | `test_gate_campaign.py` | 17 | T4C.5f-h exact campaign identity, strict nested schema, canary/full/WeatherBench drift refusals, pre-transfer R13/physical-lag audit, aggregate storage/readiness, immutable freeze/load, pinned real preregistration and zero-network CLI; plus T4C.5i's surrogate resolution audit -- D85 pinned on the frozen campaign itself (2,912 distinct shifts against 3,005 required) and acquisition refused on it while review still reports it; plus step 8's checked supersession -- an inadmissible reason, an unrepaired successor, a dropped invariant, a rename, a swapped envelope and the acquisition refusal, from the library and the CLI (19 pytest cases) |
 | `test_grid_operators.py` | 64 | grid metrics, metric-aware gradient/Laplacian, area weighting, physical-wavenumber spectra, D26 |
 | `test_hypothesis.py` | 3 | correlation and categorical hypothesis discovery |
@@ -6872,7 +6935,7 @@ able to sit three slices out of date.
 | `test_experiment_receipt.py` | 21 | TG17.9 completed-only export, exact explained field set, self-hash, manifest/run/result/refusal identity through replay, reconstruction with no run store or UI state, changed bytes and unknown fields refused, a forged-and-rehashed receipt caught by semantic journal replay, impossible transitions refused, source and adapter identities, native/canonical/result role separation, full inference declaration, freeze-time environment identity, methods-report digest and claim boundary, evidence absences with no automatic action, idempotent immutable publication, generated trust contract, HTTP export/replay/report, non-complete refusal and the browser's integral-number spelling round trip (D81) |
 | `test_spatial_power.py` | 58 | T4C.5i spatial sampling adequacy: white noise decorrelating at one pixel, constructed correlation lengths of 4/8/16 px recovered, effective samples falling as structure grows, pixel count never treated as sample count, a crop that never decorrelates reporting saturation instead of a length, the searched limit never substituted for an unmeasured one, the mean-centring artefact demonstrated at half the interior and refused inside the trust horizon, a larger crop measuring what a smaller one could not, a constant interior counted as one sample, masked and 1-D inputs refused, the spatial and temporal 1/e conventions pinned to agree, a planted coupling attenuating as the crop shrinks, only spatial precision varying across the curve, the extrapolation exceeding every measured crop, a still-climbing curve refusing distinctly from a badly fitting one, and the same field yielding ADEQUATE and INVALID verdicts when only the crop changes; the campaign design admitting exactly one ranking, the BY dependence penalty pinned to the repository's own, the required level agreeing with `required_surrogates`, a design that cannot reject having no minimum detectable effect rather than a large one, the threshold sitting at the ensemble maximum at rank 1 and deeper for a smaller family, non-finite surrogates discarded and counted, the derived threshold driving the power verdict, and -- the load-bearing one -- the threshold falling exactly where `screen` over the declared family changes its mind; and for step 5 the train partition resolving the corrected level where the test partition cannot, that finding reproduced independently through the gate's own `screen`, extra draws not repairing a short record, a wider Theiler window costing resolution, the crop that closes a deficit exceeding the one measured and growing with the target, no crop being named for a target above the ceiling, a reduced family being reported and refused, resolution binding before the threshold is consulted, an attenuation deficit naming crop and refusing family, and no refusal naming a bare constant (58 pytest cases); and for step 7 the streamed curve equalling the array curve exactly rather than approximately, orientations collapsing as a signature collapses them, a curve refusing to be read from a subset of the record, a frame refusing to be counted twice, and both paths taking their sub-crop sizes from one place |
 | `test_experiment_qualification.py` | 16 | TG17.10 the release gate itself: three durations by two modes with no cell missing, explicit dates and complete-family correction frozen before results, every matrix manifest preflighting without a refusal, the two modes carrying different relationship/null/language contracts, the order-book record bound by content rather than filename, every admissible cell executing/exporting/replaying with one manifest identity throughout, the scale/shape quartet refused before execution by the order book's own declaration with a refused cell opening no run and keeping its reason, the scale-partner null admitted per domain and never by framework default (D83), one timed-out acquisition retried alone across a process boundary, the single-failure suite registered as fixture-only, a fully green offline rehearsal still unable to make the verdict `RELEASEABLE`, scientist-action measurements reported as `NOT_MEASURED` rather than invented, the record self-hashed with tampering detected, a repeat qualification resuming identical runs, and the HTTP plan and rehearsal keeping the unrun gates visible |
-  | **total** | **2948** | |
+  | **total** | **2967** | |
 ### 7.2h A surrogate null that was not the null it claimed (T4C.5)
 
 The most instructive defect of the project so far, because it passed every structural check.
