@@ -1165,10 +1165,17 @@ async def zarr_catalogue():
         "cache_dir": zarr_adapter.DEFAULT_CACHE_DIR,
         "r13_minimum_crop": {str(n): zarr_adapter.minimum_crop_size(n)
                              for n in range(1, 7)},
+        "r13_dyadic_operational_crop": {str(n): zarr_adapter.dyadic_crop_size(n)
+                                        for n in range(1, 7)},
         "analysis_transforms": support_transforms,
         "r13_legacy_note": ("r13_minimum_crop is the pre-planner conservative 14-tap table "
-                            "kept for API compatibility. Use the request-specific acquisition "
-                            "plan returned by /inspect for a scientific decision."),
+                            "kept for API compatibility. Its valid-interior term is a "
+                            "heuristic, not a derived power criterion, and since T4C.5i step 6 "
+                            "it is no longer rounded up to a power of two; "
+                            "r13_dyadic_operational_crop reports that rounding separately as a "
+                            "convention that is never refused on. Use the request-specific "
+                            "acquisition plan returned by /inspect for a scientific "
+                            "decision, and analysis_engine/spatial_power.py for a power one."),
         "note": ("Network access is opt-in: reaching the internet must never be a side "
                  "effect of running a sweep, and a mistyped bounding box against a 0.25 "
                  "degree store can move tens of gigabytes."),

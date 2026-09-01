@@ -833,6 +833,12 @@ export interface CropGeometryPlan {
   recommended_minimum: {
     shape: number[]; unrounded_required_side: number;
     valid_parent_side_policy: number; basis: string;
+    // T4C.5i step 6: the threshold is a heuristic, and the dyadic size is reported beside it
+    // as a convention that is never refused on.
+    heuristic?: boolean;
+    dyadic_operational_shape?: number[];
+    dyadic_operational_basis?: string;
+    limitation?: string;
   };
   alignment_cells: number;
   support_source: string;

@@ -110,17 +110,37 @@ def test_valid_interior_reproduces_the_r13_table():
     assert zs.valid_interior(512, 4) == 316
 
 
-def test_minimum_crop_size_matches_the_roadmaps_numbers():
-    """D44: recursive support makes the practical floors 512 and 1024."""
-    assert zs.minimum_crop_size(4) == 512
-    assert zs.minimum_crop_size(5) == 1024
+def test_minimum_crop_size_is_the_requirement_not_the_round_number():
+    """T4C.5i step 6: the dyadic rounding left the refusal path and became a report.
+
+    D44's recursive support still sets the edge term; what changed is that 128 valid px plus
+    2x98 of exclusion is 324, and 324 is what a four-level crop must clear. 512 was the next
+    power of two, which is a convenience for the transforms and for how crops are named -- not
+    a support requirement and not a statistical one.
+    """
+    assert zs.minimum_crop_size(4) == 128 + 2 * zs.edge_exclusion(4) == 324
+    assert zs.minimum_crop_size(5) == 532
+    assert zs.dyadic_crop_size(4) == 512
+    assert zs.dyadic_crop_size(5) == 1024
+    # A crop between the requirement and the round number is awkward, not inadequate.
+    assert zs.check_crop_size(400, 400, levels=4)["ok"] is True
+
+
+def test_the_valid_interior_floor_is_reported_as_a_heuristic():
+    """It is a judgement about comfort, not a criterion the statistic can be failed on."""
+    report = zs.check_crop_size(512, 512, levels=4)
+    assert report["heuristic_valid_interior"] == zs.MIN_VALID_INTERIOR
+    assert report["dyadic_operational_size"] == 512
+    assert "never refused on" in report["dyadic_operational_basis"]
+    assert "not a derived power criterion" in report["minimum_size_basis"]
 
 
 def test_crop_too_small_is_refused_and_names_the_minimum():
     with pytest.raises(FieldTooSmallError) as excinfo:
         zs.check_crop_size(64, 64, levels=4)
     message = str(excinfo.value)
-    assert "512" in message, "the refusal must name the minimum size"
+    assert "324" in message, "the refusal must name the minimum size"
+    assert "heuristic" in message, "and must not present that judgement as a derivation"
     assert "98 px per side" in message
     # And it must say which dimension to give up instead - R13 is explicit that the grid is
     # never the thing to shrink.
@@ -130,7 +150,7 @@ def test_crop_too_small_is_refused_and_names_the_minimum():
 def test_crop_at_the_floor_is_accepted_and_reports_its_interior():
     report = zs.check_crop_size(512, 512, levels=4)
     assert report["ok"] is True
-    assert report["minimum_size"] == 512
+    assert report["minimum_size"] == 324
     assert report["valid_interior_by_level"][4] == 316
 
 
@@ -690,8 +710,10 @@ def test_catalogue_endpoint_reports_stores_and_the_network_gate(client):
     assert body["network_env_var"] == zs.NETWORK_ENV_VAR
     assert body["missing_dependencies"] == []
     # The R13 floor is published, so a caller can size a crop before requesting one.
-    assert body["r13_minimum_crop"]["4"] == 512
-    assert body["r13_minimum_crop"]["5"] == 1024
+    assert body["r13_minimum_crop"]["4"] == 324
+    assert body["r13_minimum_crop"]["5"] == 532
+    assert body["r13_dyadic_operational_crop"]["4"] == 512
+    assert body["r13_dyadic_operational_crop"]["5"] == 1024
 
 
 def test_inspect_endpoint_reports_hostility_without_transferring_data(client, hostile_store):
@@ -710,7 +732,9 @@ def test_inspect_endpoint_reports_hostility_without_transferring_data(client, ho
     # A crop below the R13 recommendation is *planned*, not raised: inspection reports the
     # technical floor, the meaningful-statistics floor and native-grid expansion before data.
     assert body["geometry"]["meets_recommended_minimum"] is False
-    assert body["geometry"]["recommended_minimum"]["shape"] == [512, 512]
+    assert body["geometry"]["recommended_minimum"]["shape"] == [352, 352]
+    assert body["geometry"]["recommended_minimum"]["dyadic_operational_shape"] == [512, 512]
+    assert body["geometry"]["recommended_minimum"]["heuristic"] is True
     assert body["geometry"]["absolute_minimum"]["shape"] == [240, 240]
     assert body["acquisition_plan"]["suggestions"]["recommended"]["feasible"] is False
     assert "--analysis-levels 4 --analysis-transform dtcwt" in body["cli"]

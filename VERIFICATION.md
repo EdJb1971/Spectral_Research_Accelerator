@@ -7830,3 +7830,78 @@ $ .venv/Scripts/python.exe -m pytest src/tests/test_lag_policy_registry.py -q
 No network was used and no data was acquired. The full backend suite has **not** been rerun since
 these additions, so **3106** remains the last measured full-suite figure. The defect ledger moves
 to D1-D85 with three open entries: D43, D84 and now D85.
+
+## T4C.5i step 6 -- demoting the two constants (2026-09-01, `ed-dev`)
+
+Step 6 leaves `MIN_VALID_INTERIOR` and `RECOMMENDED_VALID_PARENT_SIDE` in place, and leaves both
+at 128. What changed is their standing and their reach. Each now declares, in code and in every
+payload that reports it, that it is a judgement about how much uncontaminated span makes a spatial
+statistic comfortable to look at rather than a derived power criterion, and each names
+`analysis_engine/spatial_power.py` as the thing that answers the question it stood in for. The
+power-of-two rounding left the refusal path entirely and is reported separately as an operational
+convention that nothing is refused on.
+
+Measured thresholds before and after:
+
+```
+$ .venv/Scripts/python.exe -c "... minimum_crop_size / dyadic_crop_size ..."
+levels  refusal threshold  dyadic convention   (was: refused on the dyadic figure)
+  1            142               256
+  2            168               256
+  3            220               256
+  4            324               512
+  5            532              1024
+
+$ .venv/Scripts/python.exe -c "... crop_planner.assess_shape ..."
+swt   db2 level 4 : requirement 174, dyadic 256
+dtcwt     level 4 : requirement 352, dyadic 512
+```
+
+**What this closes, and what it does not.** D84's *contradiction* is closed. The frozen T4C.6 crop
+is 161 px at db2 SWT level 3; the accumulated support contaminates 11 px per side, leaving a 139 px
+valid interior, so `gate_campaign` admitted it against the 128 px heuristic while the planner
+raised its own raw 150 px requirement to 256 and refused the same crop -- describing 256 to the
+caller as *statistically recommended*. With the rounding gone the planner's threshold is 150 px,
+both gates admit the crop, and that is pinned as a test against the defect's own case:
+
+```
+$ .venv/Scripts/python.exe -c "... assess_shape(161, 161, swt/db2/level 3) ..."
+valid interior 139x139, requirement 150, dyadic 256, verdict recommended, meets True
+```
+
+What is **not** closed is whether 139 px of interior is *enough*. That is a power question, the
+derived quantities exist in `spatial_power.py`, and the FAIL/INVALID adjudication that consumes
+them is step 5's deferred attenuation half. **D84 remains open**, now on the adjudication rather
+than on the disagreement, and D85 is untouched by this step.
+
+The refusal wording was corrected throughout: `FieldTooSmallError` now reads *R13 heuristic
+interior*, states that the threshold is a judgement rather than a derivation, and points at the
+derived criterion. The API catalogue reports `r13_minimum_crop` as the requirement and adds
+`r13_dyadic_operational_crop` for the rounding, with `r13_legacy_note` saying which is which. The
+acquisition UI labels the tile *Heuristic minimum*, shows the dyadic convention beneath it marked
+*not gated on*, renders the threshold's own `limitation` text, and no longer calls a crop that
+clears it *scientifically recommended*.
+
+Commands and results:
+
+```
+$ .venv/Scripts/python.exe -m pytest src/tests/test_crop_planner.py src/tests/test_zarr_source.py -q
+72 passed, 1 skipped, 5 warnings in 25.79s
+
+$ .venv/Scripts/python.exe -m pytest src/tests/test_frontend_contract.py -q
+161 passed, 5 warnings in 8.66s
+
+$ .venv/Scripts/python.exe -m pytest src/tests/test_cds_source.py src/tests/test_imports.py \
+    src/tests/test_gate_run.py src/tests/test_gate_campaign.py src/tests/test_spatial_power.py -q
+136 passed, 2 warnings in 1275.76s
+
+$ .venv/Scripts/python.exe -m pytest src/tests/test_documentation.py -q
+20 passed, 2 warnings in 315.70s
+
+$ npm run build            # frontend
+1409 modules transformed, built in 1m 23s
+```
+
+No network was used and no data was acquired. The full backend suite has **not** been rerun since
+these changes, so **3106** remains the last measured full-suite figure. The ledger is unchanged at
+D1-D85 with three open entries: D43, D84 and D85.

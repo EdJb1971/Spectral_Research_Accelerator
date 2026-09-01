@@ -395,7 +395,7 @@ export const AcquisitionView: React.FC<AcquisitionViewProps> = ({
                     <h4 className="text-sm font-semibold text-slate-100">
                       {String(inspection.geometry.analysis.transform_family).toUpperCase()} ·{' '}
                       {inspection.geometry.analysis.levels} levels ·{' '}
-                      {inspection.geometry.verdict === 'recommended' ? 'scientifically recommended'
+                      {inspection.geometry.verdict === 'recommended' ? 'meets the R13 heuristic interior'
                         : inspection.geometry.verdict === 'technical_only'
                           ? 'technical support only' : 'insufficient support'}
                     </h4>
@@ -410,14 +410,22 @@ export const AcquisitionView: React.FC<AcquisitionViewProps> = ({
                       <strong>{inspection.geometry.absolute_minimum.shape.join('×')}</strong>
                     </div>
                     <div className="bg-slate-950/60 rounded p-2">
-                      <span className="block text-slate-500">Recommended minimum</span>
+                      <span className="block text-slate-500">Heuristic minimum</span>
                       <strong>{inspection.geometry.recommended_minimum.shape.join('×')}</strong>
+                      {inspection.geometry.recommended_minimum.dyadic_operational_shape && <span className="block text-slate-600 mt-0.5">
+                        dyadic convention {inspection.geometry.recommended_minimum.dyadic_operational_shape.join('×')} · not gated on
+                      </span>}
                     </div>
                   </div>
+                  {inspection.geometry.recommended_minimum.limitation && <p className="text-[10px] text-slate-500 mt-2">
+                    {inspection.geometry.recommended_minimum.limitation}
+                  </p>}
                   {!inspection.geometry.meets_recommended_minimum && <p className="text-xs text-amber-200 mt-3">
                     A nonempty valid interior is not enough for a research result. Materialisation
-                    is gated on the recommended threshold; changing transform or depth changes the
-                    study and remains visible in the plan digest.
+                    is gated on the heuristic threshold; changing transform or depth changes the
+                    study and remains visible in the plan digest. Clearing the threshold is not a
+                    power statement — it is a judgement about uncontaminated span, not a derived
+                    criterion.
                   </p>}
                   {(() => {
                     const suggestion = inspection.acquisition_plan.suggestions.recommended;
@@ -455,7 +463,7 @@ export const AcquisitionView: React.FC<AcquisitionViewProps> = ({
                   <code className="text-[10px] text-teal-400 break-all">{inspection.cli}</code>
                   {!inspection.geometry.meets_recommended_minimum && <p className="text-[10px] text-amber-300 mt-2">
                     This command is complete and auditable, but it will refuse until the crop is
-                    re-inspected at the recommended size.
+                    re-inspected at the heuristic minimum size.
                   </p>}
                 </div>
                 {/* Said before the transfer rather than discovered after it (D70): materialising

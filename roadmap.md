@@ -604,7 +604,9 @@ Verified against the **live** WeatherBench 2 archive (24 ERA5 stores enumerated 
     uncompressed, **measured 951.3 MB wire in 186.3 s**, cached to 19.0 MB.
 *   **The R13 floor is refused, not warned about.** After D44, `edge_exclusion` accumulates the
     complete inherited cascade (7/20/46/98 px at levels 1–4 for 14 taps) and
-    `minimum_crop_size` returns 512 and 1024 for four and five levels.
+    `minimum_crop_size` returns 324 and 532 for four and five levels (512 and 1024 until
+    T4C.5i step 6 removed the power-of-two rounding from the refusal path; `dyadic_crop_size`
+    still reports the rounded size, and nothing is refused on it).
     A 64x64 crop at four levels raises, naming the minimum, the contaminated width and which
     dimension to constrain instead.
 *   **A repeat request transfers zero bytes**, asserted as `== 0` rather than as "fast": the
@@ -1338,19 +1340,34 @@ frozen family.
 6.  **Demote both constants.** `MIN_VALID_INTERIOR` and the power-of-two size become *reported
     recommendations*, explicitly labelled as heuristics. The power-of-two rounding is removed from
     the refusal path entirely and its "statistically recommended" wording corrected.
+    **Done.** Both constants stay at 128 and stay reported -- an unreported judgement is a number
+    in someone's head -- but each now declares in code and in every payload that it is a judgement
+    about uncontaminated span rather than a derived power criterion, and names
+    `analysis_engine/spatial_power.py` as the thing that answers the question it stood in for.
+    `minimum_crop_size` returns the requirement (324 px at four levels, 532 at five) and the new
+    `dyadic_crop_size` reports the round-up separately; `assess_shape`'s threshold is the
+    alignment-respecting requirement (352 cells for DTCWT level 4) with
+    `dyadic_operational_shape` beside it. The refusal reads *R13 heuristic interior*.
+    *Consequence:* **D84's contradiction is closed.** The frozen 161 px db2 level-3 crop needs
+    150 px, not 256, so `gate_campaign` and the planner now agree about it -- pinned as a test
+    against the defect's own case. Whether 139 px of interior is *enough* is still unanswered in
+    the running gate, so D84 remains open on the adjudication rather than the disagreement.
 7.  **Publish the derivation.** Decorrelation lengths, ESS, attenuation, minimum detectable effect
     and the FAIL/INVALID boundary all enter the receipt, so a reviewer audits the power claim
     rather than trusting a judgement.
 8.  **Re-freeze the campaign** against the derived criterion, recorded as a supersession of
     `t4c6_nz_era5_temperature_850_v1` with its reason, not an edit of it.
 
-**Progress (2026-09-01, `ed-dev`).** Steps 1-4 and the resolution half of step 5 are implemented
+**Progress (2026-09-01, `ed-dev`).** Steps 1-4, the resolution half of step 5, and step 6 are
+implemented
 in `src/analysis_engine/spatial_power.py` with 53 test functions (58 runs), all passing and
 order-stable, and 215 passing alongside the cross-scale, scale-signature, statistics, gate and
 preregistration suites. Step 5's attenuation adjudication inside `run_cached_gate` is not wired,
 because it needs the sub-cropped curve that step 7's receipt fields also need and the two are
-built together. Steps 6-8 -- demoting the two constants, the receipt fields and the campaign
-supersession -- are not started. **D85 is open and blocks acquisition alongside D84.**
+built together. Step 6 demoted both constants to labelled heuristics and removed the
+power-of-two rounding from the refusal path, which closed D84's gate-versus-gate contradiction
+without closing D84. Steps 7-8 -- the receipt fields and the campaign supersession -- are not
+started. **D85 is open and blocks acquisition alongside D84.**
 
 Three things were learned by building it, recorded so they are not re-derived:
 
@@ -1363,6 +1380,12 @@ Three things were learned by building it, recorded so they are not re-derived:
     temporal estimator safely does over thousands of frames, returns a confident 19 px length for
     a 40 px interior of 60 px structure. `TRUST_HORIZON_FRACTION = 0.25` bounds the search and
     saturation is reported instead.
+*   **A rounded threshold refuses on the rounding.** `minimum_crop_size` raised a 150 px
+    requirement to 256 for dyadic tidiness, and that 106 px of ergonomics was the entire reason
+    the frozen campaign's crop was admitted by one gate and refused by another -- while the
+    refusal called the round number *statistically recommended*. Convenience conventions and
+    decision thresholds must be reported separately, because a caller cannot tell which one
+    refused them.
 *   **Draws are not resolution.** Surrogates are drawn *with replacement* from the admissible
     circular shifts, so asking for 4,999 always returns 4,999 numbers and a nominal p-value floor
     of 1/5000. The exact test's reference set is the shifts themselves, and its attainable

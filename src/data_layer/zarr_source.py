@@ -98,9 +98,16 @@ HOSTILE_AMPLIFICATION = 4.0
 #: sizing from 14 is conservative in the right direction.
 DEFAULT_FILTER_TAPS = 14
 
-#: Smallest valid interior worth analysing, in pixels per side. This is a judgement, so it
-#: is a named constant rather than a literal: with the accumulated cascade support, 128
-#: valid pixels requires 512 for four levels and 1024 for five (D44).
+#: Valid interior, in pixels per side, that the R13 heuristic asks for. This is a judgement,
+#: so it is a named constant rather than a literal.
+#:
+#: T4C.5i step 6 demoted it to a *reported recommendation*. It is not a validity criterion and
+#: never was one: `scale_signature` collapses space to one energy density per frame before
+#: `transfer_entropy` runs, so the joint histogram's samples are frames, not pixels. An
+#: undersized crop does not invalidate the statistic, it attenuates it -- biasing toward the
+#: null, so it cannot forge a PASS but can forge a FAIL that is really inadequate power. The
+#: derived quantities that replace this judgement (decorrelation length, effective sample size,
+#: attenuation, minimum detectable effect) live in `src/analysis_engine/spatial_power.py`.
 MIN_VALID_INTERIOR = 128
 
 
@@ -130,15 +137,29 @@ def minimum_crop_size(levels: int, taps: int = DEFAULT_FILTER_TAPS,
                       min_interior: int = MIN_VALID_INTERIOR) -> int:
     """Smallest crop that leaves ``min_interior`` valid pixels at the *coarsest* level.
 
-    Rounded up to a power of two, because the dyadic transforms want one and because it
-    matches how a researcher thinks about crop sizes. With the accumulated cascade support it
-    gives 512 for four levels and 1024 for five (D44).
+    The accumulated cascade support (D44) makes this 324 px for four levels and 532 for five.
+
+    **No longer rounded up to a power of two (T4C.5i step 6).** The dyadic size is a convenience
+    for the transforms and for how researchers name crops; it is not a support requirement and
+    not a statistical one, so refusing a 400 px crop because 512 is the next power of two would
+    refuse it for an inconvenient pixel count rather than an inadequate one. The dyadic size is
+    still reported, by :func:`dyadic_crop_size` and in :func:`check_crop_size`'s report.
     """
-    needed = min_interior + 2 * edge_exclusion(levels, taps)
+    return int(min_interior + 2 * edge_exclusion(levels, taps))
+
+
+def dyadic_crop_size(levels: int, taps: int = DEFAULT_FILTER_TAPS,
+                     min_interior: int = MIN_VALID_INTERIOR) -> int:
+    """The next power of two at or above :func:`minimum_crop_size`.
+
+    Reported as an operational convention, never refused on. This is what the old
+    ``minimum_crop_size`` returned: 512 for four levels, 1024 for five.
+    """
+    needed = minimum_crop_size(levels, taps, min_interior)
     size = 1
     while size < needed:
         size *= 2
-    return size
+    return int(size)
 
 
 def check_crop_size(height: int, width: int, levels: int,
@@ -161,10 +182,12 @@ def check_crop_size(height: int, width: int, levels: int,
             (minimum, minimum),
             remedy=(
                 "at level %d a %d-tap filter contaminates %d px per side, leaving a valid "
-                "interior of %d px from a %d px crop. R13 requires at least %d px of valid "
-                "interior, so the crop must be at least %dx%d. Constrain the number of "
-                "frames or the bank breadth instead - never the grid: a smaller grid does "
-                "not make the analysis cheaper, it makes it wrong."
+                "interior of %d px from a %d px crop. The R13 heuristic asks for at least "
+                "%d px of valid interior, so the crop must be at least %dx%d. That floor is a "
+                "judgement about spatial-statistics comfort, not a derived power criterion "
+                "(see analysis_engine/spatial_power.py). Constrain the number of frames or "
+                "the bank breadth instead - never the grid: a smaller grid does not make the "
+                "analysis cheaper, it makes it wrong."
                 % (levels, taps, edge_exclusion(levels, taps),
                    valid_interior(min(height, width), levels, taps),
                    min(height, width), MIN_VALID_INTERIOR, minimum, minimum)),
@@ -175,6 +198,16 @@ def check_crop_size(height: int, width: int, levels: int,
         "levels": levels,
         "filter_taps": taps,
         "minimum_size": minimum,
+        "minimum_size_basis": (
+            "edge exclusion at the coarsest level, plus the R13 heuristic valid interior of "
+            "%d px. The edge term is derived from the filter; the interior term is a "
+            "judgement, not a derived power criterion, and since T4C.5i step 6 it is no "
+            "longer rounded up to a power of two" % MIN_VALID_INTERIOR),
+        "heuristic_valid_interior": MIN_VALID_INTERIOR,
+        "dyadic_operational_size": dyadic_crop_size(levels, taps),
+        "dyadic_operational_basis": (
+            "a convenience for dyadic transforms and for naming crop sizes; reported, never "
+            "refused on"),
         "edge_exclusion_by_level": {j: edge_exclusion(j, taps)
                                     for j in range(1, levels + 1)},
         "valid_interior_by_level": interiors,
@@ -832,9 +865,12 @@ def _raise_transform_crop_refusal(geometry: Mapping[str, Any],
     suggestion = ((plan or {}).get("suggestions") or {}).get("recommended") or {}
     bounds = suggestion.get("bounds")
     remedy = (
-        "%s level %d leaves this crop below the statistically recommended R13 interior. "
-        "The absolute minimum %s is technical computability only; it is not licensed for "
-        "meaningful spatial statistics. "
+        "%s level %d leaves this crop below the R13 heuristic interior. That threshold is a "
+        "judgement about how much uncontaminated span makes a spatial statistic comfortable "
+        "to look at, not a derived power criterion: meeting it would not establish that the "
+        "analysis can detect anything (the derived criterion is effective sample size and "
+        "attenuation, in analysis_engine/spatial_power.py). The absolute minimum %s is "
+        "technical computability only; it is not licensed for meaningful spatial statistics. "
         % (analysis["transform_family"].upper(), int(analysis["levels"]),
            tuple(geometry["absolute_minimum"]["shape"])))
     if suggestion.get("feasible") and bounds:
@@ -849,7 +885,7 @@ def _raise_transform_crop_refusal(geometry: Mapping[str, Any],
                       "Use a larger crop, a shallower preregistered analysis, or another "
                       "registered transform; do not weaken the grid after seeing the cost.")
     raise FieldTooSmallError(
-        "%s level-%d statistically recommended cross-scale analysis"
+        "%s level-%d cross-scale analysis at the R13 heuristic interior"
         % (analysis["transform_family"].upper(), int(analysis["levels"])),
         current, required, remedy=remedy,
         geometry=dict(geometry), acquisition_plan_sha256=(plan or {}).get("plan_sha256"))

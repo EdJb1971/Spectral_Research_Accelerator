@@ -634,11 +634,14 @@ def test_data_source_payload_carries_the_observational_flag(client):
 def test_zarr_catalogue_payload_has_the_fields_the_form_reads(client):
     body = client.get("/api/v1/data/zarr/catalogue").json()
     for key in ("stores", "network_enabled", "network_env_var", "r13_minimum_crop",
-                "analysis_transforms", "r13_legacy_note"):
+                "r13_dyadic_operational_crop", "analysis_transforms", "r13_legacy_note"):
         assert key in body
     first = next(iter(body["stores"].values()))
     assert "note" in first, "the store picker shows the note; it must be present"
-    assert body["r13_minimum_crop"]["4"] == 512
+    # T4C.5i step 6: the table is the requirement; the dyadic rounding is reported separately.
+    assert body["r13_minimum_crop"]["4"] == 324
+    assert body["r13_dyadic_operational_crop"]["4"] == 512
+    assert "not a derived power criterion" in body["r13_legacy_note"]
 
 
 def test_training_readiness_payload_carries_every_scientific_caveat_the_ui_reads(client):
