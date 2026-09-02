@@ -128,6 +128,7 @@ from src.api.comparison_views import router as comparison_views_router  # noqa: 
 from src.api.experiment_receipts import router as experiment_receipts_router  # noqa: E402
 from src.api.experiment_qualification import router as experiment_qualification_router  # noqa: E402
 from src.api.gate import router as gate_router  # noqa: E402
+from src.api.cds import router as cds_router  # noqa: E402
 
 app.include_router(findings_router)
 # TG8.4. Mounted here for the same reason the findings router is: registration must not depend
@@ -178,6 +179,9 @@ app.include_router(comparison_views_router)
 app.include_router(experiment_receipts_router)
 app.include_router(experiment_qualification_router)
 app.include_router(gate_router)
+# TG18.1: a metadata-only browser projection of the existing CDS request/shard/storage
+# contracts. Execution remains a separate durable-job concern; these routes cannot use network.
+app.include_router(cds_router)
 
 
 class HealthResponse(BaseModel):

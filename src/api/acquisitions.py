@@ -170,14 +170,14 @@ async def list_acquisitions() -> Dict[str, Any]:
             "label": "ERA5 regional request · Copernicus CDS",
             "provider": "Copernicus Climate Data Store",
             "product_family": "ERA5 atmospheric reanalysis",
-            "ui_status": "PLANNER_NOT_EXPOSED",
-            "execution": "bounded resumable CLI acquisition",
+            "ui_status": "PLANNER_AVAILABLE",
+            "execution": "browser plan; bounded resumable CLI acquisition",
             "configuration": ["variables", "date range", "UTC hours", "latitude/longitude",
                               "pressure levels", "grid spacing", "analysis depth",
                               "download/cache directories", "time chunk"],
-            "reason": ("The production CDS acquisition and replay path is implemented, but no "
-                       "browser planning/job surface is mounted. It is listed here so an "
-                       "implemented route cannot disappear merely because it has no HTTP route."),
+            "reason": ("The browser validates, hashes, shards and prices the exact request "
+                       "without network use. Durable browser execution and progress are not "
+                       "mounted yet; acquisition remains available through the resumable CLI."),
         }],
         "violation_coverage": coverage,
         "attribution_caveat": DOMAIN_ATTRIBUTION_CAVEAT,

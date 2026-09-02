@@ -58,7 +58,9 @@ import {
   FileLock2,
   Lock,
   Landmark,
-  MessageSquare
+  MessageSquare,
+  Menu,
+  X
 } from 'lucide-react';
 
 const WORKFLOW_NAV = [
@@ -98,6 +100,7 @@ const WORKFLOW_NAV = [
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('acquire');
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const workspaceHeadingRef = useRef<HTMLHeadingElement>(null);
   const hasMountedRef = useRef(false);
   const [backendConnected, setBackendConnected] = useState<boolean | null>(null);
@@ -688,24 +691,41 @@ export default function App() {
             <p className="text-xs text-slate-400">Scientific Visual Research Workbench</p>
           </div>
         </div>
-        <div className="flex items-center gap-4">
-          {backendConnected ? (
+        <div className="flex items-center gap-2 sm:gap-4">
+          {backendConnected === true ? (
             <span role="status" className="text-xs bg-emerald-500/10 text-emerald-300 border border-emerald-500/25 px-3 py-1.5 rounded-full font-medium flex items-center gap-2">
               <Server className="w-3.5 h-3.5" aria-hidden="true" /> Connected <span className="hidden sm:inline text-emerald-400/70">· SQLite active</span>
             </span>
-          ) : (
+          ) : backendConnected === false ? (
             <button type="button" className="text-xs bg-amber-500/10 text-amber-400 border border-amber-500/20 px-3 py-1.5 rounded-full font-medium flex items-center gap-2"
               onClick={checkConnection}>
-              <WifiOff className="w-3.5 h-3.5" aria-hidden="true" /> Backend unreachable - no computation available; retry
+              <WifiOff className="w-3.5 h-3.5" aria-hidden="true" />
+              <span className="hidden sm:inline">Backend unreachable - no computation available; retry</span>
+              <span className="sm:hidden">Retry API</span>
             </button>
+          ) : (
+            <span role="status" className="flex items-center gap-2 rounded-full border border-slate-700
+                                      bg-slate-800/70 px-3 py-1.5 text-xs text-slate-400">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> Checking API
+            </span>
           )}
+          <button type="button" aria-controls="scientific-workflow-nav"
+            aria-expanded={mobileNavOpen}
+            aria-label={mobileNavOpen ? 'Close workspace menu' : 'Open workspace menu'}
+            onClick={() => setMobileNavOpen((open) => !open)}
+            className="mobile-nav-trigger grid h-9 w-9 place-items-center rounded-lg border
+                       border-slate-700 bg-slate-800 text-slate-200 hover:bg-slate-700 lg:hidden">
+            {mobileNavOpen ? <X className="h-4 w-4" aria-hidden="true" />
+              : <Menu className="h-4 w-4" aria-hidden="true" />}
+          </button>
         </div>
       </header>
 
-      <div className="flex-1 flex flex-col lg:flex-row">
+      <div className="instrument-body min-h-0 flex-1 flex flex-col lg:flex-row">
         {/* Left Side Navigation bar */}
-        <nav aria-label="Scientific workflow"
-          className="workflow-nav w-full lg:w-72 lg:flex-none border-r border-slate-800 bg-slate-900/20 p-4 space-y-5">
+        <nav id="scientific-workflow-nav" aria-label="Scientific workflow"
+          className={`workflow-nav ${mobileNavOpen ? 'block' : 'hidden'} w-full lg:block lg:w-72
+                      lg:flex-none border-r border-slate-800 bg-slate-900/20 p-4 space-y-5`}>
           {WORKFLOW_NAV.map(group => (
             <section key={group.section} aria-labelledby={`nav-${group.section.toLowerCase()}`}>
               <div className="px-3 mb-1">
@@ -726,7 +746,7 @@ export default function App() {
                   const unavailable = decision ? !decision.available : false;
                   return (
                     <button key={tab.id} type="button" disabled={unavailable}
-                      onClick={() => setActiveTab(tab.id)}
+                      onClick={() => { setActiveTab(tab.id); setMobileNavOpen(false); }}
                       aria-current={isActive ? 'page' : undefined}
                       aria-describedby={unavailable ? `nav-reason-${tab.id}` : undefined}
                       className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
@@ -740,7 +760,7 @@ export default function App() {
                       <span className="min-w-0 text-left">
                         <span className="block">{tab.name}</span>
                         {'context' in tab && (
-                          <span className="block text-[9px] uppercase tracking-wide text-slate-600">
+                          <span className="block text-[10px] uppercase tracking-wide text-slate-500">
                             {tab.context}
                           </span>
                         )}

@@ -10,6 +10,7 @@ import ChannelRecords from './ChannelRecords';
 import ProfileAcquisition from './ProfileAcquisition';
 import LightCurveAcquisition from './LightCurveAcquisition';
 import GenericIngress from './GenericIngress';
+import CDSPlanner from './CDSPlanner';
 
 interface AcquisitionViewProps {
   onError?: (message: string) => void;
@@ -239,6 +240,7 @@ export const AcquisitionView: React.FC<AcquisitionViewProps> = ({
             </span>
           </div>
         ))}
+        {domainName === 'reanalysis' && <CDSPlanner onError={onError} />}
       </section>
 
       <GenericIngress onError={onError} onCapability={onCapability} />

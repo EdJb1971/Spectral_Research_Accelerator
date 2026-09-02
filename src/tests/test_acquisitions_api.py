@@ -70,17 +70,45 @@ def test_every_known_violation_has_a_registered_data_path_not_only_a_declaration
         "profile_query", "lightcurve_query"}
 
 
-def test_catalogue_exposes_the_non_http_cds_route_instead_of_hiding_it(client):
+def test_catalogue_exposes_the_browser_cds_planner_without_implying_a_job(client):
     body = client.get("/api/v1/acquisitions").json()
     cds = next(row for row in body["operational_routes"]
                if row["id"] == "era5_cds_regional")
 
     assert cds["domain"] == "reanalysis"
-    assert cds["ui_status"] == "PLANNER_NOT_EXPOSED"
-    assert cds["execution"] == "bounded resumable CLI acquisition"
+    assert cds["ui_status"] == "PLANNER_AVAILABLE"
+    assert cds["execution"] == "browser plan; bounded resumable CLI acquisition"
     assert {"variables", "date range", "pressure levels", "time chunk"}.issubset(
         cds["configuration"])
-    assert "no HTTP route" in cds["reason"]
+    assert "without network use" in cds["reason"]
+    assert "not mounted yet" in cds["reason"]
+
+
+def test_cds_browser_planner_reproduces_the_accepted_six_year_request_without_network(client):
+    capabilities = client.get("/api/v1/data/cds")
+    assert capabilities.status_code == 200
+    assert capabilities.json()["planner_network_used"] is False
+    assert capabilities.json()["execution_status"] == "NOT_MOUNTED"
+
+    response = client.post("/api/v1/data/cds/plan", json=capabilities.json()["defaults"])
+    assert response.status_code == 200
+    body = response.json()
+    assert body["network_used"] is False
+    assert body["execution_status"] == "NOT_MOUNTED"
+    assert len(body["monthly_shards"]) == 72
+    assert body["storage_estimate"]["frames"] == 8764
+    assert body["request_sha256"] == \
+        "297204dd6d576828dece605bb4a94ce96c35b6cce0a8152f85b1174e853eb5aa"
+
+
+def test_cds_browser_planner_refuses_bounds_that_would_be_server_snapped(client):
+    request = client.get("/api/v1/data/cds").json()["defaults"]
+    request["lat_min"] = -59.9
+    response = client.post("/api/v1/data/cds/plan", json=request)
+
+    assert response.status_code == 400
+    assert "bounds/grid" in response.json()["detail"]
+    assert "server-side snapping would change the frozen crop" in response.json()["detail"]
 
 
 def test_gridded_acquisitions_publish_researcher_facing_source_identity(client):

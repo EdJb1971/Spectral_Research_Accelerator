@@ -3445,6 +3445,27 @@ rows and cannot add a tab. This is reachability, not acquisition evidence: no pu
 fetch or live WeatherBench probe was run, and selecting a domain does not establish that a
 supplied record came from it.
 
+### 3.6zqa CDS browser planning (`src/api/cds.py`, `frontend/src/components/CDSPlanner.tsx`, TG18.1, `ed-dev`)
+
+The production CDS route is no longer merely named by the acquisition catalogue. `GET
+/api/v1/data/cds` serves its exact variable and pressure-level vocabulary plus the accepted
+six-year New Zealand request as editable defaults. `POST /api/v1/data/cds/plan` constructs the
+same immutable `CDSRegionalRequest` used by the CLI, so its date, bounds, grid snapping, hours,
+levels and variables pass the source implementation's own validation rather than a browser copy.
+The response carries the canonical request digest, every deterministic monthly shard, exact frame
+count and grid dimensions, and the source implementation's conservative storage ceiling with no
+compression credit. The accepted default reproduces 72 shards, 8,764 frames and request digest
+`297204dd6d576828dece605bb4a94ce96c35b6cce0a8152f85b1174e853eb5aa`.
+
+Planning imports no CDS client and makes no network call. It reports `network_used: false` and
+`execution_status: NOT_MOUNTED` even when the server's opt-in network environment variable is set.
+Generic R13 analysis geometry is shown beside the valid acquisition plan as a separate readiness
+assessment: failure of that heuristic does not falsely say the ERA5 request itself is malformed.
+The browser therefore exposes every scientific selection needed by the downloader without making
+the dangerous leap from "valid plan" to "job submitted". Durable execution, progress, cancellation
+and resume remain the next acquisition slice; a plan is not acquired data, source agreement,
+analysis, evidence or a finding.
+
 ### 3.6zr Workflow navigation and persistent context (`frontend/src/App.tsx`, TG11.0, `ed-dev`)
 
 The shell groups its eleven destinations by the scientific workflow: **Acquire, Analyse,
@@ -5406,6 +5427,12 @@ complete lazy Dataset/DataLoader interface. It does **not** prove CDS credential
 wire transfer, current NetCDF conversion or ERA5 agreement. No live request or multi-year NZ
 crop has run, so this is T5.2c partial infrastructure and D43 remains open.
 
+**Subsequent live acceptance (T4C.5m/T4C.5n) supersedes that operational status, not the offline
+evidence above.** The CDS route later acquired the complete six-year, 8,764-frame NZ record;
+WeatherBench overlap passed at the opening and at a separately acquired interior window; queue
+time, transferred bytes, cache identity and returned schema are recorded; and D43 is closed.
+The remaining T5.2 dependency is use by the real T5.3/T5.4 laboratory experiment, not acquisition.
+
 ### 3.13b Calendar splits and physical forecast time (`regional_forecast.py`, `evaluation.py`, T5.2d)
 
 `RegionalForecastConfig.calendar_boundaries=(validation_start, test_start)` selects a reproducible
@@ -5578,19 +5605,27 @@ study ledger is therefore rendered as an honest absence with a route back to the
 
 Acquire now begins with a researcher-facing **Source routes** inventory for the selected domain.
 Registered cloud-grid entries carry a display label, provider, and product family while retaining
-their stable internal IDs. The implemented CDS regional downloader is also listed, but its status
-is explicitly `PLANNER_NOT_EXPOSED`: it remains a bounded, resumable CLI path with variables,
-date/time, region, pressure-level, grid, analysis-level, download/cache, and chunk controls, and
-there is no browser planner, job surface, or HTTP execution route yet. Listing that gap makes the
-catalogue complete without pretending the capability is configurable from the UI.
+their stable internal IDs. The implemented CDS regional downloader is listed as
+`PLANNER_AVAILABLE`: its variables, date/time, region, pressure-level, grid and analysis-depth
+controls are configurable through the metadata-only browser planner described in §3.6zqa. The
+bounded resumable transfer remains a CLI path; there is no browser job/progress or HTTP execution
+route yet. Keeping planning and execution as separate statuses makes the catalogue complete
+without pretending that validating a request submitted it.
 
 The record/study context strip remains persistent in application state, but is rendered only when
 a record or study is selected. It is ordinary document content rather than a second sticky header,
 so an empty context cannot consume permanent vertical space.
 
+At compact widths the workflow rail is a labelled, stateful menu controlled by a native button
+with `aria-controls` and `aria-expanded`; choosing a workspace closes it. At desktop widths the
+rail and main workspace occupy the viewport below the instrument header and scroll independently.
+Connection state is three-valued in presentation (`checking`, `connected`, `unreachable`), so an
+unfinished startup probe is not rendered as a failure. These are shell semantics only and do not
+change a scientific request, result or refusal.
+
 ## 3.12 HTTP API Surface
 
-145 routes. Listed here because an undocumented endpoint is an untested contract. The count and this table were both wrong until TG17.3 (defect D75): the guard enumerated a hand-maintained list of ten source files and could not see four mounted routers.
+147 routes. Listed here because an undocumented endpoint is an untested contract. The count and this table were both wrong until TG17.3 (defect D75): the guard enumerated a hand-maintained list of ten source files and could not see four mounted routers.
 
 | Method | Route | Notes |
 |---|---|---|
@@ -5643,6 +5678,8 @@ so an empty context cannot consume permanent vertical space.
 | POST | `/api/v1/export/field` | a 2D field as CSV, JSON, NetCDF4 or a zipped Zarr store, provenance embedded (T3.5.23) |
 | POST | `/api/v1/export/table` | hypotheses, benchmarks or metrics as CSV or JSON, provenance embedded |
 | GET | `/api/v1/data/zarr/catalogue` | known cloud ERA5 stores, the network gate, and the R13 crop floor (T3.5.18) |
+| GET | `/api/v1/data/cds` | CDS planner vocabulary, accepted request defaults and explicit no-network/unenforced-execution boundary (TG18.1) |
+| POST | `/api/v1/data/cds/plan` | validate and hash an exact CDS request, enumerate monthly shards and conservatively price bytes; acquires no values (TG18.1) |
 | GET | `/api/v1/data/zarr/cached` | crops already materialised locally; works with no network |
 | POST | `/api/v1/data/zarr/inspect` | chunk structure and chunk-hostility for a proposed crop - **metadata only** |
 | GET | `/api/v1/data/zarr/probes` | the probe ledger, with the transcription debt published (TG10.3) |
@@ -7220,6 +7257,14 @@ the platform — had **no test file at all**. `src/tests/test_transforms.py` now
 across FFT, DCT, DWT, DTCWT and hybrid — two thirds of the whole suite) and covers round-trip exactness, energy conservation,
 orthonormality, dtype preservation and shift behaviour.
 
+**Current status of D84/D85 (2026-09-03).** Their terminal labels in the ledger preserve the
+state at discovery and are too broad after T4C.5m: D43 is closed, v3 acquired the complete
+six-year record, and T4C.6 returned PASS. Neither defect invalidates that PASS because both govern
+whether an observed absence was detectable, and attenuation toward the null cannot manufacture a
+positive. They remain open only for the first real negative-result path: D84 must adjudicate
+spatial attenuation as FAIL versus INVALID, and D85 must record attainable null resolution at the
+measured window. They no longer block acquisition of the record that already exists.
+
 ### 7.2c Empirical confirmation of D1
 
 Running the code settles D1 beyond static argument:
@@ -7420,7 +7465,7 @@ able to sit three slices out of date.
 | `test_stores.py` | 37 | TG10.1/TG12.1 gridded-store registry: the four ERA5 stores and externally registered GLORYS source under declared domains; malformed declarations refused; measured versus unmeasured chunk facts; read-only catalogue compatibility; pinned ERA5 crop identity; declared depth and fractional negative-elevation selection; GLORYS citing the persisted 2.02x probe while the rejected 72.52x layout remains in the ledger; no runtime import of `copernicusmarine`; and the independent fifth-store extension acceptance (E1, E2, E14, R17) |
 | `test_store_probe.py` | 34 | TG10.3 probing as a recorded act: a local store's structure and chunk sizes read without transferring data, the worst chunk reported rather than the mean against a fixture whose two variables differ in width because an identical pair could not tell the two apart; the acceptance criterion, a deliberately hostile store characterised as hostile with nothing materialised, no cache entry created and the figure agreeing exactly with the prediction from chunk metadata alone; hostility shown to be a property of a pairing, the same store amplifying 30x for a request that straddles its chunks and under 4x for one that lines up; three-valued hostility with `None` never folded into `False`; a refusal recorded as a result — network switched off, an unopenable path, a directory that is not Zarr, and five open failures classified with their text kept verbatim, because the difference between "no such bucket" and "403" is a typo versus an account; seven incoherent records refused, including an amplification with no crop attached and a refusal with no reason; the digest covering the observation and not the day it was taken; a ledger that keeps an earlier probe rather than replacing it; atomic content-addressed persistence that never rewrites an existing record; the registration gate in five parts — a claimed measurement with no probe, a probe of another store's URI, an unrecorded digest, a figure the cited probe denies, and a store that both cites a look and says nobody looked — with the error asserted to name the claim, the remedy and the honest alternative after a mutation showed a weaker assertion passing; the four transcriptions counted as debt and asserted to carry exactly what was recorded and no more; the probe routes including a recorded result where `/inspect` returns 409; and an opt-in live probe of the real WeatherBench store, **NOT RUN** (E1, E5, D43, D62) |
 | `test_crop_planner.py` | 12 | TG12.1d/D73 transform-owned support and derived absolute/recommended crop thresholds; an external support callback without planner edits and pre-source refusal without one; symmetric coordinate expansion, edge/source infeasibility and revised chunk cost; plan identity moving with transform or coordinate observations but not field values; metadata-before-selection materialisation refusal; and invalid filter configuration refused as a client parameter (R13); and for T4C.5i step 6 the demoted heuristic threshold -- the requirement rather than its dyadic round-up, the threshold declaring itself a heuristic and naming what replaces it, the convention never moving a verdict, and D84's own 161 px crop now admitted by both gates (12 pytest cases) |
-| `test_acquisitions_api.py` | 8 | TG10.2-TG13.2 domain-first catalogue, complete registered grid and light-curve reachability, channel-table E14 admission/refusal, limits and attribution caveats, mechanical known-violation coverage backed by available acquisition paths, human-facing grid-source identity, and explicit visibility of the implemented but non-HTTP CDS route |
+| `test_acquisitions_api.py` | 10 | TG10.2-TG18.1 domain-first catalogue, complete registered grid and light-curve reachability, channel-table E14 admission/refusal, limits and attribution caveats, mechanical known-violation coverage backed by available acquisition paths, human-facing grid-source identity, and the metadata-only CDS browser planner reproducing the accepted six-year request while refusing server-snapped geometry and never implying that a job ran |
 | `test_analysis_api.py` | 7 | TG11.1 the domain-analysis engine through HTTP: the read-only capability boundary, association over the full re-uploaded record, precedence admitted only by a declared floor, the R21 refusal reaching the caller before any computation, a three-valued gate verdict over server-derived record facts, an unknown configuration key refused rather than ignored, and the acceptance criterion — all thirteen `sequence` and `cross_domain` benchmarks reproduced through the live HTTP client with every null still answering "there is nothing here" |
 | `test_preregistration_api.py` | 17 | TG11.2 the generate/confirm split over HTTP: the sealed family matching the shape the sweep actually emits, a partition identity that ignores what the file was called (D65) and separates two splits of one record, sealing that narrows by lag and is timed by the server clock, a confirmatory lag that was never generated refused, an edited seal naming the field that changed, a wrong published digest refused, confirmation taking every setting from the seal and spending the partition, the same held-out data refused a second confirmation under a second individually honest seal, two seals frozen before any opening still buying only one look, a partition the seal did not name refused, a refused confirmation leaving the partition unspent, and TG11.1's gate refused on a spent partition |
 | `test_evidence_api.py` | 22 | TG11.3 the evidence write path: a study opened at revision zero claiming nothing, a second study under one identifier refused, an identifier that could traverse a directory refused, an append linked to the head it names, a stale head refused with nothing written, earlier revisions kept rather than rewritten, the read surface serving the latest revision and folding the earlier ones into one row (D66), a request carrying a rung refused rather than ignored, a payload asserting a rung refused at any depth, a payload asserting `temporal_precedence` refused and told which route computes it, the rung moving only because the evidence moved it, one FAIL entry capping the chain at observation through the wire, commentary refused a category, a bare confidence refused on the way in, an entry that cannot be back-dated, a causally worded hypothesis registered with the ceiling stated, the precedence verdict computed here and citing the bytes and the configuration it came from, an underpowered sweep recorded INCONCLUSIVE rather than as a negative, a domain with no admissible lag floor writing nothing, and a stale head refused before the sweep runs |
@@ -7442,7 +7487,7 @@ able to sit three slices out of date.
 | `test_spectral_constellation.py` | 45 | T4E.1 the bridge to TG3.3's attributed graphs: every constellation carrying a real `AttributedGraph` whose declared relations are exactly what `measurable_relations` reports, three of the eight measurable and the other five refused by name with the field each one lacks; D90 pinned on the units themselves rather than on the symptom, with `distance` measured on every pair of the pass and a scale genuinely in metres still refused so the fix cannot be read as a weakening; `succession` asserted false for every ordered pair of every constellation, which is why the onsets are carried separately; the enumeration checked against the combinatorics of its own frame census frame by frame and 318 nodes checked against the tracks they came from; the flank separation of two bands following one vortex, `same_band` on every pair, and the claim boundary naming both; the raw and band-normalised strength ratios disagreeing about the sign of the comparison, with the band RMS recovered exactly from the threshold and its sigma, and a detection that recorded no threshold refused a normalised strength and saying so; left-censoring set from the tracker's own clock, the nine-frame offset carried as a bound, and an uncensored pair carrying no note; the plane angle checked against six hand-built displacements, declared not to be a compass in its own receipt, refused between two coincident nodes, and wrapped on a periodic axis with two tracks disagreeing about where it closes refused; rates local to the node so two frames of one track differ, a single sighting given no rate, velocity or scale velocity, a held level reporting exactly zero rather than a least-squares residue, and a signed radial velocity; and the refusals -- only pairs and triples, a frame over the node cap refused rather than sampled, a budget overrun refused whole rather than returned as a prefix, R19 left to TG3.3 rather than re-implemented, D88 registration required across scales but not within one, a missing registration receipt not treated as a failing one, a node with no scale refused, the carried half required to be the same size as the comparable half, and the absent self-loop check shown to be unreachable rather than added |
 | `test_spectral_invariance.py` | 45 | T4E.2 the invariant signature: the principal axis checked against the covariance eigendecomposition it stands for over 50 random configurations, exactly collinear points reporting an infinite anisotropy rather than a failure, and three axes refused rather than projected; the `planted_configuration` benchmark measured over 24 field-noise realisations to be isotropic with an axis angle spanning 0.78 to 158.08 degrees, the module's isotropy floor asserted to be the number that measurement produced, a configuration at the benchmark's own anisotropy refused an axis by name, and the vortex triples shown to clear the floor by two orders of magnitude; invariance measured rather than declared, with translation, three rotations, reflection and every relabelling asserted to leave the signature vector identical to floating-point precision in both modes; a uniform rescaling leaving the scale-free shape alone while an estimator that missed the rescaling moves the scale-specific geometry by exactly the factor it missed; the canonical order shown to matter, with two configurations that agree on independently sorted blocks and have no correspondence making both true at once; the toggle priced at 87 of 135 with the loss attributed by cardinality; a position in metres beside a scale in cells refusing the scale-specific mode and signing in the scale-invariant one, which is what R19's own refusal message tells the caller to do; and the refusals -- a pair asked for a scale-free shape, a pair's axis refused for a different reason than an isotropic triple's, a constellation stripped of its features, a member with no band RMS, an unknown mode, blocks that disagree about cardinality, a floor calibrated on one realisation or on collinear replicates, and the mixed-unit refusal left to the extractor rather than copied |
 | `test_spectral_narrative.py` | 25 | T4D.3 the prose, and what it may not say: every number in a sentence checked against the track it came from including the spoken speed against `Track.speed()` for all four tracks, the subject of every sentence being the coefficient maximum and not the structure, and the frame count being of frames searched rather than frames found; no track of a growing vortex claiming its own scale doubled -- each holding one level at a scale velocity of exactly zero with the word absent from the prose -- while the growth that did happen is measured across bands, level 4 weakening as level 5 strengthens and is first excited nine frames later, offered as a candidate precursor relationship carrying that it was not tested against a null and claims no merge, with one band supporting no ordering at all; a cartesian grid refused every compass word and given axis-relative wording, the sign that makes a row northward read from the grid so one displacement on two grids gives opposite points, the cosine of the latitude shortening a degree of longitude before the bearing is taken so 60 degrees north gives 26.6 and not 45, a track that returned to where it started given no bearing, and the missing-`lat0` branch shown to be unreachable rather than added; energy reported as the square under its own name so the roadmap's own 43% becomes 104.5%, and a change from zero refused rather than rendered infinite; the guard using the programme's one list of words for every entry in it, a causal word in a caller's own dataset name refused before a reader sees it, the guard's own limit asserted so a substring match cannot creep in, and the entitlement allowed to name the boundary the sentences may not cross and appearing exactly once however many tracks there are; plus a single sighting supporting no direction, speed or growth, a search that found nothing refused as an empty list of sentences, and the structural signature naming no variable, dataset or units |
-  | **total** | **3147** | |
+  | **total** | **3149** | |
 ### 7.2h A surrogate null that was not the null it claimed (T4C.5)
 
 The most instructive defect of the project so far, because it passed every structural check.

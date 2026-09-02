@@ -4550,8 +4550,27 @@ shown only when populated and does not create a second sticky header. A new Rese
 indexes the existing study, run, gate, evaluation, acquisition-probe and benchmark ledgers while
 keeping their evidence classes visibly distinct. Acquire now exposes researcher-facing source
 identity and names the implemented CDS downloader as `PLANNER_NOT_EXPOSED` instead of silently
-omitting it. This does **not** complete TG18.1: the CDS browser planner/job surface, route-level
-bundle splitting, narrow-width rendered inspection and cross-workspace density tuning remain.
+omitting it. This does **not** complete TG18.1: the CDS browser planner/job surface,
+narrow-width rendered inspection and cross-workspace density tuning remain. Route-level bundle
+splitting is explicitly **not required** (2026-09-03): this local research instrument may ship a
+large bundle unless measured startup or interaction latency establishes a user-visible defect.
+
+**Second foundation slice delivered (2026-09-03).** The shell now has an accessible compact-width
+workspace menu with explicit expanded state and automatic closure after selection; the desktop
+workflow rail and workspace scroll independently inside the viewport; record/study context wraps
+without clipping on narrow screens; and connection startup is rendered as `Checking API` rather
+than briefly misreported as an outage. Navigation metadata is no longer set below 10 px. TG18.1
+remains in progress for rendered narrow-width inspection, cross-workspace density tuning and the
+CDS browser planner and durable job surface. The next slice below completes the planner half.
+
+**Third foundation slice delivered (2026-09-03).** Acquire now exposes the existing CDS route as
+a real metadata-only planner. Every variable, date, UTC hour, bound, pressure level, grid spacing
+and analysis depth is editable; the backend uses the production `CDSRegionalRequest` to return the
+immutable digest, monthly work units, exact frame/grid geometry and a no-compression-credit storage
+ceiling. The accepted six-year request reproduces 72 shards and 8,764 frames. Both API and UI state
+plainly say planning uses no network and execution is `NOT_MOUNTED`; a valid plan cannot be mistaken
+for a submitted job or acquired data. TG18.1 remains in progress for the durable CDS job/progress/
+resume surface, rendered narrow-width inspection and cross-workspace density tuning.
 
 **TG18.2 Scientific visualization workspace.** Add coordinated plot focus, exact-value inspection,
 shared colour/axis controls, comparison locking, uncertainty and validity overlays, resizable panes,

@@ -537,6 +537,55 @@ export interface AcquisitionCatalogue {
   note: string;
 }
 
+export interface CDSPlanRequest {
+  variables: string[];
+  date_start: string;
+  date_end: string;
+  hours_utc: number[];
+  lat_min: number;
+  lat_max: number;
+  lon_min: number;
+  lon_max: number;
+  pressure_levels: number[];
+  grid_degrees: number;
+  n_levels_analysis: number;
+}
+
+export interface CDSCapabilities {
+  schema: string;
+  dataset: string;
+  variables: Array<{ id: string; cds_name: string }>;
+  pressure_levels: number[];
+  defaults: CDSPlanRequest;
+  network_env_var: string;
+  network_enabled: boolean;
+  planner_network_used: false;
+  execution_status: 'NOT_MOUNTED';
+  workflow: string[];
+  claim_boundary: string;
+}
+
+export interface CDSPlan {
+  schema: string;
+  request: CDSPlanRequest & { request_sha256: string };
+  request_sha256: string;
+  monthly_shards: Array<{
+    year: number; month: number; days: number[]; request_sha256: string; filename: string;
+    request: Record<string, unknown>;
+  }>;
+  storage_estimate: {
+    basis: string; compression_credit_assumed: boolean; frames: number;
+    latitude_points_upper_bound: number; longitude_points_upper_bound: number;
+    levels: number; variables: number; raw_value_bytes: number;
+    artifact_bytes_upper_bound: number; shards: number;
+  };
+  analysis_geometry: { status: string; assessment: Record<string, any> };
+  network_used: false;
+  execution_status: 'NOT_MOUNTED';
+  next_action: string;
+  claim_boundary: string;
+}
+
 export interface ZarrAnalysisRequest {
   transform_family: 'swt' | 'dtcwt';
   wavelet: 'haar' | 'db2' | 'db3';

@@ -214,6 +214,19 @@ export const apiService = {
     return handleResponse<types.AcquisitionCatalogue>(response);
   },
 
+  async cdsCapabilities(): Promise<types.CDSCapabilities> {
+    return handleResponse<types.CDSCapabilities>(
+      await fetch(`${BASE_URL}/data/cds`, { method: 'GET' }));
+  },
+
+  async planCDS(payload: types.CDSPlanRequest): Promise<types.CDSPlan> {
+    return handleResponse<types.CDSPlan>(
+      await fetch(`${BASE_URL}/data/cds/plan`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      }));
+  },
+
   async profileCapabilities(): Promise<types.ProfileCapabilities> {
     return handleResponse<types.ProfileCapabilities>(
       await fetch(`${BASE_URL}/profiles`, { method: 'GET' }));

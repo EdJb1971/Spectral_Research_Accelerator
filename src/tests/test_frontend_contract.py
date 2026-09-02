@@ -155,6 +155,10 @@ def test_navigation_follows_the_scientific_workflow_and_labels_the_grid_line(app
     assert "name: 'Recorded review'" in app_source
     assert "Recorded argument; never claim permission" in app_source
     assert 'aria-label="Scientific workflow"' in app_source
+    assert 'id="scientific-workflow-nav"' in app_source
+    assert 'aria-controls="scientific-workflow-nav"' in app_source
+    assert "aria-expanded={mobileNavOpen}" in app_source
+    assert "setMobileNavOpen(false)" in app_source
     assert re.search(r"name: '\d+\.", app_source) is None
 
 
@@ -2030,12 +2034,21 @@ def test_research_archive_keeps_record_classes_distinct_and_reachable(app_source
 
 def test_acquire_surfaces_noninteractive_routes_and_human_source_identity():
     source = _read("components", "AcquisitionView.tsx")
+    planner = _read("components", "CDSPlanner.tsx")
+    service = _read("services", "api.ts")
 
     assert "catalogue.operational_routes" in source
     assert "route.ui_status" in source
     assert "option.label || option.name" in source
     assert "option.provider || option.product_family" in source
     assert "Source routes" in source
+    assert "<CDSPlanner" in source
+    assert "apiService.cdsCapabilities(" in planner
+    assert "apiService.planCDS(" in planner
+    assert "Validate plan — no network" in planner
+    assert "Planning uses no network" in planner
+    assert "plan.network_used" in planner
+    assert "/data/cds/plan" in service
 
 
 def test_findings_refuses_to_treat_a_run_or_receipt_label_as_a_published_study():
