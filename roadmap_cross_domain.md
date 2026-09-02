@@ -4671,10 +4671,52 @@ contract term may be labelled Mean, Median, Slope, Correlation or Standard devia
 and the production build succeeds. The full backend suite was **not** rerun; the last measured
 figure remains 3,240.
 
-**Not yet done in TG18.2.** Coordinated plot focus, shared colour and axis controls, comparison
-locking, uncertainty and validity overlays, resizable panes and publication export are untouched by
-this slice. The equivalent also does not yet cover figures rendered by the comparison views, which
-carry their own `AccessibleTable`, nor does it claim the two idioms have been unified.
+**Not yet done in that slice.** Coordinated plot focus, shared colour and axis controls, comparison
+locking, uncertainty and validity overlays, resizable panes and publication export were untouched.
+The equivalent also does not cover figures rendered by the comparison views, which carry their own
+`AccessibleTable`; the two idioms are **deliberately not unified**, because `AccessibleTable`
+transcribes a backend-authored table that the analysis layer stands behind while `FigureTable`
+transcribes a client-side figure encoding, and merging them would erase exactly the provenance
+distinction the platform exists to preserve.
+
+**Second slice delivered (2026-09-03): the comparison contract.** Coordinated focus, shared colour
+and axis controls and comparison locking are one requirement wearing three hats, so they are built
+as one contract rather than three widgets.
+
+The defect closed here was structural. Plotly autoscales each panel to its own extremes unless
+given explicit limits, and `zRange` was supplied at exactly **one** call site in the entire
+frontend. Every other side-by-side pair rendered on independent scales — including original target
+against inverse reconstruction, which *is* an error judgement: under independent autoscaling a
+reconstruction that lost most of its amplitude produces a near-identical picture, the discrepancy
+surviving only in two small colour-bar ranges.
+
+Forcing a shared scale everywhere would trade a silent error for a louder one, so the module
+decides whether one is **admissible** and states the reason above the panels. It refuses on
+mismatched units (R19–R21: raw magnitudes never share an axis), mismatched quantity, an undeclared
+relationship, a panel with no finite sample, and a group of one. The relationship cannot be
+inferred — two unitless fields are not related by being equally unitless — so the call site
+declares a `quantity` key and omitting it refuses. A pair becomes comparable only through an
+explicit, reviewable claim in the source.
+
+Scale comparability and cell correspondence are decided separately: the padded-boundary pair keeps
+its shared colour range, which is what makes padding's effect on magnitude visible, while linked
+addressing is refused because the grids differ in shape and says so. Where grids do correspond, one
+address drives every panel's cell inspector at once.
+
+**Evidence.** The Chromium suite is **75/75 from a cleaned `.e2e-state`** (63 before, 12 added).
+The decision function is exercised directly through the dev server's module graph, because the
+mismatched-units, mismatched-quantity and undeclared-relationship branches are not reachable
+through the current UI where every declared pair agrees — verifying them only on screen would leave
+the refusals unchecked until a future call site needed them. The rendered half confirms both traces
+carry identical explicit limits rather than two autoscales. `test_frontend_contract.py` and
+`test_documentation.py` are **199 passed**; `tsc --noEmit` clean and the production build succeeds.
+The full backend suite was **not** rerun; the last measured figure remains 3,240.
+
+**Still not done in TG18.2.** Uncertainty and validity overlays, resizable panes and publication
+export. The contract currently governs the three declared gridded pairs in `App.tsx`; the
+`DTCWTScientificView` shared range predates it and has not been migrated, and no line-chart group
+declares a contract yet, because axis-range sharing across line charts raises a separate question
+about log scales that this slice does not answer.
 
 **TG18.3 Guided research journey.** Make `Acquire -> Inspect -> Design -> Run -> Compare -> Admit ->
 Report` visible without collapsing the existing claim ladder. Every blocked state names one next

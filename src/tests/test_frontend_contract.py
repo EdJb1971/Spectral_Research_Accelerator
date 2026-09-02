@@ -271,6 +271,33 @@ def test_figure_data_panels_transcribe_without_authoring_a_statistic():
         assert forbidden not in body
 
 
+def test_side_by_side_fields_carry_a_stated_comparison_contract(app_source):
+    """Two heat maps side by side are an invitation to compare them, and Plotly autoscales each
+    panel to its own extremes unless told otherwise -- so an inverse reconstruction that lost most
+    of its amplitude rendered as a near-identical picture beside its original, with the difference
+    surviving only in two small colour-bar ranges. `zRange` was supplied at exactly one call site
+    in the whole frontend before TG18.2."""
+    comparison = _read("components", "FigureComparison.tsx")
+
+    # Comparability is decided, not assumed, and every branch carries a reason written for the
+    # page rather than for a log.
+    assert "buildComparisonContract" in comparison
+    for refusal in ("different units", "different quantities",
+                    "does not declare which quantity", "no finite sample"):
+        assert refusal in comparison, refusal
+    # Scale comparability and cell correspondence are separate claims: a pair can honestly have
+    # one without the other.
+    assert "linked" in comparison and "differ in shape" in comparison
+
+    contracts = app_source.count("buildComparisonContract(")
+    assert contracts, "no gridded pair declares a comparison contract"
+    # Every contract that is built is also stated on the page and offered a shared address...
+    assert app_source.count("<FigureComparisonNotice") == contracts
+    assert app_source.count("useLinkedAddress(") == contracts
+    # ...and reaches at least two panels, since a contract governing one panel governs nothing.
+    assert app_source.count("zRange={") >= 2 * contracts
+
+
 def test_async_workflow_surfaces_expose_busy_state(all_sources):
     for name in ("AcquisitionView", "DomainAnalysisView", "PreregistrationView", "EvidenceView",
                  "StructureMiningView", "CrossDomainRecordView", "FindingsView",

@@ -147,18 +147,31 @@ export function FigureTable({ caption, columns, rows, note }: {
  * its units and whether it falls inside the valid interior. That is what the hover tooltip
  * gives a mouse, offered to a keyboard and preserved in a printed copy.
  */
-export function CellInspector({ data, coords, units, validInset, xLabel, yLabel }: {
+export interface CellAddress { row: number; column: number; }
+
+export function CellInspector({ data, coords, units, validInset, xLabel, yLabel,
+  address, onAddressChange }: {
   data: number[][];
   coords?: Record<string, number[]>;
   units?: string | null;
   validInset: number;
   xLabel?: string;
   yLabel?: string;
+  /** Supplied by a linked comparison group, so one address inspects every panel at once. Absent
+   *  when the panel stands alone or the grids do not correspond, in which case the address is
+   *  the figure's own. */
+  address?: CellAddress;
+  onAddressChange?: (address: CellAddress) => void;
 }) {
   const rowId = useId();
   const columnId = useId();
-  const [row, setRow] = React.useState(0);
-  const [column, setColumn] = React.useState(0);
+  const [ownAddress, setOwnAddress] = React.useState<CellAddress>({ row: 0, column: 0 });
+  const linked = !!address && !!onAddressChange;
+  const { row, column } = linked ? address! : ownAddress;
+  const setAddress = (next: CellAddress) => (
+    linked ? onAddressChange!(next) : setOwnAddress(next));
+  const setRow = (value: number) => setAddress({ row: value, column });
+  const setColumn = (value: number) => setAddress({ row, column: value });
 
   const rowCount = data.length;
   const columnCount = data[0]?.length ?? 0;

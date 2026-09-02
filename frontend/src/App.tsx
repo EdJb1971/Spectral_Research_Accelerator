@@ -1,9 +1,12 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { Heatmap2D } from './components/Heatmap2D';
 import { LineChart } from './components/LineChart';
 import { LineageGraph } from './components/LineageGraph';
 import { FieldExportBar, TableExportBar } from './components/ExportBar';
 import { FigureExport } from './components/FigureExport';
+import {
+  buildComparisonContract, FigureComparisonNotice, useLinkedAddress,
+} from './components/FigureComparison';
 import { FieldImport } from './components/FieldImport';
 import { TrainingReadiness } from './components/TrainingReadiness';
 import { DTCWTScientificView } from './components/DTCWTScientificView';
@@ -203,6 +206,41 @@ export default function App() {
   const [transformMetrics, setTransformMetrics] = useState<types.TransformResponse['metrics'] | null>(null);
   const [transformCoefficients, setTransformCoefficients] = useState<Record<string, any> | null>(null);
   const [trainingCatalogue, setTrainingCatalogue] = useState<types.TrainingRepresentationCatalogue | null>(null);
+
+  /**
+   * Comparison contracts for the three gridded pairs that are laid out side by side (TG18.2).
+   *
+   * Each pair is an invitation to read one picture against the other, and until now each panel
+   * carried a colour range Plotly derived from its own extremes. The reconstruction pair is the
+   * one that mattered: comparing a field with its own inverse *is* an error judgement, and under
+   * independent autoscaling a reconstruction that lost most of its amplitude renders as a
+   * near-identical picture, with the difference surviving only in two small colour-bar ranges.
+   *
+   * `quantity` is declared here rather than inferred, because the relationship between the panels
+   * is knowledge this call site has and a generic figure component does not. Declaring it is an
+   * explicit, reviewable claim that the two panels hold the same measured thing; the synthetic
+   * line is dimensionless throughout, so units agree by carrying none.
+   */
+  const syntheticPair = useMemo(() => buildComparisonContract([
+    { key: 'clean', title: 'Generated Clean Field (F)', data: primaryField, quantity: 'synthetic scalar field' },
+    { key: 'perturbed', title: "Perturbed Spatial Field (F')", data: perturbedField || primaryField, quantity: 'synthetic scalar field' },
+  ]), [primaryField, perturbedField]);
+  const syntheticAddress = useLinkedAddress(syntheticPair);
+
+  // The padded domain is deliberately a different shape, so cell addressing cannot be linked and
+  // the contract says so; the shared colour range is what makes the padding's effect on magnitude
+  // visible rather than normalised away.
+  const boundaryPair = useMemo(() => buildComparisonContract([
+    { key: 'original', title: 'Original Spatial Domain', data: primaryField, quantity: 'synthetic scalar field' },
+    { key: 'padded', title: 'Padded Boundary Domain', data: paddedField || primaryField, quantity: 'synthetic scalar field' },
+  ]), [primaryField, paddedField]);
+  const boundaryAddress = useLinkedAddress(boundaryPair);
+
+  const reconstructionPair = useMemo(() => buildComparisonContract([
+    { key: 'target', title: 'Original Target Field (F)', data: primaryField, quantity: 'synthetic scalar field' },
+    { key: 'reconstructed', title: 'Inverse Reconstructed Field (F-hat)', data: reconstructedField || primaryField, quantity: 'synthetic scalar field' },
+  ]), [primaryField, reconstructedField]);
+  const reconstructionAddress = useLinkedAddress(reconstructionPair);
 
   // --- TAB 5 STATE: Analysis & Diagnostics ---
   const [forecastNoise, setForecastNoise] = useState(0.15);
@@ -1069,10 +1107,13 @@ export default function App() {
 
                 {/* Main Visualizer */}
                 <div className="xl:col-span-2 space-y-6">
+                  <FigureComparisonNotice contract={syntheticPair}
+                    label="the clean and perturbed synthetic fields" />
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
                       <Heatmap2D data={primaryField} title="Generated Clean Field (F)" colormap="viridis"
                         coords={primaryCoords} divId="fig-clean-field"
+                        zRange={syntheticPair.scale.range} {...syntheticAddress}
                         xLabel="x (normalised)" yLabel="y (normalised)" />
                       <div className="flex flex-col gap-2 px-1">
                         <FieldExportBar field={primaryField} coords={primaryCoords}
@@ -1085,6 +1126,7 @@ export default function App() {
                     <div className="space-y-2">
                       <Heatmap2D data={perturbedField || primaryField} title="Perturbed Spatial Field (F')"
                         colormap="viridis" coords={primaryCoords} divId="fig-perturbed-field"
+                        zRange={syntheticPair.scale.range} {...syntheticAddress}
                         xLabel="x (normalised)" yLabel="y (normalised)" />
                       <div className="flex flex-col gap-2 px-1">
                         <FieldExportBar field={perturbedField} coords={primaryCoords}
@@ -1567,9 +1609,13 @@ export default function App() {
                 </div>
 
                 <div className="xl:col-span-2 space-y-6">
+                  <FigureComparisonNotice contract={boundaryPair}
+                    label="the original and padded boundary domains" />
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <Heatmap2D data={primaryField} title="Original Spatial Domain" colormap="viridis" />
-                    <Heatmap2D data={paddedField || primaryField} title="Padded Boundary Domain" colormap="viridis" />
+                    <Heatmap2D data={primaryField} title="Original Spatial Domain" colormap="viridis"
+                      zRange={boundaryPair.scale.range} {...boundaryAddress} />
+                    <Heatmap2D data={paddedField || primaryField} title="Padded Boundary Domain"
+                      colormap="viridis" zRange={boundaryPair.scale.range} {...boundaryAddress} />
                   </div>
 
                   {distanceProfiles.length > 0 && (
@@ -1718,9 +1764,16 @@ export default function App() {
                 </div>
 
                 <div className="xl:col-span-2 space-y-6">
+                  <FigureComparisonNotice contract={reconstructionPair}
+                    label="the target field and its inverse reconstruction" />
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <Heatmap2D data={primaryField} title="Original Target Field (F)" colormap="viridis" />
-                    <Heatmap2D data={reconstructedField || primaryField} title="Inverse Reconstructed Field (F-hat)" colormap="viridis" />
+                    <Heatmap2D data={primaryField} title="Original Target Field (F)" colormap="viridis"
+                      divId="fig-target-field"
+                      zRange={reconstructionPair.scale.range} {...reconstructionAddress} />
+                    <Heatmap2D data={reconstructedField || primaryField}
+                      title="Inverse Reconstructed Field (F-hat)" colormap="viridis"
+                      divId="fig-reconstructed-field"
+                      zRange={reconstructionPair.scale.range} {...reconstructionAddress} />
                   </div>
 
                   {transformMetrics && (

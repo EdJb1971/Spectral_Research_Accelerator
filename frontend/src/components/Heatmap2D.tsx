@@ -1,7 +1,7 @@
 import React, { useId, useMemo, useState } from 'react';
 import Plot from 'react-plotly.js';
 import {
-  CellInspector, FigureContract, FigureDataDisclosure, FigureFact, formatNumber,
+  CellAddress, CellInspector, FigureContract, FigureDataDisclosure, FigureFact, formatNumber,
 } from './FigureData';
 
 interface Heatmap2DProps {
@@ -21,6 +21,9 @@ interface Heatmap2DProps {
   zRange?: [number, number];
   /** Invalid boundary width in native samples. Shaded, never silently cropped. */
   validInset?: number;
+  /** Shared cell address from a linked comparison group; see `FigureComparison`. */
+  address?: CellAddress;
+  onAddressChange?: (address: CellAddress) => void;
 }
 
 export const Heatmap2D: React.FC<Heatmap2DProps> = ({
@@ -34,6 +37,8 @@ export const Heatmap2D: React.FC<Heatmap2DProps> = ({
   divId,
   zRange,
   validInset = 0,
+  address,
+  onAddressChange,
 }) => {
   const figureTitleId = useId();
   // The scan is deferred until a researcher opens the panel. A research-size field is a million
@@ -194,7 +199,8 @@ export const Heatmap2D: React.FC<Heatmap2DProps> = ({
           + 'number authored by a view is indistinguishable on screen from one the analysis layer '
           + 'stands behind.'} />
         <CellInspector data={data} coords={coords} units={units} validInset={validInset}
-          xLabel={xLabel} yLabel={yLabel} />
+          xLabel={xLabel} yLabel={yLabel}
+          address={address} onAddressChange={onAddressChange} />
         <p className="text-[11px] text-slate-500">
           {rowCount * columnCount} samples are not tabulated cell by cell. A field of research
           size is too large to enumerate, so the equivalent for a heat map is addressed rather
