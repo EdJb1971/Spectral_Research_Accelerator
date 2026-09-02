@@ -76,7 +76,7 @@ export const Heatmap2D: React.FC<Heatmap2DProps> = ({
             margin: { t: 20, r: 20, b: 40, l: 40 },
             paper_bgcolor: 'rgba(0,0,0,0)',
             plot_bgcolor: 'rgba(0,0,0,0)',
-            font: { color: '#94a3b8', size: 10 },
+            font: { color: '#94a3b8', size: 11 },
             xaxis: { title: xLabel ? { text: xLabel } : undefined, gridcolor: '#1e293b', zeroline: false },
             yaxis: { title: yLabel ? { text: yLabel } : undefined, gridcolor: '#1e293b', zeroline: false },
             shapes: validInset > 0 && data.length && data[0]?.length ? [{
@@ -87,7 +87,7 @@ export const Heatmap2D: React.FC<Heatmap2DProps> = ({
             annotations: validInset > 0 ? [{
               xref: 'paper', yref: 'paper', x: 0.01, y: 0.99, xanchor: 'left', yanchor: 'top',
               text: `dashed box = valid interior (${validInset}px inset)`, showarrow: false,
-              bgcolor: 'rgba(2,6,23,0.8)', font: { color: '#fbbf24', size: 9 },
+              bgcolor: 'rgba(2,6,23,0.8)', font: { color: '#fbbf24', size: 10 },
             }] : [],
           }}
           config={{

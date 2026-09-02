@@ -9,6 +9,7 @@
   --instrument-line: rgba(51, 65, 85, 0.72);
   --instrument-muted: #94a3b8;
   --instrument-accent: #2dd4bf;
+  --workspace-max: 112rem;
 }
 
 html {
@@ -39,6 +40,8 @@ button, input, select, textarea {
 }
 
 .instrument-shell {
+  min-height: 100vh;
+  min-height: 100dvh;
   background:
     radial-gradient(circle at 72% -10%, rgba(13, 148, 136, 0.055), transparent 30rem),
     var(--instrument-bg);
@@ -67,9 +70,36 @@ button, input, select, textarea {
     linear-gradient(110deg, rgba(15, 23, 42, 0.12), transparent 28rem),
     transparent;
   padding: clamp(1rem, 1.65vw, 2rem);
+  scroll-padding-top: 4rem;
+}
+
+.workspace-main > * {
+  width: min(100%, var(--workspace-max));
+  margin-inline: auto;
+}
+
+.workspace-main :where(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea) {
+  min-height: 2.5rem;
+}
+
+.workspace-main :where(code, [class~="font-mono"]) {
+  overflow-wrap: anywhere;
+}
+
+.workspace-main [class~="text-[10px]"] {
+  font-size: 0.6875rem;
+  line-height: 1rem;
+}
+
+.workspace-main [class~="text-[11px]"] {
+  font-size: 0.75rem;
+  line-height: 1.125rem;
 }
 
 .research-context {
+  position: sticky;
+  top: 0;
+  z-index: 30;
   box-shadow: 0 12px 30px rgba(2, 6, 23, 0.2);
   backdrop-filter: blur(14px);
 }
@@ -118,6 +148,7 @@ button, input, select, textarea {
 @media (min-width: 1024px) {
   .instrument-body {
     height: calc(100vh - 4.5rem);
+    height: calc(100dvh - 4.5rem);
     overflow: hidden;
   }
 
@@ -134,13 +165,31 @@ button, input, select, textarea {
 }
 
 @media (max-width: 1023px) {
+  .workflow-nav-scrim {
+    position: fixed;
+    inset: 4.5rem 0 0;
+    z-index: 32;
+    border: 0;
+    border-radius: 0;
+    background: rgba(2, 6, 23, 0.72);
+    backdrop-filter: blur(2px);
+  }
+
   .workflow-nav {
-    max-height: calc(100vh - 4.5rem);
+    position: fixed;
+    inset: 4.5rem auto 0 0;
+    z-index: 35;
+    width: min(22rem, 100vw) !important;
+    max-height: none;
     overflow-y: auto;
     border-right: 0;
     border-bottom: 1px solid var(--instrument-line);
     background: rgba(15, 23, 42, 0.97);
     box-shadow: 0 18px 40px rgba(2, 6, 23, 0.45);
+  }
+
+  .research-context {
+    top: 4.5rem;
   }
 }
 
@@ -162,6 +211,27 @@ button, input, select, textarea {
     padding: 0.875rem;
   }
 
+  .workflow-nav,
+  .workflow-nav-scrim {
+    top: 4rem;
+  }
+
+  .research-context {
+    top: 4rem;
+  }
+
+  .workspace-main [class~="p-12"] {
+    padding: 1.25rem;
+  }
+
+  .workspace-main [class~="p-5"] {
+    padding: 1rem;
+  }
+
+  .workspace-main [class~="gap-6"] {
+    gap: 1rem;
+  }
+
   .research-context {
     align-items: stretch;
     gap: 0.5rem;
@@ -170,6 +240,39 @@ button, input, select, textarea {
   .context-item {
     width: 100%;
     overflow-wrap: anywhere;
+  }
+}
+
+@media (max-width: 479px) {
+  .workspace-main .grid.grid-cols-2,
+  .workspace-main .grid.grid-cols-3,
+  .workspace-main .grid.grid-cols-4,
+  .workspace-main .grid.grid-cols-5 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .workspace-main :where(.flex) {
+    min-width: 0;
+  }
+
+  .findings-empty {
+    min-height: 14rem;
+  }
+}
+
+@media (max-width: 399px) {
+  .instrument-header > div {
+    gap: 0.5rem;
+  }
+
+  .instrument-header .connection-status {
+    min-width: 2.25rem;
+    justify-content: center;
+    padding-inline: 0.625rem;
+  }
+
+  .instrument-header .connection-label {
+    display: none;
   }
 }
 

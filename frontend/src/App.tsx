@@ -101,6 +101,8 @@ const WORKFLOW_NAV = [
 export default function App() {
   const [activeTab, setActiveTab] = useState('acquire');
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const mobileNavTriggerRef = useRef<HTMLButtonElement>(null);
+  const workflowNavRef = useRef<HTMLElement>(null);
   const workspaceHeadingRef = useRef<HTMLHeadingElement>(null);
   const hasMountedRef = useRef(false);
   const [backendConnected, setBackendConnected] = useState<boolean | null>(null);
@@ -672,6 +674,40 @@ export default function App() {
     hasMountedRef.current = true;
   }, [activeTab]);
 
+  useEffect(() => {
+    if (!mobileNavOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const focusCurrent = window.requestAnimationFrame(() => {
+      workflowNavRef.current?.querySelector<HTMLButtonElement>(
+        '[aria-current="page"]:not(:disabled), button:not(:disabled)')?.focus();
+    });
+    const containDrawerFocus = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setMobileNavOpen(false);
+        mobileNavTriggerRef.current?.focus();
+        return;
+      }
+      if (event.key !== 'Tab' || !workflowNavRef.current) return;
+      const controls = Array.from(workflowNavRef.current.querySelectorAll<HTMLElement>(
+        'a[href], button:not(:disabled), input:not(:disabled), select:not(:disabled), [tabindex]:not([tabindex="-1"])'));
+      if (controls.length === 0) return;
+      const first = controls[0];
+      const last = controls[controls.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault(); last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault(); first.focus();
+      }
+    };
+    document.addEventListener('keydown', containDrawerFocus);
+    return () => {
+      window.cancelAnimationFrame(focusCurrent);
+      document.removeEventListener('keydown', containDrawerFocus);
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [mobileNavOpen]);
+
   const activeWorkspace = (WORKFLOW_NAV as readonly {
     items: readonly { id: string; name: string }[];
   }[]).flatMap(group => group.items)
@@ -693,23 +729,30 @@ export default function App() {
         </div>
         <div className="flex items-center gap-2 sm:gap-4">
           {backendConnected === true ? (
-            <span role="status" className="text-xs bg-emerald-500/10 text-emerald-300 border border-emerald-500/25 px-3 py-1.5 rounded-full font-medium flex items-center gap-2">
-              <Server className="w-3.5 h-3.5" aria-hidden="true" /> Connected <span className="hidden sm:inline text-emerald-400/70">· SQLite active</span>
+            <span role="status" aria-label="API connected; SQLite active"
+              className="connection-status text-xs bg-emerald-500/10 text-emerald-300 border border-emerald-500/25 px-3 py-1.5 rounded-full font-medium flex items-center gap-2">
+              <Server className="w-3.5 h-3.5" aria-hidden="true" />
+              <span className="connection-label">Connected</span>
+              <span className="hidden sm:inline text-emerald-400/70">· SQLite active</span>
             </span>
           ) : backendConnected === false ? (
-            <button type="button" className="text-xs bg-amber-500/10 text-amber-400 border border-amber-500/20 px-3 py-1.5 rounded-full font-medium flex items-center gap-2"
+            <button type="button" aria-label="Backend unreachable; retry API connection"
+              className="connection-status text-xs bg-amber-500/10 text-amber-400 border border-amber-500/20 px-3 py-1.5 rounded-full font-medium flex items-center gap-2"
               onClick={checkConnection}>
               <WifiOff className="w-3.5 h-3.5" aria-hidden="true" />
               <span className="hidden sm:inline">Backend unreachable - no computation available; retry</span>
-              <span className="sm:hidden">Retry API</span>
+              <span className="connection-label sm:hidden">Retry API</span>
             </button>
           ) : (
-            <span role="status" className="flex items-center gap-2 rounded-full border border-slate-700
+            <span role="status" aria-label="Checking API connection"
+              className="connection-status flex items-center gap-2 rounded-full border border-slate-700
                                       bg-slate-800/70 px-3 py-1.5 text-xs text-slate-400">
-              <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> Checking API
+              <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+              <span className="connection-label">Checking API</span>
             </span>
           )}
           <button type="button" aria-controls="scientific-workflow-nav"
+            ref={mobileNavTriggerRef}
             aria-expanded={mobileNavOpen}
             aria-label={mobileNavOpen ? 'Close workspace menu' : 'Open workspace menu'}
             onClick={() => setMobileNavOpen((open) => !open)}
@@ -722,8 +765,12 @@ export default function App() {
       </header>
 
       <div className="instrument-body min-h-0 flex-1 flex flex-col lg:flex-row">
+        {mobileNavOpen && <button type="button" aria-label="Close workspace menu"
+          className="workflow-nav-scrim lg:hidden" onClick={() => {
+            setMobileNavOpen(false); mobileNavTriggerRef.current?.focus();
+          }} />}
         {/* Left Side Navigation bar */}
-        <nav id="scientific-workflow-nav" aria-label="Scientific workflow"
+        <nav id="scientific-workflow-nav" aria-label="Scientific workflow" ref={workflowNavRef}
           className={`workflow-nav ${mobileNavOpen ? 'block' : 'hidden'} w-full lg:block lg:w-72
                       lg:flex-none border-r border-slate-800 bg-slate-900/20 p-4 space-y-5`}>
           {WORKFLOW_NAV.map(group => (
@@ -789,7 +836,7 @@ export default function App() {
         {/* Core Main content section */}
         <main id="workspace-main" aria-labelledby="workspace-heading"
           aria-busy={loading || benchmarkRunning || receiptImporting}
-          className="workspace-main flex-1 overflow-y-auto space-y-6">
+          className="workspace-main flex-1 overflow-y-auto space-y-4 sm:space-y-6">
           <h2 id="workspace-heading" ref={workspaceHeadingRef} tabIndex={-1} className="sr-only">
             {activeWorkspace} workspace
           </h2>
@@ -821,12 +868,12 @@ export default function App() {
           </section>}
           {selectedCapability && <DatasetCapabilityProfile profile={selectedCapability} compact />}
           {error && (
-            <div role="alert" className="bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded-lg p-4 flex items-center justify-between">
-              <div className="flex items-center gap-3">
+            <div role="alert" className="bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded-lg p-4 flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
+              <div className="flex min-w-0 items-start gap-3 sm:items-center">
                 <XCircle className="w-5 h-5 flex-shrink-0" aria-hidden="true" />
                 <p className="text-sm font-medium">{error}</p>
               </div>
-              <button type="button" onClick={() => setError(null)} className="text-xs underline hover:text-rose-200">Dismiss error</button>
+              <button type="button" onClick={() => setError(null)} className="shrink-0 text-xs underline hover:text-rose-200">Dismiss error</button>
             </div>
           )}
 

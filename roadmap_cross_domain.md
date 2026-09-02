@@ -4585,6 +4585,18 @@ embedded worker registry is deliberately qualified for one API process; a multi-
 still requires an external queue. TG18.1 remains in progress only for rendered narrow-width
 inspection and cross-workspace density tuning.
 
+**Fifth foundation slice delivered (2026-09-03).** Cross-workspace density is now a shared shell
+contract rather than a panel-by-panel accident: one centred scientific canvas on wide displays,
+readable metadata and plot-label floors, consistent control height, compact mobile spacing, safe
+wrapping for content identities, and one-column reflow below 480 px. The conditional record/study
+context remains pinned beneath the instrument header while the workspace scrolls. The compact menu
+is now a fixed scrimmed drawer with background-scroll lock, current-workspace focus, a Tab loop,
+Escape and outside-click dismissal, and trigger focus restoration. Connection state collapses to
+an accessibly named icon below 400 px so the 320-pixel header does not overflow. All 171 frontend
+contract tests and the production build pass. Rendered narrow-width inspection is still **NOT RUN**:
+the supported shared-browser runtime returned no available browser session after reconnect, so
+TG18.1 remains in progress for that visual acceptance only.
+
 **TG18.2 Scientific visualization workspace.** Add coordinated plot focus, exact-value inspection,
 shared colour/axis controls, comparison locking, uncertainty and validity overlays, resizable panes,
 and publication/export affordances. Every visual encoding must have a text/table equivalent and

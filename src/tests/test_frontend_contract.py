@@ -159,6 +159,12 @@ def test_navigation_follows_the_scientific_workflow_and_labels_the_grid_line(app
     assert 'aria-controls="scientific-workflow-nav"' in app_source
     assert "aria-expanded={mobileNavOpen}" in app_source
     assert "setMobileNavOpen(false)" in app_source
+    assert "workflow-nav-scrim" in app_source
+    assert "event.key === 'Escape'" in app_source
+    assert "event.key !== 'Tab'" in app_source
+    assert "event.preventDefault(); last.focus()" in app_source
+    assert "document.body.style.overflow = 'hidden'" in app_source
+    assert "mobileNavTriggerRef.current?.focus()" in app_source
     assert re.search(r"name: '\d+\.", app_source) is None
 
 
@@ -188,6 +194,12 @@ def test_global_keyboard_focus_and_reduced_motion_are_not_panel_options():
     assert ":focus-visible" in css and "outline: 3px solid" in css
     assert ".skip-link:focus" in css
     assert "prefers-reduced-motion: reduce" in css
+    assert ".workspace-main > *" in css and "--workspace-max" in css
+    assert ".workspace-main .grid.grid-cols-2" in css
+    assert "grid-template-columns: minmax(0, 1fr)" in css
+    assert ".workflow-nav-scrim" in css
+    assert "position: sticky" in css and ".research-context" in css
+    assert "min-height: 2.5rem" in css
 
 
 def test_retry_and_lineage_nodes_are_keyboard_operable(app_source):

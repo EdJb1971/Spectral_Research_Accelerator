@@ -5624,8 +5624,9 @@ resume and its completion-only record; the CLI remains available. Keeping planni
 and completed acquisition as separate statuses prevents validation from masquerading as transfer.
 
 The record/study context strip remains persistent in application state, but is rendered only when
-a record or study is selected. It is ordinary document content rather than a second sticky header,
-so an empty context cannot consume permanent vertical space.
+a record or study is selected. It stays pinned to the top of the scrolling workspace beneath the
+instrument header, while an empty context consumes no vertical space. It is therefore persistent
+working context rather than a second unconditional application header.
 
 At compact widths the workflow rail is a labelled, stateful menu controlled by a native button
 with `aria-controls` and `aria-expanded`; choosing a workspace closes it. At desktop widths the
@@ -5633,6 +5634,19 @@ rail and main workspace occupy the viewport below the instrument header and scro
 Connection state is three-valued in presentation (`checking`, `connected`, `unreachable`), so an
 unfinished startup probe is not rendered as a failure. These are shell semantics only and do not
 change a scientific request, result or refusal.
+
+The next TG18.1 density slice gives every direct workspace child one shared 112-rem scientific
+canvas, centres it on wider displays, raises legacy 10/11-pixel workspace metadata to an 11/12-
+pixel floor, and gives text-entry controls a 40-pixel minimum height. At 639 px, desktop panel
+padding and gaps contract; below 480 px, inherited two-to-five-column grids become one readable
+column. Long identifiers wrap rather than widening the page, empty states lose desktop-only height,
+and Plotly field labels no longer fall below 10 px. The compact workflow menu is now a fixed,
+scrimmed drawer: opening it locks background scroll and moves focus to the current workspace;
+Escape, the scrim or a selection closes it, Tab remains inside it, and Escape/scrim restore focus
+to the trigger. Below 400 px the connection control becomes an icon with a complete accessible
+name so the brand, status and menu fit the 320-pixel floor. Source contracts and a production build
+cover these rules; rendered narrow-width inspection remains **NOT RUN** because the shared browser
+runtime exposed no browser session.
 
 ## 3.12 HTTP API Surface
 
