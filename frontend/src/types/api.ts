@@ -560,7 +560,7 @@ export interface CDSCapabilities {
   network_env_var: string;
   network_enabled: boolean;
   planner_network_used: false;
-  execution_status: 'NOT_MOUNTED';
+  execution_status: 'AVAILABLE' | 'NETWORK_DISABLED';
   workflow: string[];
   claim_boundary: string;
 }
@@ -581,8 +581,53 @@ export interface CDSPlan {
   };
   analysis_geometry: { status: string; assessment: Record<string, any> };
   network_used: false;
-  execution_status: 'NOT_MOUNTED';
+  execution_status: 'READY_TO_SUBMIT' | 'NETWORK_DISABLED';
+  submission_confirmation: {
+    confirm_request_sha256: string; confirm_network_access: true; statement: string;
+  };
   next_action: string;
+  claim_boundary: string;
+}
+
+export interface CDSStoragePreflight {
+  status: 'READY';
+  completed_shards: number;
+  remaining_shards: number;
+  volumes: Array<{
+    volume: string; roles: string[]; working_bytes_required: number; free_bytes: number;
+    reserve_bytes: number; total_free_required: number; passes: boolean;
+  }>;
+}
+
+export type CDSJobState = 'QUEUED' | 'RUNNING' | 'CANCELLING' | 'INTERRUPTED' |
+  'CANCELLED' | 'FAILED' | 'COMPLETE';
+
+export interface CDSAcquisitionRecord {
+  schema: 'cds-acquisition-record/v1';
+  job_id: string; request_sha256: string; request: CDSPlanRequest & { request_sha256: string };
+  completed_at: string; completed_shards: number; total_bytes: number;
+  shards: Array<{ filename: string; sha256: string; bytes: number; request_sha256: string }>;
+  record_sha256: string; claim_boundary: string;
+}
+
+export interface CDSJob {
+  schema: 'cds-acquisition-job/v1';
+  job_id: string; request_sha256: string; request: CDSPlanRequest & { request_sha256: string };
+  state: CDSJobState; created_at: string; updated_at: string; started_at: string | null;
+  completed_at: string | null; total_shards: number; completed_shards: number;
+  current_shard: string | null; downloaded_shards_this_attempt: number;
+  resumed_shards_this_attempt: number; attempts: number; message: string;
+  error: { type: string; detail: string } | null; storage_preflight: CDSStoragePreflight;
+  acquisition_record: CDSAcquisitionRecord | null; existing_job?: boolean;
+  storage: { ownership: 'SERVER_MANAGED'; namespace: string; job_id: string;
+    client_path_accepted: false };
+  progress: { completed_shards: number; total_shards: number; fraction: number;
+    current_shard: string | null };
+  resumable: boolean; cancellation_boundary: string; claim_boundary: string;
+}
+
+export interface CDSJobList {
+  schema: 'cds-acquisition-jobs/v1'; jobs: CDSJob[]; network_enabled: boolean;
   claim_boundary: string;
 }
 

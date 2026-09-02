@@ -2027,8 +2027,9 @@ def test_research_archive_keeps_record_classes_distinct_and_reachable(app_source
                            "VALIDATION FIXTURE"):
         assert classification in archive
     for method in ("listStudies", "experimentRunContract", "listGateReceipts",
-                   "listEvaluationReports", "zarrProbes", "listBenchmarks"):
+                   "listEvaluationReports", "zarrProbes", "listCDSJobs", "listBenchmarks"):
         assert "apiService.%s(" % method in archive
+    assert "job.state === 'COMPLETE' && job.acquisition_record" in archive
     assert "a passing fixture is not a published study" in archive
 
 
@@ -2045,9 +2046,16 @@ def test_acquire_surfaces_noninteractive_routes_and_human_source_identity():
     assert "<CDSPlanner" in source
     assert "apiService.cdsCapabilities(" in planner
     assert "apiService.planCDS(" in planner
+    assert "apiService.submitCDSJob(" in planner
+    assert "apiService.cancelCDSJob(" in planner
+    assert "apiService.resumeCDSJob(" in planner
+    assert "apiService.getCDSAcquisitionRecord(" in planner
     assert "Validate plan — no network" in planner
     assert "Planning uses no network" in planner
     assert "plan.network_used" in planner
+    assert "A validated plan is not a job" in planner
+    assert "Submit durable acquisition job" in planner
+    assert "Server managed" in planner
     assert "/data/cds/plan" in service
 
 

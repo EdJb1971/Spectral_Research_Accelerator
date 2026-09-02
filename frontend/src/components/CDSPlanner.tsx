@@ -1,6 +1,6 @@
 /** Metadata-only browser planner for the production Copernicus CDS acquisition route. */
 import { useEffect, useState } from 'react';
-import { Calculator, CheckCircle, Loader2, ShieldCheck } from 'lucide-react';
+import { Calculator, CheckCircle, Database, Loader2, RotateCcw, ShieldCheck, Square } from 'lucide-react';
 
 import { apiService } from '../services/api';
 import * as types from '../types/api';
@@ -19,12 +19,17 @@ export default function CDSPlanner({ onError }: CDSPlannerProps) {
   const [plan, setPlan] = useState<types.CDSPlan | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [confirmed, setConfirmed] = useState(false);
+  const [jobs, setJobs] = useState<types.CDSJob[]>([]);
+  const [activeJob, setActiveJob] = useState<types.CDSJob | null>(null);
+  const [acquisitionRecord, setAcquisitionRecord] = useState<types.CDSAcquisitionRecord | null>(null);
 
   useEffect(() => {
     let live = true;
-    apiService.cdsCapabilities().then((value) => {
+    Promise.all([apiService.cdsCapabilities(), apiService.listCDSJobs()]).then(([value, jobList]) => {
       if (!live) return;
-      setCapabilities(value); setRequest(value.defaults);
+      setCapabilities(value); setRequest(value.defaults); setJobs(jobList.jobs);
+      setActiveJob(jobList.jobs[0] || null);
     }).catch((cause) => {
       const message = cause instanceof Error ? cause.message : String(cause);
       if (live) setError(message); onError?.(message);
@@ -32,9 +37,56 @@ export default function CDSPlanner({ onError }: CDSPlannerProps) {
     return () => { live = false; };
   }, [onError]);
 
+  useEffect(() => {
+    if (!activeJob || !['QUEUED', 'RUNNING', 'CANCELLING'].includes(activeJob.state)) return;
+    const timer = window.setInterval(() => {
+      apiService.getCDSJob(activeJob.job_id).then((job) => {
+        setActiveJob(job);
+        setJobs((current) => [job, ...current.filter((item) => item.job_id !== job.job_id)]);
+      }).catch(() => { /* The next explicit action will surface a durable API error. */ });
+    }, 1500);
+    return () => window.clearInterval(timer);
+  }, [activeJob?.job_id, activeJob?.state]);
+
+  useEffect(() => {
+    setAcquisitionRecord(null);
+    if (activeJob?.state !== 'COMPLETE') return;
+    apiService.getCDSAcquisitionRecord(activeJob.job_id).then(setAcquisitionRecord)
+      .catch(() => { /* Job detail still carries the record; explicit actions surface errors. */ });
+  }, [activeJob?.job_id, activeJob?.state]);
+
   const revise = (patch: Partial<types.CDSPlanRequest>) => {
     setRequest((current) => current ? { ...current, ...patch } : current);
-    setPlan(null); setError('');
+    setPlan(null); setConfirmed(false); setError('');
+  };
+
+  const submit = async () => {
+    if (!request || !plan || !confirmed) return;
+    setBusy(true); setError('');
+    try {
+      const job = await apiService.submitCDSJob(request, plan.request_sha256);
+      setActiveJob(job);
+      setJobs((current) => [job, ...current.filter((item) => item.job_id !== job.job_id)]);
+      setConfirmed(false);
+    } catch (cause) {
+      const message = cause instanceof Error ? cause.message : String(cause);
+      setError(message); onError?.(message);
+    } finally { setBusy(false); }
+  };
+
+  const operate = async (operation: 'cancel' | 'resume') => {
+    if (!activeJob) return;
+    setBusy(true); setError('');
+    try {
+      const job = operation === 'cancel'
+        ? await apiService.cancelCDSJob(activeJob.job_id, 'Cancelled by the researcher in Acquire data')
+        : await apiService.resumeCDSJob(activeJob.job_id);
+      setActiveJob(job);
+      setJobs((current) => [job, ...current.filter((item) => item.job_id !== job.job_id)]);
+    } catch (cause) {
+      const message = cause instanceof Error ? cause.message : String(cause);
+      setError(message); onError?.(message);
+    } finally { setBusy(false); }
   };
 
   const inspect = async () => {
@@ -188,8 +240,109 @@ export default function CDSPlanner({ onError }: CDSPlannerProps) {
             <p className="mt-2 text-amber-300">{plan.next_action}</p>
             <p className="mt-2">{plan.claim_boundary}</p>
           </div>
+          <div className="rounded-lg border border-teal-500/25 bg-teal-500/[0.06] p-3">
+            <p className="text-xs font-semibold text-slate-200">Submit this exact request</p>
+            <p className="mt-1 text-[11px] leading-relaxed text-slate-400">
+              The server owns the storage location and repeats its free-space preflight before
+              any CDS client is created. Submission may use your configured CDS credentials.
+            </p>
+            {!capabilities.network_enabled && <p className="mt-2 rounded border border-amber-500/25
+              bg-amber-500/5 p-2 text-[11px] text-amber-300">
+              Execution is disabled on this server. Set {capabilities.network_env_var}=1 and
+              restart the API; metadata-only planning remains available.
+            </p>}
+            <label className="mt-3 flex items-start gap-2 text-[11px] leading-relaxed text-slate-300">
+              <input type="checkbox" checked={confirmed} className="mt-0.5 accent-teal-500"
+                onChange={(event) => setConfirmed(event.target.checked)} />
+              <span>I reviewed request <span className="font-mono text-teal-300">
+                {plan.request_sha256.slice(0, 12)}…</span> and authorize network acquisition.</span>
+            </label>
+            <button type="button" onClick={() => void submit()}
+              disabled={busy || !confirmed || !capabilities.network_enabled}
+              className="mt-3 flex w-full items-center justify-center gap-2 rounded bg-teal-600 p-2.5
+                text-xs font-semibold text-white hover:bg-teal-500 disabled:cursor-not-allowed disabled:opacity-40">
+              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Database className="h-4 w-4" />}
+              Submit durable acquisition job
+            </button>
+          </div>
         </div>}
       </div>
+    </div>
+
+    <div className="mt-4 rounded-lg border border-slate-800 bg-slate-950/45 p-4">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <h4 className="text-sm font-semibold text-slate-100">Durable acquisition jobs</h4>
+          <p className="mt-1 text-xs text-slate-500">Refresh-safe state, bounded monthly progress,
+            cooperative cancellation, and verified-shard resume.</p>
+        </div>
+        {jobs.length > 1 && <select value={activeJob?.job_id || ''}
+          onChange={(event) => setActiveJob(jobs.find((job) => job.job_id === event.target.value) || null)}
+          className="max-w-sm rounded border border-slate-800 bg-slate-950 p-2 text-xs text-slate-300">
+          {jobs.map((job) => <option key={job.job_id} value={job.job_id}>
+            {job.state} · {job.request.date_start} to {job.request.date_end}
+          </option>)}
+        </select>}
+      </div>
+      {!activeJob ? <div className="mt-4 rounded border border-dashed border-slate-800 p-6 text-center
+        text-xs text-slate-500">No CDS job has been submitted. A validated plan is not a job.</div>
+        : <div className="mt-4 space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <span className={`rounded px-2 py-1 text-[10px] font-bold tracking-wide ${
+                activeJob.state === 'COMPLETE' ? 'bg-emerald-500/15 text-emerald-300'
+                  : activeJob.state === 'FAILED' ? 'bg-rose-500/15 text-rose-300'
+                    : 'bg-sky-500/15 text-sky-300'}`}>{activeJob.state}</span>
+              <span className="ml-2 font-mono text-[10px] text-slate-500">
+                {activeJob.job_id.slice(0, 20)}… · attempt {activeJob.attempts}</span>
+            </div>
+            <div className="flex gap-2">
+              {['QUEUED', 'RUNNING', 'CANCELLING'].includes(activeJob.state) &&
+                <button type="button" disabled={busy || activeJob.state === 'CANCELLING'}
+                  onClick={() => void operate('cancel')}
+                  className="flex items-center gap-1.5 rounded border border-rose-500/30 px-2.5 py-1.5
+                    text-xs text-rose-300 disabled:opacity-40"><Square className="h-3.5 w-3.5" /> Cancel</button>}
+              {activeJob.resumable && <button type="button" disabled={busy || !capabilities.network_enabled}
+                onClick={() => void operate('resume')}
+                className="flex items-center gap-1.5 rounded border border-teal-500/30 px-2.5 py-1.5
+                  text-xs text-teal-300 disabled:opacity-40"><RotateCcw className="h-3.5 w-3.5" /> Resume</button>}
+            </div>
+          </div>
+          <div className="h-2 overflow-hidden rounded-full bg-slate-800" role="progressbar"
+            aria-valuemin={0} aria-valuemax={activeJob.progress.total_shards}
+            aria-valuenow={activeJob.progress.completed_shards}>
+            <div className="h-full bg-teal-500 transition-all"
+              style={{ width: `${activeJob.progress.fraction * 100}%` }} />
+          </div>
+          <div className="flex flex-wrap justify-between gap-2 text-xs text-slate-400">
+            <span>{activeJob.progress.completed_shards} / {activeJob.progress.total_shards} monthly shards</span>
+            <span>{Math.round(activeJob.progress.fraction * 100)}%</span>
+          </div>
+          <p className="text-xs text-slate-300">{activeJob.message}</p>
+          {activeJob.progress.current_shard && <p className="font-mono text-[10px] text-sky-300">
+            In flight: {activeJob.progress.current_shard}</p>}
+          <div className="grid gap-2 text-[11px] sm:grid-cols-3">
+            <div className="rounded bg-slate-900 p-2"><span className="text-slate-500">Storage</span>
+              <strong className="block text-slate-300">Server managed</strong></div>
+            <div className="rounded bg-slate-900 p-2"><span className="text-slate-500">Preflight</span>
+              <strong className="block text-emerald-300">{activeJob.storage_preflight.status}</strong></div>
+            <div className="rounded bg-slate-900 p-2"><span className="text-slate-500">Last update</span>
+              <strong className="block text-slate-300">{new Date(activeJob.updated_at).toLocaleString()}</strong></div>
+          </div>
+          {activeJob.error && <p role="alert" className="rounded border border-rose-500/25 bg-rose-500/5
+            p-2 text-xs text-rose-300">{activeJob.error.type}: {activeJob.error.detail}</p>}
+          <p className="text-[10px] leading-relaxed text-slate-500">{activeJob.cancellation_boundary}</p>
+          {(acquisitionRecord || activeJob.acquisition_record) && <div className="rounded border border-emerald-500/25
+            bg-emerald-500/5 p-3 text-xs">
+            <div className="flex items-center gap-2 font-semibold text-emerald-300">
+              <CheckCircle className="h-4 w-4" /> Completed acquisition record</div>
+            <p className="mt-2 text-slate-300">{(acquisitionRecord || activeJob.acquisition_record)!.completed_shards} verified shards · {' '}
+              {bytes((acquisitionRecord || activeJob.acquisition_record)!.total_bytes)}</p>
+            <p className="mt-1 break-all font-mono text-[10px] text-slate-500">
+              record sha256 {(acquisitionRecord || activeJob.acquisition_record)!.record_sha256}</p>
+            <p className="mt-2 text-[10px] text-slate-500">{(acquisitionRecord || activeJob.acquisition_record)!.claim_boundary}</p>
+          </div>}
+        </div>}
     </div>
   </section>;
 }

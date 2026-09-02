@@ -25,7 +25,7 @@ import time
 from dataclasses import asdict, dataclass
 from datetime import date, datetime, timedelta
 from pathlib import Path
-from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple, Union
+from typing import Any, Callable, Dict, List, Mapping, Optional, Sequence, Tuple, Union
 
 from src.core.errors import DataSourceError, InvalidParameterError
 from src.data_layer.regional_forecast import CANONICAL_VARIABLES, VARIABLE_ALIASES
@@ -57,6 +57,10 @@ ACQUISITION_SCHEMA = "cds-regional-acquisition/v1"
 STORAGE_SAFETY_FACTOR = 2.0
 MINIMUM_FREE_RESERVE_BYTES = 5 * 1024 ** 3
 PER_SHARD_OVERHEAD_BYTES = 16 * 1024 ** 2
+
+
+class CDSAcquisitionCancelled(DataSourceError):
+    """Cooperative stop requested between two monthly CDS transfers."""
 
 
 def _canonical_json(value: Any) -> bytes:
@@ -458,6 +462,8 @@ def acquire_cds_shards(
     *,
     client: Optional[Any] = None,
     allow_network: Optional[bool] = None,
+    progress_callback: Optional[Callable[[Mapping[str, Any]], None]] = None,
+    cancellation_requested: Optional[Callable[[], bool]] = None,
 ) -> Dict[str, Any]:
     """Download missing monthly shards atomically and return replayable acquisition state."""
     if not _network_enabled(allow_network):
@@ -485,7 +491,16 @@ def acquire_cds_shards(
     state = _read_state(state_path, spec, shards)
     completed = dict(state.get("completed_shards", {}))
     downloaded = resumed = 0
+    if progress_callback is not None:
+        progress_callback({"completed_shards": len(completed), "total_shards": len(shards),
+                           "current_shard": None})
     for shard in shards:
+        if cancellation_requested is not None and cancellation_requested():
+            raise CDSAcquisitionCancelled(
+                "CDS acquisition cancelled between monthly shards; verified shards were retained")
+        if progress_callback is not None:
+            progress_callback({"completed_shards": len(completed), "total_shards": len(shards),
+                               "current_shard": shard.filename})
         target = root / shard.filename
         existing = completed.get(shard.filename)
         if existing is not None:
@@ -524,6 +539,9 @@ def acquire_cds_shards(
         state["completed_shards"] = completed
         _write_state(state_path, state)
         downloaded += 1
+        if progress_callback is not None:
+            progress_callback({"completed_shards": len(completed), "total_shards": len(shards),
+                               "current_shard": None})
     state["run"] = {
         "downloaded_shards": downloaded,
         "resumed_shards": resumed,

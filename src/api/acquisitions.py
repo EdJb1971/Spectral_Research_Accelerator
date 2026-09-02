@@ -170,14 +170,15 @@ async def list_acquisitions() -> Dict[str, Any]:
             "label": "ERA5 regional request · Copernicus CDS",
             "provider": "Copernicus Climate Data Store",
             "product_family": "ERA5 atmospheric reanalysis",
-            "ui_status": "PLANNER_AVAILABLE",
-            "execution": "browser plan; bounded resumable CLI acquisition",
+            "ui_status": "DURABLE_JOB_AVAILABLE",
+            "execution": "browser plan; confirmed durable browser job; resumable CLI acquisition",
             "configuration": ["variables", "date range", "UTC hours", "latitude/longitude",
                               "pressure levels", "grid spacing", "analysis depth",
-                              "download/cache directories", "time chunk"],
+                              "server-managed storage", "time chunk"],
             "reason": ("The browser validates, hashes, shards and prices the exact request "
-                       "without network use. Durable browser execution and progress are not "
-                       "mounted yet; acquisition remains available through the resumable CLI."),
+                       "without network use. A separate explicit confirmation opens a durable "
+                       "server-owned job with storage preflight, progress, cancellation, resume "
+                       "and a completion-only acquisition record."),
         }],
         "violation_coverage": coverage,
         "attribution_caveat": DOMAIN_ATTRIBUTION_CAVEAT,

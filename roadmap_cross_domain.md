@@ -4572,6 +4572,19 @@ plainly say planning uses no network and execution is `NOT_MOUNTED`; a valid pla
 for a submitted job or acquired data. TG18.1 remains in progress for the durable CDS job/progress/
 resume surface, rendered narrow-width inspection and cross-workspace density tuning.
 
+**Fourth foundation slice delivered (2026-09-03).** The CDS planner/job portion is complete. An
+exact request digest plus affirmative network acknowledgement is required before submission; the
+server accepts no client path, repeats the conservative free-space preflight, and journals bounded
+monthly progress atomically below server-owned storage. Cancellation is cooperative between
+monthly requests and preserves verified work. Jobs left active by process loss become explicitly
+`INTERRUPTED` and can be resumed without repeating verified shards. Only `COMPLETE` creates a
+self-hashed acquisition record, which is labelled transfer/integrity provenance rather than
+analysis or evidence. The browser exposes job history, progress, the in-flight shard, stop/resume,
+preflight status and the completion record while keeping a validated plan visibly inert. The
+embedded worker registry is deliberately qualified for one API process; a multi-process deployment
+still requires an external queue. TG18.1 remains in progress only for rendered narrow-width
+inspection and cross-workspace density tuning.
+
 **TG18.2 Scientific visualization workspace.** Add coordinated plot focus, exact-value inspection,
 shared colour/axis controls, comparison locking, uncertainty and validity overlays, resizable panes,
 and publication/export affordances. Every visual encoding must have a text/table equivalent and

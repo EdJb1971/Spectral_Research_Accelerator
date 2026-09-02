@@ -58,7 +58,8 @@ function KindIcon({ kind }: { kind: ArchiveKind }) {
 function entriesFrom(
   studies: types.StudySummary[], runs: types.RunContract,
   gates: types.GateReceiptIndex, evaluations: types.EvaluationReport[],
-  probes: types.ZarrProbeLedgerResponse, benchmarks: types.BenchmarkResponse[],
+  probes: types.ZarrProbeLedgerResponse, cdsJobs: types.CDSJobList,
+  benchmarks: types.BenchmarkResponse[],
 ): ArchiveEntry[] {
   return [
     ...studies.map((row): ArchiveEntry => ({
@@ -96,6 +97,17 @@ function entriesFrom(
       status: row.readiness.scientific_skill,
       detail: row.readiness.reason, target: 'evaluation',
     })),
+    ...cdsJobs.jobs.filter((job) => job.state === 'COMPLETE' && job.acquisition_record)
+      .map((job): ArchiveEntry => ({
+        id: job.acquisition_record!.record_sha256,
+        kind: 'acquisition', classification: 'ACQUISITION RECORD',
+        title: `ERA5 · ${job.request.date_start} to ${job.request.date_end}`,
+        description: `${job.acquisition_record!.completed_shards} verified monthly shards · ${
+          job.request.variables.join(', ')} · request ${job.request_sha256.slice(0, 12)}…`,
+        status: 'COMPLETE',
+        detail: 'Transfer and integrity provenance only; not analysis or evidence.',
+        target: 'acquire',
+      })),
     ...probes.probes.map((row): ArchiveEntry => ({
       id: row.digest, kind: 'acquisition', classification: 'ACQUISITION RECORD',
       title: row.uri, description: row.outcome_means,
@@ -121,11 +133,12 @@ export default function ResearchArchive({ onNavigate, onError }: Props) {
   const load = useCallback(async () => {
     setBusy(true);
     try {
-      const [studies, runs, gates, evaluations, probes, benchmarks] = await Promise.all([
+      const [studies, runs, gates, evaluations, probes, cdsJobs, benchmarks] = await Promise.all([
         apiService.listStudies(), apiService.experimentRunContract(), apiService.listGateReceipts(),
-        apiService.listEvaluationReports(), apiService.zarrProbes(), apiService.listBenchmarks(),
+        apiService.listEvaluationReports(), apiService.zarrProbes(), apiService.listCDSJobs(),
+        apiService.listBenchmarks(),
       ]);
-      setEntries(entriesFrom(studies, runs, gates, evaluations, probes, benchmarks));
+      setEntries(entriesFrom(studies, runs, gates, evaluations, probes, cdsJobs, benchmarks));
     } catch (error) {
       onError?.(error instanceof Error ? error.message : String(error));
     } finally {

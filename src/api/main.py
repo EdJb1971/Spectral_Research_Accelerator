@@ -179,8 +179,8 @@ app.include_router(comparison_views_router)
 app.include_router(experiment_receipts_router)
 app.include_router(experiment_qualification_router)
 app.include_router(gate_router)
-# TG18.1: a metadata-only browser projection of the existing CDS request/shard/storage
-# contracts. Execution remains a separate durable-job concern; these routes cannot use network.
+# TG18.1: metadata-only CDS planning plus a separately confirmed, durable acquisition-job
+# surface. Planning cannot use network; execution writes only server-owned operational records.
 app.include_router(cds_router)
 
 

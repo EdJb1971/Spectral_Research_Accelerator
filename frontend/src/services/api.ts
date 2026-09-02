@@ -227,6 +227,45 @@ export const apiService = {
       }));
   },
 
+  async listCDSJobs(): Promise<types.CDSJobList> {
+    return handleResponse<types.CDSJobList>(
+      await fetch(`${BASE_URL}/data/cds/jobs`, { method: 'GET' }));
+  },
+
+  async submitCDSJob(payload: types.CDSPlanRequest, requestSha256: string): Promise<types.CDSJob> {
+    return handleResponse<types.CDSJob>(
+      await fetch(`${BASE_URL}/data/cds/jobs`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ request: payload, confirm_request_sha256: requestSha256,
+          confirm_network_access: true }),
+      }));
+  },
+
+  async getCDSJob(jobId: string): Promise<types.CDSJob> {
+    return handleResponse<types.CDSJob>(
+      await fetch(`${BASE_URL}/data/cds/jobs/${encodeURIComponent(jobId)}`, { method: 'GET' }));
+  },
+
+  async cancelCDSJob(jobId: string, reason: string): Promise<types.CDSJob> {
+    return handleResponse<types.CDSJob>(
+      await fetch(`${BASE_URL}/data/cds/jobs/${encodeURIComponent(jobId)}/cancel`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason }),
+      }));
+  },
+
+  async resumeCDSJob(jobId: string): Promise<types.CDSJob> {
+    return handleResponse<types.CDSJob>(
+      await fetch(`${BASE_URL}/data/cds/jobs/${encodeURIComponent(jobId)}/resume`,
+        { method: 'POST' }));
+  },
+
+  async getCDSAcquisitionRecord(jobId: string): Promise<types.CDSAcquisitionRecord> {
+    return handleResponse<types.CDSAcquisitionRecord>(
+      await fetch(`${BASE_URL}/data/cds/jobs/${encodeURIComponent(jobId)}/record`,
+        { method: 'GET' }));
+  },
+
   async profileCapabilities(): Promise<types.ProfileCapabilities> {
     return handleResponse<types.ProfileCapabilities>(
       await fetch(`${BASE_URL}/profiles`, { method: 'GET' }));
