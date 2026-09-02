@@ -270,6 +270,65 @@ class CoefficientField:
         height, width = self.shape[-2:]
         return (height * width) / float(native[0] * native[1])
 
+    def parent_alignment(self, scale: Any) -> Dict[str, Any]:
+        """How far a coefficient index at `scale` sits from the position it describes (D88).
+
+        The class docstring's parent-grid claim is about *shape*: an undecimated band already
+        has the field's shape and nothing is resampled. It was silent about *registration*,
+        and registration is a separate fact. An analysis filter anchored at index 0 displaces
+        its response by half its accumulated support, so a level-4 db2 band on a 128-pixel
+        crop is 22.5 pixels away from where its indices say it is -- and a level-3 band is
+        10.5 pixels away, so the two levels are 12 pixels out of register *with each other*.
+
+        Nothing that collapses a band to a scalar is affected, which is why this went unseen:
+        energies, RMS, the scale signature and the cross-scale gate all move no mass under a
+        circular shift. It falsifies positional use only, and positional use across scales
+        most of all.
+
+        Returns `shift_px` to subtract from an index to get a parent-grid position, and
+        `exact` saying whether subtracting it registers the level completely. `exact` is False
+        for a non-linear-phase filter, whose delay depends on what it is filtering, and
+        `shift_px` is None when this field does not record enough to say -- in which case a
+        caller may not treat two scales' positions as comparable, rather than assuming a
+        default and being quietly wrong by tens of pixels.
+        """
+        from src.transform_engine import stationary as swt_mod
+
+        index = self.scale_index(scale)      # UnknownNameError for a scale not in this field
+        del index
+        if self.wavelet_family == "swt":
+            wavelet = self.config.get("wavelet")
+            if wavelet is None:
+                return {"shift_px": None, "exact": False, "wavelet": None,
+                        "basis": ("this field does not record which filter produced it, and "
+                                  "the delay is a property of the filter. Positions from "
+                                  "different scales are not comparable until it does")}
+            try:
+                level = int(scale)
+            except (TypeError, ValueError):
+                return {"shift_px": None, "exact": False, "wavelet": str(wavelet),
+                        "basis": ("the scale label is not a dyadic level, so the accumulated "
+                                  "filter support behind it is unknown")}
+            exact = swt_mod.is_linear_phase(str(wavelet))
+            return {
+                "shift_px": float(swt_mod.analysis_delay(str(wavelet), level)),
+                "exact": bool(exact),
+                "wavelet": str(wavelet),
+                "basis": ("half the accumulated filter support, from the analysis filter "
+                          "anchored at index 0"
+                          + ("" if exact else
+                             ". This filter is neither symmetric nor antisymmetric, so its "
+                             "delay is not one number: a residual that grows with the "
+                             "level's dilation survives the shift, and levels remain out of "
+                             "register with each other")),
+            }
+        return {
+            "shift_px": None, "exact": False, "wavelet": None,
+            "basis": ("a decimated family placed on the parent grid by nearest-neighbour "
+                      "replication. An aligned index is a label for the block of parent "
+                      "pixels one native coefficient covers, not a position within it, and "
+                      "no single shift turns a label into a location")}
+
     def available_coefficients(self) -> List[int]:
         """Coefficients the transform actually computed per scale, over all orientations.
 

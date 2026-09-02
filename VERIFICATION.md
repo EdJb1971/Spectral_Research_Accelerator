@@ -8398,3 +8398,96 @@ the T4C.5n changes, and the full suite has not been re-run since them.
 **What this does not establish.** Two independently verified windows out of 8,764 frames. The
 audit authorises nothing and does not revisit the gate verdict. D84 and D85 remain open. The
 gate panel's agreement-rule column still has not been inspected in a browser.
+
+
+## T4D.1 -- located maxima (`src/analysis_engine/spectral_feature.py`)
+
+**Tests.** `src/tests/test_spectral_feature.py`, 15 test functions, **17 passed** in 1.84 s.
+
+**What was measured.** A Gaussian blob planted at (32.0, 32.0), (30.4, 41.7) and (25.5, 25.5) is
+recovered to better than one pixel in each case, and the parabolic refinement beats the integer
+peak it starts from on the deliberately worst case at (30.5, 41.5). At scale 3 a blob at (1, 1)
+is found with `interior=False` and refused with `interior=True`, so the R13 exclusion is the mask
+and not a blind spot. Two frames, one with a blob ten times the other's amplitude: with the
+threshold fitted over the record only frame 0 reports a detection, and a frozen threshold
+re-supplied reproduces the fitted result exactly while a threshold of 1e6 yields nothing.
+
+**The design change the tests forced, with its numbers.** Two acceptance cases failed under a
+strict local-maximum rule: a blob at a half-pixel position produces two exactly equal samples and
+strictness rejects both. Rewritten to regional maxima: a 4x4 flat top is now one detection at
+(31.5, 31.5) with `plateau_pixels == 16`, and a blob at (32.0, 31.5) is found at exactly (32.0,
+31.5) with `plateau_pixels == 2`. A plateau adjoining a strictly higher pixel is not reported at
+all.
+
+## T4D.2 -- tracks, and D88
+
+**Tests.** `src/tests/test_spectral_tracking.py`, 19 test functions, **19 passed** in 3.18 s.
+
+**D88, measured before it was fixed.** A delta at (64, 64) of a 128x128 field, SWT:
+
+```
+            LH offset      HL offset      HH offset     accumulated support / 2
+haar  L4    (+0, +4)       (+4, +8)       (+4, +0)       7.5
+db2   L1    (+2, +1)       (+1, +2)       (+1, +1)       1.5
+db2   L2    (+6, +4)       (+4, +6)       (+4, +4)       4.5
+db2   L3    (+14, +10)     (+10, +14)     (+10, +10)    10.5
+db2   L4    (+30, +22)     (+22, +30)     (+22, +22)    22.5
+db3   L4    (+60, +36)     (+36, +60)     (+36, +36)    37.5
+```
+
+The delta's argmax is a filter-peak artefact, so the decisive measurement is the centroid of
+`|band|` for a symmetric Gaussian blob at (64, 64), which for a symmetric structure must sit at
+the structure's centre if the band is registered:
+
+```
+             centroid          minus analysis_delay
+haar L1     (64.50, 64.50)     (64.00, 64.00)
+haar L2     (65.50, 65.50)     (64.00, 64.00)
+haar L3     (67.50, 67.50)     (64.00, 64.00)
+haar L4     (71.50, 71.50)     (64.00, 64.00)
+db2  L4     (97.54, 88.65)     (75.04, 66.15)
+db3  L4     (79.83, 96.62)     (42.33, 59.12)
+```
+
+Haar returns to the blob's centre exactly at every level. db2 and db3 do not, and the residual
+grows with the level's dilation -- the non-linear-phase half of the defect, which no shift can
+remove. `analysis_delay("haar", 1..5) = 0.5, 1.5, 3.5, 7.5, 15.5`;
+`analysis_delay("db2", 1..4) = 1.5, 4.5, 10.5, 22.5`;
+`is_linear_phase = {haar: True, db2: False, db3: False}`.
+
+**The acceptance run.** `advected_vortex_sequence` (128x128, 24 frames, sigma 5.00 -> 13.54 cells,
+velocity (1.5, 2.5) cells/step, doubling 16 steps -- all recorded before this code existed), SWT
+haar at 5 levels, scales 4 and 5, `threshold_sigma=4.0`, `MotionBounds(max_doublings=0.5)`,
+Hungarian association at alpha 0.05:
+
+```
+                              measured v        predicted v      err   transverse worst
+L4 HL  len=24  t0= 0.0   (1.823, 2.526)   (1.871, 2.500)   0.0544   col  0.6668
+L4 LH  len=24  t0= 0.0   (1.505, 2.852)   (1.500, 2.871)   0.0197   row  0.3521
+L5 HL  len=15  t0= 9.0   (1.835, 2.532)   (1.940, 2.500)   0.1093   col  0.3447
+L5 LH  len=11  t0= 9.0   (1.506, 2.807)   (1.500, 2.900)   0.0935   row  0.2323
+```
+
+4 tracks, 4 births, 1 death, 24 frames. The prediction column is advection plus
+`(sigma_end - sigma_start) / (t_end - t_start)` on the axis that band high-passes, with no fitted
+parameter. Worst velocity error **0.109 cells/step**; worst transverse position error **0.667 px**,
+inside the roadmap's 1 px on the coordinate for which it is a claim about the structure.
+
+**What this does not establish.** A detail-coefficient maximum is a flank, not a centre, so the
+longitudinal coordinate of every track above is offset by about the structure's width and grows
+with it; the roadmap's "< 1 px position" is met by the field-space path (`4D.position`, 0.052
+cells) and not by this one. Nothing here is calibrated against a null: the threshold is
+`sigma x RMS` and no significance is reported. The vortex is synthetic; no track has been produced
+from ERA5. `4D.tracking` in the benchmark suite is graded through `src/core/extraction`, not
+through this module, and its status is unchanged by this slice.
+
+**Neighbourhood run.** `test_spectral_tracking.py test_spectral_feature.py test_coefficient_field.py
+test_wavelet_bank.py test_tracking.py test_cross_scale.py test_scale_signature.py
+test_stationary.py test_transforms.py test_benchmarks.py`: **387 passed, 1 xfailed** in 325.75 s.
+Inventory total 2986 -> 3020.
+
+**Full backend suite, after T4D.1, T4D.2 and D88.** **3400 passed, 4 skipped, 1 xfailed** in
+2,165.95 s (36:05), exit code 0. This supersedes 3362 as the last measured full-suite figure and
+measures the current tree. The arithmetic reconciles exactly: 3362 (as of the D87 fix) + 2
+(T4C.5n's `test_cds_source.py` additions, which the 3362 run predated) + 17 (T4D.1) + 19 (T4D.2)
+= 3400. Documentation audit inside that run: 20 passed.

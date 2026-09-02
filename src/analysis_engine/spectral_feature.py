@@ -13,6 +13,15 @@ which is why every record carries the band it came from and the threshold it cle
 detections across scales, and two detections at different scales are only comparable if they are
 expressed in the same frame. The native bands of a decimated family are not that frame.
 
+*And the parent grid has to be earned, not assumed (D88).* Having the parent grid's **shape** is
+not the same as being registered to it. An analysis filter anchored at index 0 displaces its
+response by half its accumulated support -- half a pixel at level 1, 22.5 pixels at db2 level 4 --
+so two levels of one decomposition are displaced by tens of pixels relative to each other. Every
+detection here is therefore reported at its index minus the shift the field itself declares, and
+when the field cannot declare one the output says so rather than letting the positions pass as
+comparable. Nothing that collapses a band to a scalar was ever affected by this, which is why it
+survived until something read a coefficient's index as a place.
+
 *The threshold is fitted on the whole record and can be frozen and re-supplied.* A threshold set
 per frame would make a quiet frame and a stormy one report the same number of features by
 construction, and any subsequent count would be a statement about the normalisation rather than
@@ -209,6 +218,7 @@ def detect_features(
     threshold_sigma: float = DEFAULT_THRESHOLD_SIGMA,
     threshold_values: Optional[Sequence[float]] = None,
     interior: bool = True,
+    align: bool = True,
     max_features_per_band: int = DEFAULT_MAX_FEATURES_PER_BAND,
 ) -> Dict[str, Any]:
     """Detect located maxima in every band of a `CoefficientField`.
@@ -217,6 +227,11 @@ def detect_features(
     pass over held-out frames can inherit the yardstick fitted on the frames it is compared
     with. Supplying them is the leakage-safe path and fitting them is not, which is why the
     provenance records which one happened.
+
+    `align` subtracts the transform's own analysis delay so a reported position is on the parent
+    grid rather than at the filter's anchor (D88). Turning it off is for inspecting the raw
+    coefficient indices; the result then says so, and cross-scale comparison of those positions
+    is meaningless.
     """
     if not np.isfinite(threshold_sigma) or threshold_sigma <= 0:
         raise InvalidParameterError(
@@ -230,6 +245,10 @@ def detect_features(
 
     margins = [(_parent_margin(field, scale, index + 1) if interior else 0)
                for index, scale in enumerate(field.scales)]
+    alignments = [field.parent_alignment(scale) for scale in field.scales]
+    shifts = [(float(record["shift_px"])
+               if align and record["shift_px"] is not None else 0.0)
+              for record in alignments]
 
     if threshold_values is None:
         thresholds = _fit_thresholds(field, float(threshold_sigma), margins)
@@ -290,6 +309,8 @@ def detect_features(
                             float(magnitude[y_index, x_index + 1]))
                     else:
                         y, x = record["y"], record["x"]
+                    y -= shifts[s_index]
+                    x -= shifts[s_index]
                     features.append(SpectralFeature(
                         feature_id=_feature_id(t_index, scale, orientation, y_index, x_index),
                         time_index=int(t_index), scale=str(scale),
@@ -319,9 +340,29 @@ def detect_features(
         },
         "truncated_bands": truncated,
         "max_features_per_band": int(max_features_per_band),
+        "alignment": {
+            "applied": bool(align),
+            "shift_parent_px": {str(scale): float(shifts[index])
+                                for index, scale in enumerate(field.scales)},
+            "declarable": {str(scale): alignments[index]["shift_px"] is not None
+                           for index, scale in enumerate(field.scales)},
+            "exact": {str(scale): bool(alignments[index]["exact"])
+                      for index, scale in enumerate(field.scales)},
+            "basis": {str(scale): alignments[index]["basis"]
+                      for index, scale in enumerate(field.scales)},
+            "cross_scale_comparable": bool(
+                align and all(record["exact"] for record in alignments)),
+            "meaning": ("D88: the analysis delay subtracted from each coefficient index to put "
+                        "it on the parent grid. Positions from two scales may only be compared "
+                        "when it was applied and is exact at both; otherwise the levels are "
+                        "displaced relative to each other by an amount that grows with level"),
+        },
         "coordinate_frame": (
             "parent-grid pixels, y down and x across, sub-pixel by parabolic vertex clipped to "
-            "the sample that produced it"),
+            "the sample that produced it"
+            + (", with each scale's declared analysis delay subtracted (D88)" if align
+               else ", at the raw coefficient index with no analysis delay removed, so two "
+                    "scales' positions are NOT comparable")),
         "claim_boundary": (
             "A feature is a local maximum of this transform's coefficient magnitude above a "
             "threshold fitted on this record. It is not a physical object, not a detection of "
