@@ -8578,3 +8578,85 @@ current tree. The arithmetic reconciles exactly: 3400 + 25 (T4D.3's `test_spectr
 + 4 (D89's one parametrised function in `test_translation.py`, over the four words it is
 parametrised on) = 3429. The documentation audit was also run on its own against the finished
 documents: **20 passed** in 276.06 s, exit code 0. `git diff --check` clean.
+
+
+## T4E.1 -- the constellations, and D90
+
+**Tests.** `src/tests/test_spectral_constellation.py`, 45 test functions, **54 passed** in 2.53 s.
+Neighbourhood run (`test_spectral_constellation.py test_spectral_narrative.py
+test_spectral_tracking.py test_spectral_feature.py test_tracking.py test_constellation.py
+test_invariance.py test_motif.py test_coefficient_field.py`): **370 passed** in 75.48 s.
+
+**The pass, over the vortex T4D.2 tracked.** Same field, same tracker settings, same four tracks.
+24 searched frames, 4 tracks, **135 constellations**: 87 pairs and 48 triples. The count is
+checked frame by frame against the combinatorics of the pass's own census, so it cannot quietly be
+a sample. By band:
+
+```
+L4/LH+L4/HL              24     L4/HL+L5/LH              11
+L4/HL+L5/HL              15     L4/HL+L5/LH+L5/HL        11
+L4/LH+L4/HL+L5/HL        15     L4/LH+L4/HL+L5/LH        11
+L4/LH+L5/HL              15     L4/LH+L5/LH              11
+                                L4/LH+L5/LH+L5/HL        11
+                                L5/LH+L5/HL              11
+```
+
+**Three of the eight TG3.3 relations are measurable; five refuse by name.** Measurable:
+`distance`, `relative_scale`, `succession`. Refused, with the field each one lacks:
+`temporal_lag` and `co_occurrence` (no `temporal_scale`), `direction` and `convergence` (no
+`orientation`), `containment` (no `extent`). Every refusal is in the receipt with its reason,
+rather than dropped from the declaration.
+
+**The two halves, at frame 9.** The left pair of columns is the graph -- dimensionless, and the
+only half a match or a cluster may read. The right is carried, in this record's own units:
+
+```
+pair             distance  rel_scale |  separation   bearing    raw   sigma   onset
+L4/LH+L4/HL        1.4447      1.00  |  11.56 cells   315.4   1.000   1.000   0.0 (bound)
+L4/LH+L5/LH        0.2046      0.50  |   2.32 cells    88.7   1.755   0.554   9.0 (bound)
+L4/LH+L5/HL        1.1887      0.50  |  13.45 cells   321.3   1.760   0.556   9.0 (bound)
+L4/HL+L5/LH        1.1716      0.50  |  13.26 cells   128.1   1.756   0.555   9.0 (bound)
+L4/HL+L5/HL        0.2026      0.50  |   2.29 cells   352.9   1.761   0.556   9.0 (bound)
+L5/LH+L5/HL        0.9356      1.00  |  14.97 cells   314.3   1.003   1.003   0.0
+```
+
+**What each column is not.** `L4/LH+L4/HL` is one vortex seen through two orientations of one
+level, and its 11.56 cells is entirely **flank geometry** -- a detail maximum sits about one
+analysing width off the structure's centre, so a separation is between two flanks and not between
+two structures. The raw and band-normalised strength ratios **disagree about the sign of the
+comparison**: raw 1.755 says the coarse band is stronger by three quarters, and each strength
+divided by its own band's RMS says 0.554, the weaker of the two. The band RMS is not estimated
+here -- it comes back exactly from the detection's own `threshold / threshold_sigma`, and the test
+checks that for all 318 nodes. Every offset marked *(bound)* has a left-censored end: both level-4
+tracks were alive in the first searched frame, so the record began before they did.
+`L5/LH+L5/HL`, born together at frame 9, is the one uncensored pair, and it carries no bound note.
+
+**`succession` is not the ordering that carries information.** It is asserted false for every
+ordered pair of every one of the 135 constellations, because the two observations are in the same
+frame by construction. The informative ordering is between onsets, and it is carried separately.
+
+**D90, and how it was found.** The first attempt to build a graph from these features returned
+`distance` in the refusals rather than in the edges: *"'11.5579 cells vs 8 parent-grid px' ... the
+separation is in 'cells' and the scales are in 'parent-grid px', so the quotient is not a number
+of scale lengths."* The check is right and the units were wrong -- the bank is undecimated and
+T4D.1 maps every level onto the parent grid, so a parent-grid pixel is a cell. The failure was
+**silent**, because a refusal is recorded on the graph rather than raised: a mining pass would
+have run with the geometry missing and reported patterns built from `relative_scale` and
+`succession` alone. Fixed in `_scale_quantity`; the regression is pinned on the two unit names
+themselves rather than on the symptom, `distance` is asserted measured on every pair of the pass,
+and a separate test builds a scale genuinely in metres beside a location in cells and asserts it
+**still refuses**, so the fix cannot be read as a weakening of the rule.
+
+**What this does not establish.** Every number above is from synthetic data; no constellation has
+been extracted from ERA5. There is no null, no support count and no significance anywhere in this
+slice: a constellation is one observation of one arrangement in one searched frame. Recurrence is
+T4E.3's clustering and T4E.4's support threshold, invariant matching is TG3.4's, and none of the
+three has run over this output. The four tracks are four bands of one vortex, so the "population"
+here is one structure seen four ways rather than four structures.
+
+**Full backend suite, after T4E.1 and D90.** **3483 passed, 4 skipped, 1 xfailed** in 2,058.00 s
+(34:17), exit code 0. This supersedes 3429 as the last measured full-suite figure and measures the
+current tree. The arithmetic reconciles exactly: 3429 + 54 (T4E.1's
+`test_spectral_constellation.py`, 45 test functions of which two are parametrised over five and
+six cases) = 3483. D90's fix added no test case of its own; its regressions live inside that file.
+`git diff --check` clean.

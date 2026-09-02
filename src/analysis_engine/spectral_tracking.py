@@ -97,6 +97,15 @@ def _scale_quantity(scale: Any) -> Quantity:
     Level `j` is given `2 ** (j - 1)` parent pixels. The constant is a labelling convention and
     nothing reads it; what everything reads is that consecutive levels differ by a factor of
     two, which is true of the transform by construction rather than true of this line.
+
+    The unit is `cells`, the same name `_axes` gives the parent grid, and it says `cells`
+    because it originally said `parent-grid px` (D90). Those are two spellings of one unit --
+    the bank is undecimated and the alignment step puts every level on the parent grid, so a
+    parent-grid pixel *is* a cell -- but TG3.3's `distance` relation divides a separation by a
+    scale and refuses the quotient when the two unit *names* differ. The effect was that the
+    one relation which makes a configuration recognisable refused on every feature this
+    module produces, for a spelling. The precision that name carried is not lost: `scale_basis`
+    below still records that the octave is counted in cells of the parent grid.
     """
     try:
         level = int(scale)
@@ -108,7 +117,7 @@ def _scale_quantity(scale: Any) -> Quantity:
             "a positive integer dyadic level. A scale label that is not a level has no "
             "declared octave, and inventing one would put a made-up number into every scale "
             "ratio and every doubling time computed from these tracks")
-    return Quantity(float(2 ** (level - 1)), "parent-grid px")
+    return Quantity(float(2 ** (level - 1)), "cells")
 
 
 def _orientation(value: Any, convention_note: Optional[str]) -> Optional[Orientation]:
@@ -245,8 +254,9 @@ def spectral_feature_set(
                 "threshold": record["threshold"],
                 "plateau_pixels": record["plateau_pixels"],
                 "phase": record["phase"],
-                "scale_basis": ("dyadic octave 2 ** (level - 1) parent-grid px; only ratios "
-                                "are used and consecutive levels differ by exactly two"),
+                "scale_basis": ("dyadic octave 2 ** (level - 1) cells of the parent grid; "
+                                "only ratios are used and consecutive levels differ by "
+                                "exactly two"),
                 "alignment_shift_parent_px": alignment["shift_parent_px"][record["scale"]],
             }))
     if not features:
