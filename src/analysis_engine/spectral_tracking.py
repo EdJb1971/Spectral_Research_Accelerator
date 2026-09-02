@@ -268,6 +268,11 @@ def _representation(field) -> str:
     return "wavelet[%s]" % ",".join(parts)
 
 
+#: The public name for the representation string, read by T4D.3's narratives. One
+#: definition, so a receipt and a sentence cannot disagree about which bank ran.
+representation_of = _representation
+
+
 def track_spectral_features(
     field,
     *,

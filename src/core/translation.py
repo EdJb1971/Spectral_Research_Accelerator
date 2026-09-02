@@ -796,14 +796,24 @@ def assert_no_causal_language(document: TranslatedFinding) -> None:
     templates are fixed, so a hit here means a template was edited or an author put a causal
     word in an evidence label — and both are worth stopping before a reader sees them.
 
-    What is scanned is each unit's ``rendered`` half, not its ``licences``.  The entitlements are
-    the programme's own fixed sentences, and several of them name a causal term precisely in
-    order to refuse it — *"a statement about prediction, never about mechanism"*.  Scanning
-    those would refuse the sentence whose whole purpose is to hold the line, which is why the
-    curated half and the authored half are scanned differently rather than together.
+    What is scanned is each unit's ``rendered`` half, not its ``licences``, and it is scanned
+    with its punctuation flattened to spaces so that an identifier is screened the way prose is
+    (D89).  What remains uncaught is a word run together with another without any separator —
+    ``co2causeswarming`` — and that limit is stated rather than replaced by a substring match,
+    which would refuse "causeway" and every other innocent word containing one of these.
+
+    The entitlements are the programme's own fixed sentences, and several of them name a causal
+    term precisely in order to refuse it — *"a statement about prediction, never about
+    mechanism"*.  Scanning those would refuse the sentence whose whole purpose is to hold the
+    line, which is why the curated half and the authored half are scanned differently rather
+    than together.
     """
     for unit in document.units:
-        lowered = unit.rendered.lower()
+        # Punctuation is flattened to spaces before the word boundaries are applied (D89).
+        # An underscore is a word character, so ``causes`` does not match inside
+        # ``co2_causes_warming`` — and an identifier is exactly the shape of the author-supplied
+        # text that reaches ``rendered`` through an entry label or an alternative's wording.
+        lowered = re.sub(r"[^a-z0-9]+", " ", unit.rendered.lower())
         for word in OUTSIDE_THE_LADDER:
             if re.search(r"\b%s\b" % re.escape(word), lowered):
                 raise InvalidParameterError(

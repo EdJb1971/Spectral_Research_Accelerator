@@ -8491,3 +8491,90 @@ Inventory total 2986 -> 3020.
 measures the current tree. The arithmetic reconciles exactly: 3362 (as of the D87 fix) + 2
 (T4C.5n's `test_cds_source.py` additions, which the 3362 run predated) + 17 (T4D.1) + 19 (T4D.2)
 = 3400. Documentation audit inside that run: 20 passed.
+
+
+## T4D.3 -- the sentences, and D89
+
+**Tests.** `src/tests/test_spectral_narrative.py`, 25 test functions, **25 passed** in 2.22 s.
+`src/tests/test_translation.py` gains one parametrised function for D89: **64 passed** (48 test
+functions).
+
+**The narrative, in full, of the T4D.2 acceptance pass.** Same field, same tracker settings, same
+four tracks. This is the whole rendered output, not an excerpt:
+
+```
+Track 0 (advected_vortex_sequence, amplitude; level 4, LH): the coefficient maximum was followed
+across 24 of 24 searched frames, consecutively, 0.00 to 23.00 frames. It moved 74.2 cells toward
+increasing row and increasing col, at a mean 3.22 cells/frames. It stayed at level 4 throughout,
+so this track reports no change of scale; which bands were excited, and when, is a statement about
+the set of tracks rather than about this one. Its peak coefficient magnitude went from 3.7372 to
+2.5576, a change of -31.6%, which is a change of -53.2% in coefficient energy -- energy being the
+square, so the two figures are not interchangeable.
+
+Track 1 (level 4, HL): ... 71.6 cells ... 3.12 cells/frames ... 3.7528 to 2.5242, -32.7%, -54.8%.
+Track 2 (level 5, LH): 11 of 24 frames, 9.00 to 19.00 ... 6.3793 to 7.5824, +18.9%, +41.3%.
+Track 3 (level 5, HL): 15 of 24 frames, 9.00 to 23.00 ... 6.3965 to 7.4860, +17.0%, +37.0%.
+
+4 bands produced tracks. The earliest was L4/HL at 0.00 and the latest L5/LH at 9.00, a separation
+of 9.00 in the clock's units. That ordering is a candidate precursor relationship between two
+bands of one record: it is co-occurrence with a recorded sign of the time offset, it was not
+tested against a null, and it is not a structure moving up the bank -- the transform is redundant,
+so both bands respond at once and no merge is claimed.
+```
+
+**The measurement that replaces "dominant scale doubled".** The vortex widens from sigma 5.00 to
+sigma 13.54 cells. No single track records that, since each holds one dyadic level and therefore
+has a scale velocity of exactly zero. What is measured, across the population:
+
+```
+band     first seen   frames   magnitude first -> last     change
+L4/LH        0.0        24        3.7372 -> 2.5576        -31.6%
+L4/HL        0.0        24        3.7528 -> 2.5242        -32.7%
+L5/LH        9.0        11        6.3793 -> 7.5824        +18.9%
+L5/HL        9.0        15        6.3965 -> 7.4860        +17.0%
+```
+
+Both fine bands weaken and both coarse bands strengthen, and the coarse bands are not excited
+until frame 9. That is the growth, expressed as an ordering of two bands over one record, which
+is the strongest form the evidence supports.
+
+**The compass, checked against arithmetic rather than against itself.** One displacement of
+(+1 row, 0 col) on two grids that differ only in the sign of `dy` gives bearings of 0.0 and 180.0
+degrees -- north and south -- which is the ERA5 case, since ERA5 stores rows north to south. A
+displacement of (+1, +1) at `lat0 = 60` gives **26.6 degrees**, not 45: the east component is
+shortened by `cos(60.125 deg)` before the bearing is taken, so omitting the cosine would rotate
+the answer and change the compass word. A `cartesian` grid is refused every compass word and gets
+axis-relative wording instead. A track with a net displacement of exactly zero is given no
+bearing at all.
+
+**Magnitude against energy.** A track whose magnitude goes 1.0 -> 1.43 renders "a change of 43.0%,
+which is a change of 104.5% in coefficient energy". The roadmap's example sentence named the
+second under the first's number.
+
+**D89, and how it was found.** T4D.3's causal guard was written as `\bword\b` over the rendered
+sentence, matching the programme's existing guard in `src/core/translation.py`. The test that puts
+a caller's own dataset name into a sentence -- `dataset="co2_causes_warming"` -- failed, DID NOT
+RAISE. An underscore is a word character, so the boundary sits at the ends of the identifier and
+not at its underscores. Both guards now flatten punctuation to spaces before matching. The
+remaining limit is asserted, not assumed: `co2causeswarming` still passes, and `causeway` still
+passes, which is the point -- a substring match would catch the first and refuse the second.
+`test_translation.py` was re-run after the change: **64 passed**, no existing expectation moved.
+
+**What this does not establish.** Every sentence above describes synthetic data. No narrative has
+been produced from ERA5, and the candidate precursor relationship reported is one ordering
+observed once in one record: it was not tested against a null, it has no significance attached,
+and it is not evidence that the ordering recurs. The guard refuses causal *vocabulary*; it cannot
+refuse a causal *reading*, and the entitlement that travels with every narrative is the only thing
+that addresses that.
+
+**Neighbourhood run.** `test_spectral_narrative.py test_spectral_tracking.py
+test_spectral_feature.py test_tracking.py test_claim_ladder.py test_translation.py
+test_five_outputs.py test_coefficient_field.py`: **278 passed** in 35.38 s (before the D89 test was
+added). Inventory total 3020 -> 3046.
+
+**Full backend suite, after T4D.3 and D89.** **3429 passed, 4 skipped, 1 xfailed** in 2,197.90 s
+(36:37), exit code 0. This supersedes 3400 as the last measured full-suite figure and measures the
+current tree. The arithmetic reconciles exactly: 3400 + 25 (T4D.3's `test_spectral_narrative.py`)
++ 4 (D89's one parametrised function in `test_translation.py`, over the four words it is
+parametrised on) = 3429. The documentation audit was also run on its own against the finished
+documents: **20 passed** in 276.06 s, exit code 0. `git diff --check` clean.

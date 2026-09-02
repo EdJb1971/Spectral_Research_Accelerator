@@ -23,6 +23,7 @@ from __future__ import annotations
 import itertools
 import json
 import random
+from types import SimpleNamespace
 
 import pytest
 
@@ -263,6 +264,31 @@ def test_causal_vocabulary_cannot_enter_through_a_glossary(word):
                        phrases=dict(ATMOSPHERIC,
                                     **{"status.PASS": "the reading that %s it" % word}))
     assert word in str(excinfo.value)
+
+
+@pytest.mark.parametrize("word", ["causes", "mechanism", "explains", "efficacy"])
+def test_a_causal_word_inside_an_identifier_is_caught_too(word):
+    """D89, found by T4D.3's narratives, which run the same guard over their own prose.
+
+    An underscore is a word character, so a plain `\bcauses\b` scan passes straight over
+    `co2_causes_warming` -- and an identifier is exactly the shape of the author-supplied text
+    that reaches `rendered` through an entry's label or an alternative's wording. Punctuation
+    is now flattened to spaces before the boundaries are applied. What is still not caught,
+    and is asserted here so the limit is recorded rather than assumed away, is a word run
+    together with another with no separator at all; a substring match would catch that and
+    would also refuse "causeway".
+    """
+    unit = TranslationUnit(structural_key="rung.observation", source_sha256="0" * 64,
+                           rendered="the co2_%s_warming record was read" % word,
+                           licences="this is not a claim about mechanism")
+    with pytest.raises(InvalidParameterError) as excinfo:
+        assert_no_causal_language(SimpleNamespace(units=(unit,)))
+    assert word in str(excinfo.value) and "R7" in str(excinfo.value)
+
+    innocent = TranslationUnit(structural_key="rung.observation", source_sha256="0" * 64,
+                               rendered="the causeway record was read",
+                               licences="this is not a claim about mechanism")
+    assert_no_causal_language(SimpleNamespace(units=(innocent,)))
 
 
 def test_a_digit_cannot_enter_through_a_glossary():
