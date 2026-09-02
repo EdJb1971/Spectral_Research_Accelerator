@@ -4634,10 +4634,47 @@ the trigger and selection remain, which is why none is treated as optional. This
 accessibility conformance audit and does not pre-empt TG18.4; measuring a font size is not certifying
 a contrast ratio with a screen reader in the loop.
 
-**TG18.2 Scientific visualization workspace.** Add coordinated plot focus, exact-value inspection,
-shared colour/axis controls, comparison locking, uncertainty and validity overlays, resizable panes,
-and publication/export affordances. Every visual encoding must have a text/table equivalent and
-must state units, support, normalization and missingness where they apply.
+**TG18.2 Scientific visualization workspace — IN PROGRESS.** Add coordinated plot focus, exact-value
+inspection, shared colour/axis controls, comparison locking, uncertainty and validity overlays,
+resizable panes, and publication/export affordances. Every visual encoding must have a text/table
+equivalent and must state units, support, normalization and missingness where they apply.
+
+**First slice delivered (2026-09-03): the figure data contract.** This opens the phase on the
+standing gap rather than on new features. Every gridded panel renders through exactly two
+components, so the text/table equivalent is implemented once at that seam and reaches all fifteen
+call sites. Both previously carried an `sr-only` caption describing the *shape* of the data and
+nothing else; the values were reachable only through a hover tooltip, which is mouse-only,
+ephemeral, and absent from every exported or printed copy.
+
+The design decision that matters is the boundary, because G18 may not recompute or summarize a
+scientific value and the obvious implementation — mean, median, slope and correlation under every
+plot — would breach that immediately. The rule adopted is **transcribe what the figure encodes, and
+state what it could not encode.** A sample's value and an axis or colour-bar range are already on
+the figure, so restating them is transcription; the heat map therefore reports the range *shown on
+this figure* and names whether the limits were supplied for comparison or derived from that panel
+alone. Non-finite samples and points a log axis discards are what the encoding silently omits — a
+gap in a line reads as an absence of structure, and Plotly drops non-positive samples without a
+mark — so those counts are part of the contract. A mean is neither, and is refused; the refusal is
+printed on the page, not kept in a comment.
+
+Line charts are enumerated point by point with a stated cap at 2,000 rows. A field cannot be, so
+the heat map equivalent is addressed rather than listed: name a row and column, read the exact
+sample with its coordinates, units and validity. The control clamps to the field instead of
+accepting an index it cannot answer, and the panel states the cell count it declines to tabulate.
+
+**Evidence.** The Chromium suite is **63/63 from a cleaned `.e2e-state`** (54 before this slice, 9
+added). Its load-bearing assertion is agreement: the exact sample is read out of the live Plotly
+trace and compared with what the panel printed, because plausible numbers unrelated to the trace
+would pass every structural check. The refusal is asserted in the markup as well as the prose — no
+contract term may be labelled Mean, Median, Slope, Correlation or Standard deviation.
+`test_frontend_contract.py` and `test_documentation.py` are **198 passed**; `tsc --noEmit` is clean
+and the production build succeeds. The full backend suite was **not** rerun; the last measured
+figure remains 3,240.
+
+**Not yet done in TG18.2.** Coordinated plot focus, shared colour and axis controls, comparison
+locking, uncertainty and validity overlays, resizable panes and publication export are untouched by
+this slice. The equivalent also does not yet cover figures rendered by the comparison views, which
+carry their own `AccessibleTable`, nor does it claim the two idioms have been unified.
 
 **TG18.3 Guided research journey.** Make `Acquire -> Inspect -> Design -> Run -> Compare -> Admit ->
 Report` visible without collapsing the existing claim ladder. Every blocked state names one next

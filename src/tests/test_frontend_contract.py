@@ -231,6 +231,44 @@ def test_visualisations_have_text_equivalents():
         assert "<figcaption" in source and 'className="sr-only"' in source
     assert "rows and" in heatmap and "Value units" in heatmap
     assert "series.map(item => item.name).join" in line
+    # A caption describing the shape of the data is not an equivalent; both families must reach
+    # the shared exact-value panel (TG18.2).
+    for source in (heatmap, line):
+        assert "FigureDataDisclosure" in source and "FigureContract" in source
+
+
+def test_figure_data_panels_transcribe_without_authoring_a_statistic():
+    """The text equivalent may restate what a figure encodes and name what it could not encode.
+    It may not derive a new number: G18 is presentation only, and a statistic authored by a view
+    is indistinguishable on screen from one the analysis layer stands behind."""
+    figure_data = _read("components", "FigureData.tsx")
+    heatmap = _read("components", "Heatmap2D.tsx")
+    line = _read("components", "LineChart.tsx")
+
+    # `<details>` groups carry an explicit accessible name; an unnamed one is announced only as
+    # a disclosure triangle (the TG17.8 defect that recurred as D82).
+    assert "aria-label={name}" in figure_data
+    # Exact values are keyboard-addressable rather than hover-only, and the readout is live.
+    assert 'aria-live="polite"' in figure_data and "<output" in figure_data
+    assert 'type="number"' in figure_data
+    assert "htmlFor={rowId}" in figure_data and "htmlFor={columnId}" in figure_data
+    assert "CellInspector" in heatmap
+
+    # Missingness and normalization provenance are stated, not inferred by the reader.
+    assert "Missing samples" in heatmap and "not finite" in heatmap
+    assert "supplied, shared across panels" in heatmap
+    assert "derived from this panel alone" in heatmap
+    # A log axis silently discards non-positive samples; the count is part of the contract.
+    assert "non-positive" in line and "Points drawn" in line
+    # Truncation is stated rather than silent.
+    assert "MAX_TABULATED_POINTS" in line and "Showing the first" in line
+
+    # The refusal, in both the prose and the absence of the statistics themselves.
+    for source in (heatmap, line):
+        assert "derives no summary statistic" in source
+    body = _strip_comments(figure_data + heatmap + line)
+    for forbidden in ("'Mean'", '"Mean"', "'Median'", "'Std", "'Correlation'"):
+        assert forbidden not in body
 
 
 def test_async_workflow_surfaces_expose_busy_state(all_sources):
