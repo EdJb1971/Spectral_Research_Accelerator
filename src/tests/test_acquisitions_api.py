@@ -68,3 +68,27 @@ def test_every_known_violation_has_a_registered_data_path_not_only_a_declaration
         "lightcurve_query"}
     assert {row["shape"] for row in body["violation_coverage"]["non_stationary_support"]} >= {
         "profile_query", "lightcurve_query"}
+
+
+def test_catalogue_exposes_the_non_http_cds_route_instead_of_hiding_it(client):
+    body = client.get("/api/v1/acquisitions").json()
+    cds = next(row for row in body["operational_routes"]
+               if row["id"] == "era5_cds_regional")
+
+    assert cds["domain"] == "reanalysis"
+    assert cds["ui_status"] == "PLANNER_NOT_EXPOSED"
+    assert cds["execution"] == "bounded resumable CLI acquisition"
+    assert {"variables", "date range", "pressure levels", "time chunk"}.issubset(
+        cds["configuration"])
+    assert "no HTTP route" in cds["reason"]
+
+
+def test_gridded_acquisitions_publish_researcher_facing_source_identity(client):
+    body = client.get("/api/v1/acquisitions").json()
+    reanalysis = next(row for row in body["domains"] if row["name"] == "reanalysis")
+    grids = [row for row in reanalysis["acquisitions"] if row["shape"] == "grid_crop"]
+
+    assert grids
+    assert all(row["label"] and row["provider"] and row["product_family"] for row in grids)
+    assert any("WeatherBench 2" in row["provider"] for row in grids)
+    assert any("Copernicus Marine" in row["provider"] for row in grids)

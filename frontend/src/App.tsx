@@ -19,12 +19,14 @@ import ReviewView from './components/ReviewView';
 import GateRecordView from './components/GateRecordView';
 import DatasetCapabilityProfile from './components/DatasetCapabilityProfile';
 import ExperimentComposer from './components/ExperimentComposer';
+import ResearchArchive from './components/ResearchArchive';
 import { ExperimentReceiptPanel } from './components/ExperimentReceipt';
 import { ExperimentQualificationPanel } from './components/ExperimentQualification';
 import { apiService } from './services/api';
 import * as types from './types/api';
 import {
   BookOpen,
+  Archive,
   Layers,
   Wind,
   Sliders,
@@ -87,7 +89,10 @@ const WORKFLOW_NAV = [
     { id: 'review', name: 'Recorded review', icon: MessageSquare },
     { id: 'gate', name: 'Atmospheric gate record', icon: Landmark, context: 'Gridded field line' },
   ] },
-  { section: 'Read', items: [{ id: 'findings', name: 'Findings', icon: BookOpen }] },
+  { section: 'Read', items: [
+    { id: 'researchArchive', name: 'Research archive', icon: Archive },
+    { id: 'findings', name: 'Findings', icon: BookOpen },
+  ] },
   { section: 'Platform', items: [{ id: 'platform', name: 'Platform & evidence', icon: ShieldCheck }] },
 ] as const;
 
@@ -670,12 +675,14 @@ export default function App() {
     .find(item => item.id === activeTab)?.name || 'Scientific workbench';
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
+    <div className="instrument-shell min-h-screen bg-slate-950 text-slate-100 flex flex-col">
       <a href="#workspace-main" className="skip-link">Skip to workspace</a>
       {/* Top Banner / Navigation Header */}
-      <header className="border-b border-slate-800 bg-slate-900/50 backdrop-blur px-6 py-4 flex items-center justify-between">
+      <header className="instrument-header border-b border-slate-800 backdrop-blur px-5 sm:px-6 py-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Globe className="w-8 h-8 text-teal-400 animate-pulse" aria-hidden="true" />
+          <span className="grid place-items-center w-9 h-9 rounded-xl bg-teal-400/10 border border-teal-400/20">
+            <Globe className="w-5 h-5 text-teal-300" aria-hidden="true" />
+          </span>
           <div>
             <h1 className="text-lg font-bold tracking-tight text-white">SpectralEarth</h1>
             <p className="text-xs text-slate-400">Scientific Visual Research Workbench</p>
@@ -683,8 +690,8 @@ export default function App() {
         </div>
         <div className="flex items-center gap-4">
           {backendConnected ? (
-            <span role="status" className="text-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-3 py-1.5 rounded-full font-medium flex items-center gap-2">
-              <Server className="w-3.5 h-3.5" aria-hidden="true" /> API Connected (SQLite DB Active)
+            <span role="status" className="text-xs bg-emerald-500/10 text-emerald-300 border border-emerald-500/25 px-3 py-1.5 rounded-full font-medium flex items-center gap-2">
+              <Server className="w-3.5 h-3.5" aria-hidden="true" /> Connected <span className="hidden sm:inline text-emerald-400/70">· SQLite active</span>
             </span>
           ) : (
             <button type="button" className="text-xs bg-amber-500/10 text-amber-400 border border-amber-500/20 px-3 py-1.5 rounded-full font-medium flex items-center gap-2"
@@ -698,7 +705,7 @@ export default function App() {
       <div className="flex-1 flex flex-col lg:flex-row">
         {/* Left Side Navigation bar */}
         <nav aria-label="Scientific workflow"
-          className="w-full lg:w-72 border-r border-slate-800 bg-slate-900/10 p-4 space-y-5">
+          className="workflow-nav w-full lg:w-72 lg:flex-none border-r border-slate-800 bg-slate-900/20 p-4 space-y-5">
           {WORKFLOW_NAV.map(group => (
             <section key={group.section} aria-labelledby={`nav-${group.section.toLowerCase()}`}>
               <div className="px-3 mb-1">
@@ -762,16 +769,16 @@ export default function App() {
         {/* Core Main content section */}
         <main id="workspace-main" aria-labelledby="workspace-heading"
           aria-busy={loading || benchmarkRunning || receiptImporting}
-          className="flex-1 p-6 overflow-y-auto space-y-6">
+          className="workspace-main flex-1 overflow-y-auto space-y-6">
           <h2 id="workspace-heading" ref={workspaceHeadingRef} tabIndex={-1} className="sr-only">
             {activeWorkspace} workspace
           </h2>
           <p className="sr-only" role="status" aria-live="polite">
             {loading || benchmarkRunning || receiptImporting ? `${activeWorkspace} is working` : `${activeWorkspace} is ready`}
           </p>
-          <section aria-label="Current research context"
-            className="bg-slate-900/60 border border-slate-800 rounded-lg px-4 py-3 flex flex-wrap gap-x-6 gap-y-2 text-xs">
-            <div className="flex items-center gap-2">
+          {(selectedRecord || selectedStudyId) && <section aria-label="Current research context"
+            className="research-context bg-slate-900/85 border border-slate-700/70 rounded-xl px-4 py-2.5 flex flex-wrap items-center gap-x-8 gap-y-2 text-xs">
+            <div className="context-item flex items-center gap-2">
               <span className="uppercase tracking-wide text-slate-500">Record</span>
               {selectedRecord ? <>
                 <span className="text-slate-200">{selectedRecord.record.source_name}</span>
@@ -781,17 +788,17 @@ export default function App() {
                 </span>
                 <button type="button" onClick={() => { setSelectedRecord(null); setSelectedCapability(null); }}
                   aria-label="Clear selected record" className="text-slate-500 hover:text-slate-200">×</button>
-              </> : <span className="text-slate-600">none selected</span>}
+              </> : <span className="text-slate-500">No record selected</span>}
             </div>
-            <div className="flex items-center gap-2">
+            <div className="context-item flex items-center gap-2">
               <span className="uppercase tracking-wide text-slate-500">Study</span>
               {selectedStudyId ? <>
                 <span className="font-mono text-slate-200">{selectedStudyId}</span>
                 <button type="button" onClick={() => setSelectedStudyId('')}
                   aria-label="Clear selected study" className="text-slate-500 hover:text-slate-200">×</button>
-              </> : <span className="text-slate-600">none selected</span>}
+              </> : <span className="text-slate-500">No study selected</span>}
             </div>
-          </section>
+          </section>}
           {selectedCapability && <DatasetCapabilityProfile profile={selectedCapability} compact />}
           {error && (
             <div role="alert" className="bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded-lg p-4 flex items-center justify-between">
@@ -1556,7 +1563,7 @@ export default function App() {
               </div>
 
               <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-                <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-5 space-y-4">
+                <div className="self-start xl:sticky xl:top-32 bg-slate-900/50 border border-slate-800 rounded-xl p-5 space-y-4">
                   <h3 className="text-sm font-semibold text-slate-200 border-b border-slate-800 pb-2">
                     Transform Configuration
                   </h3>
@@ -2580,7 +2587,16 @@ export default function App() {
               the backend produced; this file passes an error handler and nothing else. */}
           {activeTab === 'findings' && (
             <FindingsView onError={(message) => setError(message)}
-              selectedStudyId={selectedStudyId} onSelectStudy={setSelectedStudyId} />
+              selectedStudyId={selectedStudyId} onSelectStudy={setSelectedStudyId}
+              onOpenComposer={() => setActiveTab('experimentComposer')} />
+          )}
+
+          {activeTab === 'researchArchive' && (
+            <ResearchArchive onError={(message) => setError(message)}
+              onNavigate={(target, studyId) => {
+                if (studyId) setSelectedStudyId(studyId);
+                setActiveTab(target);
+              }} />
           )}
 
           {/* TG11.5: recorded-not-reproducible argument. This is a separate workspace from

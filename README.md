@@ -6,10 +6,50 @@ hypothesis screening.
 
 The platform joins a tensor-accelerated computational backend (**PyTorch**, **xarray**,
 **SQLAlchemy**) to a React/Vite/Plotly dashboard and a Jupyter playground. It is not yet a
-validated forecasting system: the decisive Phase 4C real-ERA5 gate has not been run, and Phase 5
-has integration contracts but no completed learned forecasting comparison. Current status,
-evidence and known limitations live in `roadmap.md`, `VERIFICATION.md` and `architecture.md`
-respectively.
+validated forecasting system. The decisive Phase 4C real-ERA5 gate **has** now run and returned
+PASS on an 8,764-frame acquired record (T4C.5m, which also closed D43); Phase 5 still has
+integration contracts and no completed learned forecasting comparison. Current status, evidence
+and known limitations live in `roadmap.md`, `VERIFICATION.md` and `architecture.md`
+respectively, and the section immediately below says which of those is authoritative for what.
+
+---
+
+## Where the programme actually is, and which document says so
+
+This README is an orientation document. It is **not** the status of record and must not be cited
+as one. Four documents carry the tracked state, each with a different job:
+
+| Document | What it is authoritative for | Machine-checked |
+|---|---|---|
+| `architecture.md` | What exists in the code today: modules, HTTP routes, the test inventory, and Section 7's full defect ledger. | yes |
+| `roadmap.md` | The **atmospheric** programme: Section 1's honest status table, the standing rules R1-R16, and every task with its evidence block. | yes |
+| `roadmap_cross_domain.md` | The **cross-domain** programme on `ed-dev`: rules R17 onward, phases G0-G17. | partly |
+| `VERIFICATION.md` | Captured output. Every number claimed elsewhere should be findable here as a run. | yes |
+| `README.md` (this file) | Installation, layout and an orientation summary. | partly |
+
+"Machine-checked" means `src/tests/test_documentation.py` parses the document and fails when it
+contradicts the source or the other documents. That guard exists because these files had gone
+stale before while nothing failed; it is the reason the status table cannot quietly drift.
+
+**Two roadmaps, one repository.** `roadmap.md` is the atmospheric line, frozen for `master` at
+`freeze-t4c.5h-preregistration` and still advancing on `ed-dev`. `roadmap_cross_domain.md` is a
+fork of that line, not a successor, and its results may **not** be cited as SpectralEarth
+atmospheric evidence. Both are live on `ed-dev` and work alternates between them; neither
+supersedes the other.
+
+**Current frontier (`ed-dev`).**
+
+* Atmospheric line: Phase 4E. T4E.1 and T4E.2 are DONE; **T4E.3 (approximate matching by
+  clustering) is next and has not been started.**
+* Cross-domain line: TG17.9 is DONE and TG17.10 delivered the apparatus gate with the
+  **release withheld**.
+* Last measured full backend run: **3536 passed, 4 skipped, 1 xfailed**, exit 0.
+* Open defects: **D84 and D85**; D18 partial. D43 is closed.
+
+**What has not been done**, stated once here so it is not inferred from the feature list: no
+learned forecast comparison has been run, no laboratory model or config has been supplied, FCN3
+has not been executed, no cross-domain mining pass has produced a finding, and no claim has been
+promoted from any of the above. Completion of a run is not a finding.
 
 ---
 
@@ -170,9 +210,10 @@ train_loader = DataLoader(bundle.train, batch_size=8, shuffle=True, num_workers=
 silently falls back to simulated data. The ERA5 panel reports only manifest-level structural
 eligibility until values are opened, and keeps preparation, train-only normalisation and the
 independent-route overlap check as separate claims. **This is not the whole forecasting path:**
-mixed-precision/compilation acceptance, non-NVIDIA hardware evidence, a viable multi-year
-regional source (D43), an actual independent ERA5 overlap run and execution of the actual
-laboratory model remain outstanding.
+mixed-precision/compilation acceptance, non-NVIDIA hardware evidence and execution of the
+actual laboratory model remain outstanding. The multi-year regional source and the independent
+ERA5 overlap run are no longer outstanding: T4C.5m acquired the record and closed D43, and
+T4C.5n audited a second window.
 
 T5.3a adds the first forecasting seam without pretending the laboratory model has been
 integrated. `PersistenceForecaster` is an exact zero-parameter physical-space baseline.
@@ -448,8 +489,10 @@ the result into the same local Zarr cache used by `RegionalForecastDataset`. Cre
 in the standard CDS client configuration and never enter provenance. The offline acquisition,
 resume and conversion contracts pass. A **real CDS request has now run**: the eight-frame canary
 for campaign v3, checked against an independently acquired WeatherBench window and agreeing to
-within one step of the CDS route's own GRIB packing. **The multi-year NZ crop has NOT been
-acquired and T4C.6 has NOT run**, so D43 remains open.
+within one step of the CDS route's own GRIB packing. **The multi-year NZ crop has since been acquired
+and T4C.6 has run**: 8,764 frames in 72 monthly shards (338.905 MB, 5,853.7 s), the full-cache
+overlap passing at 0.71875 of a GRIB packing step, and a **PASS** verdict with ten links
+replicated in train and test. D43 is closed (T4C.5m).
 
 Planning is network-free and prints the exact monthly CDS payloads before anything is queued:
 
@@ -535,16 +578,18 @@ multi-gigabyte transfer was the one no supersession governed. It was also unsati
 arrives through CDS packed per GRIB field, each frame on its own binary lattice, and 1e-4 K is
 finer than the step the route can express. v3 freezes an `overlap_criterion` instead --
 agreement within one step of the lattice the primary frame actually occupies -- and `preflight`
-now refuses any campaign that declares none. The eight-frame canary has been acquired and
-passes it; **the 8,764-frame record has not been acquired and no gate has run.**
+now refuses any campaign that declares none. The eight-frame canary was acquired and
+passed it, and **the 8,764-frame record has since been acquired and the gate has run to a PASS**
+under v3 (T4C.5m). D84 and D85 remain open; they govern whether an *absence* would have been
+detectable, and a PASS does not route through them.
 
 Both campaigns, the retirement and any published receipts are also readable in the browser under
 **Review -> Atmospheric gate record**, served by seven `GET /api/v1/gate/...` routes. That
 surface is read-only by construction: it serves no other HTTP verb, has no preflight or
 acquisition route, and publishes the reasons for those refusals rather than leaving a missing
 button to be read as an unfinished panel. It shows a retired design in full with its defect
-visible, and reports an empty receipt store as an absence of *runs* rather than of findings --
-no gate has run.
+visible, and reports an empty receipt store as an absence of *runs* rather than of findings.
+The T4C.6 gate has since run and returned PASS.
 Before reporting readiness it now derives the exact grid shape and chosen transform supports,
 requires at least 128 valid parent-grid pixels at every scale, converts lat/lon degrees to
 physical metres for the advection floor, refuses shorter lags, and reports temporal split,

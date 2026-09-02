@@ -2009,3 +2009,44 @@ def test_the_gate_panel_shows_an_undeclared_agreement_rule_as_a_refusal():
     # And the rule that is declared is shown in the unit it is actually applied in, because a
     # bound in Kelvin is what D86 was.
     assert "encoding step" in view
+
+
+# ============================================================= TG18: research instrument shell
+
+def test_research_archive_keeps_record_classes_distinct_and_reachable(app_source):
+    archive = _read("components", "ResearchArchive.tsx")
+
+    assert "Research archive" in app_source
+    assert "activeTab === 'researchArchive'" in app_source
+    for classification in ("SCIENTIFIC EVIDENCE", "EXPERIMENT RUN", "GATE RECEIPT",
+                           "EVALUATION RECEIPT", "ACQUISITION RECORD",
+                           "VALIDATION FIXTURE"):
+        assert classification in archive
+    for method in ("listStudies", "experimentRunContract", "listGateReceipts",
+                   "listEvaluationReports", "zarrProbes", "listBenchmarks"):
+        assert "apiService.%s(" % method in archive
+    assert "a passing fixture is not a published study" in archive
+
+
+def test_acquire_surfaces_noninteractive_routes_and_human_source_identity():
+    source = _read("components", "AcquisitionView.tsx")
+
+    assert "catalogue.operational_routes" in source
+    assert "route.ui_status" in source
+    assert "option.label || option.name" in source
+    assert "option.provider || option.product_family" in source
+    assert "Source routes" in source
+
+
+def test_findings_refuses_to_treat_a_run_or_receipt_label_as_a_published_study():
+    findings = _read("components", "FindingsView.tsx")
+    archive = _read("components", "ResearchArchive.tsx")
+
+    assert "publishedStudyId" in findings
+    assert "studies.some(" in findings
+    assert "apiService.getTranslation(publishedStudyId, glossaryName)" in findings
+    assert "Current context is not published" in findings
+    assert "No LLM action is required" in findings
+    gate_mapping = archive.split("...gates.receipts.map", 1)[1].split(
+        "...evaluations.map", 1)[0]
+    assert "studyId:" not in gate_mapping

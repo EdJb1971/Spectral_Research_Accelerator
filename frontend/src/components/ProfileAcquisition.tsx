@@ -81,9 +81,15 @@ export const ProfileAcquisition: React.FC<Props> = ({ source, onError, onCapabil
 
   return <div className="space-y-5">
     {capabilities && !capabilities.network_enabled && <div role="status"
-      className="border border-amber-900/60 bg-amber-950/20 rounded-lg p-3 text-xs text-amber-200">
-      Live profiles are disabled server-side. Set <code>{capabilities.network_env_var}=1</code>{' '}
-      before starting the backend. A browser click never enables archive access.
+      className="instrument-notice text-xs">
+      <AlertTriangle className="instrument-notice__icon h-4 w-4" aria-hidden="true" />
+      <div>
+        <p className="font-semibold text-amber-200">Live archive access is off</p>
+        <p className="mt-1 leading-relaxed text-amber-100/80">
+          Live profiles are disabled server-side. Set <code>{capabilities.network_env_var}=1</code>{' '}
+          before starting the backend. A browser click never enables archive access.
+        </p>
+      </div>
     </div>}
 
     <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">

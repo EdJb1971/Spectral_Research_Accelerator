@@ -177,13 +177,71 @@ export const AcquisitionView: React.FC<AcquisitionViewProps> = ({
 
   return (
     <div className="space-y-6 animate-fadeIn" aria-busy={busy}>
-      <GenericIngress onError={onError} onCapability={onCapability} />
       <header>
         <h2 className="text-xl font-bold text-white flex items-center gap-2">
           <Database className="text-teal-400 w-5 h-5" /> Acquire
         </h2>
         <p className="text-sm text-slate-400 max-w-4xl">{catalogue.note}</p>
       </header>
+
+      <section className="rounded-xl border border-slate-800 bg-slate-900/45 p-4"
+        aria-labelledby="source-route-heading">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h3 id="source-route-heading" className="text-sm font-semibold text-slate-100">
+              Source routes
+            </h3>
+            <p className="mt-1 text-xs text-slate-500">
+              Choose a scientific domain to reveal every registered path, including paths that
+              are currently non-interactive.
+            </p>
+          </div>
+          <span className="rounded-md bg-slate-950 px-2 py-1 text-[10px] uppercase tracking-wide text-slate-500">
+            {catalogue.domains.length} domains · {catalogue.domains.reduce((total, row) =>
+              total + row.acquisitions.length, 0)} selectable declarations
+          </span>
+        </div>
+        <div className="mt-4 grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-4">
+          {catalogue.domains.map((row) => {
+            const available = row.acquisitions.filter((item) => item.available).length;
+            return <button key={row.name} type="button" onClick={() => chooseDomain(row.name)}
+              aria-pressed={domainName === row.name}
+              className={`rounded-lg border p-3 text-left ${domainName === row.name
+                ? 'border-teal-500/40 bg-teal-500/10'
+                : 'border-slate-800 bg-slate-950/35 hover:border-slate-700'}`}>
+              <span className="block text-sm font-medium capitalize text-slate-200">
+                {row.name.split('_').join(' ')}
+              </span>
+              <span className="mt-1 block text-xs text-slate-500">
+                {available} available · {row.acquisitions.length} declared
+              </span>
+            </button>;
+          })}
+        </div>
+        {catalogue.operational_routes.filter((route) => route.domain === domainName).map((route) => (
+          <div key={route.id} className="mt-3 flex flex-col gap-3 rounded-lg border border-amber-500/25
+                                      bg-amber-500/5 p-3 lg:flex-row lg:items-start lg:justify-between">
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-sm font-semibold text-amber-100">{route.label}</span>
+                <span className="rounded border border-amber-500/30 px-1.5 py-0.5 text-[9px]
+                                 font-semibold uppercase tracking-wide text-amber-300">
+                  {route.ui_status.split('_').join(' ')}
+                </span>
+              </div>
+              <p className="mt-1 text-xs text-slate-400">{route.reason}</p>
+              <p className="mt-2 text-[11px] text-slate-500">
+                Configurable in the implementation: {route.configuration.join(' · ')}
+              </p>
+            </div>
+            <span className="shrink-0 rounded-md bg-slate-950 px-2 py-1 text-[10px] text-slate-400">
+              {route.execution}
+            </span>
+          </div>
+        ))}
+      </section>
+
+      <GenericIngress onError={onError} onCapability={onCapability} />
 
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4">
@@ -208,8 +266,11 @@ export const AcquisitionView: React.FC<AcquisitionViewProps> = ({
                 className={`text-left border rounded-lg p-3 ${acquisitionId === option.id
                   ? 'border-teal-500 bg-teal-500/10' : option.available
                     ? 'border-slate-800 hover:border-slate-600' : 'border-slate-900 opacity-60'}`}>
-                <span className="text-sm text-slate-200 block">{option.name}</span>
-                <span className="text-[10px] font-mono text-teal-400">{option.shape}</span>
+                <span className="text-sm text-slate-200 block">{option.label || option.name}</span>
+                <span className="mt-0.5 block text-[10px] text-slate-500">
+                  {option.provider || option.product_family || option.shape}
+                </span>
+                <span className="text-[9px] font-mono text-teal-400">{option.name} · {option.shape}</span>
                 <span className="text-[10px] text-slate-500 block mt-1">
                   {option.available ? option.access_means : option.unavailable_reason}
                 </span>
@@ -219,14 +280,21 @@ export const AcquisitionView: React.FC<AcquisitionViewProps> = ({
         </div>
       </section>
 
-      <section className="bg-slate-950 border border-slate-800 rounded-lg p-3 text-xs">
-        <p className="text-amber-300">{domain.domain_limits.attribution_caveat}</p>
-        {domain.domain_limits.refuses.length > 0 && (
-          <div className="mt-2 text-slate-400">
-            This domain refuses: {domain.domain_limits.refuses.map((row) =>
-              String(row.consequence || row.basis || Object.values(row)[0])).join('; ')}
+      <section className="instrument-notice text-xs" aria-label="Domain evidence boundary">
+        <AlertTriangle className="instrument-notice__icon h-4 w-4" aria-hidden="true" />
+        <div className="min-w-0">
+          <h3 className="font-semibold text-amber-200">Domain evidence boundary</h3>
+          <p className="mt-1 leading-relaxed text-amber-100/80">
+            {domain.domain_limits.attribution_caveat}
+          </p>
+          {domain.domain_limits.refuses.length > 0 && (
+            <p className="mt-2 leading-relaxed text-slate-400">
+              <span className="font-medium text-slate-300">This domain refuses: </span>
+              {domain.domain_limits.refuses.map((row) =>
+                String(row.consequence || row.basis || Object.values(row)[0])).join('; ')}
+            </p>
+          )}
           </div>
-        )}
       </section>
 
       {acquisition?.shape === 'channel_table' && acquisition.available && (

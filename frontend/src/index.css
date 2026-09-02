@@ -2,8 +2,122 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  color-scheme: dark;
+  --instrument-bg: #020617;
+  --instrument-panel: rgba(15, 23, 42, 0.72);
+  --instrument-line: rgba(51, 65, 85, 0.72);
+  --instrument-muted: #94a3b8;
+  --instrument-accent: #2dd4bf;
+}
+
+html {
+  min-width: 320px;
+  background: var(--instrument-bg);
+}
+
 body {
   @apply bg-slate-950 text-slate-100 font-sans antialiased;
+  min-height: 100vh;
+  margin: 0;
+  line-height: 1.5;
+  text-rendering: optimizeLegibility;
+}
+
+button, input, select, textarea {
+  font: inherit;
+}
+
+::selection {
+  background: rgba(45, 212, 191, 0.28);
+  color: #f8fafc;
+}
+
+* {
+  scrollbar-color: #334155 #020617;
+  scrollbar-width: thin;
+}
+
+.instrument-shell {
+  background:
+    radial-gradient(circle at 72% -10%, rgba(13, 148, 136, 0.055), transparent 30rem),
+    var(--instrument-bg);
+}
+
+.instrument-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  min-height: 4.5rem;
+  background: rgba(15, 23, 42, 0.88);
+  box-shadow: 0 1px 0 rgba(148, 163, 184, 0.04);
+}
+
+.workflow-nav {
+  scrollbar-gutter: stable;
+}
+
+.workspace-main {
+  min-width: 0;
+  background:
+    linear-gradient(110deg, rgba(15, 23, 42, 0.12), transparent 28rem),
+    transparent;
+  padding: clamp(1rem, 1.65vw, 2rem);
+}
+
+.research-context {
+  box-shadow: 0 12px 30px rgba(2, 6, 23, 0.2);
+  backdrop-filter: blur(14px);
+}
+
+.context-item {
+  min-height: 1.75rem;
+}
+
+.instrument-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  border: 1px solid rgba(245, 158, 11, 0.28);
+  border-radius: 0.75rem;
+  background: rgba(120, 53, 15, 0.08);
+  padding: 0.875rem 1rem;
+}
+
+.instrument-notice__icon {
+  flex: 0 0 auto;
+  margin-top: 0.125rem;
+  color: #fbbf24;
+}
+
+.instrument-notice code {
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  border-radius: 0.25rem;
+  background: rgba(2, 6, 23, 0.55);
+  padding: 0.1rem 0.3rem;
+  color: #fde68a;
+}
+
+.findings-empty {
+  display: grid;
+  min-height: 20rem;
+  place-items: center;
+  border: 1px dashed rgba(51, 65, 85, 0.8);
+  border-radius: 0.75rem;
+  background:
+    radial-gradient(circle at 50% 25%, rgba(13, 148, 136, 0.07), transparent 13rem),
+    rgba(2, 6, 23, 0.24);
+  padding: clamp(1.5rem, 4vw, 4rem);
+  text-align: center;
+}
+
+@media (min-width: 1024px) {
+  .workflow-nav {
+    position: sticky;
+    top: 4.5rem;
+    height: calc(100vh - 4.5rem);
+    overflow-y: auto;
+  }
 }
 
 /* TG11.6: one focus contract for every legacy and cross-domain control.  Several older

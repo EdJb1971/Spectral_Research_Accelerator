@@ -56,6 +56,9 @@ def _grid_acquisitions(domain: str, limits: Dict[str, Any]) -> List[Dict[str, An
         rows.append({
             "id": "grid_crop:%s" % store.name,
             "name": store.name,
+            "label": store.display_name or store.name,
+            "provider": store.provider or None,
+            "product_family": store.product_family or None,
             "shape": "grid_crop",
             "available": True,
             "access": store.access,
@@ -161,6 +164,21 @@ async def list_acquisitions() -> Dict[str, Any]:
     return refuse_bare_confidence({
         "domains": domains,
         "shapes": ACQUISITION_SHAPES,
+        "operational_routes": [{
+            "id": "era5_cds_regional",
+            "domain": "reanalysis",
+            "label": "ERA5 regional request · Copernicus CDS",
+            "provider": "Copernicus Climate Data Store",
+            "product_family": "ERA5 atmospheric reanalysis",
+            "ui_status": "PLANNER_NOT_EXPOSED",
+            "execution": "bounded resumable CLI acquisition",
+            "configuration": ["variables", "date range", "UTC hours", "latitude/longitude",
+                              "pressure levels", "grid spacing", "analysis depth",
+                              "download/cache directories", "time chunk"],
+            "reason": ("The production CDS acquisition and replay path is implemented, but no "
+                       "browser planning/job surface is mounted. It is listed here so an "
+                       "implemented route cannot disappear merely because it has no HTTP route."),
+        }],
         "violation_coverage": coverage,
         "attribution_caveat": DOMAIN_ATTRIBUTION_CAVEAT,
         "note": ("Choose a domain first. A catalogue entry is an available acquisition path, "

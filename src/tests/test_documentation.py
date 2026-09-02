@@ -52,6 +52,16 @@ def licence():
     return _read("LICENSE.md")
 
 
+@pytest.fixture(scope="module")
+def readme():
+    return _read("README.md")
+
+
+@pytest.fixture(scope="module")
+def cross_domain():
+    return _read("roadmap_cross_domain.md")
+
+
 def _source_modules():
     out = []
     for path in glob.glob(os.path.join(REPO_ROOT, "src", "**", "*.py"), recursive=True):
@@ -402,3 +412,120 @@ def test_every_registered_tg17_receipt_capability_has_a_documented_explanation(a
     assert not missing, (
         "registered TG17 receipt capabilities have no visible architecture explanation: %s"
         % missing)
+
+
+# ---------------------------------------------------------------------------
+# The two documents nothing was reading.
+#
+# `README.md` and `roadmap_cross_domain.md` were unguarded for the whole
+# programme, and both drifted exactly as the guarded ones had before these
+# tests existed. At the T4E.2 audit the README still said "the decisive Phase
+# 4C real-ERA5 gate has not been run", "the 8,764-frame record has not been
+# acquired and no gate has run" and "D43 remains open" -- several slices after
+# T4C.5m acquired 8,764 frames, ran the gate to a PASS and closed D43 -- while
+# `architecture.md`'s ledger prose still summarised 78 entries and 75 fixes
+# against a table holding 90 and 87. Nothing failed, because nothing looked.
+# ---------------------------------------------------------------------------
+
+def _ledger_open_ids(architecture):
+    rows = re.findall(r"^\| (D\d+) \|(.*)$", architecture, re.M)
+    return [d for d, body in rows
+            if "**FIXED**" not in body and "PARTIAL" not in body]
+
+
+def _ledger_fixed_ids(architecture):
+    rows = re.findall(r"^\| (D\d+) \|(.*)$", architecture, re.M)
+    return [d for d, body in rows if "**FIXED**" in body]
+
+
+def _readme_frontier(readme):
+    start = readme.find("**Current frontier")
+    assert start != -1, (
+        "README.md must carry a '**Current frontier' block naming where the programme is; "
+        "an orientation document with no 'you are here' sends a reader to guess from the "
+        "feature list, which is how this file came to claim an unrun gate for four slices")
+    end = readme.find("**What has not been done**", start)
+    assert end != -1, "the frontier block must be followed by the '**What has not been done**' list"
+    return readme[start:end]
+
+
+def test_readme_disclaims_being_the_status_of_record(readme):
+    """The README is read first and updated last; it must say which document to trust."""
+    assert "not** the status of record" in readme or "not the status of record" in readme, (
+        "README.md must state that it is not the status of record")
+    for name in ("architecture.md", "roadmap.md", "roadmap_cross_domain.md", "VERIFICATION.md"):
+        assert name in readme, "README.md must point at %s in its document map" % name
+
+
+def test_readme_open_defects_match_the_ledger(readme, architecture):
+    """The README's frontier block lists the open defects; the ledger decides them."""
+    block = _readme_frontier(readme)
+    match = re.search(r"Open defects: \*\*([^*]+)\*\*", block)
+    assert match, ("the README frontier block must state 'Open defects: **D84 and D85**' or "
+                   "equivalent")
+    claimed = sorted(re.findall(r"D\d+", match.group(1)))
+    assert claimed == sorted(_ledger_open_ids(architecture)), (
+        "README.md claims open defects %s but the architecture.md ledger holds %s"
+        % (claimed, sorted(_ledger_open_ids(architecture))))
+
+
+def test_readme_test_count_agrees_with_the_status_tables(readme, architecture):
+    """A third document quoting the suite total is a third place for it to go stale."""
+    match = re.search(r"full backend run: \*\*(\d+) passed", readme)
+    assert match, "the README frontier block must quote the last measured full-suite total"
+    assert int(match.group(1)) == _claimed_test_count(architecture)[0], (
+        "README.md claims %s passing tests, architecture.md claims %s"
+        % (match.group(1), _claimed_test_count(architecture)[0]))
+
+
+def test_readme_frontier_task_is_not_already_done(readme, roadmap, cross_domain):
+    """The frontier moves every slice; a README naming a finished task as 'next' is stale."""
+    block = _readme_frontier(readme)
+    for task in re.findall(r"\*\*(T[G]?[0-9][A-Z]?\.[0-9]+(?:\.[0-9]+)?) [^*]*is next", block):
+        for doc in (roadmap, cross_domain):
+            for heading in re.finditer(r"\*\*%s [A-Z]" % re.escape(task), doc):
+                window = doc[max(0, heading.start() - 40): heading.start() + 200]
+                assert "DONE" not in window, (
+                    "README.md calls %s the next task but the roadmap marks it DONE" % task)
+
+
+def test_no_current_status_section_calls_a_fixed_defect_open(readme, roadmap, architecture):
+    """Historical task prose may say 'D43 remains open'; a *current status* section may not.
+
+    The regions checked are the ones a reader treats as present tense: the README's
+    orientation section, `roadmap.md` Section 1, and the ledger summary paragraph in
+    `architecture.md`. Each is bounded, so slice narratives recording what was true at the
+    time keep saying so.
+    """
+    fixed = set(_ledger_fixed_ids(architecture))
+    regions = {
+        "README.md orientation": readme[:readme.find("Key Scientific Pillars")],
+        "roadmap.md Section 1": roadmap[roadmap.find("## 1. Honest Technical Status"):
+                                        roadmap.find("## 2.")],
+        "architecture.md ledger summary": architecture[
+            architecture.find("The ledger below has grown"):
+            architecture.find("The ledger below has grown") + 900],
+    }
+    pattern = re.compile(r"\*{0,2}(D\d+)\*{0,2}[^.\n]{0,80}?(remains open|is still open|"
+                         r"still open|remains unfixed)")
+    for where, text in regions.items():
+        assert text, "could not locate the %s region" % where
+        for defect, phrase in pattern.findall(text):
+            assert defect not in fixed, (
+                "%s says %s %s, but the ledger marks it FIXED" % (where, defect, phrase))
+
+
+def test_cross_domain_rules_continue_contiguously_from_r17(roadmap, cross_domain):
+    """R1-R16 live in roadmap.md and R17 onward in roadmap_cross_domain.md, by declaration.
+
+    Two files holding one numbering is a gap or a collision waiting to happen, and a rule that
+    exists in neither reachable range is a lesson nobody will find.
+    """
+    atmospheric = [int(r[1:]) for r in re.findall(r"^### (R\d+)\.", roadmap, re.M)]
+    extended = [int(r[1:]) for r in re.findall(r"^### (R\d+)\.", cross_domain, re.M)]
+    assert extended == list(range(max(atmospheric) + 1, max(atmospheric) + 1 + len(extended))), (
+        "roadmap.md ends at R%d, so roadmap_cross_domain.md must run R%d upward; it holds %s"
+        % (max(atmospheric), max(atmospheric) + 1, extended))
+    assert not set(atmospheric) & set(extended), "the two rule ranges overlap"
+    assert ("continues at **R17**" in roadmap or "continues at R17" in roadmap), (
+        "roadmap.md must say where the rule numbering continues")

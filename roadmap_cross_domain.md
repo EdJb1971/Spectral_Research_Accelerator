@@ -37,7 +37,8 @@ Three boundaries hold for the life of this programme:
   atmospheric assumption is load-bearing it is named as such and given a general replacement, or
   it is recorded as a limit on generality. It is never hidden behind an adapter.
 * **Nothing in this line may be cited as SpectralEarth evidence, and nothing here relaxes the
-  atmospheric programme's claim boundary.** T4C.6 remains unrun on both lines; D43 remains open.
+  atmospheric programme's claim boundary.** T4C.6 has since run on this line and returned PASS (T4C.5m, which also closed D43); that verdict
+  is atmospheric evidence on the `ed-dev` fork and is not thereby a cross-domain result.
   The frozen campaign `campaigns/t4c6_nz_era5_temperature_850_v1.json`
   (`84f7b53f…75975`) is immutable on this line.
 * **Generalisation is never a reason to weaken a working abstraction.** See E12.
@@ -254,6 +255,34 @@ but it may not require a branch in the experiment runner or a bespoke page. The 
 is operational: a scientist can preflight, freeze, run, inspect, resume and export a complete
 experiment from a clean browser session without a terminal, handwritten glue or undeclared
 defaults.
+
+### R25. A refusal no call can reach is a defect, not a safeguard.
+
+Found three times in a row -- in G0's `require_declared`, and then in T4D.3 and T4E.1/T4E.2 --
+and it is a defect rather than harmless duplication because it reads like a guard and guards
+nothing. A second copy of a check that an earlier layer already performs makes the reviewer
+believe a class of input is handled here when it is refused elsewhere, so the real refusal's
+message and its coverage go uninspected.
+
+**Rule:** every refusal must be demonstrated by a test that reaches it. If measurement shows
+another mechanism fires first, the unreachable branch is deleted and replaced by a test naming
+*which* mechanism fires and what it says. The deletion is recorded in the docstring, so the
+absence is a decision rather than an omission.
+
+### R26. An operating point is measured against replicates, never chosen.
+
+R16 says a tolerance comes from the mathematics rather than from what the code happens to pass.
+Its counterpart applies where the mathematics gives no number: a match tolerance, a noise floor,
+an admission threshold. A plausible-looking constant is an author's opinion wearing the costume
+of a measurement, and it silently sets the false-positive rate of everything downstream.
+
+**Rule:** any such constant is produced by a calibration function that re-derives it from
+replicates of a known answer, is committed with the report that produced it, and is pinned by a
+test asserting the constant equals what the calibration returns. Two instances stand:
+TG3.4's `calibrate_match_tolerance`, and T4E.2's `AXIS_ISOTROPY_FLOOR = 1.0421`, the largest
+anisotropy a known-isotropic configuration produced over 24 noise realisations. Clearing a
+calibrated floor is a **minimum, not a precision claim**, and the documentation must say so
+where the constant is defined.
 
 ---
 
@@ -4486,6 +4515,63 @@ not working*, and the ledger must be able to say so.
     the archive (`DOMAIN_ATTRIBUTION_CAVEAT`).
 *   Network stays opt-in. Reaching the internet must never be a side effect of running a sweep.
 *   Credentials are never written to an artefact, a log, a provenance record or a `repr`.
+
+### Phase G18 — World-class scientific interface — **IN PROGRESS (2026-09-02)**
+
+The engine is reachable, but reachability is not yet an instrument-quality interaction contract.
+The rendered baseline was inspected at an ultra-wide desktop viewport across Acquire, Spectral
+Transforms, Experiment Composer and Findings. The visual language is worth retaining: a restrained
+dark field, teal selection, explicit status, numbered scientific workflows and claim-boundary
+language. The deficits are shared ergonomics rather than a need for a new aesthetic: undersized
+secondary text, weak use of wide screens, stretched control cards, warnings that read like log
+lines, a research-context bar too quiet to function as orientation, and empty states that occupy a
+large canvas without naming the next legitimate action.
+
+This phase changes presentation and navigation only. It may not recompute, summarize, promote or
+reinterpret a scientific value; backend-authored claim language remains verbatim under R22/R23,
+and capability/refusal decisions remain server-owned under R25.
+
+**TG18.0 Rendered baseline and interaction inventory — DONE (2026-09-02).** Preserve the four
+distinct product modes identified in the baseline: interactive instrument (Spectral Transforms),
+guided commitment workflow (Composer), read-only claim surface (Findings), and trust/qualification
+surface (Platform & evidence). A change that improves one by making another ambiguous is not a
+successful redesign.
+
+**TG18.1 Shared instrument foundation — IN PROGRESS.** Establish one stable application frame,
+readable type/contrast tokens, an independently scrolling workflow rail, a wide-screen workspace
+that uses panes instead of stretched forms, a prominent persistent record/study context, standard
+surface and status treatments, reduced-motion compliance, and purposeful empty states. The first
+slice must improve all supplied baseline views without changing an API request or response.
+
+**First slice delivered (2026-09-02).** The shared shell now has instrument-level typography and
+surface tokens, an independently scrolling workflow rail, bounded wide-screen content, structured
+notices, and actionable empty Findings. Record/study context persists in application state but is
+shown only when populated and does not create a second sticky header. A new Research Archive
+indexes the existing study, run, gate, evaluation, acquisition-probe and benchmark ledgers while
+keeping their evidence classes visibly distinct. Acquire now exposes researcher-facing source
+identity and names the implemented CDS downloader as `PLANNER_NOT_EXPOSED` instead of silently
+omitting it. This does **not** complete TG18.1: the CDS browser planner/job surface, route-level
+bundle splitting, narrow-width rendered inspection and cross-workspace density tuning remain.
+
+**TG18.2 Scientific visualization workspace.** Add coordinated plot focus, exact-value inspection,
+shared colour/axis controls, comparison locking, uncertainty and validity overlays, resizable panes,
+and publication/export affordances. Every visual encoding must have a text/table equivalent and
+must state units, support, normalization and missingness where they apply.
+
+**TG18.3 Guided research journey.** Make `Acquire -> Inspect -> Design -> Run -> Compare -> Admit ->
+Report` visible without collapsing the existing claim ladder. Every blocked state names one next
+legitimate action; legacy gridded tools remain available but are visually distinguished from the
+evidence workflow.
+
+**TG18.4 Responsive and assistive-technology acceptance.** Verify keyboard order, focus return,
+zoom/reflow, contrast, reduced motion and non-colour status at desktop, laptop and narrow widths.
+TG11.6 remains the source-level contract; this task adds rendered inspection and must not call
+itself WCAG certification.
+
+**TG18.5 UI qualification gate.** A clean-browser run exercises one representative path through
+each product mode, captures named viewport artefacts, asserts that every served route remains
+reachable, and records action count and refusal-to-remediation time. A production build and the
+existing no-glue Composer suite are necessary but not sufficient evidence.
 
 ## 6. Definition of Done
 

@@ -156,6 +156,9 @@ class GriddedStore:
     #: measurement must be able to produce the look that made it. `None` is only honest
     #: alongside the admission that nobody has looked.
     probe_digest: Optional[str] = None
+    display_name: str = ""
+    provider: str = ""
+    product_family: str = ""
     variables_note: str = ""
     extra: Dict[str, Any] = dc_field(default_factory=dict)
 
@@ -227,6 +230,12 @@ class GriddedStore:
             "chunks": self.chunks.to_dict(),
             "probe_digest": self.probe_digest,
         }
+        if self.display_name:
+            payload["display_name"] = self.display_name
+        if self.provider:
+            payload["provider"] = self.provider
+        if self.product_family:
+            payload["product_family"] = self.product_family
         if self.variables_note:
             payload["variables_note"] = self.variables_note
         if self.extra:
@@ -459,6 +468,9 @@ BUILTIN_STORES: Tuple[GriddedStore, ...] = (
         resolution_deg=0.25,
         cadence_hours=6,
         levels=13,
+        display_name="ERA5 · 0.25° · 6-hourly · 13 pressure levels",
+        provider="WeatherBench 2 on Google Cloud",
+        product_family="ERA5 atmospheric reanalysis",
         note=("Full-resolution ERA5, 13 pressure levels. Chunked one timestep x all "
               "levels x whole globe (54.0 MB/chunk), so regional crops are severely "
               "chunk-hostile - measured 51.1x amplification. Use for the R13 spatial "
@@ -488,6 +500,9 @@ BUILTIN_STORES: Tuple[GriddedStore, ...] = (
         resolution_deg=0.25,
         cadence_hours=1,
         levels=37,
+        display_name="ERA5 · 0.25° · hourly · 37 pressure levels",
+        provider="WeatherBench 2 on Google Cloud",
+        product_family="ERA5 atmospheric reanalysis",
         note=("Hourly, 37 levels, 153.6 MB/chunk. The most chunk-hostile store in the "
               "catalogue for regional work; 561,264 timesteps."),
         probe_digest=_BUILTIN_PROBE_DIGESTS[
@@ -511,6 +526,9 @@ BUILTIN_STORES: Tuple[GriddedStore, ...] = (
         resolution_deg=1.5,
         cadence_hours=6,
         levels=13,
+        display_name="ERA5 · 1.5° · 6-hourly · 13 pressure levels",
+        provider="WeatherBench 2 on Google Cloud",
+        product_family="ERA5 atmospheric reanalysis",
         note=("Coarse but chunked 8 timesteps deep (12.1 MB/chunk), so long records are "
               "cheap. Global grid is 121x240, which is BELOW the R13 256x256 floor - "
               "usable for whole-globe work, not for a regional cross-scale crop."),
@@ -534,6 +552,9 @@ BUILTIN_STORES: Tuple[GriddedStore, ...] = (
         resolution_deg=0.703125,
         cadence_hours=6,
         levels=13,
+        display_name="ERA5 · 0.7° · 6-hourly · 13 pressure levels",
+        provider="WeatherBench 2 on Google Cloud",
+        product_family="ERA5 atmospheric reanalysis",
         note=("Time chunks are eight frames deep, but each still spans every level and "
               "the full 512x256 globe. Live inspection on 2026-08-21 estimated 29.88 GB "
               "for a three-year, one-variable 255x255 crop (26.2x amplification). This "

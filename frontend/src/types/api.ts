@@ -502,6 +502,9 @@ export interface AcquisitionDomainLimits {
 export interface AcquisitionOption {
   id: string;
   name: string;
+  label?: string;
+  provider?: string | null;
+  product_family?: string | null;
   shape: AcquisitionShape;
   available: boolean;
   access: string;
@@ -525,6 +528,10 @@ export interface AcquisitionDomain {
 export interface AcquisitionCatalogue {
   domains: AcquisitionDomain[];
   shapes: Record<AcquisitionShape, string>;
+  operational_routes: Array<{
+    id: string; domain: string; label: string; provider: string; product_family: string;
+    ui_status: string; execution: string; configuration: string[]; reason: string;
+  }>;
   violation_coverage: Record<string, Array<{ domain: string; shape: AcquisitionShape; path: string }>>;
   attribution_caveat: string;
   note: string;
