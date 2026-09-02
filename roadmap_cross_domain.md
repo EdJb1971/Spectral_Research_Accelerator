@@ -4537,7 +4537,7 @@ guided commitment workflow (Composer), read-only claim surface (Findings), and t
 surface (Platform & evidence). A change that improves one by making another ambiguous is not a
 successful redesign.
 
-**TG18.1 Shared instrument foundation — IN PROGRESS.** Establish one stable application frame,
+**TG18.1 Shared instrument foundation — DONE (2026-09-03).** Establish one stable application frame,
 readable type/contrast tokens, an independently scrolling workflow rail, a wide-screen workspace
 that uses panes instead of stretched forms, a prominent persistent record/study context, standard
 surface and status treatments, reduced-motion compliance, and purposeful empty states. The first
@@ -4593,9 +4593,46 @@ context remains pinned beneath the instrument header while the workspace scrolls
 is now a fixed scrimmed drawer with background-scroll lock, current-workspace focus, a Tab loop,
 Escape and outside-click dismissal, and trigger focus restoration. Connection state collapses to
 an accessibly named icon below 400 px so the 320-pixel header does not overflow. All 171 frontend
-contract tests and the production build pass. Rendered narrow-width inspection is still **NOT RUN**:
-the supported shared-browser runtime returned no available browser session after reconnect, so
-TG18.1 remains in progress for that visual acceptance only.
+contract tests and the production build pass. Rendered narrow-width inspection was **NOT RUN** in
+that slice: the shared-browser runtime returned no available session after reconnect. The slice
+below runs it.
+
+**Sixth foundation slice delivered (2026-09-03) — TG18.1 closed.** The rendered narrow-width
+inspection is run, in Chromium, at 320, 375, 414 and 768 CSS pixels across all four product modes.
+The blocker in the fifth slice was the shared browser runtime, not the absence of a browser: the
+repository already carries a Playwright install and a Chromium binary, and `narrow-width.spec.ts`
+now sits beside the four existing acceptance specs under the same config.
+
+*It found two defects the source contract and the production build had both passed*, which is the
+whole argument for the task. The shared canvas rule `.workspace-main > *` also matched the two
+`sr-only` children; overriding their one-pixel clipped box with a real width and `margin-inline:
+auto` let those absolutely positioned elements escape the workspace's clipping, so **every**
+workspace scrolled horizontally by 14 px at 320 px. And the below-480-px reflow collapsed the track
+count but not `col-span-*`, so a spanning child rebuilt the second column as an implicit track while
+the declared template still read as one. A third, smaller finding: the 11/12-px metadata floor
+covered `text-[10px]` and `text-[11px]` and never `text-[9px]`, which Acquire, the lineage nodes and
+the capability profile all use. All three are fixed and now carry source assertions as well.
+
+The inspection measures the laid-out document rather than restating the CSS: document scroll width,
+content past the right edge that no ancestor scrolls, computed font size on every text-owning
+element, rendered control height, header containment, and both the used track count and the rendered
+row occupancy of every collapsed grid. It drives the drawer end to end — scrim, scroll lock, focus
+placement, Tab loop, Escape, outside click, focus restoration — and captures 21 named viewport
+artefacts.
+
+**Evidence.** The complete Chromium suite is **54/54 from a cleaned `.e2e-state`** (35 before this
+slice, 19 added). `test_frontend_contract.py` and `test_documentation.py` are **197 passed**. The
+production build succeeds. The full backend suite was **not** rerun for this slice; the last
+measured figure remains 3,240.
+
+**Stated boundaries, so the closure cannot be read as more than it is.** The sticky record/study
+context is not covered: it renders only when a record or study is selected, and no workspace this
+inspection reaches selects one, so its pinning stays a source-level contract. Plotly label floors are
+not covered, because those axes exist only after a transform has run against real data. Below 352 px
+the drawer fills the viewport and outside-click dismissal is unavailable by construction — Escape,
+the trigger and selection remain, which is why none is treated as optional. This is not an
+accessibility conformance audit and does not pre-empt TG18.4; measuring a font size is not certifying
+a contrast ratio with a screen reader in the loop.
 
 **TG18.2 Scientific visualization workspace.** Add coordinated plot focus, exact-value inspection,
 shared colour/axis controls, comparison locking, uncertainty and validity overlays, resizable panes,

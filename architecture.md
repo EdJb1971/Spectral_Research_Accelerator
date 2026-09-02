@@ -5644,9 +5644,40 @@ and Plotly field labels no longer fall below 10 px. The compact workflow menu is
 scrimmed drawer: opening it locks background scroll and moves focus to the current workspace;
 Escape, the scrim or a selection closes it, Tab remains inside it, and Escape/scrim restore focus
 to the trigger. Below 400 px the connection control becomes an icon with a complete accessible
-name so the brand, status and menu fit the 320-pixel floor. Source contracts and a production build
-cover these rules; rendered narrow-width inspection remains **NOT RUN** because the shared browser
-runtime exposed no browser session.
+name so the brand, status and menu fit the 320-pixel floor.
+
+Rendered narrow-width inspection is now **RUN**, in Chromium, at 320, 375, 414 and 768 CSS pixels
+across all four product modes, and it found two defects that the source contract and the production
+build had both passed. Neither was visible above the compact breakpoints, which is the argument for
+the measurement rather than for the rule.
+
+First, the shared canvas rule `.workspace-main > *` also selected the two `sr-only` children — the
+workspace heading and the polite live-status paragraph. Giving them `width: min(100%, 112rem)` and
+`margin-inline: auto` overrode the one-pixel clipped box that makes them screen-reader-only, and
+because they are absolutely positioned with no positioned ancestor they escaped the workspace's own
+clipping and widened the document. Every workspace scrolled horizontally by 14 pixels at a 320-pixel
+viewport. The rule now excludes `.sr-only`.
+
+Second, the below-480-pixel reflow collapsed `grid-cols-2..5` to one explicit track but left
+`col-span-*` children untouched. A child spanning two columns of a one-column grid causes the
+browser to create an implicit second track, so the two-column layout returned while the declared
+template still read as one column. Spans are now released with the tracks. The same pass found that
+the 11/12-pixel metadata floor covered `text-[10px]` and `text-[11px]` but never `text-[9px]`, which
+is used across Acquire, the lineage nodes and the capability profile; that step is now raised too.
+
+The inspection asserts measured layout, not restated CSS: document scroll width, content past the
+right edge that no ancestor scrolls, computed font size on every text-owning element, rendered
+control height, header containment, and both the used track count and the rendered row occupancy of
+each collapsed grid. It also drives the drawer — scrim, scroll lock, focus placement, the Tab loop,
+Escape and outside-click dismissal and focus restoration — and captures 21 named viewport artefacts.
+Two boundaries are stated rather than claimed: the sticky record/study context is **not** covered,
+because it renders only once a record or study is selected and no workspace reached by this
+inspection selects one, so its pinning remains a source-level contract only; and Plotly label floors
+are **not** covered, because those axes exist only after a transform has run against real data.
+Below 352 pixels the drawer occupies the full viewport width and outside-click dismissal is
+unavailable by construction — Escape, the trigger and selection remain, which is why the inspection
+treats none of them as optional. This is not an accessibility conformance audit; TG18.4 owns
+rendered assistive-technology acceptance.
 
 ## 3.12 HTTP API Surface
 

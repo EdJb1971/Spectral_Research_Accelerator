@@ -194,7 +194,17 @@ def test_global_keyboard_focus_and_reduced_motion_are_not_panel_options():
     assert ":focus-visible" in css and "outline: 3px solid" in css
     assert ".skip-link:focus" in css
     assert "prefers-reduced-motion: reduce" in css
-    assert ".workspace-main > *" in css and "--workspace-max" in css
+    # The canvas rule must exclude `sr-only` children.  Giving the workspace heading and the
+    # live-status paragraph a real width and `margin-inline: auto` overrides the 1px clipped box
+    # that makes them screen-reader-only; being absolutely positioned, they then escape the
+    # workspace's clipping and widen the document by 14px at every viewport (TG18.1).
+    assert ".workspace-main > *:not(.sr-only)" in css and "--workspace-max" in css
+    assert ".workspace-main > * {" not in css
+    # The metadata floor covers every legacy sub-11px step, not only 10 and 11.
+    assert '.workspace-main [class~="text-[9px]"]' in css
+    assert '.workspace-main [class~="text-[10px]"]' in css
+    # Collapsing tracks without releasing `col-span-*` leaves an implicit column behind.
+    assert "grid-column: auto" in css
     assert ".workspace-main .grid.grid-cols-2" in css
     assert "grid-template-columns: minmax(0, 1fr)" in css
     assert ".workflow-nav-scrim" in css

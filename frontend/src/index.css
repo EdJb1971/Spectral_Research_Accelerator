@@ -73,7 +73,13 @@ button, input, select, textarea {
   scroll-padding-top: 4rem;
 }
 
-.workspace-main > * {
+/* The shared scientific canvas. `sr-only` children are excluded deliberately: giving the
+ * workspace heading and the live-status paragraph a real width and `margin-inline: auto`
+ * overrides the 1px clipped box that makes them screen-reader-only, and because they are
+ * absolutely positioned with no positioned ancestor they then escape this element's own
+ * clipping and widen the document. At 320px that was a 14px horizontal scroll on every
+ * workspace, visible only in a rendered narrow viewport (TG18.1). */
+.workspace-main > *:not(.sr-only) {
   width: min(100%, var(--workspace-max));
   margin-inline: auto;
 }
@@ -84,6 +90,11 @@ button, input, select, textarea {
 
 .workspace-main :where(code, [class~="font-mono"]) {
   overflow-wrap: anywhere;
+}
+
+.workspace-main [class~="text-[9px]"] {
+  font-size: 0.6875rem;
+  line-height: 1rem;
 }
 
 .workspace-main [class~="text-[10px]"] {
@@ -249,6 +260,17 @@ button, input, select, textarea {
   .workspace-main .grid.grid-cols-4,
   .workspace-main .grid.grid-cols-5 {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* Collapsing the track count is not enough on its own. A `col-span-2` child of a grid that
+   * now declares one explicit column is placed across two, which makes the browser create an
+   * implicit second track and rebuilds the very layout this rule removes - silently, because
+   * the declared template still reads as one column. Spans are released with the tracks. */
+  .workspace-main .grid.grid-cols-2 > *,
+  .workspace-main .grid.grid-cols-3 > *,
+  .workspace-main .grid.grid-cols-4 > *,
+  .workspace-main .grid.grid-cols-5 > * {
+    grid-column: auto;
   }
 
   .workspace-main :where(.flex) {
