@@ -8660,3 +8660,123 @@ current tree. The arithmetic reconciles exactly: 3429 + 54 (T4E.1's
 `test_spectral_constellation.py`, 45 test functions of which two are parametrised over five and
 six cases) = 3483. D90's fix added no test case of its own; its regressions live inside that file.
 `git diff --check` clean.
+
+## T4E.2 -- the invariant signature, and the benchmark with no axis
+
+`src/analysis_engine/spectral_invariance.py`, verified by `src/tests/test_spectral_invariance.py`
+(45 test functions, 53 cases, 33.9 s). Everything below is measured on this tree.
+
+### What the toggle costs, on the vortex pass
+
+`compare_scale_modes` runs the same 135-constellation pass with scale invariance off and on:
+
+| | scale-specific | scale-invariant |
+|---|---|---|
+| geometry keys on | `distance` (TG3.3) | `shape_ratio` (TG3.4 `relative_geometry`) |
+| signed | **135** | **48** |
+| refused | 0 | **87**, all cardinality 2 |
+| axis refused | 87 (every pair) | 0 |
+| invariant to | translation, rotation, reflection | translation, rotation, reflection, **rescaling** |
+| crosses a domain boundary | no -- scales in cells | yes -- every entry dimensionless |
+
+Turning the universality hook on costs every pair and nothing else: a scale-free shape is a ratio
+between separations, and a pair has one separation whose ratio to itself is 1 for every pair in
+every domain. The comparison deliberately stops there. It does **not** report how many distinct
+configurations each mode sees, because that is a count of clusters, a cluster needs a tolerance,
+and a tolerance calibrated rather than chosen is T4E.3.
+
+### Invariance, measured on exact geometry
+
+The reference is a scalene triangle -- no symmetry, so exactly one correspondence recovers it --
+placed by hand so the truth carries no noise. In **both** modes the signature vector is identical
+to floating-point precision (`abs=1e-9`, `1e-8` after a rotation) under:
+
+*   translation by (311, -207) cells;
+*   rotation by 17, 90 and 233.5 degrees;
+*   reflection;
+*   all five non-identity relabellings of the three members.
+
+Two further measurements separate the modes:
+
+*   a **uniform** rescaling by 0.5, 2.0 and 7.5 leaves the scale-invariant vector unchanged;
+*   an estimator that **misses** a rescaling -- positions doubled, recorded scales left where they
+    were -- moves the scale-specific geometry by exactly a factor of two and leaves the
+    scale-invariant vector unchanged. That is TG3.4's measured drift reproduced as arithmetic
+    rather than re-measured: on the real pipeline the miss is 4.8% at `scale_factor=3` against a
+    3.3% noise floor, which is why `distance` is not registered as rescaling-invariant.
+
+### The finding: `planted_configuration` is equilateral, so it has no principal axis
+
+The specification asks for "bearings measured relative to the constellation's own principal
+axis". The benchmark this programme supplies for invariance -- the one TG3.4's `4E.invariance`
+gate runs on -- is an equilateral triangle, whose position covariance is isotropic. Measured over
+**24 field-noise realisations** of the same planting, through the real extraction pipeline:
+
+| quantity | measured |
+|---|---|
+| anisotropy `lambda_1 / lambda_2` | **1.0077 to 1.0421** |
+| recovered axis angle | **0.78 to 158.08 degrees** |
+| circular standard deviation of that angle (mod 180) | **~49.8 degrees** |
+| shape ratios over the same replicates | reproduce to **0.218%** |
+
+The shape is stable to a fifth of a percent and the axis it implies is uniform noise. A bearing
+block written without a guard would have reported a confident angle for every one of those 24
+realisations, all of them different, on the exact configuration nominated for testing invariance.
+
+`AXIS_ISOTROPY_FLOOR = 1.0421` is that measurement -- the largest anisotropy a known-isotropic
+configuration produced under noise -- in the same spirit as TG3.4's `calibrate_match_tolerance`:
+an operating point is what the noise did, not what an author thought reasonable.
+`calibrate_axis_admission` re-measures it, and a test asserts the module's constant is the number
+the measurement produces. Clearing the floor is a **minimum, not a precision claim**: a
+configuration just above it still has a poorly determined angle. The vortex triples clear it by
+two orders of magnitude -- smallest observed anisotropy **85.22**, median 183.28 -- which is why
+the bearings on this record are usable at all, and the reason is that the four tracks are the
+flanks of one vortex and lie nearly on a line.
+
+### What each block is, and is not
+
+*   **Geometry** -- one value per unordered pair, from TG3.4's matcher rather than recomputed.
+    Both matchers refuse a configuration outright rather than recording a hole, so there is no
+    partial shape.
+*   **Bearings** -- folded to [0, 90] degrees, because an edge is unordered and an axis has no
+    sign. The fold makes the signature invariant to reflection as well as rotation. That is a
+    consequence of the grid declaring no orientation (`has_orientation: False` on every 4D
+    feature), not a preference; telling a configuration from its mirror image would need an
+    orientation convention this record does not have. At three members the bearings are a
+    *function of* the geometry block -- three separations determine a triangle up to similarity
+    and reflection -- so they add no degree of freedom and are kept as the readable form.
+*   **Strength** -- each member's magnitude over its own band's RMS, then over the geometric mean
+    of the members'. The band normalisation is not optional: T4E.1 measured the raw and
+    band-normalised ratios disagreeing about *which member is stronger*. A member with no
+    recorded band RMS is refused.
+*   **Scale** -- absolute, in cells, inside the scale-specific vector; ratios only inside the
+    scale-invariant one. This is the second place the toggle bites, and it is the difference
+    between "does this recur at *this* scale?" and "does this recur at *other* scales?". It is
+    also why only one mode crosses a domain boundary, as a fact about the vector rather than a
+    policy about it: a length in cells has no ratio to a length in metres. The absolute scales
+    are carried beside the vector in both modes.
+
+### The canonical order
+
+The vector is minimised lexicographically over all node correspondences (six at most). A test
+exhibits why sorting each block separately would be wrong: two configurations that are the same
+triangle with the same three strengths *attached to different vertices* agree on sorted geometry
+and on sorted strengths, and disagree on the minimised vector, because no single correspondence
+makes both blocks true at once.
+
+### What this does not establish
+
+Nothing here is a match, a cluster, a support count, a null or a p-value. Every configuration
+signed is synthetic: the vortex sequence and hand-placed triangles. Nothing has been signed from
+ERA5 or from any second domain, so the cross-domain comparability of the scale-invariant mode is
+a property of its units and not a demonstration. The universality hook is **exercised and not
+evidenced**: the tracked bank has two levels, so every triple's scale block is one of two ratio
+patterns and "does this configuration recur at *other* scales?" has almost no room to be answered
+on this record. And a bearing that clears the isotropy floor is admitted, not certified -- the
+floor says the elongation is not noise, not that the angle is accurate.
+
+**Full backend suite, after T4E.2.** **3536 passed, 4 skipped, 1 xfailed** in 2,787.05 s (46:27),
+exit code 0. This supersedes 3483 as the last measured full-suite figure and measures the current
+tree. The arithmetic reconciles exactly: 3483 + 53 (T4E.2's `test_spectral_invariance.py`, 45 test
+functions of which three are parametrised) = 3536. T4E.2 found no defect, so the ledger is
+unchanged at D1-D90. `git diff --check` clean.

@@ -339,6 +339,13 @@ class FrameConstellation:
     `graph` is the comparable half and the only half a match or a cluster may read.
     `nodes` and `relations` are in this record's units and are aligned with the graph by
     position: `nodes[i]` is the track behind `graph.attributes[i]`.
+
+    `features` holds the `SpectralFeature` each node was built from, in the same order and
+    carried for the same reason the nodes are: a later pass that wants a quantity this one
+    did not compute -- T4E.2's invariant signature is the first -- must measure it from the
+    coefficient rather than reconstruct it from a summary that has already rounded. It is
+    absent from `describe()`, because a receipt records what was measured and the features
+    are the input to a measurement, not one.
     """
 
     graph: AttributedGraph
@@ -346,8 +353,16 @@ class FrameConstellation:
     relations: Tuple[TrackRelation, ...]
     time: float
     time_units: Optional[str]
+    features: Tuple[Any, ...] = ()
 
     def __post_init__(self) -> None:
+        if self.features and len(self.features) != len(self.nodes):
+            raise InvalidParameterError(
+                "FrameConstellation.features", len(self.features),
+                "one feature per node (%d), or none at all. The features are kept so a later "
+                "pass can re-measure the configuration rather than re-derive it from the "
+                "carried summary, and a mismatch would measure one track through another "
+                "track's coefficient" % len(self.nodes))
         if len(self.nodes) not in ALLOWED_CARDINALITIES:
             raise InvalidParameterError(
                 "FrameConstellation.nodes", len(self.nodes),
@@ -745,7 +760,8 @@ def extract_constellations(
                               for a, b in itertools.combinations(range(size), 2))
                 built.append(FrameConstellation(
                     graph=graph, nodes=tuple(picked), relations=pairs, time=frame,
-                    time_units=time_units))
+                    time_units=time_units,
+                    features=tuple(features[i] for i in chosen)))
                 if len(built) > int(max_constellations):
                     raise InvalidParameterError(
                         "extract_constellations.max_constellations", len(built),

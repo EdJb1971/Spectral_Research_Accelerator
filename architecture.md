@@ -6797,6 +6797,89 @@ is no graph algorithm to run -- the graphs are complete, with one edge or three 
 of the tree is built from. If T4E.3's clustering needs real graph algorithms the dependency can be
 added there, against a use.
 
+### 3E.2 The invariant signature, and the axis the benchmark does not have (`src/analysis_engine/spectral_invariance.py`, T4E.2)
+
+T4E.2 asks for invariance by construction: distances normalised by the members' scales, bearings
+relative to the configuration's own principal axis, strengths normalised within the
+configuration, and scale invariance as a **separate, explicit toggle** that can be run on and
+off and compared. Two of those four already existed, and TG3.4 had already measured that one of
+them does not do what the specification assumes.
+
+*   *"Distances normalised by the participating features' scales"* is TG3.3's `distance`
+    relation. TG3.4 measured it on real extracted features and it is **not** rescaling-invariant:
+    it divides a separation by an *estimated* spatial scale, the estimate runs about +3.6% high
+    at sigma 3 and about -2.6% low at sigma 18, and the whole of that drift lands in the
+    quotient -- 4.8% movement at `scale_factor=3` against a 3.3% noise floor. TG3.4 left it out
+    of `MATCHERS` on purpose, because a registry entry carries a declaration and this one has
+    none it can demonstrate.
+*   What does survive a rescaling is a separation divided by *another separation*: TG3.4's
+    `relative_geometry`, measured to reproduce to 0.37%. Its price is three features. Two
+    features have one separation, and its ratio to itself is 1 for every configuration in
+    every domain.
+
+So the toggle is not a normalisation this module invents; it is a **choice between two matchers
+that already exist**, and the honest content of the slice is the choice, the two blocks neither
+matcher measures, and the number attached to what the choice costs.
+
+`scale_invariant=False` -- *scale-specific*. Geometry is `distance`. Available at cardinality 2
+and 3; translation-, rotation- and reflection-invariant; **not** rescaling-invariant, and it
+says so in its own receipt rather than in a footnote. The scale block carries the members'
+absolute scales in cells, so the signature stops at the domain boundary.
+
+`scale_invariant=True` -- *the universality hook*. Geometry is `shape_ratio`. No estimated
+quantity enters, so rescaling invariance joins the other three. The scale block keeps only the
+ratios between the members' scales, so every entry is dimensionless and this is the only mode
+that could be compared with a configuration from another domain.
+
+**What the toggle costs, measured on the vortex pass: 87 of 135 constellations -- every pair.**
+That is the comparison the specification asks for, and `compare_scale_modes` returns it as a
+number rather than an argument. It deliberately does *not* count how many distinct
+configurations each mode sees: that is a count of clusters, it needs a tolerance calibrated
+against replicates rather than chosen, and it is T4E.3.
+
+**The bearings, and what the slice found.** "Bearings measured relative to the constellation's
+own principal axis" assumes the configuration has one. `planted_configuration` -- the benchmark
+this programme supplies for invariance, and the one TG3.4's gate runs on -- is an **equilateral**
+triangle, so its position covariance is isotropic and the axis is whatever the noise decided.
+Measured over 24 field-noise realisations of the same planting, through the real extraction
+pipeline: the anisotropy `lambda_1 / lambda_2` stayed between 1.0077 and 1.0421 while the
+recovered axis angle scattered from 0.78 to 158.08 degrees -- effectively uniform over the
+half-circle, a circular standard deviation near 50 degrees -- and the shape ratios over the same
+replicates reproduced to 0.218%. A bearing block written without a guard would have emitted a
+confident angle that was pure noise, on the exact configuration the roadmap nominates for
+testing invariance. `AXIS_ISOTROPY_FLOOR` is that measurement rather than a choice, in the same
+spirit as TG3.4's calibrated match tolerance, and `calibrate_axis_admission` re-measures it.
+Clearing it is a minimum and not a precision claim. The vortex triples clear it by two orders of
+magnitude -- the smallest observed anisotropy is 85.22 -- which is why the bearings on this
+record are usable at all.
+
+Three further properties are stated in the module because the obvious reading of each is wrong:
+
+*   **A bearing is folded to [0, 90] degrees**, because an edge is unordered and a principal
+    axis has no sign. That makes the signature invariant to reflection as well as rotation --
+    a consequence, not a preference. Telling a configuration from its mirror image would need an
+    orientation convention on the grid, and these features declare none (`has_orientation:
+    False` on every one of them), which is the refusal 3D.3 already made when it declined to
+    give a compass word to a grid that never said which way was north.
+*   **At two and three nodes the bearings add no degree of freedom.** Three points' pairwise
+    separations determine the triangle up to similarity and reflection, so the angles are a
+    function of the geometry block rather than an addition to it. They are kept because they are
+    the readable form and because 4F must project a configuration back onto a map.
+*   **The canonical order is a minimisation over correspondences, not a sort.** The vector is
+    minimised lexicographically over all node permutations -- six at most, since the enumeration
+    stops at three. Sorting each block on its own is cheaper and wrong: two configurations can
+    then agree on sorted separations and sorted strengths with no single correspondence that
+    makes both true at once, which is a matcher reporting an agreement it cannot exhibit.
+
+The strength block divides each member's magnitude by its own band's RMS before normalising
+within the configuration, for the reason 3E.1 recorded: a raw ratio across two bands is a ratio
+of filter gains, and on this record the raw and normalised ratios disagree about which member is
+the stronger. A member with no recorded band RMS is refused rather than compared.
+
+Nothing in this module reports a p-value, a null, a match or a support count. A signature is a
+description of one configuration in one frame; two equal signatures are two descriptions that
+agree, and deciding whether that agreement means anything is T4E.3.
+
 ## 4. Database Schema and State Tracking (`src/database/models.py`, `session.py`, `migrate.py`)
 
 The database layer (`src/database/`) is fully configured using SQLAlchemy and targets a persistent or in-memory SQLite database (`spectral_earth.db`). 
@@ -6970,7 +7053,7 @@ See `VERIFICATION.md` for the captured command output behind every statement her
 | Item | Status |
 |---|---|
 | Python venv + dependencies | installed (torch 2.13.0+cu130, numpy 2.2.6, pydantic 1.10.26, SQLAlchemy 2.0.52, xarray 2025.6.1, FastAPI 0.110.3) |
-| Backend test suite | **3483 passed, 1 xfailed** (plus 4 skipped: the opt-in live GCS read, opt-in live store probe, opt-in live Argo acceptance, and opt-in live TESS/MAST acceptance). Two further tests failed in that run and are not counted above: `test_claimed_test_count_is_at_least_the_function_count`, which was the stale 2745 claim this run replaced, and **D80**, a guard pinning a served capability claim that TG17.6 had made false. Both were fixed immediately afterwards and re-verified in a targeted 304-test run including the full documentation audit, so the next full run should read 3108. Every slice since has been measured by a full run: **3362** as of the D87 fix, **3400** after T4D.1/T4D.2/D88, **3429** after T4D.3/D89, and **3483** on the current tree after T4E.1/D90 in 2,058.00 s (34:17), exit code 0. That is the figure above and it is current. (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17, 351 after T3.5.6, 379 after T3.5.15, 407 after T3.5.19, 449 after T4C.5, 709 after T4A.4, 781 after T4B.4, 855 after T4C.5, 859 after T4C.5c, 882 after T5.1a CPU acceptance, 883 after RTX acceptance, 890 after portable profiles, 911 after T5.1b/D44, 917 after T5.1c, 933 after T5.1d/D45, 946 after T5.1e, 955 after T5.2a, 957 after T5.2b, 962 after T5.3a, 969 after T5.3b, 981 after T5.2c offline acceptance, 985 after T5.2d, 1000 after T5.0a, 1008 after T5.0b, 1027 after T5.6a offline acceptance, 1042 after T5.6b cube acceptance, 1056 after T5.6c matched evaluation, 1070 after T5.6d truth matching, 1080 after T5.6e orchestration, 1089 after T5.6f portable jobs, 1094 after T5.6g reporting, 1095 after the licence guard, 1102 after T4C.5d gate readiness, 1104 after D50 storage preflight, 1106 after T4C.5e overlap evidence, 1112 after T4C.5f campaign acceptance, 1116 after T4C.5g physical preflight, 1117 after T4C.5h preregistration - the `master` freeze; then on `ed-dev`, 1375 after TG2.1, 1429 after TG2.2, 1477 after TG2.3, 1536 after TG2.4, 1577 after TG3.1, 1621 after TG3.2, 1686 after TG3.3, 1742 after TG3.4, 1787 after TG3.5, 1850 after TG4.1, 1922 after TG4.2, 1972 after TG4.3, 1986 after TG5.1, 2004 after TG5.2 and 2020 after TG5.3, 2044 after TG6.1, 2074 after TG6.2, 2112 after TG6.3, 2167 after TG7.1, 2217 after TG7.2, 2235 after TG7.3, 2236 after TG7.3 live acceptance, 2296 after TG7.4, 2321 after TG9.1/TG9.2 2334 after TG9.3, 2367 after TG8.1, 2420 after TG8.4, 2459 after TG10.1, 2503 after TG10.3, 2509 after TG10.2 2511 after TG11.0, 2521 after TG11.1, 2543 after TG11.2, 2570 after TG11.3, 2619 after TG11.4, 2661 after TG11.4b, 2667 after TG11.6, 2681 after TG11.5, 2694 after TG12.1b/TG12.1c, 2708 after TG12.2a, 2716 after TG12.1d, 2726 after TG12.2b-d, 2741 after TG13/G14 file-first ingress, and 2745 after TG15 capability routing; then 3106 at TG17.7, the first full-suite run since TG15 - the intervening G16 and G17 slices verified against targeted suites, 3362 after T4C.5m/D87, 3400 after T4D.1/T4D.2/D88, 3429 after T4D.3/D89, and 3483 after T4E.1/D90) |
+| Backend test suite | **3536 passed, 1 xfailed** (plus 4 skipped: the opt-in live GCS read, opt-in live store probe, opt-in live Argo acceptance, and opt-in live TESS/MAST acceptance). Two further tests failed in that run and are not counted above: `test_claimed_test_count_is_at_least_the_function_count`, which was the stale 2745 claim this run replaced, and **D80**, a guard pinning a served capability claim that TG17.6 had made false. Both were fixed immediately afterwards and re-verified in a targeted 304-test run including the full documentation audit, so the next full run should read 3108. Every slice since has been measured by a full run: **3362** as of the D87 fix, **3400** after T4D.1/T4D.2/D88, **3429** after T4D.3/D89, **3483** after T4E.1/D90, and **3536** on the current tree after T4E.2 in 2,787.05 s (46:27), exit code 0. That is the figure above and it is current. (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17, 351 after T3.5.6, 379 after T3.5.15, 407 after T3.5.19, 449 after T4C.5, 709 after T4A.4, 781 after T4B.4, 855 after T4C.5, 859 after T4C.5c, 882 after T5.1a CPU acceptance, 883 after RTX acceptance, 890 after portable profiles, 911 after T5.1b/D44, 917 after T5.1c, 933 after T5.1d/D45, 946 after T5.1e, 955 after T5.2a, 957 after T5.2b, 962 after T5.3a, 969 after T5.3b, 981 after T5.2c offline acceptance, 985 after T5.2d, 1000 after T5.0a, 1008 after T5.0b, 1027 after T5.6a offline acceptance, 1042 after T5.6b cube acceptance, 1056 after T5.6c matched evaluation, 1070 after T5.6d truth matching, 1080 after T5.6e orchestration, 1089 after T5.6f portable jobs, 1094 after T5.6g reporting, 1095 after the licence guard, 1102 after T4C.5d gate readiness, 1104 after D50 storage preflight, 1106 after T4C.5e overlap evidence, 1112 after T4C.5f campaign acceptance, 1116 after T4C.5g physical preflight, 1117 after T4C.5h preregistration - the `master` freeze; then on `ed-dev`, 1375 after TG2.1, 1429 after TG2.2, 1477 after TG2.3, 1536 after TG2.4, 1577 after TG3.1, 1621 after TG3.2, 1686 after TG3.3, 1742 after TG3.4, 1787 after TG3.5, 1850 after TG4.1, 1922 after TG4.2, 1972 after TG4.3, 1986 after TG5.1, 2004 after TG5.2 and 2020 after TG5.3, 2044 after TG6.1, 2074 after TG6.2, 2112 after TG6.3, 2167 after TG7.1, 2217 after TG7.2, 2235 after TG7.3, 2236 after TG7.3 live acceptance, 2296 after TG7.4, 2321 after TG9.1/TG9.2 2334 after TG9.3, 2367 after TG8.1, 2420 after TG8.4, 2459 after TG10.1, 2503 after TG10.3, 2509 after TG10.2 2511 after TG11.0, 2521 after TG11.1, 2543 after TG11.2, 2570 after TG11.3, 2619 after TG11.4, 2661 after TG11.4b, 2667 after TG11.6, 2681 after TG11.5, 2694 after TG12.1b/TG12.1c, 2708 after TG12.2a, 2716 after TG12.1d, 2726 after TG12.2b-d, 2741 after TG13/G14 file-first ingress, and 2745 after TG15 capability routing; then 3106 at TG17.7, the first full-suite run since TG15 - the intervening G16 and G17 slices verified against targeted suites, 3362 after T4C.5m/D87, 3400 after T4D.1/T4D.2/D88, 3429 after T4D.3/D89, 3483 after T4E.1/D90, and 3536 after T4E.2) |
 | Ground-Truth Benchmark Suite | **29 PASS, 0 FAIL, 0 NOT_YET_RUNNABLE** (`python -m src.benchmarks`, exit 0) |
 | Frontend `npm install` + `npm run build` | passes, emits 1,395 modules + real JS/CSS assets (was: 1 module, no assets) |
 | Backend server | starts, serves OpenAPI, all smoke-tested endpoints return 200 |
@@ -6980,7 +7063,7 @@ See `VERIFICATION.md` for the captured command output behind every statement her
 TG17.9 was verified after that last full-suite figure with 21 receipt tests, all 157 frontend
 contract tests, all 80 orchestrator tests and all 20 documentation tests (278 focused tests across
 the four files). The production build transforms 1,408 modules and the full rendered Chromium
-suite is 33/33. The whole backend suite has since been rerun, so 3483 is the last measured full
+suite is 33/33. The whole backend suite has since been rerun, so 3536 is the last measured full
 figure rather than being arithmetically increased from targeted runs.
 
 Earlier revisions of this document and of `roadmap.md` claimed the platform was "validated"
@@ -7332,8 +7415,9 @@ able to sit three slices out of date.
 | `test_spectral_feature.py` | 15 | T4D.1 located maxima: a planted blob recovered sub-pixel at three positions including one exactly between samples, the refinement beating the integer peak it starts from, the R13 margin excluding a detection the detector demonstrably can see, the margin recorded even when not applied, a threshold fitted over the record rather than per frame so a quiet frame reports nothing beside a loud one, frozen thresholds inherited verbatim and a threshold above the peak yielding nothing, a threshold that would accept everything refused, truncation recorded with the strongest kept rather than silently dropped, a real family reporting no phase rather than inventing zero and a complex one reporting the phase it has, a flat top as one detection at its centroid carrying its own imprecision, a feature exactly between two samples found at the midpoint, a plateau on a slope refused as a maximum, the claim boundary travelling with the detection, and every band visited and labelled |
 | `test_spectral_tracking.py` | 19 | T4D.2 linking those maxima: the two level-4 bands running the whole 24-frame sequence unbroken (D1's aliasing, absent), the transverse coordinate of every band's track within a pixel of the recorded trajectory, the velocity equal to advection plus the structure's own growth along the axis its band high-passes -- a prediction with no free parameter, checked for every band -- the coarse band excited later and never earlier, no track spanning two levels because the octave gate refuses it; and for D88 the levels of a linear-phase bank agreeing on where a blob is while the unaligned view is marked not comparable, a db2 bank refused for cross-scale linking by name with one-level-at-a-time still allowed, and a decimated family unable to declare an alignment at all; plus a separable band label never becoming an angle and the orientation gate refused on it, a complex family passing its declared angle through, a threshold crossing never reported as a significance, the representation naming the filter and not only the family, a plateau carried as positional uncertainty, domain/dataset/variable required rather than defaulted, a grid that closes in longitude refused a flat declaration, two sets of detection settings refused, a search that found nothing returning no tracking result, and the clock being every frame that was searched |
 | `test_spectral_constellation.py` | 45 | T4E.1 the bridge to TG3.3's attributed graphs: every constellation carrying a real `AttributedGraph` whose declared relations are exactly what `measurable_relations` reports, three of the eight measurable and the other five refused by name with the field each one lacks; D90 pinned on the units themselves rather than on the symptom, with `distance` measured on every pair of the pass and a scale genuinely in metres still refused so the fix cannot be read as a weakening; `succession` asserted false for every ordered pair of every constellation, which is why the onsets are carried separately; the enumeration checked against the combinatorics of its own frame census frame by frame and 318 nodes checked against the tracks they came from; the flank separation of two bands following one vortex, `same_band` on every pair, and the claim boundary naming both; the raw and band-normalised strength ratios disagreeing about the sign of the comparison, with the band RMS recovered exactly from the threshold and its sigma, and a detection that recorded no threshold refused a normalised strength and saying so; left-censoring set from the tracker's own clock, the nine-frame offset carried as a bound, and an uncensored pair carrying no note; the plane angle checked against six hand-built displacements, declared not to be a compass in its own receipt, refused between two coincident nodes, and wrapped on a periodic axis with two tracks disagreeing about where it closes refused; rates local to the node so two frames of one track differ, a single sighting given no rate, velocity or scale velocity, a held level reporting exactly zero rather than a least-squares residue, and a signed radial velocity; and the refusals -- only pairs and triples, a frame over the node cap refused rather than sampled, a budget overrun refused whole rather than returned as a prefix, R19 left to TG3.3 rather than re-implemented, D88 registration required across scales but not within one, a missing registration receipt not treated as a failing one, a node with no scale refused, the carried half required to be the same size as the comparable half, and the absent self-loop check shown to be unreachable rather than added |
+| `test_spectral_invariance.py` | 45 | T4E.2 the invariant signature: the principal axis checked against the covariance eigendecomposition it stands for over 50 random configurations, exactly collinear points reporting an infinite anisotropy rather than a failure, and three axes refused rather than projected; the `planted_configuration` benchmark measured over 24 field-noise realisations to be isotropic with an axis angle spanning 0.78 to 158.08 degrees, the module's isotropy floor asserted to be the number that measurement produced, a configuration at the benchmark's own anisotropy refused an axis by name, and the vortex triples shown to clear the floor by two orders of magnitude; invariance measured rather than declared, with translation, three rotations, reflection and every relabelling asserted to leave the signature vector identical to floating-point precision in both modes; a uniform rescaling leaving the scale-free shape alone while an estimator that missed the rescaling moves the scale-specific geometry by exactly the factor it missed; the canonical order shown to matter, with two configurations that agree on independently sorted blocks and have no correspondence making both true at once; the toggle priced at 87 of 135 with the loss attributed by cardinality; a position in metres beside a scale in cells refusing the scale-specific mode and signing in the scale-invariant one, which is what R19's own refusal message tells the caller to do; and the refusals -- a pair asked for a scale-free shape, a pair's axis refused for a different reason than an isotropic triple's, a constellation stripped of its features, a member with no band RMS, an unknown mode, blocks that disagree about cardinality, a floor calibrated on one realisation or on collinear replicates, and the mixed-unit refusal left to the extractor rather than copied |
 | `test_spectral_narrative.py` | 25 | T4D.3 the prose, and what it may not say: every number in a sentence checked against the track it came from including the spoken speed against `Track.speed()` for all four tracks, the subject of every sentence being the coefficient maximum and not the structure, and the frame count being of frames searched rather than frames found; no track of a growing vortex claiming its own scale doubled -- each holding one level at a scale velocity of exactly zero with the word absent from the prose -- while the growth that did happen is measured across bands, level 4 weakening as level 5 strengthens and is first excited nine frames later, offered as a candidate precursor relationship carrying that it was not tested against a null and claims no merge, with one band supporting no ordering at all; a cartesian grid refused every compass word and given axis-relative wording, the sign that makes a row northward read from the grid so one displacement on two grids gives opposite points, the cosine of the latitude shortening a degree of longitude before the bearing is taken so 60 degrees north gives 26.6 and not 45, a track that returned to where it started given no bearing, and the missing-`lat0` branch shown to be unreachable rather than added; energy reported as the square under its own name so the roadmap's own 43% becomes 104.5%, and a change from zero refused rather than rendered infinite; the guard using the programme's one list of words for every entry in it, a causal word in a caller's own dataset name refused before a reader sees it, the guard's own limit asserted so a substring match cannot creep in, and the entitlement allowed to name the boundary the sentences may not cross and appearing exactly once however many tracks there are; plus a single sighting supporting no direction, speed or growth, a search that found nothing refused as an empty list of sentences, and the structural signature naming no variable, dataset or units |
-  | **total** | **3091** | |
+  | **total** | **3136** | |
 ### 7.2h A surrogate null that was not the null it claimed (T4C.5)
 
 The most instructive defect of the project so far, because it passed every structural check.
