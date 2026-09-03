@@ -83,6 +83,12 @@ class NullRefusal(InvalidParameterError):
         super().__init__(requirement, subject, detail)
 
 
+# Above this size the valid reassignments are no longer enumerated exhaustively, and a
+# uniform draw would have to be argued for rather than demonstrated. No declared family
+# approaches it: the largest currently declared inventory names six pairings.
+MAX_REASSIGNABLE_PAIRINGS = 8
+
+
 def _array_digest(*arrays: np.ndarray) -> str:
     digest = hashlib.sha256()
     for value in arrays:
@@ -315,8 +321,67 @@ def within_group_clock_shift(trajectory: StructuralTrajectory, seed: int, *,
          "groups": float(len(np.unique(groups)))})
 
 
-def reassign_scale_partners(pairings: Sequence[Tuple[Any, Any]], seed: int) \
-        -> Tuple[Tuple[Any, Any], ...]:
+def _is_same_member(left: Any, right: Any) -> bool:
+    """Whether two inventory members are the same record, not merely similar ones."""
+    if left is right:
+        return True
+    try:
+        return bool(left == right)
+    except Exception:  # pragma: no cover - members that decline equality are distinct by identity
+        return False
+
+
+def _valid_reassignments(pairs: Sequence[Tuple[Any, Any]]) -> Tuple[Tuple[int, ...], ...]:
+    """Every *distinguishable* reassignment of the inventory's right members.
+
+    An assignment is valid only where, for every pairing, the substituted partner is neither the
+    partner it already had nor the pairing's own left member. The first would return the
+    observation as its own surrogate; the second would compare a record against itself, whose
+    similarity is maximal by construction. Both would be counted as evidence that the null could
+    not be rejected.
+
+    Assignments are then deduplicated by the surrogate they *produce*, not by the index
+    permutation that produced it. Where an inventory names the same record in several pairings,
+    many permutations yield one surrogate; counting them separately would both overstate how much
+    the null explores and bias a uniform draw towards whichever surrogate has the most spellings.
+    """
+    lefts = [left for left, _ in pairs]
+    rights = [right for _, right in pairs]
+    member_of: list = []
+    for position, right in enumerate(rights):
+        same = [member_of[earlier] for earlier in range(position)
+                if _is_same_member(right, rights[earlier])]
+        member_of.append(same[0] if same else max(member_of, default=-1) + 1)
+    allowed = [
+        tuple(candidate for candidate in range(len(pairs))
+              if member_of[candidate] != member_of[position]
+              and not _is_same_member(rights[candidate], lefts[position]))
+        for position in range(len(pairs))
+    ]
+    if any(not candidates for candidates in allowed):
+        return ()
+    distinct: Dict[Tuple[int, ...], Tuple[int, ...]] = {}
+    order: list = []
+    taken = set()
+
+    def extend(position: int) -> None:
+        if position == len(pairs):
+            distinct.setdefault(tuple(member_of[index] for index in order), tuple(order))
+            return
+        for candidate in allowed[position]:
+            if candidate in taken:
+                continue
+            taken.add(candidate)
+            order.append(candidate)
+            extend(position + 1)
+            order.pop()
+            taken.discard(candidate)
+
+    extend(0)
+    return tuple(distinct.values())
+
+
+def reassign_scale_partners(pairings: Sequence[Tuple[Any, Any]], seed: int)         -> Tuple[Tuple[Any, Any], ...]:
     """Break which native scales were compared, and change nothing about either record.
 
     Scale/shape mode has no shared clock to shift, so its null cannot be a clock shift. What the
@@ -325,6 +390,21 @@ def reassign_scale_partners(pairings: Sequence[Tuple[Any, Any]], seed: int) \
     record keeps its values, its support, its gaps and its native scale — the surrogate differs
     from the observation only in the correspondence being tested, which is the only thing the
     claim was about.
+
+    **The reassignment is of pairings, not of positions (D91).** Deranging the positions of the
+    right members guarantees only that each moved somewhere else in the list. Where an inventory
+    names the same record as the right member of more than one pairing — which every all-pairs
+    inventory does — a member can move position while the pairing it produces is identical to the
+    one it replaced. That surrogate equals its observation, satisfies the ``>=`` of a one-sided
+    surrogate p-value, and so raises that member's p-value floor towards 1 no matter how strong
+    the effect. The bias is conservative, which is why it has to be excluded here rather than
+    noticed downstream: it presents as a well-behaved safeguard result rather than as a fault.
+
+    **An inventory that admits no valid reassignment is refused, not approximated.** Three
+    records compared all-against-all is such an inventory: one of its three pairings has no
+    substitute partner that is neither its own nor itself. That is a real property of the
+    declared family and not an error to route around — returning the observation, or relaxing
+    the constraint to get an answer, would be manufacturing a null the inventory cannot support.
     """
     pairs = [(left, right) for left, right in pairings]
     if len(pairs) < 2:
@@ -332,18 +412,31 @@ def reassign_scale_partners(pairings: Sequence[Tuple[Any, Any]], seed: int) \
             "pairings", len(pairs),
             "at least two declared correspondences to reassign between. One pairing has no "
             "alternative partner, so its null is the observation itself")
-    rights = [right for _, right in pairs]
+    if len(pairs) > MAX_REASSIGNABLE_PAIRINGS:
+        raise NullRefusal(
+            "pairings", len(pairs),
+            f"at most {MAX_REASSIGNABLE_PAIRINGS} declared correspondences, the size at which "
+            "the valid reassignments can still be enumerated exactly and drawn from uniformly. "
+            "A larger inventory needs a sampler whose uniformity has been demonstrated, not an "
+            "approximation adopted silently")
+    assignments = _valid_reassignments(pairs)
+    if not assignments:
+        raise NullRefusal(
+            "pairings", len(pairs),
+            "an inventory admitting a reassignment in which every pairing changes and no record "
+            "is paired with itself. This one admits none, so it has no surrogate distinguishable "
+            "from its observation and cannot be tested under this null")
+    if len(assignments) < 2:
+        raise NullRefusal(
+            "pairings", len(pairs),
+            "an inventory admitting more than one distinguishable reassignment. This one admits "
+            "exactly one, so every replication returns the same surrogate: a null that is a "
+            "constant rather than a distribution, whose p-value can take only two values "
+            "regardless of how many surrogates are paid for")
     rng = np.random.default_rng(seed)
-    order = np.arange(len(rights))
-    # A derangement, because a reassignment that leaves a pairing where it was has not tested
-    # it: that member's surrogate would be the observation and its p-value a foregone 1.0.
-    for _ in range(64):
-        rng.shuffle(order)
-        if all(int(order[index]) != index for index in range(len(order))):
-            break
-    else:  # pragma: no cover - a derangement of two or more elements is found immediately
-        order = np.roll(np.arange(len(rights)), 1)
-    return tuple((pairs[index][0], rights[int(order[index])]) for index in range(len(pairs)))
+    order = assignments[int(rng.integers(len(assignments)))]
+    rights = [right for _, right in pairs]
+    return tuple((pairs[index][0], rights[order[index]]) for index in range(len(pairs)))
 
 
 def global_value_shuffle(*args: Any, **kwargs: Any) -> Any:

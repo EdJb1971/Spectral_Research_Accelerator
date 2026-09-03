@@ -25,7 +25,8 @@ from src.core.experiment_manifest import (CrossDomainExperimentSpec, canonical_b
 from src.core.family import FamilyUnaffordableError
 from src.core.structural_nulls import (NULL_FAMILIES, NULL_FEATURES, NullRefusal, bind_null,
                                        circular_clock_shift, nulls_for_mode,
-                                       reassign_scale_partners, whole_cycle_clock_shift,
+                                       reassign_scale_partners, _valid_reassignments,
+                                       whole_cycle_clock_shift,
                                        within_group_clock_shift)
 
 
@@ -443,6 +444,75 @@ def test_the_scale_shape_null_reassigns_partners_and_alters_no_record():
     assert [left for left, _ in reassigned] == ["a", "b", "c", "d"]
     assert sorted(right for _, right in reassigned) == [1.0, 2.0, 4.0, 8.0]
     assert all(before[1] != after[1] for before, after in zip(pairs, reassigned))
+
+
+def _all_pairs(*members):
+    return [(left, right) for index, left in enumerate(members) for right in members[index + 1:]]
+
+
+def test_every_pairing_changes_and_no_record_is_paired_with_itself():
+    """D91. Deranging positions is not deranging pairings, and the difference is a p-value floor.
+
+    The right members of an all-pairs inventory repeat, so a shuffle guaranteeing only
+    `order[i] != i` still returns pairings identical to the ones they replaced. A surrogate equal
+    to its observation satisfies the `>=` of the one-sided p-value, so those members could not
+    reject at any effect size — conservatively, and therefore invisibly. Measured on the family
+    that exposed it: six pairings over an inventory whose three right members each appear twice.
+    """
+    pairs = [(left, right) for left in ("a", "b") for right in ("x", "y", "z")]
+    for seed in range(200):
+        reassigned = reassign_scale_partners(pairs, seed)
+        assert [left for left, _ in reassigned] == [left for left, _ in pairs]
+        assert sorted(right for _, right in reassigned) == sorted(right for _, right in pairs)
+        for (left, before), (_, after) in zip(pairs, reassigned):
+            assert after != before, "a pairing survived the null and is its own surrogate"
+            assert after != left, "a record was paired with itself, whose similarity is maximal"
+
+
+def test_the_draw_is_uniform_over_exactly_the_distinguishable_reassignments():
+    """Every distinguishable surrogate is reachable and no other is, so the null is the declared one."""
+    pairs = [("a", 1.0), ("b", 2.0), ("c", 4.0), ("d", 8.0)]
+    rights = [right for _, right in pairs]
+    reached = {tuple(right for _, right in reassign_scale_partners(pairs, seed))
+               for seed in range(400)}
+    assert reached == {tuple(rights[index] for index in order)
+                       for order in _valid_reassignments(pairs)}
+    assert len(reached) == 9, "the derangements of four distinct partners"
+
+
+def test_an_inventory_admitting_no_reassignment_is_refused_rather_than_answered():
+    """Two pairings sharing a right member have no derangement, and that is the family's property."""
+    with pytest.raises(NullRefusal, match="admits none"):
+        reassign_scale_partners([("a", "c"), ("b", "c")], 20260903)
+
+
+def test_an_inventory_with_one_reachable_surrogate_is_refused_as_a_constant():
+    """A null that returns the same surrogate every replication is not a distribution.
+
+    Its p-value can only be the floor or 1.0 however many surrogates are paid for, so reporting
+    one would price a family for precision the null cannot deliver.
+    """
+    with pytest.raises(NullRefusal, match="more than one distinguishable"):
+        reassign_scale_partners([("a", "b"), ("a", "c"), ("d", "c"), ("d", "b")], 20260903)
+
+
+def test_the_declared_g17_inventories_cannot_be_tested_under_the_scale_shape_null():
+    """The concrete consequence for G17, recorded because it is a finding and not a detail.
+
+    Four domains compared all-against-all admit exactly one distinguishable reassignment. Removing
+    `order_book`, which declines this null under D83, leaves three domains whose inventory admits
+    none at all. Neither the declared quartet nor the admitting triple can carry this null, so a
+    scale/shape calibration over an all-pairs *domain* family is not available at either size.
+    """
+    quartet = _all_pairs("argo_float", "reanalysis", "tess_lightcurve", "order_book")
+    assert len(_valid_reassignments(quartet)) == 1
+    with pytest.raises(NullRefusal, match="more than one distinguishable"):
+        reassign_scale_partners(quartet, 20260903)
+
+    triple = _all_pairs("argo_float", "reanalysis", "tess_lightcurve")
+    assert _valid_reassignments(triple) == ()
+    with pytest.raises(NullRefusal, match="admits none"):
+        reassign_scale_partners(triple, 20260903)
 
 
 def test_a_single_correspondence_has_no_alternative_partner_and_is_refused():

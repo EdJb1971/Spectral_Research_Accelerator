@@ -4501,7 +4501,7 @@ last measured full-suite figure. No archive is acquired, no statistic runs, no f
 recorded, no evidence is admitted and nothing is released by this slice.
 
 
-**TG17.11 Scale/shape mining calibration — SCOPED, NOT STARTED (2026-09-03).** The
+**TG17.11 Scale/shape mining calibration — IN PROGRESS — slice 1 of 5 done (2026-09-03).** The
 `scale_shape_calibration` gate is the only one of TG17.10's seven that reads `NOT_IMPLEMENTED`
 rather than `NOT_RUN`. The distinction is exact and it is the reason this task exists: the other
 unpassed gates have a method that has not been executed or has no channel to report itself, while
@@ -4549,7 +4549,7 @@ this programme's stated central failure mode in a second guise. Nothing already 
 affected: no scale/shape cell has ever executed, because all three are `REFUSED` before execution
 by D83's per-domain declarations.
 
-**The family is three members, not six.** D83's per-domain declarations mean the scale/shape family
+**The family is three members, not six** — *superseded by slice 1 below, which found that the three-member inventory admits no reassignment at all and so cannot carry this null; kept as written because the pricing argument still holds for a three-member family and only the membership changes.* D83's per-domain declarations mean the scale/shape family
 is the three unordered pairs of the three admitting domains. R18 prices that at 59 required
 surrogates for alpha 0.05; 999 replications give a p-value floor of 0.001 and
 `check_power(999, 3)` reports `can_reject_after_correction: True`. The calibration is affordable.
@@ -4605,6 +4605,51 @@ retuned after its answer is seen.
 **Claim boundary.** Nothing in this task is evidence about the world. It measures whether a
 declared family behaves as declared on fixtures whose answers are fixed in advance. Passing it
 licenses no mining, promotes no claim and admits no evidence.
+
+**TG17.11 slice 1 — D91 fixed, and the declared families answered a different question than
+expected (2026-09-03).** The null now enumerates the reassignments an inventory actually admits
+rather than shuffling list positions. A substituted partner must be neither the partner the
+pairing already had — the D91 fault, which returned the observation as its own surrogate — nor the
+pairing's own left member, which would compare a record against itself at maximal similarity.
+Assignments are deduplicated by the surrogate they *produce* rather than by the index permutation
+that produced it, because where an inventory names one record in several pairings many
+permutations spell one surrogate; counting them separately would overstate how much the null
+explores and bias the draw towards whichever surrogate has the most spellings. The draw is then
+uniform over the distinguishable surrogates. Enumeration is exact and bounded at eight pairings,
+above which a uniform draw would have to be argued for rather than demonstrated; no declared
+family approaches that bound.
+
+Measured on the inventory that exposed the fault, six pairings over three right members each
+appearing twice: **0 of 5,000 draws** leave a pairing unchanged and **0 of 5,000** pair a record
+with itself, against 50% for both before. Four guards pin it, and all four fail when the validity
+condition is mutated back to position derangement.
+
+**Two findings about the declared families, which change the rest of this task.** They are
+properties of the inventories, not defects, and they were invisible until the null was made to
+enumerate what it could legally return.
+
+* **Four domains compared all-against-all admit exactly one distinguishable reassignment.** Every
+  valid permutation of that family's six pairings spells the same surrogate. Its null is therefore
+  a constant, not a distribution: every replication returns the same value, so the p-value can only
+  be the floor or 1.0 however many surrogates R18 prices and is paid for.
+* **The three domains that admit the null after D83 admit no reassignment at all.** One of the
+  three pairings has no substitute partner that is neither its own nor itself. There is no
+  surrogate, so there is no test.
+
+Both are now refused by name, each with its own reason, rather than answered. The consequence is
+that the family sketched when this task was scoped does not exist: **a scale/shape calibration
+cannot be declared over an all-pairs *domain* family at either size.** It must be declared over an
+inventory of records, where the members of a pairing are individual frozen shapes rather than
+domains, and where the inventory is checked against the null it will run before any statistic is
+built on it. Slices 2 to 4 are rewritten on that basis; slice 3's `degenerate_inventory` fixture
+is no longer hypothetical, since both declared domain families are now instances of it.
+
+This is the falsification clause of this task's scope doing its work early and cheaply, on the
+null rather than on the statistic. Had the statistic been built first, the calibration would have
+reported near-zero planted power on a family that could not have produced any, and the honest
+reading of that number would have been a redesign of the statistic.
+
+
 
 **TG8.3 The domain ledger — finally measurable.** With five domains across three acquisition
 shapes there is at last a trend to read. *If onboarding cost is not falling, the abstraction is
