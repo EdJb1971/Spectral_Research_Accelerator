@@ -3,6 +3,7 @@ import Plot from 'react-plotly.js';
 import {
   CellAddress, CellInspector, FigureContract, FigureDataDisclosure, FigureFact, formatNumber,
 } from './FigureData';
+import { FigureExport } from './FigureExport';
 
 interface Heatmap2DProps {
   data: number[][];
@@ -17,6 +18,8 @@ interface Heatmap2DProps {
   yLabel?: string;
   /** DOM id, so FigureExport can find this exact plot to render to PNG/SVG. */
   divId?: string;
+  /** Verbatim provenance/qualification line placed beside the figure in publication export. */
+  publicationCaption?: string;
   /** Shared numeric colour range, required when panels are compared quantitatively. */
   zRange?: [number, number];
   /** Invalid boundary width in native samples. Shaded, never silently cropped. */
@@ -35,12 +38,15 @@ export const Heatmap2D: React.FC<Heatmap2DProps> = ({
   xLabel,
   yLabel,
   divId,
+  publicationCaption,
   zRange,
   validInset = 0,
   address,
   onAddressChange,
 }) => {
   const figureTitleId = useId();
+  const generatedPlotId = `figure-${useId().replace(/:/g, '')}`;
+  const plotId = divId || generatedPlotId;
   // The scan is deferred until a researcher opens the panel. A research-size field is a million
   // samples, and walking it on every render to populate a disclosure nobody opened would tax
   // the interactive path to answer a question that was not asked.
@@ -69,8 +75,8 @@ export const Heatmap2D: React.FC<Heatmap2DProps> = ({
    *
    * No mean, and no other summary statistic, is derived here (G18: presentation only).
    */
-  const scan = useMemo(() => {
-    if (!dataOpen || !rowCount || !columnCount) return null;
+  const scanValues = () => {
+    if (!rowCount || !columnCount) return null;
     let minimum = Number.POSITIVE_INFINITY;
     let maximum = Number.NEGATIVE_INFINITY;
     let nonFinite = 0;
@@ -83,30 +89,32 @@ export const Heatmap2D: React.FC<Heatmap2DProps> = ({
     }
     const finiteSeen = Number.isFinite(minimum);
     return { minimum, maximum, nonFinite, finiteSeen, total: rowCount * columnCount };
-  }, [data, dataOpen, rowCount, columnCount]);
+  };
+  const scan = useMemo(() => dataOpen ? scanValues() : null,
+    [data, dataOpen, rowCount, columnCount]);
 
   const extent = (values: number[]) => (values.length
     ? `${formatNumber(values[0])} to ${formatNumber(values[values.length - 1])}`
     : null);
 
-  const colourRange = (() => {
+  const colourRangeFor = (measured: ReturnType<typeof scanValues>) => {
     if (zRange) {
       return `${formatNumber(zRange[0])} to ${formatNumber(zRange[1])} (supplied, shared across panels)`;
     }
-    if (!scan) return null;
-    if (!scan.finiteSeen) return 'not established: no finite sample in this field';
-    return `${formatNumber(scan.minimum)} to ${formatNumber(scan.maximum)} `
+    if (!measured) return null;
+    if (!measured.finiteSeen) return 'not established: no finite sample in this field';
+    return `${formatNumber(measured.minimum)} to ${formatNumber(measured.maximum)} `
       + '(derived from this panel alone, so it is not comparable with another panel)';
-  })();
+  };
 
-  const facts: FigureFact[] = [
+  const factsFor = (measured: ReturnType<typeof scanValues>): FigureFact[] => [
     { label: 'Value units', value: units || 'not supplied', warn: !units },
     { label: 'Grid', value: `${rowCount} rows x ${columnCount} columns` },
     { label: 'Horizontal axis', value: xLabel || 'column index' },
     { label: 'Horizontal support', value: extent(xCoords) },
     { label: 'Vertical axis', value: yLabel || 'row index' },
     { label: 'Vertical support', value: extent(yCoords) },
-    { label: 'Colour range shown', value: colourRange },
+    { label: 'Colour range shown', value: colourRangeFor(measured) },
     {
       label: 'Valid interior',
       value: validInset > 0
@@ -115,14 +123,19 @@ export const Heatmap2D: React.FC<Heatmap2DProps> = ({
     },
     {
       label: 'Missing samples',
-      value: scan
-        ? (scan.nonFinite === 0
-          ? `none: all ${scan.total} samples are finite`
-          : `${scan.nonFinite} of ${scan.total} samples are not finite and are drawn as gaps`)
+      value: measured
+        ? (measured.nonFinite === 0
+          ? `none: all ${measured.total} samples are finite`
+          : `${measured.nonFinite} of ${measured.total} samples are not finite and are drawn as gaps`)
         : null,
-      warn: !!scan && scan.nonFinite > 0,
+      warn: !!measured && measured.nonFinite > 0,
     },
   ];
+  const facts = factsFor(scan);
+  const publicationBoundary =
+    'This export transcribes what the figure encodes and names what it could not encode. '
+    + 'It derives no summary statistic - no mean, median, slope or correlation - because a '
+    + 'number authored by a view is indistinguishable from one the analysis layer stands behind.';
 
   return (
     <figure className="bg-slate-900 border border-slate-800 rounded-lg p-4 flex flex-col items-center w-full"
@@ -175,10 +188,20 @@ export const Heatmap2D: React.FC<Heatmap2DProps> = ({
             displaylogo: false,
             toImageButtonOptions: { format: 'png', filename: title || 'field', scale: 2 },
           }}
-          divId={divId}
+          divId={plotId}
           useResizeHandler={true}
           className="w-full h-80"
         />
+      </div>
+      <div className="w-full mt-2">
+        <FigureExport targetId={plotId} name={title || 'two_dimensional_field'}
+          caption={publicationCaption
+            || `${title || 'Two-dimensional field'}; ${units || 'units not supplied'}`}
+          publication={{
+            title: title || 'Two-dimensional field',
+            facts: () => factsFor(scanValues()),
+            boundary: publicationBoundary,
+          }} />
       </div>
       <figcaption className="sr-only">
         Heat map with {data.length} rows and {data[0]?.length || 0} columns.
@@ -193,11 +216,7 @@ export const Heatmap2D: React.FC<Heatmap2DProps> = ({
         name={`Figure data for ${title || 'two-dimensional field'}`}
         summary="Figure data: exact values, units, support and missingness"
         onOpenChange={setDataOpen}>
-        <FigureContract facts={facts} boundary={
-          'This panel transcribes what the figure encodes and names what it could not encode. '
-          + 'It derives no summary statistic - no mean, median, slope or correlation - because a '
-          + 'number authored by a view is indistinguishable on screen from one the analysis layer '
-          + 'stands behind.'} />
+        <FigureContract facts={facts} boundary={publicationBoundary} />
         <CellInspector data={data} coords={coords} units={units} validInset={validInset}
           xLabel={xLabel} yLabel={yLabel}
           address={address} onAddressChange={onAddressChange} />

@@ -244,6 +244,7 @@ def test_figure_data_panels_transcribe_without_authoring_a_statistic():
     figure_data = _read("components", "FigureData.tsx")
     heatmap = _read("components", "Heatmap2D.tsx")
     line = _read("components", "LineChart.tsx")
+    export = _read("components", "FigureExport.tsx")
 
     # `<details>` groups carry an explicit accessible name; an unnamed one is announced only as
     # a disclosure triangle (the TG17.8 defect that recurred as D82).
@@ -266,9 +267,21 @@ def test_figure_data_panels_transcribe_without_authoring_a_statistic():
     # The refusal, in both the prose and the absence of the statistics themselves.
     for source in (heatmap, line):
         assert "derives no summary statistic" in source
+        assert "<FigureExport" in source, "every figure family must expose publication export"
     body = _strip_comments(figure_data + heatmap + line)
     for forbidden in ("'Mean'", '"Mean"', "'Median'", "'Std", "'Correlation'"):
         assert forbidden not in body
+
+    # The publication form is a self-contained vector sheet with the same stated facts and
+    # producer qualifications. It snapshots the live plot and never mutates or recomputes it.
+    assert "Publication HTML" in export and "Plotly as any).toImage" in export
+    assert "Figure reading contract" in export
+    assert "Producer statements and qualifications" in export
+    assert "performs no scientific analysis" in export
+    assert "Plotly.relayout" not in export and "Plotly.react" not in export
+    assert "facts: () => factsFor(scanValues())" in heatmap
+    assert "facts: () => factsFor(scanOmissions())" in line
+    assert "decision.statement.qualifiers" in line
 
 
 def test_side_by_side_fields_carry_a_stated_comparison_contract(app_source):
@@ -351,6 +364,30 @@ def test_figures_state_the_domain_a_claim_was_fitted_over(app_source):
     declared = app_source.count("validity={")
     assert declared, "no figure declares a validity domain"
     assert app_source.count("uncertainties={") == declared
+
+
+def test_declared_figure_pairs_share_a_bounded_accessible_resizer(app_source):
+    """Pane width is presentation state, not a fourth comparison decision.
+
+    Both figures must remain mounted, and the interaction must be operable without a pointer.
+    Narrow-screen stacking is a reading-order requirement rather than a squeezed resizer.
+    """
+    resizer = _read("components", "ResizableFigurePair.tsx")
+    css = _read("index.css")
+
+    assert 'role="separator"' in resizer
+    assert 'aria-orientation="vertical"' in resizer
+    assert "aria-valuemin={25}" in resizer and "aria-valuemax={75}" in resizer
+    for key in ("ArrowLeft", "ArrowRight", "Home", "End", "Enter"):
+        assert key in resizer, key
+    assert "setPointerCapture" in resizer
+    assert "Pane width changes presentation only" in resizer
+    assert "children[0]" in resizer and "children[1]" in resizer
+
+    declared_pairs = app_source.count("<FigureComparisonNotice")
+    assert app_source.count("<ResizableFigurePair") == declared_pairs
+    assert "@media (max-width: 767px)" in css
+    assert ".resizable-figure-pair__separator" in css and "display: none" in css
 
 
 def test_async_workflow_surfaces_expose_busy_state(all_sources):

@@ -3,6 +3,7 @@ import Plot from 'react-plotly.js';
 import {
   FigureContract, FigureDataDisclosure, FigureFact, FigureTable, formatNumber,
 } from './FigureData';
+import { FigureExport } from './FigureExport';
 import {
   StatedUncertainty, ValidityDomain, buildValidityContract, insideMarkedDomains,
   validityShapes, FigureValidityNotice,
@@ -49,6 +50,8 @@ export const LineChart: React.FC<LineChartProps> = ({
   uncertainties,
 }) => {
   const figureTitleId = useId();
+  const generatedPlotId = `figure-${useId().replace(/:/g, '')}`;
+  const plotId = divId || generatedPlotId;
   const [dataOpen, setDataOpen] = useState(false);
   // The empty-figure guard below runs after these hooks, so the contract is computed against a
   // safe list rather than assuming a caller supplied one.
@@ -90,8 +93,7 @@ export const LineChart: React.FC<LineChartProps> = ({
    * part of the figure's contract, not a diagnostic. Non-finite samples are counted for the
    * same reason - a break in a line reads as absence of structure.
    */
-  const omissions = useMemo(() => {
-    if (!dataOpen) return null;
+  const scanOmissions = () => {
     return safeSeries.map((item) => {
       let nonFinite = 0;
       let droppedByLogY = 0;
@@ -106,7 +108,9 @@ export const LineChart: React.FC<LineChartProps> = ({
       }
       return { name: item.name, count, nonFinite, droppedByLogY, droppedByLogX };
     });
-  }, [safeSeries, dataOpen, logX, logY]);
+  };
+  const omissions = useMemo(() => dataOpen ? scanOmissions() : null,
+    [safeSeries, dataOpen, logX, logY]);
 
   const totalPoints = safeSeries.reduce(
     (sum, item) => sum + Math.min(item.x.length, item.y.length), 0);
@@ -145,10 +149,15 @@ export const LineChart: React.FC<LineChartProps> = ({
     return log ? `${base} (logarithmic; non-positive samples are not drawn)` : `${base} (linear)`;
   };
 
-  const facts: FigureFact[] = [
+  const factsFor = (measuredOmissions: ReturnType<typeof scanOmissions> | null): FigureFact[] => {
+    const measuredDropped = measuredOmissions
+      ? measuredOmissions.reduce(
+        (sum, o) => sum + o.nonFinite + o.droppedByLogX + o.droppedByLogY, 0)
+      : droppedTotal;
+    return [
     { label: 'Series', value: safeSeries.map((item) => item.name).join(', ') || 'none' },
-    { label: 'Points drawn', value: `${totalPoints - droppedTotal} of ${totalPoints}`,
-      warn: droppedTotal > 0 },
+    { label: 'Points drawn', value: `${totalPoints - measuredDropped} of ${totalPoints}`,
+      warn: measuredDropped > 0 },
     { label: 'Horizontal axis', value: axisDescription(xLabel, logX) },
     { label: 'Vertical axis', value: axisDescription(yLabel, logY) },
     ...validityContract.domains.map((decision) => ({
@@ -171,7 +180,7 @@ export const LineChart: React.FC<LineChartProps> = ({
           : 'not produced'),
       warn: decision.warn,
     })),
-    ...(omissions || []).filter(
+    ...(measuredOmissions || []).filter(
       (o) => o.nonFinite || o.droppedByLogX || o.droppedByLogY).map((o) => ({
       label: `Omitted from ${o.name}`,
       value: [
@@ -182,6 +191,14 @@ export const LineChart: React.FC<LineChartProps> = ({
       warn: true,
     })),
   ];
+  };
+  const facts = factsFor(omissions);
+  const publicationBoundary =
+    'This export transcribes what the figure encodes and names what it could not encode. '
+    + 'It derives no summary statistic - no mean, slope or fitted exponent - because a number '
+    + 'authored by a view is indistinguishable from one the analysis layer stands behind. A '
+    + 'fitted value and its uncertainty appear only when the analysis layer produced them; the '
+    + 'fitted model itself is not drawn.';
 
   if (!series || series.length === 0 || series.every(s => s.x.length === 0)) {
     return (
@@ -247,10 +264,30 @@ export const LineChart: React.FC<LineChartProps> = ({
             displaylogo: false,
             toImageButtonOptions: { format: 'png', filename: title || 'figure', scale: 2 },
           }}
-          divId={divId}
+          divId={plotId}
           useResizeHandler={true}
           className="w-full h-80"
         />
+      </div>
+      <div className="w-full mt-2">
+        <FigureExport targetId={plotId} name={title || 'line_chart'}
+          caption={`${title || 'Line chart'}; ${xLabel || 'unlabelled x axis'}; ${yLabel || 'unlabelled y axis'}`}
+          publication={{
+            title: title || 'Line chart',
+            facts: () => factsFor(scanOmissions()),
+            notes: () => [
+              ...validityContract.domains.flatMap((decision) => [
+                decision.reason,
+                decision.domain.claim,
+              ]),
+              ...validityContract.uncertainties.flatMap((decision) => [
+                decision.text,
+                decision.statement.basis,
+                ...(decision.statement.qualifiers || []),
+              ]),
+            ],
+            boundary: publicationBoundary,
+          }} />
       </div>
       <figcaption className="sr-only">
         {series.length} series: {series.map(item => item.name).join(', ')}.
@@ -265,13 +302,7 @@ export const LineChart: React.FC<LineChartProps> = ({
         name={`Figure data for ${title || 'line chart'}`}
         summary="Figure data: exact values, axis scales and omitted points"
         onOpenChange={setDataOpen}>
-        <FigureContract facts={facts} boundary={
-          'This panel transcribes what the figure encodes and names what it could not encode. '
-          + 'It derives no summary statistic - no mean, slope or fitted exponent - because a '
-          + 'number authored by a view is indistinguishable on screen from one the analysis layer '
-          + 'stands behind. A fitted value and its uncertainty appear here only when the analysis '
-          + 'layer produced them, carried through unchanged; the fitted model itself is not drawn.'
-        } />
+        <FigureContract facts={facts} boundary={publicationBoundary} />
         <FigureTable
           caption={`Every point behind ${title || 'this figure'}`}
           columns={['series', 'index', xLabel || 'x', yLabel || 'y', 'drawn',

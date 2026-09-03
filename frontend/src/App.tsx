@@ -3,10 +3,10 @@ import { Heatmap2D } from './components/Heatmap2D';
 import { LineChart } from './components/LineChart';
 import { LineageGraph } from './components/LineageGraph';
 import { FieldExportBar, TableExportBar } from './components/ExportBar';
-import { FigureExport } from './components/FigureExport';
 import {
   buildComparisonContract, FigureComparisonNotice, useLinkedAddress,
 } from './components/FigureComparison';
+import { ResizableFigurePair } from './components/ResizableFigurePair';
 import { slopeValidity } from './components/FigureValidity';
 import { FieldImport } from './components/FieldImport';
 import { TrainingReadiness } from './components/TrainingReadiness';
@@ -1140,23 +1140,23 @@ export default function App() {
                 <div className="xl:col-span-2 space-y-6">
                   <FigureComparisonNotice contract={syntheticPair}
                     label="the clean and perturbed synthetic fields" />
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <ResizableFigurePair label="the clean and perturbed synthetic field panes">
                     <div className="space-y-2">
                       <Heatmap2D data={primaryField} title="Generated Clean Field (F)" colormap="viridis"
                         coords={primaryCoords} divId="fig-clean-field"
+                        publicationCaption="Synthetic analytical field; dimensionless"
                         zRange={syntheticPair.scale.range} {...syntheticAddress}
                         xLabel="x (normalised)" yLabel="y (normalised)" />
                       <div className="flex flex-col gap-2 px-1">
                         <FieldExportBar field={primaryField} coords={primaryCoords}
                           metadata={fieldProvenance()} variable="field" name="clean_field"
                           label="Export clean field" onError={setError} />
-                        <FigureExport targetId="fig-clean-field" name="clean_field"
-                          caption="synthetic - dimensionless" onError={setError} />
                       </div>
                     </div>
                     <div className="space-y-2">
                       <Heatmap2D data={perturbedField || primaryField} title="Perturbed Spatial Field (F')"
                         colormap="viridis" coords={primaryCoords} divId="fig-perturbed-field"
+                        publicationCaption="Synthetic analytical field after declared perturbations; dimensionless"
                         zRange={syntheticPair.scale.range} {...syntheticAddress}
                         xLabel="x (normalised)" yLabel="y (normalised)" />
                       <div className="flex flex-col gap-2 px-1">
@@ -1164,11 +1164,9 @@ export default function App() {
                           metadata={fieldProvenance({ perturbations, reproducible: perturbations.every(pp => pp.type !== 'noise' || pp.seed != null) })}
                           variable="field" name="perturbed_field"
                           label="Export perturbed field" onError={setError} />
-                        <FigureExport targetId="fig-perturbed-field" name="perturbed_field"
-                          caption="synthetic + perturbation" onError={setError} />
                       </div>
                     </div>
-                  </div>
+                  </ResizableFigurePair>
 
                   {/* Perturbation Engine Steps */}
                   <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-5">
@@ -1512,18 +1510,15 @@ export default function App() {
                       <Heatmap2D data={slicedField}
                         title={`${selectedVariable.toUpperCase()} Crop (${selectedDatasetId})`}
                         coords={slicedCoords} colormap="viridis" divId="fig-dataset-crop"
+                        publicationCaption={datasets.find(d => d.id === selectedDatasetId)?.is_simulated
+                          ? 'SIMULATED - not an observation'
+                          : 'observational'}
                         xLabel="longitude (degrees east)" yLabel="latitude (degrees north)" />
                       <div className="flex flex-col gap-2 px-1 mt-2">
                         <FieldExportBar field={slicedField} coords={slicedCoords}
                           metadata={datasetProvenance()} variable={selectedVariable}
                           name={`${selectedDatasetId}_${selectedVariable}`}
                           label="Export crop" onError={setError} />
-                        <FigureExport targetId="fig-dataset-crop"
-                          name={`${selectedDatasetId}_${selectedVariable}`}
-                          caption={datasets.find(d => d.id === selectedDatasetId)?.is_simulated
-                            ? 'SIMULATED - not an observation'
-                            : 'observational'}
-                          onError={setError} />
                       </div>
                       <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 text-xs space-y-2 text-slate-400">
                         <span className="text-slate-300 font-semibold block mb-1">Metadata Summary</span>
@@ -1642,12 +1637,12 @@ export default function App() {
                 <div className="xl:col-span-2 space-y-6">
                   <FigureComparisonNotice contract={boundaryPair}
                     label="the original and padded boundary domains" />
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <ResizableFigurePair label="the original and padded boundary-domain panes">
                     <Heatmap2D data={primaryField} title="Original Spatial Domain" colormap="viridis"
                       zRange={boundaryPair.scale.range} {...boundaryAddress} />
                     <Heatmap2D data={paddedField || primaryField} title="Padded Boundary Domain"
                       colormap="viridis" zRange={boundaryPair.scale.range} {...boundaryAddress} />
-                  </div>
+                  </ResizableFigurePair>
 
                   {distanceProfiles.length > 0 && (
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -1797,7 +1792,7 @@ export default function App() {
                 <div className="xl:col-span-2 space-y-6">
                   <FigureComparisonNotice contract={reconstructionPair}
                     label="the target field and its inverse reconstruction" />
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <ResizableFigurePair label="the target and inverse-reconstruction panes">
                     <Heatmap2D data={primaryField} title="Original Target Field (F)" colormap="viridis"
                       divId="fig-target-field"
                       zRange={reconstructionPair.scale.range} {...reconstructionAddress} />
@@ -1805,7 +1800,7 @@ export default function App() {
                       title="Inverse Reconstructed Field (F-hat)" colormap="viridis"
                       divId="fig-reconstructed-field"
                       zRange={reconstructionPair.scale.range} {...reconstructionAddress} />
-                  </div>
+                  </ResizableFigurePair>
 
                   {transformMetrics && (
                     <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">

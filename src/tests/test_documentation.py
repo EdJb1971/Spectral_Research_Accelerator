@@ -199,6 +199,43 @@ def test_documented_test_counts_match_the_source(architecture):
         "inventory total says %s, actual %d"
         % (stated_total.group(1), sum(actual.values())))
 
+def test_browser_suite_inventory_matches_the_spec_files(architecture):
+    """The second suite, which nothing was reading.
+
+    `frontend/e2e/` grew to the weight of a real suite while architecture.md named two of
+    its files in a TG17.7 narrative and gave no current inventory at all -- so its size was
+    discoverable only by listing the directory. That is the same condition section 7.4
+    exists to end, reappearing one language over.
+
+    A static reader cannot count a parametrised Playwright loop (`narrow-width.spec.ts`
+    declares ten tests and collects nineteen), so this checks what it honestly can: the
+    file set exactly, and each stated count as a lower bound on the literal declarations.
+    The suite total stays a dated measurement in the document rather than a derivation
+    here, for the same reason pytest cases are not test functions.
+    """
+    e2e = os.path.join(REPO_ROOT, "frontend", "e2e")
+    actual = sorted(n for n in os.listdir(e2e) if n.endswith(".spec.ts"))
+
+    documented = dict(
+        (m.group(1), int(m.group(2)))
+        for m in re.finditer(r"\|\s*`([\w-]+\.spec\.ts)`\s*\|\s*(\d+)\s*\|", architecture))
+
+    assert documented, (
+        "architecture.md must carry a browser suite inventory (section 7.4a); the Playwright "
+        "suite is not a diagnostic, it is the only check in this repository that proves a "
+        "page renders")
+    assert sorted(documented) == actual, (
+        "browser suite inventory disagrees with frontend/e2e/ (documented, actual): %s"
+        % ({"documented": sorted(documented), "actual": actual},))
+
+    for name in actual:
+        declared = len(re.findall(
+            r"^\s*test\(", io.open(os.path.join(e2e, name), encoding="utf-8").read(), re.M))
+        assert documented[name] >= declared, (
+            "architecture.md credits %s with %d tests but the file declares %d outright; a "
+            "count below the literal declarations cannot be a parametrisation"
+            % (name, documented[name], declared))
+
 
 # ============================================================== defect ledger
 

@@ -23,7 +23,7 @@ as one. Four documents carry the tracked state, each with a different job:
 |---|---|---|
 | `architecture.md` | What exists in the code today: modules, HTTP routes, the test inventory, and Section 7's full defect ledger. | yes |
 | `roadmap.md` | The **atmospheric** programme: Section 1's honest status table, the standing rules R1-R16, and every task with its evidence block. | yes |
-| `roadmap_cross_domain.md` | The **cross-domain** programme on `ed-dev`: rules R17 onward, phases G0-G17. | partly |
+| `roadmap_cross_domain.md` | The **cross-domain** programme on `ed-dev`: rules R17 onward, phases G0-G18. | partly |
 | `VERIFICATION.md` | Captured output. Every number claimed elsewhere should be findable here as a run. | yes |
 | `README.md` (this file) | Installation, layout and an orientation summary. | partly |
 
@@ -41,9 +41,22 @@ supersedes the other.
 
 * Atmospheric line: Phase 4E. T4E.1 and T4E.2 are DONE; **T4E.3 (approximate matching by
   clustering) is next and has not been started.**
-* Cross-domain line: TG17.9 is DONE and TG17.10 delivered the apparatus gate with the
-  **release withheld**.
+* Cross-domain line: Phase G18, the instrument the science is read through. TG17.9 and TG17.10
+  are DONE, the latter with the **release withheld**; TG18.1 (shared instrument foundation) closed
+  on 2026-09-03 after six slices; TG18.2 (scientific visualization workspace) closed the same day
+  after five slices. **TG18.3 (guided research journey) is next.** TG18.4 and TG18.5 have not been
+  started.
+* What TG18.2 has delivered, all of it presentation only: every figure carries a text and table
+  equivalent of what it draws, a declared statement of whether two panels may share a colour
+  scale, the domain a fitted claim was taken over with the uncertainty attached to it, and
+  presentation-only resizable panes for the declared gridded comparisons, and self-contained
+  vector publication sheets that preserve the figure's reading contract. Under
+  G18 none of this may recompute, summarize, promote or reinterpret a scientific value, so each
+  addition transcribes what the analysis layer produced or states that it produced nothing.
 * Last measured full backend run: **3536 passed, 4 skipped, 1 xfailed**, exit 0.
+* Last measured browser suite: **104/104** in Chromium from a cleaned `.e2e-state` (2026-09-03).
+  It is inventoried in `architecture.md` section 7.4a; it is the only check here that proves a
+  page renders.
 * Open defects: **D84 and D85**; D18 partial. D43 is closed.
 
 **What has not been done**, stated once here so it is not inferred from the feature list: no

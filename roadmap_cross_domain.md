@@ -4623,7 +4623,7 @@ artefacts.
 **Evidence.** The complete Chromium suite is **54/54 from a cleaned `.e2e-state`** (35 before this
 slice, 19 added). `test_frontend_contract.py` and `test_documentation.py` are **197 passed**. The
 production build succeeds. The full backend suite was **not** rerun for this slice; the last
-measured figure remains 3,240.
+measured full-suite figure is **3536** (T4E.2, on this same tree).
 
 **Stated boundaries, so the closure cannot be read as more than it is.** The sticky record/study
 context is not covered: it renders only when a record or study is selected, and no workspace this
@@ -4634,7 +4634,7 @@ the trigger and selection remain, which is why none is treated as optional. This
 accessibility conformance audit and does not pre-empt TG18.4; measuring a font size is not certifying
 a contrast ratio with a screen reader in the loop.
 
-**TG18.2 Scientific visualization workspace — IN PROGRESS.** Add coordinated plot focus, exact-value
+**TG18.2 Scientific visualization workspace — DONE (2026-09-03).** Add coordinated plot focus, exact-value
 inspection, shared colour/axis controls, comparison locking, uncertainty and validity overlays,
 resizable panes, and publication/export affordances. Every visual encoding must have a text/table
 equivalent and must state units, support, normalization and missingness where they apply.
@@ -4669,7 +4669,7 @@ would pass every structural check. The refusal is asserted in the markup as well
 contract term may be labelled Mean, Median, Slope, Correlation or Standard deviation.
 `test_frontend_contract.py` and `test_documentation.py` are **198 passed**; `tsc --noEmit` is clean
 and the production build succeeds. The full backend suite was **not** rerun; the last measured
-figure remains 3,240.
+full-suite figure is **3536** (T4E.2).
 
 **Not yet done in that slice.** Coordinated plot focus, shared colour and axis controls, comparison
 locking, uncertainty and validity overlays, resizable panes and publication export were untouched.
@@ -4710,7 +4710,7 @@ through the current UI where every declared pair agrees — verifying them only 
 the refusals unchecked until a future call site needed them. The rendered half confirms both traces
 carry identical explicit limits rather than two autoscales. `test_frontend_contract.py` and
 `test_documentation.py` are **199 passed**; `tsc --noEmit` clean and the production build succeeds.
-The full backend suite was **not** rerun; the last measured figure remains 3,240.
+The full backend suite was **not** rerun; the last measured full-suite figure is **3536** (T4E.2).
 
 **Third slice delivered (2026-09-03): the validity and uncertainty overlay.** These belong to the
 same "what this picture cannot tell you" family as missingness, so they extend the figure contract
@@ -4755,9 +4755,46 @@ where a box is correct.
 `test_documentation.py` **200 passed**; `tsc --noEmit` clean. One real prose defect was found by
 the rendered half and fixed: the sentence that samples outside the band were not used appeared only
 on the unclipped branch, which is precisely the branch the platform's own spectra do not take. The
-full backend suite was **not** rerun; the last measured figure remains 3,240.
+full backend suite was **not** rerun; the last measured full-suite figure is **3536** (T4E.2).
 
-**Still not done in TG18.2.** Resizable panes and publication export. The validity overlay is
+**Fourth slice delivered (2026-09-03): resizable comparison panes.** The three gridded pairs
+already governed by the comparison contract now share one bounded two-pane canvas. The divider
+changes presentation only: both figures stay mounted, their shared scale and linked address do not
+move, and the page states that boundary. Pointer drag, arrows, accelerated Shift+arrow steps,
+Home/End, Enter/Space and double-click are supported through an accessible separator exposing the
+current 25--75 percent allocation. Below 768 px the control disappears and the figures return to
+one-column document order, because a working separator with no usable horizontal canvas would be a
+false affordance. The component notifies Plotly after a track change but never reads or rewrites a
+trace.
+
+**Evidence.** The six new rendered tests pass: they measure both pane rectangles after a real drag,
+exercise every keyboard bound and reset, compare the two live Plotly data arrays and their shared
+limits before and after resizing, and verify narrow-width stacking. The production build succeeds
+with 1,416 transformed modules. Focused source/documentation verification is **202 passed** after
+the checked inventories were advanced. The complete Chromium inventory is now **100 tests**; the
+full suite has not been rerun as one command for this slice. The full backend suite was not rerun;
+the last measured full-suite figure is **3536** (T4E.2).
+
+**Fifth slice delivered (2026-09-03) — TG18.2 closed: publication export.** PNG and SVG remain
+picture-only conveniences. Every heat-map and line-chart call site now also exposes one
+self-contained, printable publication HTML sheet containing a 1200x800 vector snapshot of the
+live Plotly figure, its caption, the fully evaluated figure contract, producer-authored validity
+and uncertainty statements and their verbatim qualifiers, the no-analysis boundary and an export
+timestamp. Export evaluates the deferred missingness scan only when requested, reads the mounted
+figure without mutating its trace or layout, contains no script and has no path into the claim
+ladder. This is why the pre-existing three PNG/SVG controls did not already satisfy publication
+export: an image without the restricted fit domain, uncertainty, assumptions or scale provenance
+is not the figure this instrument asked the researcher to read.
+
+**Evidence.** Four rendered download tests pass. They open the generated files and verify the
+vector, caption, exact grid and missingness, shared-range provenance, fit domain, uncertainty,
+assumptions, no-analysis statement and live-figure immutability. Both figure families acquire the
+action at their shared seam. `test_frontend_contract.py` pins the same refusal at source level;
+the production build succeeds with 1,416 transformed modules. The complete cleaned Chromium suite
+is **104/104**. The focused frontend/documentation pair is **202 passed**. The full backend suite
+was not rerun; the last measured full-suite figure is **3536** (T4E.2).
+
+**Closure boundaries and recorded visual debt.** The validity overlay is
 declared at one figure (the PSD chart), because it is the only figure whose backend record carries
 a fit domain and an uncertainty; no other chart has one to state. The comparison contract governs
 the three declared gridded pairs in `App.tsx`; the `DTCWTScientificView` shared range predates it

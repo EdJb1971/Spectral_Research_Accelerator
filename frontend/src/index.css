@@ -126,6 +126,63 @@ button, input, select, textarea {
   }
 }
 
+/* TG18.2: two compared figures may yield canvas to one another without changing their data or
+ * comparability. The separator occupies its own fixed track, so neither plot overlays it. */
+.resizable-figure-pair {
+  --first-pane: 50%;
+  display: grid;
+  grid-template-columns: minmax(0, var(--first-pane)) 0.875rem minmax(0, 1fr);
+  align-items: start;
+  gap: 0;
+  min-width: 0;
+}
+
+.resizable-figure-pair__pane {
+  min-width: 0;
+}
+
+.resizable-figure-pair__separator {
+  align-self: stretch;
+  min-height: 20rem;
+  cursor: col-resize;
+  touch-action: none;
+  display: grid;
+  place-items: center;
+}
+
+.resizable-figure-pair__separator > span {
+  width: 0.25rem;
+  height: 4rem;
+  border-radius: 999px;
+  background: #334155;
+  box-shadow: 0 0 0 1px rgba(148, 163, 184, 0.08);
+}
+
+.resizable-figure-pair__separator:hover > span,
+.resizable-figure-pair__separator:focus-visible > span {
+  background: var(--instrument-accent);
+}
+
+.resizable-figure-pair__note {
+  grid-column: 1 / -1;
+  margin-top: 0.5rem;
+  color: #64748b;
+  font-size: 0.6875rem;
+  line-height: 1rem;
+}
+
+@media (max-width: 767px) {
+  .resizable-figure-pair {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1rem;
+  }
+
+  .resizable-figure-pair__separator,
+  .resizable-figure-pair__note {
+    display: none;
+  }
+}
+
 .research-context {
   position: sticky;
   top: 0;
