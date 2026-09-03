@@ -19,7 +19,12 @@ const COMPOSER = 'Experiment Composer';
 async function openComposer(page: Page) {
   await page.goto('/');
   await page.getByRole('button', { name: COMPOSER, exact: true }).click();
-  await expect(page.getByRole('heading', { name: COMPOSER })).toBeVisible();
+  // `exact`, because `name` is a substring match and the shell's own sr-only workspace heading
+  // reads "Experiment Composer workspace". Both are headings, so the unqualified locator
+  // resolves to two the moment the panel renders and strict mode fails the run - intermittently,
+  // since which of the two exists first depends on when the served path answers. Found by the
+  // TG18.5 full-suite measurement, where it failed once and passed on isolated re-run.
+  await expect(page.getByRole('heading', { name: COMPOSER, exact: true })).toBeVisible();
   // The path is fetched from the server; until it answers, the view says so rather than
   // guessing at a step order of its own.
   await expect(page.getByRole('tablist', { name: 'Experiment composition path' })).toBeVisible();

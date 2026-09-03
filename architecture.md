@@ -6168,6 +6168,68 @@ against the served identifiers, covering the stages no clean-browser run can rea
 This gate qualifies apparatus reachability. It is not evidence that any workspace computes
 anything correctly, and it must not be read as one.
 
+**Second slice (2026-09-04) - one representative path per product mode, and the assertion that
+holds the four apart.** Opening a workspace is not operating it, so `product-modes.spec.ts` walks
+the characteristic path of each of the four modes TG18.0 identified - interactive instrument
+(Spectral transforms), guided commitment workflow (Composer), read-only claim surface (Findings),
+trust and qualification surface (Platform & evidence) - and captures a named artefact at the state
+each path reaches, at 1440 and 1920 CSS pixels. Those are the desktop widths the narrow-width
+inspection does not cover; between them the two files now span 320 to 1920.
+
+The load-bearing assertion is not any of the four paths. TG18.0's constraint is that "a change
+that improves one by making another ambiguous is not a successful redesign", and that is a
+property of the modes *together*: four per-mode checks could each pass while the modes converged
+on one another. So each mode declares a **signature** - the observable that makes it that mode,
+found by role and accessible name so it cannot be satisfied by a class or a test id - and the
+suite asserts that **every signature appears in exactly one of the four**. The signatures are the
+composition-path tablist, the findings-panels tablist, the qualification matrix table, and the
+on-demand transform action.
+
+Each path also asserts what its mode is *for*, including one thing each mode must not have. The
+instrument recomputes on demand and the answer must still arrive carrying both figure-data
+equivalents (TG18.2's rule). The commitment workflow serves seven ordered steps and **exactly one**
+next legitimate action naming its own `/api/v1/` route, because a commitment workflow offering two
+is presenting a choice that is the researcher's to record. The claim surface opens every panel and
+must offer no way to compute or freeze one - a read-only surface that can recompute a claim leaves
+a reader unable to tell a recorded finding from a fresh one. The trust surface must show **both** a
+cleared gate and an uncleared one carrying its reason: a ledger showing only passes is an
+advertisement, and one showing only failures cannot be told apart from a broken build. TG17.12 is
+what made the first `PASS` available to show.
+
+Nothing here asserts a pixel, so an artefact cannot pass or fail anything; it is a record of what
+the path reached, for a human reader. The artefacts are written to the gitignored `e2e/artifacts/`,
+which is a constraint on the remaining evidence-channel slice rather than an oversight: what
+reaches the qualification ledger has to be a manifest and a digest of the artefact set, never the
+images.
+
+Three mutations were run against the product source rather than against the suite. Giving Findings
+a compute affordance fails the read-only path at both viewports (2 of 10). Relabelling the findings
+tablist as the composition path fails the claim path *and* the uniqueness assertion at both
+viewports (4 of 10) - that second failure is the convergence the assertion exists to catch, and it
+is the one a per-mode check would have missed. Removing the qualification matrix's accessible name
+fails the trust path and the uniqueness assertion (4 of 10). All three restored byte-identically
+and the suite returned to 10 of 10.
+
+One measurement was discarded rather than recorded: a first attempt at the second mutation reported
+all ten failing, because that run began while the dev server was still reloading the file the
+previous mutation had just restored. Re-run in isolation it fails the four it should. A mutation
+that appears to kill everything is evidence about the harness, not about the guard.
+
+**The slice's full-suite measurement found an intermittent failure in an older spec, which is worth
+more than the slice itself.** `composer-path.spec.ts` waited on
+`getByRole('heading', { name: 'Experiment Composer' })`. Playwright matches an accessible name by
+substring, and the shell's own sr-only workspace heading reads "Experiment Composer workspace", so
+the locator resolves to two headings the moment the served panel renders and strict mode fails the
+run. Which of the two exists first depends on when the API answers, so the failure is intermittent:
+it failed once in a 134-test run and passed 11 of 11 on isolated re-run. The locator is now
+`exact`, and the spec passed 33 of 33 across three repeats.
+
+That defect is recorded here rather than in the defect ledger because nothing in the product was
+wrong - the ambiguity was in the test - but it is exactly the failure mode a qualification gate
+cannot tolerate. TG18.5's remaining slice feeds a measured browser run into the release ledger, and
+an intermittently failing suite there would produce an intermittently blocking gate, which is
+indistinguishable from a real refusal at the moment a reader most needs to tell them apart.
+
 
 ## 3.12 HTTP API Surface
 
@@ -8073,7 +8135,8 @@ not bound to the scratch state.
 | `research-journey.spec.ts` | 5 | TG18.3 all seven global stages, one remediation per context blocker, Composer/ladder separation and reachable distinguished legacy tools |
 | `assistive-acceptance.spec.ts` | 11 | TG18.4 keyboard order and focus at three layouts, zoom-equivalent reflow, rendered contrast, reduced motion, non-colour and semantic acceptance |
 | `ui-qualification.spec.ts` | 4 | TG18.5 served-workspace inventory, reachability with self-naming, journey destinations and unexplained disablement |
-| **suite** | **124** | from a cleaned `.e2e-state`, Chromium, 2026-09-03 |
+| `product-modes.spec.ts` | 5 | TG18.5 one representative path through each of TG18.0's four product modes at two desktop viewports, with a named artefact at the state each path reaches, and the signature-uniqueness assertion that holds the modes apart (the file declares five and Playwright collects ten, once per viewport) |
+| **suite** | **134** | from a cleaned `.e2e-state`, Chromium, 2026-09-04 |
 
 The counts are guarded by `test_documentation.py`, but only as far as a static reader honestly can:
 the file set must match `frontend/e2e/` exactly in both directions, and each stated count must be at

@@ -5309,9 +5309,41 @@ against the served identifiers, and was verified to fail on that mutation and pa
 Both new static guards were mutation-checked; the rendered inventory and self-naming tests were
 confirmed to fail on a workspace rename and the reachability tests correctly to stay green.
 
-Remaining for TG18.5: one representative path per product mode with named viewport artefacts; the
-action-count and refusal-to-remediation measurement, deterministic count asserted with wall-clock
-recorded as unasserted context; and the evidence channel into the qualification ledger.
+**Second slice delivered (2026-09-04) - one representative path per product mode.**
+`frontend/e2e/product-modes.spec.ts` walks the characteristic path of each of TG18.0's four modes
+and captures a named artefact at the state each reaches, at 1440 and 1920 CSS pixels - the desktop
+widths the narrow-width inspection does not cover, so the two files now span 320 to 1920.
+
+The load-bearing assertion is not any of the four paths. TG18.0's constraint is a property of the
+modes *together*, so each mode declares a signature - found by role and accessible name, never a
+class or a test id - and the suite asserts every signature appears in **exactly one** of the four.
+Four per-mode checks could each pass while the modes converged on one another; this cannot.
+
+Each path also asserts one thing its mode must not have. The instrument recomputes on demand and
+must still deliver both figure-data equivalents. The commitment workflow serves seven ordered
+steps and exactly one next legitimate action naming its own route. The claim surface opens every
+panel and offers no way to compute or freeze one. The trust surface shows both a cleared gate and
+an uncleared one with its reason - TG17.12 made the first `PASS` available to show.
+
+Nothing asserts a pixel, so an artefact cannot pass or fail anything. Artefacts land in the
+gitignored `e2e/artifacts/`, which sets a constraint on the remaining evidence slice: what reaches
+the ledger must be a manifest and digest of the artefact set, never the images. Three mutations
+against the product source were each caught: a compute affordance on the claim surface fails 2 of
+10, relabelling the findings tablist as the composition path fails 4 of 10 including the uniqueness
+assertion, and removing the qualification matrix's accessible name fails 4 of 10.
+
+**The slice's full-suite measurement found an intermittent failure in an older spec.**
+`composer-path.spec.ts` waited on a heading name that Playwright matches by substring, and the
+shell's sr-only "Experiment Composer workspace" heading matches it too, so the locator resolved to
+two elements once the served panel rendered and strict mode failed the run. It failed once in a
+134-test run and passed 11 of 11 on isolated re-run. Made `exact`; 33 of 33 across three repeats.
+Nothing in the product was wrong, but an intermittently failing suite is exactly what the remaining
+evidence slice cannot carry: it would produce an intermittently blocking gate, indistinguishable
+from a real refusal at the moment a reader most needs to tell them apart.
+
+Remaining for TG18.5: the action-count and refusal-to-remediation measurement, deterministic count
+asserted with wall-clock recorded as unasserted context; and the evidence channel into the
+qualification ledger.
 
 ## 6. Definition of Done
 
