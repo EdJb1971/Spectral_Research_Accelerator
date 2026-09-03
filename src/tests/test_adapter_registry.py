@@ -24,6 +24,7 @@ from src.core.experiment_adapter import (EXPERIMENT_ADAPTERS, AcquisitionPlan,
                                          DomainExperimentAdapter, adapter_for_domain,
                                          plan_windows, register_experiment_adapter,
                                          registered_domains)
+from src.core.extension_evidence import record_extension_conformance
 from src.core.onboarding import onboard_domain
 from src.core.registry import restore, snapshot
 from src.core.structural_trajectory import (ChannelLineage, NativeStructuralRecord,
@@ -191,6 +192,14 @@ def test_synthetic_fifth_adapter_reaches_the_registry_and_conforms_without_frame
     trajectory = adapter.translate(record, adapter.structural_declaration({}), {})
     peak = mine_structural_peak(trajectory, channel="monotone_rank")
     assert peak["units"] == "dimensionless"
+
+    # TG17.13 slice 2: this run reaches the release gate, or the gate stays shut. The adapter can
+    # only live here - the acceptance requires a module the application never imports - but owning
+    # the apparatus must not mean grading the exam, so every check is decided in
+    # `src.core.extension_evidence` and this module supplies the fixture and nothing else.
+    recorded = record_extension_conformance(adapter, record, [WEEK])
+    assert recorded["status"] == "MEASURED", recorded.get("reasons")
+    assert recorded["conformant"], recorded.get("failed_checks")
 
 
 def test_an_unprobed_invariance_is_reported_as_unverified_rather_than_passing():

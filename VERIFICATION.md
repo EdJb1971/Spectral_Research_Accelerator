@@ -9232,3 +9232,143 @@ plus the uniqueness assertion at both viewports. The first run had begun while V
 reloading the file the previous mutation had just restored. **A mutation that appears to kill
 everything is evidence about the harness, not about the guard**, and the 10-of-10 figure is recorded
 here as discarded rather than quietly replaced.
+
+
+## TG17.13 The source-edit audit and the fifth-adapter gate - COMPLETE (2026-09-04, ed-dev)
+
+Two slices. Slice 1 wrote the audit a test name had been standing in for; slice 2 built the channel
+that carries it into the release record. `synthetic_fifth_adapter` reads `PASS` for the first time
+since TG17.10 registered it.
+
+**What slice 2 decided, and why it is not TG17.12's shape applied twice.** The gate has two halves
+and only one of them is recorded. The source-edit audit is **read live** on every call: it is
+exact, it reads committed source, it costs milliseconds, and a recording of a fact that can be
+recomputed is only a way to be wrong later. The acceptance run is **recorded**, because it cannot
+be read from the gate's side at all - TG17.3 requires the fifth adapter to be defined in a module
+the application never imports, so it lives in `src/tests/test_adapter_registry.py` and nothing
+under `src/core` may reach it. Copying the recording shape onto both halves would have been the
+symmetric answer and the wrong one.
+
+**Deciding sits on the reading side.** The test supplies apparatus only it owns - the adapter, the
+native record, the window - and `measure_extension_conformance` performs all eight checks and
+decides whether they passed. A test that deleted its own assertions changes nothing about what is
+recorded. What it can still do is stop calling the recorder, and the answer to that is `NOT_RUN`.
+
+**What the gate now says, recorded output:**
+
+```text
+> .\.venv\Scripts\python.exe -c "from src.core.experiment_qualification import
+    qualification_plan ..."
+NOT_RUN  offline_matrix
+NOT_RUN  restart_recovery
+PASS     browser_no_glue
+PASS     synthetic_fifth_adapter
+PASS     calendar_calibration
+REFUSED  scale_shape_calibration
+NOT_RUN  live_sources
+
+A synthetic fifth domain with different mathematics - a monotone rank channel, not the shared
+standardized level - reached the registry, the control schema, the conformance kit and the
+domain-blind mining seam from a module the application never imports, passing all 8 checks
+(recorded 2026-09-03T22:53:39.149657Z). No framework source names it, so installation required
+0 framework edits across 17 generic surfaces. Standing adapter-specific glue in those surfaces
+is 1 and is reported rather than asserted: frontend/src/components/AcquisitionView.tsx:243
+renders a bespoke planner for reanalysis.
+```
+
+Three of seven gates clear. The verdict is unmoved at `NOT_RELEASEABLE`: `offline_matrix` and
+`restart_recovery` are `NOT_RUN` in a cold plan, `scale_shape_calibration` is `REFUSED`, and
+`live_sources` is the last unmeasured scientific gate.
+
+**A guard passed because it could not see what it was checking, for the fifth time.** The
+`defined_outside_the_application` check first compared `translate.__module__` against dotted package
+prefixes. Under pytest's import mode that string is the bare `test_adapter_registry`, which starts
+with none of them - and would have started with none of them whatever the module was called. It now
+resolves the defining *file*, makes it repository-relative and checks it against directory roots; a
+callable whose source cannot be located is a **refusal** rather than a pass, because an unanswerable
+question is not a satisfied one. D64, D74, D75, slice 1's vacuous registry scan, and now this.
+
+**The completeness guard TG18.5 built did its first real work.** Marking TG17.13 DONE in the roadmap
+made `test_every_completed_cross_domain_phase_has_a_verification_entry` fail, naming TG17.13 and
+nothing else, before this entry existed:
+
+```text
+E  AssertionError: these cross-domain phases are marked complete in roadmap_cross_domain.md but
+   have no '## <phase> ' entry in VERIFICATION.md: TG17.13
+1 failed, 3 passed, 25 deselected, 1 warning in 0.66s
+```
+
+**A mutation pass with no baseline cannot tell a killed mutant from a broken suite, and this one
+reported a false CAUGHT before it was fixed.** The first run of the script produced:
+
+```text
+M1 staleness ignored                              CAUGHT      2 failed, 49 passed
+M2 a missing required check tolerated             CAUGHT      2 failed, 49 passed
+M3 defining_source falls back to the module name  NOT CAUGHT  49 passed
+M4 DEFAULT widened into glue                      CAUGHT      4 failed, 45 passed
+M5 another adapter accepted for measurement       CAUGHT      2 failed, 49 passed
+```
+
+The second run, after I added a test for the branch M3 mutates, reported M3 as `CAUGHT  1 failed,
+50 passed` - and that was **wrong**. The single failure in that run was the new test itself, which
+was broken: it asserted `__module__ == "builtins"` for a callable compiled from a string, and the
+exec scope carried no `__name__`, so the attribute was `None`. Every mutation's count in both runs
+was inflated by one failing test, and M3 was never actually killed. The script now runs an
+unmutated baseline first and refuses to report unless it is green:
+
+```text
+BASELINE (unmutated)                              GREEN   51 passed, 2 warnings in 33.13s
+M1 staleness ignored                              CAUGHT  1 failed, 50 passed
+M2 a missing required check tolerated             CAUGHT  1 failed, 50 passed
+M3 defining_source falls back to the module name  CAUGHT  2 failed, 49 passed
+M4 DEFAULT widened into glue                      CAUGHT  1 failed, 50 passed*
+M5 another adapter accepted for measurement       CAUGHT  1 failed, 50 passed
+M6 the live audit inherited from the recording    CAUGHT  1 failed, 50 passed
+
+all modules restored byte-identically
+```
+
+*M4 reported `4 failed, 47 passed`. It is the cross-check that the contract binding bites: widening
+`GLUE_KINDS` in `extension_audit.py` moves the contract digest, which un-measures the recording,
+which returns the gate to `NOT_RUN` - so a recording cannot be made green by widening the list it is
+judged against.
+
+**Fixing the broken test found a real defect in the code under it.** `inspect.getsourcefile` returns
+a pseudo-filename such as `<no file>` for code compiled from a string whose module carries a loader,
+and on Windows `Path("<no file>").resolve()` yields an absolute path inside the repository without
+raising - so `defining_source` would have reported a located source that cannot be read, and
+`defined_outside_the_application` would have passed on it. The resolved path must now be an existing
+file.
+
+**A second real defect, found by a wall-clock assertion I did not write.** TG17.12's
+`test_the_gate_reads_the_recording_and_does_not_run_the_calibration` asserts that
+`qualification_plan()` assembles in under a second, and it failed in a long combined run. The
+reading was contention, but investigating it found that the plan was calling
+`read_extension_conformance()` **twice** - once for the gate and once for the record - walking
+seventeen sources twice for an identical answer and doubling an HTTP route's added cost. It is read
+once and passed to the gate. Measured after the fix: 0.183s, 0.146s, 0.145s over three consecutive
+assemblies.
+
+**Verification, all actually run:**
+
+```text
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_extension_evidence.py ^
+    src/tests/test_experiment_qualification.py -q
+51 passed, 2 warnings in 33.13s
+
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_calibration_record.py ^
+    src/tests/test_browser_evidence.py src/tests/test_adapter_registry.py -q
+46 passed, 1 warning in 13.03s
+
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_experiment_qualification.py ^
+    src/tests/test_extension_audit.py src/tests/test_frontend_contract.py -q
+217 passed, 5 warnings in 33.92s
+```
+
+The reported counts exceed the source function counts because several of these modules parametrise:
+`test_extension_evidence.py` carries 25 test functions and `test_experiment_qualification.py` 22.
+
+Nothing in this phase is evidence about the world. Both slices are statements about this
+repository's source, and about whether one synthetic adapter reached the seams a third party's
+adapter would have to reach. The full backend suite was not rerun; the last measured result remains
+3,536 passed.

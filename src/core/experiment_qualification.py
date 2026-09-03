@@ -32,6 +32,16 @@ with its fixtures.  It is still not executed here, for the reason above.  The ga
 recording bound to the declared contract and to the source of the modules that decide what the
 measurement is, so relaxing an expectation or changing the statistic returns this gate to
 ``NOT_RUN`` instead of leaving a stale pass behind.  See ``src.core.calibration_record``.
+
+``synthetic_fifth_adapter`` is the fifth, and it is the only gate here whose evidence is partly
+readable on the spot (TG17.13).  Its source-edit half is decidable from committed source in
+milliseconds, so it is re-run live rather than believed from a receipt; its acceptance-run half
+cannot be reached from this side at all, because TG17.3 requires the fifth adapter to be defined in
+a module the application never imports, so it is recorded by that test and read back bound to the
+declared contract and source.  The gate publishes the standing glue count even when it passes:
+what this installation required is asserted to be zero, and what stands in the generic surfaces
+today is reported, because a count nobody prints is a count that grows.  See
+``src.core.extension_evidence``.
 """
 
 from __future__ import annotations
@@ -277,6 +287,44 @@ def _browser_gate(title: str) -> Dict[str, Any]:
     return _gate("browser_no_glue", title, facts["status"], detail)
 
 
+def _extension_gate(title: str, facts: Dict[str, Any]) -> Dict[str, Any]:
+    """The fifth-adapter gate, half read live from source and half read from a recorded run.
+
+    TG17.13. The split is the interesting part. The source-edit audit is decidable here, exactly,
+    from committed source, so it is re-run live rather than trusted from a receipt: a recording of
+    a fact that can be recomputed is only a way to be wrong later. The acceptance run cannot be
+    read here at all - TG17.3 requires the fifth adapter to live in a module the application never
+    imports - so it is recorded by the test and bound to the contract and source it was measured
+    against. The gate's `detail` states the standing glue count even when it passes, because that
+    count is reported rather than asserted and an unpublished one would let glue accumulate behind
+    a green gate.
+    """
+    audit = facts["audit"]
+    if facts["status"] == "PASS":
+        recorded = facts["recorded"]
+        glue = recorded["glue"]
+        detail = (
+            "A synthetic fifth domain with different mathematics - a monotone rank channel, not "
+            "the shared standardized level - reached the registry, the control schema, the "
+            "conformance kit and the domain-blind mining seam from a module the application never "
+            "imports, passing all %d checks (recorded %s). No framework source names it, so "
+            "installation required 0 framework edits across %d generic surfaces. Standing "
+            "adapter-specific glue in those surfaces is %d and is reported rather than asserted: "
+            "%s."
+            % (recorded["checks"], recorded["recorded_utc"], audit["framework_sources"],
+               recorded["adapter_specific_framework_edits"],
+               "; ".join("%s:%d renders a bespoke planner for %s"
+                         % (item["source"], item["line"], item["domain"]) for item in glue)
+               or "none"))
+    else:
+        detail = (
+            "Must be measured by the extension conformance test and source-edit audit, and "
+            "recorded at %s. %s" % (facts["record_path"],
+                                    " ".join(reason[0].upper() + reason[1:] + "."
+                                             for reason in facts["reasons"])))
+    return _gate("synthetic_fifth_adapter", title, facts["status"], detail)
+
+
 def _scale_shape_gate(title: str) -> Dict[str, Any]:
     """The gate, stated from the measurement rather than from a sentence maintained by hand."""
     facts = scale_shape_applicability()
@@ -298,6 +346,11 @@ def qualification_plan() -> Dict[str, Any]:
     """The complete gate before anything is executed; omissions are impossible to hide."""
     from src.core.browser_evidence import browser_run_evidence, scientist_action_evidence
     from src.core.calibration_record import read_calendar_calibration
+    from src.core.extension_evidence import read_extension_conformance
+
+    # Read once and passed to the gate: the audit walks seventeen sources, and doing that twice
+    # per plan would double an HTTP route's cost for an identical answer.
+    extension = read_extension_conformance()
 
     cells = []
     for duration in DURATIONS:
@@ -322,8 +375,7 @@ def qualification_plan() -> Dict[str, Any]:
               "Resume the same manifest after a process-boundary reload and retry only the "
               "failed component."),
         _browser_gate("Clean-browser no-glue path"),
-        _gate("synthetic_fifth_adapter", "Synthetic fifth-adapter no-edit test", "NOT_RUN",
-              "Must be measured by the extension conformance test and source-edit audit."),
+        _extension_gate("Synthetic fifth-adapter no-edit test", extension),
         _calendar_gate("Calendar null calibration and planted power"),
         _scale_shape_gate("Scale/shape null calibration and planted power"),
         _gate("live_sources", "Four-domain live-source tail", "NOT_RUN",
@@ -340,10 +392,14 @@ def qualification_plan() -> Dict[str, Any]:
         "calendar_calibration": read_calendar_calibration(),
         "scale_shape_calibration": scale_shape_applicability(),
         # TG18.5 slice 4: measured by a rendered run or reported as unmeasured, never invented
-        # here. `adapter_specific_framework_edits` stays NOT_MEASURED in both cases - it is a
-        # source-edit audit belonging to `synthetic_fifth_adapter`, which no browser can observe.
+        # here. `adapter_specific_framework_edits` stays NOT_MEASURED in both cases - a browser
+        # cannot observe a source-edit audit. TG17.13 supplies that number from the audit itself,
+        # under `extension_evidence`, where the two halves of the fifth-adapter claim are kept
+        # apart: what this installation required (0, asserted) and what stands in the generic
+        # surfaces today (reported).
         "scientist_actions": scientist_action_evidence(),
         "browser_evidence": browser_run_evidence(),
+        "extension_evidence": extension,
         "claim_boundary": (
             "This plan and its offline rehearsal qualify apparatus behaviour only. They are "
             "not acquired observations, scientific results, evidence, replication or claims."),

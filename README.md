@@ -41,6 +41,7 @@ supersedes the other.
 
 * Atmospheric line: Phase 4E. T4E.1 and T4E.2 are DONE; **T4E.3 (approximate matching by
   clustering) is next and has not been started.**
+* Cross-domain line: **TG17.13 is DONE (2026-09-04)** - `synthetic_fifth_adapter` reads `PASS` for the first time, on a live source-edit audit plus a recorded acceptance run, and it publishes the standing glue count (**1**, `AcquisitionView.tsx:243`) that it deliberately does not block on. Three of seven release gates now clear; the verdict stays `NOT_RELEASEABLE`, and **`live_sources` is the last unmeasured scientific gate**.
 * Cross-domain line: Phase G18, the instrument the science is read through. TG17.9 and TG17.10
   are DONE, the latter with the **release withheld**; TG18.1 (shared instrument foundation) closed
   on 2026-09-03 after six slices; TG18.2 (scientific visualization workspace) closed the same day

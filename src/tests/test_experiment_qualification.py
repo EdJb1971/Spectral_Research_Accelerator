@@ -171,8 +171,40 @@ def test_green_offline_rehearsal_cannot_make_the_release_verdict_green(qualified
     # It is the first scientific gate to clear, and the verdict is unmoved by it.
     assert gates["calendar_calibration"]["status"] == "PASS"
     assert gates["calendar_calibration"]["blocking"] is False
+    # TG17.13: the fifth-adapter gate no longer states a sentence about a measurement nobody made.
+    # It reads a live source-edit audit and a recorded acceptance run, and it may still refuse.
+    assert gates["synthetic_fifth_adapter"]["status"] in ("PASS", "FAIL", "NOT_RUN")
     assert gates["live_sources"]["status"] == "NOT_RUN"
     assert qualified["verdict"] == "NOT_RELEASEABLE"
+
+
+def test_the_fifth_adapter_gate_publishes_the_glue_count_it_does_not_block_on(qualified):
+    """TG17.13. Two numbers, and collapsing them would lose the one that is actionable.
+
+    The installation claim is asserted and is zero: no framework source names the fifth adapter.
+    The standing glue count is reported, because "glue must trend to zero rather than merely move
+    files" is a property of the whole surface over time rather than of one installation. A gate
+    that blocked on it would make an unrelated archive's acquisition semantics a release decision;
+    a gate that passed without printing it would let glue accumulate behind a green light.
+    """
+    evidence = qualified["extension_evidence"]
+    gate = {item["gate_id"]: item for item in qualified["gates"]}["synthetic_fifth_adapter"]
+    assert evidence["audit_read_live_here"] is True
+
+    if evidence["status"] != "PASS":
+        assert evidence["reasons"], "a gate that has not cleared must say why"
+        assert "Must be measured by the extension conformance test" in gate["detail"]
+        return
+
+    recorded = evidence["recorded"]
+    assert recorded["installation_required_framework_edits"] == 0
+    standing = recorded["adapter_specific_framework_edits"]
+    assert isinstance(standing, int)
+    # The published count is in the detail a reader of the record actually sees.
+    assert "installation required 0 framework edits" in gate["detail"]
+    assert "Standing adapter-specific glue in those surfaces is %d" % standing in gate["detail"]
+    for item in recorded["glue"]:
+        assert item["source"] in gate["detail"], "a counted instance is named, not just totalled"
 
 
 def test_scientist_action_measurements_are_not_invented(qualified):

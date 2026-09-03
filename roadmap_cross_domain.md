@@ -5431,7 +5431,7 @@ recorded under the slice headings, are exempt by construction rather than by a l
 
 TG18.5 is complete. G18 is complete.
 
-**TG17.13 The source-edit audit and the fifth-adapter gate — IN PROGRESS (2026-09-04).**
+**TG17.13 The source-edit audit and the fifth-adapter gate — DONE (2026-09-04, `ed-dev`).**
 `synthetic_fifth_adapter` is one of the two gates still blocking release, and the reason it was
 recorded `NOT_RUN` turns out to have been wrong. TG17.10 said a deterministic backend rehearsal
 must not award itself a gate only a source-edit audit can measure. The real reason is that no such
@@ -5471,9 +5471,58 @@ Four mutations were each caught: ignoring an undeclared occurrence, counting pro
 content as glue, scanning an empty registry instead of refusing it, and permitting the fifth
 adapter's name in a framework source.
 
-Remaining for TG17.13: the channel into the qualification ledger, which is the shape TG17.12 and
-TG18.5 slice 4 already established - a recording bound to a declared contract and to the sources
-that decide what was measured, with absence, staleness and drift all reading `NOT_RUN`.
+**Second slice delivered (2026-09-04) - the channel, and the half of it that must not exist.**
+`src/core/extension_evidence.py` carries the measurement into the ledger, and the design decision
+is which half it records. The **source-edit audit is read live**, on every call, from committed
+source: it is exact, it costs milliseconds, and a recording of a fact that can be recomputed is
+only a way to be wrong later. The **acceptance run is recorded**, because it cannot be read from
+this side at all - TG17.3 requires the fifth adapter to be defined in a module the application
+never imports, so nothing under `src/core` may reach it. Copying TG17.12's recording shape onto
+both halves would have been the easy symmetry and the wrong one.
+
+**Deciding moved to the reading side.** The test supplies apparatus only it owns - the adapter, the
+native record, the window - and `measure_extension_conformance` performs all eight checks and
+decides whether they passed. A test that deleted its own assertions therefore changes nothing about
+what gets recorded. What it can still do is stop calling the recorder, and the answer to that is
+`NOT_RUN`, which is the correct answer. The recording binds the declared contract - the fifth
+adapter's names, the framework sources, what counts as glue, and **every declared occurrence with
+its written reason** - so a recording cannot be made green by widening the list it is judged
+against, or by rewriting why an entry is excused.
+
+**`synthetic_fifth_adapter` now reads `PASS`**, and it publishes the number it does not block on. A
+synthetic fifth domain with a monotone rank channel reached the registry, the control schema, the
+conformance kit and the domain-blind mining seam from `src/tests/test_adapter_registry.py`, passing
+all eight checks; installation required **0** framework edits across the seventeen generic
+surfaces; and standing adapter-specific glue is **1**, named in the gate's own detail as
+`AcquisitionView.tsx:243`. Three of the seven gates now clear. The verdict is unmoved:
+`NOT_RELEASEABLE`, with `offline_matrix` and `restart_recovery` unrun in a cold plan,
+`scale_shape_calibration` refused, and `live_sources` still the last unmeasured scientific gate.
+
+**A guard passed because it could not see what it was checking, for the fifth time.** The
+`defined_outside_the_application` check first compared `translate.__module__` against package
+prefixes. Under pytest's import mode that string is the bare `test_adapter_registry`, which starts
+with none of them - and would have started with none of them whatever the module was called. The
+check is now resolved from the defining *file*, made repository-relative, and a callable whose
+source cannot be located is a **refusal** rather than a pass, because an unanswerable question is
+not a satisfied one. D64, D74, D75, slice 1's vacuous scan, and now this.
+
+**A mutation pass with no baseline cannot tell a killed mutant from a broken suite.** The first
+run of this slice's mutation script reported M3 - `defining_source` falling back to the module name
+- as caught. It was not. The single failure that run was a test of my own that was broken: it
+asserted `__module__ == "builtins"` for a callable compiled from a string, and the exec scope
+carried no `__name__`, so the attribute was `None`. Every other mutation's count was inflated by
+the same failing test. The script now runs an unmutated baseline first and refuses to report at all
+unless it is green. Against a green baseline of 51 tests, **six mutations, six caught**: staleness
+ignored, a missing required check tolerated, the module-name fallback, `DEFAULT` widened into glue,
+another adapter accepted for measurement, and the live audit inherited from the recording.
+
+**Fixing that test found a real defect in the code it was testing.** `inspect.getsourcefile` hands
+back a pseudo-filename like `<no file>` for code compiled from a string whose module carries a
+loader, and on Windows `Path("<no file>").resolve()` produces an absolute path inside the
+repository without raising - so `defining_source` would have reported a located source that cannot
+be read. It now requires the resolved path to be an existing file.
+
+TG17.13 is complete. `live_sources` is the only scientific gate left, and it requires network.
 
 ## 6. Definition of Done
 
