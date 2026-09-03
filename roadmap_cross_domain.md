@@ -4848,10 +4848,46 @@ in Chromium. This is bounded browser engineering acceptance, not a screen-reader
 certification. `test_frontend_contract.py` is **179 tests** and the Python inventory is **3161**.
 The full backend suite was not rerun; the last measured figure remains **3536** (T4E.2).
 
-**TG18.5 UI qualification gate.** A clean-browser run exercises one representative path through
-each product mode, captures named viewport artefacts, asserts that every served route remains
-reachable, and records action count and refusal-to-remediation time. A production build and the
-existing no-glue Composer suite are necessary but not sufficient evidence.
+**TG18.5 UI qualification gate — IN PROGRESS (2026-09-03).** A clean-browser run exercises one
+representative path through each product mode, captures named viewport artefacts, asserts that
+every served route remains reachable, and records action count and refusal-to-remediation time. A
+production build and the existing no-glue Composer suite are necessary but not sufficient
+evidence.
+
+The gate is a suite, not a surface. Nothing it measures is reported back inside the product; a UI
+that grades itself on screen publishes a claim about the UI, and the claims this programme
+publishes are about the science.
+
+Its scope is set by TG17.10 rather than by presentation. That task shipped `NOT_RELEASEABLE` with
+five unpassed gates, two of which name this work directly: `browser_no_glue` reads `NOT_RUN`
+because "a deterministic backend rehearsal cannot observe a rendered browser and must not award
+itself a gate on someone else's evidence", and `scientist_actions` reads `NOT_MEASURED` for both
+the action count and `refusal_explanation_time_seconds`. TG18.5 therefore has to supply a
+trustworthy channel from a rendered run into the qualification record. A missing, stale or
+digest-mismatched artefact must read `NOT_RUN`; the ledger may ingest a measurement with its
+provenance and may never synthesize one it did not receive.
+
+**First slice delivered (2026-09-03) — served-workspace reachability.**
+`frontend/e2e/ui-qualification.spec.ts` asserts the shell serves exactly the qualified inventory
+in order, that all twenty workspaces open from a clean browser and name themselves, that every
+reachable journey destination lands on an inventoried workspace rather than the fallback heading,
+and that a clean browser disables nothing and claims no reason it is not entitled to.
+
+**The slice found a coverage hole rather than a defect, and the distinction matters.**
+`ResearchJourney.tsx` holds its seven destination identifiers separately from `WORKFLOW_NAV`.
+Inspect and Admit are blocked in a clean browser and correctly substitute a remediation for their
+own action, so their destinations are never clicked by any test in the repository. Renaming the
+journey's `domainWorkbench` target was confirmed to pass the entire rendered suite — TG18.3's own
+journey tests included — while sending a researcher who had selected a record to a heading reading
+"Scientific workbench workspace". Nothing is currently broken; nothing was guarding it either. A
+static cross-check now resolves all seven destinations and every `JOURNEY_STAGE_BY_WORKSPACE` key
+against the served identifiers, and was verified to fail on that mutation and pass without it.
+Both new static guards were mutation-checked; the rendered inventory and self-naming tests were
+confirmed to fail on a workspace rename and the reachability tests correctly to stay green.
+
+Remaining for TG18.5: one representative path per product mode with named viewport artefacts; the
+action-count and refusal-to-remediation measurement, deterministic count asserted with wall-clock
+recorded as unasserted context; and the evidence channel into the qualification ledger.
 
 ## 6. Definition of Done
 

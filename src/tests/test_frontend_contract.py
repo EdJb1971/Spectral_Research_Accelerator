@@ -2313,3 +2313,53 @@ def test_rendered_non_colour_acceptance_keeps_status_words_and_semantics():
     assert "Blocked: no study is selected for evidence admission." in acceptance
     assert "aria-current" in acceptance
     assert "accessibleNames" in acceptance
+
+
+# --------------------------------------- TG18.5 UI qualification gate
+
+
+def _workflow_nav_ids(app_source: str) -> set:
+    nav = app_source[app_source.index("const WORKFLOW_NAV"):app_source.index("] as const;")]
+    return set(re.findall(r"\{ id: '([^']+)', name:", nav))
+
+
+def test_every_journey_destination_resolves_to_a_served_workspace(app_source):
+    """A clean browser cannot reach the blocked stages' own destinations, so nothing rendered
+    exercises them. Inspect and Admit substitute a remediation while they are blocked, which is
+    correct behaviour that also hides a renamed or mistyped workspace identifier behind it. The
+    journey holds these strings separately from WORKFLOW_NAV; only a static cross-check covers
+    all seven regardless of which are reachable today."""
+    journey = _read("components", "ResearchJourney.tsx")
+    served = _workflow_nav_ids(app_source)
+
+    targets = set(re.findall(r"workspace: '([^']+)'", journey))
+    assert len(targets) >= 5, "the journey's workspace identifiers are no longer parseable"
+    unresolved = sorted(t for t in targets if t not in served)
+    assert not unresolved, (
+        "the journey navigates to workspaces the shell does not serve, which lands the researcher "
+        "on App.tsx's fallback heading instead of the workspace asked for:\n  %s\nserved:\n  %s"
+        % ("\n  ".join(unresolved), "\n  ".join(sorted(served))))
+
+    # The reverse map decides which stage a workspace lights up; a stale key silently lights none.
+    stage_map = app_source[app_source.index("const JOURNEY_STAGE_BY_WORKSPACE"):]
+    stage_map = stage_map[:stage_map.index("};")]
+    mapped = set(re.findall(r"^\s*(\w+): '", stage_map, re.MULTILINE))
+    assert mapped, "JOURNEY_STAGE_BY_WORKSPACE is no longer parseable"
+    assert not sorted(m for m in mapped if m not in served), (
+        "JOURNEY_STAGE_BY_WORKSPACE keys a workspace the shell does not serve")
+
+
+def test_the_qualification_gate_inventories_every_served_workspace(app_source):
+    """The rendered gate writes its inventory out rather than deriving it from the page. That is
+    deliberate - a self-derived list shrinks to match a shell that lost a workspace - and it is
+    only safe while this holds the other end against WORKFLOW_NAV."""
+    gate = io.open(os.path.join(REPO_ROOT, "frontend", "e2e", "ui-qualification.spec.ts"),
+                   encoding="utf-8").read()
+    nav = app_source[app_source.index("const WORKFLOW_NAV"):app_source.index("] as const;")]
+    names = re.findall(r"\{ id: '[^']+', name: '([^']+)'", nav)
+
+    listed = re.findall(r"^  '([^']+)',$", gate, re.MULTILINE)
+    assert listed == names, (
+        "the qualification gate's workspace inventory has drifted from WORKFLOW_NAV\n"
+        "gate:  %s\nshell: %s" % (listed, names))
+    assert "not evidence that any workspace computes anything correctly" in gate
