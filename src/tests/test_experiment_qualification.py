@@ -176,8 +176,28 @@ def test_green_offline_rehearsal_cannot_make_the_release_verdict_green(qualified
 
 
 def test_scientist_action_measurements_are_not_invented(qualified):
-    assert set(qualified["scientist_actions"].values()) >= {
-        "NOT_MEASURED", "visible researcher actions from a clean browser session"}
+    """TG18.5 slice 4 gave this a channel, and the guard is now about provenance, not absence.
+
+    Before the channel existed the only honest answer was `NOT_MEASURED`, and this test asserted
+    that literal. A measurement arriving does not weaken the rule it was protecting: the record
+    may report a number a rendered run handed it, and may still never produce one itself. So the
+    two admissible shapes are asserted, and the field no browser can observe is asserted to stay
+    unmeasured in both of them.
+    """
+    actions = qualified["scientist_actions"]
+    assert actions["definition"] == "visible researcher actions from a clean browser session"
+    # A source-edit audit belongs to `synthetic_fifth_adapter`. No browser run may award it.
+    assert actions["adapter_specific_framework_edits"] == "NOT_MEASURED"
+
+    if actions["status"] == "NOT_MEASURED":
+        assert actions["refusal_explanation_time_seconds"] == "NOT_MEASURED"
+        assert actions["reasons"], "an unmeasured count must say why it has none"
+    else:
+        assert actions["status"] == "MEASURED"
+        assert isinstance(actions["actions_to_a_completed_run"], int)
+        # Durations are carried, and only under a name that says nothing asserts them.
+        assert not any(key.endswith("_seconds") for key in actions)
+        assert any(key.endswith("_seconds_unasserted") for key in actions)
 
 
 def test_qualification_record_is_self_hashed_and_tampering_is_detected(qualified):

@@ -5363,7 +5363,35 @@ grows the path and fails the count, renaming a control fails both tests rather t
 finding another route, and rendering the refusal without the domain it refuses fails the refusal
 measurement.
 
-Remaining for TG18.5: the evidence channel into the qualification ledger, and the G18 close-out.
+**Fourth slice delivered (2026-09-04) - the evidence channel into the qualification ledger.**
+TG17.10 registered two gates it could not award itself, and TG18.5 set its own constraint for
+closing them: the ledger may ingest a measurement with its provenance and may never synthesize one
+it did not receive. Recording and deciding are separate and separately owned.
+`frontend/e2e/qualification-reporter.ts` writes `measurements/browser_run.json` - every test that
+ran with its spec and outcome, the artefacts with their digests, and the source digest of every
+spec in the suite - and decides nothing. `src/core/browser_evidence.py` decides, and every decision
+can be a refusal.
+
+Two bindings, and the second is the one that was actually needed. Weakening a spec returns the gate
+to `NOT_RUN`, because a recording is a measurement of a particular set of assertions. And a
+*partial* run is refused: running one spec is the normal way to work on a test, and Playwright
+reports it as `passed`, so the reporter records both the specs that ran and the whole inventory it
+found, and the gate refuses when they disagree, naming every spec that did not run. That refusal
+was verified before the first full run - a green four-test invocation read `NOT_RUN` and listed the
+other fourteen specs.
+
+The outcomes stay apart: absent, stale or partial means the run has not happened for this code and
+reads `NOT_RUN`; a run that happened and failed reads `FAIL`; only a complete, clean run of the
+suite this checkout contains reads `PASS`. The counts from slice 3 are restated in the module so a
+*drifted* count reads `NOT_MEASURED` rather than being reported as the new number, wall-clock is
+carried only under names ending `_unasserted`, and `adapter_specific_framework_edits` stays
+unmeasured because no rendered run may award a source-edit audit.
+
+Measured: **136 of 136** across all 15 specs from a cleaned `.e2e-state`, so `browser_no_glue` reads
+**`PASS`**. Four mutations were each caught: accepting a partial run, dropping the spec-source
+binding, collapsing `FAIL` into `NOT_RUN`, and reporting a drifted count instead of refusing it.
+
+Remaining for TG18.5: the G18 close-out.
 
 ## 6. Definition of Done
 

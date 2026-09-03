@@ -56,7 +56,15 @@ supersedes the other.
   reaches, and asserts that every mode signature appears in exactly one of the four -- the property
   that keeps a redesign from making one mode ambiguous while improving another. That measurement
   also found an intermittent failure in an older spec, whose heading locator matched both the
-  panel's own title and the shell's screen-reader-only workspace heading. **TG17.11 (the scale/shape calibration) is
+  panel's own title and the shell's screen-reader-only workspace heading. Its third measures the two numbers
+  `scientist_actions` refused to invent -- **14** visible actions from a clean browser to a
+  completed run of the frozen plan, and **3** to reach the preflight refusal with **4** more to
+  clear it -- asserting the counts while recording wall-clock as context nothing asserts. Its
+  fourth supplies the evidence channel: a Playwright reporter records what a run did and binds it
+  to the source of every spec plus the completeness of the run, and a Python reader decides. A
+  green single-spec run is refused as partial, a weakened spec returns the gate to `NOT_RUN`, and a
+  run that failed reads `FAIL` rather than merely unrun. **`browser_no_glue` now reads `PASS`** on
+  a measured 136 of 136. **TG17.11 (the scale/shape calibration) is
   done**, all five slices: D91 fixed, the statistic built with its scale invariance measured at
   1.1e-16 rather than declared, four frozen fixtures, a calibration in which the planted case
   recovers 105 of 105 members in 20 of 20 realisations while both safeguards reject nothing in

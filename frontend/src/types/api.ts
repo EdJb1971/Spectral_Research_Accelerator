@@ -2727,7 +2727,31 @@ export interface ExperimentQualificationRecord {
     }>;
     claim_boundary: string;
   };
-  scientist_actions: Record<string, string>;
+  // TG18.5 slice 4. Measured by a rendered run or reported as unmeasured, never synthesized by
+  // the server. `MEASURED` carries the counts; `NOT_MEASURED` carries only the reasons it has
+  // none. Numbers and strings both appear, so the value type stays open; the durations are named
+  // `_unasserted` because nothing compares them to anything.
+  scientist_actions: Record<string, string | number | null | string[]>;
+  // What the `browser_no_glue` gate read, and why it said what it said.
+  browser_evidence?: {
+    schema: string;
+    measured_by: string;
+    executed_here: boolean;
+    record_path: string;
+    specs_in_this_checkout: number;
+    status: 'PASS' | 'FAIL' | 'NOT_RUN';
+    reasons: string[];
+    recorded: {
+      recorded_utc: string;
+      playwright_status: string;
+      passed: number;
+      failed: number;
+      skipped: number;
+      specs_that_ran: number;
+      artefacts: number;
+    } | null;
+    claim_boundary: string;
+  };
   claim_boundary: string;
 }
 

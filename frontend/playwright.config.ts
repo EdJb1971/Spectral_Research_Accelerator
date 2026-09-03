@@ -20,7 +20,10 @@ export default defineConfig({
   expect: { timeout: 15_000 },
   fullyParallel: false,
   workers: 1,
-  reporter: [['list']],
+  // `list` for a human watching the run; the second writes `measurements/browser_run.json`, which
+  // is the only channel by which a rendered run reaches the release gate (TG18.5 slice 4). It
+  // records and does not decide; `src/core/browser_evidence.py` decides and refuses.
+  reporter: [['list'], ['./e2e/qualification-reporter.ts']],
   use: {
     baseURL: 'http://127.0.0.1:3000',
     trace: 'retain-on-failure',

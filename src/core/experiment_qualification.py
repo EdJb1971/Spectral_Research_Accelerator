@@ -247,6 +247,36 @@ def _calendar_gate(title: str) -> Dict[str, Any]:
     return _gate("calendar_calibration", title, facts["status"], detail)
 
 
+def _browser_gate(title: str) -> Dict[str, Any]:
+    """The no-glue gate, read from a recorded browser run that this process did not perform.
+
+    TG18.5 slice 4. The gate cannot observe a browser and does not try; it reads a recording that
+    is bound to the source of every spec in the suite and to the completeness of the run, and it
+    refuses on absence, staleness, a partial run, or a failure. The distinction it keeps is the
+    one this module keeps everywhere: a run that has not happened for this code is `NOT_RUN`, and
+    a run that happened and failed is `FAIL`.
+    """
+    from src.core.browser_evidence import browser_run_evidence
+
+    facts = browser_run_evidence()
+    if facts["status"] == "PASS":
+        recorded = facts["recorded"]
+        detail = (
+            "A rendered Chromium run of all %d specs in this checkout passed %d tests with %d "
+            "failed, recorded %s, bound to the source of every spec it ran and to %d produced "
+            "artefacts. Measured through visible controls only; it qualifies apparatus "
+            "behaviour and no scientific result."
+            % (facts["specs_in_this_checkout"], recorded["passed"], recorded["failed"],
+               recorded["recorded_utc"], recorded["artefacts"]))
+    else:
+        detail = (
+            "Must be measured by a rendered browser test through visible controls and recorded "
+            "at %s. %s" % (facts["record_path"],
+                           " ".join(reason[0].upper() + reason[1:] + "."
+                                    for reason in facts["reasons"])))
+    return _gate("browser_no_glue", title, facts["status"], detail)
+
+
 def _scale_shape_gate(title: str) -> Dict[str, Any]:
     """The gate, stated from the measurement rather than from a sentence maintained by hand."""
     facts = scale_shape_applicability()
@@ -266,6 +296,7 @@ def _scale_shape_gate(title: str) -> Dict[str, Any]:
 
 def qualification_plan() -> Dict[str, Any]:
     """The complete gate before anything is executed; omissions are impossible to hide."""
+    from src.core.browser_evidence import browser_run_evidence, scientist_action_evidence
     from src.core.calibration_record import read_calendar_calibration
 
     cells = []
@@ -290,8 +321,7 @@ def qualification_plan() -> Dict[str, Any]:
         _gate("restart_recovery", "Single remote-failure restart recovery", "NOT_RUN",
               "Resume the same manifest after a process-boundary reload and retry only the "
               "failed component."),
-        _gate("browser_no_glue", "Clean-browser no-glue path", "NOT_RUN",
-              "Must be measured by a rendered browser test through visible controls."),
+        _browser_gate("Clean-browser no-glue path"),
         _gate("synthetic_fifth_adapter", "Synthetic fifth-adapter no-edit test", "NOT_RUN",
               "Must be measured by the extension conformance test and source-edit audit."),
         _calendar_gate("Calendar null calibration and planted power"),
@@ -309,12 +339,11 @@ def qualification_plan() -> Dict[str, Any]:
         "gates": gates,
         "calendar_calibration": read_calendar_calibration(),
         "scale_shape_calibration": scale_shape_applicability(),
-        "scientist_actions": {
-            "status": "NOT_MEASURED",
-            "definition": "visible researcher actions from a clean browser session",
-            "adapter_specific_framework_edits": "NOT_MEASURED",
-            "refusal_explanation_time_seconds": "NOT_MEASURED",
-        },
+        # TG18.5 slice 4: measured by a rendered run or reported as unmeasured, never invented
+        # here. `adapter_specific_framework_edits` stays NOT_MEASURED in both cases - it is a
+        # source-edit audit belonging to `synthetic_fifth_adapter`, which no browser can observe.
+        "scientist_actions": scientist_action_evidence(),
+        "browser_evidence": browser_run_evidence(),
         "claim_boundary": (
             "This plan and its offline rehearsal qualify apparatus behaviour only. They are "
             "not acquired observations, scientific results, evidence, replication or claims."),
