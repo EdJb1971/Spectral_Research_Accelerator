@@ -4898,6 +4898,48 @@ not working*, and the ledger must be able to say so.
 *   Network stays opt-in. Reaching the internet must never be a side effect of running a sweep.
 *   Credentials are never written to an artefact, a log, a provenance record or a `repr`.
 
+**TG17.12 Calendar calibration recorded into its release gate — DONE (2026-09-03).**
+`calendar_calibration` was the last of TG17.10's seven gates whose `NOT_RUN` was true of the record
+and false of the world. `family_calibration.calibrate_family` runs the frozen calendar family on
+the TG17.0 fixtures and has always passed; nothing carried that measurement into the qualification
+record. The gate still does not run it — a calibration is a scientific measurement and the gate is
+a release gate, the same separation TG17.11 stated for scale/shape — so what this task builds is
+the channel, in `src/core/calibration_record.py`.
+
+A recording is bound to two digests and is read as *unrun* if either moves: the **declared
+contract** (the cases and the rejection counts frozen with them, family size, alpha, correction,
+replications, channel, null family and seed), digested from `CALIBRATION_CASES` rather than
+restated so that relaxing an expectation cannot leave a stale pass agreeing with it; and the
+**source** of the four modules that decide what the measurement is, digested with line endings
+normalised so a Windows clone and a POSIX one agree. Four outcomes, three of them blocking: absent,
+unbound from its contract and unbound from its source all read `NOT_RUN`, because a recording made
+against something else is a measurement of a different thing rather than a weaker pass; a recording
+whose cases missed their frozen answers reads `FAIL`, because a calibration that ran and failed is
+a different fact from one that did not run.
+
+Neither digest is tamper-evidence against an editor of this repository, and the source binding
+covers four files rather than the whole import graph. That boundary is stated rather than hidden,
+because the backstop is elsewhere: the live calibration already runs in the suite on every pass,
+and a guard in `test_experiment_family.py` compares it case by case against what the gate is being
+told, so a recording cannot drift from what the calibration actually does.
+
+**What it recorded.** At 999 replications on a family of six, `shared_calendar_event` rejects
+**6 of 6** after correction and `same_window_unrelated`, `gap_alias` and `inadmissible_precedence`
+each reject **0**. `all_met` is true, so the gate reads **`PASS`** — the first of the seven
+scientific gates to clear, and the verdict is unmoved at `NOT_RELEASEABLE`.
+
+**The contrast with TG17.11, computed rather than asserted.** Both modes have a p-value floor and
+buy it differently. Scale/shape buys it with domains — a `k`-pairing family cannot go below `1/k`,
+and its draw refuses above 8 while its correction needs 105. Calendar buys it with computation —
+the floor is `1/(1 + replications)` and there is no enumeration ceiling, because the surrogates are
+clock shifts the record itself supports. Both configurations are checked against the real
+correction: the calibration family resolves at **999 against 293 required**, and the calendar plan
+the manifests actually declare resolves **4 corrected members at 200 replications against 166
+required**. Two bounds that do not meet, against two that meet with room to spare.
+
+Twelve guards in a new `test_calibration_record.py` plus the drift backstop, and the gate assembles
+in **22 ms warm** with a guard failing above one second.
+
 ### Phase G18 — World-class scientific interface — **IN PROGRESS (2026-09-02)**
 
 The engine is reachable, but reachability is not yet an instrument-quality interaction contract.

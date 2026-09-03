@@ -2651,6 +2651,17 @@ export interface ExperimentQualificationCell {
   refusals?: { domain?: string; reason: string }[];
 }
 
+// TG17.12: whether a rejection is arithmetically reachable at a declared configuration. The
+// calendar null's floor is 1/(1+replications), so it is bought with computation and there is no
+// enumeration ceiling - the opposite of the scale/shape null one field below.
+export interface CalendarNullResolution {
+  members: number;
+  replications: number;
+  p_value_floor: number;
+  replications_required: number;
+  can_reject_after_correction: boolean;
+}
+
 export interface ExperimentQualificationRecord {
   schema: string;
   qualification_sha256: string;
@@ -2663,6 +2674,40 @@ export interface ExperimentQualificationRecord {
     attempts_before_restart: Record<string, number>;
     attempts_after_retry: Record<string, number>;
     checks: Record<string, boolean>;
+  };
+  // TG17.12. A calibration measured outside orchestration and read here, never run here.
+  // `status` is what the gate is entitled to say; `reasons` is why, and is non-empty whenever
+  // the recording is absent, unbound from the contract or source it was made against, or failed.
+  calendar_calibration?: {
+    schema: string;
+    entry_point: string;
+    executed_here: boolean;
+    record_path: string;
+    contract_sha256: string;
+    status: 'PASS' | 'FAIL' | 'NOT_RUN';
+    reasons: string[];
+    recorded_utc?: string;
+    recorded: {
+      recorded_utc: string;
+      all_met: boolean;
+      replications: number;
+      family_size: number;
+      cases: Array<{
+        case: string; expectation: string;
+        minimum_rejections: number; maximum_rejections: number;
+        n_rejected_after_correction: number; met: boolean;
+      }>;
+      claim_boundary: string;
+    } | null;
+    applicability: {
+      floor_is_bought_with: string;
+      enumeration_ceiling: number | null;
+      calibration_family: CalendarNullResolution;
+      declared_plan: CalendarNullResolution & { declared_search_members: number };
+      alpha: number;
+      correction: string;
+      claim_boundary: string;
+    };
   };
   // TG17.11: why the scale/shape gate is REFUSED rather than absent. Applicability only - the
   // server does not run that calibration here and this section carries no power number.

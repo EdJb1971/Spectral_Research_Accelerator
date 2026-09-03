@@ -551,6 +551,27 @@ def test_every_calibration_case_meets_the_answer_frozen_with_the_fixture(calibra
     assert calibration["replications"] == 999
 
 
+def test_the_recording_the_release_gate_reads_matches_this_live_calibration(calibration):
+    """TG17.12's backstop, and the reason the recorded channel is evidence rather than a sentence.
+
+    `calendar_calibration` reads a recording rather than running this, so that a release gate is
+    not a scientific worker. That separation is only safe if the recording cannot drift from what
+    the calibration actually does, and the guard against drift is here: the live measurement runs
+    on every pass anyway, and it must agree, case by case, with what the gate is being told.
+    """
+    from src.core.calibration_record import read_calendar_calibration
+
+    facts = read_calendar_calibration()
+    assert facts["status"] == "PASS", facts["reasons"]
+    recorded = facts["recorded"]
+    assert recorded["replications"] == calibration["replications"]
+    assert recorded["family_size"] == calibration["family_size"]
+    assert recorded["all_met"] == calibration["all_met"]
+    live = {row["case"]: row["n_rejected_after_correction"] for row in calibration["cases"]}
+    assert {row["case"]: row["n_rejected_after_correction"]
+            for row in recorded["cases"]} == live
+
+
 def test_the_statistic_is_built_from_shared_support_and_not_from_row_counts():
     """The TG17.4 invariant, applied to the statistic the calibration corrects.
 

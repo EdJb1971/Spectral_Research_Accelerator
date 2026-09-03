@@ -25,6 +25,13 @@ but an inapplicable one: the declared null's support is too small to resolve any
 it will draw from, and too large to draw from at the sizes that could resolve.  A calibrated method
 the declared plans cannot reach, a method that does not exist, and a method that ran and failed are
 three different facts, and the record keeps them apart.
+
+``calendar_calibration`` is the fourth of those facts and the only one that clears (TG17.12): a
+method that exists, is applicable at the declared configuration, ran, and met every answer frozen
+with its fixtures.  It is still not executed here, for the reason above.  The gate reads a
+recording bound to the declared contract and to the source of the modules that decide what the
+measurement is, so relaxing an expectation or changing the statistic returns this gate to
+``NOT_RUN`` instead of leaving a stale pass behind.  See ``src.core.calibration_record``.
 """
 
 from __future__ import annotations
@@ -200,6 +207,46 @@ def scale_shape_applicability() -> Dict[str, Any]:
     }
 
 
+def _calendar_gate(title: str) -> Dict[str, Any]:
+    """The calendar gate, read from a recorded calibration rather than from a hopeful sentence.
+
+    TG17.12. The measurement lives in `src.core.calibration_record`, which decides between four
+    outcomes and blocks on three of them. This gate states the outcome and the arithmetic behind
+    it, and never executes the calibration: it reads a recording bound to the contract and source
+    the recording was made against, so a relaxed expectation or a changed statistic returns the
+    gate to `NOT_RUN` rather than letting a stale pass stand.
+    """
+    from src.core.calibration_record import read_calendar_calibration
+
+    facts = read_calendar_calibration()
+    applicability = facts["applicability"]
+    declared = applicability["declared_plan"]
+    if facts["status"] == "PASS":
+        recorded = facts["recorded"]
+        detail = (
+            "The frozen family calibration (%s) ran outside orchestration and every case met the "
+            "answer frozen with its fixture: %s. Recorded %s at %d replications on a family of "
+            "%d, bound to the contract and source it was measured against. Unlike the scale/shape "
+            "null this one has no enumeration ceiling - its floor of %.4g is bought with "
+            "replications - and the calendar plan the manifests declare resolves %d corrected "
+            "members at %d replications, where %d are required."
+            % (facts["entry_point"],
+               "; ".join("%s %d" % (row["case"], row["n_rejected_after_correction"])
+                         for row in recorded["cases"]),
+               recorded["recorded_utc"], recorded["replications"], recorded["family_size"],
+               applicability["calibration_family"]["p_value_floor"],
+               declared["members"], declared["replications"],
+               declared["replications_required"]))
+    else:
+        detail = (
+            "The frozen family calibration (%s) must run separately from orchestration and be "
+            "recorded at %s. %s"
+            % (facts["entry_point"], facts["record_path"],
+               " ".join(reason[0].upper() + reason[1:] + "."
+                        for reason in facts["reasons"]) or "No outcome is recorded."))
+    return _gate("calendar_calibration", title, facts["status"], detail)
+
+
 def _scale_shape_gate(title: str) -> Dict[str, Any]:
     """The gate, stated from the measurement rather than from a sentence maintained by hand."""
     facts = scale_shape_applicability()
@@ -219,6 +266,8 @@ def _scale_shape_gate(title: str) -> Dict[str, Any]:
 
 def qualification_plan() -> Dict[str, Any]:
     """The complete gate before anything is executed; omissions are impossible to hide."""
+    from src.core.calibration_record import read_calendar_calibration
+
     cells = []
     for duration in DURATIONS:
         for mode in MODES:
@@ -245,8 +294,7 @@ def qualification_plan() -> Dict[str, Any]:
               "Must be measured by a rendered browser test through visible controls."),
         _gate("synthetic_fifth_adapter", "Synthetic fifth-adapter no-edit test", "NOT_RUN",
               "Must be measured by the extension conformance test and source-edit audit."),
-        _gate("calendar_calibration", "Calendar null calibration and planted power", "NOT_RUN",
-              "The frozen family calibration must run separately from orchestration."),
+        _calendar_gate("Calendar null calibration and planted power"),
         _scale_shape_gate("Scale/shape null calibration and planted power"),
         _gate("live_sources", "Four-domain live-source tail", "NOT_RUN",
               "Network remains opt-in and archive coverage/refusals require a separately "
@@ -259,6 +307,7 @@ def qualification_plan() -> Dict[str, Any]:
         "record_kind": RECORD_KIND,
         "matrix": cells,
         "gates": gates,
+        "calendar_calibration": read_calendar_calibration(),
         "scale_shape_calibration": scale_shape_applicability(),
         "scientist_actions": {
             "status": "NOT_MEASURED",

@@ -167,6 +167,10 @@ def test_green_offline_rehearsal_cannot_make_the_release_verdict_green(qualified
     # TG17.11 moved this off NOT_IMPLEMENTED: a registered calibration now exists, and what
     # blocks the gate is that no declared plan can reach it. Still blocking, for a stated reason.
     assert gates["scale_shape_calibration"]["status"] == "REFUSED"
+    # TG17.12: the calendar calibration ran, met every frozen answer, and now reaches the record.
+    # It is the first scientific gate to clear, and the verdict is unmoved by it.
+    assert gates["calendar_calibration"]["status"] == "PASS"
+    assert gates["calendar_calibration"]["blocking"] is False
     assert gates["live_sources"]["status"] == "NOT_RUN"
     assert qualified["verdict"] == "NOT_RELEASEABLE"
 

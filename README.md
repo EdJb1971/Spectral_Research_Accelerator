@@ -60,7 +60,16 @@ supersedes the other.
   inventory of at least **105 declared pairings** before any member can reject at alpha 0.05,
   while the declared draw refuses inventories above 8, so no size satisfies both. Scale/shape
   mode is therefore not qualifiable on the declared families, which is recorded as the finding
-  rather than engineered away.
+  rather than engineered away. **TG17.12 is done**: the calendar calibration, which has always
+  run and passed in the suite, now reaches its release gate through a recording bound to the
+  declared contract and to the source of the modules that decide what it measures, so a relaxed
+  expectation or a changed statistic returns the gate to `NOT_RUN` instead of leaving a stale
+  pass. It recorded 6 of 6 rejections on the planted calendar event and 0 on each of the three
+  false-alignment fixtures, so `calendar_calibration` reads **`PASS`** — the first of the seven
+  gates to clear, with the verdict unmoved at `NOT_RELEASEABLE`. The two modes are opposites
+  here: calendar buys its p-value floor with replications and has no enumeration ceiling
+  (999 against 293 required, and the declared plan 200 against 166), while scale/shape buys its
+  floor with domains and cannot.
 * What TG18.2 has delivered, all of it presentation only: every figure carries a text and table
   equivalent of what it draws, a declared statement of whether two panels may share a colour
   scale, the domain a fitted claim was taken over with the uncertainty attached to it, and
