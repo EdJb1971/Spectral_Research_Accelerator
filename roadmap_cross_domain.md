@@ -4501,7 +4501,7 @@ last measured full-suite figure. No archive is acquired, no statistic runs, no f
 recorded, no evidence is admitted and nothing is released by this slice.
 
 
-**TG17.11 Scale/shape mining calibration — IN PROGRESS — slices 1-3 of 5 done (2026-09-03).** The
+**TG17.11 Scale/shape mining calibration — IN PROGRESS — slices 1-4 of 5 done (2026-09-03).** The
 `scale_shape_calibration` gate is the only one of TG17.10's seven that reads `NOT_IMPLEMENTED`
 rather than `NOT_RUN`. The distinction is exact and it is the reason this task exists: the other
 unpassed gates have a method that has not been executed or has no channel to report itself, while
@@ -4765,6 +4765,69 @@ from, so the test and the null cannot disagree about what the family is.
 
 Eleven guards, including one asserting the contrast with the calendar null so that the refusal
 reads as the specific finding it is rather than a general suspicion of resampling.
+
+**TG17.11 slice 4 — the calibration runs, every case meets its frozen expectation, and the design
+states what it can and cannot resolve (2026-09-03).** `calibrate_shape_family` is the counterpart
+of `family_calibration.calibrate_family` and deliberately reports more than it does, because this
+mode's null has finite support and a p-value floor: a result saying only that the planted case was
+recovered and the safeguards were not would omit the two facts a reader most needs.
+
+**What it measured.** Each scoreable case is run over **20 independent realisations**, each as one
+family of 105 corrected once under Benjamini-Yekutieli at alpha 0.05, with no replications at all —
+the null's support is enumerated, and resampling it would claim a resolution it does not have.
+
+* `planted_shape_recurrence`: **105 of 105 members reject in 20 of 20 realisations.** Full power.
+* `same_normalisation_unrelated`: **0 rejections in 2,100 member tests**, family-wise rate 0.000.
+* `native_scale_alias`: **0 rejections in 2,100 member tests**, family-wise rate 0.000.
+* `degenerate_inventory`: **refused**, with its reason, rather than scored.
+
+`all_met` is true. Twenty realisations bound a zero count only at 14% by the rule of three, which
+is weaker than the alpha being claimed, so the same quantity is measured a second way where draws
+are nearly free: under the global null a member's exact p-value is uniform on the lattice
+`1/k ... 1`, so a whole family can be drawn without building a record. Over **20,000 draws the
+family-wise false-positive rate is 0.000**, a one-sided 95% upper bound of **0.015%**. The two are
+reported side by side rather than one standing in for the other, because the lattice measurement
+treats members as independent and a shared statistic grid makes that only approximately true.
+
+**The operating characteristic, which is the finding a study most needs and least expects.** Every
+genuinely recurring member sits at exactly the same p-value floor, so there is no region of partial
+power: at a given inventory size a family either rejects or it does not. The declared family is the
+smallest that can reject at all, which puts it on a knife edge — it recovers a wholly recurring
+inventory and nothing sparser. Measured at 105: with **104 of 105** pairings genuinely recurring
+the family rejects **0.9%** of the time; with 105 of 105 it rejects 100%.
+
+Detecting a sparser recurrence is not a matter of more computation. It is a larger inventory, and
+`minimum_family_for_detected_fraction` solves each size against the real correction:
+
+| fraction of the family genuinely recurring | smallest inventory that can detect it |
+| --- | --- |
+| 100% | 105 |
+| 90% | 120 |
+| 75% | 149 |
+| 50% | 243 |
+| 25% | 550 |
+| 10% | 1,586 |
+
+A study that declares 105 correspondences and finds that 90 of them recur reports **nothing**,
+however strong each individual match is. That is a property of the null and the correction
+together, it is now stated before anyone acquires anything, and it is the single most consequential
+number this task produced.
+
+**Why the Monte Carlo form is refused rather than documented as a shortcut.** Its error is a factor
+of `k` and therefore shrinks as the inventory grows, while the correction's stringency grows with
+it. The two cross, measured on wholly unrelated inventories: family-wise false-positive rate
+**76.7% at k=6**, **50.0% at k=12**, **10.0% at k=30**, and **0.0% at k=60 and k=105** — against a
+nominal 5%, with the exact test at 0.0% throughout. The wrong method is safe only at the inventory
+sizes where the right method already works, and catastrophic at the handful-of-domains sizes anyone
+would actually reach for. That is the shape of a trap rather than of an approximation.
+
+Seven further guards, seventeen in the file. Two mutations were run against them: reintroducing a
+replication denominator on this finite-support null fails two, and replacing the solved family size
+with a chosen one fails two. Notably the replication mutation does *not* break the safeguards at
+k=105, which is the same crossing measured above and the reason the guard that catches it asserts
+the p-value floor directly rather than waiting for a safeguard to fire.
+
+
 
 
 

@@ -319,13 +319,189 @@ FIXTURE_EXPECTATIONS: Tuple[Dict[str, Any], ...] = (
 )
 
 
+# ------------------------------------------------------------------------- the calibration
+
+
+#: Independent realisations each scoreable case is run over. A single draw cannot state a rate,
+#: and the expectations in `FIXTURE_EXPECTATIONS` are rates. Twenty is what the fixture build cost
+#: allows; it bounds a zero false-positive count at 14% by the rule of three, which is weaker than
+#: alpha, so `null_lattice_error` measures the same quantity where draws are nearly free and the
+#: two are reported side by side rather than one standing in for the other.
+DEFAULT_REALISATIONS = 20
+
+#: Draws of the exact null's p-value lattice. Cheap, because no record is built: under the global
+#: null a member's own pairing is exchangeable with its `k - 1` alternatives, so its rank — and
+#: therefore its exact p-value — is uniform on the lattice `1/k, 2/k, ... 1`.
+DEFAULT_LATTICE_DRAWS = 20000
+
+#: Fractions of a family genuinely recurring, for the operating characteristic.
+DETECTION_FRACTIONS: Tuple[float, ...] = (1.0, 0.9, 0.75, 0.5, 0.25, 0.1)
+
+
+def minimum_family_for_detected_fraction(fraction: float, alpha: float = ALPHA,
+                                         correction: str = CORRECTION, limit: int = 4000) -> int:
+    """How large an inventory must be before a family with this fraction recurring can reject.
+
+    Members that genuinely recur sit at the p-value floor `1/k`, and Benjamini-Yekutieli steps up
+    to rank `fraction * k`, so a rejection needs `1/k` to clear the threshold at that rank. Solved
+    against the real correction rather than against that rearrangement, because the rearrangement
+    is the thing most likely to be subtly wrong. `minimum_resolvable_family` is this at fraction 1.
+    """
+    if not 0.0 < fraction <= 1.0:
+        raise InvalidParameterError("fraction", fraction,
+                                    "a fraction of the family in (0, 1] that genuinely recurs")
+    for size in range(2, limit + 1):
+        planted = int(round(fraction * size))
+        if planted < 1:
+            continue
+        p_values = [1.0 / size] * planted + [1.0] * (size - planted)
+        corrected = adjust(p_values, method=correction, alpha=alpha, n_tests=size,
+                           labels=[str(index) for index in range(size)])
+        if any(corrected["rejected"]):
+            return size
+    raise InvalidParameterError(
+        "limit", limit,
+        "a search bound large enough to contain a family that can detect this fraction. At "
+        "fraction %.3g none was found below %d, which is itself the answer: a recurrence this "
+        "sparse is not detectable under this null at any inventory size worth acquiring"
+        % (fraction, limit))
+
+
+def null_lattice_error(size: int = FAMILY_SIZE, *, draws: int = DEFAULT_LATTICE_DRAWS,
+                       alpha: float = ALPHA, correction: str = CORRECTION,
+                       seed: int = 20260903) -> Dict[str, Any]:
+    """The correction's false-positive rate on this null's own p-value lattice, under the global null.
+
+    Measured rather than assumed, and measured where it is affordable: the exact p-value of a
+    member with no shared shape is uniform on the lattice, so a whole family can be drawn without
+    building a single record. This does not replace the fixture-based rate — it treats members as
+    independent, which a shared statistic grid makes only approximately true — but it resolves a
+    rate twenty fixture realisations cannot, and the two are reported together rather than one
+    standing in for the other.
+    """
+    rng = np.random.default_rng(seed)
+    labels = [str(index) for index in range(size)]
+    families_rejecting = 0
+    rejections = 0
+    for _ in range(draws):
+        p_values = [float(value) / size for value in rng.integers(1, size + 1, size=size)]
+        corrected = adjust(p_values, method=correction, alpha=alpha, n_tests=size, labels=labels)
+        count = int(sum(corrected["rejected"]))
+        families_rejecting += count > 0
+        rejections += count
+    return {"schema": "shape-null-lattice/v1", "family_size": size, "draws": draws,
+            "alpha": alpha, "correction": correction,
+            "family_wise_false_positive_rate": families_rejecting / float(draws),
+            "mean_false_rejections": rejections / float(draws),
+            "one_sided_95_upper_bound": (3.0 / draws) if families_rejecting == 0 else None,
+            "claim_boundary": ("The correction's behaviour on this null's discrete p-values under "
+                               "the global null. It is not a statement about any record.")}
+
+
+def detection_profile(sizes: Sequence[int] = (FAMILY_SIZE,),
+                      fractions: Sequence[float] = DETECTION_FRACTIONS,
+                      *, alpha: float = ALPHA, correction: str = CORRECTION) -> Dict[str, Any]:
+    """What fraction of a family must genuinely recur before the family rejects anything.
+
+    The operating characteristic a study needs before it declares an inventory, and the one this
+    design makes least obvious. Because every genuinely recurring member sits at exactly the same
+    p-value floor, the transition is a step and not a curve: at a given inventory size the family
+    either rejects or does not, with no region of partial power. A study whose recurrence is
+    sparser than its inventory size supports reports nothing, however strong each match is.
+    """
+    rows: List[Dict[str, Any]] = []
+    for size in sizes:
+        detected: List[Dict[str, Any]] = []
+        for fraction in fractions:
+            planted = int(round(fraction * size))
+            p_values = [1.0 / size] * planted + [1.0] * (size - planted)
+            corrected = adjust(p_values, method=correction, alpha=alpha, n_tests=size,
+                               labels=[str(index) for index in range(size)])
+            detected.append({"fraction": float(fraction), "planted": planted,
+                             "rejects": bool(any(corrected["rejected"])),
+                             "n_rejected": int(sum(corrected["rejected"]))})
+        rows.append({"family_size": int(size), "fractions": tuple(detected)})
+    return {"schema": "shape-detection-profile/v1", "rows": tuple(rows),
+            "minimum_family_by_fraction": tuple(
+                {"fraction": float(fraction),
+                 "minimum_family_size": minimum_family_for_detected_fraction(
+                     fraction, alpha=alpha, correction=correction)}
+                for fraction in fractions),
+            "claim_boundary": ("An operating characteristic of one design. It detects nothing and "
+                               "licenses no claim.")}
+
+
+def calibrate_case(case: str, *, realisations: int = DEFAULT_REALISATIONS,
+                   seed: int = 20260903, size: int = FAMILY_SIZE) -> Dict[str, Any]:
+    """One fixture case run over independent realisations, each as one corrected family."""
+    entry = next(row for row in FIXTURE_EXPECTATIONS if row["case"] == case)
+    build = FIXTURE_BUILDERS[case]
+    if entry["outcome"] == "refuses":
+        try:
+            corrected_family(build(seed, size))
+        except NullRefusal as refusal:
+            return {"case": case, "expectation": entry["expectation"], "outcome": "refuses",
+                    "refused": True, "reason": str(refusal), "met": True}
+        return {"case": case, "expectation": entry["expectation"], "outcome": "refuses",
+                "refused": False, "reason": None, "met": False}
+
+    counts: List[int] = []
+    for index in range(realisations):
+        counts.append(corrected_family(build(seed + index, size))["n_rejected_after_correction"])
+    families_rejecting = sum(1 for count in counts if count > 0)
+    fully_recovered = sum(1 for count in counts if count == size)
+    row: Dict[str, Any] = {
+        "case": case, "expectation": entry["expectation"], "outcome": entry["outcome"],
+        "realisations": realisations, "family_size": size, "member_tests": realisations * size,
+        "family_wise_rejection_rate": families_rejecting / float(realisations),
+        "full_recovery_rate": fully_recovered / float(realisations),
+        "mean_rejections": float(np.mean(counts)), "rejections": tuple(counts)}
+    if entry["outcome"] == "rejects":
+        row["met"] = row["full_recovery_rate"] >= entry["minimum_rejection_rate"]
+    else:
+        row["false_rejections"] = int(sum(counts))
+        row["one_sided_95_upper_bound"] = (3.0 / realisations) if families_rejecting == 0 else None
+        row["met"] = row["family_wise_rejection_rate"] <= entry["maximum_family_wise_error"]
+    return row
+
+
+def calibrate_shape_family(*, realisations: int = DEFAULT_REALISATIONS,
+                           lattice_draws: int = DEFAULT_LATTICE_DRAWS,
+                           seed: int = 20260903, size: int = FAMILY_SIZE) -> Dict[str, Any]:
+    """Every scale/shape case with its declared expectation, and what the design can resolve.
+
+    The counterpart of `family_calibration.calibrate_family`, and deliberately reporting more than
+    it does. This mode's null has finite support and a p-value floor, so a result saying only that
+    the planted case was recovered and the safeguards were not would omit the two facts a reader
+    most needs: how large an inventory this null requires, and how much of it must recur.
+    """
+    cases = [calibrate_case(entry["case"], realisations=realisations, seed=seed, size=size)
+             for entry in FIXTURE_EXPECTATIONS]
+    return {"schema": "shape-family-calibration/v1", "family_size": size,
+            "family_size_is": ("solved by minimum_resolvable_family from the null's p-value floor "
+                               "of 1/k, not chosen"),
+            "p_value_floor": 1.0 / size, "alpha": ALPHA, "correction": CORRECTION,
+            "inference": "exact_partner_p_values",
+            "replications": ("none: the null's support is enumerated, and resampling it would "
+                             "claim a resolution it does not have"),
+            "realisations": realisations, "cases": tuple(cases),
+            "null_lattice": null_lattice_error(size, draws=lattice_draws, seed=seed),
+            "detection": detection_profile((size,)),
+            "all_met": all(row["met"] for row in cases),
+            "claim_boundary": ("A frozen-fixture calibration of one comparison mode. It is not a "
+                               "result about any domain, not a licence to mine, and not evidence "
+                               "that any shape recurs anywhere.")}
+
 @lru_cache(maxsize=16)
 def _cached_family(case: str, seed: int, size: int) -> Any:
     return corrected_family(FIXTURE_BUILDERS[case](seed, size))
 
 
-__all__ = ["ALPHA", "CORRECTION", "FAMILY_SIZE", "FIXTURE_BUILDERS", "FIXTURE_EXPECTATIONS",
+__all__ = ["ALPHA", "CORRECTION", "DEFAULT_LATTICE_DRAWS", "DEFAULT_REALISATIONS",
+           "DETECTION_FRACTIONS", "FAMILY_SIZE", "FIXTURE_BUILDERS", "FIXTURE_EXPECTATIONS",
            "FIXTURE_ROWS", "NATIVE_SECONDS_RANGE", "ROWS_PER_CYCLE", "SPAN_CYCLES",
-           "corrected_family", "degenerate_inventory", "exact_partner_p_values",
+           "calibrate_case", "calibrate_shape_family", "corrected_family", "degenerate_inventory",
+           "detection_profile", "exact_partner_p_values", "minimum_family_for_detected_fraction",
            "minimum_resolvable_family", "monte_carlo_partner_p_values", "native_scale_alias",
-           "planted_shape_recurrence", "same_normalisation_unrelated", "statistic_grid"]
+           "null_lattice_error", "planted_shape_recurrence", "same_normalisation_unrelated",
+           "statistic_grid"]

@@ -12,10 +12,12 @@ import pytest
 
 from src.benchmarks.shape_calibration import MINIMUM_ROWS_PER_CYCLE
 from src.benchmarks.shape_fixtures import (ALPHA, FAMILY_SIZE, FIXTURE_BUILDERS,
+                                           minimum_family_for_detected_fraction,
                                            FIXTURE_EXPECTATIONS, ROWS_PER_CYCLE, SPAN_CYCLES,
                                            corrected_family, exact_partner_p_values,
                                            minimum_resolvable_family,
                                            monte_carlo_partner_p_values, statistic_grid)
+from src.core.errors import InvalidParameterError
 from src.core.structural_nulls import NullRefusal
 from src.statistics.multiple_comparisons import adjust
 
@@ -176,3 +178,142 @@ def test_the_calendar_null_is_not_affected_because_its_support_is_not_finite_in_
     assert len(distinct) > 0.95 * draws, (
         "the calendar null must be shown to supply a new surrogate per draw, or the scale/shape "
         "refusal would have to apply to it too")
+
+
+def test_the_monte_carlo_error_is_worst_at_the_inventory_sizes_a_study_would_try():
+    """Why the wrong method is dangerous rather than merely wrong, measured across sizes.
+
+    The anti-conservative error is a factor of `k`, so it shrinks as the inventory grows while the
+    correction stringency grows with it. The two cross: at the resolvable family size the
+    correction absorbs the error entirely, and at the handful-of-domains sizes anyone would
+    actually reach for it inflates the family-wise error by more than an order of magnitude. The
+    wrong method is therefore safe only where the right method already works, which is the shape of
+    a trap rather than of an approximation, and is the reason it is refused by name rather than
+    documented as an acceptable shortcut.
+    """
+    replications = 999
+    rates = {}
+    for size, realisations in ((6, 30), (30, 20)):
+        firing = 0
+        for index in range(realisations):
+            grid = statistic_grid(FIXTURE_BUILDERS["same_normalisation_unrelated"](5000 + index,
+                                                                                   size))
+            rng = np.random.default_rng(index)
+            p_values = []
+            for member in range(size):
+                alternatives = np.asarray([grid[member][other] for other in range(size)
+                                           if other != member])
+                draws = alternatives[rng.integers(len(alternatives), size=replications)]
+                p_values.append((1 + int(np.sum(draws >= grid[member][member])))
+                                / (1.0 + replications))
+            corrected = adjust(p_values, method="benjamini_yekutieli", alpha=ALPHA, n_tests=size,
+                               labels=[str(index) for index in range(size)])
+            firing += sum(corrected["rejected"]) > 0
+        rates[size] = firing / float(realisations)
+
+    assert rates[6] > 0.5, (
+        "the Monte Carlo form must be shown to fail badly on a small inventory, or the refusal "
+        "has no measurement behind it")
+    assert rates[6] > 4 * ALPHA and rates[30] < rates[6], (
+        "the error must be shown to shrink with inventory size, which is what makes it a trap "
+        "rather than a uniform bias")
+
+
+# --------------------------------------------------- TG17.11 slice 4: the calibration itself
+
+
+@pytest.fixture(scope="module")
+def calibration():
+    """The declared configuration, run once. A test that ran a cheaper one would not be the gate."""
+    from src.benchmarks.shape_fixtures import calibrate_shape_family
+
+    return calibrate_shape_family()
+
+
+def test_every_case_meets_the_expectation_frozen_in_the_module(calibration):
+    """The expectations live in `FIXTURE_EXPECTATIONS`, so this asserts them rather than restating."""
+    by_case = {row["case"]: row for row in calibration["cases"]}
+    assert set(by_case) == {entry["case"] for entry in FIXTURE_EXPECTATIONS}
+    for entry in FIXTURE_EXPECTATIONS:
+        assert by_case[entry["case"]]["met"], entry["expectation"]
+    assert calibration["all_met"]
+
+
+def test_the_planted_case_is_fully_recovered_and_the_safeguards_never_fire(calibration):
+    """Power and false-positive rate, which are the two numbers the gate is about."""
+    by_case = {row["case"]: row for row in calibration["cases"]}
+    planted = by_case["planted_shape_recurrence"]
+    assert planted["full_recovery_rate"] == 1.0
+    assert planted["mean_rejections"] == float(calibration["family_size"])
+
+    for case in ("same_normalisation_unrelated", "native_scale_alias"):
+        safeguard = by_case[case]
+        assert safeguard["family_wise_rejection_rate"] == 0.0
+        assert safeguard["false_rejections"] == 0
+        assert safeguard["member_tests"] >= 20 * calibration["family_size"]
+
+    assert by_case["degenerate_inventory"]["refused"] is True
+
+
+def test_the_calibration_records_that_it_resampled_nothing(calibration):
+    """A guard against the trap being reintroduced by a later slice reaching for replications.
+
+    The artefact states its inference and states that it used no replications. If a future change
+    resamples this null, either this field stops being true or the change had to edit the sentence
+    that says it is — and editing that sentence is a decision somebody has to make deliberately.
+    """
+    assert calibration["inference"] == "exact_partner_p_values"
+    assert "none:" in calibration["replications"]
+    assert calibration["p_value_floor"] == pytest.approx(1.0 / calibration["family_size"])
+    assert "not chosen" in calibration["family_size_is"]
+    assert "not evidence" in calibration["claim_boundary"]
+
+
+def test_the_correction_holds_its_alpha_on_this_null_s_own_p_value_lattice(calibration):
+    """The false-positive rate measured where draws are nearly free, beside the fixture rate.
+
+    Twenty fixture realisations bound a zero count at 14% by the rule of three, which is weaker
+    than the alpha being claimed. The lattice draws resolve the same quantity to a much tighter
+    bound, and reporting both is what keeps the weaker one from being read as the stronger.
+    """
+    lattice = calibration["null_lattice"]
+    assert lattice["draws"] >= 10000
+    assert lattice["family_wise_false_positive_rate"] <= ALPHA
+    assert lattice["mean_false_rejections"] <= ALPHA
+    if lattice["family_wise_false_positive_rate"] == 0.0:
+        assert lattice["one_sided_95_upper_bound"] < ALPHA
+
+
+def test_the_detection_profile_is_a_step_and_names_the_inventory_each_fraction_needs(calibration):
+    """The operating characteristic, which is the finding a study most needs and least expects.
+
+    Every genuinely recurring member sits at exactly the same p-value floor, so there is no region
+    of partial power: at a given inventory size a family either rejects or does not. The declared
+    family is the smallest that can reject at all, so it is on the knife edge — it recovers a
+    wholly recurring inventory and nothing sparser. Detecting a sparser recurrence is not a matter
+    of more computation; it is a larger inventory, and the sizes are reported.
+    """
+    profile = calibration["detection"]
+    row = next(entry for entry in profile["rows"]
+               if entry["family_size"] == calibration["family_size"])
+    outcomes = {entry["fraction"]: entry["rejects"] for entry in row["fractions"]}
+    assert outcomes[1.0] is True
+    assert all(outcomes[fraction] is False for fraction in outcomes if fraction < 1.0), (
+        "the declared family is the smallest that can reject, so it must be knife-edge")
+
+    minimums = profile["minimum_family_by_fraction"]
+    assert minimums[0]["minimum_family_size"] == calibration["family_size"]
+    sizes = [entry["minimum_family_size"] for entry in minimums]
+    fractions = [entry["fraction"] for entry in minimums]
+    assert fractions == sorted(fractions, reverse=True)
+    assert sizes == sorted(sizes), "a sparser recurrence must require a larger inventory, not a smaller"
+    assert sizes[-1] > 10 * sizes[0], (
+        "the cost of detecting sparse recurrence must be shown, not implied")
+
+
+def test_a_recurrence_too_sparse_to_detect_is_refused_with_the_reason_rather_than_answered():
+    """`minimum_family_for_detected_fraction` must not return a number it did not find."""
+    with pytest.raises(InvalidParameterError, match="not detectable under this null"):
+        minimum_family_for_detected_fraction(0.01, limit=200)
+    with pytest.raises(InvalidParameterError, match="fraction of the family"):
+        minimum_family_for_detected_fraction(0.0)
