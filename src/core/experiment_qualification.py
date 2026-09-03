@@ -17,6 +17,14 @@ three scale/shape cells are therefore refused at preflight, and the gate records
 the qualification result rather than widening a framework default until the matrix turns green.
 A domain's declared refusal is the science; a passing matrix obtained by overruling it would be
 the failure this gate exists to catch.
+
+The ``scale_shape_calibration`` gate is the same distinction one level up (TG17.11).  A registered
+calibration for that mode now exists and is measured outside orchestration, so the gate no longer
+reads ``NOT_IMPLEMENTED``.  It reads ``REFUSED``, because what blocks it is not an absent method
+but an inapplicable one: the declared null's support is too small to resolve anything at the sizes
+it will draw from, and too large to draw from at the sizes that could resolve.  A calibrated method
+the declared plans cannot reach, a method that does not exist, and a method that ran and failed are
+three different facts, and the record keeps them apart.
 """
 
 from __future__ import annotations
@@ -105,6 +113,110 @@ def _gate(gate_id: str, title: str, status: str, detail: str,
             "blocking": blocking and status != "PASS", "detail": detail}
 
 
+# ------------------------------------------------- TG17.11 slice 5: the scale/shape gate
+
+#: Where the registered scale/shape calibration lives. It is named rather than executed here, for
+#: the reason `calendar_calibration` gives: a calibration is a scientific measurement and this
+#: module is a release gate. Running a three-minute family calibration inside plan assembly would
+#: also make an HTTP route's cost depend on a benchmark's.
+SCALE_SHAPE_CALIBRATION = "src.benchmarks.shape_fixtures:calibrate_shape_family"
+
+#: The two domain families G17 could offer this null: the frozen quartet compared all-against-all,
+#: and the same inventory once `order_book` has declined the null under D83.
+SCALE_SHAPE_DOMAIN_FAMILIES: Tuple[Tuple[str, Tuple[str, ...]], ...] = (
+    ("quartet_all_pairs", ("argo_float", "reanalysis", "tess_lightcurve", "order_book")),
+    ("admitting_triple_all_pairs", ("argo_float", "reanalysis", "tess_lightcurve")),
+)
+
+
+def scale_shape_applicability() -> Dict[str, Any]:
+    """Whether the scale/shape mode's declared null can resolve anything, decided before power.
+
+    This is the fact the gate turns on, and it is decidable exactly and in milliseconds, without
+    acquiring a record or running a calibration. Two bounds, established by TG17.11 slices 1-4,
+    close on the same declared null from opposite directions:
+
+    * **From below, the resolution bound.** A member of a ``k``-pairing family has ``k - 1``
+      admissible alternative partners, so its exact p-value cannot fall below ``1/k``. Solved
+      against the real Benjamini-Yekutieli correction at the declared alpha, no family smaller
+      than ``minimum_resolvable_family()`` pairings can reject even when every member is a
+      perfect planted match.
+    * **From above, the enumeration bound.** ``reassign_scale_partners`` draws uniformly over the
+      reassignments an inventory admits, enumerated exactly, and refuses above
+      ``MAX_REASSIGNABLE_PAIRINGS`` rather than adopt a sampler whose uniformity is assumed.
+
+    The two do not meet: the largest inventory the declared null will draw from is an order of
+    magnitude smaller than the smallest inventory that could reject.  There is therefore no
+    inventory size at which this null *as the qualification manifests declare it* — drawn, with a
+    replication count — can produce a rejection.  What can is the exact partner test, which
+    enumerates the same finite support instead of resampling it, and which the registered
+    calibration is built on.  No declared manifest requests it.
+
+    G17's two candidate families are refused for a second and independent reason before size is
+    even reached: one admits a single distinguishable reassignment, so its null is a constant
+    rather than a distribution, and the other admits none at all.  Both refusals are recorded
+    verbatim from the null itself rather than restated here.
+    """
+    from src.benchmarks.shape_fixtures import ALPHA, CORRECTION, minimum_resolvable_family
+    from src.core.structural_nulls import (
+        MAX_REASSIGNABLE_PAIRINGS,
+        NullRefusal,
+        reassign_scale_partners,
+    )
+
+    minimum = minimum_resolvable_family()
+    families: List[Dict[str, Any]] = []
+    for name, domains in SCALE_SHAPE_DOMAIN_FAMILIES:
+        pairings = [(left, right) for index, left in enumerate(domains)
+                    for right in domains[index + 1:]]
+        try:
+            reassign_scale_partners(pairings, 20260903)
+        except NullRefusal as error:
+            refusal = str(error)
+        else:  # pragma: no cover - both declared families are refused; TG17.11 slice 1
+            refusal = ""
+        families.append({
+            "family": name,
+            "domains": list(domains),
+            "pairings": len(pairings),
+            "null_refusal": refusal,
+            "reaches_resolvable_size": len(pairings) >= minimum,
+        })
+    return {
+        "calibration": SCALE_SHAPE_CALIBRATION,
+        "calibration_executed_here": False,
+        "inference_the_calibration_uses": "exact_partner_p_values",
+        "inference_the_manifests_declare": "drawn surrogates with a replication count",
+        "alpha": ALPHA,
+        "correction": CORRECTION,
+        "minimum_resolvable_family": minimum,
+        "largest_drawable_inventory": MAX_REASSIGNABLE_PAIRINGS,
+        "declared_null_can_ever_reject": MAX_REASSIGNABLE_PAIRINGS >= minimum,
+        "declared_families": families,
+        "claim_boundary": (
+            "A registered calibration exists and is measured outside orchestration. This gate "
+            "reports applicability, not power: it does not read that calibration's result and "
+            "does not assert one."),
+    }
+
+
+def _scale_shape_gate(title: str) -> Dict[str, Any]:
+    """The gate, stated from the measurement rather than from a sentence maintained by hand."""
+    facts = scale_shape_applicability()
+    refused = [row for row in facts["declared_families"] if row["null_refusal"]]
+    detail = (
+        "A registered scale/shape calibration now exists (%s); it is measured outside "
+        "orchestration, as the calendar one is, and its result is not read here. The gate is "
+        "blocked by applicability rather than by absence. Every member of a %s-pairing family "
+        "sits at a p-value floor of 1/k, so under %s at alpha %.2f no family smaller than %d "
+        "pairings can reject; the declared null draws only from inventories of at most %d. %d of "
+        "%d declared domain families are refused by the null before size is reached."
+        % (SCALE_SHAPE_CALIBRATION, "k", facts["correction"], facts["alpha"],
+           facts["minimum_resolvable_family"], facts["largest_drawable_inventory"],
+           len(refused), len(facts["declared_families"])))
+    return _gate("scale_shape_calibration", title, "REFUSED", detail)
+
+
 def qualification_plan() -> Dict[str, Any]:
     """The complete gate before anything is executed; omissions are impossible to hide."""
     cells = []
@@ -135,9 +247,7 @@ def qualification_plan() -> Dict[str, Any]:
               "Must be measured by the extension conformance test and source-edit audit."),
         _gate("calendar_calibration", "Calendar null calibration and planted power", "NOT_RUN",
               "The frozen family calibration must run separately from orchestration."),
-        _gate("scale_shape_calibration", "Scale/shape null calibration and planted power",
-              "NOT_IMPLEMENTED", "No registered scale/shape mining calibration currently "
-              "produces a scientific statistic; rehearsal cannot satisfy this gate."),
+        _scale_shape_gate("Scale/shape null calibration and planted power"),
         _gate("live_sources", "Four-domain live-source tail", "NOT_RUN",
               "Network remains opt-in and archive coverage/refusals require a separately "
               "dated live record."),
@@ -149,6 +259,7 @@ def qualification_plan() -> Dict[str, Any]:
         "record_kind": RECORD_KIND,
         "matrix": cells,
         "gates": gates,
+        "scale_shape_calibration": scale_shape_applicability(),
         "scientist_actions": {
             "status": "NOT_MEASURED",
             "definition": "visible researcher actions from a clean browser session",
@@ -317,5 +428,7 @@ def verify_qualification_record(record: Mapping[str, Any]) -> Dict[str, Any]:
             "verdict": record.get("verdict"), "gates": list(record.get("gates", []))}
 
 
-__all__ = ["DURATIONS", "MODES", "RECORD_KIND", "SCHEMA", "execute_offline_qualification",
-           "qualification_manifest", "qualification_plan", "verify_qualification_record"]
+__all__ = ["DURATIONS", "MODES", "RECORD_KIND", "SCALE_SHAPE_CALIBRATION",
+           "SCALE_SHAPE_DOMAIN_FAMILIES", "SCHEMA", "execute_offline_qualification",
+           "qualification_manifest", "qualification_plan", "scale_shape_applicability",
+           "verify_qualification_record"]

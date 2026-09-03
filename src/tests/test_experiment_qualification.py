@@ -2,6 +2,7 @@
 
 import copy
 import json
+import time
 
 import pytest
 from fastapi.testclient import TestClient
@@ -13,9 +14,12 @@ from src.core.experiment_qualification import (
     DURATIONS,
     MODES,
     RECORD_KIND,
+    SCALE_SHAPE_CALIBRATION,
+    SCALE_SHAPE_DOMAIN_FAMILIES,
     execute_offline_qualification,
     qualification_manifest,
     qualification_plan,
+    scale_shape_applicability,
     verify_qualification_record,
 )
 from src.core.experiment_run import RunStore
@@ -160,7 +164,9 @@ def test_green_offline_rehearsal_cannot_make_the_release_verdict_green(qualified
     assert gates["offline_matrix"]["blocking"] is True
     assert "order_book.bespoke_record" in gates["offline_matrix"]["detail"]
     assert gates["restart_recovery"]["status"] == "PASS"
-    assert gates["scale_shape_calibration"]["status"] == "NOT_IMPLEMENTED"
+    # TG17.11 moved this off NOT_IMPLEMENTED: a registered calibration now exists, and what
+    # blocks the gate is that no declared plan can reach it. Still blocking, for a stated reason.
+    assert gates["scale_shape_calibration"]["status"] == "REFUSED"
     assert gates["live_sources"]["status"] == "NOT_RUN"
     assert qualified["verdict"] == "NOT_RELEASEABLE"
 
@@ -201,3 +207,87 @@ def test_http_plan_and_rehearsal_keep_the_unrun_gates_visible(tmp_path):
     assert sum(row["status"] == "REFUSED" for row in body["matrix"]) == 3
     assert any(row["status"] == "NOT_RUN" for row in body["gates"])
     assert body["record_kind"] == RECORD_KIND
+
+
+# ------------------------------------------ TG17.11 slice 5: the scale/shape calibration gate
+
+
+def test_the_scale_shape_gate_is_refused_rather_than_unimplemented_or_passed(qualified):
+    """What the gate has actually earned, which is none of the three easy answers.
+
+    It is no longer `NOT_IMPLEMENTED`: a registered calibration exists. It is not `PASS`: that
+    calibration is a measurement on built fixtures at an inventory size no declared plan reaches,
+    and this module does not read its result. It is not `FAIL`: nothing broke. `REFUSED` is the
+    status this apparatus already reserves for a declared scientific limit that blocks release
+    exactly as a failure does, and it is the honest one here.
+    """
+    gate = {row["gate_id"]: row for row in qualified["gates"]}["scale_shape_calibration"]
+    assert gate["status"] == "REFUSED"
+    assert gate["blocking"] is True
+    assert SCALE_SHAPE_CALIBRATION in gate["detail"]
+    assert qualified["verdict"] == "NOT_RELEASEABLE"
+
+
+def test_the_gate_states_applicability_and_does_not_claim_the_calibration_s_result(qualified):
+    """The two facts slice 5 exists to keep apart.
+
+    A calibration that runs and meets its targets on fixtures is one fact; whether a declared plan
+    can use the method is another. Reporting the first as the second is how an unusable mode gets
+    a green gate, so the record carries the entry point, says it did not execute it, and turns on
+    a quantity it computed itself.
+    """
+    facts = qualified["scale_shape_calibration"]
+    assert facts["calibration"] == SCALE_SHAPE_CALIBRATION
+    assert facts["calibration_executed_here"] is False
+    assert "does not assert one" in facts["claim_boundary"]
+    assert not any(key.startswith(("power", "rejection", "full_recovery")) for key in facts), (
+        "the gate must not carry a power number it did not measure")
+
+
+def test_the_declared_null_cannot_reject_at_any_inventory_size_it_will_draw_from(qualified):
+    """The finding the gate turns on, asserted as the inequality rather than as two constants.
+
+    The resolution bound rises with the correction's stringency and the enumeration bound is where
+    a uniform draw stops being demonstrable. They do not meet, and the gap is an order of
+    magnitude: every inventory the declared null will draw from is too small to reject, and every
+    inventory large enough to reject is one it refuses to draw from. That is a property of the
+    declared null, not of the fixtures, so no fixture work can move it.
+    """
+    facts = qualified["scale_shape_calibration"]
+    assert facts["largest_drawable_inventory"] < facts["minimum_resolvable_family"]
+    assert facts["declared_null_can_ever_reject"] is False
+    assert facts["minimum_resolvable_family"] > 10 * facts["largest_drawable_inventory"]
+    assert facts["inference_the_calibration_uses"] != facts["inference_the_manifests_declare"]
+
+
+def test_both_declared_domain_families_carry_the_null_s_own_refusal_verbatim(qualified):
+    """Neither candidate family is refused for its size; each is refused before size is reached.
+
+    The reasons are taken from the null rather than restated here, so a change to either refusal
+    surfaces as a changed qualification record instead of as a sentence that quietly went stale.
+    """
+    families = qualified["scale_shape_calibration"]["declared_families"]
+    assert [row["pairings"] for row in families] == [6, 3]
+    assert all(row["null_refusal"] and not row["reaches_resolvable_size"] for row in families)
+    assert "admits exactly one" in families[0]["null_refusal"]
+    assert "admits none" in families[1]["null_refusal"]
+    for name, domains in SCALE_SHAPE_DOMAIN_FAMILIES:
+        adapters = [adapter_for_domain(domain) for domain in domains]
+        if name == "admitting_triple_all_pairs":
+            assert all("scale_partner_reassignment" in item.admissible_nulls
+                       for item in adapters), (
+                "the triple must be the domains that do admit the null, or the finding is about "
+                "the wrong inventory")
+
+
+def test_the_gate_is_decided_without_acquiring_or_calibrating_anything():
+    """Applicability is decidable in milliseconds, which is why it is decided before power.
+
+    A gate that had to run the calibration would put a three-minute benchmark inside an HTTP
+    route, and a gate that skipped the question would report an absent method rather than an
+    inapplicable one.
+    """
+    started = time.perf_counter()
+    facts = scale_shape_applicability()
+    assert time.perf_counter() - started < 1.0
+    assert facts == qualification_plan()["scale_shape_calibration"]

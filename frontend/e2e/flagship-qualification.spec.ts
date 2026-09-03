@@ -30,7 +30,9 @@ test('the generated release gate runs offline but refuses to certify unrun scien
   await expect(gate).toContainText('order_book.bespoke_record');
   await expect(gate).toContainText('Six-cell known-answer apparatus matrix: REFUSED');
   await expect(gate).toContainText('Single remote-failure restart recovery: PASS');
-  await expect(gate).toContainText('Scale/shape null calibration and planted power: NOT_IMPLEMENTED');
+  // TG17.11: a registered calibration now exists, so the gate is no longer unimplemented.
+  // It is still blocking, and REFUSED is what the rendered ledger must show.
+  await expect(gate).toContainText('Scale/shape null calibration and planted power: REFUSED');
   await expect(gate).toContainText('Four-domain live-source tail: NOT_RUN');
   await expect(gate).toContainText('NOT_RELEASEABLE');
 });

@@ -4501,8 +4501,8 @@ last measured full-suite figure. No archive is acquired, no statistic runs, no f
 recorded, no evidence is admitted and nothing is released by this slice.
 
 
-**TG17.11 Scale/shape mining calibration — IN PROGRESS — slices 1-4 of 5 done (2026-09-03).** The
-`scale_shape_calibration` gate is the only one of TG17.10's seven that reads `NOT_IMPLEMENTED`
+**TG17.11 Scale/shape mining calibration — DONE — all five slices (2026-09-03).** *Superseded below: the gate now reads `REFUSED` rather than `NOT_IMPLEMENTED`, and the finding is that the method is calibrated while G17's declared families cannot reach it.* The
+`scale_shape_calibration` gate was, when this task was scoped, the only one of TG17.10's seven that read `NOT_IMPLEMENTED`
 rather than `NOT_RUN`. The distinction is exact and it is the reason this task exists: the other
 unpassed gates have a method that has not been executed or has no channel to report itself, while
 this one has no scientific statistic at all. Half of G17's two declared scientific modes is
@@ -4826,6 +4826,54 @@ replication denominator on this finite-support null fails two, and replacing the
 with a chosen one fails two. Notably the replication mutation does *not* break the safeguards at
 k=105, which is the same crossing measured above and the reason the guard that catches it asserts
 the p-value floor directly rather than waiting for a safeguard to fire.
+
+**TG17.11 slice 5 — the gate moved off `NOT_IMPLEMENTED`, and what it moved to is `REFUSED`
+(2026-09-03).** The sentence the gate carried — that no registered scale/shape calibration produces
+a scientific statistic — is now false, so it could not stay. What replaced it is not a pass. The
+gate reads `REFUSED`, the status this apparatus already reserves for a declared scientific limit
+that blocks release exactly as a failure does, and `scale_shape_applicability` computes the
+determination in milliseconds without acquiring a record or running a calibration.
+
+**The blocker is an inapplicable method, not an absent one, and it is two bounds that do not
+meet.** From below, every member of a `k`-pairing family sits at a p-value floor of `1/k`, so
+solved against the real correction at alpha 0.05 **no family smaller than 105 pairings can reject**
+even when every member is a perfect planted match. From above, `reassign_scale_partners` enumerates
+the reassignments an inventory admits exactly and **refuses above 8 pairings** rather than adopt a
+sampler whose uniformity is assumed. The gap is an order of magnitude, so **there is no inventory
+size at which the null as the qualification manifests declare it — drawn, with a replication count
+— can produce a rejection at all.** What can is the exact partner test, which enumerates the same
+finite support instead of resampling it; it is what the registered calibration is built on and what
+no declared manifest requests. That is a sharper statement than slice 4's, and it is a property of
+the declared null rather than of the fixtures, so no fixture work could move it.
+
+G17's two candidate families never reach that argument: the quartet all-pairs admits exactly one
+distinguishable reassignment and the post-D83 triple admits none, and both refusals are carried in
+the qualification record verbatim from the null itself rather than restated in prose that could go
+stale independently of the code.
+
+**The two facts the slice existed to keep apart.** A calibration that runs and meets its targets on
+built fixtures is one fact; whether a declared plan can reach the method is another. Reporting the
+first as the second is exactly how an unusable mode acquires a green gate. The record therefore
+names the calibration's entry point, states `calibration_executed_here: false`, and asserts only
+quantities it computed itself — a guard fails if any power or rejection-rate key appears in that
+section. A calibrated method the declared plans cannot reach, a method that does not exist, and a
+method that ran and failed are three different facts.
+
+**What this establishes about the task's own falsification condition, stated before it started.**
+The condition was that if the planted case could not be recovered at the declared alpha once D91
+was fixed, the honest conclusion would be that scale/shape mode is not measurable on this quartet.
+The planted case *was* recovered — 105 of 105 members in 20 of 20 realisations — and the conclusion
+about the quartet holds anyway, for a reason the condition did not anticipate: the method is sound
+and the declared families are two orders of magnitude too small to use it. **Scale/shape mode is
+not qualifiable on G17's declared families, and this is now recorded as the result rather than
+engineered away.** Qualifying it needs a declared inventory of at least 105 correspondences and an
+enumerated rather than drawn inference — a different family design, not a retuned fixture.
+
+**Verification.** Five guards added, twenty-one in `test_experiment_qualification.py`, 25 passed.
+Three mutations: awarding the gate `PASS` fails two, hard-coding the applicability verdict while
+adding a power number fails two, replacing the null's own refusal text with a fixed string fails
+one. The verdict remains `NOT_RELEASEABLE` and one fewer gate is unexplained. No archive is
+acquired, no statistic runs here, no evidence is admitted and nothing is released by this slice.
 
 
 

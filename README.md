@@ -51,15 +51,16 @@ supersedes the other.
   certification. **TG18.5 (the UI qualification gate) is in progress**, scoped by TG17.10's
   withheld release rather than by presentation: it must supply the rendered evidence the
   `browser_no_glue` and `scientist_actions` gates refuse to award themselves. Its first slice
-  qualifies served-workspace reachability. **TG17.11 (the scale/shape calibration) is in
-  progress and is the active scientific work**, taken up because `scale_shape_calibration` was
-  the only qualification gate reading `NOT_IMPLEMENTED`. Four of its five slices are done: D91
-  fixed, the statistic built with its scale invariance measured at 1.1e-16 rather than declared,
-  four frozen fixtures, and a calibration in which the planted case recovers 105 of 105 members
-  in 20 of 20 realisations and both safeguards reject nothing in 2,100 member tests. It has
-  established that the null needs an inventory of at least **105 declared pairings** before any
-  member can reject at alpha 0.05, so G17's declared families of three and four domains are short
-  by a factor of about twenty-five.
+  qualifies served-workspace reachability. **TG17.11 (the scale/shape calibration) is
+  done**, all five slices: D91 fixed, the statistic built with its scale invariance measured at
+  1.1e-16 rather than declared, four frozen fixtures, a calibration in which the planted case
+  recovers 105 of 105 members in 20 of 20 realisations while both safeguards reject nothing in
+  2,100 member tests, and the gate moved off `NOT_IMPLEMENTED` to **`REFUSED`**. Its result is
+  that the method is sound and G17's declared families cannot reach it: the null needs an
+  inventory of at least **105 declared pairings** before any member can reject at alpha 0.05,
+  while the declared draw refuses inventories above 8, so no size satisfies both. Scale/shape
+  mode is therefore not qualifiable on the declared families, which is recorded as the finding
+  rather than engineered away.
 * What TG18.2 has delivered, all of it presentation only: every figure carries a text and table
   equivalent of what it draws, a declared statement of whether two panels may share a colour
   scale, the domain a fitted claim was taken over with the uncertainty attached to it, and

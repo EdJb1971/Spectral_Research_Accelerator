@@ -2664,6 +2664,24 @@ export interface ExperimentQualificationRecord {
     attempts_after_retry: Record<string, number>;
     checks: Record<string, boolean>;
   };
+  // TG17.11: why the scale/shape gate is REFUSED rather than absent. Applicability only - the
+  // server does not run that calibration here and this section carries no power number.
+  scale_shape_calibration?: {
+    calibration: string;
+    calibration_executed_here: boolean;
+    inference_the_calibration_uses: string;
+    inference_the_manifests_declare: string;
+    alpha: number;
+    correction: string;
+    minimum_resolvable_family: number;
+    largest_drawable_inventory: number;
+    declared_null_can_ever_reject: boolean;
+    declared_families: Array<{
+      family: string; domains: string[]; pairings: number;
+      null_refusal: string; reaches_resolvable_size: boolean;
+    }>;
+    claim_boundary: string;
+  };
   scientist_actions: Record<string, string>;
   claim_boundary: string;
 }
