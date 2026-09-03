@@ -7,6 +7,7 @@ import {
   buildComparisonContract, FigureComparisonNotice, useLinkedAddress,
 } from './components/FigureComparison';
 import { ResizableFigurePair } from './components/ResizableFigurePair';
+import { ResearchJourney, JourneyStageId } from './components/ResearchJourney';
 import { slopeValidity } from './components/FigureValidity';
 import { FieldImport } from './components/FieldImport';
 import { TrainingReadiness } from './components/TrainingReadiness';
@@ -102,8 +103,18 @@ const WORKFLOW_NAV = [
   { section: 'Platform', items: [{ id: 'platform', name: 'Platform & evidence', icon: ShieldCheck }] },
 ] as const;
 
+const JOURNEY_STAGE_BY_WORKSPACE: Partial<Record<string, JourneyStageId>> = {
+  acquire: 'acquire',
+  domainWorkbench: 'inspect',
+  experimentComposer: 'design',
+  evidence: 'admit',
+  findings: 'report',
+};
+
 export default function App() {
   const [activeTab, setActiveTab] = useState('acquire');
+  const [activeJourneyStage, setActiveJourneyStage] = useState<JourneyStageId | null>('acquire');
+  const [requestedComposerStep, setRequestedComposerStep] = useState<string>();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const mobileNavTriggerRef = useRef<HTMLButtonElement>(null);
   const workflowNavRef = useRef<HTMLElement>(null);
@@ -132,6 +143,12 @@ export default function App() {
   const [importedProvenance, setImportedProvenance] = useState<Record<string, any> | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const navigateWorkspace = (workspace: string) => {
+    setActiveJourneyStage(JOURNEY_STAGE_BY_WORKSPACE[workspace] || null);
+    setRequestedComposerStep(undefined);
+    setActiveTab(workspace);
+  };
 
   // Core Scientific Fields State (shared or passed between tabs)
   const [primaryField, setPrimaryField] = useState<number[][]>(() =>
@@ -623,7 +640,7 @@ export default function App() {
 
   const handleAdoptProposal = (config: any) => {
     setExperimentJson(JSON.stringify(config, null, 2));
-    setActiveTab('declarative');
+    navigateWorkspace('declarative');
   };
 
 
@@ -782,6 +799,13 @@ export default function App() {
   }[]).flatMap(group => group.items)
     .find(item => item.id === activeTab)?.name || 'Scientific workbench';
 
+  const navigateJourney = (stage: JourneyStageId, workspace: string, composerStep?: string) => {
+    setActiveJourneyStage(stage);
+    setRequestedComposerStep(composerStep);
+    setActiveTab(workspace);
+    setMobileNavOpen(false);
+  };
+
   return (
     <div className="instrument-shell min-h-screen bg-slate-950 text-slate-100 flex flex-col">
       <a href="#workspace-main" className="skip-link">Skip to workspace</a>
@@ -862,10 +886,12 @@ export default function App() {
                   const unavailable = decision ? !decision.available : false;
                   return (
                     <button key={tab.id} type="button" disabled={unavailable}
-                      onClick={() => { setActiveTab(tab.id); setMobileNavOpen(false); }}
+                      data-workflow-line={'context' in tab ? 'legacy-gridded' : 'evidence'}
+                      onClick={() => { navigateWorkspace(tab.id); setMobileNavOpen(false); }}
                       aria-current={isActive ? 'page' : undefined}
                       aria-describedby={unavailable ? `nav-reason-${tab.id}` : undefined}
-                      className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                      className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all
+                        ${'context' in tab ? 'legacy-workspace-entry ' : ''}${
                         isActive
                           ? 'bg-teal-500/10 text-teal-400 border border-teal-500/20 shadow-sm shadow-teal-500/5'
                           : unavailable ? 'text-slate-600 cursor-not-allowed border border-slate-900'
@@ -876,8 +902,8 @@ export default function App() {
                       <span className="min-w-0 text-left">
                         <span className="block">{tab.name}</span>
                         {'context' in tab && (
-                          <span className="block text-[10px] uppercase tracking-wide text-slate-500">
-                            {tab.context}
+                          <span className="legacy-workspace-entry__label block text-[10px] uppercase tracking-wide">
+                            Legacy · {tab.context}
                           </span>
                         )}
                         {unavailable && decision && <span id={`nav-reason-${tab.id}`}
@@ -912,6 +938,8 @@ export default function App() {
           <p className="sr-only" role="status" aria-live="polite">
             {loading || benchmarkRunning || receiptImporting ? `${activeWorkspace} is working` : `${activeWorkspace} is ready`}
           </p>
+          <ResearchJourney active={activeJourneyStage} hasRecord={!!selectedRecord}
+            hasStudy={!!selectedStudyId} onNavigate={navigateJourney} />
           {(selectedRecord || selectedStudyId) && <section aria-label="Current research context"
             className="research-context bg-slate-900/85 border border-slate-700/70 rounded-xl px-4 py-2.5 flex flex-wrap items-center gap-x-8 gap-y-2 text-xs">
             <div className="context-item flex items-center gap-2">
@@ -2679,7 +2707,7 @@ export default function App() {
           {/* TG11.1: the selected full channel record reaches domain_analysis without a write. */}
           {activeTab === 'domainWorkbench' && (
             <DomainAnalysisView selectedRecord={selectedRecord}
-              onError={(message) => setError(message)} onAcquire={() => setActiveTab('acquire')} />
+              onError={(message) => setError(message)} onAcquire={() => navigateWorkspace('acquire')} />
           )}
 
           {/* TG11.2: the generate/confirm split. The panel makes the ordering legible; the
@@ -2687,7 +2715,7 @@ export default function App() {
               partition is refused whatever this file renders (R18). */}
           {activeTab === 'preregistration' && (
             <PreregistrationView selectedRecord={selectedRecord}
-              onError={(message) => setError(message)} onAcquire={() => setActiveTab('acquire')} />
+              onError={(message) => setError(message)} onAcquire={() => navigateWorkspace('acquire')} />
           )}
 
           {/* TG11.3: the evidence write path. The only writing panel in the application, and
@@ -2726,8 +2754,9 @@ export default function App() {
           )}
 
           {activeTab === 'experimentComposer' && (
-            <ExperimentComposer onSelectStudy={setSelectedStudyId} onEvidenceHandoff={(studyId) => {
-              setSelectedStudyId(studyId); setActiveTab('evidence');
+            <ExperimentComposer onSelectStudy={setSelectedStudyId}
+              requestedStep={requestedComposerStep} onEvidenceHandoff={(studyId) => {
+              setSelectedStudyId(studyId); setActiveJourneyStage('admit'); setActiveTab('evidence');
             }} />
           )}
 
@@ -2737,14 +2766,14 @@ export default function App() {
           {activeTab === 'findings' && (
             <FindingsView onError={(message) => setError(message)}
               selectedStudyId={selectedStudyId} onSelectStudy={setSelectedStudyId}
-              onOpenComposer={() => setActiveTab('experimentComposer')} />
+              onOpenComposer={() => navigateWorkspace('experimentComposer')} />
           )}
 
           {activeTab === 'researchArchive' && (
             <ResearchArchive onError={(message) => setError(message)}
               onNavigate={(target, studyId) => {
                 if (studyId) setSelectedStudyId(studyId);
-                setActiveTab(target);
+                navigateWorkspace(target);
               }} />
           )}
 

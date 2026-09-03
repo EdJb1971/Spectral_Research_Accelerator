@@ -4805,10 +4805,28 @@ that the fit band is visible on it - a power law is a straight line only on log-
 the axes alters the figure rather than describing it, so it is recorded here rather than folded in
 silently.
 
-**TG18.3 Guided research journey.** Make `Acquire -> Inspect -> Design -> Run -> Compare -> Admit ->
-Report` visible without collapsing the existing claim ladder. Every blocked state names one next
-legitimate action; legacy gridded tools remain available but are visually distinguished from the
-evidence workflow.
+**TG18.3 Guided research journey — DONE (2026-09-03).** `Acquire -> Inspect -> Design -> Run ->
+Compare -> Admit -> Report` is now a visible global map above every workspace. It is explicitly
+navigation, not evidence status: Design, Run and Compare hand off to the named Composer panel,
+while Composer continues to obtain the scientific order, every status, every blocked reason and
+the one next legitimate action from its served path contract. The existing acquired-material,
+executed-run, finding and admitted-evidence ladder remains visible on Compare, and the map states
+that it neither advances nor replaces it.
+
+The shell owns only two ordinary context blockers. Inspect without a selected record names
+`Acquire a record` as its one remediation; Admit without a selected study names `Open Composer and
+save a study`. Neither is a scientific readiness verdict. Eight legacy gridded workspaces remain
+reachable in the original workflow rail and are distinguished from the evidence journey twice:
+the non-colour label `Legacy · Gridded field line` and an amber inset/background treatment.
+
+**Evidence.** Five rendered acceptance tests verify the seven ordered stages, both blockers and
+their performed remediation, Run and Compare landing on the corresponding served Composer panels,
+continued visibility of the distinct claim ladder, direct Report navigation, and all eight legacy
+tools remaining labelled and reachable. The existing Composer and narrow-width suites pass with
+the new map (**35/35** together). The complete run from a cleaned `.e2e-state` is **109/109** in
+Chromium. `test_frontend_contract.py` is **177 passed**. The production build transforms 1,417
+modules. The full backend suite was not rerun; the last measured full-suite figure remains
+**3536** (T4E.2).
 
 **TG18.4 Responsive and assistive-technology acceptance.** Verify keyboard order, focus return,
 zoom/reflow, contrast, reduced motion and non-colour status at desktop, laptop and narrow widths.

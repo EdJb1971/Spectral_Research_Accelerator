@@ -44,8 +44,10 @@ supersedes the other.
 * Cross-domain line: Phase G18, the instrument the science is read through. TG17.9 and TG17.10
   are DONE, the latter with the **release withheld**; TG18.1 (shared instrument foundation) closed
   on 2026-09-03 after six slices; TG18.2 (scientific visualization workspace) closed the same day
-  after five slices. **TG18.3 (guided research journey) is next.** TG18.4 and TG18.5 have not been
-  started.
+  after five slices; TG18.3 now closes the global navigation-only
+  `Acquire -> Inspect -> Design -> Run -> Compare -> Admit -> Report` journey without replacing
+  Composer's server-owned path or claim ladder. **TG18.4 (responsive and assistive-technology
+  acceptance) is next.** TG18.5 has not been started.
 * What TG18.2 has delivered, all of it presentation only: every figure carries a text and table
   equivalent of what it draws, a declared statement of whether two panels may share a colour
   scale, the domain a fitted claim was taken over with the uncertainty attached to it, and
@@ -54,7 +56,7 @@ supersedes the other.
   G18 none of this may recompute, summarize, promote or reinterpret a scientific value, so each
   addition transcribes what the analysis layer produced or states that it produced nothing.
 * Last measured full backend run: **3536 passed, 4 skipped, 1 xfailed**, exit 0.
-* Last measured browser suite: **104/104** in Chromium from a cleaned `.e2e-state` (2026-09-03).
+* Last measured browser suite: **109/109** in Chromium from a cleaned `.e2e-state` (2026-09-03).
   It is inventoried in `architecture.md` section 7.4a; it is the only check here that proves a
   page renders.
 * Open defects: **D84 and D85**; D18 partial. D43 is closed.

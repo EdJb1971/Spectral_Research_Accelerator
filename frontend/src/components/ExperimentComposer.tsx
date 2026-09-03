@@ -38,9 +38,10 @@ function utcValue(value: string): string {
   return new Date(value.endsWith('Z') ? value : `${value}:00Z`).toISOString();
 }
 
-export default function ExperimentComposer({ onSelectStudy, onEvidenceHandoff }: {
+export default function ExperimentComposer({ onSelectStudy, onEvidenceHandoff, requestedStep }: {
   onSelectStudy?: (id: string) => void;
   onEvidenceHandoff?: (id: string) => void;
+  requestedStep?: string;
 }) {
   const [manifest, setManifest] = useState<types.CrossDomainExperimentManifest | null>(null);
   const [identity, setIdentity] = useState<string>('');
@@ -73,6 +74,12 @@ export default function ExperimentComposer({ onSelectStudy, onEvidenceHandoff }:
     setActiveStep(stepId);
     localStorage.setItem(ACTIVE_STEP_KEY, stepId);
   };
+
+  // The global journey chooses only which served panel to inspect. It supplies no status and
+  // cannot make the step actionable; the path response below remains the sole scientific judge.
+  useEffect(() => {
+    if (requestedStep) selectStep(requestedStep);
+  }, [requestedStep]);
 
   useEffect(() => {
     apiService.getExperimentComposerContract().then(setContract).catch(() => setContract(null));

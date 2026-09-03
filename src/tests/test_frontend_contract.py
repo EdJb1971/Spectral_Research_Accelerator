@@ -2250,3 +2250,34 @@ def test_findings_refuses_to_treat_a_run_or_receipt_label_as_a_published_study()
     gate_mapping = archive.split("...gates.receipts.map", 1)[1].split(
         "...evaluations.map", 1)[0]
     assert "studyId:" not in gate_mapping
+
+
+# ------------------------------------------------ TG18.3 the global guided research journey
+
+
+def test_the_global_journey_is_navigation_and_not_a_second_scientific_judge(app_source):
+    journey = _read("components", "ResearchJourney.tsx")
+    composer = _read("components", "ExperimentComposer.tsx")
+    for stage in ("Acquire", "Inspect", "Design", "Run", "Compare", "Admit", "Report"):
+        assert "label: '%s'" % stage in journey
+    assert 'aria-label="Guided research journey"' in journey
+    assert "Navigation only" in journey
+    assert "does not advance or replace the claim ladder" in journey
+    assert "requestedStep" in composer
+    assert "composerPathState" in composer
+    assert "setPathState" in composer
+    # The shell sends a panel name, never a verdict about the panel.
+    for scientific_status in ("SATISFIED", "ACTION_REQUIRED", "INCONCLUSIVE", "PASS", "FAIL"):
+        assert scientific_status not in journey
+    assert "ResearchJourney" in app_source
+
+
+def test_every_global_blocker_names_one_remediation_and_legacy_tools_stay_distinct(app_source):
+    journey = _read("components", "ResearchJourney.tsx")
+    assert "Blocked:" in journey
+    assert "Next legitimate action:" in journey
+    assert "no record is selected for inspection" in journey
+    assert "no study is selected for evidence admission" in journey
+    assert "data-workflow-line={'context' in tab ? 'legacy-gridded' : 'evidence'}" in app_source
+    assert "legacy-workspace-entry" in app_source
+    assert "Legacy · {tab.context}" in app_source

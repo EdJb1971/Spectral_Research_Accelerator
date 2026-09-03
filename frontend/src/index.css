@@ -64,6 +64,18 @@ button, input, select, textarea {
   scrollbar-gutter: stable;
 }
 
+/* TG18.3: compatibility workspaces remain reachable in the ordinary workflow rail, but they
+ * must not look like steps in the evidence journey. The label supplies the non-colour cue; the
+ * amber inset and background make the separation visible at a glance. */
+.legacy-workspace-entry {
+  box-shadow: inset 3px 0 0 rgba(245, 158, 11, 0.52);
+  background: rgba(120, 53, 15, 0.055);
+}
+
+.legacy-workspace-entry__label {
+  color: #d6a44b;
+}
+
 .workspace-main {
   min-width: 0;
   background:
@@ -193,6 +205,134 @@ button, input, select, textarea {
 
 .context-item {
   min-height: 1.75rem;
+}
+
+/* TG18.3: a small, global journey map. It is deliberately styled unlike Composer's status
+ * stepper and states its non-authority in text: location in this strip is not scientific
+ * progress, and its two blockers are UI-context absences rather than evidence decisions. */
+.research-journey {
+  border: 1px solid rgba(45, 212, 191, 0.18);
+  border-radius: 0.875rem;
+  background: rgba(15, 23, 42, 0.6);
+  padding: 0.875rem;
+}
+
+.research-journey__heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0 0.25rem 0.75rem;
+}
+
+.research-journey__boundary {
+  max-width: 25rem;
+  color: #94a3b8;
+  font-size: 0.75rem;
+  line-height: 1.125rem;
+  text-align: right;
+}
+
+.research-journey__stages {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.research-journey__stage {
+  display: flex;
+  min-width: 0;
+  min-height: 7.25rem;
+  flex-direction: column;
+  gap: 0.45rem;
+  border: 1px solid #1e293b;
+  border-radius: 0.65rem;
+  background: rgba(2, 6, 23, 0.55);
+  padding: 0.65rem;
+}
+
+.research-journey__stage.is-current {
+  border-color: rgba(45, 212, 191, 0.55);
+  background: rgba(13, 148, 136, 0.08);
+}
+
+.research-journey__stage.is-blocked {
+  border-color: rgba(244, 63, 94, 0.38);
+}
+
+.research-journey__stage-name {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: #e2e8f0;
+  font-size: 0.8125rem;
+}
+
+.research-journey__marker,
+.research-journey__marker svg {
+  width: 0.875rem;
+  height: 0.875rem;
+  flex: 0 0 auto;
+  color: #5eead4;
+}
+
+.is-blocked .research-journey__marker svg {
+  color: #fda4af;
+}
+
+.research-journey__ordinal {
+  margin-right: 0.25rem;
+  color: #64748b;
+  font-size: 0.6875rem;
+}
+
+.research-journey__reason {
+  color: #fda4af;
+  font-size: 0.6875rem;
+  line-height: 1rem;
+}
+
+.research-journey__stage button {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.3rem;
+  margin-top: auto;
+  color: #99f6e4;
+  font-size: 0.6875rem;
+  line-height: 1rem;
+  text-align: left;
+}
+
+.research-journey__stage button:hover {
+  color: #f0fdfa;
+}
+
+.research-journey__stage button svg {
+  width: 0.75rem;
+  height: 0.75rem;
+  margin-top: 0.125rem;
+  flex: 0 0 auto;
+}
+
+@media (max-width: 1279px) {
+  .research-journey__stages {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 639px) {
+  .research-journey__heading {
+    align-items: start;
+    flex-direction: column;
+  }
+
+  .research-journey__boundary {
+    text-align: left;
+  }
+
+  .research-journey__stages {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 .instrument-notice {
