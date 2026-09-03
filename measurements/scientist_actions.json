@@ -1,0 +1,130 @@
+{
+  "schema": "scientist-actions/v1",
+  "definition": "visible researcher actions from a clean browser session",
+  "counted": "one activation of one visible control, located by role and accessible name",
+  "not_counted": "opening the application, waiting for a served response, reading, and assertions",
+  "claim_boundary": "Actions on the declared representative path, which is an upper bound on the shortest route and not a claim about the minimum. Wall-clock durations are recorded as context and are asserted by nothing: they are properties of the machine that ran this, not of the interface. Nothing here is evidence about any scientific result.",
+  "declared_plan_to_completed_run": {
+    "actions": 14,
+    "asserted": true,
+    "reached": "a COMPLETE run of the frozen plan, which is an executed plan and not evidence",
+    "timeline": [
+      {
+        "ordinal": 1,
+        "action": "open Experiment Composer",
+        "at_ms": 1985
+      },
+      {
+        "ordinal": 2,
+        "action": "go to step 2. Domains",
+        "at_ms": 2132
+      },
+      {
+        "ordinal": 3,
+        "action": "exclude order_book",
+        "at_ms": 2181
+      },
+      {
+        "ordinal": 4,
+        "action": "go to step 3. Observation",
+        "at_ms": 2252
+      },
+      {
+        "ordinal": 5,
+        "action": "Apply the week preset",
+        "at_ms": 2293
+      },
+      {
+        "ordinal": 6,
+        "action": "go to step 4. Preflight",
+        "at_ms": 2354
+      },
+      {
+        "ordinal": 7,
+        "action": "Inspect metadata coverage",
+        "at_ms": 2419
+      },
+      {
+        "ordinal": 8,
+        "action": "go to step 5. Analysis",
+        "at_ms": 2504
+      },
+      {
+        "ordinal": 9,
+        "action": "Price the declared family",
+        "at_ms": 2573
+      },
+      {
+        "ordinal": 10,
+        "action": "go to step 6. Freeze and run",
+        "at_ms": 2631
+      },
+      {
+        "ordinal": 11,
+        "action": "Render the preregistration summary",
+        "at_ms": 2677
+      },
+      {
+        "ordinal": 12,
+        "action": "Open or resume the run",
+        "at_ms": 2729
+      },
+      {
+        "ordinal": 13,
+        "action": "Execute the frozen plan",
+        "at_ms": 2912
+      },
+      {
+        "ordinal": 14,
+        "action": "go to step 7. Interpret",
+        "at_ms": 3004
+      }
+    ],
+    "elapsed_seconds_unasserted": 3.004
+  },
+  "refusal_to_remediation": {
+    "refusal": "the flagship preflight refuses order_book, which has no public archive to plan",
+    "actions_to_reach_the_refusal": 3,
+    "actions_from_refusal_to_remediation": 4,
+    "asserted": true,
+    "refusal_explanation_time_seconds_unasserted": 0.265,
+    "remediation": "exclude the bespoke domain through the domain menu",
+    "timeline": [
+      {
+        "ordinal": 1,
+        "action": "open Experiment Composer",
+        "at_ms": 2105
+      },
+      {
+        "ordinal": 2,
+        "action": "go to step 4. Preflight",
+        "at_ms": 2246
+      },
+      {
+        "ordinal": 3,
+        "action": "Inspect metadata coverage",
+        "at_ms": 2296
+      },
+      {
+        "ordinal": 4,
+        "action": "go to step 2. Domains",
+        "at_ms": 2437
+      },
+      {
+        "ordinal": 5,
+        "action": "exclude order_book",
+        "at_ms": 2498
+      },
+      {
+        "ordinal": 6,
+        "action": "go to step 4. Preflight",
+        "at_ms": 2545
+      },
+      {
+        "ordinal": 7,
+        "action": "Inspect metadata coverage",
+        "at_ms": 2593
+      }
+    ]
+  }
+}

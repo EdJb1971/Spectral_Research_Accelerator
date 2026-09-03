@@ -6215,6 +6215,41 @@ all ten failing, because that run began while the dev server was still reloading
 previous mutation had just restored. Re-run in isolation it fails the four it should. A mutation
 that appears to kill everything is evidence about the harness, not about the guard.
 
+**Third slice (2026-09-04) - the two numbers `scientist_actions` refuses to invent, and the
+distinction between them.** TG17.10 shipped with `scientist_actions` reading `NOT_MEASURED` for the
+action count and for `refusal_explanation_time_seconds`. `scientist-actions.spec.ts` measures both
+in a rendered browser, and the design turns on which of them an assertion may hold.
+
+**An action count is deterministic, so it is asserted.** Every action is one activation of one
+visible control, located by role and accessible name; a control that cannot be found that way is
+not one a researcher could have used. The count is produced by the walk itself through a small
+harness rather than maintained by hand beside it, so it cannot drift from the path it describes.
+Measured: **14 actions** from a clean browser to a `COMPLETE` run of the frozen plan, and **3** to
+reach the preflight refusal with **4** more to clear it.
+
+**A wall-clock duration is not, so it is recorded and asserted by nothing.** How long a refusal
+takes to explain itself is a property of the machine that ran the suite. Asserting it would fail
+the gate for reasons that have nothing to do with the interface and, worse, would let it pass on a
+fast machine while the interface got slower. The measured 0.3 s and 4.74 s are written into the
+measurement as context, marked unasserted, beside the counts that are.
+
+**What the count is not.** It is the number of actions on the declared representative path, which
+is an upper bound on the shortest route and not a claim about a minimum - another researcher could
+reach the same state differently. The measurement says so in its own `claim_boundary` rather than
+leaving a reader to assume otherwise. `adapter_specific_framework_edits`, the third `NOT_MEASURED`
+field, is deliberately untouched: it is a source-edit audit belonging to `synthetic_fifth_adapter`,
+and no browser can observe it.
+
+The measurement is written to `measurements/scientist_actions.json`, which is committed rather than
+gitignored like `e2e/artifacts/`, because the remaining slice has to be able to read it.
+
+Three mutations, all against the product. Making the run ask a second time before executing grows
+the path by one action and fails the count (1 of 2). Renaming `Inspect metadata coverage` fails both
+tests, because a walk that cannot find a control by its visible name does not quietly find another
+route. Rendering the preflight refusal without the domain it refuses fails the refusal measurement
+(1 of 2), which is the guard that the refusal must *explain* itself rather than merely appear. All
+three restored byte-identically and the file returned to 2 of 2.
+
 **The slice's full-suite measurement found an intermittent failure in an older spec, which is worth
 more than the slice itself.** `composer-path.spec.ts` waited on
 `getByRole('heading', { name: 'Experiment Composer' })`. Playwright matches an accessible name by
@@ -8135,8 +8170,9 @@ not bound to the scratch state.
 | `research-journey.spec.ts` | 5 | TG18.3 all seven global stages, one remediation per context blocker, Composer/ladder separation and reachable distinguished legacy tools |
 | `assistive-acceptance.spec.ts` | 11 | TG18.4 keyboard order and focus at three layouts, zoom-equivalent reflow, rendered contrast, reduced motion, non-colour and semantic acceptance |
 | `ui-qualification.spec.ts` | 4 | TG18.5 served-workspace inventory, reachability with self-naming, journey destinations and unexplained disablement |
+| `scientist-actions.spec.ts` | 2 | TG18.5 the two numbers `scientist_actions` refuses to invent: the visible actions a researcher takes from a clean browser to a completed run of the frozen plan, and the actions between meeting the preflight refusal and clearing it, both asserted, with the wall-clock durations written into the measurement and asserted by nothing |
 | `product-modes.spec.ts` | 5 | TG18.5 one representative path through each of TG18.0's four product modes at two desktop viewports, with a named artefact at the state each path reaches, and the signature-uniqueness assertion that holds the modes apart (the file declares five and Playwright collects ten, once per viewport) |
-| **suite** | **134** | from a cleaned `.e2e-state`, Chromium, 2026-09-04 |
+| **suite** | **136** | from a cleaned `.e2e-state`, Chromium, 2026-09-04 |
 
 The counts are guarded by `test_documentation.py`, but only as far as a static reader honestly can:
 the file set must match `frontend/e2e/` exactly in both directions, and each stated count must be at

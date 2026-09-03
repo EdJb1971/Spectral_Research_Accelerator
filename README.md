@@ -83,7 +83,7 @@ supersedes the other.
   G18 none of this may recompute, summarize, promote or reinterpret a scientific value, so each
   addition transcribes what the analysis layer produced or states that it produced nothing.
 * Last measured full backend run: **3536 passed, 4 skipped, 1 xfailed**, exit 0.
-* Last measured browser suite: **134/134** in Chromium from a cleaned `.e2e-state` (2026-09-04).
+* Last measured browser suite: **136/136** in Chromium from a cleaned `.e2e-state` (2026-09-04).
   It is inventoried in `architecture.md` section 7.4a; it is the only check here that proves a
   page renders.
 * Open defects: **D84 and D85**; D18 partial. D43 is closed. D91, the scale/shape null

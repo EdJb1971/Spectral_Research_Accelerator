@@ -5341,9 +5341,29 @@ Nothing in the product was wrong, but an intermittently failing suite is exactly
 evidence slice cannot carry: it would produce an intermittently blocking gate, indistinguishable
 from a real refusal at the moment a reader most needs to tell them apart.
 
-Remaining for TG18.5: the action-count and refusal-to-remediation measurement, deterministic count
-asserted with wall-clock recorded as unasserted context; and the evidence channel into the
-qualification ledger.
+**Third slice delivered (2026-09-04) - the action count and the refusal-to-remediation
+measurement.** `scientist-actions.spec.ts` measures both in a rendered browser, and the design
+turns on which of the two an assertion may hold. An action count is deterministic, so it is
+asserted: **14 actions** from a clean browser to a `COMPLETE` run of the frozen plan, and **3** to
+reach the preflight refusal with **4** more to clear it. Every action is one activation of one
+visible control located by role and accessible name, counted by the walk itself rather than
+maintained by hand beside it.
+
+A wall-clock duration is not deterministic, so it is recorded and asserted by nothing. How long a
+refusal takes to explain itself is a property of the machine that ran the suite; asserting it would
+fail the gate for reasons unrelated to the interface, and would let it pass on a fast machine while
+the interface got slower. The measured 0.3 s and 4.74 s are written in as unasserted context.
+
+The count is an upper bound on the shortest route, not a claim about a minimum, and the measurement
+says so in its own claim boundary. `adapter_specific_framework_edits` is untouched: it is a
+source-edit audit belonging to `synthetic_fifth_adapter` and no browser can observe it. The
+measurement lands in the committed `measurements/scientist_actions.json`, because the remaining
+slice has to read it. Three mutations against the product were each caught: an extra confirmation
+grows the path and fails the count, renaming a control fails both tests rather than silently
+finding another route, and rendering the refusal without the domain it refuses fails the refusal
+measurement.
+
+Remaining for TG18.5: the evidence channel into the qualification ledger, and the G18 close-out.
 
 ## 6. Definition of Done
 
