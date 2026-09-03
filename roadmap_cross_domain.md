@@ -5431,6 +5431,50 @@ recorded under the slice headings, are exempt by construction rather than by a l
 
 TG18.5 is complete. G18 is complete.
 
+**TG17.13 The source-edit audit and the fifth-adapter gate — IN PROGRESS (2026-09-04).**
+`synthetic_fifth_adapter` is one of the two gates still blocking release, and the reason it was
+recorded `NOT_RUN` turns out to have been wrong. TG17.10 said a deterministic backend rehearsal
+must not award itself a gate only a source-edit audit can measure. The real reason is that no such
+audit existed: TG17.3's acceptance test is named
+`test_synthetic_fifth_adapter_reaches_the_registry_and_conforms_without_framework_edits`, proves
+the first half of that name, and asserts nothing about the second. "Without framework edits" was a
+claim carried in a test name - the same shape as TG18.5 slice 1's finding, and found the same way,
+by asking what a passing test would still allow.
+
+**First slice delivered (2026-09-04) — the audit, and the number it produced.**
+`src/core/extension_audit.py` separates two measurements that must not be run together. The
+installation claim is absolute: no framework source may name the synthetic fifth adapter, no
+declaration may excuse one that does, and the gate turns on this. It holds -
+`installation_required_framework_edits` is **0** across seventeen framework sources. The standing
+glue count is reported rather than asserted, because "glue must trend to zero rather than merely
+move files" is a property of the whole surface over time and not of one installation; a count that
+blocked release would make an unrelated archive's acquisition semantics a release decision, and a
+count that went unpublished would let glue accumulate behind a green gate.
+
+Every one of the eighteen occurrences where a framework source names a registered domain is
+declared with a kind and a reason, or the audit refuses. Only a behaviour branch counts as glue: a
+source that names a domain in prose, or carries a named recipe's own content, has not been edited
+to make that domain work. **The count is 1.** `AcquisitionView.tsx` renders `CDSPlanner` behind
+`domainName === 'reanalysis'`, and Copernicus acquisition being a long-running job the generic
+control schema cannot currently express is a reason the glue exists rather than a reason it stops
+being glue.
+
+Two things were found by writing it. `AdapterControls.tsx` claimed there was deliberately no
+`domain === 'reanalysis'` branch *anywhere* - true of that file, false of the surface, and pointing
+a reader away from the one place such a branch lives; narrowed to what it can support with the
+exception named. And **the audit's own first version passed vacuously**: it read the registry cold,
+before anything loads the adapters, scanned for an empty set of names and reported a clean surface.
+An empty registry is now a refusal, because that is D64, D74 and D75 a fourth time - a guard passing
+because it could not see what it was checking.
+
+Four mutations were each caught: ignoring an undeclared occurrence, counting prose and recipe
+content as glue, scanning an empty registry instead of refusing it, and permitting the fifth
+adapter's name in a framework source.
+
+Remaining for TG17.13: the channel into the qualification ledger, which is the shape TG17.12 and
+TG18.5 slice 4 already established - a recording bound to a declared contract and to the sources
+that decide what was measured, with absence, staleness and drift all reading `NOT_RUN`.
+
 ## 6. Definition of Done
 
 Inherits all nine conditions from `roadmap.md` §10 unchanged. A phase in this line is done when

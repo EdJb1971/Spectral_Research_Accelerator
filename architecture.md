@@ -6354,6 +6354,58 @@ pass both the clean-browser no-glue test and the synthetic fifth-adapter test. T
 field TG18.5 left unmeasured throughout because no rendered browser can observe a source-edit audit.
 G17 completion is therefore still unclaimable and the verdict is unmoved at `NOT_RELEASEABLE`.
 
+### 3.11.8 The source-edit audit, and the claim a test name was carrying (TG17.13)
+
+`synthetic_fifth_adapter` has read `NOT_RUN` since TG17.10, and `adapter_specific_framework_edits`
+`NOT_MEASURED`, for a reason that turned out to be wrong. The stated reason was that a source-edit
+audit is not something a deterministic backend rehearsal may award itself. The actual reason is
+that **no such audit had ever been written**.
+
+TG17.3's acceptance test is called
+`test_synthetic_fifth_adapter_reaches_the_registry_and_conforms_without_framework_edits`, and it
+proves the first half of its own name: a fifth domain carrying genuinely different mathematics - a
+monotone rank channel - reaches the registry, the control schema, the conformance kit and the
+domain-blind mining seam from a module the application never imports. Nothing in the repository
+proved the second half. "without framework edits" was carried in a test name and asserted nowhere,
+which is the same shape as TG18.5 slice 1's finding one gate over: a property claimed by naming it.
+
+**`src/core/extension_audit.py` measures it, and separates two things that must not be run
+together.** The *installation* claim is absolute: no framework source may name
+`synthetic_rank_sensor` or `monotone_rank`, there is no admissible reason for one to, and no
+declaration may excuse it. That is the half the gate turns on, and it holds -
+`installation_required_framework_edits` is **0** across seventeen framework sources. The *standing
+glue count* is reported rather than asserted, because "glue must trend to zero rather than merely
+move files" is a property of the whole surface over time and not of one adapter's installation. A
+count that blocked release would make an unrelated archive's acquisition semantics a release
+decision; a count that went unpublished would let glue accumulate behind a green gate.
+
+**Every occurrence is declared, and a declaration is a sentence rather than a suppression.** The
+scan reports all eighteen places a framework source names a registered domain. Each is declared
+with a kind and a reason, or the audit refuses - so an occurrence cannot be waved through by adding
+it to a list without also writing down why it is there. Only `BRANCH` counts as glue: a source that
+*names* a domain in prose, or carries a named recipe's own content, has not been edited to make
+that domain work, while a source that *behaves* differently because of the name has. TG17.0's
+flagship quartet naming its four domains is the recipe's subject; the known-answer preview route
+naming three is that frozen fixture's identity and dispatches on nothing.
+
+**The number is 1, not 0, and that is the finding.**
+`AcquisitionView.tsx` renders `CDSPlanner` behind `domainName === 'reanalysis'`. Copernicus
+acquisition is a long-running job with queue position, progress and resumption rather than a fetch,
+so the planner is not a form the generic control schema can currently express - but that is a
+reason the glue exists, not a reason it stops being glue, and the audit counts it.
+
+**A comment was asserting the property this gate exists to measure, and was wrong.**
+`AdapterControls.tsx` said there was deliberately no `domain === 'reanalysis'` branch *anywhere*.
+True of that file, false of the surface, and it pointed a reader away from the single place such a
+branch does live. Narrowed to the claim it can support, with the exception named.
+
+**The audit's own first version passed vacuously**, which is why an empty registry is now a refusal.
+It read `registered_domains()` cold, before anything loads the adapters, scanned for an empty set of
+names, found nothing and reported a clean surface with `adapter_specific_framework_edits` of 0. That
+is the defect this repository has already met three times - D64, D74 and D75, each a guard passing
+because it could not see what it was checking - and it is caught here by the same instinct that a
+silence has to be explained before it is believed.
+
 ## 3.12 HTTP API Surface
 
 153 routes. Listed here because an undocumented endpoint is an untested contract. The count and this table were both wrong until TG17.3 (defect D75): the guard enumerated a hand-maintained list of ten source files and could not see four mounted routers.
@@ -8148,6 +8200,7 @@ able to sit three slices out of date.
 | `test_sample_spine.py` | 28 | TG1.4 sibling sample spine: a rank-3 domain through the unmodified sweep and replication gate, the planted/AR(1) pair, `PhysicalField` still refusing non-2D input, the one-way bridge and its transpose refusal, declaration-not-inference refusals, and a fourth reduction registered from the test module |
 | `test_tabular_domain.py` | 48 | TG0.2 non-atmospheric domain: planted-coupling recovery and AR(1) null through the unmodified sweep, R21/R17 refusals, declaration and adapter validation |
 | `test_coefficient_field.py` | 40 | T4B.1 acceptance: parent-grid alignment, perfect reconstruction per family, lineage-safe summary; DTCWT upsampling declared; LevelBank and level slicing (T4B.4) |
+| `test_extension_audit.py` | 11 | TG17.13 the source-edit audit: no framework source names the synthetic fifth adapter, every registered-domain occurrence in the generic seam is declared with a stated kind and reason, and only a behaviour branch counts as glue; an empty registry, a missing source and an undeclared occurrence are each refused rather than scanned past |
 | `test_documentation.py` | 29 | architecture, roadmap and proprietary named-licence boundary against the code/repository, including every registered TG17 receipt operation, adapter, refusal and field having an explicit source-of-truth explanation |
 | `test_dtcwt.py` | 28 | Kingsbury q-shift DTCWT: primitives vs reference, two oracles, orientation, shift invariance, D1 head-to-heads |
 | `test_executor.py` | 38 | Executor backends, seed derivation, ordering, portable CPU/accelerator/HPC profiles, doctor, device/thread policy, SQLite concurrency, byte-identical sweeps (now over a payload that actually draws), D55 thread/serial agreement with the seed-to-draw window held open |
@@ -8229,7 +8282,7 @@ able to sit three slices out of date.
 | `test_spectral_constellation.py` | 45 | T4E.1 the bridge to TG3.3's attributed graphs: every constellation carrying a real `AttributedGraph` whose declared relations are exactly what `measurable_relations` reports, three of the eight measurable and the other five refused by name with the field each one lacks; D90 pinned on the units themselves rather than on the symptom, with `distance` measured on every pair of the pass and a scale genuinely in metres still refused so the fix cannot be read as a weakening; `succession` asserted false for every ordered pair of every constellation, which is why the onsets are carried separately; the enumeration checked against the combinatorics of its own frame census frame by frame and 318 nodes checked against the tracks they came from; the flank separation of two bands following one vortex, `same_band` on every pair, and the claim boundary naming both; the raw and band-normalised strength ratios disagreeing about the sign of the comparison, with the band RMS recovered exactly from the threshold and its sigma, and a detection that recorded no threshold refused a normalised strength and saying so; left-censoring set from the tracker's own clock, the nine-frame offset carried as a bound, and an uncensored pair carrying no note; the plane angle checked against six hand-built displacements, declared not to be a compass in its own receipt, refused between two coincident nodes, and wrapped on a periodic axis with two tracks disagreeing about where it closes refused; rates local to the node so two frames of one track differ, a single sighting given no rate, velocity or scale velocity, a held level reporting exactly zero rather than a least-squares residue, and a signed radial velocity; and the refusals -- only pairs and triples, a frame over the node cap refused rather than sampled, a budget overrun refused whole rather than returned as a prefix, R19 left to TG3.3 rather than re-implemented, D88 registration required across scales but not within one, a missing registration receipt not treated as a failing one, a node with no scale refused, the carried half required to be the same size as the comparable half, and the absent self-loop check shown to be unreachable rather than added |
 | `test_spectral_invariance.py` | 45 | T4E.2 the invariant signature: the principal axis checked against the covariance eigendecomposition it stands for over 50 random configurations, exactly collinear points reporting an infinite anisotropy rather than a failure, and three axes refused rather than projected; the `planted_configuration` benchmark measured over 24 field-noise realisations to be isotropic with an axis angle spanning 0.78 to 158.08 degrees, the module's isotropy floor asserted to be the number that measurement produced, a configuration at the benchmark's own anisotropy refused an axis by name, and the vortex triples shown to clear the floor by two orders of magnitude; invariance measured rather than declared, with translation, three rotations, reflection and every relabelling asserted to leave the signature vector identical to floating-point precision in both modes; a uniform rescaling leaving the scale-free shape alone while an estimator that missed the rescaling moves the scale-specific geometry by exactly the factor it missed; the canonical order shown to matter, with two configurations that agree on independently sorted blocks and have no correspondence making both true at once; the toggle priced at 87 of 135 with the loss attributed by cardinality; a position in metres beside a scale in cells refusing the scale-specific mode and signing in the scale-invariant one, which is what R19's own refusal message tells the caller to do; and the refusals -- a pair asked for a scale-free shape, a pair's axis refused for a different reason than an isotropic triple's, a constellation stripped of its features, a member with no band RMS, an unknown mode, blocks that disagree about cardinality, a floor calibrated on one realisation or on collinear replicates, and the mixed-unit refusal left to the extractor rather than copied |
 | `test_spectral_narrative.py` | 25 | T4D.3 the prose, and what it may not say: every number in a sentence checked against the track it came from including the spoken speed against `Track.speed()` for all four tracks, the subject of every sentence being the coefficient maximum and not the structure, and the frame count being of frames searched rather than frames found; no track of a growing vortex claiming its own scale doubled -- each holding one level at a scale velocity of exactly zero with the word absent from the prose -- while the growth that did happen is measured across bands, level 4 weakening as level 5 strengthens and is first excited nine frames later, offered as a candidate precursor relationship carrying that it was not tested against a null and claims no merge, with one band supporting no ordering at all; a cartesian grid refused every compass word and given axis-relative wording, the sign that makes a row northward read from the grid so one displacement on two grids gives opposite points, the cosine of the latitude shortening a degree of longitude before the bearing is taken so 60 degrees north gives 26.6 and not 45, a track that returned to where it started given no bearing, and the missing-`lat0` branch shown to be unreachable rather than added; energy reported as the square under its own name so the roadmap's own 43% becomes 104.5%, and a change from zero refused rather than rendered infinite; the guard using the programme's one list of words for every entry in it, a causal word in a caller's own dataset name refused before a reader sees it, the guard's own limit asserted so a substring match cannot creep in, and the entitlement allowed to name the boundary the sentences may not cross and appearing exactly once however many tracks there are; plus a single sighting supporting no direction, speed or growth, a search that found nothing refused as an empty list of sentences, and the structural signature naming no variable, dataset or units |
-  | **total** | **3229** | |
+  | **total** | **3240** | |
 
 ### 7.4a Browser suite inventory
 

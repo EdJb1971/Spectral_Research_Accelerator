@@ -4,10 +4,16 @@ import * as types from '../types/api';
  * Schema-driven controls for one registered domain adapter (TG17.3).
  *
  * The only switch in this file is on a control's declared `kind`. There is deliberately no
- * `domain === 'reanalysis'` branch anywhere: a fifth adapter reaches this form by registering
- * its `ControlSchema`, and this component never learns its name. TG17.3's review rule is
- * explicit that a hardcoded form in the generic composer fails, and the acceptance test
- * installs an adapter this file has never seen.
+ * `domain === 'reanalysis'` branch *in this form*: a fifth adapter reaches it by registering its
+ * `ControlSchema`, and this component never learns its name. TG17.3's review rule is explicit
+ * that a hardcoded form in the generic composer fails, and the acceptance test installs an
+ * adapter this file has never seen.
+ *
+ * This comment used to claim there was no such branch *anywhere*, which was not true and pointed
+ * a reader away from the one place it is: `AcquisitionView` renders `CDSPlanner` behind
+ * `domainName === 'reanalysis'`. TG17.13's source-edit audit counts that branch as glue and
+ * publishes the count rather than excusing it, so the claim this file makes is now the narrow
+ * one it can actually support.
  *
  * Every control renders its declared help text. A control whose meaning lives only in the
  * adapter author's head cannot be operated by a researcher, so the backend refuses to register
