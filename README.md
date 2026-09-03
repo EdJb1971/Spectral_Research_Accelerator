@@ -63,7 +63,10 @@ supersedes the other.
 * Last measured browser suite: **124/124** in Chromium from a cleaned `.e2e-state` (2026-09-03).
   It is inventoried in `architecture.md` section 7.4a; it is the only check here that proves a
   page renders.
-* Open defects: **D84 and D85**; D18 partial. D43 is closed.
+* Open defects: **D84, D85 and D91**; D18 partial. D43 is closed. D91 is the scale/shape
+  null deranging list positions rather than pairings, which leaves two of the three
+  admissible family members unable to reject at any effect size; it blocks TG17.11 and
+  affects nothing already recorded, because no scale/shape cell has ever executed.
 
 **What has not been done**, stated once here so it is not inferred from the feature list: no
 learned forecast comparison has been run, no laboratory model or config has been supplied, FCN3

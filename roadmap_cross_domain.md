@@ -4501,6 +4501,111 @@ last measured full-suite figure. No archive is acquired, no statistic runs, no f
 recorded, no evidence is admitted and nothing is released by this slice.
 
 
+**TG17.11 Scale/shape mining calibration — SCOPED, NOT STARTED (2026-09-03).** The
+`scale_shape_calibration` gate is the only one of TG17.10's seven that reads `NOT_IMPLEMENTED`
+rather than `NOT_RUN`. The distinction is exact and it is the reason this task exists: the other
+unpassed gates have a method that has not been executed or has no channel to report itself, while
+this one has no scientific statistic at all. Half of G17's two declared scientific modes is
+currently unvalidatable.
+
+**What already exists, and is sound.** The scale/shape foundations are further along than the
+gate's wording suggests. `invariance.py` supplies `relative_geometry`, a matcher whose
+scale-invariance is *measured* rather than declared — normalising each edge by the geometric mean
+of every edge reproduces to 0.37% across translation, rotation and rescaling, inside replicate
+noise — together with `calibrate_match_tolerance`, which fixes the comparison tolerance by
+re-measuring the same configuration under fresh noise instead of letting an author choose it, and
+`recover_scale_ratio`. `motif.py` supplies a complete mining statistic with a null: `support_of`,
+`surrogate_scene` and `motif_p_value` in the `(1 + k) / (1 + n)` form. The
+`scale_partner_reassignment` null family is registered and implemented.
+`structural_alignment.py` supplies `ScaleShapeCorrespondence`, which retains the mapping back to
+both native durations so a normalised match is always reportable as "1.8 hours here, 46 days
+there" rather than as an unqualified similarity, and `assert_mode_admits_relationship`, which
+refuses calendar vocabulary in this mode by name.
+
+**What is missing is the statistic, and the template for it is already written.**
+`src/benchmarks/family_calibration.py` is the calendar analogue and is complete: a statistic
+(`support_weighted_correlation`, built from shared support *duration* so that rewriting a record
+at ten times the row density gives the same number), the declared registered null applied through
+`bind_null`, 999 replications giving a per-pair null distribution, the surrogate p-value, one
+Benjamini-Yekutieli correction over the whole declared family, and four cases whose expected
+answers are frozen in the module rather than in the test — one planted case that must reject every
+member and three safeguards that must reject none. Scale/shape needs the same five parts. It has
+the null and it has none of the other four.
+
+**D91 blocks everything downstream of it, and was found by probing the null on the family it would
+actually run.** `reassign_scale_partners` deranges list positions, not pairings. Its own docstring
+states the requirement it violates. The right members of an all-pairs family repeat, so a shuffle
+guaranteeing `order[i] != i` still frequently yields `rights[order[i]] == rights[i]`. Measured over
+5,000 draws on the three domains that admit this null — `argo_float`, `reanalysis`,
+`tess_lightcurve`, with `order_book` declining under D83 — two of the three members are unchanged
+from the observation 50% of the time, and one of those pairs a record against itself 50% of the
+time. A surrogate equal to the observation satisfies `null >= observed`, so those members carry a
+p-value floor near 0.5 before correction and cannot reject at any effect size.
+
+The bias is conservative, and that is precisely what makes it dangerous here. A calibration built
+on this null would have measured near-zero planted power and been read as a well-behaved safeguard
+result rather than as a broken null — a false negative wearing the appearance of rigour, which is
+this programme's stated central failure mode in a second guise. Nothing already recorded is
+affected: no scale/shape cell has ever executed, because all three are `REFUSED` before execution
+by D83's per-domain declarations.
+
+**The family is three members, not six.** D83's per-domain declarations mean the scale/shape family
+is the three unordered pairs of the three admitting domains. R18 prices that at 59 required
+surrogates for alpha 0.05; 999 replications give a p-value floor of 0.001 and
+`check_power(999, 3)` reports `can_reject_after_correction: True`. The calibration is affordable.
+It is a different family from calendar's six and must be declared as its own, not inherited.
+
+**The statistic is the open scientific question, and one measurement in this tree already
+constrains it.** The mode compares a shape at one native duration against a shape at another, so
+the statistic must be invariant to each record's native scale — that invariance is the mode's whole
+content and must therefore be *measured*, as `invariance.py` measures its matcher, not asserted.
+The constraint that measurement already imposes: dividing by a modelled quantity imports that
+quantity's bias, which is why `scale_normalised` is kept as a function and deliberately left out of
+`MATCHERS` after the extractor's scale estimate was found to drift from +3.6% to -2.6% across a
+sixfold range. A shape statistic that normalises by each record's *estimated* native scale would
+inherit exactly that drift. The recommended form therefore divides one measurement by another of
+the same kind, as `relative_geometry` does, rather than by an estimated scale; the deciding
+evidence is an invariance measurement, and the alternative is admitted only if it survives one.
+
+**Fixtures, by direct analogy with the four frozen calendar cases.** A planted case where one shape
+genuinely recurs at materially different native durations, which must reject every member at the
+declared alpha. A `same_normalisation_unrelated` safeguard — independent shapes put through the
+identical normalisation — because standardising two smooth profiles to zero mean and unit variance
+makes them correlate, and that is this mode's counterpart to calendar's `same_window_unrelated`. A
+`native_scale_alias` safeguard where a coordinate coincidence arises from the scale grid rather
+than from shape, the counterpart of `gap_alias`. And a `degenerate_inventory` case whose declared
+family admits no valid reassignment, which must produce a refusal rather than a p-value of 1.0 —
+the case D91 currently answers silently and wrongly.
+
+**Slices.**
+
+1. **D91.** Derange effective pairings rather than positions; refuse when an inventory admits no
+   valid reassignment. Verified by re-running the probe that found it, and by a test asserting the
+   refusal on two pairs sharing one right member.
+2. **The statistic.** One shape-recurrence statistic over a declared correspondence, with its
+   scale-invariance measured across a range of native durations rather than declared, and its
+   sensitivity to the normalisation itself reported.
+3. **The fixtures.** Four frozen cases with their expected answers written in the module, not the
+   test.
+4. **The calibration.** The family of three, run under the declared null at 999 replications with
+   one Benjamini-Yekutieli correction, reporting planted power and the false-positive rate on the
+   safeguards.
+5. **The gate.** `scale_shape_calibration` moves off `NOT_IMPLEMENTED` to whatever it has actually
+   earned. A calibration that runs and fails its power target is a passed slice and an unpassed
+   gate; those are different facts and the record keeps them apart.
+
+**What would falsify this task, stated before it starts.** If the planted case cannot be recovered
+at the declared alpha once D91 is fixed, the honest conclusion is that scale/shape mode is not
+measurable on this quartet — not that the fixtures need adjusting or the alpha relaxing. D83
+already established that the frozen quartet cannot be qualified in this mode at all; this task may
+end by establishing that the three domains which do admit the null still cannot support the claim,
+and that outcome must be recorded as the result rather than engineered away. No case may be
+retuned after its answer is seen.
+
+**Claim boundary.** Nothing in this task is evidence about the world. It measures whether a
+declared family behaves as declared on fixtures whose answers are fixed in advance. Passing it
+licenses no mining, promotes no claim and admits no evidence.
+
 **TG8.3 The domain ledger — finally measurable.** With five domains across three acquisition
 shapes there is at last a trend to read. *If onboarding cost is not falling, the abstraction is
 not working*, and the ledger must be able to say so.
