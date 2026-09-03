@@ -7,6 +7,7 @@ import { FigureExport } from './components/FigureExport';
 import {
   buildComparisonContract, FigureComparisonNotice, useLinkedAddress,
 } from './components/FigureComparison';
+import { slopeValidity } from './components/FigureValidity';
 import { FieldImport } from './components/FieldImport';
 import { TrainingReadiness } from './components/TrainingReadiness';
 import { DTCWTScientificView } from './components/DTCWTScientificView';
@@ -242,6 +243,7 @@ export default function App() {
   ]), [primaryField, reconstructedField]);
   const reconstructionAddress = useLinkedAddress(reconstructionPair);
 
+
   // --- TAB 5 STATE: Analysis & Diagnostics ---
   const [forecastNoise, setForecastNoise] = useState(0.15);
   // An explicit, visible seed. A diagnostic whose input cannot be regenerated is not a
@@ -249,6 +251,35 @@ export default function App() {
   const [forecastSeed, setForecastSeed] = useState(20260820);
   const [forecastProvenance, setForecastProvenance] = useState<any | null>(null);
   const [diagnosticsResults, setDiagnosticsResults] = useState<types.DiagnosticsResponse | null>(null);
+
+  /**
+   * The fit domain and uncertainty for the power spectral density figure (TG18.2).
+   *
+   * The PSD chart draws every wavenumber bin; the exponents quoted below it were fitted over
+   * `[k_min, k_max]` and nothing on the figure said so, so the only available reading was that
+   * each beta described the whole curve. The backend's assumption strings - isotropy averaged
+   * over annuli, a single unbroken power law, the reporting convention - were returned by the
+   * API and typed in `api.ts` but rendered nowhere at all until now. Both fits are declared, so
+   * a band that differs between forecast and ground truth is visible rather than merged.
+   */
+  const psdValidity = useMemo(() => {
+    const spectral = diagnosticsResults?.spectral_diagnostics;
+    if (!spectral) return { domains: [], uncertainties: [] };
+    const kUnits = spectral.k_units || null;
+    const parts = [
+      spectral.forecast_slope_analysis
+        ? slopeValidity(spectral.forecast_slope_analysis, { seriesLabel: 'Forecast PSD', kUnits })
+        : null,
+      spectral.ground_truth_slope_analysis
+        ? slopeValidity(spectral.ground_truth_slope_analysis,
+          { seriesLabel: 'Ground Truth PSD', kUnits })
+        : null,
+    ].filter(Boolean) as { domains: any[]; uncertainties: any[] }[];
+    return {
+      domains: parts.flatMap((part) => part.domains),
+      uncertainties: parts.flatMap((part) => part.uncertainties),
+    };
+  }, [diagnosticsResults]);
   const [scaleDecompResults, setScaleDecompResults] = useState<types.ErrorDecompositionResponse['scale_decomposition'] | null>(null);
   const [boundaryDecompResults, setBoundaryDecompResults] = useState<types.ErrorDecompositionResponse['boundary_decomposition'] | null>(null);
 
@@ -1927,6 +1958,9 @@ export default function App() {
                           title="Power Spectral Density (PSD)"
                           xLabel="Wavenumber (k)"
                           yLabel="Energy Density"
+                          divId="fig-psd"
+                          validity={psdValidity.domains}
+                          uncertainties={psdValidity.uncertainties}
                         />
                         <LineChart
                           series={[

@@ -3,6 +3,10 @@ import Plot from 'react-plotly.js';
 import {
   FigureContract, FigureDataDisclosure, FigureFact, FigureTable, formatNumber,
 } from './FigureData';
+import {
+  StatedUncertainty, ValidityDomain, buildValidityContract, insideMarkedDomains,
+  validityShapes, FigureValidityNotice,
+} from './FigureValidity';
 
 /** Beyond this many rows the table is capped and says so; silent truncation is the failure. */
 const MAX_TABULATED_POINTS = 2000;
@@ -25,6 +29,12 @@ interface LineChartProps {
    *  off linear axes is how a Kolmogorov cascade gets mistaken for something else. */
   logX?: boolean;
   logY?: boolean;
+  /** Declared sub-ranges of an axis within which a stated claim holds - a fit's `[k_min, k_max]`,
+   *  for instance. Drawn as a band, so an exponent quoted for part of a curve cannot be read as
+   *  describing all of it. See `FigureValidity`. */
+  validity?: ValidityDomain[];
+  /** Values the analysis layer produced for this figure, with whatever uncertainty it supplied. */
+  uncertainties?: StatedUncertainty[];
 }
 
 export const LineChart: React.FC<LineChartProps> = ({
@@ -35,12 +45,40 @@ export const LineChart: React.FC<LineChartProps> = ({
   divId,
   logX,
   logY,
+  validity,
+  uncertainties,
 }) => {
   const figureTitleId = useId();
   const [dataOpen, setDataOpen] = useState(false);
   // The empty-figure guard below runs after these hooks, so the contract is computed against a
   // safe list rather than assuming a caller supplied one.
   const safeSeries = series ?? [];
+
+  /**
+   * The extent the figure actually draws, so a declared band can be checked against it rather
+   * than assumed to land on screen. Computed from the samples that survive the axis: on a
+   * logarithmic axis the non-positive ones are not drawn, so they do not bound what is drawn.
+   */
+  const drawn = useMemo(() => {
+    const span = (values: number[], log: boolean | undefined): [number, number] | undefined => {
+      const usable = values.filter((v) => Number.isFinite(v) && !(log && v <= 0));
+      return usable.length ? [Math.min(...usable), Math.max(...usable)] : undefined;
+    };
+    return {
+      x: span(safeSeries.flatMap((item) => item.x), logX),
+      y: span(safeSeries.flatMap((item) => item.y), logY),
+    };
+  }, [safeSeries, logX, logY]);
+
+  const validityContract = useMemo(
+    () => buildValidityContract({ domains: validity, uncertainties, drawn }),
+    [validity, uncertainties, drawn]);
+
+  // The membership column exists only where there is a marked band to be inside or outside of.
+  // A column of em dashes on every other figure would be noise standing in for a fact, and a
+  // declared-but-refused band leaves membership genuinely undefined for every row - the notice
+  // states that refusal instead.
+  const showMembership = validityContract.domains.some((decision) => decision.marked);
 
   /**
    * What the axes silently drop.
@@ -84,19 +122,23 @@ export const LineChart: React.FC<LineChartProps> = ({
       for (let index = 0; index < count && rows.length < MAX_TABULATED_POINTS; index += 1) {
         const x = item.x[index];
         const y = item.y[index];
-        const drawn = Number.isFinite(x) && Number.isFinite(y)
+        const isDrawn = Number.isFinite(x) && Number.isFinite(y)
           && !(logY && y <= 0) && !(logX && x <= 0);
+        // The text equivalent of the shaded band. A reader who cannot see the shading still
+        // needs to know which points a stated claim was taken over.
+        const inside = insideMarkedDomains(x, y, validityContract);
         rows.push([
           item.name,
           index,
           Number.isFinite(x) ? formatNumber(x) : 'not finite',
           Number.isFinite(y) ? formatNumber(y) : 'not finite',
-          drawn ? 'yes' : 'no',
+          isDrawn ? 'yes' : 'no',
+          ...(showMembership ? [inside ? 'yes' : 'no'] : []),
         ]);
       }
     }
     return rows;
-  }, [safeSeries, dataOpen, logX, logY]);
+  }, [safeSeries, dataOpen, logX, logY, validityContract, showMembership]);
 
   const axisDescription = (label: string | undefined, log: boolean | undefined) => {
     const base = label || 'not labelled';
@@ -109,6 +151,26 @@ export const LineChart: React.FC<LineChartProps> = ({
       warn: droppedTotal > 0 },
     { label: 'Horizontal axis', value: axisDescription(xLabel, logX) },
     { label: 'Vertical axis', value: axisDescription(yLabel, logY) },
+    ...validityContract.domains.map((decision) => ({
+      label: decision.domain.label,
+      value: decision.marked
+        ? `${formatNumber(decision.markedFrom)} to ${formatNumber(decision.markedTo)} on the `
+          + `${decision.domain.axis === 'x' ? 'horizontal' : 'vertical'} axis`
+          + (decision.clipped ? ', clipped to what this figure draws' : '')
+        : 'declared, but not marked on this figure',
+      warn: !decision.marked || decision.clipped,
+    })),
+    ...validityContract.uncertainties.map((decision) => ({
+      label: decision.statement.label,
+      value: decision.bounded
+        ? `${formatNumber(decision.statement.value)} ± `
+          + `${formatNumber(decision.statement.uncertainty as number)}`
+          + (decision.statement.units ? ` ${decision.statement.units}` : '')
+        : (decision.stated
+          ? `${formatNumber(decision.statement.value)}, no uncertainty supplied`
+          : 'not produced'),
+      warn: decision.warn,
+    })),
     ...(omissions || []).filter(
       (o) => o.nonFinite || o.droppedByLogX || o.droppedByLogY).map((o) => ({
       label: `Omitted from ${o.name}`,
@@ -150,6 +212,7 @@ export const LineChart: React.FC<LineChartProps> = ({
       <h3 id={figureTitleId} className={title ? "text-sm font-semibold text-slate-300 mb-2" : "sr-only"}>
         {title || 'Line chart'}
       </h3>
+      <FigureValidityNotice contract={validityContract} label={title || 'line chart'} />
       <div className="w-full overflow-hidden rounded">
         <Plot
           data={plotData}
@@ -171,6 +234,7 @@ export const LineChart: React.FC<LineChartProps> = ({
               gridcolor: '#1e293b',
               zeroline: false,
             },
+            shapes: validityShapes(validityContract, { logX, logY }),
             legend: {
               orientation: 'h',
               y: -0.2,
@@ -192,6 +256,8 @@ export const LineChart: React.FC<LineChartProps> = ({
         {series.length} series: {series.map(item => item.name).join(', ')}.
         {xLabel ? ` Horizontal axis: ${xLabel}${logX ? ', logarithmic scale' : ''}.` : ''}
         {yLabel ? ` Vertical axis: ${yLabel}${logY ? ', logarithmic scale' : ''}.` : ''}
+        {validityContract.domains.filter((d) => d.marked).map((d) => (
+          ` ${d.reason}`)).join('')}
         {' '}Exact point values are available in the figure data panel that follows.
       </figcaption>
 
@@ -203,10 +269,13 @@ export const LineChart: React.FC<LineChartProps> = ({
           'This panel transcribes what the figure encodes and names what it could not encode. '
           + 'It derives no summary statistic - no mean, slope or fitted exponent - because a '
           + 'number authored by a view is indistinguishable on screen from one the analysis layer '
-          + 'stands behind.'} />
+          + 'stands behind. A fitted value and its uncertainty appear here only when the analysis '
+          + 'layer produced them, carried through unchanged; the fitted model itself is not drawn.'
+        } />
         <FigureTable
           caption={`Every point behind ${title || 'this figure'}`}
-          columns={['series', 'index', xLabel || 'x', yLabel || 'y', 'drawn']}
+          columns={['series', 'index', xLabel || 'x', yLabel || 'y', 'drawn',
+            ...(showMembership ? ['in declared domain'] : [])]}
           rows={tableRows}
           note={totalPoints > MAX_TABULATED_POINTS
             ? `Showing the first ${MAX_TABULATED_POINTS} of ${totalPoints} points. The rest are `

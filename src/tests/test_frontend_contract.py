@@ -298,6 +298,61 @@ def test_side_by_side_fields_carry_a_stated_comparison_contract(app_source):
     assert app_source.count("zRange={") >= 2 * contracts
 
 
+def test_figures_state_the_domain_a_claim_was_fitted_over(app_source):
+    """A power spectrum is drawn across every wavenumber bin; the exponent quoted for it is not.
+
+    The backend fits over ``[k_min, k_max]`` with ``n_points`` of those bins, and returns a
+    standard error, an R-squared, a weighting scheme and an explicit ``assumptions`` list. Before
+    TG18.2 the figure showed the whole curve, the exponent sat in a card below it, and the
+    assumptions were returned by the API, typed in ``api.ts`` and rendered nowhere at all -- so
+    the only available reading was that the exponent described the curve on screen.
+    """
+    validity = _read("components", "FigureValidity.tsx")
+    line = _read("components", "LineChart.tsx")
+
+    # Whether a declared band may honestly be drawn is decided, and every branch carries a reason
+    # written for the page.
+    assert "buildValidityContract" in validity
+    for refusal in ("not both finite numbers", "encloses nothing", "lies entirely",
+                    "was not produced"):
+        assert refusal in validity, refusal
+    # The sentence the whole overlay exists for, present on both marked branches: a band that
+    # runs off the figure must not lose it, and that is the branch the platform's own spectra
+    # take, since the fit reaches Nyquist and the plotted bins stop short.
+    assert validity.count("drawn but were not used") == 2
+    # A value quoted without an uncertainty is flagged, not silently rendered as exact.
+    assert "no uncertainty supplied" in validity
+    assert "cannot be compared against a reference value" in validity
+    # Plotly reads shape coordinates on a log axis as log10 of the value, and a fitted spectrum
+    # is read on log-log axes.
+    assert "Math.log10" in validity
+    # The band is clamped to what is drawn, so the mark on screen is the one the prose describes.
+    assert "markedFrom" in validity and "markedTo" in validity
+
+    # The claim language the analysis layer authored is carried, not paraphrased (R22, R23), and
+    # its interpretation is deliberately not repeated beside the figure.
+    assert "assumptions" in validity and "qualifiers" in validity
+    body = _strip_comments(validity)
+    assert "regime_interpretation" not in body
+
+    # The refusal that keeps this an overlay rather than a second analysis: the view states the
+    # fit, it does not draw it.
+    assert "no uncertainty envelope is drawn around it" in validity
+    for forbidden in ("Math.exp(", "Math.pow(", "** slope", "intercept_ln_c"):
+        assert forbidden not in body, forbidden
+
+    # The chart states the decision outside the disclosure, draws only the bands it accepted, and
+    # gives the shading a text equivalent in the tabulated points.
+    assert "FigureValidityNotice" in line
+    assert "validityShapes(validityContract" in line
+    assert "insideMarkedDomains" in line and "in declared domain" in line
+
+    # Every figure that declares a domain also states it and offers the uncertainty beside it.
+    declared = app_source.count("validity={")
+    assert declared, "no figure declares a validity domain"
+    assert app_source.count("uncertainties={") == declared
+
+
 def test_async_workflow_surfaces_expose_busy_state(all_sources):
     for name in ("AcquisitionView", "DomainAnalysisView", "PreregistrationView", "EvidenceView",
                  "StructureMiningView", "CrossDomainRecordView", "FindingsView",

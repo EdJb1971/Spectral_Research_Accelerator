@@ -4712,11 +4712,61 @@ carry identical explicit limits rather than two autoscales. `test_frontend_contr
 `test_documentation.py` are **199 passed**; `tsc --noEmit` clean and the production build succeeds.
 The full backend suite was **not** rerun; the last measured figure remains 3,240.
 
-**Still not done in TG18.2.** Uncertainty and validity overlays, resizable panes and publication
-export. The contract currently governs the three declared gridded pairs in `App.tsx`; the
-`DTCWTScientificView` shared range predates it and has not been migrated, and no line-chart group
-declares a contract yet, because axis-range sharing across line charts raises a separate question
-about log scales that this slice does not answer.
+**Third slice delivered (2026-09-03): the validity and uncertainty overlay.** These belong to the
+same "what this picture cannot tell you" family as missingness, so they extend the figure contract
+rather than sitting beside it.
+
+The gap was concrete and entirely backend-authored, which is what made it addressable under G18 at
+all. The PSD chart draws every wavenumber bin; the exponents quoted for it are fitted over
+`[k_min, k_max]` using `n_points` of them under a stated `weighting`, with a standard error, an
+R-squared and an explicit `assumptions` list. On the running platform the fit band is `0.649` to
+`pi rad/pixel` while the figure draws from `0.237`, so roughly the lowest third of the plotted
+abscissa lies outside the fit and nothing said so. The assumption strings - isotropy averaged over
+annuli, a single unbroken power law, the reporting convention - were returned by the API, typed in
+`api.ts`, and rendered **nowhere at all**.
+
+The band is now marked on the figure and the numbers stated with it, outside any disclosure, since
+a restricted domain governs how the whole curve may be read. Every value is transcribed and the
+claim language is carried verbatim (R22, R23); `regime_interpretation` is deliberately not carried,
+because it already appears where the exponent is quoted and a conclusion repeated beside a picture
+hardens into a caption.
+
+**The refusal is the load-bearing half.** The fitted power law is not drawn, and no plus/minus one
+sigma envelope is drawn around it. Both would require the view to evaluate a model at every plotted
+abscissa, and a curve rendered by the browser is indistinguishable on screen from measured data -
+the mean-under-the-plot temptation of the first slice in better clothes. The refusal is printed on
+the page and asserted mechanically: no `Math.exp`, no `Math.pow`, no `intercept_ln_c` in the module.
+
+Refusals cover a degenerate band, limits that are not finite, and a band lying entirely off the
+drawn extent - the last mattering most, since a silently absent band is indistinguishable from a
+fit that spanned the whole figure. A band overrunning the figure is clamped, not merely described,
+which also keeps `log10(0)` away from a logarithmic axis. Shape coordinates are projected into log
+space when the axis is logarithmic, because Plotly reads them as `log10` of the value and a fitted
+spectrum is read on log-log axes. The shading has a text equivalent: tabulated points carry an
+*in declared domain* column, with three states rather than two, because a point outside a band and
+a point on a figure with no band are different facts.
+
+`Heatmap2D`'s `validInset` is the precedent this generalises and was deliberately **not**
+retrofitted: its only caller draws six panels per level and already states the inset once at level
+scope, and an inset is the intersection of two axis bands, so per-axis shading would draw a cross
+where a box is correct.
+
+**Evidence.** 19 e2e tests added, **19/19 passing**; `test_frontend_contract.py` and
+`test_documentation.py` **200 passed**; `tsc --noEmit` clean. One real prose defect was found by
+the rendered half and fixed: the sentence that samples outside the band were not used appeared only
+on the unclipped branch, which is precisely the branch the platform's own spectra do not take. The
+full backend suite was **not** rerun; the last measured figure remains 3,240.
+
+**Still not done in TG18.2.** Resizable panes and publication export. The validity overlay is
+declared at one figure (the PSD chart), because it is the only figure whose backend record carries
+a fit domain and an uncertainty; no other chart has one to state. The comparison contract governs
+the three declared gridded pairs in `App.tsx`; the `DTCWTScientificView` shared range predates it
+and has not been migrated, and no line-chart group declares a comparison contract yet, because
+axis-range sharing across line charts raises a separate question about log scales that these slices
+do not answer. The PSD chart is also still drawn on **linear** axes, which is a genuine weakness now
+that the fit band is visible on it - a power law is a straight line only on log-log - but changing
+the axes alters the figure rather than describing it, so it is recorded here rather than folded in
+silently.
 
 **TG18.3 Guided research journey.** Make `Acquire -> Inspect -> Design -> Run -> Compare -> Admit ->
 Report` visible without collapsing the existing claim ladder. Every blocked state names one next
