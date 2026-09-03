@@ -4501,7 +4501,7 @@ last measured full-suite figure. No archive is acquired, no statistic runs, no f
 recorded, no evidence is admitted and nothing is released by this slice.
 
 
-**TG17.11 Scale/shape mining calibration — IN PROGRESS — slices 1-2 of 5 done (2026-09-03).** The
+**TG17.11 Scale/shape mining calibration — IN PROGRESS — slices 1-3 of 5 done (2026-09-03).** The
 `scale_shape_calibration` gate is the only one of TG17.10's seven that reads `NOT_IMPLEMENTED`
 rather than `NOT_RUN`. The distinction is exact and it is the reason this task exists: the other
 unpassed gates have a method that has not been executed or has no channel to report itself, while
@@ -4704,6 +4704,69 @@ Eight guards. Three mutations were run against them: dividing the phase axis by 
 of seconds instead of the declared native duration fails seven of the eight; weighting by row
 count instead of shared phase duration fails two; removing the resolution floor fails two. No
 mutation left the suite green.
+
+**TG17.11 slice 3 — the fixtures, and the inference that had to be corrected before they could be
+scored (2026-09-03).** `src/benchmarks/shape_fixtures.py` builds the four cases and freezes their
+expected answers in the module. Two things had to be settled first, and both were found by
+measurement rather than by reasoning about the design.
+
+**The family size is solved from the null's resolution, not chosen, and it is 105.**
+`reassign_scale_partners` replaces a pairing's right member with another right member from the
+same inventory, so a member's surrogate statistic can take only as many values as the inventory
+has admissible alternative partners — exactly `k - 1` for `k` disjoint pairings. The p-value is
+therefore bounded below by `1/k` however many replications are paid for, and Benjamini-Yekutieli
+admits a rejection only where `1/k <= alpha/H_k`. `minimum_resolvable_family` solves that against
+the real `adjust` rather than against arithmetic written into the module, and at alpha 0.05 the
+answer is **105 pairings**: at 104 the most favourable result the null can produce — every member
+beating every alternative — still rejects nothing. This is a hard floor on the mode. It is also
+the quantitative form of the slice 1 finding: G17's declared families of three and four domains
+are not merely too small, they are short by a factor of about twenty-five.
+
+**The Monte Carlo template would have inverted the safeguards, and is registered and refused.**
+Applying `family_calibration.py`'s method unchanged — draw 999 whole reassignments, count
+surrogates reaching the observation, divide by 1,000 — reports 0.001 for a member that beats its
+`k - 1` alternatives, when the exact tail probability of that event is `1/k`. The replications
+resample the same handful of values, so the denominator asserts a resolution the null does not
+have. The error is a factor of `k` **in the anti-conservative direction**: measured on a wholly
+unrelated inventory of six pairings over 200 realisations, the Monte Carlo form rejects at a
+family-wise rate of **74%** against a nominal 5%, at 1.11 false rejections per family, while the
+exact partner test rejects at **0%**. Calendar mode is not affected and that is measured rather
+than assumed: an independent clock shift over records of 56 and 1,344 rows returns 397 distinct
+surrogate statistics in 400 draws, so each replication there is a genuinely new surrogate. The
+distinction is whether the null's support exceeds the number of draws, which is a property of the
+null rather than of the code, so `monte_carlo_partner_p_values` is kept, named and refused with
+its measurement attached — the treatment `global_value_shuffle` already gets, for the same reason.
+
+Had D91 not been fixed first, this second fault would have been hidden underneath it: the
+conservative bias of the broken null would have masked the anti-conservative bias of the wrong
+p-value, and the calibration would have looked approximately calibrated for two compensating wrong
+reasons.
+
+**The four cases, with their answers stated from what each case is.** `exact_partner_p_values`
+scores each declared pairing by its rank among the alternatives that could legitimately have
+replaced it, taking that reference set from `admissible_partners` — the same set the null draws
+from, so the test and the null cannot disagree about what the family is.
+
+* `planted_shape_recurrence`: each pairing genuinely shares one profile, presented at two native
+  durations drawn independently across four orders of magnitude. **105 of 105 members reject**,
+  in 20 of 20 independent realisations.
+* `same_normalisation_unrelated`: independent profiles put through the identical standardization,
+  which is what makes arbitrary smooth shapes look alike. Own pairings score 0.339 and
+  alternatives 0.346 — indistinguishable, as required. **0 of 105 reject**, family-wise error 0%
+  over 20 realisations.
+* `native_scale_alias`: every record sampled at the same rows per native cycle and carrying the
+  same artefact keyed to position within the cycle, the signature of a shared instrument cadence.
+  Own pairings score **0.812** and alternatives **0.845**: a raw correlation that would look like
+  a spectacular result under any threshold, and which the null absorbs completely. **0 of 105
+  reject**, family-wise error 0% over 20 realisations. This is the case that shows the null
+  earning its place rather than the statistic being weak.
+* `degenerate_inventory`: every pairing names the same right record, so none has an admissible
+  substitute. **Refused**, not scored — a p-value of 1.0 here would read as a safeguard passing.
+
+Eleven guards, including one asserting the contrast with the calendar null so that the refusal
+reads as the specific finding it is rather than a general suspicion of resampling.
+
+
 
 
 

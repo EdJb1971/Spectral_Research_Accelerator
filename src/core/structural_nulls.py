@@ -331,6 +331,29 @@ def _is_same_member(left: Any, right: Any) -> bool:
         return False
 
 
+def admissible_partners(pairs: Sequence[Tuple[Any, Any]]) -> Tuple[Tuple[int, ...], ...]:
+    """For each pairing, which of the inventory's right members could legitimately replace its own.
+
+    A candidate is admissible only where it is neither the partner the pairing already had — whose
+    surrogate would be the observation — nor the pairing's own left member, whose similarity to
+    itself is maximal by construction. Exposed rather than kept private because it is also the
+    reference set an exact partner test draws its p-value denominator from, and the two must be
+    the same set or the test would be priced against a null it is not running.
+    """
+    lefts = [left for left, _ in pairs]
+    rights = [right for _, right in pairs]
+    member_of: list = []
+    for position, right in enumerate(rights):
+        same = [member_of[earlier] for earlier in range(position)
+                if _is_same_member(right, rights[earlier])]
+        member_of.append(same[0] if same else max(member_of, default=-1) + 1)
+    return tuple(
+        tuple(candidate for candidate in range(len(pairs))
+              if member_of[candidate] != member_of[position]
+              and not _is_same_member(rights[candidate], lefts[position]))
+        for position in range(len(pairs)))
+
+
 def _valid_reassignments(pairs: Sequence[Tuple[Any, Any]]) -> Tuple[Tuple[int, ...], ...]:
     """Every *distinguishable* reassignment of the inventory's right members.
 
@@ -352,12 +375,7 @@ def _valid_reassignments(pairs: Sequence[Tuple[Any, Any]]) -> Tuple[Tuple[int, .
         same = [member_of[earlier] for earlier in range(position)
                 if _is_same_member(right, rights[earlier])]
         member_of.append(same[0] if same else max(member_of, default=-1) + 1)
-    allowed = [
-        tuple(candidate for candidate in range(len(pairs))
-              if member_of[candidate] != member_of[position]
-              and not _is_same_member(rights[candidate], lefts[position]))
-        for position in range(len(pairs))
-    ]
+    allowed = admissible_partners(pairs)
     if any(not candidates for candidates in allowed):
         return ()
     distinct: Dict[Tuple[int, ...], Tuple[int, ...]] = {}
@@ -606,4 +624,5 @@ def nulls_for_mode(mode: str) -> Tuple[str, ...]:
 __all__ = ["NULL_FAMILIES", "NULL_FEATURES", "NULL_MODES", "NullFamily", "NullRefusal",
            "BoundNull", "register_null_family", "circular_clock_shift",
            "whole_cycle_clock_shift", "within_group_clock_shift", "reassign_scale_partners",
+           "admissible_partners",
            "assert_null_admits_mode", "bind_null", "describe_null", "nulls_for_mode"]
