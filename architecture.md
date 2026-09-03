@@ -6274,8 +6274,11 @@ reach the preflight refusal with **4** more to clear it.
 **A wall-clock duration is not, so it is recorded and asserted by nothing.** How long a refusal
 takes to explain itself is a property of the machine that ran the suite. Asserting it would fail
 the gate for reasons that have nothing to do with the interface and, worse, would let it pass on a
-fast machine while the interface got slower. The measured 0.3 s and 4.74 s are written into the
-measurement as context, marked unasserted, beside the counts that are.
+fast machine while the interface got slower. The committed recording carries 0.264 s and
+2.835 s as context, marked unasserted, beside the counts that are. They are not the 0.3 s
+and 4.74 s slice 3 first measured: slice 4's full-suite run re-recorded them on a
+differently loaded machine, so both moved while the interface did not. A gate asserting
+either would have failed on that alone, two days after it was written.
 
 **What the count is not.** It is the number of actions on the declared representative path, which
 is an upper bound on the shortest route and not a claim about a minimum - another researcher could
@@ -6309,6 +6312,47 @@ cannot tolerate. TG18.5's remaining slice feeds a measured browser run into the 
 an intermittently failing suite there would produce an intermittently blocking gate, which is
 indistinguishable from a real refusal at the moment a reader most needs to tell them apart.
 
+
+**The TG18.5 close-out, and the condition that was enforced by habit alone.** The phase's five
+declared scope items are delivered. Three of the close-out's findings are recorded rather than
+resolved by rewording, because each is a statement about what this instrument does that a later
+reader would otherwise have to rediscover.
+
+*A cleared gate now states its basis on screen, and TG18.5's own "nothing it measures is reported
+back inside the product" is narrower than that.* No UI-quality surface exists: the
+`scientist_actions` counts are declared in `frontend/src/types/api.ts` and read by no component, so
+the fourteen actions, the three to the refusal, the four to clear it and both wall-clock durations
+appear nowhere in the product. What appears is one gate in the release registry that has always
+rendered, and `browser_no_glue`'s detail now describes a run instead of an absence. Suppressing it
+while every refusal continues to show its reason would make a `PASS` *less* inspectable than a
+refusal, which inverts the property the trust surface exists to hold. The line actually held is: no
+UI-quality surface, and no UI-quality measurement outside the release registry's own verdict and the
+basis for it.
+
+*`qualification_plan()` is no longer uniformly cold, and the two kinds of `NOT_RUN` in it mean
+different things.* Three gates read recordings at assembly time - `browser_no_glue` and
+`calendar_calibration` `PASS`, `scale_shape_calibration` `REFUSED` - while `offline_matrix` and
+`restart_recovery` read `NOT_RUN` until an executed run fills them. Both block release identically.
+One says a measurement has not been received for this checkout; the other says this call did not
+perform a run. A reader who collapses them will misread a cold plan as a failing one.
+
+*The programme's own bookkeeping had drifted, and nothing objected.* `roadmap.md` §10.2 admits no
+claim of completion without recorded command output in `VERIFICATION.md`. TG17.11, TG17.12 and
+TG18.0 through TG18.4 all reached a terminal state with that file silent about them, while the
+atmospheric line was recorded correctly throughout - so the failure was not of discipline in general
+but of a specific unguarded condition. `test_documentation.py` now holds both directions: a dated
+phase marked complete must have an entry, and a phase still marked in progress must not. The rule
+keys on the date a heading carries, so the undated seam phases (TG0.x-TG2.x), recorded under the
+slice headings before that convention existed, are exempt by construction rather than by a list that
+would need maintaining. The seven missing entries are backfilled from the commits that recorded them
+and are labelled as transcribed rather than re-measured: re-running the suites today would attribute
+this tree to phases that closed against earlier ones, which is a worse record than a transcribed one.
+
+**What G18 did not clear.** `roadmap_cross_domain.md` §6.19 requires a complete G17 capability to
+pass both the clean-browser no-glue test and the synthetic fifth-adapter test. The first now passes.
+`synthetic_fifth_adapter` remains `NOT_RUN`, and it owns `adapter_specific_framework_edits`, the one
+field TG18.5 left unmeasured throughout because no rendered browser can observe a source-edit audit.
+G17 completion is therefore still unclaimable and the verdict is unmoved at `NOT_RELEASEABLE`.
 
 ## 3.12 HTTP API Surface
 
@@ -8104,7 +8148,7 @@ able to sit three slices out of date.
 | `test_sample_spine.py` | 28 | TG1.4 sibling sample spine: a rank-3 domain through the unmodified sweep and replication gate, the planted/AR(1) pair, `PhysicalField` still refusing non-2D input, the one-way bridge and its transpose refusal, declaration-not-inference refusals, and a fourth reduction registered from the test module |
 | `test_tabular_domain.py` | 48 | TG0.2 non-atmospheric domain: planted-coupling recovery and AR(1) null through the unmodified sweep, R21/R17 refusals, declaration and adapter validation |
 | `test_coefficient_field.py` | 40 | T4B.1 acceptance: parent-grid alignment, perfect reconstruction per family, lineage-safe summary; DTCWT upsampling declared; LevelBank and level slicing (T4B.4) |
-| `test_documentation.py` | 27 | architecture, roadmap and proprietary named-licence boundary against the code/repository, including every registered TG17 receipt operation, adapter, refusal and field having an explicit source-of-truth explanation |
+| `test_documentation.py` | 29 | architecture, roadmap and proprietary named-licence boundary against the code/repository, including every registered TG17 receipt operation, adapter, refusal and field having an explicit source-of-truth explanation |
 | `test_dtcwt.py` | 28 | Kingsbury q-shift DTCWT: primitives vs reference, two oracles, orientation, shift invariance, D1 head-to-heads |
 | `test_executor.py` | 38 | Executor backends, seed derivation, ordering, portable CPU/accelerator/HPC profiles, doctor, device/thread policy, SQLite concurrency, byte-identical sweeps (now over a payload that actually draws), D55 thread/serial agreement with the seed-to-draw window held open |
 | `test_experiments.py` | 3 | declarative sweeps and lineage |
@@ -8185,7 +8229,7 @@ able to sit three slices out of date.
 | `test_spectral_constellation.py` | 45 | T4E.1 the bridge to TG3.3's attributed graphs: every constellation carrying a real `AttributedGraph` whose declared relations are exactly what `measurable_relations` reports, three of the eight measurable and the other five refused by name with the field each one lacks; D90 pinned on the units themselves rather than on the symptom, with `distance` measured on every pair of the pass and a scale genuinely in metres still refused so the fix cannot be read as a weakening; `succession` asserted false for every ordered pair of every constellation, which is why the onsets are carried separately; the enumeration checked against the combinatorics of its own frame census frame by frame and 318 nodes checked against the tracks they came from; the flank separation of two bands following one vortex, `same_band` on every pair, and the claim boundary naming both; the raw and band-normalised strength ratios disagreeing about the sign of the comparison, with the band RMS recovered exactly from the threshold and its sigma, and a detection that recorded no threshold refused a normalised strength and saying so; left-censoring set from the tracker's own clock, the nine-frame offset carried as a bound, and an uncensored pair carrying no note; the plane angle checked against six hand-built displacements, declared not to be a compass in its own receipt, refused between two coincident nodes, and wrapped on a periodic axis with two tracks disagreeing about where it closes refused; rates local to the node so two frames of one track differ, a single sighting given no rate, velocity or scale velocity, a held level reporting exactly zero rather than a least-squares residue, and a signed radial velocity; and the refusals -- only pairs and triples, a frame over the node cap refused rather than sampled, a budget overrun refused whole rather than returned as a prefix, R19 left to TG3.3 rather than re-implemented, D88 registration required across scales but not within one, a missing registration receipt not treated as a failing one, a node with no scale refused, the carried half required to be the same size as the comparable half, and the absent self-loop check shown to be unreachable rather than added |
 | `test_spectral_invariance.py` | 45 | T4E.2 the invariant signature: the principal axis checked against the covariance eigendecomposition it stands for over 50 random configurations, exactly collinear points reporting an infinite anisotropy rather than a failure, and three axes refused rather than projected; the `planted_configuration` benchmark measured over 24 field-noise realisations to be isotropic with an axis angle spanning 0.78 to 158.08 degrees, the module's isotropy floor asserted to be the number that measurement produced, a configuration at the benchmark's own anisotropy refused an axis by name, and the vortex triples shown to clear the floor by two orders of magnitude; invariance measured rather than declared, with translation, three rotations, reflection and every relabelling asserted to leave the signature vector identical to floating-point precision in both modes; a uniform rescaling leaving the scale-free shape alone while an estimator that missed the rescaling moves the scale-specific geometry by exactly the factor it missed; the canonical order shown to matter, with two configurations that agree on independently sorted blocks and have no correspondence making both true at once; the toggle priced at 87 of 135 with the loss attributed by cardinality; a position in metres beside a scale in cells refusing the scale-specific mode and signing in the scale-invariant one, which is what R19's own refusal message tells the caller to do; and the refusals -- a pair asked for a scale-free shape, a pair's axis refused for a different reason than an isotropic triple's, a constellation stripped of its features, a member with no band RMS, an unknown mode, blocks that disagree about cardinality, a floor calibrated on one realisation or on collinear replicates, and the mixed-unit refusal left to the extractor rather than copied |
 | `test_spectral_narrative.py` | 25 | T4D.3 the prose, and what it may not say: every number in a sentence checked against the track it came from including the spoken speed against `Track.speed()` for all four tracks, the subject of every sentence being the coefficient maximum and not the structure, and the frame count being of frames searched rather than frames found; no track of a growing vortex claiming its own scale doubled -- each holding one level at a scale velocity of exactly zero with the word absent from the prose -- while the growth that did happen is measured across bands, level 4 weakening as level 5 strengthens and is first excited nine frames later, offered as a candidate precursor relationship carrying that it was not tested against a null and claims no merge, with one band supporting no ordering at all; a cartesian grid refused every compass word and given axis-relative wording, the sign that makes a row northward read from the grid so one displacement on two grids gives opposite points, the cosine of the latitude shortening a degree of longitude before the bearing is taken so 60 degrees north gives 26.6 and not 45, a track that returned to where it started given no bearing, and the missing-`lat0` branch shown to be unreachable rather than added; energy reported as the square under its own name so the roadmap's own 43% becomes 104.5%, and a change from zero refused rather than rendered infinite; the guard using the programme's one list of words for every entry in it, a causal word in a caller's own dataset name refused before a reader sees it, the guard's own limit asserted so a substring match cannot creep in, and the entitlement allowed to name the boundary the sentences may not cross and appearing exactly once however many tracks there are; plus a single sighting supporting no direction, speed or growth, a search that found nothing refused as an empty list of sentences, and the structural signature naming no variable, dataset or units |
-  | **total** | **3227** | |
+  | **total** | **3229** | |
 
 ### 7.4a Browser suite inventory
 

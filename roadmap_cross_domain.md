@@ -5272,7 +5272,7 @@ in Chromium. This is bounded browser engineering acceptance, not a screen-reader
 certification. `test_frontend_contract.py` is **179 tests** and the Python inventory is **3161**.
 The full backend suite was not rerun; the last measured figure remains **3536** (T4E.2).
 
-**TG18.5 UI qualification gate — IN PROGRESS (2026-09-03).** A clean-browser run exercises one
+**TG18.5 UI qualification gate — DONE (2026-09-04, `ed-dev`).** A clean-browser run exercises one
 representative path through each product mode, captures named viewport artefacts, asserts that
 every served route remains reachable, and records action count and refusal-to-remediation time. A
 production build and the existing no-glue Composer suite are necessary but not sufficient
@@ -5352,7 +5352,11 @@ maintained by hand beside it.
 A wall-clock duration is not deterministic, so it is recorded and asserted by nothing. How long a
 refusal takes to explain itself is a property of the machine that ran the suite; asserting it would
 fail the gate for reasons unrelated to the interface, and would let it pass on a fast machine while
-the interface got slower. The measured 0.3 s and 4.74 s are written in as unasserted context.
+the interface got slower. The committed recording carries 0.264 s and 2.835 s as unasserted context. Those are not
+the 0.3 s and 4.74 s first measured: slice 4's full-suite run re-recorded them on a
+differently loaded machine, so the numbers moved while the interface did not. A gate
+asserting either would have failed on that alone, which is the argument for the design
+rather than an illustration chosen after the fact.
 
 The count is an upper bound on the shortest route, not a claim about a minimum, and the measurement
 says so in its own claim boundary. `adapter_specific_framework_edits` is untouched: it is a
@@ -5391,7 +5395,41 @@ Measured: **136 of 136** across all 15 specs from a cleaned `.e2e-state`, so `br
 **`PASS`**. Four mutations were each caught: accepting a partial run, dropping the spec-source
 binding, collapsing `FAIL` into `NOT_RUN`, and reporting a drifted count instead of refusing it.
 
-Remaining for TG18.5: the G18 close-out.
+**The close-out (2026-09-04), and the condition it found unguarded.** The five declared scope items
+are delivered and were checked against the declaration rather than against the commit log. Three
+findings are recorded rather than resolved by rewording.
+
+*The phase's own "nothing it measures is reported back inside the product" is narrower than what
+shipped, so the declaration is amended and the code is not.* The trust surface renders every gate's
+detail, so `browser_no_glue`'s cleared detail now says on screen that a rendered run of all fifteen
+specs passed 136 tests. No UI-quality surface exists — the `scientist_actions` counts are declared in
+`api.ts` and read by no component, so 14/3/4 and both durations appear nowhere in the product — but
+one gate in the release registry that has always rendered now carries a cleared basis. Suppressing it
+while continuing to show every refusal's reason would make a `PASS` *less* inspectable than a
+refusal. The line actually held is: no UI-quality surface, and no UI-quality measurement outside the
+release registry's own verdict and the basis for it.
+
+*The plan is no longer uniformly cold.* Three gates read recordings at assembly time
+(`browser_no_glue` and `calendar_calibration` `PASS`, `scale_shape_calibration` `REFUSED`) while
+`offline_matrix` and `restart_recovery` stay `NOT_RUN` until a run fills them. Both kinds block
+release identically and mean different things: a measurement this checkout has not received, versus
+a run this call did not perform.
+
+*Condition 19 is half-met and this phase does not clear it.* §6.19 requires both the clean-browser
+no-glue test and the synthetic fifth-adapter test. The first passes; `synthetic_fifth_adapter` is
+`NOT_RUN`, so G17 completion stays unclaimable and the verdict is unmoved at `NOT_RELEASEABLE`.
+
+*The substantive finding is about this programme's own bookkeeping.* `roadmap.md` §10.2 admits no
+claim of completion without recorded output in `VERIFICATION.md`, and nothing enforced it: TG17.11,
+TG17.12 and TG18.0 through TG18.4 all reached a terminal state with that file silent about them,
+while the atmospheric line continued to be recorded correctly. The seven entries are backfilled from
+the commits that recorded them, transcribed rather than re-measured, because re-measuring today would
+attribute this tree to a phase that closed against an earlier one. Two guards now hold the two
+directions: a dated phase marked complete must have an entry, and a phase still in progress must not.
+The rule keys on the date the heading carries, so the undated seam phases (TG0.x-TG2.x), which were
+recorded under the slice headings, are exempt by construction rather than by a list.
+
+TG18.5 is complete. G18 is complete.
 
 ## 6. Definition of Done
 

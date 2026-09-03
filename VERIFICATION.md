@@ -8780,3 +8780,455 @@ exit code 0. This supersedes 3483 as the last measured full-suite figure and mea
 tree. The arithmetic reconciles exactly: 3483 + 53 (T4E.2's `test_spectral_invariance.py`, 45 test
 functions of which three are parametrised) = 3536. T4E.2 found no defect, so the ledger is
 unchanged at D1-D90. `git diff --check` clean.
+
+---
+
+# The TG17.11 - TG18.5 backfill (recorded 2026-09-04)
+
+Eight phases reached a terminal state between 2026-09-02 and 2026-09-04 without an entry in this
+file. `roadmap.md` §10.2 requires recorded command output here for every phase claiming
+completion, and the requirement went unguarded: nothing in `test_documentation.py` compared the
+roadmap's completed phases against this file's headings, so the gap widened silently for eight
+phases while the atmospheric line (T4C, T4D, T4E) continued to be recorded correctly.
+
+**The output below was recorded contemporaneously and is transcribed, not re-measured.** Each
+entry names the commit that recorded it. Re-measuring today would produce a different and less
+honest record: it would attribute today's tree to a phase that closed against an earlier one. The
+one entry measured today is TG18.5's own, which closes against this tree.
+
+A guard now exists (`test_every_completed_cross_domain_phase_has_a_verification_entry`), so a
+phase cannot again be marked done in the roadmap while this file is silent about it.
+
+## TG17.11 Scale/shape mining calibration — DONE, GATE REFUSED (2026-09-03, `ed-dev`)
+
+Transcribed from `2fe3e0c`, `a68ccf8`, `4d49ec6`, `0c0a22b`, `951f169`, `81ac6ed`.
+
+`scale_shape_calibration` was the only qualification gate reading `NOT_IMPLEMENTED`. That sentence
+is now false, and what replaced it is not a pass.
+
+**The finding is two bounds that do not meet.** Below, every member of a k-pairing family sits at a
+p-value floor of `1/k`, so under Benjamini-Yekutieli at alpha 0.05 no family smaller than **105**
+pairings can reject even when every member is a perfect planted match. Above,
+`reassign_scale_partners` enumerates exactly and refuses above **8** pairings rather than assume a
+sampler's uniformity. There is therefore no inventory size at which the null *as the qualification
+manifests declare it* — drawn, with a replication count — can produce a rejection. What can is the
+exact partner test, which the registered calibration is built on and no declared manifest requests.
+Both G17 candidate families are refused before size is reached: the quartet all-pairs admits one
+distinguishable reassignment, the post-D83 triple none.
+
+The gate reads `REFUSED`, the status reserved for a declared scientific limit that blocks release
+exactly as a failure does. The record states `calibration_executed_here: false` and asserts only
+quantities it computed; a guard fails if any power key appears in it. **A calibrated method the
+declared plans cannot reach, a method that does not exist, and a method that ran and failed are
+three different facts**, and the gate now distinguishes them.
+
+D91 was found and fixed in the first slice: the declared families answered a different question
+than the one the null poses.
+
+```text
+> pytest src/tests/test_documentation.py src/tests/test_experiment_qualification.py ^
+    src/tests/test_experiment_family.py -q
+114 passed
+
+> pytest src/tests/test_frontend_contract.py -q
+181 passed
+
+> cd frontend && npx playwright test e2e/flagship-qualification.spec.ts
+2 passed          (rendered ledger shows REFUSED)
+
+> cd frontend && npm run build
+passed
+
+Three mutations, each caught: awarding the gate PASS fails two guards; hard-coding the
+applicability verdict with a power number fails two; replacing the null's own refusal text
+with a fixed string fails one.
+
+Full backend not rerun; last measured figure remains 3536 (T4E.2).
+```
+
+## TG17.12 Calendar calibration recorded into its release gate — DONE (2026-09-03, `ed-dev`)
+
+Transcribed from `015ae48`.
+
+`calendar_calibration` was the last of TG17.10's seven gates whose `NOT_RUN` was true of the record
+and false of the world. `calibrate_family` runs the frozen calendar family on the TG17.0 fixtures
+and has always passed; nothing carried that measurement into the qualification record.
+
+**The gate still does not run it.** A calibration is a scientific measurement and the gate is a
+release gate. What this adds is the channel, `src/core/calibration_record.py`. A recording binds two
+digests and reads as unrun if either moves: the declared contract (cases and their frozen rejection
+counts, family size, alpha, correction, replications, channel, null family, seed), digested from
+`CALIBRATION_CASES` rather than restated so a relaxed expectation cannot leave a stale pass agreeing
+with it; and the source of the four modules that decide what the measurement is, with line endings
+normalised.
+
+**Four outcomes, three blocking.** Absent, unbound from contract and unbound from source all read
+`NOT_RUN`, because a recording made against something else is a measurement of a different thing
+rather than a weaker pass. Cases that missed their frozen answers read `FAIL`.
+
+Neither digest is tamper-evidence against an editor of this repository, and the source binding
+covers four files rather than the whole import graph. That boundary is stated rather than hidden:
+the backstop is that the live calibration already runs in the suite every pass, and a guard in
+`test_experiment_family.py` compares it case by case against what the gate is being told.
+
+**The contrast with TG17.11, computed rather than asserted.** Both nulls have a p-value floor and
+buy it differently. Scale/shape buys it with domains: a k-pairing family cannot go below `1/k`, its
+draw refuses above 8, its correction needs 105. Calendar buys it with computation: the floor is
+`1/(1+replications)` and there is no enumeration ceiling, because the surrogates are clock shifts
+the record itself supports. Both configurations are checked against the real correction — the
+calibration family at 999 against 293 required, the declared manifest plan at 4 corrected members
+and 200 replications against 166 — and the guard asserts the inequality, not the numbers.
+
+```text
+Recorded at 999 replications on a family of six:
+  shared_calendar_event         rejects 6 of 6 after correction
+  same_window_unrelated         rejects 0
+  gap_alias                     rejects 0
+  inadmissible_precedence       rejects 0
+all_met is true, so the gate reads PASS - the first of the seven to clear - and the
+verdict is unmoved at NOT_RELEASEABLE, with a guard saying so.
+
+> pytest src/tests/test_calibration_record.py -q
+12 passed
+
+> pytest (documentation + qualification suites) -q
+64 passed
+
+> drift backstop against the live calibration
+passed
+
+> cd frontend && npx tsc --noEmit
+clean
+
+> cd frontend && npm run build
+passed in 59.75s
+
+Gate assembles in 22 ms warm, guarded below one second.
+
+Four mutations, all caught: dropping the source binding, treating a missing recording as a
+pass, collapsing FAIL into NOT_RUN, and removing the line-ending normalisation each fail
+exactly one guard.
+
+Full backend not rerun; last measured figure remains 3536 (T4E.2).
+```
+
+## TG18.0 Rendered baseline and interaction inventory — DONE (2026-09-02, `ed-dev`)
+
+A declaration phase, and it is recorded here because what it declared became load-bearing two days
+later. TG18.0 preserved the four distinct product modes found in the rendered baseline: the
+interactive instrument (Spectral Transforms), the guided commitment workflow (Composer), the
+read-only claim surface (Findings), and the trust and qualification surface (Platform & evidence).
+Its constraint is that *a change which improves one by making another ambiguous is not a successful
+redesign.*
+
+**That constraint was unguarded from 2026-09-02 until 2026-09-04.** No test in the repository could
+have detected the four modes converging. TG18.5's second slice supplied the guard, and the design of
+that guard is the reason the constraint is a property of the modes *together* rather than four
+separate checks — four per-mode assertions could each pass while the modes collapsed onto one
+another. See the TG18.5 entry below.
+
+```text
+No command output: this phase changed no code. Its verification is the guard that
+TG18.5 slice 2 added retrospectively (product-modes.spec.ts, 10 collected), recorded below.
+```
+
+## TG18.1 Shared instrument foundation — DONE (2026-09-03, `ed-dev`)
+
+Transcribed from `62fcc0e`, `85cb027`.
+
+One stable application frame, and then the rendered inspection that the fifth slice had recorded as
+`NOT RUN` because the shared browser runtime exposed no session. **That was a tooling gap, not an
+absent capability**: the repository already carried Playwright and a Chromium binary, so
+`frontend/e2e/narrow-width.spec.ts` now runs beside the existing acceptance specs under the same
+config, at 320, 375, 414 and 768 CSS pixels across all four product modes.
+
+It found two defects that the source contract and the production build had both passed, neither
+visible above the compact breakpoints:
+
+* The shared canvas rule `.workspace-main > *` also matched the two `sr-only` children. Overriding
+  their one-pixel clipped box with a real width and `margin-inline: auto` let those absolutely
+  positioned elements escape the workspace's clipping, so **every workspace scrolled horizontally by
+  14 px at a 320 px viewport**. The rule now excludes `.sr-only`.
+* The below-480px reflow collapsed `grid-cols-2..5` to one explicit track but left `col-span-*`
+  children alone. A child spanning two columns of a one-column grid makes the browser create an
+  implicit second track, **so the two-column layout returned while the declared template still read
+  as one**. Spans are now released with the tracks.
+
+A third, smaller finding: the 11/12 px metadata floor covered `text-[10px]` and `text-[11px]` but
+never `text-[9px]`, which Acquire, the lineage nodes and the capability profile all use. Raised,
+with a source assertion.
+
+The spec measures the laid-out document rather than restating CSS: document scroll width, content
+past the right edge that no ancestor scrolls, computed font size on every text-owning element,
+rendered control height, header containment, and both the used track count and the rendered row
+occupancy of every grid.
+
+## TG18.2 Scientific visualization workspace — DONE (2026-09-03, `ed-dev`)
+
+Transcribed from `c888f64`, `b297b7f`, `4ddc21e`, `48000da`.
+
+Coordinated plot focus and exact-value reading, and three commitments that are contracts rather
+than options. A figure ships a **real text and table equivalent**, not a caption. **Comparability is
+a stated contract, not a colour-scale option** — a shared scale is admissible or it is refused with
+its reason. **A figure states the domain a claim was fitted over**, so an extrapolated reading
+cannot be mistaken for an interpolated one.
+
+Accessible resizable panes across all three gridded comparisons, with pointer, keyboard, bounds,
+reset and narrow-screen stacking. Publication HTML export for every heatmap and line chart;
+publication sheets preserve vector figures, captions, missingness, scale provenance, fit domains,
+uncertainty and assumptions. **Export performs no new scientific analysis and does not mutate live
+plots** — the property that keeps a reading sheet a record rather than a second instrument.
+
+```text
+> cd frontend && npx playwright test          (after removing .e2e-state)
+104 passed          (Chromium)
+
+> pytest (focused frontend + documentation) -q
+202 passed
+
+> cd frontend && npm run build
+passed, 1,416 modules
+
+> git diff --check
+clean apart from line-ending notices
+
+Full backend not rerun; last measured figure remains 3536 (T4E.2).
+```
+
+## TG18.3 Guided research journey — DONE (2026-09-03, `ed-dev`)
+
+Transcribed from `f423acb`.
+
+A global `Acquire -> Inspect -> Design -> Run -> Compare -> Admit -> Report` journey. Each shell
+blocker provides exactly one legitimate remediation rather than a dead end. **The Composer remains
+the authority for scientific status and next actions** — the journey routes, it does not adjudicate
+— and the existing claim ladder remains separate and visible beside it. All eight legacy gridded
+tools stay reachable with distinct text and visual treatment, and journey location clears when the
+researcher enters a non-journey legacy workspace.
+
+```text
+> cd frontend && npx playwright test          (after removing .e2e-state)
+109 passed          (Chromium)
+
+> pytest (frontend + documentation) -q
+204 passed
+
+> cd frontend && npm run build
+passed, 1,417 modules
+
+Full backend not rerun; last measured figure remains 3536 (T4E.2).
+```
+
+## TG18.4 Responsive and assistive-technology acceptance — DONE (2026-09-03, `ed-dev`)
+
+Transcribed from `ac0a978`.
+
+Eleven rendered Chromium acceptance checks at desktop (1440x900), laptop (1024x768) and narrow
+(375x667) layouts. The skip link is the first Tab stop and carries the shared focus indicator;
+fragment navigation and real workspace changes focus the named heading; the compact drawer returns
+focus to its trigger after Escape. A 640 CSS-pixel/device-scale-two reflow inspection stands in for
+a 1280-pixel viewport at 200% zoom, with no horizontal document scroll. Contrast is **computed from
+rendered foreground and composited background** at the normal- and large-text thresholds rather than
+read off the stylesheet. `prefers-reduced-motion` is emulated and the resulting durations measured.
+A colour-removal pass leaves location, both blockers, both remediations and the claim-ladder
+boundary named in text and semantics.
+
+**It fixed a real defect the first keyboard run found.** StrictMode mount replay focused the hidden
+workspace heading and stole the initial Tab stop; focus routing now compares the actual previous and
+current workspace.
+
+**Claim boundary.** This is bounded browser engineering acceptance. It is not a screen-reader audit
+and not a WCAG conformance certification, both of which `roadmap_cross_domain.md` §7 keeps
+explicitly out of scope. TG11.6 remains the source-level contract.
+
+```text
+> cd frontend && npx playwright test          (after removing .e2e-state)
+120 passed          (Chromium)
+
+> pytest src/tests/test_frontend_contract.py src/tests/test_documentation.py -q
+206 passed          (test_frontend_contract.py collects 179; Python inventory 3161)
+
+> cd frontend && npm run build
+passed, 1,417 modules
+
+> git diff --check
+clean apart from line-ending notices
+
+Full backend not rerun; last measured figure remains 3536 (T4E.2).
+```
+
+## TG18.5 UI qualification gate — COMPLETE (2026-09-04, `ed-dev`)
+
+Five slices. The phase's own declaration set the conditions, and the close-out below checks the
+delivery against them rather than restating them.
+
+**Slice 1 — served-workspace reachability.** `ui-qualification.spec.ts` asserts the shell serves
+exactly the qualified inventory in order, that all twenty workspaces open from a clean browser and
+name themselves, that every reachable journey destination lands on an inventoried workspace rather
+than the fallback heading, and that a clean browser disables nothing and claims no reason it is not
+entitled to. **The slice found a coverage hole rather than a defect**, and the distinction matters:
+`ResearchJourney.tsx` holds its seven destination identifiers separately from `WORKFLOW_NAV`, and
+Inspect and Admit are blocked in a clean browser, so their destinations were never clicked by any
+test in the repository. Renaming the journey's `domainWorkbench` target was confirmed to pass the
+entire rendered suite — TG18.3's own journey tests included — while sending a researcher who had
+selected a record to a heading reading "Scientific workbench workspace". Nothing was broken; nothing
+was guarding it either.
+
+**Slice 2 — one representative path per product mode.** `product-modes.spec.ts` walks the
+characteristic path of each of TG18.0's four modes at 1440 and 1920 CSS pixels, so the two viewport
+specs now span 320 to 1920. **The load-bearing assertion is not any of the four paths.** TG18.0's
+constraint is a property of the modes *together*, so each mode declares a signature — found by role
+and accessible name, never a class or a test id — and the suite asserts every signature appears in
+**exactly one** of the four. Four per-mode checks could each pass while the modes converged.
+
+**Slice 3 — the two numbers `scientist_actions` refuses to invent.** The design turns on which of
+the two an assertion may hold. An action count is deterministic, so it is asserted: **14 actions**
+from a clean browser to a `COMPLETE` run of the frozen plan, and **3** to reach the preflight refusal
+with **4** more to clear it. A wall-clock duration is not, so it is recorded and asserted by nothing:
+how long a refusal takes to explain itself is a property of the machine that ran the suite, and a
+gate turning on it would fail for reasons unrelated to the interface while passing on a fast machine
+as the interface got slower. The committed recording carries **0.264 s** and **2.835 s**
+as unasserted context, and those figures already differ from the 0.3 s and 4.74 s slice 3
+first measured, because slice 4's full-suite run re-recorded them on a differently loaded
+machine. A gate asserting either number would have failed on that alone. The
+count is an **upper bound on the shortest route**, not a claim about a minimum, and the measurement
+says so in its own claim boundary.
+
+**Slice 4 — the evidence channel.** `qualification-reporter.ts` writes `measurements/browser_run.json`
+and decides nothing; `src/core/browser_evidence.py` decides, and every decision can be a refusal.
+Two bindings, and **the second is the one that was actually needed**: weakening a spec returns the
+gate to `NOT_RUN`, and a *partial* run is refused, because running one spec is the normal way to work
+on a test and Playwright reports it as `passed`. The reporter therefore records both the specs that
+ran and the whole inventory it found, and the gate refuses when they disagree, naming every spec that
+did not run. That refusal was verified **before** the first full run: a green four-test invocation
+read `NOT_RUN` and listed the other fourteen specs.
+
+The outcomes stay apart. Absent, stale or partial means the run has not happened *for this code* and
+reads `NOT_RUN`; a run that happened and failed reads `FAIL`; only a complete, clean run of the suite
+this checkout contains reads `PASS`. `browser_no_glue` reads **`PASS`**.
+
+### The close-out (2026-09-04)
+
+**1. The declared scope is delivered.** The phase declared five things. A clean-browser run exercises
+one representative path through each product mode (slice 2); it captures named viewport artefacts
+(slice 2); it asserts every served route remains reachable (slice 1); it records the action count and
+the refusal-to-remediation measurement (slice 3); and a missing, stale or digest-mismatched artefact
+reads `NOT_RUN` (slice 4). The constraint that the ledger "may ingest a measurement with its
+provenance and may never synthesize one it did not receive" holds: `browser_evidence.py` computes no
+count of its own and every field it publishes came from a recording or is a refusal.
+
+**2. The phase's "nothing it measures is reported back inside the product" is narrower than what
+shipped, and the declaration is amended rather than the code.** The trust surface renders every
+gate's `detail`, so `browser_no_glue`'s cleared detail now states on screen that a rendered run of
+all 15 specs passed 136 tests with 0 failed. That sentence was written against the risk of building a
+UI-quality dashboard, and no such surface exists: the `scientist_actions` counts are declared in
+`api.ts` and **read by no component**, so the 14/3/4 figures and both durations appear nowhere in the
+product. What is on screen is one gate in the release registry that has always rendered. Suppressing
+a cleared gate's basis while continuing to show every refusal's reason would make a `PASS` *less*
+inspectable than a refusal, which inverts the property this programme is built on. The line actually
+held is therefore: **no UI-quality surface, and no UI-quality measurement outside the release
+registry's own gate verdict and the basis for it.**
+
+**3. `qualification_plan()` is no longer uniformly cold, and a reader must not misread the
+difference.** The plan used to return every gate `NOT_RUN` until something executed it. Three gates
+now read recordings at assembly time — `browser_no_glue` `PASS`, `calendar_calibration` `PASS`,
+`scale_shape_calibration` `REFUSED` — while `offline_matrix` and `restart_recovery` still read
+`NOT_RUN` in the cold plan and are filled by an actual run. Both kinds of `NOT_RUN` block release
+identically, but they mean different things: one is a measurement this checkout has not received, the
+other is a run this call did not perform.
+
+**4. Cross-domain condition 19 is half-met, and the phase does not clear it.**
+`roadmap_cross_domain.md` §6.19 requires that a complete G17 capability pass *both* the clean-browser
+no-glue test *and* the synthetic fifth-adapter test. The first now passes. `synthetic_fifth_adapter`
+remains `NOT_RUN`, so G17 completion stays unclaimable, and TG18.5 must not be recorded as satisfying
+19. The verdict is unmoved at `NOT_RELEASEABLE`, blocked by `offline_matrix`,
+`scale_shape_calibration`, `synthetic_fifth_adapter` and `live_sources`.
+
+**5. `roadmap.md` §10.2 was itself unguarded, which is how eight phases drifted out of this file.**
+See the backfill above and the two guards added in `test_documentation.py`. This is the close-out's
+substantive finding: the condition that no completion claim exists without recorded output was
+enforced by habit alone, and habit failed for two days across seven phases without a single test
+objecting.
+
+```text
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_browser_evidence.py ^
+    src/tests/test_calibration_record.py src/tests/test_experiment_qualification.py ^
+    src/tests/test_documentation.py src/tests/test_frontend_contract.py -q
+261 passed, 5 warnings in 312.03s (0:05:12)
+
+> cd frontend && npx playwright test          (after removing .e2e-state)
+136 passed                 Chromium, 15 specs
+recorded 2026-09-03T20:34:54.533Z, finished 20:42:39.556Z (7 m 45 s, unasserted)
+
+  assistive-acceptance.spec.ts    11     narrow-width.spec.ts           19
+  comparison-contract.spec.ts     12     product-modes.spec.ts          10
+  comparison-views.spec.ts        19     publication-export.spec.ts      4
+  composer-path.spec.ts           11     research-journey.spec.ts        5
+  experiment-receipt.spec.ts       3     resizable-panes.spec.ts         6
+  figure-data.spec.ts              9     scientist-actions.spec.ts       2
+  flagship-qualification.spec.ts   2     ui-qualification.spec.ts        4
+  validity-uncertainty.spec.ts    19     ------------------------------ 136
+
+> cd frontend && npx tsc --noEmit
+clean
+
+> cd frontend && npm run build
+1,417 modules transformed; built in 53.45s
+
+> qualification_plan() gate states, cold
+verdict: NOT_RELEASEABLE          assembled in 33 ms warm, guarded below one second
+  offline_matrix           NOT_RUN     (filled by an executed matrix; REFUSED when run)
+  restart_recovery         NOT_RUN     (filled by an executed rehearsal)
+  browser_no_glue          PASS        <- TG18.5
+  synthetic_fifth_adapter  NOT_RUN
+  calendar_calibration     PASS        <- TG17.12
+  scale_shape_calibration  REFUSED     <- TG17.11
+  live_sources             NOT_RUN
+browser_evidence: PASS   136 passed / 0 failed / 0 skipped, 15 specs, 32 artefacts
+scientist_actions: MEASURED   14 actions, 3 to the refusal, 4 to clear it
+adapter_specific_framework_edits: NOT_MEASURED   (belongs to synthetic_fifth_adapter)
+
+> artefact manifest inspection
+32 artefacts, keys exactly {name, bytes, sha256}; no image payload; 10,108 bytes total.
+frontend/e2e/artifacts/ is gitignored and no artefact is tracked, so slice 2's constraint
+on slice 4 holds: what reaches the ledger is a manifest and digest, never the images.
+
+> four mutations against src/core/browser_evidence.py, module restored byte-identically
+M1 a partial run accepted as a full one          1 failed, 15 passed
+M2 the spec source binding dropped               1 failed, 15 passed
+M3 a failed run reported as merely unrun         1 failed, 15 passed
+M4 a drifted action count reported not refused   1 failed, 15 passed
+restored: identical                              16 passed
+
+Full backend not rerun; last measured figure remains 3536 (T4E.2).
+```
+
+```text
+> two mutations against the documents the new guards read, restored byte-identically
+M1 a completed phase loses its VERIFICATION.md entry   1 failed, 1 passed
+M2 an entry exists while the roadmap says IN PROGRESS  1 failed, 1 passed
+restored: VERIFICATION.md identical, roadmap_cross_domain.md identical
+                                                       2 passed
+
+The completeness guard was also written before the backfill and run against the tree as it
+then stood, where it failed naming exactly TG17.11, TG17.12, TG18.0, TG18.1, TG18.2, TG18.3
+and TG18.4 - the seven phases the backfill then supplied. A guard written after the entries
+it demands would have proved nothing about whether it can see their absence.
+
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_documentation.py ^
+    src/tests/test_frontend_contract.py -q
+210 passed, 5 warnings in 265.81s (0:04:25)
+
+The run before it failed on test_documented_test_counts_match_the_source, because the two
+new guards had moved test_documentation.py from 27 test functions to 29 and section 7.4
+still said 27. The inventory guard caught its own file drifting, which is the mechanism
+working rather than an incident: 27 -> 29 and the Python total 3227 -> 3229.
+```
+
+**A discarded measurement, recorded because discarding one silently is the habit worth refusing.**
+Slice 2's mutation M2 first reported 10 of 10 tests failing, which would have been evidence that the
+guard was indiscriminate rather than sharp. Re-run in isolation it failed exactly 4 — the claim path
+plus the uniqueness assertion at both viewports. The first run had begun while Vite was still
+reloading the file the previous mutation had just restored. **A mutation that appears to kill
+everything is evidence about the harness, not about the guard**, and the 10-of-10 figure is recorded
+here as discarded rather than quietly replaced.

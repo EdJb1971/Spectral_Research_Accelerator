@@ -294,6 +294,49 @@ def test_tasks_marked_done_record_their_evidence(roadmap):
             "%s is marked DONE but records no evidence block" % task)
 
 
+#: A dated cross-domain phase declares a date and a branch, so it claims to have been
+#: measured on a particular tree. The undated seam phases (TG0.x-TG2.x) predate that
+#: convention and were recorded under the slice headings instead; they are exempt by
+#: construction rather than by a list, because the rule keys on the date they do not carry.
+#: `.` already excludes the newline, so the scan cannot run past the heading it reads.
+CROSS_DOMAIN_PHASE = re.compile(
+    r"^\*\*(TG\d+\.\d+).*?[—-]{1,2}\s*([A-Z][A-Z ,/]*[A-Z])\b"
+    r".*?\((\d{4}-\d{2}-\d{2})[,)]", re.M)
+
+
+def test_every_completed_cross_domain_phase_has_a_verification_entry(cross_domain, verification):
+    """`roadmap.md` §10.2 admits no claim of completion without recorded output there.
+
+    This guard exists because the requirement was unguarded and drifted: seven phases
+    (TG17.11, TG17.12 and TG18.0 through TG18.4) reached a terminal state between
+    2026-09-02 and 2026-09-04 while this file said nothing about them, and nothing in the
+    suite objected. Marking a phase done in the roadmap and recording its output are two
+    acts, and only the first of them was ever checked.
+    """
+    dated = CROSS_DOMAIN_PHASE.findall(cross_domain)
+    assert len(dated) >= 19, "the phase scan looks broken: %d dated phases found" % len(dated)
+    missing = sorted(phase for phase, state, _ in dated
+                     if state != "IN PROGRESS" and ("## %s " % phase) not in verification)
+    assert not missing, (
+        "these cross-domain phases are marked complete in roadmap_cross_domain.md but have "
+        "no '## <phase> ' entry in VERIFICATION.md: %s" % ", ".join(missing))
+
+
+def test_a_verification_entry_is_not_written_before_the_phase_is_complete(cross_domain,
+                                                                          verification):
+    """The converse, and the cheaper mistake to make.
+
+    An entry written while a phase is still in progress records output that the phase's
+    remaining work can invalidate, which is the same defect as a stale calibration
+    recording one gate down.
+    """
+    in_progress = sorted(phase for phase, state, _ in CROSS_DOMAIN_PHASE.findall(cross_domain)
+                         if state == "IN PROGRESS" and ("## %s " % phase) in verification)
+    assert not in_progress, (
+        "VERIFICATION.md records %s, which roadmap_cross_domain.md still marks IN PROGRESS"
+        % ", ".join(in_progress))
+
+
 def test_no_unqualified_validated_claims(architecture, roadmap):
     """Earlier revisions claimed "validated" and "zero-error" without any evidence.
 

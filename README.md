@@ -48,7 +48,7 @@ supersedes the other.
   `Acquire -> Inspect -> Design -> Run -> Compare -> Admit -> Report` journey without replacing
   Composer's server-owned path or claim ladder. TG18.4 now closes rendered keyboard, focus,
   zoom-equivalent reflow, contrast, reduced-motion and non-colour acceptance without claiming WCAG
-  certification. **TG18.5 (the UI qualification gate) is in progress**, scoped by TG17.10's
+  certification. **TG18.5 (the UI qualification gate) is DONE, and with it G18**, scoped by TG17.10's
   withheld release rather than by presentation: it must supply the rendered evidence the
   `browser_no_glue` and `scientist_actions` gates refuse to award themselves. Its first slice
   qualifies served-workspace reachability; its second walks one representative path through each of
@@ -64,7 +64,11 @@ supersedes the other.
   to the source of every spec plus the completeness of the run, and a Python reader decides. A
   green single-spec run is refused as partial, a weakened spec returns the gate to `NOT_RUN`, and a
   run that failed reads `FAIL` rather than merely unrun. **`browser_no_glue` now reads `PASS`** on
-  a measured 136 of 136. **TG17.11 (the scale/shape calibration) is
+  a measured 136 of 136. The close-out found the gap that mattered most: `roadmap.md`
+  §10.2 admits no completion claim without recorded output in `VERIFICATION.md`, and seven
+  phases had been marked done while that file stayed silent. The entries are backfilled and
+  two guards now hold both directions. **G18 does not clear condition 19**: that needs the
+  synthetic fifth-adapter test too, which is still `NOT_RUN`. **TG17.11 (the scale/shape calibration) is
   done**, all five slices: D91 fixed, the statistic built with its scale invariance measured at
   1.1e-16 rather than declared, four frozen fixtures, a calibration in which the planted case
   recovers 105 of 105 members in 20 of 20 realisations while both safeguards reject nothing in
