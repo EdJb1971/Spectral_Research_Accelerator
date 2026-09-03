@@ -2281,3 +2281,35 @@ def test_every_global_blocker_names_one_remediation_and_legacy_tools_stay_distin
     assert "data-workflow-line={'context' in tab ? 'legacy-gridded' : 'evidence'}" in app_source
     assert "legacy-workspace-entry" in app_source
     assert "Legacy · {tab.context}" in app_source
+
+
+# --------------------------------------- TG18.4 rendered accessibility acceptance
+
+
+def test_assistive_acceptance_complements_the_source_contract_without_claiming_certification(
+        app_source):
+    acceptance = io.open(os.path.join(REPO_ROOT, "frontend", "e2e",
+                                      "assistive-acceptance.spec.ts"), encoding="utf-8").read()
+    css = _read("index.css")
+
+    assert "not WCAG certification" in acceptance
+    assert "not a screen-reader" in acceptance
+    for concern in ("keyboard route", "focus indicator", "reflow", "contrast",
+                    "reduced-motion preference", "text cues"):
+        assert concern in acceptance
+    for layout in ("desktop", "laptop", "narrow"):
+        assert f"name: '{layout}'" in acceptance
+    assert "prefers-reduced-motion: reduce" in css
+    assert "window.requestAnimationFrame(() => workspaceHeadingRef.current?.focus())" in app_source
+    assert "previousActiveTabRef.current !== activeTab" in app_source
+
+
+def test_rendered_non_colour_acceptance_keeps_status_words_and_semantics():
+    acceptance = io.open(os.path.join(REPO_ROOT, "frontend", "e2e",
+                                      "assistive-acceptance.spec.ts"), encoding="utf-8").read()
+
+    assert "journey location and blockers remain named when colour is removed" in acceptance
+    assert "Blocked: no record is selected for inspection." in acceptance
+    assert "Blocked: no study is selected for evidence admission." in acceptance
+    assert "aria-current" in acceptance
+    assert "accessibleNames" in acceptance

@@ -4828,10 +4828,25 @@ Chromium. `test_frontend_contract.py` is **177 passed**. The production build tr
 modules. The full backend suite was not rerun; the last measured full-suite figure remains
 **3536** (T4E.2).
 
-**TG18.4 Responsive and assistive-technology acceptance.** Verify keyboard order, focus return,
-zoom/reflow, contrast, reduced motion and non-colour status at desktop, laptop and narrow widths.
-TG11.6 remains the source-level contract; this task adds rendered inspection and must not call
-itself WCAG certification.
+**TG18.4 Responsive and assistive-technology acceptance — DONE (2026-09-03).** TG11.6 remains
+the source-level contract. Eleven new Chromium checks add rendered inspection at desktop (1440 x
+900), laptop (1024 x 768) and narrow (375 x 667) layouts: the skip link is the first keyboard stop,
+the global focus indicator is measurable, fragment navigation and workspace changes focus the
+named workspace heading, and the compact drawer returns focus after Escape. A 640 CSS-pixel/device
+scale two inspection covers the effective reflow of a 1280-pixel viewport at 200% zoom without
+horizontal document scrolling. Computed foreground/background contrast is checked at the normal-
+and large-text thresholds; reduced motion is emulated and its durations measured; and a rendered
+colour-removal pass leaves the current journey stage, both blockers, their remediations and the
+claim-ladder boundary readable in words and semantics.
+
+The first keyboard run found and closed a real defect: React StrictMode replay focused the hidden
+workspace heading on mount, stealing the first Tab stop from the skip link. Focus routing now
+compares the actual previous/current workspace, while the skip link explicitly focuses the named
+heading after navigation. The new suite is **11/11**; TG18.4 plus its narrow-width and journey
+compatibility boundaries are **35/35**; the complete run from a cleaned `.e2e-state` is **120/120**
+in Chromium. This is bounded browser engineering acceptance, not a screen-reader audit or WCAG
+certification. `test_frontend_contract.py` is **179 tests** and the Python inventory is **3161**.
+The full backend suite was not rerun; the last measured figure remains **3536** (T4E.2).
 
 **TG18.5 UI qualification gate.** A clean-browser run exercises one representative path through
 each product mode, captures named viewport artefacts, asserts that every served route remains

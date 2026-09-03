@@ -119,7 +119,7 @@ export default function App() {
   const mobileNavTriggerRef = useRef<HTMLButtonElement>(null);
   const workflowNavRef = useRef<HTMLElement>(null);
   const workspaceHeadingRef = useRef<HTMLHeadingElement>(null);
-  const hasMountedRef = useRef(false);
+  const previousActiveTabRef = useRef(activeTab);
   const [backendConnected, setBackendConnected] = useState<boolean | null>(null);
   // TG11.0: context belongs to the shell, not to whichever workflow panel is mounted.
   const [selectedRecord, setSelectedRecord] = useState<types.ChannelRecordSelection | null>(null);
@@ -756,8 +756,11 @@ export default function App() {
   }, [activeTab]);
 
   useEffect(() => {
-    if (hasMountedRef.current) workspaceHeadingRef.current?.focus();
-    hasMountedRef.current = true;
+    // React StrictMode replays mount effects in development. Comparing the route itself keeps
+    // that replay from stealing the browser's initial Tab stop while preserving focus routing
+    // after a real workspace change.
+    if (previousActiveTabRef.current !== activeTab) workspaceHeadingRef.current?.focus();
+    previousActiveTabRef.current = activeTab;
   }, [activeTab]);
 
   useEffect(() => {
@@ -808,7 +811,10 @@ export default function App() {
 
   return (
     <div className="instrument-shell min-h-screen bg-slate-950 text-slate-100 flex flex-col">
-      <a href="#workspace-main" className="skip-link">Skip to workspace</a>
+      <a href="#workspace-main" className="skip-link"
+        onClick={() => window.requestAnimationFrame(() => workspaceHeadingRef.current?.focus())}>
+        Skip to workspace
+      </a>
       {/* Top Banner / Navigation Header */}
       <header className="instrument-header border-b border-slate-800 backdrop-blur px-5 sm:px-6 py-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
