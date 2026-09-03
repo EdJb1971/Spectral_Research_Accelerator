@@ -4501,7 +4501,7 @@ last measured full-suite figure. No archive is acquired, no statistic runs, no f
 recorded, no evidence is admitted and nothing is released by this slice.
 
 
-**TG17.11 Scale/shape mining calibration — IN PROGRESS — slice 1 of 5 done (2026-09-03).** The
+**TG17.11 Scale/shape mining calibration — IN PROGRESS — slices 1-2 of 5 done (2026-09-03).** The
 `scale_shape_calibration` gate is the only one of TG17.10's seven that reads `NOT_IMPLEMENTED`
 rather than `NOT_RUN`. The distinction is exact and it is the reason this task exists: the other
 unpassed gates have a method that has not been executed or has no channel to report itself, while
@@ -4648,6 +4648,64 @@ This is the falsification clause of this task's scope doing its work early and c
 null rather than on the statistic. Had the statistic been built first, the calibration would have
 reported near-zero planted power on a family that could not have produced any, and the honest
 reading of that number would have been a redesign of the statistic.
+
+**TG17.11 slice 2 — the statistic exists, and three of its properties are now numbers
+(2026-09-03).** `src/benchmarks/shape_calibration.py` supplies `shape_recurrence`: a
+support-weighted correlation over shared *phase* rather than shared seconds. Each record's
+declared support is divided by its declared native duration, the two phase axes are intersected
+by the same linear sweep `family_calibration.py` uses on calendar supports, and each contribution
+is weighted by the phase actually shared. Binning both records onto a common phase grid would
+have manufactured the correspondence under test, in the same way binning onto a common calendar
+grid would manufacture simultaneity, so it is not done.
+
+**Scale invariance is exact, and the reason is the denominator.** `invariance.py` records why
+`scale_normalised` is kept as a function and left out of `MATCHERS`: it divides by the extractor's
+*estimated* spatial scale, which drifts from about +3.6% to -2.6% across a sixfold range, and the
+whole of that drift lands in the quotient. The denominator here is a record's declared
+`StructuralScale.native_value` — a quantity the adapter states and the manifest carries, not one
+this module infers from the data it is about to test. Nothing is estimated, so nothing drifts, and
+the measurement shows it: re-presenting one record across the same sixfold native range moves the
+statistic by at most **1.1e-16**, against 0.37% for `relative_geometry`. The test asserts below
+1e-12 rather than below a tolerance chosen to fit. On a planted pair whose native durations differ
+by a factor of 2,222 the statistic reads **0.99**, against **0.05** for an unrelated shape at the
+same native duration.
+
+That argument was not accepted on its own, and two further measurements say what it costs.
+
+**Row density stops mattering, and where it stops is measured rather than picked.** Rewriting a
+record at a different cadence over the same span moves the statistic by less than 1e-9 down to
+about 16 rows per native cycle, then **2.7% at 8**, **11.7% at 4** and **15.6% at 2**. That
+movement is not a failure of invariance and is deliberately not reported as one: two rows per
+cycle cannot represent a second harmonic at all, so the lower agreement is real information loss,
+and a statistic that reported no movement there would be inventing detail the rows no longer
+carry. `measure_cadence_dependence` is therefore a separate function from
+`measure_scale_invariance`, because a single sweep varying both would report one number for two
+effects and make the invariance claim unfalsifiable. `MINIMUM_ROWS_PER_CYCLE` is set at 8 from
+those figures and comparisons below it are refused by name rather than scored.
+
+**A phase comparison is phase-locked, and that trade-off is now stated in advance.** A wrongly
+declared native duration drifts the two records apart once per cycle, so its cost compounds with
+how much was compared. A 10% mis-declaration costs **15%** of the statistic over one cycle,
+**40%** over two and **93%** over six. Comparing more cycles buys statistical support and spends
+tolerance to declaration error, and `measure_phase_window_tradeoff` puts that table in the record
+so a study cannot choose its phase window — and with it its own sensitivity — by accident. This is
+the honest counterpart of the "declared, not modelled" argument above: the phase axis imports no
+estimator drift, but it does import the declaration's own error, and here is how much.
+
+**A third finding, which settles what slice 3 must build.** Every G17 flagship record declares its
+structural scale as its own row cadence, so each resolves exactly **1.00 rows per native cycle**.
+A shape needs more than one sample per cycle to exist, so *none of the TG17.0 calendar fixtures
+can be reused as a scale/shape fixture at its declared scale* — the comparison refuses before it
+computes anything. Slice 3 must build records that declare a shape-bearing native scale rather
+than borrowing the calendar fixtures, and a test pins the finding so that a later slice cannot
+quietly borrow them anyway.
+
+Eight guards. Three mutations were run against them: dividing the phase axis by a constant number
+of seconds instead of the declared native duration fails seven of the eight; weighting by row
+count instead of shared phase duration fails two; removing the resolution floor fails two. No
+mutation left the suite green.
+
+
 
 
 
