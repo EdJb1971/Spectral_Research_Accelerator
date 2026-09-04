@@ -8005,6 +8005,32 @@ working by the user on 2026-08-20 (T3.5.25). **No screenshot per tab has been ca
 that clause of T3.5.0 remains open: the rendering is attested by a user, not evidenced by an
 artefact in this repository.
 
+### 7.1a The G17 release gate, as this tree reads it (2026-09-04)
+
+`src.core.experiment_qualification.qualification_plan()` assembles seven gates in about 0.15 s and
+executes none of the measurements they read. Recorded here because the statuses are a property of
+this checkout, and because three of the five statuses mean different things that a summary would
+flatten.
+
+| Gate | Status | Read from |
+|---|---|---|
+| `offline_matrix` | `NOT_RUN` | A run this call did not perform. `run_qualification()` executes it. |
+| `restart_recovery` | `NOT_RUN` | The same kind: a run not performed, not a recording absent. |
+| `browser_no_glue` | `PASS` | `src/core/browser_evidence.py`, from a recorded Playwright run bound to every spec's source. |
+| `synthetic_fifth_adapter` | `PASS` | `src/core/extension_evidence.py`: a live source-edit audit plus a recorded acceptance run. |
+| `calendar_calibration` | `PASS` | `src/core/calibration_record.py`, bound to the declared contract and the source that decides the measurement. |
+| `scale_shape_calibration` | `REFUSED` | Computed live. A declared scientific limit, blocking exactly as a failure is. |
+| `live_sources` | `NOT_RUN` | Nothing records it. It needs real network acquisition against public archives. |
+
+Verdict: `NOT_RELEASEABLE`. **`live_sources` is the only unmeasured scientific gate**, and it is
+the only outstanding item on this line that cannot be finished offline. `§6` condition 19 of
+`roadmap_cross_domain.md` needs both `browser_no_glue` and `synthetic_fifth_adapter`, and as of
+TG17.13 both read `PASS`.
+
+The two `NOT_RUN` kinds above are deliberately not merged. A measurement this checkout never
+received and a run this particular call did not perform block release identically and mean
+different things, and a reader who cannot tell them apart cannot tell what to go and do.
+
 ### 7.2 Confirmed defects
 
 | # | Location | Defect | Fixed by |

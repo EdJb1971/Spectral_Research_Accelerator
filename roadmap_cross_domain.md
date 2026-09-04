@@ -22,6 +22,55 @@ the cost of a refactor, not for the cost of a platform.
 
 ---
 
+## 0. Current position (2026-09-04, `ed-dev`)
+
+Maintained at the top so that the frontier does not have to be reconstructed from the five
+thousand lines below. `VERIFICATION.md` carries the captured output behind every figure here, and
+`architecture.md` describes what exists rather than what is planned.
+
+**Phase G17 is IN PROGRESS. Phase G18 is DONE.** Every G17 phase from TG17.0 to TG17.13 is
+complete; what keeps G17 open is that TG17.10 delivered its apparatus gate with the **release
+withheld**, not that a feature is unbuilt. TG17.11, TG17.12 and TG17.13 were written after G18
+opened, so they appear physically *after* the G18 section below. They are G17 phases.
+
+**The release gate.** `src.core.experiment_qualification.qualification_plan()` assembles seven
+gates in about 0.15 s without executing any of the measurements they read. On this tree:
+
+| Gate | Status | What it means |
+|---|---|---|
+| `offline_matrix` | `NOT_RUN` | A run this call did not perform, not a measurement missing from the checkout. It passes when `run_qualification()` executes it. |
+| `restart_recovery` | `NOT_RUN` | The same kind of `NOT_RUN` as above. |
+| `browser_no_glue` | `PASS` | TG18.5 slice 4. Reads a recorded Playwright run bound to the source of every spec in the suite. |
+| `synthetic_fifth_adapter` | `PASS` | TG17.13. A live source-edit audit plus a recorded acceptance run. Publishes a standing glue count of **1** that it deliberately does not block on. |
+| `calendar_calibration` | `PASS` | TG17.12. Reads a recording bound to the declared contract and to the source that decides what was measured. |
+| `scale_shape_calibration` | `REFUSED` | TG17.11. A declared scientific limit: the null's resolvable sizes and its drawable sizes do not overlap. A refusal blocks release exactly as a failure does. |
+| `live_sources` | `NOT_RUN` | **The last unmeasured scientific gate.** |
+
+The verdict is `NOT_RELEASEABLE` and no combination of the above changes it while `live_sources`
+is unmeasured.
+
+**`live_sources` is what comes next on this line, and it is the one item that cannot be finished
+offline.** It requires real network acquisition against public archives across four domains, with
+a separately dated live record and honest refusals where an archive declines. Nothing in this
+repository may reach the network without the maintainer's explicit say-so; build up to the point
+where a request would go out and stop there.
+
+**Also open, and independent of the above:**
+
+* T4E.3, approximate matching by clustering, on the atmospheric line. Not started.
+* Defects **D84** and **D85** are open and **D18** is partial. Eighty-seven of ninety are fixed.
+* The last measured **full backend run is 3,536 passed**, from before TG17.11. Every slice since
+  has been verified against targeted suites and says so; do not quote a larger figure without
+  running the suite.
+
+**Two habits this line holds to, because both were learned by being caught out.** A guard that
+passes because it cannot see what it is checking has now been met five times (D64, D74, D75, and
+twice inside TG17.13) - a silence is explained before it is believed. And deterministic counts are
+asserted while wall-clock is recorded under names that say nothing asserts it, because a duration
+measures the machine.
+
+---
+
 ## 1. Relationship to SpectralEarth, and the claim boundary
 
 SpectralEarth is a rigorous atmospheric research instrument. It continues independently under
@@ -4940,7 +4989,9 @@ required**. Two bounds that do not meet, against two that meet with room to spar
 Twelve guards in a new `test_calibration_record.py` plus the drift backstop, and the gate assembles
 in **22 ms warm** with a guard failing above one second.
 
-### Phase G18 — World-class scientific interface — **IN PROGRESS (2026-09-02)**
+### Phase G18 — World-class scientific interface — **DONE (2026-09-04, `ed-dev`)**
+
+All six phases TG18.0-TG18.5 are complete; TG18.5's close-out checked the phase against its own opening paragraph rather than against its slice list. G18 does **not** clear §6 condition 19 on its own: that condition names both the clean-browser no-glue test and the synthetic fifth-adapter test, and the second belongs to G17.
 
 The engine is reachable, but reachability is not yet an instrument-quality interaction contract.
 The rendered baseline was inspected at an ultra-wide desktop viewport across Acquire, Spectral
