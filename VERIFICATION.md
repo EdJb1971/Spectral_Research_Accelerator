@@ -9592,3 +9592,87 @@ The count rose by 202 over T4E.2's 3536. Contributing test functions added this 
 T4F.1's event substrate, 3 for D95, 1 for D94, 1 for D93. The remainder predates this session and
 was verified against targeted suites at the time, which is exactly the accounting the standing
 instruction against quoting an unmeasured larger figure exists to force.
+
+## TG17.15 slice 1 The estimand declared before it is answered (2026-09-04, `ed-dev`)
+
+TG17.11 established that the scale/shape null cannot reject at a reachable inventory size. This
+slice establishes why, and the why is not about compute.
+
+```
+> python -m pytest src/tests/test_correspondence_estimand.py -q
+14 passed, 1 warning in 1.97s
+```
+
+**The measurement the decision rests on**, computed from the null's own enumerator rather than
+written down:
+
+```
+k=4  |A|=9       partners=3  floor=0.2500  miscounted=0.1000000
+k=5  |A|=44      partners=4  floor=0.2000  miscounted=0.0222222
+k=6  |A|=265     partners=5  floor=0.1667  miscounted=0.0037594
+k=7  |A|=1854    partners=6  floor=0.1429  miscounted=0.0005391
+k=8  |A|=14833   partners=7  floor=0.1250  miscounted=0.0000674
+```
+
+The valid reassignments are the derangement numbers and grow factorially; the partners one member
+can receive are `k - 1`. A member's statistic depends only on its partner, so 14,833 draws produce
+seven distinct statistic values. Reading the reassignment count as the reference-set size is
+**anticonservative by more than a factor of a thousand at k = 8, in the direction that makes a null
+easier to reject**. That is the most likely error in any reimplementation and is now pinned by
+test rather than left as a warning.
+
+**Two consequences, both measured.** Raising `MAX_REASSIGNABLE_PAIRINGS` cannot help: it raises the
+reassignment count and leaves the partner count at `k - 1`, so the TG17.11 gap is structural rather
+than computational. And the minimum resolvable joint family has **no margin at all** -- at 105, one
+member a single step off the floor drops rejections to zero of 105, against 105 of 106 one size up.
+Reaching 105 would not have produced a usable instrument.
+
+**What the chosen estimand buys**, solved against the real correction:
+
+```
+tested m:      1    3    5    6   10   20
+pool N:       19   36   45   48   58   71
+```
+
+and the property the joint estimand cannot have: at a pool of 48 with six tests, one member off the
+floor rejects nothing; at 96 it rejects five of six. The test count is identical in both, so margin
+was bought without multiplicity. Under `joint_structure` the only way to lower the floor is to grow
+the family, which grows the correction burden with it.
+
+Benjamini-Yekutieli is recorded with its reason rather than inherited: family members share a
+partner inventory and are dependent, BY is valid under arbitrary dependence and BH is not.
+
+`joint_structure` is registered **inadmissible** rather than omitted, so it is refused by name with
+its reason attached; it is the natural first design and its failure is not visible from inside it.
+`require_declared_estimand` refuses an undeclared estimand rather than defaulting, because the two
+questions have different reference sets and can disagree on the same data.
+
+This slice declares the question and answers nothing. Its claim boundary says it is not a
+calibration, not a power analysis on real records, not a partner pool and not a result, and a guard
+asserts no power key appears in its report. The gate is unchanged: `scale_shape_calibration` still
+reads `REFUSED` and the verdict is still `NOT_RELEASEABLE`.
+
+## Benchmark suite, verified by running (2026-09-04, `ed-dev`)
+
+```
+> python -m src.benchmarks
+PASS 43   FAIL 0   NOT_YET_RUNNABLE 0
+exit 0
+```
+
+Recorded because the figure had been quoted from the document rather than measured. **Thirteen of
+the twenty-four registered benchmarks are null benchmarks**, where the correct answer is that there
+is nothing there. Two of their reports are worth transcribing, because they are the instrument
+catching what would otherwise be its most publishable result:
+
+```
+4C.r11_raw_is_deceptive   raw (un-anomalised) scale energies correlate at r = 0.999,
+                          p = 2.02e-219 - a strong 'finding' that is purely the calendar.
+                          This is the trap R11 exists for.
+
+4F.refusal_calendar       unguarded, the same pipeline confirms 4 relationship(s) at
+                          q = 0.0104 (strongest member naive p 4.5e-66, ESS-corrected
+                          1.1e-12, so neither R12 nor the surrogate refuses it); with the
+                          calendar fitted on train and removed from both partitions,
+                          2 frozen and none confirmed, smallest q 0.105
+```

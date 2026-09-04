@@ -5653,7 +5653,7 @@ metadata service answered three times and timed out twice; a timeout is recorded
 `network_used: null`, because after a failed call whether bytes moved is unknown. The binding
 constraint on this gate is a metadata service, not the science.
 
-**TG17.15 Rebuilding the scale/shape null so it can resolve - NOT STARTED.**
+**TG17.15 Rebuilding the scale/shape null so it can resolve - IN PROGRESS (slice 1 done).**
 
 TG17.11 delivered a calibration and a refusal, and the refusal is correct: the declared null cannot
 reject at any inventory size the enumerator can reach. This phase asks what to build instead. It is
@@ -5727,10 +5727,21 @@ cannot have: pool size and family size become two independent knobs instead of o
 
 **Slices.**
 
-*   **Slice 1 - the estimand as a declared object.** Both candidate estimands written down, one
-    chosen with its reason, and a null whose estimand is not declared refused by name. Records the
-    derangement measurement above, so the reason joint reassignment cannot resolve lives in the
-    repository rather than in a conversation.
+*   **Slice 1 - the estimand as a declared object. DONE.**
+    `src/core/correspondence_estimand.py`; `src/tests/test_correspondence_estimand.py`, 14 test
+    functions, **14 passed**. Both estimands are registered, `per_correspondence` is chosen, and
+    `joint_structure` is registered *inadmissible* so it is refused by name rather than
+    rediscovered -- it is the natural first design and its failure is invisible from inside it.
+    `require_declared_estimand` refuses an undeclared estimand rather than defaulting, because the
+    two questions can disagree on the same data and a silent default would choose the finding.
+    The derangement measurement is computed by `joint_reassignment_resolution` from the null's own
+    enumerator rather than restated, so it cannot drift from the object it describes, and the
+    anticonservative misreading is pinned at more than a thousandfold in the direction that eases
+    rejection. `minimum_pool_size` is solved against the real correction the way
+    `minimum_resolvable_family` is. A test asserts the property that motivates the whole rebuild:
+    at a pool of 48 one member off the floor rejects nothing, at 96 it rejects five of six, and
+    the test count is identical -- margin bought without multiplicity. The slice declares the
+    question and stops; a guard asserts no power key appears in its report.
 *   **Slice 2 - the partner pool and its admission criterion.** A declared exchangeability
     contract, with members failing it refused individually and by name rather than dropped
     silently. This slice carries the phase's real risk and should be the most heavily guarded.

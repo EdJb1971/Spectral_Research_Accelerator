@@ -8225,6 +8225,63 @@ so editing any of them returns the gate to `NOT_RUN` until the run is repeated. 
 theoretical during TG17.14: fixing D94 and D95 each invalidated the preceding record and forced a
 fresh acquisition, which is the intended cost of binding evidence to the source that produced it.
 
+### 7.1c Which question a correspondence test asks (`src/core/correspondence_estimand.py`, TG17.15 slice 1)
+
+`scale_shape_calibration` refuses, and TG17.11 established that as a fact about the null. This
+slice establishes *why*, and the answer is not about compute.
+
+**Two questions had been travelling under one name.** `joint_structure` asks whether the whole
+observed arrangement of partners is special. `per_correspondence` asks whether one left member's
+affinity for one partner is special against a declared pool of candidates that are not themselves
+hypotheses. They have different reference sets and can disagree on the same data, so
+`require_declared_estimand` refuses an undeclared one by name rather than defaulting: choosing
+silently would be choosing the result.
+
+**The measurement that decides between them is computed, not written down.**
+`joint_reassignment_resolution(k)` runs the null's own enumerator and counts how many *distinct
+partners* one member can actually receive:
+
+| pairings | valid reassignments | distinct partners | honest floor | floor if miscounted |
+|---|---|---|---|---|
+| 4 | 9 | 3 | 0.250 | 0.100 |
+| 6 | 265 | 5 | 0.167 | 0.0038 |
+| 8 | 14,833 | 7 | 0.125 | 0.000067 |
+
+The reassignment count is the derangement number and grows factorially; the partner count is
+`k - 1`. A member's statistic depends only on which partner it received, so those 14,833 draws
+produce seven distinct statistic values. **Treating the reassignment count as the reference-set
+size counts duplicates as independent evidence and is anticonservative by more than a factor of a
+thousand** at k = 8, in the direction that makes a null look easier to reject. It is the most
+likely error in any reimplementation, so it is measured by a function and pinned by a test.
+
+**Two consequences follow, and both are recorded as measurements rather than arguments.**
+
+*   **The gap is structural.** Raising `MAX_REASSIGNABLE_PAIRINGS` above 8 is achievable honestly
+    -- rejection sampling from uniform permutations is exactly uniform on the valid subset -- but
+    it raises the reassignment count and leaves the partner count at `k - 1`. No amount of compute
+    lowers a floor of `1/k`.
+*   **The minimum resolvable joint family has no margin.** At `minimum_resolvable_family()` = 105,
+    putting one member a single step off the floor drops rejections to **zero of 105**, not 104.
+    Graceful degradation begins only at 106. Reaching 105 would not have produced a usable
+    instrument, which is why the rebuild is a change of question and not a bigger inventory.
+
+**The cause is one inventory doing two jobs.** Under `joint_structure` the k pairings are both the
+hypotheses, setting the multiplicity burden, and the source of alternatives, setting the
+resolution; the crossover is `H_k / k <= alpha`. `per_correspondence` separates them, so
+`minimum_pool_size(m)` -- solved against the real correction, like `minimum_resolvable_family` --
+returns 19 for one tested correspondence and 48 for six, and **margin can be bought by enlarging
+the pool at no correction cost**. That property is the whole reason to change, and a test asserts
+it directly: at a pool of 48 one member off the floor rejects nothing, at 96 it rejects five of
+six, and the number of tests is identical in both.
+
+**Benjamini-Yekutieli is named here with its reason.** Members of one family share a partner
+inventory and are therefore dependent; BY is valid under arbitrary dependence and BH is not. The
+correction choice is load-bearing rather than incidental.
+
+The slice declares the question and stops. Its claim boundary says it is not a calibration, not a
+power analysis on real records, not a partner pool and not a result; a guard asserts no power key
+appears in its report.
+
 ### 7.2 Confirmed defects
 
 | # | Location | Defect | Fixed by |
@@ -8465,6 +8522,7 @@ able to sit three slices out of date.
 | `test_benchmarks.py` | 50 | Ground-Truth Benchmark Suite, seed discipline, eager/streamed climatology agreement, D30 determinism, TG16.0 paired-family completeness, TG16.1-TG16.5 gate registration, and TG17.0 four-domain contract completeness/determinism/refusals |
 | `test_boundary_synthetic.py` | 8 | boundary treatments, windowing, synthetic generators and independent Euclidean-ring oracle |
 | `test_cds_source.py` | 24 | T5.2c monthly CDS planning/CLI, grid-alignment/server-snap refusals, network consent, atomic resume, shard integrity, conservative storage refusal, bounded Zarr publication, plus PASS/FAIL independent-route receipt publication, replay and tamper refusal; and T4C.5k's encoding-relative agreement criterion -- a packed frame revealing its binary step and an unpacked one refusing to invent one, D86 itself reproduced as the same pair of fields failing an absolute tolerance finer than the route can express while passing at 0.4 of a packing step, a real 1.4-step disagreement still failing so the criterion is not decoration, and the two criteria kept apart with both receipts surviving because the earlier verdict is why the successor exists, and the lattice search exercised at temperature, geopotential and specific-humidity magnitudes because a residual tolerance that does not scale would refuse a packed geopotential field as though it were unpacked; plus T4C.5m's D87 -- a record admitted only under the criterion that actually judged it, refused under the one that never ran on it, refused for a criterion that does not exist, and a receipt whose declared name has been relabelled refused rather than trusted to the manifest field it sits under; plus T4C.5n's labelled audit window -- an audit binding beside the authorising receipt rather than over it, unreadable to the gate because the criterion argument rejects any name carrying a label, and a label that could pass for a criterion refused outright |
+| `test_correspondence_estimand.py` | 14 | TG17.15 slice 1 the declared estimand: the derangement counts pinned against the partner counts they diverge from, and the miscounted reference set shown anticonservative by more than a thousandfold in the direction that eases rejection; resolution refused above the size the null itself will enumerate; the declared family unable to reach its own resolvable size; zero of 105 rejecting when one member leaves the floor, against 105 of 106 one size up; the pool size derived against the real correction and falsified one smaller; margin bought from the pool at an identical test count; an undeclared or unregistered estimand refused rather than defaulted; the inadmissible estimand registered so it is refused by name; and the correction's dependence reason and the slice's claim boundary both carried |
 | `test_geometry_registry.py` | 20 | TG1.2 geometry registry: the three builtins' metrics, crops, resamples and provenance unchanged; capability-driven `is_physical`/`length_units`/`latitudes`; a fourth geometry (`polar_scan`) registered from the test module with a non-uniform, non-spherical metric; the Cartesian Laplacian refusing it; `latitude`/`longitude` recognised as a sphere |
 | `test_tracking.py` | 47 | TG2.3 frame-to-frame association: `4D.tracking` moving from NOT_YET_RUNNABLE to PASS with the recorded velocity and doubling time recovered from the field alone; the coincidence gate derived from alpha and the frame's own density and tightening when the frame crowds; a declared bound as a rate against an irregular clock; greedy and Hungarian disagreeing measurably, plus a third associator registered from the test module and two rogue ones refused; the seam crossing that is one track on a torus and two on a plane; the orientation gate reading the convention rather than the number and refused outright on an extractor that reports none; and the empty-frame and short-clock regressions |
 | `test_representation.py` | 59 | TG2.4 representation-induced feature audit: the floor on every plane of every registered lens, and the planted blob that proves the audit can see; the null propagated through the representation against the same null rebuilt inside it, measured on the dual tree where they differ and on the stationary transform where they do not; the FFT magnitude plane whose null nothing can exceed; the family of forty-five planes that rejects on 86% of structureless fields uncorrected, the ensemble refused as too small for it, and the correction registry that prices six identical columns as one test; the declared decimation an array does not have; and the plane R13 leaves no interior in |
@@ -8580,7 +8638,7 @@ able to sit three slices out of date.
 | `test_spectral_events.py` | 18 | T4F.1 the timed event substrate: the grid refusing an unnamed time unit, an empty frame list, repeated or reordered frames and a cadence the frames do not lie on; coverage measured against the declared cadence, reported incomplete with its missing count across an unsearched frame, and refused as undecidable without a cadence; the searched frames unrecoverable from the catalogue; an empty catalogue, an occurrence at an unsearched frame, two scale modes in one series, a repeated occurrence identity and a member unit disagreeing with the grid each refused by name; members carrying no unit counted rather than assumed to agree; event order invariant to input permutation; two patterns on one frame reported as simultaneous and unordered; per-pattern spans in the declared unit; and the receipt publishing its schema, grid and claim boundary |
 | `test_spectral_invariance.py` | 46 | T4E.2 the invariant signature: the principal axis checked against the covariance eigendecomposition it stands for over 50 random configurations, exactly collinear points reporting an infinite anisotropy rather than a failure, and three axes refused rather than projected; the `planted_configuration` benchmark measured over 24 field-noise realisations to be isotropic with an axis angle spanning 0.78 to 158.08 degrees, the module's isotropy floor asserted to be the number that measurement produced, a configuration at the benchmark's own anisotropy refused an axis by name, and the vortex triples shown to clear the floor by two orders of magnitude; invariance measured rather than declared, with translation, three rotations, reflection and every relabelling asserted to leave the signature vector identical to floating-point precision in both modes; a uniform rescaling leaving the scale-free shape alone while an estimator that missed the rescaling moves the scale-specific geometry by exactly the factor it missed; the canonical order shown to matter, with two configurations that agree on independently sorted blocks and have no correspondence making both true at once; the toggle priced at 87 of 135 with the loss attributed by cardinality; a position in metres beside a scale in cells refusing the scale-specific mode and signing in the scale-invariant one, which is what R19's own refusal message tells the caller to do; and the refusals -- a pair asked for a scale-free shape, a pair's axis refused for a different reason than an isotropic triple's, a constellation stripped of its features, a member with no band RMS, an unknown mode, blocks that disagree about cardinality, a floor calibrated on one realisation or on collinear replicates, and the mixed-unit refusal left to the extractor rather than copied |
 | `test_spectral_narrative.py` | 25 | T4D.3 the prose, and what it may not say: every number in a sentence checked against the track it came from including the spoken speed against `Track.speed()` for all four tracks, the subject of every sentence being the coefficient maximum and not the structure, and the frame count being of frames searched rather than frames found; no track of a growing vortex claiming its own scale doubled -- each holding one level at a scale velocity of exactly zero with the word absent from the prose -- while the growth that did happen is measured across bands, level 4 weakening as level 5 strengthens and is first excited nine frames later, offered as a candidate precursor relationship carrying that it was not tested against a null and claims no merge, with one band supporting no ordering at all; a cartesian grid refused every compass word and given axis-relative wording, the sign that makes a row northward read from the grid so one displacement on two grids gives opposite points, the cosine of the latitude shortening a degree of longitude before the bearing is taken so 60 degrees north gives 26.6 and not 45, a track that returned to where it started given no bearing, and the missing-`lat0` branch shown to be unreachable rather than added; energy reported as the square under its own name so the roadmap's own 43% becomes 104.5%, and a change from zero refused rather than rendered infinite; the guard using the programme's one list of words for every entry in it, a causal word in a caller's own dataset name refused before a reader sees it, the guard's own limit asserted so a substring match cannot creep in, and the entitlement allowed to name the boundary the sentences may not cross and appearing exactly once however many tracks there are; plus a single sighting supporting no direction, speed or growth, a search that found nothing refused as an empty list of sentences, and the structural signature naming no variable, dataset or units |
-  | **total** | **3337** | |
+  | **total** | **3351** | |
 
 ### 7.4a Browser suite inventory
 
