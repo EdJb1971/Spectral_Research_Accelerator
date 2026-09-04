@@ -133,6 +133,10 @@ class LightCurveCollection:
     source_sha256: Sequence[str]
     target_ra_deg: float
     target_dec_deg: float
+    #: Cadences the archive emitted with no timestamp, dropped before this collection
+    #: was built. Counted rather than discarded silently: a sample with no time cannot
+    #: be placed on a clock, and how many there were is a property of the record (D95).
+    unclocked_samples_dropped: int = 0
 
     def __post_init__(self) -> None:
         arrays = {"times_bjd_tdb": np.asarray(self.times_bjd_tdb, dtype=np.float64),
@@ -193,6 +197,7 @@ class LightCurveCollection:
                     "quality": [int(value) for value in self.quality],
                     "sector": [int(value) for value in self.sectors]},
                 "source_sha256": list(self.source_sha256),
+                "unclocked_samples_dropped": int(self.unclocked_samples_dropped),
                 "target": {"tic_id": self.spec.target_id,
                            "ra_deg": float(self.target_ra_deg),
                            "dec_deg": float(self.target_dec_deg), "frame": "ICRS"}}
@@ -208,6 +213,7 @@ class LightCurveCollection:
                 "sectors": sorted(set(map(int, self.sectors))),
                 "quality_admitted": int(np.sum(quality == 0)),
                 "quality_flagged": int(np.sum(quality != 0)),
+                "unclocked_samples_dropped": int(self.unclocked_samples_dropped),
                 "target": self.canonical()["target"], "time_scale": "BJD_TDB",
                 "flux_column": self.spec.flux_column}
 
@@ -227,7 +233,8 @@ class LightCurveCollection:
                                for item in samples["flux_error"]],
                    quality=samples["quality"], sectors=samples["sector"],
                    source_sha256=value["source_sha256"], target_ra_deg=target["ra_deg"],
-                   target_dec_deg=target["dec_deg"])
+                   target_dec_deg=target["dec_deg"],
+                   unclocked_samples_dropped=int(value.get("unclocked_samples_dropped", 0)))
 
 
 class LightCurveSource:

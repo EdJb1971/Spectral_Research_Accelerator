@@ -28,10 +28,10 @@ Maintained at the top so that the frontier does not have to be reconstructed fro
 thousand lines below. `VERIFICATION.md` carries the captured output behind every figure here, and
 `architecture.md` describes what exists rather than what is planned.
 
-**Phase G17 is IN PROGRESS. Phase G18 is DONE.** Every G17 phase from TG17.0 to TG17.13 is
+**Phase G17 is IN PROGRESS. Phase G18 is DONE.** Every G17 phase from TG17.0 to TG17.14 is
 complete; what keeps G17 open is that TG17.10 delivered its apparatus gate with the **release
-withheld**, not that a feature is unbuilt. TG17.11, TG17.12 and TG17.13 were written after G18
-opened, so they appear physically *after* the G18 section below. They are G17 phases.
+withheld**, not that a feature is unbuilt. TG17.11 to TG17.14 were written after G18 opened, so
+they appear physically *after* the G18 section below. They are G17 phases.
 
 **The release gate.** `src.core.experiment_qualification.qualification_plan()` assembles seven
 gates in about 0.15 s without executing any of the measurements they read. On this tree:
@@ -43,26 +43,44 @@ gates in about 0.15 s without executing any of the measurements they read. On th
 | `browser_no_glue` | `PASS` | TG18.5 slice 4. Reads a recorded Playwright run bound to the source of every spec in the suite. |
 | `synthetic_fifth_adapter` | `PASS` | TG17.13. A live source-edit audit plus a recorded acceptance run. Publishes a standing glue count of **1** that it deliberately does not block on. |
 | `calendar_calibration` | `PASS` | TG17.12. Reads a recording bound to the declared contract and to the source that decides what was measured. |
-| `scale_shape_calibration` | `REFUSED` | TG17.11. A declared scientific limit: the null's resolvable sizes and its drawable sizes do not overlap. A refusal blocks release exactly as a failure does. |
-| `live_sources` | `NOT_RUN` | **The last unmeasured scientific gate.** TG17.14 slice 1 now supplies its source-bound evidence reader; no live run has been made. |
+| `scale_shape_calibration` | `REFUSED` | TG17.11. A declared scientific limit: the null's resolvable sizes and its drawable sizes do not overlap, and TG17.15 establishes that no amount of compute closes the gap. A refusal blocks release exactly as a failure does. |
+| `live_sources` | `PASS` | TG17.14. A dated four-domain run: ERA5/CDS, Argo GDAC and MAST SPOC each demonstrating network use, and the bespoke order-book record demonstrating **no** network use. |
 
-The verdict is `NOT_RELEASEABLE` and no combination of the above changes it while `live_sources`
-is unmeasured.
+The verdict is `NOT_RELEASEABLE`. **Every scientific gate has now been measured** and five of the
+seven read `PASS`; the one thing blocking release is `scale_shape_calibration`, and it is a
+declared scientific limit rather than unfinished work. TG17.14 reached four archives in four
+domains and moved the verdict not at all, which is the arrangement working: a refusal blocks
+exactly as a failure does.
 
-**`live_sources` is what comes next on this line, and it is the one item that cannot be finished
-offline.** It requires real network acquisition against public archives across four domains, with
-a separately dated live record and honest refusals where an archive declines. Nothing in this
-repository may reach the network without the maintainer's explicit say-so; build up to the point
-where a request would go out and stop there.
+**What comes next is `scale_shape_calibration`, and TG17.15 below now specifies it.** The gate
+refuses because the null's resolvable sizes and its drawable sizes do not overlap. Two measurements
+on 2026-09-04 established that this cannot be fixed by scaling: at its minimum size of 105 the test
+has **zero margin** -- one member off the floor and none of the 105 reject -- and lifting the
+enumeration cap buys nothing, because each member's statistic sees only k - 1 distinct partners
+however many joint reassignments exist. The gap is structural. TG17.15 proposes separating the
+partner pool from the tested family, which makes resolution and multiplicity independent knobs;
+its costs, slices and falsification conditions are written down there before any code is cut.
+
+`offline_matrix` and `restart_recovery` remain `NOT_RUN` only in the sense that this call did not
+perform them; `execute_offline_qualification()` resolves both.
+
+Standing instruction, unchanged by TG17.14 having been authorised once: nothing in this repository
+may reach the network without the maintainer's explicit say-so.
 
 **Also open, and independent of the above:**
 
-* Phase 4E is now DONE on the atmospheric line: T4E.3 supplies approximate clustering and T4E.4
-  supplies bounded minimum-support mining. Phase 4F is next.
-* Defects **D84** and **D85** are open and **D18** is partial. Eighty-nine of ninety-two are fixed.
-* The last measured **full backend run is 3,536 passed**, from before TG17.11. Every slice since
-  has been verified against targeted suites and says so; do not quote a larger figure without
-  running the suite.
+* Phase 4E is DONE on the atmospheric line and **Phase 4F has opened**: T4F.1 supplies the
+  timed event substrate, with the observation grid that separates what was searched from
+  what was found. T4F.2 sequence mining is next there.
+* Defects **D84** and **D85** are open and **D18** is partial. Ninety-two of ninety-five are
+  fixed. This session found three: **D93** (a time unit dropped at the T4E.2 signing seam, T4F.1),
+  **D94** (a cache key republished as a `sha256`) and **D95** (untimestamped SPOC cadences), the
+  last two by TG17.14's first contact with real archives.
+* The last measured **full backend run is 3,738 passed, 4 skipped, 1 xfailed**, exit 0, on
+  2026-09-04 in 45:04 -- the tree carrying T4F.1 and TG17.14. It replaces the 3,536 that
+  predated TG17.11. Documentation-only edits landed while it ran, so the 29 documentation
+  guards were re-run standalone afterwards and passed; no source changed during the run.
+  Do not quote a larger figure without running the suite again.
 
 **Two habits this line holds to, because both were learned by being caught out.** A guard that
 passes because it cannot see what it is checking has now been met five times (D64, D74, D75, and
@@ -5576,7 +5594,7 @@ be read. It now requires the resolved path to be an existing file.
 
 TG17.13 is complete. `live_sources` is the only scientific gate left, and it requires network.
 
-**TG17.14 Four-domain live-source qualification — IN PROGRESS.** The first offline slice supplies
+**TG17.14 Four-domain live-source qualification — DONE (2026-09-04, `ed-dev`).** The first offline slice supplies
 the evidence boundary without pretending to have made the measurement. `src/core/live_source_evidence.py`
 derives the four required source identities from the flagship manifest, binds a future recording
 to every adapter and acquisition module that decides what was measured, and distinguishes an
@@ -5603,9 +5621,146 @@ failures are recorded separately; either records network use as unknown rather t
 fact after an exception. The record is self-hashed, and plan assembly reads it without
 performing acquisition.
 
-**Still to deliver in TG17.14:** the separately authorised live run and committed dated recording.
-Until that happens, `measurements/live_sources.json` is absent and the gate remains `NOT_RUN`.
-No network was used by these slices.
+**The authorised live run has now been made, and the gate reads `PASS`.** On 2026-09-04, with the
+maintainer's explicit say-so and both locks satisfied, the bounded acquisition ran in all four
+domains: 324 ERA5 values through CDS, 93 Argo profiles carrying 10,218 values, 18,279 finite flux
+samples from one MAST SPOC product for TIC 261136679, and 34,560 values in 2,880 records from the
+researcher-supplied order-book table. The first three demonstrate network use; the fourth
+demonstrates **no** network use, which is what its contract requires and the reason the fourth
+domain was chosen to be the bespoke family in the first place.
+
+**It did not clear the release, and could not have.** Five of seven gates now read `PASS`, every
+scientific gate has been measured, and the verdict is still `NOT_RELEASEABLE` because
+`scale_shape_calibration` is `REFUSED`. Four archives in four domains bought nothing past a
+declared scientific limit, which is the whole design.
+
+**The order-book record is deliberately not committed.** `order_book` declares a licence under
+which redistribution of raw depth is restricted, so the gate binds the record by `sha256` and the
+repository stores its README rather than its bytes -- source URL, exact transformation and digest,
+enough to rebuild it and check the hash. Committing the file would contradict the licence the
+platform states while reading it.
+
+**Two defects, both from first contact with real data, and neither findable offline.** **D94**: the
+reanalysis probe republished a 32-character cache key in a field named `sha256`, and the gate
+refused the whole record rather than credit a `PASS` whose content binding it could not verify --
+the validator working. **D95**: SPOC emits a row per cadence including 815 of 20,076 with no
+timestamp, and those were handed to a collection whose invariant is a finite strictly increasing
+clock; they are now dropped and *counted*, with the count carried into the record. Every synthetic
+fixture had a clean clock, which is exactly why a live gate exists.
+
+**MAST is intermittent and the record must be read knowing it.** Across five attempts that day the
+metadata service answered three times and timed out twice; a timeout is recorded `REFUSED` with
+`network_used: null`, because after a failed call whether bytes moved is unknown. The binding
+constraint on this gate is a metadata service, not the science.
+
+**TG17.15 Rebuilding the scale/shape null so it can resolve - NOT STARTED.**
+
+TG17.11 delivered a calibration and a refusal, and the refusal is correct: the declared null cannot
+reject at any inventory size the enumerator can reach. This phase asks what to build instead. It is
+a change of scientific question rather than an implementation detail, so it is written down before
+any code is cut.
+
+**Two measurements made on 2026-09-04 that sharpen TG17.11's finding, and neither is in that
+phase's record.**
+
+*   **At its own minimum the test has no margin at all.** `minimum_resolvable_family()` returns
+    105. Put one member of 105 a single step off the p-value floor and **zero** of 105 reject, not
+    104. Graceful degradation begins only at k = 106 (105 of 106). So 105 is not a size at which
+    the test starts working; it is a knife-edge requiring every one of 105 members to be a perfect
+    planted match simultaneously. Reaching it would not have produced a usable instrument.
+*   **Lifting the enumeration cap buys nothing, and the reason is the whole finding.**
+    `_valid_reassignments` returns the derangement numbers -- 9, 44, 265, 1854, **14,833** at
+    k = 8. It is tempting to read that as a reference set giving a floor of 1/(1+|A|) = 6.7e-5. It
+    is not one. Each member's statistic depends only on *which partner it received*, and member 0
+    has exactly k - 1 = 7 distinct partners across all 14,833 reassignments. Those draws produce
+    seven distinct statistic values; using |A| as the denominator counts duplicates as independent
+    evidence and is **anticonservative by three orders of magnitude**. The existing 1/k floor is
+    right, and this is the mistake a re-implementation is most likely to make.
+
+**So `MAX_REASSIGNABLE_PAIRINGS = 8` and the 105 bound are not two ends of one axis.** A uniform
+sampler above 8 is achievable and provable -- rejection sampling from uniform permutations,
+accepting only valid ones, is exactly uniform on the valid subset with acceptance about 1/e -- but
+it would raise |A| and not per-member resolution. **The gap is structural, not computational**, and
+no amount of compute closes it.
+
+**The cause is one inventory doing two jobs.** The k pairings are simultaneously the hypotheses
+under test, which sets the multiplicity burden, and the source of alternative partners, which sets
+the resolution. Growing k lowers the floor to 1/k and raises the correction burden at nearly the
+same rate; the crossover is `H_k / k <= alpha`, which is why the answer is 105 and why it arrives
+with no margin.
+
+**The proposed rebuild separates the two roles.** A **partner pool** of N candidate records that
+are *not* hypotheses, and m preregistered tested correspondences. Each test substitutes its left
+member's partner across the pool: an exact categorical reference set of size N, no factorial
+enumeration, so the 8-cap stops being this test's concern. The requirement is
+`1/(N + 1) <= alpha / (m * H_m)`, solved against the real correction rather than written down.
+Measured against this repository's own `adjust()`:
+
+| tested `m` | pool `N` needed | margin at `N` | margin at `2N` |
+|---|---|---|---|
+| 1 | 19 | -- | -- |
+| 5 | 45 | 0 of 5 | 4 of 5 |
+| 6 | 48 | 0 of 6 | 5 of 6 |
+| 10 | 58 | 0 of 10 | 9 of 10 |
+
+Six tests need a pool of about 48 rather than a 105-member all-pairs family, and doubling the pool
+to about 96 buys real margin **at no multiplicity cost**. That is the property the present design
+cannot have: pool size and family size become two independent knobs instead of one.
+
+**What the rebuild costs, recorded before it is built rather than discovered afterwards.**
+
+*   **The estimand narrows, and must be declared rather than slipped in (condition 15).** Joint
+    reassignment asks whether the *overall correspondence structure* is special. Pool substitution
+    asks whether *this* left member's affinity for *this* partner is special against a declared
+    pool. The second is arguably what scale/shape mode already claims -- "this shape at this native
+    duration resembles that shape at that one" is a per-correspondence sentence -- but the two are
+    different questions with different answers, and the choice belongs in the record.
+*   **Exchangeability becomes a data-curation obligation, and this is the new failure mode.** If
+    pool members differ systematically in record length, noise floor or sampling density, the null
+    is biased and every p-value is wrong. The present design's limit is computational and therefore
+    self-announcing; this one's limit is a property of a curated inventory and can be violated
+    silently. It needs a declared admission criterion and a guard, and it is the half of this phase
+    most likely to go quietly wrong.
+*   **Benjamini-Yekutieli stays.** The m tests share one pool and are dependent. BY is valid under
+    arbitrary dependence and BH is not, so the existing correction choice is load-bearing rather
+    than incidental.
+
+**Slices.**
+
+*   **Slice 1 - the estimand as a declared object.** Both candidate estimands written down, one
+    chosen with its reason, and a null whose estimand is not declared refused by name. Records the
+    derangement measurement above, so the reason joint reassignment cannot resolve lives in the
+    repository rather than in a conversation.
+*   **Slice 2 - the partner pool and its admission criterion.** A declared exchangeability
+    contract, with members failing it refused individually and by name rather than dropped
+    silently. This slice carries the phase's real risk and should be the most heavily guarded.
+*   **Slice 3 - the exact pool-substitution null, and the pool size derived rather than chosen.**
+    The required N computed from (m, alpha, correction) the way `minimum_resolvable_family` is
+    computed now, so the number stays true if the correction ever changes.
+*   **Slice 4 - calibration, with margin measured rather than assumed.** Planted fixtures at
+    declared effect sizes, and -- the T4C.5h lesson applied -- a **false-positive rate measured on
+    a true null**. A surrogate that preserves what its method is named after while getting the
+    distribution wrong is this project's most instructive defect, and this null must be shown not
+    to repeat it.
+*   **Slice 5 - the gate.** `scale_shape_calibration` reads the new calibration. TG17.11's refusal
+    is retired by a **checked supersession**, not edited away: the old record keeps its meaning and
+    the new one states why it replaces it.
+
+**What would falsify this phase, stated in advance.**
+
+1.  No pool admission criterion can be stated that is both checkable and non-circular -- the
+    inventory cannot be shown exchangeable without assuming the answer. The per-correspondence
+    estimand is then not testable on real records, and the honest outcome is that scale/shape mode
+    supports description but no significance claim at all.
+2.  The measured false-positive rate on a true null departs from nominal, as T4C.5's did. The null
+    is then not the null it claims, and the design is wrong regardless of its arithmetic.
+3.  A pool large enough to resolve cannot be assembled from real records without admitting members
+    that are not plausible partners, so N is bought at the cost of the exchangeability the
+    p-values depend on.
+
+Any of these is a result. The first would mean scale/shape alignment is a describable but not a
+testable mode, which is worth knowing and worth stating plainly.
+
 
 ## 6. Definition of Done
 

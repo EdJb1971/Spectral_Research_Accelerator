@@ -829,13 +829,18 @@ def _content_hash(dataset) -> str:
     return digest.hexdigest()[:32]
 
 
-def streaming_content_hash(dataset, time_block: int = 32) -> str:
-    """Return the canonical data hash without materialising a whole long record.
+def streaming_content_sha256(dataset, time_block: int = 32) -> str:
+    """The **whole** SHA-256 of the canonical data stream, without materialising the record.
 
     This emits the same logical byte stream as :func:`_content_hash`: variables in name
     order, followed by each name, full shape and contiguous C-order values.  Splitting an
     array along its leading ``time`` dimension does not change that byte stream, so neither
     the read block nor the Zarr chunk layout can change the identity.
+
+    `streaming_content_hash` returns the first 32 characters of this value as a cache key.
+    The two are separate functions because they are separate contracts: a key that indexes a
+    local cache and a digest that binds published content are allowed to have different
+    widths, and D94 is what happened when one value was asked to be both.
     """
     import numpy as np
 
@@ -853,7 +858,21 @@ def streaming_content_hash(dataset, time_block: int = 32) -> str:
                 digest.update(values.tobytes())
         else:
             digest.update(np.ascontiguousarray(variable.values).tobytes())
-    return digest.hexdigest()[:32]
+    return digest.hexdigest()
+
+
+#: The cache-key width every existing manifest and frozen receipt was written under.
+CONTENT_KEY_CHARS = 32
+
+
+def streaming_content_hash(dataset, time_block: int = 32) -> str:
+    """The 32-character cache key: the prefix of :func:`streaming_content_sha256`.
+
+    Unchanged in value, deliberately. Every manifest, cache path and frozen atmospheric
+    receipt in the repository was written under this width, and widening it would rewrite
+    identities that other records are pinned to.
+    """
+    return streaming_content_sha256(dataset, time_block=time_block)[:CONTENT_KEY_CHARS]
 
 
 def _raise_transform_crop_refusal(geometry: Mapping[str, Any],

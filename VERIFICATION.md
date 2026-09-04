@@ -9481,3 +9481,114 @@ Nothing in this phase is evidence about the world. Both slices are statements ab
 repository's source, and about whether one synthetic adapter reached the seams a third party's
 adapter would have to reach. The full backend suite was not rerun; the last measured result remains
 3,536 passed.
+
+## TG17.14 Four-domain live-source acquisition — DONE, GATE PASS (2026-09-04, `ed-dev`)
+
+The first run in this project's history in which real data was pulled from public archives in more
+than one domain. Authorised explicitly by the maintainer; both locks satisfied.
+
+```
+> python -m src.core.live_source_evidence run --order-book-record ... ^
+    --confirm-network-access I_AUTHORIZE_BOUNDED_ARCHIVE_REQUESTS
+
+reanalysis       PASS   network_used=True     324 values     ERA5 t@850hPa via CDS, 9x9x1x4
+argo_float       PASS   network_used=True     10,218 values  93 profiles, Argo GDAC
+tess_lightcurve  PASS   network_used=True     18,279 values  MAST SPOC, TIC 261136679 sector 1
+order_book       PASS   network_used=False    34,560 values  2,880 records, local, no network
+GATE: PASS   reasons: []
+```
+
+```
+> python -c "qualification_plan()"
+offline_matrix             NOT_RUN      blocking=True
+restart_recovery           NOT_RUN      blocking=True
+browser_no_glue            PASS         blocking=False
+synthetic_fifth_adapter    PASS         blocking=False
+calendar_calibration       PASS         blocking=False
+scale_shape_calibration    REFUSED      blocking=True
+live_sources               PASS         blocking=False
+VERDICT: NOT_RELEASEABLE
+```
+
+**Five of seven gates pass and the release is still refused.** That is the result, not a
+disappointment: `scale_shape_calibration` is TG17.11's declared scientific limit, and reaching four
+archives in four domains does not buy past it.
+
+**Two defects found by first contact with real data.**
+
+*   **D94.** The reanalysis probe republished `streaming_content_hash`'s 32-character cache key in a
+    field named `sha256`. `_is_sha256` requires 64, so the gate returned `NOT_RUN` with
+    `reanalysis PASS has no non-empty content-addressed record` — declining to credit a pass whose
+    content binding it could not verify. Fixed by separating the two contracts:
+    `streaming_content_sha256` returns the whole digest and `streaming_content_hash` is defined as
+    its 32-character prefix, **unchanged in value**, so no frozen atmospheric receipt moved.
+*   **D95.** SPOC emits one row per cadence including those with no photometry, and those carry a
+    non-finite `TIME`. The real sector-1 product for TIC 261136679 has **815 of them in 20,076
+    rows**. `LightCurveCollection` refused the lot, correctly. Untimestamped cadences are now
+    dropped and counted, with `unclocked_samples_dropped` carried into the gate record.
+
+```
+> python -m pytest src/tests/test_photometry.py -q
+12 passed, 1 skipped, 2 warnings in 4.03s
+
+> python -m pytest src/tests/test_zarr_source.py src/tests/test_cds_source.py ^
+    src/tests/test_live_source_evidence.py -q
+109 passed, 1 skipped, 5 warnings in 65.61s
+
+> python -m pytest src/tests/test_experiment_qualification.py -q
+26 passed, 2 warnings in 30.23s
+```
+
+**A correction recorded rather than quietly fixed.** A first reading of D95 claimed the
+duplicate-clock guard had been blinded by NaN — "the sixth guard to pass by not looking". That was
+**wrong**, and the test written to pin it refused to pass. numpy sorts NaN to the end, so the
+finite prefix was always compared correctly and `[1.0, nan, 1.0]` refused before this slice exactly
+as after. The claim was removed from the code comment and the test rewritten to assert what is
+true. D95 is one defect, not two.
+
+**Two tests changed because the world changed, not to make them green.**
+`test_qualification_record_is_self_hashed_and_tampering_is_detected` tampered by writing
+`status = "PASS"` to the last gate; once `live_sources` actually passed, the tamper wrote the value
+already there and the record verified — a tamper test failing for the one reason it must not. It
+now writes a sentinel that cannot collide with a real status.
+`test_http_plan_and_rehearsal_keep_the_unrun_gates_visible` asserted some gate remained `NOT_RUN`
+after the rehearsal; the survivor is now the `REFUSED` one, and the assertion was rewritten to its
+actual intent — the rehearsal must not present every gate as passing.
+
+**MAST is intermittent, and this record is three successes in five attempts.** On 2026-09-04
+`Mast.Caom.Filtered.Position` answered three times and timed out twice after two bounded 90-second
+attempts. A timeout records `REFUSED` with `network_used: null` — not `false`, because after a
+failed call whether bytes moved is unknown. Stated because a reader deciding whether to depend on
+this gate should know the binding constraint is a metadata service rather than the science, and
+because reporting only the passing run would misdescribe the archive.
+
+**The order-book record is not in this repository and that is deliberate.** Its domain declares
+that redistribution of raw depth is restricted, so the gate binds it by `sha256`
+(`b2fd0c2cfe426cf8c3c142ca2195da9564a6e65517c3cf8287afa4968edfe94f`) and `data/market_records/`
+carries a README with the source URL and exact transformation instead of the bytes.
+
+Nothing here is a scientific result. The record's own `claim_boundary` says so: this qualifies
+bounded acquisition and record binding in four domains, and is not evidence, replication or claim
+promotion.
+
+## Full backend suite, after T4F.1 and TG17.14 (2026-09-04, `ed-dev`)
+
+```
+> .\.venv\Scripts\python.exe -m pytest src/tests/ -q
+3738 passed, 4 skipped, 1 xfailed, 6 warnings in 2704.67s (0:45:04)
+exit 0
+```
+
+The first full-suite measurement since before TG17.11. It replaces **3536**, which was measured at
+T4E.2 and had been correctly quoted as stale by every slice since. The four skips are the standing
+opt-in live checks: GCS read, store probe, Argo acceptance and TESS/MAST acceptance.
+
+**One qualification on how it was measured.** Documentation-only edits landed while the run was in
+progress -- the TG17.15 phase and this file's own TG17.14 entry. No source changed during the run,
+so the figure is a true count of the code, but the 29 documentation guards were re-run standalone
+afterwards and passed rather than being trusted from inside the long run.
+
+The count rose by 202 over T4E.2's 3536. Contributing test functions added this session: 18 for
+T4F.1's event substrate, 3 for D95, 1 for D94, 1 for D93. The remainder predates this session and
+was verified against targeted suites at the time, which is exactly the accounting the standing
+instruction against quoting an unmeasured larger figure exists to force.

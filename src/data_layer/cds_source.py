@@ -36,7 +36,8 @@ from src.data_layer.zarr_source import (
     check_crop_size,
     is_cached,
     manifest_path,
-    streaming_content_hash,
+    CONTENT_KEY_CHARS,
+    streaming_content_sha256,
 )
 
 
@@ -756,7 +757,9 @@ def materialise_cds(
             if not np.array_equal(observed_times, expected_times):
                 raise DataSourceError(
                     "streamed CDS cache timestamps do not exactly match the complete request")
-            content_hash = streaming_content_hash(completed, time_block=int(time_chunk))
+            content_sha256 = streaming_content_sha256(
+                completed, time_block=int(time_chunk))
+            content_hash = content_sha256[:CONTENT_KEY_CHARS]
             final_shape = {key: int(value) for key, value in completed.sizes.items()}
 
         # Publish only a complete, validated store. The manifest follows, so an interrupted
@@ -770,6 +773,7 @@ def materialise_cds(
             "shape": final_shape,
             "variables": list(variables_seen or ()),
             "content_hash": content_hash,
+            "content_sha256": content_sha256,
             "bytes_transferred": int(state["run"]["total_bytes"]),
             "megabytes_transferred": round(int(state["run"]["total_bytes"]) / 1e6, 3),
             "elapsed_s": round(time.monotonic() - started, 3),

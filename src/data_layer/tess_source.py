@@ -263,7 +263,22 @@ def acquire_tess(spec: LightCurveSpec, *, query: Query = _mast_query,
         parsed.append(parse_spoc_fits(payload, spec, product))
         digests.append(hashlib.sha256(payload).hexdigest())
     time_values = np.concatenate([value["time"] for value in parsed])
-    order = np.argsort(time_values, kind="stable")
+    # SPOC emits a row for every cadence in the window, including the ones photometry was
+    # not produced for, and those carry a non-finite TIME. They are dropped here and counted
+    # rather than carried: a sample with no timestamp cannot be placed on a clock, so it is
+    # not a measurement this collection can hold. The count travels in the receipt (D95).
+    clocked = np.isfinite(time_values)
+    unclocked = int(time_values.size - int(np.count_nonzero(clocked)))
+    if not np.any(clocked):
+        raise InvalidParameterError(
+            "TESS product clocks", "no finite timestamps in %d rows" % time_values.size,
+            "at least one cadence the archive actually timestamped")
+    kept = np.flatnonzero(clocked)
+    # The order array both sorts and selects. The duplicate check below was never blind to
+    # these rows -- numpy sorts NaN to the end, so the finite prefix was always compared
+    # correctly -- and it is checked here after the drop for the plainer reason that a
+    # duplicate among timestamped cadences is what it exists to catch.
+    order = kept[np.argsort(time_values[kept], kind="stable")]
     if np.any(np.diff(time_values[order]) <= 0):
         raise InvalidParameterError("TESS product clocks", "duplicate or reversed samples",
                                     "a strictly increasing union without silently deduplicating")
@@ -279,7 +294,8 @@ def acquire_tess(spec: LightCurveSpec, *, query: Query = _mast_query,
         spec=spec, products=products, times_bjd_tdb=time_values[order],
         flux=joined("flux"), flux_error=joined("flux_error"), quality=joined("quality"),
         sectors=joined("sector"), source_sha256=digests,
-        target_ra_deg=plan["target"]["ra_deg"], target_dec_deg=plan["target"]["dec_deg"])
+        target_ra_deg=plan["target"]["ra_deg"], target_dec_deg=plan["target"]["dec_deg"],
+        unclocked_samples_dropped=unclocked)
 
 
 class TessMastSource(LightCurveSource):

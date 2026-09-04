@@ -485,6 +485,30 @@ def test_content_hash_is_independent_of_cache_chunking(hostile_store, tmp_path):
         dataset_b.close()
 
 
+def test_the_cache_key_is_a_declared_prefix_of_the_whole_content_digest(hostile_store, tmp_path):
+    """D94: one value was serving as both a cache key and a published content binding.
+
+    `streaming_content_hash` truncates to 32 characters, which is right for a cache key and
+    wrong for a field named `sha256` in a published record. The two contracts are separated
+    here so the relationship is pinned rather than remembered: the key must stay exactly the
+    prefix it has always been, and the digest must be a whole SHA-256.
+    """
+    spec = _spec(hostile_store)
+    zs.materialise(spec, cache_dir=str(tmp_path / "k"), check_size=False, time_chunk=1)
+    dataset, _ = zs.load_cached(_spec(hostile_store), cache_dir=str(tmp_path / "k"))
+    try:
+        full = zs.streaming_content_sha256(dataset, time_block=3)
+        key = zs.streaming_content_hash(dataset, time_block=3)
+        assert len(full) == 64 and set(full) <= set("0123456789abcdef")
+        assert len(key) == zs.CONTENT_KEY_CHARS == 32
+        assert full.startswith(key)
+        # Chunk independence is the property the key was introduced for; it must survive
+        # at the full width too, or the digest would be describing the cache.
+        assert zs.streaming_content_sha256(dataset, time_block=7) == full
+    finally:
+        dataset.close()
+
+
 def test_size_check_is_enforced_during_materialisation(hostile_store, tmp_path):
     """A 32-degree crop of this 128x256 grid is far below the four-level floor."""
     with pytest.raises(FieldTooSmallError):

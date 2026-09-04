@@ -229,7 +229,7 @@ def _reanalysis_probe(declared: Mapping[str, Any], base: Path,
         "network_used": not result.get("cache_hit") and int(result["bytes_transferred"]) > 0,
         "coverage": {"start": spec.date_start + "T00:00:00Z",
                      "end": spec.date_end + "T18:00:00Z", "exact": True},
-        "content": {"sha256": result["content_hash"], "observed_values": observed,
+        "content": {"sha256": result["content_sha256"], "observed_values": observed,
                     "bytes": int(result["bytes_transferred"])},
         "detail": {"request_sha256": spec.request_sha256(), "shape": shape,
                    "source_route": result["source_route"]},
@@ -277,7 +277,15 @@ def _tess_probe(declared: Mapping[str, Any], _base: Path,
         "content": {"sha256": description["collection_sha256"],
                     "observed_values": finite, "records": description["n_products"]},
         "detail": {"request_sha256": description["request_sha256"],
-                   "sectors": description["sectors"], "target": description["target"]},
+                   "sectors": description["sectors"], "target": description["target"],
+                   # D95: the cadences SPOC emitted with no timestamp. Counting them on the
+                   # collection is not enough -- a count that never reaches the record is a
+                   # count nobody can read.
+                   "unclocked_samples_dropped": description["unclocked_samples_dropped"],
+                   "observed_values_basis": (
+                       "finite %s among the timestamped cadences; rows the archive left "
+                       "without a clock are dropped and counted separately"
+                       % spec.flux_column)},
     }
 
 

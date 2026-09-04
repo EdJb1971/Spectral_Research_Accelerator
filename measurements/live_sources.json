@@ -1,0 +1,159 @@
+{
+  "bespoke_record": {
+    "content_sha256": "b2fd0c2cfe426cf8c3c142ca2195da9564a6e65517c3cf8287afa4968edfe94f",
+    "licence": "Binance market data published for public download at data.binance.vision. Venue market-data terms restrict redistribution of raw depth, so this record is held locally and bound to the gate by sha256 rather than committed or republished.",
+    "provenance": "Binance public futures data dump, https://data.binance.vision/data/futures/um/daily/bookDepth/BTCUSDT/BTCUSDT-bookDepth-2026-09-01.zip, retrieved 2026-09-04 UTC. Reshaped from the venue's long format (timestamp,percentage,depth,notional) to a wide channel table: the 12 percentage levels pivoted into one depth column each, the UTC timestamp converted to epoch seconds as 't', notional discarded. No rows added, removed, reordered or resampled."
+  },
+  "claim_boundary": "This qualifies bounded acquisition and record binding in four domains. It is not a cross-domain scientific result, evidence, replication or claim promotion.",
+  "contract_sha256": "4ec74e4b7d732cb8f9839f1ccdd4dd41fc6b334e47f648e5ea766a524d5320fa",
+  "outcomes": [
+    {
+      "content": {
+        "bytes": 28537,
+        "observed_values": 324,
+        "sha256": "40f6b5033b7e1178a5d4cb45e2d16bd713e730ee5b8c03bb65f7e88ed336f489"
+      },
+      "coverage": {
+        "end": "2025-01-01T18:00:00Z",
+        "exact": true,
+        "start": "2025-01-01T00:00:00Z"
+      },
+      "detail": {
+        "request_sha256": "0b105fb0b2e9246b84adbfc4aca0c26963f968f8cb42f74b2317e55c98ea040e",
+        "shape": {
+          "latitude": 9,
+          "level": 1,
+          "longitude": 9,
+          "time": 4
+        },
+        "source_route": "Copernicus Climate Data Store API"
+      },
+      "domain": "reanalysis",
+      "finished_utc": "2026-09-04T03:08:16.181201Z",
+      "network_used": true,
+      "reason": "",
+      "source_id": "grid_crop:era5_0p25_1h_full37",
+      "source_version": "CDS-era5",
+      "started_utc": "2026-09-04T03:07:33.895719Z",
+      "status": "PASS"
+    },
+    {
+      "content": {
+        "observed_values": 10218,
+        "records": 93,
+        "sha256": "bce629809970c635250f318f72af2be0de33303b200b4d56b4d58ba8f71e7a2e"
+      },
+      "coverage": {
+        "end": "2026-03-01T00:00:00Z",
+        "exact": false,
+        "start": "2026-01-01T00:00:00Z"
+      },
+      "detail": {
+        "platforms": 19,
+        "request_sha256": "e27e407b17019814d0edb485f6add18dcc8adaee63696a7af762683d2f8fcd3c",
+        "response_sha256": "0842d5348976ec8c57a6dd038e7d5e6158686b1c8b68c772aa0b1ce891ce7a8a"
+      },
+      "domain": "argo_float",
+      "finished_utc": "2026-09-04T03:08:25.085581Z",
+      "network_used": true,
+      "reason": "",
+      "source_id": "profile_query:argo_gdac_erddap",
+      "source_version": "Argo-GDAC",
+      "started_utc": "2026-09-04T03:08:16.181201Z",
+      "status": "PASS"
+    },
+    {
+      "content": {
+        "observed_values": 18279,
+        "records": 1,
+        "sha256": "d84a7e2089893df0af6af5b4a17182d467c8e55af95cf101515796e2a53a0c32"
+      },
+      "coverage": {
+        "end": "2458353.1770658973",
+        "exact": true,
+        "start": "2458325.2955716257",
+        "time_scale": "BJD_TDB"
+      },
+      "detail": {
+        "observed_values_basis": "finite PDCSAP_FLUX among the timestamped cadences; rows the archive left without a clock are dropped and counted separately",
+        "request_sha256": "6e2d236f019ee4dd44fbfbdb222f5364d6495885250bf4b530c26ac152fd5fb7",
+        "sectors": [
+          1
+        ],
+        "target": {
+          "dec_deg": -80.4691197969941,
+          "frame": "ICRS",
+          "ra_deg": 84.2911879979852,
+          "tic_id": "261136679"
+        },
+        "unclocked_samples_dropped": 815
+      },
+      "domain": "tess_lightcurve",
+      "finished_utc": "2026-09-04T03:10:22.896085Z",
+      "network_used": true,
+      "reason": "",
+      "source_id": "lightcurve_query:mast_tess_spoc",
+      "source_version": "MAST-TESS-SPOC",
+      "started_utc": "2026-09-04T03:08:25.085581Z",
+      "status": "PASS"
+    },
+    {
+      "content": {
+        "observed_values": 34560,
+        "records": 2880,
+        "sha256": "b2fd0c2cfe426cf8c3c142ca2195da9564a6e65517c3cf8287afa4968edfe94f"
+      },
+      "coverage": {
+        "end": "1788307171.0",
+        "exact": true,
+        "start": "1788220804.0",
+        "time_units": "s"
+      },
+      "detail": {
+        "channels": [
+          "depth_bid_5",
+          "depth_bid_4",
+          "depth_bid_3",
+          "depth_bid_2",
+          "depth_bid_1",
+          "depth_bid_0p2",
+          "depth_ask_0p2",
+          "depth_ask_1",
+          "depth_ask_2",
+          "depth_ask_3",
+          "depth_ask_4",
+          "depth_ask_5"
+        ],
+        "domain_attribution": "This record was read under domain 'order_book' because a reader chose that domain. Nothing here establishes that it came from it.",
+        "operator_declaration": {
+          "content_sha256": "b2fd0c2cfe426cf8c3c142ca2195da9564a6e65517c3cf8287afa4968edfe94f",
+          "licence": "Binance market data published for public download at data.binance.vision. Venue market-data terms restrict redistribution of raw depth, so this record is held locally and bound to the gate by sha256 rather than committed or republished.",
+          "provenance": "Binance public futures data dump, https://data.binance.vision/data/futures/um/daily/bookDepth/BTCUSDT/BTCUSDT-bookDepth-2026-09-01.zip, retrieved 2026-09-04 UTC. Reshaped from the venue's long format (timestamp,percentage,depth,notional) to a wide channel table: the 12 percentage levels pivoted into one depth column each, the UTC timestamp converted to epoch seconds as 't', notional discarded. No rows added, removed, reordered or resampled."
+        }
+      },
+      "domain": "order_book",
+      "finished_utc": "2026-09-04T03:10:22.911837Z",
+      "network_used": false,
+      "reason": "",
+      "source_id": "channel_table:local",
+      "source_version": "user-supplied-v1",
+      "started_utc": "2026-09-04T03:10:22.896085Z",
+      "status": "PASS"
+    }
+  ],
+  "record_kind": "four_domain_live_source_acceptance_not_scientific_result",
+  "record_sha256": "bad11cf283be8cb9488c4991cc6b75244e833d51bbe577e40bbed0ddf9ab7b4d",
+  "recorded_utc": "2026-09-04T03:10:22.911837Z",
+  "schema": "live-source-evidence/v1",
+  "source_sha256": {
+    "extensions/argo_float.py": "3305e94ae59cf20652c8668e58396d71814b2e2cfcefc7e850186d3656ea9f8e",
+    "extensions/tess_lightcurve.py": "f695419c6424f085df28a80f377b4a93bd649db40522aa812a234a10c5cce42f",
+    "src/adapters/bespoke_record.py": "119285d3e5bd80df86cef7a38fd748913772fb277a5b60b8d489a5535a1fde7e",
+    "src/adapters/reanalysis.py": "fa29cf2907c73cc5ddb28e8aa192c31a127862c325be3691b9de6dbd1a57c480",
+    "src/adapters/standardized_level_adapter.py": "424b3c8af0b8bddd740cdb3ccdb583cead71fa10813049ffee674e495948481b",
+    "src/data_layer/argo_source.py": "c338f96157d26ff2a2aad5b06bc8ec0724c3490aa3b6a3c379bb9f94c2f40ae3",
+    "src/data_layer/cds_source.py": "41b7703156d42a5e3e805c4aa1537158514766b9e8db720e0f7135ce2aa2c333",
+    "src/data_layer/tabular_source.py": "091017d3cebc5ccf901333e959960deec42fe0445925f664e449e21f786bede4",
+    "src/data_layer/tess_source.py": "988b8bd7db6ea2e0289e35e8379c604f9c98d850a93ada3cab9c3b5fd26827fe"
+  }
+}

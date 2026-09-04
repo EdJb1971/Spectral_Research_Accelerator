@@ -70,3 +70,9 @@ data/profile_collections/e7c8acc202a81169b705dce99fd9391ca4a8c9ee3ba1f54715e3e09
 .e2e-state/
 frontend/test-results/
 frontend/playwright-report/
+
+# TG17.14: the researcher-supplied order_book record. The venue's market-data terms
+# restrict redistribution of raw depth, and the live-source gate binds the record by
+# sha256 rather than by storing it, so the CSV is deliberately absent and its README
+# carries the URL and the transformation needed to rebuild it byte-for-byte.
+data/market_records/*.csv

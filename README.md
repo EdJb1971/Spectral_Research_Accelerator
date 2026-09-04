@@ -45,14 +45,20 @@ supersedes the other.
   refuses candidate/time budget overruns without returning a partial sweep. Approximate matching
   uses a declared attributed-graph metric, a tolerance measured from same-configuration
   replicates, and deterministic complete-link clusters whose centroid and radius are readable.
-  **Phase 4F transition and precursor mining is next.**
-* Cross-domain line: **TG17.14 is IN PROGRESS.** Its first network-dark slice gives
-  `live_sources` a source-bound evidence reader while honestly leaving the gate `NOT_RUN`.
-  Reanalysis, Argo and TESS must demonstrate real use of their declared archives; the bespoke
-  order-book family must demonstrate a content-addressed local record and no network use. The
-  source-bound reader and double-locked, bounded runner are implemented; the separately authorised
-  live measurement is next. Three of seven release gates clear and the verdict remains
-  `NOT_RELEASEABLE`.
+  **Phase 4F has opened: T4F.1 is DONE.** The timed event substrate reads a clustered
+  catalogue against an explicit grid of the frames that were *searched*, refuses an
+  unnamed clock, refuses an occurrence at a frame nothing looked at, and marks a span
+  crossing an unread instant rather than reporting it as a longer gap. Events sharing a
+  frame are published unordered, because a succession taken from list position would be
+  fabricated. It found and fixed D93. **T4F.2 sequence mining is next.**
+* Cross-domain line: **TG17.14 is DONE and `live_sources` reads `PASS`.** On 2026-09-04 the
+  authorised bounded run reached ERA5 through CDS, Argo GDAC and MAST SPOC, each demonstrating
+  real network use, while the bespoke order-book family demonstrated a content-addressed local
+  record and **no** network use. First contact with real archives found two defects, D94 and D95,
+  neither findable offline. **Five of seven release gates now clear and the verdict is still
+  `NOT_RELEASEABLE`**, blocked by `scale_shape_calibration`'s declared scientific limit — four
+  archives in four domains buy nothing past a refusal. **The scale/shape bound is next, and it is
+  a decision rather than a task.**
 * Cross-domain line: Phase G18, the instrument the science is read through. TG17.9 and TG17.10
   are DONE, the latter with the **release withheld**; TG18.1 (shared instrument foundation) closed
   on 2026-09-03 after six slices; TG18.2 (scientific visualization workspace) closed the same day
@@ -107,7 +113,7 @@ supersedes the other.
   vector publication sheets that preserve the figure's reading contract. Under
   G18 none of this may recompute, summarize, promote or reinterpret a scientific value, so each
   addition transcribes what the analysis layer produced or states that it produced nothing.
-* Last measured full backend run: **3536 passed, 4 skipped, 1 xfailed**, exit 0.
+* Last measured full backend run: **3738 passed, 4 skipped, 1 xfailed**, exit 0 (2026-09-04, 45:04).
 * Last measured browser suite: **136/136** in Chromium from a cleaned `.e2e-state` (2026-09-04).
   It is inventoried in `architecture.md` section 7.4a; it is the only check here that proves a
   page renders.

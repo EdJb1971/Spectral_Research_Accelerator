@@ -174,7 +174,16 @@ def test_green_offline_rehearsal_cannot_make_the_release_verdict_green(qualified
     # TG17.13: the fifth-adapter gate no longer states a sentence about a measurement nobody made.
     # It reads a live source-edit audit and a recorded acceptance run, and it may still refuse.
     assert gates["synthetic_fifth_adapter"]["status"] in ("PASS", "FAIL", "NOT_RUN")
-    assert gates["live_sources"]["status"] == "NOT_RUN"
+    # TG17.14: the four-domain live acquisition ran and its record is bound to this tree, so
+    # the last unmeasured scientific gate now reads PASS. Asserted as the recorded state
+    # rather than pinned to PASS forever: the record binds source digests, and an edit to any
+    # acquisition module correctly returns this to NOT_RUN until the run is repeated.
+    assert gates["live_sources"]["status"] in ("PASS", "REFUSED", "FAIL", "NOT_RUN")
+    assert gates["live_sources"]["blocking"] is False
+    # The verdict is unmoved, and by exactly one thing: TG17.11's declared scientific limit.
+    # Five of seven gates now clear and the release is still refused, which is the point --
+    # a refusal blocks as a failure does, and clearing four archives does not buy past it.
+    assert gates["scale_shape_calibration"]["status"] == "REFUSED"
     assert qualified["verdict"] == "NOT_RELEASEABLE"
 
 
@@ -235,7 +244,12 @@ def test_scientist_action_measurements_are_not_invented(qualified):
 def test_qualification_record_is_self_hashed_and_tampering_is_detected(qualified):
     assert verify_qualification_record(qualified)["integrity"] == "VERIFIED"
     tampered = copy.deepcopy(qualified)
-    tampered["gates"][-1]["status"] = "PASS"
+    # The edit must actually change the record. This assignment used to read `= "PASS"`, and
+    # when TG17.14's live run turned the last gate PASS the tamper became a no-op writing the
+    # value already there: the record verified, and the test failed for the one reason a
+    # tamper test must never fail. The sentinel cannot collide with a real status.
+    assert tampered["gates"][-1]["status"] != "TAMPERED"
+    tampered["gates"][-1]["status"] = "TAMPERED"
     with pytest.raises(ValueError, match="qualification_sha256"):
         verify_qualification_record(tampered)
 
@@ -261,7 +275,14 @@ def test_http_plan_and_rehearsal_keep_the_unrun_gates_visible(tmp_path):
         body = response.json()
     assert sum(row["status"] == "PASS" for row in body["matrix"]) == 3
     assert sum(row["status"] == "REFUSED" for row in body["matrix"]) == 3
-    assert any(row["status"] == "NOT_RUN" for row in body["gates"])
+    # The rehearsal resolves the two gates it performs and must not quietly absorb the ones
+    # it does not. Until TG17.14 the survivor was `live_sources`, still unmeasured; now that
+    # it has run, the gate the rehearsal cannot touch is the refused one, and a rehearsal
+    # that returned an all-clear body would be the failure this assertion guards against.
+    unresolved = [row for row in body["gates"] if row["status"] != "PASS"]
+    assert unresolved, "the rehearsal must not present every gate as passing"
+    assert any(row["status"] == "REFUSED" for row in unresolved)
+    assert body["verdict"] == "NOT_RELEASEABLE"
     assert body["record_kind"] == RECORD_KIND
 
 
