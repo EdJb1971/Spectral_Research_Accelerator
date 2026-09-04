@@ -8339,6 +8339,83 @@ Four mutations were applied and each was caught: dropping refused candidates sil
 band on `native_seconds`, skipping the observed-partner self-check, and admitting a pool below the
 resolvable size.
 
+### 7.1e The exact pool-substitution null, and the family that cannot be re-chosen (`src/core/pool_substitution_null.py`, TG17.15 slice 3)
+
+Slice 1 declared the question and slice 2 built the pool. This is the inference: substitute each
+admitted alternative for the observed partner, rank the observation among them, correct once.
+
+**Nothing is sampled, and the sampled variant is refused by name.** The reference set is a
+*declared finite inventory*, sealed by digest before any statistic existed, so every value the null
+can produce is enumerable. `monte_carlo_pool_substitution` is registered and refused for the reason
+`monte_carlo_partner_p_values` was in scale/shape mode, arriving by a different route: a Monte
+Carlo denominator is **chosen by the caller rather than fixed by the pool**, so a pool of thirty
+alternatives resolving nothing finer than `1/31 = 0.032` could report `p = 0.0001` from ten
+thousand draws with the same apparent authority.
+
+**One statistic path.** The module takes a *callable* and evaluates all `N + 1` values itself; a
+precomputed observed statistic is not an accepted argument. An observed value computed elsewhere
+may carry a different normalisation, window or code version, and the resulting rank would compare
+quantities that were never the same quantity while still returning a number. The observed pair is
+additionally evaluated **twice**, and a statistic that returns two values for it is refused: under
+a non-deterministic statistic the rank depends on evaluation order and the p-value is not exact.
+
+**Orientation is declared and has no default.** A similarity and a distance invert the tail. Under
+the wrong one every reported p-value is about `1 - p`, and the result still looks like a result.
+`require_declared_orientation` refuses `None` the way `require_declared_estimand` does.
+
+**Ties count toward the numerator.** An alternative achieving exactly the observed value is one the
+statistic cannot distinguish from the observation, and treating indistinguishable as beaten would
+manufacture resolution the statistic does not have. A statistic that ties *every* alternative
+yields `p = 1.0`; that is conservative and is reported rather than refused, but it is flagged
+`degenerate`, because a reader seeing only the p-value would read a safeguard passing where there
+was never a test.
+
+**The family size is sealed in the pools, not passed as an argument.** The classic multiplicity
+failure -- run five hundred tests, correct the twenty that survived -- is guarded by `adjust`'s
+`n_tests` only when the caller supplies an honest number. Here each `PartnerPool` already carries
+the `tested_correspondences` it was admitted for, inside its digest, fixed before any p-value
+existed. `correspondence_family` requires every pool to declare the same size **and** the number of
+pools presented to equal it, so narrowing the family contradicts a number that predates the results.
+
+**The defect this slice found in its own first draft, and the number it now publishes.**
+`minimum_pool_size(m)` asks what pool lets **every** member reject when **every** member sits at
+its floor. That is the most favourable world there is, and the first `resolution()` reported it as
+a green light. On the acceptance family it was one: six pools of 58 each clear the required 48, and
+`every_member_can_reject_at_its_own_floor` read `True` -- while a family with three genuine
+correspondences of six rejected **nothing**, all three sitting exactly at the floor with
+`q = 0.083`. Members that do not correspond consume the Benjamini-Yekutieli step-up ranks the
+genuine ones need. `sparsest_detectable_count` now measures, from the floors the pools actually
+have, the fewest genuine members the family could ever reject, and the receipt states it in words:
+
+    powered_for: this family can produce a rejection only if at least 5 of its 6 declared
+    correspondences are genuine.
+
+`minimum_pool_size_for_detected_fraction` sizes a pool for that world before data is acquired. The
+gap is not marginal -- at `m = 6`: all six genuine needs `N = 48`, half needs `N = 97`, one of six
+needs `N = 293`.
+
+**Resolution is re-verified rather than inherited.** `build_partner_pool` refuses an underpowered
+pool, but `PartnerPool` is a public dataclass and a guarantee that depends on which constructor was
+used is a guarantee by convention. The floor is measured again here against the real correction,
+and a directly constructed starved pool is named in `unresolvable_members`.
+
+**Refusals that keep an exact denominator honest.** A record the pool admitted but whose payload is
+absent is refused, not skipped: skipping shrinks the denominator without changing the pool digest
+the p-value is reported against, which is anticonservative and leaves no trace. A non-finite
+statistic is refused for the same reason. An empty pool is refused because `p = 1.0` would be
+arithmetic rather than evidence, and an observed partner appearing inside its own pool is refused
+because it would be counted twice.
+
+Ten mutations were applied and each was caught, including dropping the observation from its own
+reference set, ceasing to count ties, silently skipping a missing payload, narrowing the sealed
+family, and reporting the all-genuine case as the family's real power.
+
+**The claim boundary.** Exact ranks, corrected once at the declared family size. Validity as a tail
+probability rests on the pool being exchangeable, which slice 2 establishes as necessary and not
+sufficient. It is **not** a calibration: no false-positive rate has been measured for this null on
+records with no planted correspondence, and T4C.5h is the standing proof that a null can preserve
+exactly the property it is named after and still get the distribution wrong. That is slice 4.
+
 ### 7.2 Confirmed defects
 
 | # | Location | Defect | Fixed by |
@@ -8579,8 +8656,9 @@ able to sit three slices out of date.
 | `test_benchmarks.py` | 50 | Ground-Truth Benchmark Suite, seed discipline, eager/streamed climatology agreement, D30 determinism, TG16.0 paired-family completeness, TG16.1-TG16.5 gate registration, and TG17.0 four-domain contract completeness/determinism/refusals |
 | `test_boundary_synthetic.py` | 8 | boundary treatments, windowing, synthetic generators and independent Euclidean-ring oracle |
 | `test_cds_source.py` | 24 | T5.2c monthly CDS planning/CLI, grid-alignment/server-snap refusals, network consent, atomic resume, shard integrity, conservative storage refusal, bounded Zarr publication, plus PASS/FAIL independent-route receipt publication, replay and tamper refusal; and T4C.5k's encoding-relative agreement criterion -- a packed frame revealing its binary step and an unpacked one refusing to invent one, D86 itself reproduced as the same pair of fields failing an absolute tolerance finer than the route can express while passing at 0.4 of a packing step, a real 1.4-step disagreement still failing so the criterion is not decoration, and the two criteria kept apart with both receipts surviving because the earlier verdict is why the successor exists, and the lattice search exercised at temperature, geopotential and specific-humidity magnitudes because a residual tolerance that does not scale would refuse a packed geopotential field as though it were unpacked; plus T4C.5m's D87 -- a record admitted only under the criterion that actually judged it, refused under the one that never ran on it, refused for a criterion that does not exist, and a receipt whose declared name has been relabelled refused rather than trusted to the manifest field it sits under; plus T4C.5n's labelled audit window -- an audit binding beside the authorising receipt rather than over it, unreadable to the gate because the criterion argument rejects any name carrying a label, and a label that could pass for a criterion refused outright |
-| `test_correspondence_estimand.py` | 14 | TG17.15 slice 1 the declared estimand: the derangement counts pinned against the partner counts they diverge from, and the miscounted reference set shown anticonservative by more than a thousandfold in the direction that eases rejection; resolution refused above the size the null itself will enumerate; the declared family unable to reach its own resolvable size; zero of 105 rejecting when one member leaves the floor, against 105 of 106 one size up; the pool size derived against the real correction and falsified one smaller; margin bought from the pool at an identical test count; an undeclared or unregistered estimand refused rather than defaulted; the inadmissible estimand registered so it is refused by name; and the correction's dependence reason and the slice's claim boundary both carried |
+| `test_correspondence_estimand.py` | 21 | TG17.15 slices 1 and 3 the declared estimand: the derangement counts pinned against the partner counts they diverge from, and the miscounted reference set shown anticonservative by more than a thousandfold in the direction that eases rejection; resolution refused above the size the null itself will enumerate; the declared family unable to reach its own resolvable size; zero of 105 rejecting when one member leaves the floor, against 105 of 106 one size up; the pool size derived against the real correction and falsified one smaller; margin bought from the pool at an identical test count; an undeclared or unregistered estimand refused rather than defaulted; the inadmissible estimand registered so it is refused by name; and the correction's dependence reason and the slice's claim boundary both carried; and, added by slice 3, `minimum_pool_size` shown to be `minimum_pool_size_for_detected_fraction` at fraction one, a sparser family shown to need a much larger pool, a fraction rounding to no planted member refused, and `sparsest_detectable_count` measured from real floors -- six pools of 58 needing five genuine members of six, pools too small to ever reject returning None rather than a number, and the sparse case published in the estimand report beside the favourable one |
 | `test_partner_pool.py` | 20 | TG17.15 slice 2 the partner pool: the profile field set asserted exactly so no joint quantity can be added, and every banded marginal readable from one record alone; `native_seconds` refused a band by name with the admitted pool spanning an order of magnitude; an observed partner failing its own contract, sharing the left member's provenance, or equal to the left member each refused; every refusal carried with its check and its measured numbers, and admitted plus refused equal to what was offered; a record offered twice refused rather than counted twice; a pool below the resolvable size refused naming the required size, which tracks the declared number of tested correspondences; the estimand required and the inadmissible one refused; contracts with no band or a band below one refused; an effective sample size above the nominal count refused; the pool sealed by digest and the digest moving when a member does; the spread reporting where the observation sits inside its own pool; and the claim boundary stating admission is necessary and not sufficient |
+| `test_pool_substitution_null.py` | 35 | TG17.15 slice 3 the exact pool-substitution null: orientation refused when undeclared and the two tails shown to invert the same numbers; the p-value the exact rank with the observation in its own reference set, attaining `1/(N+1)` and never zero; ties counted toward the numerator and an all-tied statistic reported as degenerate rather than as a pass; the observed statistic not an accepted argument and shown to travel the same path as its alternatives, with a non-deterministic statistic refused; a missing payload, a non-finite value, an empty pool and an observed partner inside its own pool each refused; the Monte Carlo variant refused by name with its measurement; a family corrected once at the size sealed in its pools, with narrowing, enlarging, mixed declared sizes and a duplicated correspondence each refused; resolution re-measured against the real correction so a directly constructed starved pool is still named; the sparsest detectable count reported beside the all-genuine case, three genuine of six shown to reject nothing, and a family that can never reject saying so rather than returning a number; results bound to the pool and contract digests; and the claim boundary refusing to call this a calibration |
 | `test_geometry_registry.py` | 20 | TG1.2 geometry registry: the three builtins' metrics, crops, resamples and provenance unchanged; capability-driven `is_physical`/`length_units`/`latitudes`; a fourth geometry (`polar_scan`) registered from the test module with a non-uniform, non-spherical metric; the Cartesian Laplacian refusing it; `latitude`/`longitude` recognised as a sphere |
 | `test_tracking.py` | 47 | TG2.3 frame-to-frame association: `4D.tracking` moving from NOT_YET_RUNNABLE to PASS with the recorded velocity and doubling time recovered from the field alone; the coincidence gate derived from alpha and the frame's own density and tightening when the frame crowds; a declared bound as a rate against an irregular clock; greedy and Hungarian disagreeing measurably, plus a third associator registered from the test module and two rogue ones refused; the seam crossing that is one track on a torus and two on a plane; the orientation gate reading the convention rather than the number and refused outright on an extractor that reports none; and the empty-frame and short-clock regressions |
 | `test_representation.py` | 59 | TG2.4 representation-induced feature audit: the floor on every plane of every registered lens, and the planted blob that proves the audit can see; the null propagated through the representation against the same null rebuilt inside it, measured on the dual tree where they differ and on the stationary transform where they do not; the FFT magnitude plane whose null nothing can exceed; the family of forty-five planes that rejects on 86% of structureless fields uncorrected, the ensemble refused as too small for it, and the correction registry that prices six identical columns as one test; the declared decimation an array does not have; and the plane R13 leaves no interior in |
@@ -8696,7 +8774,7 @@ able to sit three slices out of date.
 | `test_spectral_events.py` | 18 | T4F.1 the timed event substrate: the grid refusing an unnamed time unit, an empty frame list, repeated or reordered frames and a cadence the frames do not lie on; coverage measured against the declared cadence, reported incomplete with its missing count across an unsearched frame, and refused as undecidable without a cadence; the searched frames unrecoverable from the catalogue; an empty catalogue, an occurrence at an unsearched frame, two scale modes in one series, a repeated occurrence identity and a member unit disagreeing with the grid each refused by name; members carrying no unit counted rather than assumed to agree; event order invariant to input permutation; two patterns on one frame reported as simultaneous and unordered; per-pattern spans in the declared unit; and the receipt publishing its schema, grid and claim boundary |
 | `test_spectral_invariance.py` | 46 | T4E.2 the invariant signature: the principal axis checked against the covariance eigendecomposition it stands for over 50 random configurations, exactly collinear points reporting an infinite anisotropy rather than a failure, and three axes refused rather than projected; the `planted_configuration` benchmark measured over 24 field-noise realisations to be isotropic with an axis angle spanning 0.78 to 158.08 degrees, the module's isotropy floor asserted to be the number that measurement produced, a configuration at the benchmark's own anisotropy refused an axis by name, and the vortex triples shown to clear the floor by two orders of magnitude; invariance measured rather than declared, with translation, three rotations, reflection and every relabelling asserted to leave the signature vector identical to floating-point precision in both modes; a uniform rescaling leaving the scale-free shape alone while an estimator that missed the rescaling moves the scale-specific geometry by exactly the factor it missed; the canonical order shown to matter, with two configurations that agree on independently sorted blocks and have no correspondence making both true at once; the toggle priced at 87 of 135 with the loss attributed by cardinality; a position in metres beside a scale in cells refusing the scale-specific mode and signing in the scale-invariant one, which is what R19's own refusal message tells the caller to do; and the refusals -- a pair asked for a scale-free shape, a pair's axis refused for a different reason than an isotropic triple's, a constellation stripped of its features, a member with no band RMS, an unknown mode, blocks that disagree about cardinality, a floor calibrated on one realisation or on collinear replicates, and the mixed-unit refusal left to the extractor rather than copied |
 | `test_spectral_narrative.py` | 25 | T4D.3 the prose, and what it may not say: every number in a sentence checked against the track it came from including the spoken speed against `Track.speed()` for all four tracks, the subject of every sentence being the coefficient maximum and not the structure, and the frame count being of frames searched rather than frames found; no track of a growing vortex claiming its own scale doubled -- each holding one level at a scale velocity of exactly zero with the word absent from the prose -- while the growth that did happen is measured across bands, level 4 weakening as level 5 strengthens and is first excited nine frames later, offered as a candidate precursor relationship carrying that it was not tested against a null and claims no merge, with one band supporting no ordering at all; a cartesian grid refused every compass word and given axis-relative wording, the sign that makes a row northward read from the grid so one displacement on two grids gives opposite points, the cosine of the latitude shortening a degree of longitude before the bearing is taken so 60 degrees north gives 26.6 and not 45, a track that returned to where it started given no bearing, and the missing-`lat0` branch shown to be unreachable rather than added; energy reported as the square under its own name so the roadmap's own 43% becomes 104.5%, and a change from zero refused rather than rendered infinite; the guard using the programme's one list of words for every entry in it, a causal word in a caller's own dataset name refused before a reader sees it, the guard's own limit asserted so a substring match cannot creep in, and the entitlement allowed to name the boundary the sentences may not cross and appearing exactly once however many tracks there are; plus a single sighting supporting no direction, speed or growth, a search that found nothing refused as an empty list of sentences, and the structural signature naming no variable, dataset or units |
-  | **total** | **3371** | |
+  | **total** | **3413** | |
 
 ### 7.4a Browser suite inventory
 

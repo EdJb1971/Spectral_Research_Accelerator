@@ -204,6 +204,74 @@ def minimum_pool_size(tested_correspondences: int, *, alpha: float = ALPHA,
         "limit", limit, "a search bound large enough to contain a resolvable pool size")
 
 
+def minimum_pool_size_for_detected_fraction(
+        tested_correspondences: int, fraction: float, *, alpha: float = ALPHA,
+        correction: str = CORRECTION, limit: int = 200000) -> int:
+    """Pool size `N` needed when only `fraction` of the declared family genuinely corresponds.
+
+    `minimum_pool_size` is this at `fraction = 1`, and that is its blind spot: it asks what pool
+    lets **every** member reject when every member sits at its floor. Real families are mixed. A
+    member that genuinely corresponds sits at `1/(N+1)`; the rest sit near 1.0 and take up the
+    step-up ranks Benjamini-Yekutieli would otherwise have given away, so the threshold the real
+    members must clear is the one at rank `fraction * m` rather than at rank `m`.
+
+    The gap is not marginal. Six correspondences of which all six are real need `N = 48`; six of
+    which three are real need roughly twice that; six of which one is real need six times it. A
+    pool sized by `minimum_pool_size` alone is sized for the most favourable world there is.
+    """
+    m = tested_correspondences
+    if isinstance(m, bool) or int(m) != m or m < 1:
+        raise InvalidParameterError(
+            "tested_correspondences", m, "a positive integer count of declared correspondences")
+    if not 0.0 < float(fraction) <= 1.0:
+        raise InvalidParameterError(
+            "fraction", fraction,
+            "a fraction in (0, 1] of the declared family that genuinely corresponds")
+    planted = int(round(float(fraction) * int(m)))
+    if planted < 1:
+        raise InvalidParameterError(
+            "fraction", fraction,
+            "a fraction that plants at least one correspondence in a family of %d. Rounded to "
+            "zero members, the question has no answer at any pool size" % int(m))
+    labels = [str(index) for index in range(int(m))]
+    for size in range(2, int(limit) + 1):
+        p_values = [1.0 / (size + 1)] * planted + [1.0] * (int(m) - planted)
+        outcome = adjust(p_values, method=correction, alpha=alpha, n_tests=int(m), labels=labels)
+        if any(outcome["rejected"]):
+            return size
+    raise InvalidParameterError(
+        "limit", limit,
+        "a search bound large enough to contain a resolvable pool size. At %d of %d genuinely "
+        "corresponding, none was found below %d, which is itself the answer: a correspondence "
+        "this sparse is not detectable under this null at any pool worth curating"
+        % (planted, int(m), limit))
+
+
+def sparsest_detectable_count(p_floors: Sequence[float], *, tested_correspondences: int,
+                              alpha: float = ALPHA, correction: str = CORRECTION) -> Optional[int]:
+    """Fewest genuinely corresponding members these actual pools could ever reject.
+
+    Measured from the floors the pools really have, rather than from a nominal size. The answer is
+    the number a reader needs and the one no other diagnostic reports: a family whose every pool
+    clears `minimum_pool_size` can still be unable to reject anything unless almost every member
+    is real, and nothing about the pools themselves says so.
+
+    Returns `None` when no number of genuine correspondences would produce a rejection.
+    """
+    m = int(tested_correspondences)
+    floors = sorted(float(value) for value in p_floors)
+    if not floors:
+        return None
+    labels = [str(index) for index in range(m)]
+    for count in range(1, len(floors) + 1):
+        # The most favourable placement: the genuine members are the ones with the largest pools.
+        p_values = floors[:count] + [1.0] * (m - count)
+        outcome = adjust(p_values[:m], method=correction, alpha=alpha, n_tests=m, labels=labels)
+        if any(outcome["rejected"]):
+            return count
+    return None
+
+
 def require_declared_estimand(name: Optional[str]) -> CorrespondenceEstimand:
     """Resolve a declared estimand, or refuse by name. There is no default.
 
@@ -249,6 +317,14 @@ def estimand_report() -> Dict[str, Any]:
         "largest_enumerable_inventory": MAX_REASSIGNABLE_PAIRINGS,
         "pool_sizes_required": {
             str(m): minimum_pool_size(m) for m in (1, 3, 5, 6, 10, 20)},
+        "pool_sizes_required_when_only_some_correspond": {
+            "basis": ("`pool_sizes_required` assumes every declared correspondence is genuine, "
+                      "which is the most favourable world there is. These are the same families "
+                      "when only a fraction of their members really correspond"),
+            "m=6": {"%.3g" % f: minimum_pool_size_for_detected_fraction(6, f)
+                    for f in (1.0, 0.5, 1.0 / 6.0)},
+            "m=20": {"%.3g" % f: minimum_pool_size_for_detected_fraction(20, f)
+                     for f in (1.0, 0.5, 0.1)}},
         "claim_boundary": (
             "this declares which question a correspondence test asks and what bounds its "
             "resolution. It is not a calibration, a power analysis on real records, a partner "
@@ -259,6 +335,8 @@ def estimand_report() -> Dict[str, Any]:
 __all__ = [
     "ESTIMAND_SCHEMA", "ALPHA", "CORRECTION", "CorrespondenceEstimand", "ESTIMANDS",
     "register_estimand", "JOINT_STRUCTURE", "PER_CORRESPONDENCE",
-    "joint_reassignment_resolution", "minimum_pool_size", "require_declared_estimand",
+    "joint_reassignment_resolution", "minimum_pool_size",
+    "minimum_pool_size_for_detected_fraction", "sparsest_detectable_count",
+    "require_declared_estimand",
     "estimand_report",
 ]

@@ -64,10 +64,15 @@ its costs, slices and falsification conditions are written down there before any
 `offline_matrix` and `restart_recovery` remain `NOT_RUN` only in the sense that this call did not
 perform them; `execute_offline_qualification()` resolves both.
 
-**TG17.15 slices 1 and 2 are delivered.** The estimand is declared and the partner pool is built,
-both with the circularity structurally excluded rather than forbidden. Slices 3 to 5 -- the
-pool-substitution null, its calibration against a measured false-positive rate, and the gate
-supersession -- remain.
+**TG17.15 slices 1 to 3 are delivered.** The estimand is declared, the partner pool is built with
+the circularity structurally excluded rather than forbidden, and the exact pool-substitution null
+runs a family at the size sealed into its pools. Slice 3 also corrected a defect in its own first
+draft that the phase's own falsification conditions were written to catch: a pool sized by
+`minimum_pool_size` is sized for the world in which every declared correspondence is genuine, and a
+family of six that clears it can still reject nothing unless five of the six are real. The receipt
+now names that number rather than reporting the favourable case as a green light. Slices 4 and 5 --
+the calibration against a measured false-positive rate, and the gate supersession -- remain, and
+slice 4 is the one that can return an unwelcome answer.
 
 **Phase G19 is specified and not started.** A researcher meeting a refusal wants to interrogate it
 with a model of their choosing, over several turns. G7's recorded-call boundary already supplies
@@ -5665,7 +5670,7 @@ metadata service answered three times and timed out twice; a timeout is recorded
 `network_used: null`, because after a failed call whether bytes moved is unknown. The binding
 constraint on this gate is a metadata service, not the science.
 
-**TG17.15 Rebuilding the scale/shape null so it can resolve - IN PROGRESS (slices 1-2 done).**
+**TG17.15 Rebuilding the scale/shape null so it can resolve - IN PROGRESS (slices 1-3 done).**
 
 TG17.11 delivered a calibration and a refusal, and the refusal is correct: the declared null cannot
 reject at any inventory size the enumerator can reach. This phase asks what to build instead. It is
@@ -5768,9 +5773,33 @@ cannot have: pool size and family size become two independent knobs instead of o
     rather than returned. The receipt states that admission is a **necessary and not sufficient**
     condition for exchangeability, because a pool that reads as a proof of it would be worse than
     no pool.
-*   **Slice 3 - the exact pool-substitution null, and the pool size derived rather than chosen.**
-    The required N computed from (m, alpha, correction) the way `minimum_resolvable_family` is
-    computed now, so the number stays true if the correction ever changes.
+*   **Slice 3 - the exact pool-substitution null, and the pool size derived rather than chosen.
+    DONE.** `src/core/pool_substitution_null.py`; `src/tests/test_pool_substitution_null.py`, 35
+    test functions, **37 passed** (one parametrised over three values), and ten mutations each caught. Nothing is sampled: the
+    reference set is a sealed finite inventory, so `monte_carlo_pool_substitution` is registered
+    and refused -- a Monte Carlo denominator is chosen by the caller rather than fixed by the
+    pool. The module takes a **callable** and evaluates all `N + 1` values itself, so a
+    precomputed observed statistic cannot enter under a different normalisation; the observed pair
+    is evaluated twice and a non-deterministic statistic is refused. Orientation is declared with
+    no default, because a similarity and a distance invert the tail. Ties count toward the
+    numerator. The **family size is sealed in the pool digests** before any p-value exists, so
+    narrowing a family after seeing its results contradicts a number that predates them.
+
+    **The slice also corrected a defect in its own first draft, and the correction is the more
+    useful half.** `minimum_pool_size(m)` sizes for the world in which *every* declared
+    correspondence is genuine, and the first `resolution()` reported that as a green light. It was
+    wrong in exactly the way this phase exists to catch: six pools of 58 clear the required 48 and
+    report `every_member_can_reject_at_its_own_floor = True`, yet a family with **three genuine
+    correspondences of six rejects nothing** -- all three at the exact floor, `q = 0.083` -- because
+    members that do not correspond consume the Benjamini-Yekutieli step-up ranks the genuine ones
+    need. `sparsest_detectable_count` now measures, from the floors the pools actually have, the
+    fewest genuine members the family could ever reject, and the receipt says so in words:
+    *"this family can produce a rejection only if at least 5 of its 6 declared correspondences are
+    genuine."* `minimum_pool_size_for_detected_fraction` sizes a pool for that world in advance:
+    at `m = 6`, all six genuine needs `N = 48`, half needs `N = 97`, one of six needs `N = 293`.
+
+    No calibration was performed and no false-positive rate was measured on real records. The gate
+    is unchanged: `scale_shape_calibration` still reads `REFUSED`, verdict `NOT_RELEASEABLE`.
 *   **Slice 4 - calibration, with margin measured rather than assumed.** Planted fixtures at
     declared effect sizes, and -- the T4C.5h lesson applied -- a **false-positive rate measured on
     a true null**. A surrogate that preserves what its method is named after while getting the

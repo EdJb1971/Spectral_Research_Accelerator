@@ -9727,3 +9727,133 @@ exchangeability would be more dangerous than no pool at all.
 No null was run and no calibration was performed. The gate is unchanged:
 `scale_shape_calibration` still reads `REFUSED` and the verdict is still `NOT_RELEASEABLE`.
 
+## TG17.15 slice 3 The exact pool-substitution null, and a defect found in its own first draft (2026-09-04, `ed-dev`)
+
+```
+> python -m pytest src/tests/test_pool_substitution_null.py -q
+37 passed, 1 warning in 0.54s
+
+> python -m pytest src/tests/test_correspondence_estimand.py src/tests/test_partner_pool.py \
+      src/tests/test_pool_substitution_null.py -q
+80 passed, 1 warning in 6.31s
+```
+
+**Mutation testing, ten applied and ten caught:**
+
+```
+CAUGHT  drop the observation from its own reference set (denominator N instead of N+1)
+CAUGHT  stop counting ties as evidence against rejection
+CAUGHT  silently skip an alternative whose record payload is missing
+CAUGHT  let a non-finite statistic through instead of refusing
+CAUGHT  default the orientation instead of requiring it to be declared
+CAUGHT  allow the family to be narrowed after the pools were sealed
+CAUGHT  allow the same correspondence to be counted twice
+CAUGHT  allow the observed partner to sit inside its own pool
+CAUGHT  skip the determinism check on the statistic
+CAUGHT  report the all-genuine case as if it were the family's real power
+uncaught: 0
+```
+
+**The defect the acceptance run found, and the correction it forced.** The first `resolution()`
+reported `every_member_can_reject_at_its_own_floor`, which is what `minimum_pool_size` is defined
+against. That question places *every* member at its floor simultaneously -- the most favourable
+world there is -- and reporting it alone showed a green light for a family that cannot produce a
+finding:
+
+```
+declared family m = 6, admitted pool N = 58, required N = 48, floor = 1/59 = 0.01695
+
+family: 6 members, 0 rejected after benjamini_yekutieli at alpha 0.05
+  L0   p = 0.01695  q = 0.08305  no  (at floor)
+  L1   p = 0.01695  q = 0.08305  no  (at floor)
+  L2   p = 0.01695  q = 0.08305  no  (at floor)
+  L3   p = 0.96610  q = 1.00000  no
+  L4   p = 0.23729  q = 0.87203  no
+  L5   p = 0.54237  q = 1.00000  no
+resolution: every member can reject at its own floor = True, worst floor 0.01695
+            sparsest detectable: 5 of 6 genuine (83%); a half-genuine family of this
+            size would need N = 97 rather than the 48 it was sized for
+```
+
+Three correspondences sat at the exact floor and none was rejected. Members that do not correspond
+consume the Benjamini-Yekutieli step-up ranks the genuine ones need, so a pool sized by
+`minimum_pool_size` is sized for a world in which nothing fails. `sparsest_detectable_count` now
+measures the fewest genuine members these actual pools could ever reject, and the family receipt
+carries it in words:
+
+```
+powered_for: this family can produce a rejection only if at least 5 of its 6 declared
+correspondences are genuine. Members that do not correspond consume the Benjamini-Yekutieli
+step-up ranks the genuine ones would need
+```
+
+`minimum_pool_size_for_detected_fraction` sizes a pool for that world before acquisition, and the
+gap is large:
+
+```
+m = 6, fraction 1.000 -> N = 48
+m = 6, fraction 0.833 -> N = 58
+m = 6, fraction 0.500 -> N = 97
+m = 6, fraction 0.167 -> N = 293
+```
+
+**Refusals, each by name:**
+
+```
+narrowed family          NullRefusal: expected exactly the 6 correspondences these pools were
+                         sealed for. Narrowing the declared family ... is selection
+undeclared orientation   InvalidParameterError: expected one of ['larger_is_more_similar',
+                         'smaller_is_more_similar'], declared explicitly
+missing payload          NullRefusal: r0002 is in the sealed pool but absent from the records
+                         offered ... anticonservative and leaves no trace
+```
+
+**What was checked about the arithmetic, and what was not.** Statistics drawn i.i.d. are
+exchangeable with their pool *by construction*, so the rank is uniform on the attainable grid:
+
+```
+40,000 trials, N = 58
+  P(p <= 0.05) = 0.0338   nominal 0.05, attainable grid step 0.01695
+  mean p       = 0.5081   uniform on the grid has mean 0.5085
+```
+
+The rate sits below nominal because the attainable grid is coarse: `0.0338 = 2/59` is the largest
+grid point at or below 0.05. This checks the **arithmetic only**. It does not establish that a
+curated pool of real records is exchangeable, and it is not a calibration. No false-positive rate
+has been measured for this null on records with no planted correspondence; T4C.5h remains the
+standing proof that a null can preserve exactly the property it is named after and still get the
+distribution wrong, at a measured 0.765 against a nominal 0.05. That is slice 4.
+
+The gate is unchanged: `scale_shape_calibration` still reads `REFUSED` and the verdict is still
+`NOT_RELEASEABLE`.
+
+**The full suite, and one failure that is not this slice's.**
+
+```
+> python -m pytest src/tests -q -p no:randomly
+3 failed, 3815 passed, 4 skipped, 1 xfailed in 3739.00s (1:02:19)
+
+FAILED test_acquisitions_api.py::test_a_server_restart_marks_active_cds_work_interrupted...
+FAILED test_documentation.py::test_every_source_module_appears_in_architecture
+FAILED test_documentation.py::test_documented_test_counts_match_the_source
+```
+
+The two documentation failures are stale: that run began at 17:56, before this slice's sections
+were written. The dedicated re-run afterwards passed all 29 documentation guards in 10:24.
+
+The acquisitions failure is **not attributable to this slice and was not reproduced**. It passed
+alone (41.7s), as a whole file (13 passed), and with all 124 test modules collected but only it
+selected. `test_acquisitions_api.py` is the *first* file pytest collects, so nothing added here
+executed before it, and this slice touches no API, database or threading code. The mechanism is
+visible in the test itself: `_wait_for_job` polls 200 times at 10 ms, a **two-second wall-clock
+budget** on a background worker thread, inside a suite that ran for 62 minutes. That is a
+timing-sensitive test rather than a defect in what it tests, it is pre-existing, and it is recorded
+here rather than fixed inside an unrelated slice.
+
+Gate re-read directly after the documentation pass rather than assumed:
+
+```
+Scale/shape null calibration a REFUSED
+verdict: NOT_RELEASEABLE
+```
+

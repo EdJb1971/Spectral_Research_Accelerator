@@ -8,7 +8,7 @@ from src.benchmarks.shape_fixtures import minimum_resolvable_family
 from src.core.correspondence_estimand import (
     ALPHA, CORRECTION, ESTIMAND_SCHEMA, ESTIMANDS, JOINT_STRUCTURE, PER_CORRESPONDENCE,
     estimand_report, joint_reassignment_resolution, minimum_pool_size,
-    require_declared_estimand,
+    minimum_pool_size_for_detected_fraction, require_declared_estimand, sparsest_detectable_count,
 )
 from src.core.errors import InvalidParameterError
 from src.core.structural_nulls import MAX_REASSIGNABLE_PAIRINGS
@@ -175,3 +175,50 @@ def test_this_slice_claims_no_calibration_and_no_pool():
     body = estimand_report()
     assert "It is not a calibration" in body["claim_boundary"]
     assert not any(key.startswith("power") or key.startswith("false_positive") for key in body)
+
+
+# --- the all-genuine assumption, named and measured ---------------------------------------------
+
+def test_minimum_pool_size_is_the_detected_fraction_function_at_fraction_one():
+    for m in (3, 6, 10):
+        assert minimum_pool_size_for_detected_fraction(m, 1.0) == minimum_pool_size(m)
+
+
+def test_a_sparser_family_needs_a_larger_pool_and_the_gap_is_not_marginal():
+    """`minimum_pool_size` sizes for the most favourable world there is; this measures the rest."""
+    sizes = [minimum_pool_size_for_detected_fraction(6, f) for f in (1.0, 5 / 6, 0.5, 1 / 6)]
+    assert sizes == sorted(sizes)
+    assert sizes[0] == 48 and sizes[-1] >= 6 * sizes[0] / 2
+    assert minimum_pool_size_for_detected_fraction(6, 0.5) > 2 * minimum_pool_size(6) - 10
+
+
+def test_a_fraction_rounding_to_no_planted_member_is_refused_rather_than_answered():
+    with pytest.raises(InvalidParameterError) as excinfo:
+        minimum_pool_size_for_detected_fraction(3, 0.01)
+    assert "has no answer at any pool size" in str(excinfo.value)
+
+
+@pytest.mark.parametrize("fraction", [0.0, -0.5, 1.5])
+def test_an_impossible_detected_fraction_is_refused(fraction):
+    with pytest.raises(InvalidParameterError):
+        minimum_pool_size_for_detected_fraction(6, fraction)
+
+
+def test_sparsest_detectable_count_measures_from_the_floors_the_pools_actually_have():
+    """Six pools of 58 clear `minimum_pool_size(6)` and still need five genuine members."""
+    assert sparsest_detectable_count([1 / 59.0] * 6, tested_correspondences=6) == 5
+    # A larger pool lowers every floor and buys back the sparsity the family can detect.
+    assert sparsest_detectable_count([1 / 301.0] * 6, tested_correspondences=6) == 1
+
+
+def test_pools_too_small_to_ever_reject_return_none_rather_than_a_number():
+    assert sparsest_detectable_count([1 / 3.0] * 6, tested_correspondences=6) is None
+    assert sparsest_detectable_count([], tested_correspondences=6) is None
+
+
+def test_the_estimand_report_publishes_the_sparse_case_beside_the_favourable_one():
+    body = estimand_report()
+    sparse = body["pool_sizes_required_when_only_some_correspond"]
+    assert sparse["m=6"]["1"] == body["pool_sizes_required"]["6"]
+    assert sparse["m=6"]["0.5"] > sparse["m=6"]["1"]
+    assert "most favourable world" in sparse["basis"]
