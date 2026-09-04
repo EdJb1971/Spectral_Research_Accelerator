@@ -8282,6 +8282,63 @@ The slice declares the question and stops. Its claim boundary says it is not a c
 power analysis on real records, not a partner pool and not a result; a guard asserts no power key
 appears in its report.
 
+### 7.1d The partner pool, and the circularity made inexpressible (`src/core/partner_pool.py`, TG17.15 slice 2)
+
+Slice 1's arithmetic cannot be wrong; it is counting. Admission is different in kind, and the
+roadmap named it the slice most likely to go quietly wrong. If pool members differ systematically
+from the observed partner in length, effective sample size, coverage or noise floor, the similarity
+statistic differs for reasons unrelated to affinity, every p-value is wrong, and **nothing
+announces it**. The enumeration bound this design replaces announced itself by refusing; a badly
+curated pool returns a confident number.
+
+**The defence is structural, following the same principle as R22.** Free text cannot corrupt a
+claim level because the gates read only typed fields, not because anyone is careful. Likewise, an
+admission rule here cannot key on the statistic under test because **there is no value in the
+module that is a function of two records**. `build_partner_pool` reads `RecordProfile` objects and
+never records; a profile carries `record_id`, `provenance_key` and the marginals alone. A test
+asserts the field set exactly, so a similarity, distance or affinity field cannot be added without
+failing. The tempting design -- admit candidates that look like plausible partners -- means
+admitting on resemblance to the left member, which is conditioning on the outcome; it is not a
+mistake this module can express.
+
+Reading the left member's *own* marginals is not circular and is required: a record's length,
+cadence and noise floor are not functions of any pairing, and matching a pool to the record under
+test is what exchangeability demands.
+
+**`native_seconds` is recorded and never banded.** Scale/shape mode exists to compare shapes across
+native durations, so a pool banded on duration would refuse the comparison the mode is for. It is
+the one marginal where wide spread is the point, and `AdmissionContract` refuses a band on it by
+name. In the acceptance pool the admitted durations span more than an order of magnitude.
+
+**Four refusals, none of them silent.**
+
+*   A candidate failing any band is carried in `refused` with the check it failed **and the
+    measured numbers**, never dropped. A pool that quietly shrinks is one whose resolution cannot
+    be audited.
+*   The **observed partner must clear the same bands as its own alternatives**. If it does not,
+    the reference set is not exchangeable with the thing it is a reference for, and the p-value
+    compares a record against alternatives it was never comparable to.
+*   A candidate sharing the left member's `provenance_key` is refused as leakage: a duplicate,
+    smoothed copy or overlapping window is evidence *about* the left member, not against it.
+*   A pool below `minimum_pool_size(m)` is refused rather than returned, naming the size the
+    declared number of tested correspondences requires. A pool that cannot resolve would produce
+    a p-value unable to reject at any effect size.
+
+**What the pool reports but does not check.** `spread()` publishes each marginal's pool range and
+the observed partner's percentile within it. The partner is inside every band by construction, so
+this is not a test -- but a partner at the edge of its own pool is exactly where an undeclared
+property is most likely to be doing the work, and a reader who cannot see it cannot judge it.
+
+**The claim boundary is the point of the slice.** Passing every declared band is a **necessary
+condition for exchangeability and not a sufficient one**. It establishes only that no *declared*
+marginal visibly violates it; an unmeasured property may still differ systematically and the pool
+cannot know. A pool that reads as a proof of exchangeability would be more dangerous than no pool
+at all, and the receipt says so in those words.
+
+Four mutations were applied and each was caught: dropping refused candidates silently, permitting a
+band on `native_seconds`, skipping the observed-partner self-check, and admitting a pool below the
+resolvable size.
+
 ### 7.2 Confirmed defects
 
 | # | Location | Defect | Fixed by |
@@ -8523,6 +8580,7 @@ able to sit three slices out of date.
 | `test_boundary_synthetic.py` | 8 | boundary treatments, windowing, synthetic generators and independent Euclidean-ring oracle |
 | `test_cds_source.py` | 24 | T5.2c monthly CDS planning/CLI, grid-alignment/server-snap refusals, network consent, atomic resume, shard integrity, conservative storage refusal, bounded Zarr publication, plus PASS/FAIL independent-route receipt publication, replay and tamper refusal; and T4C.5k's encoding-relative agreement criterion -- a packed frame revealing its binary step and an unpacked one refusing to invent one, D86 itself reproduced as the same pair of fields failing an absolute tolerance finer than the route can express while passing at 0.4 of a packing step, a real 1.4-step disagreement still failing so the criterion is not decoration, and the two criteria kept apart with both receipts surviving because the earlier verdict is why the successor exists, and the lattice search exercised at temperature, geopotential and specific-humidity magnitudes because a residual tolerance that does not scale would refuse a packed geopotential field as though it were unpacked; plus T4C.5m's D87 -- a record admitted only under the criterion that actually judged it, refused under the one that never ran on it, refused for a criterion that does not exist, and a receipt whose declared name has been relabelled refused rather than trusted to the manifest field it sits under; plus T4C.5n's labelled audit window -- an audit binding beside the authorising receipt rather than over it, unreadable to the gate because the criterion argument rejects any name carrying a label, and a label that could pass for a criterion refused outright |
 | `test_correspondence_estimand.py` | 14 | TG17.15 slice 1 the declared estimand: the derangement counts pinned against the partner counts they diverge from, and the miscounted reference set shown anticonservative by more than a thousandfold in the direction that eases rejection; resolution refused above the size the null itself will enumerate; the declared family unable to reach its own resolvable size; zero of 105 rejecting when one member leaves the floor, against 105 of 106 one size up; the pool size derived against the real correction and falsified one smaller; margin bought from the pool at an identical test count; an undeclared or unregistered estimand refused rather than defaulted; the inadmissible estimand registered so it is refused by name; and the correction's dependence reason and the slice's claim boundary both carried |
+| `test_partner_pool.py` | 20 | TG17.15 slice 2 the partner pool: the profile field set asserted exactly so no joint quantity can be added, and every banded marginal readable from one record alone; `native_seconds` refused a band by name with the admitted pool spanning an order of magnitude; an observed partner failing its own contract, sharing the left member's provenance, or equal to the left member each refused; every refusal carried with its check and its measured numbers, and admitted plus refused equal to what was offered; a record offered twice refused rather than counted twice; a pool below the resolvable size refused naming the required size, which tracks the declared number of tested correspondences; the estimand required and the inadmissible one refused; contracts with no band or a band below one refused; an effective sample size above the nominal count refused; the pool sealed by digest and the digest moving when a member does; the spread reporting where the observation sits inside its own pool; and the claim boundary stating admission is necessary and not sufficient |
 | `test_geometry_registry.py` | 20 | TG1.2 geometry registry: the three builtins' metrics, crops, resamples and provenance unchanged; capability-driven `is_physical`/`length_units`/`latitudes`; a fourth geometry (`polar_scan`) registered from the test module with a non-uniform, non-spherical metric; the Cartesian Laplacian refusing it; `latitude`/`longitude` recognised as a sphere |
 | `test_tracking.py` | 47 | TG2.3 frame-to-frame association: `4D.tracking` moving from NOT_YET_RUNNABLE to PASS with the recorded velocity and doubling time recovered from the field alone; the coincidence gate derived from alpha and the frame's own density and tightening when the frame crowds; a declared bound as a rate against an irregular clock; greedy and Hungarian disagreeing measurably, plus a third associator registered from the test module and two rogue ones refused; the seam crossing that is one track on a torus and two on a plane; the orientation gate reading the convention rather than the number and refused outright on an extractor that reports none; and the empty-frame and short-clock regressions |
 | `test_representation.py` | 59 | TG2.4 representation-induced feature audit: the floor on every plane of every registered lens, and the planted blob that proves the audit can see; the null propagated through the representation against the same null rebuilt inside it, measured on the dual tree where they differ and on the stationary transform where they do not; the FFT magnitude plane whose null nothing can exceed; the family of forty-five planes that rejects on 86% of structureless fields uncorrected, the ensemble refused as too small for it, and the correction registry that prices six identical columns as one test; the declared decimation an array does not have; and the plane R13 leaves no interior in |
@@ -8638,7 +8696,7 @@ able to sit three slices out of date.
 | `test_spectral_events.py` | 18 | T4F.1 the timed event substrate: the grid refusing an unnamed time unit, an empty frame list, repeated or reordered frames and a cadence the frames do not lie on; coverage measured against the declared cadence, reported incomplete with its missing count across an unsearched frame, and refused as undecidable without a cadence; the searched frames unrecoverable from the catalogue; an empty catalogue, an occurrence at an unsearched frame, two scale modes in one series, a repeated occurrence identity and a member unit disagreeing with the grid each refused by name; members carrying no unit counted rather than assumed to agree; event order invariant to input permutation; two patterns on one frame reported as simultaneous and unordered; per-pattern spans in the declared unit; and the receipt publishing its schema, grid and claim boundary |
 | `test_spectral_invariance.py` | 46 | T4E.2 the invariant signature: the principal axis checked against the covariance eigendecomposition it stands for over 50 random configurations, exactly collinear points reporting an infinite anisotropy rather than a failure, and three axes refused rather than projected; the `planted_configuration` benchmark measured over 24 field-noise realisations to be isotropic with an axis angle spanning 0.78 to 158.08 degrees, the module's isotropy floor asserted to be the number that measurement produced, a configuration at the benchmark's own anisotropy refused an axis by name, and the vortex triples shown to clear the floor by two orders of magnitude; invariance measured rather than declared, with translation, three rotations, reflection and every relabelling asserted to leave the signature vector identical to floating-point precision in both modes; a uniform rescaling leaving the scale-free shape alone while an estimator that missed the rescaling moves the scale-specific geometry by exactly the factor it missed; the canonical order shown to matter, with two configurations that agree on independently sorted blocks and have no correspondence making both true at once; the toggle priced at 87 of 135 with the loss attributed by cardinality; a position in metres beside a scale in cells refusing the scale-specific mode and signing in the scale-invariant one, which is what R19's own refusal message tells the caller to do; and the refusals -- a pair asked for a scale-free shape, a pair's axis refused for a different reason than an isotropic triple's, a constellation stripped of its features, a member with no band RMS, an unknown mode, blocks that disagree about cardinality, a floor calibrated on one realisation or on collinear replicates, and the mixed-unit refusal left to the extractor rather than copied |
 | `test_spectral_narrative.py` | 25 | T4D.3 the prose, and what it may not say: every number in a sentence checked against the track it came from including the spoken speed against `Track.speed()` for all four tracks, the subject of every sentence being the coefficient maximum and not the structure, and the frame count being of frames searched rather than frames found; no track of a growing vortex claiming its own scale doubled -- each holding one level at a scale velocity of exactly zero with the word absent from the prose -- while the growth that did happen is measured across bands, level 4 weakening as level 5 strengthens and is first excited nine frames later, offered as a candidate precursor relationship carrying that it was not tested against a null and claims no merge, with one band supporting no ordering at all; a cartesian grid refused every compass word and given axis-relative wording, the sign that makes a row northward read from the grid so one displacement on two grids gives opposite points, the cosine of the latitude shortening a degree of longitude before the bearing is taken so 60 degrees north gives 26.6 and not 45, a track that returned to where it started given no bearing, and the missing-`lat0` branch shown to be unreachable rather than added; energy reported as the square under its own name so the roadmap's own 43% becomes 104.5%, and a change from zero refused rather than rendered infinite; the guard using the programme's one list of words for every entry in it, a causal word in a caller's own dataset name refused before a reader sees it, the guard's own limit asserted so a substring match cannot creep in, and the entitlement allowed to name the boundary the sentences may not cross and appearing exactly once however many tracks there are; plus a single sighting supporting no direction, speed or growth, a search that found nothing refused as an empty list of sentences, and the structural signature naming no variable, dataset or units |
-  | **total** | **3351** | |
+  | **total** | **3371** | |
 
 ### 7.4a Browser suite inventory
 

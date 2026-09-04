@@ -9676,3 +9676,54 @@ catching what would otherwise be its most publishable result:
                           calendar fitted on train and removed from both partitions,
                           2 frozen and none confirmed, smallest q 0.105
 ```
+
+## TG17.15 slice 2 The partner pool, and circularity made inexpressible (2026-09-04, `ed-dev`)
+
+```
+> python -m pytest src/tests/test_partner_pool.py -q
+20 passed, 1 warning in 0.25s
+```
+
+The roadmap named this the slice most likely to go quietly wrong, and the reason is asymmetry: the
+enumeration bound it replaces announced itself by refusing, whereas a badly curated pool returns a
+confident number.
+
+**The defence is structural, not disciplinary**, following R22's own precedent -- prose cannot
+corrupt a claim level because the gates read typed fields, not because anyone is careful. Here,
+there is no value in the module that is a function of two records. `build_partner_pool` reads
+`RecordProfile` objects and never records, and a test asserts the profile's field set exactly, so a
+similarity, distance or affinity field cannot be added without failing. Admission on resemblance to
+the record under test is not a mistake this module can express.
+
+**Mutation testing, four applied and four caught:**
+
+```
+CAUGHT  silently drop refused candidates instead of recording them
+CAUGHT  allow native_seconds to be banded
+CAUGHT  skip the check that the observed partner clears its own contract
+CAUGHT  let a pool below the resolvable size through
+uncaught: 0
+```
+
+**Acceptance pool**, six tested correspondences, 60 candidates offered:
+
+```
+admitted 58, refused 2, required 48, resolution floor 0.01695
+  REFUSED TOO_SHORT  effective_sample_size = 20 against the partner's 400, ratio 0.05 outside [0.5, 2]
+  REFUSED LEAKED     shares provenance 'srcLEFT' with the left member
+  native_seconds     pool 6,092 to 141,160 s, partner 22,334 s at the 22nd percentile
+```
+
+The duration spread is deliberate: `native_seconds` is recorded and never banded, because
+scale/shape mode exists to compare shapes across native durations and a pool banded on duration
+would refuse the comparison the mode is for.
+
+**What the receipt refuses to claim.** Passing every declared band is a **necessary condition for
+exchangeability and not a sufficient one**. It establishes that no declared marginal visibly
+violates it; an unmeasured property may still differ systematically and the pool cannot know. That
+sentence is in the receipt and asserted by test, because a pool that reads as a proof of
+exchangeability would be more dangerous than no pool at all.
+
+No null was run and no calibration was performed. The gate is unchanged:
+`scale_shape_calibration` still reads `REFUSED` and the verdict is still `NOT_RELEASEABLE`.
+

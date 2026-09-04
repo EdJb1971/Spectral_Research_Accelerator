@@ -5653,7 +5653,7 @@ metadata service answered three times and timed out twice; a timeout is recorded
 `network_used: null`, because after a failed call whether bytes moved is unknown. The binding
 constraint on this gate is a metadata service, not the science.
 
-**TG17.15 Rebuilding the scale/shape null so it can resolve - IN PROGRESS (slice 1 done).**
+**TG17.15 Rebuilding the scale/shape null so it can resolve - IN PROGRESS (slices 1-2 done).**
 
 TG17.11 delivered a calibration and a refusal, and the refusal is correct: the declared null cannot
 reject at any inventory size the enumerator can reach. This phase asks what to build instead. It is
@@ -5742,9 +5742,20 @@ cannot have: pool size and family size become two independent knobs instead of o
     at a pool of 48 one member off the floor rejects nothing, at 96 it rejects five of six, and
     the test count is identical -- margin bought without multiplicity. The slice declares the
     question and stops; a guard asserts no power key appears in its report.
-*   **Slice 2 - the partner pool and its admission criterion.** A declared exchangeability
-    contract, with members failing it refused individually and by name rather than dropped
-    silently. This slice carries the phase's real risk and should be the most heavily guarded.
+*   **Slice 2 - the partner pool and its admission criterion. DONE.**
+    `src/core/partner_pool.py`; `src/tests/test_partner_pool.py`, 20 test functions, **20
+    passed**, and four mutations each caught. The criterion is decided on **marginals only**, and
+    circularity is made *inexpressible* rather than forbidden: `build_partner_pool` reads
+    `RecordProfile` objects and never records, so an admission rule keyed on resemblance to the
+    record under test is not a rule this module can express. A test asserts the profile field set
+    exactly, so a similarity or distance field cannot be added quietly. `native_seconds` is
+    recorded and refuses a band by name, because banding the quantity scale/shape mode compares
+    across would refuse the comparison the mode is for. The observed partner must clear the same
+    bands as its own alternatives; candidates sharing the left member's provenance are refused as
+    leakage; nothing is dropped silently; and a pool below `minimum_pool_size(m)` is refused
+    rather than returned. The receipt states that admission is a **necessary and not sufficient**
+    condition for exchangeability, because a pool that reads as a proof of it would be worse than
+    no pool.
 *   **Slice 3 - the exact pool-substitution null, and the pool size derived rather than chosen.**
     The required N computed from (m, alpha, correction) the way `minimum_resolvable_family` is
     computed now, so the number stays true if the correction ever changes.
