@@ -342,15 +342,36 @@ def _scale_shape_gate(title: str) -> Dict[str, Any]:
     return _gate("scale_shape_calibration", title, "REFUSED", detail)
 
 
+def _live_source_gate(title: str, facts: Mapping[str, Any]) -> Dict[str, Any]:
+    """Report a dated external measurement without reaching the network during assembly."""
+    if facts["status"] == "PASS":
+        detail = (
+            "A separately dated four-domain source run passed for the source identities in the "
+            "flagship manifest, recorded %s. Reanalysis, Argo and TESS used their declared "
+            "archives; the bespoke order-book family used a content-addressed local record and "
+            "did not pretend to have a public archive."
+            % facts["recorded"]["recorded_utc"])
+    else:
+        detail = (
+            "Requires an explicit opt-in run covering three declared archives and one "
+            "content-addressed bespoke local record, recorded at %s. %s"
+            % (facts["record_path"],
+               " ".join(reason[0].upper() + reason[1:] + "."
+                        for reason in facts["reasons"])))
+    return _gate("live_sources", title, facts["status"], detail)
+
+
 def qualification_plan() -> Dict[str, Any]:
     """The complete gate before anything is executed; omissions are impossible to hide."""
     from src.core.browser_evidence import browser_run_evidence, scientist_action_evidence
     from src.core.calibration_record import read_calendar_calibration
     from src.core.extension_evidence import read_extension_conformance
+    from src.core.live_source_evidence import read_live_source_evidence
 
     # Read once and passed to the gate: the audit walks seventeen sources, and doing that twice
     # per plan would double an HTTP route's cost for an identical answer.
     extension = read_extension_conformance()
+    live_sources = read_live_source_evidence()
 
     cells = []
     for duration in DURATIONS:
@@ -378,9 +399,7 @@ def qualification_plan() -> Dict[str, Any]:
         _extension_gate("Synthetic fifth-adapter no-edit test", extension),
         _calendar_gate("Calendar null calibration and planted power"),
         _scale_shape_gate("Scale/shape null calibration and planted power"),
-        _gate("live_sources", "Four-domain live-source tail", "NOT_RUN",
-              "Network remains opt-in and archive coverage/refusals require a separately "
-              "dated live record."),
+        _live_source_gate("Four-domain live-source tail", live_sources),
     ]
     result = {
         "schema": SCHEMA,
@@ -400,6 +419,7 @@ def qualification_plan() -> Dict[str, Any]:
         "scientist_actions": scientist_action_evidence(),
         "browser_evidence": browser_run_evidence(),
         "extension_evidence": extension,
+        "live_source_evidence": live_sources,
         "claim_boundary": (
             "This plan and its offline rehearsal qualify apparatus behaviour only. They are "
             "not acquired observations, scientific results, evidence, replication or claims."),

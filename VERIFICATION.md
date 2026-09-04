@@ -8781,6 +8781,115 @@ tree. The arithmetic reconciles exactly: 3483 + 53 (T4E.2's `test_spectral_invar
 functions of which three are parametrised) = 3536. T4E.2 found no defect, so the ledger is
 unchanged at D1-D90. `git diff --check` clean.
 
+## T4E.3 -- approximate attributed-graph matching with a measured radius
+
+`src/analysis_engine/spectral_clustering.py`, verified by
+`src/tests/test_spectral_clustering.py` (16 test functions). Everything below was measured on
+2026-09-04 against this tree; no network was used.
+
+The metric declares all four T4E.2 blocks -- geometry, bearings, relative strength and scale --
+and publishes their weights and dimensionless component reductions. The calibration takes three
+known measurements of the same physical scalene configuration, measures all three pair distances,
+and retains their maximum in TG3.4's `MatchTolerance`. With equal declared block weights, the
+measured scale-specific radius is **0.2061925217**. The metric digest and signature family are
+bound into that tolerance, so changing a weight, mode, cardinality, axis availability or
+scale-unit contract makes the measurement inadmissible rather than silently reusing it.
+
+The acceptance pass supplies four presentations not used as four independent discoveries: the
+base triangle, a translation, a 73-degree rotation, and a held presentation with position,
+strength and spatial-scale perturbations bounded at 10%. All four land in **one cluster**. When
+position and member scales are both doubled, the scale-specific distance is **0.3333333333**,
+outside its 0.2062 measured radius, and the two presentations form **two clusters**. In
+scale-invariant mode the doubled presentation is identical under the declared comparable blocks
+and the two form **one cluster**. This meets both halves of the roadmap acceptance.
+
+Complete-link behaviour is pinned separately with A-B and B-C each inside the measured radius
+while A-C is outside: the output is a cluster of two plus a singleton, never one chained cluster.
+Reversing input order leaves the full receipt, membership and pattern IDs identical. Each pattern
+reports an aligned centroid, the calibrated tolerance radius and the observed member radius; the
+receipt states that its raw member count is not minimum-support mining, recurrence evidence, a
+p-value or a discovery.
+
+**D92 found and fixed.** The first acceptance run compared T4E.2's canonical vectors component by
+component. Exact canonicalisation is valid for exact invariance but discontinuous under noise: one
+10% replicate put a different edge first, attaching the strength and scale blocks to different
+physical vertices. The scale-block RMS became **0.4743** instead of about 0.10, the calibrated
+radius widened to **0.3418**, and the doubled absolute scale at 0.3333 incorrectly joined in
+scale-specific mode. Approximate distance now minimises over every valid node correspondence
+(at most six), moving edge and node attributes together; centroids align to a deterministic medoid
+before averaging. A direct regression starts on the replicate whose exact canonical order flips
+and measures its aligned scale-block disagreement below 0.11.
+
+Recorded commands:
+
+```text
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_spectral_clustering.py -q
+................                                                         [100%]
+16 passed, 1 warning in 2.38s
+
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_spectral_clustering.py src/tests/test_spectral_invariance.py src/tests/test_spectral_constellation.py -q
+........................................................................ [ 58%]
+...................................................                      [100%]
+123 passed, 1 warning in 25.80s
+
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_documentation.py src/tests/test_spectral_clustering.py -q
+.............................................                            [100%]
+45 passed, 2 warnings in 260.67s (0:04:20)
+```
+
+The warnings are SQLAlchemy's existing `declarative_base()` deprecation from
+`src/database/session.py:55` and Starlette's existing `python_multipart` pending deprecation,
+not T4E.3 failures. The full backend suite was **not** rerun; its
+last measured figure remains **3536 passed, 4 skipped, 1 xfailed** from T4E.2 and predates the
+TG17.11-TG17.14 and T4E.3 changes.
+
+## T4E.4 -- bounded minimum-support mining
+
+`src/analysis_engine/spectral_mining.py`, verified by
+`src/tests/test_spectral_mining.py` (14 test functions). Measured on 2026-09-04 with no network.
+
+The acceptance catalogue has two T4E.3 clusters: one contains five distinct constellation keys
+and one contains two. At the declared inclusive minimum support of three, exactly the
+five-occurrence pattern is `SUPPORTED` and the two-occurrence pattern is
+`PRUNED_BELOW_MINIMUM`. Both remain in the receipt with their support, support unit, centroid,
+calibrated tolerance and observed radius. At minimum five the first remains admitted; above all
+observed counts the result is complete with zero supported patterns rather than failing or
+returning an ambiguous empty list.
+
+The scan orders candidates by decreasing support, then prunes the entire remaining tail at its
+first miss. Support is counted over distinct `signature.key` identities; inserting the same
+constellation twice is refused with the reason that duplication would manufacture support.
+Reversing all seven input observations leaves pattern IDs, counts and decisions unchanged.
+
+Both hard budgets are mandatory. A catalogue of two candidates under `max_candidates=1` refuses
+before scanning and reports `partial_result: false`. Injected monotonic-clock overruns during
+identity/support preflight and mid-scan both raise the client-safe `MiningBudgetExceededError` and
+return no result. The successful receipt carries the exact budget and names elapsed time
+`unasserted`, keeping an operational measurement out of deterministic claims. Its claim boundary
+states that minimum support is not recurrence significance, a null test, a p-value, predictive
+evidence or a discovery.
+
+Recorded command:
+
+```text
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_spectral_mining.py src/tests/test_spectral_clustering.py -q
+..............................                                           [100%]
+30 passed, 1 warning in 3.03s
+
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_spectral_mining.py src/tests/test_spectral_clustering.py src/tests/test_spectral_invariance.py src/tests/test_spectral_constellation.py -q
+........................................................................ [ 52%]
+.................................................................        [100%]
+137 passed, 1 warning in 29.60s
+
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_documentation.py -q
+.............................                                            [100%]
+29 passed, 2 warnings in 263.70s (0:04:23)
+```
+
+The warning is the existing SQLAlchemy `declarative_base()` deprecation. Full backend was not
+rerun; **3536 passed, 4 skipped, 1 xfailed** remains the last full measurement and predates this
+slice.
+
 ---
 
 # The TG17.11 - TG18.5 backfill (recorded 2026-09-04)

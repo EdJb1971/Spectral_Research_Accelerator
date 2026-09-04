@@ -39,9 +39,20 @@ supersedes the other.
 
 **Current frontier (`ed-dev`).**
 
-* Atmospheric line: Phase 4E. T4E.1 and T4E.2 are DONE; **T4E.3 (approximate matching by
-  clustering) is next and has not been started.**
-* Cross-domain line: **TG17.13 is DONE (2026-09-04)** - `synthetic_fifth_adapter` reads `PASS` for the first time, on a live source-edit audit plus a recorded acceptance run, and it publishes the standing glue count (**1**, `AcquisitionView.tsx:243`) that it deliberately does not block on. Three of seven release gates now clear; the verdict stays `NOT_RELEASEABLE`, and **`live_sources` is the last unmeasured scientific gate**.
+* Atmospheric line: **Phase 4E is DONE**. T4E.1-3 build, sign and approximately cluster
+  constellations; T4E.4 now applies a configurable minimum support over distinct constellation
+  identities, reports every candidate's support, prunes the below-threshold tail early, and
+  refuses candidate/time budget overruns without returning a partial sweep. Approximate matching
+  uses a declared attributed-graph metric, a tolerance measured from same-configuration
+  replicates, and deterministic complete-link clusters whose centroid and radius are readable.
+  **Phase 4F transition and precursor mining is next.**
+* Cross-domain line: **TG17.14 is IN PROGRESS.** Its first network-dark slice gives
+  `live_sources` a source-bound evidence reader while honestly leaving the gate `NOT_RUN`.
+  Reanalysis, Argo and TESS must demonstrate real use of their declared archives; the bespoke
+  order-book family must demonstrate a content-addressed local record and no network use. The
+  source-bound reader and double-locked, bounded runner are implemented; the separately authorised
+  live measurement is next. Three of seven release gates clear and the verdict remains
+  `NOT_RELEASEABLE`.
 * Cross-domain line: Phase G18, the instrument the science is read through. TG17.9 and TG17.10
   are DONE, the latter with the **release withheld**; TG18.1 (shared instrument foundation) closed
   on 2026-09-03 after six slices; TG18.2 (scientific visualization workspace) closed the same day
@@ -68,8 +79,9 @@ supersedes the other.
   a measured 136 of 136. The close-out found the gap that mattered most: `roadmap.md`
   §10.2 admits no completion claim without recorded output in `VERIFICATION.md`, and seven
   phases had been marked done while that file stayed silent. The entries are backfilled and
-  two guards now hold both directions. **G18 does not clear condition 19**: that needs the
-  synthetic fifth-adapter test too, which is still `NOT_RUN`. **TG17.11 (the scale/shape calibration) is
+  two guards now hold both directions. **G18 did not clear condition 19 by itself**; TG17.13 later
+  supplied the source-edit audit and recorded acceptance run, so `synthetic_fifth_adapter` now
+  reads `PASS`. **TG17.11 (the scale/shape calibration) is
   done**, all five slices: D91 fixed, the statistic built with its scale invariance measured at
   1.1e-16 rather than declared, four frozen fixtures, a calibration in which the planted case
   recovers 105 of 105 members in 20 of 20 realisations while both safeguards reject nothing in

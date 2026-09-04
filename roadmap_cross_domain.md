@@ -38,13 +38,13 @@ gates in about 0.15 s without executing any of the measurements they read. On th
 
 | Gate | Status | What it means |
 |---|---|---|
-| `offline_matrix` | `NOT_RUN` | A run this call did not perform, not a measurement missing from the checkout. It passes when `run_qualification()` executes it. |
+| `offline_matrix` | `NOT_RUN` | A run this call did not perform, not a measurement missing from the checkout. `execute_offline_qualification()` resolves it to the measured result: three calendar cells pass and three scale/shape cells are refused by the bespoke adapter. |
 | `restart_recovery` | `NOT_RUN` | The same kind of `NOT_RUN` as above. |
 | `browser_no_glue` | `PASS` | TG18.5 slice 4. Reads a recorded Playwright run bound to the source of every spec in the suite. |
 | `synthetic_fifth_adapter` | `PASS` | TG17.13. A live source-edit audit plus a recorded acceptance run. Publishes a standing glue count of **1** that it deliberately does not block on. |
 | `calendar_calibration` | `PASS` | TG17.12. Reads a recording bound to the declared contract and to the source that decides what was measured. |
 | `scale_shape_calibration` | `REFUSED` | TG17.11. A declared scientific limit: the null's resolvable sizes and its drawable sizes do not overlap. A refusal blocks release exactly as a failure does. |
-| `live_sources` | `NOT_RUN` | **The last unmeasured scientific gate.** |
+| `live_sources` | `NOT_RUN` | **The last unmeasured scientific gate.** TG17.14 slice 1 now supplies its source-bound evidence reader; no live run has been made. |
 
 The verdict is `NOT_RELEASEABLE` and no combination of the above changes it while `live_sources`
 is unmeasured.
@@ -57,8 +57,9 @@ where a request would go out and stop there.
 
 **Also open, and independent of the above:**
 
-* T4E.3, approximate matching by clustering, on the atmospheric line. Not started.
-* Defects **D84** and **D85** are open and **D18** is partial. Eighty-seven of ninety are fixed.
+* Phase 4E is now DONE on the atmospheric line: T4E.3 supplies approximate clustering and T4E.4
+  supplies bounded minimum-support mining. Phase 4F is next.
+* Defects **D84** and **D85** are open and **D18** is partial. Eighty-nine of ninety-two are fixed.
 * The last measured **full backend run is 3,536 passed**, from before TG17.11. Every slice since
   has been verified against targeted suites and says so; do not quote a larger figure without
   running the suite.
@@ -5574,6 +5575,37 @@ repository without raising - so `defining_source` would have reported a located 
 be read. It now requires the resolved path to be an existing file.
 
 TG17.13 is complete. `live_sources` is the only scientific gate left, and it requires network.
+
+**TG17.14 Four-domain live-source qualification — IN PROGRESS.** The first offline slice supplies
+the evidence boundary without pretending to have made the measurement. `src/core/live_source_evidence.py`
+derives the four required source identities from the flagship manifest, binds a future recording
+to every adapter and acquisition module that decides what was measured, and distinguishes an
+absent, stale or partial recording (`NOT_RUN`) from an operational refusal (`REFUSED`) and an
+executed contract failure (`FAIL`). The release ledger now reads that channel and never reaches
+the network while assembling its verdict.
+
+The slice also corrects an ambiguity in the earlier phrase "public archives across four domains".
+Reanalysis, Argo and TESS name archives and must demonstrate real network use. The fourth domain
+is deliberately the **bespoke local-record family**: a pass must demonstrate a non-empty,
+content-addressed researcher-supplied record with *no* network use. Giving order book a convenient
+public feed here would replace the abstraction the flagship froze with a finance-specific adapter.
+
+**The opt-in runner is now delivered, still without executing it.** `python -m
+src.core.live_source_evidence plan` prints the complete contract with `network_used: false`:
+a 324-value one-day ERA5/CDS request, at most 200 Argo profiles, at most two TESS products and
+64 MiB, and the exact local-record requirements. The `run` command cannot start unless both
+`SPECTRALEARTH_ALLOW_NETWORK=1` and the literal acknowledgement
+`--confirm-network-access I_AUTHORIZE_BOUNDED_ARCHIVE_REQUESTS` are present. A missing local
+record, provenance declaration or licence declaration is refused before the first provider call,
+and the hashes of the committed fabricated demonstration CSVs are explicitly ineligible.
+Provider refusals and unexpected implementation
+failures are recorded separately; either records network use as unknown rather than inventing a
+fact after an exception. The record is self-hashed, and plan assembly reads it without
+performing acquisition.
+
+**Still to deliver in TG17.14:** the separately authorised live run and committed dated recording.
+Until that happens, `measurements/live_sources.json` is absent and the gate remains `NOT_RUN`.
+No network was used by these slices.
 
 ## 6. Definition of Done
 
