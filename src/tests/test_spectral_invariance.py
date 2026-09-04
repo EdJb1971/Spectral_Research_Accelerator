@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import json
 import math
+from dataclasses import replace
 
 import numpy as np
 import pytest
@@ -395,6 +396,25 @@ def test_only_the_scale_invariant_mode_could_cross_a_domain_boundary():
     assert all(item.cross_domain_comparable for item in on)
     assert "rescaling" not in MODE_INVARIANCE["scale_specific"]
     assert "rescaling" in MODE_INVARIANCE["scale_invariant"]
+
+
+def test_the_frames_time_unit_reaches_the_signature_and_its_receipt():
+    """D93: the signature carried a bare float clock while the constellation named its unit.
+
+    T4F.1 measures spans between occurrences, and a span in unnamed units is not a span. The
+    unit is taken from the frame rather than declared again here, so a constellation in hours
+    cannot be signed as though it were in frames.
+    """
+    constellation = _configuration(SCALENE)
+    assert constellation.time_units == "frames"
+
+    signature = signature_for(constellation)
+    assert signature.time_units == "frames"
+    assert signature.describe()["time_units"] == "frames"
+
+    in_hours = replace(constellation, time_units="hours")
+    assert signature_for(in_hours).time_units == "hours"
+    assert all(item.time_units == "frames" for item in sign_constellations(_extracted()))
 
 
 def test_the_scale_specific_mode_names_the_two_things_it_does_not_claim():

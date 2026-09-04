@@ -328,6 +328,7 @@ class ConstellationSignature:
     track_ids: Tuple[int, ...]
     bands: Tuple[str, ...]
     refusals: Mapping[str, str] = dc_field(default_factory=dict)
+    time_units: Optional[str] = None
 
     def __post_init__(self) -> None:
         if self.mode not in SCALE_MODES:
@@ -392,6 +393,7 @@ class ConstellationSignature:
             "schema": SIGNATURE_SCHEMA,
             "key": list(self.key),
             "time": self.time,
+            "time_units": self.time_units,
             "cardinality": self.cardinality,
             "mode": self.mode,
             "scale_invariant": self.scale_invariant,
@@ -623,7 +625,7 @@ def signature_for(constellation: FrameConstellation, *, scale_invariant: bool = 
         axis=admission,
         track_ids=tuple(constellation.track_ids[index] for index in order),
         bands=tuple(constellation.bands[index] for index in order),
-        refusals=refusals)
+        refusals=refusals, time_units=constellation.time_units)
 
 
 def sign_constellations(constellations: ConstellationSet, *, scale_invariant: bool = False,
