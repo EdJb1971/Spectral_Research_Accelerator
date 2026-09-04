@@ -64,15 +64,28 @@ its costs, slices and falsification conditions are written down there before any
 `offline_matrix` and `restart_recovery` remain `NOT_RUN` only in the sense that this call did not
 perform them; `execute_offline_qualification()` resolves both.
 
-**TG17.15 slices 1 to 3 are delivered.** The estimand is declared, the partner pool is built with
+**TG17.15 slices 1 to 4 are delivered.** The estimand is declared, the partner pool is built with
 the circularity structurally excluded rather than forbidden, and the exact pool-substitution null
 runs a family at the size sealed into its pools. Slice 3 also corrected a defect in its own first
 draft that the phase's own falsification conditions were written to catch: a pool sized by
 `minimum_pool_size` is sized for the world in which every declared correspondence is genuine, and a
 family of six that clears it can still reject nothing unless five of the six are real. The receipt
-now names that number rather than reporting the favourable case as a green light. Slices 4 and 5 --
-the calibration against a measured false-positive rate, and the gate supersession -- remain, and
-slice 4 is the one that can return an unwelcome answer.
+now names that number rather than reporting the favourable case as a green light.
+
+Slice 4 measured the calibration and the null holds: on a true null the family-wise false-positive
+rate is 1 of 200 with a one-sided bound of 0.024, and the exact ranks are uniform on their own
+lattice rather than merely thin in the tail. Two adversarial nulls -- a sampling artefact every
+record shares, and an observed partner cleaner than the pool its own bands admit -- hold the rate
+too. It returned two unwelcome answers all the same. Detection collapses between planted
+correlations of 0.92 and 0.84: at 0.88, 98.8% of members have an uncorrected p under 0.05 and 35.4%
+survive correction, because a mixed family gives its surviving member no step-up rank to hide in.
+And the admission contract narrows native duration transitively through the cadence band, so an
+inventory spanning 4.05 decades yields pools spanning about one. Slice 4 also failed its own first
+recorded run, on an expectation that demanded a test with no type-II error; the expectation was the
+defect and was replaced by two criteria derived from the case.
+
+Slice 5 -- carrying this into the gate by checked supersession -- remains. `scale_shape_calibration`
+still reads `REFUSED`, verdict `NOT_RELEASEABLE`.
 
 **Phase G19 is specified and not started.** A researcher meeting a refusal wants to interrogate it
 with a model of their choosing, over several turns. G7's recorded-call boundary already supplies
@@ -5670,7 +5683,7 @@ metadata service answered three times and timed out twice; a timeout is recorded
 `network_used: null`, because after a failed call whether bytes moved is unknown. The binding
 constraint on this gate is a metadata service, not the science.
 
-**TG17.15 Rebuilding the scale/shape null so it can resolve - IN PROGRESS (slices 1-3 done).**
+**TG17.15 Rebuilding the scale/shape null so it can resolve - IN PROGRESS (slices 1-4 done).**
 
 TG17.11 delivered a calibration and a refusal, and the refusal is correct: the declared null cannot
 reject at any inventory size the enumerator can reach. This phase asks what to build instead. It is
@@ -5800,11 +5813,60 @@ cannot have: pool size and family size become two independent knobs instead of o
 
     No calibration was performed and no false-positive rate was measured on real records. The gate
     is unchanged: `scale_shape_calibration` still reads `REFUSED`, verdict `NOT_RELEASEABLE`.
-*   **Slice 4 - calibration, with margin measured rather than assumed.** Planted fixtures at
-    declared effect sizes, and -- the T4C.5h lesson applied -- a **false-positive rate measured on
-    a true null**. A surrogate that preserves what its method is named after while getting the
-    distribution wrong is this project's most instructive defect, and this null must be shown not
-    to repeat it.
+*   **Slice 4 - calibration, with margin measured rather than assumed. DONE**
+    (`src/benchmarks/pool_calibration.py`, `src/tests/test_pool_calibration.py`, 50 tests, 15 of 15
+    mutations caught after four gaps were found and closed; architecture.md section 7.1f; VERIFICATION.md.)
+
+    **The null does not repeat T4C.5h's defect.** Five declared cases at 200 realisations each,
+    `m = 6`, pools of 61 to 470, run through the real `correspondence_family` with the real
+    `shape_recurrence` statistic. `no_correspondence` gives a family-wise false-positive rate of
+    1/200, one-sided bound **0.0235**; `shared_grid_alias` 2/200, bound **0.0311**;
+    `clean_partner_noisy_pool` 0/199, bound **0.0149**. Every bound clears alpha, and
+    `unresolvable_inventory` refused 200 of 200 rather than scoring.
+
+    **The tail is not the whole check.** Under exchangeability the observation's rank among its `N`
+    alternatives is uniform on `{1, ..., N + 1}` *exactly*, so the whole distribution is predicted
+    in advance, not only its 5% tail -- a rate can look nominal while the distribution is wrong.
+    Measured on one member per realisation, because members of a family share an inventory and are
+    dependent: KS 0.065 (p = 0.35), 0.073 (p = 0.23), 0.068 (p = 0.30). It holds.
+
+    **Slice 2's claim boundary was asked for a number.** Passing every declared band is necessary
+    for exchangeability and not sufficient -- so two adversarial nulls attack it: an artefact every
+    record carries keyed to position within its own cycle, and an observed partner drawn
+    systematically cleaner than the alternatives its own bands admit. Both hold the declared rate.
+
+    **The defect this slice found in its own first recorded run.** `planted_correspondence` was
+    declared to pass when detection reached 1.0. The run measured **1,199 of 1,200** and reported
+    `calibrated: False`. The expectation was wrong, not the run: with pools of up to 470
+    alternatives a chance candidate will occasionally outrank a real correspondence, so demanding
+    that every member reject was demanding a test with **no type-II error** -- the point-estimate
+    mistake already fixed for error rates, left standing in the opposite direction. It is replaced
+    by two criteria derived from the case: the statistic must rank the true partner first for at
+    least 90% of members, judged on a **lower** confidence bound; and every member it does rank
+    first must reject (`maximum_unresolved_at_floor = 0`, parameter-free).
+
+    **Detection is a curve and it falls off a cliff between `w = 0.92` and `w = 0.84`.** At
+    `w = 0.88`, **98.8% of members have an uncorrected p at or under 0.05 and 35.4% survive
+    correction**. That gap is slice 3's `sparsest_detectable_count` prediction confirmed: when the
+    family is mixed, a surviving member must clear `alpha / (m * H_m) = 0.0034`, which no pool
+    below 293 can reach. Every rung reports `members_at_their_floor_that_did_not_reject`, so a low
+    number says whether the correspondence was absent or the pool too small.
+
+    **A cost of the admission contract that nothing had measured.** `native_seconds` is unbandable
+    by design, but `cadence_seconds` is banded and equals native duration over a bounded row
+    density -- so the cadence band narrows native duration *transitively*. `admission_yield`
+    measures it: an inventory spanning **4.05 decades** yields pools spanning **0.95 to 1.47**, at
+    a yield of 15% to 26%.
+
+    Every rate is an interval and every acceptance reads a bound: `certifies` the one-sided upper,
+    `attains` the lower, and `certifies_rate` is separate from `within_expectation` so a run too
+    small for its own claim says so. `REALISATIONS_FOR_ALPHA` solves for the smallest certifying
+    run rather than asserting it -- 59 -- and the declared 200 is larger because the distribution
+    check resolves 0.18 at 59 and 0.096 at 200.
+
+    The gate is unchanged and deliberately so: `scale_shape_calibration` still reads `REFUSED`,
+    verdict `NOT_RELEASEABLE`. Carrying this measurement into it is slice 5's work, by checked
+    supersession.
 *   **Slice 5 - the gate.** `scale_shape_calibration` reads the new calibration. TG17.11's refusal
     is retired by a **checked supersession**, not edited away: the old record keeps its meaning and
     the new one states why it replaces it.

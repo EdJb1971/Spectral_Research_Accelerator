@@ -9857,3 +9857,184 @@ Scale/shape null calibration a REFUSED
 verdict: NOT_RELEASEABLE
 ```
 
+## TG17.15 slice 4 The calibration, an expectation that was the defect, and four mutation gaps (2026-09-05, `ed-dev`)
+
+```
+> python -m pytest src/tests/test_pool_calibration.py -q
+50 passed, 1 warning in 77.69s (0:01:17)
+```
+
+**The recorded calibration.** Five declared cases at 200 realisations each, `m = 6`, pools of 61
+to 470, run through the real `correspondence_family` with the real `shape_recurrence` statistic.
+Ran in 1,351 s (22:31).
+
+```
+calibrated: True | failing: [] | uncertified: []
+
+case                       refus  family-wise  1-sided upper   uncorrected     rank 1      at floor,
+                                                                per member              not rejected
+planted_correspondence       0     200/200         --         1200/1200      1189/1200         0
+no_correspondence            0       1/200       0.0235         55/1200         4/1200         3
+shared_grid_alias            0       2/200       0.0311         40/1200         3/1200         1
+clean_partner_noisy_pool     1       0/199       0.0149         54/1194         5/1194         5
+unresolvable_inventory     200        --           --              --             --          --
+
+realisations 200 | needed to certify alpha 59 | uniformity resolution 0.0962
+```
+
+Every family-wise bound clears alpha 0.05, and `unresolvable_inventory` refused 200 of 200 rather
+than scoring. The whole calibration was run again after the mutation gaps below were closed, in
+1,487 s, and **every figure above reproduced exactly** -- the fixes changed what is checked, not
+what was measured. The eight ladder rungs published one identical `inventory_sha256`. **This null does not repeat T4C.5h**, whose surrogate preserved exactly the property
+its method was named after and still measured a family-wise rate of 0.765 against a nominal 0.05.
+
+**The tail is not the whole check.** Under exchangeability the observation's rank among its `N`
+alternatives is uniform on `{1, ..., N + 1}` *exactly*, so the entire distribution is predicted in
+advance rather than only its 5% tail -- a rate can look nominal while the distribution is wrong.
+Measured on **one member per realisation**, because members of a family share a candidate
+inventory and are dependent, which is the case Benjamini-Yekutieli was chosen for and also the
+reason a pooled Kolmogorov-Smirnov p-value would not be a test:
+
+```
+                            independent (n = 200)          pooled diagnostic (n = 1200)
+no_correspondence           mean 0.5214  KS 0.0650  p 0.35   mean 0.5104  KS 0.0326
+shared_grid_alias           mean 0.5423  KS 0.0727  p 0.23   mean 0.5095  KS 0.0261
+clean_partner_noisy_pool    mean 0.5218  KS 0.0684  p 0.30   mean 0.5086  KS 0.0273
+```
+
+**Slice 2's claim boundary, asked for a number.** It states that passing every declared band is a
+*necessary* condition for exchangeability and not a sufficient one. Two adversarial nulls attack
+exactly that: `shared_grid_alias` gives every record the same strong artefact keyed to position
+within its own cycle -- a shared instrument cadence, which is not a shared shape -- and
+`clean_partner_noisy_pool` draws the observed partner systematically cleaner than the inventory
+while still inside every band, so the alternatives its own contract admits are noisier than it is
+and its statistic should ride higher. Both hold the declared rate. The sentence survives contact
+with a measurement; it is not thereby proved for real records, and the claim boundary still says so.
+
+**The defect: the first recorded run failed, and the expectation was what was wrong.**
+
+```
+calibrated: False | failing: ['planted_correspondence']
+
+planted_correspondence   memb=1199/1200   rank1=1189/1200   pools [61, 470]
+declared expectation: {'outcome': 'rejects', 'minimum_detection': 1.0, ...}
+```
+
+`minimum_detection: 1.0` demanded that every one of 1,200 members reject. Eleven members did not
+have the true partner at rank 1: with pools of up to 470 alternatives a chance candidate will
+occasionally outrank a real correspondence. **Requiring otherwise is requiring a test with no
+type-II error**, which is the point-estimate mistake already fixed for the error rates, left
+standing in the opposite direction after they were fixed. It is replaced by two criteria derived
+from what the case is rather than from what a perfect run would look like:
+
+* the **statistic** must rank the true partner first for at least 90% of members, judged on a
+  one-sided *lower* confidence bound -- the mirror of how an error rate is judged on an upper one;
+* every member it did rank first must reject: `maximum_unresolved_at_floor = 0`, parameter-free,
+  isolating the failure worth catching, which is being short of pool rather than short of effect.
+
+The rerun's measured numbers are **identical** -- 1,199 of 1,200 and 1,189 of 1,200 -- and only the
+verdict moved, which is what should happen when the expectation rather than the run was at fault.
+On the new criteria the rank-one lower bound is 0.9849 against the declared 0.90, and no member
+ranked first failed to reject. The failed run is recorded here rather than replaced by the one that
+passed.
+
+**Detection is a curve, and it falls off a cliff.** The inventory, the left members and every
+declared marginal are held fixed across rungs -- enforced by digest -- so a rung differs from its
+neighbour in the planted correlation and nothing else:
+
+```
+planted w   member   family   uncorrected   at rank 1
+   1.00      1.000    1.000      1.000        0.992
+   0.95      0.996    1.000      1.000        0.658
+   0.92      0.958    1.000      1.000        0.346
+   0.88      0.354    0.600      0.988        0.125
+   0.84      0.062    0.225      0.817        0.083
+   0.80      0.037    0.175      0.575        0.054
+   0.60      0.004    0.025      0.158        0.013
+   0.00      0.000    0.000      0.050        0.004
+```
+
+At `w = 0.88`, **98.8% of members have an uncorrected p at or under 0.05 and 35.4% survive
+correction**. That gap is not noise; it is slice 3's `sparsest_detectable_count` prediction
+confirmed by measurement. When every member corresponds, Benjamini-Yekutieli divides at rank 6 and
+a pool of 48 suffices; when the family is mixed, a surviving member must clear
+`alpha / (m * H_m) = 0.0034`, which no pool below 293 can reach. So every rung reports
+`members_at_their_floor_that_did_not_reject`: a member the statistic ranked first that still fails
+was **short of pool, not short of effect**, and `minimum_pool_size_for_detected_fraction` already
+names the pool it would have needed. The bottom rung is a true null reached through the ladder
+rather than through the case, and the two agree.
+
+**A cost of the admission contract that nothing had measured.** `AdmissionContract` refuses to band
+`native_seconds`, because bounding it would refuse the comparison scale/shape mode exists to make.
+But `cadence_seconds` *is* banded, and cadence is native duration divided by a bounded row density,
+so the cadence band narrows native duration **transitively** and nothing said so:
+
+```
+offered 1500 candidates spanning 4.05 decades of native duration
+admitted per pool  229  268  348  299  396  243   (yield 15% to 26%)
+decades admitted  1.18 1.33 1.47 1.42 1.45 0.95
+```
+
+A pool is far more native-scale homogeneous than the inventory it was drawn from. That helps
+exchangeability and constrains the mode's reach; either way it is now reported by
+`admission_yield` and guarded by a test rather than left to be inferred.
+
+**Mutation testing found four gaps before it found none.**
+
+```
+first pass:  11 CAUGHT, 4 MISSED
+  MISSED  stop holding a scoring case to its refusal ceiling
+  MISSED  stop counting members ranked first that did not reject
+  MISSED  redraw the inventory between rungs of the effect ladder
+  MISSED  infer the phase window from the pair instead of declaring it
+
+second pass: 15 CAUGHT, 0 MISSED
+```
+
+Three of the four were real. The refusal ceiling and the at-floor-unresolved count were never the
+*binding* reason in any test -- every case that exercised them failed for another reason first --
+so both are now tested directly against the decision rule. The ladder's "held fixed" claim was
+enforced by digest on `build_realisation` and only described on `detection_profile`; each rung now
+publishes an `inventory_sha256` and a test requires them equal.
+
+The fourth was an **equivalent mutant**, and is recorded as one rather than worked around.
+`_shared_phase` caps the comparison at each record's own declared support, so passing
+`cycles=SPAN_CYCLES` and inferring the shorter record's span give the same number for every fixture
+this module builds -- the test asserting they agreed **could not fail**. The number was never
+wrong; the check was vacuous. The declaration is now something that can fail: `_statistic` refuses
+a record that does not cover the declared window, so a fixture that silently got shorter is refused
+rather than compared over a window nobody declared.
+
+**What is not claimed.** A measured false-positive rate and detection curve for this null on
+records whose answers were fixed before the method ran. It is evidence that the arithmetic and the
+exchangeability hold together **on these fixtures**. It is not evidence that a pool of real records
+is exchangeable: that rests on properties the fixtures were given by construction, and a real
+inventory would have to be shown to have them.
+
+**The full backend suite, and the flake that was contention after all.**
+
+```
+> python -m pytest src/tests -q
+3868 passed, 4 skipped, 1 xfailed, 6 warnings in 2481.74s (0:41:21)
+```
+
+Nothing failed. `test_acquisitions_api.py::test_a_server_restart_marks_active_cds_work_interrupted_
+for_explicit_resume` -- recorded under slice 3 as timing-sensitive and not reproducible in
+isolation, and failing again in slice 3's rerun -- **passed here**. Both runs where it failed were
+heavily contended by concurrent calibration work; this one had the machine to itself. That is the
+behaviour a test polling a background worker on a two-second wall-clock budget would show, and it
+is now the third piece of evidence for that reading rather than an assumption.
+
+One precision about this figure: the suite began at 09:06 and two files were tidied at the margin
+while it ran -- a docstring line, an `__all__` rewrap and an import rewrap, in
+`pool_calibration.py` and its test. Nothing else in the tree imports either file, and
+`test_pool_calibration.py` was rerun in full afterwards at 50 passed. So the suite figure covers
+every module, and the tidied bytes are covered by that separate run rather than by this one.
+
+The gate is unchanged, and deliberately so -- carrying this measurement into it is slice 5's work,
+by checked supersession rather than by editing the old refusal away:
+
+```
+Scale/shape null calibration and planted power REFUSED
+verdict: NOT_RELEASEABLE
+```

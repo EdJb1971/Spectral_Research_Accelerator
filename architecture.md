@@ -4656,6 +4656,11 @@ declared scale**: each declares its structural scale as its own row cadence and 
 rows per native cycle, which is below the floor and is refused. The scale/shape fixtures must
 therefore be built rather than borrowed from TG17.0.
 
+`src/benchmarks/pool_calibration.py` is TG17.15 slice 4's calibration of the pool-substitution
+null, described in section 7.1f. It builds its own records rather than borrowing `shape_fixtures`'
+pairings, because the pool null admits on declared marginals and every record therefore needs a
+`RecordProfile` that is a consequence of how it was actually built.
+
 `src/benchmarks/shape_fixtures.py` carries the four frozen scale/shape cases and the inference
 they are scored under. Two properties of the null had to be settled before any fixture could be
 written, and both were measured rather than reasoned about.
@@ -8118,7 +8123,7 @@ See `VERIFICATION.md` for the captured command output behind every statement her
 | Item | Status |
 |---|---|
 | Python venv + dependencies | installed (torch 2.13.0+cu130, numpy 2.2.6, pydantic 1.10.26, SQLAlchemy 2.0.52, xarray 2025.6.1, FastAPI 0.110.3) |
-| Backend test suite | **3738 passed, 1 xfailed** (plus 4 skipped: the opt-in live GCS read, opt-in live store probe, opt-in live Argo acceptance, and opt-in live TESS/MAST acceptance). Measured 2026-09-04 in 2,704.67 s (45:04), exit 0, on the tree carrying T4F.1 and TG17.14. Nothing failed in this run. |
+| Backend test suite | **3868 passed, 1 xfailed** (plus 4 skipped: the opt-in live GCS read, opt-in live store probe, opt-in live Argo acceptance, and opt-in live TESS/MAST acceptance). Measured 2026-09-05 in 2,481.74 s (41:21), exit 0, on the tree carrying TG17.15 slice 4. Nothing failed in this run. |
 | Ground-Truth Benchmark Suite | **29 PASS, 0 FAIL, 0 NOT_YET_RUNNABLE** (`python -m src.benchmarks`, exit 0) |
 | Frontend `npm install` + `npm run build` | passes, emits 1,395 modules + real JS/CSS assets (was: 1 module, no assets) |
 | Backend server | starts, serves OpenAPI, all smoke-tested endpoints return 200 |
@@ -8128,9 +8133,13 @@ See `VERIFICATION.md` for the captured command output behind every statement her
 TG17.9 was verified after that last full-suite figure with 21 receipt tests, all 157 frontend
 contract tests, all 80 orchestrator tests and all 26 documentation tests (284 focused tests across
 the four files). The production build transforms 1,408 modules and the full rendered Chromium
-suite is 33/33. The whole backend suite has since been rerun twice, most recently on 2026-09-04
-after TG17.14, so **3738** is the last measured full figure rather than being arithmetically
-increased from targeted runs.
+suite is 33/33. The whole backend suite has since been rerun, most recently on 2026-09-05 after
+TG17.15 slice 4, so **3868** is the last measured full figure rather than being arithmetically
+increased from targeted runs. That run was the first in a while with nothing else competing for
+the machine, and `test_acquisitions_api.py::test_a_server_restart_marks_active_cds_work_
+interrupted_for_explicit_resume` passed in it. The two runs where it failed were both heavily
+contended by concurrent calibration work, which is what a test polling a background worker on a
+two-second wall-clock budget is sensitive to.
 
 Earlier revisions of this document and of `roadmap.md` claimed the platform was "validated"
 and "zero-error". It was not: the first real execution produced 8 test failures and a frontend
@@ -8416,6 +8425,118 @@ sufficient. It is **not** a calibration: no false-positive rate has been measure
 records with no planted correspondence, and T4C.5h is the standing proof that a null can preserve
 exactly the property it is named after and still get the distribution wrong. That is slice 4.
 
+### 7.1f The calibration, and the margin that had to be measured (`src/benchmarks/pool_calibration.py`, TG17.15 slice 4)
+
+Slice 3 produced exact ranks and said in its own claim boundary that an exact rank is not a
+calibration. This is the measurement that boundary named, and it exists because of one result in
+this repository's history: T4C.5h's surrogate preserved **exactly** the property its method was
+named after and still measured a family-wise false-positive rate of 0.765 against a nominal 0.05.
+Arithmetic being right is not the same as a null being the null it claims.
+
+**The headline: this null does not repeat that defect.** Five declared cases at 200 realisations
+each, `m = 6`, pools of 61 to 470, run through the real `correspondence_family` with the real
+`shape_recurrence` statistic:
+
+| Case | Family-wise error | One-sided 95% bound | Uncorrected per member | Rank uniformity (independent) |
+|---|---|---|---|---|
+| `no_correspondence` | 1/200 | **0.0235** | 55/1200 = 0.046 | KS 0.065, p = 0.35 |
+| `shared_grid_alias` | 2/200 | **0.0311** | 40/1200 = 0.033 | KS 0.073, p = 0.23 |
+| `clean_partner_noisy_pool` | 0/199 | **0.0149** | 54/1194 = 0.045 | KS 0.068, p = 0.30 |
+| `unresolvable_inventory` | — | — | — | 200 of 200 refused |
+
+Every bound clears alpha. The tail is not the whole check, and that is deliberate: **a rate can
+look nominal while the distribution is wrong**, so the shape is compared too. Under exchangeability
+the observation's rank among its `N` alternatives is uniform on `{1, ..., N + 1}` *exactly*, which
+predicts the entire distribution in advance rather than only its 5% tail. It holds.
+
+**Two adversarial nulls, aimed at where the pool contract could be necessary and not sufficient.**
+Slice 2's claim boundary says passing every declared band is a necessary condition for
+exchangeability and not a sufficient one. That is a sentence; these ask it for a number.
+`shared_grid_alias` gives every record the same strong artefact keyed to position within its own
+cycle — a shared instrument cadence, which is not a shared shape. `clean_partner_noisy_pool` draws
+the observed partner systematically cleaner than the inventory while still inside every band, so
+the alternatives its own contract admits are noisier than it is and its statistic should ride
+higher. Both hold the declared rate. The sentence survives contact with a measurement.
+
+**Every rate is an interval and every acceptance reads a bound.** "Zero false positives in twenty
+runs" is not a rate of zero; it is consistent with a true rate of 14%. `certifies` reads the
+one-sided Clopper-Pearson **upper** bound, `attains` reads the **lower** one, and
+`certifies_rate` is a field separate from `within_expectation` so a run too small for its own claim
+reports that rather than passing. `REALISATIONS_FOR_ALPHA` solves for the smallest certifying run
+rather than asserting it — the answer is **59**. The declared 200 is larger for a stated second
+reason: the distribution check resolves `1.36 / sqrt(n)`, which is 0.18 at 59 and 0.096 at 200, so
+a run sized for the tail alone would certify the rate and be blind to the shape.
+
+**The defect this slice found in its own first recorded run.** `planted_correspondence` was
+declared to pass when `minimum_detection` reached 1.0 — every member rejecting. The run measured
+**1,199 of 1,200** and the calibration reported `calibrated: False`. The expectation was wrong, not
+the run: 1,189 of 1,200 members had the true partner at rank 1, and with pools of up to 470
+alternatives a chance candidate will occasionally outrank a real correspondence. Demanding that
+every member reject was demanding a test with **no type-II error**, which is the same mistake as
+reading a point estimate for an error rate, made in the opposite direction and left in place after
+the error rates had been fixed. It is replaced by two criteria derived from what the case is:
+
+* the **statistic** must put the true partner top of its own pool for at least 90% of members,
+  judged on a lower confidence bound rather than a point;
+* every member the statistic did rank first must reject — `maximum_unresolved_at_floor = 0`, which
+  is parameter-free and isolates the failure worth catching.
+
+**Detection is a curve, and it falls off a cliff.** The ladder holds the inventory, the left
+members and every declared marginal fixed across rungs — enforced by pool digest, not described —
+so a rung differs from its neighbour in the planted correlation and nothing else:
+
+| planted `w` | member detection | family detection | uncorrected | at rank 1 |
+|---|---|---|---|---|
+| 1.00 | 1.000 | 1.000 | 1.000 | 0.992 |
+| 0.95 | 0.996 | 1.000 | 1.000 | 0.658 |
+| 0.92 | 0.958 | 1.000 | 1.000 | 0.346 |
+| 0.88 | **0.354** | 0.600 | **0.988** | 0.125 |
+| 0.84 | 0.062 | 0.225 | 0.817 | 0.083 |
+| 0.80 | 0.037 | 0.175 | 0.575 | 0.054 |
+| 0.60 | 0.004 | 0.025 | 0.158 | 0.013 |
+| 0.00 | 0.000 | 0.000 | 0.050 | 0.004 |
+
+At `w = 0.88`, **98.8% of members have an uncorrected p at or under 0.05 and 35.4% survive
+correction**. That gap is not noise; it is the Benjamini-Yekutieli burden at `m = 6` acting exactly
+as slice 3's `sparsest_detectable_count` predicted. When every member corresponds, the step-up
+divides at rank 6 and a pool of 48 suffices; when the family is mixed, a surviving member must
+clear the rank-1 threshold `alpha / (m * H_m) = 0.0034`, which a pool smaller than 293 cannot
+reach. So each rung reports `members_at_their_floor_that_did_not_reject`: a member the statistic
+ranked first that still fails was **short of pool, not short of effect**, and
+`minimum_pool_size_for_detected_fraction` already names the pool it would have needed. The bottom
+rung is a true null reached through the ladder rather than through the case, and the two agree.
+
+**A cost of the admission contract that nothing had measured.** `AdmissionContract` refuses to band
+`native_seconds`, because bounding it would refuse the very comparison scale/shape mode exists for.
+But `cadence_seconds` **is** banded, and cadence is native duration divided by a bounded row
+density — so the cadence band narrows native duration *transitively*, and nothing said so.
+`admission_yield` measures it: an inventory spanning **4.05 decades** of native duration yields
+pools spanning **0.95 to 1.47**, at a yield of 15% to 26%. The pool for a correspondence is far
+more native-scale homogeneous than the inventory it was drawn from. That helps exchangeability and
+constrains the mode's reach, and either way a reader is entitled to see it rather than infer it.
+
+**Why a rank is needed at all, in one number.** `shape_recurrence` returns a magnitude, and the
+magnitude of the weighted correlation between two *independent* smooth profiles averages about 0.26
+over these fixtures and reaches 0.73. A threshold on the statistic would be a threshold on how many
+harmonics a profile happens to carry. The planted weight is recovered faithfully above that floor —
+1.00 measures 0.95, 0.80 measures 0.78, 0.50 measures 0.51 — and swamped below it.
+
+**The dependence the numbers are read under.** One candidate inventory serves every member of a
+family, so their pools overlap and their p-values are dependent. That is deliberate: it is the case
+Benjamini-Yekutieli was chosen for. It also means the six values from one realisation are not
+independent draws, so every statistic requiring independence is computed on **one member per
+realisation** and the pooled figure is reported beside it as a diagnostic whose p-value is
+explicitly not a test.
+
+**Mutation testing found four gaps before it found none.** Fifteen mutations were applied; the first pass caught eleven. Three of the four survivors were real: the refusal ceiling and the count of members ranked first that did not reject were never the *binding* reason in any test, and the ladder's "held fixed" claim was checked on `build_realisation` but not on `detection_profile`. Each is now tested where it binds, and the ladder publishes an `inventory_sha256` per rung so the claim is checked rather than described. The fourth survivor was an **equivalent mutant** and is recorded as one: `_shared_phase` caps the comparison at each record's own declared support, so passing `cycles=SPAN_CYCLES` and inferring the shorter span give the same number for every fixture, and the test asserting they agreed could not fail. The declaration is now a guard that can -- a record not covering the declared window is refused. The second pass caught **15 of 15**.
+
+**The claim boundary.** A measured false-positive rate and detection curve for this null on records
+whose answers were fixed before the method ran. It is evidence that the arithmetic and the
+exchangeability hold together **on these fixtures**. It is not evidence that a pool of real records
+is exchangeable: that rests on properties the fixtures were given by construction, and a real
+inventory would have to be shown to have them. Slice 5 carries this into the release gate by a
+checked supersession of TG17.11's refusal.
+
 ### 7.2 Confirmed defects
 
 | # | Location | Defect | Fixed by |
@@ -8659,6 +8780,7 @@ able to sit three slices out of date.
 | `test_correspondence_estimand.py` | 21 | TG17.15 slices 1 and 3 the declared estimand: the derangement counts pinned against the partner counts they diverge from, and the miscounted reference set shown anticonservative by more than a thousandfold in the direction that eases rejection; resolution refused above the size the null itself will enumerate; the declared family unable to reach its own resolvable size; zero of 105 rejecting when one member leaves the floor, against 105 of 106 one size up; the pool size derived against the real correction and falsified one smaller; margin bought from the pool at an identical test count; an undeclared or unregistered estimand refused rather than defaulted; the inadmissible estimand registered so it is refused by name; and the correction's dependence reason and the slice's claim boundary both carried; and, added by slice 3, `minimum_pool_size` shown to be `minimum_pool_size_for_detected_fraction` at fraction one, a sparser family shown to need a much larger pool, a fraction rounding to no planted member refused, and `sparsest_detectable_count` measured from real floors -- six pools of 58 needing five genuine members of six, pools too small to ever reject returning None rather than a number, and the sparse case published in the estimand report beside the favourable one |
 | `test_partner_pool.py` | 20 | TG17.15 slice 2 the partner pool: the profile field set asserted exactly so no joint quantity can be added, and every banded marginal readable from one record alone; `native_seconds` refused a band by name with the admitted pool spanning an order of magnitude; an observed partner failing its own contract, sharing the left member's provenance, or equal to the left member each refused; every refusal carried with its check and its measured numbers, and admitted plus refused equal to what was offered; a record offered twice refused rather than counted twice; a pool below the resolvable size refused naming the required size, which tracks the declared number of tested correspondences; the estimand required and the inadmissible one refused; contracts with no band or a band below one refused; an effective sample size above the nominal count refused; the pool sealed by digest and the digest moving when a member does; the spread reporting where the observation sits inside its own pool; and the claim boundary stating admission is necessary and not sufficient |
 | `test_pool_substitution_null.py` | 35 | TG17.15 slice 3 the exact pool-substitution null: orientation refused when undeclared and the two tails shown to invert the same numbers; the p-value the exact rank with the observation in its own reference set, attaining `1/(N+1)` and never zero; ties counted toward the numerator and an all-tied statistic reported as degenerate rather than as a pass; the observed statistic not an accepted argument and shown to travel the same path as its alternatives, with a non-deterministic statistic refused; a missing payload, a non-finite value, an empty pool and an observed partner inside its own pool each refused; the Monte Carlo variant refused by name with its measurement; a family corrected once at the size sealed in its pools, with narrowing, enlarging, mixed declared sizes and a duplicated correspondence each refused; resolution re-measured against the real correction so a directly constructed starved pool is still named; the sparsest detectable count reported beside the all-genuine case, three genuine of six shown to reject nothing, and a family that can never reject saying so rather than returning a number; results bound to the pool and contract digests; and the claim boundary refusing to call this a calibration |
+| `test_pool_calibration.py` | 50 | TG17.15 slice 4 the calibration: a record profile shown to follow from the record it describes and no fixture near the statistic's resolution floor; the planted weight recovered as the correlation it claims to be, and unrelated records shown not to score near zero so the need for a rank is measured rather than argued; a zero count reported as a bound and never as a rate, the one-sided bound separated from the two-sided interval, the certifying run size solved rather than written down, and the declared run shown to be sized by the distribution check rather than by the tail; a run too small to bound its own rate refusing to pass, in both directions; the detection claim judged on a lower bound and the planted case shown not to require a test free of type-II error; a member ranked first that still does not reject counted and named; refusals counted against a detection claim rather than dropped; a rung of the ladder shown by pool digest to differ from its neighbour only in the planted correlation, the effect grid shown to bracket the measured cliff, and the ladder agreeing with the case where the effect is dialled out; an unresolvable inventory refused rather than scored; the lattice transform inverted exactly and a shifted lattice shown to be flagged; uniformity certified on independent members with the pooled figure named a diagnostic; and the transitive narrowing of native duration by the cadence band guarded so a later change cannot lose it |
 | `test_geometry_registry.py` | 20 | TG1.2 geometry registry: the three builtins' metrics, crops, resamples and provenance unchanged; capability-driven `is_physical`/`length_units`/`latitudes`; a fourth geometry (`polar_scan`) registered from the test module with a non-uniform, non-spherical metric; the Cartesian Laplacian refusing it; `latitude`/`longitude` recognised as a sphere |
 | `test_tracking.py` | 47 | TG2.3 frame-to-frame association: `4D.tracking` moving from NOT_YET_RUNNABLE to PASS with the recorded velocity and doubling time recovered from the field alone; the coincidence gate derived from alpha and the frame's own density and tightening when the frame crowds; a declared bound as a rate against an irregular clock; greedy and Hungarian disagreeing measurably, plus a third associator registered from the test module and two rogue ones refused; the seam crossing that is one track on a torus and two on a plane; the orientation gate reading the convention rather than the number and refused outright on an extractor that reports none; and the empty-frame and short-clock regressions |
 | `test_representation.py` | 59 | TG2.4 representation-induced feature audit: the floor on every plane of every registered lens, and the planted blob that proves the audit can see; the null propagated through the representation against the same null rebuilt inside it, measured on the dual tree where they differ and on the stationary transform where they do not; the FFT magnitude plane whose null nothing can exceed; the family of forty-five planes that rejects on 86% of structureless fields uncorrected, the ensemble refused as too small for it, and the correction registry that prices six identical columns as one test; the declared decimation an array does not have; and the plane R13 leaves no interior in |
@@ -8774,7 +8896,7 @@ able to sit three slices out of date.
 | `test_spectral_events.py` | 18 | T4F.1 the timed event substrate: the grid refusing an unnamed time unit, an empty frame list, repeated or reordered frames and a cadence the frames do not lie on; coverage measured against the declared cadence, reported incomplete with its missing count across an unsearched frame, and refused as undecidable without a cadence; the searched frames unrecoverable from the catalogue; an empty catalogue, an occurrence at an unsearched frame, two scale modes in one series, a repeated occurrence identity and a member unit disagreeing with the grid each refused by name; members carrying no unit counted rather than assumed to agree; event order invariant to input permutation; two patterns on one frame reported as simultaneous and unordered; per-pattern spans in the declared unit; and the receipt publishing its schema, grid and claim boundary |
 | `test_spectral_invariance.py` | 46 | T4E.2 the invariant signature: the principal axis checked against the covariance eigendecomposition it stands for over 50 random configurations, exactly collinear points reporting an infinite anisotropy rather than a failure, and three axes refused rather than projected; the `planted_configuration` benchmark measured over 24 field-noise realisations to be isotropic with an axis angle spanning 0.78 to 158.08 degrees, the module's isotropy floor asserted to be the number that measurement produced, a configuration at the benchmark's own anisotropy refused an axis by name, and the vortex triples shown to clear the floor by two orders of magnitude; invariance measured rather than declared, with translation, three rotations, reflection and every relabelling asserted to leave the signature vector identical to floating-point precision in both modes; a uniform rescaling leaving the scale-free shape alone while an estimator that missed the rescaling moves the scale-specific geometry by exactly the factor it missed; the canonical order shown to matter, with two configurations that agree on independently sorted blocks and have no correspondence making both true at once; the toggle priced at 87 of 135 with the loss attributed by cardinality; a position in metres beside a scale in cells refusing the scale-specific mode and signing in the scale-invariant one, which is what R19's own refusal message tells the caller to do; and the refusals -- a pair asked for a scale-free shape, a pair's axis refused for a different reason than an isotropic triple's, a constellation stripped of its features, a member with no band RMS, an unknown mode, blocks that disagree about cardinality, a floor calibrated on one realisation or on collinear replicates, and the mixed-unit refusal left to the extractor rather than copied |
 | `test_spectral_narrative.py` | 25 | T4D.3 the prose, and what it may not say: every number in a sentence checked against the track it came from including the spoken speed against `Track.speed()` for all four tracks, the subject of every sentence being the coefficient maximum and not the structure, and the frame count being of frames searched rather than frames found; no track of a growing vortex claiming its own scale doubled -- each holding one level at a scale velocity of exactly zero with the word absent from the prose -- while the growth that did happen is measured across bands, level 4 weakening as level 5 strengthens and is first excited nine frames later, offered as a candidate precursor relationship carrying that it was not tested against a null and claims no merge, with one band supporting no ordering at all; a cartesian grid refused every compass word and given axis-relative wording, the sign that makes a row northward read from the grid so one displacement on two grids gives opposite points, the cosine of the latitude shortening a degree of longitude before the bearing is taken so 60 degrees north gives 26.6 and not 45, a track that returned to where it started given no bearing, and the missing-`lat0` branch shown to be unreachable rather than added; energy reported as the square under its own name so the roadmap's own 43% becomes 104.5%, and a change from zero refused rather than rendered infinite; the guard using the programme's one list of words for every entry in it, a causal word in a caller's own dataset name refused before a reader sees it, the guard's own limit asserted so a substring match cannot creep in, and the entitlement allowed to name the boundary the sentences may not cross and appearing exactly once however many tracks there are; plus a single sighting supporting no direction, speed or growth, a search that found nothing refused as an empty list of sentences, and the structural signature naming no variable, dataset or units |
-  | **total** | **3413** | |
+  | **total** | **3463** | |
 
 ### 7.4a Browser suite inventory
 
