@@ -64,6 +64,18 @@ its costs, slices and falsification conditions are written down there before any
 `offline_matrix` and `restart_recovery` remain `NOT_RUN` only in the sense that this call did not
 perform them; `execute_offline_qualification()` resolves both.
 
+**TG17.15 slices 1 and 2 are delivered.** The estimand is declared and the partner pool is built,
+both with the circularity structurally excluded rather than forbidden. Slices 3 to 5 -- the
+pool-substitution null, its calibration against a measured false-positive rate, and the gate
+supersession -- remain.
+
+**Phase G19 is specified and not started.** A researcher meeting a refusal wants to interrogate it
+with a model of their choosing, over several turns. G7's recorded-call boundary already supplies
+most of what that needs; what it lacks is a conversation, and a conversation adds drift,
+staleness across turns and a transcript that is the most quotable and least reproducible artefact
+the platform can produce. The phase records the rule that keeps retrieval safe here -- whole
+records, never fragments -- before any code is cut.
+
 Standing instruction, unchanged by TG17.14 having been authorised once: nothing in this repository
 may reach the network without the maintainer's explicit say-so.
 
@@ -5782,6 +5794,114 @@ cannot have: pool size and family size become two independent knobs instead of o
 
 Any of these is a result. The first would mean scale/shape alignment is a describable but not a
 testable mode, which is worth knowing and worth stating plainly.
+
+
+### Phase G19 - The researcher's conversation with the record - **NOT STARTED**
+
+G7 gives the platform an adversarial review layer that argues with a finding. G19 asks the
+adjacent question: a researcher meeting a `REFUSED` gate or a corrected q-value wants to
+*interrogate* it, with a model of their choosing, over more than one turn. That is a real need and
+the architecture already anticipates most of it. What it does not yet have is a conversation, and a
+conversation introduces failure modes a single review does not.
+
+**What already exists, so this phase is an extension rather than a new risk surface.**
+
+*   `ReviewRecord` is already an **append-only hash chain** bound to one exact bundle revision:
+    `bundle_sha256`, `bundle_revision`, and `previous_sha256` on every call.
+*   `record_call` takes `context` **per call**. Context is passed, never accumulated, so
+    re-grounding is already the shape of the API rather than something to retrofit.
+*   Every `CallRequest` carries the bundle digest and revision it was asked against, so a stale
+    turn is already *detectable*.
+*   `verify_claim_independence` makes R22 executable three ways: the claim state must be identical
+    with the review present and deleted, must survive a rebuild from the bundle's own bytes, and
+    **no phrase from any recorded response may appear anywhere in those bytes**.
+*   `ResponseSchema` refuses free text where a schema was declared, and R23's non-reproducibility
+    is recorded in the body rather than papered over.
+
+**Retrieval is the new capability, and chunking is the wrong instinct for this instrument.**
+Retrieval-augmented generation returns *fragments ranked by similarity*. The asset this whole
+programme is built on is that every result travels with its refusals and its claim boundary.
+Retrieve three of eight chunks of a gate receipt and a model can state "ten links replicated in
+train and test" without "D84 and D85 govern whether an absence was detectable", or surface a `PASS`
+stripped of its `claim_boundary`. That is the exact failure the platform exists to prevent, and a
+retrieval layer would introduce it invisibly and plausibly ranked.
+
+So the rule this phase is built on:
+
+> **Retrieve at the granularity of a complete record. Never a fragment of one.**
+
+Receipts, qualification plans and `EvidenceBundle`s are bounded structured objects that already
+carry their own boundaries, and they fit in a context window whole. Retrieval chooses *which*
+records are relevant across a corpus; each chosen record then enters entire. A record too large to
+enter whole is a signal that the platform owes a **deterministic summary view** it computes itself,
+not an invitation for a chunker to guess which paragraphs mattered.
+
+**Three properties a conversation needs that a single review does not.**
+
+*   **Re-grounding every turn.** The transcript carries dialogue; the scientific context is
+    rebuilt from source on each turn and never inherited as the model's own paraphrase. Otherwise
+    turn twelve reasons about turn three's summary of a receipt, and the compounding is invisible
+    because every individual turn looks reasonable.
+*   **Staleness that refuses rather than warns.** A conversation outlives the record it discusses.
+    TG17.14 demonstrated this on real code: editing an acquisition module returned `live_sources`
+    to `NOT_RUN` and invalidated a passing record. A conversation open against a bundle whose
+    digest has moved must refuse to continue, in the same way the gate does.
+*   **Independence over the whole transcript, not one review.** `verify_claim_independence` holds
+    for one `ReviewedBundle`. A conversation spans several bundles and many turns; the guarantee
+    must hold for every bundle it touched, and deleting the entire conversation must change
+    nothing anywhere.
+
+**What this phase costs, recorded before it is built.**
+
+*   **Model output becomes model input.** Under R22 that never reaches a claim, so the ladder is
+    safe. But turn N-1's answer is turn N's context, so **drift compounds inside the transcript**
+    even while every claim stays untouched. The mitigation is re-grounding, and re-grounding is
+    only checkable if the context is rebuilt from source rather than diffed against history.
+*   **A conversation is the most quotable artefact the platform will produce**, and R23 says it is
+    recorded evidence and not reproducible computation. A transcript can therefore never be cited
+    as the reason a claim holds. That has to be visible in the rendering, not just true in the
+    schema, or the most persuasive object in the system will be the least verifiable one.
+*   **Multi-provider is a refusal surface, not a convenience.** "Whatever model they choose" means
+    the recorded call must carry provider identity, and a provider that cannot honour a declared
+    response schema, or that silently accepts sampling parameters R23 rejects, must be **refused
+    by name** rather than accommodated.
+*   **Cost multiplies.** TG7.3's provider-neutral accounting exists; a conversation turns one
+    review into an open-ended sequence, so a declared budget per conversation is a requirement
+    rather than an option.
+
+**Slices.**
+
+*   **G19.1 - the conversation as a bound object.** A transcript spanning one or more bundle
+    revisions, each digest pinned, with researcher turns and model turns distinguishable by type
+    rather than by convention. A turn whose bundle digest has moved is refused.
+*   **G19.2 - re-grounding, and a guard that it happened.** Context assembled from source each
+    turn. The check that matters: a turn's context must be **derivable from the records it names**
+    and must contain nothing that appears only in an earlier model response.
+*   **G19.3 - whole-record retrieval.** Selection across a corpus at record granularity, with the
+    refusal that makes it safe: a record that will not fit whole is refused, naming the
+    deterministic view that should be built, rather than chunked.
+*   **G19.4 - independence extended to the transcript.** `verify_claim_independence` generalised
+    over every bundle a conversation touched, plus the deletion test: remove the whole
+    conversation and assert every claim digest is unchanged.
+*   **G19.5 - the rendering.** The transcript displayed with its non-reproducibility and its claim
+    boundary attached to every turn, so the most quotable artefact is also the most clearly
+    labelled. R22's structural defence carried into the interface, not restated as a caption.
+
+**What would falsify this phase, stated in advance.**
+
+1.  Re-grounding cannot be checked. If no guard can distinguish a context assembled from source
+    from one contaminated by an earlier model turn, then drift is unmeasurable and the layer
+    should stay a single-shot review, which is verifiable.
+2.  Whole-record retrieval proves impractical -- the records that matter do not fit, and the
+    deterministic views needed to shrink them cannot be written without choosing what to omit,
+    which is the chunking problem wearing a different hat.
+3.  A conversation measurably changes what researchers conclude from the same evidence. That is
+    testable by giving the same bundle to readers with and without the layer, and it is the
+    outcome that would matter most: a tool that makes people more confident without making them
+    more correct is the opposite of this programme's purpose.
+
+The third is the one worth stating loudest, because it is the only one that cannot be found by
+reading the code.
 
 
 ## 6. Definition of Done
