@@ -10179,3 +10179,151 @@ recording without binding it to the source it was measured against.
 The verdict is unmoved: `NOT_RELEASEABLE`. Scale/shape mode is now a calibrated method waiting on a
 declared plan and a curated inventory, rather than a method that could not work. That is a better
 position than TG17.11 left it in, and it is not a release.
+
+## T4F.2 -- counted sequences, and the denominator they are counted over (2026-09-05, `ed-dev`)
+
+`src/analysis_engine/spectral_sequences.py`, verified by `src/tests/test_spectral_sequences.py`
+(33 test functions). Measured on 2026-09-05 with no network.
+
+```
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_spectral_sequences.py -q
+33 passed, 1 warning in 7.67s
+
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_spectral_sequences.py src/tests/test_spectral_events.py src/tests/test_spectral_mining.py src/tests/test_spectral_clustering.py -q
+81 passed, 1 warning in 12.08s
+```
+
+T4F.1 built the ordered substrate and its own record said it counts nothing. This task does the
+counting the phase exists for. `A4 -> A8 -> B8 -> C16` is now a chain with a support and a
+confidence attached rather than a shape the record merely permits.
+
+**The acceptance record, printed rather than described.** Three configurations, a chain planted
+four times at frames 0, 6, 12 and 18 with two frames between links, a declared window of `[1, 3]`
+frames and a minimum support of three:
+
+```
+=== grid searched frames 0..25, window [1, 3] frames, minimum support 3
+sequence     support eligible   occurrs confidence  trunc  unobs status
+A -> B             4        4         4      1.000      0      0 SUPPORTED
+B -> C             4        4         4      1.000      0      0 SUPPORTED
+C -> A             3        4         4      0.750      0      0 SUPPORTED
+A -> B -> C        4        4         4      1.000      0      0 SUPPORTED
+B -> C -> A        3        3         4      1.000      1      0 SUPPORTED
+C -> A -> B        3        3         4      1.000      1      0 SUPPORTED
+candidates examined 18, pruned by antimonotonicity 18, supported 6
+```
+
+**The same data on a record two frames shorter, which is the whole point of the task.**
+
+```
+=== grid searched frames 0..23, window [1, 3] frames, minimum support 3
+(the two rows that move; A -> B and B -> C are unchanged at 4/4 and 1.000)
+C -> A             3        3         4      1.000      1      0 SUPPORTED
+A -> B -> C        3        3         4      1.000      1      0 SUPPORTED
+```
+
+`C -> A` reads **0.750** on the longer record and **1.000** on the shorter one, and both are
+correct. On the 26-frame grid the last C's window `[23, 25]` was searched and held no A: that is a
+miss, and it belongs in the denominator. On the 24-frame grid the same window runs past the last
+frame anyone looked at, so that C was never given the chance the ratio is about; it is censored,
+excluded, and reported as `trunc 1`. Counting it as a failure to be followed would have priced the
+end of the record as a property of the pattern. The naive figure -- every antecedent in the
+denominator regardless -- is 0.750 in both cases, and in the second case it is measuring where the
+file stops.
+
+`A -> B -> C` shows the other half: a three-link chain needs a window twice as long to have been
+searched, so the last anchor is censored for the triple while the same anchor remains admissible
+for the pair. A confidence that used one eligibility rule for every length would silently prefer
+short chains.
+
+**What is refused rather than defaulted.** A window is mandatory, because without declared lags
+every pair of occurrences anywhere in the record is a transition. Its minimum lag is strictly
+positive, so two events on one frame can never form a step -- T4F.1 refused to sort simultaneity
+into an order and this module refuses to count one. A window that admits no lag on the grid's own
+cadence lattice is refused rather than returning zeros, because a zero from an unreachable window
+measures the window and not the record. A lag declared in one unit against frames declared in
+another is refused rather than converted. Without a cadence, eligibility is undecidable, so the
+support count stands and the ratio is `None` under `COVERAGE_UNDECLARED` rather than computed
+against a denominator nobody checked.
+
+**The pruning rule is proved, not assumed.** Extending a sequence lengthens the window an
+antecedent must have observed, so the eligible set can only shrink; and a chain that completes for
+`s + (q,)` completes for `s` by taking its prefix. Support is therefore antimonotone under
+extension. The suite asserts that inequality directly over every extension the sweep reached, and
+asserts the identity `examined + pruned == exhaustive`: 18 + 18 = 36 = 3^2 + 3^3. T4E.4's
+`MiningBudget` is reused rather than a second budget declared, and either overrun refuses the
+whole sweep with `partial_result: false`.
+
+**Recurrence, and the several ways it is not a period.** Spans are tallied on the cadence lattice,
+which is the finest interval the pass can resolve. All three patterns report `INTERVAL_REPEATS`
+with a modal interval of 6 frames seen three times, concentration 1.00, one distinct interval. A
+span crossing unobserved time *bounds* an interval from above rather than measuring it -- an
+unseen occurrence inside would split it in two -- so it is excluded, counted as excluded, and kept
+out of the reported longest gap. The receipt publishes `admissible_lattice_values` (25 on the
+longer grid), because among few admissible values a repeat is expected under no structure at all,
+and a concentration without that denominator invites over-reading. Four statuses keep the failures
+apart: `NO_MEASURED_SPAN`, `TOO_FEW_MEASURED_SPANS`, `NO_REPEATED_INTERVAL`, `INTERVAL_REPEATS`.
+
+**Mutation testing: 33 mutations, two batches, and the first batch was too easy.**
+
+```
+batch one:  17 CAUGHT, 0 MISSED
+batch two:  12 CAUGHT, 4 MISSED
+  MISSED  give a long chain the same eligibility window as a short one
+  MISSED  admit a sequence one occurrence short of the declared minimum
+  MISSED  take the concentration over every gap rather than over the measured ones
+  MISSED  count the distinct intervals over the lattice rather than what was seen
+
+after closing the gaps: 17 CAUGHT + 16 CAUGHT, 0 MISSED
+```
+
+A clean first pass is not evidence of good guards; it is evidence that the mutations were easy.
+The second batch aimed at the quantities nothing obviously read and at the off-by-ones, and four
+survived. The first is the substantive one: nothing asserted that a longer chain requires a longer
+observed window, because the antimonotonicity guard is an inequality and equality satisfies it.
+That mutation would have made every chain, at every length, eligible on a pair's window -- the
+exact bias this task exists to prevent, passing a suite that appeared to test for it.
+
+**One defect in this task's own code, found by printing the receipt rather than by a test.**
+`candidates_pruned_by_antimonotonicity` counted the *prefixes* that failed rather than the
+*candidates*, and multiplied by the level width. At the first level those two are the same number,
+so the arithmetic agreed with itself exactly where it was tested and nowhere else: the receipt read
+`pruned 0` while eighteen extensions had genuinely never been built. The acceptance guard had
+encoded the same wrong formula, and the mutation aimed at that line was caught only because it
+disagreed with an expectation that was itself wrong. Fixed, re-anchored so the mutation now
+reintroduces exactly this defect, and the suite now asserts the identity `examined + pruned ==
+exhaustive`, which no single wrong formula can satisfy. **It gets no defect number**: it never
+reached a commit and no recorded result depended on it. It is written down because the way it
+surfaced -- reading an actual receipt, after a green suite and a clean mutation pass -- is the part
+worth keeping.
+
+**One method was added to T4F.1's grid rather than to this module.**
+`ObservationGrid.observation_of_window` answers whether a *proposed* window was wholly searched,
+which `coverage_between` cannot: a span runs between two occurrences known to be on the grid, while
+a window is offered by a lag and can therefore run off the end of what the pass looked at. The grid
+is what knows what was looked at, so the question belongs there. `WINDOW_TRUNCATED_BY_RECORD` is
+kept apart from `WINDOW_SPANS_UNOBSERVED_TIME` because the two bias a confidence differently -- one
+is the record's edge, the other is a hole in the middle -- and collapsing them would lose the
+distinction that makes the exclusion defensible.
+
+**Nothing here is significance, and both receipts say so.** Support and confidence are not a base
+rate, a lift, a surrogate comparison, a p-value, a precursor or a cause. A repeated interval is not
+a period, a frequency or an oscillation, and no null was drawn over any of it. Those begin at
+T4F.3.
+
+**Documentation guards.**
+
+```
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_documentation.py -q
+29 passed, 2 warnings in 305.58s (0:05:05)
+```
+
+Re-run standalone after the documentation edits rather than trusted from inside the long run.
+
+**Full backend suite.**
+
+```
+> .\.venv\Scripts\python.exe -m pytest src/tests/ -q
+3926 passed, 4 skipped, 1 xfailed, 6 warnings in 3510.91s (0:58:30)
+exit 0
+```

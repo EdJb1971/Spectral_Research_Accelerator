@@ -50,7 +50,13 @@ supersedes the other.
   unnamed clock, refuses an occurrence at a frame nothing looked at, and marks a span
   crossing an unread instant rather than reporting it as a longer gap. Events sharing a
   frame are published unordered, because a succession taken from list position would be
-  fabricated. It found and fixed D93. **T4F.2 sequence mining is next.**
+  fabricated. It found and fixed D93. **T4F.2 is DONE**: the chain the substrate was built
+  to express is now counted, against a declared transition window whose minimum lag is
+  strictly positive so simultaneity can never become a step. Confidence admits only
+  antecedents whose window was wholly searched, so an occurrence the record ended before is
+  censored rather than counted as unfollowed; a repeated gap is reported with the number of
+  interval values the record was long enough to hold, and is not called a period. **T4F.3
+  precursor tests are next**, and they are where the first null is drawn.
 * Cross-domain line: **TG17.14 is DONE and `live_sources` reads `PASS`.** On 2026-09-04 the
   authorised bounded run reached ERA5 through CDS, Argo GDAC and MAST SPOC, each demonstrating
   real network use, while the bespoke order-book family demonstrated a content-addressed local
@@ -113,7 +119,7 @@ supersedes the other.
   vector publication sheets that preserve the figure's reading contract. Under
   G18 none of this may recompute, summarize, promote or reinterpret a scientific value, so each
   addition transcribes what the analysis layer produced or states that it produced nothing.
-* Last measured full backend run: **3893 passed, 4 skipped, 1 xfailed**, exit 0 (2026-09-05, 1:04:19).
+* Last measured full backend run: **3926 passed, 4 skipped, 1 xfailed**, exit 0 (2026-09-05, 0:58:30).
 * Last measured browser suite: **136/136** in Chromium from a cleaned `.e2e-state` (2026-09-04).
   It is inventoried in `architecture.md` section 7.4a; it is the only check here that proves a
   page renders.

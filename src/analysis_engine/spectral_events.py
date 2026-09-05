@@ -52,6 +52,13 @@ COVERAGE_UNDECLARED = "COVERAGE_UNDECLARED"
 COVERAGE_MEASURED = "MEASURED"
 COVERAGE_INCOMPLETE = "SPANS_UNOBSERVED_TIME"
 
+#: A closed interval every instant of which was searched, so an absence in it was observed.
+WINDOW_MEASURED = "WINDOW_MEASURED"
+#: A closed interval containing an instant that was never read: an absence in it is unknown.
+WINDOW_INCOMPLETE = "WINDOW_SPANS_UNOBSERVED_TIME"
+#: A closed interval running past the end (or before the start) of what the pass searched.
+WINDOW_TRUNCATED = "WINDOW_TRUNCATED_BY_RECORD"
+
 CLAIM_BOUNDARY = (
     "an event is one clustered occurrence at one searched frame, and a span is the elapsed "
     "distance between two of them in this record. Neither is a recurrence, a period, a "
@@ -134,6 +141,33 @@ class ObservationGrid:
         missing = max(expected - observed, 0)
         status = COVERAGE_MEASURED if missing == 0 else COVERAGE_INCOMPLETE
         return status, observed, missing
+
+    def observation_of_window(self, start: float,
+                             end: float) -> Tuple[str, int, Optional[int]]:
+        """Was every instant of the closed window `[start, end]` actually searched?
+
+        `coverage_between` answers this for the open span between two occurrences that are both
+        known to be on the grid. A window is the other question T4F.2 needs and it is not the
+        same one: a window is proposed by a lag rather than found in the record, so it can run
+        off the end of what was searched. That case is `WINDOW_TRUNCATED_BY_RECORD` and it is
+        kept apart from a hole in the middle deliberately -- an occurrence whose window the
+        record ended before is not evidence that nothing followed it, and counting it as one
+        would bias every confidence downwards by exactly the tail of the record.
+        """
+        observed = sum(1 for frame in self.frames if start <= float(frame) <= end)
+        if self.cadence is None:
+            return COVERAGE_UNDECLARED, observed, None
+        cadence = float(self.cadence)
+        first = float(self.frames[0])
+        last = float(self.frames[-1])
+        tolerance = CADENCE_TOLERANCE * max(1.0, abs(start), abs(end))
+        if start < first - tolerance or end > last + tolerance:
+            return WINDOW_TRUNCATED, observed, None
+        lowest = int(math.ceil((start - first) / cadence - CADENCE_TOLERANCE))
+        highest = int(math.floor((end - first) / cadence + CADENCE_TOLERANCE))
+        expected = max(highest - lowest + 1, 0)
+        missing = max(expected - observed, 0)
+        return (WINDOW_MEASURED if missing == 0 else WINDOW_INCOMPLETE), observed, missing
 
     def describe(self) -> Dict[str, Any]:
         return {
@@ -340,5 +374,6 @@ def events_from_catalogue(catalogue: PatternCatalogue, *,
 __all__ = [
     "EVENT_SCHEMA", "CADENCE_TOLERANCE", "CLAIM_BOUNDARY",
     "COVERAGE_UNDECLARED", "COVERAGE_MEASURED", "COVERAGE_INCOMPLETE",
+    "WINDOW_MEASURED", "WINDOW_INCOMPLETE", "WINDOW_TRUNCATED",
     "ObservationGrid", "PatternEvent", "EventSpan", "EventSeries", "events_from_catalogue",
 ]
