@@ -116,16 +116,21 @@ may reach the network without the maintainer's explicit say-so.
 
 * Phase 4E is DONE on the atmospheric line and **Phase 4F has opened**: T4F.1 supplies the
   timed event substrate, with the observation grid that separates what was searched from
-  what was found. T4F.2 sequence mining is next there.
+  what was found. **T4F.2 sequence mining is next there, and it is the larger outstanding
+  body of work in this repository** -- T4F.2-8 and all of 4G remain, and T4F.1's own record
+  says it counts nothing, so no sequence has yet been counted anywhere. 4G is gated behind
+  T4F.6: if nothing recognisable is recovered, the pipeline is presumed broken and 4G does
+  not start.
 * Defects **D84** and **D85** are open and **D18** is partial. Ninety-two of ninety-five are
   fixed. This session found three: **D93** (a time unit dropped at the T4E.2 signing seam, T4F.1),
   **D94** (a cache key republished as a `sha256`) and **D95** (untimestamped SPOC cadences), the
   last two by TG17.14's first contact with real archives.
-* The last measured **full backend run is 3,738 passed, 4 skipped, 1 xfailed**, exit 0, on
-  2026-09-04 in 45:04 -- the tree carrying T4F.1 and TG17.14. It replaces the 3,536 that
-  predated TG17.11. Documentation-only edits landed while it ran, so the 29 documentation
-  guards were re-run standalone afterwards and passed; no source changed during the run.
-  Do not quote a larger figure without running the suite again.
+* The last measured **full backend run is 3,893 passed, 4 skipped, 1 xfailed**, exit 0, on
+  2026-09-05 in 1:04:19 -- the tree carrying TG17.15 slice 5. It replaces the 3,868 measured
+  after slice 4 and the 3,738 that predated TG17.15. The wall time is longer than slice 4's
+  41:21 on a tree of the same size because the documentation guards ran concurrently; that is
+  CPU contention, not a regression. The 29 documentation guards were re-run standalone
+  afterwards and passed. Do not quote a larger figure without running the suite again.
 
 **Two habits this line holds to, because both were learned by being caught out.** A guard that
 passes because it cannot see what it is checking has now been met five times (D64, D74, D75, and
