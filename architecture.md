@@ -8022,6 +8022,87 @@ not a base rate, a lift, a surrogate comparison, a p-value, a precursor or a cau
 boundary says a repeated interval is not a period, a frequency or an oscillation, that no null was
 drawn, and that whether a concentration exceeds chance is T4F.3's question.
 
+### 3F.3 Precursor tests, and the first null (`src/analysis_engine/spectral_precursors.py`, T4F.3)
+
+T4F.2 counted and claimed nothing. This is the task that asks whether a count means anything:
+**when a small attributed configuration appears at `t`, does the probability of another
+configuration appearing by `t + delta` rise above its base rate, above a surrogate ensemble, at
+admissible lags, under FDR control?** `precursor_report` answers it for every ordered pair at
+every declared lag and refuses to answer it for a design that could not have answered it.
+
+**The base rate is a window probability, and it is measured.** Confidence here is the chance
+that a declared window following an occurrence contains the consequent. Divided by the fraction
+of *frames* carrying the consequent, it would yield a lift that grows with the width of the
+window and with nothing else. So `window_base_rate` drops the **same window** at every searched
+position whose window was wholly observed -- the same eligibility rule that decides an
+antecedent's admissibility -- and reports the rate with the number of positions it was estimated
+over. The reference set is not purged of the antecedent's own occurrences: purging would make the
+denominator depend on which rule is being tested, so two rules sharing a consequent would be
+divided by different numbers, and including them pulls lift toward 1 for a common antecedent,
+which is the conservative direction. That choice is published rather than assumed.
+
+**The null is a statement about alignment.** `circular_antecedent_shift`, the default, rotates
+the antecedent's occurrence times on the searched lattice: the count is preserved exactly, every
+gap inside it is preserved but the one the wrap falls in, the consequent is untouched -- so the
+base rate is invariant and confidence and lift rank the ensemble identically -- and only the
+alignment between the two patterns is destroyed. Rotations smaller than the widest declared lag
+plus one cadence step are never drawn, because such a surrogate retains part of the alignment
+under test and is a blurred copy of the observation rather than a draw from a null; the floor is
+derived from the window and the cadence rather than chosen, and a rotation near the full extent
+is excluded with it because it is a small rotation the other way.
+
+`uniform_antecedent_relocation` is provided and is **anti-conservative by construction**, in the
+way `surrogate_null.per_frame_phase` is: it scatters the antecedent uniformly over the searched
+frames and so destroys the antecedent's own clustering. The acceptance suite measures the
+consequence on one unchanged record -- a clumped antecedent sitting in front of a dense block of
+the consequent reads lift 5.25 either way, is **not distinguished** from the shifting null at
+p = 0.11, and is called a precursor by the scattering null at p = 0.01. The choice of null is
+the hypothesis, and here it decides the finding.
+
+**A lag chosen by the data is a search, so two families are reported and each is corrected on
+its own.** The per-lag family is every (antecedent, consequent, window) triple, every member
+reported whether it looked interesting or not, so no selection precedes the correction. The
+selected-lag family is one member per pair, and its p-value is referenced to the distribution of
+the **maximum across the declared lags** -- which is available exactly because one draw is shared
+across the whole family per antecedent. `precedence.py` names the failure this avoids: testing
+the winner against the null of a single lag prices a search of several as one test. The shared
+draw is not merely asserted: because the ensemble is published on each rule, a test holds the
+selected null to the elementwise maximum of the per-lag ones, and holds a window's ensemble to
+be the same whether it was declared first or second in the family.
+
+**A design that could not reject is refused before anything is counted.** `check_power` is asked
+first, and an ensemble too small for the declared family raises rather than returning a report
+full of non-rejections. This is deliberately *not* T4C.5i's boundary applied late: an
+under-powered study reports an absence indistinguishable from a real one, and the cleanest way
+to honour "an inadequately powered absence is not a negative finding" is never to produce the
+absence. The refusal is a fact about the declared design, before the record is read.
+
+**The receipt publishes the ensemble, not only the verdict.** Each rule carries the confidence
+every surrogate produced, in draw order, with quantiles in the rendered receipt -- a p-value is a
+statement about a distribution, and the distribution is the part a reader can check. Each rule
+also carries R9's six figures or names which one is undefined and why, and `PrecursorRule.figures()`
+builds the programme's own `AssociationFigures` rather than a seventh private home for the same
+six numbers, so a rule that cannot satisfy R9's contract is refused by that contract rather than
+by a check in this file.
+
+**Nothing is reimplemented.** The counting and its eligibility rule are T4F.2's `count_sequence`,
+made public in this task so a second denominator cannot exist -- two would agree on the planted
+case and diverge exactly at the record's edge, which is the case the denominator was written for.
+The empirical p-value is `significance.surrogate_p_value`, the correction and the power check are
+`multiple_comparisons.adjust` and `check_power`. T4F.1's `observation_of_window` became
+logarithmic in this task, because it is called for every antecedent of every rule of every
+surrogate and a linear scan there is the difference between a report in seconds and one in
+minutes; the classification it returns is unchanged.
+
+**What a rejected rule is.** A precursor signature: the antecedent was followed by the consequent
+within the declared window more often than the record's own re-alignments of that antecedent
+were. Not a cause, a driver, a mechanism, a trigger or a forecast, and no intervention is implied
+(R7). The null is a statement about alignment, so both patterns following a third thing this
+record does not contain is entirely consistent with a rejection; the interval assumes an
+independence the record does not have, and says so with the number of overlapping windows
+measured; and the base rate comes from this record alone, so a rule is a statement about this
+record and not about the world.
+
 ## 4. Database Schema and State Tracking (`src/database/models.py`, `session.py`, `migrate.py`)
 
 The database layer (`src/database/`) is fully configured using SQLAlchemy and targets a persistent or in-memory SQLite database (`spectral_earth.db`). 
@@ -8195,7 +8276,7 @@ See `VERIFICATION.md` for the captured command output behind every statement her
 | Item | Status |
 |---|---|
 | Python venv + dependencies | installed (torch 2.13.0+cu130, numpy 2.2.6, pydantic 1.10.26, SQLAlchemy 2.0.52, xarray 2025.6.1, FastAPI 0.110.3) |
-| Backend test suite | **3926 passed, 1 xfailed** (plus 4 skipped: the opt-in live GCS read, opt-in live store probe, opt-in live Argo acceptance, and opt-in live TESS/MAST acceptance). Measured 2026-09-05 in 3,510.91 s (0:58:30), exit 0, on the tree carrying T4F.2. Nothing failed in this run. It is exactly 33 above the previous measurement of 3893, which is the number of test functions T4F.2 added, so nothing was lost in between. |
+| Backend test suite | **3978 passed, 1 xfailed** (plus 4 skipped: the opt-in live GCS read, opt-in live store probe, opt-in live Argo acceptance, and opt-in live TESS/MAST acceptance). Measured 2026-09-05 in 3,129.85 s (0:52:09), exit 0, on the tree carrying T4F.3. Nothing failed in this run. It is exactly 52 above the previous measurement of 3926: the 47 test functions T4F.3 added, one of which is parametrised six ways, so nothing was lost in between. |
 | Ground-Truth Benchmark Suite | **29 PASS, 0 FAIL, 0 NOT_YET_RUNNABLE** (`python -m src.benchmarks`, exit 0) |
 | Frontend `npm install` + `npm run build` | passes, emits 1,395 modules + real JS/CSS assets (was: 1 module, no assets) |
 | Backend server | starts, serves OpenAPI, all smoke-tested endpoints return 200 |
@@ -8206,7 +8287,7 @@ TG17.9 was verified after that last full-suite figure with 21 receipt tests, all
 contract tests, all 80 orchestrator tests and all 26 documentation tests (284 focused tests across
 the four files). The production build transforms 1,408 modules and the full rendered Chromium
 suite is 33/33. The whole backend suite has since been rerun, most recently on 2026-09-05 after
-T4F.2, so **3926** is the last measured full figure rather than being arithmetically
+T4F.3, so **3978** is the last measured full figure rather than being arithmetically
 increased from targeted runs. That run was the first in a while with nothing else competing for
 the machine, and `test_acquisitions_api.py::test_a_server_restart_marks_active_cds_work_
 interrupted_for_explicit_resume` passed in it. The two runs where it failed were both heavily
@@ -9051,9 +9132,10 @@ able to sit three slices out of date.
 | `test_spectral_mining.py` | 14 | T4E.4 bounded minimum-support mining: both hard budgets positive and mandatory; support a positive integral threshold rather than a boolean or fraction; planted five- and two-occurrence patterns separated at minimum three and equality admitted at five; every supported or early-pruned candidate still reporting its distinct-identity count and support unit; the entire decreasing-support tail pruned at the first miss; candidate cap refused before a partial sweep; wall-clock deadline enclosing both preflight and the scan and exposing no partial result; duplicate constellation keys refused rather than counted twice; a threshold above all candidates returning a complete empty result; input permutation unable to change IDs, counts or decisions; and the receipt publishing its algorithm, budgets, unasserted elapsed time and explicit non-significance boundary |
 | `test_spectral_events.py` | 18 | T4F.1 the timed event substrate: the grid refusing an unnamed time unit, an empty frame list, repeated or reordered frames and a cadence the frames do not lie on; coverage measured against the declared cadence, reported incomplete with its missing count across an unsearched frame, and refused as undecidable without a cadence; the searched frames unrecoverable from the catalogue; an empty catalogue, an occurrence at an unsearched frame, two scale modes in one series, a repeated occurrence identity and a member unit disagreeing with the grid each refused by name; members carrying no unit counted rather than assumed to agree; event order invariant to input permutation; two patterns on one frame reported as simultaneous and unordered; per-pattern spans in the declared unit; and the receipt publishing its schema, grid and claim boundary |
 | `test_spectral_sequences.py` | 33 | T4F.2 counted sequences and repeated gaps: a zero or negative minimum lag refused because it would make two events on one frame a succession, lags required finite, ordered and in a named unit, a lag declared in another unit than the grid refused rather than converted, and a window no frame on the cadence can fall inside refused rather than counted as zero while the same window is admitted on a grid fine enough to reach it; a proposed window classified measured, holed or truncated with the three kept apart and undecidable without a cadence; the planted four-fold chain counted at both lengths with the reversed chain present as a zero rather than omitted, two patterns sharing a frame counted as no step in either direction, and a pattern following itself counted as the chain it is; a censored antecedent excluded from the denominator while an antecedent whose searched window held nothing stays in it as a miss, an unread window excluded and counted apart, a completion at an inadmissible antecedent published rather than dropped, the count standing and the ratio refused without a cadence, a pattern with no admissible antecedent reporting that rather than a zero ratio, and no sequence claiming more support than the occurrences it was counted over; support asserted antimonotone under extension over every extension the sweep reached and the examined and pruned candidate counts asserted against the arithmetic that rule implies; a length below two, a fractional or non-positive minimum support, an implicit series, window or budget, and either budget overrun each refused whole; and for recurrence, a repeated gap reported with its count and share, a gap containing an unread instant bounding rather than measuring and kept out of the longest, a series whose every gap is unmeasured, an undeclared cadence reporting which kind of ignorance it is, gaps that never agree, a tally below the declared minimum refusing a modal interval, a single gap refused as a recurrence, an absent pattern refused rather than reported empty, and the receipt publishing the lattice count that is the denominator of its own coincidence |
+| `test_spectral_precursors.py` | 47 | T4F.3 precursor tests: the base rate measured as a window probability rather than a frame one and shown to grow with the window, estimated only over positions whose window was wholly observed, identical for two antecedents sharing a consequent, published with the sample size it was estimated over, and refused as a lift when the consequent never fell in any observed window; lift held to confidence over base rate, the interval bracketing it and narrowing as the denominator grows, the interval held to the defining property of the score interval so a normal approximation that gives a perfect record no width at all is refused, the overlapping windows that break its independence assumption counted rather than only disclaimed with two anchors exactly a window apart counted as sharing one, and R9's six figures either built as the programme's own carrier or refused whole, the surrogate-corrected lift shown to be against the ensemble while the plain lift is against the base rate; the planted precursor clearing the null while its reverse does not, the same unchanged record called a precursor by the scattering null and not by the shifting one, the rotation preserving the antecedent's count and every gap but the wrapped one, rotations below the widest declared lag never drawn, an ensemble larger than the record's distinct rotations refused, the null's identity and what it preserves and destroys travelling in the receipt, the easy null carrying its own warning, and one seed redrawing one ensemble; a lag family required as a declared object and refused empty, duplicated, mixed in unit or declared in a unit the grid does not use, overlapping windows reported rather than refused, one draw shown to be shared across the family so the maximum has a null and a window's ensemble does not depend on where it was declared, the chosen lag referenced to the maximum, and each family corrected against its own size; an under-powered design refused before anything is counted, the family sized by what was declared rather than by what was reported even when a member returned no number at all, a family whose every member clears alpha raw and none of them corrected showing that the status follows the correction, correction shown to move p-values only upwards, and every member reported including those that found nothing; a grid without a cadence, a pattern preceding itself, an unknown null or correction, an alpha or interval level outside (0, 1), an empty ensemble, an undeclared seed, an unaffordable budget and a pattern the series does not contain each refused by name; the ensemble a p-value came from published rather than only summarised; no status naming a term the ladder places outside itself; and the counting shown to be T4F.2's own rather than a second implementation of it |
 | `test_spectral_invariance.py` | 46 | T4E.2 the invariant signature: the principal axis checked against the covariance eigendecomposition it stands for over 50 random configurations, exactly collinear points reporting an infinite anisotropy rather than a failure, and three axes refused rather than projected; the `planted_configuration` benchmark measured over 24 field-noise realisations to be isotropic with an axis angle spanning 0.78 to 158.08 degrees, the module's isotropy floor asserted to be the number that measurement produced, a configuration at the benchmark's own anisotropy refused an axis by name, and the vortex triples shown to clear the floor by two orders of magnitude; invariance measured rather than declared, with translation, three rotations, reflection and every relabelling asserted to leave the signature vector identical to floating-point precision in both modes; a uniform rescaling leaving the scale-free shape alone while an estimator that missed the rescaling moves the scale-specific geometry by exactly the factor it missed; the canonical order shown to matter, with two configurations that agree on independently sorted blocks and have no correspondence making both true at once; the toggle priced at 87 of 135 with the loss attributed by cardinality; a position in metres beside a scale in cells refusing the scale-specific mode and signing in the scale-invariant one, which is what R19's own refusal message tells the caller to do; and the refusals -- a pair asked for a scale-free shape, a pair's axis refused for a different reason than an isotropic triple's, a constellation stripped of its features, a member with no band RMS, an unknown mode, blocks that disagree about cardinality, a floor calibrated on one realisation or on collinear replicates, and the mixed-unit refusal left to the extractor rather than copied |
 | `test_spectral_narrative.py` | 25 | T4D.3 the prose, and what it may not say: every number in a sentence checked against the track it came from including the spoken speed against `Track.speed()` for all four tracks, the subject of every sentence being the coefficient maximum and not the structure, and the frame count being of frames searched rather than frames found; no track of a growing vortex claiming its own scale doubled -- each holding one level at a scale velocity of exactly zero with the word absent from the prose -- while the growth that did happen is measured across bands, level 4 weakening as level 5 strengthens and is first excited nine frames later, offered as a candidate precursor relationship carrying that it was not tested against a null and claims no merge, with one band supporting no ordering at all; a cartesian grid refused every compass word and given axis-relative wording, the sign that makes a row northward read from the grid so one displacement on two grids gives opposite points, the cosine of the latitude shortening a degree of longitude before the bearing is taken so 60 degrees north gives 26.6 and not 45, a track that returned to where it started given no bearing, and the missing-`lat0` branch shown to be unreachable rather than added; energy reported as the square under its own name so the roadmap's own 43% becomes 104.5%, and a change from zero refused rather than rendered infinite; the guard using the programme's one list of words for every entry in it, a causal word in a caller's own dataset name refused before a reader sees it, the guard's own limit asserted so a substring match cannot creep in, and the entitlement allowed to name the boundary the sentences may not cross and appearing exactly once however many tracks there are; plus a single sighting supporting no direction, speed or growth, a search that found nothing refused as an empty list of sentences, and the structural signature naming no variable, dataset or units |
-  | **total** | **3521** | |
+  | **total** | **3568** | |
 
 ### 7.4a Browser suite inventory
 

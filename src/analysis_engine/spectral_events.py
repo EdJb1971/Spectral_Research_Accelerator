@@ -34,6 +34,7 @@ rather than from the record, which is exactly the fabricated arrow `A4 -> A8` ex
 
 from __future__ import annotations
 
+import bisect
 import json
 import math
 from dataclasses import dataclass
@@ -105,6 +106,10 @@ class ObservationGrid:
                     "strictly increasing frame times (%s follows %s). A repeated or reordered "
                     "frame would make one instant two observations" % (value, previous))
             previous = value
+        # The frames as plain floats, once. `observation_of_window` is called for every
+        # antecedent of every rule of every surrogate in a T4F.3 ensemble, and a linear
+        # scan there is the difference between a report in seconds and one in minutes.
+        object.__setattr__(self, "_ordered", tuple(float(f) for f in self.frames))
         if self.cadence is not None:
             cadence = float(self.cadence)
             if not math.isfinite(cadence) or cadence <= 0.0:
@@ -154,7 +159,9 @@ class ObservationGrid:
         record ended before is not evidence that nothing followed it, and counting it as one
         would bias every confidence downwards by exactly the tail of the record.
         """
-        observed = sum(1 for frame in self.frames if start <= float(frame) <= end)
+        ordered: Tuple[float, ...] = getattr(self, "_ordered")
+        observed = (bisect.bisect_right(ordered, end)
+                    - bisect.bisect_left(ordered, start))
         if self.cadence is None:
             return COVERAGE_UNDECLARED, observed, None
         cadence = float(self.cadence)

@@ -242,7 +242,9 @@ class SequenceMiningResult:
         }
 
 
-def _times_by_pattern(series: EventSeries) -> Dict[int, List[float]]:
+def times_by_pattern(series: EventSeries) -> Dict[int, List[float]]:
+    """Each pattern's occurrence times, sorted. Public so T4F.3 counts on the same
+    index this module counts on rather than building a second one beside it."""
     times: Dict[int, List[float]] = {}
     for event in series:
         times.setdefault(event.pattern_id, []).append(float(event.time))
@@ -270,8 +272,16 @@ def _completes(sequence: Sequence[int], anchor: float, times: Dict[int, List[flo
     return True
 
 
-def _count(sequence: Tuple[int, ...], series: EventSeries, times: Dict[int, List[float]],
-           window: TransitionWindow, minimum_support: int) -> SequenceSupport:
+def count_sequence(sequence: Tuple[int, ...], series: EventSeries,
+                   times: Dict[int, List[float]], window: TransitionWindow,
+                   minimum_support: int) -> SequenceSupport:
+    """Count one sequence against the eligibility rule, and say what it could not count.
+
+    Public because T4F.3's precursor test is this count with a null wrapped around it, and
+    a second implementation of the denominator is the one thing that must not exist: the
+    two would agree on the planted case and diverge exactly at the record's edge, which is
+    the case the denominator was written for.
+    """
     grid = series.grid
     anchors = times.get(sequence[0], [])
     reach = (len(sequence) - 1) * float(window.maximum_lag)
@@ -344,7 +354,7 @@ def mine_frequent_sequences(
     _check_window_against_grid(window, series.grid)
 
     started = float(clock())
-    times = _times_by_pattern(series)
+    times = times_by_pattern(series)
     pattern_ids = tuple(sorted(times))
 
     results: List[SequenceSupport] = []
@@ -361,7 +371,7 @@ def mine_frequent_sequences(
             elapsed = float(clock()) - started
             if elapsed > budget.max_seconds:
                 raise MiningBudgetExceededError("wall-clock", elapsed, budget.max_seconds)
-            counted = _count(candidate, series, times, window, int(minimum_support))
+            counted = count_sequence(candidate, series, times, window, int(minimum_support))
             examined += 1
             results.append(counted)
             if counted.status == SEQUENCE_SUPPORTED:
@@ -540,4 +550,5 @@ __all__ = [
     "TransitionWindow", "SequenceSupport", "SequenceMiningResult",
     "RecurrenceInterval", "RecurrenceReport",
     "mine_frequent_sequences", "recurrence_report",
+    "count_sequence", "times_by_pattern",
 ]

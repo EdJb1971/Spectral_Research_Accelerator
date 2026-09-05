@@ -120,20 +120,28 @@ may reach the network without the maintainer's explicit say-so.
   support and a confidence rather than a shape the record merely permits. The honest part is
   the denominator: an antecedent enters a confidence only if the whole window it could have
   been followed in was searched, so an occurrence the record ended before is censored rather
-  than counted as unfollowed. **This remains the larger outstanding body of work in the
-  repository** -- T4F.3-8 and all of 4G remain, and no null has yet been drawn over any of
-  it. 4G is gated behind T4F.6: if nothing recognisable is recovered, the pipeline is
-  presumed broken and 4G does not start.
+  than counted as unfollowed. **T4F.3 has now drawn this phase's first null**: a confidence
+  is referenced to a base rate measured as a window probability rather than a per-frame one,
+  to a surrogate ensemble that rotates the antecedent on the searched lattice so its own
+  bursting survives and only the alignment under test is destroyed, and to a correction paid
+  on the whole declared family, with a data-chosen lag referenced to the distribution of the
+  maximum because a lag chosen by the data is a search. The easy null is provided and priced:
+  on one unchanged record the same lift is not distinguished at p = 0.11 by the shifting null
+  and is called a precursor at p = 0.01 by the scattering one, so the choice of null decides
+  the finding and the receipt names which was drawn. A design that could not have rejected
+  anything is refused before any counting happens, so an under-powered absence is never
+  produced to be read as a negative result. **This remains the larger outstanding body of
+  work in the repository** -- T4F.4-8 and all of 4G remain. 4G is gated behind T4F.6: if
+  nothing recognisable is recovered, the pipeline is presumed broken and 4G does not start.
 * Defects **D84** and **D85** are open and **D18** is partial. Ninety-two of ninety-five are
   fixed. This session found three: **D93** (a time unit dropped at the T4E.2 signing seam, T4F.1),
   **D94** (a cache key republished as a `sha256`) and **D95** (untimestamped SPOC cadences), the
   last two by TG17.14's first contact with real archives.
-* The last measured **full backend run is 3,926 passed, 4 skipped, 1 xfailed**, exit 0, on
-  2026-09-05 in 0:58:30 -- the tree carrying T4F.2. It replaces the 3,893 measured after
-  TG17.15 slice 5, the 3,868 after slice 4 and the 3,738 that predated TG17.15. The rise is
-  exactly the 33 test functions T4F.2 added, so nothing was lost in between, and this run had
-  nothing else competing for the machine. Do not quote a larger figure without running the
-  suite again.
+* The last measured **full backend run is 3,978 passed, 4 skipped, 1 xfailed**, exit 0, on
+  2026-09-05 in 0:52:09 -- the tree carrying T4F.3. It replaces the 3,926 measured after T4F.2
+  and the 3,893 after TG17.15 slice 5. The rise is exactly 52: the 47 test
+  functions T4F.3 added, one of them parametrised six ways, so nothing was lost in between, and this run had nothing else competing for the
+  machine. Do not quote a larger figure without running the suite again.
 
 **Two habits this line holds to, because both were learned by being caught out.** A guard that
 passes because it cannot see what it is checking has now been met five times (D64, D74, D75, and

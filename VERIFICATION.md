@@ -10327,3 +10327,189 @@ Re-run standalone after the documentation edits rather than trusted from inside 
 3926 passed, 4 skipped, 1 xfailed, 6 warnings in 3510.91s (0:58:30)
 exit 0
 ```
+
+## T4F.3 -- precursor tests, and the first null this phase draws (2026-09-05, `ed-dev`)
+
+`src/analysis_engine/spectral_precursors.py`, verified by `src/tests/test_spectral_precursors.py`
+(47 test functions, 52 pytest cases: one of them is parametrised six ways). Measured on 2026-09-05 with no network.
+
+```
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_spectral_precursors.py -q
+52 passed, 1 warning in 16.98s
+
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_spectral_precursors.py
+    src/tests/test_spectral_events.py src/tests/test_spectral_sequences.py
+    src/tests/test_spectral_mining.py src/tests/test_spectral_clustering.py -q
+133 passed, 1 warning in 45.28s
+```
+
+T4F.2 counted and its own receipt said it claimed nothing. This task asks whether a count means
+anything. It is the roadmap's central question and the first null Phase 4F draws.
+
+**The acceptance record, printed rather than described.** Two patterns on a 150-frame grid; A
+every ten frames, B two frames behind each one, and three further B occurrences in a stretch A
+never enters. Window `[1, 3]` frames, 99 circular-shift surrogates, seed 20260905, alpha 0.05,
+Benjamini-Yekutieli:
+
+```
+rule       sup  elig     conf     base    lift lift 95%              p        q  status
+A->B        10    10    1.000    0.259    3.87 [2.79, 3.87]     0.0100   0.0300  PRECURSOR_SIGNATURE
+         corrected lift 3.93 (null mean confidence 0.254), overlapping windows 0, six figures yes
+B->A         0    13    0.000    0.184    0.00 [0.00, 1.24]     1.0000   1.0000  NOT_DISTINGUISHED
+         corrected lift 0.00 (null mean confidence 0.193), overlapping windows 0, six figures no
+```
+
+**The measurement this task exists to make.** The same unchanged record, the same lift, two nulls:
+
+```
+=== B in four dense blocks, A one clump of four sitting just in front of the first
+circular_antecedent_shift      conf 1.000 base 0.190 lift 5.25  p 0.1100 q 0.1100  NOT_DISTINGUISHED
+   null mean confidence 0.187, corrected lift 5.35
+uniform_antecedent_relocation  conf 1.000 base 0.190 lift 5.25  p 0.0100 q 0.0100  PRECURSOR_SIGNATURE
+   null mean confidence 0.185, corrected lift 5.40
+```
+
+Nothing about the data differs between those two lines. The lift is identical, the base rate is
+identical, the ensemble size and the seed are identical. The scattering null destroys the
+antecedent's own bursting, so a clump of four that happens to sit in front of a dense block beats
+it on the shape of its own occurrence times; the shifting null moves the clump as a clump, and
+roughly one rotation in nine lands it in front of some block, which is what p = 0.11 is
+measuring. The choice of null is the hypothesis, and here it decides the finding. The uniform
+null is provided for exactly this reason and its receipt carries the word **anti-conservative**
+and the sentence "it should not be used to support a claim".
+
+**The base rate is a window probability and it is measured.** Confidence is the chance that a
+declared window following an occurrence contains the consequent, so dividing it by the fraction
+of *frames* carrying the consequent would give a lift that grows with the width of the window and
+with nothing else. `window_base_rate` drops the **same window** at every searched position whose
+window was wholly observed -- the eligibility rule that decides an antecedent's admissibility,
+applied to the reference -- and publishes the rate with the number of positions it was estimated
+over. The reference is not purged of the antecedent's own occurrences: purging would make the
+denominator depend on which rule is being tested, so two rules sharing a consequent would be
+divided by different numbers. Including them pulls lift toward 1 for a common antecedent, which
+is the conservative direction, and the choice is stated in the receipt rather than left implicit.
+
+**A lag chosen by the data is a search, and the null is over the choice.** `src/core/precedence.py`
+found this at the band level: the maximum of several lagged statistics is not one statistic. Two
+families are therefore reported and each is corrected against its own size -- every (antecedent,
+consequent, window) triple, all of them reported so that no selection precedes the correction; and
+one selected lag per pair, referenced to the distribution of the **maximum across the declared
+family**. That maximum has a null because one draw is shared across the family per antecedent, and
+the sharing is held to by test rather than asserted: the selected null must equal the elementwise
+maximum of the per-lag ones, and a window's ensemble must be identical whether it was declared
+first or second in the family.
+
+**A design that could not have rejected anything is refused before anything is counted.** With
+`n` surrogates a p-value cannot fall below `1 / (1 + n)`, and rank 1 of an `m`-test family under
+Benjamini-Yekutieli needs a raw p below `alpha / (m * H_m)`. `check_power` is asked first, and an
+ensemble too small for the declared family raises. This is not T4C.5i's boundary applied late: an
+under-powered study duly reports an absence indistinguishable from a real one, and the cleanest
+way to honour "an inadequately powered absence is not a negative finding" is never to produce the
+absence. The refusal is a fact about the declared design, before the record is read. It fires in
+the suite on its own: a run at alpha 0.02 with 99 surrogates and two tests is refused with the
+arithmetic, and 149 surrogates named as the requirement.
+
+**Nothing is reimplemented.** The counting and its eligibility rule are T4F.2's `count_sequence`,
+made public in this task so that a second denominator cannot exist -- two would agree on the
+planted case and diverge exactly at the record's edge, which is the case the denominator was
+written for, and the suite asserts the two agree figure for figure. The empirical p-value is
+`significance.surrogate_p_value`; the correction and the power check are
+`multiple_comparisons.adjust` and `check_power`; R9's six figures are carried by the programme's
+own `AssociationFigures`, so a rule that cannot satisfy that contract is refused by the contract
+rather than by a check in this file.
+
+**Mutation testing: 49 mutations in two batches, 27 + 22, all caught after the gaps were closed.**
+
+```
+batch one:  19 CAUGHT, 8 MISSED
+  MISSED  let the base rate depend on which antecedent is being tested        (equivalent mutant)
+  MISSED  give each lag its own draw, so the maximum has no null              (equivalent mutant)
+  MISSED  count one frame too many inside a proposed window                   (script scope)
+  MISSED  take a Wald interval, which is too narrow exactly where support is small
+  MISSED  correct against the tests that were reported rather than the family declared
+  MISSED  call a rule a precursor on its raw p-value
+  MISSED  relocate uniformly with replacement, so the surrogate loses occurrences
+  MISSED  make the surrogate-corrected lift a second copy of the plain lift
+
+batch two (the five real gaps re-aimed, plus fourteen new):  18 CAUGHT, 4 MISSED
+  MISSED  relocate uniformly with replacement          (the fixture made a collision unlikely)
+  MISSED  hide how many of the interval's trials shared a window   (no anchors a window apart)
+  MISSED  let an unstated seed default to something                (bad anchor)
+  MISSED  count one frame too many inside a proposed window        (script scope, again)
+
+after closing every gap and re-anchoring: 27 CAUGHT + 22 CAUGHT, 0 MISSED
+```
+
+Three of batch one's misses were faults in the mutations rather than in the guards, and they are
+recorded as such rather than quietly dropped. Two were **equivalent mutants**: trimming the last
+frame from the base-rate universe removes a position whose window was already truncated and so
+changes no number, and re-seeding the generator changes every draw consistently rather than
+giving each lag its own. The third was a **scope error in the harness** -- an
+`observation_of_window` mutation was run against the precursor and event suites but not against
+T4F.2's, which is where that method's guard actually lives; with the third file added it is caught
+at once, twice over.
+
+The five that were real gaps are the ones worth naming. **The Wald interval is the substantive
+one.** Nothing asserted the interval was the *score* interval rather than the normal
+approximation, and the existing test compared widths, which a hybrid preserves. It matters
+precisely here: a precursor rule is a rule where every eligible trial succeeded, and a Wald
+interval on a perfect record has **no width at all** -- it would report that the record had
+settled the question exactly. The test now holds the bounds to the score interval's defining
+property, that the observation sits `z` standard errors from each of them, which no
+approximation satisfies. **Correcting on the reported tests rather than the declared family** and
+**calling a rule a precursor on its raw p-value** both survived because the planted fixture is too
+clean: every member returned a number and the one rejection cleared both thresholds. Closing them
+needed two fixtures built for the purpose -- a family containing a member that returns no p-value
+at all, and a family whose every member clears alpha raw and none of them clears it corrected.
+The remaining two, drawing the relocation with replacement and printing the plain lift twice,
+were quantities nothing had read.
+
+**One design consequence worth recording.** The power refusal and the raw-versus-corrected test
+collide by construction: at rank 1 the corrected threshold is exactly the ratio the power check
+demands, so a p-value at the ensemble's floor is always rejected under a design powered to reject
+anything. The discriminating case therefore has to sit strictly above the floor, and the fixture
+that produces it -- two lags on one pair, p = 0.02 and 0.04, both clearing alpha = 0.05 raw and
+neither clearing q = 0.06 -- is named in the test so that a later edit which loses it fails loudly
+rather than silently testing nothing.
+
+**One change to an earlier task's code.** `ObservationGrid.observation_of_window` was a linear
+scan over the grid's frames. It is called for every antecedent of every rule of every surrogate,
+which took the smallest useful family from 0.00 s to 3.09 s, and a real study to minutes. It now
+bisects a float copy of the frames built once in `__post_init__`. The classification it returns is
+unchanged, T4F.1's and T4F.2's suites pass untouched, and two mutations aimed at the new
+arithmetic -- one frame too many, and treating the window's own endpoints as outside it -- are
+caught by T4F.2's existing guard on a window with a single missing frame in it.
+
+**What is refused rather than defaulted.** A lag family must be a declared `LagFamily`, because a
+family assembled at the call site is a family whose size the correction never sees; it is refused
+empty, refused with a window declared twice, refused with two units in it, and refused in a unit
+the grid does not use. The seed and the ensemble size are required arguments, because an ensemble
+nobody can redraw is an ensemble nobody can check. A grid without a cadence is refused with the
+three things it costs named. A pattern preceding itself is refused and sent to T4F.2's
+`recurrence_report`, which has a denominator built for that question. An ensemble larger than the
+record's distinct admissible rotations is refused rather than drawn with replacement, because the
+same rotation twice prices one null draw as several. A declared family that will not fit its
+budget is refused whole before any counting, with `partial_result: false`.
+
+**Nothing here is causal.** A rejected rule is a `PRECURSOR_SIGNATURE`, and the boundary refuses
+*cause*, *driver*, *mechanism*, *trigger*, *forecast* and *intervention* by name (R7). It also
+states two things a p-value invites a reader to forget: the null is a statement about alignment,
+so both patterns following a third thing this record does not contain is entirely consistent with
+a rejection; and the base rate is estimated from this record alone, so a rule is a statement about
+this record and not about the world. A test asserts that no status this module can emit contains a
+term `claim_ladder.OUTSIDE_THE_LADDER` names.
+
+**Documentation guards.**
+
+```
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_documentation.py -q
+29 passed
+```
+
+**Full backend suite.**
+
+```
+> .\.venv\Scripts\python.exe -m pytest src/tests -q
+3978 passed, 4 skipped, 1 xfailed, 6 warnings in 3129.85s (0:52:09)
+exit 0
+```

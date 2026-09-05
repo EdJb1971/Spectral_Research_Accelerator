@@ -55,8 +55,17 @@ supersedes the other.
   strictly positive so simultaneity can never become a step. Confidence admits only
   antecedents whose window was wholly searched, so an occurrence the record ended before is
   censored rather than counted as unfollowed; a repeated gap is reported with the number of
-  interval values the record was long enough to hold, and is not called a period. **T4F.3
-  precursor tests are next**, and they are where the first null is drawn.
+  interval values the record was long enough to hold, and is not called a period. **T4F.3 is
+  DONE, and it is where this phase draws its first null.** A confidence is referenced to a
+  base rate measured as a window probability over the searched positions, to a surrogate
+  ensemble that rotates the antecedent on the lattice so its own bursting survives and only
+  the alignment under test is destroyed, and to a correction paid on the whole declared
+  family, with a data-chosen lag tested against the distribution of the maximum. The
+  anti-conservative null is provided and its cost measured: on one unchanged record the same
+  lift of 5.25 is not distinguished from the shifting null at p = 0.11 and is called a
+  precursor by the scattering null at p = 0.01. A design that could not have rejected
+  anything is refused before any counting happens. Nothing is called a cause (R7). **T4F.4
+  bidirectional queries are next.**
 * Cross-domain line: **TG17.14 is DONE and `live_sources` reads `PASS`.** On 2026-09-04 the
   authorised bounded run reached ERA5 through CDS, Argo GDAC and MAST SPOC, each demonstrating
   real network use, while the bespoke order-book family demonstrated a content-addressed local
@@ -119,7 +128,7 @@ supersedes the other.
   vector publication sheets that preserve the figure's reading contract. Under
   G18 none of this may recompute, summarize, promote or reinterpret a scientific value, so each
   addition transcribes what the analysis layer produced or states that it produced nothing.
-* Last measured full backend run: **3926 passed, 4 skipped, 1 xfailed**, exit 0 (2026-09-05, 0:58:30).
+* Last measured full backend run: **3978 passed, 4 skipped, 1 xfailed**, exit 0 (2026-09-05, 0:52:09).
 * Last measured browser suite: **136/136** in Chromium from a cleaned `.e2e-state` (2026-09-04).
   It is inventoried in `architecture.md` section 7.4a; it is the only check here that proves a
   page renders.
