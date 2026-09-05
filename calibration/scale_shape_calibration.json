@@ -1,0 +1,295 @@
+{
+  "all_met": true,
+  "calibration": "scale_shape_calibration",
+  "cases": [
+    {
+      "case": "planted_correspondence",
+      "certifies_rate": true,
+      "family_wise_error": {
+        "one_sided_upper": 1.0,
+        "point": 1.0,
+        "successes": 200,
+        "trials": 200
+      },
+      "independent_uniformity": {
+        "ks_p_value": 0.0,
+        "ks_statistic": 0.9928571428571429,
+        "mean": 0.001941738960712157,
+        "n": 200
+      },
+      "members_at_their_floor_that_did_not_reject": 0,
+      "members_at_their_pool_floor": {
+        "one_sided_lower": 0.9848726414974043,
+        "successes": 1189,
+        "trials": 1200
+      },
+      "pool_size_range": [
+        61,
+        470
+      ],
+      "realisations": 200,
+      "refusal_rate_upper": 0.014867039231272056,
+      "refusals": 0,
+      "reproduction_witness": {
+        "basis": "realisation `i` runs at `seed + i`, so a 3-realisation run at this seed is the leading prefix of this one and reproduces it exactly or not at all",
+        "realisations": 3,
+        "seed": 20260904,
+        "sha256": "5fb8c2de6809f56317dec13a5bda5412aa37cca6e91e046f299d982a033940bc"
+      },
+      "seconds": 192.2,
+      "within_expectation": true
+    },
+    {
+      "case": "no_correspondence",
+      "certifies_rate": true,
+      "family_wise_error": {
+        "one_sided_upper": 0.02349847043495072,
+        "point": 0.005,
+        "successes": 1,
+        "trials": 200
+      },
+      "independent_uniformity": {
+        "ks_p_value": 0.3515620403222707,
+        "ks_statistic": 0.06499999999999995,
+        "mean": 0.5213983194201626,
+        "n": 200
+      },
+      "members_at_their_floor_that_did_not_reject": 3,
+      "members_at_their_pool_floor": {
+        "one_sided_lower": 0.0011393747443056317,
+        "successes": 4,
+        "trials": 1200
+      },
+      "pool_size_range": [
+        61,
+        470
+      ],
+      "realisations": 200,
+      "refusal_rate_upper": 0.014867039231272056,
+      "refusals": 0,
+      "reproduction_witness": {
+        "basis": "realisation `i` runs at `seed + i`, so a 3-realisation run at this seed is the leading prefix of this one and reproduces it exactly or not at all",
+        "realisations": 3,
+        "seed": 20260904,
+        "sha256": "0551a40745b118814b7e6703e029254818e53e14b4dfa2f5e1e1246dc78be557"
+      },
+      "seconds": 192.6,
+      "within_expectation": true
+    },
+    {
+      "case": "shared_grid_alias",
+      "certifies_rate": true,
+      "family_wise_error": {
+        "one_sided_upper": 0.03114259941408376,
+        "point": 0.01,
+        "successes": 2,
+        "trials": 200
+      },
+      "independent_uniformity": {
+        "ks_p_value": 0.22906488342753173,
+        "ks_statistic": 0.0727450980392157,
+        "mean": 0.5423430538493101,
+        "n": 200
+      },
+      "members_at_their_floor_that_did_not_reject": 1,
+      "members_at_their_pool_floor": {
+        "one_sided_lower": 0.0006817455504639716,
+        "successes": 3,
+        "trials": 1200
+      },
+      "pool_size_range": [
+        61,
+        470
+      ],
+      "realisations": 200,
+      "refusal_rate_upper": 0.014867039231272056,
+      "refusals": 0,
+      "reproduction_witness": {
+        "basis": "realisation `i` runs at `seed + i`, so a 3-realisation run at this seed is the leading prefix of this one and reproduces it exactly or not at all",
+        "realisations": 3,
+        "seed": 20260904,
+        "sha256": "55881cfdd34627aa6ddcab474a84380f8b4312a674ec0eaaaae686c37490eb5d"
+      },
+      "seconds": 183.5,
+      "within_expectation": true
+    },
+    {
+      "case": "clean_partner_noisy_pool",
+      "certifies_rate": true,
+      "family_wise_error": {
+        "one_sided_upper": 0.01494118705889525,
+        "point": 0.0,
+        "successes": 0,
+        "trials": 199
+      },
+      "independent_uniformity": {
+        "ks_p_value": 0.2960536610037219,
+        "ks_statistic": 0.0683924805374021,
+        "mean": 0.5218379527764088,
+        "n": 199
+      },
+      "members_at_their_floor_that_did_not_reject": 5,
+      "members_at_their_pool_floor": {
+        "one_sided_lower": 0.0016514464446664157,
+        "successes": 5,
+        "trials": 1194
+      },
+      "pool_size_range": [
+        57,
+        443
+      ],
+      "realisations": 200,
+      "refusal_rate_upper": 0.02349847043495072,
+      "refusals": 1,
+      "reproduction_witness": {
+        "basis": "realisation `i` runs at `seed + i`, so a 3-realisation run at this seed is the leading prefix of this one and reproduces it exactly or not at all",
+        "realisations": 3,
+        "seed": 20260904,
+        "sha256": "4fbb8db56ae0eb0d249df8d292ddeb9a9f652852ca52209f5da4fe628cb06ece"
+      },
+      "seconds": 158.1,
+      "within_expectation": true
+    },
+    {
+      "case": "unresolvable_inventory",
+      "certifies_rate": true,
+      "family_wise_error": {
+        "one_sided_upper": 1.0,
+        "point": null,
+        "successes": 0,
+        "trials": 0
+      },
+      "independent_uniformity": {
+        "ks_p_value": null,
+        "ks_statistic": null,
+        "mean": null,
+        "n": 0
+      },
+      "members_at_their_floor_that_did_not_reject": 0,
+      "members_at_their_pool_floor": {
+        "one_sided_lower": 0.0,
+        "successes": 0,
+        "trials": 0
+      },
+      "pool_size_range": [
+        0,
+        0
+      ],
+      "realisations": 200,
+      "refusal_rate_upper": 1.0,
+      "refusals": 200,
+      "reproduction_witness": {
+        "basis": "realisation `i` runs at `seed + i`, so a 3-realisation run at this seed is the leading prefix of this one and reproduces it exactly or not at all",
+        "realisations": 3,
+        "seed": 20260904,
+        "sha256": "863a41d4047acd08e24d07cd2242638330b47f2ef4119b4057851e9e35778963"
+      },
+      "seconds": 0.9,
+      "within_expectation": true
+    }
+  ],
+  "cases_failing_expectation": [],
+  "cases_whose_run_cannot_certify_a_rate": [],
+  "claim_boundary": "a measured false-positive rate and detection curve for this null on records built here, whose answers were fixed before the method ran. It is evidence that the arithmetic and the exchangeability hold together on these fixtures. It is NOT evidence that a pool of real records is exchangeable: that rests on properties the fixtures were given by construction and a real inventory would have to be shown to have",
+  "contract_sha256": "87738fcfceb15a943bce7025e37d89cad5fd8cf00ab057c39d34c48e2675b765",
+  "detection": {
+    "inventory_sha256": [
+      "be9a0eeed11d3b038792405c3639f8de15024657a09fb2c14b0beefc3fe9d011"
+    ],
+    "rungs": [
+      {
+        "family_detection": 1.0,
+        "member_detection": 1.0,
+        "member_uncorrected": 1.0,
+        "members_at_their_floor_that_did_not_reject": 0,
+        "members_at_their_pool_floor": 0.9916666666666667,
+        "realisations": 40,
+        "refusals": 0,
+        "weight": 1.0
+      },
+      {
+        "family_detection": 1.0,
+        "member_detection": 0.9958333333333333,
+        "member_uncorrected": 1.0,
+        "members_at_their_floor_that_did_not_reject": 0,
+        "members_at_their_pool_floor": 0.6583333333333333,
+        "realisations": 40,
+        "refusals": 0,
+        "weight": 0.95
+      },
+      {
+        "family_detection": 1.0,
+        "member_detection": 0.9583333333333334,
+        "member_uncorrected": 1.0,
+        "members_at_their_floor_that_did_not_reject": 0,
+        "members_at_their_pool_floor": 0.3458333333333333,
+        "realisations": 40,
+        "refusals": 0,
+        "weight": 0.92
+      },
+      {
+        "family_detection": 0.6,
+        "member_detection": 0.3541666666666667,
+        "member_uncorrected": 0.9875,
+        "members_at_their_floor_that_did_not_reject": 4,
+        "members_at_their_pool_floor": 0.125,
+        "realisations": 40,
+        "refusals": 0,
+        "weight": 0.88
+      },
+      {
+        "family_detection": 0.225,
+        "member_detection": 0.0625,
+        "member_uncorrected": 0.8166666666666667,
+        "members_at_their_floor_that_did_not_reject": 7,
+        "members_at_their_pool_floor": 0.08333333333333333,
+        "realisations": 40,
+        "refusals": 0,
+        "weight": 0.84
+      },
+      {
+        "family_detection": 0.175,
+        "member_detection": 0.0375,
+        "member_uncorrected": 0.575,
+        "members_at_their_floor_that_did_not_reject": 5,
+        "members_at_their_pool_floor": 0.05416666666666667,
+        "realisations": 40,
+        "refusals": 0,
+        "weight": 0.8
+      },
+      {
+        "family_detection": 0.025,
+        "member_detection": 0.004166666666666667,
+        "member_uncorrected": 0.15833333333333333,
+        "members_at_their_floor_that_did_not_reject": 2,
+        "members_at_their_pool_floor": 0.0125,
+        "realisations": 40,
+        "refusals": 0,
+        "weight": 0.6
+      },
+      {
+        "family_detection": 0.0,
+        "member_detection": 0.0,
+        "member_uncorrected": 0.05,
+        "members_at_their_floor_that_did_not_reject": 1,
+        "members_at_their_pool_floor": 0.004166666666666667,
+        "realisations": 40,
+        "refusals": 0,
+        "weight": 0.0
+      }
+    ]
+  },
+  "family_size": 6,
+  "realisations": 200,
+  "recorded_utc": "2026-09-04T22:41:28.066528Z",
+  "schema": "calibration-record/v1",
+  "seed": 20260904,
+  "source_sha256": {
+    "src/benchmarks/pool_calibration.py": "fd6f087565b54837c03227626030004f3aa60682f47ed9df6c2a305f0ba197da",
+    "src/benchmarks/shape_calibration.py": "33315f87fd93bcf21725ff9355cfa39363d50b44ad8e83db97c001b12b0eef0f",
+    "src/core/correspondence_estimand.py": "1ad0166c91f477f5d4efb233247d019631bde2c32ca558f1cebc4a3281368921",
+    "src/core/partner_pool.py": "8c0b875f81a36c2576453b110b40f703c49c463cc531cda2367a986ed9258995",
+    "src/core/pool_substitution_null.py": "27d0cc3dba61419a7a81af4a90d35f63cea618a84a4c1334e3af9291e0ac6ea6",
+    "src/statistics/multiple_comparisons.py": "5bcb4bb0e60844273e486def2b57c8677843c48bb78777e25d544098edce7c24"
+  }
+}

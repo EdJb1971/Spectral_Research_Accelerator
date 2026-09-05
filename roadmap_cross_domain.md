@@ -43,7 +43,7 @@ gates in about 0.15 s without executing any of the measurements they read. On th
 | `browser_no_glue` | `PASS` | TG18.5 slice 4. Reads a recorded Playwright run bound to the source of every spec in the suite. |
 | `synthetic_fifth_adapter` | `PASS` | TG17.13. A live source-edit audit plus a recorded acceptance run. Publishes a standing glue count of **1** that it deliberately does not block on. |
 | `calendar_calibration` | `PASS` | TG17.12. Reads a recording bound to the declared contract and to the source that decides what was measured. |
-| `scale_shape_calibration` | `REFUSED` | TG17.11. A declared scientific limit: the null's resolvable sizes and its drawable sizes do not overlap, and TG17.15 establishes that no amount of compute closes the gap. A refusal blocks release exactly as a failure does. |
+| `scale_shape_calibration` | `REFUSED` | TG17.11, **superseded and not deleted** by TG17.15 slice 5. The old claim -- the null's resolvable sizes and its drawable sizes do not overlap, and no amount of compute closes the gap -- is recomputed on every plan and still holds. A successor null is calibrated and recorded. What still blocks: no declared manifest requests the calibrated inference, and pool exchangeability on real records is not decidable here. A refusal blocks release exactly as a failure does. |
 | `live_sources` | `PASS` | TG17.14. A dated four-domain run: ERA5/CDS, Argo GDAC and MAST SPOC each demonstrating network use, and the bespoke order-book record demonstrating **no** network use. |
 
 The verdict is `NOT_RELEASEABLE`. **Every scientific gate has now been measured** and five of the
@@ -52,8 +52,9 @@ declared scientific limit rather than unfinished work. TG17.14 reached four arch
 domains and moved the verdict not at all, which is the arrangement working: a refusal blocks
 exactly as a failure does.
 
-**What comes next is `scale_shape_calibration`, and TG17.15 below now specifies it.** The gate
-refuses because the null's resolvable sizes and its drawable sizes do not overlap. Two measurements
+**`scale_shape_calibration` is what TG17.15 addressed, and TG17.15 is now complete.** The gate
+refused because the null's resolvable sizes and its drawable sizes did not overlap -- a claim that
+is still recomputed on every plan and still holds. Two measurements
 on 2026-09-04 established that this cannot be fixed by scaling: at its minimum size of 105 the test
 has **zero margin** -- one member off the floor and none of the 105 reject -- and lifting the
 enumeration cap buys nothing, because each member's statistic sees only k - 1 distinct partners
@@ -64,7 +65,7 @@ its costs, slices and falsification conditions are written down there before any
 `offline_matrix` and `restart_recovery` remain `NOT_RUN` only in the sense that this call did not
 perform them; `execute_offline_qualification()` resolves both.
 
-**TG17.15 slices 1 to 4 are delivered.** The estimand is declared, the partner pool is built with
+**TG17.15 is delivered in full.** The estimand is declared, the partner pool is built with
 the circularity structurally excluded rather than forbidden, and the exact pool-substitution null
 runs a family at the size sealed into its pools. Slice 3 also corrected a defect in its own first
 draft that the phase's own falsification conditions were written to catch: a pool sized by
@@ -84,8 +85,22 @@ inventory spanning 4.05 decades yields pools spanning about one. Slice 4 also fa
 recorded run, on an expectation that demanded a test with no type-II error; the expectation was the
 defect and was replaced by two criteria derived from the case.
 
-Slice 5 -- carrying this into the gate by checked supersession -- remains. `scale_shape_calibration`
-still reads `REFUSED`, verdict `NOT_RELEASEABLE`.
+Slice 5 carried that into the gate on 2026-09-05, and **TG17.15 is complete**. The gate still reads
+`REFUSED` and the verdict is still `NOT_RELEASEABLE`; what moved is the reason. TG17.11's refusal is
+superseded rather than deleted, and the supersession is recomputed on every plan rather than quoted:
+if the enumeration cap were ever lifted past the resolvable size, the record reads `VOID` and says
+the old limit removed itself instead of crediting this phase with removing it. Two blockers remain,
+both computed. Every frozen scale/shape manifest declares `scale_partner_reassignment` at 200
+replications -- read back from the manifests, not restated -- and the calibrated method is exact
+pool substitution, which none of them requests. And pool exchangeability on *real* records is
+published as **not decidable here**, with a guard asserting that blocker survives a passing
+recording, because it is exactly the one that gets quietly dropped once everything else goes green.
+
+**So scale/shape mode is now a calibrated method waiting on a declared plan and a curated
+inventory, rather than a method that could not work.** That is a better position than TG17.11 left
+it in and it is not a release. What would move it: a manifest that declares the per-correspondence
+estimand, and an inventory of real records whose admission criterion is shown to hold rather than
+assumed.
 
 **Phase G19 is specified and not started.** A researcher meeting a refusal wants to interrogate it
 with a model of their choosing, over several turns. G7's recorded-call boundary already supplies
@@ -5683,7 +5698,7 @@ metadata service answered three times and timed out twice; a timeout is recorded
 `network_used: null`, because after a failed call whether bytes moved is unknown. The binding
 constraint on this gate is a metadata service, not the science.
 
-**TG17.15 Rebuilding the scale/shape null so it can resolve - IN PROGRESS (slices 1-4 done).**
+**TG17.15 Rebuilding the scale/shape null so it can resolve - DONE (all five slices, 2026-09-05).**
 
 TG17.11 delivered a calibration and a refusal, and the refusal is correct: the declared null cannot
 reject at any inventory size the enumerator can reach. This phase asks what to build instead. It is
@@ -5867,9 +5882,54 @@ cannot have: pool size and family size become two independent knobs instead of o
     The gate is unchanged and deliberately so: `scale_shape_calibration` still reads `REFUSED`,
     verdict `NOT_RELEASEABLE`. Carrying this measurement into it is slice 5's work, by checked
     supersession.
-*   **Slice 5 - the gate.** `scale_shape_calibration` reads the new calibration. TG17.11's refusal
-    is retired by a **checked supersession**, not edited away: the old record keeps its meaning and
-    the new one states why it replaces it.
+*   **Slice 5 - the gate. DONE (2026-09-05).** `scale_shape_calibration` reads the new
+    calibration, and **the gate still refuses**. What moved is the reason; the old reason was kept.
+
+    **The supersession is recomputed, not remembered.** `scale_shape_supersession` does not quote
+    TG17.11's claim. It recomputes it from the two primitives that claim turned on -- 105 resolvable
+    against 8 drawable -- using the same functions the gate's applicability section uses, and a
+    guard asserts the two agree. Three outcomes, and the third is the point: `SUPERSEDED`,
+    `NOT_SUPERSEDED` when the successor is absent, stale or failed, and **`VOID`** when the
+    predecessor's claim has stopped being true. If someone lifts the enumeration cap, the old limit
+    removed itself and calling that a supersession would credit this phase with work it did not do.
+    A guard drives the record into `VOID` and asserts it says so. Deleting the refusal instead
+    would have left a repository in which a limit that was overcome and a limit that was edited
+    away read identically.
+
+    **A second recording, with a backstop that is honestly smaller than the first's.** The calendar
+    calibration is cheap enough to re-run whole on every test pass, and is. This one costs
+    **1,031 s** for its five cases plus an eight-rung ladder. Rather than imply an equivalence, the
+    recording carries a **reproduction witness**: `calibrate_case` runs realisation `i` at
+    `seed + i`, so a three-realisation run at the recorded seed is the *leading prefix* of the
+    recorded run rather than a similar measurement, and the suite recomputes it for every case in
+    seconds. The case that refuses every realisation witnesses its refusals rather than the empty
+    list, which would agree with any other run that also produced nothing.
+
+    **What was recorded**, reproducing slice 4 exactly: `all_met: true`, family-wise one-sided
+    bounds of **0.0235**, **0.0311** and **0.0149** against alpha 0.05, ranks uniform on their own
+    lattice (KS 0.0650 / 0.0727 / 0.0684 at p 0.35 / 0.23 / 0.30), the planted case ranking the
+    true partner first for 1,189 of 1,200 members at a lower bound of **0.9849** with none of those
+    failing to reject, `unresolvable_inventory` refusing **200 of 200**, and one inventory digest
+    across all eight rungs.
+
+    **Why it still refuses, computed rather than asserted.** Two blockers, each published with what
+    would discharge it and whether this module can decide it at all. `declared_inference` is
+    decidable here: every frozen scale/shape manifest declares `scale_partner_reassignment` at 200
+    replications, **read back from the six manifests** rather than restated, and the calibrated
+    method is exact pool substitution, which none of them requests. Discharging it is a change to
+    the experiment declaration, not to the gate. `pool_exchangeability_on_real_records` is **not**
+    decidable here, and a guard asserts it survives a passing recording: it is the failure mode
+    this phase named in advance as the silently-violable one, and no further measurement on built
+    fixtures reaches it. TG17.11 kept three facts apart -- a calibrated method the declared plans
+    cannot reach, a method that does not exist, a method that ran and failed. This slice adds a
+    fourth: a calibrated, applicable, recorded method that answers a question no declared plan asks.
+
+    **Verification.** 59 guards across the two gate suites (12 to 28 and 22 to 28) plus three for
+    the witness (50 to 53). Fifteen mutations; the first pass missed one and it was a real gap --
+    every guard read the recording already on disk, so a break in the code that *writes* one would
+    have passed everything and surfaced only after the next fifty-minute re-record. `_trim_case` is
+    now exercised directly on a one-realisation outcome. Second pass **15 of 15**. The verdict is
+    unmoved: `NOT_RELEASEABLE`.
 
 **What would falsify this phase, stated in advance.**
 

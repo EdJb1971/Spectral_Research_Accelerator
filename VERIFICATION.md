@@ -10038,3 +10038,144 @@ by checked supersession rather than by editing the old refusal away:
 Scale/shape null calibration and planted power REFUSED
 verdict: NOT_RELEASEABLE
 ```
+
+## TG17.15 slice 5 A refusal superseded rather than deleted, and a gate that still refuses (2026-09-05, `ed-dev`)
+
+```
+> python -m pytest src/tests/test_calibration_record.py src/tests/test_experiment_qualification.py -q
+59 passed, 2 warnings in 63.67s (0:01:03)
+```
+
+**The recording.** `calibrate_pool_substitution` run deliberately and written to
+`calibration/scale_shape_calibration.json`, bound to its declared contract and to the source of the
+six modules that decide what it measures. 1,031 s for the five cases and the eight-rung ladder.
+
+```
+recorded_utc 2026-09-04T22:41:28.066528Z | all_met True | seed 20260904 | realisations 200
+
+case                        refus  fam-wise 1-sided up   rank1 lo       KS       p        pools
+planted_correspondence          0   200/200     1.0000     0.9849   0.9929   0.000    [61, 470]
+no_correspondence               0     1/200     0.0235     0.0011   0.0650   0.352    [61, 470]
+shared_grid_alias               0     2/200     0.0311     0.0007   0.0727   0.229    [61, 470]
+clean_partner_noisy_pool        1     0/199     0.0149     0.0017   0.0684   0.296    [57, 443]
+unresolvable_inventory      200/200        --         --         --       --      --           --
+
+ladder rungs 8 | inventory digests 1
+```
+
+Every figure reproduces slice 4's recorded run exactly, on a different day and in a separate
+process. The planted row's `KS 0.9929, p 0.000` is the alternative and not the null: that case is
+supposed to depart from uniformity, and a reader is entitled to see the number rather than a blank.
+
+**The reproduction witness, which is what makes a 1,031-second measurement checkable in seconds.**
+The calendar calibration is cheap enough that the live measurement runs in the test suite on every
+pass and a guard compares it against the recording. This one is not, and pretending otherwise would
+have been the easy lie. `calibrate_case` runs realisation `i` at `seed + i`, so a three-realisation
+run at the recorded seed is not a *similar* measurement to the recorded one -- it is its leading
+prefix, exactly. The recording carries a digest of those realisations per case, and the suite
+recomputes all five:
+
+```
+witness planted_correspondence     seed 20260904 realisations 3 5fb8c2de6809f563
+witness no_correspondence          seed 20260904 realisations 3 0551a40745b11881
+witness shared_grid_alias          seed 20260904 realisations 3 55881cfdd34627aa
+witness clean_partner_noisy_pool   seed 20260904 realisations 3 4fbb8db56ae0eb0d
+witness unresolvable_inventory     seed 20260904 realisations 3 863a41d4047acd08
+```
+
+`no_correspondence`'s digest was computed independently, in a separate process before the recording
+existed, and is the same. The case that refuses every realisation witnesses `["REFUSED", ...]`
+rather than the empty list -- an empty digest agrees with every other run that also produced
+nothing, which is the one thing a witness must not do. This is a **smaller** claim than the
+calendar recording's, and the module says so in those words rather than implying an equivalence.
+
+**The supersession, recomputed rather than remembered.**
+
+```
+> python -c "from src.core.calibration_record import scale_shape_supersession; ..."
+supersession SUPERSEDED
+still_true True {'minimum_resolvable_family': 105, 'largest_drawable_inventory': 8}
+minimum_pool_size 48
+```
+
+`scale_shape_supersession` does not quote TG17.11's claim. It recomputes it from the two primitives
+that claim turned on, using the same functions the gate's applicability section uses, and a guard
+asserts the two agree. Three outcomes, and the third is the whole point of the word "checked":
+
+* `SUPERSEDED` -- the old claim still holds when recomputed, and a bound successor recording passed.
+* `NOT_SUPERSEDED` -- the successor is absent, stale or failed; the old refusal stands alone.
+* `VOID` -- the predecessor's claim has **stopped being true**. It was retired on its own terms
+  rather than superseded, and the record must be re-derived rather than kept.
+
+A guard drives it into `VOID` by lifting `MAX_REASSIGNABLE_PAIRINGS` past the resolvable size and
+asserts the record says the limit removed itself. Nothing in this repository produces `VOID` today,
+which is exactly why it needed a test: a supersession nobody recomputes is a sentence about the
+past that keeps agreeing with itself.
+
+**The gate, read directly. It still refuses, and that is the result.**
+
+```
+SUPERSEDED. The superseded claim (TG17.11 slice 5,
+src.benchmarks.shape_fixtures:calibrate_shape_family) is recomputed on every plan and still holds:
+no family smaller than 105 pairings can reject under benjamini_yekutieli at alpha 0.05, the
+declared null draws only from inventories of at most 8, and 2 of 2 declared domain families are
+refused by the null before size is reached. Superseded for applicability by TG17.15 slices 1-4
+(per_correspondence, src.benchmarks.pool_calibration:calibrate_pool_substitution), recorded
+2026-09-04T22:41:28.066528Z: 6 correspondences need a pool of 48, which the calibration's own pools
+reach. Blocked by declared_inference (decidable here); pool_exchangeability_on_real_records (not
+decidable here).
+
+status: REFUSED | verdict: NOT_RELEASEABLE
+```
+
+**Both blockers are computed, and one of them is admitted to be undecidable here.**
+`declared_inference` is read back from the six frozen manifests rather than restated: every one
+declares `scale_partner_reassignment` at 200 replications, and the calibrated method is exact pool
+substitution, which none of them requests. `pool_exchangeability_on_real_records` carries
+`decidable_here: false`, and a guard asserts it **survives a passing recording** -- it is the
+failure mode this phase named in advance as the silently-violable one, and it is therefore the one
+most likely to be quietly dropped once everything else goes green. Each blocker states what would
+discharge it, and a guard fails a blocker that does not, because a blocker with no discharge
+condition is a complaint.
+
+TG17.11 kept three facts apart: a calibrated method the declared plans cannot reach, a method that
+does not exist, and a method that ran and failed. This slice adds a fourth -- a calibrated,
+applicable, **recorded** method that answers a question no declared plan asks -- and refuses to
+report the measurement it can make in place of the one it cannot.
+
+**Mutation testing: one gap, and it was the one a slow measurement hides.**
+
+```
+first pass:  14 CAUGHT, 1 MISSED
+  MISSED  drop the witness from what a recording carries
+
+second pass: 15 CAUGHT, 0 MISSED
+```
+
+Every guard read the recording already on disk, so a break in the code that *writes* one would have
+passed the entire suite and surfaced only after the next fifty-minute re-record -- by which point
+the recording it produced would be a receipt with an unusable witness. `_trim_case` is now
+exercised directly on a one-realisation outcome costing about a second, and a guard also asserts
+that what a recording is written with and what the gate reads back are the same shape. The fourteen
+caught include awarding the gate a `PASS` now that a calibration passes, dropping the
+exchangeability blocker once everything else is green, remembering the predecessor's claim instead
+of recomputing it, calling it superseded while the predecessor is void, letting an absent successor
+supersede, asserting the declared null instead of reading it from the manifests, and reading a
+recording without binding it to the source it was measured against.
+
+**Documentation guards.**
+
+```
+> python -m pytest src/tests/test_documentation.py -q
+29 passed
+```
+
+**Full backend suite.**
+
+```
+3893 passed, 4 skipped, 1 xfailed, 6 warnings in 3859.63s (1:04:19)
+```
+
+The verdict is unmoved: `NOT_RELEASEABLE`. Scale/shape mode is now a calibrated method waiting on a
+declared plan and a curated inventory, rather than a method that could not work. That is a better
+position than TG17.11 left it in, and it is not a release.

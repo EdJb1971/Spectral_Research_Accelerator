@@ -67,6 +67,7 @@ as declared on records whose answers were fixed before the method ran.
 from __future__ import annotations
 
 import hashlib
+import json
 import math
 import time
 from dataclasses import dataclass
@@ -154,6 +155,20 @@ DEFAULT_REALISATIONS = 200
 DEFAULT_LADDER_REALISATIONS = 40
 
 CONFIDENCE = 0.95
+
+#: How many leading realisations of a case are digested as a reproduction witness.
+#:
+#: `calibrate_case` runs realisation `index` at `seed + index`, so a run of `k` realisations at a
+#: given seed *is* the first `k` realisations of any longer run at that seed. A short run is
+#: therefore not a similar measurement to the recorded one -- it is a prefix of it, exactly, and
+#: comparing digests either agrees or does not.
+#:
+#: This is what makes a 22-minute recording checkable by a test suite. The calendar calibration is
+#: cheap enough to re-run whole on every pass and is; this one is not, and the honest substitute
+#: is not a weaker version of the same claim but a different and smaller one: that the code path
+#: the recording names still produces, realisation for realisation, what it produced then. Three
+#: is enough for that, because a digest over eighteen p-values agrees by coincidence or not at all.
+WITNESS_REALISATIONS = 3
 
 
 # --------------------------------------------------------------------------- rates as intervals
@@ -566,6 +581,17 @@ CASE_EXPECTATIONS: Dict[str, Dict[str, Any]] = {
 }
 
 
+def witness_digest(rows: Sequence[Any]) -> str:
+    """A digest of the leading realisations of a case, refusals included as themselves.
+
+    A refused realisation is recorded as the string it is rather than skipped, because the case
+    that refuses every realisation would otherwise digest an empty list -- a witness that agrees
+    with any run that also produced nothing, which is the one thing a witness must not do.
+    """
+    return hashlib.sha256(json.dumps(list(rows), separators=(",", ":"),
+                                     sort_keys=True).encode("utf-8")).hexdigest()
+
+
 @dataclass(frozen=True)
 class CalibrationOutcome:
     """One case, run enough times to say something, with what it can and cannot certify."""
@@ -573,6 +599,8 @@ class CalibrationOutcome:
     case: str
     realisations: int
     refusals: int
+    seed: int
+    witness: str
     family_wise: Dict[str, Any]
     refusal_rate: Dict[str, Any]
     per_member_after_correction: Dict[str, Any]
@@ -619,6 +647,13 @@ class CalibrationOutcome:
     def describe(self) -> Dict[str, Any]:
         return {
             "case": self.case, "statement": CASES[self.case]["statement"],
+            "reproduction_witness": {
+                "realisations": int(WITNESS_REALISATIONS), "seed": int(self.seed),
+                "sha256": self.witness,
+                "basis": (
+                    "realisation `i` runs at `seed + i`, so a %d-realisation run at this seed is "
+                    "the leading prefix of this one and reproduces it exactly or not at all"
+                    % WITNESS_REALISATIONS)},
             "expectation": dict(self.expectation),
             "realisations": self.realisations, "refusals": self.refusals,
             "refusal_rate": self.refusal_rate,
@@ -694,17 +729,28 @@ def calibrate_case(case: str, *, realisations: int = DEFAULT_REALISATIONS, seed:
             "vacuous interval [0, 1] as though it were a measurement")
     started = time.time()
     families: List[CorrespondenceFamily] = []
+    witness_rows: List[Any] = []
     refusals = 0
     for index in range(int(realisations)):
         try:
-            families.append(run_realisation(
+            family = run_realisation(
                 case, int(seed) + index, family_size=family_size, alpha=alpha,
-                correction=correction, candidates_offered=candidates_offered))
+                correction=correction, candidates_offered=candidates_offered)
         except PoolAdmissionRefusal:
             refusals += 1
+            if index < WITNESS_REALISATIONS:
+                witness_rows.append("REFUSED")
+            continue
+        families.append(family)
+        if index < WITNESS_REALISATIONS:
+            # Rounded, so the witness survives a rebuild of the same arithmetic on another
+            # machine's last bit. Twelve places is far finer than any pool floor this module
+            # reaches, so it cannot round two genuinely different runs into agreement.
+            witness_rows.append([round(float(result.p_value), 12) for result in family.results])
     stats = _case_statistics(families, alpha=alpha)
     return CalibrationOutcome(
         case=case, realisations=int(realisations), refusals=refusals,
+        seed=int(seed), witness=witness_digest(witness_rows),
         family_wise=rate(sum(1 for family in families if family.n_rejected), len(families)),
         refusal_rate=rate(refusals, int(realisations)),
         per_member_after_correction=rate(stats["member_rejections"], stats["members"]),
@@ -872,7 +918,8 @@ __all__ = [
     "CALIBRATION_SCHEMA", "DETECTION_SCHEMA", "ORIENTATION", "SPAN_CYCLES",
     "NATIVE_SECONDS_RANGE", "ROWS_PER_CYCLE_RANGE", "NOISE_FLOOR_RANGE", "CALIBRATION_CONTRACT",
     "CALIBRATION_FAMILY_SIZE", "CANDIDATES_OFFERED", "EFFECT_WEIGHTS", "DEFAULT_REALISATIONS",
-    "DEFAULT_LADDER_REALISATIONS", "CONFIDENCE", "REALISATIONS_FOR_ALPHA", "clopper_pearson",
+    "DEFAULT_LADDER_REALISATIONS", "CONFIDENCE", "REALISATIONS_FOR_ALPHA",
+    "WITNESS_REALISATIONS", "witness_digest", "clopper_pearson",
     "one_sided_upper", "one_sided_lower", "attains", "realisations_to_certify",
     "ks_resolution", "rate", "certifies",
     "FixtureRecord", "build_record", "CASES", "CLEAN_PARTNER_NOISE", "build_realisation",

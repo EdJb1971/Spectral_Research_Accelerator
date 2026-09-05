@@ -25,11 +25,12 @@ import pytest
 from src.benchmarks.pool_calibration import (
     CALIBRATION_CONTRACT, CALIBRATION_FAMILY_SIZE, CASE_EXPECTATIONS, CASES, CONFIDENCE,
     DEFAULT_REALISATIONS, EFFECT_WEIGHTS, NOISE_FLOOR_RANGE, ORIENTATION,
-    REALISATIONS_FOR_ALPHA, ROWS_PER_CYCLE_RANGE, SPAN_CYCLES, CalibrationOutcome,
+    REALISATIONS_FOR_ALPHA, ROWS_PER_CYCLE_RANGE, SPAN_CYCLES, WITNESS_REALISATIONS,
+    CalibrationOutcome,
     _case_statistics, _harmonics, _statistic, admission_yield, attains, build_realisation,
     build_record, calibrate_case, certifies, clopper_pearson, detection_profile,
     ks_resolution, one_sided_lower, one_sided_upper, rank_uniform, rate,
-    realisations_to_certify, run_realisation, uniformity,
+    realisations_to_certify, run_realisation, uniformity, witness_digest,
 )
 from src.benchmarks.shape_calibration import (
     MINIMUM_ROWS_PER_CYCLE, ShapeComparisonRefusal, ShapeRecord, shape_recurrence,
@@ -472,7 +473,7 @@ def _outcome(case, **overrides):
     reason in any of them is a criterion nothing checks. Mutation testing found two of those.
     """
     body = dict(
-        case=case, realisations=200, refusals=0,
+        case=case, realisations=200, refusals=0, seed=20260904, witness="0" * 64,
         family_wise=rate(0, 200), refusal_rate=rate(0, 200),
         per_member_after_correction=rate(0, 1200), per_member_uncorrected=rate(0, 1200),
         attained_floor=rate(1189, 1200), unresolved_at_floor=0,
@@ -531,3 +532,43 @@ def test_the_ladder_proves_it_held_the_inventory_fixed_by_digest():
     digests = {rung["inventory_sha256"] for rung in profile["rungs"]}
     assert len(digests) == 1, "a rung ran against a different inventory from its neighbour"
     assert "checked rather than described" in profile["held_fixed"]
+
+
+# ----------------------- the reproduction witness, which is what makes a recording checkable
+
+
+def test_a_short_run_is_the_leading_prefix_of_a_longer_one_at_the_same_seed():
+    """The property the whole recording backstop rests on, asserted rather than assumed.
+
+    `calibrate_case` runs realisation `i` at `seed + i`, so a three-realisation run is not a
+    similar measurement to a two-hundred-realisation one at that seed - it is its first three
+    realisations, exactly. If that stopped being true, a recording made in tens of minutes could
+    no longer be checked in seconds, and the check would silently start comparing two different
+    things instead of failing.
+    """
+    short = calibrate_case("no_correspondence", realisations=WITNESS_REALISATIONS, seed=4041)
+    longer = calibrate_case("no_correspondence", realisations=WITNESS_REALISATIONS + 2, seed=4041)
+    assert short.witness == longer.witness
+    assert calibrate_case(
+        "no_correspondence", realisations=WITNESS_REALISATIONS, seed=4042).witness != short.witness
+
+
+def test_a_case_that_refuses_every_realisation_still_witnesses_something():
+    """The empty-list trap. A witness built by skipping refusals would digest `[]` for the case
+    that refuses everything, and an empty digest agrees with every other run that also produced
+    nothing - which is precisely the run a witness has to be able to tell apart."""
+    refusing = calibrate_case("unresolvable_inventory", realisations=WITNESS_REALISATIONS,
+                              seed=4043)
+    assert refusing.refusals == WITNESS_REALISATIONS
+    assert refusing.witness == witness_digest(["REFUSED"] * WITNESS_REALISATIONS)
+    assert refusing.witness != witness_digest([])
+
+
+def test_the_witness_travels_with_the_seed_that_addresses_it():
+    """A digest nobody can re-derive is a number, not a witness: it has to name its own run."""
+    described = calibrate_case("no_correspondence", realisations=WITNESS_REALISATIONS,
+                               seed=4044).describe()["reproduction_witness"]
+    assert described["seed"] == 4044
+    assert described["realisations"] == WITNESS_REALISATIONS
+    assert described["sha256"] == calibrate_case(
+        "no_correspondence", realisations=WITNESS_REALISATIONS, seed=4044).witness

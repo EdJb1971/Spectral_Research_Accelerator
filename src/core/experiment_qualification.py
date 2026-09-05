@@ -11,7 +11,7 @@ preserves one plan.  It says nothing about whether an archive was reachable, a s
 calibrated, an effect was detected, or a claim should move.
 
 It is also load-bearing that a cell may come back ``REFUSED``.  The frozen quartet includes the
-bespoke order-book domain, whose adapter declares that it cannot carry ``scale_partner_reassignment``
+bespoke order-book domain, whose adapter declares it cannot carry ``scale_partner_reassignment``
 because a depositor-supplied record has no native duration worth comparing shapes across.  The
 three scale/shape cells are therefore refused at preflight, and the gate records that refusal as
 the qualification result rather than widening a framework default until the matrix turns green.
@@ -33,6 +33,24 @@ recording bound to the declared contract and to the source of the modules that d
 measurement is, so relaxing an expectation or changing the statistic returns this gate to
 ``NOT_RUN`` instead of leaving a stale pass behind.  See ``src.core.calibration_record``.
 
+TG17.15 slice 5 changes why that gate refuses without changing that it refuses, and the change is
+recorded as a **checked supersession** rather than as an edit.  TG17.11's refusal was about a
+method: the declared joint-reassignment null cannot reject at any inventory size its enumerator
+will draw from.  A different null answering a different estimand - exact substitution over a
+declared partner pool - now exists, is applicable at a pool size the fixtures actually reach, and
+is calibrated and recorded.  Deleting the old refusal at that point would leave a repository in
+which a limit that was overcome and a limit that was edited away read identically, so the old claim
+is kept, **recomputed** on every plan, and superseded only while it is still true on its own terms.
+See ``src.core.calibration_record.scale_shape_supersession``.
+
+What the supersession does not do is turn the gate green, and the reasons are computed rather than
+asserted.  The qualification manifests declare ``scale_partner_reassignment`` with a replication
+count, which is checked against the manifests this module builds; the calibrated method is not the
+one they request.  And the calibration's own claim boundary says it is evidence about built
+fixtures rather than about whether a pool of *real* records is exchangeable - a curation obligation
+that no amount of further measurement on fixtures discharges.  The gate therefore publishes its
+blockers, each with what would discharge it and whether this module can decide it at all.
+
 ``synthetic_fifth_adapter`` is the fifth, and it is the only gate here whose evidence is partly
 readable on the spot (TG17.13).  Its source-edit half is decidable from committed source in
 milliseconds, so it is re-run live rather than believed from a receipt; its acceptance-run half
@@ -52,6 +70,7 @@ from pathlib import Path
 from typing import Any, Dict, Iterable, List, Mapping, Tuple
 
 from src.benchmarks.multidomain_flagship import EXPERIMENT_CONTRACT
+from src.core.calibration_record import scale_shape_supersession
 from src.benchmarks.structural_trajectory import known_answer_native
 from src.core.experiment_manifest import (
     CrossDomainExperimentSpec,
@@ -132,11 +151,19 @@ def _gate(gate_id: str, title: str, status: str, detail: str,
 
 # ------------------------------------------------- TG17.11 slice 5: the scale/shape gate
 
-#: Where the registered scale/shape calibration lives. It is named rather than executed here, for
-#: the reason `calendar_calibration` gives: a calibration is a scientific measurement and this
-#: module is a release gate. Running a three-minute family calibration inside plan assembly would
-#: also make an HTTP route's cost depend on a benchmark's.
+#: Where the *superseded* scale/shape calibration lives - TG17.11's, built on the declared
+#: joint-reassignment null. It is named rather than executed here, for the reason
+#: `calendar_calibration` gives: a calibration is a scientific measurement and this module is a
+#: release gate. Running a three-minute family calibration inside plan assembly would also make an
+#: HTTP route's cost depend on a benchmark's. It is still named because the refusal it belongs to
+#: is still recomputed and still true; see `scale_shape_supersession`.
 SCALE_SHAPE_CALIBRATION = "src.benchmarks.shape_fixtures:calibrate_shape_family"
+
+#: The calibration the gate now decides applicability on (TG17.15). Two entry points appear here
+#: rather than one because two different questions were asked, and replacing the first name with
+#: the second would be the edit this slice exists not to make.
+SCALE_SHAPE_CALIBRATION_SUPERSEDING = (
+    "src.benchmarks.pool_calibration:calibrate_pool_substitution")
 
 #: The two domain families G17 could offer this null: the frozen quartet compared all-against-all,
 #: and the same inventory once `order_book` has declined the null under D83.
@@ -199,8 +226,11 @@ def scale_shape_applicability() -> Dict[str, Any]:
             "null_refusal": refusal,
             "reaches_resolvable_size": len(pairings) >= minimum,
         })
+    supersession = scale_shape_supersession()
+    declared = declared_scale_shape_null()
     return {
         "calibration": SCALE_SHAPE_CALIBRATION,
+        "calibration_superseding": SCALE_SHAPE_CALIBRATION_SUPERSEDING,
         "calibration_executed_here": False,
         "inference_the_calibration_uses": "exact_partner_p_values",
         "inference_the_manifests_declare": "drawn surrogates with a replication count",
@@ -210,11 +240,86 @@ def scale_shape_applicability() -> Dict[str, Any]:
         "largest_drawable_inventory": MAX_REASSIGNABLE_PAIRINGS,
         "declared_null_can_ever_reject": MAX_REASSIGNABLE_PAIRINGS >= minimum,
         "declared_families": families,
+        "declared_null": declared,
+        "supersession": supersession,
+        "blockers": scale_shape_blockers(supersession, declared),
         "claim_boundary": (
-            "A registered calibration exists and is measured outside orchestration. This gate "
-            "reports applicability, not power: it does not read that calibration's result and "
-            "does not assert one."),
+            "This gate reports applicability and reads a recorded calibration's verdict; it "
+            "executes no calibration and asserts no power number of its own. A recorded pass is "
+            "evidence about built fixtures, and is not evidence that a pool of real records is "
+            "exchangeable."),
     }
+
+
+def declared_scale_shape_null() -> Dict[str, Any]:
+    """Which inference the frozen scale/shape manifests actually request, read from the manifests.
+
+    The load-bearing half of why a calibrated method still leaves the gate refused, and the half
+    most easily reduced to a sentence. It is not a sentence: the six frozen declarations are built
+    and their declared null is read back, so a manifest that later requested the calibrated
+    inference would change this without anybody remembering to change a paragraph.
+    """
+    declarations = set()
+    for duration in DURATIONS:
+        for null in qualification_manifest(duration, "scale_shape_aligned").nulls:
+            declarations.add((null.name, null.method, int(null.replications)))
+    rows = sorted({"name": name, "method": method, "replications": replications}.items()
+                  for name, method, replications in declarations)
+    return {
+        "declared": [dict(row) for row in rows],
+        "inference": "drawn surrogates with a replication count",
+        "estimand": "joint_structure",
+        "manifests_request_the_calibrated_inference": False,
+        "read_from": "the six frozen qualification manifests, not from a restated sentence",
+    }
+
+
+def scale_shape_blockers(supersession: Mapping[str, Any],
+                         declared: Mapping[str, Any]) -> List[Dict[str, Any]]:
+    """What stands between this gate and a pass, each with what would discharge it.
+
+    A gate that reports only a status invites the reading that enough work turns it green. Two of
+    these three would be discharged by work, and the third would not be discharged by any amount of
+    measuring the same fixtures harder - so `decidable_here` is published beside each rather than
+    left for a reader to infer from tone.
+    """
+    blockers: List[Dict[str, Any]] = []
+    if supersession["status"] == "VOID":
+        blockers.append({
+            "blocker": "supersession_void",
+            "detail": " ".join(supersession["reasons"]),
+            "discharged_by": ("re-deriving the record: the predecessor's refusal was retired on "
+                              "its own terms rather than superseded"),
+            "decidable_here": True})
+    elif supersession["status"] != "SUPERSEDED":
+        blockers.append({
+            "blocker": "recorded_calibration",
+            "detail": " ".join(supersession["reasons"]) or "no recorded calibration passes.",
+            "discharged_by": ("recording %s against this checkout's contract and source"
+                              % SCALE_SHAPE_CALIBRATION_SUPERSEDING),
+            "decidable_here": True})
+    if not declared["manifests_request_the_calibrated_inference"]:
+        blockers.append({
+            "blocker": "declared_inference",
+            "detail": ("every frozen scale/shape manifest declares %s; the calibrated method is "
+                       "exact pool substitution over a declared partner pool, which no declared "
+                       "manifest requests"
+                       % ", ".join("%s at %d replications" % (row["method"], row["replications"])
+                                   for row in declared["declared"])),
+            "discharged_by": ("a declared manifest that requests the calibrated inference, which "
+                              "is a change to the experiment declaration and not to this gate"),
+            "decidable_here": True})
+    blockers.append({
+        "blocker": "pool_exchangeability_on_real_records",
+        "detail": ("the recorded calibration is evidence that the arithmetic and the "
+                   "exchangeability hold together on records built with the property by "
+                   "construction. Whether an inventory of real records has it is the failure mode "
+                   "TG17.15 named in advance as the one that can be violated silently"),
+        "discharged_by": ("a declared admission criterion shown to hold on an inventory of real "
+                          "records. That is a curation obligation, and no further measurement on "
+                          "built fixtures discharges it"),
+        "decidable_here": False})
+    return blockers
 
 
 def _calendar_gate(title: str) -> Dict[str, Any]:
@@ -326,20 +431,45 @@ def _extension_gate(title: str, facts: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def _scale_shape_gate(title: str) -> Dict[str, Any]:
-    """The gate, stated from the measurement rather than from a sentence maintained by hand."""
+    """The gate, stated from the measurement and from a supersession that is recomputed.
+
+    TG17.15 slice 5. The status does not move, and that is the result rather than a shortfall: a
+    method that is calibrated and a method a declared plan can use are two different facts, and
+    this gate exists to keep them apart. What moves is the reason, from "no applicable method
+    exists" to a narrower and now-measured one, and the old reason is kept beside the new one
+    because it is still true when recomputed.
+    """
     facts = scale_shape_applicability()
+    supersession = facts["supersession"]
+    superseded = supersession["superseded"]
+    successor = supersession["superseding"]
     refused = [row for row in facts["declared_families"] if row["null_refusal"]]
-    detail = (
-        "A registered scale/shape calibration now exists (%s); it is measured outside "
-        "orchestration, as the calendar one is, and its result is not read here. The gate is "
-        "blocked by applicability rather than by absence. Every member of a %s-pairing family "
-        "sits at a p-value floor of 1/k, so under %s at alpha %.2f no family smaller than %d "
-        "pairings can reject; the declared null draws only from inventories of at most %d. %d of "
-        "%d declared domain families are refused by the null before size is reached."
-        % (SCALE_SHAPE_CALIBRATION, "k", facts["correction"], facts["alpha"],
-           facts["minimum_resolvable_family"], facts["largest_drawable_inventory"],
-           len(refused), len(facts["declared_families"])))
-    return _gate("scale_shape_calibration", title, "REFUSED", detail)
+    head = (
+        "%s. The superseded claim (%s, %s) is recomputed on every plan and still holds: no family "
+        "smaller than %d pairings can reject under %s at alpha %.2f, the declared null draws only "
+        "from inventories of at most %d, and %d of %d declared domain families are refused by the "
+        "null before size is reached."
+        % (supersession["status"], superseded["record"], SCALE_SHAPE_CALIBRATION,
+           facts["minimum_resolvable_family"], facts["correction"], facts["alpha"],
+           facts["largest_drawable_inventory"], len(refused), len(facts["declared_families"])))
+    if supersession["status"] == "SUPERSEDED":
+        recorded = facts["supersession"]["superseding"]
+        middle = (
+            " Superseded for applicability by %s (%s, %s), recorded %s: %d correspondences need a "
+            "pool of %d, which the calibration's own pools reach."
+            % (successor["record"], successor["estimand"],
+               SCALE_SHAPE_CALIBRATION_SUPERSEDING, recorded["recorded_utc"],
+               successor["tested_correspondences"], successor["minimum_pool_size"]))
+    else:
+        middle = (
+            " Not superseded: %s."
+            % (" ".join(supersession["reasons"]).rstrip(".")
+               or "no successor recording passes"))
+    tail = " Blocked by %s." % "; ".join(
+        "%s (%s)" % (row["blocker"],
+                     "decidable here" if row["decidable_here"] else "not decidable here")
+        for row in facts["blockers"])
+    return _gate("scale_shape_calibration", title, "REFUSED", head + middle + tail)
 
 
 def _live_source_gate(title: str, facts: Mapping[str, Any]) -> Dict[str, Any]:
@@ -364,7 +494,10 @@ def _live_source_gate(title: str, facts: Mapping[str, Any]) -> Dict[str, Any]:
 def qualification_plan() -> Dict[str, Any]:
     """The complete gate before anything is executed; omissions are impossible to hide."""
     from src.core.browser_evidence import browser_run_evidence, scientist_action_evidence
-    from src.core.calibration_record import read_calendar_calibration
+    from src.core.calibration_record import (
+        read_calendar_calibration,
+        read_scale_shape_calibration,
+    )
     from src.core.extension_evidence import read_extension_conformance
     from src.core.live_source_evidence import read_live_source_evidence
 
@@ -410,6 +543,11 @@ def qualification_plan() -> Dict[str, Any]:
         "gates": gates,
         "calendar_calibration": read_calendar_calibration(),
         "scale_shape_calibration": scale_shape_applicability(),
+        # TG17.15 slice 5. Kept beside the applicability section rather than folded into it: what
+        # the calibration measured is one fact and whether a declared plan can reach the method is
+        # another, and this module has said since TG17.11 that reporting the first as the second
+        # is how an unusable mode acquires a green gate.
+        "scale_shape_evidence": read_scale_shape_calibration(),
         # TG18.5 slice 4: measured by a rendered run or reported as unmeasured, never invented
         # here. `adapter_specific_framework_edits` stays NOT_MEASURED in both cases - a browser
         # cannot observe a source-edit audit. TG17.13 supplies that number from the audit itself,
@@ -583,6 +721,8 @@ def verify_qualification_record(record: Mapping[str, Any]) -> Dict[str, Any]:
 
 
 __all__ = ["DURATIONS", "MODES", "RECORD_KIND", "SCALE_SHAPE_CALIBRATION",
+           "SCALE_SHAPE_CALIBRATION_SUPERSEDING", "declared_scale_shape_null",
+           "scale_shape_blockers",
            "SCALE_SHAPE_DOMAIN_FAMILIES", "SCHEMA", "execute_offline_qualification",
            "qualification_manifest", "qualification_plan", "scale_shape_applicability",
            "verify_qualification_record"]

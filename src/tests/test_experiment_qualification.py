@@ -15,6 +15,7 @@ from src.core.experiment_qualification import (
     MODES,
     RECORD_KIND,
     SCALE_SHAPE_CALIBRATION,
+    SCALE_SHAPE_CALIBRATION_SUPERSEDING,
     SCALE_SHAPE_DOMAIN_FAMILIES,
     execute_offline_qualification,
     qualification_manifest,
@@ -305,20 +306,26 @@ def test_the_scale_shape_gate_is_refused_rather_than_unimplemented_or_passed(qua
     assert qualified["verdict"] == "NOT_RELEASEABLE"
 
 
-def test_the_gate_states_applicability_and_does_not_claim_the_calibration_s_result(qualified):
-    """The two facts slice 5 exists to keep apart.
+def test_the_gate_states_applicability_and_does_not_claim_a_result_of_its_own(qualified):
+    """The two facts TG17.11 slice 5 exists to keep apart, restated for a gate that now reads one.
 
     A calibration that runs and meets its targets on fixtures is one fact; whether a declared plan
     can use the method is another. Reporting the first as the second is how an unusable mode gets
-    a green gate, so the record carries the entry point, says it did not execute it, and turns on
-    a quantity it computed itself.
+    a green gate. TG17.15 slice 5 lets the gate read a recorded verdict, so the guard changes from
+    "asserts nothing about the calibration" to the sharper thing it always meant: the gate still
+    executes nothing and still computes no power number of its own, and everything it says about
+    a result comes from a recording bound to the contract and source it was measured against.
     """
     facts = qualified["scale_shape_calibration"]
     assert facts["calibration"] == SCALE_SHAPE_CALIBRATION
+    assert facts["calibration_superseding"] == SCALE_SHAPE_CALIBRATION_SUPERSEDING
     assert facts["calibration_executed_here"] is False
-    assert "does not assert one" in facts["claim_boundary"]
+    assert "executes no calibration and asserts no power number of its own" in \
+        facts["claim_boundary"]
+    assert "not evidence that a pool of real records is exchangeable" in facts["claim_boundary"]
     assert not any(key.startswith(("power", "rejection", "full_recovery")) for key in facts), (
         "the gate must not carry a power number it did not measure")
+    assert qualified["scale_shape_evidence"]["executed_here"] is False
 
 
 def test_the_declared_null_cannot_reject_at_any_inventory_size_it_will_draw_from(qualified):
@@ -368,3 +375,96 @@ def test_the_gate_is_decided_without_acquiring_or_calibrating_anything():
     facts = scale_shape_applicability()
     assert time.perf_counter() - started < 1.0
     assert facts == qualification_plan()["scale_shape_calibration"]
+
+
+# =================== TG17.15 slice 5: the refusal is superseded, and the gate still refuses
+
+
+def test_the_gate_still_refuses_and_the_reason_rather_than_the_status_is_what_moved(qualified):
+    """The result of slice 5, stated as the result rather than as a shortfall.
+
+    A calibrated, applicable, recorded null does not qualify a mode whose declared plans do not
+    request it. The gate that turned green here would be reporting the measurement it can make in
+    place of the one it cannot, which is the substitution this module has refused to make since
+    TG17.11.
+    """
+    gate = {row["gate_id"]: row for row in qualified["gates"]}["scale_shape_calibration"]
+    assert gate["status"] == "REFUSED"
+    assert gate["blocking"] is True
+    assert qualified["verdict"] == "NOT_RELEASEABLE"
+    assert "SUPERSEDED" in gate["detail"]
+    assert SCALE_SHAPE_CALIBRATION in gate["detail"], "the superseded calibration is still named"
+    assert SCALE_SHAPE_CALIBRATION_SUPERSEDING in gate["detail"]
+
+
+def test_the_superseded_claim_is_recomputed_and_cannot_disagree_with_the_gate(qualified):
+    """A supersession that quoted its predecessor would keep agreeing with itself forever.
+
+    The two numbers TG17.11's refusal turned on are recomputed from the same primitives the
+    applicability section uses, so a change to either surfaces in both or in neither.
+    """
+    facts = qualified["scale_shape_calibration"]
+    recomputed = facts["supersession"]["superseded"]["recomputed"]
+    assert recomputed["minimum_resolvable_family"] == facts["minimum_resolvable_family"]
+    assert recomputed["largest_drawable_inventory"] == facts["largest_drawable_inventory"]
+    assert facts["supersession"]["superseded"]["still_true"] is True
+    assert facts["declared_null_can_ever_reject"] is False
+
+
+def test_the_declared_inference_is_read_from_the_manifests_rather_than_restated(qualified):
+    """The load-bearing half of why a calibrated method leaves the gate refused.
+
+    It would be a sentence in a docstring if nothing computed it, and a sentence cannot notice the
+    day a manifest starts requesting the calibrated inference. The six frozen declarations are
+    built and their null is read back instead.
+    """
+    declared = qualified["scale_shape_calibration"]["declared_null"]
+    assert [row["method"] for row in declared["declared"]] == ["scale_partner_reassignment"]
+    assert declared["declared"][0]["replications"] == 200
+    assert declared["manifests_request_the_calibrated_inference"] is False
+    assert declared["estimand"] == "joint_structure"
+    assert qualified["scale_shape_calibration"]["supersession"]["superseding"]["estimand"] == \
+        "per_correspondence", "the calibrated method answers the other question"
+
+
+def test_the_gate_publishes_its_blockers_and_admits_which_one_it_cannot_decide(qualified):
+    """A status alone invites the reading that enough work turns it green.
+
+    Two of these would be discharged by work. The third is a property of a curated inventory of
+    real records, and no further measurement on built fixtures reaches it; saying so beside the
+    other two is the difference between a blocked gate and a gate that looks nearly open.
+    """
+    blockers = {row["blocker"]: row for row in qualified["scale_shape_calibration"]["blockers"]}
+    assert "recorded_calibration" not in blockers, "this checkout carries a passing recording"
+    assert blockers["declared_inference"]["decidable_here"] is True
+    assert "scale_partner_reassignment" in blockers["declared_inference"]["detail"]
+    exchangeability = blockers["pool_exchangeability_on_real_records"]
+    assert exchangeability["decidable_here"] is False
+    assert "curation obligation" in exchangeability["discharged_by"]
+    assert all(row["discharged_by"] for row in blockers.values()), (
+        "a blocker that does not say what would discharge it is a complaint")
+
+
+def test_the_exchangeability_blocker_survives_a_passing_recording(qualified):
+    """The one blocker that must not be dischargeable by measuring the same fixtures harder.
+
+    TG17.15 named it in advance as the failure mode that can be violated silently, which is
+    exactly the kind that gets quietly dropped once everything else goes green.
+    """
+    assert qualified["scale_shape_evidence"]["status"] == "PASS"
+    blockers = [row["blocker"] for row in qualified["scale_shape_calibration"]["blockers"]]
+    assert "pool_exchangeability_on_real_records" in blockers
+
+
+def test_the_gate_reads_the_pool_recording_without_running_it(qualified):
+    """The separation the whole channel exists for, applied to a measurement costing half an hour.
+
+    The calendar recording could in principle have been re-run by a gate that felt like it. This
+    one could not, and a gate that tried would put a tens-of-minutes benchmark inside plan
+    assembly.
+    """
+    evidence = qualified["scale_shape_evidence"]
+    assert evidence["executed_here"] is False
+    assert evidence["entry_point"] == "src.benchmarks.pool_calibration:calibrate_pool_substitution"
+    assert "reproduction witness" in evidence["reproduction_basis"]
+    assert "weaker backstop than the calendar recording" in evidence["reproduction_basis"]
