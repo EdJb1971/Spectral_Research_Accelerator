@@ -23,6 +23,7 @@ from src.data_layer.cds_source import (
     rematerialise_cds_from_provenance,
 )
 from src.data_layer.era5_overlap import (
+    encoding_step,
     load_overlap_receipt,
     main as overlap_main,
     overlap_receipt_path,
@@ -48,8 +49,11 @@ pytest.importorskip("zarr")
 class FakeCDSClient:
     """Writes deterministic NetCDF responses without contacting Copernicus."""
 
-    def __init__(self) -> None:
+    def __init__(self, quantum=None) -> None:
         self.calls = []
+        # When set, values are rounded onto a binary lattice, which is what a route delivering
+        # GRIB-packed fields does. The default leaves them unpacked.
+        self.quantum = quantum
 
     def retrieve(self, dataset, request, target):
         self.calls.append((dataset, request, target))
@@ -72,9 +76,17 @@ class FakeCDSClient:
         }
         for channel, name in enumerate(request["variable"]):
             base = np.arange(np.prod(shape), dtype=np.float32).reshape(shape)
+            values = base * np.float32(1e-5) + np.float32(channel + 1)
+            if self.quantum:
+                # A packed field has to vary across many steps within a single frame, because
+                # that is what makes its lattice observable. The unpacked default spans under
+                # two steps in total, which determines no lattice and is rightly refused.
+                values = (np.float32(100 * (channel + 1)) + base * np.float32(0.05))
+                values = (np.round(values / np.float32(self.quantum))
+                          * np.float32(self.quantum)).astype(np.float32)
             variables[name] = (
                 ("valid_time", "pressure_level", "latitude", "longitude"),
-                base * np.float32(1e-5) + np.float32(channel + 1),
+                values,
                 {"units": units[name]},
             )
         response = xr.Dataset(
@@ -293,7 +305,8 @@ def test_multimonth_materialisation_never_loads_a_full_shard(tmp_path, monkeypat
     assert manifest["materialisation"]["maximum_source_frames_in_memory"] == 3
 
 
-def _write_weatherbench_overlap(spec, primary_cache, independent_cache, *, perturb=False):
+def _write_weatherbench_overlap(spec, primary_cache, independent_cache, *, perturb=False,
+                                jitter=0.0):
     primary, _ = load_cached(spec.to_crop_spec(), cache_dir=str(primary_cache))
     try:
         overlap = primary.isel(time=slice(0, 4)).load().copy(deep=True)
@@ -301,6 +314,10 @@ def _write_weatherbench_overlap(spec, primary_cache, independent_cache, *, pertu
         primary.close()
     if perturb:
         overlap["t"].values[0, 0, 0, 0] += np.float32(1.0)
+    if jitter:
+        # A uniform offset every value shares, standing in for the second archive having
+        # decoded the same field through its own pipeline.
+        overlap["t"].values[...] = overlap["t"].values + np.float32(jitter)
     independent = CropSpec(
         store="era5_0p25_6h", variables=spec.variables,
         time_start=str(overlap.time.values[0]), time_end=str(overlap.time.values[-1]),
@@ -389,6 +406,116 @@ def test_failed_overlap_is_recorded_but_cannot_authorise_the_gate(tmp_path):
         validate_overlap_evidence(manifest, variable="t", level_hpa=850)
 
 
+def test_a_record_is_admitted_only_under_the_criterion_that_judged_it(tmp_path):
+    """D87. The gate refused the real record because the criterion was assumed, not named.
+
+    A manifest carries one set of overlap fields per criterion that has judged it. Reading the
+    unsuffixed fields regardless meant an encoding-relative PASS was invisible, so a record
+    holding exactly the evidence its campaign designed for could not be admitted -- and,
+    symmetrically, an absolute PASS would have admitted a record whose campaign declared a
+    different rule.
+    """
+    spec = _request(date_start="2020-01-01", date_end="2020-01-02")
+    primary_cache, independent_cache = tmp_path / "primary", tmp_path / "independent"
+    materialise_cds(
+        spec, download_dir=tmp_path / "downloads", cache_dir=str(primary_cache),
+        time_chunk=3, check_size=False, client=FakeCDSClient(quantum=2.0 ** -10),
+        allow_network=True)
+    independent = _write_weatherbench_overlap(spec, primary_cache, independent_cache)
+    verify_cached_era5_overlap(
+        spec.to_crop_spec(), independent, primary_cache_dir=str(primary_cache),
+        independent_cache_dir=str(independent_cache), variables=("t",),
+        level_hpa=850, block_frames=2, criterion="encoding_relative", steps_allowed=1.0)
+    manifest = json.loads(Path(manifest_path(
+        spec.to_crop_spec(), str(primary_cache))).read_text(encoding="utf-8"))
+
+    admitted = validate_overlap_evidence(
+        manifest, variable="t", level_hpa=850, criterion="encoding_relative")
+    assert admitted["passed"]
+    assert admitted["criterion"]["name"] == "encoding_relative"
+    # The absolute criterion never ran here, so it must not admit this record.
+    assert manifest["independent_overlap_check"] == "NOT RUN"
+    with pytest.raises(DataSourceError, match="not a recorded PASS under the absolute"):
+        validate_overlap_evidence(manifest, variable="t", level_hpa=850)
+    with pytest.raises(InvalidParameterError):
+        validate_overlap_evidence(
+            manifest, variable="t", level_hpa=850, criterion="whatever_passes")
+
+
+def test_an_encoding_pass_cannot_be_relabelled_as_a_different_criterion(tmp_path):
+    """The receipt's own declared name is checked, not just the manifest field it sits under."""
+    spec = _request(date_start="2020-01-01", date_end="2020-01-02")
+    primary_cache, independent_cache = tmp_path / "primary", tmp_path / "independent"
+    materialise_cds(
+        spec, download_dir=tmp_path / "downloads", cache_dir=str(primary_cache),
+        time_chunk=3, check_size=False, client=FakeCDSClient(quantum=2.0 ** -10),
+        allow_network=True)
+    independent = _write_weatherbench_overlap(spec, primary_cache, independent_cache)
+    verify_cached_era5_overlap(
+        spec.to_crop_spec(), independent, primary_cache_dir=str(primary_cache),
+        independent_cache_dir=str(independent_cache), variables=("t",),
+        level_hpa=850, block_frames=2, criterion="encoding_relative", steps_allowed=1.0)
+    manifest = json.loads(Path(manifest_path(
+        spec.to_crop_spec(), str(primary_cache))).read_text(encoding="utf-8"))
+    manifest["independent_overlap_receipt_encoding_relative"]["criterion"]["name"] = "absolute"
+    with pytest.raises(DataSourceError, match="not produced under the encoding_relative"):
+        validate_overlap_evidence(
+            manifest, variable="t", level_hpa=850, criterion="encoding_relative")
+
+
+def test_an_audit_window_cannot_become_the_authorisation(tmp_path):
+    """T4C.5n. A second window compared after the fact is evidence, not authorisation.
+
+    The frozen campaign names exactly one overlap window and that window is what admitted the
+    record. A later window closes a real evidentiary gap, but if it could be read back as the
+    authorising receipt then the evidence that admitted a record could be chosen after the
+    record was already in hand -- the same failure D86 exists to prevent, arriving by a
+    different door.
+    """
+    spec = _request(date_start="2020-01-01", date_end="2020-01-02")
+    primary_cache, independent_cache = tmp_path / "primary", tmp_path / "independent"
+    materialise_cds(
+        spec, download_dir=tmp_path / "downloads", cache_dir=str(primary_cache),
+        time_chunk=3, check_size=False, client=FakeCDSClient(quantum=2.0 ** -10),
+        allow_network=True)
+    independent = _write_weatherbench_overlap(spec, primary_cache, independent_cache)
+
+    audit = verify_cached_era5_overlap(
+        spec.to_crop_spec(), independent, primary_cache_dir=str(primary_cache),
+        independent_cache_dir=str(independent_cache), variables=("t",),
+        level_hpa=850, block_frames=2, criterion="encoding_relative", steps_allowed=1.0,
+        label="midrecord")
+    assert audit["passed"] and audit["criterion"]["role"] == "audit"
+    assert audit["criterion"]["label"] == "midrecord"
+    assert audit["criterion"]["authorises"].startswith("nothing")
+
+    # It lands in its own receipt, beside rather than over the authorising one.
+    assert overlap_receipt_path(
+        spec.to_crop_spec(), str(primary_cache), "encoding_relative", "midrecord").exists()
+    assert not overlap_receipt_path(
+        spec.to_crop_spec(), str(primary_cache), "encoding_relative").exists()
+
+    # And the gate cannot read it: the audit's manifest fields carry the label, and the only
+    # names `validate_overlap_evidence` will accept are the two criteria.
+    manifest = json.loads(Path(manifest_path(
+        spec.to_crop_spec(), str(primary_cache))).read_text(encoding="utf-8"))
+    assert "independent_overlap_check_encoding_relative_midrecord" in manifest
+    with pytest.raises(DataSourceError, match="not a recorded PASS"):
+        validate_overlap_evidence(
+            manifest, variable="t", level_hpa=850, criterion="encoding_relative")
+    with pytest.raises(InvalidParameterError):
+        validate_overlap_evidence(
+            manifest, variable="t", level_hpa=850,
+            criterion="encoding_relative_midrecord")
+
+
+def test_a_label_that_could_pass_for_a_criterion_is_refused(tmp_path):
+    spec = _request(date_start="2020-01-01", date_end="2020-01-02")
+    for bad in ("absolute", "encoding_relative", "Mid Record", "mid.record", ""):
+        with pytest.raises(InvalidParameterError):
+            overlap_receipt_path(spec.to_crop_spec(), None, "encoding_relative", bad)
+
+
 def test_plan_cli_prints_exact_request_without_network(capsys):
     assert main([
         "plan", "--date-start", "2020-01-30", "--date-end", "2020-02-02",
@@ -401,3 +528,137 @@ def test_plan_cli_prints_exact_request_without_network(capsys):
     assert result["request"]["hours_utc"] == [0, 6, 12, 18]
     assert result["storage_estimate"]["compression_credit_assumed"] is False
     assert "completed_shards" not in result
+
+
+# ====================================================== D86: what "the routes agree" may mean
+#
+# ERA5 arrives through CDS packed per field, so the resolution at which that route can express
+# an agreement is a property of the frame rather than a constant in Kelvin. These cover the
+# criterion that says so, and the refusals that stop it being applied where it means nothing.
+
+QUANTUM = 2.0 ** -10
+
+
+def test_a_packed_frame_reveals_its_step_and_an_unpacked_one_refuses_to_pretend():
+    packed = np.round(np.linspace(250.0, 260.0, 4096) / QUANTUM) * QUANTUM
+    assert encoding_step(packed) == QUANTUM
+    coarse = np.round(np.linspace(250.0, 260.0, 4096) / (2.0 ** -6)) * (2.0 ** -6)
+    # The largest step every value sits on, not merely one they happen to be divisible by.
+    assert encoding_step(coarse) == 2.0 ** -6
+    # Values off any plausible binary lattice are not packed, and saying so is the point: a
+    # step guessed for them would make the comparison judge nothing.
+    assert encoding_step(np.linspace(250.0, 260.0, 4096) + 1e-9) is None
+    assert encoding_step(np.asarray([250.0])) is None
+
+
+def test_a_tolerance_finer_than_the_route_can_express_fails_a_pair_that_agrees(tmp_path):
+    """This is D86 itself, reproduced: same numbers, two verdicts, and only one of them means
+    anything. The routes differ by 0.4 of a packing step - agreement as close as the coarser
+    of them can represent - and the absolute criterion still calls it a disagreement."""
+    spec = _request(date_start="2020-01-01", date_end="2020-01-02")
+    primary_cache, independent_cache = tmp_path / "primary", tmp_path / "independent"
+    materialise_cds(
+        spec, download_dir=tmp_path / "downloads", cache_dir=str(primary_cache),
+        time_chunk=3, check_size=False, client=FakeCDSClient(quantum=QUANTUM),
+        allow_network=True)
+    independent = _write_weatherbench_overlap(
+        spec, primary_cache, independent_cache, jitter=0.4 * QUANTUM)
+
+    absolute = verify_cached_era5_overlap(
+        spec.to_crop_spec(), independent, primary_cache_dir=str(primary_cache),
+        independent_cache_dir=str(independent_cache), variables=("t",),
+        level_hpa=850, block_frames=2)
+    assert absolute["passed"] is False
+    assert absolute["variables"]["t"]["mismatch_count"] > 0
+    # The declared tolerance is finer than one step, which is why no pair could satisfy it.
+    assert absolute["variables"]["t"]["atol"] < QUANTUM
+
+    relative = verify_cached_era5_overlap(
+        spec.to_crop_spec(), independent, primary_cache_dir=str(primary_cache),
+        independent_cache_dir=str(independent_cache), variables=("t",),
+        level_hpa=850, block_frames=2, criterion="encoding_relative")
+    assert relative["passed"] is True
+    assert relative["variables"]["t"]["mismatch_count"] == 0
+    assert relative["variables"]["t"]["encoding_steps"] == [QUANTUM]
+    assert relative["variables"]["t"]["max_error_in_steps"] == pytest.approx(0.4, abs=0.01)
+    assert relative["criterion"]["steps_allowed"] == 1.0
+
+    # Both verdicts survive. The failing one is not a mistake to be overwritten: it is what the
+    # criterion in force at the time returned, and erasing it would erase why v3 exists.
+    assert (overlap_receipt_path(spec.to_crop_spec(), str(primary_cache)).exists()
+            and overlap_receipt_path(spec.to_crop_spec(), str(primary_cache),
+                                     "encoding_relative").exists())
+    assert absolute["receipt_sha256"] != relative["receipt_sha256"]
+    manifest = json.loads(Path(manifest_path(
+        spec.to_crop_spec(), str(primary_cache))).read_text(encoding="utf-8"))
+    assert manifest["independent_overlap_check"] == "FAIL"
+    assert manifest["independent_overlap_check_encoding_relative"] == "PASS"
+
+
+def test_the_encoding_criterion_still_fails_a_pair_that_actually_disagrees(tmp_path):
+    """A criterion that cannot fail is decoration. 1.4 steps is a real disagreement."""
+    spec = _request(date_start="2020-01-01", date_end="2020-01-02")
+    primary_cache, independent_cache = tmp_path / "primary", tmp_path / "independent"
+    materialise_cds(
+        spec, download_dir=tmp_path / "downloads", cache_dir=str(primary_cache),
+        time_chunk=3, check_size=False, client=FakeCDSClient(quantum=QUANTUM),
+        allow_network=True)
+    independent = _write_weatherbench_overlap(
+        spec, primary_cache, independent_cache, jitter=1.4 * QUANTUM)
+    receipt = verify_cached_era5_overlap(
+        spec.to_crop_spec(), independent, primary_cache_dir=str(primary_cache),
+        independent_cache_dir=str(independent_cache), variables=("t",),
+        level_hpa=850, block_frames=2, criterion="encoding_relative")
+    assert receipt["passed"] is False
+    assert receipt["variables"]["t"]["max_error_in_steps"] > 1.0
+
+
+def test_an_unpacked_primary_is_refused_rather_than_judged_against_an_invented_step(tmp_path):
+    spec = _request(date_start="2020-01-01", date_end="2020-01-02")
+    primary_cache, independent_cache = tmp_path / "primary", tmp_path / "independent"
+    materialise_cds(
+        spec, download_dir=tmp_path / "downloads", cache_dir=str(primary_cache),
+        time_chunk=3, check_size=False, client=FakeCDSClient(), allow_network=True)
+    independent = _write_weatherbench_overlap(spec, primary_cache, independent_cache)
+    with pytest.raises(DataSourceError, match="does not lie on a binary lattice"):
+        verify_cached_era5_overlap(
+            spec.to_crop_spec(), independent, primary_cache_dir=str(primary_cache),
+            independent_cache_dir=str(independent_cache), variables=("t",),
+            level_hpa=850, block_frames=2, criterion="encoding_relative")
+
+
+def test_the_two_criteria_cannot_be_confused_for_one_another(tmp_path):
+    spec = _request(date_start="2020-01-01", date_end="2020-01-02")
+    primary_cache, independent_cache = tmp_path / "primary", tmp_path / "independent"
+    materialise_cds(
+        spec, download_dir=tmp_path / "downloads", cache_dir=str(primary_cache),
+        time_chunk=3, check_size=False, client=FakeCDSClient(quantum=QUANTUM),
+        allow_network=True)
+    independent = _write_weatherbench_overlap(
+        spec, primary_cache, independent_cache, jitter=0.4 * QUANTUM)
+    common = dict(primary_cache_dir=str(primary_cache),
+                  independent_cache_dir=str(independent_cache), variables=("t",),
+                  level_hpa=850, block_frames=2)
+    with pytest.raises(InvalidParameterError, match="steps_allowed"):
+        verify_cached_era5_overlap(spec.to_crop_spec(), independent,
+                                   steps_allowed=1.0, **common)
+    with pytest.raises(InvalidParameterError, match="absolute or encoding_relative"):
+        verify_cached_era5_overlap(spec.to_crop_spec(), independent,
+                                   criterion="whatever_passes", **common)
+    # A receipt already published under one bound may not be re-read as another's.
+    verify_cached_era5_overlap(spec.to_crop_spec(), independent,
+                               criterion="encoding_relative", steps_allowed=1.0, **common)
+    with pytest.raises(DataSourceError, match="different comparison design"):
+        verify_cached_era5_overlap(spec.to_crop_spec(), independent,
+                                   criterion="encoding_relative", steps_allowed=2.0, **common)
+
+
+def test_the_lattice_search_survives_the_magnitudes_the_other_variables_live_at():
+    """Geopotential runs to ~5e4 m2/s2, where float64 spacing is 7e-12. A fixed residual
+    tolerance of 1e-12 would refuse a genuinely packed z field - a false refusal that would
+    look exactly like an unpacked route."""
+    for magnitude, step in ((300.0, 2.0 ** -10),       # temperature
+                            (5.0e4, 2.0 ** -6),        # geopotential
+                            (1.0e-3, 2.0 ** -24)):     # specific humidity
+        packed = np.round(np.linspace(magnitude, magnitude * 1.02, 4096) / step) * step
+        assert encoding_step(packed) == step, magnitude

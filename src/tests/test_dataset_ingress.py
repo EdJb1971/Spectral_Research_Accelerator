@@ -13,6 +13,7 @@ from src.core.errors import InvalidParameterError
 from src.data_layer.dataset_ingress import (SampleTableDeclaration,
                                             plan_representation_audit,
                                             probe_delimited,
+                                            require_independent_samples,
                                             run_representation_audit,
                                             sample_table_capability_profile)
 
@@ -80,6 +81,8 @@ def test_capability_profile_routes_independent_tables_and_explains_spatial_refus
     assert profile["identity"] == probe_delimited(
         dataset(), filename="experiment.csv")["content_sha256"]
     assert profile["operations"]["representation_audit"]["available"] is True
+    assert profile["operations"]["redundancy_structure_audit"]["available"] is True
+    assert profile["operations"]["conditional_information_audit"]["available"] is True
     boundary = profile["operations"]["boundary_lab"]
     assert boundary["status"] == "unavailable"
     assert boundary["reason_code"] == "requires_spatial_grid_2d"
@@ -105,6 +108,24 @@ def test_grouped_and_ordered_tables_name_the_safe_split_they_need_and_never_plan
             plan_representation_audit(
                 payload, filename="experiment.csv", delimiter=",", declaration=declared,
                 representations=("identity",), pca_components=1, permutations=99)
+
+
+def test_g16_admission_is_independent_only_and_names_the_missing_resampling_contract():
+    require_independent_samples(declaration(), recipe="G16 representation structure")
+    for relationship, phrase in (
+        ("grouped", "group-held-out confirmation with benchmarked nulls"),
+        ("ordered", "blocked and embargoed confirmation with benchmarked nulls"),
+    ):
+        declared = SampleTableDeclaration(
+            roles={**declaration().roles, "sample":
+                   "group" if relationship == "grouped" else "ordering"},
+            sample_relationship=relationship, units=declaration().units)
+        with pytest.raises(InvalidParameterError, match=phrase):
+            require_independent_samples(declared, recipe="G16 representation structure")
+    invalid = SampleTableDeclaration(
+        roles=declaration().roles, sample_relationship="unknown", units=declaration().units)
+    with pytest.raises(InvalidParameterError, match="one of"):
+        require_independent_samples(invalid, recipe="G16 representation structure")
 
 
 def test_audit_finds_planted_candidate_on_generate_and_confirmation_without_claiming_truth():

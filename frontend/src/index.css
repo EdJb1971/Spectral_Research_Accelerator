@@ -2,8 +2,516 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  color-scheme: dark;
+  --instrument-bg: #020617;
+  --instrument-panel: rgba(15, 23, 42, 0.72);
+  --instrument-line: rgba(51, 65, 85, 0.72);
+  --instrument-muted: #94a3b8;
+  --instrument-accent: #2dd4bf;
+  --workspace-max: 112rem;
+}
+
+html {
+  min-width: 320px;
+  background: var(--instrument-bg);
+}
+
 body {
   @apply bg-slate-950 text-slate-100 font-sans antialiased;
+  min-height: 100vh;
+  margin: 0;
+  line-height: 1.5;
+  text-rendering: optimizeLegibility;
+}
+
+button, input, select, textarea {
+  font: inherit;
+}
+
+::selection {
+  background: rgba(45, 212, 191, 0.28);
+  color: #f8fafc;
+}
+
+* {
+  scrollbar-color: #334155 #020617;
+  scrollbar-width: thin;
+}
+
+.instrument-shell {
+  min-height: 100vh;
+  min-height: 100dvh;
+  background:
+    radial-gradient(circle at 72% -10%, rgba(13, 148, 136, 0.055), transparent 30rem),
+    var(--instrument-bg);
+}
+
+.instrument-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  min-height: 4.5rem;
+  background: rgba(15, 23, 42, 0.88);
+  box-shadow: 0 1px 0 rgba(148, 163, 184, 0.04);
+}
+
+.instrument-body {
+  min-width: 0;
+}
+
+.workflow-nav {
+  scrollbar-gutter: stable;
+}
+
+/* TG18.3: compatibility workspaces remain reachable in the ordinary workflow rail, but they
+ * must not look like steps in the evidence journey. The label supplies the non-colour cue; the
+ * amber inset and background make the separation visible at a glance. */
+.legacy-workspace-entry {
+  box-shadow: inset 3px 0 0 rgba(245, 158, 11, 0.52);
+  background: rgba(120, 53, 15, 0.055);
+}
+
+.legacy-workspace-entry__label {
+  color: #d6a44b;
+}
+
+.workspace-main {
+  min-width: 0;
+  background:
+    linear-gradient(110deg, rgba(15, 23, 42, 0.12), transparent 28rem),
+    transparent;
+  padding: clamp(1rem, 1.65vw, 2rem);
+  scroll-padding-top: 4rem;
+}
+
+/* The shared scientific canvas. `sr-only` children are excluded deliberately: giving the
+ * workspace heading and the live-status paragraph a real width and `margin-inline: auto`
+ * overrides the 1px clipped box that makes them screen-reader-only, and because they are
+ * absolutely positioned with no positioned ancestor they then escape this element's own
+ * clipping and widen the document. At 320px that was a 14px horizontal scroll on every
+ * workspace, visible only in a rendered narrow viewport (TG18.1). */
+.workspace-main > *:not(.sr-only) {
+  width: min(100%, var(--workspace-max));
+  margin-inline: auto;
+}
+
+.workspace-main :where(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea) {
+  min-height: 2.5rem;
+}
+
+.workspace-main :where(code, [class~="font-mono"]) {
+  overflow-wrap: anywhere;
+}
+
+.workspace-main [class~="text-[9px]"] {
+  font-size: 0.6875rem;
+  line-height: 1rem;
+}
+
+.workspace-main [class~="text-[10px]"] {
+  font-size: 0.6875rem;
+  line-height: 1rem;
+}
+
+.workspace-main [class~="text-[11px]"] {
+  font-size: 0.75rem;
+  line-height: 1.125rem;
+}
+
+/* A figure data panel is as wide as the figure it belongs to, and a heat map often sits in a
+ * half-width comparison cell. Its width therefore has nothing to do with the viewport's, so the
+ * label/value split is a container question rather than a media-query one: at a wide viewport in
+ * a narrow cell, a two-column contract wraps every value into a ragged stack. */
+.figure-data {
+  container-type: inline-size;
+}
+
+@container (max-width: 22rem) {
+  .figure-contract {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0 0;
+  }
+
+  .figure-contract dt {
+    margin-top: 0.375rem;
+  }
+}
+
+/* TG18.2: two compared figures may yield canvas to one another without changing their data or
+ * comparability. The separator occupies its own fixed track, so neither plot overlays it. */
+.resizable-figure-pair {
+  --first-pane: 50%;
+  display: grid;
+  grid-template-columns: minmax(0, var(--first-pane)) 0.875rem minmax(0, 1fr);
+  align-items: start;
+  gap: 0;
+  min-width: 0;
+}
+
+.resizable-figure-pair__pane {
+  min-width: 0;
+}
+
+.resizable-figure-pair__separator {
+  align-self: stretch;
+  min-height: 20rem;
+  cursor: col-resize;
+  touch-action: none;
+  display: grid;
+  place-items: center;
+}
+
+.resizable-figure-pair__separator > span {
+  width: 0.25rem;
+  height: 4rem;
+  border-radius: 999px;
+  background: #334155;
+  box-shadow: 0 0 0 1px rgba(148, 163, 184, 0.08);
+}
+
+.resizable-figure-pair__separator:hover > span,
+.resizable-figure-pair__separator:focus-visible > span {
+  background: var(--instrument-accent);
+}
+
+.resizable-figure-pair__note {
+  grid-column: 1 / -1;
+  margin-top: 0.5rem;
+  color: #64748b;
+  font-size: 0.6875rem;
+  line-height: 1rem;
+}
+
+@media (max-width: 767px) {
+  .resizable-figure-pair {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1rem;
+  }
+
+  .resizable-figure-pair__separator,
+  .resizable-figure-pair__note {
+    display: none;
+  }
+}
+
+.research-context {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  box-shadow: 0 12px 30px rgba(2, 6, 23, 0.2);
+  backdrop-filter: blur(14px);
+}
+
+.context-item {
+  min-height: 1.75rem;
+}
+
+/* TG18.3: a small, global journey map. It is deliberately styled unlike Composer's status
+ * stepper and states its non-authority in text: location in this strip is not scientific
+ * progress, and its two blockers are UI-context absences rather than evidence decisions. */
+.research-journey {
+  border: 1px solid rgba(45, 212, 191, 0.18);
+  border-radius: 0.875rem;
+  background: rgba(15, 23, 42, 0.6);
+  padding: 0.875rem;
+}
+
+.research-journey__heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0 0.25rem 0.75rem;
+}
+
+.research-journey__boundary {
+  max-width: 25rem;
+  color: #94a3b8;
+  font-size: 0.75rem;
+  line-height: 1.125rem;
+  text-align: right;
+}
+
+.research-journey__stages {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.research-journey__stage {
+  display: flex;
+  min-width: 0;
+  min-height: 7.25rem;
+  flex-direction: column;
+  gap: 0.45rem;
+  border: 1px solid #1e293b;
+  border-radius: 0.65rem;
+  background: rgba(2, 6, 23, 0.55);
+  padding: 0.65rem;
+}
+
+.research-journey__stage.is-current {
+  border-color: rgba(45, 212, 191, 0.55);
+  background: rgba(13, 148, 136, 0.08);
+}
+
+.research-journey__stage.is-blocked {
+  border-color: rgba(244, 63, 94, 0.38);
+}
+
+.research-journey__stage-name {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: #e2e8f0;
+  font-size: 0.8125rem;
+}
+
+.research-journey__marker,
+.research-journey__marker svg {
+  width: 0.875rem;
+  height: 0.875rem;
+  flex: 0 0 auto;
+  color: #5eead4;
+}
+
+.is-blocked .research-journey__marker svg {
+  color: #fda4af;
+}
+
+.research-journey__ordinal {
+  margin-right: 0.25rem;
+  color: #64748b;
+  font-size: 0.6875rem;
+}
+
+.research-journey__reason {
+  color: #fda4af;
+  font-size: 0.6875rem;
+  line-height: 1rem;
+}
+
+.research-journey__stage button {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.3rem;
+  margin-top: auto;
+  color: #99f6e4;
+  font-size: 0.6875rem;
+  line-height: 1rem;
+  text-align: left;
+}
+
+.research-journey__stage button:hover {
+  color: #f0fdfa;
+}
+
+.research-journey__stage button svg {
+  width: 0.75rem;
+  height: 0.75rem;
+  margin-top: 0.125rem;
+  flex: 0 0 auto;
+}
+
+@media (max-width: 1279px) {
+  .research-journey__stages {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 639px) {
+  .research-journey__heading {
+    align-items: start;
+    flex-direction: column;
+  }
+
+  .research-journey__boundary {
+    text-align: left;
+  }
+
+  .research-journey__stages {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.instrument-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  border: 1px solid rgba(245, 158, 11, 0.28);
+  border-radius: 0.75rem;
+  background: rgba(120, 53, 15, 0.08);
+  padding: 0.875rem 1rem;
+}
+
+.instrument-notice__icon {
+  flex: 0 0 auto;
+  margin-top: 0.125rem;
+  color: #fbbf24;
+}
+
+.instrument-notice code {
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  border-radius: 0.25rem;
+  background: rgba(2, 6, 23, 0.55);
+  padding: 0.1rem 0.3rem;
+  color: #fde68a;
+}
+
+.findings-empty {
+  display: grid;
+  min-height: 20rem;
+  place-items: center;
+  border: 1px dashed rgba(51, 65, 85, 0.8);
+  border-radius: 0.75rem;
+  background:
+    radial-gradient(circle at 50% 25%, rgba(13, 148, 136, 0.07), transparent 13rem),
+    rgba(2, 6, 23, 0.24);
+  padding: clamp(1.5rem, 4vw, 4rem);
+  text-align: center;
+}
+
+@media (min-width: 1024px) {
+  .instrument-body {
+    height: calc(100vh - 4.5rem);
+    height: calc(100dvh - 4.5rem);
+    overflow: hidden;
+  }
+
+  .workflow-nav {
+    position: sticky;
+    top: 0;
+    height: 100%;
+    overflow-y: auto;
+  }
+
+  .workspace-main {
+    height: 100%;
+  }
+}
+
+@media (max-width: 1023px) {
+  .workflow-nav-scrim {
+    position: fixed;
+    inset: 4.5rem 0 0;
+    z-index: 32;
+    border: 0;
+    border-radius: 0;
+    background: rgba(2, 6, 23, 0.72);
+    backdrop-filter: blur(2px);
+  }
+
+  .workflow-nav {
+    position: fixed;
+    inset: 4.5rem auto 0 0;
+    z-index: 35;
+    width: min(22rem, 100vw) !important;
+    max-height: none;
+    overflow-y: auto;
+    border-right: 0;
+    border-bottom: 1px solid var(--instrument-line);
+    background: rgba(15, 23, 42, 0.97);
+    box-shadow: 0 18px 40px rgba(2, 6, 23, 0.45);
+  }
+
+  .research-context {
+    top: 4.5rem;
+  }
+}
+
+@media (max-width: 639px) {
+  .instrument-header {
+    min-height: 4rem;
+    padding-inline: 0.75rem;
+  }
+
+  .instrument-header h1 {
+    font-size: 1rem;
+  }
+
+  .instrument-header p {
+    display: none;
+  }
+
+  .workspace-main {
+    padding: 0.875rem;
+  }
+
+  .workflow-nav,
+  .workflow-nav-scrim {
+    top: 4rem;
+  }
+
+  .research-context {
+    top: 4rem;
+  }
+
+  .workspace-main [class~="p-12"] {
+    padding: 1.25rem;
+  }
+
+  .workspace-main [class~="p-5"] {
+    padding: 1rem;
+  }
+
+  .workspace-main [class~="gap-6"] {
+    gap: 1rem;
+  }
+
+  .research-context {
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+
+  .context-item {
+    width: 100%;
+    overflow-wrap: anywhere;
+  }
+}
+
+@media (max-width: 479px) {
+  .workspace-main .grid.grid-cols-2,
+  .workspace-main .grid.grid-cols-3,
+  .workspace-main .grid.grid-cols-4,
+  .workspace-main .grid.grid-cols-5 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* Collapsing the track count is not enough on its own. A `col-span-2` child of a grid that
+   * now declares one explicit column is placed across two, which makes the browser create an
+   * implicit second track and rebuilds the very layout this rule removes - silently, because
+   * the declared template still reads as one column. Spans are released with the tracks. */
+  .workspace-main .grid.grid-cols-2 > *,
+  .workspace-main .grid.grid-cols-3 > *,
+  .workspace-main .grid.grid-cols-4 > *,
+  .workspace-main .grid.grid-cols-5 > * {
+    grid-column: auto;
+  }
+
+  .workspace-main :where(.flex) {
+    min-width: 0;
+  }
+
+  .findings-empty {
+    min-height: 14rem;
+  }
+}
+
+@media (max-width: 399px) {
+  .instrument-header > div {
+    gap: 0.5rem;
+  }
+
+  .instrument-header .connection-status {
+    min-width: 2.25rem;
+    justify-content: center;
+    padding-inline: 0.625rem;
+  }
+
+  .instrument-header .connection-label {
+    display: none;
+  }
 }
 
 /* TG11.6: one focus contract for every legacy and cross-domain control.  Several older

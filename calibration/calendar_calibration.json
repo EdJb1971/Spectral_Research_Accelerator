@@ -1,0 +1,50 @@
+{
+  "all_met": true,
+  "calibration": "calendar_calibration",
+  "cases": [
+    {
+      "case": "shared_calendar_event",
+      "expectation": "one shared calendar event: every pair rejects after correction",
+      "maximum_rejections": 6,
+      "met": true,
+      "minimum_rejections": 6,
+      "n_rejected_after_correction": 6
+    },
+    {
+      "case": "same_window_unrelated",
+      "expectation": "identical outer interval, independent construction: no pair rejects",
+      "maximum_rejections": 0,
+      "met": true,
+      "minimum_rejections": 0,
+      "n_rejected_after_correction": 0
+    },
+    {
+      "case": "gap_alias",
+      "expectation": "shared observation gaps must not become shared structure",
+      "maximum_rejections": 0,
+      "met": true,
+      "minimum_rejections": 0,
+      "n_rejected_after_correction": 0
+    },
+    {
+      "case": "inadmissible_precedence",
+      "expectation": "association may be tested; the precedence members of the family are unavailable and are not counted here",
+      "maximum_rejections": 6,
+      "met": true,
+      "minimum_rejections": 0,
+      "n_rejected_after_correction": 0
+    }
+  ],
+  "claim_boundary": "A frozen-family calibration on TG17.0 fixtures. It is not a result about any domain and not a licence to mine.",
+  "contract_sha256": "70322e4c2da477040600ca06a865a65c4d3159df39f1af1ae99372e992052d47",
+  "family_size": 6,
+  "recorded_utc": "2026-09-03T08:45:22.744209Z",
+  "replications": 999,
+  "schema": "calibration-record/v1",
+  "source_sha256": {
+    "src/benchmarks/family_calibration.py": "b279e7f32447b3985b41b441add2cb0e1568b88b10f4b24defcd6f1beb8ec1b6",
+    "src/benchmarks/multidomain_flagship.py": "064627f17822a6de16d2ee10af70be8c3ed47a8566ec321fe7fa744da1c6dde9",
+    "src/core/structural_nulls.py": "a0840ec299aed6a5d3ec41b07207571efd241859cdbb63b45293c9b01bbe7b03",
+    "src/statistics/multiple_comparisons.py": "5bcb4bb0e60844273e486def2b57c8677843c48bb78777e25d544098edce7c24"
+  }
+}

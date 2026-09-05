@@ -6856,3 +6856,3660 @@ dist/assets/index-BUwU39Jz.js  10,185.28 kB | gzip: 3,052.89 kB
 The four skips and one xfail have the same explicit meanings as the preceding finished-tree run.
 Capability availability means only that declared and verified prerequisites are present; it is
 not evidence that the operation ran, succeeded or established a scientific claim.
+
+---
+
+## TG16.0 - Representation-structure admission and benchmark prerequisites (2026-08-30, `ed-dev`) - **COMPLETE**
+
+The first G16 admission is independent-sample only, through the same authoritative refusal now
+used by the G14 representation plan. Grouped and ordered data remain unavailable until their
+respective null and confirmation schemes exist. The paired benchmark family freezes all nine
+declared planted/safeguard cases plus the later operation-level calibration and power thresholds.
+No G16 scientific operation was registered; the premature G15 `association_redundancy` entry was
+removed.
+
+```text
+> .\.venv\Scripts\python.exe -m pytest -q src/tests/test_dataset_ingress.py
+9 passed, 2 warnings in 4.41s
+
+> .\.venv\Scripts\python.exe -m src.benchmarks
+PASS 31   FAIL 0   NOT_YET_RUNNABLE 0
+```
+
+The focused benchmark/ingress run covering both files initially reported 55 passes and one
+failure because the strengthened grouped refusal no longer contained the existing public phrase
+`group-held-out confirmation`. The final wording preserves that phrase and adds the benchmarked
+null requirement; the rerun above passes. The full backend suite was not rerun for this bounded
+prerequisite slice; the clean 2745-pass G15 run remains the latest full-suite evidence.
+
+---
+
+## TG16.1 - Redundancy Structure Audit (2026-08-30, `ed-dev`) - **COMPLETE**
+
+The registered operation now freezes the complete two-candidate group family, estimator,
+equiprobable discretisation, conditional-permutation nulls, seeds, alpha and
+Benjamini-Yekutieli correction before enumeration. Its structure map distinguishes supported
+redundancy, supported complementarity and unresolved pairs. The joint test preserves the XOR
+control despite weak singleton information, while the response explicitly denies a
+partial-information decomposition, feature-removal instruction or representation recommendation.
+
+```text
+> .\.venv\Scripts\python.exe -m pytest -q src/tests/test_representation_structure.py src/tests/test_dataset_ingress.py
+15 passed, 2 warnings in 4.55s
+
+> .\.venv\Scripts\python.exe -m src.benchmarks --name representation_structure_planted --name representation_structure_safeguards
+PASS 4   FAIL 0   NOT_YET_RUNNABLE 0
+```
+
+The benchmark command ran the frozen 200-replication power/calibration family. Exact-duplicate and
+noisy-copy redundancy power was 1.00 and 0.94; complementary and XOR power was 1.00 each; the
+independent false-claim rate was 0.02; and the four one-candidate conditioning safeguards made no
+pair claim. The full backend suite was not rerun; the clean 2745-pass G15 run remains the latest
+full-suite evidence.
+
+---
+
+## TG16.2 - Conditional-Information Audit (2026-08-30, `ed-dev`) - **COMPLETE**
+
+The registered operation freezes the complete raw-feature family, the single researcher-declared
+nuisance, equiprobable Miller-Madow conditional mutual information, overlap/effective-support and
+linear conditional-model admission, conditional-randomisation draws, seed, alpha and global
+Benjamini-Yekutieli correction. The null reconstructs target from the fitted target/nuisance
+relationship plus permuted residuals instead of globally permuting target. Responses report only
+conditional association and expressly decline confounding, collider, post-treatment and causal
+interpretations.
+
+```text
+> .\.venv\Scripts\python.exe -m pytest -q src/tests/test_conditional_information.py src/tests/test_dataset_ingress.py src/tests/test_representation_structure.py
+21 passed, 2 warnings in 4.68s
+
+> .\.venv\Scripts\python.exe -m src.benchmarks --name representation_structure_planted --name representation_structure_safeguards
+PASS 6   FAIL 0   NOT_YET_RUNNABLE 0
+```
+
+The benchmark command ran the frozen 200-replication family. Every applicable construction met
+the support/model admission rule. Signal-survival power and collider conditional-association
+detection were 1.00. Nuisance-only and conditional-null false-claim rates were 0.055 and 0.045,
+below the frozen 0.075 ceiling. The collider detection is a safeguard against causal overwording,
+not evidence that conditioning removed a confounder. The full backend suite was not rerun; the
+clean 2745-pass G15 run remains the latest full-suite evidence.
+
+---
+
+## TG16.3 - Stable-Subspace Generation (2026-08-30, `ed-dev`) - **COMPLETE**
+
+The registered operation seals the complete compact linear family, generate/confirmation split,
+generate-only standardisation, supervised covariance objective and optional nuisance penalty,
+ridge values, seeded block-power optimiser, restarts, perturbations, target-permutation refits,
+alpha and global Benjamini-Yekutieli correction. Results identify spans by projectors, report
+multi-seed perturbation distances, and keep the reserved confirmation partition unopened.
+
+```text
+> .\.venv\Scripts\python.exe -m pytest -q src/tests/test_stable_subspace.py src/tests/test_dataset_ingress.py
+15 passed, 2 warnings in 4.50s
+
+> .\.venv\Scripts\python.exe -m pytest -q src/tests/test_benchmarks.py -k "gating_lookup or g16_benchmark_pair"
+2 passed, 45 deselected, 1 warning in 1.97s
+
+> .\.venv\Scripts\python.exe -m src.benchmarks --name representation_structure_planted --name representation_structure_safeguards
+PASS 8   FAIL 0   NOT_YET_RUNNABLE 0
+```
+
+The first frozen run measured an independent false-candidate rate of 0.085, above the declared
+0.075 ceiling, and therefore failed. The original 2% perturbation was too weak to distinguish a
+chance direction from a scientifically stable span. The recipe was corrected before completion
+to 10% perturbations and a 0.10 projector-distance ceiling. On the final 200-replication family,
+exact-duplicate, noisy-copy and complementary linear candidate rates were 1.00 each, nonlinear
+XOR was 0.025, and the independent false-candidate rate was 0.055. Every one-feature case made no
+compact-subspace claim. The full backend suite was not rerun; the clean 2745-pass G15 run remains
+the latest full-suite evidence.
+
+---
+
+## TG16.4 - Held-out and Nuisance-region Confirmation (2026-08-30, `ed-dev`) - **COMPLETE**
+
+The confirmation workflow now freezes every TG16.3 family member's projector/application basis,
+generate-only preprocessing, candidate state, generate-derived nuisance-region cuts, correction
+unit, permutation ensemble and thresholds before held-out outcomes are used. Confirmation applies
+those values unchanged, corrects the complete searched family, refuses inadequate frozen-region
+overlap, and spends the content-and-index-bound partition once through the programme-wide durable
+held-out ledger. Its strongest result is internal replication within one dataset, not external
+certification, evidence storage, rung movement, optimality or causality.
+
+```text
+> .\.venv\Scripts\python.exe -m pytest -q src/tests/test_stable_subspace.py
+10 passed, 2 warnings in 4.56s
+
+> .\.venv\Scripts\python.exe -m pytest -q src/tests/test_stable_subspace.py src/tests/test_dataset_ingress.py src/tests/test_representation_structure.py src/tests/test_conditional_information.py
+31 passed, 2 warnings in 5.19s
+
+> .\.venv\Scripts\python.exe -m pytest -q src/tests/test_benchmarks.py -k "gating_lookup or g16_benchmark_pair"
+2 passed, 45 deselected, 1 warning in 1.97s
+
+> .\.venv\Scripts\python.exe -m src.benchmarks --name representation_structure_planted --name representation_structure_safeguards
+PASS 10   FAIL 0   NOT_YET_RUNNABLE 0
+```
+
+The paired gate ran 200 frozen replications with 156 generate and 68 confirmation rows.
+Exact-duplicate, noisy-copy and complementary-linear internal-replication rates were 1.000 each;
+nonlinear XOR was 0.005 and the independent null was 0.000, below the 0.075 ceiling. Every
+one-feature case remained outside the compact family. No acceptance setting was changed after
+this run. The full backend suite was not rerun; the clean 2745-pass G15 run remains the latest
+full-suite evidence.
+
+---
+
+## TG16.5 - External Certification Seam and UI Integration (2026-08-30, `ed-dev`) - **COMPLETE**
+
+Published candidate definitions now retain exact TG16.4 lineage and source preprocessing/span.
+A separate no-adaptation contract binds them to a different content-addressed target and declared
+acquisition provenance before target access. Certification verifies the independently published
+contract digest, spends the whole target once, applies every source value unchanged, corrects the
+complete transfer family and emits the only `external_replication_receipt` in the programme. The
+receipt certifies the executed test and recorded provenance, not the truth of an independence
+declaration, optimality, causality or population-wide transportability.
+
+The integration audit also found eight committed TG16.1-TG16.4 routes that the UI could not call.
+The generic-file workbench now exposes the complete progressive structure programme, including
+the three TG16.5 routes. Argo's measure choice updates the acquisition projection as well as the
+reduction; acquisition domain/path survive rerenders and browser refresh; Argo/TESS receipts now
+say explicitly that an acquired dataset is not automatically an evidence study. MAST metadata
+long-polling uses a 90-second bounded transport window and retries one transient transport failure.
+
+```text
+> npm run build
+✓ built in 1m 6s
+
+> .\.venv\Scripts\python.exe -m pytest -q src/tests/test_frontend_contract.py src/tests/test_stable_subspace.py src/tests/test_photometry.py src/tests/test_profiles.py
+121 passed, 2 skipped, 5 warnings in 8.00s
+
+> .\.venv\Scripts\python.exe -m pytest -q src/tests/test_stable_subspace.py
+13 passed, 2 warnings in 4.86s
+
+> .\.venv\Scripts\python.exe -m src.benchmarks --name representation_structure_planted --name representation_structure_safeguards
+PASS 12   FAIL 0   NOT_YET_RUNNABLE 0
+
+> .\.venv\Scripts\python.exe -m pytest -q src/tests/test_photometry.py src/tests/test_profiles.py src/tests/test_acquisitions_api.py src/tests/test_frontend_contract.py src/tests/test_stable_subspace.py src/tests/test_benchmarks.py -k "not suite_results and not no_null_benchmark_ever_fails and not every_benchmark_passes_its_declared_gates"
+177 passed, 2 skipped, 1 deselected, 5 warnings in 306.15s
+
+> .\.venv\Scripts\python.exe -m pytest -q src/tests/test_documentation.py
+19 passed, 1 warning in 367.50s
+```
+
+Across 200 frozen replications, exact-duplicate, noisy-copy and complementary-linear external
+receipt rates were 1.000 each. XOR, the independent null and all one-feature safeguards were
+0.000. The two live-network tests remained opt-in and were skipped; the TESS retry itself is
+covered with a deterministic first-timeout/second-success test. The full suite was not rerun at
+the user's request; the clean 2745-pass G15 run remains the latest full-suite evidence.
+
+---
+
+## TG17.0 - Four-domain Flagship Contract and Known-answer Benchmarks (2026-08-30, `ed-dev`) - **COMPLETE**
+
+The flagship contract is frozen before any configurable experiment operation exists. Reanalysis,
+Argo, TESS and order book cross four distinct source/shape contracts; calendar-aligned and
+scale/shape-aligned questions remain separate; week, three-month and six-month presets form the
+initial duration family. Order book intentionally uses a licensed user-supplied content-addressed
+record and keeps `lag_policy="none"`, so an apparent event order exercises a mandatory precedence
+refusal instead of acquiring atmospheric semantics through the common workbench.
+
+The two registered benchmarks cover six independent-construction cases: shared calendar event,
+scale-shifted motif, same-window null, shared-gap alias, inadmissible precedence and an unaffordable
+24,576-member family. Later operation acceptance is frozen at 200 replications, alpha 0.05,
+maximum null rejection 0.075, minimum planted detection 0.80, maximum 10,000 family members,
+4 GiB planned bytes and one hour planned runtime. TG17.0 registers no experiment capability and
+emits no scientific result or evidence.
+
+```text
+> .\.venv\Scripts\python.exe -m pytest src\tests\test_benchmarks.py -k "g17 or gating_lookup" -q
+4 passed, 46 deselected, 1 warning in 2.12s
+
+> .\.venv\Scripts\python.exe -m src.benchmarks --name multidomain_flagship_planted --name multidomain_flagship_safeguards
+PASS 2   FAIL 0   NOT_YET_RUNNABLE 0
+```
+
+The focused gate measured a maximum 21,600-second peak separation for the shared event (inside
+one 43,200-second Argo interval), minimum native peak contrast 0.966, an 11.875-fold planted native
+width range, 0.994 shared-gap coverage correlation, the exact planted domain event order, and the
+24,576 versus 10,000 resource refusal. The full suite was not rerun at the user's request; the
+clean 2745-pass G15 run remains the latest full-suite evidence.
+
+---
+
+## TG17.1 - Versioned Experiment Manifest and Composer Preflight (2026-08-30, `ed-dev`) - **COMPLETE**
+
+The first operable G17 product slice uses one immutable `CrossDomainExperimentSpec` from saved
+flagship recipe through API validation, content-addressed draft revision and metadata preflight.
+The canonical JSON bytes derive both manifest digest and future run identity. Exact UTC boundaries
+replace ambiguous duration labels, and all three duration windows form one 288-member family.
+
+Preflight uses no network and opens no measurement values. It retains reanalysis grid extent,
+Argo sparse point support and TESS sector-bounded support as different coverage facts, reports
+access/bytes/gap and expected-sample basis per exact window, and refuses the unbound local order-
+book record. A complete-coverage policy refuses unresolved sparse/sector coverage; it does not
+silently narrow the study. The visible Composer saves and reloads the exact manifest across browser
+refresh and leaves Run disabled until TG17.6. It neither creates evidence nor moves a claim rung.
+
+```text
+> .\.venv\Scripts\python.exe -m pytest src\tests\test_experiment_manifest.py -q
+12 passed, 2 warnings in 5.24s
+
+> .\.venv\Scripts\python.exe -m pytest src\tests\test_experiment_manifest.py src\tests\test_frontend_contract.py -q
+107 passed, 5 warnings in 8.51s
+
+> npm run build
+✓ 1401 modules transformed; built in 1m 31s (TypeScript and Vite production bundle)
+```
+
+The full suite was not rerun at the user's request; the clean 2745-pass G15 run remains the latest
+full-suite evidence.
+
+---
+
+## TG17.2 - Canonical Structural-Trajectory Contract (2026-08-30, `ed-dev`) - **COMPLETE**
+
+The immutable `StructuralTrajectory` retains exact native interval support, validity, semantic
+identity, units, structural/native scale mapping, native record identity and locator,
+adapter/version/config digests, assumption violations and reconstructable per-value lineage.
+Executable adapter declarations constrain channels to benchmarked definitions and declare axes,
+roles, invariances, consumed information, clock/support, missing-data behaviour, legitimate null,
+leakage risks and refused operations.
+
+Reanalysis, Argo and TESS known-answer records enter the same domain-blind mining seam. Focused
+conformance covers exact reconstruction, immutable raw/native separation, and mandatory refusal
+of semantic leakage and undeclared clock/support changes. The manifest-bound Composer preview
+shows the native clock/support, unit, scale, adapter/native digests and limits while stating that
+these are deterministic fixtures rather than acquired data. Live translation and scientific
+execution remain unavailable.
+
+```text
+> .\.venv\Scripts\python.exe -m pytest src\tests\test_structural_trajectory.py src\tests\test_experiment_manifest.py src\tests\test_frontend_contract.py -q
+118 passed, 5 warnings in 8.48s
+
+> cd frontend && npm run build
+✓ 1401 modules transformed; built in 1m 11s (TypeScript and Vite production bundle)
+```
+
+The full suite was not rerun at the user's request; the clean 2745-pass G15 run remains the latest
+full-suite evidence.
+
+## TG17.3 - Adapter Registry, Schema-Driven Controls and Conformance Kit (2026-08-30, `ed-dev`) - **COMPLETE**
+
+Acquisition plus structural translation is now a registered `DomainExperimentAdapter` rather than
+an orchestrator switch. One registration carries the domain declaration, a typed `ControlSchema`,
+the acquisition planner, translator configuration, materializer, structural declaration and
+translator, capability derivation, null builder and provenance renderer. `preflight_manifest` lost
+its literal `source_plans` table and its `channel_table:local` special case and resolves every
+coverage row through the registered adapter.
+
+Window arithmetic stayed in the framework: an adapter declares support kind, native cadence,
+exactness, access and cost per day, and `plan_windows` derives expected samples, bytes and gap
+status identically for every domain. Reanalysis and the bespoke family register from `src/adapters`;
+Argo and TESS register from `extensions/` through the same public seam.
+
+The conformance kit runs ten checks and executes what a declaration claims rather than trusting
+it. `INVARIANCE_PROBES` applies each declared invariance to the native record and compares every
+canonical channel; an invariance with no registered probe reports `NOT_PROBED` rather than `PASS`.
+All four flagship adapters pass 11 of 11 checks against their deterministic known-answer records,
+visibly through `POST /api/v1/experiment-composer/adapters/{adapter_id}/conformance`.
+
+Order book became one declaration of a bespoke record family rather than a finance adapter. Its
+fence is TG8.4's rule imported unchanged - detection may create a required declaration and may
+never satisfy one - so an observed irregular clock obliges `irregular_sampling` on an onboarded
+domain, an aggregate footprint obliges `aggregated_values`, a flat record is refused under a
+domain declaring richer axes, and `lag_policy="none"` adds `precedence` to the refused operations
+by construction. A bespoke domain is added by declaration alone with no code.
+
+That is explicitly not treated as the acceptance evidence. The acceptance test installs a synthetic
+fifth adapter with different structural mathematics - a monotone rank channel - from a module the
+application never imports, and it reaches the registry, the control schema, the conformance kit and
+the domain-blind mining seam with no edit to the orchestrator, the generic API routes or the UI.
+
+Three defects were forced out. TG17.2's `assert_structural_conformance` reconstructed values from a
+hardcoded standardized-level formula and compared every configuration digest against `{"ddof": 0}`,
+which failed the fifth adapter for having different and correct arithmetic; `LINEAGE_RECONSTRUCTORS`
+now dispatches on the declared operation and an unregistered operation fails rather than passes.
+
+**D74**: the route-count guard had matched the words "those routes" written into architecture.md
+by TG17.1 and had been unable to parse its own claim since. **D75**, found by fixing D74: the
+guard enumerated a hand-maintained list of ten source files and four mounted routers were missing
+from it — `profiles`, `lightcurves`, `ingress` and `experiment_composer` — so 32 served endpoints,
+including the whole TG16 ingress surface, were invisible to every check in that file. architecture.md
+claimed 75 routes; 107 are served, and the section 3.12 table was missing 21 rows. The list is
+deleted rather than corrected: routes now come from the application object. Both are fixed and the
+table is complete.
+
+```text
+> .\.venv\Scripts\python.exe -m pytest src\tests\test_adapter_registry.py src\tests\test_structural_trajectory.py src\tests\test_experiment_manifest.py src\tests\test_frontend_contract.py src\tests\test_domain_onboarding.py src\tests\test_acquisitions_api.py -q
+180 passed, 5 warnings in 6.94s
+
+> .\.venv\Scripts\python.exe -m pytest src\tests\test_documentation.py -q
+19 passed, 1 warning in 469.84s
+
+> cd frontend && npm run build
+1402 modules transformed; built in 51.34s (TypeScript and Vite production bundle)
+```
+
+No live archive is acquired, no cross-domain statistic runs, no evidence is written and no claim
+rung moves. The `source_binding` control makes the deterministic known-answer binding a visible
+manifest-recorded choice; the live binding refuses by naming TG17.6.
+
+The full suite was not rerun at the user's request; the clean 2745-pass G15 run remains the latest
+full-suite evidence.
+
+## TG17.4 - Clock, Support and Coverage Semantics (2026-08-31, `ed-dev`) - **COMPLETE**
+
+Cross-domain comparison is interval arithmetic over half-open `[start, end)` support. Two records
+that arrive as arrays of equal length look aligned and are not; a row index is a position in a
+file and nothing in either file says the two were written on the same clock.
+
+The load-bearing guarantee is that **changing row density alone cannot manufacture support**.
+Rewriting every fixture with sixty times as many rows over identical support leaves occupied
+duration, overlap, governing scale and effective sample size unchanged. Effective sample size is
+overlap duration over the coarser of the two native scales; raw row counts are reported in every
+row and used by nothing. `[a, b)` and `[b, c)` abut and do not overlap.
+
+Only `exact_support_overlap` runs without being named, and it transforms nothing. Every widening,
+snapping or carrying kernel is frozen in the manifest's `AlignmentPolicy`, travels inside the
+manifest digest, must be admitted by every participating adapter through `admissible_kernels`,
+takes no framework-default parameter, and reports in seconds the overlap it created rather than
+observed. A value-inventing kernel is refused over a domain declaring `irregular_sampling` or
+`aggregated_values`. No registered adapter admits `carry_forward`.
+
+Calendar mode may not silently search normalized scale ratios and scale/shape mode may not emit
+simultaneity, precedence or causal language; the manifest refuses the mismatch where the search
+is declared. Scale/shape correspondences retain both native durations. `elapsed_seconds` refuses
+a naive local timestamp, and a daylight-saving day is 82,800 seconds rather than 86,400.
+
+Preflight binds the kernel and reports pairs as bounded by the window where metadata cannot
+establish an overlap, rather than offering a number that would later turn out to have been a
+guess. `POST /api/v1/experiment-composer/manifests/alignment` measures the known-answer records'
+actual support, stating that binding in every response, and the coverage view draws it by time
+rather than by index.
+
+The six adversarial fixtures each align as declared or refuse by name: unequal cadence, abutting
+boundary, daylight-saving day, sparse profile, interrupted light curve, non-stationary support.
+
+```text
+> .\.venv\Scripts\python.exe -m pytest src\tests\test_structural_alignment.py src\tests\test_frontend_contract.py src\tests\test_adapter_registry.py src\tests\test_experiment_manifest.py src\tests\test_structural_trajectory.py src\tests\test_domain_onboarding.py src\tests\test_acquisitions_api.py src\tests\test_benchmarks.py src\tests\test_cross_domain.py src\tests\test_documentation.py -q
+362 passed, 5 warnings in 539.08s (0:08:59)
+
+> cd frontend && npm run build
+1403 modules transformed; built in 55.38s (TypeScript and Vite production bundle)
+
+> git diff --check
+(clean)
+```
+
+No live archive is acquired, no cross-domain statistic runs, no evidence is written and no claim
+rung moves.
+
+The full suite was not rerun at the user's request; the clean 2745-pass G15 run remains the latest
+full-suite evidence.
+
+## TG17.5 - Multi-Domain Family Accounting and Domain-Legitimate Nulls (2026-08-31, `ed-dev`) - **COMPLETE**
+
+A four-domain study is a search over domain combinations, windows, channels, scales,
+relationships, lags, representations and motifs. Every one of those is a knob that can be turned
+after seeing a result, so every one of them is declared, and the family is the product of all of
+them counted once. `src/core/experiment_family.py` builds that product as a `SearchSpecification`
+over eight axes and prices it before acquisition. The inline product in `preflight_manifest` and
+its copy in the browser are gone; a family size that could be read two ways is a family size that
+will be.
+
+Domain combinations are unioned across declared arities rather than multiplied: pairs and triples
+of four domains are 6 + 4 = 10 members, because a member is one combination.
+
+**The check found what it exists to find.** Priced for the first time, the flagship's 288 declared
+tests need about **35,953 surrogates** under Benjamini-Yekutieli at alpha 0.05. The frozen
+acceptance policy declares **200**, at which the largest affordable family is **four**. That
+study could have run to completion, cost the full amount and been arithmetically incapable of
+rejecting anything - reporting nothing for an arithmetic reason indistinguishable afterwards from
+a clean negative. It is logged as **D76**, and the manifest gained the `ConfirmationPolicy` that
+makes the two legitimate answers separable: a `confirmatory_only` study is priced at its complete
+declared family and refused when it cannot resolve it, and a `generate_then_confirm` study must
+name the held-out partition it will confirm on and how many members. The flagship declares the
+second. Its generate stage is labelled in every payload as producing candidates and not claims.
+**D77** fell out of the same pass: the flagship's null had carried a `preserve_gaps` parameter
+that nothing read since TG17.1.
+
+A pairwise screen never shrinks the correction unit. `correct_over_candidates` refuses the number
+of survivors by name and permits it only against a named held-out partition, because a
+confirmatory family is legitimately small only when it was frozen before that partition was
+opened.
+
+Two of the four flagship domains declare no justified lag policy. They take part in structural
+association; the 240 declared members that pair them at a precedence relationship are reported
+unavailable, and the declared family size is unchanged - a family narrowed to what survived is a
+family chosen after looking.
+
+Nulls became declared objects with a comparison mode and a named list of what they preserve and
+destroy. A calendar null is refused for a scale/shape question where the question is declared.
+Four admissible families are registered - the plain clock shift, a whole-cycle shift that keeps
+seasonal phase, a within-group shift that never moves a value across a declared group boundary,
+and a scale/shape partner reassignment that alters no record at all - and none of their parameters
+has a framework default. `global_value_shuffle` is **registered and refused**: every domain can
+execute it, which is exactly why it must be refusable by name rather than quietly absent. Which
+nulls a domain's support can carry is declared per adapter and bound against every participating
+adapter in preflight.
+
+The TG17.0 fixtures calibrate at the frozen family level - six pairs, one correction, 999
+replications, the declared null applied through `bind_null`, and a support-weighted statistic that
+inherits TG17.4's density invariance. The planted `shared_calendar_event` is confirmed on **6 of
+6** pairs. `same_window_unrelated`, `gap_alias` and `inadmissible_precedence` each reject **0 of
+6**: an identical outer interval and a shared observation gap do not become shared structure.
+
+```text
+> .\.venv\Scripts\python.exe -m pytest src\tests\test_experiment_family.py src\tests\test_structural_alignment.py src\tests\test_frontend_contract.py src\tests\test_adapter_registry.py src\tests\test_experiment_manifest.py src\tests\test_structural_trajectory.py src\tests\test_domain_onboarding.py src\tests\test_acquisitions_api.py src\tests\test_benchmarks.py src\tests\test_cross_domain.py src\tests\test_family_accounting.py src\tests\test_preregistration.py src\tests\test_documentation.py -q
+513 passed, 5 warnings in 556.20s (0:09:16)
+
+> cd frontend && npm run build
+built in 1m 17s (TypeScript and Vite production bundle)
+
+> git diff --check
+(clean)
+```
+
+No live archive is acquired, no confirmatory statistic runs, no evidence is written and no claim
+rung moves. A calibration on fixtures with known answers is not a result about any domain.
+
+The full suite was not rerun at the user's request; the clean 2745-pass G15 run remains the latest
+full-suite evidence.
+
+## TG17.6 - Content-Addressed, Resumable Experiment Orchestrator (2026-08-31, `ed-dev`) - **COMPLETE**
+
+A four-domain study is a long job over remote archives, and long jobs get interrupted. Every
+interruption offers the same recovery - start again, and run whatever is available this time - and
+taking it substitutes a smaller experiment for the declared one while producing a receipt
+indistinguishable from a study that always intended to be that size. `src/core/experiment_run.py`
+executes a frozen manifest as one state machine, held as a transition **table**, so what a run was
+allowed to do next is one dictionary rather than a chain of branches.
+
+**Run identity is the manifest.** It is a content address over the schema and the manifest digest
+and nothing else - no clock, no UUID, no machine - so executing an identical manifest *is* the same
+run. `POST /api/v1/experiment-runs` resumes rather than creates, and the Composer has no "new run"
+control because there is no such operation.
+
+**Every step is content-addressed.** A step key is the digest of the run, the stage, the component
+and the digests of that step's declared inputs; a completed step is published immutably through
+`publish_new_bytes` and replayed from disk. That is the no-duplicate-acquisition guarantee and the
+drift check at once: a changed native artefact re-keys its translation rather than being paired
+with a stale one. Operational failures are deliberately *not* published under a step address, since
+a timeout is a fact about a network at a moment and not a function of the declared inputs - and
+publishing it there would make a successful retry look like one address disagreeing with itself.
+
+**A retry may not author a new plan.** `retry` re-executes only the components recorded `FAILED` or
+`TIMED_OUT`, and refuses a manifest whose digest differs from the frozen one. `REFUSED` and
+`MISSING` are the archive answering rather than failing, so they are terminal: the remedy is
+`editable_copy`, which writes a new mutable draft and leaves the frozen run's journal unchanged.
+There is no `unfreeze` - a frozen run edited after seeing how it went is a plan chosen with
+knowledge of the result.
+
+**Partial acquisition is the frozen policy's decision.** `decide_stage` is a pure function of the
+manifest and the component statuses, auditable without reconstructing a run: `complete_required`
+refuses, `partial_permitted` admits only above its declared minimum fraction, and the receipt names
+every missing component either way. A refusal outranks a failure and a failure outranks a missing
+component, because "we could not ask" is not "the answer is no".
+
+**Progress cannot leak an unopened result.** `ComponentOutcome` carries a status, a digest, a
+bounded work estimate and a remediation string, and has nowhere to put a measurement value - so a
+progress feed watched during `MINING` reports that mining is happening and cannot report what it
+found. `runs/<run_id>/journal.jsonl` is the only state: append-only, fsync'd per line, folded on
+read, with a torn tail skipped rather than raised.
+
+`src/core/run_workers.py` registers the stage-worker suites instead of accepting behaviour from a
+request, and everything registered today **acquires nothing**. `fixture_dry_run` rehearses a frozen
+plan end to end; `fixture_transient_failure` times out each acquisition component once and
+completes it on retry, reading "first attempt" from the run's own journal so the rehearsal behaves
+identically across a restart or four separate HTTP requests. Eight routes and
+`frontend/src/components/RunMonitor.tsx` put the machine in the browser, with Retry and "open an
+editable copy" as two buttons that are never both live.
+
+**Two things the widened verification set found.** `test_analysis_api.py`'s TG11.1 acceptance test
+asserted `len(names) == 13` before posting every sequence and cross-domain benchmark over HTTP;
+TG17.0 registered two more, so the assertion aborted the test *before the HTTP call* and the two
+four-domain flagship benchmarks were never exercised across the API boundary that test exists to
+exercise (**D78**, fixed by deriving the count with a floor and naming them). And the shared
+`client` fixture gained the filesystem half of D24's reasoning: persisting routes fall back to
+`data/` when nothing binds them, which for a content-addressed run means an unbound test posting a
+manifest would resume, and then advance, whatever real run that manifest already had.
+
+**Acceptance met.** A killed run resumes without re-requesting the coverage it had acquired; a torn
+journal tail is skipped and the run still resumes; re-executing an identical complete manifest
+returns the same run identity and byte-identical artefact digests and requests nothing. A timed-out
+acquisition leaves the run `FAILED` with a remediation and is retried over HTTP, re-executing only
+that component. A retry carrying a different manifest is refused by digest. A permanent refusal is
+terminal, is not retryable, and is answered with an editable copy that leaves the frozen run
+unchanged.
+
+```text
+> .\.venv\Scripts\python.exe -m pytest src\tests\test_experiment_run.py src\tests\test_experiment_manifest.py src\tests\test_experiment_family.py src\tests\test_frontend_contract.py src\tests\test_structural_alignment.py src\tests\test_adapter_registry.py src\tests\test_structural_trajectory.py src\tests\test_domain_onboarding.py src\tests\test_acquisitions_api.py src\tests\test_benchmarks.py src\tests\test_cross_domain.py src\tests\test_family_accounting.py src\tests\test_preregistration.py src\tests\test_api_infrastructure.py src\tests\test_analysis_api.py src\tests\test_channels_api.py src\tests\test_cross_domain_api.py src\tests\test_evidence_api.py src\tests\test_findings_api.py src\tests\test_mining_api.py src\tests\test_preregistration_api.py src\tests\test_profiles.py src\tests\test_reviews_api.py src\tests\test_documentation.py -q
+811 passed, 1 skipped, 5 warnings in 677.37s (0:11:17)
+
+> cd frontend && npm run build
+built in 1m 5s (TypeScript and Vite production bundle)
+
+> git diff --check
+(clean)
+```
+
+No live archive is acquired, no confirmatory statistic runs, no evidence is written and no claim
+rung moves. The registered suites are rehearsals, and a rehearsal that completes is not a result.
+
+The full suite was not rerun at the user's request; the clean 2745-pass G15 run remains the latest
+full-suite evidence.
+
+## TG17.7 - The Guided Path, the Ladder, and the First Browser Test (2026-08-31, `ed-dev`) - **COMPLETE**
+
+The workbench before this slice was four acquisition surfaces and a Composer whose panels could be
+visited in any order. Nothing about that was broken, and that is the problem: the order of
+operations *is* the scientific discipline. A family priced after acquisition is priced knowing what
+the data looked like. A null admitted after the statistic exists is not a null. A UI that permits
+those in any order has not made an error - it has made the error **undetectable**, because no
+receipt can distinguish an experiment that was declared from one that was assembled.
+
+`src/core/composer_path.py` therefore holds the workflow as a registry rather than a layout.
+`COMPOSER_PATH` carries the seven steps, each a `PathStep` deciding its own status from the
+manifest, and `compose_state` returns exactly **one** `next_action`. The browser renders that; it
+does not compute it. Statuses are three-valued, because "you have not done this" and "this cannot
+be done yet" are different sentences and only one is the researcher's move. A blocked step keeps
+its tab and its reason: the whole flagship blocks at preflight naming `order_book`, rather than
+dropping the domain and reporting a complete three-domain study. `STAGE_LADDER` names acquired
+material, an executed run, a finding and admitted evidence, each with what it is **not** and its
+own gate; this surface moves a researcher across the first two and structurally cannot move them
+across the last two.
+
+Three things the path made honest. Duration presets resolve on the server in calendar terms and
+apply as the explicit instants they resolved to - writing them as fixed day counts was caught in
+test, because 182 days from the flagship's own anchor is 2026-07-02, so pressing the preset that
+described your own window would have moved its boundary and re-addressed the manifest. The domain
+menu filters nothing and returns a domain with no declared observation unselectable with the
+reason, since an adapter says how a domain is translated and not what is measured, in which units,
+in which role or from which record. `POST /path/state` looks for a run at the manifest's content
+address and never opens one, because `RunStore.open` publishes a frozen manifest and a read of
+where a draft stands must not be the thing that freezes it.
+
+**The first browser test in this repository.** Every other check here reads source or calls HTTP,
+and neither proves a page renders. `frontend/playwright.config.ts` serves the real API and the real
+frontend and drives Chromium; `frontend/e2e/composer-path.spec.ts` walks the path through roles and
+visible names only - no CSS class, no test id - because a test that clicks `.btn-primary` proves the
+DOM has a div, not that a person could declare an experiment. The complete flagship is deliberately
+**not** what is executed: `order_book` is bespoke and metadata cannot plan its coverage, so the
+browser drives into that refusal, resolves it through the visible domain menu, and runs the
+resulting three-domain plan.
+
+**Two defects, both found by evidence that did not exist before.**
+
+*   **D79**, found by the browser within minutes. The domain menu's checkbox was bound to the
+    server's echo of the selection rather than to the manifest, so it snapped back to its old value
+    and for ~200ms reported the **opposite** of the choice just made. Every source-level and HTTP
+    test passed throughout, because the manifest and the payload were both correct and nothing in
+    this repository rendered anything.
+*   **D80**, found by the first full-suite run since TG15. A test asserted that the composer
+    contract still called running an experiment unavailable - true at TG17.1, false from TG17.6,
+    and the assertion did not fail, it **held the stale claim in place** while the run contract on
+    the next router described the state machine that ran it.
+
+```text
+> .\.venv\Scripts\python.exe -m pytest src\tests -q -p no:randomly
+3106 passed, 2 failed, 4 skipped, 1 xfailed in 2617.52s (0:43:37)
+  the two failures are D80 and the stale 2745 test-count claim this run replaced
+
+> .\.venv\Scripts\python.exe -m pytest src\tests\test_composer_path.py src\tests\test_experiment_manifest.py src\tests\test_frontend_contract.py src\tests\test_experiment_run.py src\tests\test_documentation.py -q
+304 passed in 354.32s (0:05:54)          (after both fixes; includes the full documentation audit)
+
+> cd frontend && npx playwright test
+11 passed (52.2s)                        (Chromium, real API and real frontend)
+
+> cd frontend && npm run build
+built in 49.17s                          (TypeScript and Vite production bundle)
+```
+
+`test_composer_path.py` 49 tests; `test_frontend_contract.py` 127 -> 144; seven new routes,
+119 -> 126. Ledger D1-D80, 78 fixed.
+
+No archive is acquired, no statistic runs, no finding is recorded and no evidence is admitted.
+
+Every status this slice reports is a fact about a declaration.
+
+---
+
+## TG17.8 Scientific comparison views — COMPLETE (2026-08-31, `ed-dev`)
+
+Seven linked views over one manifest, held in a registry ordered by ordinal, each declaring its
+axes, its legend, what it may conclude and what it may not. Every earlier G17 slice refuses a bad
+**declaration**; this one refuses a bad **picture**, which is harder, because a picture is
+persuasive before it is read.
+
+The refusals are structural rather than advisory:
+
+*   `Axis` raises `MagnitudeEquivalenceError` when a `native_magnitude` coordinate is given more
+    than one domain — at **construction**, so a view that would put two units on one ruler never
+    finishes being built and cannot reach a browser, an export or a screenshot. There is no
+    plotting call to police.
+*   A coverage cell is a named state (`COVERED`/`SPARSE`/`ABSENT`/`REFUSED`) in the payload *and*
+    in the component, which draws from `CELL_STYLE` with no numeric path into it. Absent support
+    has no width to be zero, so it cannot be read as a measured zero.
+*   `Mark` requires exactly one of an artefact digest and a reason it has none.
+*   `register_encoding` refuses a role duplicating another's colour, marker *or* word, so the
+    candidate/confirmation distinction survives for a reader who cannot use colour.
+
+**What may be declared is not what may be drawn.** `calendar_aligned` admits `causality` as a
+declarable relationship and that stays correct — a study holding an external intervention design
+may test it. No view may draw it, because every alignment computed here is observational and the
+design that licenses the arrow has no field in the manifest. A manifest declaring `causality`
+still gets its matrix cells, occupied by the refusal and its reason.
+
+`ViewContext.results_exist` requires a `MINING/` artefact rather than trusting
+`state == "COMPLETE"`: TG17.6 lets a run complete under `partial_permitted` with mining components
+missing by name, and without this a run that mined nothing would render its matrix as measured and
+empty.
+
+**Found by the guards, not by inspection:**
+
+*   `test_every_api_method_is_reachable_from_the_ui` failed on **four** service methods with no
+    caller — the contract, the legend, the single-view render and the reading check were served
+    and invisible. They are now the legend, a *What these views will not draw* disclosure, a
+    per-view refresh, and a control that asks the server whether a reading can be drawn.
+*   Two `<details>` panels were exposed as groups with **no accessible name**, because a
+    `<details>` name is not computed from its `<summary>`. Found by role+name locators timing out
+    in the browser; fixed with explicit `aria-label`s.
+*   One full-suite browser run failed on the motif view where the helper waited only for the first
+    view to paint. The helper now waits for the seventh, so each test's assumption that the whole
+    set is present is stated once rather than raced on.
+
+```text
+> .\.venv\Scripts\python.exe -m pytest src\tests\test_comparison_views.py src\tests\test_frontend_contract.py ^
+    src\tests\test_experiment_manifest.py src\tests\test_composer_path.py ^
+    src\tests\test_experiment_run.py src\tests\test_documentation.py -q -p no:randomly
+387 passed in 341.21s (0:05:41)          (includes the full documentation audit)
+
+> cd frontend && npx playwright test
+30 passed (1.9m)                         (Chromium, real API and real frontend; 19 are TG17.8's)
+
+> cd frontend && npm run build
+built in 53.63s                          (TypeScript and Vite production bundle)
+```
+
+`test_comparison_views.py` 65 test functions (73 runs with parametrisation);
+`test_frontend_contract.py` 144 -> 154; six new routes, 126 -> 132. The full suite has **not**
+been rerun since TG17.7's 3106, so that figure remains the last measured one rather than a current
+one; the documented inventory total is 2822.
+
+No archive is acquired, no statistic runs, no finding is recorded and no evidence is admitted.
+
+---
+
+## TG17.9 Portable receipt, methods report and evidence handoff — COMPLETE (2026-08-31, `ed-dev`)
+
+The completed-run export is now a separate immutable object from TG17.6's live receipt. It seals
+the exact manifest, preflight, acquisition/source identities, freeze-time adapter contracts and
+environment, role-separated artefacts, inference declaration, event sequence, results, refusals,
+methods report and explicit evidence-category census. Registry-derived context is captured when
+the run freezes. Legacy runs are exportable only if current re-derivation agrees with their
+recorded preflight digest.
+
+Import verifies the outer content address, exact field set, manifest-derived run identity, every
+journal transition and step component, the receipt reconstructed from those events, and the
+Markdown digest. Recomputing an outer digest after forging the embedded state therefore does not
+pass. Replay writes no run, study or EvidenceBundle.
+
+The Composer and Platform & evidence render the same generated capability snapshot. The
+documentation guard imports it and requires every registered operation, adapter, refusal and
+receipt field to be explained in `architecture.md`. The rendered handoff displays absent
+hypothesis/evidence/replication/promotion categories before navigating to a separate study draft;
+it makes no evidence call.
+
+**D81.** The first real browser import rejected its own untouched export because Python wrote an
+integral JSON number as `1.0` and JavaScript re-emitted it as `1`. Canonical hashing now normalises
+integral JSON numbers. The focused regression and the Chromium export/replay path both pass.
+
+```text
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_experiment_receipt.py -q
+21 passed in 35.33s
+
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_frontend_contract.py ^
+    src/tests/test_experiment_run.py -q -p no:randomly
+237 passed in 66.35s
+
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_documentation.py -q
+20 passed                         (verified in the widened targeted run; all documentation checks green)
+
+> cd frontend && npx playwright test
+33 passed (2.2m)                  (real API, real frontend, Chromium; 3 are TG17.9)
+
+> cd frontend && npm run build
+1,408 modules transformed; production bundle clean
+
+> git diff --check
+clean
+```
+
+Four new routes bring the served surface from 132 to 136. The inventory is 2,847 test functions.
+The full backend suite has not been rerun since TG17.7, so 3,106 remains the last measured full
+figure. No live archive is acquired, no scientific statistic is run, no finding is recorded and
+no evidence is admitted by TG17.9.
+
+---
+
+## TG17.10 Flagship qualification and no-glue release gate — APPARATUS GATE DELIVERED, RELEASE WITHHELD (2026-09-01, `ed-dev`)
+
+The frozen matrix is three declared durations crossed with the two comparison modes, derived from
+the single flagship recipe rather than a second configuration. Each cell keeps explicit UTC
+boundaries, the complete-family correction and `duration_selected_before_results`, and binds the
+order-book observation by the content digest of its known-answer record. `REFUSED` is a distinct
+cell and gate state from `FAIL`, and a refused cell opens no run.
+
+**The matrix does not go green, and that is the measurement.** `order_book.bespoke_record` declares
+that it cannot carry `scale_partner_reassignment`, so the four-domain quartet cannot be qualified
+in scale/shape mode at all. Three cells are refused before execution with their reason recorded,
+rendered and asserted. The Composer answers the same way in the browser rather than switching mode
+silently and failing later at execution.
+
+Two gates pass (`offline_matrix` is not one of them; it is `REFUSED`). `browser_no_glue` and
+`synthetic_fifth_adapter` are recorded `NOT_RUN` because a backend rehearsal must not award itself
+a gate measured by a rendered browser or a source-edit audit, even though both of those pass.
+`calendar_calibration` and `live_sources` are `NOT_RUN`; `scale_shape_calibration` is
+`NOT_IMPLEMENTED`. `scientist_actions` is `NOT_MEASURED` throughout. The verdict is
+`NOT_RELEASEABLE` and `verify_qualification_record` refuses a `RELEASEABLE` verdict carrying any
+non-passing gate.
+
+**D83.** TG17.10's first attempt widened the *framework default* `admissible_nulls` in four places
+instead of declaring the null per domain, silently overruling the order-book adapter's documented
+refusal and pre-admitting the null for any future adapter. Every targeted suite, the production
+build and the full 35-test browser suite were green. Only `test_experiment_family.py`'s pinned
+per-domain declaration objected, in a full-suite run. Reverted; the three admitting domains
+declare it individually with reasons.
+
+**D82.** A held-out confirmation partition is spent exactly once and the frozen flagship ships one
+default name, so any plan composed in the browser was executable at most once per deployment and
+the refusal told the scientist to declare a partition the form could not declare. The analysis
+step now carries an explicit *Held-out confirmation partition* control.
+
+```text
+> .\.venv\Scripts\python.exe -m pytest src/tests -q -p no:randomly
+3240 passed, 4 skipped, 1 xfailed in 2380.86s (0:39:40)
+
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_experiment_qualification.py ^
+    src/tests/test_experiment_family.py -q
+77 passed in 431.39s
+
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_documentation.py ^
+    src/tests/test_frontend_contract.py -q
+181 passed in 274.25s
+
+> cd frontend && npx playwright test          (after rm -rf .e2e-state)
+35 passed (2.7m)                  (real API, real frontend, Chromium; 2 are TG17.10)
+
+> cd frontend && npm run build
+1,409 modules transformed; production bundle clean
+
+> git diff --check
+clean
+```
+
+The clean **3,240** replaces TG17.7's 3,106 as the last measured full-suite figure. Two new routes
+bring the served surface from 136 to 138; the inventory is 2,867 test functions. No live archive is
+acquired, no scientific statistic is run, no finding is recorded, no evidence is admitted and
+nothing is released by TG17.10. Five of the seven registered gates remain unpassed.
+
+---
+
+## T4C.6 acquisition attempted and stopped at D84 (2026-09-01, `ed-dev`)
+
+**The three long-standing external prerequisites are now satisfied.** `cdsapi` 0.7.7 is installed
+into `.venv` from `requirements-cds.txt`; a CDS personal access token is configured as
+`CDSAPI_URL`/`CDSAPI_KEY` in `.env.local`, which `start_platform.ps1` promotes into the process
+environment; the ERA5 licence for `reanalysis-era5-pressure-levels` has been accepted; and
+`SPECTRALEARTH_ALLOW_NETWORK` was already set. The campaign preflight returns
+`status: READY_FOR_CANARY` with `blockers: []`.
+
+The direct regional route also resolves D43's amplification: the full five-year record is 2.52 GB
+across 60 monthly shards against the catalogued route's 29.88 GB, the canary is 18 MB, and the
+9.75 GiB total requirement passes against 941 GiB free on `D:`.
+
+The preflight's own claim boundary still holds and is worth restating: `READY_FOR_CANARY` proves
+local contract, capacity, dependency, configuration-presence and consent only. It does not prove
+credential validity, licence acceptance or service availability. **No live CDS request has been
+made, so the token and licence remain unproven.**
+
+**Acquisition stopped before any data transfer, at D84.** Materialising the WeatherBench overlap
+was refused on crop geometry. The first attempt supplied no `TransformSupportRequest` and was
+correctly refused against the 4-level DTCWT default; that was a caller error, not a defect. Supplying
+the campaign's frozen transform (`swt`, `db2`, 3 scales) produced the real refusal: the 161x161
+crop retains a 139 px valid interior against `MIN_VALID_INTERIOR` of 128 and passes
+`gate_campaign`, while `minimum_crop_size` rounds the 150 px raw minimum up to 256 and refuses.
+
+Reading the estimator settled what the constant is standing in for. `transfer_entropy` consumes
+1-D series; `energy_density[t, s] = sum(coefficient**2) / values.size` collapses space to one
+scalar per frame per scale. The joint histogram's samples are frames: 4,382/216 = 20.3 per cell on
+train and 2,914/216 = 13.5 on test, both above the 5.0 minimum. Crop size beyond edge exclusion
+therefore governs the precision of the per-frame scalar, not the sample count -- a power
+criterion, not a validity one. It biases toward the null, so it cannot forge a PASS, but it can
+forge a FAIL that is really inadequate power, and the frozen decision rule's own FAIL/INVALID
+distinction cannot currently be made. Recorded as D84; fix specified as roadmap T4C.5i.
+
+```text
+> .\.venv\Scripts\python.exe -m pip install -r requirements-cds.txt
+Successfully installed cdsapi-0.7.7 ecmwf-datastores-client-0.5.3 multiurl-0.3.9
+
+> .\.venv\Scripts\python.exe -m src.analysis_engine.gate_campaign review ^
+    --campaign campaigns/t4c6_nz_era5_temperature_850_v1.json
+campaign_sha256 84f7b53fd25d555c8dcd57c6006288b95c5908f2a1d5c002d10a6572c7875975
+network_used false
+
+> .\.venv\Scripts\python.exe -m src.analysis_engine.gate_campaign preflight ...
+status READY_FOR_CANARY; blockers []; cdsapi_available true;
+credentials.configuration_present true; secret_values_inspected false;
+remote_validity_or_licence_acceptance_proven false;
+network_consent_enabled true; client_constructed false; network_used false
+
+> materialise(weatherbench_overlap, analysis=swt/db2/3)
+FieldTooSmallError: SWT level-3 ... needs at least (256, 256) ... field is (161, 161)
+```
+
+Network use in this session was limited to opening the WeatherBench store to read coordinate and
+chunk metadata. No measurement values were transferred, no shard was downloaded, no cache was
+written and no CDS request was issued. The defect ledger moves to D1-D84 with two open entries,
+D43 and D84.
+
+## T4C.5i steps 1-4 -- spatial sampling adequacy (2026-09-01, `ed-dev`)
+
+`src/analysis_engine/spatial_power.py` derives what `MIN_VALID_INTERIOR` was standing in for
+(D84): spatial decorrelation and effective sample size per interior, an attenuation curve measured
+by nested sub-cropping, an extrapolation to an unlimited crop, and the minimum detectable effect
+of the declared design. Steps 5-8 are not started, so D84 stays open.
+
+```text
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_spatial_power.py -q
+41 passed, 1 warning in 4.64s                     (36 test functions)
+
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_spatial_power.py ^
+    src/tests/test_cross_scale.py src/tests/test_scale_signature.py ^
+    src/tests/test_statistics.py src/tests/test_gate_campaign.py ^
+    src/tests/test_gate_run.py src/tests/test_preregistration.py -q
+196 passed, 1 warning in 54.55s
+
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_documentation.py -q
+20 passed, 2 warnings in 252.38s
+
+> git diff --check
+(clean)
+```
+
+For the frozen campaign -- 36 tests, Benjamini-Yekutieli at alpha 0.05, 4,999 circular shifts --
+the derived detection rank is `k = 0`: the observation must exceed **every** surrogate. The
+p-value floor of 1/5000 clears the required raw level of 3.327e-4 by a factor of 1.66, so the
+design detects, but with no margin for a single exceedance. A test pins that boundary to the
+gate's own `screen` over the declared family, and the rejection flips across it and nowhere else.
+
+No confidence interval is attached to the minimum detectable effect, and two attempts to attach
+one are recorded in `roadmap.md` as errors rather than removed silently. The surrogate seed is
+preregistered, so the ensemble is frozen and the order statistic is the decision boundary itself
+rather than an estimate of it. The measured miscalibration that exposed this: at rank 1 a
+bootstrap resample can never exceed the sample maximum, and four independent ensembles of 4,999
+draws all fell above the interval's upper limit; at rank 10, coverage was 3 in 20.
+
+The full backend suite has **not** been rerun since these additions, so 3106 remains the last
+measured full-suite figure. No network was used. The defect ledger is unchanged at D1-D84 with
+D43 and D84 open.
+
+## T4C.5i step 5 -- refusing on the derived quantity, and defect D85 (2026-09-01, `ed-dev`)
+
+Step 5 replaces the crop-size constant in the refusal path with the derived quantities from steps
+1-4. `spatial_power_refusal` returns one verdict and, when it is `INVALID`, names the deficit in
+the units of what caused it plus which of `REMEDY_AXES` -- crop size, frame count, scale count --
+would close it. `crop_for_effect` inverts the attenuation fit already reported rather than adding a
+second model, and refuses to name a crop where a number would be an invention: a target above the
+unlimited-crop ceiling, a saturated largest sub-crop, or an area exponent showing the decorrelation
+length still growing with the window. `family_for_effect` reports the family that would have
+detected the effect and marks it `admissible_after_seeing_data: False`.
+
+**Defect D85, found while wiring this and confirmed against the checked-in preregistration.**
+`_shift_null` draws its circular shifts with replacement from `admissible_shifts`, so requesting
+4,999 surrogates always returns 4,999 numbers. The exact test's reference set is the distinct
+admissible shifts the record contains, and its attainable p-value is bounded by `1 / (1 + D)`
+however many draws are taken. Measured on the frozen campaign's own split:
+
+```
+$ .venv/Scripts/python.exe -c "... frames_for_resolution ..."
+train 4382 frames, theiler 24: 4329 distinct shifts, attainable p 2.309e-4, required 3.327e-4, resolves
+test  2914 frames, theiler 24: 2861 distinct shifts, attainable p 3.494e-4, required 3.327e-4, does not
+test  2914 frames, theiler  1: 2912 distinct shifts, attainable p 3.433e-4, required 3.327e-4, does not
+      -> about 3007 frames would supply the 3005 distinct shifts required
+```
+
+Confirmed independently through the repository's own screening machinery rather than this module's
+arithmetic, by feeding the best attainable p-value of each partition into `screen` over the
+declared 36-test family:
+
+```
+train theiler 1  D 4380 p 0.00022826 q 0.034304 sig True
+train theiler 24 D 4329 p 0.00023095 q 0.034708 sig True
+test  theiler 1  D 2912 p 0.00034329 q 0.051591 sig False
+test  theiler 24 D 2861 p 0.00034941 q 0.052510 sig False
+```
+
+**The frozen T4C.6 campaign cannot replicate on its confirmatory half at any effect size**, and
+`check_power` reports it as adequately powered because it counts the 4,999 requested draws against
+the 3,005 required rather than counting the reference set. The margin is small -- q = 0.0516
+against alpha = 0.05 -- and on the wrong side. The campaign file is left frozen and unedited;
+re-freezing it is the recorded supersession specified as T4C.5i step 8, not a repair, and D85 is
+recorded as open.
+
+**Wiring.** `review_gate_campaign` reports the audit as `scientific_design.surrogate_resolution`
+with a `resolvable` flag; `preflight_gate_campaign` refuses on it before any transfer; and
+`preflight_cached_gate` refuses on it for the `real_era5_gate` role. The order is deliberate: a
+frozen campaign that cannot resolve its own family must stay loadable and reviewable, or the defect
+could not be recorded against it. The audit uses the most favourable Theiler window of one frame,
+so a partition that fails it cannot be rescued by any window, which is what makes refusing before
+acquisition safe. The `test_gate_campaign.py` orchestration fixture was lengthened from 120 to 200
+frames -- its 47-frame confirmatory partition genuinely could not resolve its own two-test family,
+and a fixture is not evidence.
+
+**Step 5 is not finished.** The attenuation half of the adjudication -- converting a FAIL into an
+INVALID inside `run_cached_gate` -- needs the sub-cropped attenuation curve, which means
+re-decomposing the train partition at six crop sizes. That is the same computation step 7's receipt
+fields need, and the two are built together rather than twice.
+
+Commands and results:
+
+```
+$ .venv/Scripts/python.exe -m pytest src/tests/test_spatial_power.py -q
+58 passed, 1 warning in 4.82s
+
+$ .venv/Scripts/python.exe -m pytest src/tests/test_spatial_power.py src/tests/test_cross_scale.py \
+    src/tests/test_scale_signature.py src/tests/test_statistics.py src/tests/test_gate_campaign.py \
+    src/tests/test_gate_run.py src/tests/test_preregistration.py -q
+215 passed, 1 warning in 50.73s
+
+$ .venv/Scripts/python.exe -m pytest src/tests/test_lag_policy_registry.py -q
+21 passed, 1 warning in 4.79s
+```
+
+No network was used and no data was acquired. The full backend suite has **not** been rerun since
+these additions, so **3106** remains the last measured full-suite figure. The defect ledger moves
+to D1-D85 with three open entries: D43, D84 and now D85.
+
+## T4C.5i step 6 -- demoting the two constants (2026-09-01, `ed-dev`)
+
+Step 6 leaves `MIN_VALID_INTERIOR` and `RECOMMENDED_VALID_PARENT_SIDE` in place, and leaves both
+at 128. What changed is their standing and their reach. Each now declares, in code and in every
+payload that reports it, that it is a judgement about how much uncontaminated span makes a spatial
+statistic comfortable to look at rather than a derived power criterion, and each names
+`analysis_engine/spatial_power.py` as the thing that answers the question it stood in for. The
+power-of-two rounding left the refusal path entirely and is reported separately as an operational
+convention that nothing is refused on.
+
+Measured thresholds before and after:
+
+```
+$ .venv/Scripts/python.exe -c "... minimum_crop_size / dyadic_crop_size ..."
+levels  refusal threshold  dyadic convention   (was: refused on the dyadic figure)
+  1            142               256
+  2            168               256
+  3            220               256
+  4            324               512
+  5            532              1024
+
+$ .venv/Scripts/python.exe -c "... crop_planner.assess_shape ..."
+swt   db2 level 4 : requirement 174, dyadic 256
+dtcwt     level 4 : requirement 352, dyadic 512
+```
+
+**What this closes, and what it does not.** D84's *contradiction* is closed. The frozen T4C.6 crop
+is 161 px at db2 SWT level 3; the accumulated support contaminates 11 px per side, leaving a 139 px
+valid interior, so `gate_campaign` admitted it against the 128 px heuristic while the planner
+raised its own raw 150 px requirement to 256 and refused the same crop -- describing 256 to the
+caller as *statistically recommended*. With the rounding gone the planner's threshold is 150 px,
+both gates admit the crop, and that is pinned as a test against the defect's own case:
+
+```
+$ .venv/Scripts/python.exe -c "... assess_shape(161, 161, swt/db2/level 3) ..."
+valid interior 139x139, requirement 150, dyadic 256, verdict recommended, meets True
+```
+
+What is **not** closed is whether 139 px of interior is *enough*. That is a power question, the
+derived quantities exist in `spatial_power.py`, and the FAIL/INVALID adjudication that consumes
+them is step 5's deferred attenuation half. **D84 remains open**, now on the adjudication rather
+than on the disagreement, and D85 is untouched by this step.
+
+The refusal wording was corrected throughout: `FieldTooSmallError` now reads *R13 heuristic
+interior*, states that the threshold is a judgement rather than a derivation, and points at the
+derived criterion. The API catalogue reports `r13_minimum_crop` as the requirement and adds
+`r13_dyadic_operational_crop` for the rounding, with `r13_legacy_note` saying which is which. The
+acquisition UI labels the tile *Heuristic minimum*, shows the dyadic convention beneath it marked
+*not gated on*, renders the threshold's own `limitation` text, and no longer calls a crop that
+clears it *scientifically recommended*.
+
+Commands and results:
+
+```
+$ .venv/Scripts/python.exe -m pytest src/tests/test_crop_planner.py src/tests/test_zarr_source.py -q
+72 passed, 1 skipped, 5 warnings in 25.79s
+
+$ .venv/Scripts/python.exe -m pytest src/tests/test_frontend_contract.py -q
+161 passed, 5 warnings in 8.66s
+
+$ .venv/Scripts/python.exe -m pytest src/tests/test_cds_source.py src/tests/test_imports.py \
+    src/tests/test_gate_run.py src/tests/test_gate_campaign.py src/tests/test_spatial_power.py -q
+136 passed, 2 warnings in 1275.76s
+
+$ .venv/Scripts/python.exe -m pytest src/tests/test_documentation.py -q
+20 passed, 2 warnings in 315.70s
+
+$ npm run build            # frontend
+1409 modules transformed, built in 1m 23s
+```
+
+No network was used and no data was acquired. The full backend suite has **not** been rerun since
+these changes, so **3106** remains the last measured full-suite figure. The ledger is unchanged at
+D1-D85 with three open entries: D43, D84 and D85.
+
+## T4C.5i step 7 -- publishing the derivation, and the FAIL/INVALID boundary (2026-09-01, `ed-dev`)
+
+Steps 1-4 produced derived spatial-power quantities that nothing consulted. Step 7 runs them
+inside `run_cached_gate`, publishes every one of them in the receipt, and lets them decide whether
+an absence is a negative finding -- which is also step 5's deferred attenuation half, deferred
+precisely because it needed this curve.
+
+`run_cached_gate` now takes one further bounded pass over the train partition. The receipt gains
+a `spatial_power` block -- per-scale median decorrelation length per axis and effective sample
+count, the attenuation curve over concentric sub-crops, the sweep-derived minimum detectable
+effect, the `spatial_power_refusal` record with its remedy axes, and a `limitations` list -- and a
+`power_adjudication` block naming the rule that produced the scientific verdict. The gate's own
+verdict is left exactly as `evaluate_replication_gate` returned it, so the receipt records the
+protocol decision and the power decision separately rather than presenting one as the other.
+
+**The boundary.** In the real gate role a FAIL survives as a negative finding only where the
+derived record returns ADEQUATE. Where it returns INVALID, could not be measured, or could not
+reproduce the sweep's surrogate ensemble, the run is INVALID and names its deficit and remedy
+axis. A PASS is never downgraded and the receipt says why: spatial imprecision attenuates toward
+the null, so an undersized crop cannot manufacture a positive -- only an absence that belongs to
+the instrument. Under synthetic acceptance the block is computed and published in full and
+adjudicates nothing.
+
+**Three things recorded in the receipt rather than in a docstring.**
+
+*   The audited test is the **train** partition's smallest-p case. Selecting what to audit after
+    seeing the held-out result is the move the split exists to prevent.
+*   Where two scales lose different margins to the same filter, the curve is measured on the
+    window both interiors can supply, so its largest row is *not* the sweep's own estimate. Both
+    numbers are published and neither is adjusted into the other; the adjustment between them
+    would be a correction nothing measured. On the synthetic fixture the interiors are 60 and 54
+    px and the matched window is 54.
+*   A decimated family's shared sub-crop size is a coefficient-count match, not a shared area.
+    SWT -- which the frozen T4C.6 campaign uses -- is undecimated and unaffected, and the record
+    says so for the families that are.
+
+**Two seams added rather than shortcuts taken.** `cross_scale.shift_null_ensemble` and
+`surrogate_seed` let the audit reconstruct the ensemble the sweep actually used: the minimum
+detectable effect is an order statistic, the sweep keeps only that ensemble's summary, and an
+audit that reseeded would be characterising a different null and reporting it as this study's
+decision boundary. The receipt records whether the reconstruction matched the published summary,
+and a mismatch is INVALID rather than a quiet threshold. `spatial_power.StreamedAttenuation`
+builds the curve one frame at a time, because the array form would need 677 MB per scale on the
+frozen crop before the orientations are counted; a test asserts it **equals** `attenuation_curve`
+rather than approximating it.
+
+Commands and results:
+
+```
+$ .venv/Scripts/python.exe -m pytest src/tests/test_gate_run.py -q
+6 passed, 1 warning in 13.34s
+
+$ .venv/Scripts/python.exe -m pytest src/tests/test_spatial_power.py -q
+63 passed, 1 warning in 5.47s
+
+$ .venv/Scripts/python.exe -m pytest src/tests/test_cross_scale.py src/tests/test_spatial_power.py \
+    src/tests/test_gate_run.py src/tests/test_gate_campaign.py src/tests/test_imports.py \
+    src/tests/test_preregistration.py -q
+199 passed, 2 warnings in 1182.67s
+
+$ .venv/Scripts/python.exe -m pytest src/tests/test_gate_campaign.py src/tests/test_preregistration.py \
+    src/tests/test_frontend_contract.py src/tests/test_imports.py src/tests/test_scale_signature.py -q
+298 passed, 5 warnings in 796.84s
+
+$ .venv/Scripts/python.exe -m pytest src/tests/test_documentation.py -q
+20 passed, 2 warnings in 258.62s
+```
+
+The 298-test run predates the `limitations` field and the module-docstring change; the 199-test
+run and the documentation audit were both taken against the final tree.
+
+**What this does not establish.** No real gate has run. No atmospheric absence has been adjudicated
+by the new boundary, and no measured attenuation curve for the frozen 161 px ERA5 crop exists --
+every branch is exercised on the synthetic acceptance fixture and on unit-level records. D84's
+remaining half, whether 139 px of valid interior is *enough*, now has an apparatus that will answer
+it rather than an unanswered question, but the answer waits on acquisition, which step 8's campaign
+supersession and D85 still block.
+
+No network was used and no data was acquired. The full backend suite has **not** been rerun since
+these changes, so **3106** remains the last measured full-suite figure. The ledger is unchanged at
+D1-D85 with three open entries: D43, D84 and D85. No frontend change was needed: gate receipts are
+not surfaced by the API or the UI, so the receipt is the artefact this step delivers.
+
+## T4C.5i step 8 -- retiring a frozen campaign by checked supersession (2026-09-01, `ed-dev`)
+
+D85 established that `t4c6_nz_era5_temperature_850_v1` could not resolve its own declared family
+on its confirmatory partition. A frozen design that cannot reach its own decision cannot simply
+be corrected in place: editing it destroys the record that the original rule existed, and leaves
+a reader unable to tell a correction from a result-driven revision. Step 8 records the retirement
+as a third immutable artifact instead.
+
+`CampaignSupersession` names both campaigns by content hash and states its reasons as **checks**.
+Recording it runs every check against both campaigns: a reason is admissible only where the
+superseded campaign genuinely fails it and the successor genuinely passes. Properties the
+predecessor already held are declared under `preserved` and must hold for **both**. A reason
+naming a check the registry does not implement is refused outright. The consequence is that the
+record cannot be written for a defect that was not real, cannot claim a repair that did not
+happen, cannot be a rename, and cannot quietly drop a design property it was not repairing.
+
+The successor `t4c6-nz-era5-temperature-850-campaign-v2` extends the record to six whole calendar
+years, 2018--2023: 8,764 frames, a 5,258/3,498 split, 3,496 distinct admissible shifts against
+the 3,005 required. Crop, variable, level, transform, the family of 36, lags, embargo, seed,
+correction, canary and WeatherBench overlap are unchanged, and a test asserts that rather than
+trusting the diff.
+
+**The minimal repair was refused by the record's own checks.** This is the substantive finding of
+the step. `frames_for_resolution` reported that 3,007 confirmatory frames would close D85, and it
+was right about the question it was asked -- it audits the most favourable Theiler window of one
+frame, because the window is derived from a series that does not exist before acquisition. The
+sweep sets that window from the measured temporal decorrelation of the series under test. Measured
+here:
+
+```
+record                              frames  train  test   max Theiler window still resolving
+2022-12-31 (superseded v1)            7304   4382  2914   -- (does not resolve at all)
+2023-02-27 (the minimal repair)       7536   4521  3007   1
+2023-12-31 (successor v2)             8764   5258  3498   245
+```
+
+A design built to the reported number resolves at a window of one frame and nothing larger, so it
+would have reproduced D85 at run time after the 2.8 GB transfer rather than before it. The
+`resolution_margin` check states the margin as an admissibility condition against a declared floor
+of 16 frames -- four days at this cadence -- and a test pins that the minimal design is refused by
+it. The check is a *designed margin, not a prediction*: the guarantee remains the run-time refusal,
+which re-runs the resolution audit at the measured window and returns INVALID.
+
+The supersession bites at the **acquisition** boundary, not the reading boundary.
+`review_gate_campaign` still loads the retired v1 and still reports its defect -- otherwise the
+defect could not be recorded against the artifact it belongs to -- while
+`preflight_gate_campaign(..., supersessions=[...])` and `gate_campaign preflight --supersession`
+refuse to spend on it. `gate_campaign review-supersession` re-runs every check against both
+campaigns and prints the outcomes side by side.
+
+Commands and results:
+
+```
+$ .venv/Scripts/python.exe -m pytest src/tests/test_gate_campaign.py -q
+19 passed, 1 warning in 7.46s
+
+$ .venv/Scripts/python.exe -m src.analysis_engine.gate_campaign review-supersession \
+    --supersession campaigns/t4c6_nz_era5_temperature_850_v1_superseded_by_v2.json
+  reasons: surrogate_resolution   superseded=False successor=True
+           resolution_margin(16)  superseded=False successor=True
+  preserved: whole_annual_cycles  superseded=True  successor=True
+  deferred_to_run: D84, D85, D43
+  network_used: false
+```
+
+Artifact hashes, published immutably and pinned by test:
+
+```
+superseded campaign   84f7b53fd25d555c8dcd57c6006288b95c5908f2a1d5c002d10a6572c7875975
+successor campaign    c66284d619d7439638ec5e1886671894df4d12708ab3cdced245d7e5f80fa23c
+supersession record   054592339d99141a1560b8fbecad6daaf02844a9813513331b982722f10e6711
+```
+
+**What this does not establish**, as the record's own `deferred_to_run` block says and the review
+republishes. **D84 is not closed**: the crop is carried through unchanged, and whether 139 px of
+valid interior suffices is a question about a field that does not exist, left to step 7's
+`power_adjudication` at run time. **D85 is not closed**: the declared margin is a design decision,
+not a measurement of the window the sweep will derive. **D43 is untouched**: no data has been
+acquired for either campaign, no network was used, and the successor is a design rather than a
+record. The successor's own preflight on this machine reports BLOCKED on the absent `cdsapi`
+dependency, absent CDS credential configuration and disabled network consent -- unchanged from
+v1, and unrelated to the supersession. A supersession is not a result and does not by itself
+license the successor's acquisition.
+
+The full backend suite has **not** been rerun, so **3106** remains the last measured full-suite
+figure. The ledger is unchanged at D1-D85 with three open entries: D43, D84 and D85. **No part
+of this line is surfaced in the API or the UI:** there is no gate or campaign route, no client
+method and no component that reads a campaign, a supersession or a gate receipt. The T4C
+artifacts are CLI-and-file only, and the frontend's preregistration and evidence panels belong
+to the separate cross-domain line in `roadmap_cross_domain.md`.
+
+## T4C.5j -- the gate record served read-only (2026-09-01, `ed-dev`)
+
+The T4C line had no API route, no client method and no component. Every campaign, supersession
+and receipt was CLI-and-file only, so the two distinctions the line exists to draw -- a retired
+design that must not be acquired, and an inadequately powered absence that is INVALID rather
+than FAIL -- could be checked only by knowing which file to open. `src/api/gate.py` serves seven
+GET routes and `frontend/src/components/GateRecordView.tsx` renders them under Review.
+
+The surface is read-only as a property of the routing table: a test collects every method served
+under `/api/v1/gate` and asserts the set is exactly `{"GET"}`. There is no preflight route and no
+acquisition route, and the four refusals are served as data and rendered, so a reader who cannot
+find an acquire button is told why rather than left to infer the apparatus is unfinished.
+
+Retirement is derived from content. A campaign is RETIRED here if and only if a supersession in
+the store names it by fingerprint -- the same comparison `preflight_gate_campaign` refuses on --
+so the surface and the spend agree by construction. A test installs all three artifacts under
+different file names and asserts the retirement survives; another installs v1 and v2 with no
+supersession and asserts both are ACTIVE while v1 still reports `resolvable: false`, because not
+being retired is not being sound. A tampered envelope is listed as unreadable rather than
+dropped, and the surface summary reports it.
+
+Commands and results:
+
+```
+$ .venv/Scripts/python.exe -m pytest src/tests/test_gate_api.py -q
+13 passed, 2 warnings in 10.05s
+
+$ .venv/Scripts/python.exe -m pytest src/tests/test_frontend_contract.py -q
+167 passed, 5 warnings in 7.23s
+
+$ .venv/Scripts/python.exe -m pytest src/tests/test_documentation.py -q
+20 passed, 2 warnings in 253.77s
+
+$ cd frontend && npm run build
+tsc clean; 1410 modules transformed; built in 1m 11s
+```
+
+Served against the repository's own store, `GET /api/v1/gate` reports 2 campaigns, 1
+supersession, 1 retired campaign, 0 receipts and `measurement_status: NOT_YET_MEASURED`;
+`/gate/campaigns` labels `...-v1` RETIRED with `resolvable: false` and `...-v2` ACTIVE with
+`resolvable: true`; `/gate/supersessions/...v1-to-v2` re-runs both reasons and reports
+`superseded=false successor=true` for each, with `deferred_to_run` carrying D84, D85 and D43.
+
+**What this does not establish.** It adds no science and closes no defect. D43, D84 and D85
+remain open and unchanged. Nothing here reads a field or touches a network. **The receipt route
+has never served a real receipt, because no gate has run**; the receipt tests use a fabricated
+transport fixture that authenticates, which is a test of what the route shows a reviewer and is
+not evidence about the atmosphere. The panel compiles and builds; as with every surface after
+T3.5.25, its **rendered appearance has not been inspected in a browser** and no screenshot
+exists in this repository. The full backend suite has not been rerun, so **3106** remains the
+last measured full-suite figure; the inventory total is now 2967 by AST count.
+
+## T4C.5k -- the first live ERA5 acquisition, stopped at the cross-route gate (2026-09-01, ed-dev)
+
+The mandatory acquisition order was executed live against campaign v2 for the first time. Steps
+1 and 2 passed; **step 3 failed and stopped the campaign**, so the 3.03 GB full record was never
+requested. Every figure below was measured on this machine on this date.
+
+**Preflight (zero network).** `python -m src.analysis_engine.gate_campaign preflight --campaign
+campaigns/t4c6_nz_era5_temperature_850_v2.json --supersession
+campaigns/t4c6_nz_era5_temperature_850_v1_superseded_by_v2.json ...` returned
+`status: READY_FOR_CANARY`, rc 0, `blockers: []`, `network_used: false`,
+`client_constructed: false`. Credentials were reported present from the
+`CDSAPI_URL`/`CDSAPI_KEY` environment with `secret_values_inspected: false`; no secret value was
+read or displayed at any point in this work. Storage: 6.11 GB working requirement against 1,012
+GB free on `D:`. Full record upper bound 3,025,332,704 bytes over 72 monthly shards; canary
+18,436,160 bytes over 1.
+
+**Step 0, the recorded probe.** `store_probe.probe_store` opened
+`gs://weatherbench2/datasets/era5/1959-2023_01_10-wb13-6h-1440x721.zarr` with `chunks={}` and
+transferred no values. Recorded as digest `1a28d5980c97a38e` in `data/store_probes/`. Chunks are
+`(1, 13, 721, 1440)` float32, 53,988,480 bytes each; 93,544 time steps. Amplification for the
+eight-frame overlap crop: **520.7x**. This confirms the original D43 diagnosis at the
+0.25-degree store, and by the same arithmetic the 8,764-frame record would cost roughly 473 GB
+through this route -- which is why the record comes from CDS.
+
+**Step 1, `materialise_weatherbench_overlap`.** 8 frames, 1 level, 161x161. Transferred
+**237,476,444 bytes in 61.9 s** for 829,472 bytes of wanted values -- 286x realised against the
+520.7x chunk-arithmetic bound, the difference being compression. Content hash
+`fb7f6a261ae3bb1941c3b28eb6b892c2`, cache key `a5ff06f93a0e8f6f`.
+
+**Step 2, `materialise_cds_canary`.** **The first live CDS request in this programme's
+history.** Request ID `34e8fd4c-e007-4d16-9d95-e9289f057c84`, accepted then successful in 26 s
+of queue, 339 KB downloaded, 45.4 s wall total. Content hash
+`417c005f9355e1d7a42f9301e44285e6`, cache key `a4f2304e05985fd7`, shape
+`{time: 8, latitude: 161, level: 1, longitude: 161}`. This establishes that the credential
+configuration, licence acceptance, download, shard integrity check, NetCDF normalisation and
+canonical Zarr conversion all work end to end against the live service. It establishes nothing
+about the atmosphere: it is two days of one variable.
+
+**Step 3, `require_canary_overlap_PASS_or_stop` -- FAILED, campaign stopped.** Receipt
+`5acf466052195974adc21637724cc47984c3843919e0ae3904efe22b5272224d`, written immutably to
+`data/era5_cache/a4f2304e05985fd7.overlap.json`, records `passed: false` with
+`coordinates_exact: true`, `units_compatible: true`, `network_used: false` and
+`maximum_frames_per_source_in_memory: 8`. For `t`: `max_abs_error` 7.324e-4 K, `rmse` 3.399e-4,
+`mean_abs_error` 2.856e-4, `mismatch_count` 62,163 of 207,368 against `atol` 1e-4 and `rtol`
+1e-6. **The full acquisition was not started.**
+
+**Why it failed, tested rather than assumed.** The CDS route delivers 850 hPa temperature
+quantised to 2.44140625e-4 K (2^-12); the WeatherBench route to 3.0517578125e-5 K (2^-15).
+Neither file carries `scale_factor`/`add_offset`; both are float32. The declared 1e-4 K
+tolerance is therefore 0.41 of the primary route's own representation step. The difference
+between the routes is commensurate with the primary route's encoding rather than with the
+atmosphere, on four independent checks: it is bounded at **exactly 3.000 CDS quanta**; its mean is flat across latitude (-0.620 to -0.454 quanta) and
+longitude (-0.618 to -0.425); it is uncorrelated with the field value (-0.0002) and with the
+spatial gradient (0.0008), where regridding or interpolation error would track the gradient
+strongly; and registration is exact, a one-cell roll raising the maximum difference from 7.3e-4
+K to 12.6 K in longitude or 30.8 K in latitude. The residual -0.533 quantum mean bias varies
+per frame from -0.133 to -0.883, which is the signature of per-field GRIB packing.
+
+**The magnitude is not fully explained, and that is recorded rather than smoothed over.**
+Co-quantising a single underlying value at the two observed steps bounds the difference at
+`q_cds/2 + q_wb/2` = 1.37e-4 K; adding the per-frame offset reaches roughly 1.5 quanta.
+The observation is 3.000. Misregistration and interpolation are excluded and the scale is
+set by the CDS encoding, but about a factor of two remains unaccounted for. This is a
+second reason not to pick a constant now: a tolerance chosen to clear 7.324e-4 K would
+also clear whatever is producing the unexplained part.
+
+**Correction to the figures first published above.** The "3.000 quanta" and the "factor of
+about two unexplained" were artefacts of pooling eight frames that are on *different* lattices.
+Each CDS frame is packed separately: frames 0, 1, 4 and 5 of the canary sit on 2^-10 K and
+frames 2, 3, 6 and 7 on 2^-9 K, each exactly. Measured against its own frame's step the worst
+disagreement is **0.72 steps**, not 3.0, and nothing is unaccounted for. The pooled 2^-12 K
+"quantum" was the interference pattern between two lattices, not a step either route uses.
+
+**The independent window, acquired to derive a criterion without tuning it to its own test.**
+A second canary at 2019-06-01/02 -- different season, different year, outside the campaign, in
+its own directories -- cost 341,999 bytes from CDS and 237,738,102 bytes from WeatherBench. All
+eight of its frames sit on 2^-9 K, and its signed error lies wholly within +/-0.5 steps
+(min -0.4375, max +0.3125): exact round-to-nearest re-quantisation of the same numbers, with no
+residual at all. It disagrees *more* in Kelvin than the gate window does -- 8.545e-4 against
+7.324e-4 -- while being the cleaner of the two, which is the clearest available demonstration
+that Kelvin is the wrong unit for this question. Both windows are `expver 0001`, so this is
+final ERA5 against final ERA5, not ERA5 against ERA5T.
+
+**Recorded as D86, and repaired by changing the unit rather than the number.** Widening `DEFAULT_ATOL` to admit
+7.324e-4 K would have tuned the criterion to the first measurement it was ever asked to judge,
+making the independent-route check ornamental. The repair was a criterion derived from the two
+routes' declared encodings and frozen into the campaign envelope -- which is the second half of
+D86, since the constant lived in module code and could therefore be changed without a
+supersession, outside the preregistration discipline that governs everything else in this line.
+Both halves were carried out in the continuation section below.
+
+**What this does not establish.** No multi-year record was acquired. No crop was frozen. T4C.6
+has not run and no gate verdict exists. D43 is **not closed**: its acquisition route is now
+proven live for an eight-frame canary, but the multi-year record and its cross-route check
+remain unrun. D84 and D85 are
+untouched. No test suite was rerun as part of this work, so **3106** remains the last measured
+full-suite figure.
+
+
+## T4C.5k continued -- the encoding-relative criterion and campaign v3 (2026-09-02, ed-dev)
+
+**The criterion.** `era5_overlap.encoding_step` returns the largest binary step on which every
+value of a frame lies exactly, or `None`. `verify_cached_era5_overlap` gains
+`criterion="encoding_relative"` with `steps_allowed`, judging each value against its own
+frame's step. Receipts are criterion-keyed, so the earlier FAIL is preserved beside the PASS
+rather than overwritten: a cache is a fact about what the archive returned, a verdict is a
+judgement under a stated rule.
+
+**A refusal that could never fire, found by testing it.** The first `encoding_step` accepted any
+binary lattice. Every float32 value lies on one -- the one its own exponent defines -- so the
+function would always succeed and would judge an unpacked route against its representation
+error. It now requires the step to be at least two bits coarser than float32's spacing in that
+range. Measured against the real caches: the CDS frames report 2^-10 and 2^-9; **both
+WeatherBench windows report `None`**, correctly, because their values sit exactly at the float32
+ulp. The criterion is therefore applied to the primary route only.
+
+**Measured verdicts under the new criterion**, on caches already on disk:
+
+| window | worst error | steps allowed | verdict |
+| --- | --- | --- | --- |
+| gate 2018-01-01/02 | 0.71875 steps | 1.0 | PASS, `mismatch_count` 0 |
+| independent 2019-06-01/02 | 0.4375 steps | 1.0 | PASS, `mismatch_count` 0 |
+
+Receipt `0ccf02243ef9b93c1fae7afb384ed4012b2d1127936e891b7b979bf3a6424de9`, schema
+`era5-independent-overlap/v2`. The manifest now records `independent_overlap_check` FAIL and
+`independent_overlap_check_encoding_relative` PASS side by side.
+
+**Campaign v3, frozen as a checked supersession of v2.** Campaign sha256
+`1c96e49b6717bf0d99da9f5048cea84f7a9af28b60d9c0c173a93056c0a0e24b`; supersession sha256
+`cdf49d81bb8d9b2b6cc4bf3f46ecd4cd2310d93206a724fef047ac7887363905`. Its single reason cites D86
+and re-runs `overlap_criterion_declared` against both designs -- v2 fails it, v3 passes. v2's
+six whole calendar years and its D85 repair are recorded as preserved; D84, D85 and D43 are
+carried as deferred to the run. **v1 and v2 keep the exact fingerprints they were sealed under**
+(`84f7b53f...` and `c66284d6...`), verified after the schema change and pinned by test, because
+the optional field is omitted from the mapping when absent.
+
+**Preflight.** `preflight` on v3 with both supersessions returns `READY_FOR_CANARY`, rc 0,
+`blockers: []`, with `overlap_criterion` `{name: encoding_relative, steps_allowed: 1.0}` and
+`canary_cache_present: true`, `weatherbench_overlap_cache_present: true`,
+`full_cache_present: false`. Preflight on **v2 is now refused outright** as retired by the new
+supersession. A campaign with no declared criterion reports `BLOCKED` naming D86.
+
+**Tests.** `test_cds_source.py` 14 -> 20 functions (25 collected, all passing);
+`test_gate_campaign.py` 17 -> 22 (24 collected); `test_frontend_contract.py` 167 -> 168.
+Final combined run against the tree as it stands, of `test_gate_api.py test_gate_campaign.py
+test_cds_source.py test_frontend_contract.py test_regional_forecast.py test_imports.py`:
+**291 passed** in 793.26 s, exit code 0. `test_documentation.py` **20 passed** in 246.37 s
+against the same tree (an earlier documentation run of the same 20 took 274.63 s; the 246.37 s
+is the one that judged the tree as it now stands). `git diff --check` clean. Frontend production build clean at **1,410
+modules**. Inventory total 2967 -> 2979.
+
+One earlier combined run reported 297 passed, but it was started before the residual-tolerance
+fix and the magnitude test were added and therefore describes a tree that no longer exists; the
+291 above is the figure for the current one.
+
+**What this does not establish.** The 8,764-frame record has not been acquired; the full-cache
+overlap has not run; no crop has been frozen against real data; T4C.6 has not executed and no
+gate verdict exists. The canary is two days of one variable at one level, and a criterion
+validated on two two-day windows is validated on two two-day windows. D43, D84 and D85 remain
+open. The gate panel's new column compiles and builds but its **rendered appearance has not been
+inspected in a browser**. The full backend suite has not been rerun, so **3106** remains the
+last measured full-suite figure.
+
+## T4C.5m -- the multi-year record, and the first gate verdict (D43 closed; D87 found and fixed)
+
+**Preflight before spending.** `gate_campaign preflight` on campaign v3 with the v2 supersession
+supplied: `status READY_FOR_CANARY`, `blockers []`, `overlap_criterion {name:
+encoding_relative, steps_allowed: 1.0}`, `campaign_sha256
+1c96e49b6717bf0d99da9f5048cea84f7a9af28b60d9c0c173a93056c0a0e24b`, exit code 0. The step-3
+receipt on disk reads `passed: true` at **0.71875** steps with zero mismatches over 207,368
+values.
+
+**Step 4, `materialise_full_cds_record`.** 72/72 monthly CDS shards. `content_key
+a07c23ec89f953c1`, `content_hash e488f5c3d480f072c834dceae1eeea2a`, `shape {time: 8764, level:
+1, latitude: 161, longitude: 161}`, `bytes_transferred 338,905,211` (**338.905 MB**),
+`wall_seconds 5,853.7`, `cache_hit false`, exit code 0. Against a 3,025,332,704-byte preflight
+upper bound, which assumes float32 x2 with no compression credit; the checked quantity is the
+frame count, verified exactly against the complete expected calendar at conversion.
+
+**Step 5, `require_full_cache_overlap_PASS_or_stop`.** `passed True`, `max_error_in_steps
+0.71875` against `steps_allowed 1.0`, `encoding_steps [2^-10, 2^-9]`, `max_abs_error
+7.32421875e-4`, `rmse 3.398889796464777e-4`, `mismatch_count 0`, `value_count 207,368`,
+`receipt_sha256 bdfd9c8a00a41d4b3dcd95c244cedd17c1078f675ef758f04fa2a2e0c494b0dc`. Identical to
+the canary's figure because the record's first eight frames come through the same route; this
+establishes the 72-shard concatenation, not a new fact about agreement.
+
+**D87, found by running it.** Step 6 refused the record: `independent WeatherBench overlap
+evidence is not a recorded PASS`. The manifest holds `independent_overlap_check_encoding_relative
+= PASS` and `independent_overlap_check = NOT RUN`, and `validate_overlap_evidence` read only the
+unsuffixed fields. Fixing that surfaced a second layer -- `CachedFieldReader.source_provenance`
+hardcoded the same three names, so the evidence never reached the gate. Both fixed. Checked in
+both directions on the real manifest before re-running: admitted under `encoding_relative` at
+0.71875 steps, and **refused** under `absolute` with `not a recorded PASS under the absolute
+criterion`.
+
+**Step 6, `preflight_and_run_T4C.6`.** Run through `run_campaign_gate`, so the criterion came
+from the frozen envelope. `campaign 1c96e49b`, `plan dd9fc47c25df1b32ca18e6c01873421854063d5add
+ddb977d1026b66f1b7d2f5`, `crop a07c23ec89f953c1`, `criterion encoding_relative`.
+**`scientific_verdict PASS`**, `gate.verdict PASS`, `problems []`, **10 replicated links**,
+`wall_seconds 753.9`. Receipt at `data/gate_receipts/t4c6-nz-era5-temperature-850-v3.json`
+(128 KB), `schema cross-scale-gate-receipt/v1`, with `preflight.overlap_criterion
+encoding_relative`. Representative link `2->1@3` (18 h): train observed 0.021457982912114204
+nats against surrogate mean 0.0019260827780943593, effect size 10.814231699653089, p 0.0006, q
+0.015028413108460698; test observed 0.018884626612145183 against 0.0035527403383150834, effect
+size 5.457797843730858, p 0.0012, q 0.02576299390021834; 4,999 surrogates, Theiler window 6,
+Benjamini-Yekutieli. `power_adjudication` `power_applied false`: *"a PASS verdict is not an
+absence, and spatial imprecision biases toward the null, so the derived power record cannot
+overturn it."*
+
+**A tripwire fired as designed.** `test_the_repository_store_serves_the_real_campaigns_and_their_retirement`
+asserted `measurement_status == "NOT_YET_MEASURED"` with the note *"if this ever fails, a
+receipt exists and the docs must say so"*. It failed. Updated to `MEASURED`, and the test now
+also asserts the receipt is served from the checked-in store and that its `plan_sha256` binds to
+campaign v3's plan.
+
+**Tests.** `test_cds_source.py` 20 -> 22 functions; `test_gate_campaign.py` 22 -> 25.
+`test_gate_campaign.py` **27 passed** in 15.26 s. `test_gate_api.py` **13 passed** in 17.39 s
+after the tripwire update. Combined `test_cds_source.py test_gate_run.py test_zarr_source.py
+test_gate_api.py`: **106 passed, 1 skipped, 1 failed** in 66.12 s -- the single failure was the
+tripwire above, re-run green afterwards. Inventory total 2979 -> 2984.
+
+**What this does not establish.** The verdict adjudicates the frozen T4C.6 relationship family on
+this exact crop only -- one variable, one level, one region, six years -- and is not causality,
+universality, forecast skill or operational readiness. The independent cross-route check covers
+**eight of the 8,764 frames**, the window the frozen design specifies; the other 8,756 are
+guaranteed structurally rather than against a second archive, and no mid-record independent
+window has been acquired. **D84 and D85 remain open** and did not gate this result. The gate
+panel's agreement-rule column still has **not been inspected in a browser**. The full backend
+suite has not been rerun since these changes, so **3106** remains the last measured full-suite
+figure, and the documentation audit has not yet been re-run against this tree.
+
+## T4C.5n -- the mid-record audit window
+
+**Acquisition.** WeatherBench `era5_0p25_6h`, 2021-07-01T00:00 to 2021-07-02T18:00, same region,
+level, variable and eight-frame length as the frozen window; only the dates move. `content_key
+19c03cdcde90ceb2`, **237,731,669 bytes** in **62.9 s**.
+
+**Audit.** `passed True`, `role audit`, `max_error_in_steps` **0.46875** against `steps_allowed
+1.0`, `encoding_steps [2^-9]` with all eight frames on that step, `max_abs_error
+9.1552734375e-4`, `rmse 4.1482507906808234e-4`, `mismatch_count 0`, `value_count 207,368`,
+`receipt_sha256 0f32c89a600b9759133df68a2b0943ef7e459a086f4acfd814fe83390dc65a8f`. Receipt at
+`data/era5_cache/a07c23ec89f953c1.overlap.encoding_relative.midrecord2021.json`.
+
+**The Kelvin inversion, reproduced on new data.** The audit window disagrees more in Kelvin than
+the gate window (9.155e-4 against 7.324e-4) and less in steps (0.469 against 0.719). This is the
+first reproduction of that inversion on a window acquired *after* the criterion was frozen, so
+it cannot be an artefact of the derivation.
+
+**A defect caught by the tests during this slice.** The new `label` parameter collided with an
+existing loop variable of the same name inside `verify_cached_era5_overlap`, so every receipt
+bound as `..._encoding_relative_independent` -- evidence filed under the wrong name by a change
+that otherwise looked correct. Caught because the tests assert on manifest field names rather
+than only on `passed`. Loop variable renamed to `side`.
+
+**Tests.** `test_cds_source.py` 22 -> 24 functions. Clean run of `test_cds_source.py
+test_gate_campaign.py test_gate_api.py test_gate_run.py test_zarr_source.py`: **136 passed, 1
+skipped** in 95.02 s. Inventory total 2984 -> 2986.
+
+**Full backend suite.** **3362 passed, 4 skipped, 1 xfailed** in 2,289.91 s (38:09), exit code 0.
+This supersedes **3106** as the last measured full-suite figure. It was launched before the
+T4C.5n label work, so it measures the tree as of the D87 fix; the 136-test clean run above covers
+the T4C.5n changes, and the full suite has not been re-run since them.
+
+**What this does not establish.** Two independently verified windows out of 8,764 frames. The
+audit authorises nothing and does not revisit the gate verdict. D84 and D85 remain open. The
+gate panel's agreement-rule column still has not been inspected in a browser.
+
+
+## T4D.1 -- located maxima (`src/analysis_engine/spectral_feature.py`)
+
+**Tests.** `src/tests/test_spectral_feature.py`, 15 test functions, **17 passed** in 1.84 s.
+
+**What was measured.** A Gaussian blob planted at (32.0, 32.0), (30.4, 41.7) and (25.5, 25.5) is
+recovered to better than one pixel in each case, and the parabolic refinement beats the integer
+peak it starts from on the deliberately worst case at (30.5, 41.5). At scale 3 a blob at (1, 1)
+is found with `interior=False` and refused with `interior=True`, so the R13 exclusion is the mask
+and not a blind spot. Two frames, one with a blob ten times the other's amplitude: with the
+threshold fitted over the record only frame 0 reports a detection, and a frozen threshold
+re-supplied reproduces the fitted result exactly while a threshold of 1e6 yields nothing.
+
+**The design change the tests forced, with its numbers.** Two acceptance cases failed under a
+strict local-maximum rule: a blob at a half-pixel position produces two exactly equal samples and
+strictness rejects both. Rewritten to regional maxima: a 4x4 flat top is now one detection at
+(31.5, 31.5) with `plateau_pixels == 16`, and a blob at (32.0, 31.5) is found at exactly (32.0,
+31.5) with `plateau_pixels == 2`. A plateau adjoining a strictly higher pixel is not reported at
+all.
+
+## T4D.2 -- tracks, and D88
+
+**Tests.** `src/tests/test_spectral_tracking.py`, 19 test functions, **19 passed** in 3.18 s.
+
+**D88, measured before it was fixed.** A delta at (64, 64) of a 128x128 field, SWT:
+
+```
+            LH offset      HL offset      HH offset     accumulated support / 2
+haar  L4    (+0, +4)       (+4, +8)       (+4, +0)       7.5
+db2   L1    (+2, +1)       (+1, +2)       (+1, +1)       1.5
+db2   L2    (+6, +4)       (+4, +6)       (+4, +4)       4.5
+db2   L3    (+14, +10)     (+10, +14)     (+10, +10)    10.5
+db2   L4    (+30, +22)     (+22, +30)     (+22, +22)    22.5
+db3   L4    (+60, +36)     (+36, +60)     (+36, +36)    37.5
+```
+
+The delta's argmax is a filter-peak artefact, so the decisive measurement is the centroid of
+`|band|` for a symmetric Gaussian blob at (64, 64), which for a symmetric structure must sit at
+the structure's centre if the band is registered:
+
+```
+             centroid          minus analysis_delay
+haar L1     (64.50, 64.50)     (64.00, 64.00)
+haar L2     (65.50, 65.50)     (64.00, 64.00)
+haar L3     (67.50, 67.50)     (64.00, 64.00)
+haar L4     (71.50, 71.50)     (64.00, 64.00)
+db2  L4     (97.54, 88.65)     (75.04, 66.15)
+db3  L4     (79.83, 96.62)     (42.33, 59.12)
+```
+
+Haar returns to the blob's centre exactly at every level. db2 and db3 do not, and the residual
+grows with the level's dilation -- the non-linear-phase half of the defect, which no shift can
+remove. `analysis_delay("haar", 1..5) = 0.5, 1.5, 3.5, 7.5, 15.5`;
+`analysis_delay("db2", 1..4) = 1.5, 4.5, 10.5, 22.5`;
+`is_linear_phase = {haar: True, db2: False, db3: False}`.
+
+**The acceptance run.** `advected_vortex_sequence` (128x128, 24 frames, sigma 5.00 -> 13.54 cells,
+velocity (1.5, 2.5) cells/step, doubling 16 steps -- all recorded before this code existed), SWT
+haar at 5 levels, scales 4 and 5, `threshold_sigma=4.0`, `MotionBounds(max_doublings=0.5)`,
+Hungarian association at alpha 0.05:
+
+```
+                              measured v        predicted v      err   transverse worst
+L4 HL  len=24  t0= 0.0   (1.823, 2.526)   (1.871, 2.500)   0.0544   col  0.6668
+L4 LH  len=24  t0= 0.0   (1.505, 2.852)   (1.500, 2.871)   0.0197   row  0.3521
+L5 HL  len=15  t0= 9.0   (1.835, 2.532)   (1.940, 2.500)   0.1093   col  0.3447
+L5 LH  len=11  t0= 9.0   (1.506, 2.807)   (1.500, 2.900)   0.0935   row  0.2323
+```
+
+4 tracks, 4 births, 1 death, 24 frames. The prediction column is advection plus
+`(sigma_end - sigma_start) / (t_end - t_start)` on the axis that band high-passes, with no fitted
+parameter. Worst velocity error **0.109 cells/step**; worst transverse position error **0.667 px**,
+inside the roadmap's 1 px on the coordinate for which it is a claim about the structure.
+
+**What this does not establish.** A detail-coefficient maximum is a flank, not a centre, so the
+longitudinal coordinate of every track above is offset by about the structure's width and grows
+with it; the roadmap's "< 1 px position" is met by the field-space path (`4D.position`, 0.052
+cells) and not by this one. Nothing here is calibrated against a null: the threshold is
+`sigma x RMS` and no significance is reported. The vortex is synthetic; no track has been produced
+from ERA5. `4D.tracking` in the benchmark suite is graded through `src/core/extraction`, not
+through this module, and its status is unchanged by this slice.
+
+**Neighbourhood run.** `test_spectral_tracking.py test_spectral_feature.py test_coefficient_field.py
+test_wavelet_bank.py test_tracking.py test_cross_scale.py test_scale_signature.py
+test_stationary.py test_transforms.py test_benchmarks.py`: **387 passed, 1 xfailed** in 325.75 s.
+Inventory total 2986 -> 3020.
+
+**Full backend suite, after T4D.1, T4D.2 and D88.** **3400 passed, 4 skipped, 1 xfailed** in
+2,165.95 s (36:05), exit code 0. This supersedes 3362 as the last measured full-suite figure and
+measures the current tree. The arithmetic reconciles exactly: 3362 (as of the D87 fix) + 2
+(T4C.5n's `test_cds_source.py` additions, which the 3362 run predated) + 17 (T4D.1) + 19 (T4D.2)
+= 3400. Documentation audit inside that run: 20 passed.
+
+
+## T4D.3 -- the sentences, and D89
+
+**Tests.** `src/tests/test_spectral_narrative.py`, 25 test functions, **25 passed** in 2.22 s.
+`src/tests/test_translation.py` gains one parametrised function for D89: **64 passed** (48 test
+functions).
+
+**The narrative, in full, of the T4D.2 acceptance pass.** Same field, same tracker settings, same
+four tracks. This is the whole rendered output, not an excerpt:
+
+```
+Track 0 (advected_vortex_sequence, amplitude; level 4, LH): the coefficient maximum was followed
+across 24 of 24 searched frames, consecutively, 0.00 to 23.00 frames. It moved 74.2 cells toward
+increasing row and increasing col, at a mean 3.22 cells/frames. It stayed at level 4 throughout,
+so this track reports no change of scale; which bands were excited, and when, is a statement about
+the set of tracks rather than about this one. Its peak coefficient magnitude went from 3.7372 to
+2.5576, a change of -31.6%, which is a change of -53.2% in coefficient energy -- energy being the
+square, so the two figures are not interchangeable.
+
+Track 1 (level 4, HL): ... 71.6 cells ... 3.12 cells/frames ... 3.7528 to 2.5242, -32.7%, -54.8%.
+Track 2 (level 5, LH): 11 of 24 frames, 9.00 to 19.00 ... 6.3793 to 7.5824, +18.9%, +41.3%.
+Track 3 (level 5, HL): 15 of 24 frames, 9.00 to 23.00 ... 6.3965 to 7.4860, +17.0%, +37.0%.
+
+4 bands produced tracks. The earliest was L4/HL at 0.00 and the latest L5/LH at 9.00, a separation
+of 9.00 in the clock's units. That ordering is a candidate precursor relationship between two
+bands of one record: it is co-occurrence with a recorded sign of the time offset, it was not
+tested against a null, and it is not a structure moving up the bank -- the transform is redundant,
+so both bands respond at once and no merge is claimed.
+```
+
+**The measurement that replaces "dominant scale doubled".** The vortex widens from sigma 5.00 to
+sigma 13.54 cells. No single track records that, since each holds one dyadic level and therefore
+has a scale velocity of exactly zero. What is measured, across the population:
+
+```
+band     first seen   frames   magnitude first -> last     change
+L4/LH        0.0        24        3.7372 -> 2.5576        -31.6%
+L4/HL        0.0        24        3.7528 -> 2.5242        -32.7%
+L5/LH        9.0        11        6.3793 -> 7.5824        +18.9%
+L5/HL        9.0        15        6.3965 -> 7.4860        +17.0%
+```
+
+Both fine bands weaken and both coarse bands strengthen, and the coarse bands are not excited
+until frame 9. That is the growth, expressed as an ordering of two bands over one record, which
+is the strongest form the evidence supports.
+
+**The compass, checked against arithmetic rather than against itself.** One displacement of
+(+1 row, 0 col) on two grids that differ only in the sign of `dy` gives bearings of 0.0 and 180.0
+degrees -- north and south -- which is the ERA5 case, since ERA5 stores rows north to south. A
+displacement of (+1, +1) at `lat0 = 60` gives **26.6 degrees**, not 45: the east component is
+shortened by `cos(60.125 deg)` before the bearing is taken, so omitting the cosine would rotate
+the answer and change the compass word. A `cartesian` grid is refused every compass word and gets
+axis-relative wording instead. A track with a net displacement of exactly zero is given no
+bearing at all.
+
+**Magnitude against energy.** A track whose magnitude goes 1.0 -> 1.43 renders "a change of 43.0%,
+which is a change of 104.5% in coefficient energy". The roadmap's example sentence named the
+second under the first's number.
+
+**D89, and how it was found.** T4D.3's causal guard was written as `\bword\b` over the rendered
+sentence, matching the programme's existing guard in `src/core/translation.py`. The test that puts
+a caller's own dataset name into a sentence -- `dataset="co2_causes_warming"` -- failed, DID NOT
+RAISE. An underscore is a word character, so the boundary sits at the ends of the identifier and
+not at its underscores. Both guards now flatten punctuation to spaces before matching. The
+remaining limit is asserted, not assumed: `co2causeswarming` still passes, and `causeway` still
+passes, which is the point -- a substring match would catch the first and refuse the second.
+`test_translation.py` was re-run after the change: **64 passed**, no existing expectation moved.
+
+**What this does not establish.** Every sentence above describes synthetic data. No narrative has
+been produced from ERA5, and the candidate precursor relationship reported is one ordering
+observed once in one record: it was not tested against a null, it has no significance attached,
+and it is not evidence that the ordering recurs. The guard refuses causal *vocabulary*; it cannot
+refuse a causal *reading*, and the entitlement that travels with every narrative is the only thing
+that addresses that.
+
+**Neighbourhood run.** `test_spectral_narrative.py test_spectral_tracking.py
+test_spectral_feature.py test_tracking.py test_claim_ladder.py test_translation.py
+test_five_outputs.py test_coefficient_field.py`: **278 passed** in 35.38 s (before the D89 test was
+added). Inventory total 3020 -> 3046.
+
+**Full backend suite, after T4D.3 and D89.** **3429 passed, 4 skipped, 1 xfailed** in 2,197.90 s
+(36:37), exit code 0. This supersedes 3400 as the last measured full-suite figure and measures the
+current tree. The arithmetic reconciles exactly: 3400 + 25 (T4D.3's `test_spectral_narrative.py`)
++ 4 (D89's one parametrised function in `test_translation.py`, over the four words it is
+parametrised on) = 3429. The documentation audit was also run on its own against the finished
+documents: **20 passed** in 276.06 s, exit code 0. `git diff --check` clean.
+
+
+## T4E.1 -- the constellations, and D90
+
+**Tests.** `src/tests/test_spectral_constellation.py`, 45 test functions, **54 passed** in 2.53 s.
+Neighbourhood run (`test_spectral_constellation.py test_spectral_narrative.py
+test_spectral_tracking.py test_spectral_feature.py test_tracking.py test_constellation.py
+test_invariance.py test_motif.py test_coefficient_field.py`): **370 passed** in 75.48 s.
+
+**The pass, over the vortex T4D.2 tracked.** Same field, same tracker settings, same four tracks.
+24 searched frames, 4 tracks, **135 constellations**: 87 pairs and 48 triples. The count is
+checked frame by frame against the combinatorics of the pass's own census, so it cannot quietly be
+a sample. By band:
+
+```
+L4/LH+L4/HL              24     L4/HL+L5/LH              11
+L4/HL+L5/HL              15     L4/HL+L5/LH+L5/HL        11
+L4/LH+L4/HL+L5/HL        15     L4/LH+L4/HL+L5/LH        11
+L4/LH+L5/HL              15     L4/LH+L5/LH              11
+                                L4/LH+L5/LH+L5/HL        11
+                                L5/LH+L5/HL              11
+```
+
+**Three of the eight TG3.3 relations are measurable; five refuse by name.** Measurable:
+`distance`, `relative_scale`, `succession`. Refused, with the field each one lacks:
+`temporal_lag` and `co_occurrence` (no `temporal_scale`), `direction` and `convergence` (no
+`orientation`), `containment` (no `extent`). Every refusal is in the receipt with its reason,
+rather than dropped from the declaration.
+
+**The two halves, at frame 9.** The left pair of columns is the graph -- dimensionless, and the
+only half a match or a cluster may read. The right is carried, in this record's own units:
+
+```
+pair             distance  rel_scale |  separation   bearing    raw   sigma   onset
+L4/LH+L4/HL        1.4447      1.00  |  11.56 cells   315.4   1.000   1.000   0.0 (bound)
+L4/LH+L5/LH        0.2046      0.50  |   2.32 cells    88.7   1.755   0.554   9.0 (bound)
+L4/LH+L5/HL        1.1887      0.50  |  13.45 cells   321.3   1.760   0.556   9.0 (bound)
+L4/HL+L5/LH        1.1716      0.50  |  13.26 cells   128.1   1.756   0.555   9.0 (bound)
+L4/HL+L5/HL        0.2026      0.50  |   2.29 cells   352.9   1.761   0.556   9.0 (bound)
+L5/LH+L5/HL        0.9356      1.00  |  14.97 cells   314.3   1.003   1.003   0.0
+```
+
+**What each column is not.** `L4/LH+L4/HL` is one vortex seen through two orientations of one
+level, and its 11.56 cells is entirely **flank geometry** -- a detail maximum sits about one
+analysing width off the structure's centre, so a separation is between two flanks and not between
+two structures. The raw and band-normalised strength ratios **disagree about the sign of the
+comparison**: raw 1.755 says the coarse band is stronger by three quarters, and each strength
+divided by its own band's RMS says 0.554, the weaker of the two. The band RMS is not estimated
+here -- it comes back exactly from the detection's own `threshold / threshold_sigma`, and the test
+checks that for all 318 nodes. Every offset marked *(bound)* has a left-censored end: both level-4
+tracks were alive in the first searched frame, so the record began before they did.
+`L5/LH+L5/HL`, born together at frame 9, is the one uncensored pair, and it carries no bound note.
+
+**`succession` is not the ordering that carries information.** It is asserted false for every
+ordered pair of every one of the 135 constellations, because the two observations are in the same
+frame by construction. The informative ordering is between onsets, and it is carried separately.
+
+**D90, and how it was found.** The first attempt to build a graph from these features returned
+`distance` in the refusals rather than in the edges: *"'11.5579 cells vs 8 parent-grid px' ... the
+separation is in 'cells' and the scales are in 'parent-grid px', so the quotient is not a number
+of scale lengths."* The check is right and the units were wrong -- the bank is undecimated and
+T4D.1 maps every level onto the parent grid, so a parent-grid pixel is a cell. The failure was
+**silent**, because a refusal is recorded on the graph rather than raised: a mining pass would
+have run with the geometry missing and reported patterns built from `relative_scale` and
+`succession` alone. Fixed in `_scale_quantity`; the regression is pinned on the two unit names
+themselves rather than on the symptom, `distance` is asserted measured on every pair of the pass,
+and a separate test builds a scale genuinely in metres beside a location in cells and asserts it
+**still refuses**, so the fix cannot be read as a weakening of the rule.
+
+**What this does not establish.** Every number above is from synthetic data; no constellation has
+been extracted from ERA5. There is no null, no support count and no significance anywhere in this
+slice: a constellation is one observation of one arrangement in one searched frame. Recurrence is
+T4E.3's clustering and T4E.4's support threshold, invariant matching is TG3.4's, and none of the
+three has run over this output. The four tracks are four bands of one vortex, so the "population"
+here is one structure seen four ways rather than four structures.
+
+**Full backend suite, after T4E.1 and D90.** **3483 passed, 4 skipped, 1 xfailed** in 2,058.00 s
+(34:17), exit code 0. This supersedes 3429 as the last measured full-suite figure and measures the
+current tree. The arithmetic reconciles exactly: 3429 + 54 (T4E.1's
+`test_spectral_constellation.py`, 45 test functions of which two are parametrised over five and
+six cases) = 3483. D90's fix added no test case of its own; its regressions live inside that file.
+`git diff --check` clean.
+
+## T4E.2 -- the invariant signature, and the benchmark with no axis
+
+`src/analysis_engine/spectral_invariance.py`, verified by `src/tests/test_spectral_invariance.py`
+(45 test functions, 53 cases, 33.9 s). Everything below is measured on this tree.
+
+### What the toggle costs, on the vortex pass
+
+`compare_scale_modes` runs the same 135-constellation pass with scale invariance off and on:
+
+| | scale-specific | scale-invariant |
+|---|---|---|
+| geometry keys on | `distance` (TG3.3) | `shape_ratio` (TG3.4 `relative_geometry`) |
+| signed | **135** | **48** |
+| refused | 0 | **87**, all cardinality 2 |
+| axis refused | 87 (every pair) | 0 |
+| invariant to | translation, rotation, reflection | translation, rotation, reflection, **rescaling** |
+| crosses a domain boundary | no -- scales in cells | yes -- every entry dimensionless |
+
+Turning the universality hook on costs every pair and nothing else: a scale-free shape is a ratio
+between separations, and a pair has one separation whose ratio to itself is 1 for every pair in
+every domain. The comparison deliberately stops there. It does **not** report how many distinct
+configurations each mode sees, because that is a count of clusters, a cluster needs a tolerance,
+and a tolerance calibrated rather than chosen is T4E.3.
+
+### Invariance, measured on exact geometry
+
+The reference is a scalene triangle -- no symmetry, so exactly one correspondence recovers it --
+placed by hand so the truth carries no noise. In **both** modes the signature vector is identical
+to floating-point precision (`abs=1e-9`, `1e-8` after a rotation) under:
+
+*   translation by (311, -207) cells;
+*   rotation by 17, 90 and 233.5 degrees;
+*   reflection;
+*   all five non-identity relabellings of the three members.
+
+Two further measurements separate the modes:
+
+*   a **uniform** rescaling by 0.5, 2.0 and 7.5 leaves the scale-invariant vector unchanged;
+*   an estimator that **misses** a rescaling -- positions doubled, recorded scales left where they
+    were -- moves the scale-specific geometry by exactly a factor of two and leaves the
+    scale-invariant vector unchanged. That is TG3.4's measured drift reproduced as arithmetic
+    rather than re-measured: on the real pipeline the miss is 4.8% at `scale_factor=3` against a
+    3.3% noise floor, which is why `distance` is not registered as rescaling-invariant.
+
+### The finding: `planted_configuration` is equilateral, so it has no principal axis
+
+The specification asks for "bearings measured relative to the constellation's own principal
+axis". The benchmark this programme supplies for invariance -- the one TG3.4's `4E.invariance`
+gate runs on -- is an equilateral triangle, whose position covariance is isotropic. Measured over
+**24 field-noise realisations** of the same planting, through the real extraction pipeline:
+
+| quantity | measured |
+|---|---|
+| anisotropy `lambda_1 / lambda_2` | **1.0077 to 1.0421** |
+| recovered axis angle | **0.78 to 158.08 degrees** |
+| circular standard deviation of that angle (mod 180) | **~49.8 degrees** |
+| shape ratios over the same replicates | reproduce to **0.218%** |
+
+The shape is stable to a fifth of a percent and the axis it implies is uniform noise. A bearing
+block written without a guard would have reported a confident angle for every one of those 24
+realisations, all of them different, on the exact configuration nominated for testing invariance.
+
+`AXIS_ISOTROPY_FLOOR = 1.0421` is that measurement -- the largest anisotropy a known-isotropic
+configuration produced under noise -- in the same spirit as TG3.4's `calibrate_match_tolerance`:
+an operating point is what the noise did, not what an author thought reasonable.
+`calibrate_axis_admission` re-measures it, and a test asserts the module's constant is the number
+the measurement produces. Clearing the floor is a **minimum, not a precision claim**: a
+configuration just above it still has a poorly determined angle. The vortex triples clear it by
+two orders of magnitude -- smallest observed anisotropy **85.22**, median 183.28 -- which is why
+the bearings on this record are usable at all, and the reason is that the four tracks are the
+flanks of one vortex and lie nearly on a line.
+
+### What each block is, and is not
+
+*   **Geometry** -- one value per unordered pair, from TG3.4's matcher rather than recomputed.
+    Both matchers refuse a configuration outright rather than recording a hole, so there is no
+    partial shape.
+*   **Bearings** -- folded to [0, 90] degrees, because an edge is unordered and an axis has no
+    sign. The fold makes the signature invariant to reflection as well as rotation. That is a
+    consequence of the grid declaring no orientation (`has_orientation: False` on every 4D
+    feature), not a preference; telling a configuration from its mirror image would need an
+    orientation convention this record does not have. At three members the bearings are a
+    *function of* the geometry block -- three separations determine a triangle up to similarity
+    and reflection -- so they add no degree of freedom and are kept as the readable form.
+*   **Strength** -- each member's magnitude over its own band's RMS, then over the geometric mean
+    of the members'. The band normalisation is not optional: T4E.1 measured the raw and
+    band-normalised ratios disagreeing about *which member is stronger*. A member with no
+    recorded band RMS is refused.
+*   **Scale** -- absolute, in cells, inside the scale-specific vector; ratios only inside the
+    scale-invariant one. This is the second place the toggle bites, and it is the difference
+    between "does this recur at *this* scale?" and "does this recur at *other* scales?". It is
+    also why only one mode crosses a domain boundary, as a fact about the vector rather than a
+    policy about it: a length in cells has no ratio to a length in metres. The absolute scales
+    are carried beside the vector in both modes.
+
+### The canonical order
+
+The vector is minimised lexicographically over all node correspondences (six at most). A test
+exhibits why sorting each block separately would be wrong: two configurations that are the same
+triangle with the same three strengths *attached to different vertices* agree on sorted geometry
+and on sorted strengths, and disagree on the minimised vector, because no single correspondence
+makes both blocks true at once.
+
+### What this does not establish
+
+Nothing here is a match, a cluster, a support count, a null or a p-value. Every configuration
+signed is synthetic: the vortex sequence and hand-placed triangles. Nothing has been signed from
+ERA5 or from any second domain, so the cross-domain comparability of the scale-invariant mode is
+a property of its units and not a demonstration. The universality hook is **exercised and not
+evidenced**: the tracked bank has two levels, so every triple's scale block is one of two ratio
+patterns and "does this configuration recur at *other* scales?" has almost no room to be answered
+on this record. And a bearing that clears the isotropy floor is admitted, not certified -- the
+floor says the elongation is not noise, not that the angle is accurate.
+
+**Full backend suite, after T4E.2.** **3536 passed, 4 skipped, 1 xfailed** in 2,787.05 s (46:27),
+exit code 0. This supersedes 3483 as the last measured full-suite figure and measures the current
+tree. The arithmetic reconciles exactly: 3483 + 53 (T4E.2's `test_spectral_invariance.py`, 45 test
+functions of which three are parametrised) = 3536. T4E.2 found no defect, so the ledger is
+unchanged at D1-D90. `git diff --check` clean.
+
+## T4E.3 -- approximate attributed-graph matching with a measured radius
+
+`src/analysis_engine/spectral_clustering.py`, verified by
+`src/tests/test_spectral_clustering.py` (16 test functions). Everything below was measured on
+2026-09-04 against this tree; no network was used.
+
+The metric declares all four T4E.2 blocks -- geometry, bearings, relative strength and scale --
+and publishes their weights and dimensionless component reductions. The calibration takes three
+known measurements of the same physical scalene configuration, measures all three pair distances,
+and retains their maximum in TG3.4's `MatchTolerance`. With equal declared block weights, the
+measured scale-specific radius is **0.2061925217**. The metric digest and signature family are
+bound into that tolerance, so changing a weight, mode, cardinality, axis availability or
+scale-unit contract makes the measurement inadmissible rather than silently reusing it.
+
+The acceptance pass supplies four presentations not used as four independent discoveries: the
+base triangle, a translation, a 73-degree rotation, and a held presentation with position,
+strength and spatial-scale perturbations bounded at 10%. All four land in **one cluster**. When
+position and member scales are both doubled, the scale-specific distance is **0.3333333333**,
+outside its 0.2062 measured radius, and the two presentations form **two clusters**. In
+scale-invariant mode the doubled presentation is identical under the declared comparable blocks
+and the two form **one cluster**. This meets both halves of the roadmap acceptance.
+
+Complete-link behaviour is pinned separately with A-B and B-C each inside the measured radius
+while A-C is outside: the output is a cluster of two plus a singleton, never one chained cluster.
+Reversing input order leaves the full receipt, membership and pattern IDs identical. Each pattern
+reports an aligned centroid, the calibrated tolerance radius and the observed member radius; the
+receipt states that its raw member count is not minimum-support mining, recurrence evidence, a
+p-value or a discovery.
+
+**D92 found and fixed.** The first acceptance run compared T4E.2's canonical vectors component by
+component. Exact canonicalisation is valid for exact invariance but discontinuous under noise: one
+10% replicate put a different edge first, attaching the strength and scale blocks to different
+physical vertices. The scale-block RMS became **0.4743** instead of about 0.10, the calibrated
+radius widened to **0.3418**, and the doubled absolute scale at 0.3333 incorrectly joined in
+scale-specific mode. Approximate distance now minimises over every valid node correspondence
+(at most six), moving edge and node attributes together; centroids align to a deterministic medoid
+before averaging. A direct regression starts on the replicate whose exact canonical order flips
+and measures its aligned scale-block disagreement below 0.11.
+
+Recorded commands:
+
+```text
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_spectral_clustering.py -q
+................                                                         [100%]
+16 passed, 1 warning in 2.38s
+
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_spectral_clustering.py src/tests/test_spectral_invariance.py src/tests/test_spectral_constellation.py -q
+........................................................................ [ 58%]
+...................................................                      [100%]
+123 passed, 1 warning in 25.80s
+
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_documentation.py src/tests/test_spectral_clustering.py -q
+.............................................                            [100%]
+45 passed, 2 warnings in 260.67s (0:04:20)
+```
+
+The warnings are SQLAlchemy's existing `declarative_base()` deprecation from
+`src/database/session.py:55` and Starlette's existing `python_multipart` pending deprecation,
+not T4E.3 failures. The full backend suite was **not** rerun; its
+last measured figure remains **3536 passed, 4 skipped, 1 xfailed** from T4E.2 and predates the
+TG17.11-TG17.14 and T4E.3 changes.
+
+## T4E.4 -- bounded minimum-support mining
+
+`src/analysis_engine/spectral_mining.py`, verified by
+`src/tests/test_spectral_mining.py` (14 test functions). Measured on 2026-09-04 with no network.
+
+The acceptance catalogue has two T4E.3 clusters: one contains five distinct constellation keys
+and one contains two. At the declared inclusive minimum support of three, exactly the
+five-occurrence pattern is `SUPPORTED` and the two-occurrence pattern is
+`PRUNED_BELOW_MINIMUM`. Both remain in the receipt with their support, support unit, centroid,
+calibrated tolerance and observed radius. At minimum five the first remains admitted; above all
+observed counts the result is complete with zero supported patterns rather than failing or
+returning an ambiguous empty list.
+
+The scan orders candidates by decreasing support, then prunes the entire remaining tail at its
+first miss. Support is counted over distinct `signature.key` identities; inserting the same
+constellation twice is refused with the reason that duplication would manufacture support.
+Reversing all seven input observations leaves pattern IDs, counts and decisions unchanged.
+
+Both hard budgets are mandatory. A catalogue of two candidates under `max_candidates=1` refuses
+before scanning and reports `partial_result: false`. Injected monotonic-clock overruns during
+identity/support preflight and mid-scan both raise the client-safe `MiningBudgetExceededError` and
+return no result. The successful receipt carries the exact budget and names elapsed time
+`unasserted`, keeping an operational measurement out of deterministic claims. Its claim boundary
+states that minimum support is not recurrence significance, a null test, a p-value, predictive
+evidence or a discovery.
+
+Recorded command:
+
+```text
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_spectral_mining.py src/tests/test_spectral_clustering.py -q
+..............................                                           [100%]
+30 passed, 1 warning in 3.03s
+
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_spectral_mining.py src/tests/test_spectral_clustering.py src/tests/test_spectral_invariance.py src/tests/test_spectral_constellation.py -q
+........................................................................ [ 52%]
+.................................................................        [100%]
+137 passed, 1 warning in 29.60s
+
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_documentation.py -q
+.............................                                            [100%]
+29 passed, 2 warnings in 263.70s (0:04:23)
+```
+
+The warning is the existing SQLAlchemy `declarative_base()` deprecation. Full backend was not
+rerun; **3536 passed, 4 skipped, 1 xfailed** remains the last full measurement and predates this
+slice.
+
+---
+
+# The TG17.11 - TG18.5 backfill (recorded 2026-09-04)
+
+Eight phases reached a terminal state between 2026-09-02 and 2026-09-04 without an entry in this
+file. `roadmap.md` §10.2 requires recorded command output here for every phase claiming
+completion, and the requirement went unguarded: nothing in `test_documentation.py` compared the
+roadmap's completed phases against this file's headings, so the gap widened silently for eight
+phases while the atmospheric line (T4C, T4D, T4E) continued to be recorded correctly.
+
+**The output below was recorded contemporaneously and is transcribed, not re-measured.** Each
+entry names the commit that recorded it. Re-measuring today would produce a different and less
+honest record: it would attribute today's tree to a phase that closed against an earlier one. The
+one entry measured today is TG18.5's own, which closes against this tree.
+
+A guard now exists (`test_every_completed_cross_domain_phase_has_a_verification_entry`), so a
+phase cannot again be marked done in the roadmap while this file is silent about it.
+
+## TG17.11 Scale/shape mining calibration — DONE, GATE REFUSED (2026-09-03, `ed-dev`)
+
+Transcribed from `2fe3e0c`, `a68ccf8`, `4d49ec6`, `0c0a22b`, `951f169`, `81ac6ed`.
+
+`scale_shape_calibration` was the only qualification gate reading `NOT_IMPLEMENTED`. That sentence
+is now false, and what replaced it is not a pass.
+
+**The finding is two bounds that do not meet.** Below, every member of a k-pairing family sits at a
+p-value floor of `1/k`, so under Benjamini-Yekutieli at alpha 0.05 no family smaller than **105**
+pairings can reject even when every member is a perfect planted match. Above,
+`reassign_scale_partners` enumerates exactly and refuses above **8** pairings rather than assume a
+sampler's uniformity. There is therefore no inventory size at which the null *as the qualification
+manifests declare it* — drawn, with a replication count — can produce a rejection. What can is the
+exact partner test, which the registered calibration is built on and no declared manifest requests.
+Both G17 candidate families are refused before size is reached: the quartet all-pairs admits one
+distinguishable reassignment, the post-D83 triple none.
+
+The gate reads `REFUSED`, the status reserved for a declared scientific limit that blocks release
+exactly as a failure does. The record states `calibration_executed_here: false` and asserts only
+quantities it computed; a guard fails if any power key appears in it. **A calibrated method the
+declared plans cannot reach, a method that does not exist, and a method that ran and failed are
+three different facts**, and the gate now distinguishes them.
+
+D91 was found and fixed in the first slice: the declared families answered a different question
+than the one the null poses.
+
+```text
+> pytest src/tests/test_documentation.py src/tests/test_experiment_qualification.py ^
+    src/tests/test_experiment_family.py -q
+114 passed
+
+> pytest src/tests/test_frontend_contract.py -q
+181 passed
+
+> cd frontend && npx playwright test e2e/flagship-qualification.spec.ts
+2 passed          (rendered ledger shows REFUSED)
+
+> cd frontend && npm run build
+passed
+
+Three mutations, each caught: awarding the gate PASS fails two guards; hard-coding the
+applicability verdict with a power number fails two; replacing the null's own refusal text
+with a fixed string fails one.
+
+Full backend not rerun; last measured figure remains 3536 (T4E.2).
+```
+
+## TG17.12 Calendar calibration recorded into its release gate — DONE (2026-09-03, `ed-dev`)
+
+Transcribed from `015ae48`.
+
+`calendar_calibration` was the last of TG17.10's seven gates whose `NOT_RUN` was true of the record
+and false of the world. `calibrate_family` runs the frozen calendar family on the TG17.0 fixtures
+and has always passed; nothing carried that measurement into the qualification record.
+
+**The gate still does not run it.** A calibration is a scientific measurement and the gate is a
+release gate. What this adds is the channel, `src/core/calibration_record.py`. A recording binds two
+digests and reads as unrun if either moves: the declared contract (cases and their frozen rejection
+counts, family size, alpha, correction, replications, channel, null family, seed), digested from
+`CALIBRATION_CASES` rather than restated so a relaxed expectation cannot leave a stale pass agreeing
+with it; and the source of the four modules that decide what the measurement is, with line endings
+normalised.
+
+**Four outcomes, three blocking.** Absent, unbound from contract and unbound from source all read
+`NOT_RUN`, because a recording made against something else is a measurement of a different thing
+rather than a weaker pass. Cases that missed their frozen answers read `FAIL`.
+
+Neither digest is tamper-evidence against an editor of this repository, and the source binding
+covers four files rather than the whole import graph. That boundary is stated rather than hidden:
+the backstop is that the live calibration already runs in the suite every pass, and a guard in
+`test_experiment_family.py` compares it case by case against what the gate is being told.
+
+**The contrast with TG17.11, computed rather than asserted.** Both nulls have a p-value floor and
+buy it differently. Scale/shape buys it with domains: a k-pairing family cannot go below `1/k`, its
+draw refuses above 8, its correction needs 105. Calendar buys it with computation: the floor is
+`1/(1+replications)` and there is no enumeration ceiling, because the surrogates are clock shifts
+the record itself supports. Both configurations are checked against the real correction — the
+calibration family at 999 against 293 required, the declared manifest plan at 4 corrected members
+and 200 replications against 166 — and the guard asserts the inequality, not the numbers.
+
+```text
+Recorded at 999 replications on a family of six:
+  shared_calendar_event         rejects 6 of 6 after correction
+  same_window_unrelated         rejects 0
+  gap_alias                     rejects 0
+  inadmissible_precedence       rejects 0
+all_met is true, so the gate reads PASS - the first of the seven to clear - and the
+verdict is unmoved at NOT_RELEASEABLE, with a guard saying so.
+
+> pytest src/tests/test_calibration_record.py -q
+12 passed
+
+> pytest (documentation + qualification suites) -q
+64 passed
+
+> drift backstop against the live calibration
+passed
+
+> cd frontend && npx tsc --noEmit
+clean
+
+> cd frontend && npm run build
+passed in 59.75s
+
+Gate assembles in 22 ms warm, guarded below one second.
+
+Four mutations, all caught: dropping the source binding, treating a missing recording as a
+pass, collapsing FAIL into NOT_RUN, and removing the line-ending normalisation each fail
+exactly one guard.
+
+Full backend not rerun; last measured figure remains 3536 (T4E.2).
+```
+
+## TG18.0 Rendered baseline and interaction inventory — DONE (2026-09-02, `ed-dev`)
+
+A declaration phase, and it is recorded here because what it declared became load-bearing two days
+later. TG18.0 preserved the four distinct product modes found in the rendered baseline: the
+interactive instrument (Spectral Transforms), the guided commitment workflow (Composer), the
+read-only claim surface (Findings), and the trust and qualification surface (Platform & evidence).
+Its constraint is that *a change which improves one by making another ambiguous is not a successful
+redesign.*
+
+**That constraint was unguarded from 2026-09-02 until 2026-09-04.** No test in the repository could
+have detected the four modes converging. TG18.5's second slice supplied the guard, and the design of
+that guard is the reason the constraint is a property of the modes *together* rather than four
+separate checks — four per-mode assertions could each pass while the modes collapsed onto one
+another. See the TG18.5 entry below.
+
+```text
+No command output: this phase changed no code. Its verification is the guard that
+TG18.5 slice 2 added retrospectively (product-modes.spec.ts, 10 collected), recorded below.
+```
+
+## TG18.1 Shared instrument foundation — DONE (2026-09-03, `ed-dev`)
+
+Transcribed from `62fcc0e`, `85cb027`.
+
+One stable application frame, and then the rendered inspection that the fifth slice had recorded as
+`NOT RUN` because the shared browser runtime exposed no session. **That was a tooling gap, not an
+absent capability**: the repository already carried Playwright and a Chromium binary, so
+`frontend/e2e/narrow-width.spec.ts` now runs beside the existing acceptance specs under the same
+config, at 320, 375, 414 and 768 CSS pixels across all four product modes.
+
+It found two defects that the source contract and the production build had both passed, neither
+visible above the compact breakpoints:
+
+* The shared canvas rule `.workspace-main > *` also matched the two `sr-only` children. Overriding
+  their one-pixel clipped box with a real width and `margin-inline: auto` let those absolutely
+  positioned elements escape the workspace's clipping, so **every workspace scrolled horizontally by
+  14 px at a 320 px viewport**. The rule now excludes `.sr-only`.
+* The below-480px reflow collapsed `grid-cols-2..5` to one explicit track but left `col-span-*`
+  children alone. A child spanning two columns of a one-column grid makes the browser create an
+  implicit second track, **so the two-column layout returned while the declared template still read
+  as one**. Spans are now released with the tracks.
+
+A third, smaller finding: the 11/12 px metadata floor covered `text-[10px]` and `text-[11px]` but
+never `text-[9px]`, which Acquire, the lineage nodes and the capability profile all use. Raised,
+with a source assertion.
+
+The spec measures the laid-out document rather than restating CSS: document scroll width, content
+past the right edge that no ancestor scrolls, computed font size on every text-owning element,
+rendered control height, header containment, and both the used track count and the rendered row
+occupancy of every grid.
+
+## TG18.2 Scientific visualization workspace — DONE (2026-09-03, `ed-dev`)
+
+Transcribed from `c888f64`, `b297b7f`, `4ddc21e`, `48000da`.
+
+Coordinated plot focus and exact-value reading, and three commitments that are contracts rather
+than options. A figure ships a **real text and table equivalent**, not a caption. **Comparability is
+a stated contract, not a colour-scale option** — a shared scale is admissible or it is refused with
+its reason. **A figure states the domain a claim was fitted over**, so an extrapolated reading
+cannot be mistaken for an interpolated one.
+
+Accessible resizable panes across all three gridded comparisons, with pointer, keyboard, bounds,
+reset and narrow-screen stacking. Publication HTML export for every heatmap and line chart;
+publication sheets preserve vector figures, captions, missingness, scale provenance, fit domains,
+uncertainty and assumptions. **Export performs no new scientific analysis and does not mutate live
+plots** — the property that keeps a reading sheet a record rather than a second instrument.
+
+```text
+> cd frontend && npx playwright test          (after removing .e2e-state)
+104 passed          (Chromium)
+
+> pytest (focused frontend + documentation) -q
+202 passed
+
+> cd frontend && npm run build
+passed, 1,416 modules
+
+> git diff --check
+clean apart from line-ending notices
+
+Full backend not rerun; last measured figure remains 3536 (T4E.2).
+```
+
+## TG18.3 Guided research journey — DONE (2026-09-03, `ed-dev`)
+
+Transcribed from `f423acb`.
+
+A global `Acquire -> Inspect -> Design -> Run -> Compare -> Admit -> Report` journey. Each shell
+blocker provides exactly one legitimate remediation rather than a dead end. **The Composer remains
+the authority for scientific status and next actions** — the journey routes, it does not adjudicate
+— and the existing claim ladder remains separate and visible beside it. All eight legacy gridded
+tools stay reachable with distinct text and visual treatment, and journey location clears when the
+researcher enters a non-journey legacy workspace.
+
+```text
+> cd frontend && npx playwright test          (after removing .e2e-state)
+109 passed          (Chromium)
+
+> pytest (frontend + documentation) -q
+204 passed
+
+> cd frontend && npm run build
+passed, 1,417 modules
+
+Full backend not rerun; last measured figure remains 3536 (T4E.2).
+```
+
+## TG18.4 Responsive and assistive-technology acceptance — DONE (2026-09-03, `ed-dev`)
+
+Transcribed from `ac0a978`.
+
+Eleven rendered Chromium acceptance checks at desktop (1440x900), laptop (1024x768) and narrow
+(375x667) layouts. The skip link is the first Tab stop and carries the shared focus indicator;
+fragment navigation and real workspace changes focus the named heading; the compact drawer returns
+focus to its trigger after Escape. A 640 CSS-pixel/device-scale-two reflow inspection stands in for
+a 1280-pixel viewport at 200% zoom, with no horizontal document scroll. Contrast is **computed from
+rendered foreground and composited background** at the normal- and large-text thresholds rather than
+read off the stylesheet. `prefers-reduced-motion` is emulated and the resulting durations measured.
+A colour-removal pass leaves location, both blockers, both remediations and the claim-ladder
+boundary named in text and semantics.
+
+**It fixed a real defect the first keyboard run found.** StrictMode mount replay focused the hidden
+workspace heading and stole the initial Tab stop; focus routing now compares the actual previous and
+current workspace.
+
+**Claim boundary.** This is bounded browser engineering acceptance. It is not a screen-reader audit
+and not a WCAG conformance certification, both of which `roadmap_cross_domain.md` §7 keeps
+explicitly out of scope. TG11.6 remains the source-level contract.
+
+```text
+> cd frontend && npx playwright test          (after removing .e2e-state)
+120 passed          (Chromium)
+
+> pytest src/tests/test_frontend_contract.py src/tests/test_documentation.py -q
+206 passed          (test_frontend_contract.py collects 179; Python inventory 3161)
+
+> cd frontend && npm run build
+passed, 1,417 modules
+
+> git diff --check
+clean apart from line-ending notices
+
+Full backend not rerun; last measured figure remains 3536 (T4E.2).
+```
+
+## TG18.5 UI qualification gate — COMPLETE (2026-09-04, `ed-dev`)
+
+Five slices. The phase's own declaration set the conditions, and the close-out below checks the
+delivery against them rather than restating them.
+
+**Slice 1 — served-workspace reachability.** `ui-qualification.spec.ts` asserts the shell serves
+exactly the qualified inventory in order, that all twenty workspaces open from a clean browser and
+name themselves, that every reachable journey destination lands on an inventoried workspace rather
+than the fallback heading, and that a clean browser disables nothing and claims no reason it is not
+entitled to. **The slice found a coverage hole rather than a defect**, and the distinction matters:
+`ResearchJourney.tsx` holds its seven destination identifiers separately from `WORKFLOW_NAV`, and
+Inspect and Admit are blocked in a clean browser, so their destinations were never clicked by any
+test in the repository. Renaming the journey's `domainWorkbench` target was confirmed to pass the
+entire rendered suite — TG18.3's own journey tests included — while sending a researcher who had
+selected a record to a heading reading "Scientific workbench workspace". Nothing was broken; nothing
+was guarding it either.
+
+**Slice 2 — one representative path per product mode.** `product-modes.spec.ts` walks the
+characteristic path of each of TG18.0's four modes at 1440 and 1920 CSS pixels, so the two viewport
+specs now span 320 to 1920. **The load-bearing assertion is not any of the four paths.** TG18.0's
+constraint is a property of the modes *together*, so each mode declares a signature — found by role
+and accessible name, never a class or a test id — and the suite asserts every signature appears in
+**exactly one** of the four. Four per-mode checks could each pass while the modes converged.
+
+**Slice 3 — the two numbers `scientist_actions` refuses to invent.** The design turns on which of
+the two an assertion may hold. An action count is deterministic, so it is asserted: **14 actions**
+from a clean browser to a `COMPLETE` run of the frozen plan, and **3** to reach the preflight refusal
+with **4** more to clear it. A wall-clock duration is not, so it is recorded and asserted by nothing:
+how long a refusal takes to explain itself is a property of the machine that ran the suite, and a
+gate turning on it would fail for reasons unrelated to the interface while passing on a fast machine
+as the interface got slower. The committed recording carries **0.264 s** and **2.835 s**
+as unasserted context, and those figures already differ from the 0.3 s and 4.74 s slice 3
+first measured, because slice 4's full-suite run re-recorded them on a differently loaded
+machine. A gate asserting either number would have failed on that alone. The
+count is an **upper bound on the shortest route**, not a claim about a minimum, and the measurement
+says so in its own claim boundary.
+
+**Slice 4 — the evidence channel.** `qualification-reporter.ts` writes `measurements/browser_run.json`
+and decides nothing; `src/core/browser_evidence.py` decides, and every decision can be a refusal.
+Two bindings, and **the second is the one that was actually needed**: weakening a spec returns the
+gate to `NOT_RUN`, and a *partial* run is refused, because running one spec is the normal way to work
+on a test and Playwright reports it as `passed`. The reporter therefore records both the specs that
+ran and the whole inventory it found, and the gate refuses when they disagree, naming every spec that
+did not run. That refusal was verified **before** the first full run: a green four-test invocation
+read `NOT_RUN` and listed the other fourteen specs.
+
+The outcomes stay apart. Absent, stale or partial means the run has not happened *for this code* and
+reads `NOT_RUN`; a run that happened and failed reads `FAIL`; only a complete, clean run of the suite
+this checkout contains reads `PASS`. `browser_no_glue` reads **`PASS`**.
+
+### The close-out (2026-09-04)
+
+**1. The declared scope is delivered.** The phase declared five things. A clean-browser run exercises
+one representative path through each product mode (slice 2); it captures named viewport artefacts
+(slice 2); it asserts every served route remains reachable (slice 1); it records the action count and
+the refusal-to-remediation measurement (slice 3); and a missing, stale or digest-mismatched artefact
+reads `NOT_RUN` (slice 4). The constraint that the ledger "may ingest a measurement with its
+provenance and may never synthesize one it did not receive" holds: `browser_evidence.py` computes no
+count of its own and every field it publishes came from a recording or is a refusal.
+
+**2. The phase's "nothing it measures is reported back inside the product" is narrower than what
+shipped, and the declaration is amended rather than the code.** The trust surface renders every
+gate's `detail`, so `browser_no_glue`'s cleared detail now states on screen that a rendered run of
+all 15 specs passed 136 tests with 0 failed. That sentence was written against the risk of building a
+UI-quality dashboard, and no such surface exists: the `scientist_actions` counts are declared in
+`api.ts` and **read by no component**, so the 14/3/4 figures and both durations appear nowhere in the
+product. What is on screen is one gate in the release registry that has always rendered. Suppressing
+a cleared gate's basis while continuing to show every refusal's reason would make a `PASS` *less*
+inspectable than a refusal, which inverts the property this programme is built on. The line actually
+held is therefore: **no UI-quality surface, and no UI-quality measurement outside the release
+registry's own gate verdict and the basis for it.**
+
+**3. `qualification_plan()` is no longer uniformly cold, and a reader must not misread the
+difference.** The plan used to return every gate `NOT_RUN` until something executed it. Three gates
+now read recordings at assembly time — `browser_no_glue` `PASS`, `calendar_calibration` `PASS`,
+`scale_shape_calibration` `REFUSED` — while `offline_matrix` and `restart_recovery` still read
+`NOT_RUN` in the cold plan and are filled by an actual run. Both kinds of `NOT_RUN` block release
+identically, but they mean different things: one is a measurement this checkout has not received, the
+other is a run this call did not perform.
+
+**4. Cross-domain condition 19 is half-met, and the phase does not clear it.**
+`roadmap_cross_domain.md` §6.19 requires that a complete G17 capability pass *both* the clean-browser
+no-glue test *and* the synthetic fifth-adapter test. The first now passes. `synthetic_fifth_adapter`
+remains `NOT_RUN`, so G17 completion stays unclaimable, and TG18.5 must not be recorded as satisfying
+19. The verdict is unmoved at `NOT_RELEASEABLE`, blocked by `offline_matrix`,
+`scale_shape_calibration`, `synthetic_fifth_adapter` and `live_sources`.
+
+**5. `roadmap.md` §10.2 was itself unguarded, which is how eight phases drifted out of this file.**
+See the backfill above and the two guards added in `test_documentation.py`. This is the close-out's
+substantive finding: the condition that no completion claim exists without recorded output was
+enforced by habit alone, and habit failed for two days across seven phases without a single test
+objecting.
+
+```text
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_browser_evidence.py ^
+    src/tests/test_calibration_record.py src/tests/test_experiment_qualification.py ^
+    src/tests/test_documentation.py src/tests/test_frontend_contract.py -q
+261 passed, 5 warnings in 312.03s (0:05:12)
+
+> cd frontend && npx playwright test          (after removing .e2e-state)
+136 passed                 Chromium, 15 specs
+recorded 2026-09-03T20:34:54.533Z, finished 20:42:39.556Z (7 m 45 s, unasserted)
+
+  assistive-acceptance.spec.ts    11     narrow-width.spec.ts           19
+  comparison-contract.spec.ts     12     product-modes.spec.ts          10
+  comparison-views.spec.ts        19     publication-export.spec.ts      4
+  composer-path.spec.ts           11     research-journey.spec.ts        5
+  experiment-receipt.spec.ts       3     resizable-panes.spec.ts         6
+  figure-data.spec.ts              9     scientist-actions.spec.ts       2
+  flagship-qualification.spec.ts   2     ui-qualification.spec.ts        4
+  validity-uncertainty.spec.ts    19     ------------------------------ 136
+
+> cd frontend && npx tsc --noEmit
+clean
+
+> cd frontend && npm run build
+1,417 modules transformed; built in 53.45s
+
+> qualification_plan() gate states, cold
+verdict: NOT_RELEASEABLE          assembled in 33 ms warm, guarded below one second
+  offline_matrix           NOT_RUN     (filled by an executed matrix; REFUSED when run)
+  restart_recovery         NOT_RUN     (filled by an executed rehearsal)
+  browser_no_glue          PASS        <- TG18.5
+  synthetic_fifth_adapter  NOT_RUN
+  calendar_calibration     PASS        <- TG17.12
+  scale_shape_calibration  REFUSED     <- TG17.11
+  live_sources             NOT_RUN
+browser_evidence: PASS   136 passed / 0 failed / 0 skipped, 15 specs, 32 artefacts
+scientist_actions: MEASURED   14 actions, 3 to the refusal, 4 to clear it
+adapter_specific_framework_edits: NOT_MEASURED   (belongs to synthetic_fifth_adapter)
+
+> artefact manifest inspection
+32 artefacts, keys exactly {name, bytes, sha256}; no image payload; 10,108 bytes total.
+frontend/e2e/artifacts/ is gitignored and no artefact is tracked, so slice 2's constraint
+on slice 4 holds: what reaches the ledger is a manifest and digest, never the images.
+
+> four mutations against src/core/browser_evidence.py, module restored byte-identically
+M1 a partial run accepted as a full one          1 failed, 15 passed
+M2 the spec source binding dropped               1 failed, 15 passed
+M3 a failed run reported as merely unrun         1 failed, 15 passed
+M4 a drifted action count reported not refused   1 failed, 15 passed
+restored: identical                              16 passed
+
+Full backend not rerun; last measured figure remains 3536 (T4E.2).
+```
+
+```text
+> two mutations against the documents the new guards read, restored byte-identically
+M1 a completed phase loses its VERIFICATION.md entry   1 failed, 1 passed
+M2 an entry exists while the roadmap says IN PROGRESS  1 failed, 1 passed
+restored: VERIFICATION.md identical, roadmap_cross_domain.md identical
+                                                       2 passed
+
+The completeness guard was also written before the backfill and run against the tree as it
+then stood, where it failed naming exactly TG17.11, TG17.12, TG18.0, TG18.1, TG18.2, TG18.3
+and TG18.4 - the seven phases the backfill then supplied. A guard written after the entries
+it demands would have proved nothing about whether it can see their absence.
+
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_documentation.py ^
+    src/tests/test_frontend_contract.py -q
+210 passed, 5 warnings in 265.81s (0:04:25)
+
+The run before it failed on test_documented_test_counts_match_the_source, because the two
+new guards had moved test_documentation.py from 27 test functions to 29 and section 7.4
+still said 27. The inventory guard caught its own file drifting, which is the mechanism
+working rather than an incident: 27 -> 29 and the Python total 3227 -> 3229.
+```
+
+**A discarded measurement, recorded because discarding one silently is the habit worth refusing.**
+Slice 2's mutation M2 first reported 10 of 10 tests failing, which would have been evidence that the
+guard was indiscriminate rather than sharp. Re-run in isolation it failed exactly 4 — the claim path
+plus the uniqueness assertion at both viewports. The first run had begun while Vite was still
+reloading the file the previous mutation had just restored. **A mutation that appears to kill
+everything is evidence about the harness, not about the guard**, and the 10-of-10 figure is recorded
+here as discarded rather than quietly replaced.
+
+
+## TG17.13 The source-edit audit and the fifth-adapter gate - COMPLETE (2026-09-04, ed-dev)
+
+Two slices. Slice 1 wrote the audit a test name had been standing in for; slice 2 built the channel
+that carries it into the release record. `synthetic_fifth_adapter` reads `PASS` for the first time
+since TG17.10 registered it.
+
+**What slice 2 decided, and why it is not TG17.12's shape applied twice.** The gate has two halves
+and only one of them is recorded. The source-edit audit is **read live** on every call: it is
+exact, it reads committed source, it costs milliseconds, and a recording of a fact that can be
+recomputed is only a way to be wrong later. The acceptance run is **recorded**, because it cannot
+be read from the gate's side at all - TG17.3 requires the fifth adapter to be defined in a module
+the application never imports, so it lives in `src/tests/test_adapter_registry.py` and nothing
+under `src/core` may reach it. Copying the recording shape onto both halves would have been the
+symmetric answer and the wrong one.
+
+**Deciding sits on the reading side.** The test supplies apparatus only it owns - the adapter, the
+native record, the window - and `measure_extension_conformance` performs all eight checks and
+decides whether they passed. A test that deleted its own assertions changes nothing about what is
+recorded. What it can still do is stop calling the recorder, and the answer to that is `NOT_RUN`.
+
+**What the gate now says, recorded output:**
+
+```text
+> .\.venv\Scripts\python.exe -c "from src.core.experiment_qualification import
+    qualification_plan ..."
+NOT_RUN  offline_matrix
+NOT_RUN  restart_recovery
+PASS     browser_no_glue
+PASS     synthetic_fifth_adapter
+PASS     calendar_calibration
+REFUSED  scale_shape_calibration
+NOT_RUN  live_sources
+
+A synthetic fifth domain with different mathematics - a monotone rank channel, not the shared
+standardized level - reached the registry, the control schema, the conformance kit and the
+domain-blind mining seam from a module the application never imports, passing all 8 checks
+(recorded 2026-09-03T22:53:39.149657Z). No framework source names it, so installation required
+0 framework edits across 17 generic surfaces. Standing adapter-specific glue in those surfaces
+is 1 and is reported rather than asserted: frontend/src/components/AcquisitionView.tsx:243
+renders a bespoke planner for reanalysis.
+```
+
+Three of seven gates clear. The verdict is unmoved at `NOT_RELEASEABLE`: `offline_matrix` and
+`restart_recovery` are `NOT_RUN` in a cold plan, `scale_shape_calibration` is `REFUSED`, and
+`live_sources` is the last unmeasured scientific gate.
+
+**A guard passed because it could not see what it was checking, for the fifth time.** The
+`defined_outside_the_application` check first compared `translate.__module__` against dotted package
+prefixes. Under pytest's import mode that string is the bare `test_adapter_registry`, which starts
+with none of them - and would have started with none of them whatever the module was called. It now
+resolves the defining *file*, makes it repository-relative and checks it against directory roots; a
+callable whose source cannot be located is a **refusal** rather than a pass, because an unanswerable
+question is not a satisfied one. D64, D74, D75, slice 1's vacuous registry scan, and now this.
+
+**The completeness guard TG18.5 built did its first real work.** Marking TG17.13 DONE in the roadmap
+made `test_every_completed_cross_domain_phase_has_a_verification_entry` fail, naming TG17.13 and
+nothing else, before this entry existed:
+
+```text
+E  AssertionError: these cross-domain phases are marked complete in roadmap_cross_domain.md but
+   have no '## <phase> ' entry in VERIFICATION.md: TG17.13
+1 failed, 3 passed, 25 deselected, 1 warning in 0.66s
+```
+
+**A mutation pass with no baseline cannot tell a killed mutant from a broken suite, and this one
+reported a false CAUGHT before it was fixed.** The first run of the script produced:
+
+```text
+M1 staleness ignored                              CAUGHT      2 failed, 49 passed
+M2 a missing required check tolerated             CAUGHT      2 failed, 49 passed
+M3 defining_source falls back to the module name  NOT CAUGHT  49 passed
+M4 DEFAULT widened into glue                      CAUGHT      4 failed, 45 passed
+M5 another adapter accepted for measurement       CAUGHT      2 failed, 49 passed
+```
+
+The second run, after I added a test for the branch M3 mutates, reported M3 as `CAUGHT  1 failed,
+50 passed` - and that was **wrong**. The single failure in that run was the new test itself, which
+was broken: it asserted `__module__ == "builtins"` for a callable compiled from a string, and the
+exec scope carried no `__name__`, so the attribute was `None`. Every mutation's count in both runs
+was inflated by one failing test, and M3 was never actually killed. The script now runs an
+unmutated baseline first and refuses to report unless it is green:
+
+```text
+BASELINE (unmutated)                              GREEN   51 passed, 2 warnings in 33.13s
+M1 staleness ignored                              CAUGHT  1 failed, 50 passed
+M2 a missing required check tolerated             CAUGHT  1 failed, 50 passed
+M3 defining_source falls back to the module name  CAUGHT  2 failed, 49 passed
+M4 DEFAULT widened into glue                      CAUGHT  1 failed, 50 passed*
+M5 another adapter accepted for measurement       CAUGHT  1 failed, 50 passed
+M6 the live audit inherited from the recording    CAUGHT  1 failed, 50 passed
+
+all modules restored byte-identically
+```
+
+*M4 reported `4 failed, 47 passed`. It is the cross-check that the contract binding bites: widening
+`GLUE_KINDS` in `extension_audit.py` moves the contract digest, which un-measures the recording,
+which returns the gate to `NOT_RUN` - so a recording cannot be made green by widening the list it is
+judged against.
+
+**Fixing the broken test found a real defect in the code under it.** `inspect.getsourcefile` returns
+a pseudo-filename such as `<no file>` for code compiled from a string whose module carries a loader,
+and on Windows `Path("<no file>").resolve()` yields an absolute path inside the repository without
+raising - so `defining_source` would have reported a located source that cannot be read, and
+`defined_outside_the_application` would have passed on it. The resolved path must now be an existing
+file.
+
+**A second real defect, found by a wall-clock assertion I did not write.** TG17.12's
+`test_the_gate_reads_the_recording_and_does_not_run_the_calibration` asserts that
+`qualification_plan()` assembles in under a second, and it failed in a long combined run. The
+reading was contention, but investigating it found that the plan was calling
+`read_extension_conformance()` **twice** - once for the gate and once for the record - walking
+seventeen sources twice for an identical answer and doubling an HTTP route's added cost. It is read
+once and passed to the gate. Measured after the fix: 0.183s, 0.146s, 0.145s over three consecutive
+assemblies.
+
+**Verification, all actually run:**
+
+```text
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_extension_evidence.py ^
+    src/tests/test_experiment_qualification.py -q
+51 passed, 2 warnings in 33.13s
+
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_calibration_record.py ^
+    src/tests/test_browser_evidence.py src/tests/test_adapter_registry.py -q
+46 passed, 1 warning in 13.03s
+
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_experiment_qualification.py ^
+    src/tests/test_extension_audit.py src/tests/test_frontend_contract.py -q
+217 passed, 5 warnings in 33.92s
+```
+
+The reported counts exceed the source function counts because several of these modules parametrise:
+`test_extension_evidence.py` carries 25 test functions and `test_experiment_qualification.py` 22.
+
+Nothing in this phase is evidence about the world. Both slices are statements about this
+repository's source, and about whether one synthetic adapter reached the seams a third party's
+adapter would have to reach. The full backend suite was not rerun; the last measured result remains
+3,536 passed.
+
+## TG17.14 Four-domain live-source acquisition — DONE, GATE PASS (2026-09-04, `ed-dev`)
+
+The first run in this project's history in which real data was pulled from public archives in more
+than one domain. Authorised explicitly by the maintainer; both locks satisfied.
+
+```
+> python -m src.core.live_source_evidence run --order-book-record ... ^
+    --confirm-network-access I_AUTHORIZE_BOUNDED_ARCHIVE_REQUESTS
+
+reanalysis       PASS   network_used=True     324 values     ERA5 t@850hPa via CDS, 9x9x1x4
+argo_float       PASS   network_used=True     10,218 values  93 profiles, Argo GDAC
+tess_lightcurve  PASS   network_used=True     18,279 values  MAST SPOC, TIC 261136679 sector 1
+order_book       PASS   network_used=False    34,560 values  2,880 records, local, no network
+GATE: PASS   reasons: []
+```
+
+```
+> python -c "qualification_plan()"
+offline_matrix             NOT_RUN      blocking=True
+restart_recovery           NOT_RUN      blocking=True
+browser_no_glue            PASS         blocking=False
+synthetic_fifth_adapter    PASS         blocking=False
+calendar_calibration       PASS         blocking=False
+scale_shape_calibration    REFUSED      blocking=True
+live_sources               PASS         blocking=False
+VERDICT: NOT_RELEASEABLE
+```
+
+**Five of seven gates pass and the release is still refused.** That is the result, not a
+disappointment: `scale_shape_calibration` is TG17.11's declared scientific limit, and reaching four
+archives in four domains does not buy past it.
+
+**Two defects found by first contact with real data.**
+
+*   **D94.** The reanalysis probe republished `streaming_content_hash`'s 32-character cache key in a
+    field named `sha256`. `_is_sha256` requires 64, so the gate returned `NOT_RUN` with
+    `reanalysis PASS has no non-empty content-addressed record` — declining to credit a pass whose
+    content binding it could not verify. Fixed by separating the two contracts:
+    `streaming_content_sha256` returns the whole digest and `streaming_content_hash` is defined as
+    its 32-character prefix, **unchanged in value**, so no frozen atmospheric receipt moved.
+*   **D95.** SPOC emits one row per cadence including those with no photometry, and those carry a
+    non-finite `TIME`. The real sector-1 product for TIC 261136679 has **815 of them in 20,076
+    rows**. `LightCurveCollection` refused the lot, correctly. Untimestamped cadences are now
+    dropped and counted, with `unclocked_samples_dropped` carried into the gate record.
+
+```
+> python -m pytest src/tests/test_photometry.py -q
+12 passed, 1 skipped, 2 warnings in 4.03s
+
+> python -m pytest src/tests/test_zarr_source.py src/tests/test_cds_source.py ^
+    src/tests/test_live_source_evidence.py -q
+109 passed, 1 skipped, 5 warnings in 65.61s
+
+> python -m pytest src/tests/test_experiment_qualification.py -q
+26 passed, 2 warnings in 30.23s
+```
+
+**A correction recorded rather than quietly fixed.** A first reading of D95 claimed the
+duplicate-clock guard had been blinded by NaN — "the sixth guard to pass by not looking". That was
+**wrong**, and the test written to pin it refused to pass. numpy sorts NaN to the end, so the
+finite prefix was always compared correctly and `[1.0, nan, 1.0]` refused before this slice exactly
+as after. The claim was removed from the code comment and the test rewritten to assert what is
+true. D95 is one defect, not two.
+
+**Two tests changed because the world changed, not to make them green.**
+`test_qualification_record_is_self_hashed_and_tampering_is_detected` tampered by writing
+`status = "PASS"` to the last gate; once `live_sources` actually passed, the tamper wrote the value
+already there and the record verified — a tamper test failing for the one reason it must not. It
+now writes a sentinel that cannot collide with a real status.
+`test_http_plan_and_rehearsal_keep_the_unrun_gates_visible` asserted some gate remained `NOT_RUN`
+after the rehearsal; the survivor is now the `REFUSED` one, and the assertion was rewritten to its
+actual intent — the rehearsal must not present every gate as passing.
+
+**MAST is intermittent, and this record is three successes in five attempts.** On 2026-09-04
+`Mast.Caom.Filtered.Position` answered three times and timed out twice after two bounded 90-second
+attempts. A timeout records `REFUSED` with `network_used: null` — not `false`, because after a
+failed call whether bytes moved is unknown. Stated because a reader deciding whether to depend on
+this gate should know the binding constraint is a metadata service rather than the science, and
+because reporting only the passing run would misdescribe the archive.
+
+**The order-book record is not in this repository and that is deliberate.** Its domain declares
+that redistribution of raw depth is restricted, so the gate binds it by `sha256`
+(`b2fd0c2cfe426cf8c3c142ca2195da9564a6e65517c3cf8287afa4968edfe94f`) and `data/market_records/`
+carries a README with the source URL and exact transformation instead of the bytes.
+
+Nothing here is a scientific result. The record's own `claim_boundary` says so: this qualifies
+bounded acquisition and record binding in four domains, and is not evidence, replication or claim
+promotion.
+
+## Full backend suite, after T4F.1 and TG17.14 (2026-09-04, `ed-dev`)
+
+```
+> .\.venv\Scripts\python.exe -m pytest src/tests/ -q
+3738 passed, 4 skipped, 1 xfailed, 6 warnings in 2704.67s (0:45:04)
+exit 0
+```
+
+The first full-suite measurement since before TG17.11. It replaces **3536**, which was measured at
+T4E.2 and had been correctly quoted as stale by every slice since. The four skips are the standing
+opt-in live checks: GCS read, store probe, Argo acceptance and TESS/MAST acceptance.
+
+**One qualification on how it was measured.** Documentation-only edits landed while the run was in
+progress -- the TG17.15 phase and this file's own TG17.14 entry. No source changed during the run,
+so the figure is a true count of the code, but the 29 documentation guards were re-run standalone
+afterwards and passed rather than being trusted from inside the long run.
+
+The count rose by 202 over T4E.2's 3536. Contributing test functions added this session: 18 for
+T4F.1's event substrate, 3 for D95, 1 for D94, 1 for D93. The remainder predates this session and
+was verified against targeted suites at the time, which is exactly the accounting the standing
+instruction against quoting an unmeasured larger figure exists to force.
+
+## TG17.15 slice 1 The estimand declared before it is answered (2026-09-04, `ed-dev`)
+
+TG17.11 established that the scale/shape null cannot reject at a reachable inventory size. This
+slice establishes why, and the why is not about compute.
+
+```
+> python -m pytest src/tests/test_correspondence_estimand.py -q
+14 passed, 1 warning in 1.97s
+```
+
+**The measurement the decision rests on**, computed from the null's own enumerator rather than
+written down:
+
+```
+k=4  |A|=9       partners=3  floor=0.2500  miscounted=0.1000000
+k=5  |A|=44      partners=4  floor=0.2000  miscounted=0.0222222
+k=6  |A|=265     partners=5  floor=0.1667  miscounted=0.0037594
+k=7  |A|=1854    partners=6  floor=0.1429  miscounted=0.0005391
+k=8  |A|=14833   partners=7  floor=0.1250  miscounted=0.0000674
+```
+
+The valid reassignments are the derangement numbers and grow factorially; the partners one member
+can receive are `k - 1`. A member's statistic depends only on its partner, so 14,833 draws produce
+seven distinct statistic values. Reading the reassignment count as the reference-set size is
+**anticonservative by more than a factor of a thousand at k = 8, in the direction that makes a null
+easier to reject**. That is the most likely error in any reimplementation and is now pinned by
+test rather than left as a warning.
+
+**Two consequences, both measured.** Raising `MAX_REASSIGNABLE_PAIRINGS` cannot help: it raises the
+reassignment count and leaves the partner count at `k - 1`, so the TG17.11 gap is structural rather
+than computational. And the minimum resolvable joint family has **no margin at all** -- at 105, one
+member a single step off the floor drops rejections to zero of 105, against 105 of 106 one size up.
+Reaching 105 would not have produced a usable instrument.
+
+**What the chosen estimand buys**, solved against the real correction:
+
+```
+tested m:      1    3    5    6   10   20
+pool N:       19   36   45   48   58   71
+```
+
+and the property the joint estimand cannot have: at a pool of 48 with six tests, one member off the
+floor rejects nothing; at 96 it rejects five of six. The test count is identical in both, so margin
+was bought without multiplicity. Under `joint_structure` the only way to lower the floor is to grow
+the family, which grows the correction burden with it.
+
+Benjamini-Yekutieli is recorded with its reason rather than inherited: family members share a
+partner inventory and are dependent, BY is valid under arbitrary dependence and BH is not.
+
+`joint_structure` is registered **inadmissible** rather than omitted, so it is refused by name with
+its reason attached; it is the natural first design and its failure is not visible from inside it.
+`require_declared_estimand` refuses an undeclared estimand rather than defaulting, because the two
+questions have different reference sets and can disagree on the same data.
+
+This slice declares the question and answers nothing. Its claim boundary says it is not a
+calibration, not a power analysis on real records, not a partner pool and not a result, and a guard
+asserts no power key appears in its report. The gate is unchanged: `scale_shape_calibration` still
+reads `REFUSED` and the verdict is still `NOT_RELEASEABLE`.
+
+## Benchmark suite, verified by running (2026-09-04, `ed-dev`)
+
+```
+> python -m src.benchmarks
+PASS 43   FAIL 0   NOT_YET_RUNNABLE 0
+exit 0
+```
+
+Recorded because the figure had been quoted from the document rather than measured. **Thirteen of
+the twenty-four registered benchmarks are null benchmarks**, where the correct answer is that there
+is nothing there. Two of their reports are worth transcribing, because they are the instrument
+catching what would otherwise be its most publishable result:
+
+```
+4C.r11_raw_is_deceptive   raw (un-anomalised) scale energies correlate at r = 0.999,
+                          p = 2.02e-219 - a strong 'finding' that is purely the calendar.
+                          This is the trap R11 exists for.
+
+4F.refusal_calendar       unguarded, the same pipeline confirms 4 relationship(s) at
+                          q = 0.0104 (strongest member naive p 4.5e-66, ESS-corrected
+                          1.1e-12, so neither R12 nor the surrogate refuses it); with the
+                          calendar fitted on train and removed from both partitions,
+                          2 frozen and none confirmed, smallest q 0.105
+```
+
+## TG17.15 slice 2 The partner pool, and circularity made inexpressible (2026-09-04, `ed-dev`)
+
+```
+> python -m pytest src/tests/test_partner_pool.py -q
+20 passed, 1 warning in 0.25s
+```
+
+The roadmap named this the slice most likely to go quietly wrong, and the reason is asymmetry: the
+enumeration bound it replaces announced itself by refusing, whereas a badly curated pool returns a
+confident number.
+
+**The defence is structural, not disciplinary**, following R22's own precedent -- prose cannot
+corrupt a claim level because the gates read typed fields, not because anyone is careful. Here,
+there is no value in the module that is a function of two records. `build_partner_pool` reads
+`RecordProfile` objects and never records, and a test asserts the profile's field set exactly, so a
+similarity, distance or affinity field cannot be added without failing. Admission on resemblance to
+the record under test is not a mistake this module can express.
+
+**Mutation testing, four applied and four caught:**
+
+```
+CAUGHT  silently drop refused candidates instead of recording them
+CAUGHT  allow native_seconds to be banded
+CAUGHT  skip the check that the observed partner clears its own contract
+CAUGHT  let a pool below the resolvable size through
+uncaught: 0
+```
+
+**Acceptance pool**, six tested correspondences, 60 candidates offered:
+
+```
+admitted 58, refused 2, required 48, resolution floor 0.01695
+  REFUSED TOO_SHORT  effective_sample_size = 20 against the partner's 400, ratio 0.05 outside [0.5, 2]
+  REFUSED LEAKED     shares provenance 'srcLEFT' with the left member
+  native_seconds     pool 6,092 to 141,160 s, partner 22,334 s at the 22nd percentile
+```
+
+The duration spread is deliberate: `native_seconds` is recorded and never banded, because
+scale/shape mode exists to compare shapes across native durations and a pool banded on duration
+would refuse the comparison the mode is for.
+
+**What the receipt refuses to claim.** Passing every declared band is a **necessary condition for
+exchangeability and not a sufficient one**. It establishes that no declared marginal visibly
+violates it; an unmeasured property may still differ systematically and the pool cannot know. That
+sentence is in the receipt and asserted by test, because a pool that reads as a proof of
+exchangeability would be more dangerous than no pool at all.
+
+No null was run and no calibration was performed. The gate is unchanged:
+`scale_shape_calibration` still reads `REFUSED` and the verdict is still `NOT_RELEASEABLE`.
+
+## TG17.15 slice 3 The exact pool-substitution null, and a defect found in its own first draft (2026-09-04, `ed-dev`)
+
+```
+> python -m pytest src/tests/test_pool_substitution_null.py -q
+37 passed, 1 warning in 0.54s
+
+> python -m pytest src/tests/test_correspondence_estimand.py src/tests/test_partner_pool.py \
+      src/tests/test_pool_substitution_null.py -q
+80 passed, 1 warning in 6.31s
+```
+
+**Mutation testing, ten applied and ten caught:**
+
+```
+CAUGHT  drop the observation from its own reference set (denominator N instead of N+1)
+CAUGHT  stop counting ties as evidence against rejection
+CAUGHT  silently skip an alternative whose record payload is missing
+CAUGHT  let a non-finite statistic through instead of refusing
+CAUGHT  default the orientation instead of requiring it to be declared
+CAUGHT  allow the family to be narrowed after the pools were sealed
+CAUGHT  allow the same correspondence to be counted twice
+CAUGHT  allow the observed partner to sit inside its own pool
+CAUGHT  skip the determinism check on the statistic
+CAUGHT  report the all-genuine case as if it were the family's real power
+uncaught: 0
+```
+
+**The defect the acceptance run found, and the correction it forced.** The first `resolution()`
+reported `every_member_can_reject_at_its_own_floor`, which is what `minimum_pool_size` is defined
+against. That question places *every* member at its floor simultaneously -- the most favourable
+world there is -- and reporting it alone showed a green light for a family that cannot produce a
+finding:
+
+```
+declared family m = 6, admitted pool N = 58, required N = 48, floor = 1/59 = 0.01695
+
+family: 6 members, 0 rejected after benjamini_yekutieli at alpha 0.05
+  L0   p = 0.01695  q = 0.08305  no  (at floor)
+  L1   p = 0.01695  q = 0.08305  no  (at floor)
+  L2   p = 0.01695  q = 0.08305  no  (at floor)
+  L3   p = 0.96610  q = 1.00000  no
+  L4   p = 0.23729  q = 0.87203  no
+  L5   p = 0.54237  q = 1.00000  no
+resolution: every member can reject at its own floor = True, worst floor 0.01695
+            sparsest detectable: 5 of 6 genuine (83%); a half-genuine family of this
+            size would need N = 97 rather than the 48 it was sized for
+```
+
+Three correspondences sat at the exact floor and none was rejected. Members that do not correspond
+consume the Benjamini-Yekutieli step-up ranks the genuine ones need, so a pool sized by
+`minimum_pool_size` is sized for a world in which nothing fails. `sparsest_detectable_count` now
+measures the fewest genuine members these actual pools could ever reject, and the family receipt
+carries it in words:
+
+```
+powered_for: this family can produce a rejection only if at least 5 of its 6 declared
+correspondences are genuine. Members that do not correspond consume the Benjamini-Yekutieli
+step-up ranks the genuine ones would need
+```
+
+`minimum_pool_size_for_detected_fraction` sizes a pool for that world before acquisition, and the
+gap is large:
+
+```
+m = 6, fraction 1.000 -> N = 48
+m = 6, fraction 0.833 -> N = 58
+m = 6, fraction 0.500 -> N = 97
+m = 6, fraction 0.167 -> N = 293
+```
+
+**Refusals, each by name:**
+
+```
+narrowed family          NullRefusal: expected exactly the 6 correspondences these pools were
+                         sealed for. Narrowing the declared family ... is selection
+undeclared orientation   InvalidParameterError: expected one of ['larger_is_more_similar',
+                         'smaller_is_more_similar'], declared explicitly
+missing payload          NullRefusal: r0002 is in the sealed pool but absent from the records
+                         offered ... anticonservative and leaves no trace
+```
+
+**What was checked about the arithmetic, and what was not.** Statistics drawn i.i.d. are
+exchangeable with their pool *by construction*, so the rank is uniform on the attainable grid:
+
+```
+40,000 trials, N = 58
+  P(p <= 0.05) = 0.0338   nominal 0.05, attainable grid step 0.01695
+  mean p       = 0.5081   uniform on the grid has mean 0.5085
+```
+
+The rate sits below nominal because the attainable grid is coarse: `0.0338 = 2/59` is the largest
+grid point at or below 0.05. This checks the **arithmetic only**. It does not establish that a
+curated pool of real records is exchangeable, and it is not a calibration. No false-positive rate
+has been measured for this null on records with no planted correspondence; T4C.5h remains the
+standing proof that a null can preserve exactly the property it is named after and still get the
+distribution wrong, at a measured 0.765 against a nominal 0.05. That is slice 4.
+
+The gate is unchanged: `scale_shape_calibration` still reads `REFUSED` and the verdict is still
+`NOT_RELEASEABLE`.
+
+**The full suite, and one failure that is not this slice's.**
+
+```
+> python -m pytest src/tests -q -p no:randomly
+3 failed, 3815 passed, 4 skipped, 1 xfailed in 3739.00s (1:02:19)
+
+FAILED test_acquisitions_api.py::test_a_server_restart_marks_active_cds_work_interrupted...
+FAILED test_documentation.py::test_every_source_module_appears_in_architecture
+FAILED test_documentation.py::test_documented_test_counts_match_the_source
+```
+
+The two documentation failures are stale: that run began at 17:56, before this slice's sections
+were written. The dedicated re-run afterwards passed all 29 documentation guards in 10:24.
+
+The acquisitions failure is **not attributable to this slice and was not reproduced**. It passed
+alone (41.7s), as a whole file (13 passed), and with all 124 test modules collected but only it
+selected. `test_acquisitions_api.py` is the *first* file pytest collects, so nothing added here
+executed before it, and this slice touches no API, database or threading code. The mechanism is
+visible in the test itself: `_wait_for_job` polls 200 times at 10 ms, a **two-second wall-clock
+budget** on a background worker thread, inside a suite that ran for 62 minutes. That is a
+timing-sensitive test rather than a defect in what it tests, it is pre-existing, and it is recorded
+here rather than fixed inside an unrelated slice.
+
+Gate re-read directly after the documentation pass rather than assumed:
+
+```
+Scale/shape null calibration a REFUSED
+verdict: NOT_RELEASEABLE
+```
+
+## TG17.15 slice 4 The calibration, an expectation that was the defect, and four mutation gaps (2026-09-05, `ed-dev`)
+
+```
+> python -m pytest src/tests/test_pool_calibration.py -q
+50 passed, 1 warning in 77.69s (0:01:17)
+```
+
+**The recorded calibration.** Five declared cases at 200 realisations each, `m = 6`, pools of 61
+to 470, run through the real `correspondence_family` with the real `shape_recurrence` statistic.
+Ran in 1,351 s (22:31).
+
+```
+calibrated: True | failing: [] | uncertified: []
+
+case                       refus  family-wise  1-sided upper   uncorrected     rank 1      at floor,
+                                                                per member              not rejected
+planted_correspondence       0     200/200         --         1200/1200      1189/1200         0
+no_correspondence            0       1/200       0.0235         55/1200         4/1200         3
+shared_grid_alias            0       2/200       0.0311         40/1200         3/1200         1
+clean_partner_noisy_pool     1       0/199       0.0149         54/1194         5/1194         5
+unresolvable_inventory     200        --           --              --             --          --
+
+realisations 200 | needed to certify alpha 59 | uniformity resolution 0.0962
+```
+
+Every family-wise bound clears alpha 0.05, and `unresolvable_inventory` refused 200 of 200 rather
+than scoring. The whole calibration was run again after the mutation gaps below were closed, in
+1,487 s, and **every figure above reproduced exactly** -- the fixes changed what is checked, not
+what was measured. The eight ladder rungs published one identical `inventory_sha256`. **This null does not repeat T4C.5h**, whose surrogate preserved exactly the property
+its method was named after and still measured a family-wise rate of 0.765 against a nominal 0.05.
+
+**The tail is not the whole check.** Under exchangeability the observation's rank among its `N`
+alternatives is uniform on `{1, ..., N + 1}` *exactly*, so the entire distribution is predicted in
+advance rather than only its 5% tail -- a rate can look nominal while the distribution is wrong.
+Measured on **one member per realisation**, because members of a family share a candidate
+inventory and are dependent, which is the case Benjamini-Yekutieli was chosen for and also the
+reason a pooled Kolmogorov-Smirnov p-value would not be a test:
+
+```
+                            independent (n = 200)          pooled diagnostic (n = 1200)
+no_correspondence           mean 0.5214  KS 0.0650  p 0.35   mean 0.5104  KS 0.0326
+shared_grid_alias           mean 0.5423  KS 0.0727  p 0.23   mean 0.5095  KS 0.0261
+clean_partner_noisy_pool    mean 0.5218  KS 0.0684  p 0.30   mean 0.5086  KS 0.0273
+```
+
+**Slice 2's claim boundary, asked for a number.** It states that passing every declared band is a
+*necessary* condition for exchangeability and not a sufficient one. Two adversarial nulls attack
+exactly that: `shared_grid_alias` gives every record the same strong artefact keyed to position
+within its own cycle -- a shared instrument cadence, which is not a shared shape -- and
+`clean_partner_noisy_pool` draws the observed partner systematically cleaner than the inventory
+while still inside every band, so the alternatives its own contract admits are noisier than it is
+and its statistic should ride higher. Both hold the declared rate. The sentence survives contact
+with a measurement; it is not thereby proved for real records, and the claim boundary still says so.
+
+**The defect: the first recorded run failed, and the expectation was what was wrong.**
+
+```
+calibrated: False | failing: ['planted_correspondence']
+
+planted_correspondence   memb=1199/1200   rank1=1189/1200   pools [61, 470]
+declared expectation: {'outcome': 'rejects', 'minimum_detection': 1.0, ...}
+```
+
+`minimum_detection: 1.0` demanded that every one of 1,200 members reject. Eleven members did not
+have the true partner at rank 1: with pools of up to 470 alternatives a chance candidate will
+occasionally outrank a real correspondence. **Requiring otherwise is requiring a test with no
+type-II error**, which is the point-estimate mistake already fixed for the error rates, left
+standing in the opposite direction after they were fixed. It is replaced by two criteria derived
+from what the case is rather than from what a perfect run would look like:
+
+* the **statistic** must rank the true partner first for at least 90% of members, judged on a
+  one-sided *lower* confidence bound -- the mirror of how an error rate is judged on an upper one;
+* every member it did rank first must reject: `maximum_unresolved_at_floor = 0`, parameter-free,
+  isolating the failure worth catching, which is being short of pool rather than short of effect.
+
+The rerun's measured numbers are **identical** -- 1,199 of 1,200 and 1,189 of 1,200 -- and only the
+verdict moved, which is what should happen when the expectation rather than the run was at fault.
+On the new criteria the rank-one lower bound is 0.9849 against the declared 0.90, and no member
+ranked first failed to reject. The failed run is recorded here rather than replaced by the one that
+passed.
+
+**Detection is a curve, and it falls off a cliff.** The inventory, the left members and every
+declared marginal are held fixed across rungs -- enforced by digest -- so a rung differs from its
+neighbour in the planted correlation and nothing else:
+
+```
+planted w   member   family   uncorrected   at rank 1
+   1.00      1.000    1.000      1.000        0.992
+   0.95      0.996    1.000      1.000        0.658
+   0.92      0.958    1.000      1.000        0.346
+   0.88      0.354    0.600      0.988        0.125
+   0.84      0.062    0.225      0.817        0.083
+   0.80      0.037    0.175      0.575        0.054
+   0.60      0.004    0.025      0.158        0.013
+   0.00      0.000    0.000      0.050        0.004
+```
+
+At `w = 0.88`, **98.8% of members have an uncorrected p at or under 0.05 and 35.4% survive
+correction**. That gap is not noise; it is slice 3's `sparsest_detectable_count` prediction
+confirmed by measurement. When every member corresponds, Benjamini-Yekutieli divides at rank 6 and
+a pool of 48 suffices; when the family is mixed, a surviving member must clear
+`alpha / (m * H_m) = 0.0034`, which no pool below 293 can reach. So every rung reports
+`members_at_their_floor_that_did_not_reject`: a member the statistic ranked first that still fails
+was **short of pool, not short of effect**, and `minimum_pool_size_for_detected_fraction` already
+names the pool it would have needed. The bottom rung is a true null reached through the ladder
+rather than through the case, and the two agree.
+
+**A cost of the admission contract that nothing had measured.** `AdmissionContract` refuses to band
+`native_seconds`, because bounding it would refuse the comparison scale/shape mode exists to make.
+But `cadence_seconds` *is* banded, and cadence is native duration divided by a bounded row density,
+so the cadence band narrows native duration **transitively** and nothing said so:
+
+```
+offered 1500 candidates spanning 4.05 decades of native duration
+admitted per pool  229  268  348  299  396  243   (yield 15% to 26%)
+decades admitted  1.18 1.33 1.47 1.42 1.45 0.95
+```
+
+A pool is far more native-scale homogeneous than the inventory it was drawn from. That helps
+exchangeability and constrains the mode's reach; either way it is now reported by
+`admission_yield` and guarded by a test rather than left to be inferred.
+
+**Mutation testing found four gaps before it found none.**
+
+```
+first pass:  11 CAUGHT, 4 MISSED
+  MISSED  stop holding a scoring case to its refusal ceiling
+  MISSED  stop counting members ranked first that did not reject
+  MISSED  redraw the inventory between rungs of the effect ladder
+  MISSED  infer the phase window from the pair instead of declaring it
+
+second pass: 15 CAUGHT, 0 MISSED
+```
+
+Three of the four were real. The refusal ceiling and the at-floor-unresolved count were never the
+*binding* reason in any test -- every case that exercised them failed for another reason first --
+so both are now tested directly against the decision rule. The ladder's "held fixed" claim was
+enforced by digest on `build_realisation` and only described on `detection_profile`; each rung now
+publishes an `inventory_sha256` and a test requires them equal.
+
+The fourth was an **equivalent mutant**, and is recorded as one rather than worked around.
+`_shared_phase` caps the comparison at each record's own declared support, so passing
+`cycles=SPAN_CYCLES` and inferring the shorter record's span give the same number for every fixture
+this module builds -- the test asserting they agreed **could not fail**. The number was never
+wrong; the check was vacuous. The declaration is now something that can fail: `_statistic` refuses
+a record that does not cover the declared window, so a fixture that silently got shorter is refused
+rather than compared over a window nobody declared.
+
+**What is not claimed.** A measured false-positive rate and detection curve for this null on
+records whose answers were fixed before the method ran. It is evidence that the arithmetic and the
+exchangeability hold together **on these fixtures**. It is not evidence that a pool of real records
+is exchangeable: that rests on properties the fixtures were given by construction, and a real
+inventory would have to be shown to have them.
+
+**The full backend suite, and the flake that was contention after all.**
+
+```
+> python -m pytest src/tests -q
+3868 passed, 4 skipped, 1 xfailed, 6 warnings in 2481.74s (0:41:21)
+```
+
+Nothing failed. `test_acquisitions_api.py::test_a_server_restart_marks_active_cds_work_interrupted_
+for_explicit_resume` -- recorded under slice 3 as timing-sensitive and not reproducible in
+isolation, and failing again in slice 3's rerun -- **passed here**. Both runs where it failed were
+heavily contended by concurrent calibration work; this one had the machine to itself. That is the
+behaviour a test polling a background worker on a two-second wall-clock budget would show, and it
+is now the third piece of evidence for that reading rather than an assumption.
+
+One precision about this figure: the suite began at 09:06 and two files were tidied at the margin
+while it ran -- a docstring line, an `__all__` rewrap and an import rewrap, in
+`pool_calibration.py` and its test. Nothing else in the tree imports either file, and
+`test_pool_calibration.py` was rerun in full afterwards at 50 passed. So the suite figure covers
+every module, and the tidied bytes are covered by that separate run rather than by this one.
+
+The gate is unchanged, and deliberately so -- carrying this measurement into it is slice 5's work,
+by checked supersession rather than by editing the old refusal away:
+
+```
+Scale/shape null calibration and planted power REFUSED
+verdict: NOT_RELEASEABLE
+```
+
+## TG17.15 slice 5 A refusal superseded rather than deleted, and a gate that still refuses (2026-09-05, `ed-dev`)
+
+```
+> python -m pytest src/tests/test_calibration_record.py src/tests/test_experiment_qualification.py -q
+59 passed, 2 warnings in 63.67s (0:01:03)
+```
+
+**The recording.** `calibrate_pool_substitution` run deliberately and written to
+`calibration/scale_shape_calibration.json`, bound to its declared contract and to the source of the
+six modules that decide what it measures. 1,031 s for the five cases and the eight-rung ladder.
+
+```
+recorded_utc 2026-09-04T22:41:28.066528Z | all_met True | seed 20260904 | realisations 200
+
+case                        refus  fam-wise 1-sided up   rank1 lo       KS       p        pools
+planted_correspondence          0   200/200     1.0000     0.9849   0.9929   0.000    [61, 470]
+no_correspondence               0     1/200     0.0235     0.0011   0.0650   0.352    [61, 470]
+shared_grid_alias               0     2/200     0.0311     0.0007   0.0727   0.229    [61, 470]
+clean_partner_noisy_pool        1     0/199     0.0149     0.0017   0.0684   0.296    [57, 443]
+unresolvable_inventory      200/200        --         --         --       --      --           --
+
+ladder rungs 8 | inventory digests 1
+```
+
+Every figure reproduces slice 4's recorded run exactly, on a different day and in a separate
+process. The planted row's `KS 0.9929, p 0.000` is the alternative and not the null: that case is
+supposed to depart from uniformity, and a reader is entitled to see the number rather than a blank.
+
+**The reproduction witness, which is what makes a 1,031-second measurement checkable in seconds.**
+The calendar calibration is cheap enough that the live measurement runs in the test suite on every
+pass and a guard compares it against the recording. This one is not, and pretending otherwise would
+have been the easy lie. `calibrate_case` runs realisation `i` at `seed + i`, so a three-realisation
+run at the recorded seed is not a *similar* measurement to the recorded one -- it is its leading
+prefix, exactly. The recording carries a digest of those realisations per case, and the suite
+recomputes all five:
+
+```
+witness planted_correspondence     seed 20260904 realisations 3 5fb8c2de6809f563
+witness no_correspondence          seed 20260904 realisations 3 0551a40745b11881
+witness shared_grid_alias          seed 20260904 realisations 3 55881cfdd34627aa
+witness clean_partner_noisy_pool   seed 20260904 realisations 3 4fbb8db56ae0eb0d
+witness unresolvable_inventory     seed 20260904 realisations 3 863a41d4047acd08
+```
+
+`no_correspondence`'s digest was computed independently, in a separate process before the recording
+existed, and is the same. The case that refuses every realisation witnesses `["REFUSED", ...]`
+rather than the empty list -- an empty digest agrees with every other run that also produced
+nothing, which is the one thing a witness must not do. This is a **smaller** claim than the
+calendar recording's, and the module says so in those words rather than implying an equivalence.
+
+**The supersession, recomputed rather than remembered.**
+
+```
+> python -c "from src.core.calibration_record import scale_shape_supersession; ..."
+supersession SUPERSEDED
+still_true True {'minimum_resolvable_family': 105, 'largest_drawable_inventory': 8}
+minimum_pool_size 48
+```
+
+`scale_shape_supersession` does not quote TG17.11's claim. It recomputes it from the two primitives
+that claim turned on, using the same functions the gate's applicability section uses, and a guard
+asserts the two agree. Three outcomes, and the third is the whole point of the word "checked":
+
+* `SUPERSEDED` -- the old claim still holds when recomputed, and a bound successor recording passed.
+* `NOT_SUPERSEDED` -- the successor is absent, stale or failed; the old refusal stands alone.
+* `VOID` -- the predecessor's claim has **stopped being true**. It was retired on its own terms
+  rather than superseded, and the record must be re-derived rather than kept.
+
+A guard drives it into `VOID` by lifting `MAX_REASSIGNABLE_PAIRINGS` past the resolvable size and
+asserts the record says the limit removed itself. Nothing in this repository produces `VOID` today,
+which is exactly why it needed a test: a supersession nobody recomputes is a sentence about the
+past that keeps agreeing with itself.
+
+**The gate, read directly. It still refuses, and that is the result.**
+
+```
+SUPERSEDED. The superseded claim (TG17.11 slice 5,
+src.benchmarks.shape_fixtures:calibrate_shape_family) is recomputed on every plan and still holds:
+no family smaller than 105 pairings can reject under benjamini_yekutieli at alpha 0.05, the
+declared null draws only from inventories of at most 8, and 2 of 2 declared domain families are
+refused by the null before size is reached. Superseded for applicability by TG17.15 slices 1-4
+(per_correspondence, src.benchmarks.pool_calibration:calibrate_pool_substitution), recorded
+2026-09-04T22:41:28.066528Z: 6 correspondences need a pool of 48, which the calibration's own pools
+reach. Blocked by declared_inference (decidable here); pool_exchangeability_on_real_records (not
+decidable here).
+
+status: REFUSED | verdict: NOT_RELEASEABLE
+```
+
+**Both blockers are computed, and one of them is admitted to be undecidable here.**
+`declared_inference` is read back from the six frozen manifests rather than restated: every one
+declares `scale_partner_reassignment` at 200 replications, and the calibrated method is exact pool
+substitution, which none of them requests. `pool_exchangeability_on_real_records` carries
+`decidable_here: false`, and a guard asserts it **survives a passing recording** -- it is the
+failure mode this phase named in advance as the silently-violable one, and it is therefore the one
+most likely to be quietly dropped once everything else goes green. Each blocker states what would
+discharge it, and a guard fails a blocker that does not, because a blocker with no discharge
+condition is a complaint.
+
+TG17.11 kept three facts apart: a calibrated method the declared plans cannot reach, a method that
+does not exist, and a method that ran and failed. This slice adds a fourth -- a calibrated,
+applicable, **recorded** method that answers a question no declared plan asks -- and refuses to
+report the measurement it can make in place of the one it cannot.
+
+**Mutation testing: one gap, and it was the one a slow measurement hides.**
+
+```
+first pass:  14 CAUGHT, 1 MISSED
+  MISSED  drop the witness from what a recording carries
+
+second pass: 15 CAUGHT, 0 MISSED
+```
+
+Every guard read the recording already on disk, so a break in the code that *writes* one would have
+passed the entire suite and surfaced only after the next fifty-minute re-record -- by which point
+the recording it produced would be a receipt with an unusable witness. `_trim_case` is now
+exercised directly on a one-realisation outcome costing about a second, and a guard also asserts
+that what a recording is written with and what the gate reads back are the same shape. The fourteen
+caught include awarding the gate a `PASS` now that a calibration passes, dropping the
+exchangeability blocker once everything else is green, remembering the predecessor's claim instead
+of recomputing it, calling it superseded while the predecessor is void, letting an absent successor
+supersede, asserting the declared null instead of reading it from the manifests, and reading a
+recording without binding it to the source it was measured against.
+
+**Documentation guards.**
+
+```
+> python -m pytest src/tests/test_documentation.py -q
+29 passed
+```
+
+**Full backend suite.**
+
+```
+3893 passed, 4 skipped, 1 xfailed, 6 warnings in 3859.63s (1:04:19)
+```
+
+The verdict is unmoved: `NOT_RELEASEABLE`. Scale/shape mode is now a calibrated method waiting on a
+declared plan and a curated inventory, rather than a method that could not work. That is a better
+position than TG17.11 left it in, and it is not a release.
+
+## T4F.2 -- counted sequences, and the denominator they are counted over (2026-09-05, `ed-dev`)
+
+`src/analysis_engine/spectral_sequences.py`, verified by `src/tests/test_spectral_sequences.py`
+(33 test functions). Measured on 2026-09-05 with no network.
+
+```
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_spectral_sequences.py -q
+33 passed, 1 warning in 7.67s
+
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_spectral_sequences.py src/tests/test_spectral_events.py src/tests/test_spectral_mining.py src/tests/test_spectral_clustering.py -q
+81 passed, 1 warning in 12.08s
+```
+
+T4F.1 built the ordered substrate and its own record said it counts nothing. This task does the
+counting the phase exists for. `A4 -> A8 -> B8 -> C16` is now a chain with a support and a
+confidence attached rather than a shape the record merely permits.
+
+**The acceptance record, printed rather than described.** Three configurations, a chain planted
+four times at frames 0, 6, 12 and 18 with two frames between links, a declared window of `[1, 3]`
+frames and a minimum support of three:
+
+```
+=== grid searched frames 0..25, window [1, 3] frames, minimum support 3
+sequence     support eligible   occurrs confidence  trunc  unobs status
+A -> B             4        4         4      1.000      0      0 SUPPORTED
+B -> C             4        4         4      1.000      0      0 SUPPORTED
+C -> A             3        4         4      0.750      0      0 SUPPORTED
+A -> B -> C        4        4         4      1.000      0      0 SUPPORTED
+B -> C -> A        3        3         4      1.000      1      0 SUPPORTED
+C -> A -> B        3        3         4      1.000      1      0 SUPPORTED
+candidates examined 18, pruned by antimonotonicity 18, supported 6
+```
+
+**The same data on a record two frames shorter, which is the whole point of the task.**
+
+```
+=== grid searched frames 0..23, window [1, 3] frames, minimum support 3
+(the two rows that move; A -> B and B -> C are unchanged at 4/4 and 1.000)
+C -> A             3        3         4      1.000      1      0 SUPPORTED
+A -> B -> C        3        3         4      1.000      1      0 SUPPORTED
+```
+
+`C -> A` reads **0.750** on the longer record and **1.000** on the shorter one, and both are
+correct. On the 26-frame grid the last C's window `[23, 25]` was searched and held no A: that is a
+miss, and it belongs in the denominator. On the 24-frame grid the same window runs past the last
+frame anyone looked at, so that C was never given the chance the ratio is about; it is censored,
+excluded, and reported as `trunc 1`. Counting it as a failure to be followed would have priced the
+end of the record as a property of the pattern. The naive figure -- every antecedent in the
+denominator regardless -- is 0.750 in both cases, and in the second case it is measuring where the
+file stops.
+
+`A -> B -> C` shows the other half: a three-link chain needs a window twice as long to have been
+searched, so the last anchor is censored for the triple while the same anchor remains admissible
+for the pair. A confidence that used one eligibility rule for every length would silently prefer
+short chains.
+
+**What is refused rather than defaulted.** A window is mandatory, because without declared lags
+every pair of occurrences anywhere in the record is a transition. Its minimum lag is strictly
+positive, so two events on one frame can never form a step -- T4F.1 refused to sort simultaneity
+into an order and this module refuses to count one. A window that admits no lag on the grid's own
+cadence lattice is refused rather than returning zeros, because a zero from an unreachable window
+measures the window and not the record. A lag declared in one unit against frames declared in
+another is refused rather than converted. Without a cadence, eligibility is undecidable, so the
+support count stands and the ratio is `None` under `COVERAGE_UNDECLARED` rather than computed
+against a denominator nobody checked.
+
+**The pruning rule is proved, not assumed.** Extending a sequence lengthens the window an
+antecedent must have observed, so the eligible set can only shrink; and a chain that completes for
+`s + (q,)` completes for `s` by taking its prefix. Support is therefore antimonotone under
+extension. The suite asserts that inequality directly over every extension the sweep reached, and
+asserts the identity `examined + pruned == exhaustive`: 18 + 18 = 36 = 3^2 + 3^3. T4E.4's
+`MiningBudget` is reused rather than a second budget declared, and either overrun refuses the
+whole sweep with `partial_result: false`.
+
+**Recurrence, and the several ways it is not a period.** Spans are tallied on the cadence lattice,
+which is the finest interval the pass can resolve. All three patterns report `INTERVAL_REPEATS`
+with a modal interval of 6 frames seen three times, concentration 1.00, one distinct interval. A
+span crossing unobserved time *bounds* an interval from above rather than measuring it -- an
+unseen occurrence inside would split it in two -- so it is excluded, counted as excluded, and kept
+out of the reported longest gap. The receipt publishes `admissible_lattice_values` (25 on the
+longer grid), because among few admissible values a repeat is expected under no structure at all,
+and a concentration without that denominator invites over-reading. Four statuses keep the failures
+apart: `NO_MEASURED_SPAN`, `TOO_FEW_MEASURED_SPANS`, `NO_REPEATED_INTERVAL`, `INTERVAL_REPEATS`.
+
+**Mutation testing: 33 mutations, two batches, and the first batch was too easy.**
+
+```
+batch one:  17 CAUGHT, 0 MISSED
+batch two:  12 CAUGHT, 4 MISSED
+  MISSED  give a long chain the same eligibility window as a short one
+  MISSED  admit a sequence one occurrence short of the declared minimum
+  MISSED  take the concentration over every gap rather than over the measured ones
+  MISSED  count the distinct intervals over the lattice rather than what was seen
+
+after closing the gaps: 17 CAUGHT + 16 CAUGHT, 0 MISSED
+```
+
+A clean first pass is not evidence of good guards; it is evidence that the mutations were easy.
+The second batch aimed at the quantities nothing obviously read and at the off-by-ones, and four
+survived. The first is the substantive one: nothing asserted that a longer chain requires a longer
+observed window, because the antimonotonicity guard is an inequality and equality satisfies it.
+That mutation would have made every chain, at every length, eligible on a pair's window -- the
+exact bias this task exists to prevent, passing a suite that appeared to test for it.
+
+**One defect in this task's own code, found by printing the receipt rather than by a test.**
+`candidates_pruned_by_antimonotonicity` counted the *prefixes* that failed rather than the
+*candidates*, and multiplied by the level width. At the first level those two are the same number,
+so the arithmetic agreed with itself exactly where it was tested and nowhere else: the receipt read
+`pruned 0` while eighteen extensions had genuinely never been built. The acceptance guard had
+encoded the same wrong formula, and the mutation aimed at that line was caught only because it
+disagreed with an expectation that was itself wrong. Fixed, re-anchored so the mutation now
+reintroduces exactly this defect, and the suite now asserts the identity `examined + pruned ==
+exhaustive`, which no single wrong formula can satisfy. **It gets no defect number**: it never
+reached a commit and no recorded result depended on it. It is written down because the way it
+surfaced -- reading an actual receipt, after a green suite and a clean mutation pass -- is the part
+worth keeping.
+
+**One method was added to T4F.1's grid rather than to this module.**
+`ObservationGrid.observation_of_window` answers whether a *proposed* window was wholly searched,
+which `coverage_between` cannot: a span runs between two occurrences known to be on the grid, while
+a window is offered by a lag and can therefore run off the end of what the pass looked at. The grid
+is what knows what was looked at, so the question belongs there. `WINDOW_TRUNCATED_BY_RECORD` is
+kept apart from `WINDOW_SPANS_UNOBSERVED_TIME` because the two bias a confidence differently -- one
+is the record's edge, the other is a hole in the middle -- and collapsing them would lose the
+distinction that makes the exclusion defensible.
+
+**Nothing here is significance, and both receipts say so.** Support and confidence are not a base
+rate, a lift, a surrogate comparison, a p-value, a precursor or a cause. A repeated interval is not
+a period, a frequency or an oscillation, and no null was drawn over any of it. Those begin at
+T4F.3.
+
+**Documentation guards.**
+
+```
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_documentation.py -q
+29 passed, 2 warnings in 305.58s (0:05:05)
+```
+
+Re-run standalone after the documentation edits rather than trusted from inside the long run.
+
+**Full backend suite.**
+
+```
+> .\.venv\Scripts\python.exe -m pytest src/tests/ -q
+3926 passed, 4 skipped, 1 xfailed, 6 warnings in 3510.91s (0:58:30)
+exit 0
+```
+
+## T4F.3 -- precursor tests, and the first null this phase draws (2026-09-05, `ed-dev`)
+
+`src/analysis_engine/spectral_precursors.py`, verified by `src/tests/test_spectral_precursors.py`
+(47 test functions, 52 pytest cases: one of them is parametrised six ways). Measured on 2026-09-05 with no network.
+
+```
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_spectral_precursors.py -q
+52 passed, 1 warning in 16.98s
+
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_spectral_precursors.py
+    src/tests/test_spectral_events.py src/tests/test_spectral_sequences.py
+    src/tests/test_spectral_mining.py src/tests/test_spectral_clustering.py -q
+133 passed, 1 warning in 45.28s
+```
+
+T4F.2 counted and its own receipt said it claimed nothing. This task asks whether a count means
+anything. It is the roadmap's central question and the first null Phase 4F draws.
+
+**The acceptance record, printed rather than described.** Two patterns on a 150-frame grid; A
+every ten frames, B two frames behind each one, and three further B occurrences in a stretch A
+never enters. Window `[1, 3]` frames, 99 circular-shift surrogates, seed 20260905, alpha 0.05,
+Benjamini-Yekutieli:
+
+```
+rule       sup  elig     conf     base    lift lift 95%              p        q  status
+A->B        10    10    1.000    0.259    3.87 [2.79, 3.87]     0.0100   0.0300  PRECURSOR_SIGNATURE
+         corrected lift 3.93 (null mean confidence 0.254), overlapping windows 0, six figures yes
+B->A         0    13    0.000    0.184    0.00 [0.00, 1.24]     1.0000   1.0000  NOT_DISTINGUISHED
+         corrected lift 0.00 (null mean confidence 0.193), overlapping windows 0, six figures no
+```
+
+**The measurement this task exists to make.** The same unchanged record, the same lift, two nulls:
+
+```
+=== B in four dense blocks, A one clump of four sitting just in front of the first
+circular_antecedent_shift      conf 1.000 base 0.190 lift 5.25  p 0.1100 q 0.1100  NOT_DISTINGUISHED
+   null mean confidence 0.187, corrected lift 5.35
+uniform_antecedent_relocation  conf 1.000 base 0.190 lift 5.25  p 0.0100 q 0.0100  PRECURSOR_SIGNATURE
+   null mean confidence 0.185, corrected lift 5.40
+```
+
+Nothing about the data differs between those two lines. The lift is identical, the base rate is
+identical, the ensemble size and the seed are identical. The scattering null destroys the
+antecedent's own bursting, so a clump of four that happens to sit in front of a dense block beats
+it on the shape of its own occurrence times; the shifting null moves the clump as a clump, and
+roughly one rotation in nine lands it in front of some block, which is what p = 0.11 is
+measuring. The choice of null is the hypothesis, and here it decides the finding. The uniform
+null is provided for exactly this reason and its receipt carries the word **anti-conservative**
+and the sentence "it should not be used to support a claim".
+
+**The base rate is a window probability and it is measured.** Confidence is the chance that a
+declared window following an occurrence contains the consequent, so dividing it by the fraction
+of *frames* carrying the consequent would give a lift that grows with the width of the window and
+with nothing else. `window_base_rate` drops the **same window** at every searched position whose
+window was wholly observed -- the eligibility rule that decides an antecedent's admissibility,
+applied to the reference -- and publishes the rate with the number of positions it was estimated
+over. The reference is not purged of the antecedent's own occurrences: purging would make the
+denominator depend on which rule is being tested, so two rules sharing a consequent would be
+divided by different numbers. Including them pulls lift toward 1 for a common antecedent, which
+is the conservative direction, and the choice is stated in the receipt rather than left implicit.
+
+**A lag chosen by the data is a search, and the null is over the choice.** `src/core/precedence.py`
+found this at the band level: the maximum of several lagged statistics is not one statistic. Two
+families are therefore reported and each is corrected against its own size -- every (antecedent,
+consequent, window) triple, all of them reported so that no selection precedes the correction; and
+one selected lag per pair, referenced to the distribution of the **maximum across the declared
+family**. That maximum has a null because one draw is shared across the family per antecedent, and
+the sharing is held to by test rather than asserted: the selected null must equal the elementwise
+maximum of the per-lag ones, and a window's ensemble must be identical whether it was declared
+first or second in the family.
+
+**A design that could not have rejected anything is refused before anything is counted.** With
+`n` surrogates a p-value cannot fall below `1 / (1 + n)`, and rank 1 of an `m`-test family under
+Benjamini-Yekutieli needs a raw p below `alpha / (m * H_m)`. `check_power` is asked first, and an
+ensemble too small for the declared family raises. This is not T4C.5i's boundary applied late: an
+under-powered study duly reports an absence indistinguishable from a real one, and the cleanest
+way to honour "an inadequately powered absence is not a negative finding" is never to produce the
+absence. The refusal is a fact about the declared design, before the record is read. It fires in
+the suite on its own: a run at alpha 0.02 with 99 surrogates and two tests is refused with the
+arithmetic, and 149 surrogates named as the requirement.
+
+**Nothing is reimplemented.** The counting and its eligibility rule are T4F.2's `count_sequence`,
+made public in this task so that a second denominator cannot exist -- two would agree on the
+planted case and diverge exactly at the record's edge, which is the case the denominator was
+written for, and the suite asserts the two agree figure for figure. The empirical p-value is
+`significance.surrogate_p_value`; the correction and the power check are
+`multiple_comparisons.adjust` and `check_power`; R9's six figures are carried by the programme's
+own `AssociationFigures`, so a rule that cannot satisfy that contract is refused by the contract
+rather than by a check in this file.
+
+**Mutation testing: 49 mutations in two batches, 27 + 22, all caught after the gaps were closed.**
+
+```
+batch one:  19 CAUGHT, 8 MISSED
+  MISSED  let the base rate depend on which antecedent is being tested        (equivalent mutant)
+  MISSED  give each lag its own draw, so the maximum has no null              (equivalent mutant)
+  MISSED  count one frame too many inside a proposed window                   (script scope)
+  MISSED  take a Wald interval, which is too narrow exactly where support is small
+  MISSED  correct against the tests that were reported rather than the family declared
+  MISSED  call a rule a precursor on its raw p-value
+  MISSED  relocate uniformly with replacement, so the surrogate loses occurrences
+  MISSED  make the surrogate-corrected lift a second copy of the plain lift
+
+batch two (the five real gaps re-aimed, plus fourteen new):  18 CAUGHT, 4 MISSED
+  MISSED  relocate uniformly with replacement          (the fixture made a collision unlikely)
+  MISSED  hide how many of the interval's trials shared a window   (no anchors a window apart)
+  MISSED  let an unstated seed default to something                (bad anchor)
+  MISSED  count one frame too many inside a proposed window        (script scope, again)
+
+after closing every gap and re-anchoring: 27 CAUGHT + 22 CAUGHT, 0 MISSED
+```
+
+Three of batch one's misses were faults in the mutations rather than in the guards, and they are
+recorded as such rather than quietly dropped. Two were **equivalent mutants**: trimming the last
+frame from the base-rate universe removes a position whose window was already truncated and so
+changes no number, and re-seeding the generator changes every draw consistently rather than
+giving each lag its own. The third was a **scope error in the harness** -- an
+`observation_of_window` mutation was run against the precursor and event suites but not against
+T4F.2's, which is where that method's guard actually lives; with the third file added it is caught
+at once, twice over.
+
+The five that were real gaps are the ones worth naming. **The Wald interval is the substantive
+one.** Nothing asserted the interval was the *score* interval rather than the normal
+approximation, and the existing test compared widths, which a hybrid preserves. It matters
+precisely here: a precursor rule is a rule where every eligible trial succeeded, and a Wald
+interval on a perfect record has **no width at all** -- it would report that the record had
+settled the question exactly. The test now holds the bounds to the score interval's defining
+property, that the observation sits `z` standard errors from each of them, which no
+approximation satisfies. **Correcting on the reported tests rather than the declared family** and
+**calling a rule a precursor on its raw p-value** both survived because the planted fixture is too
+clean: every member returned a number and the one rejection cleared both thresholds. Closing them
+needed two fixtures built for the purpose -- a family containing a member that returns no p-value
+at all, and a family whose every member clears alpha raw and none of them clears it corrected.
+The remaining two, drawing the relocation with replacement and printing the plain lift twice,
+were quantities nothing had read.
+
+**One design consequence worth recording.** The power refusal and the raw-versus-corrected test
+collide by construction: at rank 1 the corrected threshold is exactly the ratio the power check
+demands, so a p-value at the ensemble's floor is always rejected under a design powered to reject
+anything. The discriminating case therefore has to sit strictly above the floor, and the fixture
+that produces it -- two lags on one pair, p = 0.02 and 0.04, both clearing alpha = 0.05 raw and
+neither clearing q = 0.06 -- is named in the test so that a later edit which loses it fails loudly
+rather than silently testing nothing.
+
+**One change to an earlier task's code.** `ObservationGrid.observation_of_window` was a linear
+scan over the grid's frames. It is called for every antecedent of every rule of every surrogate,
+which took the smallest useful family from 0.00 s to 3.09 s, and a real study to minutes. It now
+bisects a float copy of the frames built once in `__post_init__`. The classification it returns is
+unchanged, T4F.1's and T4F.2's suites pass untouched, and two mutations aimed at the new
+arithmetic -- one frame too many, and treating the window's own endpoints as outside it -- are
+caught by T4F.2's existing guard on a window with a single missing frame in it.
+
+**What is refused rather than defaulted.** A lag family must be a declared `LagFamily`, because a
+family assembled at the call site is a family whose size the correction never sees; it is refused
+empty, refused with a window declared twice, refused with two units in it, and refused in a unit
+the grid does not use. The seed and the ensemble size are required arguments, because an ensemble
+nobody can redraw is an ensemble nobody can check. A grid without a cadence is refused with the
+three things it costs named. A pattern preceding itself is refused and sent to T4F.2's
+`recurrence_report`, which has a denominator built for that question. An ensemble larger than the
+record's distinct admissible rotations is refused rather than drawn with replacement, because the
+same rotation twice prices one null draw as several. A declared family that will not fit its
+budget is refused whole before any counting, with `partial_result: false`.
+
+**Nothing here is causal.** A rejected rule is a `PRECURSOR_SIGNATURE`, and the boundary refuses
+*cause*, *driver*, *mechanism*, *trigger*, *forecast* and *intervention* by name (R7). It also
+states two things a p-value invites a reader to forget: the null is a statement about alignment,
+so both patterns following a third thing this record does not contain is entirely consistent with
+a rejection; and the base rate is estimated from this record alone, so a rule is a statement about
+this record and not about the world. A test asserts that no status this module can emit contains a
+term `claim_ladder.OUTSIDE_THE_LADDER` names.
+
+**Documentation guards.**
+
+```
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_documentation.py -q
+29 passed
+```
+
+**Full backend suite.**
+
+```
+> .\.venv\Scripts\python.exe -m pytest src/tests -q
+3978 passed, 4 skipped, 1 xfailed, 6 warnings in 3129.85s (0:52:09)
+exit 0
+```

@@ -56,6 +56,13 @@ export const ProfileAcquisition: React.FC<Props> = ({ source, onError, onCapabil
   const reviseReduction = (action: () => void) => {
     action(); setPlan(null); setResult(null); onCapability?.(null);
   };
+  const chooseVariable = (name: string) => {
+    // One visible choice controls both the archive projection and the reduction. Otherwise
+    // selecting salinity leaves a temperature-only collection behind it and must fail later.
+    setVariable(name);
+    setSpec((current) => ({ ...current, variables: [name] }));
+    setPlan(null); setResult(null); onCapability?.(null);
+  };
   const fail = (error: unknown) => onError?.(error instanceof Error ? error.message : String(error));
 
   const inspect = async () => {
@@ -74,9 +81,15 @@ export const ProfileAcquisition: React.FC<Props> = ({ source, onError, onCapabil
 
   return <div className="space-y-5">
     {capabilities && !capabilities.network_enabled && <div role="status"
-      className="border border-amber-900/60 bg-amber-950/20 rounded-lg p-3 text-xs text-amber-200">
-      Live profiles are disabled server-side. Set <code>{capabilities.network_env_var}=1</code>{' '}
-      before starting the backend. A browser click never enables archive access.
+      className="instrument-notice text-xs">
+      <AlertTriangle className="instrument-notice__icon h-4 w-4" aria-hidden="true" />
+      <div>
+        <p className="font-semibold text-amber-200">Live archive access is off</p>
+        <p className="mt-1 leading-relaxed text-amber-100/80">
+          Live profiles are disabled server-side. Set <code>{capabilities.network_env_var}=1</code>{' '}
+          before starting the backend. A browser click never enables archive access.
+        </p>
+      </div>
     </div>}
 
     <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
@@ -134,7 +147,7 @@ export const ProfileAcquisition: React.FC<Props> = ({ source, onError, onCapabil
             </select>
           </label>
           <label className="text-xs text-slate-400 block">Measure
-            <select value={variable} onChange={(e) => reviseReduction(() => setVariable(e.target.value))}
+            <select value={variable} onChange={(e) => chooseVariable(e.target.value)}
               className="mt-1 w-full bg-slate-950 border border-slate-800 rounded p-2">
               {source.variables.map((name) => <option key={name}>{name}</option>)}
             </select>
@@ -218,6 +231,12 @@ export const ProfileAcquisition: React.FC<Props> = ({ source, onError, onCapabil
               reduction {String(result.reduction.reduction.reduction_sha256)}</p>
             <p className="text-[10px] text-slate-500 mt-2">
               QC: {String(result.collection.qc_policy.name)} · publication {result.publication.publication}</p>
+            <div className="mt-3 border border-sky-700/40 bg-sky-950/20 rounded p-3 text-[11px] text-sky-200">
+              <strong>Acquired dataset, not a study.</strong> This immutable collection is
+              reproducible and its capability profile is selected above. It does not silently
+              become a channel-table record or open an evidence study. The current engine
+              refusal below remains the scientific outcome for this irregular reduction.
+            </div>
           </section>
           <section role="status" className={`rounded-xl border p-5 ${result.analysis_readiness.frame_lag_admissible
             ? 'border-emerald-600/40 bg-emerald-950/10' : 'border-amber-600/50 bg-amber-950/20'}`}>

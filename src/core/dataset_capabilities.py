@@ -52,14 +52,65 @@ OPERATIONS: Dict[str, Operation] = {
                   "admissible for independent samples. Grouped data need group-held-out "
                   "confirmation; ordered data need blocked and embargoed confirmation.",
                   "Declare whether samples are independent, grouped or ordered."),)),
-    "association_redundancy": Operation(
-        "Association and redundancy", "Contemporaneous association over independent samples.", (
+    "redundancy_structure_audit": Operation(
+        "Redundancy Structure Audit",
+        "Frozen-family candidate redundancy and complementarity map.", (
             _need("sample_table", "declared sample table",
-                  "This action belongs to the independent-sample table line.",
-                  "Declare the dataset representation first."),
+                  "This representation is not an explicitly declared sample table.",
+                  "Declare the dataset representation before auditing its structure."),
             _need("independent_samples", "independent samples",
-                  "This recipe does not account for grouped or ordered dependence.",
-                  "Declare how samples are related."),)),
+                  "This recipe uses conditional permutations of exchangeable rows. Grouped "
+                  "data need group-held-out benchmarked nulls; ordered data need blocked and "
+                  "embargoed benchmarked nulls.",
+                  "Declare whether samples are independent, grouped or ordered."),)),
+    "conditional_information_audit": Operation(
+        "Conditional-Information Audit",
+        "Frozen-family conditional association given one declared nuisance.", (
+            _need("sample_table", "declared sample table",
+                  "This representation is not an explicitly declared sample table.",
+                  "Declare the dataset representation before auditing it."),
+            _need("independent_samples", "independent samples",
+                  "This recipe uses a conditional-randomisation model over exchangeable "
+                  "rows. Grouped data need group-held-out benchmarked nulls; ordered data "
+                  "need blocked and embargoed benchmarked nulls.",
+                  "Declare whether samples are independent, grouped or ordered."),
+            _need("declared_nuisance", "researcher-declared nuisance",
+                  "This bounded recipe requires exactly one numeric column explicitly "
+                  "declared as nuisance.",
+                  "Declare whether one column has the nuisance role."),)),
+    "stable_subspace_generation": Operation(
+        "Stable-Subspace Generation",
+        "Generate bounded linear candidate spans on a reserved generate partition.", (
+            _need("sample_table", "declared sample table",
+                  "This representation is not an explicitly declared sample table.",
+                  "Declare the dataset representation before generating subspaces."),
+            _need("independent_samples", "independent samples",
+                  "This recipe reserves a row-random confirmation partition and is only "
+                  "admissible for independent samples. Grouped data need group-held-out "
+                  "generation/confirmation; ordered data need blocked and embargoed splits.",
+                  "Declare whether samples are independent, grouped or ordered."),)),
+    "stable_subspace_confirmation": Operation(
+        "Held-out Stable-Subspace Confirmation",
+        "Apply a frozen generated span family once to reserved held-out samples.", (
+            _need("sample_table", "declared sample table",
+                  "This representation is not an explicitly declared sample table.",
+                  "Declare the dataset representation before confirming subspaces."),
+            _need("independent_samples", "independent samples",
+                  "This recipe confirms on a row-random reserved partition and is only "
+                  "admissible for independent samples. Grouped data need group-held-out "
+                  "confirmation; ordered data need blocked and embargoed confirmation.",
+                  "Declare whether samples are independent, grouped or ordered."),)),
+    "external_subspace_certification": Operation(
+        "External Stable-Subspace Certification",
+        "Test an unchanged published span family once on an independently acquired target.", (
+            _need("sample_table", "declared sample table",
+                  "This representation is not an explicitly declared sample table.",
+                  "Declare the external target representation before certification."),
+            _need("independent_samples", "independent samples",
+                  "This first external recipe uses target permutations over exchangeable rows. "
+                  "Grouped targets need group-held-out transfer nulls; ordered targets need "
+                  "blocked and embargoed transfer nulls.",
+                  "Declare whether target samples are independent, grouped or ordered."),)),
     "cross_domain_analysis": Operation(
         "Cross-domain analysis", "Association and declared-lag analysis of channel series.", (
             _need("channel_series", "admitted channel series",
@@ -147,6 +198,7 @@ CORE_FACTS: Tuple[Tuple[str, str], ...] = (
     ("transform_compatible", "Requested transform compatible"),
     ("precedence_admissible", "Lag analysis admissible"),
     ("independent_samples", "Independent samples"),
+    ("declared_nuisance", "Declared nuisance"),
 )
 
 

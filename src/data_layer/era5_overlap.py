@@ -13,6 +13,7 @@ import argparse
 import hashlib
 import json
 import math
+import re
 import os
 from pathlib import Path
 from typing import Any, Dict, Mapping, Optional, Sequence, Tuple, Union
@@ -30,6 +31,13 @@ from src.data_layer.zarr_source import (
 )
 
 OVERLAP_SCHEMA = "era5-independent-overlap/v1"
+ENCODING_OVERLAP_SCHEMA = "era5-independent-overlap/v2"
+
+# D86. These are absolute Kelvin (or kg/kg, m/s, m2/s2) tolerances, and for a route that
+# delivers packed values they are the wrong instrument: `t` at 1e-4 K is finer than the step
+# the CDS route can express, so no pair of archives could satisfy it however perfectly they
+# agreed. Retained because a criterion that has judged a receipt may not be edited away, and
+# because an unpacked route is legitimately judged this way.
 DEFAULT_ATOL: Mapping[str, float] = {
     "t": 1e-4,
     "q": 1e-9,
@@ -37,6 +45,57 @@ DEFAULT_ATOL: Mapping[str, float] = {
     "v": 1e-5,
     "z": 1e-3,
 }
+
+# The smallest and largest binary steps a frame may sit on before the encoding assumption is
+# treated as broken rather than measured. 2^-4 is coarser than any plausible ERA5 packing and
+# 2^-25 is finer than float32 resolves in the 200-300 K range, so a frame outside this band is
+# not a packed field and must not be judged as one.
+ENCODING_STEP_EXPONENTS = range(4, 26)
+
+# Half a step is what round-to-nearest re-quantisation of one underlying value can produce.
+# The second half is the allowance for the independent route's own undocumented pipeline: it
+# is a declared bound, not a fitted one, and deliberately a round number so that it cannot be
+# mistaken for a measurement of the archives it judges.
+DEFAULT_STEPS_ALLOWED = 1.0
+
+
+def encoding_step(values: np.ndarray) -> Optional[float]:
+    """The largest binary step on which every supplied value lies exactly, or None.
+
+    A field delivered through GRIB packing is quantised per message: its values occupy a
+    lattice `reference + k * 2**-n`, and `n` varies field to field with the data range. That
+    step - not a fixed tolerance in Kelvin - is the resolution at which the route can express
+    an agreement, which is why it has to be measured on the frame rather than declared once.
+
+    Returns None when no such lattice exists in the plausible band, which is a refusal rather
+    than a default: it means the values are not packed the way this check assumes, and a
+    comparison judged against an assumed step would be judging nothing.
+    """
+    unique = np.unique(np.asarray(values, dtype=np.float64))
+    if unique.size < 2:
+        return None
+    # Every float32 value already lies on a binary lattice - the one its own exponent defines -
+    # so a search that accepted any lattice would always succeed and would judge an unpacked
+    # field against its representation error. Packing is only observable where it is coarser
+    # than that: the step must be at least two bits wider than the widest spacing float32 has
+    # in this range, which the CDS route clears by five bits and an unpacked route never does.
+    magnitude = float(np.abs(unique).max())
+    finest = float(np.spacing(np.float32(magnitude))) * 4.0
+    # Scaled to the magnitude rather than fixed: geopotential runs to ~5e4 m2/s2, where float64
+    # spacing is 7e-12 and a fixed 1e-12 would refuse a genuinely packed field. The floor keeps
+    # it meaningful for variables as small as specific humidity.
+    tolerance = max(float(np.spacing(magnitude)) * 8.0, 1e-12)
+    origin = float(unique.min())
+    offsets = unique - origin
+    for exponent in ENCODING_STEP_EXPONENTS:
+        step = 2.0 ** (-exponent)
+        if step < finest:
+            return None
+        residual = np.mod(offsets, step)
+        # Distance to the nearer lattice line, so a value just under a multiple counts as on it.
+        if float(np.minimum(residual, step - residual).max()) < tolerance:
+            return step
+    return None
 
 
 def _canonical_json(value: Any) -> bytes:
@@ -49,8 +108,45 @@ def _sha256(value: Any) -> str:
     return hashlib.sha256(_canonical_json(value)).hexdigest()
 
 
-def overlap_receipt_path(spec: CropSpec, cache_dir: Optional[str] = None) -> Path:
-    return Path(manifest_path(spec, cache_dir)).with_suffix(".overlap.json")
+def validate_receipt_label(label: Optional[str]) -> Optional[str]:
+    """A label names an audit window; it is not a criterion and must never read as one."""
+    if label is None:
+        return None
+    text = str(label)
+    if not re.fullmatch(r"[a-z0-9]+(?:_[a-z0-9]+)*", text) or text in (
+            "absolute", "encoding_relative"):
+        raise InvalidParameterError(
+            "label", label,
+            "a short lower-case identifier that is not the name of a criterion -- a label that "
+            "could be mistaken for a criterion would blur an audit into an authorisation")
+    return text
+
+
+def overlap_receipt_path(spec: CropSpec, cache_dir: Optional[str] = None,
+                         criterion: str = "absolute",
+                         label: Optional[str] = None) -> Path:
+    """One receipt per cache *per criterion*, and per labelled audit window.
+
+    A cache is a fact about what the archive returned; a verdict is a judgement under a stated
+    rule. Binding a cache permanently to whichever rule happened to judge it first would make
+    the earlier verdict unreadable the moment a better rule was preregistered - and D86 exists
+    precisely because the rule had been left implicit. The absolute criterion keeps the
+    original unsuffixed name so every receipt already written stays exactly where it is.
+
+    T4C.5n. A `label` marks a comparison that is *about* the record rather than one that
+    authorised it. The frozen campaign names exactly one overlap window, and that window is
+    what admitted the record; a second window acquired afterwards is an audit, and an audit
+    that could retroactively become the authorisation would let evidence be chosen after the
+    fact. Labelled fields are therefore unreadable to `validate_overlap_evidence`, whose
+    criterion argument rejects any name carrying one.
+    """
+    label = validate_receipt_label(label)
+    base = Path(manifest_path(spec, cache_dir))
+    stem = "absolute" if criterion == "absolute" else criterion
+    if label is None:
+        return (base.with_suffix(".overlap.json") if criterion == "absolute"
+                else base.with_suffix(".overlap.%s.json" % criterion))
+    return base.with_suffix(".overlap.%s.%s.json" % (stem, label))
 
 
 def _atomic_write_new(path: Path, payload: bytes) -> None:
@@ -81,9 +177,16 @@ def _validate_receipt_structure(receipt: Any) -> None:
         "schema", "primary", "independent", "level_hpa", "coordinates_exact",
         "coordinate_sha256", "shape", "variables", "passed", "bounded_execution",
     }
+    schema = receipt.get("schema") if isinstance(receipt, Mapping) else None
+    if schema == ENCODING_OVERLAP_SCHEMA:
+        # The criterion is part of the evidence, not a setting: a receipt that does not say what
+        # it judged against cannot be read back as a result.
+        required = required | {"criterion"}
     if not isinstance(receipt, Mapping) or set(receipt) != required \
-            or receipt.get("schema") != OVERLAP_SCHEMA:
+            or schema not in (OVERLAP_SCHEMA, ENCODING_OVERLAP_SCHEMA):
         raise DataSourceError("ERA5 overlap receipt has an unsupported or incomplete schema")
+    if schema == ENCODING_OVERLAP_SCHEMA and not isinstance(receipt.get("criterion"), Mapping):
+        raise DataSourceError("ERA5 overlap receipt contains malformed evidence blocks")
     if not isinstance(receipt.get("primary"), Mapping) \
             or not isinstance(receipt.get("independent"), Mapping) \
             or not isinstance(receipt.get("variables"), Mapping) \
@@ -149,21 +252,30 @@ def _coordinate_hash(times: np.ndarray, latitude: np.ndarray, longitude: np.ndar
 
 
 def _attach_receipt(primary: CropSpec, cache_dir: Optional[str], receipt: Mapping[str, Any],
-                    receipt_sha256: str) -> None:
+                    receipt_sha256: str, criterion: str = "absolute",
+                    label: Optional[str] = None) -> None:
     path = Path(manifest_path(primary, cache_dir))
     try:
         manifest = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
         raise DataSourceError("CDS cache manifest is unreadable: %s" % exc) from exc
-    existing = manifest.get("independent_overlap_receipt_sha256")
+    # Each criterion binds once and never rebinds. The absolute criterion keeps the original
+    # unsuffixed field names, so a manifest written before D86 reads back unchanged.
+    suffix = "" if criterion == "absolute" else "_" + criterion
+    if label is not None:
+        # T4C.5n. An audit binds under its own name, so it can neither overwrite the receipt
+        # that authorised the record nor be read as one.
+        suffix = "_%s_%s" % (criterion, validate_receipt_label(label))
+    sha_field = "independent_overlap_receipt_sha256" + suffix
+    existing = manifest.get(sha_field)
     if existing is not None and existing != receipt_sha256:
         raise DataSourceError("CDS cache is already bound to a different overlap receipt")
     if manifest.get("content_key") != receipt["primary"]["content_key"] \
             or manifest.get("content_hash") != receipt["primary"]["content_hash"]:
         raise DataSourceError("CDS cache identity changed before overlap receipt publication")
-    manifest["independent_overlap_check"] = "PASS" if receipt["passed"] else "FAIL"
-    manifest["independent_overlap_receipt_sha256"] = receipt_sha256
-    manifest["independent_overlap_receipt"] = dict(receipt)
+    manifest["independent_overlap_check" + suffix] = "PASS" if receipt["passed"] else "FAIL"
+    manifest[sha_field] = receipt_sha256
+    manifest["independent_overlap_receipt" + suffix] = dict(receipt)
     temporary = path.with_suffix(path.suffix + ".tmp")
     temporary.write_bytes(_canonical_json(manifest) + b"\n")
     os.replace(temporary, path)
@@ -171,13 +283,29 @@ def _attach_receipt(primary: CropSpec, cache_dir: Optional[str], receipt: Mappin
 
 def validate_overlap_evidence(
     manifest: Mapping[str, Any], *, variable: Optional[str] = None,
-    level_hpa: Optional[float] = None,
+    level_hpa: Optional[float] = None, criterion: str = "absolute",
 ) -> Mapping[str, Any]:
-    """Validate that a manifest's PASS is backed by content-bound independent evidence."""
-    receipt = manifest.get("independent_overlap_receipt")
-    fingerprint = manifest.get("independent_overlap_receipt_sha256")
-    if manifest.get("independent_overlap_check") != "PASS" or not isinstance(receipt, Mapping):
-        raise DataSourceError("independent WeatherBench overlap evidence is not a recorded PASS")
+    """Validate that a manifest's PASS is backed by content-bound independent evidence.
+
+    D87. The criterion is named rather than assumed. A manifest carries one set of overlap
+    fields per criterion that has judged it, so admitting a record under the rule its campaign
+    froze means reading that rule's fields and no others. Reading the unsuffixed fields
+    regardless would let an absolute PASS admit a record whose campaign declared an
+    encoding-relative one, and would refuse a record that holds exactly the evidence it was
+    designed to hold.
+    """
+    if criterion not in ("absolute", "encoding_relative"):
+        raise InvalidParameterError("criterion", criterion, "absolute or encoding_relative")
+    suffix = "" if criterion == "absolute" else "_" + criterion
+    receipt = manifest.get("independent_overlap_receipt" + suffix)
+    fingerprint = manifest.get("independent_overlap_receipt_sha256" + suffix)
+    if manifest.get("independent_overlap_check" + suffix) != "PASS"             or not isinstance(receipt, Mapping):
+        raise DataSourceError(
+            "independent WeatherBench overlap evidence is not a recorded PASS under the %s "
+            "criterion" % criterion)
+    if criterion != "absolute" and (receipt.get("criterion") or {}).get("name") != criterion:
+        raise DataSourceError(
+            "independent overlap receipt was not produced under the %s criterion" % criterion)
     _validate_receipt_structure(receipt)
     if fingerprint != _sha256(receipt):
         raise DataSourceError("independent WeatherBench overlap evidence is missing or tampered")
@@ -212,8 +340,26 @@ def verify_cached_era5_overlap(
     rtol: float = 1e-6,
     atol: Optional[Mapping[str, float]] = None,
     block_frames: int = 8,
+    criterion: str = "absolute",
+    steps_allowed: Optional[float] = None,
+    label: Optional[str] = None,
 ) -> Dict[str, Any]:
-    """Compare a local CDS cache with a local WeatherBench overlap and publish evidence."""
+    """Compare a local CDS cache with a local WeatherBench overlap and publish evidence.
+
+    Two criteria are available, and which one applies belongs to the campaign rather than to
+    this module.
+
+    ``absolute`` judges each value against a fixed tolerance in the variable's own units. That
+    is right for a route delivering unpacked values and wrong for one that does not.
+
+    ``encoding_relative`` judges each value against the step of the lattice the primary frame
+    actually occupies, allowing ``steps_allowed`` of them. ERA5 arrives through CDS packed per
+    field, so the resolution at which that route can express an agreement changes from frame to
+    frame; a fixed tolerance in Kelvin therefore demands more precision than the route has on
+    one frame and grants more licence than it needs on the next. This criterion asks the only
+    question the two routes can answer: do they agree as closely as the coarser one can
+    represent?
+    """
     selected = tuple(variables)
     if not selected or len(set(selected)) != len(selected) \
             or set(selected) - set(CANONICAL_VARIABLES):
@@ -227,6 +373,19 @@ def verify_cached_era5_overlap(
         raise InvalidParameterError("block_frames", block_frames, "a positive integer")
     if not math.isfinite(rtol) or rtol < 0:
         raise InvalidParameterError("rtol", rtol, "a finite non-negative tolerance")
+    if criterion not in ("absolute", "encoding_relative"):
+        raise InvalidParameterError("criterion", criterion, "absolute or encoding_relative")
+    if criterion == "absolute":
+        if steps_allowed is not None:
+            raise InvalidParameterError(
+                "steps_allowed", steps_allowed,
+                "omitted for the absolute criterion, which judges in the variable's own units")
+    else:
+        steps_allowed = (DEFAULT_STEPS_ALLOWED if steps_allowed is None
+                         else float(steps_allowed))
+        if not math.isfinite(steps_allowed) or steps_allowed <= 0:
+            raise InvalidParameterError("steps_allowed", steps_allowed,
+                                        "a finite positive number of encoding steps")
     tolerances = ({name: DEFAULT_ATOL[name] for name in selected}
                   if atol is None else dict(atol))
     if set(tolerances) != set(selected) or any(
@@ -234,10 +393,21 @@ def verify_cached_era5_overlap(
         raise InvalidParameterError("atol", tolerances,
                                     "one finite non-negative tolerance per selected variable")
 
-    receipt_path = overlap_receipt_path(primary, primary_cache_dir)
+    label = validate_receipt_label(label)
+    receipt_path = overlap_receipt_path(primary, primary_cache_dir, criterion, label)
     if receipt_path.exists():
         existing = load_overlap_receipt(receipt_path)
         sha = existing.pop("receipt_sha256")
+        if criterion == "absolute":
+            same_thresholds = all(
+                float(existing["variables"][name].get("rtol")) == float(rtol)
+                and float(existing["variables"][name].get("atol"))
+                    == float(tolerances[name])
+                for name in selected)
+        else:
+            same_thresholds = (
+                float((existing.get("criterion") or {}).get("steps_allowed", -1.0))
+                == float(steps_allowed))
         same_design = (
             (existing.get("primary") or {}).get("content_key") == primary.content_key()
             and (existing.get("independent") or {}).get("content_key") == independent.content_key()
@@ -245,15 +415,11 @@ def verify_cached_era5_overlap(
             and set(existing.get("variables", {})) == set(selected)
             and int((existing.get("bounded_execution") or {}).get("block_frames", 0))
                 == int(block_frames)
-            and all(
-                float(existing["variables"][name].get("rtol")) == float(rtol)
-                and float(existing["variables"][name].get("atol"))
-                    == float(tolerances[name])
-                for name in selected))
+            and same_thresholds)
         if not same_design:
             raise DataSourceError(
                 "existing immutable overlap receipt belongs to a different comparison design")
-        _attach_receipt(primary, primary_cache_dir, existing, sha)
+        _attach_receipt(primary, primary_cache_dir, existing, sha, criterion, label)
         return {**existing, "receipt_sha256": sha}
 
     primary_ds, primary_manifest = open_cached_lazy(primary, primary_cache_dir)
@@ -261,10 +427,10 @@ def verify_cached_era5_overlap(
     try:
         if primary_manifest.get("source_route") != "Copernicus Climate Data Store API":
             raise DataSourceError("primary overlap cache is not the direct CDS route")
-        for label, spec, manifest in (("primary", primary, primary_manifest),
-                                      ("independent", independent, independent_manifest)):
+        for side, spec, manifest in (("primary", primary, primary_manifest),
+                                     ("independent", independent, independent_manifest)):
             if manifest.get("content_key") != spec.content_key() or not manifest.get("content_hash"):
-                raise DataSourceError("%s overlap cache identity is incomplete" % label)
+                raise DataSourceError("%s overlap cache identity is incomplete" % side)
 
         reference_array, _ = _resolved_array(independent_ds, selected[0], level_hpa)
         ilat_name = "latitude" if "latitude" in reference_array.dims else "lat"
@@ -301,6 +467,8 @@ def verify_cached_era5_overlap(
 
             count = mismatches = 0
             sum_abs = sum_squared = max_abs = 0.0
+            frame_steps: list = []
+            worst_steps = 0.0
             for start in range(0, len(times), int(block_frames)):
                 stop = min(start + int(block_frames), len(times))
                 a = np.asarray(left.isel(time=slice(start, stop)).values, dtype=np.float64)
@@ -312,20 +480,47 @@ def verify_cached_era5_overlap(
                 sum_abs += float(delta.sum(dtype=np.float64))
                 sum_squared += float(np.square(delta).sum(dtype=np.float64))
                 max_abs = max(max_abs, float(delta.max(initial=0.0)))
-                mismatches += int(np.count_nonzero(
-                    ~np.isclose(a, b, rtol=float(rtol), atol=float(tolerances[variable]))))
+                if criterion == "absolute":
+                    mismatches += int(np.count_nonzero(
+                        ~np.isclose(a, b, rtol=float(rtol), atol=float(tolerances[variable]))))
+                    continue
+                # Frame by frame, because the packing step is a property of one GRIB message
+                # and pooling frames would invent a lattice neither of them is on.
+                for offset in range(a.shape[0]):
+                    step = encoding_step(a[offset])
+                    if step is None:
+                        raise DataSourceError(
+                            "CDS frame %d of %s does not lie on a binary lattice, so the "
+                            "encoding-relative criterion cannot judge it; the route is not "
+                            "delivering packed values and this comparison would be vacuous"
+                            % (start + offset, variable))
+                    frame_steps.append(step)
+                    in_steps = delta[offset] / step
+                    worst_steps = max(worst_steps, float(in_steps.max(initial=0.0)))
+                    mismatches += int(np.count_nonzero(in_steps > float(steps_allowed)))
             details[variable] = {
                 "primary_name": left_name, "independent_name": right_name,
                 "primary_units": str(left_unit), "independent_units": str(right_unit),
-                "units_compatible": True, "atol": float(tolerances[variable]),
-                "rtol": float(rtol), "value_count": count,
+                "units_compatible": True, "value_count": count,
                 "mismatch_count": mismatches, "allclose": mismatches == 0,
                 "max_abs_error": max_abs, "mean_abs_error": sum_abs / count,
                 "rmse": math.sqrt(sum_squared / count),
             }
+            if criterion == "absolute":
+                details[variable]["atol"] = float(tolerances[variable])
+                details[variable]["rtol"] = float(rtol)
+            else:
+                # The steps are published because the verdict is meaningless without them: the
+                # same difference in Kelvin is agreement on one frame and disagreement on the
+                # next, and a reader must be able to see which frame they are looking at.
+                details[variable]["encoding_steps"] = sorted(set(frame_steps))
+                details[variable]["encoding_step_per_frame"] = frame_steps
+                details[variable]["max_error_in_steps"] = worst_steps
+                details[variable]["steps_allowed"] = float(steps_allowed)
 
         receipt: Dict[str, Any] = {
-            "schema": OVERLAP_SCHEMA,
+            "schema": (OVERLAP_SCHEMA if criterion == "absolute"
+                       else ENCODING_OVERLAP_SCHEMA),
             "primary": {
                 "route": primary_manifest.get("source_route"),
                 "store": primary.store, "content_key": primary.content_key(),
@@ -349,10 +544,30 @@ def verify_cached_era5_overlap(
                 "full_overlap_loaded": False,
             },
         }
+        if criterion != "absolute":
+            receipt["criterion"] = {
+                "name": criterion,
+                "steps_allowed": float(steps_allowed),
+                "basis": (
+                    "Half a step is what round-to-nearest re-quantisation of one underlying "
+                    "value produces; the remaining allowance covers the independent route's "
+                    "own undocumented pipeline. Declared, not fitted to any observation."),
+            }
+            if label is not None:
+                # T4C.5n. Carried inside the criterion block rather than beside it: the
+                # receipt's top-level key set is exact-checked, so a new field there would
+                # invalidate every receipt already written.
+                receipt["criterion"]["role"] = "audit"
+                receipt["criterion"]["label"] = label
+                receipt["criterion"]["authorises"] = (
+                    "nothing. This window was compared after the record was already admitted "
+                    "and gated, so it is evidence about the record rather than the evidence "
+                    "that authorised it; the campaign names exactly one overlap window and "
+                    "this is not that window.")
         receipt_sha256 = _sha256(receipt)
         _atomic_write_new(receipt_path, _canonical_json({
             "receipt": receipt, "receipt_sha256": receipt_sha256}) + b"\n")
-        _attach_receipt(primary, primary_cache_dir, receipt, receipt_sha256)
+        _attach_receipt(primary, primary_cache_dir, receipt, receipt_sha256, criterion, label)
         return {**receipt, "receipt_sha256": receipt_sha256}
     finally:
         primary_ds.close()
@@ -383,6 +598,10 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     parser.add_argument("--level-hpa", required=True, type=float)
     parser.add_argument("--rtol", type=float, default=1e-6)
     parser.add_argument("--block-frames", type=int, default=8)
+    parser.add_argument("--criterion", choices=("absolute", "encoding_relative"),
+                        default="absolute")
+    parser.add_argument("--steps-allowed", type=float, default=None,
+                        help="encoding_relative only: permitted multiples of the frame's step")
     args = parser.parse_args(argv)
     primary, primary_cache = _load_manifest_crop(args.primary_manifest)
     independent, independent_cache = _load_manifest_crop(args.independent_manifest)
@@ -390,7 +609,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     result = verify_cached_era5_overlap(
         primary, independent, primary_cache_dir=primary_cache,
         independent_cache_dir=independent_cache, variables=variables,
-        level_hpa=args.level_hpa, rtol=args.rtol, block_frames=args.block_frames)
+        level_hpa=args.level_hpa, rtol=args.rtol, block_frames=args.block_frames,
+        criterion=args.criterion, steps_allowed=args.steps_allowed)
     print(json.dumps(result, indent=2, sort_keys=True))
     return 0
 

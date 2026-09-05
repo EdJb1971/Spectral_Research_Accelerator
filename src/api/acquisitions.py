@@ -56,6 +56,9 @@ def _grid_acquisitions(domain: str, limits: Dict[str, Any]) -> List[Dict[str, An
         rows.append({
             "id": "grid_crop:%s" % store.name,
             "name": store.name,
+            "label": store.display_name or store.name,
+            "provider": store.provider or None,
+            "product_family": store.product_family or None,
             "shape": "grid_crop",
             "available": True,
             "access": store.access,
@@ -161,6 +164,22 @@ async def list_acquisitions() -> Dict[str, Any]:
     return refuse_bare_confidence({
         "domains": domains,
         "shapes": ACQUISITION_SHAPES,
+        "operational_routes": [{
+            "id": "era5_cds_regional",
+            "domain": "reanalysis",
+            "label": "ERA5 regional request · Copernicus CDS",
+            "provider": "Copernicus Climate Data Store",
+            "product_family": "ERA5 atmospheric reanalysis",
+            "ui_status": "DURABLE_JOB_AVAILABLE",
+            "execution": "browser plan; confirmed durable browser job; resumable CLI acquisition",
+            "configuration": ["variables", "date range", "UTC hours", "latitude/longitude",
+                              "pressure levels", "grid spacing", "analysis depth",
+                              "server-managed storage", "time chunk"],
+            "reason": ("The browser validates, hashes, shards and prices the exact request "
+                       "without network use. A separate explicit confirmation opens a durable "
+                       "server-owned job with storage preflight, progress, cancellation, resume "
+                       "and a completion-only acquisition record."),
+        }],
         "violation_coverage": coverage,
         "attribution_caveat": DOMAIN_ATTRIBUTION_CAVEAT,
         "note": ("Choose a domain first. A catalogue entry is an available acquisition path, "

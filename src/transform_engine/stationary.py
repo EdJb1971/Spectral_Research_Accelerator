@@ -112,6 +112,45 @@ def filter_support(wavelet: str, level: int) -> int:
     return 1 + (len(h) - 1) * (2 ** level - 1)
 
 
+def analysis_delay(wavelet: str, level: int) -> float:
+    """Parent-grid displacement of a level-`level` coefficient, in pixels per axis (D88).
+
+    `circular_filter_1d` anchors every filter at index 0 rather than at its centre, so the
+    response to a structure at pixel `p` appears at `p + (support - 1) / 2`, where `support`
+    accumulates over the cascade exactly as `filter_support` reports it. The shift is half a
+    pixel at level 1 and 22.5 pixels at db2 level 4 -- it is not a rounding matter, and it
+    grows with level, so *two levels of the same decomposition are displaced relative to each
+    other*. Anything that reads a coefficient's index as a position must subtract this first.
+
+    Statistics that collapse a band to a scalar -- energies, RMS, the scale signature, the
+    cross-scale gate -- are untouched by it: a circular shift moves no mass. It is positional
+    use, and only positional use, that the shift falsifies.
+
+    Returned as a float because the true delay is a half-integer whenever the support is
+    even, and rounding it to a whole pixel would leave half a pixel of the very error this
+    function exists to remove.
+    """
+    return (filter_support(wavelet, level) - 1) / 2.0
+
+
+def is_linear_phase(wavelet: str) -> bool:
+    """Whether this filter displaces every structure by the same amount (D88).
+
+    A symmetric or antisymmetric filter has linear phase: its delay is one number, so
+    subtracting `analysis_delay` registers a level exactly. An orthogonal Daubechies filter
+    of length four or more can be neither, and its delay depends on what it is filtering --
+    so after the common shift is removed, a residual remains that grows with the level's
+    dilation, and coefficients at different levels still describe different pixels. This is a
+    property of the filter, not of the implementation, and the only fix is a filter with the
+    property. `haar` has it; `db2` and `db3` do not.
+    """
+    h, _ = _FILTERS[wavelet.lower()]
+    values = list(h)
+    reversed_values = values[::-1]
+    return (all(abs(a - b) < 1e-12 for a, b in zip(values, reversed_values))
+            or all(abs(a + b) < 1e-12 for a, b in zip(values, reversed_values)))
+
+
 def valid_interior_halfwidth(wavelet: str, level: int) -> int:
     """Margin (per side) contaminated by the boundary at `level`, per rule R13.
 

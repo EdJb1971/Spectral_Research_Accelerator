@@ -1,0 +1,87 @@
+{
+  "adapter_specific_framework_edits": 1,
+  "checks": [
+    {
+      "check": "defined_outside_the_application",
+      "detail": "the adapter's translate is defined in src/tests/test_adapter_registry.py",
+      "status": "PASS"
+    },
+    {
+      "check": "reaches_the_registry",
+      "detail": "registered domains: argo_float, order_book, reanalysis, synthetic_rank_sensor, tess_lightcurve",
+      "status": "PASS"
+    },
+    {
+      "check": "resolves_by_domain",
+      "detail": "resolved synthetic_rank_sensor.monotone-rank",
+      "status": "PASS"
+    },
+    {
+      "check": "describes_controls_generically",
+      "detail": "1 declared control field(s), 0 carrying the domain name",
+      "status": "PASS"
+    },
+    {
+      "check": "conforms_to_the_kit",
+      "detail": "12 conformance checks, 0 failed, 1 unprobed and reported as unverified",
+      "status": "PASS"
+    },
+    {
+      "check": "carries_different_mathematics",
+      "detail": "declares channel(s) monotone_rank",
+      "status": "PASS"
+    },
+    {
+      "check": "reaches_the_domain_blind_mining_seam",
+      "detail": "peak on channel 'monotone_rank' in dimensionless over [240.0, 300.0) seconds",
+      "status": "PASS"
+    },
+    {
+      "check": "no_framework_source_names_it",
+      "detail": "the source-edit audit reports MEASURED over 17 framework sources",
+      "status": "PASS"
+    }
+  ],
+  "claim_boundary": "One synthetic adapter reached the seams a third party's adapter would have to reach, and no framework source names it. It is not a result about any domain.",
+  "conformant": true,
+  "contract_sha256": "351989659a72e9a14c5e38ec37ec2da4233ff58a78fbafb91aa40cd41f4e304e",
+  "domain": "synthetic_rank_sensor",
+  "failed_checks": [],
+  "gate": "synthetic_fifth_adapter",
+  "glue": [
+    {
+      "domain": "reanalysis",
+      "line": 243,
+      "reason": "`domainName === 'reanalysis' && <CDSPlanner />` renders a bespoke acquisition planner for one archive. This is glue and is counted as glue. Copernicus acquisition is a long-running job with queue position, progress and resumption rather than a fetch, so the planner is not a form the generic control schema can currently express - but that is a reason the glue exists, not a reason it stops being glue.",
+      "source": "frontend/src/components/AcquisitionView.tsx"
+    }
+  ],
+  "installation_required_framework_edits": 0,
+  "reasons": [],
+  "recorded_utc": "2026-09-03T23:05:44.476679Z",
+  "schema": "extension-evidence/v1",
+  "source_sha256": {
+    "frontend/src/App.tsx": "7a113e00a33d712d4089a6513d0425fc3490f04ec633fc5292a6e8845e1c480d",
+    "frontend/src/components/AcquisitionView.tsx": "f4598ed84ebd994f09a659602496107c3afdce1d7cc85bba50f1f5e09445f7a9",
+    "frontend/src/components/AdapterControls.tsx": "143e80c7ffe4d5a17b958486abdef00bcfca9ea9c9d855e403ec74ab88a65f6f",
+    "frontend/src/components/ChannelRecords.tsx": "f0ea32933a2ebaf8ebf55c9854dee244eb0fd51141164e19e582d3128e50c927",
+    "frontend/src/components/ExperimentComposer.tsx": "f494c8c4dce9ce2c33c695e34075dbf6966690916782a7829be7b2a211a80b16",
+    "frontend/src/components/StructureMiningView.tsx": "e9e5ebafbf315a034864f837d78eeda7813b0c807757f6d709550be715b9e3c2",
+    "src/api/cross_domain.py": "ab5898fe5e0b67aed22627b78089c8bfaf933f3cdeabf877b451b953ca36f508",
+    "src/api/experiment_composer.py": "090049b60e069bffc2c297038befc23614e7407c20a7ce0178c70fbb3f0d2541",
+    "src/api/experiment_runs.py": "27182dd92f27a54e719f994b7b55d3fecc0c967f1d53a090634826b484c1a436",
+    "src/api/mining.py": "685eec8c7455e9a7c80fef9333e5bd26bf03559cbcca9001ac6e82e1c592c536",
+    "src/core/adapter_conformance.py": "8c88f755d84e2ba24aad2cb91c08596b2a537dbf56a2a7fbc7ad1f5ca5eca5a2",
+    "src/core/comparison_views.py": "78a7f2c57df5484dee9da7bebcc9042dcb974ba8393066643a88ca9d39c84bc7",
+    "src/core/composer_path.py": "d47b8d38f7a862048225ac769ee482d539394d780526be4711477d528e785416",
+    "src/core/experiment_adapter.py": "cbb731be241f2677f08b4f8bb54c1c01cbc3d6190c5c0171f2479d5b2d91c4c6",
+    "src/core/experiment_family.py": "8c6d3efa9506b7fe05496514c3b20034f2b5146a5a8ba9b5bca33b4e25abbbc5",
+    "src/core/experiment_manifest.py": "0d7bfc7c4cc44a3dac9d5f04c9a79ed19c711a759c50c4cd2afbbc90a9a12d3d",
+    "src/core/experiment_run.py": "056b70c0e19898e8ab32248010e9275a4b4724c6c0f6918f4ca37c4153dc3e6d",
+    "src/core/extension_audit.py": "d12dc5515826ec0d745a172c7e9237d97d9d432dbbcd3b497567af85d3a94eb2",
+    "src/core/onboarding.py": "ca0db5ece2a8abd954588a5821efa0de047f527b5184d96905698fa0d2e9fc9e",
+    "src/core/structural_trajectory.py": "25355b07e06447988cf53b20577ddf7bd82dac4328a2cd7769cc5494215b1ffd",
+    "src/tests/test_adapter_registry.py": "15b188f08bbcdac9d0a3a9dc9d70e4d4896a85c13348bae09e2f1caeb11e05ea"
+  },
+  "status": "MEASURED"
+}

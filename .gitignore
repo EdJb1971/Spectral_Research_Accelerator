@@ -27,6 +27,21 @@ data/*.zarr/
 data/store_probes/*.json
 !data/store_probes/ccdb0625e7e8fb1d.json
 !data/store_probes/f9a45764fcf52c2a.json
+!data/store_probes/1a28d5980c97a38e.json
+
+# Acquired ERA5 caches and CDS shards are reproducible from the frozen request,
+# and large. The immutable cross-route overlap receipt is evidence, so it stays.
+data/cds_downloads/
+data/era5_cache/
+data/wb_cache/
+!data/era5_cache/
+data/era5_cache/*
+!data/era5_cache/*.overlap.json
+!data/era5_cache/*.overlap.*.json
+
+# The 2019 window exists to derive a criterion without tuning it to the
+# window it judges. It is reproducible from the frozen request.
+data/diagnostics/
 *.db-shm
 *.db-wal
 
@@ -50,3 +65,14 @@ frontend/vite.inspect.config.ts
 .pytest-basetemp/
 _pt*.txt
 data/profile_collections/e7c8acc202a81169b705dce99fd9391ca4a8c9ee3ba1f54715e3e0943e1ad773.json
+
+# Playwright (TG17.7): scratch backend state and browser artefacts, never committed
+.e2e-state/
+frontend/test-results/
+frontend/playwright-report/
+
+# TG17.14: the researcher-supplied order_book record. The venue's market-data terms
+# restrict redistribution of raw depth, and the live-source gate binds the record by
+# sha256 rather than by storing it, so the CSV is deliberately absent and its README
+# carries the URL and the transformation needed to rebuild it byte-for-byte.
+data/market_records/*.csv

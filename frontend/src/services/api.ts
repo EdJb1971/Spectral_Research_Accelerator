@@ -214,6 +214,58 @@ export const apiService = {
     return handleResponse<types.AcquisitionCatalogue>(response);
   },
 
+  async cdsCapabilities(): Promise<types.CDSCapabilities> {
+    return handleResponse<types.CDSCapabilities>(
+      await fetch(`${BASE_URL}/data/cds`, { method: 'GET' }));
+  },
+
+  async planCDS(payload: types.CDSPlanRequest): Promise<types.CDSPlan> {
+    return handleResponse<types.CDSPlan>(
+      await fetch(`${BASE_URL}/data/cds/plan`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      }));
+  },
+
+  async listCDSJobs(): Promise<types.CDSJobList> {
+    return handleResponse<types.CDSJobList>(
+      await fetch(`${BASE_URL}/data/cds/jobs`, { method: 'GET' }));
+  },
+
+  async submitCDSJob(payload: types.CDSPlanRequest, requestSha256: string): Promise<types.CDSJob> {
+    return handleResponse<types.CDSJob>(
+      await fetch(`${BASE_URL}/data/cds/jobs`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ request: payload, confirm_request_sha256: requestSha256,
+          confirm_network_access: true }),
+      }));
+  },
+
+  async getCDSJob(jobId: string): Promise<types.CDSJob> {
+    return handleResponse<types.CDSJob>(
+      await fetch(`${BASE_URL}/data/cds/jobs/${encodeURIComponent(jobId)}`, { method: 'GET' }));
+  },
+
+  async cancelCDSJob(jobId: string, reason: string): Promise<types.CDSJob> {
+    return handleResponse<types.CDSJob>(
+      await fetch(`${BASE_URL}/data/cds/jobs/${encodeURIComponent(jobId)}/cancel`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason }),
+      }));
+  },
+
+  async resumeCDSJob(jobId: string): Promise<types.CDSJob> {
+    return handleResponse<types.CDSJob>(
+      await fetch(`${BASE_URL}/data/cds/jobs/${encodeURIComponent(jobId)}/resume`,
+        { method: 'POST' }));
+  },
+
+  async getCDSAcquisitionRecord(jobId: string): Promise<types.CDSAcquisitionRecord> {
+    return handleResponse<types.CDSAcquisitionRecord>(
+      await fetch(`${BASE_URL}/data/cds/jobs/${encodeURIComponent(jobId)}/record`,
+        { method: 'GET' }));
+  },
+
   async profileCapabilities(): Promise<types.ProfileCapabilities> {
     return handleResponse<types.ProfileCapabilities>(
       await fetch(`${BASE_URL}/profiles`, { method: 'GET' }));
@@ -292,6 +344,99 @@ export const apiService = {
     form.append('plan', JSON.stringify(plan));
     return handleResponse<types.RepresentationAuditResult>(
       await fetch(`${BASE_URL}/ingress/audit`, { method: 'POST', body: form }));
+  },
+
+  async planRedundancyStructure(file: File, declaration: types.SampleTableDeclaration,
+                                permutations = 4999): Promise<Record<string, any>> {
+    const form = new FormData(); form.append('file', file); form.append('delimiter', ',');
+    form.append('declaration', JSON.stringify(declaration));
+    form.append('permutations', String(permutations));
+    return handleResponse<Record<string, any>>(
+      await fetch(`${BASE_URL}/ingress/structure/plan`, { method: 'POST', body: form }));
+  },
+
+  async runRedundancyStructure(file: File, plan: Record<string, any>): Promise<Record<string, any>> {
+    const form = new FormData(); form.append('file', file); form.append('delimiter', ',');
+    form.append('plan', JSON.stringify(plan));
+    return handleResponse<Record<string, any>>(
+      await fetch(`${BASE_URL}/ingress/structure/audit`, { method: 'POST', body: form }));
+  },
+
+  async planConditionalInformation(file: File, declaration: types.SampleTableDeclaration,
+                                   permutations = 4999): Promise<Record<string, any>> {
+    const form = new FormData(); form.append('file', file); form.append('delimiter', ',');
+    form.append('declaration', JSON.stringify(declaration));
+    form.append('permutations', String(permutations));
+    return handleResponse<Record<string, any>>(
+      await fetch(`${BASE_URL}/ingress/conditional/plan`, { method: 'POST', body: form }));
+  },
+
+  async runConditionalInformation(file: File, plan: Record<string, any>): Promise<Record<string, any>> {
+    const form = new FormData(); form.append('file', file); form.append('delimiter', ',');
+    form.append('plan', JSON.stringify(plan));
+    return handleResponse<Record<string, any>>(
+      await fetch(`${BASE_URL}/ingress/conditional/audit`, { method: 'POST', body: form }));
+  },
+
+  async planStableSubspace(file: File, declaration: types.SampleTableDeclaration,
+                           permutations = 4999): Promise<Record<string, any>> {
+    const form = new FormData(); form.append('file', file); form.append('delimiter', ',');
+    form.append('declaration', JSON.stringify(declaration));
+    form.append('dimensions', JSON.stringify([1]));
+    form.append('regularizations', JSON.stringify([0.01, 0.1, 1.0]));
+    form.append('permutations', String(permutations));
+    return handleResponse<Record<string, any>>(
+      await fetch(`${BASE_URL}/ingress/subspace/plan`, { method: 'POST', body: form }));
+  },
+
+  async generateStableSubspace(file: File, plan: Record<string, any>): Promise<Record<string, any>> {
+    const form = new FormData(); form.append('file', file); form.append('delimiter', ',');
+    form.append('plan', JSON.stringify(plan));
+    return handleResponse<Record<string, any>>(
+      await fetch(`${BASE_URL}/ingress/subspace/generate`, { method: 'POST', body: form }));
+  },
+
+  async freezeStableSubspace(file: File, plan: Record<string, any>,
+                             generation: Record<string, any>, permutations = 4999): Promise<Record<string, any>> {
+    const form = new FormData(); form.append('file', file); form.append('delimiter', ',');
+    form.append('plan', JSON.stringify(plan)); form.append('generation', JSON.stringify(generation));
+    form.append('confirmation_permutations', String(permutations));
+    return handleResponse<Record<string, any>>(
+      await fetch(`${BASE_URL}/ingress/subspace/freeze`, { method: 'POST', body: form }));
+  },
+
+  async confirmStableSubspace(file: File, sealSha256: string): Promise<Record<string, any>> {
+    const form = new FormData(); form.append('file', file); form.append('delimiter', ',');
+    form.append('seal_sha256', sealSha256); form.append('published_sha256', sealSha256);
+    return handleResponse<Record<string, any>>(
+      await fetch(`${BASE_URL}/ingress/subspace/confirm`, { method: 'POST', body: form }));
+  },
+
+  async publishStableSubspace(sealSha256: string, label: string): Promise<Record<string, any>> {
+    const form = new FormData(); form.append('seal_sha256', sealSha256); form.append('label', label);
+    return handleResponse<Record<string, any>>(
+      await fetch(`${BASE_URL}/ingress/subspace/publish`, { method: 'POST', body: form }));
+  },
+
+  async freezeExternalSubspace(candidateSha256: string[], targetSha256: string,
+                               targetRows: number, declaration: types.SampleTableDeclaration,
+                               provenance: Record<string, any>): Promise<Record<string, any>> {
+    const form = new FormData();
+    form.append('candidate_sha256', JSON.stringify(candidateSha256));
+    form.append('target_content_sha256', targetSha256);
+    form.append('target_n_rows', String(targetRows));
+    form.append('target_declaration', JSON.stringify(declaration));
+    form.append('target_provenance', JSON.stringify(provenance));
+    return handleResponse<Record<string, any>>(
+      await fetch(`${BASE_URL}/ingress/subspace/transfer/freeze`, { method: 'POST', body: form }));
+  },
+
+  async certifyExternalSubspace(file: File, sealSha256: string): Promise<Record<string, any>> {
+    const form = new FormData(); form.append('file', file); form.append('delimiter', ',');
+    form.append('transfer_seal_sha256', sealSha256);
+    form.append('published_sha256', sealSha256);
+    return handleResponse<Record<string, any>>(
+      await fetch(`${BASE_URL}/ingress/subspace/transfer/certify`, { method: 'POST', body: form }));
   },
 
   // ---------------------------------------------------------------- ERA5 over Zarr
@@ -725,6 +870,99 @@ export const apiService = {
       await fetch(`${BASE_URL}/cross-domain`, { method: 'GET' }));
   },
 
+  // ------------------------------------------ configurable experiment manifest (TG17.1)
+  async getExperimentComposerContract(): Promise<Record<string, any>> {
+    return handleResponse<Record<string, any>>(
+      await fetch(`${BASE_URL}/experiment-composer`, { method: 'GET' }));
+  },
+
+  async listExperimentRecipes(): Promise<{ recipes: { recipe_id: string; title: string; mode: string; domains: string[]; manifest_sha256: string }[]; note: string }> {
+    return handleResponse<{ recipes: { recipe_id: string; title: string; mode: string; domains: string[]; manifest_sha256: string }[]; note: string }>(
+      await fetch(`${BASE_URL}/experiment-composer/recipes`, { method: 'GET' }));
+  },
+
+  async getFlagshipRecipe(): Promise<types.ExperimentManifestEnvelope> {
+    return handleResponse<types.ExperimentManifestEnvelope>(
+      await fetch(`${BASE_URL}/experiment-composer/recipes/g17-flagship-calendar`, { method: 'GET' }));
+  },
+
+  async validateExperimentManifest(manifest: types.CrossDomainExperimentManifest): Promise<types.ExperimentManifestEnvelope> {
+    return handleResponse<types.ExperimentManifestEnvelope>(
+      await fetch(`${BASE_URL}/experiment-composer/manifests/validate`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(manifest)
+      }));
+  },
+
+  async saveExperimentDraft(draftId: string, manifest: types.CrossDomainExperimentManifest): Promise<types.ExperimentManifestEnvelope & { draft_id: string }> {
+    return handleResponse<types.ExperimentManifestEnvelope & { draft_id: string }>(
+      await fetch(`${BASE_URL}/experiment-composer/drafts/${encodeURIComponent(draftId)}`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(manifest)
+      }));
+  },
+
+  async loadExperimentDraft(draftId: string): Promise<types.ExperimentManifestEnvelope & { draft_id: string }> {
+    return handleResponse<types.ExperimentManifestEnvelope & { draft_id: string }>(
+      await fetch(`${BASE_URL}/experiment-composer/drafts/${encodeURIComponent(draftId)}`, { method: 'GET' }));
+  },
+
+  async loadExperimentManifest(manifestSha256: string): Promise<types.ExperimentManifestEnvelope> {
+    return handleResponse<types.ExperimentManifestEnvelope>(
+      await fetch(`${BASE_URL}/experiment-composer/manifests/${encodeURIComponent(manifestSha256)}`, { method: 'GET' }));
+  },
+
+  async preflightExperimentManifest(manifest: types.CrossDomainExperimentManifest): Promise<types.ExperimentPreflight> {
+    return handleResponse<types.ExperimentPreflight>(
+      await fetch(`${BASE_URL}/experiment-composer/manifests/preflight`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(manifest)
+      }));
+  },
+
+// ------------------------------------------ registered domain adapters (TG17.3)
+  async listExperimentAdapters(): Promise<{ schema: string; adapters: types.DomainExperimentAdapterDescription[]; claim_boundary: string }> {
+    return handleResponse<{ schema: string; adapters: types.DomainExperimentAdapterDescription[]; claim_boundary: string }>(
+      await fetch(`${BASE_URL}/experiment-composer/adapters`, { method: 'GET' }));
+  },
+
+  async runAdapterConformance(adapterId: string, parameters: Record<string, any>): Promise<types.AdapterConformanceReport> {
+    return handleResponse<types.AdapterConformanceReport>(
+      await fetch(`${BASE_URL}/experiment-composer/adapters/${encodeURIComponent(adapterId)}/conformance`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(parameters)
+      }));
+  },
+
+// ------------------------------------------ clock, support and coverage (TG17.4)
+  async listAlignmentKernels(): Promise<types.AlignmentKernelList> {
+    return handleResponse<types.AlignmentKernelList>(
+      await fetch(`${BASE_URL}/experiment-composer/alignment-kernels`, { method: 'GET' }));
+  },
+
+  async experimentAlignment(manifest: types.CrossDomainExperimentManifest): Promise<types.AlignmentReport> {
+    return handleResponse<types.AlignmentReport>(
+      await fetch(`${BASE_URL}/experiment-composer/manifests/alignment`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(manifest)
+      }));
+  },
+
+// --------------------------- multi-domain family accounting and nulls (TG17.5)
+  async listNullFamilies(): Promise<types.NullFamilyList> {
+    return handleResponse<types.NullFamilyList>(
+      await fetch(`${BASE_URL}/experiment-composer/null-families`, { method: 'GET' }));
+  },
+
+  async experimentFamily(manifest: types.CrossDomainExperimentManifest): Promise<types.FamilyExpansion> {
+    return handleResponse<types.FamilyExpansion>(
+      await fetch(`${BASE_URL}/experiment-composer/manifests/family`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(manifest)
+      }));
+  },
+
+  async previewStructuralTrajectories(manifest: types.CrossDomainExperimentManifest): Promise<types.StructuralTrajectoryPreview> {
+    return handleResponse<types.StructuralTrajectoryPreview>(
+      await fetch(`${BASE_URL}/experiment-composer/manifests/representation-preview`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(manifest)
+      }));
+  },
+
   async alignDomains(first: File, second: File, firstSource: types.CrossDomainSource,
                      secondSource: types.CrossDomainSource,
                      name: string): Promise<types.CrossDomainAligned> {
@@ -847,5 +1085,236 @@ export const apiService = {
   async getStudyReview(studyId: string): Promise<types.ReviewSurface> {
     return handleResponse<types.ReviewSurface>(
       await fetch(`${BASE_URL}/reviews/studies/${encodeURIComponent(studyId)}`, { method: 'GET' }));
+  },
+
+  // ------------------------------------------------ orchestrated runs (TG17.6)
+  // Posting a manifest opens the run that manifest identifies. It is not `create`: the identity
+  // is the content address of the plan, so a second post - a refreshed browser, a second tab, a
+  // retried request - resumes the same run instead of starting a rival copy of it.
+  async experimentRunContract(): Promise<types.RunContract> {
+    return handleResponse<types.RunContract>(
+      await fetch(`${BASE_URL}/experiment-runs`, { method: 'GET' }));
+  },
+
+  async openExperimentRun(spec: types.CrossDomainExperimentManifest): Promise<types.RunIdentity> {
+    return handleResponse<types.RunIdentity>(
+      await fetch(`${BASE_URL}/experiment-runs`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(spec) }));
+  },
+
+  async experimentRunProgress(runId: string): Promise<types.RunProgress> {
+    return handleResponse<types.RunProgress>(
+      await fetch(`${BASE_URL}/experiment-runs/${encodeURIComponent(runId)}/progress`,
+        { method: 'GET' }));
+  },
+
+  async experimentRunReceipt(runId: string): Promise<types.RunReceipt> {
+    return handleResponse<types.RunReceipt>(
+      await fetch(`${BASE_URL}/experiment-runs/${encodeURIComponent(runId)}`, { method: 'GET' }));
+  },
+
+  async executeExperimentRun(runId: string, workerSuite: string): Promise<types.RunReceipt> {
+    return handleResponse<types.RunReceipt>(
+      await fetch(`${BASE_URL}/experiment-runs/${encodeURIComponent(runId)}/execute`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ worker_suite: workerSuite }) }));
+  },
+
+  // Only an operational failure is retryable, and the server decides that, not this call.
+  async retryExperimentRun(runId: string, workerSuite: string): Promise<types.RunReceipt> {
+    return handleResponse<types.RunReceipt>(
+      await fetch(`${BASE_URL}/experiment-runs/${encodeURIComponent(runId)}/retry`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ worker_suite: workerSuite }) }));
+  },
+
+  async cancelExperimentRun(runId: string, reason: string): Promise<types.RunReceipt> {
+    return handleResponse<types.RunReceipt>(
+      await fetch(`${BASE_URL}/experiment-runs/${encodeURIComponent(runId)}/cancel`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason }) }));
+  },
+
+  // The remedy for a refusal. It writes a new editable draft; the frozen run is left as it is.
+  async experimentRunEditableCopy(runId: string, draftId: string): Promise<types.RunEditableCopy> {
+    return handleResponse<types.RunEditableCopy>(
+      await fetch(`${BASE_URL}/experiment-runs/${encodeURIComponent(runId)}/editable-copy`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ draft_id: draftId }) }));
+  },
+
+  // ------------------------------------------------ immutable experiment receipts (TG17.9)
+  async experimentReceiptCapabilities(): Promise<types.ExperimentReceiptCapabilities> {
+    return handleResponse<types.ExperimentReceiptCapabilities>(
+      await fetch(`${BASE_URL}/experiment-receipts`, { method: 'GET' }));
+  },
+
+  async exportExperimentReceipt(runId: string): Promise<types.ExperimentReceiptExport> {
+    return handleResponse<types.ExperimentReceiptExport>(
+      await fetch(`${BASE_URL}/experiment-receipts/runs/${encodeURIComponent(runId)}/export`,
+        { method: 'POST' }));
+  },
+
+  async replayExperimentReceipt(bundle: types.ExperimentReplayBundle): Promise<types.ExperimentReceiptReplay> {
+    return handleResponse<types.ExperimentReceiptReplay>(
+      await fetch(`${BASE_URL}/experiment-receipts/replay`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(bundle) }));
+  },
+
+  async experimentMethodsReport(runId: string): Promise<string> {
+    const response = await fetch(
+      `${BASE_URL}/experiment-receipts/runs/${encodeURIComponent(runId)}/methods`,
+      { method: 'GET' });
+    if (!response.ok) throw new Error(await response.text());
+    return response.text();
+  },
+
+  async experimentQualificationPlan(): Promise<types.ExperimentQualificationRecord> {
+    return handleResponse<types.ExperimentQualificationRecord>(
+      await fetch(`${BASE_URL}/experiment-qualification`, { method: 'GET' }));
+  },
+
+  async rehearseExperimentQualification(): Promise<types.ExperimentQualificationRecord> {
+    return handleResponse<types.ExperimentQualificationRecord>(
+      await fetch(`${BASE_URL}/experiment-qualification/rehearse`, { method: 'POST' }));
+  },
+
+  // ---------------------------------------------------- TG17.7 the guided path
+
+  async composerPath(): Promise<types.ComposerPathContract> {
+    return handleResponse<types.ComposerPathContract>(
+      await fetch(`${BASE_URL}/experiment-composer/path`, { method: 'GET' }));
+  },
+
+  // Where this manifest stands and what may legitimately be done next. Metadata only, and it
+  // deliberately does not open a run: it looks for one at the manifest's content address.
+  async composerPathState(spec: types.CrossDomainExperimentManifest): Promise<types.ComposerPathState> {
+    return handleResponse<types.ComposerPathState>(
+      await fetch(`${BASE_URL}/experiment-composer/path/state`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(spec) }));
+  },
+
+  // The preset arithmetic is the server's. A boundary computed twice is two boundaries.
+  async composerWindowPresets(anchorUtc: string, strideSeconds: number): Promise<types.ComposerWindowPresets> {
+    const query = new URLSearchParams({ anchor_utc: anchorUtc, stride_seconds: String(strideSeconds) });
+    return handleResponse<types.ComposerWindowPresets>(
+      await fetch(`${BASE_URL}/experiment-composer/window-presets?${query}`, { method: 'GET' }));
+  },
+
+  async composerDomainMenu(selected: string[]): Promise<types.ComposerDomainMenu> {
+    const query = new URLSearchParams({ selected: selected.join(',') });
+    return handleResponse<types.ComposerDomainMenu>(
+      await fetch(`${BASE_URL}/experiment-composer/domain-menu?${query}`, { method: 'GET' }));
+  },
+
+  async composerPreregistrationSummary(
+    spec: types.CrossDomainExperimentManifest): Promise<types.ComposerPreregistrationSummary> {
+    return handleResponse<types.ComposerPreregistrationSummary>(
+      await fetch(`${BASE_URL}/experiment-composer/preregistration-summary`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(spec) }));
+  },
+
+  async composerExportManifest(
+    spec: types.CrossDomainExperimentManifest): Promise<types.ComposerManifestEnvelope> {
+    return handleResponse<types.ComposerManifestEnvelope>(
+      await fetch(`${BASE_URL}/experiment-composer/manifests/export`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(spec) }));
+  },
+
+  // An envelope whose body disagrees with its digest is refused here rather than imported: a
+  // run identity is the content address of its plan.
+  async composerImportManifest(envelope: types.ComposerManifestEnvelope | Record<string, any>) {
+    return handleResponse<{ manifest_sha256: string; canonical_manifest: types.CrossDomainExperimentManifest }>(
+      await fetch(`${BASE_URL}/experiment-composer/manifests/import`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(envelope) }));
+  },
+
+  // ---------------------------------------------------------- TG17.8 comparison views
+
+  async comparisonViewsContract(): Promise<types.ComparisonViewsContract> {
+    return handleResponse<types.ComparisonViewsContract>(
+      await fetch(`${BASE_URL}/comparison-views`, { method: 'GET' }));
+  },
+
+  async comparisonEncodings(): Promise<{ schema: string; encodings: types.ComparisonEncoding[]; why_three_channels: string }> {
+    return handleResponse(await fetch(`${BASE_URL}/comparison-views/encodings`, { method: 'GET' }));
+  },
+
+  async comparisonRenderAll(
+    spec: types.CrossDomainExperimentManifest): Promise<types.ComparisonViewSet> {
+    return handleResponse<types.ComparisonViewSet>(
+      await fetch(`${BASE_URL}/comparison-views/render`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(spec) }));
+  },
+
+  async comparisonRenderView(
+    viewId: string, spec: types.CrossDomainExperimentManifest): Promise<types.ComparisonView> {
+    return handleResponse<types.ComparisonView>(
+      await fetch(`${BASE_URL}/comparison-views/render/${encodeURIComponent(viewId)}`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(spec) }));
+  },
+
+  // The answer is per-domain and stays that way. There is no route that returns one merged
+  // interval, because a merged one would show four domains agreeing about an extent that only
+  // one of them addresses.
+  async comparisonLinkedSelection(
+    spec: types.CrossDomainExperimentManifest, window: string,
+    domains: string[] = []): Promise<types.ComparisonLinkedSelection> {
+    return handleResponse<types.ComparisonLinkedSelection>(
+      await fetch(`${BASE_URL}/comparison-views/linked-selection`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ manifest: spec, window, domains }) }));
+  },
+
+  async comparisonCheckReading(
+    mode: string, reading: string): Promise<types.ComparisonReadingCheck> {
+    return handleResponse<types.ComparisonReadingCheck>(
+      await fetch(`${BASE_URL}/comparison-views/readings/check`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode, reading }) }));
+  },
+
+  // T4C.5j: the atmospheric gate record. Every method below is a GET and there is no other
+  // kind, which is the contract rather than an unfinished section. The two write-shaped things
+  // a reader might look for - preflight and acquisition - are deliberately absent: the first
+  // reports on a machine rather than on the science, and the second spends a 2.8 GB transfer.
+  async gateSurface(): Promise<types.GateSurface> {
+    return handleResponse<types.GateSurface>(await fetch(`${BASE_URL}/gate`));
+  },
+
+  async listGateCampaigns(): Promise<types.GateCampaignIndex> {
+    return handleResponse<types.GateCampaignIndex>(await fetch(`${BASE_URL}/gate/campaigns`));
+  },
+
+  async gateCampaignReview(campaignId: string): Promise<types.GateCampaignReview> {
+    return handleResponse<types.GateCampaignReview>(
+      await fetch(`${BASE_URL}/gate/campaigns/${encodeURIComponent(campaignId)}`));
+  },
+
+  async listGateSupersessions(): Promise<types.GateSupersessionIndex> {
+    return handleResponse<types.GateSupersessionIndex>(
+      await fetch(`${BASE_URL}/gate/supersessions`));
+  },
+
+  async gateSupersessionReview(supersessionId: string): Promise<types.GateSupersessionReview> {
+    return handleResponse<types.GateSupersessionReview>(
+      await fetch(`${BASE_URL}/gate/supersessions/${encodeURIComponent(supersessionId)}`));
+  },
+
+  async listGateReceipts(): Promise<types.GateReceiptIndex> {
+    return handleResponse<types.GateReceiptIndex>(await fetch(`${BASE_URL}/gate/receipts`));
+  },
+
+  async gateReceipt(receiptId: string): Promise<types.GateReceiptView> {
+    return handleResponse<types.GateReceiptView>(
+      await fetch(`${BASE_URL}/gate/receipts/${encodeURIComponent(receiptId)}`));
   }
 };

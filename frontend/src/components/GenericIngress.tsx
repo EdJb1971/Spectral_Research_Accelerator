@@ -5,6 +5,7 @@ import { FileSearch, Loader2, Play, ShieldCheck, Upload } from 'lucide-react';
 import { apiService } from '../services/api';
 import * as types from '../types/api';
 import DatasetCapabilityProfile from './DatasetCapabilityProfile';
+import RepresentationStructureProgramme from './RepresentationStructureProgramme';
 
 const ROLES: types.SampleRole[] = [
   'ignore', 'sample_id', 'target', 'nuisance', 'feature', 'group', 'ordering',
@@ -24,6 +25,9 @@ const GenericIngress: React.FC<{ onError?: (message: string) => void;
 
   const featureCount = useMemo(() => Object.values(roles).filter((role) => role === 'feature').length,
     [roles]);
+  const declaration = useMemo<types.SampleTableDeclaration>(() => ({
+    roles, units, sample_relationship: relationship,
+  }), [roles, units, relationship]);
 
   const fail = (error: unknown) => onError?.(error instanceof Error ? error.message : String(error));
 
@@ -43,14 +47,11 @@ const GenericIngress: React.FC<{ onError?: (message: string) => void;
     if (!file || !probe) return;
     setBusy('plan'); setResult(null);
     try {
-      const profile = await apiService.genericFileCapabilities(file, {
-        roles, units, sample_relationship: relationship,
-      });
+      const profile = await apiService.genericFileCapabilities(file, declaration);
       setCapability(profile); onCapability?.(profile);
       if (!profile.operations.representation_audit?.available) return;
-      setPlan(await apiService.planRepresentationAudit(file, {
-        roles, units, sample_relationship: relationship,
-      }, { pcaComponents: Math.max(1, Math.min(3, featureCount)), permutations: 4999 }));
+      setPlan(await apiService.planRepresentationAudit(file, declaration,
+        { pcaComponents: Math.max(1, Math.min(3, featureCount)), permutations: 4999 }));
     } catch (error) { fail(error); } finally { setBusy(null); }
   };
 
@@ -159,6 +160,9 @@ const GenericIngress: React.FC<{ onError?: (message: string) => void;
       </div>)}</div>
       <p className="text-[10px] text-slate-500">{result.claim_boundary}</p>
     </div>}
+
+    {file && capability && <RepresentationStructureProgramme file={file}
+      declaration={declaration} capability={capability} onError={onError} />}
   </section>;
 };
 

@@ -1,9 +1,14 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { Heatmap2D } from './components/Heatmap2D';
 import { LineChart } from './components/LineChart';
 import { LineageGraph } from './components/LineageGraph';
 import { FieldExportBar, TableExportBar } from './components/ExportBar';
-import { FigureExport } from './components/FigureExport';
+import {
+  buildComparisonContract, FigureComparisonNotice, useLinkedAddress,
+} from './components/FigureComparison';
+import { ResizableFigurePair } from './components/ResizableFigurePair';
+import { ResearchJourney, JourneyStageId } from './components/ResearchJourney';
+import { slopeValidity } from './components/FigureValidity';
 import { FieldImport } from './components/FieldImport';
 import { TrainingReadiness } from './components/TrainingReadiness';
 import { DTCWTScientificView } from './components/DTCWTScientificView';
@@ -16,11 +21,17 @@ import EvidenceView from './components/EvidenceView';
 import StructureMiningView from './components/StructureMiningView';
 import CrossDomainRecordView from './components/CrossDomainRecordView';
 import ReviewView from './components/ReviewView';
+import GateRecordView from './components/GateRecordView';
 import DatasetCapabilityProfile from './components/DatasetCapabilityProfile';
+import ExperimentComposer from './components/ExperimentComposer';
+import ResearchArchive from './components/ResearchArchive';
+import { ExperimentReceiptPanel } from './components/ExperimentReceipt';
+import { ExperimentQualificationPanel } from './components/ExperimentQualification';
 import { apiService } from './services/api';
 import * as types from './types/api';
 import {
   BookOpen,
+  Archive,
   Layers,
   Wind,
   Sliders,
@@ -49,8 +60,12 @@ import {
   Waypoints,
   FileCheck2,
   FilePlus2,
+  FileLock2,
   Lock,
-  MessageSquare
+  Landmark,
+  MessageSquare,
+  Menu,
+  X
 } from 'lucide-react';
 
 const WORKFLOW_NAV = [
@@ -72,21 +87,39 @@ const WORKFLOW_NAV = [
   {
     section: 'Evidence', items: [
       { id: 'evidence', name: 'Evidence record', icon: FilePlus2 },
-      { id: 'declarative', name: 'Experiment engine', icon: FileCode },
+      { id: 'experimentComposer', name: 'Experiment Composer', icon: FileLock2 },
+      { id: 'declarative', name: 'Legacy parameter sweeps', icon: FileCode, context: 'Gridded field line' },
       { id: 'evaluation', name: 'Forecast evaluation', icon: FileCheck2, context: 'Gridded field line', operation: 'forecast_evaluation' },
     ],
   },
   { section: 'Review', note: 'Recorded argument; never claim permission', items: [
     { id: 'review', name: 'Recorded review', icon: MessageSquare },
+    { id: 'gate', name: 'Atmospheric gate record', icon: Landmark, context: 'Gridded field line' },
   ] },
-  { section: 'Read', items: [{ id: 'findings', name: 'Findings', icon: BookOpen }] },
+  { section: 'Read', items: [
+    { id: 'researchArchive', name: 'Research archive', icon: Archive },
+    { id: 'findings', name: 'Findings', icon: BookOpen },
+  ] },
   { section: 'Platform', items: [{ id: 'platform', name: 'Platform & evidence', icon: ShieldCheck }] },
 ] as const;
 
+const JOURNEY_STAGE_BY_WORKSPACE: Partial<Record<string, JourneyStageId>> = {
+  acquire: 'acquire',
+  domainWorkbench: 'inspect',
+  experimentComposer: 'design',
+  evidence: 'admit',
+  findings: 'report',
+};
+
 export default function App() {
   const [activeTab, setActiveTab] = useState('acquire');
+  const [activeJourneyStage, setActiveJourneyStage] = useState<JourneyStageId | null>('acquire');
+  const [requestedComposerStep, setRequestedComposerStep] = useState<string>();
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const mobileNavTriggerRef = useRef<HTMLButtonElement>(null);
+  const workflowNavRef = useRef<HTMLElement>(null);
   const workspaceHeadingRef = useRef<HTMLHeadingElement>(null);
-  const hasMountedRef = useRef(false);
+  const previousActiveTabRef = useRef(activeTab);
   const [backendConnected, setBackendConnected] = useState<boolean | null>(null);
   // TG11.0: context belongs to the shell, not to whichever workflow panel is mounted.
   const [selectedRecord, setSelectedRecord] = useState<types.ChannelRecordSelection | null>(null);
@@ -110,6 +143,12 @@ export default function App() {
   const [importedProvenance, setImportedProvenance] = useState<Record<string, any> | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const navigateWorkspace = (workspace: string) => {
+    setActiveJourneyStage(JOURNEY_STAGE_BY_WORKSPACE[workspace] || null);
+    setRequestedComposerStep(undefined);
+    setActiveTab(workspace);
+  };
 
   // Core Scientific Fields State (shared or passed between tabs)
   const [primaryField, setPrimaryField] = useState<number[][]>(() =>
@@ -186,6 +225,42 @@ export default function App() {
   const [transformCoefficients, setTransformCoefficients] = useState<Record<string, any> | null>(null);
   const [trainingCatalogue, setTrainingCatalogue] = useState<types.TrainingRepresentationCatalogue | null>(null);
 
+  /**
+   * Comparison contracts for the three gridded pairs that are laid out side by side (TG18.2).
+   *
+   * Each pair is an invitation to read one picture against the other, and until now each panel
+   * carried a colour range Plotly derived from its own extremes. The reconstruction pair is the
+   * one that mattered: comparing a field with its own inverse *is* an error judgement, and under
+   * independent autoscaling a reconstruction that lost most of its amplitude renders as a
+   * near-identical picture, with the difference surviving only in two small colour-bar ranges.
+   *
+   * `quantity` is declared here rather than inferred, because the relationship between the panels
+   * is knowledge this call site has and a generic figure component does not. Declaring it is an
+   * explicit, reviewable claim that the two panels hold the same measured thing; the synthetic
+   * line is dimensionless throughout, so units agree by carrying none.
+   */
+  const syntheticPair = useMemo(() => buildComparisonContract([
+    { key: 'clean', title: 'Generated Clean Field (F)', data: primaryField, quantity: 'synthetic scalar field' },
+    { key: 'perturbed', title: "Perturbed Spatial Field (F')", data: perturbedField || primaryField, quantity: 'synthetic scalar field' },
+  ]), [primaryField, perturbedField]);
+  const syntheticAddress = useLinkedAddress(syntheticPair);
+
+  // The padded domain is deliberately a different shape, so cell addressing cannot be linked and
+  // the contract says so; the shared colour range is what makes the padding's effect on magnitude
+  // visible rather than normalised away.
+  const boundaryPair = useMemo(() => buildComparisonContract([
+    { key: 'original', title: 'Original Spatial Domain', data: primaryField, quantity: 'synthetic scalar field' },
+    { key: 'padded', title: 'Padded Boundary Domain', data: paddedField || primaryField, quantity: 'synthetic scalar field' },
+  ]), [primaryField, paddedField]);
+  const boundaryAddress = useLinkedAddress(boundaryPair);
+
+  const reconstructionPair = useMemo(() => buildComparisonContract([
+    { key: 'target', title: 'Original Target Field (F)', data: primaryField, quantity: 'synthetic scalar field' },
+    { key: 'reconstructed', title: 'Inverse Reconstructed Field (F-hat)', data: reconstructedField || primaryField, quantity: 'synthetic scalar field' },
+  ]), [primaryField, reconstructedField]);
+  const reconstructionAddress = useLinkedAddress(reconstructionPair);
+
+
   // --- TAB 5 STATE: Analysis & Diagnostics ---
   const [forecastNoise, setForecastNoise] = useState(0.15);
   // An explicit, visible seed. A diagnostic whose input cannot be regenerated is not a
@@ -193,6 +268,35 @@ export default function App() {
   const [forecastSeed, setForecastSeed] = useState(20260820);
   const [forecastProvenance, setForecastProvenance] = useState<any | null>(null);
   const [diagnosticsResults, setDiagnosticsResults] = useState<types.DiagnosticsResponse | null>(null);
+
+  /**
+   * The fit domain and uncertainty for the power spectral density figure (TG18.2).
+   *
+   * The PSD chart draws every wavenumber bin; the exponents quoted below it were fitted over
+   * `[k_min, k_max]` and nothing on the figure said so, so the only available reading was that
+   * each beta described the whole curve. The backend's assumption strings - isotropy averaged
+   * over annuli, a single unbroken power law, the reporting convention - were returned by the
+   * API and typed in `api.ts` but rendered nowhere at all until now. Both fits are declared, so
+   * a band that differs between forecast and ground truth is visible rather than merged.
+   */
+  const psdValidity = useMemo(() => {
+    const spectral = diagnosticsResults?.spectral_diagnostics;
+    if (!spectral) return { domains: [], uncertainties: [] };
+    const kUnits = spectral.k_units || null;
+    const parts = [
+      spectral.forecast_slope_analysis
+        ? slopeValidity(spectral.forecast_slope_analysis, { seriesLabel: 'Forecast PSD', kUnits })
+        : null,
+      spectral.ground_truth_slope_analysis
+        ? slopeValidity(spectral.ground_truth_slope_analysis,
+          { seriesLabel: 'Ground Truth PSD', kUnits })
+        : null,
+    ].filter(Boolean) as { domains: any[]; uncertainties: any[] }[];
+    return {
+      domains: parts.flatMap((part) => part.domains),
+      uncertainties: parts.flatMap((part) => part.uncertainties),
+    };
+  }, [diagnosticsResults]);
   const [scaleDecompResults, setScaleDecompResults] = useState<types.ErrorDecompositionResponse['scale_decomposition'] | null>(null);
   const [boundaryDecompResults, setBoundaryDecompResults] = useState<types.ErrorDecompositionResponse['boundary_decomposition'] | null>(null);
 
@@ -536,7 +640,7 @@ export default function App() {
 
   const handleAdoptProposal = (config: any) => {
     setExperimentJson(JSON.stringify(config, null, 2));
-    setActiveTab('declarative');
+    navigateWorkspace('declarative');
   };
 
 
@@ -652,45 +756,122 @@ export default function App() {
   }, [activeTab]);
 
   useEffect(() => {
-    if (hasMountedRef.current) workspaceHeadingRef.current?.focus();
-    hasMountedRef.current = true;
+    // React StrictMode replays mount effects in development. Comparing the route itself keeps
+    // that replay from stealing the browser's initial Tab stop while preserving focus routing
+    // after a real workspace change.
+    if (previousActiveTabRef.current !== activeTab) workspaceHeadingRef.current?.focus();
+    previousActiveTabRef.current = activeTab;
   }, [activeTab]);
+
+  useEffect(() => {
+    if (!mobileNavOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const focusCurrent = window.requestAnimationFrame(() => {
+      workflowNavRef.current?.querySelector<HTMLButtonElement>(
+        '[aria-current="page"]:not(:disabled), button:not(:disabled)')?.focus();
+    });
+    const containDrawerFocus = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setMobileNavOpen(false);
+        mobileNavTriggerRef.current?.focus();
+        return;
+      }
+      if (event.key !== 'Tab' || !workflowNavRef.current) return;
+      const controls = Array.from(workflowNavRef.current.querySelectorAll<HTMLElement>(
+        'a[href], button:not(:disabled), input:not(:disabled), select:not(:disabled), [tabindex]:not([tabindex="-1"])'));
+      if (controls.length === 0) return;
+      const first = controls[0];
+      const last = controls[controls.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault(); last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault(); first.focus();
+      }
+    };
+    document.addEventListener('keydown', containDrawerFocus);
+    return () => {
+      window.cancelAnimationFrame(focusCurrent);
+      document.removeEventListener('keydown', containDrawerFocus);
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [mobileNavOpen]);
 
   const activeWorkspace = (WORKFLOW_NAV as readonly {
     items: readonly { id: string; name: string }[];
   }[]).flatMap(group => group.items)
     .find(item => item.id === activeTab)?.name || 'Scientific workbench';
 
+  const navigateJourney = (stage: JourneyStageId, workspace: string, composerStep?: string) => {
+    setActiveJourneyStage(stage);
+    setRequestedComposerStep(composerStep);
+    setActiveTab(workspace);
+    setMobileNavOpen(false);
+  };
+
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
-      <a href="#workspace-main" className="skip-link">Skip to workspace</a>
+    <div className="instrument-shell min-h-screen bg-slate-950 text-slate-100 flex flex-col">
+      <a href="#workspace-main" className="skip-link"
+        onClick={() => window.requestAnimationFrame(() => workspaceHeadingRef.current?.focus())}>
+        Skip to workspace
+      </a>
       {/* Top Banner / Navigation Header */}
-      <header className="border-b border-slate-800 bg-slate-900/50 backdrop-blur px-6 py-4 flex items-center justify-between">
+      <header className="instrument-header border-b border-slate-800 backdrop-blur px-5 sm:px-6 py-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Globe className="w-8 h-8 text-teal-400 animate-pulse" aria-hidden="true" />
+          <span className="grid place-items-center w-9 h-9 rounded-xl bg-teal-400/10 border border-teal-400/20">
+            <Globe className="w-5 h-5 text-teal-300" aria-hidden="true" />
+          </span>
           <div>
             <h1 className="text-lg font-bold tracking-tight text-white">SpectralEarth</h1>
             <p className="text-xs text-slate-400">Scientific Visual Research Workbench</p>
           </div>
         </div>
-        <div className="flex items-center gap-4">
-          {backendConnected ? (
-            <span role="status" className="text-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-3 py-1.5 rounded-full font-medium flex items-center gap-2">
-              <Server className="w-3.5 h-3.5" aria-hidden="true" /> API Connected (SQLite DB Active)
+        <div className="flex items-center gap-2 sm:gap-4">
+          {backendConnected === true ? (
+            <span role="status" aria-label="API connected; SQLite active"
+              className="connection-status text-xs bg-emerald-500/10 text-emerald-300 border border-emerald-500/25 px-3 py-1.5 rounded-full font-medium flex items-center gap-2">
+              <Server className="w-3.5 h-3.5" aria-hidden="true" />
+              <span className="connection-label">Connected</span>
+              <span className="hidden sm:inline text-emerald-400/70">· SQLite active</span>
             </span>
-          ) : (
-            <button type="button" className="text-xs bg-amber-500/10 text-amber-400 border border-amber-500/20 px-3 py-1.5 rounded-full font-medium flex items-center gap-2"
+          ) : backendConnected === false ? (
+            <button type="button" aria-label="Backend unreachable; retry API connection"
+              className="connection-status text-xs bg-amber-500/10 text-amber-400 border border-amber-500/20 px-3 py-1.5 rounded-full font-medium flex items-center gap-2"
               onClick={checkConnection}>
-              <WifiOff className="w-3.5 h-3.5" aria-hidden="true" /> Backend unreachable - no computation available; retry
+              <WifiOff className="w-3.5 h-3.5" aria-hidden="true" />
+              <span className="hidden sm:inline">Backend unreachable - no computation available; retry</span>
+              <span className="connection-label sm:hidden">Retry API</span>
             </button>
+          ) : (
+            <span role="status" aria-label="Checking API connection"
+              className="connection-status flex items-center gap-2 rounded-full border border-slate-700
+                                      bg-slate-800/70 px-3 py-1.5 text-xs text-slate-400">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+              <span className="connection-label">Checking API</span>
+            </span>
           )}
+          <button type="button" aria-controls="scientific-workflow-nav"
+            ref={mobileNavTriggerRef}
+            aria-expanded={mobileNavOpen}
+            aria-label={mobileNavOpen ? 'Close workspace menu' : 'Open workspace menu'}
+            onClick={() => setMobileNavOpen((open) => !open)}
+            className="mobile-nav-trigger grid h-9 w-9 place-items-center rounded-lg border
+                       border-slate-700 bg-slate-800 text-slate-200 hover:bg-slate-700 lg:hidden">
+            {mobileNavOpen ? <X className="h-4 w-4" aria-hidden="true" />
+              : <Menu className="h-4 w-4" aria-hidden="true" />}
+          </button>
         </div>
       </header>
 
-      <div className="flex-1 flex flex-col lg:flex-row">
+      <div className="instrument-body min-h-0 flex-1 flex flex-col lg:flex-row">
+        {mobileNavOpen && <button type="button" aria-label="Close workspace menu"
+          className="workflow-nav-scrim lg:hidden" onClick={() => {
+            setMobileNavOpen(false); mobileNavTriggerRef.current?.focus();
+          }} />}
         {/* Left Side Navigation bar */}
-        <nav aria-label="Scientific workflow"
-          className="w-full lg:w-72 border-r border-slate-800 bg-slate-900/10 p-4 space-y-5">
+        <nav id="scientific-workflow-nav" aria-label="Scientific workflow" ref={workflowNavRef}
+          className={`workflow-nav ${mobileNavOpen ? 'block' : 'hidden'} w-full lg:block lg:w-72
+                      lg:flex-none border-r border-slate-800 bg-slate-900/20 p-4 space-y-5`}>
           {WORKFLOW_NAV.map(group => (
             <section key={group.section} aria-labelledby={`nav-${group.section.toLowerCase()}`}>
               <div className="px-3 mb-1">
@@ -711,10 +892,12 @@ export default function App() {
                   const unavailable = decision ? !decision.available : false;
                   return (
                     <button key={tab.id} type="button" disabled={unavailable}
-                      onClick={() => setActiveTab(tab.id)}
+                      data-workflow-line={'context' in tab ? 'legacy-gridded' : 'evidence'}
+                      onClick={() => { navigateWorkspace(tab.id); setMobileNavOpen(false); }}
                       aria-current={isActive ? 'page' : undefined}
                       aria-describedby={unavailable ? `nav-reason-${tab.id}` : undefined}
-                      className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                      className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all
+                        ${'context' in tab ? 'legacy-workspace-entry ' : ''}${
                         isActive
                           ? 'bg-teal-500/10 text-teal-400 border border-teal-500/20 shadow-sm shadow-teal-500/5'
                           : unavailable ? 'text-slate-600 cursor-not-allowed border border-slate-900'
@@ -725,8 +908,8 @@ export default function App() {
                       <span className="min-w-0 text-left">
                         <span className="block">{tab.name}</span>
                         {'context' in tab && (
-                          <span className="block text-[9px] uppercase tracking-wide text-slate-600">
-                            {tab.context}
+                          <span className="legacy-workspace-entry__label block text-[10px] uppercase tracking-wide">
+                            Legacy · {tab.context}
                           </span>
                         )}
                         {unavailable && decision && <span id={`nav-reason-${tab.id}`}
@@ -754,16 +937,18 @@ export default function App() {
         {/* Core Main content section */}
         <main id="workspace-main" aria-labelledby="workspace-heading"
           aria-busy={loading || benchmarkRunning || receiptImporting}
-          className="flex-1 p-6 overflow-y-auto space-y-6">
+          className="workspace-main flex-1 overflow-y-auto space-y-4 sm:space-y-6">
           <h2 id="workspace-heading" ref={workspaceHeadingRef} tabIndex={-1} className="sr-only">
             {activeWorkspace} workspace
           </h2>
           <p className="sr-only" role="status" aria-live="polite">
             {loading || benchmarkRunning || receiptImporting ? `${activeWorkspace} is working` : `${activeWorkspace} is ready`}
           </p>
-          <section aria-label="Current research context"
-            className="bg-slate-900/60 border border-slate-800 rounded-lg px-4 py-3 flex flex-wrap gap-x-6 gap-y-2 text-xs">
-            <div className="flex items-center gap-2">
+          <ResearchJourney active={activeJourneyStage} hasRecord={!!selectedRecord}
+            hasStudy={!!selectedStudyId} onNavigate={navigateJourney} />
+          {(selectedRecord || selectedStudyId) && <section aria-label="Current research context"
+            className="research-context bg-slate-900/85 border border-slate-700/70 rounded-xl px-4 py-2.5 flex flex-wrap items-center gap-x-8 gap-y-2 text-xs">
+            <div className="context-item flex items-center gap-2">
               <span className="uppercase tracking-wide text-slate-500">Record</span>
               {selectedRecord ? <>
                 <span className="text-slate-200">{selectedRecord.record.source_name}</span>
@@ -773,25 +958,25 @@ export default function App() {
                 </span>
                 <button type="button" onClick={() => { setSelectedRecord(null); setSelectedCapability(null); }}
                   aria-label="Clear selected record" className="text-slate-500 hover:text-slate-200">×</button>
-              </> : <span className="text-slate-600">none selected</span>}
+              </> : <span className="text-slate-500">No record selected</span>}
             </div>
-            <div className="flex items-center gap-2">
+            <div className="context-item flex items-center gap-2">
               <span className="uppercase tracking-wide text-slate-500">Study</span>
               {selectedStudyId ? <>
                 <span className="font-mono text-slate-200">{selectedStudyId}</span>
                 <button type="button" onClick={() => setSelectedStudyId('')}
                   aria-label="Clear selected study" className="text-slate-500 hover:text-slate-200">×</button>
-              </> : <span className="text-slate-600">none selected</span>}
+              </> : <span className="text-slate-500">No study selected</span>}
             </div>
-          </section>
+          </section>}
           {selectedCapability && <DatasetCapabilityProfile profile={selectedCapability} compact />}
           {error && (
-            <div role="alert" className="bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded-lg p-4 flex items-center justify-between">
-              <div className="flex items-center gap-3">
+            <div role="alert" className="bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded-lg p-4 flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
+              <div className="flex min-w-0 items-start gap-3 sm:items-center">
                 <XCircle className="w-5 h-5 flex-shrink-0" aria-hidden="true" />
                 <p className="text-sm font-medium">{error}</p>
               </div>
-              <button type="button" onClick={() => setError(null)} className="text-xs underline hover:text-rose-200">Dismiss error</button>
+              <button type="button" onClick={() => setError(null)} className="shrink-0 text-xs underline hover:text-rose-200">Dismiss error</button>
             </div>
           )}
 
@@ -987,33 +1172,35 @@ export default function App() {
 
                 {/* Main Visualizer */}
                 <div className="xl:col-span-2 space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <FigureComparisonNotice contract={syntheticPair}
+                    label="the clean and perturbed synthetic fields" />
+                  <ResizableFigurePair label="the clean and perturbed synthetic field panes">
                     <div className="space-y-2">
                       <Heatmap2D data={primaryField} title="Generated Clean Field (F)" colormap="viridis"
                         coords={primaryCoords} divId="fig-clean-field"
+                        publicationCaption="Synthetic analytical field; dimensionless"
+                        zRange={syntheticPair.scale.range} {...syntheticAddress}
                         xLabel="x (normalised)" yLabel="y (normalised)" />
                       <div className="flex flex-col gap-2 px-1">
                         <FieldExportBar field={primaryField} coords={primaryCoords}
                           metadata={fieldProvenance()} variable="field" name="clean_field"
                           label="Export clean field" onError={setError} />
-                        <FigureExport targetId="fig-clean-field" name="clean_field"
-                          caption="synthetic - dimensionless" onError={setError} />
                       </div>
                     </div>
                     <div className="space-y-2">
                       <Heatmap2D data={perturbedField || primaryField} title="Perturbed Spatial Field (F')"
                         colormap="viridis" coords={primaryCoords} divId="fig-perturbed-field"
+                        publicationCaption="Synthetic analytical field after declared perturbations; dimensionless"
+                        zRange={syntheticPair.scale.range} {...syntheticAddress}
                         xLabel="x (normalised)" yLabel="y (normalised)" />
                       <div className="flex flex-col gap-2 px-1">
                         <FieldExportBar field={perturbedField} coords={primaryCoords}
                           metadata={fieldProvenance({ perturbations, reproducible: perturbations.every(pp => pp.type !== 'noise' || pp.seed != null) })}
                           variable="field" name="perturbed_field"
                           label="Export perturbed field" onError={setError} />
-                        <FigureExport targetId="fig-perturbed-field" name="perturbed_field"
-                          caption="synthetic + perturbation" onError={setError} />
                       </div>
                     </div>
-                  </div>
+                  </ResizableFigurePair>
 
                   {/* Perturbation Engine Steps */}
                   <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-5">
@@ -1357,18 +1544,15 @@ export default function App() {
                       <Heatmap2D data={slicedField}
                         title={`${selectedVariable.toUpperCase()} Crop (${selectedDatasetId})`}
                         coords={slicedCoords} colormap="viridis" divId="fig-dataset-crop"
+                        publicationCaption={datasets.find(d => d.id === selectedDatasetId)?.is_simulated
+                          ? 'SIMULATED - not an observation'
+                          : 'observational'}
                         xLabel="longitude (degrees east)" yLabel="latitude (degrees north)" />
                       <div className="flex flex-col gap-2 px-1 mt-2">
                         <FieldExportBar field={slicedField} coords={slicedCoords}
                           metadata={datasetProvenance()} variable={selectedVariable}
                           name={`${selectedDatasetId}_${selectedVariable}`}
                           label="Export crop" onError={setError} />
-                        <FigureExport targetId="fig-dataset-crop"
-                          name={`${selectedDatasetId}_${selectedVariable}`}
-                          caption={datasets.find(d => d.id === selectedDatasetId)?.is_simulated
-                            ? 'SIMULATED - not an observation'
-                            : 'observational'}
-                          onError={setError} />
                       </div>
                       <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 text-xs space-y-2 text-slate-400">
                         <span className="text-slate-300 font-semibold block mb-1">Metadata Summary</span>
@@ -1485,10 +1669,14 @@ export default function App() {
                 </div>
 
                 <div className="xl:col-span-2 space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <Heatmap2D data={primaryField} title="Original Spatial Domain" colormap="viridis" />
-                    <Heatmap2D data={paddedField || primaryField} title="Padded Boundary Domain" colormap="viridis" />
-                  </div>
+                  <FigureComparisonNotice contract={boundaryPair}
+                    label="the original and padded boundary domains" />
+                  <ResizableFigurePair label="the original and padded boundary-domain panes">
+                    <Heatmap2D data={primaryField} title="Original Spatial Domain" colormap="viridis"
+                      zRange={boundaryPair.scale.range} {...boundaryAddress} />
+                    <Heatmap2D data={paddedField || primaryField} title="Padded Boundary Domain"
+                      colormap="viridis" zRange={boundaryPair.scale.range} {...boundaryAddress} />
+                  </ResizableFigurePair>
 
                   {distanceProfiles.length > 0 && (
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -1548,7 +1736,7 @@ export default function App() {
               </div>
 
               <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-                <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-5 space-y-4">
+                <div className="self-start xl:sticky xl:top-32 bg-slate-900/50 border border-slate-800 rounded-xl p-5 space-y-4">
                   <h3 className="text-sm font-semibold text-slate-200 border-b border-slate-800 pb-2">
                     Transform Configuration
                   </h3>
@@ -1636,10 +1824,17 @@ export default function App() {
                 </div>
 
                 <div className="xl:col-span-2 space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <Heatmap2D data={primaryField} title="Original Target Field (F)" colormap="viridis" />
-                    <Heatmap2D data={reconstructedField || primaryField} title="Inverse Reconstructed Field (F-hat)" colormap="viridis" />
-                  </div>
+                  <FigureComparisonNotice contract={reconstructionPair}
+                    label="the target field and its inverse reconstruction" />
+                  <ResizableFigurePair label="the target and inverse-reconstruction panes">
+                    <Heatmap2D data={primaryField} title="Original Target Field (F)" colormap="viridis"
+                      divId="fig-target-field"
+                      zRange={reconstructionPair.scale.range} {...reconstructionAddress} />
+                    <Heatmap2D data={reconstructedField || primaryField}
+                      title="Inverse Reconstructed Field (F-hat)" colormap="viridis"
+                      divId="fig-reconstructed-field"
+                      zRange={reconstructionPair.scale.range} {...reconstructionAddress} />
+                  </ResizableFigurePair>
 
                   {transformMetrics && (
                     <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
@@ -1792,6 +1987,9 @@ export default function App() {
                           title="Power Spectral Density (PSD)"
                           xLabel="Wavenumber (k)"
                           yLabel="Energy Density"
+                          divId="fig-psd"
+                          validity={psdValidity.domains}
+                          uncertainties={psdValidity.uncertainties}
                         />
                         <LineChart
                           series={[
@@ -2248,6 +2446,9 @@ export default function App() {
                 </button>
               </div>
 
+              <ExperimentReceiptPanel trustOnly />
+              <ExperimentQualificationPanel />
+
               {health && (
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-5 space-y-3">
@@ -2504,7 +2705,7 @@ export default function App() {
 
           {/* TAB 9: DOMAIN-FIRST ACQUISITION (TG10.2) ---------------------------------- */}
           {activeTab === 'acquire' && (
-            <AcquisitionView onError={(message) => setError(message)}
+            <AcquisitionView onError={setError}
               selectedRecord={selectedRecord} onSelectRecord={setSelectedRecord}
               onCapability={setSelectedCapability} />
           )}
@@ -2512,7 +2713,7 @@ export default function App() {
           {/* TG11.1: the selected full channel record reaches domain_analysis without a write. */}
           {activeTab === 'domainWorkbench' && (
             <DomainAnalysisView selectedRecord={selectedRecord}
-              onError={(message) => setError(message)} onAcquire={() => setActiveTab('acquire')} />
+              onError={(message) => setError(message)} onAcquire={() => navigateWorkspace('acquire')} />
           )}
 
           {/* TG11.2: the generate/confirm split. The panel makes the ordering legible; the
@@ -2520,7 +2721,7 @@ export default function App() {
               partition is refused whatever this file renders (R18). */}
           {activeTab === 'preregistration' && (
             <PreregistrationView selectedRecord={selectedRecord}
-              onError={(message) => setError(message)} onAcquire={() => setActiveTab('acquire')} />
+              onError={(message) => setError(message)} onAcquire={() => navigateWorkspace('acquire')} />
           )}
 
           {/* TG11.3: the evidence write path. The only writing panel in the application, and
@@ -2558,12 +2759,28 @@ export default function App() {
               onImport={handleImportEvaluationReceipt} />
           )}
 
+          {activeTab === 'experimentComposer' && (
+            <ExperimentComposer onSelectStudy={setSelectedStudyId}
+              requestedStep={requestedComposerStep} onEvidenceHandoff={(studyId) => {
+              setSelectedStudyId(studyId); setActiveJourneyStage('admit'); setActiveTab('evidence');
+            }} />
+          )}
+
           {/* TAB 11: FINDINGS (TG9.2) -------------------------------------------------
               The cross-domain claim surface. Everything scientific on this tab is a string
               the backend produced; this file passes an error handler and nothing else. */}
           {activeTab === 'findings' && (
             <FindingsView onError={(message) => setError(message)}
-              selectedStudyId={selectedStudyId} onSelectStudy={setSelectedStudyId} />
+              selectedStudyId={selectedStudyId} onSelectStudy={setSelectedStudyId}
+              onOpenComposer={() => navigateWorkspace('experimentComposer')} />
+          )}
+
+          {activeTab === 'researchArchive' && (
+            <ResearchArchive onError={(message) => setError(message)}
+              onNavigate={(target, studyId) => {
+                if (studyId) setSelectedStudyId(studyId);
+                navigateWorkspace(target);
+              }} />
           )}
 
           {/* TG11.5: recorded-not-reproducible argument. This is a separate workspace from
@@ -2572,6 +2789,15 @@ export default function App() {
           {activeTab === 'review' && (
             <ReviewView selectedStudyId={selectedStudyId} onStudyId={setSelectedStudyId}
               onError={(message) => setError(message)} />
+          )}
+
+          {/* T4C.5j: the atmospheric gate record. It sits in Review because it is read-only
+              about frozen artifacts and can grant no permission: a retired design is shown
+              retired, and a receipt is shown with both its verdicts. It offers no acquisition
+              control, because acquisition is a 2.8 GB spend gated on a mandatory order that a
+              browser button cannot represent. */}
+          {activeTab === 'gate' && (
+            <GateRecordView onError={(message) => setError(message)} />
           )}
 
         </main>

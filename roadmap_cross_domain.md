@@ -22,6 +22,135 @@ the cost of a refactor, not for the cost of a platform.
 
 ---
 
+## 0. Current position (2026-09-04, `ed-dev`)
+
+Maintained at the top so that the frontier does not have to be reconstructed from the five
+thousand lines below. `VERIFICATION.md` carries the captured output behind every figure here, and
+`architecture.md` describes what exists rather than what is planned.
+
+**Phase G17 is IN PROGRESS. Phase G18 is DONE.** Every G17 phase from TG17.0 to TG17.14 is
+complete; what keeps G17 open is that TG17.10 delivered its apparatus gate with the **release
+withheld**, not that a feature is unbuilt. TG17.11 to TG17.14 were written after G18 opened, so
+they appear physically *after* the G18 section below. They are G17 phases.
+
+**The release gate.** `src.core.experiment_qualification.qualification_plan()` assembles seven
+gates in about 0.15 s without executing any of the measurements they read. On this tree:
+
+| Gate | Status | What it means |
+|---|---|---|
+| `offline_matrix` | `NOT_RUN` | A run this call did not perform, not a measurement missing from the checkout. `execute_offline_qualification()` resolves it to the measured result: three calendar cells pass and three scale/shape cells are refused by the bespoke adapter. |
+| `restart_recovery` | `NOT_RUN` | The same kind of `NOT_RUN` as above. |
+| `browser_no_glue` | `PASS` | TG18.5 slice 4. Reads a recorded Playwright run bound to the source of every spec in the suite. |
+| `synthetic_fifth_adapter` | `PASS` | TG17.13. A live source-edit audit plus a recorded acceptance run. Publishes a standing glue count of **1** that it deliberately does not block on. |
+| `calendar_calibration` | `PASS` | TG17.12. Reads a recording bound to the declared contract and to the source that decides what was measured. |
+| `scale_shape_calibration` | `REFUSED` | TG17.11, **superseded and not deleted** by TG17.15 slice 5. The old claim -- the null's resolvable sizes and its drawable sizes do not overlap, and no amount of compute closes the gap -- is recomputed on every plan and still holds. A successor null is calibrated and recorded. What still blocks: no declared manifest requests the calibrated inference, and pool exchangeability on real records is not decidable here. A refusal blocks release exactly as a failure does. |
+| `live_sources` | `PASS` | TG17.14. A dated four-domain run: ERA5/CDS, Argo GDAC and MAST SPOC each demonstrating network use, and the bespoke order-book record demonstrating **no** network use. |
+
+The verdict is `NOT_RELEASEABLE`. **Every scientific gate has now been measured** and five of the
+seven read `PASS`; the one thing blocking release is `scale_shape_calibration`, and it is a
+declared scientific limit rather than unfinished work. TG17.14 reached four archives in four
+domains and moved the verdict not at all, which is the arrangement working: a refusal blocks
+exactly as a failure does.
+
+**`scale_shape_calibration` is what TG17.15 addressed, and TG17.15 is now complete.** The gate
+refused because the null's resolvable sizes and its drawable sizes did not overlap -- a claim that
+is still recomputed on every plan and still holds. Two measurements
+on 2026-09-04 established that this cannot be fixed by scaling: at its minimum size of 105 the test
+has **zero margin** -- one member off the floor and none of the 105 reject -- and lifting the
+enumeration cap buys nothing, because each member's statistic sees only k - 1 distinct partners
+however many joint reassignments exist. The gap is structural. TG17.15 proposes separating the
+partner pool from the tested family, which makes resolution and multiplicity independent knobs;
+its costs, slices and falsification conditions are written down there before any code is cut.
+
+`offline_matrix` and `restart_recovery` remain `NOT_RUN` only in the sense that this call did not
+perform them; `execute_offline_qualification()` resolves both.
+
+**TG17.15 is delivered in full.** The estimand is declared, the partner pool is built with
+the circularity structurally excluded rather than forbidden, and the exact pool-substitution null
+runs a family at the size sealed into its pools. Slice 3 also corrected a defect in its own first
+draft that the phase's own falsification conditions were written to catch: a pool sized by
+`minimum_pool_size` is sized for the world in which every declared correspondence is genuine, and a
+family of six that clears it can still reject nothing unless five of the six are real. The receipt
+now names that number rather than reporting the favourable case as a green light.
+
+Slice 4 measured the calibration and the null holds: on a true null the family-wise false-positive
+rate is 1 of 200 with a one-sided bound of 0.024, and the exact ranks are uniform on their own
+lattice rather than merely thin in the tail. Two adversarial nulls -- a sampling artefact every
+record shares, and an observed partner cleaner than the pool its own bands admit -- hold the rate
+too. It returned two unwelcome answers all the same. Detection collapses between planted
+correlations of 0.92 and 0.84: at 0.88, 98.8% of members have an uncorrected p under 0.05 and 35.4%
+survive correction, because a mixed family gives its surviving member no step-up rank to hide in.
+And the admission contract narrows native duration transitively through the cadence band, so an
+inventory spanning 4.05 decades yields pools spanning about one. Slice 4 also failed its own first
+recorded run, on an expectation that demanded a test with no type-II error; the expectation was the
+defect and was replaced by two criteria derived from the case.
+
+Slice 5 carried that into the gate on 2026-09-05, and **TG17.15 is complete**. The gate still reads
+`REFUSED` and the verdict is still `NOT_RELEASEABLE`; what moved is the reason. TG17.11's refusal is
+superseded rather than deleted, and the supersession is recomputed on every plan rather than quoted:
+if the enumeration cap were ever lifted past the resolvable size, the record reads `VOID` and says
+the old limit removed itself instead of crediting this phase with removing it. Two blockers remain,
+both computed. Every frozen scale/shape manifest declares `scale_partner_reassignment` at 200
+replications -- read back from the manifests, not restated -- and the calibrated method is exact
+pool substitution, which none of them requests. And pool exchangeability on *real* records is
+published as **not decidable here**, with a guard asserting that blocker survives a passing
+recording, because it is exactly the one that gets quietly dropped once everything else goes green.
+
+**So scale/shape mode is now a calibrated method waiting on a declared plan and a curated
+inventory, rather than a method that could not work.** That is a better position than TG17.11 left
+it in and it is not a release. What would move it: a manifest that declares the per-correspondence
+estimand, and an inventory of real records whose admission criterion is shown to hold rather than
+assumed.
+
+**Phase G19 is specified and not started.** A researcher meeting a refusal wants to interrogate it
+with a model of their choosing, over several turns. G7's recorded-call boundary already supplies
+most of what that needs; what it lacks is a conversation, and a conversation adds drift,
+staleness across turns and a transcript that is the most quotable and least reproducible artefact
+the platform can produce. The phase records the rule that keeps retrieval safe here -- whole
+records, never fragments -- before any code is cut.
+
+Standing instruction, unchanged by TG17.14 having been authorised once: nothing in this repository
+may reach the network without the maintainer's explicit say-so.
+
+**Also open, and independent of the above:**
+
+* Phase 4E is DONE on the atmospheric line and **Phase 4F is under way**: T4F.1 supplies the
+  timed event substrate with the observation grid that separates what was searched from what
+  was found, and **T4F.2 now counts on it** -- `A4 -> A8 -> B8 -> C16` is a chain with a
+  support and a confidence rather than a shape the record merely permits. The honest part is
+  the denominator: an antecedent enters a confidence only if the whole window it could have
+  been followed in was searched, so an occurrence the record ended before is censored rather
+  than counted as unfollowed. **T4F.3 has now drawn this phase's first null**: a confidence
+  is referenced to a base rate measured as a window probability rather than a per-frame one,
+  to a surrogate ensemble that rotates the antecedent on the searched lattice so its own
+  bursting survives and only the alignment under test is destroyed, and to a correction paid
+  on the whole declared family, with a data-chosen lag referenced to the distribution of the
+  maximum because a lag chosen by the data is a search. The easy null is provided and priced:
+  on one unchanged record the same lift is not distinguished at p = 0.11 by the shifting null
+  and is called a precursor at p = 0.01 by the scattering one, so the choice of null decides
+  the finding and the receipt names which was drawn. A design that could not have rejected
+  anything is refused before any counting happens, so an under-powered absence is never
+  produced to be read as a negative result. **This remains the larger outstanding body of
+  work in the repository** -- T4F.4-8 and all of 4G remain. 4G is gated behind T4F.6: if
+  nothing recognisable is recovered, the pipeline is presumed broken and 4G does not start.
+* Defects **D84** and **D85** are open and **D18** is partial. Ninety-two of ninety-five are
+  fixed. This session found three: **D93** (a time unit dropped at the T4E.2 signing seam, T4F.1),
+  **D94** (a cache key republished as a `sha256`) and **D95** (untimestamped SPOC cadences), the
+  last two by TG17.14's first contact with real archives.
+* The last measured **full backend run is 3,978 passed, 4 skipped, 1 xfailed**, exit 0, on
+  2026-09-05 in 0:52:09 -- the tree carrying T4F.3. It replaces the 3,926 measured after T4F.2
+  and the 3,893 after TG17.15 slice 5. The rise is exactly 52: the 47 test
+  functions T4F.3 added, one of them parametrised six ways, so nothing was lost in between, and this run had nothing else competing for the
+  machine. Do not quote a larger figure without running the suite again.
+
+**Two habits this line holds to, because both were learned by being caught out.** A guard that
+passes because it cannot see what it is checking has now been met five times (D64, D74, D75, and
+twice inside TG17.13) - a silence is explained before it is believed. And deterministic counts are
+asserted while wall-clock is recorded under names that say nothing asserts it, because a duration
+measures the machine.
+
+---
+
 ## 1. Relationship to SpectralEarth, and the claim boundary
 
 SpectralEarth is a rigorous atmospheric research instrument. It continues independently under
@@ -37,7 +166,8 @@ Three boundaries hold for the life of this programme:
   atmospheric assumption is load-bearing it is named as such and given a general replacement, or
   it is recorded as a limit on generality. It is never hidden behind an adapter.
 * **Nothing in this line may be cited as SpectralEarth evidence, and nothing here relaxes the
-  atmospheric programme's claim boundary.** T4C.6 remains unrun on both lines; D43 remains open.
+  atmospheric programme's claim boundary.** T4C.6 has since run on this line and returned PASS (T4C.5m, which also closed D43); that verdict
+  is atmospheric evidence on the `ed-dev` fork and is not thereby a cross-domain result.
   The frozen campaign `campaigns/t4c6_nz_era5_temperature_850_v1.json`
   (`84f7b53f…75975`) is immutable on this line.
 * **Generalisation is never a reason to weaken a working abstraction.** See E12.
@@ -159,7 +289,7 @@ abstractions. Phase G0 exploits exactly this.
 
 ---
 
-## 3. Additional Standing Rules (R17--R23)
+## 3. Additional Standing Rules (R17--R24)
 
 Inherited: R1--R16 from `roadmap.md`, unchanged and unrestated. These add the constraints that
 only arise once more than one domain is in play.
@@ -240,9 +370,52 @@ regenerated**. The LLM layer is a recorded observation of a non-deterministic pr
 on the far side of every gate. This limitation is declared in the UI wherever LLM commentary is
 displayed.
 
+### R24. A scientific configuration is a first-class record, not one-off glue.
+
+If a defensible experiment requires a researcher to write a conversion script, call hidden
+endpoints in sequence, edit JSON by hand or move files between domain-specific tools, the
+cross-domain abstraction is unfinished. Every scientific choice must be expressible in one
+validated experiment manifest, reachable through both the public API and the UI, frozen before
+the affected data are opened, and carried into the receipt.
+
+Domain-specific mathematics remains legitimate; domain-specific orchestration does not. A new
+conforming domain adapter may add declarations, acquisition controls and a structural translator,
+but it may not require a branch in the experiment runner or a bespoke page. The acceptance test
+is operational: a scientist can preflight, freeze, run, inspect, resume and export a complete
+experiment from a clean browser session without a terminal, handwritten glue or undeclared
+defaults.
+
+### R25. A refusal no call can reach is a defect, not a safeguard.
+
+Found three times in a row -- in G0's `require_declared`, and then in T4D.3 and T4E.1/T4E.2 --
+and it is a defect rather than harmless duplication because it reads like a guard and guards
+nothing. A second copy of a check that an earlier layer already performs makes the reviewer
+believe a class of input is handled here when it is refused elsewhere, so the real refusal's
+message and its coverage go uninspected.
+
+**Rule:** every refusal must be demonstrated by a test that reaches it. If measurement shows
+another mechanism fires first, the unreachable branch is deleted and replaced by a test naming
+*which* mechanism fires and what it says. The deletion is recorded in the docstring, so the
+absence is a decision rather than an omission.
+
+### R26. An operating point is measured against replicates, never chosen.
+
+R16 says a tolerance comes from the mathematics rather than from what the code happens to pass.
+Its counterpart applies where the mathematics gives no number: a match tolerance, a noise floor,
+an admission threshold. A plausible-looking constant is an author's opinion wearing the costume
+of a measurement, and it silently sets the false-positive rate of everything downstream.
+
+**Rule:** any such constant is produced by a calibration function that re-derives it from
+replicates of a known answer, is committed with the report that produced it, and is pinned by a
+test asserting the constant equals what the calibration returns. Two instances stand:
+TG3.4's `calibrate_match_tolerance`, and T4E.2's `AXIS_ISOTROPY_FLOOR = 1.0421`, the largest
+anisotropy a known-isotropic configuration produced over 24 noise realisations. Clearing a
+calibrated floor is a **minimum, not a precision claim**, and the documentation must say so
+where the constant is defined.
+
 ---
 
-## 4. Additional Engineering Standards (E12--E15)
+## 4. Additional Engineering Standards (E12--E17)
 
 ### E12. Generalise beside, never weaken.
 
@@ -285,6 +458,15 @@ and left assumed inside the sweep, so a domain's declared floor was enforced in 
 absent from the receipt. A refusal written where the reader will meet it and an assumption
 living where the number is computed are two different places, and localising one does not
 localise the other.
+
+### E17. One manifest drives the API, orchestrator, UI and receipt.
+
+The backend owns a versioned experiment schema. Adapter registrations contribute typed parameter
+schemas, defaults, units, validation, cost hints and refusal explanations; the UI renders those
+contracts rather than duplicating them in domain-specific forms. The same immutable manifest is
+accepted by the API, executed by the orchestrator, displayed by the run monitor and embedded in
+the evidence export. If any layer maintains a second interpretation of an experiment, schema
+drift has already occurred.
 
 ---
 
@@ -3494,7 +3676,7 @@ and ordered declarations while using a row-random split. It now plans only indep
 Grouped rows explicitly require group-held-out confirmation; ordered rows require blocked and
 embargoed confirmation. Neither dependency structure is silently broken to make the recipe run.
 
-#### Phase G16 — Representation Structure — **PLANNED**
+#### Phase G16 — Representation Structure — **COMPLETE**
 
 G14 finds raw or PCA candidates associated with a declared target and confirms them on a held-out
 partition. G16 asks the next bounded questions: whether candidates carry duplicate, complementary
@@ -3503,7 +3685,7 @@ nuisance; and whether a small, frozen linear subspace retains its relationship a
 samples and nuisance regions. This is a representation-structure programme, not automatic feature
 selection. Nothing in it deletes a column or instructs a researcher which representation to use.
 
-**TG16.0 Admission and benchmark prerequisites. PLANNED.** The first G16 recipes admit independent
+**TG16.0 Admission and benchmark prerequisites. DONE (2026-08-30, `ed-dev`).** The first G16 recipes admit independent
 samples only. Grouped data remain unavailable until group-held-out nulls and confirmation exist;
 ordered data remain unavailable until blocked, embargoed equivalents exist. Before an operation
 enters the capability registry, paired known-answer benchmarks must cover exact duplicates,
@@ -3512,7 +3694,18 @@ is weak individually, nuisance-only association, signal that survives conditioni
 does not, and a collider counterexample. Calibration on nulls and stated power on planted effects
 are acceptance criteria, not follow-up polish.
 
-**TG16.1 Redundancy Structure Audit. PLANNED.** Freeze the complete candidate pair/group family,
+**Delivered.** `require_independent_samples` is the one refusal used by the existing file-first
+recipe and reserved for the G16 recipes: grouped rows name group-held-out confirmation with
+benchmarked nulls, and ordered rows name blocked/embargoed confirmation with benchmarked nulls.
+`representation_structure.py` registers a planted/safeguard pair covering all nine cases above
+with separately derived random streams and independent construction oracles. The future
+operation-level acceptance family is frozen at 200 replications, alpha 0.05, null rejection rate
+at most 0.075 and planted detection power at least 0.80. The benchmark suite is 31 PASS, 0 FAIL,
+0 NOT_YET_RUNNABLE. This slice deliberately exposes no G16 operation; the premature
+`association_redundancy` G15 registry entry was removed. TG16.1 must earn its registry entry by
+running these cases, not merely by consuming their arrays.
+
+**TG16.1 Redundancy Structure Audit. DONE (2026-08-30, `ed-dev`).** Freeze the complete candidate pair/group family,
 estimator, discretisation or neighbourhood policy, null, seeds, alpha and correction before
 enumeration. Report a structure map whose outcomes distinguish supported redundancy,
 complementarity and unresolved relationships. Pairwise association alone must not be described as
@@ -3520,7 +3713,24 @@ the number of independent pieces of information, and a synergistic pair must not
 because neither member ranks highly alone. Output is a **candidate redundancy structure**, never
 an instruction to remove features.
 
-**TG16.2 Conditional-Information Audit. PLANNED.** Estimate the explicitly named quantity
+**Delivered.** The first bounded recipe freezes every unordered pair from two to six declared raw
+features, three hypotheses per pair, equiprobable discretisation with Miller-Madow correction,
+the two conditional-permutation nulls, seed, alpha and Benjamini-Yekutieli family correction before
+opening a result. Positive calibrated interaction information supports redundancy; two corrected
+conditional increments support complementarity; everything else remains unresolved. Exact
+candidate identity is separately visible structural evidence. The joint estimator therefore keeps
+the XOR pair as supported complementarity even though both singleton mutual informations are weak.
+Responses explicitly deny a partial-information decomposition, a count of independent information
+pieces, and any instruction to remove or select a feature. The operation is now registered as
+`redundancy_structure_audit` and exposed through content-bound plan/run endpoints.
+
+**Acceptance met.** Both G16 known-answer benchmarks now carry `G16.1.redundancy_structure`.
+Across the frozen 200-replication family, exact-duplicate and noisy-copy redundancy power is 1.00
+and 0.94, complementary and XOR power is 1.00 each, and the independent false-claim rate is 0.02.
+All four one-candidate conditioning cases correctly produce no pair claim. The focused gate is 4
+PASS, 0 FAIL and 0 NOT_YET_RUNNABLE; the complete benchmark registry is now 33 checks.
+
+**TG16.2 Conditional-Information Audit. DONE (2026-08-30, `ed-dev`).** Estimate the explicitly named quantity
 `I(candidate; target | declared nuisance)` only where overlap and effective support meet a frozen
 admission rule. A global target permutation is not a conditional-independence null because it also
 destroys the target/nuisance relationship. Each estimator therefore brings a benchmarked
@@ -3530,7 +3740,27 @@ statistical role, not proof that the variable is a confounder: responses say **c
 association**, never “confounding removed”, “nuisance-free” or causal. Collider and post-treatment
 interpretations remain outside what the computation can decide.
 
-**TG16.3 Stable-Subspace Generation. PLANNED.** Search a bounded linear family only. The complete
+**Delivered.** The bounded recipe requires one researcher-declared nuisance and tests every one of
+one to six declared raw features. Its content-bound plan freezes equiprobable bins, Miller-Madow
+conditional mutual information, the complete candidate family, a five-rows-per-cell
+overlap/effective-support rule, a linear conditional-randomisation model, permutations, seed,
+alpha and global Benjamini-Yekutieli correction. The null fits target on the declared nuisance,
+permutes residuals, reconstructs and rediscretises the target, preserving the fitted
+target/nuisance relationship that a global target shuffle would destroy. Inadequate within-region
+levels, effective joint support, absolute quadratic residual correlation above 0.20, a
+nuisance-stratum residual-variance ratio above 4, inadequate permutation resolution, missing
+nuisance roles and dependent rows all refuse before a result.
+
+**Acceptance met.** Both paired G16 benchmarks now carry `G16.2.conditional_information`. Across
+200 frozen replications, support admission was 1.00 for every applicable case, signal-survival
+power and collider conditional-association detection were 1.00, and nuisance-only/conditional-null
+false-claim rates were 0.055/0.045, below the 0.075 ceiling. The collider result is deliberately
+reported as conditional association while its causal interpretation remains outside the
+computation. The focused paired gate is 6 PASS, 0 FAIL and 0 NOT_YET_RUNNABLE; the complete
+benchmark registry is now 35 checks. The operation is registered as
+`conditional_information_audit` and exposed through content-bound plan/run endpoints.
+
+**TG16.3 Stable-Subspace Generation. DONE (2026-08-30, `ed-dev`).** Search a bounded linear family only. The complete
 dimension range, preprocessing, objective, nuisance-stability criterion, regularisation values,
 optimiser, restarts, seeds and correction family are sealed before generation. Scaling and every
 subspace parameter are fitted on the generate partition alone. A subspace is identified by its
@@ -3538,7 +3768,25 @@ projector/span rather than arbitrary component signs or rotations, and multi-see
 stability is reported so optimiser luck cannot be called scientific stability. Output is a
 **candidate compact stable subspace**, not an optimal representation.
 
-**TG16.4 Held-out and nuisance-region Confirmation. PLANNED.** Freeze the generated projector,
+**Delivered.** The content-bound recipe accepts two to six declared raw features, reserves but
+does not open a confirmation partition, and enumerates every sealed dimension/positive-ridge
+combination. Generate-only z-score scaling feeds a regularised supervised-covariance objective
+with a declared-nuisance regional-instability penalty where one nuisance is present. Seeded block
+power iteration, restarts, target-permutation refits, global Benjamini-Yekutieli correction and
+10% multi-seed perturbations are all frozen. Admission requires a corrected generate association,
+a maximum projector distance of 0.10 and, when applicable, generate-tertile explained-fraction
+range no larger than 0.35. Projectors identify spans independently of basis sign or rotation;
+the basis and generate-only scaling are carried solely for later unchanged application.
+
+**Acceptance met.** Both paired G16 benchmarks now carry `G16.3.stable_subspace_generation`.
+Across 200 frozen replications, exact-duplicate, noisy-copy and complementary linear candidate
+rates were 1.00 each. The nonlinear XOR candidate rate was 0.025 and the independent
+false-candidate rate was 0.055, both below the 0.075 ceiling; every one-feature case correctly
+produced no compact subspace. The focused paired gate is 8 PASS, 0 FAIL and 0
+NOT_YET_RUNNABLE; the complete benchmark registry is now 37 checks. The operation is registered
+as `stable_subspace_generation` and exposed through content-bound plan/generate endpoints.
+
+**TG16.4 Held-out and nuisance-region Confirmation. DONE.** Freeze the generated projector,
 preprocessing and complete searched family, then apply them unchanged to held-out samples.
 Nuisance regions are defined from generate data or an external declaration before confirmation
 outcomes are opened; confirmation data may not choose thresholds, regions, dimensions or family
@@ -3546,12 +3794,51 @@ members. The complete searched family is corrected on confirmation, empty region
 overlap refuse, and one held-out partition is opened once. Success is internal replication within
 one dataset, not an external certificate.
 
-**TG16.5 External Certification Seam. PLANNED.** A published candidate may be tested against an
+**Delivered.** `/subspace/freeze` binds the TG16.3 result and its content/plan digests, every
+family member's projector and application basis, generate-only means/scales, generated-candidate
+status, generate-derived nuisance-tertile cuts, the unchanged 0.35 regional-stability threshold,
+the complete-family BY correction and confirmation permutation ensemble into a field-digested
+seal. `/subspace/confirm` accepts no scientific tuning input. It reconstructs the sealed random
+partition, applies every span and preprocessing value unchanged, tests fixed projected scores by
+target permutation, corrects over every searched member rather than only selected candidates,
+and refuses missing nuisance-region overlap. The shared programme ledger keys consumption by the
+content-and-index-bound held-out partition, so a second seal cannot reopen the same rows.
+
+**Acceptance met.** Both paired G16 benchmarks now carry
+`G16.4.held_out_subspace_confirmation`. Across 200 frozen replications with 156 generate and 68
+confirmation rows, exact-duplicate, noisy-copy and complementary-linear internal-replication
+rates were 1.000 each. Nonlinear XOR was 0.005 and the independent null was 0.000, below the
+0.075 ceiling; every one-feature case remained outside the compact family. The paired gate is
+10 PASS, 0 FAIL and 0 NOT_YET_RUNNABLE; the complete registry is 39 checks. A passing receipt is
+called `internally_replicated_candidate`: it stores no evidence, moves no rung and explicitly is
+not an external replication certificate.
+
+**TG16.5 External Certification Seam. DONE (2026-08-30, `ed-dev`).** A published candidate may be tested against an
 independently acquired, content-addressed dataset under a separately frozen transfer contract.
 Preprocessing and the subspace remain unchanged unless adaptation was declared as a different
 family before target access. Only this boundary may report an external replication receipt, and
 even that receipt certifies the executed test and provenance rather than declaring a universally
 optimal or causal representation.
+
+**Delivered.** `/subspace/publish` creates a content-addressed definition only from a generated
+candidate frozen by a TG16.4 seal. `/subspace/transfer/freeze` takes candidate digests and target
+metadata without target bytes, requires a different content digest plus acquisition identifier,
+time, source and an explicit independence declaration, and freezes the complete transfer family,
+target declaration and row count, no-adaptation policy, permutation ensemble, BY correction and
+target identity. `/subspace/transfer/certify` requires the independently published transfer-seal
+digest, spends the target in the shared durable ledger before target-dependent validation, applies
+source scaling, bases/projectors and nuisance regions unchanged, and corrects across the complete
+published family. A failed post-opening validation still spends the target. The receipt records
+declared provenance without pretending the software verified the truth of that declaration.
+
+**Acceptance met.** Both paired G16 benchmarks now carry
+`G16.5.external_subspace_certification`. Across 200 frozen replications with 156 source-generate,
+68 source-confirmation and 68 independently generated external rows, exact-duplicate, noisy-copy
+and complementary-linear external-replication rates were 1.000 each. XOR and the independent null
+were 0.000, and every one-feature case remained outside the compact family. The paired gate is 12
+PASS, 0 FAIL and 0 NOT_YET_RUNNABLE; the complete registry is 41 checks. The generic-file UI now
+exposes TG16.1 through TG16.5 as one progressive structure programme, closing the served-route
+reachability gap rather than exempting scientific endpoints from it.
 
 **Capability and claim boundary.** G16 operations enter `DatasetCapabilityProfile` only when their
 backend recipe, refusal path and benchmarks exist. Until then their presence in this roadmap is
@@ -3560,6 +3847,1170 @@ stores no evidence and moves no claim rung unless a later evidence workflow expl
 receipt. The intended progression is: **many measurements → informative candidates → mapped
 information structure → conditional relationships → compact stable candidates → held-out
 replication → external certification**.
+
+#### Phase G17 — Configurable Multi-domain Structural Experiments — **IN PROGRESS**
+
+G17 closes the gap between having domain-capable parts and having an apparatus a scientist can
+actually operate. Its flagship experiment is the one the architecture has been promising: select
+a shared week, three months or six months; select four genuinely different domains; acquire each
+through its legitimate source; translate each into a common **structural** vocabulary; mine and
+compare the declared family under appropriate nulls; and inspect or export the result. The common
+vocabulary is not “weather”. Weather is its first adapter. Original units, meanings, clocks,
+missingness and provenance remain attached throughout (R19).
+
+This phase has two separate scientific modes and the UI must never blur them:
+
+* **Calendar-aligned:** what declared structures occurred during the same UTC observation
+  interval? Calendar overlap permits co-occurrence analysis only; precedence still requires every
+  participating domain to admit it under R21, and neither licenses causality.
+* **Scale/shape-aligned:** where does a frozen structural motif recur after an explicitly declared
+  normalization of structural scale, regardless of absolute duration? This mode cannot imply
+  simultaneity or lead/lag and must not inherit the calendar mode's language.
+
+The initial flagship family is reanalysis, Argo, TESS and one independently acquired fourth
+domain that breaks a different inherited assumption. The fourth domain and source are frozen in
+TG17.0; it may not be chosen after seeing which source gives the most interesting answer. A
+second gridded geophysical product does not satisfy R17. Live-source acceptance is recorded
+separately from deterministic fixture acceptance so a remote outage cannot be mistaken for a
+scientific failure.
+
+**Programme acceptance — the no-glue test.** Starting from a clean browser session, a researcher
+can choose or load an experiment, resolve coverage, understand every refusal, freeze the complete
+family, press **Run experiment**, leave and resume after refresh, inspect the domain-native and
+canonical results, and export a reproducible receipt. They use no terminal, notebook, handwritten
+JSON, manual CSV conversion, hidden endpoint or file-shuffling step. Authentication and explicit
+network consent may be supplied in the UI; they are not scientific glue. Until this test passes,
+G17 is not complete even if every backend endpoint exists.
+
+**Delivery rule:** this is a sequence of vertical product slices, not six backend slices followed
+by a UI project. TG17.1 establishes the Composer shell, saved draft and preflight view; TG17.2--6
+extend that same visible workflow as each contract becomes real. TG17.7 completes the guided
+workflow, recovery and accessibility qualification; it is not the first point at which a
+scientist sees G17. A slice with an unreachable backend route remains in progress.
+
+**TG17.0 Flagship contract and known-answer benchmarks — DONE (2026-08-30, `ed-dev`).** Freeze the scientific question,
+the four domain/source contracts, the two comparison modes and the acceptance thresholds before
+building the happy path. Known-answer fixtures cover: a shared structural event with different
+units and cadences; unrelated events in the same calendar interval; the same motif at different
+absolute durations; misleading similarity created by gaps; a lag-looking relationship where one
+domain refuses precedence; and a family large enough to exercise correction and power refusal.
+The planted construction oracle is independent from the implementation being tested.
+
+**Acceptance:** null calibration, planted-effect power, coverage/refusal expectations and maximum
+family/compute budgets are written before an operation is registered. The deterministic four-
+domain fixture is registered on the existing benchmark API/Platform surface; its saved Composer
+recipe lands with TG17.1's manifest rather than inventing a second temporary schema. A null result
+is a valid flagship result; changing the question after seeing it is not.
+
+**Delivered.** `multidomain_flagship.py` freezes reanalysis, Argo, TESS and the existing
+`order_book` declaration as the first quartet. Order book is a licensed, content-addressed user
+record, deliberately retained because its irregular aggregated clock, absent metric and explicit
+precedence refusal test more than another grid would. The contract separates calendar-aligned
+co-occurrence from scale/shape transfer; freezes week, three-month and six-month presets; and sets
+the later operation gates at 200 replications, alpha 0.05, null rejection at most 0.075, planted
+detection at least 0.80, 10,000 family members, 4 GiB and one hour of planned work.
+
+The independent construction family contains a shared calendar event, one normalized motif at
+different native durations and calendar positions, unrelated records sharing only an interval,
+independent values behind strongly shared gaps, an apparent event order that order book makes
+inadmissible as four-domain precedence, and a 24,576-member pre-acquisition budget refusal. Every
+case crosses four clocks, semantics and units and derives each domain from a distinct labelled
+random stream. The focused gate is 2 PASS, 0 FAIL and 0 NOT_YET_RUNNABLE; no G17 scientific
+operation or capability is registered by this prerequisite slice.
+
+**TG17.1 Versioned experiment manifest and observation contract — DONE (2026-08-30, `ed-dev`).** Introduce one immutable
+`CrossDomainExperimentSpec` carrying mode, domains, acquisition identities, measures and roles,
+UTC start/end or declared scale-normalization family, window durations/stride, coverage policy,
+adapter versions and parameters, family definition, nulls, correction, seeds and resource caps.
+Week, three-month and six-month controls are presets that write explicit boundaries into the
+manifest, never ambiguous duration labels. Multiple durations form one declared family unless the
+researcher preregisters separate experiments.
+
+Metadata preflight resolves each archive's native addressing into the requested interval without
+opening measurement values. In particular, TESS sector/cadence coverage is resolved to an
+interval and never presented as exact merely because a sector intersects it; Argo profile
+coverage remains sparse point support; reanalysis coverage remains a grid/time extent. The result
+is a coverage matrix with expected samples, native cadence, gaps, cost/bytes, credentials/network
+needs and a stable reason for every refusal.
+
+**Acceptance:** the manifest round-trips byte-stably through API, saved recipe, URL/run identity
+and receipt. Browser refresh preserves every selection. Insufficient coverage refuses or remains
+an explicitly permitted partial domain according to the frozen policy; it never silently changes
+the interval, drops a domain or shrinks the family. The first Composer shell can create, save,
+reload and preflight this manifest using visible controls.
+
+**Delivered.** `CrossDomainExperimentSpec` is now the only G17 scientific configuration and has a
+canonical byte encoding, content digest and run identity. It freezes the mode, exact UTC window
+boundaries/stride, complete quartet, source and planned-adapter identities, native measure,
+semantics and units, coverage rule, one duration-crossed family, domain-preserving null,
+correction, seeds and TG17.0 resource caps. The saved flagship recipe round-trips through the same
+schema. A draft name points to an immutable content-addressed revision, so saving an edit preserves
+the old manifest while browser refresh reloads the selected draft.
+
+The metadata-only preflight reports native addressing, support kind, nominal expected samples
+only where meaningful, unknown sparse/irregular counts, gap status, byte estimate and access need
+for every exact window. It does not call the network or open measurement values in this slice.
+ERA5 is a grid extent; Argo remains sparse point support; TESS remains sector-bounded and is never
+called exact from intersection alone. The recipe visibly refuses its deliberately absent local
+order-book content binding. Once bound, Argo/TESS remain explicit partial coverage under the
+recipe policy, while `complete_required` refuses; no path changes a window, drops a domain or
+shrinks the 288-member family.
+
+The separate Experiment Composer provides visible mode, coverage and exact-window controls,
+complete quartet/family inspection, validate, immutable save/reload and the coverage/refusal
+matrix. It preserves the shell study selection and the saved draft across refresh. The legacy
+gridded parameter-sweep engine remains available under its honest name. Run is visibly disabled:
+TG17.1 does not claim TG17.2 translation or TG17.6 orchestration, and creates no scientific result,
+evidence or rung movement. Twelve focused manifest/API tests and the frontend contract cover the
+slice; the production TypeScript/Vite build passes.
+
+**TG17.2 Canonical structural-trajectory contract — DONE (2026-08-30, `ed-dev`).** Define the smallest shared record
+the mining layer actually needs, provisionally `StructuralTrajectory`: labelled dimensionless or
+unit-declared structural channels; native interval support and validity masks; structural scale
+coordinate and its mapping to native scale; domain/source/variable semantics and units;
+adapter/version/config digests; and every relevant assumption violation. It may carry declared
+energy concentration, persistence, entropy, recurrence, change-point, motif or information
+channels only where the producing adapter has a benchmarked definition. It is not a bag into
+which convenient domain numbers can be renamed.
+
+Each structural adapter declares required axes and roles, invariances, consumed information,
+output clock/support, missing-data behaviour, legitimate null family, leakage risks and operations
+it refuses. Raw/native records remain available for audit and are never overwritten by the
+canonical projection. A canonical representation does not erase the many-to-one translation or
+make raw magnitudes comparable (R19).
+
+**Acceptance:** weather, Argo and TESS known-answer objects enter the same mining interface with no
+domain branch there, while provenance can reconstruct exactly how every canonical value arose.
+Semantic leakage and undeclared interpolation fail conformance. A canonical plot cannot lose the
+native clock, unit, support or adapter digest.
+
+Delivered as a vertical product slice. `StructuralTrajectory` preserves exact native interval
+support, validity, meaning and units, structural-to-native scale mapping, immutable native record
+identity/locator, adapter/version/config digests, assumption violations and reconstructable
+per-value lineage. `StructuralAdapterDeclaration` makes required axes/roles, invariances,
+consumed information, output support, gap behaviour, legitimate null, leakage risks, refusals and
+benchmark-authorized channels executable rather than prose. Its first deliberately narrow
+channel is a benchmarked within-record standardized level; it does not launder native semantics
+or magnitudes.
+
+Reanalysis, Argo and TESS deterministic known-answer records pass the same domain-blind mining
+function. Conformance independently rejects semantic/unit substitution, any changed clock,
+support or validity mask, unbenchmarked channels, changed scale mapping, dropped violations and
+values that cannot be rebuilt from their native indices and declared formula. The Composer now
+has an **Inspect structural contract** action whose manifest-bound preview visibly retains native
+support count, coverage, unit, scale, limits and native/adapter digests. It is explicitly labelled
+known-answer data, not acquired observations. Live adapter translation, order-book onboarding,
+analysis, evidence and rung movement remain later slices. Ten focused trajectory/API tests plus
+the frontend contract pass; the production TypeScript/Vite build passes.
+
+**TG17.3 Adapter registry, schema-driven controls and conformance kit — DONE (2026-08-30, `ed-dev`).** Make acquisition
+plus structural translation a registered `DomainExperimentAdapter` contract rather than an
+orchestrator switch statement. A registration supplies the domain declaration, acquisition
+planner, typed UI schema, metadata preflight, materializer, canonical translator, capability
+derivation, null builder and provenance renderer. Deliver conforming adapters for reanalysis,
+Argo, TESS and the frozen fourth domain in that order, keeping each vertical slice runnable from
+the UI as it lands.
+
+The conformance kit tests deterministic translation, content addressing, axis/role validation,
+gap preservation, refusal propagation, declared invariances, null suitability, bounded resource
+planning and API/UI schema agreement. Domain-specific advanced controls are permitted only through
+the registration schema; hardcoded forms and `if domain == ...` branches in the generic composer
+or runner fail review.
+
+**Acceptance:** a synthetic fifth adapter installed through the supported extension seam appears
+in the domain selector with its controls, preflights and completes the fixture without editing the
+orchestrator, generic API routes or UI source. Onboarding-cost entries distinguish unavoidable
+domain mathematics from framework glue; glue must trend to zero rather than merely move files.
+
+**Delivered.** `DomainExperimentAdapter` is one registration carrying the domain declaration,
+a typed `ControlSchema`, the acquisition planner, translator configuration, materializer,
+structural declaration and translator, capability derivation, null builder and provenance
+renderer. `EXPERIMENT_ADAPTERS` is an ordinary registry, so the domain selector, the Composer
+controls and the metadata preflight read one source. `preflight_manifest` lost its literal
+`source_plans` table and its `channel_table:local` special case; a manifest naming an
+unregistered domain, the wrong adapter, a source that adapter does not reach, or parameters its
+controls refuse now refuses by name before acquisition.
+
+Window arithmetic stayed in the framework. An adapter declares only support kind, native cadence,
+exactness, access and cost per day; `plan_windows` derives expected samples, bytes and gap status
+identically for all of them. That is the line the onboarding-cost entries are measured against:
+`src/adapters/reanalysis.py` is a declaration, two controls and one plan, and the shared
+standardized-level translation, null, capability derivation and provenance rendering are written
+once in `standardized_level_adapter.py`. Argo and TESS register through the public seam from
+`extensions/`, so the extension point is exercised by this programme rather than demonstrated.
+
+The conformance kit runs ten checks and *executes* what a declaration claims. `INVARIANCE_PROBES`
+applies each named invariance to the native record and compares every canonical channel, so an
+adapter claiming `native_value_positive_scaling` must have it. An invariance with no registered
+probe reports `NOT_PROBED` rather than `PASS`. All four flagship adapters pass 11 of 11 checks
+against their deterministic known-answer records, visibly, through
+`POST /api/v1/experiment-composer/adapters/{adapter_id}/conformance`.
+
+**The fourth domain became a family rather than a finance adapter.** Order book is now one saved
+declaration of `bespoke_record`, the seam for any record a researcher holds and no catalogue
+describes. Its fence is TG8.4's rule imported unchanged — *detection may create a required
+declaration; it may never satisfy one*: an observed irregular clock obliges `irregular_sampling`
+on a domain that has already passed `onboard_domain`, an aggregate footprint obliges
+`aggregated_values`, a flat record is refused under a domain declaring richer axes, and a domain
+with `lag_policy="none"` gets `precedence` added to its refused operations by construction. A new
+bespoke domain is added by declaration alone, with no code — demonstrated on a `clinic_appointments`
+domain in the test suite.
+
+That flexibility is deliberately **not** treated as the acceptance evidence. A data-driven
+instance tests an adapter's parameters, not the registry's extension point, so the acceptance test
+installs a synthetic fifth adapter with genuinely different structural mathematics — a monotone
+rank channel — from a module the application never imports. It reaches the registry, the control
+schema, the conformance kit and the domain-blind mining seam with no edit to the orchestrator, the
+generic API routes or the UI source.
+
+**Three defects this slice forced out.** TG17.2's `assert_structural_conformance` reconstructed
+values from a hardcoded standardized-level formula and compared every configuration digest against
+`{"ddof": 0}` — one domain's mathematics inside the domain-blind pass, which failed the fifth
+adapter for having different and correct arithmetic. `LINEAGE_RECONSTRUCTORS` now dispatches on the
+declared operation, and an unregistered operation fails rather than passes.
+
+The other two are in the documentation guard, and the second was hiding under the first. **D74**:
+the route-count regex matched the words "those routes" written into architecture.md by TG17.1,
+373 lines above the heading that carries the claim, so it parsed neither a numeral nor a spelled
+number and the comparison was never reached. Repairing it let the comparison run for the first
+time since TG17.1 — and it disagreed by far more than this slice had added. **D75**: `_routes()`
+enumerated a hand-maintained list of ten source files, and four mounted routers were missing from
+it, so **32 served endpoints were invisible to every check in that file**, the whole TG16 ingress
+surface among them. architecture.md claimed 75 routes, **107 are served**, and the table headed
+*"an undocumented endpoint is an untested contract"* was missing 21 rows. The list is deleted
+rather than corrected: routes now come from the application object, which cannot omit a mounted
+router. `test_frontend_contract.py` had enumerated `app.routes` since T3.5.22, so the two guards
+had disagreed about what the API is for four slices.
+
+`AdapterControls.tsx` renders the declared schema — its only switch is on a control's `kind` — and
+the Composer has no per-domain form. 18 focused adapter tests pass (15 functions, 4 parametrised),
+the TG17.1 and TG17.2 suites remain green with one deliberately updated refusal-wording assertion,
+and the production TypeScript/Vite build passes at 1,402 modules. No live archive is acquired, no
+cross-domain statistic runs, no evidence is written and no claim rung moves; the `source_binding`
+control makes the known-answer binding a visible manifest-recorded choice and the live binding
+refuses by naming TG17.6.
+
+**TG17.4 Clock, support and coverage semantics — DONE (2026-08-31, `ed-dev`).** Calendar mode compares interval support,
+not equal row indices. Every structural observation carries `[start, end)` support and presence;
+pairwise overlap and effective sample size are computed from those declarations. No path silently
+bins, compacts, forward-fills or interpolates an irregular record to manufacture simultaneity.
+Any allowed aggregation, tolerance or resampling kernel is an adapter operation declared and
+frozen before values are opened, with consequences shown in preflight.
+
+Scale/shape mode uses a separate normalized structural-scale coordinate and retains its mapping
+back to each native duration/length. It cannot emit calendar coincidence, precedence or causal
+language. Calendar mode cannot silently search normalized scale ratios. A study wanting both
+modes declares both and pays for the combined corrected family.
+
+**Acceptance:** adversarial unequal-cadence, boundary, daylight/time-zone, sparse-profile,
+interrupted-light-curve and non-stationary-support fixtures either align as declared or refuse by
+name. Changing row density alone cannot manufacture support. The UI visualizes actual coverage
+before the freeze and the exact support used afterward.
+
+
+**Delivered.** `src/core/structural_alignment.py` compares half-open `[start, end)` support with
+interval arithmetic and nothing else. The invariant it exists to hold is one sentence —
+*changing row density alone cannot manufacture support* — and it is the load-bearing test:
+splitting every record into sixty times as many rows over the same support leaves the occupied
+duration, the overlap, the governing scale and the effective sample size identical. Effective
+sample size is overlap **duration** over the coarser of the two native scales, so a fine record
+cannot lend a coarse one resolution it does not have; the raw row count travels in every report
+and is used by nothing, printed beside the number that is actually evidence. Supports are
+unioned rather than summed, a zero-width support is refused, and `[a, b)` next to `[b, c)`
+overlaps in nothing — which under a closed convention would have been a coincidence at every
+boundary of every regularly sampled record.
+
+Nothing bins, compacts, forward-fills or interpolates by default. `exact_support_overlap` is the
+only kernel that runs unnamed, and it transforms nothing. Every other kernel is a declared
+adapter operation: frozen in the manifest's `AlignmentPolicy`, inside the manifest digest,
+admitted by *every* participating adapter through the adapter contract's new
+`admissible_kernels`, with no framework default for any parameter, and reporting in seconds how
+much of the resulting overlap it created rather than observed. A value-inventing kernel is
+refused outright over a domain declaring `irregular_sampling` or `aggregated_values`. Which
+kernels a domain admits is a domain judgement: reanalysis admits tolerance and grid aggregation,
+Argo admits tolerance but not a grid the array does not keep, TESS admits a grid but not a
+tolerance that would blur the observational gap deciding whether a target was observed at all,
+the bespoke family admits only the kernel that transforms nothing, and no adapter admits
+`carry_forward`.
+
+The two modes cannot borrow each other's vocabulary, and the manifest refuses the mismatch where
+the search is declared rather than where the result is worded. Scale/shape correspondences retain
+both native durations, so a match is reported as a shape recurring at 1.8 hours here and 46 days
+there. Declaring both modes prices the union of what was searched.
+
+Consequences are visible before the freeze. `preflight_manifest` gains an alignment block that
+binds the kernel against every participating adapter, states each window's true elapsed UTC
+seconds, and reports a pair as **bounded by the window** rather than inventing an overlap number
+where metadata cannot establish one — which, for three of the four flagship domains, is the
+honest answer. `POST .../manifests/alignment` then measures the support the known-answer records
+actually have, and `CoverageTimeline.tsx` draws it positioned by time rather than by index, with
+the gap count, governing scale, effective sample size, kernel-created seconds and the greyed-out
+row count beside them.
+
+**Acceptance met.** `src/benchmarks/alignment_fixtures.py` carries the six adversarial cases and
+their known answers: unequal cadence resolves to 28 effective observations rather than 168; the
+abutting boundary shares nothing and refuses by name; the daylight-saving day is 82,800 seconds,
+where a nominal denominator would have reported 95.8% coverage for a record covering the window
+completely; the sparse Argo profile shares 36 hours of nine ascents inside ninety days; the
+interrupted light curve's two-day downlink gap survives a continuous partner and the overlap
+comes back as two intervals; and non-stationary support has its effective sample size labelled an
+upper bound rather than corrected.
+
+**Evidence.** `test_structural_alignment.py` 45 functions / 56 cases; the TG17-adjacent suites,
+the benchmark and cross-domain suites, the frontend contract and the documentation audit at
+362 passed; production build 1,403 modules; `git diff --check` clean. Nothing acquired, no cross-domain statistic run, no evidence written, no claim rung
+moved.
+
+
+**TG17.5 Multi-domain family accounting and domain-legitimate nulls — DONE (2026-08-31, `ed-dev`).** Freeze all tested
+domain pairs, triples, quartets, windows, durations, scales, motifs, lags and representations as
+one explicit hypothesis family before mining. The plan reports the family expansion in human
+terms and runs R18's resolution/power check before acquisition. Pairwise screens may generate
+candidates, but confirmation corrects over the complete search that produced them.
+
+Nulls are adapter-declared and mode-specific. They preserve the features that would otherwise
+create false structure: autocorrelation, seasonal/cyclic phase, irregular gaps, profile support,
+observation windows and any declared grouping. Calendar-co-occurrence nulls are distinct from
+scale/shape-similarity nulls. A global shuffle is not accepted merely because every domain can
+technically execute it.
+
+**Delivered.** `src/core/experiment_family.py` turns a manifest into one `SearchSpecification`
+over eight declared axes — domain set, window, channel, scale, relationship, lag, representation
+and motif — replacing the product that was written inline in `preflight_manifest` and copied
+again into the browser. Domain combinations are unioned across declared arities rather than
+multiplied, so pairs and triples of four domains are 6 + 4 members. `FamilyDefinition` gained
+`domain_arities`, `lags_seconds`, `representations` and `motifs`, each inside the manifest
+digest. `family_expansion` renders the multiplication as a sentence, prices the same declaration
+with one more domain, duration, scale and channel, and reports the surrogate cost of each.
+`ScreenedSearch` holds the screen beside the complete search and refuses to correct over the
+survivors of a screen unless a held-out partition is named. `precedence_availability` counts the
+members an absent lag policy leaves untestable without reducing the family. `structural_nulls.py`
+became a registry of mode-tagged `NullFamily` objects with declared preserved and destroyed
+features, four admissible families and `global_value_shuffle` registered-and-refused; adapters
+declare `admissible_nulls`, and preflight binds the manifest's null against every participating
+adapter. Two routes (`GET .../null-families`, `POST .../manifests/family`) and
+`frontend/src/components/FamilyPlan.tsx` put all of it in front of the researcher before the
+freeze.
+
+**The arithmetic this forced out.** Pricing the flagship through `SearchSpecification.account()`
+for the first time showed that its 288 declared tests need about **35,953 surrogates** under
+Benjamini-Yekutieli at alpha 0.05, while the frozen acceptance policy declares 200 — at which the
+largest affordable family is **four**. The study could have run to completion, cost the full
+amount and been arithmetically incapable of rejecting anything (**D76**). The remedy is the one
+R18 already admits: the manifest gained a `ConfirmationPolicy`, a `confirmatory_only` study is
+priced at its complete family and refused when it cannot resolve it, and the flagship now
+declares `generate_then_confirm` against a named held-out partition with four confirmatory
+members — with every payload stating that its generate stage produces candidates and not claims.
+A second defect fell out of the same pass: the flagship's null carried a `preserve_gaps`
+parameter that nothing had ever read (**D77**).
+
+**Acceptance met.** `src/benchmarks/family_calibration.py` calibrates the TG17.0 fixtures at the
+frozen family level — six pairs, one Benjamini-Yekutieli correction, 999 replications, the
+declared null applied through `bind_null`, and a support-weighted statistic that inherits TG17.4's
+density invariance. The planted `shared_calendar_event` is confirmed on **6 of 6** pairs; the
+false-alignment fixtures `same_window_unrelated`, `gap_alias` and `inadmissible_precedence` each
+reject **0 of 6**, so an identical outer interval and a shared observation gap do not become
+shared structure. Adding a domain or a duration updates the visible family and its surrogate
+requirement before the freeze (288 → 480 and 288 → 384, with 35,953 → 64,819 and 50,143
+surrogates required). Two of the four flagship domains declare no justified lag policy: they take
+part in structural association, and the 240 precedence members that pair them are reported
+unavailable while the declared family size stays the correction unit.
+
+**Evidence.** `test_experiment_family.py` 54 functions / 57 cases; `test_frontend_contract.py`
+117; the TG17 suites, the benchmark and cross-domain suites and the documentation audit run
+together; production build clean. Nothing acquired, no confirmatory statistic run, no evidence
+written, no claim rung moved.
+
+
+**TG17.6 Content-addressed, resumable experiment orchestrator — DONE (2026-08-31, `ed-dev`).** Execute one state machine:
+`DRAFT -> PREFLIGHTED -> FROZEN -> ACQUIRING -> TRANSLATING -> MINING -> CONFIRMING -> COMPLETE`,
+with explicit `REFUSED`, `FAILED` and `CANCELLED` outcomes. Every transition is idempotent and
+content-addressed; completed acquisitions and translations are safely reusable, while target
+openings and held-out partitions obey their existing ledgers. Retries cannot create a new
+scientific plan or reopen a spent target.
+
+Partial acquisition, remote timeout and adapter failure remain visible per domain. They never
+silently run a smaller experiment. The frozen policy alone decides whether a declared partial
+result is admissible, and the receipt lists every missing component. Progress events expose stage,
+domain, bounded work estimate, completed artefact digests and actionable remediation without
+leaking unopened results.
+
+**Acceptance:** kill/restart and browser-refresh tests resume the same run without duplicate
+network acquisition or scientific drift. A TESS timeout can be retried from the UI; a permanent
+coverage refusal returns to an editable copy rather than mutating the frozen run. Re-executing an
+identical complete manifest returns the same run identity and immutable artefacts.
+
+**Delivered.** `src/core/experiment_run.py` holds the machine as a transition **table**, so what a
+run was allowed to do next is one dictionary rather than a chain of branches. Run identity is a
+content address over the schema and the manifest digest and nothing else — no clock, no UUID, no
+machine — so executing an identical manifest *is* the same run: `POST /api/v1/experiment-runs`
+resumes rather than creates, and the Composer has no "new run" control because there is no such
+operation. Each step is keyed by the digest of the run, the stage, the component and the digests of
+its declared inputs, published immutably through `publish_new_bytes` and replayed from disk, which
+is both the no-duplicate-acquisition guarantee and the drift check: a changed native artefact
+re-keys its translation instead of being paired with a stale one. Operational failures are
+deliberately not published under a step address, because a timeout is a fact about a network at a
+moment and not a function of the declared inputs.
+
+`decide_stage` is a pure function of the frozen `CoveragePolicy` and the component statuses, so the
+decision that turns a partial acquisition into either a smaller experiment or a refusal can be
+audited without reconstructing a run. `complete_required` refuses; `partial_permitted` admits the
+run only above its declared minimum fraction; the receipt names every missing component either way.
+A refusal outranks a failure and a failure outranks a missing component, because "we could not ask"
+is not "the answer is no". `runs/<run_id>/journal.jsonl` is the only state: append-only, fsync'd
+per line, folded on read, and a torn tail is skipped rather than raising. `HeldOutOpenings` records
+the run that first spent a partition and refuses a second one by name.
+
+`src/core/run_workers.py` registers the stage-worker suites rather than accepting behaviour from a
+request, and everything registered today **acquires nothing**: `fixture_dry_run` rehearses a frozen
+plan end to end, and `fixture_transient_failure` times out each acquisition component once and
+completes it on retry, reading "first attempt" from the run's journal so it behaves identically
+across a restart or four separate HTTP requests. Eight routes and
+`frontend/src/components/RunMonitor.tsx` put the machine in the browser: the declared state trail
+drawn from the backend's own table, per-component statuses and digests, a bounded progress bar,
+the components the run did not produce, and Retry and "open an editable copy" as two buttons that
+are never both live.
+
+**Acceptance met.** A killed run resumes and does not re-request the coverage it had already
+acquired; a torn journal tail is skipped and the run still resumes; re-executing an identical
+complete manifest returns the same run identity and byte-identical artefact digests, and requests
+nothing. A timed-out acquisition leaves the run `FAILED` with a remediation and is retried from the
+UI over HTTP, re-executing only that component while the rest are replayed; a retry carrying a
+different manifest is refused by digest. A permanent refusal is terminal, is not retryable, and is
+answered with `editable_copy`, which writes a new draft and leaves the frozen run's journal
+unchanged. `ComponentOutcome` has no field a result could occupy, so a progress feed watched during
+`MINING` cannot report what mining found.
+
+**A defect the widened verification set found (D78).** `test_analysis_api.py`'s TG11.1 acceptance
+test asserted `len(names) == 13` before posting every sequence and cross-domain benchmark to
+`/api/v1/benchmarks/run`. TG17.0 registered two more, so the assertion aborted the test **before
+the HTTP call**, and from that slice onward `multidomain_flagship_planted` and
+`multidomain_flagship_safeguards` - the benchmarks carrying the four-domain flagship's planted and
+safeguard answers - were never once exercised across the API boundary the test exists to exercise.
+It survived four slices because TG17.1-17.5 each verified against targeted suites that did not
+include that file. Fixed by deriving the count from the registry with a floor so coverage cannot
+shrink unnoticed, and by naming the two benchmarks explicitly.
+
+**Evidence.** `test_experiment_run.py` 80 tests; `test_frontend_contract.py` 127; the TG17 suites,
+the manifest, family, benchmark and cross-domain suites and the documentation audit run together;
+production build clean. Nothing acquired, no confirmatory statistic run, no evidence written, no
+claim rung moved — the registered suites are rehearsals, and a rehearsal that completes is not a
+result.
+
+**TG17.7 Experiment Composer UI — DONE (2026-08-31, `ed-dev`).** Build one guided workbench over the manifest rather
+than four acquisition pages plus instructions. The progressive path is:
+
+1. **Question:** calendar-aligned or scale/shape-aligned, with the claim boundary beside the choice.
+2. **Domains:** choose two or more sources and see which assumption each breaks.
+3. **Observation:** select explicit dates or week/three-month/six-month presets and domain-native
+   measures/roles through adapter-supplied controls.
+4. **Preflight:** inspect coverage, gaps, credentials, estimates, unavailable operations and
+   remedies in one comparison view.
+5. **Analysis:** choose a benchmarked recipe; inspect the expanded family, nulls, correction,
+   seed and confirmation design with advanced controls disclosed but never hidden.
+6. **Freeze and run:** review a plain-language preregistration summary, freeze it, then monitor,
+   pause safely where supported, retry operational failures and resume after refresh.
+7. **Interpret:** move from native records to canonical structure, corrected comparisons,
+   limitations and evidence export without losing the experiment context.
+
+The composer supports saved versioned recipes, clone-to-edit, an advanced manifest inspector and
+machine-readable import/export; direct JSON editing is never required. Dataset acquisition does
+not silently make a dataset “the study”: the UI distinguishes acquired material, an experiment
+run, a finding and admitted evidence, and always shows the next legitimate action.
+
+**Acceptance:** the complete TG17.0 flagship is executed in a browser automation test using only
+visible labelled controls. Keyboard navigation, focus, loading/empty/error/refusal states,
+responsive layout and destructive-action confirmation are tested. Every served G17 route is
+reachable from the shell; selection persists across navigation and refresh; unavailable choices
+remain visible with the backend's reason rather than disappearing.
+
+**Delivered.** `src/core/composer_path.py` holds the workflow as a registry rather than a layout.
+`COMPOSER_PATH` carries the seven steps, each a `PathStep` that decides its own status from the
+manifest, and `compose_state` returns exactly **one** `next_action`. The browser renders that; it
+does not compute it. That is the whole slice: the order of operations *is* the scientific
+discipline - a family priced after acquisition is priced knowing what the data looked like, a null
+chosen after the statistic exists is not a null - and a UI that permits those in any order has not
+made an error, it has made the error undetectable, because no receipt can distinguish an
+experiment that was declared from one that was assembled.
+
+Statuses are three-valued, because "you have not done this" and "this cannot be done yet" are
+different sentences and only one of them is the researcher's move. A blocked step keeps its tab
+and its reason: the whole flagship blocks at preflight naming `order_book`, rather than dropping
+the domain and reporting a complete three-domain study. `STAGE_LADDER` names the four things a
+researcher can possess - acquired material, an executed run, a finding, admitted evidence - each
+with what it is, what it is **not** and its own gate; this surface can move a researcher across
+the first two and structurally cannot move them across the last two.
+
+Duration presets resolve on the server, in calendar terms, and apply as the explicit instants they
+resolved to. Writing them as fixed day counts was caught in test: 182 days from the flagship's own
+anchor is 2026-07-02, so a researcher pressing the preset that described their own window would
+have moved its boundary and re-addressed the manifest. The domain menu filters nothing and returns
+a domain with no declared observation unselectable with the reason. The preregistration summary is
+generated from the bytes that are hashed, since a preregistration signed after reading a summary
+the UI composed itself is a preregistration of the summary. `POST /path/state` deliberately looks
+for a run at the manifest's content address and never opens one, because `RunStore.open` publishes
+a frozen manifest and a read of where a draft stands must not be the thing that freezes it.
+
+**Acceptance met, in a real browser.** `frontend/e2e/composer-path.spec.ts` drives Chromium
+through `frontend/playwright.config.ts`, which serves the actual API and the actual frontend and
+points the backend at a scratch state directory for the same reason the pytest `client` fixture is
+bound to `tmp_path`. Eleven tests, and every locator is a role and a visible name - no CSS class,
+no test id - because a test that clicks `.btn-primary` proves the DOM has a div, not that a person
+could declare an experiment. They cover the seven ordered steps with blocked ones still reachable,
+exactly one next action naming its own route, arrow/Home/End keyboard navigation, the place kept
+across a browser refresh, the preflight refusal naming `order_book` and its reason, what each
+domain breaks shown before it is chosen, the ladder refusing to call a run a finding, empty panels
+that read as unasked questions, two-press destructive confirmation, the complete executable plan
+declared and run end to end, and a refresh that resumes the same run rather than starting a second.
+
+The one departure from the wording is that the **complete** flagship cannot be executed and should
+not be: `order_book` is bespoke, has no public archive, and metadata cannot plan its coverage, so
+the flagship blocks at preflight by design. The browser test drives that refusal, resolves it
+through the visible domain menu, and runs the resulting three-domain plan - which is the honest
+version of the acceptance rather than a weaker one.
+
+**The defect the browser found in its first minutes (D79).** The domain menu's checkbox was bound
+to `row.selected` from the `GET /domain-menu` payload rather than to the manifest. Unchecking a
+domain updated the plan at once, but the controlled input re-rendered from the previous payload,
+snapped back to checked, and flipped again ~200ms later when the refetch landed - so for that
+window the control reported the **opposite** of the choice just made. Every source-level and HTTP
+test passed throughout, because the manifest and the payload were both correct; only the rendered
+control was wrong, and until this slice nothing in this repository rendered anything. That is
+precisely the gap TG11.6 recorded and could not close. Fixed by driving the checkbox from the
+manifest the browser already holds.
+
+**Evidence.** `test_composer_path.py` 49 tests; `test_frontend_contract.py` 127 -> 144;
+`frontend/e2e/composer-path.spec.ts` 11 browser tests. Seven new routes, 119 -> 126. Production
+build clean. No archive is acquired, no statistic runs, no finding is recorded and no evidence is
+admitted.
+
+**TG17.8 Scientific comparison views — DONE (2026-08-31, `ed-dev`).** Provide linked views that make the abstraction
+inspectable rather than magical: a cross-domain coverage timeline; native-record preview beside
+canonical trajectories; native-to-structural scale mapping; pair/triple/quartet result matrix;
+motif correspondence and transfer view; null distributions, corrected values and power/resolution;
+and provenance drill-down to source, adapter, parameters and support. Selecting an apparent match
+highlights its contributing native intervals in every domain.
+
+Raw magnitudes from different domains never share a quantitative axis. Colour, ordering and
+language distinguish generated candidates, held-out confirmations, external transfers, nulls and
+refusals. Accessible tables contain the numerical result behind every visual, and all views state
+what may and may not be concluded.
+
+**Acceptance:** TG17.0 semantic-trap fixtures cannot be rendered as magnitude equivalence,
+precedence or causality. Sparse or absent coverage is visually distinct from a measured zero.
+Every plotted point traces to an immutable artefact and every correction denominator is visible.
+
+**Delivered.** `src/core/comparison_views.py` holds seven views in a registry ordered by ordinal -
+coverage timeline, native record beside canonical trajectory, native-to-structural scale mapping,
+pair/triple/quartet result matrix, motif correspondence and transfer, nulls with correction and
+resolution, and provenance drill-down - each declaring its axes, its legend roles, what it may
+conclude and what it may not. Six routes under `/api/v1/comparison-views` (126 -> 132) serve the
+contract, the legend, the set, one view, a linked selection and a reading check. The browser
+renders `frontend/src/components/ComparisonViews.tsx` inside the composer's Interpret step; it
+holds no boundary text of its own.
+
+**The refusals are structural, not advisory.** `Axis` raises `MagnitudeEquivalenceError` when a
+`native_magnitude` coordinate is given more than one domain - at *construction*, so a view that
+would put two units on one ruler never finishes being built and cannot reach a browser, an export
+or a screenshot. `Mark` requires exactly one of an artefact digest and a reason it has none.
+`register_encoding` refuses a role duplicating another's colour, marker *or* word, so the
+candidate/confirmation distinction survives for a reader who cannot use colour. A coverage cell is
+a named state (`COVERED`/`SPARSE`/`ABSENT`/`REFUSED`) in the payload and in the component, which
+draws from `CELL_STYLE` with no numeric path into it - absent support has no width to be zero.
+
+**The distinction the slice turns on.** `MODE_RELATIONSHIPS["calendar_aligned"]` admits
+`causality`, and that stays true: a study holding an external intervention design may declare and
+test it. No view may *draw* it, because every alignment computed here is observational and the
+design that licenses the arrow has no field in the manifest. Refusing the declaration would forbid
+a legitimate study; permitting the drawing would let any co-occurrence be read as a cause. So the
+contract serves `declarable_by_mode` and `renderable_by_mode` as two lists with the reason, and a
+manifest declaring `causality` still gets its matrix cells - occupied by the refusal, because a
+blank cell is indistinguishable from one nobody thought about. `magnitude_equivalence` and
+`semantic_equivalence` are refused in both modes.
+
+**Honest about what is not measured.** No stage worker produces values yet, so result and null
+cells read `NOT_YET_MEASURED` with the reason. `ViewContext.results_exist` requires a `MINING/`
+artefact rather than trusting `state == "COMPLETE"`, because TG17.6 lets a run complete under
+`partial_permitted` with mining components missing by name - without that, a run that completed
+having mined nothing would render its matrix as measured and empty. What *is* shown now is the
+correction denominator, the declared search size and the p-value floor: arithmetic about the
+declaration, computable before a byte exists, and worth reading before committing to the plan.
+Like the composer path, these routes look for a run at the manifest's content address and never
+open one.
+
+**What the reachability guard caught.** `test_every_api_method_is_reachable_from_the_ui` failed on
+four service methods with no caller - the contract, the legend, the single-view render and the
+reading check were served and invisible. They are now the legend at the top of the panel, a
+*What these views will not draw* disclosure carrying the three refusals, a per-view *Refresh*, and
+a control that asks the server whether a chosen reading can be drawn and prints the reason. That
+control is the TG17.0 semantic-trap acceptance made operable rather than only asserted.
+
+**Two a11y defects the browser found.** A `<details>` element is exposed as a group whose
+accessible name is *not* computed from its `<summary>`, so both disclosure panels were regions a
+screen-reader user would meet with no name at all. Found by `getByRole('group', { name })` timing
+out; fixed with explicit `aria-label`s. Separately, one full-suite run failed on the motif view
+where a helper waited only for the first view to paint; the helper now waits for the seventh, so
+each test's assumption that the whole set is present is stated once rather than raced on.
+
+**Evidence.** `test_comparison_views.py` 65 test functions (73 runs with parametrisation);
+`test_frontend_contract.py` 144 -> 154; `frontend/e2e/comparison-views.spec.ts` 19 browser tests,
+and the complete browser suite is 30. Six new routes, 126 -> 132. Production build clean. No
+archive is acquired, no statistic runs, no finding is recorded and no evidence is admitted.
+
+**TG17.9 Receipt, methods report and evidence handoff — DONE (2026-08-31, `ed-dev`).** A completed run exports an
+immutable bundle containing the exact manifest; coverage decision; source/acquisition identities;
+native and canonical artefact digests; adapter contracts; environment; family/null/correction;
+seeds; stage events; results; refusals; and software version. Produce both a machine-readable
+bundle and a scientist-readable methods/limitations report suitable for review, without claiming
+publication readiness or independent replication where those have not occurred.
+
+Completion creates an experiment receipt, not automatically a study, finding, EvidenceBundle or
+claim promotion. The UI offers explicit, reviewable handoffs into those existing workflows and
+shows which required evidence categories remain absent. Platform & evidence explains the entire
+G17 lineage and its claim limits from the same backend capability/receipt contracts, so the trust
+surface cannot lag behind the engine unnoticed.
+
+**Acceptance:** delete UI state and reconstruct the run from the exported bundle; all scientific
+identities and conclusions are unchanged. A platform-capability snapshot and documentation audit
+fail when a registered G17 operation, adapter, refusal or receipt field has no visible explanation.
+
+**Delivered.** `src/core/experiment_receipt.py` distinguishes TG17.6's live journal projection
+from the archival `cross-domain-experiment-bundle/v1`. A completed export carries the exact
+manifest and derived run identity; metadata preflight and coverage decision; acquisition identity
+beside source plan; full registered adapter contract and translator configuration; native,
+canonical, mining and confirmation digests in separate roles; family, nulls, correction, alpha,
+confirmation policy and labelled seeds; freeze-time environment; the exact event sequence;
+refusals; result identities; evidence-category census; methods report; and claim boundary. The
+bundle and Markdown report are content-addressed and published through the no-overwrite boundary.
+
+Replay is semantic, not merely a checksum. It reconstructs the manifest, run identity, transition
+history, component outcomes, artefacts, decisions, bounded work and terminal state from the event
+sequence and requires the embedded receipt to agree exactly. A caller that forges a state or
+artefact and recomputes the outer digest is still refused. An unknown top-level field is refused
+rather than accepted as an unexplained claim. Only COMPLETE runs export; a refusal or failure
+keeps its honest live receipt.
+
+The first Chromium import found **D81**: Python emitted an integral JSON value as `1.0`, while a
+browser round trip emitted the same JSON number as `1`, so the original digest rejected an
+untouched bundle. Canonical hashing now normalises integral numbers according to the JSON data
+model, with both a focused spelling-loss regression and the real browser export/replay path.
+
+`frontend/src/components/ExperimentReceipt.tsx` is mounted in Interpret and Platform & evidence.
+It renders the backend's operation, adapter, refusal, lineage and field registry; exports JSON and
+Markdown; and can discard all browser state then reconstruct the exact run from a user-selected
+bundle. The handoff displays `registered_hypothesis`, `admitted_evidence`,
+`independent_replication` and `claim_promotion` as absent. Its only action navigates to the
+separate evidence-study draft; `automatic_actions` is empty and no evidence route is called.
+The current registered rehearsal's mining and confirmation markers remain `fixture_artefacts`;
+they do not satisfy `measured_results`, because no measurement value was opened.
+
+The documentation audit imports the generated capability snapshot and requires every registered
+operation, adapter, refusal and receipt field to have an explicit backticked explanation in
+`architecture.md`. This is the same contract the two browser surfaces render, so a new capability
+cannot become usable while remaining invisible on the trust surface.
+
+**Evidence.** `test_experiment_receipt.py` has 21 test functions; the TG17.9 additions bring
+`test_frontend_contract.py` to 157 and `test_documentation.py` to 20, while all 80 TG17.6
+orchestrator tests remain green. Those four suites account for 278 focused tests. The full
+Chromium suite is 33/33, including three TG17.9 rendered tests; the production build transforms
+1,408 modules; four new routes bring 132 to 136; and the documented test-function inventory is
+2,847. The full backend suite has not been rerun since TG17.7, so 3,106 remains the last measured
+full-suite figure. No live archive is acquired, no statistic runs, no finding is recorded and no
+evidence is admitted by this slice.
+
+**TG17.10 Flagship qualification and no-glue release gate — APPARATUS GATE DELIVERED, RELEASE WITHHELD (2026-08-31, `ed-dev`).** Run the frozen four-domain
+known-answer family for a week, three months and six months in both comparison modes, then record
+the live-source tail separately with exact dates, archive coverage and any operational refusal.
+Qualify the entire browser path, public API path and exported replay against the same manifests.
+Measure scientist actions, adapter-specific framework edits, recovery from one remote failure and
+time to understand why a requested analysis is unavailable.
+
+**Definition of done:**
+
+* The no-glue browser test passes exactly as stated at the start of G17.
+* The synthetic fifth-adapter test requires no generic runner, route or UI edit.
+* Calendar and scale/shape modes pass their separate calibration, power and language gates.
+* Week, three-month and six-month manifests retain explicit dates, coverage and complete-family
+  correction; no duration is selected after results are opened.
+* A refresh, process restart and recoverable acquisition failure resume without scientific drift.
+* The result can be replayed and audited from its receipt, and its evidence/claim status is
+  impossible to confuse with acquisition or experiment completion.
+* `architecture.md` describes only the G17 capabilities actually delivered; this roadmap records
+  live checks that were not run or did not pass instead of polishing them into availability.
+
+**Delivered.** `src/core/experiment_qualification.py` is a release gate rather than a scientific
+worker. It derives six frozen cells — `week`, `three_months` and `six_months` crossed with the two
+comparison modes — from the single flagship recipe, so no second scientific configuration exists.
+Each cell keeps explicit UTC boundaries, the complete-family correction and an explicit
+`duration_selected_before_results` marker, and binds the order-book observation by the content
+digest of its known-answer record rather than by a filename. Each mode carries its own
+relationship, null family and claim language: `co_occurrence` under
+`independent_native_clock_shift`, `shape_recurrence` under `scale_partner_reassignment`.
+
+`execute_offline_qualification` preflights every cell and executes only the admissible ones. A
+cell passes only when the preflight refuses nothing, the run completes, one manifest digest
+appears in the preflight, run identity, exported bundle and replayed receipt, integrity verifies,
+results are unmeasured with no artefacts, and every evidence category through `claim_promotion` is
+`ABSENT` with no automatic action. Repeating the qualification resumes the identical runs.
+
+**The headline result is a refusal, not a green matrix.** Three of the six cells come back
+`REFUSED` before anything executes. `order_book.bespoke_record` declares that it cannot carry
+`scale_partner_reassignment` — that null alters no record, so admitting it would claim the domain
+has a native duration worth comparing shapes across, and a depositor-supplied record's native
+scale is whatever the depositor wrote down. **The frozen four-domain quartet cannot be qualified
+in scale/shape mode at all.** The ledger records that with its reason instead of narrowing the
+quartet, and the browser answers the same way: asking for scale/shape in the Composer produces a
+written explanation and leaves the plan calendar-aligned, rather than switching silently and
+failing later at execution. `REFUSED` is kept distinct from `FAIL` in the record and on screen —
+both block release, but nothing in the apparatus broke. A refused cell opens no run, because a run
+identity for an experiment that was never conducted cannot later be told apart from an unexecuted
+one.
+
+Recovery is measured separately from the existing broad-outage rehearsal.
+`fixture_single_remote_failure` times out exactly one remote-shaped acquisition and completes the
+other three; the run is then reloaded through a fresh `RunStore`, which is the real process
+boundary. The retry must name only the failed component, that component must show two attempts
+against one for each other, the run identity must be unchanged, and the recovered run must still
+export a bundle that replays as `VERIFIED`.
+
+**What is deliberately not delivered.** The ledger registers seven gates and passes two. It
+records `browser_no_glue` and `synthetic_fifth_adapter` as `NOT_RUN` because a backend rehearsal
+must not award a gate only a rendered browser test and a source-edit audit can measure;
+`calendar_calibration` as `NOT_RUN`; `scale_shape_calibration` as `NOT_IMPLEMENTED`, because no
+registered scale/shape mining calibration produces a scientific statistic at all; and
+`live_sources` as `NOT_RUN`, because network stays opt-in and archive coverage with its
+operational refusals needs a separately dated live record. `scientist_actions` reports
+`NOT_MEASURED` for the action count, adapter-specific framework edits and refusal-explanation
+time rather than inventing them. The verdict is `NOT_RELEASEABLE` and cannot be otherwise while
+any gate is unpassed: `verify_qualification_record` re-derives the record digest *and* refuses a
+`RELEASEABLE` verdict carrying a non-passing gate.
+
+Two of those gates are measured, just not here. The no-glue browser test now passes in Chromium,
+and `test_adapter_registry.py`'s synthetic fifth adapter — TG17.3's acceptance test — passes with
+its 17 siblings. Both gates nevertheless read `NOT_RUN` in the ledger, because a deterministic
+backend rehearsal cannot observe a rendered browser or a source-edit audit and must not award
+itself a gate on someone else's evidence. What stands between this slice and a completed TG17.10
+is therefore: a trustworthy channel that feeds those two external results into the record, the
+calendar calibration run, a scale/shape mining calibration that does not yet exist at all, and
+the dated live-source tail.
+
+**D83, caught by the full suite rather than by this slice.** Making the scale/shape cells
+admissible in the first place was done by widening the *framework default* `admissible_nulls` in
+four places — the `DomainExperimentAdapter` dataclass and the three adapter builders. Every
+targeted suite, the production build and the entire browser suite passed. What that change did was
+answer, for every adapter author including one who has not written their adapter yet, a question
+only an adapter author can answer; and it silently overruled the order-book adapter's own
+documented refusal. The only objection came from `test_experiment_family.py`'s pinned per-domain
+declaration, in an 11-hour full-suite run — which is the argument for running it. The defaults are
+reverted, the three domains that do admit the null declare it individually with stated reasons,
+and the matrix now reports the refusal the declarations actually imply. This is worth recording
+because it is the programme's central failure mode in miniature: a framework default quietly
+making a scientific choice, with every fast check green.
+
+**D82, found by the clean-browser gate.** The acceptance test composed a four-domain scale/shape
+plan through visible controls and was refused at execution. A held-out confirmation partition is
+confirmatory exactly once; the frozen flagship ships with one default partition name; the first
+run to open it spends it. Every later plan derived in the Composer inherited that spent name, was
+correctly refused, and was told to declare a new partition — through a form with no control for
+declaring one. A browser-composed plan was therefore executable at most once per deployment, and
+the only escape was hand-editing a manifest, which is exactly what the no-glue promise forbids.
+The analysis step now carries an explicit *Held-out confirmation partition* control. Two smaller
+findings came from the same test: the observation disclosure panels were `<details>` groups with
+no accessible name (the TG17.8 defect recurring in a second view, fixed with `aria-label`), and
+the acceptance test's own `addInitScript` cleared `localStorage` on *every* navigation, so the
+refresh it called a resume was really a new browser.
+
+**Evidence.** `test_experiment_qualification.py` has 16 test functions (21 runs with
+parametrisation); with `test_experiment_family.py` that is 77 passing tests. The complete Chromium
+suite is 35/35 from a cleaned `.e2e-state`, including the two TG17.10 browser tests; the production
+build transforms 1,409 modules; two new routes bring 136 to 138. The full backend suite was rerun
+twice for this slice: **3,238 passed with 1 failed** before D83 was fixed, and **3,240 passed, 4
+skipped, 1 xfailed, 0 failed in 39m 40s** after. That clean 3,240 replaces TG17.7's 3,106 as the
+last measured full-suite figure. No archive is acquired, no statistic runs, no finding is
+recorded, no evidence is admitted and nothing is released by this slice.
+
+
+**TG17.11 Scale/shape mining calibration — DONE — all five slices (2026-09-03).** *Superseded below: the gate now reads `REFUSED` rather than `NOT_IMPLEMENTED`, and the finding is that the method is calibrated while G17's declared families cannot reach it.* The
+`scale_shape_calibration` gate was, when this task was scoped, the only one of TG17.10's seven that read `NOT_IMPLEMENTED`
+rather than `NOT_RUN`. The distinction is exact and it is the reason this task exists: the other
+unpassed gates have a method that has not been executed or has no channel to report itself, while
+this one has no scientific statistic at all. Half of G17's two declared scientific modes is
+currently unvalidatable.
+
+**What already exists, and is sound.** The scale/shape foundations are further along than the
+gate's wording suggests. `invariance.py` supplies `relative_geometry`, a matcher whose
+scale-invariance is *measured* rather than declared — normalising each edge by the geometric mean
+of every edge reproduces to 0.37% across translation, rotation and rescaling, inside replicate
+noise — together with `calibrate_match_tolerance`, which fixes the comparison tolerance by
+re-measuring the same configuration under fresh noise instead of letting an author choose it, and
+`recover_scale_ratio`. `motif.py` supplies a complete mining statistic with a null: `support_of`,
+`surrogate_scene` and `motif_p_value` in the `(1 + k) / (1 + n)` form. The
+`scale_partner_reassignment` null family is registered and implemented.
+`structural_alignment.py` supplies `ScaleShapeCorrespondence`, which retains the mapping back to
+both native durations so a normalised match is always reportable as "1.8 hours here, 46 days
+there" rather than as an unqualified similarity, and `assert_mode_admits_relationship`, which
+refuses calendar vocabulary in this mode by name.
+
+**What is missing is the statistic, and the template for it is already written.**
+`src/benchmarks/family_calibration.py` is the calendar analogue and is complete: a statistic
+(`support_weighted_correlation`, built from shared support *duration* so that rewriting a record
+at ten times the row density gives the same number), the declared registered null applied through
+`bind_null`, 999 replications giving a per-pair null distribution, the surrogate p-value, one
+Benjamini-Yekutieli correction over the whole declared family, and four cases whose expected
+answers are frozen in the module rather than in the test — one planted case that must reject every
+member and three safeguards that must reject none. Scale/shape needs the same five parts. It has
+the null and it has none of the other four.
+
+**D91 blocks everything downstream of it, and was found by probing the null on the family it would
+actually run.** `reassign_scale_partners` deranges list positions, not pairings. Its own docstring
+states the requirement it violates. The right members of an all-pairs family repeat, so a shuffle
+guaranteeing `order[i] != i` still frequently yields `rights[order[i]] == rights[i]`. Measured over
+5,000 draws on the three domains that admit this null — `argo_float`, `reanalysis`,
+`tess_lightcurve`, with `order_book` declining under D83 — two of the three members are unchanged
+from the observation 50% of the time, and one of those pairs a record against itself 50% of the
+time. A surrogate equal to the observation satisfies `null >= observed`, so those members carry a
+p-value floor near 0.5 before correction and cannot reject at any effect size.
+
+The bias is conservative, and that is precisely what makes it dangerous here. A calibration built
+on this null would have measured near-zero planted power and been read as a well-behaved safeguard
+result rather than as a broken null — a false negative wearing the appearance of rigour, which is
+this programme's stated central failure mode in a second guise. Nothing already recorded is
+affected: no scale/shape cell has ever executed, because all three are `REFUSED` before execution
+by D83's per-domain declarations.
+
+**The family is three members, not six** — *superseded by slice 1 below, which found that the three-member inventory admits no reassignment at all and so cannot carry this null; kept as written because the pricing argument still holds for a three-member family and only the membership changes.* D83's per-domain declarations mean the scale/shape family
+is the three unordered pairs of the three admitting domains. R18 prices that at 59 required
+surrogates for alpha 0.05; 999 replications give a p-value floor of 0.001 and
+`check_power(999, 3)` reports `can_reject_after_correction: True`. The calibration is affordable.
+It is a different family from calendar's six and must be declared as its own, not inherited.
+
+**The statistic is the open scientific question, and one measurement in this tree already
+constrains it.** The mode compares a shape at one native duration against a shape at another, so
+the statistic must be invariant to each record's native scale — that invariance is the mode's whole
+content and must therefore be *measured*, as `invariance.py` measures its matcher, not asserted.
+The constraint that measurement already imposes: dividing by a modelled quantity imports that
+quantity's bias, which is why `scale_normalised` is kept as a function and deliberately left out of
+`MATCHERS` after the extractor's scale estimate was found to drift from +3.6% to -2.6% across a
+sixfold range. A shape statistic that normalises by each record's *estimated* native scale would
+inherit exactly that drift. The recommended form therefore divides one measurement by another of
+the same kind, as `relative_geometry` does, rather than by an estimated scale; the deciding
+evidence is an invariance measurement, and the alternative is admitted only if it survives one.
+
+**Fixtures, by direct analogy with the four frozen calendar cases.** A planted case where one shape
+genuinely recurs at materially different native durations, which must reject every member at the
+declared alpha. A `same_normalisation_unrelated` safeguard — independent shapes put through the
+identical normalisation — because standardising two smooth profiles to zero mean and unit variance
+makes them correlate, and that is this mode's counterpart to calendar's `same_window_unrelated`. A
+`native_scale_alias` safeguard where a coordinate coincidence arises from the scale grid rather
+than from shape, the counterpart of `gap_alias`. And a `degenerate_inventory` case whose declared
+family admits no valid reassignment, which must produce a refusal rather than a p-value of 1.0 —
+the case D91 currently answers silently and wrongly.
+
+**Slices.**
+
+1. **D91.** Derange effective pairings rather than positions; refuse when an inventory admits no
+   valid reassignment. Verified by re-running the probe that found it, and by a test asserting the
+   refusal on two pairs sharing one right member.
+2. **The statistic.** One shape-recurrence statistic over a declared correspondence, with its
+   scale-invariance measured across a range of native durations rather than declared, and its
+   sensitivity to the normalisation itself reported.
+3. **The fixtures.** Four frozen cases with their expected answers written in the module, not the
+   test.
+4. **The calibration.** The family of three, run under the declared null at 999 replications with
+   one Benjamini-Yekutieli correction, reporting planted power and the false-positive rate on the
+   safeguards.
+5. **The gate.** `scale_shape_calibration` moves off `NOT_IMPLEMENTED` to whatever it has actually
+   earned. A calibration that runs and fails its power target is a passed slice and an unpassed
+   gate; those are different facts and the record keeps them apart.
+
+**What would falsify this task, stated before it starts.** If the planted case cannot be recovered
+at the declared alpha once D91 is fixed, the honest conclusion is that scale/shape mode is not
+measurable on this quartet — not that the fixtures need adjusting or the alpha relaxing. D83
+already established that the frozen quartet cannot be qualified in this mode at all; this task may
+end by establishing that the three domains which do admit the null still cannot support the claim,
+and that outcome must be recorded as the result rather than engineered away. No case may be
+retuned after its answer is seen.
+
+**Claim boundary.** Nothing in this task is evidence about the world. It measures whether a
+declared family behaves as declared on fixtures whose answers are fixed in advance. Passing it
+licenses no mining, promotes no claim and admits no evidence.
+
+**TG17.11 slice 1 — D91 fixed, and the declared families answered a different question than
+expected (2026-09-03).** The null now enumerates the reassignments an inventory actually admits
+rather than shuffling list positions. A substituted partner must be neither the partner the
+pairing already had — the D91 fault, which returned the observation as its own surrogate — nor the
+pairing's own left member, which would compare a record against itself at maximal similarity.
+Assignments are deduplicated by the surrogate they *produce* rather than by the index permutation
+that produced it, because where an inventory names one record in several pairings many
+permutations spell one surrogate; counting them separately would overstate how much the null
+explores and bias the draw towards whichever surrogate has the most spellings. The draw is then
+uniform over the distinguishable surrogates. Enumeration is exact and bounded at eight pairings,
+above which a uniform draw would have to be argued for rather than demonstrated; no declared
+family approaches that bound.
+
+Measured on the inventory that exposed the fault, six pairings over three right members each
+appearing twice: **0 of 5,000 draws** leave a pairing unchanged and **0 of 5,000** pair a record
+with itself, against 50% for both before. Four guards pin it, and all four fail when the validity
+condition is mutated back to position derangement.
+
+**Two findings about the declared families, which change the rest of this task.** They are
+properties of the inventories, not defects, and they were invisible until the null was made to
+enumerate what it could legally return.
+
+* **Four domains compared all-against-all admit exactly one distinguishable reassignment.** Every
+  valid permutation of that family's six pairings spells the same surrogate. Its null is therefore
+  a constant, not a distribution: every replication returns the same value, so the p-value can only
+  be the floor or 1.0 however many surrogates R18 prices and is paid for.
+* **The three domains that admit the null after D83 admit no reassignment at all.** One of the
+  three pairings has no substitute partner that is neither its own nor itself. There is no
+  surrogate, so there is no test.
+
+Both are now refused by name, each with its own reason, rather than answered. The consequence is
+that the family sketched when this task was scoped does not exist: **a scale/shape calibration
+cannot be declared over an all-pairs *domain* family at either size.** It must be declared over an
+inventory of records, where the members of a pairing are individual frozen shapes rather than
+domains, and where the inventory is checked against the null it will run before any statistic is
+built on it. Slices 2 to 4 are rewritten on that basis; slice 3's `degenerate_inventory` fixture
+is no longer hypothetical, since both declared domain families are now instances of it.
+
+This is the falsification clause of this task's scope doing its work early and cheaply, on the
+null rather than on the statistic. Had the statistic been built first, the calibration would have
+reported near-zero planted power on a family that could not have produced any, and the honest
+reading of that number would have been a redesign of the statistic.
+
+**TG17.11 slice 2 — the statistic exists, and three of its properties are now numbers
+(2026-09-03).** `src/benchmarks/shape_calibration.py` supplies `shape_recurrence`: a
+support-weighted correlation over shared *phase* rather than shared seconds. Each record's
+declared support is divided by its declared native duration, the two phase axes are intersected
+by the same linear sweep `family_calibration.py` uses on calendar supports, and each contribution
+is weighted by the phase actually shared. Binning both records onto a common phase grid would
+have manufactured the correspondence under test, in the same way binning onto a common calendar
+grid would manufacture simultaneity, so it is not done.
+
+**Scale invariance is exact, and the reason is the denominator.** `invariance.py` records why
+`scale_normalised` is kept as a function and left out of `MATCHERS`: it divides by the extractor's
+*estimated* spatial scale, which drifts from about +3.6% to -2.6% across a sixfold range, and the
+whole of that drift lands in the quotient. The denominator here is a record's declared
+`StructuralScale.native_value` — a quantity the adapter states and the manifest carries, not one
+this module infers from the data it is about to test. Nothing is estimated, so nothing drifts, and
+the measurement shows it: re-presenting one record across the same sixfold native range moves the
+statistic by at most **1.1e-16**, against 0.37% for `relative_geometry`. The test asserts below
+1e-12 rather than below a tolerance chosen to fit. On a planted pair whose native durations differ
+by a factor of 2,222 the statistic reads **0.99**, against **0.05** for an unrelated shape at the
+same native duration.
+
+That argument was not accepted on its own, and two further measurements say what it costs.
+
+**Row density stops mattering, and where it stops is measured rather than picked.** Rewriting a
+record at a different cadence over the same span moves the statistic by less than 1e-9 down to
+about 16 rows per native cycle, then **2.7% at 8**, **11.7% at 4** and **15.6% at 2**. That
+movement is not a failure of invariance and is deliberately not reported as one: two rows per
+cycle cannot represent a second harmonic at all, so the lower agreement is real information loss,
+and a statistic that reported no movement there would be inventing detail the rows no longer
+carry. `measure_cadence_dependence` is therefore a separate function from
+`measure_scale_invariance`, because a single sweep varying both would report one number for two
+effects and make the invariance claim unfalsifiable. `MINIMUM_ROWS_PER_CYCLE` is set at 8 from
+those figures and comparisons below it are refused by name rather than scored.
+
+**A phase comparison is phase-locked, and that trade-off is now stated in advance.** A wrongly
+declared native duration drifts the two records apart once per cycle, so its cost compounds with
+how much was compared. A 10% mis-declaration costs **15%** of the statistic over one cycle,
+**40%** over two and **93%** over six. Comparing more cycles buys statistical support and spends
+tolerance to declaration error, and `measure_phase_window_tradeoff` puts that table in the record
+so a study cannot choose its phase window — and with it its own sensitivity — by accident. This is
+the honest counterpart of the "declared, not modelled" argument above: the phase axis imports no
+estimator drift, but it does import the declaration's own error, and here is how much.
+
+**A third finding, which settles what slice 3 must build.** Every G17 flagship record declares its
+structural scale as its own row cadence, so each resolves exactly **1.00 rows per native cycle**.
+A shape needs more than one sample per cycle to exist, so *none of the TG17.0 calendar fixtures
+can be reused as a scale/shape fixture at its declared scale* — the comparison refuses before it
+computes anything. Slice 3 must build records that declare a shape-bearing native scale rather
+than borrowing the calendar fixtures, and a test pins the finding so that a later slice cannot
+quietly borrow them anyway.
+
+Eight guards. Three mutations were run against them: dividing the phase axis by a constant number
+of seconds instead of the declared native duration fails seven of the eight; weighting by row
+count instead of shared phase duration fails two; removing the resolution floor fails two. No
+mutation left the suite green.
+
+**TG17.11 slice 3 — the fixtures, and the inference that had to be corrected before they could be
+scored (2026-09-03).** `src/benchmarks/shape_fixtures.py` builds the four cases and freezes their
+expected answers in the module. Two things had to be settled first, and both were found by
+measurement rather than by reasoning about the design.
+
+**The family size is solved from the null's resolution, not chosen, and it is 105.**
+`reassign_scale_partners` replaces a pairing's right member with another right member from the
+same inventory, so a member's surrogate statistic can take only as many values as the inventory
+has admissible alternative partners — exactly `k - 1` for `k` disjoint pairings. The p-value is
+therefore bounded below by `1/k` however many replications are paid for, and Benjamini-Yekutieli
+admits a rejection only where `1/k <= alpha/H_k`. `minimum_resolvable_family` solves that against
+the real `adjust` rather than against arithmetic written into the module, and at alpha 0.05 the
+answer is **105 pairings**: at 104 the most favourable result the null can produce — every member
+beating every alternative — still rejects nothing. This is a hard floor on the mode. It is also
+the quantitative form of the slice 1 finding: G17's declared families of three and four domains
+are not merely too small, they are short by a factor of about twenty-five.
+
+**The Monte Carlo template would have inverted the safeguards, and is registered and refused.**
+Applying `family_calibration.py`'s method unchanged — draw 999 whole reassignments, count
+surrogates reaching the observation, divide by 1,000 — reports 0.001 for a member that beats its
+`k - 1` alternatives, when the exact tail probability of that event is `1/k`. The replications
+resample the same handful of values, so the denominator asserts a resolution the null does not
+have. The error is a factor of `k` **in the anti-conservative direction**: measured on a wholly
+unrelated inventory of six pairings over 200 realisations, the Monte Carlo form rejects at a
+family-wise rate of **74%** against a nominal 5%, at 1.11 false rejections per family, while the
+exact partner test rejects at **0%**. Calendar mode is not affected and that is measured rather
+than assumed: an independent clock shift over records of 56 and 1,344 rows returns 397 distinct
+surrogate statistics in 400 draws, so each replication there is a genuinely new surrogate. The
+distinction is whether the null's support exceeds the number of draws, which is a property of the
+null rather than of the code, so `monte_carlo_partner_p_values` is kept, named and refused with
+its measurement attached — the treatment `global_value_shuffle` already gets, for the same reason.
+
+Had D91 not been fixed first, this second fault would have been hidden underneath it: the
+conservative bias of the broken null would have masked the anti-conservative bias of the wrong
+p-value, and the calibration would have looked approximately calibrated for two compensating wrong
+reasons.
+
+**The four cases, with their answers stated from what each case is.** `exact_partner_p_values`
+scores each declared pairing by its rank among the alternatives that could legitimately have
+replaced it, taking that reference set from `admissible_partners` — the same set the null draws
+from, so the test and the null cannot disagree about what the family is.
+
+* `planted_shape_recurrence`: each pairing genuinely shares one profile, presented at two native
+  durations drawn independently across four orders of magnitude. **105 of 105 members reject**,
+  in 20 of 20 independent realisations.
+* `same_normalisation_unrelated`: independent profiles put through the identical standardization,
+  which is what makes arbitrary smooth shapes look alike. Own pairings score 0.339 and
+  alternatives 0.346 — indistinguishable, as required. **0 of 105 reject**, family-wise error 0%
+  over 20 realisations.
+* `native_scale_alias`: every record sampled at the same rows per native cycle and carrying the
+  same artefact keyed to position within the cycle, the signature of a shared instrument cadence.
+  Own pairings score **0.812** and alternatives **0.845**: a raw correlation that would look like
+  a spectacular result under any threshold, and which the null absorbs completely. **0 of 105
+  reject**, family-wise error 0% over 20 realisations. This is the case that shows the null
+  earning its place rather than the statistic being weak.
+* `degenerate_inventory`: every pairing names the same right record, so none has an admissible
+  substitute. **Refused**, not scored — a p-value of 1.0 here would read as a safeguard passing.
+
+Eleven guards, including one asserting the contrast with the calendar null so that the refusal
+reads as the specific finding it is rather than a general suspicion of resampling.
+
+**TG17.11 slice 4 — the calibration runs, every case meets its frozen expectation, and the design
+states what it can and cannot resolve (2026-09-03).** `calibrate_shape_family` is the counterpart
+of `family_calibration.calibrate_family` and deliberately reports more than it does, because this
+mode's null has finite support and a p-value floor: a result saying only that the planted case was
+recovered and the safeguards were not would omit the two facts a reader most needs.
+
+**What it measured.** Each scoreable case is run over **20 independent realisations**, each as one
+family of 105 corrected once under Benjamini-Yekutieli at alpha 0.05, with no replications at all —
+the null's support is enumerated, and resampling it would claim a resolution it does not have.
+
+* `planted_shape_recurrence`: **105 of 105 members reject in 20 of 20 realisations.** Full power.
+* `same_normalisation_unrelated`: **0 rejections in 2,100 member tests**, family-wise rate 0.000.
+* `native_scale_alias`: **0 rejections in 2,100 member tests**, family-wise rate 0.000.
+* `degenerate_inventory`: **refused**, with its reason, rather than scored.
+
+`all_met` is true. Twenty realisations bound a zero count only at 14% by the rule of three, which
+is weaker than the alpha being claimed, so the same quantity is measured a second way where draws
+are nearly free: under the global null a member's exact p-value is uniform on the lattice
+`1/k ... 1`, so a whole family can be drawn without building a record. Over **20,000 draws the
+family-wise false-positive rate is 0.000**, a one-sided 95% upper bound of **0.015%**. The two are
+reported side by side rather than one standing in for the other, because the lattice measurement
+treats members as independent and a shared statistic grid makes that only approximately true.
+
+**The operating characteristic, which is the finding a study most needs and least expects.** Every
+genuinely recurring member sits at exactly the same p-value floor, so there is no region of partial
+power: at a given inventory size a family either rejects or it does not. The declared family is the
+smallest that can reject at all, which puts it on a knife edge — it recovers a wholly recurring
+inventory and nothing sparser. Measured at 105: with **104 of 105** pairings genuinely recurring
+the family rejects **0.9%** of the time; with 105 of 105 it rejects 100%.
+
+Detecting a sparser recurrence is not a matter of more computation. It is a larger inventory, and
+`minimum_family_for_detected_fraction` solves each size against the real correction:
+
+| fraction of the family genuinely recurring | smallest inventory that can detect it |
+| --- | --- |
+| 100% | 105 |
+| 90% | 120 |
+| 75% | 149 |
+| 50% | 243 |
+| 25% | 550 |
+| 10% | 1,586 |
+
+A study that declares 105 correspondences and finds that 90 of them recur reports **nothing**,
+however strong each individual match is. That is a property of the null and the correction
+together, it is now stated before anyone acquires anything, and it is the single most consequential
+number this task produced.
+
+**Why the Monte Carlo form is refused rather than documented as a shortcut.** Its error is a factor
+of `k` and therefore shrinks as the inventory grows, while the correction's stringency grows with
+it. The two cross, measured on wholly unrelated inventories: family-wise false-positive rate
+**76.7% at k=6**, **50.0% at k=12**, **10.0% at k=30**, and **0.0% at k=60 and k=105** — against a
+nominal 5%, with the exact test at 0.0% throughout. The wrong method is safe only at the inventory
+sizes where the right method already works, and catastrophic at the handful-of-domains sizes anyone
+would actually reach for. That is the shape of a trap rather than of an approximation.
+
+Seven further guards, seventeen in the file. Two mutations were run against them: reintroducing a
+replication denominator on this finite-support null fails two, and replacing the solved family size
+with a chosen one fails two. Notably the replication mutation does *not* break the safeguards at
+k=105, which is the same crossing measured above and the reason the guard that catches it asserts
+the p-value floor directly rather than waiting for a safeguard to fire.
+
+**TG17.11 slice 5 — the gate moved off `NOT_IMPLEMENTED`, and what it moved to is `REFUSED`
+(2026-09-03).** The sentence the gate carried — that no registered scale/shape calibration produces
+a scientific statistic — is now false, so it could not stay. What replaced it is not a pass. The
+gate reads `REFUSED`, the status this apparatus already reserves for a declared scientific limit
+that blocks release exactly as a failure does, and `scale_shape_applicability` computes the
+determination in milliseconds without acquiring a record or running a calibration.
+
+**The blocker is an inapplicable method, not an absent one, and it is two bounds that do not
+meet.** From below, every member of a `k`-pairing family sits at a p-value floor of `1/k`, so
+solved against the real correction at alpha 0.05 **no family smaller than 105 pairings can reject**
+even when every member is a perfect planted match. From above, `reassign_scale_partners` enumerates
+the reassignments an inventory admits exactly and **refuses above 8 pairings** rather than adopt a
+sampler whose uniformity is assumed. The gap is an order of magnitude, so **there is no inventory
+size at which the null as the qualification manifests declare it — drawn, with a replication count
+— can produce a rejection at all.** What can is the exact partner test, which enumerates the same
+finite support instead of resampling it; it is what the registered calibration is built on and what
+no declared manifest requests. That is a sharper statement than slice 4's, and it is a property of
+the declared null rather than of the fixtures, so no fixture work could move it.
+
+G17's two candidate families never reach that argument: the quartet all-pairs admits exactly one
+distinguishable reassignment and the post-D83 triple admits none, and both refusals are carried in
+the qualification record verbatim from the null itself rather than restated in prose that could go
+stale independently of the code.
+
+**The two facts the slice existed to keep apart.** A calibration that runs and meets its targets on
+built fixtures is one fact; whether a declared plan can reach the method is another. Reporting the
+first as the second is exactly how an unusable mode acquires a green gate. The record therefore
+names the calibration's entry point, states `calibration_executed_here: false`, and asserts only
+quantities it computed itself — a guard fails if any power or rejection-rate key appears in that
+section. A calibrated method the declared plans cannot reach, a method that does not exist, and a
+method that ran and failed are three different facts.
+
+**What this establishes about the task's own falsification condition, stated before it started.**
+The condition was that if the planted case could not be recovered at the declared alpha once D91
+was fixed, the honest conclusion would be that scale/shape mode is not measurable on this quartet.
+The planted case *was* recovered — 105 of 105 members in 20 of 20 realisations — and the conclusion
+about the quartet holds anyway, for a reason the condition did not anticipate: the method is sound
+and the declared families are two orders of magnitude too small to use it. **Scale/shape mode is
+not qualifiable on G17's declared families, and this is now recorded as the result rather than
+engineered away.** Qualifying it needs a declared inventory of at least 105 correspondences and an
+enumerated rather than drawn inference — a different family design, not a retuned fixture.
+
+**Verification.** Five guards added, twenty-one in `test_experiment_qualification.py`, 25 passed.
+Three mutations: awarding the gate `PASS` fails two, hard-coding the applicability verdict while
+adding a power number fails two, replacing the null's own refusal text with a fixed string fails
+one. The verdict remains `NOT_RELEASEABLE` and one fewer gate is unexplained. No archive is
+acquired, no statistic runs here, no evidence is admitted and nothing is released by this slice.
+
+
+
+
+
+
+
+
 
 **TG8.3 The domain ledger — finally measurable.** With five domains across three acquisition
 shapes there is at last a trend to read. *If onboarding cost is not falling, the abstraction is
@@ -3575,6 +5026,1050 @@ not working*, and the ledger must be able to say so.
     the archive (`DOMAIN_ATTRIBUTION_CAVEAT`).
 *   Network stays opt-in. Reaching the internet must never be a side effect of running a sweep.
 *   Credentials are never written to an artefact, a log, a provenance record or a `repr`.
+
+**TG17.12 Calendar calibration recorded into its release gate — DONE (2026-09-03).**
+`calendar_calibration` was the last of TG17.10's seven gates whose `NOT_RUN` was true of the record
+and false of the world. `family_calibration.calibrate_family` runs the frozen calendar family on
+the TG17.0 fixtures and has always passed; nothing carried that measurement into the qualification
+record. The gate still does not run it — a calibration is a scientific measurement and the gate is
+a release gate, the same separation TG17.11 stated for scale/shape — so what this task builds is
+the channel, in `src/core/calibration_record.py`.
+
+A recording is bound to two digests and is read as *unrun* if either moves: the **declared
+contract** (the cases and the rejection counts frozen with them, family size, alpha, correction,
+replications, channel, null family and seed), digested from `CALIBRATION_CASES` rather than
+restated so that relaxing an expectation cannot leave a stale pass agreeing with it; and the
+**source** of the four modules that decide what the measurement is, digested with line endings
+normalised so a Windows clone and a POSIX one agree. Four outcomes, three of them blocking: absent,
+unbound from its contract and unbound from its source all read `NOT_RUN`, because a recording made
+against something else is a measurement of a different thing rather than a weaker pass; a recording
+whose cases missed their frozen answers reads `FAIL`, because a calibration that ran and failed is
+a different fact from one that did not run.
+
+Neither digest is tamper-evidence against an editor of this repository, and the source binding
+covers four files rather than the whole import graph. That boundary is stated rather than hidden,
+because the backstop is elsewhere: the live calibration already runs in the suite on every pass,
+and a guard in `test_experiment_family.py` compares it case by case against what the gate is being
+told, so a recording cannot drift from what the calibration actually does.
+
+**What it recorded.** At 999 replications on a family of six, `shared_calendar_event` rejects
+**6 of 6** after correction and `same_window_unrelated`, `gap_alias` and `inadmissible_precedence`
+each reject **0**. `all_met` is true, so the gate reads **`PASS`** — the first of the seven
+scientific gates to clear, and the verdict is unmoved at `NOT_RELEASEABLE`.
+
+**The contrast with TG17.11, computed rather than asserted.** Both modes have a p-value floor and
+buy it differently. Scale/shape buys it with domains — a `k`-pairing family cannot go below `1/k`,
+and its draw refuses above 8 while its correction needs 105. Calendar buys it with computation —
+the floor is `1/(1 + replications)` and there is no enumeration ceiling, because the surrogates are
+clock shifts the record itself supports. Both configurations are checked against the real
+correction: the calibration family resolves at **999 against 293 required**, and the calendar plan
+the manifests actually declare resolves **4 corrected members at 200 replications against 166
+required**. Two bounds that do not meet, against two that meet with room to spare.
+
+Twelve guards in a new `test_calibration_record.py` plus the drift backstop, and the gate assembles
+in **22 ms warm** with a guard failing above one second.
+
+### Phase G18 — World-class scientific interface — **DONE (2026-09-04, `ed-dev`)**
+
+All six phases TG18.0-TG18.5 are complete; TG18.5's close-out checked the phase against its own opening paragraph rather than against its slice list. G18 does **not** clear §6 condition 19 on its own: that condition names both the clean-browser no-glue test and the synthetic fifth-adapter test, and the second belongs to G17.
+
+The engine is reachable, but reachability is not yet an instrument-quality interaction contract.
+The rendered baseline was inspected at an ultra-wide desktop viewport across Acquire, Spectral
+Transforms, Experiment Composer and Findings. The visual language is worth retaining: a restrained
+dark field, teal selection, explicit status, numbered scientific workflows and claim-boundary
+language. The deficits are shared ergonomics rather than a need for a new aesthetic: undersized
+secondary text, weak use of wide screens, stretched control cards, warnings that read like log
+lines, a research-context bar too quiet to function as orientation, and empty states that occupy a
+large canvas without naming the next legitimate action.
+
+This phase changes presentation and navigation only. It may not recompute, summarize, promote or
+reinterpret a scientific value; backend-authored claim language remains verbatim under R22/R23,
+and capability/refusal decisions remain server-owned under R25.
+
+**TG18.0 Rendered baseline and interaction inventory — DONE (2026-09-02).** Preserve the four
+distinct product modes identified in the baseline: interactive instrument (Spectral Transforms),
+guided commitment workflow (Composer), read-only claim surface (Findings), and trust/qualification
+surface (Platform & evidence). A change that improves one by making another ambiguous is not a
+successful redesign.
+
+**TG18.1 Shared instrument foundation — DONE (2026-09-03).** Establish one stable application frame,
+readable type/contrast tokens, an independently scrolling workflow rail, a wide-screen workspace
+that uses panes instead of stretched forms, a prominent persistent record/study context, standard
+surface and status treatments, reduced-motion compliance, and purposeful empty states. The first
+slice must improve all supplied baseline views without changing an API request or response.
+
+**First slice delivered (2026-09-02).** The shared shell now has instrument-level typography and
+surface tokens, an independently scrolling workflow rail, bounded wide-screen content, structured
+notices, and actionable empty Findings. Record/study context persists in application state but is
+shown only when populated and does not create a second sticky header. A new Research Archive
+indexes the existing study, run, gate, evaluation, acquisition-probe and benchmark ledgers while
+keeping their evidence classes visibly distinct. Acquire now exposes researcher-facing source
+identity and names the implemented CDS downloader as `PLANNER_NOT_EXPOSED` instead of silently
+omitting it. This does **not** complete TG18.1: the CDS browser planner/job surface,
+narrow-width rendered inspection and cross-workspace density tuning remain. Route-level bundle
+splitting is explicitly **not required** (2026-09-03): this local research instrument may ship a
+large bundle unless measured startup or interaction latency establishes a user-visible defect.
+
+**Second foundation slice delivered (2026-09-03).** The shell now has an accessible compact-width
+workspace menu with explicit expanded state and automatic closure after selection; the desktop
+workflow rail and workspace scroll independently inside the viewport; record/study context wraps
+without clipping on narrow screens; and connection startup is rendered as `Checking API` rather
+than briefly misreported as an outage. Navigation metadata is no longer set below 10 px. TG18.1
+remains in progress for rendered narrow-width inspection, cross-workspace density tuning and the
+CDS browser planner and durable job surface. The next slice below completes the planner half.
+
+**Third foundation slice delivered (2026-09-03).** Acquire now exposes the existing CDS route as
+a real metadata-only planner. Every variable, date, UTC hour, bound, pressure level, grid spacing
+and analysis depth is editable; the backend uses the production `CDSRegionalRequest` to return the
+immutable digest, monthly work units, exact frame/grid geometry and a no-compression-credit storage
+ceiling. The accepted six-year request reproduces 72 shards and 8,764 frames. Both API and UI state
+plainly say planning uses no network and execution is `NOT_MOUNTED`; a valid plan cannot be mistaken
+for a submitted job or acquired data. TG18.1 remains in progress for the durable CDS job/progress/
+resume surface, rendered narrow-width inspection and cross-workspace density tuning.
+
+**Fourth foundation slice delivered (2026-09-03).** The CDS planner/job portion is complete. An
+exact request digest plus affirmative network acknowledgement is required before submission; the
+server accepts no client path, repeats the conservative free-space preflight, and journals bounded
+monthly progress atomically below server-owned storage. Cancellation is cooperative between
+monthly requests and preserves verified work. Jobs left active by process loss become explicitly
+`INTERRUPTED` and can be resumed without repeating verified shards. Only `COMPLETE` creates a
+self-hashed acquisition record, which is labelled transfer/integrity provenance rather than
+analysis or evidence. The browser exposes job history, progress, the in-flight shard, stop/resume,
+preflight status and the completion record while keeping a validated plan visibly inert. The
+embedded worker registry is deliberately qualified for one API process; a multi-process deployment
+still requires an external queue. TG18.1 remains in progress only for rendered narrow-width
+inspection and cross-workspace density tuning.
+
+**Fifth foundation slice delivered (2026-09-03).** Cross-workspace density is now a shared shell
+contract rather than a panel-by-panel accident: one centred scientific canvas on wide displays,
+readable metadata and plot-label floors, consistent control height, compact mobile spacing, safe
+wrapping for content identities, and one-column reflow below 480 px. The conditional record/study
+context remains pinned beneath the instrument header while the workspace scrolls. The compact menu
+is now a fixed scrimmed drawer with background-scroll lock, current-workspace focus, a Tab loop,
+Escape and outside-click dismissal, and trigger focus restoration. Connection state collapses to
+an accessibly named icon below 400 px so the 320-pixel header does not overflow. All 171 frontend
+contract tests and the production build pass. Rendered narrow-width inspection was **NOT RUN** in
+that slice: the shared-browser runtime returned no available session after reconnect. The slice
+below runs it.
+
+**Sixth foundation slice delivered (2026-09-03) — TG18.1 closed.** The rendered narrow-width
+inspection is run, in Chromium, at 320, 375, 414 and 768 CSS pixels across all four product modes.
+The blocker in the fifth slice was the shared browser runtime, not the absence of a browser: the
+repository already carries a Playwright install and a Chromium binary, and `narrow-width.spec.ts`
+now sits beside the four existing acceptance specs under the same config.
+
+*It found two defects the source contract and the production build had both passed*, which is the
+whole argument for the task. The shared canvas rule `.workspace-main > *` also matched the two
+`sr-only` children; overriding their one-pixel clipped box with a real width and `margin-inline:
+auto` let those absolutely positioned elements escape the workspace's clipping, so **every**
+workspace scrolled horizontally by 14 px at 320 px. And the below-480-px reflow collapsed the track
+count but not `col-span-*`, so a spanning child rebuilt the second column as an implicit track while
+the declared template still read as one. A third, smaller finding: the 11/12-px metadata floor
+covered `text-[10px]` and `text-[11px]` and never `text-[9px]`, which Acquire, the lineage nodes and
+the capability profile all use. All three are fixed and now carry source assertions as well.
+
+The inspection measures the laid-out document rather than restating the CSS: document scroll width,
+content past the right edge that no ancestor scrolls, computed font size on every text-owning
+element, rendered control height, header containment, and both the used track count and the rendered
+row occupancy of every collapsed grid. It drives the drawer end to end — scrim, scroll lock, focus
+placement, Tab loop, Escape, outside click, focus restoration — and captures 21 named viewport
+artefacts.
+
+**Evidence.** The complete Chromium suite is **54/54 from a cleaned `.e2e-state`** (35 before this
+slice, 19 added). `test_frontend_contract.py` and `test_documentation.py` are **197 passed**. The
+production build succeeds. The full backend suite was **not** rerun for this slice; the last
+measured full-suite figure is **3536** (T4E.2, on this same tree).
+
+**Stated boundaries, so the closure cannot be read as more than it is.** The sticky record/study
+context is not covered: it renders only when a record or study is selected, and no workspace this
+inspection reaches selects one, so its pinning stays a source-level contract. Plotly label floors are
+not covered, because those axes exist only after a transform has run against real data. Below 352 px
+the drawer fills the viewport and outside-click dismissal is unavailable by construction — Escape,
+the trigger and selection remain, which is why none is treated as optional. This is not an
+accessibility conformance audit and does not pre-empt TG18.4; measuring a font size is not certifying
+a contrast ratio with a screen reader in the loop.
+
+**TG18.2 Scientific visualization workspace — DONE (2026-09-03).** Add coordinated plot focus, exact-value
+inspection, shared colour/axis controls, comparison locking, uncertainty and validity overlays,
+resizable panes, and publication/export affordances. Every visual encoding must have a text/table
+equivalent and must state units, support, normalization and missingness where they apply.
+
+**First slice delivered (2026-09-03): the figure data contract.** This opens the phase on the
+standing gap rather than on new features. Every gridded panel renders through exactly two
+components, so the text/table equivalent is implemented once at that seam and reaches all fifteen
+call sites. Both previously carried an `sr-only` caption describing the *shape* of the data and
+nothing else; the values were reachable only through a hover tooltip, which is mouse-only,
+ephemeral, and absent from every exported or printed copy.
+
+The design decision that matters is the boundary, because G18 may not recompute or summarize a
+scientific value and the obvious implementation — mean, median, slope and correlation under every
+plot — would breach that immediately. The rule adopted is **transcribe what the figure encodes, and
+state what it could not encode.** A sample's value and an axis or colour-bar range are already on
+the figure, so restating them is transcription; the heat map therefore reports the range *shown on
+this figure* and names whether the limits were supplied for comparison or derived from that panel
+alone. Non-finite samples and points a log axis discards are what the encoding silently omits — a
+gap in a line reads as an absence of structure, and Plotly drops non-positive samples without a
+mark — so those counts are part of the contract. A mean is neither, and is refused; the refusal is
+printed on the page, not kept in a comment.
+
+Line charts are enumerated point by point with a stated cap at 2,000 rows. A field cannot be, so
+the heat map equivalent is addressed rather than listed: name a row and column, read the exact
+sample with its coordinates, units and validity. The control clamps to the field instead of
+accepting an index it cannot answer, and the panel states the cell count it declines to tabulate.
+
+**Evidence.** The Chromium suite is **63/63 from a cleaned `.e2e-state`** (54 before this slice, 9
+added). Its load-bearing assertion is agreement: the exact sample is read out of the live Plotly
+trace and compared with what the panel printed, because plausible numbers unrelated to the trace
+would pass every structural check. The refusal is asserted in the markup as well as the prose — no
+contract term may be labelled Mean, Median, Slope, Correlation or Standard deviation.
+`test_frontend_contract.py` and `test_documentation.py` are **198 passed**; `tsc --noEmit` is clean
+and the production build succeeds. The full backend suite was **not** rerun; the last measured
+full-suite figure is **3536** (T4E.2).
+
+**Not yet done in that slice.** Coordinated plot focus, shared colour and axis controls, comparison
+locking, uncertainty and validity overlays, resizable panes and publication export were untouched.
+The equivalent also does not cover figures rendered by the comparison views, which carry their own
+`AccessibleTable`; the two idioms are **deliberately not unified**, because `AccessibleTable`
+transcribes a backend-authored table that the analysis layer stands behind while `FigureTable`
+transcribes a client-side figure encoding, and merging them would erase exactly the provenance
+distinction the platform exists to preserve.
+
+**Second slice delivered (2026-09-03): the comparison contract.** Coordinated focus, shared colour
+and axis controls and comparison locking are one requirement wearing three hats, so they are built
+as one contract rather than three widgets.
+
+The defect closed here was structural. Plotly autoscales each panel to its own extremes unless
+given explicit limits, and `zRange` was supplied at exactly **one** call site in the entire
+frontend. Every other side-by-side pair rendered on independent scales — including original target
+against inverse reconstruction, which *is* an error judgement: under independent autoscaling a
+reconstruction that lost most of its amplitude produces a near-identical picture, the discrepancy
+surviving only in two small colour-bar ranges.
+
+Forcing a shared scale everywhere would trade a silent error for a louder one, so the module
+decides whether one is **admissible** and states the reason above the panels. It refuses on
+mismatched units (R19–R21: raw magnitudes never share an axis), mismatched quantity, an undeclared
+relationship, a panel with no finite sample, and a group of one. The relationship cannot be
+inferred — two unitless fields are not related by being equally unitless — so the call site
+declares a `quantity` key and omitting it refuses. A pair becomes comparable only through an
+explicit, reviewable claim in the source.
+
+Scale comparability and cell correspondence are decided separately: the padded-boundary pair keeps
+its shared colour range, which is what makes padding's effect on magnitude visible, while linked
+addressing is refused because the grids differ in shape and says so. Where grids do correspond, one
+address drives every panel's cell inspector at once.
+
+**Evidence.** The Chromium suite is **75/75 from a cleaned `.e2e-state`** (63 before, 12 added).
+The decision function is exercised directly through the dev server's module graph, because the
+mismatched-units, mismatched-quantity and undeclared-relationship branches are not reachable
+through the current UI where every declared pair agrees — verifying them only on screen would leave
+the refusals unchecked until a future call site needed them. The rendered half confirms both traces
+carry identical explicit limits rather than two autoscales. `test_frontend_contract.py` and
+`test_documentation.py` are **199 passed**; `tsc --noEmit` clean and the production build succeeds.
+The full backend suite was **not** rerun; the last measured full-suite figure is **3536** (T4E.2).
+
+**Third slice delivered (2026-09-03): the validity and uncertainty overlay.** These belong to the
+same "what this picture cannot tell you" family as missingness, so they extend the figure contract
+rather than sitting beside it.
+
+The gap was concrete and entirely backend-authored, which is what made it addressable under G18 at
+all. The PSD chart draws every wavenumber bin; the exponents quoted for it are fitted over
+`[k_min, k_max]` using `n_points` of them under a stated `weighting`, with a standard error, an
+R-squared and an explicit `assumptions` list. On the running platform the fit band is `0.649` to
+`pi rad/pixel` while the figure draws from `0.237`, so roughly the lowest third of the plotted
+abscissa lies outside the fit and nothing said so. The assumption strings - isotropy averaged over
+annuli, a single unbroken power law, the reporting convention - were returned by the API, typed in
+`api.ts`, and rendered **nowhere at all**.
+
+The band is now marked on the figure and the numbers stated with it, outside any disclosure, since
+a restricted domain governs how the whole curve may be read. Every value is transcribed and the
+claim language is carried verbatim (R22, R23); `regime_interpretation` is deliberately not carried,
+because it already appears where the exponent is quoted and a conclusion repeated beside a picture
+hardens into a caption.
+
+**The refusal is the load-bearing half.** The fitted power law is not drawn, and no plus/minus one
+sigma envelope is drawn around it. Both would require the view to evaluate a model at every plotted
+abscissa, and a curve rendered by the browser is indistinguishable on screen from measured data -
+the mean-under-the-plot temptation of the first slice in better clothes. The refusal is printed on
+the page and asserted mechanically: no `Math.exp`, no `Math.pow`, no `intercept_ln_c` in the module.
+
+Refusals cover a degenerate band, limits that are not finite, and a band lying entirely off the
+drawn extent - the last mattering most, since a silently absent band is indistinguishable from a
+fit that spanned the whole figure. A band overrunning the figure is clamped, not merely described,
+which also keeps `log10(0)` away from a logarithmic axis. Shape coordinates are projected into log
+space when the axis is logarithmic, because Plotly reads them as `log10` of the value and a fitted
+spectrum is read on log-log axes. The shading has a text equivalent: tabulated points carry an
+*in declared domain* column, with three states rather than two, because a point outside a band and
+a point on a figure with no band are different facts.
+
+`Heatmap2D`'s `validInset` is the precedent this generalises and was deliberately **not**
+retrofitted: its only caller draws six panels per level and already states the inset once at level
+scope, and an inset is the intersection of two axis bands, so per-axis shading would draw a cross
+where a box is correct.
+
+**Evidence.** 19 e2e tests added, **19/19 passing**; `test_frontend_contract.py` and
+`test_documentation.py` **200 passed**; `tsc --noEmit` clean. One real prose defect was found by
+the rendered half and fixed: the sentence that samples outside the band were not used appeared only
+on the unclipped branch, which is precisely the branch the platform's own spectra do not take. The
+full backend suite was **not** rerun; the last measured full-suite figure is **3536** (T4E.2).
+
+**Fourth slice delivered (2026-09-03): resizable comparison panes.** The three gridded pairs
+already governed by the comparison contract now share one bounded two-pane canvas. The divider
+changes presentation only: both figures stay mounted, their shared scale and linked address do not
+move, and the page states that boundary. Pointer drag, arrows, accelerated Shift+arrow steps,
+Home/End, Enter/Space and double-click are supported through an accessible separator exposing the
+current 25--75 percent allocation. Below 768 px the control disappears and the figures return to
+one-column document order, because a working separator with no usable horizontal canvas would be a
+false affordance. The component notifies Plotly after a track change but never reads or rewrites a
+trace.
+
+**Evidence.** The six new rendered tests pass: they measure both pane rectangles after a real drag,
+exercise every keyboard bound and reset, compare the two live Plotly data arrays and their shared
+limits before and after resizing, and verify narrow-width stacking. The production build succeeds
+with 1,416 transformed modules. Focused source/documentation verification is **202 passed** after
+the checked inventories were advanced. The complete Chromium inventory is now **100 tests**; the
+full suite has not been rerun as one command for this slice. The full backend suite was not rerun;
+the last measured full-suite figure is **3536** (T4E.2).
+
+**Fifth slice delivered (2026-09-03) — TG18.2 closed: publication export.** PNG and SVG remain
+picture-only conveniences. Every heat-map and line-chart call site now also exposes one
+self-contained, printable publication HTML sheet containing a 1200x800 vector snapshot of the
+live Plotly figure, its caption, the fully evaluated figure contract, producer-authored validity
+and uncertainty statements and their verbatim qualifiers, the no-analysis boundary and an export
+timestamp. Export evaluates the deferred missingness scan only when requested, reads the mounted
+figure without mutating its trace or layout, contains no script and has no path into the claim
+ladder. This is why the pre-existing three PNG/SVG controls did not already satisfy publication
+export: an image without the restricted fit domain, uncertainty, assumptions or scale provenance
+is not the figure this instrument asked the researcher to read.
+
+**Evidence.** Four rendered download tests pass. They open the generated files and verify the
+vector, caption, exact grid and missingness, shared-range provenance, fit domain, uncertainty,
+assumptions, no-analysis statement and live-figure immutability. Both figure families acquire the
+action at their shared seam. `test_frontend_contract.py` pins the same refusal at source level;
+the production build succeeds with 1,416 transformed modules. The complete cleaned Chromium suite
+is **104/104**. The focused frontend/documentation pair is **202 passed**. The full backend suite
+was not rerun; the last measured full-suite figure is **3536** (T4E.2).
+
+**Closure boundaries and recorded visual debt.** The validity overlay is
+declared at one figure (the PSD chart), because it is the only figure whose backend record carries
+a fit domain and an uncertainty; no other chart has one to state. The comparison contract governs
+the three declared gridded pairs in `App.tsx`; the `DTCWTScientificView` shared range predates it
+and has not been migrated, and no line-chart group declares a comparison contract yet, because
+axis-range sharing across line charts raises a separate question about log scales that these slices
+do not answer. The PSD chart is also still drawn on **linear** axes, which is a genuine weakness now
+that the fit band is visible on it - a power law is a straight line only on log-log - but changing
+the axes alters the figure rather than describing it, so it is recorded here rather than folded in
+silently.
+
+**TG18.3 Guided research journey — DONE (2026-09-03).** `Acquire -> Inspect -> Design -> Run ->
+Compare -> Admit -> Report` is now a visible global map above every workspace. It is explicitly
+navigation, not evidence status: Design, Run and Compare hand off to the named Composer panel,
+while Composer continues to obtain the scientific order, every status, every blocked reason and
+the one next legitimate action from its served path contract. The existing acquired-material,
+executed-run, finding and admitted-evidence ladder remains visible on Compare, and the map states
+that it neither advances nor replaces it.
+
+The shell owns only two ordinary context blockers. Inspect without a selected record names
+`Acquire a record` as its one remediation; Admit without a selected study names `Open Composer and
+save a study`. Neither is a scientific readiness verdict. Eight legacy gridded workspaces remain
+reachable in the original workflow rail and are distinguished from the evidence journey twice:
+the non-colour label `Legacy · Gridded field line` and an amber inset/background treatment.
+
+**Evidence.** Five rendered acceptance tests verify the seven ordered stages, both blockers and
+their performed remediation, Run and Compare landing on the corresponding served Composer panels,
+continued visibility of the distinct claim ladder, direct Report navigation, and all eight legacy
+tools remaining labelled and reachable. The existing Composer and narrow-width suites pass with
+the new map (**35/35** together). The complete run from a cleaned `.e2e-state` is **109/109** in
+Chromium. `test_frontend_contract.py` is **177 passed**. The production build transforms 1,417
+modules. The full backend suite was not rerun; the last measured full-suite figure remains
+**3536** (T4E.2).
+
+**TG18.4 Responsive and assistive-technology acceptance — DONE (2026-09-03).** TG11.6 remains
+the source-level contract. Eleven new Chromium checks add rendered inspection at desktop (1440 x
+900), laptop (1024 x 768) and narrow (375 x 667) layouts: the skip link is the first keyboard stop,
+the global focus indicator is measurable, fragment navigation and workspace changes focus the
+named workspace heading, and the compact drawer returns focus after Escape. A 640 CSS-pixel/device
+scale two inspection covers the effective reflow of a 1280-pixel viewport at 200% zoom without
+horizontal document scrolling. Computed foreground/background contrast is checked at the normal-
+and large-text thresholds; reduced motion is emulated and its durations measured; and a rendered
+colour-removal pass leaves the current journey stage, both blockers, their remediations and the
+claim-ladder boundary readable in words and semantics.
+
+The first keyboard run found and closed a real defect: React StrictMode replay focused the hidden
+workspace heading on mount, stealing the first Tab stop from the skip link. Focus routing now
+compares the actual previous/current workspace, while the skip link explicitly focuses the named
+heading after navigation. The new suite is **11/11**; TG18.4 plus its narrow-width and journey
+compatibility boundaries are **35/35**; the complete run from a cleaned `.e2e-state` is **120/120**
+in Chromium. This is bounded browser engineering acceptance, not a screen-reader audit or WCAG
+certification. `test_frontend_contract.py` is **179 tests** and the Python inventory is **3161**.
+The full backend suite was not rerun; the last measured figure remains **3536** (T4E.2).
+
+**TG18.5 UI qualification gate — DONE (2026-09-04, `ed-dev`).** A clean-browser run exercises one
+representative path through each product mode, captures named viewport artefacts, asserts that
+every served route remains reachable, and records action count and refusal-to-remediation time. A
+production build and the existing no-glue Composer suite are necessary but not sufficient
+evidence.
+
+The gate is a suite, not a surface. Nothing it measures is reported back inside the product; a UI
+that grades itself on screen publishes a claim about the UI, and the claims this programme
+publishes are about the science.
+
+Its scope is set by TG17.10 rather than by presentation. That task shipped `NOT_RELEASEABLE` with
+five unpassed gates, two of which name this work directly: `browser_no_glue` reads `NOT_RUN`
+because "a deterministic backend rehearsal cannot observe a rendered browser and must not award
+itself a gate on someone else's evidence", and `scientist_actions` reads `NOT_MEASURED` for both
+the action count and `refusal_explanation_time_seconds`. TG18.5 therefore has to supply a
+trustworthy channel from a rendered run into the qualification record. A missing, stale or
+digest-mismatched artefact must read `NOT_RUN`; the ledger may ingest a measurement with its
+provenance and may never synthesize one it did not receive.
+
+**First slice delivered (2026-09-03) — served-workspace reachability.**
+`frontend/e2e/ui-qualification.spec.ts` asserts the shell serves exactly the qualified inventory
+in order, that all twenty workspaces open from a clean browser and name themselves, that every
+reachable journey destination lands on an inventoried workspace rather than the fallback heading,
+and that a clean browser disables nothing and claims no reason it is not entitled to.
+
+**The slice found a coverage hole rather than a defect, and the distinction matters.**
+`ResearchJourney.tsx` holds its seven destination identifiers separately from `WORKFLOW_NAV`.
+Inspect and Admit are blocked in a clean browser and correctly substitute a remediation for their
+own action, so their destinations are never clicked by any test in the repository. Renaming the
+journey's `domainWorkbench` target was confirmed to pass the entire rendered suite — TG18.3's own
+journey tests included — while sending a researcher who had selected a record to a heading reading
+"Scientific workbench workspace". Nothing is currently broken; nothing was guarding it either. A
+static cross-check now resolves all seven destinations and every `JOURNEY_STAGE_BY_WORKSPACE` key
+against the served identifiers, and was verified to fail on that mutation and pass without it.
+Both new static guards were mutation-checked; the rendered inventory and self-naming tests were
+confirmed to fail on a workspace rename and the reachability tests correctly to stay green.
+
+**Second slice delivered (2026-09-04) - one representative path per product mode.**
+`frontend/e2e/product-modes.spec.ts` walks the characteristic path of each of TG18.0's four modes
+and captures a named artefact at the state each reaches, at 1440 and 1920 CSS pixels - the desktop
+widths the narrow-width inspection does not cover, so the two files now span 320 to 1920.
+
+The load-bearing assertion is not any of the four paths. TG18.0's constraint is a property of the
+modes *together*, so each mode declares a signature - found by role and accessible name, never a
+class or a test id - and the suite asserts every signature appears in **exactly one** of the four.
+Four per-mode checks could each pass while the modes converged on one another; this cannot.
+
+Each path also asserts one thing its mode must not have. The instrument recomputes on demand and
+must still deliver both figure-data equivalents. The commitment workflow serves seven ordered
+steps and exactly one next legitimate action naming its own route. The claim surface opens every
+panel and offers no way to compute or freeze one. The trust surface shows both a cleared gate and
+an uncleared one with its reason - TG17.12 made the first `PASS` available to show.
+
+Nothing asserts a pixel, so an artefact cannot pass or fail anything. Artefacts land in the
+gitignored `e2e/artifacts/`, which sets a constraint on the remaining evidence slice: what reaches
+the ledger must be a manifest and digest of the artefact set, never the images. Three mutations
+against the product source were each caught: a compute affordance on the claim surface fails 2 of
+10, relabelling the findings tablist as the composition path fails 4 of 10 including the uniqueness
+assertion, and removing the qualification matrix's accessible name fails 4 of 10.
+
+**The slice's full-suite measurement found an intermittent failure in an older spec.**
+`composer-path.spec.ts` waited on a heading name that Playwright matches by substring, and the
+shell's sr-only "Experiment Composer workspace" heading matches it too, so the locator resolved to
+two elements once the served panel rendered and strict mode failed the run. It failed once in a
+134-test run and passed 11 of 11 on isolated re-run. Made `exact`; 33 of 33 across three repeats.
+Nothing in the product was wrong, but an intermittently failing suite is exactly what the remaining
+evidence slice cannot carry: it would produce an intermittently blocking gate, indistinguishable
+from a real refusal at the moment a reader most needs to tell them apart.
+
+**Third slice delivered (2026-09-04) - the action count and the refusal-to-remediation
+measurement.** `scientist-actions.spec.ts` measures both in a rendered browser, and the design
+turns on which of the two an assertion may hold. An action count is deterministic, so it is
+asserted: **14 actions** from a clean browser to a `COMPLETE` run of the frozen plan, and **3** to
+reach the preflight refusal with **4** more to clear it. Every action is one activation of one
+visible control located by role and accessible name, counted by the walk itself rather than
+maintained by hand beside it.
+
+A wall-clock duration is not deterministic, so it is recorded and asserted by nothing. How long a
+refusal takes to explain itself is a property of the machine that ran the suite; asserting it would
+fail the gate for reasons unrelated to the interface, and would let it pass on a fast machine while
+the interface got slower. The committed recording carries 0.264 s and 2.835 s as unasserted context. Those are not
+the 0.3 s and 4.74 s first measured: slice 4's full-suite run re-recorded them on a
+differently loaded machine, so the numbers moved while the interface did not. A gate
+asserting either would have failed on that alone, which is the argument for the design
+rather than an illustration chosen after the fact.
+
+The count is an upper bound on the shortest route, not a claim about a minimum, and the measurement
+says so in its own claim boundary. `adapter_specific_framework_edits` is untouched: it is a
+source-edit audit belonging to `synthetic_fifth_adapter` and no browser can observe it. The
+measurement lands in the committed `measurements/scientist_actions.json`, because the remaining
+slice has to read it. Three mutations against the product were each caught: an extra confirmation
+grows the path and fails the count, renaming a control fails both tests rather than silently
+finding another route, and rendering the refusal without the domain it refuses fails the refusal
+measurement.
+
+**Fourth slice delivered (2026-09-04) - the evidence channel into the qualification ledger.**
+TG17.10 registered two gates it could not award itself, and TG18.5 set its own constraint for
+closing them: the ledger may ingest a measurement with its provenance and may never synthesize one
+it did not receive. Recording and deciding are separate and separately owned.
+`frontend/e2e/qualification-reporter.ts` writes `measurements/browser_run.json` - every test that
+ran with its spec and outcome, the artefacts with their digests, and the source digest of every
+spec in the suite - and decides nothing. `src/core/browser_evidence.py` decides, and every decision
+can be a refusal.
+
+Two bindings, and the second is the one that was actually needed. Weakening a spec returns the gate
+to `NOT_RUN`, because a recording is a measurement of a particular set of assertions. And a
+*partial* run is refused: running one spec is the normal way to work on a test, and Playwright
+reports it as `passed`, so the reporter records both the specs that ran and the whole inventory it
+found, and the gate refuses when they disagree, naming every spec that did not run. That refusal
+was verified before the first full run - a green four-test invocation read `NOT_RUN` and listed the
+other fourteen specs.
+
+The outcomes stay apart: absent, stale or partial means the run has not happened for this code and
+reads `NOT_RUN`; a run that happened and failed reads `FAIL`; only a complete, clean run of the
+suite this checkout contains reads `PASS`. The counts from slice 3 are restated in the module so a
+*drifted* count reads `NOT_MEASURED` rather than being reported as the new number, wall-clock is
+carried only under names ending `_unasserted`, and `adapter_specific_framework_edits` stays
+unmeasured because no rendered run may award a source-edit audit.
+
+Measured: **136 of 136** across all 15 specs from a cleaned `.e2e-state`, so `browser_no_glue` reads
+**`PASS`**. Four mutations were each caught: accepting a partial run, dropping the spec-source
+binding, collapsing `FAIL` into `NOT_RUN`, and reporting a drifted count instead of refusing it.
+
+**The close-out (2026-09-04), and the condition it found unguarded.** The five declared scope items
+are delivered and were checked against the declaration rather than against the commit log. Three
+findings are recorded rather than resolved by rewording.
+
+*The phase's own "nothing it measures is reported back inside the product" is narrower than what
+shipped, so the declaration is amended and the code is not.* The trust surface renders every gate's
+detail, so `browser_no_glue`'s cleared detail now says on screen that a rendered run of all fifteen
+specs passed 136 tests. No UI-quality surface exists — the `scientist_actions` counts are declared in
+`api.ts` and read by no component, so 14/3/4 and both durations appear nowhere in the product — but
+one gate in the release registry that has always rendered now carries a cleared basis. Suppressing it
+while continuing to show every refusal's reason would make a `PASS` *less* inspectable than a
+refusal. The line actually held is: no UI-quality surface, and no UI-quality measurement outside the
+release registry's own verdict and the basis for it.
+
+*The plan is no longer uniformly cold.* Three gates read recordings at assembly time
+(`browser_no_glue` and `calendar_calibration` `PASS`, `scale_shape_calibration` `REFUSED`) while
+`offline_matrix` and `restart_recovery` stay `NOT_RUN` until a run fills them. Both kinds block
+release identically and mean different things: a measurement this checkout has not received, versus
+a run this call did not perform.
+
+*Condition 19 is half-met and this phase does not clear it.* §6.19 requires both the clean-browser
+no-glue test and the synthetic fifth-adapter test. The first passes; `synthetic_fifth_adapter` is
+`NOT_RUN`, so G17 completion stays unclaimable and the verdict is unmoved at `NOT_RELEASEABLE`.
+
+*The substantive finding is about this programme's own bookkeeping.* `roadmap.md` §10.2 admits no
+claim of completion without recorded output in `VERIFICATION.md`, and nothing enforced it: TG17.11,
+TG17.12 and TG18.0 through TG18.4 all reached a terminal state with that file silent about them,
+while the atmospheric line continued to be recorded correctly. The seven entries are backfilled from
+the commits that recorded them, transcribed rather than re-measured, because re-measuring today would
+attribute this tree to a phase that closed against an earlier one. Two guards now hold the two
+directions: a dated phase marked complete must have an entry, and a phase still in progress must not.
+The rule keys on the date the heading carries, so the undated seam phases (TG0.x-TG2.x), which were
+recorded under the slice headings, are exempt by construction rather than by a list.
+
+TG18.5 is complete. G18 is complete.
+
+**TG17.13 The source-edit audit and the fifth-adapter gate — DONE (2026-09-04, `ed-dev`).**
+`synthetic_fifth_adapter` is one of the two gates still blocking release, and the reason it was
+recorded `NOT_RUN` turns out to have been wrong. TG17.10 said a deterministic backend rehearsal
+must not award itself a gate only a source-edit audit can measure. The real reason is that no such
+audit existed: TG17.3's acceptance test is named
+`test_synthetic_fifth_adapter_reaches_the_registry_and_conforms_without_framework_edits`, proves
+the first half of that name, and asserts nothing about the second. "Without framework edits" was a
+claim carried in a test name - the same shape as TG18.5 slice 1's finding, and found the same way,
+by asking what a passing test would still allow.
+
+**First slice delivered (2026-09-04) — the audit, and the number it produced.**
+`src/core/extension_audit.py` separates two measurements that must not be run together. The
+installation claim is absolute: no framework source may name the synthetic fifth adapter, no
+declaration may excuse one that does, and the gate turns on this. It holds -
+`installation_required_framework_edits` is **0** across seventeen framework sources. The standing
+glue count is reported rather than asserted, because "glue must trend to zero rather than merely
+move files" is a property of the whole surface over time and not of one installation; a count that
+blocked release would make an unrelated archive's acquisition semantics a release decision, and a
+count that went unpublished would let glue accumulate behind a green gate.
+
+Every one of the eighteen occurrences where a framework source names a registered domain is
+declared with a kind and a reason, or the audit refuses. Only a behaviour branch counts as glue: a
+source that names a domain in prose, or carries a named recipe's own content, has not been edited
+to make that domain work. **The count is 1.** `AcquisitionView.tsx` renders `CDSPlanner` behind
+`domainName === 'reanalysis'`, and Copernicus acquisition being a long-running job the generic
+control schema cannot currently express is a reason the glue exists rather than a reason it stops
+being glue.
+
+Two things were found by writing it. `AdapterControls.tsx` claimed there was deliberately no
+`domain === 'reanalysis'` branch *anywhere* - true of that file, false of the surface, and pointing
+a reader away from the one place such a branch lives; narrowed to what it can support with the
+exception named. And **the audit's own first version passed vacuously**: it read the registry cold,
+before anything loads the adapters, scanned for an empty set of names and reported a clean surface.
+An empty registry is now a refusal, because that is D64, D74 and D75 a fourth time - a guard passing
+because it could not see what it was checking.
+
+Four mutations were each caught: ignoring an undeclared occurrence, counting prose and recipe
+content as glue, scanning an empty registry instead of refusing it, and permitting the fifth
+adapter's name in a framework source.
+
+**Second slice delivered (2026-09-04) - the channel, and the half of it that must not exist.**
+`src/core/extension_evidence.py` carries the measurement into the ledger, and the design decision
+is which half it records. The **source-edit audit is read live**, on every call, from committed
+source: it is exact, it costs milliseconds, and a recording of a fact that can be recomputed is
+only a way to be wrong later. The **acceptance run is recorded**, because it cannot be read from
+this side at all - TG17.3 requires the fifth adapter to be defined in a module the application
+never imports, so nothing under `src/core` may reach it. Copying TG17.12's recording shape onto
+both halves would have been the easy symmetry and the wrong one.
+
+**Deciding moved to the reading side.** The test supplies apparatus only it owns - the adapter, the
+native record, the window - and `measure_extension_conformance` performs all eight checks and
+decides whether they passed. A test that deleted its own assertions therefore changes nothing about
+what gets recorded. What it can still do is stop calling the recorder, and the answer to that is
+`NOT_RUN`, which is the correct answer. The recording binds the declared contract - the fifth
+adapter's names, the framework sources, what counts as glue, and **every declared occurrence with
+its written reason** - so a recording cannot be made green by widening the list it is judged
+against, or by rewriting why an entry is excused.
+
+**`synthetic_fifth_adapter` now reads `PASS`**, and it publishes the number it does not block on. A
+synthetic fifth domain with a monotone rank channel reached the registry, the control schema, the
+conformance kit and the domain-blind mining seam from `src/tests/test_adapter_registry.py`, passing
+all eight checks; installation required **0** framework edits across the seventeen generic
+surfaces; and standing adapter-specific glue is **1**, named in the gate's own detail as
+`AcquisitionView.tsx:243`. Three of the seven gates now clear. The verdict is unmoved:
+`NOT_RELEASEABLE`, with `offline_matrix` and `restart_recovery` unrun in a cold plan,
+`scale_shape_calibration` refused, and `live_sources` still the last unmeasured scientific gate.
+
+**A guard passed because it could not see what it was checking, for the fifth time.** The
+`defined_outside_the_application` check first compared `translate.__module__` against package
+prefixes. Under pytest's import mode that string is the bare `test_adapter_registry`, which starts
+with none of them - and would have started with none of them whatever the module was called. The
+check is now resolved from the defining *file*, made repository-relative, and a callable whose
+source cannot be located is a **refusal** rather than a pass, because an unanswerable question is
+not a satisfied one. D64, D74, D75, slice 1's vacuous scan, and now this.
+
+**A mutation pass with no baseline cannot tell a killed mutant from a broken suite.** The first
+run of this slice's mutation script reported M3 - `defining_source` falling back to the module name
+- as caught. It was not. The single failure that run was a test of my own that was broken: it
+asserted `__module__ == "builtins"` for a callable compiled from a string, and the exec scope
+carried no `__name__`, so the attribute was `None`. Every other mutation's count was inflated by
+the same failing test. The script now runs an unmutated baseline first and refuses to report at all
+unless it is green. Against a green baseline of 51 tests, **six mutations, six caught**: staleness
+ignored, a missing required check tolerated, the module-name fallback, `DEFAULT` widened into glue,
+another adapter accepted for measurement, and the live audit inherited from the recording.
+
+**Fixing that test found a real defect in the code it was testing.** `inspect.getsourcefile` hands
+back a pseudo-filename like `<no file>` for code compiled from a string whose module carries a
+loader, and on Windows `Path("<no file>").resolve()` produces an absolute path inside the
+repository without raising - so `defining_source` would have reported a located source that cannot
+be read. It now requires the resolved path to be an existing file.
+
+TG17.13 is complete. `live_sources` is the only scientific gate left, and it requires network.
+
+**TG17.14 Four-domain live-source qualification — DONE (2026-09-04, `ed-dev`).** The first offline slice supplies
+the evidence boundary without pretending to have made the measurement. `src/core/live_source_evidence.py`
+derives the four required source identities from the flagship manifest, binds a future recording
+to every adapter and acquisition module that decides what was measured, and distinguishes an
+absent, stale or partial recording (`NOT_RUN`) from an operational refusal (`REFUSED`) and an
+executed contract failure (`FAIL`). The release ledger now reads that channel and never reaches
+the network while assembling its verdict.
+
+The slice also corrects an ambiguity in the earlier phrase "public archives across four domains".
+Reanalysis, Argo and TESS name archives and must demonstrate real network use. The fourth domain
+is deliberately the **bespoke local-record family**: a pass must demonstrate a non-empty,
+content-addressed researcher-supplied record with *no* network use. Giving order book a convenient
+public feed here would replace the abstraction the flagship froze with a finance-specific adapter.
+
+**The opt-in runner is now delivered, still without executing it.** `python -m
+src.core.live_source_evidence plan` prints the complete contract with `network_used: false`:
+a 324-value one-day ERA5/CDS request, at most 200 Argo profiles, at most two TESS products and
+64 MiB, and the exact local-record requirements. The `run` command cannot start unless both
+`SPECTRALEARTH_ALLOW_NETWORK=1` and the literal acknowledgement
+`--confirm-network-access I_AUTHORIZE_BOUNDED_ARCHIVE_REQUESTS` are present. A missing local
+record, provenance declaration or licence declaration is refused before the first provider call,
+and the hashes of the committed fabricated demonstration CSVs are explicitly ineligible.
+Provider refusals and unexpected implementation
+failures are recorded separately; either records network use as unknown rather than inventing a
+fact after an exception. The record is self-hashed, and plan assembly reads it without
+performing acquisition.
+
+**The authorised live run has now been made, and the gate reads `PASS`.** On 2026-09-04, with the
+maintainer's explicit say-so and both locks satisfied, the bounded acquisition ran in all four
+domains: 324 ERA5 values through CDS, 93 Argo profiles carrying 10,218 values, 18,279 finite flux
+samples from one MAST SPOC product for TIC 261136679, and 34,560 values in 2,880 records from the
+researcher-supplied order-book table. The first three demonstrate network use; the fourth
+demonstrates **no** network use, which is what its contract requires and the reason the fourth
+domain was chosen to be the bespoke family in the first place.
+
+**It did not clear the release, and could not have.** Five of seven gates now read `PASS`, every
+scientific gate has been measured, and the verdict is still `NOT_RELEASEABLE` because
+`scale_shape_calibration` is `REFUSED`. Four archives in four domains bought nothing past a
+declared scientific limit, which is the whole design.
+
+**The order-book record is deliberately not committed.** `order_book` declares a licence under
+which redistribution of raw depth is restricted, so the gate binds the record by `sha256` and the
+repository stores its README rather than its bytes -- source URL, exact transformation and digest,
+enough to rebuild it and check the hash. Committing the file would contradict the licence the
+platform states while reading it.
+
+**Two defects, both from first contact with real data, and neither findable offline.** **D94**: the
+reanalysis probe republished a 32-character cache key in a field named `sha256`, and the gate
+refused the whole record rather than credit a `PASS` whose content binding it could not verify --
+the validator working. **D95**: SPOC emits a row per cadence including 815 of 20,076 with no
+timestamp, and those were handed to a collection whose invariant is a finite strictly increasing
+clock; they are now dropped and *counted*, with the count carried into the record. Every synthetic
+fixture had a clean clock, which is exactly why a live gate exists.
+
+**MAST is intermittent and the record must be read knowing it.** Across five attempts that day the
+metadata service answered three times and timed out twice; a timeout is recorded `REFUSED` with
+`network_used: null`, because after a failed call whether bytes moved is unknown. The binding
+constraint on this gate is a metadata service, not the science.
+
+**TG17.15 Rebuilding the scale/shape null so it can resolve - DONE (all five slices, 2026-09-05).**
+
+TG17.11 delivered a calibration and a refusal, and the refusal is correct: the declared null cannot
+reject at any inventory size the enumerator can reach. This phase asks what to build instead. It is
+a change of scientific question rather than an implementation detail, so it is written down before
+any code is cut.
+
+**Two measurements made on 2026-09-04 that sharpen TG17.11's finding, and neither is in that
+phase's record.**
+
+*   **At its own minimum the test has no margin at all.** `minimum_resolvable_family()` returns
+    105. Put one member of 105 a single step off the p-value floor and **zero** of 105 reject, not
+    104. Graceful degradation begins only at k = 106 (105 of 106). So 105 is not a size at which
+    the test starts working; it is a knife-edge requiring every one of 105 members to be a perfect
+    planted match simultaneously. Reaching it would not have produced a usable instrument.
+*   **Lifting the enumeration cap buys nothing, and the reason is the whole finding.**
+    `_valid_reassignments` returns the derangement numbers -- 9, 44, 265, 1854, **14,833** at
+    k = 8. It is tempting to read that as a reference set giving a floor of 1/(1+|A|) = 6.7e-5. It
+    is not one. Each member's statistic depends only on *which partner it received*, and member 0
+    has exactly k - 1 = 7 distinct partners across all 14,833 reassignments. Those draws produce
+    seven distinct statistic values; using |A| as the denominator counts duplicates as independent
+    evidence and is **anticonservative by three orders of magnitude**. The existing 1/k floor is
+    right, and this is the mistake a re-implementation is most likely to make.
+
+**So `MAX_REASSIGNABLE_PAIRINGS = 8` and the 105 bound are not two ends of one axis.** A uniform
+sampler above 8 is achievable and provable -- rejection sampling from uniform permutations,
+accepting only valid ones, is exactly uniform on the valid subset with acceptance about 1/e -- but
+it would raise |A| and not per-member resolution. **The gap is structural, not computational**, and
+no amount of compute closes it.
+
+**The cause is one inventory doing two jobs.** The k pairings are simultaneously the hypotheses
+under test, which sets the multiplicity burden, and the source of alternative partners, which sets
+the resolution. Growing k lowers the floor to 1/k and raises the correction burden at nearly the
+same rate; the crossover is `H_k / k <= alpha`, which is why the answer is 105 and why it arrives
+with no margin.
+
+**The proposed rebuild separates the two roles.** A **partner pool** of N candidate records that
+are *not* hypotheses, and m preregistered tested correspondences. Each test substitutes its left
+member's partner across the pool: an exact categorical reference set of size N, no factorial
+enumeration, so the 8-cap stops being this test's concern. The requirement is
+`1/(N + 1) <= alpha / (m * H_m)`, solved against the real correction rather than written down.
+Measured against this repository's own `adjust()`:
+
+| tested `m` | pool `N` needed | margin at `N` | margin at `2N` |
+|---|---|---|---|
+| 1 | 19 | -- | -- |
+| 5 | 45 | 0 of 5 | 4 of 5 |
+| 6 | 48 | 0 of 6 | 5 of 6 |
+| 10 | 58 | 0 of 10 | 9 of 10 |
+
+Six tests need a pool of about 48 rather than a 105-member all-pairs family, and doubling the pool
+to about 96 buys real margin **at no multiplicity cost**. That is the property the present design
+cannot have: pool size and family size become two independent knobs instead of one.
+
+**What the rebuild costs, recorded before it is built rather than discovered afterwards.**
+
+*   **The estimand narrows, and must be declared rather than slipped in (condition 15).** Joint
+    reassignment asks whether the *overall correspondence structure* is special. Pool substitution
+    asks whether *this* left member's affinity for *this* partner is special against a declared
+    pool. The second is arguably what scale/shape mode already claims -- "this shape at this native
+    duration resembles that shape at that one" is a per-correspondence sentence -- but the two are
+    different questions with different answers, and the choice belongs in the record.
+*   **Exchangeability becomes a data-curation obligation, and this is the new failure mode.** If
+    pool members differ systematically in record length, noise floor or sampling density, the null
+    is biased and every p-value is wrong. The present design's limit is computational and therefore
+    self-announcing; this one's limit is a property of a curated inventory and can be violated
+    silently. It needs a declared admission criterion and a guard, and it is the half of this phase
+    most likely to go quietly wrong.
+*   **Benjamini-Yekutieli stays.** The m tests share one pool and are dependent. BY is valid under
+    arbitrary dependence and BH is not, so the existing correction choice is load-bearing rather
+    than incidental.
+
+**Slices.**
+
+*   **Slice 1 - the estimand as a declared object. DONE.**
+    `src/core/correspondence_estimand.py`; `src/tests/test_correspondence_estimand.py`, 14 test
+    functions, **14 passed**. Both estimands are registered, `per_correspondence` is chosen, and
+    `joint_structure` is registered *inadmissible* so it is refused by name rather than
+    rediscovered -- it is the natural first design and its failure is invisible from inside it.
+    `require_declared_estimand` refuses an undeclared estimand rather than defaulting, because the
+    two questions can disagree on the same data and a silent default would choose the finding.
+    The derangement measurement is computed by `joint_reassignment_resolution` from the null's own
+    enumerator rather than restated, so it cannot drift from the object it describes, and the
+    anticonservative misreading is pinned at more than a thousandfold in the direction that eases
+    rejection. `minimum_pool_size` is solved against the real correction the way
+    `minimum_resolvable_family` is. A test asserts the property that motivates the whole rebuild:
+    at a pool of 48 one member off the floor rejects nothing, at 96 it rejects five of six, and
+    the test count is identical -- margin bought without multiplicity. The slice declares the
+    question and stops; a guard asserts no power key appears in its report.
+*   **Slice 2 - the partner pool and its admission criterion. DONE.**
+    `src/core/partner_pool.py`; `src/tests/test_partner_pool.py`, 20 test functions, **20
+    passed**, and four mutations each caught. The criterion is decided on **marginals only**, and
+    circularity is made *inexpressible* rather than forbidden: `build_partner_pool` reads
+    `RecordProfile` objects and never records, so an admission rule keyed on resemblance to the
+    record under test is not a rule this module can express. A test asserts the profile field set
+    exactly, so a similarity or distance field cannot be added quietly. `native_seconds` is
+    recorded and refuses a band by name, because banding the quantity scale/shape mode compares
+    across would refuse the comparison the mode is for. The observed partner must clear the same
+    bands as its own alternatives; candidates sharing the left member's provenance are refused as
+    leakage; nothing is dropped silently; and a pool below `minimum_pool_size(m)` is refused
+    rather than returned. The receipt states that admission is a **necessary and not sufficient**
+    condition for exchangeability, because a pool that reads as a proof of it would be worse than
+    no pool.
+*   **Slice 3 - the exact pool-substitution null, and the pool size derived rather than chosen.
+    DONE.** `src/core/pool_substitution_null.py`; `src/tests/test_pool_substitution_null.py`, 35
+    test functions, **37 passed** (one parametrised over three values), and ten mutations each caught. Nothing is sampled: the
+    reference set is a sealed finite inventory, so `monte_carlo_pool_substitution` is registered
+    and refused -- a Monte Carlo denominator is chosen by the caller rather than fixed by the
+    pool. The module takes a **callable** and evaluates all `N + 1` values itself, so a
+    precomputed observed statistic cannot enter under a different normalisation; the observed pair
+    is evaluated twice and a non-deterministic statistic is refused. Orientation is declared with
+    no default, because a similarity and a distance invert the tail. Ties count toward the
+    numerator. The **family size is sealed in the pool digests** before any p-value exists, so
+    narrowing a family after seeing its results contradicts a number that predates them.
+
+    **The slice also corrected a defect in its own first draft, and the correction is the more
+    useful half.** `minimum_pool_size(m)` sizes for the world in which *every* declared
+    correspondence is genuine, and the first `resolution()` reported that as a green light. It was
+    wrong in exactly the way this phase exists to catch: six pools of 58 clear the required 48 and
+    report `every_member_can_reject_at_its_own_floor = True`, yet a family with **three genuine
+    correspondences of six rejects nothing** -- all three at the exact floor, `q = 0.083` -- because
+    members that do not correspond consume the Benjamini-Yekutieli step-up ranks the genuine ones
+    need. `sparsest_detectable_count` now measures, from the floors the pools actually have, the
+    fewest genuine members the family could ever reject, and the receipt says so in words:
+    *"this family can produce a rejection only if at least 5 of its 6 declared correspondences are
+    genuine."* `minimum_pool_size_for_detected_fraction` sizes a pool for that world in advance:
+    at `m = 6`, all six genuine needs `N = 48`, half needs `N = 97`, one of six needs `N = 293`.
+
+    No calibration was performed and no false-positive rate was measured on real records. The gate
+    is unchanged: `scale_shape_calibration` still reads `REFUSED`, verdict `NOT_RELEASEABLE`.
+*   **Slice 4 - calibration, with margin measured rather than assumed. DONE**
+    (`src/benchmarks/pool_calibration.py`, `src/tests/test_pool_calibration.py`, 50 tests, 15 of 15
+    mutations caught after four gaps were found and closed; architecture.md section 7.1f; VERIFICATION.md.)
+
+    **The null does not repeat T4C.5h's defect.** Five declared cases at 200 realisations each,
+    `m = 6`, pools of 61 to 470, run through the real `correspondence_family` with the real
+    `shape_recurrence` statistic. `no_correspondence` gives a family-wise false-positive rate of
+    1/200, one-sided bound **0.0235**; `shared_grid_alias` 2/200, bound **0.0311**;
+    `clean_partner_noisy_pool` 0/199, bound **0.0149**. Every bound clears alpha, and
+    `unresolvable_inventory` refused 200 of 200 rather than scoring.
+
+    **The tail is not the whole check.** Under exchangeability the observation's rank among its `N`
+    alternatives is uniform on `{1, ..., N + 1}` *exactly*, so the whole distribution is predicted
+    in advance, not only its 5% tail -- a rate can look nominal while the distribution is wrong.
+    Measured on one member per realisation, because members of a family share an inventory and are
+    dependent: KS 0.065 (p = 0.35), 0.073 (p = 0.23), 0.068 (p = 0.30). It holds.
+
+    **Slice 2's claim boundary was asked for a number.** Passing every declared band is necessary
+    for exchangeability and not sufficient -- so two adversarial nulls attack it: an artefact every
+    record carries keyed to position within its own cycle, and an observed partner drawn
+    systematically cleaner than the alternatives its own bands admit. Both hold the declared rate.
+
+    **The defect this slice found in its own first recorded run.** `planted_correspondence` was
+    declared to pass when detection reached 1.0. The run measured **1,199 of 1,200** and reported
+    `calibrated: False`. The expectation was wrong, not the run: with pools of up to 470
+    alternatives a chance candidate will occasionally outrank a real correspondence, so demanding
+    that every member reject was demanding a test with **no type-II error** -- the point-estimate
+    mistake already fixed for error rates, left standing in the opposite direction. It is replaced
+    by two criteria derived from the case: the statistic must rank the true partner first for at
+    least 90% of members, judged on a **lower** confidence bound; and every member it does rank
+    first must reject (`maximum_unresolved_at_floor = 0`, parameter-free).
+
+    **Detection is a curve and it falls off a cliff between `w = 0.92` and `w = 0.84`.** At
+    `w = 0.88`, **98.8% of members have an uncorrected p at or under 0.05 and 35.4% survive
+    correction**. That gap is slice 3's `sparsest_detectable_count` prediction confirmed: when the
+    family is mixed, a surviving member must clear `alpha / (m * H_m) = 0.0034`, which no pool
+    below 293 can reach. Every rung reports `members_at_their_floor_that_did_not_reject`, so a low
+    number says whether the correspondence was absent or the pool too small.
+
+    **A cost of the admission contract that nothing had measured.** `native_seconds` is unbandable
+    by design, but `cadence_seconds` is banded and equals native duration over a bounded row
+    density -- so the cadence band narrows native duration *transitively*. `admission_yield`
+    measures it: an inventory spanning **4.05 decades** yields pools spanning **0.95 to 1.47**, at
+    a yield of 15% to 26%.
+
+    Every rate is an interval and every acceptance reads a bound: `certifies` the one-sided upper,
+    `attains` the lower, and `certifies_rate` is separate from `within_expectation` so a run too
+    small for its own claim says so. `REALISATIONS_FOR_ALPHA` solves for the smallest certifying
+    run rather than asserting it -- 59 -- and the declared 200 is larger because the distribution
+    check resolves 0.18 at 59 and 0.096 at 200.
+
+    The gate is unchanged and deliberately so: `scale_shape_calibration` still reads `REFUSED`,
+    verdict `NOT_RELEASEABLE`. Carrying this measurement into it is slice 5's work, by checked
+    supersession.
+*   **Slice 5 - the gate. DONE (2026-09-05).** `scale_shape_calibration` reads the new
+    calibration, and **the gate still refuses**. What moved is the reason; the old reason was kept.
+
+    **The supersession is recomputed, not remembered.** `scale_shape_supersession` does not quote
+    TG17.11's claim. It recomputes it from the two primitives that claim turned on -- 105 resolvable
+    against 8 drawable -- using the same functions the gate's applicability section uses, and a
+    guard asserts the two agree. Three outcomes, and the third is the point: `SUPERSEDED`,
+    `NOT_SUPERSEDED` when the successor is absent, stale or failed, and **`VOID`** when the
+    predecessor's claim has stopped being true. If someone lifts the enumeration cap, the old limit
+    removed itself and calling that a supersession would credit this phase with work it did not do.
+    A guard drives the record into `VOID` and asserts it says so. Deleting the refusal instead
+    would have left a repository in which a limit that was overcome and a limit that was edited
+    away read identically.
+
+    **A second recording, with a backstop that is honestly smaller than the first's.** The calendar
+    calibration is cheap enough to re-run whole on every test pass, and is. This one costs
+    **1,031 s** for its five cases plus an eight-rung ladder. Rather than imply an equivalence, the
+    recording carries a **reproduction witness**: `calibrate_case` runs realisation `i` at
+    `seed + i`, so a three-realisation run at the recorded seed is the *leading prefix* of the
+    recorded run rather than a similar measurement, and the suite recomputes it for every case in
+    seconds. The case that refuses every realisation witnesses its refusals rather than the empty
+    list, which would agree with any other run that also produced nothing.
+
+    **What was recorded**, reproducing slice 4 exactly: `all_met: true`, family-wise one-sided
+    bounds of **0.0235**, **0.0311** and **0.0149** against alpha 0.05, ranks uniform on their own
+    lattice (KS 0.0650 / 0.0727 / 0.0684 at p 0.35 / 0.23 / 0.30), the planted case ranking the
+    true partner first for 1,189 of 1,200 members at a lower bound of **0.9849** with none of those
+    failing to reject, `unresolvable_inventory` refusing **200 of 200**, and one inventory digest
+    across all eight rungs.
+
+    **Why it still refuses, computed rather than asserted.** Two blockers, each published with what
+    would discharge it and whether this module can decide it at all. `declared_inference` is
+    decidable here: every frozen scale/shape manifest declares `scale_partner_reassignment` at 200
+    replications, **read back from the six manifests** rather than restated, and the calibrated
+    method is exact pool substitution, which none of them requests. Discharging it is a change to
+    the experiment declaration, not to the gate. `pool_exchangeability_on_real_records` is **not**
+    decidable here, and a guard asserts it survives a passing recording: it is the failure mode
+    this phase named in advance as the silently-violable one, and no further measurement on built
+    fixtures reaches it. TG17.11 kept three facts apart -- a calibrated method the declared plans
+    cannot reach, a method that does not exist, a method that ran and failed. This slice adds a
+    fourth: a calibrated, applicable, recorded method that answers a question no declared plan asks.
+
+    **Verification.** 59 guards across the two gate suites (12 to 28 and 22 to 28) plus three for
+    the witness (50 to 53). Fifteen mutations; the first pass missed one and it was a real gap --
+    every guard read the recording already on disk, so a break in the code that *writes* one would
+    have passed everything and surfaced only after the next fifty-minute re-record. `_trim_case` is
+    now exercised directly on a one-realisation outcome. Second pass **15 of 15**. The verdict is
+    unmoved: `NOT_RELEASEABLE`.
+
+**What would falsify this phase, stated in advance.**
+
+1.  No pool admission criterion can be stated that is both checkable and non-circular -- the
+    inventory cannot be shown exchangeable without assuming the answer. The per-correspondence
+    estimand is then not testable on real records, and the honest outcome is that scale/shape mode
+    supports description but no significance claim at all.
+2.  The measured false-positive rate on a true null departs from nominal, as T4C.5's did. The null
+    is then not the null it claims, and the design is wrong regardless of its arithmetic.
+3.  A pool large enough to resolve cannot be assembled from real records without admitting members
+    that are not plausible partners, so N is bought at the cost of the exchangeability the
+    p-values depend on.
+
+Any of these is a result. The first would mean scale/shape alignment is a describable but not a
+testable mode, which is worth knowing and worth stating plainly.
+
+
+### Phase G19 - The researcher's conversation with the record - **NOT STARTED**
+
+G7 gives the platform an adversarial review layer that argues with a finding. G19 asks the
+adjacent question: a researcher meeting a `REFUSED` gate or a corrected q-value wants to
+*interrogate* it, with a model of their choosing, over more than one turn. That is a real need and
+the architecture already anticipates most of it. What it does not yet have is a conversation, and a
+conversation introduces failure modes a single review does not.
+
+**What already exists, so this phase is an extension rather than a new risk surface.**
+
+*   `ReviewRecord` is already an **append-only hash chain** bound to one exact bundle revision:
+    `bundle_sha256`, `bundle_revision`, and `previous_sha256` on every call.
+*   `record_call` takes `context` **per call**. Context is passed, never accumulated, so
+    re-grounding is already the shape of the API rather than something to retrofit.
+*   Every `CallRequest` carries the bundle digest and revision it was asked against, so a stale
+    turn is already *detectable*.
+*   `verify_claim_independence` makes R22 executable three ways: the claim state must be identical
+    with the review present and deleted, must survive a rebuild from the bundle's own bytes, and
+    **no phrase from any recorded response may appear anywhere in those bytes**.
+*   `ResponseSchema` refuses free text where a schema was declared, and R23's non-reproducibility
+    is recorded in the body rather than papered over.
+
+**Retrieval is the new capability, and chunking is the wrong instinct for this instrument.**
+Retrieval-augmented generation returns *fragments ranked by similarity*. The asset this whole
+programme is built on is that every result travels with its refusals and its claim boundary.
+Retrieve three of eight chunks of a gate receipt and a model can state "ten links replicated in
+train and test" without "D84 and D85 govern whether an absence was detectable", or surface a `PASS`
+stripped of its `claim_boundary`. That is the exact failure the platform exists to prevent, and a
+retrieval layer would introduce it invisibly and plausibly ranked.
+
+So the rule this phase is built on:
+
+> **Retrieve at the granularity of a complete record. Never a fragment of one.**
+
+Receipts, qualification plans and `EvidenceBundle`s are bounded structured objects that already
+carry their own boundaries, and they fit in a context window whole. Retrieval chooses *which*
+records are relevant across a corpus; each chosen record then enters entire. A record too large to
+enter whole is a signal that the platform owes a **deterministic summary view** it computes itself,
+not an invitation for a chunker to guess which paragraphs mattered.
+
+**Three properties a conversation needs that a single review does not.**
+
+*   **Re-grounding every turn.** The transcript carries dialogue; the scientific context is
+    rebuilt from source on each turn and never inherited as the model's own paraphrase. Otherwise
+    turn twelve reasons about turn three's summary of a receipt, and the compounding is invisible
+    because every individual turn looks reasonable.
+*   **Staleness that refuses rather than warns.** A conversation outlives the record it discusses.
+    TG17.14 demonstrated this on real code: editing an acquisition module returned `live_sources`
+    to `NOT_RUN` and invalidated a passing record. A conversation open against a bundle whose
+    digest has moved must refuse to continue, in the same way the gate does.
+*   **Independence over the whole transcript, not one review.** `verify_claim_independence` holds
+    for one `ReviewedBundle`. A conversation spans several bundles and many turns; the guarantee
+    must hold for every bundle it touched, and deleting the entire conversation must change
+    nothing anywhere.
+
+**What this phase costs, recorded before it is built.**
+
+*   **Model output becomes model input.** Under R22 that never reaches a claim, so the ladder is
+    safe. But turn N-1's answer is turn N's context, so **drift compounds inside the transcript**
+    even while every claim stays untouched. The mitigation is re-grounding, and re-grounding is
+    only checkable if the context is rebuilt from source rather than diffed against history.
+*   **A conversation is the most quotable artefact the platform will produce**, and R23 says it is
+    recorded evidence and not reproducible computation. A transcript can therefore never be cited
+    as the reason a claim holds. That has to be visible in the rendering, not just true in the
+    schema, or the most persuasive object in the system will be the least verifiable one.
+*   **Multi-provider is a refusal surface, not a convenience.** "Whatever model they choose" means
+    the recorded call must carry provider identity, and a provider that cannot honour a declared
+    response schema, or that silently accepts sampling parameters R23 rejects, must be **refused
+    by name** rather than accommodated.
+*   **Cost multiplies.** TG7.3's provider-neutral accounting exists; a conversation turns one
+    review into an open-ended sequence, so a declared budget per conversation is a requirement
+    rather than an option.
+
+**Slices.**
+
+*   **G19.1 - the conversation as a bound object.** A transcript spanning one or more bundle
+    revisions, each digest pinned, with researcher turns and model turns distinguishable by type
+    rather than by convention. A turn whose bundle digest has moved is refused.
+*   **G19.2 - re-grounding, and a guard that it happened.** Context assembled from source each
+    turn. The check that matters: a turn's context must be **derivable from the records it names**
+    and must contain nothing that appears only in an earlier model response.
+*   **G19.3 - whole-record retrieval.** Selection across a corpus at record granularity, with the
+    refusal that makes it safe: a record that will not fit whole is refused, naming the
+    deterministic view that should be built, rather than chunked.
+*   **G19.4 - independence extended to the transcript.** `verify_claim_independence` generalised
+    over every bundle a conversation touched, plus the deletion test: remove the whole
+    conversation and assert every claim digest is unchanged.
+*   **G19.5 - the rendering.** The transcript displayed with its non-reproducibility and its claim
+    boundary attached to every turn, so the most quotable artefact is also the most clearly
+    labelled. R22's structural defence carried into the interface, not restated as a caption.
+
+**What would falsify this phase, stated in advance.**
+
+1.  Re-grounding cannot be checked. If no guard can distinguish a context assembled from source
+    from one contaminated by an earlier model turn, then drift is unmeasurable and the layer
+    should stay a single-shot review, which is verifiable.
+2.  Whole-record retrieval proves impractical -- the records that matter do not fit, and the
+    deterministic views needed to shrink them cannot be written without choosing what to omit,
+    which is the chunking problem wearing a different hat.
+3.  A conversation measurably changes what researchers conclude from the same evidence. That is
+    testable by giving the same bundle to readers with and without the layer, and it is the
+    outcome that would matter most: a tool that makes people more confident without making them
+    more correct is the opposite of this programme's purpose.
+
+The third is the one worth stating loudest, because it is the only one that cannot be found by
+reading the code.
+
 
 ## 6. Definition of Done
 
@@ -3596,6 +6091,15 @@ those hold **and**:
 16. A stable-subspace result binds the complete search family before generation, fits only on the
     generate partition, identifies the span independently of basis rotation/sign, and opens its
     confirmation partition once.
+17. A configurable multi-domain experiment is represented by one versioned manifest shared by
+    API, orchestrator, UI and receipt; no layer carries a second scientific configuration (R24,
+    E17).
+18. Calendar-aligned and scale/shape-aligned experiments have separate support semantics, nulls
+    and claim language. Neither shared time nor shared structure can be rendered as causality, and
+    raw cross-domain magnitudes are never compared (R19--R21).
+19. A complete G17 capability passes the clean-browser no-glue test and the synthetic fifth-
+    adapter test. Backend-only reachability, handwritten JSON or a domain branch in the generic
+    runner/UI cannot satisfy completion.
 
 ---
 

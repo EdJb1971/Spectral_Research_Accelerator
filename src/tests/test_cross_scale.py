@@ -370,3 +370,42 @@ def test_the_action_refuses_a_zero_lag(store, cascade):
                         {"coefficients": _stored_field(store, cascade), "lags": [0]},
                         torch.device("cpu"))
     assert "simultaneous association" in str(excinfo.value)
+
+
+def test_a_sweeps_surrogate_ensemble_can_be_recovered_from_its_seed(cascade_signature):
+    """T4C.5i step 7: the minimum detectable effect is read off the ensemble the sweep used.
+
+    `cross_scale_dependency` keeps only the ensemble's summary, because carrying 4,999 numbers
+    per test through every receipt would multiply its size by two orders of magnitude for a
+    quantity nothing read. The power audit does read it -- the detection threshold is an order
+    statistic, which no summary recovers -- so it must be able to reconstruct the *identical*
+    ensemble rather than draw a fresh one and call the result the study's decision boundary.
+    """
+    result = cs.cross_scale_dependency(
+        cascade_signature, lags=[3], cadence_seconds=CADENCE, measure="energy_density",
+        bins=4, n_surrogates=99, seed=515)
+    row = next(r for r in result["results"] if r["label"] == "1->2@3")
+    channels = [str(value) for value in cascade_signature.channels]
+    matrix = cascade_signature.to_matrix("energy_density")
+    source_index = channels.index("1")
+
+    recovered = cs.shift_null_ensemble(
+        matrix[:, source_index], matrix[:, channels.index("2")], 3, bins=4, n_surrogates=99,
+        seed=cs.surrogate_seed(515, 3, source_index),
+        theiler=int(row["theiler_window_frames"]))
+    assert recovered.size == row["n_surrogates"]
+    assert float(recovered.mean()) == pytest.approx(row["surrogate_mean_nats"], rel=1e-12)
+
+    # A different test's seed is a different null, and must not be mistaken for this one's.
+    other = cs.shift_null_ensemble(
+        matrix[:, source_index], matrix[:, channels.index("2")], 3, bins=4, n_surrogates=99,
+        seed=cs.surrogate_seed(515, 3, source_index + 1),
+        theiler=int(row["theiler_window_frames"]))
+    assert float(other.mean()) != float(recovered.mean())
+
+
+def test_the_surrogate_seed_separates_lags_from_source_indices():
+    """A prime multiplier, so a neighbouring lag cannot collide with a neighbouring channel."""
+    assert cs.surrogate_seed(0, 1, 0) != cs.surrogate_seed(0, 0, 1)
+    assert len({cs.surrogate_seed(20260821, lag, index)
+                for lag in range(3, 9) for index in range(3)}) == 18

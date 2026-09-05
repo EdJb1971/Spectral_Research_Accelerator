@@ -18,9 +18,17 @@ from typing import Any, Dict, Mapping, Optional, Sequence, Tuple
 import numpy as np
 
 from src.analysis_engine.cross_scale import mutual_information
+from src.analysis_engine.conditional_information import (
+    audit_conditional_information, conditional_support)
+from src.analysis_engine.representation_structure import (audit_pair_structure,
+                                                           candidate_pairs)
+from src.analysis_engine.stable_subspace import (certify_external_subspaces,
+                                                 confirm_stable_subspaces,
+                                                 generate_stable_subspaces, projector)
 from src.core.errors import InvalidParameterError
 from src.core.dataset_capabilities import build_profile
-from src.statistics.multiple_comparisons import adjust
+from src.core.preregistration import HeldOutLedger, PartitionIdentity, Seal
+from src.statistics.multiple_comparisons import adjust, required_surrogates
 
 MAX_UPLOAD_BYTES = 16 * 1024 * 1024
 MAX_ROWS = 100_000
@@ -33,6 +41,11 @@ AUDIT_REPRESENTATIONS = ("identity", "pca")
 
 def _sha(payload: bytes) -> str:
     return hashlib.sha256(payload).hexdigest()
+
+
+def _mapping_sha(value: Mapping[str, Any]) -> str:
+    return hashlib.sha256(json.dumps(
+        value, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()).hexdigest()
 
 
 def _delimiter(value: str) -> str:
@@ -188,6 +201,8 @@ def sample_table_capability_profile(payload: bytes, *, filename: str, delimiter:
             "ordered_time_axis": relationship == "ordered", "regular_cadence": None,
             "irregular_support": None, "transform_compatible": False,
             "precedence_admissible": False, "independent_samples": relationship == "independent",
+            "declared_nuisance": sum(
+                role == "nuisance" for role in declaration.roles.values()) == 1,
         },
         basis={"filename": filename, "declaration": declaration.canonical(),
                "semantic_inference": False, "n_rows": probe["n_rows"]})
@@ -208,6 +223,972 @@ def _numeric_table(payload: bytes, delimiter: str, declaration: SampleTableDecla
     return values, header
 
 
+def require_independent_samples(declaration: SampleTableDeclaration, *, recipe: str) -> None:
+    """Authoritative admission rule for row-random independent-sample recipes.
+
+    G16 starts beside the existing sample-table spine.  Its first recipes must reuse this
+    refusal rather than each inventing a subtly different grouped/ordered fallback.
+    """
+    relationship = declaration.sample_relationship
+    if relationship not in SAMPLE_RELATIONSHIPS:
+        raise InvalidParameterError("sample_relationship", relationship,
+                                    "one of %s" % (SAMPLE_RELATIONSHIPS,))
+    if relationship == "independent":
+        return
+    needed = ("group-held-out confirmation with benchmarked nulls"
+              if relationship == "grouped"
+              else "blocked and embargoed confirmation with benchmarked nulls")
+    raise InvalidParameterError(
+        "sample_relationship", relationship,
+        "'independent' for %s. %s data require %s; treating dependent rows as exchangeable "
+        "would invalidate the null and leak samples across partitions." %
+        (recipe, relationship.capitalize(), needed))
+
+
+def plan_redundancy_structure_audit(payload: bytes, *, filename: str, delimiter: str,
+                                    declaration: SampleTableDeclaration, bins: int = 4,
+                                    permutations: int = 4999, seed: int = 16101,
+                                    alpha: float = 0.05) -> Dict[str, Any]:
+    """Seal the complete raw-feature pair family before measuring any relationship."""
+    probe = probe_delimited(payload, filename=filename, delimiter=delimiter)
+    declaration.validate(probe)
+    require_independent_samples(declaration, recipe="the redundancy structure audit")
+    features = sorted(name for name, role in declaration.roles.items() if role == "feature")
+    if not 2 <= len(features) <= 6:
+        raise InvalidParameterError(
+            "feature family", len(features),
+            "2-6 predeclared raw features; this bounded recipe enumerates every pair")
+    if isinstance(bins, bool) or not 2 <= int(bins) <= 4:
+        raise InvalidParameterError("bins", bins, "an integer from 2 through 4")
+    if not 0 < float(alpha) < 1:
+        raise InvalidParameterError("alpha", alpha, "a value in (0, 1)")
+    pairs = [[first, second] for first, second in candidate_pairs(features)]
+    n_tests = 3 * len(pairs)
+    minimum = required_surrogates(n_tests, float(alpha), "benjamini_yekutieli")
+    if not minimum <= int(permutations) <= 9999:
+        raise InvalidParameterError(
+            "permutations", permutations,
+            "%d-9999 fixed conditional permutations for this %d-test family; the smallest "
+            "attainable p-value must survive Benjamini-Yekutieli correction"
+            % (minimum, n_tests))
+    minimum_samples = 5 * int(bins) ** 3
+    if int(probe["n_rows"]) < minimum_samples:
+        raise InvalidParameterError(
+            "sample count", probe["n_rows"],
+            "at least %d rows (five per possible %d-bin joint cell)" %
+            (minimum_samples, int(bins)))
+    body = {
+        "schema": "spectral.redundancy-structure-plan.v1",
+        "content_sha256": probe["content_sha256"],
+        "declaration": declaration.canonical(),
+        "candidates": features, "candidate_groups": pairs,
+        "group_policy": "all unordered raw-feature pairs; group size exactly 2",
+        "estimator": "equiprobable-bin Miller-Madow mutual information",
+        "bins": int(bins), "neighbourhood_policy": None,
+        "null": ("candidate-within-target-bin permutation for positive interaction "
+                 "information; target-within-other-candidate-bin permutation for each "
+                 "conditional increment"),
+        "permutations": int(permutations), "seed": int(seed),
+        "alpha": float(alpha), "correction": "benjamini_yekutieli",
+        "tests_per_group": 3, "n_tests": n_tests,
+    }
+    body["plan_sha256"] = hashlib.sha256(json.dumps(
+        body, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+    return {
+        **body, "probe": probe,
+        "claim_boundary": (
+            "This freezes every pair, estimator, discretisation, conditional null, seed, "
+            "alpha and correction before enumeration. It computes no structure result."),
+    }
+
+
+def run_redundancy_structure_audit(payload: bytes, *, filename: str, delimiter: str,
+                                   plan: Mapping[str, Any]) -> Dict[str, Any]:
+    """Run the exact sealed TG16.1 pair family without selecting or deleting features."""
+    expected = dict(plan)
+    supplied_digest = expected.pop("plan_sha256", "")
+    expected.pop("probe", None)
+    expected.pop("claim_boundary", None)
+    actual_digest = hashlib.sha256(json.dumps(
+        expected, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+    if supplied_digest != actual_digest:
+        raise InvalidParameterError("plan_sha256", supplied_digest,
+                                    "the digest of the complete frozen structure plan")
+    if expected.get("schema") != "spectral.redundancy-structure-plan.v1":
+        raise InvalidParameterError("schema", expected.get("schema"),
+                                    "spectral.redundancy-structure-plan.v1")
+    if _sha(payload) != expected["content_sha256"]:
+        raise InvalidParameterError("content_sha256", _sha(payload),
+                                    "the exact file bytes the structure plan sealed")
+    declaration = SampleTableDeclaration(**expected["declaration"])
+    probe = probe_delimited(payload, filename=filename, delimiter=delimiter)
+    declaration.validate(probe)
+    require_independent_samples(declaration, recipe="the redundancy structure audit")
+    columns, _header = _numeric_table(payload, delimiter, declaration)
+    target_name = next(name for name, role in declaration.roles.items() if role == "target")
+    required = [target_name] + list(expected["candidates"])
+    missing = {name: int(np.sum(~np.isfinite(columns[name]))) for name in required}
+    if any(missing.values()):
+        raise InvalidParameterError("missing analysis values", missing,
+                                    "complete target and feature columns for this recipe")
+    actual_candidates = sorted(name for name, role in declaration.roles.items()
+                               if role == "feature")
+    actual_pairs = [[first, second] for first, second in candidate_pairs(actual_candidates)]
+    if actual_candidates != expected["candidates"] or actual_pairs != expected["candidate_groups"]:
+        raise InvalidParameterError("candidate family", actual_pairs,
+                                    "the exact complete pair family sealed by the plan")
+    measured = audit_pair_structure(
+        {name: columns[name] for name in actual_candidates}, columns[target_name],
+        bins=int(expected["bins"]), permutations=int(expected["permutations"]),
+        seed=int(expected["seed"]), alpha=float(expected["alpha"]),
+        correction=str(expected["correction"]))
+    return {
+        "schema": "spectral.redundancy-structure-audit.v1",
+        "plan_sha256": supplied_digest, "content_sha256": expected["content_sha256"],
+        "target": target_name, "sample_relationship": declaration.sample_relationship,
+        "family": {"candidates": actual_candidates, "candidate_groups": actual_pairs,
+                   "group_policy": expected["group_policy"],
+                   "tests_per_group": expected["tests_per_group"],
+                   "n_tests": expected["n_tests"], "correction": expected["correction"],
+                   "alpha": expected["alpha"], "permutations": expected["permutations"]},
+        "method": {key: expected[key] for key in
+                   ("estimator", "bins", "neighbourhood_policy", "null", "seed")},
+        "structure_map": measured["pairs"],
+        "outcome_vocabulary": measured["outcome_vocabulary"],
+        "stored": False, "rung_moved": False,
+        "claim_boundary": measured["claim_boundary"],
+    }
+
+
+def plan_conditional_information_audit(
+        payload: bytes, *, filename: str, delimiter: str,
+        declaration: SampleTableDeclaration, bins: int = 3,
+        permutations: int = 4999, seed: int = 16201,
+        alpha: float = 0.05) -> Dict[str, Any]:
+    """Seal the complete raw-feature conditional-information family and support rule."""
+    probe = probe_delimited(payload, filename=filename, delimiter=delimiter)
+    declaration.validate(probe)
+    require_independent_samples(declaration, recipe="the conditional-information audit")
+    features = sorted(name for name, role in declaration.roles.items() if role == "feature")
+    nuisances = sorted(name for name, role in declaration.roles.items() if role == "nuisance")
+    if not 1 <= len(features) <= 6:
+        raise InvalidParameterError("feature family", len(features),
+                                    "1-6 predeclared raw features")
+    if len(nuisances) != 1:
+        raise InvalidParameterError(
+            "nuisance role", nuisances,
+            "exactly one researcher-declared nuisance in this bounded recipe")
+    if isinstance(bins, bool) or not 2 <= int(bins) <= 4:
+        raise InvalidParameterError("bins", bins, "an integer from 2 through 4")
+    if not 0 < float(alpha) < 1:
+        raise InvalidParameterError("alpha", alpha, "a value in (0, 1)")
+    minimum = required_surrogates(
+        len(features), float(alpha), "benjamini_yekutieli")
+    if not minimum <= int(permutations) <= 9999:
+        raise InvalidParameterError(
+            "permutations", permutations,
+            "%d-9999 fixed conditional-randomisation draws for this %d-test family; "
+            "the smallest attainable p-value must survive Benjamini-Yekutieli correction"
+            % (minimum, len(features)))
+    minimum_samples = 5 * int(bins) ** 3
+    if int(probe["n_rows"]) < minimum_samples:
+        raise InvalidParameterError(
+            "sample count", probe["n_rows"],
+            "at least %d rows under the frozen five-per-cell support rule"
+            % minimum_samples)
+    columns, _header = _numeric_table(payload, delimiter, declaration)
+    target = next(name for name, role in declaration.roles.items() if role == "target")
+    required = [target, nuisances[0], *features]
+    missing = {name: int(np.sum(~np.isfinite(columns[name]))) for name in required}
+    if any(missing.values()):
+        raise InvalidParameterError(
+            "missing analysis values", missing,
+            "complete target, nuisance and feature columns for this recipe")
+    support = conditional_support(
+        {name: columns[name] for name in features}, columns[target], columns[nuisances[0]],
+        bins=int(bins))
+    if not support["admitted"]:
+        raise InvalidParameterError(
+            "conditional overlap/effective support", support,
+            support["rule"])
+    body = {
+        "schema": "spectral.conditional-information-plan.v1",
+        "content_sha256": probe["content_sha256"],
+        "declaration": declaration.canonical(), "target": target,
+        "nuisance": nuisances[0], "candidates": features,
+        "family_policy": "every declared raw feature conditioned on the one declared nuisance",
+        "quantity": "I(candidate; target | declared nuisance)",
+        "estimator": "equiprobable-bin Miller-Madow conditional mutual information",
+        "bins": int(bins), "support_admission": support,
+        "null": ("linear conditional-randomisation model: fit target on the declared "
+                 "nuisance, permute residuals, reconstruct and rediscretise the target; "
+                 "preserves the fitted target/nuisance relationship"),
+        "permutations": int(permutations), "seed": int(seed),
+        "alpha": float(alpha), "correction": "benjamini_yekutieli",
+        "n_tests": len(features),
+    }
+    body["plan_sha256"] = hashlib.sha256(json.dumps(
+        body, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+    return {
+        **body, "probe": probe,
+        "claim_boundary": (
+            "This freezes the complete candidate family, declared nuisance, estimator, "
+            "support rule, conditional null, seed, alpha and correction. It computes no "
+            "conditional-association result."),
+    }
+
+
+def run_conditional_information_audit(
+        payload: bytes, *, filename: str, delimiter: str,
+        plan: Mapping[str, Any]) -> Dict[str, Any]:
+    """Run the exact sealed TG16.2 family without causal interpretation."""
+    expected = dict(plan)
+    supplied_digest = expected.pop("plan_sha256", "")
+    expected.pop("probe", None)
+    expected.pop("claim_boundary", None)
+    actual_digest = hashlib.sha256(json.dumps(
+        expected, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+    if supplied_digest != actual_digest:
+        raise InvalidParameterError(
+            "plan_sha256", supplied_digest,
+            "the digest of the complete frozen conditional-information plan")
+    if expected.get("schema") != "spectral.conditional-information-plan.v1":
+        raise InvalidParameterError(
+            "schema", expected.get("schema"),
+            "spectral.conditional-information-plan.v1")
+    if _sha(payload) != expected["content_sha256"]:
+        raise InvalidParameterError(
+            "content_sha256", _sha(payload),
+            "the exact file bytes the conditional-information plan sealed")
+    declaration = SampleTableDeclaration(**expected["declaration"])
+    probe = probe_delimited(payload, filename=filename, delimiter=delimiter)
+    declaration.validate(probe)
+    require_independent_samples(declaration, recipe="the conditional-information audit")
+    columns, _header = _numeric_table(payload, delimiter, declaration)
+    actual_target = next(name for name, role in declaration.roles.items() if role == "target")
+    actual_nuisances = sorted(name for name, role in declaration.roles.items()
+                              if role == "nuisance")
+    actual_candidates = sorted(name for name, role in declaration.roles.items()
+                               if role == "feature")
+    if (actual_target != expected["target"] or actual_nuisances != [expected["nuisance"]]
+            or actual_candidates != expected["candidates"]):
+        raise InvalidParameterError(
+            "conditional family",
+            {"target": actual_target, "nuisance": actual_nuisances,
+             "candidates": actual_candidates},
+            "the exact target, nuisance and candidate family sealed by the plan")
+    required = [actual_target, expected["nuisance"], *actual_candidates]
+    missing = {name: int(np.sum(~np.isfinite(columns[name]))) for name in required}
+    if any(missing.values()):
+        raise InvalidParameterError(
+            "missing analysis values", missing,
+            "complete target, nuisance and feature columns for this recipe")
+    support = conditional_support(
+        {name: columns[name] for name in actual_candidates}, columns[actual_target],
+        columns[expected["nuisance"]], bins=int(expected["bins"]))
+    if support != expected["support_admission"] or not support["admitted"]:
+        raise InvalidParameterError(
+            "conditional overlap/effective support", support,
+            "the exact admitted support assessment sealed by the plan")
+    measured = audit_conditional_information(
+        {name: columns[name] for name in actual_candidates}, columns[actual_target],
+        columns[expected["nuisance"]], bins=int(expected["bins"]),
+        permutations=int(expected["permutations"]), seed=int(expected["seed"]),
+        alpha=float(expected["alpha"]), correction=str(expected["correction"]))
+    return {
+        "schema": "spectral.conditional-information-audit.v1",
+        "plan_sha256": supplied_digest, "content_sha256": expected["content_sha256"],
+        "target": actual_target, "declared_nuisance": expected["nuisance"],
+        "sample_relationship": declaration.sample_relationship,
+        "family": {"candidates": actual_candidates, "n_tests": expected["n_tests"],
+                   "family_policy": expected["family_policy"],
+                   "correction": expected["correction"], "alpha": expected["alpha"],
+                   "permutations": expected["permutations"]},
+        "method": {key: expected[key] for key in
+                   ("quantity", "estimator", "bins", "null", "seed")},
+        "support_admission": measured["support"],
+        "conditional_associations": measured["candidates"],
+        "outcome_vocabulary": measured["outcome_vocabulary"],
+        "stored": False, "rung_moved": False,
+        "claim_boundary": measured["claim_boundary"],
+    }
+
+
+def plan_stable_subspace_generation(
+        payload: bytes, *, filename: str, delimiter: str,
+        declaration: SampleTableDeclaration, dimensions: Sequence[int] = (1,),
+        regularizations: Sequence[float] = (0.01, 0.1, 1.0), permutations: int = 4999,
+        generate_fraction: float = 0.7, restarts: int = 6, iterations: int = 48,
+        perturbations: int = 6, perturbation_scale: float = 0.10,
+        stability_threshold: float = 0.10, nuisance_penalty: float = 1.0,
+        variance_weight: float = 0.05, seed: int = 16301,
+        alpha: float = 0.05) -> Dict[str, Any]:
+    """Freeze the complete bounded family without opening a subspace result."""
+    probe = probe_delimited(payload, filename=filename, delimiter=delimiter)
+    declaration.validate(probe)
+    require_independent_samples(declaration, recipe="stable-subspace generation")
+    features = sorted(name for name, role in declaration.roles.items() if role == "feature")
+    nuisances = sorted(name for name, role in declaration.roles.items() if role == "nuisance")
+    if not 2 <= len(features) <= 6:
+        raise InvalidParameterError("feature family", len(features),
+                                    "two to six predeclared raw features")
+    if len(nuisances) > 1:
+        raise InvalidParameterError("nuisance family", nuisances,
+                                    "zero or one researcher-declared nuisance")
+    try:
+        dims = tuple(sorted(int(value) for value in dimensions))
+        regs = tuple(sorted(float(value) for value in regularizations))
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise InvalidParameterError("subspace family", [dimensions, regularizations],
+                                    "finite numeric dimension and ridge sequences") from exc
+    if any(isinstance(value, (bool, np.bool_)) or not math.isfinite(float(value))
+           or float(value) != int(value) for value in dimensions):
+        raise InvalidParameterError("dimensions", list(dimensions),
+                                    "integer dimensions only")
+    if not dims or len(set(dims)) != len(dims) or min(dims) < 1 \
+            or max(dims) >= len(features):
+        raise InvalidParameterError("dimensions", list(dimensions),
+                                    "distinct dimensions from 1 through feature_count - 1")
+    if not regs or len(regs) > 4 or len(set(regs)) != len(regs) \
+            or any(not math.isfinite(value) for value in regs) or min(regs) <= 0 \
+            or max(regs) > 10:
+        raise InvalidParameterError("regularizations", list(regularizations),
+                                    "one to four distinct positive values no larger than 10")
+    if not 0.5 <= float(generate_fraction) <= 0.8 or not 0 < float(alpha) < 1:
+        raise InvalidParameterError("split/alpha", [generate_fraction, alpha],
+                                    "generate_fraction in [0.5, 0.8] and alpha in (0, 1)")
+    if not 2 <= int(restarts) <= 12 or not 16 <= int(iterations) <= 128 \
+            or not 3 <= int(perturbations) <= 20:
+        raise InvalidParameterError("optimizer/stability counts",
+                                    [restarts, iterations, perturbations],
+                                    "2-12 restarts, 16-128 iterations and 3-20 perturbations")
+    if not 0 < float(perturbation_scale) <= 0.1 \
+            or not 0 < float(stability_threshold) <= 0.5 \
+            or not 0 <= float(nuisance_penalty) <= 10 \
+            or not 0 <= float(variance_weight) <= 1:
+        raise InvalidParameterError(
+            "objective/stability values",
+            [perturbation_scale, stability_threshold, nuisance_penalty, variance_weight],
+            "perturbation scale (0,0.1], span threshold (0,0.5], nuisance penalty [0,10] "
+            "and variance weight [0,1]")
+    n_tests = len(dims) * len(regs)
+    minimum_permutations = required_surrogates(
+        n_tests, float(alpha), "benjamini_yekutieli")
+    if not minimum_permutations <= int(permutations) <= 9999:
+        raise InvalidParameterError(
+            "permutations", permutations,
+            "at least %d and at most 9999 for family size %d: the smallest attainable "
+            "p-value must survive the frozen Benjamini-Yekutieli correction"
+            % (minimum_permutations, n_tests))
+    columns, _header = _numeric_table(payload, delimiter, declaration)
+    required = features + nuisances + [
+        next(name for name, role in declaration.roles.items() if role == "target")]
+    missing = {name: int(np.sum(~np.isfinite(columns[name]))) for name in required}
+    if any(missing.values()):
+        raise InvalidParameterError("missing analysis values", missing,
+                                    "complete target, feature and nuisance columns")
+    n = probe["n_rows"]
+    order = np.random.default_rng(int(seed)).permutation(n)
+    stop = int(math.floor(n * float(generate_fraction)))
+    generate, confirmation = order[:stop], order[stop:]
+    if generate.size < 80 or confirmation.size < 40:
+        raise InvalidParameterError("partition sizes", [generate.size, confirmation.size],
+                                    "at least 80 generate and 40 reserved confirmation rows")
+    generate_scales = {name: float(np.std(columns[name][generate], ddof=1))
+                       for name in features}
+    if any(not math.isfinite(value) or value <= 1e-12
+           for value in generate_scales.values()):
+        raise InvalidParameterError("generate feature variation", generate_scales,
+                                    "every feature varying on the generate partition")
+    target_scale = float(np.std(columns[required[-1]][generate], ddof=1))
+    if not math.isfinite(target_scale) or target_scale <= 1e-12:
+        raise InvalidParameterError("generate target variation", target_scale,
+                                    "a varying target on the generate partition")
+    if nuisances:
+        nuisance_values = columns[nuisances[0]][generate]
+        nuisance_scale = float(np.std(nuisance_values, ddof=1))
+        region_sizes = np.bincount(np.digitize(
+            nuisance_values, np.quantile(nuisance_values, (1 / 3, 2 / 3)), right=True),
+                                   minlength=3)
+        if nuisance_scale <= 1e-12 or int(region_sizes.min()) < 20:
+            raise InvalidParameterError(
+                "generate nuisance support",
+                {"scale": nuisance_scale, "region_sizes": region_sizes.tolist()},
+                "a varying nuisance with at least 20 generate rows in each frozen tertile")
+    body = {
+        "schema": "spectral.stable-subspace-generation-plan.v1",
+        "content_sha256": probe["content_sha256"],
+        "declaration": declaration.canonical(), "features": features,
+        "target": required[-1], "nuisance": nuisances[0] if nuisances else None,
+        "dimensions": list(dims), "regularizations": list(regs),
+        "preprocessing": "generate-only z-score standardization",
+        "objective": "regularized supervised covariance with nuisance-region penalty",
+        "nuisance_stability_criterion": (
+            "generate-tertile explained-fraction range <= 0.35 when nuisance is declared; "
+            "otherwise no nuisance-region claim"),
+        "optimizer": "seeded block power iteration", "restarts": int(restarts),
+        "iterations": int(iterations), "perturbations": int(perturbations),
+        "seed_derivation": (
+            "fixed member, permutation, perturbation-stream and optimizer offsets"),
+        "perturbation_scale": float(perturbation_scale),
+        "projector_distance_threshold": float(stability_threshold),
+        "nuisance_penalty": float(nuisance_penalty),
+        "variance_weight": float(variance_weight), "permutations": int(permutations),
+        "generate_fraction": float(generate_fraction), "seed": int(seed),
+        "alpha": float(alpha), "correction": "benjamini_yekutieli",
+        "family_members": ["dimension=%d;ridge=%g" % (dimension, ridge)
+                           for dimension in dims for ridge in regs],
+        "n_tests": n_tests,
+        "partitions": {
+            "generate_n": int(generate.size), "confirmation_n": int(confirmation.size),
+            "generate_indices_sha256": _sha(generate.astype("<i8").tobytes()),
+            "confirmation_indices_sha256": _sha(confirmation.astype("<i8").tobytes()),
+            "confirmation_opened": False,
+        },
+    }
+    body["plan_sha256"] = hashlib.sha256(json.dumps(
+        body, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+    return {**body, "probe": probe,
+            "claim_boundary": (
+                "This seals the complete generate-only linear search. It computes no subspace "
+                "and does not open the reserved confirmation values.")}
+
+
+def run_stable_subspace_generation(payload: bytes, *, filename: str, delimiter: str,
+                                   plan: Mapping[str, Any]) -> Dict[str, Any]:
+    expected = dict(plan)
+    supplied_digest = expected.pop("plan_sha256", "")
+    expected.pop("probe", None)
+    expected.pop("claim_boundary", None)
+    actual_digest = hashlib.sha256(json.dumps(
+        expected, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+    if supplied_digest != actual_digest:
+        raise InvalidParameterError("plan_sha256", supplied_digest,
+                                    "the digest of the complete frozen subspace plan")
+    if expected.get("schema") != "spectral.stable-subspace-generation-plan.v1":
+        raise InvalidParameterError("plan schema", expected.get("schema"),
+                                    "spectral.stable-subspace-generation-plan.v1")
+    if _sha(payload) != expected["content_sha256"]:
+        raise InvalidParameterError("content_sha256", _sha(payload),
+                                    "the exact file bytes the plan sealed")
+    declaration = SampleTableDeclaration(**expected["declaration"])
+    probe = probe_delimited(payload, filename=filename, delimiter=delimiter)
+    declaration.validate(probe)
+    require_independent_samples(declaration, recipe="stable-subspace generation")
+    actual_features = sorted(name for name, role in declaration.roles.items()
+                             if role == "feature")
+    actual_target = next(name for name, role in declaration.roles.items()
+                         if role == "target")
+    actual_nuisances = sorted(name for name, role in declaration.roles.items()
+                              if role == "nuisance")
+    if actual_features != expected["features"] or actual_target != expected["target"] \
+            or (actual_nuisances[0] if actual_nuisances else None) != expected["nuisance"]:
+        raise InvalidParameterError("analysis family", [actual_features, actual_target,
+                                                         actual_nuisances],
+                                    "the complete frozen feature/target/nuisance family")
+    columns, _header = _numeric_table(payload, delimiter, declaration)
+    n = probe["n_rows"]
+    order = np.random.default_rng(int(expected["seed"])).permutation(n)
+    stop = int(math.floor(n * float(expected["generate_fraction"])))
+    generate, confirmation = order[:stop], order[stop:]
+    partition = expected["partitions"]
+    actual_partition = {
+        "generate_n": int(generate.size), "confirmation_n": int(confirmation.size),
+        "generate_indices_sha256": _sha(generate.astype("<i8").tobytes()),
+        "confirmation_indices_sha256": _sha(confirmation.astype("<i8").tobytes()),
+        "confirmation_opened": False,
+    }
+    if partition != actual_partition:
+        raise InvalidParameterError("partitions", actual_partition,
+                                    "the exact frozen generate/confirmation split")
+    measured = generate_stable_subspaces(
+        {name: columns[name][generate] for name in actual_features},
+        columns[actual_target][generate],
+        (columns[actual_nuisances[0]][generate] if actual_nuisances else None),
+        dimensions=expected["dimensions"],
+        regularizations=expected["regularizations"],
+        permutations=int(expected["permutations"]), restarts=int(expected["restarts"]),
+        iterations=int(expected["iterations"]), perturbations=int(expected["perturbations"]),
+        perturbation_scale=float(expected["perturbation_scale"]),
+        stability_threshold=float(expected["projector_distance_threshold"]),
+        nuisance_penalty=float(expected["nuisance_penalty"]),
+        variance_weight=float(expected["variance_weight"]), seed=int(expected["seed"]),
+        alpha=float(expected["alpha"]), correction=expected["correction"])
+    report = {
+        "schema": "spectral.stable-subspace-generation.v1",
+        "plan_sha256": supplied_digest, "content_sha256": expected["content_sha256"],
+        "target": actual_target, "declared_nuisance": expected["nuisance"],
+        "sample_relationship": declaration.sample_relationship,
+        "partitions": actual_partition,
+        "preprocessing": measured["preprocessing"], "family": measured["family"],
+        "search": measured["search"], "stability": measured["stability"],
+        "subspaces": measured["subspaces"],
+        "candidate_compact_stable_subspaces": measured["compact_candidates"],
+        "outcome_vocabulary": measured["outcome_vocabulary"],
+        "stored": False, "rung_moved": False,
+        "claim_boundary": measured["claim_boundary"] +
+            " The confirmation partition remains unopened in this generation operation.",
+    }
+    report["generation_sha256"] = _mapping_sha(report)
+    return report
+
+
+def freeze_stable_subspace_confirmation(
+        payload: bytes, *, filename: str, delimiter: str, plan: Mapping[str, Any],
+        generation: Mapping[str, Any], sealed_at: str,
+        confirmation_permutations: int = 4999, confirmation_seed: int = 16401,
+        ledger: Optional[HeldOutLedger] = None) -> Dict[str, Any]:
+    """Seal unchanged generated spans and generate-defined regions before confirmation."""
+    if not isinstance(sealed_at, str) or not sealed_at.strip():
+        raise InvalidParameterError("sealed_at", sealed_at,
+                                    "a server-recorded confirmation sealing time")
+    frozen_plan = dict(plan)
+    plan_sha = str(frozen_plan.get("plan_sha256", ""))
+    plan_body = dict(frozen_plan)
+    plan_body.pop("plan_sha256", None)
+    plan_body.pop("probe", None)
+    plan_body.pop("claim_boundary", None)
+    if plan_sha != _mapping_sha(plan_body) \
+            or plan_body.get("schema") != "spectral.stable-subspace-generation-plan.v1":
+        raise InvalidParameterError("plan_sha256", plan_sha,
+                                    "the digest of the complete frozen subspace plan")
+    if _sha(payload) != plan_body.get("content_sha256"):
+        raise InvalidParameterError("content_sha256", _sha(payload),
+                                    "the exact file bytes the plan sealed")
+    generated = dict(generation)
+    generation_sha = str(generated.pop("generation_sha256", ""))
+    if generation_sha != _mapping_sha(generated):
+        raise InvalidParameterError("generation_sha256", generation_sha,
+                                    "the digest of the complete generation result")
+    if generated.get("schema") != "spectral.stable-subspace-generation.v1" \
+            or generated.get("plan_sha256") != plan_sha \
+            or generated.get("content_sha256") != plan_body["content_sha256"]:
+        raise InvalidParameterError("generation binding", generated.get("plan_sha256"),
+                                    "a generation result bound to this exact plan and content")
+    family_members = list(plan_body["family_members"])
+    rows = list(generated.get("subspaces", []))
+    if [row.get("label") for row in rows] != family_members \
+            or generated.get("family", {}).get("members") != family_members:
+        raise InvalidParameterError("confirmation family", [row.get("label") for row in rows],
+                                    "the complete searched family in its frozen order")
+    width = len(plan_body["features"])
+    preprocessing = generated.get("preprocessing", {})
+    means = np.asarray(preprocessing.get("mean"), dtype=np.float64)
+    scales = np.asarray(preprocessing.get("scale"), dtype=np.float64)
+    if means.shape != (width,) or scales.shape != (width,) \
+            or np.any(~np.isfinite(means)) or np.any(~np.isfinite(scales)) \
+            or np.any(scales <= 1e-12):
+        raise InvalidParameterError("generated preprocessing", preprocessing,
+                                    "one finite generate-only mean and positive scale per feature")
+    for row in rows:
+        dimension = int(row.get("dimension", 0))
+        basis = np.asarray(row.get("basis_for_application"), dtype=np.float64)
+        frozen_projector = np.asarray(row.get("projector"), dtype=np.float64)
+        if basis.shape != (width, dimension) or frozen_projector.shape != (width, width) \
+                or np.any(~np.isfinite(basis)) or np.any(~np.isfinite(frozen_projector)) \
+                or not np.allclose(projector(basis), frozen_projector, atol=1e-10):
+            raise InvalidParameterError("generated span", row.get("label"),
+                                        "a finite basis and matching projector from generation")
+    candidates = [row.get("label") for row in rows
+                  if row.get("outcome") == "candidate_compact_stable_subspace"]
+    declared_candidates = [row.get("label") for row in
+                           generated.get("candidate_compact_stable_subspaces", [])]
+    if candidates != declared_candidates:
+        raise InvalidParameterError("generated candidates", declared_candidates,
+                                    "exactly the candidate members marked in the full family")
+    declaration = SampleTableDeclaration(**plan_body["declaration"])
+    probe = probe_delimited(payload, filename=filename, delimiter=delimiter)
+    declaration.validate(probe)
+    columns, _header = _numeric_table(payload, delimiter, declaration)
+    n = probe["n_rows"]
+    order = np.random.default_rng(int(plan_body["seed"])).permutation(n)
+    stop = int(math.floor(n * float(plan_body["generate_fraction"])))
+    generate, confirmation = order[:stop], order[stop:]
+    partition = plan_body["partitions"]
+    if _sha(generate.astype("<i8").tobytes()) != partition["generate_indices_sha256"] \
+            or _sha(confirmation.astype("<i8").tobytes()) != \
+            partition["confirmation_indices_sha256"]:
+        raise InvalidParameterError("partitions", partition,
+                                    "the exact frozen generate/confirmation split")
+    nuisance = plan_body["nuisance"]
+    nuisance_cuts = None
+    if nuisance is not None:
+        nuisance_values = columns[nuisance][generate]
+        nuisance_cuts = np.quantile(nuisance_values, (1 / 3, 2 / 3)).tolist()
+        if not nuisance_cuts[0] < nuisance_cuts[1]:
+            raise InvalidParameterError("generate nuisance regions", nuisance_cuts,
+                                        "two distinct generate-derived tertile cuts")
+    try:
+        minimum = required_surrogates(len(family_members), float(plan_body["alpha"]),
+                                      str(plan_body["correction"]))
+    except (TypeError, ValueError) as exc:
+        raise InvalidParameterError("confirmation family", family_members,
+                                    "a valid frozen correction family") from exc
+    if not minimum <= int(confirmation_permutations) <= 9999:
+        raise InvalidParameterError(
+            "confirmation_permutations", confirmation_permutations,
+            "at least %d and at most 9999 for the complete family" % minimum)
+    scientific_columns = [*plan_body["features"], plan_body["target"]]
+    if nuisance is not None:
+        scientific_columns.append(nuisance)
+    held_out = PartitionIdentity(
+        name="stable_subspace_confirmation", n_times=int(confirmation.size),
+        n_channels=len(scientific_columns), channel_labels=tuple(scientific_columns),
+        frames=(0, int(confirmation.size)), provenance={
+            "split": "held_out", "content_sha256": plan_body["content_sha256"],
+            "confirmation_indices_sha256": partition["confirmation_indices_sha256"],
+            "partition_seed": int(plan_body["seed"]), "n_rows": n,
+            "declaration": declaration.canonical(),
+        })
+    confirm = {
+        "schema": "spectral.stable-subspace-confirmation-contract.v1",
+        "plan_sha256": plan_sha, "generation_sha256": generation_sha,
+        "content_sha256": plan_body["content_sha256"],
+        "features": list(plan_body["features"]), "target": plan_body["target"],
+        "nuisance": nuisance, "preprocessing": preprocessing,
+        "subspaces": rows, "family_members": family_members,
+        "candidate_labels": candidates, "nuisance_region_cuts": nuisance_cuts,
+        "partition_seed": int(plan_body["seed"]),
+        "nuisance_region_definition": (
+            "generate-derived tertiles applied unchanged" if nuisance is not None
+            else "not applicable: no nuisance declared"),
+        "nuisance_stability_threshold": 0.35,
+        "permutations": int(confirmation_permutations),
+        "seed": int(confirmation_seed), "alpha": float(plan_body["alpha"]),
+        "correction": str(plan_body["correction"]),
+    }
+    seal = Seal(
+        study_id="stable-subspace:%s" % plan_sha[:16], sealed_at=sealed_at,
+        generate_sha256=generation_sha, generate_family_size=len(family_members),
+        confirm=confirm, confirm_sha256=_mapping_sha(confirm),
+        confirm_labels=tuple(family_members), confirm_family_size=len(family_members),
+        confirm_account={"family_size": len(family_members),
+                         "permutations": int(confirmation_permutations),
+                         "correction": str(plan_body["correction"])},
+        held_out=held_out)
+    if ledger is not None:
+        ledger.require_unopened(held_out, seal.seal_sha256)
+    return {
+        "schema": "spectral.stable-subspace-confirmation-seal.v1",
+        "seal": seal.to_mapping(), "seal_sha256": seal.seal_sha256,
+        "held_out_digest": held_out.digest(), "confirmation_opened": False,
+        "candidate_labels": candidates, "correction_unit": len(family_members),
+        "claim_boundary": (
+            "This freezes the generated spans, generate-only preprocessing and nuisance "
+            "regions before confirmation outcomes are opened. Self-consistency is not proof "
+            "of prior publication; publish seal_sha256 somewhere immutable before confirm."),
+    }
+
+
+def run_stable_subspace_confirmation(
+        payload: bytes, *, filename: str, delimiter: str, seal: Mapping[str, Any],
+        ledger: HeldOutLedger, opened_at: str,
+        published_sha256: Optional[str] = None) -> Dict[str, Any]:
+    """Open one reserved partition and test the complete frozen subspace family once."""
+    wrapped = dict(seal)
+    if wrapped.get("schema") != "spectral.stable-subspace-confirmation-seal.v1":
+        raise InvalidParameterError("seal schema", wrapped.get("schema"),
+                                    "spectral.stable-subspace-confirmation-seal.v1")
+    frozen = Seal.from_mapping(wrapped.get("seal", {}))
+    if wrapped.get("seal_sha256") != frozen.seal_sha256:
+        raise InvalidParameterError("seal_sha256", wrapped.get("seal_sha256"),
+                                    "the digest carried by the frozen confirmation seal")
+    if published_sha256 is None:
+        frozen.verify()
+    else:
+        frozen.verify_published(published_sha256)
+    confirm = dict(frozen.confirm)
+    if confirm.get("schema") != "spectral.stable-subspace-confirmation-contract.v1" \
+            or frozen.confirm_sha256 != _mapping_sha(confirm):
+        raise InvalidParameterError("confirmation contract", confirm.get("schema"),
+                                    "the intact stable-subspace confirmation contract")
+    if _sha(payload) != confirm["content_sha256"]:
+        raise InvalidParameterError("content_sha256", _sha(payload),
+                                    "the exact file bytes the confirmation seal bound")
+    declaration = SampleTableDeclaration(**frozen.held_out.provenance["declaration"])
+    probe = probe_delimited(payload, filename=filename, delimiter=delimiter)
+    declaration.validate(probe)
+    require_independent_samples(declaration, recipe="stable-subspace confirmation")
+    columns, _header = _numeric_table(payload, delimiter, declaration)
+    # Reconstruct the random split from the original plan seed, which is sealed in lineage.
+    plan_seed = int(frozen.held_out.provenance.get("partition_seed", -1))
+    if plan_seed < 0:
+        # TG16.4 seals created here identify the indices directly; recover them by matching
+        # the original plan seed carried in the contract when present.
+        plan_seed = int(confirm.get("partition_seed", -1))
+    if plan_seed < 0:
+        raise InvalidParameterError("partition seed", plan_seed,
+                                    "the frozen seed needed to reconstruct held-out rows")
+    order = np.random.default_rng(plan_seed).permutation(probe["n_rows"])
+    stop = probe["n_rows"] - frozen.held_out.n_times
+    confirmation = order[stop:]
+    presented = PartitionIdentity(
+        name=frozen.held_out.name, n_times=int(confirmation.size),
+        n_channels=frozen.held_out.n_channels,
+        channel_labels=frozen.held_out.channel_labels, frames=frozen.held_out.frames,
+        provenance=dict(frozen.held_out.provenance))
+    if presented.digest() != frozen.held_out.digest() \
+            or _sha(confirmation.astype("<i8").tobytes()) != \
+            frozen.held_out.provenance["confirmation_indices_sha256"]:
+        raise InvalidParameterError("held_out", presented.to_mapping(),
+                                    "the exact partition named by the confirmation seal")
+    ledger.require_unopened(presented, frozen.seal_sha256)
+    try:
+        measured = confirm_stable_subspaces(
+            {name: columns[name][confirmation] for name in confirm["features"]},
+            columns[confirm["target"]][confirmation],
+            preprocessing=confirm["preprocessing"],
+            frozen_subspaces=confirm["subspaces"],
+            family_members=confirm["family_members"],
+            nuisance=(columns[confirm["nuisance"]][confirmation]
+                      if confirm["nuisance"] is not None else None),
+            nuisance_region_cuts=confirm["nuisance_region_cuts"],
+            permutations=int(confirm["permutations"]), seed=int(confirm["seed"]),
+            alpha=float(confirm["alpha"]), correction=str(confirm["correction"]),
+            nuisance_stability_threshold=float(confirm["nuisance_stability_threshold"]))
+    except ValueError as exc:
+        raise InvalidParameterError("confirmation admission", str(exc),
+                                    "adequate overlap and the complete unchanged frozen family") from exc
+    record = ledger.open(frozen, presented, opened_at=opened_at)
+    return {
+        "schema": "spectral.stable-subspace-confirmation.v1",
+        "seal_sha256": frozen.seal_sha256,
+        "published_sha256": published_sha256, "content_sha256": confirm["content_sha256"],
+        "confirmation_opened": True, "ledger_record": record,
+        **measured, "stored": False, "rung_moved": False,
+    }
+
+
+def publish_stable_subspace_candidate(*, confirmation_seal: Seal, label: str,
+                                      published_at: str) -> Dict[str, Any]:
+    """Create a content-addressed transfer definition from a sealed generate candidate."""
+    confirmation_seal.verify()
+    confirm = dict(confirmation_seal.confirm)
+    if confirm.get("schema") != "spectral.stable-subspace-confirmation-contract.v1" \
+            or confirmation_seal.confirm_sha256 != _mapping_sha(confirm):
+        raise InvalidParameterError("confirmation seal", confirm.get("schema"),
+                                    "a TG16.4 stable-subspace confirmation seal")
+    if not isinstance(published_at, str) or not published_at.strip():
+        raise InvalidParameterError("published_at", published_at,
+                                    "a server-recorded publication time")
+    label = str(label)
+    if label not in confirm.get("candidate_labels", []):
+        raise InvalidParameterError(
+            "label", label,
+            "one of the generated candidate labels frozen by this seal: %s"
+            % list(confirm.get("candidate_labels", [])))
+    matching = [dict(row) for row in confirm["subspaces"] if row.get("label") == label]
+    if len(matching) != 1:
+        raise InvalidParameterError("label", label,
+                                    "exactly one matching member in the sealed family")
+    row = matching[0]
+    if row.get("outcome") != "candidate_compact_stable_subspace":
+        raise InvalidParameterError("candidate outcome", row.get("outcome"),
+                                    "candidate_compact_stable_subspace")
+    declaration = dict(confirmation_seal.held_out.provenance["declaration"])
+    body = {
+        "schema": "spectral.published-stable-subspace.v1",
+        "published_at": published_at,
+        "source_confirmation_seal_sha256": confirmation_seal.seal_sha256,
+        "source_content_sha256": confirm["content_sha256"],
+        "source_declaration": declaration,
+        "features": list(confirm["features"]), "target": confirm["target"],
+        "nuisance": confirm["nuisance"],
+        "preprocessing": dict(confirm["preprocessing"]),
+        "subspace": row, "label": label,
+        "nuisance_region_cuts": confirm["nuisance_region_cuts"],
+        "nuisance_stability_threshold": confirm["nuisance_stability_threshold"],
+        "adaptation": "none",
+    }
+    body["candidate_sha256"] = _mapping_sha(body)
+    return {**body,
+            "claim_boundary": (
+                "This is a published candidate definition, not a replication result. Its "
+                "source scaling, span and nuisance regions are immutable; external testing "
+                "is a separate target-bound contract.")}
+
+
+def _verify_published_candidate(candidate: Mapping[str, Any]) -> Dict[str, Any]:
+    frozen = dict(candidate)
+    frozen.pop("claim_boundary", None)
+    digest = str(frozen.pop("candidate_sha256", ""))
+    if frozen.get("schema") != "spectral.published-stable-subspace.v1" \
+            or digest != _mapping_sha(frozen):
+        raise InvalidParameterError("candidate_sha256", digest,
+                                    "the digest of an intact published subspace definition")
+    frozen["candidate_sha256"] = digest
+    return frozen
+
+
+def freeze_external_subspace_transfer(
+        *, candidates: Sequence[Mapping[str, Any]], target_content_sha256: str,
+        target_n_rows: int, target_declaration: SampleTableDeclaration,
+        target_provenance: Mapping[str, Any], sealed_at: str,
+        permutations: int = 4999, seed: int = 16501, alpha: float = 0.05,
+        ledger: Optional[HeldOutLedger] = None) -> Dict[str, Any]:
+    """Freeze published spans and an unopened external target without reading its values."""
+    if not isinstance(sealed_at, str) or not sealed_at.strip():
+        raise InvalidParameterError("sealed_at", sealed_at,
+                                    "a server-recorded transfer sealing time")
+    frozen_candidates = [_verify_published_candidate(value) for value in candidates]
+    if not 1 <= len(frozen_candidates) <= 6:
+        raise InvalidParameterError("candidate family", len(frozen_candidates),
+                                    "one to six published candidate definitions")
+    digests = [row["candidate_sha256"] for row in frozen_candidates]
+    labels = [str(row["label"]) for row in frozen_candidates]
+    if len(set(digests)) != len(digests) or len(set(labels)) != len(labels):
+        raise InvalidParameterError("candidate family", labels,
+                                    "distinct published definitions with distinct labels")
+    source_seals = {row["source_confirmation_seal_sha256"] for row in frozen_candidates}
+    if len(source_seals) != 1:
+        raise InvalidParameterError("candidate origins", sorted(source_seals),
+                                    "one source confirmation family per transfer contract")
+    first = frozen_candidates[0]
+    shared = ("source_content_sha256", "source_declaration", "features", "target",
+              "nuisance", "preprocessing", "nuisance_region_cuts",
+              "nuisance_stability_threshold", "adaptation")
+    for candidate in frozen_candidates[1:]:
+        if any(candidate.get(key) != first.get(key) for key in shared):
+            raise InvalidParameterError("candidate transfer family", labels,
+                                        "one unchanged preprocessing and feature contract")
+    if first["adaptation"] != "none":
+        raise InvalidParameterError("adaptation", first["adaptation"],
+                                    "none in this first external certification recipe")
+    if not isinstance(target_content_sha256, str) or len(target_content_sha256) != 64 \
+            or any(value not in "0123456789abcdef" for value in target_content_sha256.lower()):
+        raise InvalidParameterError("target_content_sha256", target_content_sha256,
+                                    "a 64-character hexadecimal content digest")
+    target_content_sha256 = target_content_sha256.lower()
+    if target_content_sha256 == first["source_content_sha256"]:
+        raise InvalidParameterError("target_content_sha256", target_content_sha256,
+                                    "bytes different from the source dataset")
+    if isinstance(target_n_rows, bool) or int(target_n_rows) < 40:
+        raise InvalidParameterError("target_n_rows", target_n_rows,
+                                    "at least 40 target rows declared before access")
+    if target_declaration.canonical() != first["source_declaration"]:
+        raise InvalidParameterError(
+            "target declaration", target_declaration.canonical(),
+            "the source column roles, independent-sample relationship and scientific units; "
+            "schema or unit adaptation is not implemented by this recipe")
+    require_independent_samples(target_declaration, recipe="external subspace certification")
+    provenance = dict(target_provenance)
+    required = ("acquisition_id", "acquired_at", "source")
+    missing = [key for key in required if not str(provenance.get(key, "")).strip()]
+    if missing or provenance.get("independent_of_origin") is not True:
+        raise InvalidParameterError(
+            "target_provenance", provenance,
+            "acquisition_id, acquired_at, source and independent_of_origin=true declared "
+            "before target access")
+    minimum = required_surrogates(len(labels), float(alpha), "benjamini_yekutieli")
+    if not minimum <= int(permutations) <= 9999:
+        raise InvalidParameterError("permutations", permutations,
+                                    "at least %d and at most 9999 for this family" % minimum)
+    columns = tuple(target_declaration.roles)
+    target = PartitionIdentity(
+        name="stable_subspace_external_target", n_times=int(target_n_rows),
+        n_channels=len(columns), channel_labels=columns, frames=(0, int(target_n_rows)),
+        provenance={"content_sha256": target_content_sha256,
+                    "declaration": target_declaration.canonical(),
+                    "acquisition": provenance})
+    contract = {
+        "schema": "spectral.external-subspace-transfer-contract.v1",
+        "candidate_sha256": digests, "candidate_labels": labels,
+        "candidates": frozen_candidates,
+        "target_content_sha256": target_content_sha256,
+        "target_n_rows": int(target_n_rows),
+        "target_declaration": target_declaration.canonical(),
+        "target_provenance": provenance,
+        "adaptation": "none", "permutations": int(permutations), "seed": int(seed),
+        "alpha": float(alpha), "correction": "benjamini_yekutieli",
+    }
+    seal = Seal(
+        study_id="external-subspace:%s" % next(iter(source_seals))[:16],
+        sealed_at=sealed_at, generate_sha256=_mapping_sha(
+            {"candidate_sha256": digests}), generate_family_size=len(labels),
+        confirm=contract, confirm_sha256=_mapping_sha(contract),
+        confirm_labels=tuple(labels), confirm_family_size=len(labels),
+        confirm_account={"family_size": len(labels), "permutations": int(permutations),
+                         "correction": "benjamini_yekutieli"}, held_out=target)
+    if ledger is not None:
+        ledger.require_unopened(target, seal.seal_sha256)
+    return {
+        "schema": "spectral.external-subspace-transfer-seal.v1",
+        "seal": seal.to_mapping(), "seal_sha256": seal.seal_sha256,
+        "target_partition_sha256": target.digest(), "target_opened": False,
+        "candidate_sha256": digests, "correction_unit": len(labels),
+        "publication_note": (
+            "Publish seal_sha256 somewhere immutable before the target file is supplied."),
+        "claim_boundary": (
+            "This binds an unchanged published candidate family and declared acquisition "
+            "provenance to one content-addressed target. It opens no target values."),
+    }
+
+
+def run_external_subspace_certification(
+        payload: bytes, *, filename: str, delimiter: str, seal: Mapping[str, Any],
+        ledger: HeldOutLedger, opened_at: str, published_sha256: str) -> Dict[str, Any]:
+    """Spend one external target, then test the frozen published family unchanged."""
+    wrapped = dict(seal)
+    if wrapped.get("schema") != "spectral.external-subspace-transfer-seal.v1":
+        raise InvalidParameterError("seal schema", wrapped.get("schema"),
+                                    "spectral.external-subspace-transfer-seal.v1")
+    frozen = Seal.from_mapping(wrapped.get("seal", {}))
+    if wrapped.get("seal_sha256") != frozen.seal_sha256:
+        raise InvalidParameterError("seal_sha256", wrapped.get("seal_sha256"),
+                                    "the digest carried by the transfer seal")
+    # Publication and contract checks happen before the target is spent.
+    frozen.verify_published(published_sha256)
+    contract = dict(frozen.confirm)
+    if contract.get("schema") != "spectral.external-subspace-transfer-contract.v1" \
+            or frozen.confirm_sha256 != _mapping_sha(contract) \
+            or contract.get("adaptation") != "none":
+        raise InvalidParameterError("transfer contract", contract.get("schema"),
+                                    "the intact no-adaptation external transfer contract")
+    candidates = [_verify_published_candidate(value) for value in contract["candidates"]]
+    if [row["candidate_sha256"] for row in candidates] != contract["candidate_sha256"] \
+            or [row["label"] for row in candidates] != list(frozen.confirm_labels):
+        raise InvalidParameterError("candidate family", contract.get("candidate_sha256"),
+                                    "the complete frozen published candidate family")
+    # From this point onward any refusal spends the target: values are about to be opened.
+    record = ledger.open(frozen, frozen.held_out, opened_at=opened_at)
+    if _sha(payload) != contract["target_content_sha256"]:
+        raise InvalidParameterError("target_content_sha256", _sha(payload),
+                                    "the exact independently acquired bytes the contract bound")
+    declaration = SampleTableDeclaration(**contract["target_declaration"])
+    probe = probe_delimited(payload, filename=filename, delimiter=delimiter)
+    declaration.validate(probe)
+    require_independent_samples(declaration, recipe="external subspace certification")
+    if probe["n_rows"] != int(contract["target_n_rows"]):
+        raise InvalidParameterError("target_n_rows", probe["n_rows"],
+                                    "the row count declared before target access")
+    columns, _header = _numeric_table(payload, delimiter, declaration)
+    first = candidates[0]
+    nuisance = first["nuisance"]
+    try:
+        measured = certify_external_subspaces(
+            {name: columns[name] for name in first["features"]}, columns[first["target"]],
+            preprocessing=first["preprocessing"],
+            frozen_subspaces=[row["subspace"] for row in candidates],
+            family_members=contract["candidate_labels"],
+            nuisance=(columns[nuisance] if nuisance is not None else None),
+            nuisance_region_cuts=first["nuisance_region_cuts"],
+            permutations=int(contract["permutations"]), seed=int(contract["seed"]),
+            alpha=float(contract["alpha"]), correction=str(contract["correction"]),
+            nuisance_stability_threshold=float(first["nuisance_stability_threshold"]))
+    except ValueError as exc:
+        raise InvalidParameterError("external target admission", str(exc),
+                                    "adequate target support for the frozen family") from exc
+    return {
+        "schema": "spectral.external-subspace-certification.v1",
+        "transfer_seal_sha256": frozen.seal_sha256,
+        "published_sha256": published_sha256,
+        "target_content_sha256": contract["target_content_sha256"],
+        "target_provenance": contract["target_provenance"],
+        "target_opened": True, "ledger_record": record,
+        **measured, "stored": False, "rung_moved": False,
+    }
+
+
 def plan_representation_audit(payload: bytes, *, filename: str, delimiter: str,
                               declaration: SampleTableDeclaration,
                               representations: Sequence[str] = ("identity", "pca"),
@@ -216,14 +1197,7 @@ def plan_representation_audit(payload: bytes, *, filename: str, delimiter: str,
                               seed: int = 1729, alpha: float = 0.05) -> Dict[str, Any]:
     probe = probe_delimited(payload, filename=filename, delimiter=delimiter)
     declaration.validate(probe)
-    if declaration.sample_relationship != "independent":
-        needed = ("group-held-out confirmation" if declaration.sample_relationship == "grouped"
-                  else "blocked and embargoed confirmation")
-        raise InvalidParameterError(
-            "sample_relationship", declaration.sample_relationship,
-            "'independent' for this first recipe. %s data require %s; a row-random split "
-            "would leak dependent samples across generate and confirm." %
-            (declaration.sample_relationship.capitalize(), needed))
+    require_independent_samples(declaration, recipe="this first representation recipe")
     representations = tuple(dict.fromkeys(str(value) for value in representations))
     unknown = sorted(set(representations) - set(AUDIT_REPRESENTATIONS))
     if not representations or unknown:
@@ -433,5 +1407,14 @@ def run_representation_audit(payload: bytes, *, filename: str, delimiter: str,
 
 
 __all__ = ["AUDIT_REPRESENTATIONS", "MAX_UPLOAD_BYTES", "SAMPLE_RELATIONSHIPS",
-           "SAMPLE_ROLES", "SampleTableDeclaration", "plan_representation_audit",
-           "probe_delimited", "run_representation_audit", "sample_table_capability_profile"]
+           "SAMPLE_ROLES", "SampleTableDeclaration", "freeze_external_subspace_transfer",
+           "freeze_stable_subspace_confirmation",
+           "plan_conditional_information_audit",
+           "plan_redundancy_structure_audit", "plan_representation_audit",
+           "plan_stable_subspace_generation",
+           "probe_delimited", "publish_stable_subspace_candidate",
+           "require_independent_samples", "run_external_subspace_certification",
+           "run_conditional_information_audit", "run_redundancy_structure_audit",
+           "run_representation_audit", "run_stable_subspace_confirmation",
+           "run_stable_subspace_generation",
+           "sample_table_capability_profile"]

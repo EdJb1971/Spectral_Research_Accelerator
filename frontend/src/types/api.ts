@@ -502,6 +502,9 @@ export interface AcquisitionDomainLimits {
 export interface AcquisitionOption {
   id: string;
   name: string;
+  label?: string;
+  provider?: string | null;
+  product_family?: string | null;
   shape: AcquisitionShape;
   available: boolean;
   access: string;
@@ -525,9 +528,107 @@ export interface AcquisitionDomain {
 export interface AcquisitionCatalogue {
   domains: AcquisitionDomain[];
   shapes: Record<AcquisitionShape, string>;
+  operational_routes: Array<{
+    id: string; domain: string; label: string; provider: string; product_family: string;
+    ui_status: string; execution: string; configuration: string[]; reason: string;
+  }>;
   violation_coverage: Record<string, Array<{ domain: string; shape: AcquisitionShape; path: string }>>;
   attribution_caveat: string;
   note: string;
+}
+
+export interface CDSPlanRequest {
+  variables: string[];
+  date_start: string;
+  date_end: string;
+  hours_utc: number[];
+  lat_min: number;
+  lat_max: number;
+  lon_min: number;
+  lon_max: number;
+  pressure_levels: number[];
+  grid_degrees: number;
+  n_levels_analysis: number;
+}
+
+export interface CDSCapabilities {
+  schema: string;
+  dataset: string;
+  variables: Array<{ id: string; cds_name: string }>;
+  pressure_levels: number[];
+  defaults: CDSPlanRequest;
+  network_env_var: string;
+  network_enabled: boolean;
+  planner_network_used: false;
+  execution_status: 'AVAILABLE' | 'NETWORK_DISABLED';
+  workflow: string[];
+  claim_boundary: string;
+}
+
+export interface CDSPlan {
+  schema: string;
+  request: CDSPlanRequest & { request_sha256: string };
+  request_sha256: string;
+  monthly_shards: Array<{
+    year: number; month: number; days: number[]; request_sha256: string; filename: string;
+    request: Record<string, unknown>;
+  }>;
+  storage_estimate: {
+    basis: string; compression_credit_assumed: boolean; frames: number;
+    latitude_points_upper_bound: number; longitude_points_upper_bound: number;
+    levels: number; variables: number; raw_value_bytes: number;
+    artifact_bytes_upper_bound: number; shards: number;
+  };
+  analysis_geometry: { status: string; assessment: Record<string, any> };
+  network_used: false;
+  execution_status: 'READY_TO_SUBMIT' | 'NETWORK_DISABLED';
+  submission_confirmation: {
+    confirm_request_sha256: string; confirm_network_access: true; statement: string;
+  };
+  next_action: string;
+  claim_boundary: string;
+}
+
+export interface CDSStoragePreflight {
+  status: 'READY';
+  completed_shards: number;
+  remaining_shards: number;
+  volumes: Array<{
+    volume: string; roles: string[]; working_bytes_required: number; free_bytes: number;
+    reserve_bytes: number; total_free_required: number; passes: boolean;
+  }>;
+}
+
+export type CDSJobState = 'QUEUED' | 'RUNNING' | 'CANCELLING' | 'INTERRUPTED' |
+  'CANCELLED' | 'FAILED' | 'COMPLETE';
+
+export interface CDSAcquisitionRecord {
+  schema: 'cds-acquisition-record/v1';
+  job_id: string; request_sha256: string; request: CDSPlanRequest & { request_sha256: string };
+  completed_at: string; completed_shards: number; total_bytes: number;
+  shards: Array<{ filename: string; sha256: string; bytes: number; request_sha256: string }>;
+  record_sha256: string; claim_boundary: string;
+}
+
+export interface CDSJob {
+  schema: 'cds-acquisition-job/v1';
+  job_id: string; request_sha256: string; request: CDSPlanRequest & { request_sha256: string };
+  state: CDSJobState; created_at: string; updated_at: string; started_at: string | null;
+  completed_at: string | null; total_shards: number; completed_shards: number;
+  current_shard: string | null; downloaded_shards_this_attempt: number;
+  resumed_shards_this_attempt: number; attempts: number; message: string;
+  error: { type: string; detail: string } | null; storage_preflight: CDSStoragePreflight;
+  acquisition_record: CDSAcquisitionRecord | null; existing_job?: boolean;
+  storage: { ownership: 'SERVER_MANAGED'; namespace: string; job_id: string;
+    client_path_accepted: false };
+  progress: { completed_shards: number; total_shards: number; fraction: number;
+    current_shard: string | null };
+  resumable: boolean; cancellation_boundary: string; claim_boundary: string;
+}
+
+export interface CDSJobList {
+  schema: 'cds-acquisition-jobs/v1'; jobs: CDSJob[]; network_enabled: boolean;
+  claim_boundary: string;
 }
 
 export interface ZarrAnalysisRequest {
@@ -833,6 +934,12 @@ export interface CropGeometryPlan {
   recommended_minimum: {
     shape: number[]; unrounded_required_side: number;
     valid_parent_side_policy: number; basis: string;
+    // T4C.5i step 6: the threshold is a heuristic, and the dyadic size is reported beside it
+    // as a convention that is never refused on.
+    heuristic?: boolean;
+    dyadic_operational_shape?: number[];
+    dyadic_operational_basis?: string;
+    limitation?: string;
   };
   alignment_cells: number;
   support_source: string;
@@ -1977,4 +2084,1113 @@ export interface CrossDomainConfirmation {
   rung_moved: boolean;
   publication: string;
   claim_boundary: string;
+}
+
+// ------------------------------------------ configurable experiment manifest (TG17.1)
+export interface CrossDomainExperimentManifest {
+  schema_id: 'cross-domain-experiment/v1';
+  study_id: string;
+  title: string;
+  mode: 'calendar_aligned' | 'scale_shape_aligned';
+  windows: { name: string; start_utc: string; end_utc: string; stride_seconds: number }[];
+  observations: {
+    domain: string; label: string; role: string; measure: string; semantics: string; units: string;
+    acquisition: { source_id: string; source_version: string; identity: Record<string, any>; parameters: Record<string, any> };
+    adapter: { adapter_id: string; adapter_version: string; parameters: Record<string, any> };
+  }[];
+  coverage_policy: { requirement: 'complete_required' | 'partial_permitted'; minimum_fraction: number };
+  alignment: AlignmentPolicy;
+  scale_normalization: Record<string, any> | null;
+  family: FamilyDefinition;
+  confirmation: ConfirmationPolicy;
+  nulls: { name: string; method: string; replications: number; parameters: Record<string, any> }[];
+  correction: 'benjamini_yekutieli' | 'holm' | 'bonferroni';
+  alpha: number;
+  seeds: Record<string, number>;
+  resource_caps: { maximum_family_members: number; maximum_planned_bytes: number; maximum_runtime_seconds: number };
+  notes: Record<string, any>;
+}
+
+/** Every axis of the declared search (TG17.5). The axes a study is free to vary are the axes
+ *  it must declare: a family priced without one is short by exactly the factor nobody wrote
+ *  down. */
+export interface FamilyDefinition {
+  channels: string[];
+  scales: number[];
+  relationships: string[];
+  domain_arities: number[];
+  lags_seconds: number[];
+  representations: string[];
+  motifs: string[];
+  maximum_members: number;
+}
+
+/** Which stage the manifest declares, and therefore what R18 corrects over (TG17.5). */
+export interface ConfirmationPolicy {
+  stage: 'confirmatory_only' | 'generate_then_confirm';
+  held_out_partition: string | null;
+  confirmatory_members: number | null;
+}
+
+export interface FamilyExpansionAxis {
+  axis: string;
+  declared_values: number;
+  examples: string[];
+  contributes: string;
+}
+
+/** What one more value on an axis would cost, priced before the freeze rather than discovered
+ *  after acquisition. */
+export interface FamilyExpansionCost {
+  axis: string;
+  adds: string;
+  family_size_before: number;
+  family_size_after: number;
+  members_added: number;
+  surrogates_required_before: number;
+  surrogates_required_after: number;
+  declared_surrogates: number;
+  affordable_after: boolean;
+}
+
+export interface FamilyCorrectionPlan {
+  stage: 'confirmatory_only' | 'generate_then_confirm';
+  declared_search_members: number;
+  correction_unit_members: number;
+  held_out_partition: string | null;
+  n_surrogates: number;
+  surrogates_required: number;
+  p_value_floor: number;
+  affordable: boolean;
+  warning: string | null;
+  generate_stage_makes_claims: boolean | null;
+  note: string;
+}
+
+export interface PrecedenceAvailability {
+  schema: string;
+  declared_family_size: number;
+  precedence_relationships_declared: string[];
+  domains_without_precedence_policy: string[];
+  unavailable_precedence_members: number;
+  association_members_unaffected: number;
+  family_size_unchanged: boolean;
+  entire_family_unavailable: boolean;
+  basis: string;
+  note: string;
+}
+
+export interface FamilyExpansion {
+  schema: string;
+  study_id: string;
+  mode: string;
+  axes: FamilyExpansionAxis[];
+  in_human_terms: string;
+  family_size: number;
+  specification_sha256: string;
+  declared_surrogates: number;
+  declared_surrogates_basis: string;
+  account: Record<string, any>;
+  correction: FamilyCorrectionPlan;
+  largest_affordable_family: number;
+  resource_requirement: { surrogate_evaluations_declared: number;
+    surrogate_evaluations_required: number; note: string };
+  expansion_cost: FamilyExpansionCost[];
+  screen_and_confirm: { screen_family_size: number; complete_family_size: number;
+    correction_unit: number; screen_sha256: string; complete_sha256: string; rule: string };
+  precedence: PrecedenceAvailability;
+  claim_boundary: string;
+}
+
+/** One declared surrogate construction. `preserves` is the list of features that would
+ *  otherwise manufacture the structure under test, so a family that preserves fewer of them is
+ *  a weaker null and says so. */
+export interface NullFamilyDescription {
+  name: string;
+  modes: string[];
+  operates_on: string;
+  preserves: string[];
+  destroys: string[];
+  parameters: string[];
+  admissible: boolean;
+  inadmissible_reason: string | null;
+  definition: string;
+  claim_boundary: string;
+  admitted_by: string[];
+  usable_across_all_registered_domains: boolean;
+}
+
+export interface NullFamilyList {
+  schema: string;
+  families: NullFamilyDescription[];
+  modes: string[];
+  note: string;
+  claim_boundary: string;
+}
+
+export interface ExperimentManifestEnvelope {
+  schema: string;
+  recipe_id?: string;
+  manifest_sha256: string;
+  run_identity: string;
+  canonical_manifest: CrossDomainExperimentManifest;
+  immutable: boolean;
+}
+
+export interface ExperimentPreflight {
+  schema: string;
+  manifest_sha256: string;
+  status: 'READY' | 'PARTIAL' | 'REFUSED';
+  metadata_only: boolean;
+  network_used: boolean;
+  measurement_values_opened: boolean;
+  family: FamilyExpansion & { declared_members: number; maximum_members: number;
+    windows_are_one_family: boolean };
+  alignment: PreflightAlignment;
+  coverage: { domain: string; label?: string; source_id: string; measure?: string; status: string;
+    reason: string; support_kind?: string; native_cadence_seconds?: number | null; access?: string;
+    opens_measurement_values?: boolean; windows?: Record<string, any>[] }[];
+  refusals: { domain: string | null; reason: string }[];
+  claim_boundary: string;
+}
+
+// ---------------------------------------------------------- registered adapters (TG17.3)
+
+/** One control a domain adapter declares. The Composer renders these and nothing else, so a
+ *  domain cannot require a widget only it understands, and a fifth adapter reaches the form
+ *  without the form learning its name. */
+export interface AdapterControlField {
+  name: string;
+  label: string;
+  kind: 'text' | 'integer' | 'number' | 'boolean' | 'enum' | 'utc_instant' | 'content_record';
+  help: string;
+  required: boolean;
+  default: any;
+  choices: any[];
+  minimum: number | null;
+  maximum: number | null;
+  units: string | null;
+}
+
+export interface DomainExperimentAdapterDescription {
+  schema: 'domain-experiment-adapter/v1';
+  adapter_id: string;
+  adapter_version: string;
+  domain: string;
+  definition_sha256: string;
+  controls: { schema: string; fields: AdapterControlField[] };
+  declaration: Record<string, any>;
+  implements: string[];
+  onboarding_cost: Record<string, any>;
+}
+
+export interface AdapterConformanceReport {
+  schema: 'domain-adapter-conformance/v1';
+  adapter_id: string;
+  domain: string;
+  definition_sha256: string;
+  conformant: boolean;
+  counts: Record<string, number>;
+  checks: { check: string; status: 'PASS' | 'FAIL' | 'NOT_APPLICABLE' | 'NOT_PROBED';
+    detail: string; evidence: Record<string, any> }[];
+  claim_boundary: string;
+  record_kind: 'deterministic_known_answer_not_acquired_data';
+}
+
+// ------------------------------------------------- clock, support and coverage (TG17.4)
+
+/** How support is compared, frozen in the manifest before any value is opened. The default
+ *  kernel transforms nothing; every other one widens, snaps or carries support and must be
+ *  admitted by every participating adapter. */
+export interface AlignmentPolicy {
+  kernel: string;
+  parameters: Record<string, number>;
+  minimum_overlap_seconds: number;
+  minimum_effective_samples: number;
+}
+
+export interface AlignmentKernelDescription {
+  name: string;
+  summary: string;
+  required_parameters: string[];
+  manufactures_simultaneity: boolean;
+  invents_values: boolean;
+  refused_over_violations: string[];
+  admitted_by: string[];
+  usable_across_all_registered_domains: boolean;
+}
+
+export interface AlignmentKernelList {
+  schema: 'experiment-composer-alignment-kernels/v1';
+  kernels: AlignmentKernelDescription[];
+  default: string;
+  note: string;
+  claim_boundary: string;
+}
+
+/** One record's coverage of one window. `raw_row_count` is shown next to the numbers that are
+ *  actually evidence and is used by nothing: changing row density alone cannot change any other
+ *  field here. */
+export interface SupportCoverage {
+  schema: string;
+  label: string;
+  domain: string;
+  window_start_seconds: number;
+  window_end_seconds: number;
+  window_seconds: number;
+  occupied_seconds: number;
+  covered_fraction: number;
+  intervals: number[][];
+  gaps: number[][];
+  gap_count: number;
+  largest_gap_seconds: number;
+  native_scale_seconds: number;
+  raw_row_count: number;
+  valid_row_count: number;
+  rows_are_not_evidence: string;
+  support_is_stationary: boolean;
+  support_duration_min_seconds: number | null;
+  support_duration_max_seconds: number | null;
+  kernel: string;
+  kernel_parameters: Record<string, number>;
+  manufactured_seconds: number;
+}
+
+export interface PairwiseOverlapRow {
+  left: string;
+  right: string;
+  kernel: string;
+  kernel_parameters: Record<string, number>;
+  overlap_seconds: number;
+  exact_overlap_seconds: number;
+  manufactured_overlap_seconds: number;
+  lost_overlap_seconds: number;
+  overlap_intervals: number[][];
+  left_occupied_seconds: number;
+  right_occupied_seconds: number;
+  overlap_fraction_of_shorter: number;
+  governing_scale_seconds: number;
+  effective_sample_size: number;
+  effective_sample_size_basis: string;
+  row_counts_not_used: { left: number; right: number };
+  status: 'COMPARABLE' | 'REFUSED';
+  refusals: string[];
+}
+
+export interface AlignmentReport {
+  schema: 'structural-alignment/v1';
+  mode: 'calendar_aligned' | 'scale_shape_aligned';
+  mode_forbids: string;
+  admitted_relationships: string[];
+  kernel: AlignmentKernelDescription & { parameters?: Record<string, number>; freeze_sha256?: string };
+  coverage: SupportCoverage[];
+  pairs: PairwiseOverlapRow[];
+  refusals: { pair: string[] | null; relationship: string | null; reason: string }[];
+  status: 'COMPARABLE' | 'REFUSED';
+  row_indices_were_not_compared: true;
+  claim_boundary: string;
+  manifest_sha256: string;
+  record_binding: 'benchmark_known_answer';
+  record_kind: 'deterministic_known_answer_not_acquired_data';
+  window_seconds: number;
+}
+
+/** What the declared windows and clocks imply about shared support, from metadata only. A pair
+ *  whose coverage the catalogue cannot establish is reported as bounded by the window rather
+ *  than given a number that would later turn out to have been a guess. */
+export interface PreflightAlignment {
+  schema: 'experiment-preflight-alignment/v1';
+  mode: 'calendar_aligned' | 'scale_shape_aligned';
+  mode_forbids?: string;
+  admitted_relationships?: string[];
+  declared_relationships?: string[];
+  kernel: (AlignmentKernelDescription & { parameters?: Record<string, number>; freeze_sha256?: string }) | null;
+  kernel_refused?: string;
+  minimum_overlap_seconds?: number;
+  minimum_effective_samples?: number;
+  family?: { modes: string[]; multiplier: number; correction_scope: string; why: string };
+  row_indices_were_not_compared?: boolean;
+  measurement_values_opened?: boolean;
+  windows: {
+    name: string;
+    window_seconds: number;
+    clock: { elapsed_seconds: number; nominal_seconds: number; discrepancy_seconds: number; clock_is_uniform: boolean };
+    clock_note: string;
+    pairs: Record<string, any>[];
+  }[];
+}
+
+export interface StructuralTrajectoryPreview {
+  schema: 'structural-trajectory-preview/v1';
+  kind: 'deterministic_known_answer_not_acquired_data';
+  seed: number;
+  manifest_sha256: string;
+  mining_interface: string;
+  domain_branch_in_mining: false;
+  selected_observations: string[];
+  trajectories: {
+    trajectory_id: string; domain: string; source_id: string; variable: string;
+    native_semantics: string; native_units: string;
+    support_start_seconds: number[]; support_end_seconds: number[]; valid_mask: boolean[];
+    channel: string; channel_semantics: string; channel_units: string; values: number[];
+    structural_scales: { coordinate: number; native_value: number; native_units: string; mapping: string }[];
+    adapter: { id: string; version: string; definition_sha256: string; config_sha256: string };
+    native_record: { content_sha256: string; locator: string; retained: boolean };
+    lineage: { operation: string; source_variable: string; source_indices: number[];
+      parameters: Record<string, number>; output_sha256: string };
+    assumption_violations: string[];
+    peak: { support_start_seconds: number; support_end_seconds: number; value: number; units: string };
+  }[];
+  claim_boundary: string;
+}
+
+
+// ---------------------------------------------------------------- TG17.6 orchestrated runs
+
+/** The state machine as the backend enforces it, so the browser draws the transitions that
+ *  actually exist rather than a picture of them that drifts. */
+export interface RunStateMachine {
+  schema: string;
+  states: string[];
+  work_stages: string[];
+  terminal_states: string[];
+  transitions: Record<string, string[]>;
+  component_statuses: string[];
+  retryable_statuses: string[];
+  note: string;
+}
+
+/** A registered stage-worker suite. Everything registered today acquires nothing, and the
+ *  capabilities say so rather than the label implying it. */
+export interface RunWorkerSuite {
+  name: string;
+  description: string;
+  capabilities: Record<string, any>;
+  tags: string[];
+}
+
+export interface RunSummary {
+  run_id: string;
+  study_id: string;
+  title: string;
+  state: string;
+  manifest_sha256: string;
+  bounded_work: RunBoundedWork;
+}
+
+export interface RunContract {
+  schema: string;
+  state_machine: RunStateMachine;
+  worker_suites: RunWorkerSuite[];
+  runs: RunSummary[];
+  available_now: string[];
+  not_yet_available: string[];
+  claim_boundary: string;
+}
+
+/** Bounded because the plan is declared. A progress bar over a search whose size is discovered
+ *  as it runs is a progress bar that means nothing. */
+export interface RunBoundedWork {
+  completed_steps: number;
+  total_steps: number;
+  fraction: number;
+  bytes_read: number;
+}
+
+/** What a watcher may see mid-run. There is no field here for a measurement value, a statistic
+ *  or a p-value, because the backend type it comes from has none either. */
+export interface RunComponentProgress {
+  component: string;
+  status: string;
+  artifact_sha256: string | null;
+  remediation: string;
+  reused: boolean;
+}
+
+export interface RunProgress {
+  schema: string;
+  run_id: string;
+  state: string;
+  manifest_sha256: string;
+  stages: { stage: string; components: RunComponentProgress[] }[];
+  bounded_work: RunBoundedWork;
+  retryable: boolean;
+  results_visible: boolean;
+  claim_boundary: string;
+}
+
+export interface RunReceipt {
+  schema: string;
+  run_id: string;
+  run_sha256: string;
+  manifest_sha256: string;
+  study_id: string;
+  state: string;
+  history: { at: string; from: string; to: string; reason: string }[];
+  artefacts: Record<string, string>;
+  missing_components: { stage: string; component: string; status: string; detail: string;
+    remediation: string }[];
+  stage_decisions: { stage: string; verdict: string; reason: string }[];
+  bounded_work: RunBoundedWork;
+  coverage_policy: { requirement: string; minimum_fraction: number };
+  confirmation: Record<string, any>;
+  events: number;
+  claim_boundary: string;
+}
+
+/** Posting a manifest opens the run that manifest identifies. `resumed` says which of the two
+ *  happened, because "created" and "resumed" are the same request. */
+export interface RunIdentity {
+  schema: string;
+  manifest_sha256: string;
+  run_sha256: string;
+  run_id: string;
+  study_id: string;
+  resumed: boolean;
+  progress: RunProgress;
+  receipt: RunReceipt;
+}
+
+export interface RunEditableCopy {
+  draft_id: string;
+  manifest_sha256: string;
+  copied_from_run: string;
+  frozen_run_state: string;
+  frozen_run_untouched: boolean;
+  note: string;
+}
+
+// ------------------------------------------------ TG17.9 portable experiment receipt
+
+export interface ExperimentReceiptField {
+  name: string;
+  label: string;
+  meaning: string;
+}
+
+export interface ExperimentReceiptCapabilities {
+  schema: string;
+  software_version: string;
+  operations: { name: string; effect: string; writes_evidence: boolean }[];
+  adapters: DomainExperimentAdapterDescription[];
+  refusals: { name: string; reason: string }[];
+  receipt_fields: ExperimentReceiptField[];
+  lineage: string[];
+  claim_boundary: string;
+}
+
+export interface ExperimentEvidenceHandoff {
+  run_complete: boolean;
+  eligible_actions: string[];
+  automatic_actions: string[];
+  categories: { category: string; status: 'PRESENT' | 'ABSENT'; source: string | null }[];
+  proposed_study_id: string;
+  claim_boundary: string;
+}
+
+export interface ExperimentReplayBundle extends Record<string, any> {
+  schema: 'cross-domain-experiment-bundle/v1';
+  bundle_sha256: string;
+  run_receipt: RunReceipt;
+  evidence_handoff: ExperimentEvidenceHandoff;
+  methods_report: { schema: string; format: string; sha256: string; text: string };
+  claim_boundary: string;
+}
+
+export interface ExperimentReceiptExport {
+  schema: string;
+  integrity: 'VERIFIED';
+  bundle_sha256: string;
+  report_sha256: string;
+  bundle: ExperimentReplayBundle;
+  claim_boundary: string;
+}
+
+export interface ExperimentReceiptReplay {
+  schema: string;
+  integrity: 'VERIFIED';
+  bundle_sha256: string;
+  manifest: CrossDomainExperimentManifest;
+  run_identity: Record<string, string>;
+  run_receipt: RunReceipt;
+  results: Record<string, any>;
+  refusals: Record<string, any>[];
+  evidence_handoff: ExperimentEvidenceHandoff;
+  methods_report: { schema: string; format: string; sha256: string; text: string };
+  claim_boundary: string;
+  bundle: ExperimentReplayBundle;
+}
+
+// -------------------------------------------------- TG17.10 release qualification
+
+export interface ExperimentQualificationGate {
+  gate_id: string;
+  title: string;
+  /** `REFUSED` is not `FAIL`. Nothing in the apparatus broke: a domain's declared contract
+   *  forbids the plan. Both block release, and collapsing them would hide which one happened. */
+  status: 'PASS' | 'FAIL' | 'REFUSED' | 'NOT_RUN' | 'NOT_IMPLEMENTED';
+  blocking: boolean;
+  detail: string;
+}
+
+export interface ExperimentQualificationCell {
+  cell_id: string;
+  duration: 'week' | 'three_months' | 'six_months';
+  mode: 'calendar_aligned' | 'scale_shape_aligned';
+  start_utc: string;
+  end_utc: string;
+  manifest_sha256: string;
+  family_correction: string;
+  record_kind: string;
+  status: 'PASS' | 'FAIL' | 'REFUSED' | 'NOT_RUN';
+  /** Absent on a refused cell: a plan the declarations refuse opens no run. */
+  run_id?: string;
+  bundle_sha256?: string;
+  preflight_status?: string;
+  checks?: Record<string, boolean>;
+  refusals?: { domain?: string; reason: string }[];
+}
+
+// TG17.12: whether a rejection is arithmetically reachable at a declared configuration. The
+// calendar null's floor is 1/(1+replications), so it is bought with computation and there is no
+// enumeration ceiling - the opposite of the scale/shape null one field below.
+export interface CalendarNullResolution {
+  members: number;
+  replications: number;
+  p_value_floor: number;
+  replications_required: number;
+  can_reject_after_correction: boolean;
+}
+
+export interface ExperimentQualificationRecord {
+  schema: string;
+  qualification_sha256: string;
+  verdict: 'RELEASEABLE' | 'NOT_RELEASEABLE';
+  record_kind: string;
+  matrix: ExperimentQualificationCell[];
+  gates: ExperimentQualificationGate[];
+  recovery?: {
+    status: 'PASS' | 'FAIL'; run_id: string; failed_component: string;
+    attempts_before_restart: Record<string, number>;
+    attempts_after_retry: Record<string, number>;
+    checks: Record<string, boolean>;
+  };
+  // TG17.12. A calibration measured outside orchestration and read here, never run here.
+  // `status` is what the gate is entitled to say; `reasons` is why, and is non-empty whenever
+  // the recording is absent, unbound from the contract or source it was made against, or failed.
+  calendar_calibration?: {
+    schema: string;
+    entry_point: string;
+    executed_here: boolean;
+    record_path: string;
+    contract_sha256: string;
+    status: 'PASS' | 'FAIL' | 'NOT_RUN';
+    reasons: string[];
+    recorded_utc?: string;
+    recorded: {
+      recorded_utc: string;
+      all_met: boolean;
+      replications: number;
+      family_size: number;
+      cases: Array<{
+        case: string; expectation: string;
+        minimum_rejections: number; maximum_rejections: number;
+        n_rejected_after_correction: number; met: boolean;
+      }>;
+      claim_boundary: string;
+    } | null;
+    applicability: {
+      floor_is_bought_with: string;
+      enumeration_ceiling: number | null;
+      calibration_family: CalendarNullResolution;
+      declared_plan: CalendarNullResolution & { declared_search_members: number };
+      alpha: number;
+      correction: string;
+      claim_boundary: string;
+    };
+  };
+  // TG17.11: why the scale/shape gate is REFUSED rather than absent. Applicability only - the
+  // server does not run that calibration here and this section carries no power number.
+  scale_shape_calibration?: {
+    calibration: string;
+    calibration_executed_here: boolean;
+    inference_the_calibration_uses: string;
+    inference_the_manifests_declare: string;
+    alpha: number;
+    correction: string;
+    minimum_resolvable_family: number;
+    largest_drawable_inventory: number;
+    declared_null_can_ever_reject: boolean;
+    declared_families: Array<{
+      family: string; domains: string[]; pairings: number;
+      null_refusal: string; reaches_resolvable_size: boolean;
+    }>;
+    claim_boundary: string;
+  };
+  // TG18.5 slice 4. Measured by a rendered run or reported as unmeasured, never synthesized by
+  // the server. `MEASURED` carries the counts; `NOT_MEASURED` carries only the reasons it has
+  // none. Numbers and strings both appear, so the value type stays open; the durations are named
+  // `_unasserted` because nothing compares them to anything.
+  scientist_actions: Record<string, string | number | null | string[]>;
+  // What the `browser_no_glue` gate read, and why it said what it said.
+  browser_evidence?: {
+    schema: string;
+    measured_by: string;
+    executed_here: boolean;
+    record_path: string;
+    specs_in_this_checkout: number;
+    status: 'PASS' | 'FAIL' | 'NOT_RUN';
+    reasons: string[];
+    recorded: {
+      recorded_utc: string;
+      playwright_status: string;
+      passed: number;
+      failed: number;
+      skipped: number;
+      specs_that_ran: number;
+      artefacts: number;
+    } | null;
+    claim_boundary: string;
+  };
+  claim_boundary: string;
+}
+
+// ------------------------------------------------------- TG17.7 the guided path
+
+/** One step of the workflow, described by the server. The browser renders these; it holds no
+ *  copy of the order of operations, because two copies of an order of operations are two
+ *  different experiments waiting to happen. */
+export interface ComposerPathStep {
+  step_id: string;
+  ordinal: number;
+  title: string;
+  question: string;
+  settles: string;
+  controls: string[];
+  action_label: string;
+  action_route: string;
+  claim_boundary: string;
+}
+
+export interface ComposerLadderRung {
+  rung: string;
+  title: string;
+  is: string;
+  is_not: string;
+  gate: string;
+  reached?: boolean;
+  why_not?: string;
+}
+
+export interface ComposerPathContract {
+  schema: string;
+  steps: ComposerPathStep[];
+  step_statuses: string[];
+  duration_presets: string[];
+  ladder: ComposerLadderRung[];
+  note: string;
+  claim_boundary: string;
+}
+
+export interface ComposerStepState extends ComposerPathStep {
+  status: string;
+  reason: string;
+  detail: Record<string, any>;
+}
+
+/** `next_action` is one field on purpose. Two enabled controls meaning two different scientific
+ *  commitments cannot both be the next legitimate act. */
+export interface ComposerNextAction {
+  step_id: string;
+  label: string;
+  route: string;
+  status: string;
+  why: string;
+  blocked: boolean;
+}
+
+export interface ComposerPathState {
+  schema: string;
+  manifest_sha256: string;
+  study_id: string;
+  steps: ComposerStepState[];
+  satisfied: number;
+  next_action: ComposerNextAction | null;
+  ladder: ComposerLadderRung[];
+  run_state: string | null;
+  claim_boundary: string;
+}
+
+export interface ComposerWindowPreset {
+  preset: string;
+  unit: string;
+  amount: number;
+  days: number;
+  start_utc: string;
+  end_utc: string;
+  stride_seconds: number;
+  label: string;
+}
+
+export interface ComposerWindowPresets {
+  schema: string;
+  anchor_utc: string;
+  presets: ComposerWindowPreset[];
+  note: string;
+  claim_boundary: string;
+}
+
+export interface ComposerDomainOption {
+  domain: string;
+  adapter_id: string;
+  label: string;
+  licence: string;
+  breaks: string[];
+  lag_policy: string;
+  precedence_admissible: boolean;
+  admissible_kernels: string[];
+  admissible_nulls: string[];
+  selected: boolean;
+  selectable: boolean;
+  unavailable_reason: string;
+  /** The declared observation this domain would join the study with, or null when no recipe
+   *  declares one - in which case the row is offered disabled, with the reason. */
+  observation: Record<string, any> | null;
+  onboarding_cost: Record<string, any>;
+}
+
+export interface ComposerDomainMenu {
+  schema: string;
+  domains: ComposerDomainOption[];
+  minimum_domains: number;
+  note: string;
+  claim_boundary: string;
+}
+
+export interface ComposerPreregistrationSummary {
+  schema: string;
+  manifest_sha256: string;
+  study_id: string;
+  sentences: string[];
+  claim_boundary: string;
+}
+
+export interface ComposerManifestEnvelope {
+  schema: string;
+  manifest_sha256: string;
+  envelope_sha256: string;
+  exported_from: string;
+  manifest: Record<string, any>;
+  note: string;
+  claim_boundary: string;
+}
+
+// ------------------------------------------------------------ TG17.8 comparison views
+
+export interface ComparisonAxis {
+  name: string;
+  kind: string;
+  domains: string[];
+  units: string | null;
+  /** True when more than one domain occupies the axis. A `native_magnitude` axis can never be
+   *  shared: the server raises rather than returning one, so this pair is safe to render. */
+  shared: boolean;
+  why: string;
+}
+
+export interface ComparisonEncoding {
+  role: string;
+  /** The distinction is carried in three channels - `word`, `colour` and `marker` - so a reader
+   *  who cannot use one still has two. Never render the colour alone. */
+  word: string;
+  colour: string;
+  marker: string;
+  ordinal: number;
+  definition: string;
+  admits_claim: boolean;
+}
+
+export interface ComparisonMark {
+  label: string;
+  role: string;
+  word: string;
+  colour: string;
+  marker: string;
+  domain: string | null;
+  value: number | null;
+  display: string;
+  artifact_sha256: string | null;
+  no_artifact_reason: string;
+  admits_claim: boolean;
+}
+
+export interface ComparisonTable {
+  columns: string[];
+  rows: Record<string, any>[];
+}
+
+export interface ComparisonViewSummary {
+  view_id: string;
+  ordinal: number;
+  title: string;
+  question: string;
+  axes: ComparisonAxis[];
+  roles: string[];
+  may_conclude: string;
+  may_not_conclude: string[];
+  selectable: boolean;
+}
+
+export interface ComparisonViewsContract {
+  schema: string;
+  views: ComparisonViewSummary[];
+  encodings: ComparisonEncoding[];
+  axis_kinds: string[];
+  shared_axis_kinds: string[];
+  coverage_cells: string[];
+  readings: {
+    declarable_by_mode: Record<string, string[]>;
+    renderable_by_mode: Record<string, string[]>;
+    never_admissible: string[];
+    requires_external_design: string[];
+    why_two_lists: string;
+  };
+  mode_forbids: Record<string, string>;
+  refusals: Record<string, string>;
+  routes: Record<string, string>;
+  not_yet_available: string[];
+  claim_boundary: string;
+}
+
+export interface ComparisonView {
+  schema: string;
+  view_id: string;
+  ordinal: number;
+  title: string;
+  question: string;
+  mode: string;
+  manifest_sha256: string;
+  axes: ComparisonAxis[];
+  legend: ComparisonEncoding[];
+  body: Record<string, any>;
+  table: ComparisonTable;
+  results_exist: boolean;
+  run_state: string;
+  may_conclude: string;
+  may_not_conclude: string[];
+  mode_forbids: string;
+  claim_boundary: string;
+}
+
+export interface ComparisonViewSet {
+  schema: string;
+  mode: string;
+  manifest_sha256: string;
+  views: ComparisonView[];
+}
+
+export interface ComparisonContribution {
+  domain: string;
+  state: string;
+  reason: string;
+  native_interval: {
+    start_utc: string;
+    end_utc: string;
+    support_kind: string | null;
+    native_cadence_seconds: number | null;
+    coverage_exact: boolean;
+  };
+  contributes: boolean;
+}
+
+export interface ComparisonLinkedSelection {
+  schema: string;
+  window: string;
+  manifest_sha256: string;
+  contributions: ComparisonContribution[];
+  /** Always null. Each domain keeps its own native interval; one merged extent would show
+   *  agreement about coverage only one domain addresses. */
+  merged_interval: null;
+  why_not_merged: string;
+  claim_boundary: string;
+}
+
+export interface ComparisonReadingCheck {
+  mode: string;
+  reading: string;
+  renderable: boolean;
+  reason: string;
+  claim_boundary?: string;
+}
+
+/* ---------------------------------------------------------------- T4C.5j: the gate record
+ *
+ * The atmospheric gate line is read-only from the browser. There is no request type here
+ * because there is no request: every one of these is the shape of a GET response, and the
+ * absence of a mutation type is the contract rather than an omission.
+ */
+
+/** Why the surface has no acquire button, stated by the server rather than assumed by the UI. */
+export interface GateSurface {
+  schema: string;
+  campaigns: number;
+  supersessions: number;
+  retired_campaigns: number;
+  receipts: number;
+  measurement_status: 'MEASURED' | 'NOT_YET_MEASURED';
+  unreadable: Record<string, string>[];
+  refusals: string[];
+  claim_boundary: string;
+  network_used: boolean;
+}
+
+/** Present only on a retired campaign; `null` is the whole of "this design is still live". */
+export interface GateRetirement {
+  supersession_id: string;
+  successor_campaign_id: string;
+  successor_campaign_sha256: string;
+  acquisition: string;
+  statement: string;
+}
+
+export interface GateCampaignSummary {
+  campaign_id: string;
+  campaign_sha256: string;
+  study_plan_sha256: string;
+  file: string;
+  status: 'ACTIVE' | 'RETIRED';
+  retired_by: GateRetirement | null;
+  variable: string;
+  level_hpa: number;
+  date_start: string;
+  date_end: string;
+  expected_frames: number;
+  /** Whether the design can resolve its own declared family. A retired campaign reports
+   *  `false` here and is still served, because that is the defect being recorded. */
+  resolvable: boolean;
+  hypothesis_family_size: number;
+  /** D86. The rule by which the two ERA5 routes are declared to agree, frozen with the design.
+   *  `null` means the campaign never preregistered one, which is why it may not be acquired:
+   *  the decision to spend would rest on a constant in module code that no supersession
+   *  governs. It is not a display preference and there is no default to fall back to. */
+  overlap_criterion: GateOverlapCriterion | null;
+}
+
+export interface GateOverlapCriterion {
+  /** `encoding_relative` judges agreement in units of the primary route's own packing step,
+   *  which changes frame to frame; `absolute` judges it in the variable's units. */
+  name: 'absolute' | 'encoding_relative';
+  steps_allowed?: number;
+  atol?: Record<string, number>;
+}
+
+export interface GateCampaignIndex {
+  schema: string;
+  campaigns: GateCampaignSummary[];
+  unreadable: Record<string, string>[];
+  network_used: boolean;
+}
+
+export interface GateCampaignReview {
+  schema: string;
+  campaign_id: string;
+  campaign_sha256: string;
+  study_plan_sha256: string;
+  scientific_design: Record<string, any>;
+  decision_rule: string;
+  claim_boundary: string;
+  network_used: boolean;
+  file: string;
+  status: 'ACTIVE' | 'RETIRED';
+  retired_by: GateRetirement | null;
+  refusals: string[];
+}
+
+export interface GateSupersessionSummary {
+  supersession_id: string;
+  supersession_sha256: string;
+  file: string;
+  superseded_campaign_id: string;
+  successor_campaign_id: string;
+  defects: string[];
+  reason_count: number;
+  preserved_count: number;
+  deferred_to_run: string[];
+}
+
+export interface GateSupersessionIndex {
+  schema: string;
+  supersessions: GateSupersessionSummary[];
+  unreadable: Record<string, string>[];
+  network_used: boolean;
+}
+
+/** One stated reason, re-run against both campaigns. `passes` is the check's own outcome, so a
+ *  reason is admissible exactly where superseded is false and successor is true. */
+export interface GateSupersessionOutcome {
+  passes: boolean;
+  [key: string]: any;
+}
+
+export interface GateSupersessionFinding {
+  defect?: string;
+  check: string;
+  parameters: Record<string, any>;
+  statement: string;
+  superseded: GateSupersessionOutcome;
+  successor: GateSupersessionOutcome;
+}
+
+export interface GateSupersessionReview {
+  schema: string;
+  supersession_id: string;
+  supersession_sha256: string;
+  superseded_campaign_sha256: string;
+  successor_campaign_sha256: string;
+  superseded_campaign_id: string;
+  successor_campaign_id: string;
+  reasons: GateSupersessionFinding[];
+  preserved: GateSupersessionFinding[];
+  /** What the re-freeze does *not* settle. An empty list would be a claim, not a convenience. */
+  deferred_to_run: { defect: string; statement: string; adjudicated_by: string }[];
+  successor_review: GateCampaignReview;
+  claim_boundary: string;
+  network_used: boolean;
+  file: string;
+  refusals: string[];
+}
+
+export interface GateReceiptSummary {
+  receipt_id: string;
+  receipt_sha256: string;
+  plan_sha256: string;
+  study_id: string | null;
+  evidence_role: string | null;
+  /** What the replication rule returned. */
+  gate_verdict: string;
+  /** What a reviewer should read. These differ exactly where the derived power record moved it. */
+  scientific_verdict: string;
+  power_applied: boolean;
+}
+
+export interface GateReceiptIndex {
+  schema: string;
+  receipts: GateReceiptSummary[];
+  unreadable: Record<string, string>[];
+  /** `NOT_YET_MEASURED` is an absence of runs. It is not a finding of no relationship. */
+  status: 'MEASURED' | 'NOT_YET_MEASURED';
+  statement: string;
+  network_used: boolean;
+}
+
+export interface GateReceiptView {
+  schema: string;
+  receipt_id: string;
+  integrity: string;
+  receipt: Record<string, any>;
+  gate_verdict: string;
+  scientific_verdict: string;
+  power_adjudication: Record<string, any>;
+  claim_boundary: string;
+  network_used: boolean;
 }

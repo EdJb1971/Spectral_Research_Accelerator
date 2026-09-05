@@ -18,7 +18,7 @@
  * "predictive utility is not shown" is a promotion performed by layout.
  */
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { AlertTriangle, BookOpen, FileText, Layers, RefreshCw } from 'lucide-react';
 import { apiService } from '../services/api';
 import * as types from '../types/api';
@@ -27,6 +27,7 @@ interface Props {
   onError?: (message: string) => void;
   selectedStudyId?: string;
   onSelectStudy?: (studyId: string) => void;
+  onOpenComposer?: () => void;
 }
 
 /** One structural fact: its domain wording, inseparable from the bound that qualifies it. */
@@ -60,7 +61,7 @@ function Section(
 }
 
 export default function FindingsView({
-  onError, selectedStudyId = '', onSelectStudy,
+  onError, selectedStudyId = '', onSelectStudy, onOpenComposer,
 }: Props) {
   const [domains, setDomains] = useState<types.DomainSummary[]>([]);
   const [studies, setStudies] = useState<types.StudySummary[]>([]);
@@ -70,6 +71,7 @@ export default function FindingsView({
   const [outputs, setOutputs] = useState<Record<string, unknown> | null>(null);
   const [bundle, setBundle] = useState<Record<string, unknown> | null>(null);
   const [contract, setContract] = useState<types.OnboardingContract | null>(null);
+  const [catalogueLoaded, setCatalogueLoaded] = useState(false);
   const [panel, setPanel] =
     useState<'finding' | 'refusals' | 'structural' | 'glossary' | 'onboarding'
              | 'bundle'>('finding');
@@ -89,6 +91,7 @@ export default function FindingsView({
       ]);
       setDomains(domainRows);
       setStudies(studyRows);
+      setCatalogueLoaded(true);
       if (!glossaryName && domainRows.length > 0) setGlossaryName(domainRows[0].name);
       const readable = studyRows.find((row) => row.readable && row.study_id);
       if (!selectedStudyId && readable && readable.study_id) onSelectStudy?.(readable.study_id);
@@ -101,29 +104,39 @@ export default function FindingsView({
 
   useEffect(() => { void refresh(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // A run or gate may carry a study-shaped label without having a published evidence bundle.
+  // Findings must validate the context against its own ledger before requesting claim text.
+  const publishedStudyId = useMemo(() => studies.some(
+    (row) => row.readable && row.study_id === selectedStudyId,
+  ) ? selectedStudyId : '', [studies, selectedStudyId]);
+  const contextIsNotPublished = catalogueLoaded && Boolean(selectedStudyId) && !publishedStudyId;
+
   useEffect(() => {
-    if (!selectedStudyId || !glossaryName) return;
+    if (!publishedStudyId || !glossaryName) {
+      setFinding(null);
+      return;
+    }
     setBusy(true);
-    apiService.getTranslation(selectedStudyId, glossaryName)
+    apiService.getTranslation(publishedStudyId, glossaryName)
       .then(setFinding)
       .catch(fail)
       .finally(() => setBusy(false));
-  }, [selectedStudyId, glossaryName, fail]);
+  }, [publishedStudyId, glossaryName, fail]);
 
   useEffect(() => {
     if (panel === 'glossary' && glossaryName) {
       apiService.getGlossary(glossaryName).then(setGlossary).catch(fail);
     }
-    if (panel === 'structural' && selectedStudyId) {
-      apiService.getStudyOutputs(selectedStudyId).then(setOutputs).catch(fail);
+    if (panel === 'structural' && publishedStudyId) {
+      apiService.getStudyOutputs(publishedStudyId).then(setOutputs).catch(fail);
     }
-    if (panel === 'bundle' && selectedStudyId) {
-      apiService.getStudy(selectedStudyId).then(setBundle).catch(fail);
+    if (panel === 'bundle' && publishedStudyId) {
+      apiService.getStudy(publishedStudyId).then(setBundle).catch(fail);
     }
     if (panel === 'onboarding') {
       apiService.getOnboardingContract().then(setContract).catch(fail);
     }
-  }, [panel, glossaryName, selectedStudyId, fail]);
+  }, [panel, glossaryName, publishedStudyId, fail]);
 
   const panels: Array<{ key: typeof panel; label: string }> = [
     { key: 'finding', label: 'In domain words' },
@@ -135,7 +148,7 @@ export default function FindingsView({
   ];
 
   return (
-    <div className="space-y-4" aria-busy={busy}>
+    <div className="findings-workspace max-w-[112rem] space-y-5" aria-busy={busy}>
       <header className="flex items-start justify-between gap-4">
         <div>
           <h3 className="text-lg font-semibold text-slate-100">Findings</h3>
@@ -193,10 +206,10 @@ export default function FindingsView({
                     <button
                       type="button"
                       onClick={() => onSelectStudy?.(row.study_id as string)}
-                      aria-pressed={selectedStudyId === row.study_id}
+                      aria-pressed={publishedStudyId === row.study_id}
                       className={`w-full text-left px-2 py-2 rounded text-sm focus:outline-none
                                   focus:ring-2 focus:ring-teal-400 ${
-                        selectedStudyId === row.study_id
+                        publishedStudyId === row.study_id
                           ? 'bg-teal-900/40 text-teal-200'
                           : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}
                     >
@@ -215,8 +228,11 @@ export default function FindingsView({
                 </li>
               ))}
               {studies.length === 0 && (
-                <li className="text-sm text-slate-500 italic">
-                  No studies published. That is not the same as no studies existing.
+                <li className="rounded-lg border border-slate-800 bg-slate-900/50 p-3">
+                  <p className="text-sm text-slate-300">No published studies</p>
+                  <p className="mt-1 text-xs leading-relaxed text-slate-500">
+                    Existing drafts and runs are intentionally not implied to be findings.
+                  </p>
                 </li>
               )}
             </ul>
@@ -224,6 +240,17 @@ export default function FindingsView({
         </div>
 
         <div className="lg:col-span-3 bg-slate-900/60 rounded p-4 min-h-[24rem]">
+          {contextIsNotPublished && (
+            <div className="mb-4 rounded-lg border border-amber-500/25 bg-amber-500/5 p-3"
+              role="status">
+              <p className="text-sm font-medium text-amber-200">Current context is not published</p>
+              <p className="mt-1 text-xs leading-relaxed text-slate-400">
+                <span className="font-mono text-slate-300">{selectedStudyId}</span> identifies a
+                draft, run, or receipt, but no published evidence bundle with that ID exists.
+                Findings will not query or reinterpret it. No LLM action is required.
+              </p>
+            </div>
+          )}
           <div role="tablist" aria-label="Findings panels" className="flex gap-1 mb-4 flex-wrap">
             {panels.map((entry) => (
               <button
@@ -496,9 +523,34 @@ export default function FindingsView({
           )}
 
           {panel === 'finding' && !finding && !busy && (
-            <p className="text-sm text-slate-500 italic">
-              Select a published study to see what it permits and what it does not.
-            </p>
+            <div className="findings-empty">
+              <div className="max-w-xl">
+                <span className="mx-auto grid h-12 w-12 place-items-center rounded-xl border
+                                 border-teal-400/20 bg-teal-400/10 text-teal-300">
+                  <BookOpen size={22} aria-hidden="true" />
+                </span>
+                <h4 className="mt-4 text-base font-semibold text-slate-100">
+                  Nothing has reached the read-only claim surface
+                </h4>
+                <p className="mt-2 text-sm leading-relaxed text-slate-400">
+                  Findings appear only after a study completes its declared workflow and publishes
+                  an evidence-bound statement. A draft, a run, and an empty result are different
+                  states; this view does not collapse them.
+                </p>
+                {onOpenComposer && (
+                  <button type="button" onClick={onOpenComposer}
+                    className="mt-5 inline-flex items-center justify-center rounded-lg border
+                               border-teal-400/30 bg-teal-500/10 px-4 py-2 text-sm font-semibold
+                               text-teal-200 hover:bg-teal-500/20 focus:outline-none
+                               focus:ring-2 focus:ring-teal-400">
+                    Open Experiment Composer
+                  </button>
+                )}
+                <p className="mt-3 text-xs text-slate-500">
+                  No published study is not evidence that no studies or effects exist.
+                </p>
+              </div>
+            </div>
           )}
         </div>
       </div>

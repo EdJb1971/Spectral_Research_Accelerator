@@ -122,6 +122,13 @@ from src.api.evidence import router as evidence_router  # noqa: E402
 from src.api.mining import router as mining_router  # noqa: E402
 from src.api.cross_domain import router as cross_domain_router  # noqa: E402
 from src.api.reviews import router as reviews_router  # noqa: E402
+from src.api.experiment_composer import router as experiment_composer_router  # noqa: E402
+from src.api.experiment_runs import router as experiment_runs_router  # noqa: E402
+from src.api.comparison_views import router as comparison_views_router  # noqa: E402
+from src.api.experiment_receipts import router as experiment_receipts_router  # noqa: E402
+from src.api.experiment_qualification import router as experiment_qualification_router  # noqa: E402
+from src.api.gate import router as gate_router  # noqa: E402
+from src.api.cds import router as cds_router  # noqa: E402
 
 app.include_router(findings_router)
 # TG8.4. Mounted here for the same reason the findings router is: registration must not depend
@@ -161,6 +168,20 @@ app.include_router(cross_domain_router)
 # Recorded argument can be inspected beside a selected study, but never shares an endpoint or
 # a response object with translated claim text (R22/R23).
 app.include_router(reviews_router)
+# TG17.1: the first no-glue experiment surface. It stores only content-addressed manifest
+# revisions and performs metadata-only planning; no route here acquires values or creates a claim.
+app.include_router(experiment_composer_router)
+app.include_router(experiment_runs_router)
+# TG17.8: the linked comparison views. Read-only over a manifest and, when one already exists at
+# that manifest's address, its run receipt. No route here opens a run, acquires a value or admits
+# evidence; a view that would put two domains' native magnitudes on one axis refuses instead.
+app.include_router(comparison_views_router)
+app.include_router(experiment_receipts_router)
+app.include_router(experiment_qualification_router)
+app.include_router(gate_router)
+# TG18.1: metadata-only CDS planning plus a separately confirmed, durable acquisition-job
+# surface. Planning cannot use network; execution writes only server-owned operational records.
+app.include_router(cds_router)
 
 
 class HealthResponse(BaseModel):
@@ -1150,10 +1171,17 @@ async def zarr_catalogue():
         "cache_dir": zarr_adapter.DEFAULT_CACHE_DIR,
         "r13_minimum_crop": {str(n): zarr_adapter.minimum_crop_size(n)
                              for n in range(1, 7)},
+        "r13_dyadic_operational_crop": {str(n): zarr_adapter.dyadic_crop_size(n)
+                                        for n in range(1, 7)},
         "analysis_transforms": support_transforms,
         "r13_legacy_note": ("r13_minimum_crop is the pre-planner conservative 14-tap table "
-                            "kept for API compatibility. Use the request-specific acquisition "
-                            "plan returned by /inspect for a scientific decision."),
+                            "kept for API compatibility. Its valid-interior term is a "
+                            "heuristic, not a derived power criterion, and since T4C.5i step 6 "
+                            "it is no longer rounded up to a power of two; "
+                            "r13_dyadic_operational_crop reports that rounding separately as a "
+                            "convention that is never refused on. Use the request-specific "
+                            "acquisition plan returned by /inspect for a scientific "
+                            "decision, and analysis_engine/spatial_power.py for a power one."),
         "note": ("Network access is opt-in: reaching the internet must never be a side "
                  "effect of running a sweep, and a mistyped bounding box against a 0.25 "
                  "degree store can move tens of gigabytes."),

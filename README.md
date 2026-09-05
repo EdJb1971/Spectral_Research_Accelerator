@@ -6,10 +6,143 @@ hypothesis screening.
 
 The platform joins a tensor-accelerated computational backend (**PyTorch**, **xarray**,
 **SQLAlchemy**) to a React/Vite/Plotly dashboard and a Jupyter playground. It is not yet a
-validated forecasting system: the decisive Phase 4C real-ERA5 gate has not been run, and Phase 5
-has integration contracts but no completed learned forecasting comparison. Current status,
-evidence and known limitations live in `roadmap.md`, `VERIFICATION.md` and `architecture.md`
-respectively.
+validated forecasting system. The decisive Phase 4C real-ERA5 gate **has** now run and returned
+PASS on an 8,764-frame acquired record (T4C.5m, which also closed D43); Phase 5 still has
+integration contracts and no completed learned forecasting comparison. Current status, evidence
+and known limitations live in `roadmap.md`, `VERIFICATION.md` and `architecture.md`
+respectively, and the section immediately below says which of those is authoritative for what.
+
+---
+
+## Where the programme actually is, and which document says so
+
+This README is an orientation document. It is **not** the status of record and must not be cited
+as one. Four documents carry the tracked state, each with a different job:
+
+| Document | What it is authoritative for | Machine-checked |
+|---|---|---|
+| `architecture.md` | What exists in the code today: modules, HTTP routes, the test inventory, and Section 7's full defect ledger. | yes |
+| `roadmap.md` | The **atmospheric** programme: Section 1's honest status table, the standing rules R1-R16, and every task with its evidence block. | yes |
+| `roadmap_cross_domain.md` | The **cross-domain** programme on `ed-dev`: rules R17 onward, phases G0-G18. | partly |
+| `VERIFICATION.md` | Captured output. Every number claimed elsewhere should be findable here as a run. | yes |
+| `README.md` (this file) | Installation, layout and an orientation summary. | partly |
+
+"Machine-checked" means `src/tests/test_documentation.py` parses the document and fails when it
+contradicts the source or the other documents. That guard exists because these files had gone
+stale before while nothing failed; it is the reason the status table cannot quietly drift.
+
+**Two roadmaps, one repository.** `roadmap.md` is the atmospheric line, frozen for `master` at
+`freeze-t4c.5h-preregistration` and still advancing on `ed-dev`. `roadmap_cross_domain.md` is a
+fork of that line, not a successor, and its results may **not** be cited as SpectralEarth
+atmospheric evidence. Both are live on `ed-dev` and work alternates between them; neither
+supersedes the other.
+
+**Current frontier (`ed-dev`).**
+
+* Atmospheric line: **Phase 4E is DONE**. T4E.1-3 build, sign and approximately cluster
+  constellations; T4E.4 now applies a configurable minimum support over distinct constellation
+  identities, reports every candidate's support, prunes the below-threshold tail early, and
+  refuses candidate/time budget overruns without returning a partial sweep. Approximate matching
+  uses a declared attributed-graph metric, a tolerance measured from same-configuration
+  replicates, and deterministic complete-link clusters whose centroid and radius are readable.
+  **Phase 4F has opened: T4F.1 is DONE.** The timed event substrate reads a clustered
+  catalogue against an explicit grid of the frames that were *searched*, refuses an
+  unnamed clock, refuses an occurrence at a frame nothing looked at, and marks a span
+  crossing an unread instant rather than reporting it as a longer gap. Events sharing a
+  frame are published unordered, because a succession taken from list position would be
+  fabricated. It found and fixed D93. **T4F.2 is DONE**: the chain the substrate was built
+  to express is now counted, against a declared transition window whose minimum lag is
+  strictly positive so simultaneity can never become a step. Confidence admits only
+  antecedents whose window was wholly searched, so an occurrence the record ended before is
+  censored rather than counted as unfollowed; a repeated gap is reported with the number of
+  interval values the record was long enough to hold, and is not called a period. **T4F.3 is
+  DONE, and it is where this phase draws its first null.** A confidence is referenced to a
+  base rate measured as a window probability over the searched positions, to a surrogate
+  ensemble that rotates the antecedent on the lattice so its own bursting survives and only
+  the alignment under test is destroyed, and to a correction paid on the whole declared
+  family, with a data-chosen lag tested against the distribution of the maximum. The
+  anti-conservative null is provided and its cost measured: on one unchanged record the same
+  lift of 5.25 is not distinguished from the shifting null at p = 0.11 and is called a
+  precursor by the scattering null at p = 0.01. A design that could not have rejected
+  anything is refused before any counting happens. Nothing is called a cause (R7). **T4F.4
+  bidirectional queries are next.**
+* Cross-domain line: **TG17.14 is DONE and `live_sources` reads `PASS`.** On 2026-09-04 the
+  authorised bounded run reached ERA5 through CDS, Argo GDAC and MAST SPOC, each demonstrating
+  real network use, while the bespoke order-book family demonstrated a content-addressed local
+  record and **no** network use. First contact with real archives found two defects, D94 and D95,
+  neither findable offline. **Five of seven release gates now clear and the verdict is still
+  `NOT_RELEASEABLE`**, blocked by `scale_shape_calibration`'s declared scientific limit — four
+  archives in four domains buy nothing past a refusal. **The scale/shape bound is next, and it is
+  a decision rather than a task.**
+* Cross-domain line: Phase G18, the instrument the science is read through. TG17.9 and TG17.10
+  are DONE, the latter with the **release withheld**; TG18.1 (shared instrument foundation) closed
+  on 2026-09-03 after six slices; TG18.2 (scientific visualization workspace) closed the same day
+  after five slices; TG18.3 closes the global navigation-only
+  `Acquire -> Inspect -> Design -> Run -> Compare -> Admit -> Report` journey without replacing
+  Composer's server-owned path or claim ladder. TG18.4 now closes rendered keyboard, focus,
+  zoom-equivalent reflow, contrast, reduced-motion and non-colour acceptance without claiming WCAG
+  certification. **TG18.5 (the UI qualification gate) is DONE, and with it G18**, scoped by TG17.10's
+  withheld release rather than by presentation: it must supply the rendered evidence the
+  `browser_no_glue` and `scientist_actions` gates refuse to award themselves. Its first slice
+  qualifies served-workspace reachability; its second walks one representative path through each of
+  the four product modes at 1440 and 1920 CSS pixels, capturing a named artefact at the state each
+  reaches, and asserts that every mode signature appears in exactly one of the four -- the property
+  that keeps a redesign from making one mode ambiguous while improving another. That measurement
+  also found an intermittent failure in an older spec, whose heading locator matched both the
+  panel's own title and the shell's screen-reader-only workspace heading. Its third measures the two numbers
+  `scientist_actions` refused to invent -- **14** visible actions from a clean browser to a
+  completed run of the frozen plan, and **3** to reach the preflight refusal with **4** more to
+  clear it -- asserting the counts while recording wall-clock as context nothing asserts. Its
+  fourth supplies the evidence channel: a Playwright reporter records what a run did and binds it
+  to the source of every spec plus the completeness of the run, and a Python reader decides. A
+  green single-spec run is refused as partial, a weakened spec returns the gate to `NOT_RUN`, and a
+  run that failed reads `FAIL` rather than merely unrun. **`browser_no_glue` now reads `PASS`** on
+  a measured 136 of 136. The close-out found the gap that mattered most: `roadmap.md`
+  §10.2 admits no completion claim without recorded output in `VERIFICATION.md`, and seven
+  phases had been marked done while that file stayed silent. The entries are backfilled and
+  two guards now hold both directions. **G18 did not clear condition 19 by itself**; TG17.13 later
+  supplied the source-edit audit and recorded acceptance run, so `synthetic_fifth_adapter` now
+  reads `PASS`. **TG17.11 (the scale/shape calibration) is
+  done**, all five slices: D91 fixed, the statistic built with its scale invariance measured at
+  1.1e-16 rather than declared, four frozen fixtures, a calibration in which the planted case
+  recovers 105 of 105 members in 20 of 20 realisations while both safeguards reject nothing in
+  2,100 member tests, and the gate moved off `NOT_IMPLEMENTED` to **`REFUSED`**. Its result is
+  that the method is sound and G17's declared families cannot reach it: the null needs an
+  inventory of at least **105 declared pairings** before any member can reject at alpha 0.05,
+  while the declared draw refuses inventories above 8, so no size satisfies both. Scale/shape
+  mode is therefore not qualifiable on the declared families, which is recorded as the finding
+  rather than engineered away. **TG17.12 is done**: the calendar calibration, which has always
+  run and passed in the suite, now reaches its release gate through a recording bound to the
+  declared contract and to the source of the modules that decide what it measures, so a relaxed
+  expectation or a changed statistic returns the gate to `NOT_RUN` instead of leaving a stale
+  pass. It recorded 6 of 6 rejections on the planted calendar event and 0 on each of the three
+  false-alignment fixtures, so `calendar_calibration` reads **`PASS`** — the first of the seven
+  gates to clear, with the verdict unmoved at `NOT_RELEASEABLE`. The two modes are opposites
+  here: calendar buys its p-value floor with replications and has no enumeration ceiling
+  (999 against 293 required, and the declared plan 200 against 166), while scale/shape buys its
+  floor with domains and cannot.
+* What TG18.2 has delivered, all of it presentation only: every figure carries a text and table
+  equivalent of what it draws, a declared statement of whether two panels may share a colour
+  scale, the domain a fitted claim was taken over with the uncertainty attached to it, and
+  presentation-only resizable panes for the declared gridded comparisons, and self-contained
+  vector publication sheets that preserve the figure's reading contract. Under
+  G18 none of this may recompute, summarize, promote or reinterpret a scientific value, so each
+  addition transcribes what the analysis layer produced or states that it produced nothing.
+* Last measured full backend run: **3978 passed, 4 skipped, 1 xfailed**, exit 0 (2026-09-05, 0:52:09).
+* Last measured browser suite: **136/136** in Chromium from a cleaned `.e2e-state` (2026-09-04).
+  It is inventoried in `architecture.md` section 7.4a; it is the only check here that proves a
+  page renders.
+* Open defects: **D84 and D85**; D18 partial. D43 is closed. D91, the scale/shape null
+  deranging list positions rather than pairings, is fixed in TG17.11's first slice. Fixing
+  it established two facts about the declared families themselves: four domains compared
+  all-against-all admit exactly one distinguishable reassignment, and the three that admit
+  the null after D83 admit none at all. Both are refused by name rather than answered, so a
+  scale/shape calibration must be declared over an inventory of records rather than domains.
+
+**What has not been done**, stated once here so it is not inferred from the feature list: no
+learned forecast comparison has been run, no laboratory model or config has been supplied, FCN3
+has not been executed, no cross-domain mining pass has produced a finding, and no claim has been
+promoted from any of the above. Completion of a run is not a finding.
 
 ---
 
@@ -170,9 +303,10 @@ train_loader = DataLoader(bundle.train, batch_size=8, shuffle=True, num_workers=
 silently falls back to simulated data. The ERA5 panel reports only manifest-level structural
 eligibility until values are opened, and keeps preparation, train-only normalisation and the
 independent-route overlap check as separate claims. **This is not the whole forecasting path:**
-mixed-precision/compilation acceptance, non-NVIDIA hardware evidence, a viable multi-year
-regional source (D43), an actual independent ERA5 overlap run and execution of the actual
-laboratory model remain outstanding.
+mixed-precision/compilation acceptance, non-NVIDIA hardware evidence and execution of the
+actual laboratory model remain outstanding. The multi-year regional source and the independent
+ERA5 overlap run are no longer outstanding: T4C.5m acquired the record and closed D43, and
+T4C.5n audited a second window.
 
 T5.3a adds the first forecasting seam without pretending the laboratory model has been
 integrated. `PersistenceForecaster` is an exact zero-parameter physical-space baseline.
@@ -446,8 +580,12 @@ canonical variables, pressure levels and grid spacing. It plans monthly requests
 explicit network consent, downloads atomically, resumes only hash-verified shards and converts
 the result into the same local Zarr cache used by `RegionalForecastDataset`. Credentials remain
 in the standard CDS client configuration and never enter provenance. The offline acquisition,
-resume and conversion contracts pass; **a real CDS request, multi-year NZ crop and independent
-WeatherBench overlap check have NOT RUN**, so D43 remains open.
+resume and conversion contracts pass. A **real CDS request has now run**: the eight-frame canary
+for campaign v3, checked against an independently acquired WeatherBench window and agreeing to
+within one step of the CDS route's own GRIB packing. **The multi-year NZ crop has since been acquired
+and T4C.6 has run**: 8,764 frames in 72 monthly shards (338.905 MB, 5,853.7 s), the full-cache
+overlap passing at 0.71875 of a GRIB packing step, and a **PASS** verdict with ten links
+replicated in train and test. D43 is closed (T4C.5m).
 
 Planning is network-free and prints the exact monthly CDS payloads before anything is queued:
 
@@ -496,20 +634,55 @@ the mandatory canary-first order:
 
 ```powershell
 python -m src.analysis_engine.gate_campaign review `
-  --campaign campaigns/t4c6_nz_era5_temperature_850_v1.json
+  --campaign campaigns/t4c6_nz_era5_temperature_850_v2.json
+python -m src.analysis_engine.gate_campaign review-supersession `
+  --supersession campaigns/t4c6_nz_era5_temperature_850_v1_superseded_by_v2.json
 python -m src.analysis_engine.gate_campaign preflight `
-  --campaign campaigns/t4c6_nz_era5_temperature_850_v1.json `
+  --campaign campaigns/t4c6_nz_era5_temperature_850_v2.json `
+  --supersession campaigns/t4c6_nz_era5_temperature_850_v1_superseded_by_v2.json `
   --full-download-dir data/cds/full --canary-download-dir data/cds/canary `
   --cache-dir data/zarr_cache --independent-cache-dir data/zarr_cache
 ```
 
-The checked-in campaign is the preregistered T4C.6 primary analysis, not an example: five
-complete years (2018--2022), 0.25-degree 20--60 S / 140--180 E, 850-hPa temperature, three
+The checked-in campaign is the preregistered T4C.6 primary analysis, not an example: six
+complete years (2018--2023), 0.25-degree 20--60 S / 140--180 E, 850-hPa temperature, three
 db2 SWT scales and 18--48-hour transfer-entropy lags. Its campaign SHA-256 is pinned by a test;
 the review command emits exact calendar partitions, transform interiors, physical lag floors,
 the 36-test BY family and surrogate resolution without touching the network. A ready preflight
 still does not prove credentials, licence acceptance, remote service availability, ERA5
 agreement or the hypothesis.
+
+**`..._v1.json` is retired and must not be acquired.** It preregistered 2018--2022, and defect
+D85 established that its 2,914-frame confirmatory partition holds 2,912 distinct admissible
+circular shifts against the 3,005 its own 36-test BY family needs -- so it could not have
+produced a PASS at any effect size. It is left frozen and unedited, because editing a
+preregistration destroys the record of what was actually declared. `..._v1_superseded_by_v2.json`
+is the retirement: it names both campaigns by content hash and states its reasons as *checks*
+that are re-run against both, so a reason is admissible only where v1 fails it and v2 passes.
+Passing `--supersession` to `preflight` makes the retirement bite where the transfer would
+happen; `review` still reads v1 and still reports its defect, which is the point of keeping it.
+The supersession's `deferred_to_run` block names what the re-freeze does **not** settle: D84
+(the crop is carried through unchanged), D85's derived Theiler window, and D43.
+
+`..._v3.json` and `..._v2_superseded_by_v3.json` continue the chain for D86. v2 froze the
+record, the crop and the protocol but not the rule by which the two ERA5 routes are declared to
+agree -- that lived in `era5_overlap.DEFAULT_ATOL` as 1e-4 K, so the one decision authorising a
+multi-gigabyte transfer was the one no supersession governed. It was also unsatisfiable: ERA5
+arrives through CDS packed per GRIB field, each frame on its own binary lattice, and 1e-4 K is
+finer than the step the route can express. v3 freezes an `overlap_criterion` instead --
+agreement within one step of the lattice the primary frame actually occupies -- and `preflight`
+now refuses any campaign that declares none. The eight-frame canary was acquired and
+passed it, and **the 8,764-frame record has since been acquired and the gate has run to a PASS**
+under v3 (T4C.5m). D84 and D85 remain open; they govern whether an *absence* would have been
+detectable, and a PASS does not route through them.
+
+Both campaigns, the retirement and any published receipts are also readable in the browser under
+**Review -> Atmospheric gate record**, served by seven `GET /api/v1/gate/...` routes. That
+surface is read-only by construction: it serves no other HTTP verb, has no preflight or
+acquisition route, and publishes the reasons for those refusals rather than leaving a missing
+button to be read as an unfinished panel. It shows a retired design in full with its defect
+visible, and reports an empty receipt store as an absence of *runs* rather than of findings.
+The T4C.6 gate has since run and returned PASS.
 Before reporting readiness it now derives the exact grid shape and chosen transform supports,
 requires at least 128 valid parent-grid pixels at every scale, converts lat/lon degrees to
 physical metres for the advection floor, refuses shorter lags, and reports temporal split,

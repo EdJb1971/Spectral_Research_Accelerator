@@ -22,9 +22,19 @@ from src.transform_engine.registry import TRANSFORMS
 PLAN_SCHEMA = "transform-acquisition-plan/v1"
 ANALYSIS_SCHEMA = "transform-support-request/v1"
 
-# R13's existing practical floor, now a named *analysis* policy rather than a copied filter
+# R13's existing practical floor, named as an *analysis* policy rather than a copied filter
 # constant. The transform supplies the contaminated margin; this policy supplies the minimum
 # uncontaminated parent-grid span on which cross-scale spatial statistics are considered useful.
+#
+# T4C.5i step 6 -- what this number is, and what it is not. It is a **heuristic**: a judgement
+# about how much uncontaminated span makes a spatial statistic comfortable to look at. It is not
+# a derived criterion, and it cannot be one, because crop size does not enter the cross-scale
+# test as a sample count at all: `scale_signature` collapses space to one energy density per
+# frame before `transfer_entropy` runs, so the joint histogram's samples are frames. What crop
+# size actually buys is *precision* in each frame's energy density, and that is a power question
+# whose derived answer lives in `src/analysis_engine/spatial_power.py` (effective sample size,
+# decorrelation length and attenuation). Meeting this threshold is therefore not evidence that
+# an analysis is adequately powered, and failing it is not evidence that an effect is absent.
 RECOMMENDED_VALID_PARENT_SIDE = 128
 RECOMMENDATION_POLICY = "r13-cross-scale-valid-interior/v1"
 
@@ -147,7 +157,12 @@ def assess_shape(height: int, width: int,
     recommended_native_valid = int(math.ceil(RECOMMENDED_VALID_PARENT_SIDE / factor))
     recommended_raw = max(2 * parent_margin + RECOMMENDED_VALID_PARENT_SIDE,
                           factor * (2 * native_margin + recommended_native_valid))
-    recommended = _next_power_two(_ceil_multiple(recommended_raw, alignment))
+    # T4C.5i step 6: the threshold that is refused on is the aligned requirement itself. The
+    # dyadic size is reported beside it as an operational convention and never refused on --
+    # rounding 352 up to 512 would refuse a crop for having an inconvenient number of pixels
+    # rather than an inadequate one, and no statistical statement distinguishes the two.
+    recommended = _ceil_multiple(recommended_raw, alignment)
+    dyadic = _next_power_two(recommended)
 
     level_rows = []
     for row in support["levels"]:
@@ -186,10 +201,23 @@ def assess_shape(height: int, width: int,
             "shape": [recommended, recommended],
             "unrounded_required_side": recommended_raw,
             "valid_parent_side_policy": RECOMMENDED_VALID_PARENT_SIDE,
-            "basis": ("R13 practical cross-scale policy: at least %d uncontaminated "
+            "heuristic": True,
+            "dyadic_operational_shape": [dyadic, dyadic],
+            "dyadic_operational_basis": (
+                "a convenience for dyadic transforms and for how researchers name crop sizes. "
+                "Reported, never refused on (T4C.5i step 6): a crop between %d and %d px is "
+                "awkward, not inadequate" % (recommended, dyadic)),
+            "basis": ("R13 practical cross-scale heuristic: at least %d uncontaminated "
                       "parent-grid cells of span at the coarsest level, translated through "
-                      "the transform's native sampling and rounded to a dyadic operational "
-                      "crop" % RECOMMENDED_VALID_PARENT_SIDE),
+                      "the transform's native sampling and aligned to the transform's cell "
+                      "multiple" % RECOMMENDED_VALID_PARENT_SIDE),
+            "limitation": (
+                "a heuristic, not a derived power criterion. Crop size does not enter the "
+                "cross-scale test as a sample count -- space is collapsed to one energy "
+                "density per frame before transfer entropy runs -- so meeting this threshold "
+                "is not evidence that the analysis is adequately powered, and failing it is "
+                "not evidence that an effect is absent. The derived criterion is effective "
+                "sample size and attenuation; see analysis_engine/spatial_power.py"),
         },
         "alignment_cells": alignment,
         "support_source": ("registered transform implementation; no filter length is copied "

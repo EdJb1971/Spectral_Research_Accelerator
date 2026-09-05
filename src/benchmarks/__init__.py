@@ -22,6 +22,8 @@ from src.benchmarks.seeding import DEFAULT_ROOT_SEED, SeedBundle, derive  # noqa
 from src.benchmarks import fields  # noqa: F401,E402
 from src.benchmarks import sequences  # noqa: F401,E402
 from src.benchmarks import cross_domain  # noqa: F401,E402
+from src.benchmarks import representation_structure  # noqa: F401,E402
+from src.benchmarks import multidomain_flagship  # noqa: F401,E402
 from src.benchmarks.runner import run_all, format_report  # noqa: F401,E402
 
 __all__ = [

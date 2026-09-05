@@ -3445,6 +3445,38 @@ rows and cannot add a tab. This is reachability, not acquisition evidence: no pu
 fetch or live WeatherBench probe was run, and selecting a domain does not establish that a
 supplied record came from it.
 
+### 3.6zqa CDS browser planning and durable jobs (`src/api/cds.py`, `src/core/cds_job.py`, `frontend/src/components/CDSPlanner.tsx`, TG18.1, `ed-dev`)
+
+The production CDS route is no longer merely named by the acquisition catalogue. `GET
+/api/v1/data/cds` serves its exact variable and pressure-level vocabulary plus the accepted
+six-year New Zealand request as editable defaults. `POST /api/v1/data/cds/plan` constructs the
+same immutable `CDSRegionalRequest` used by the CLI, so its date, bounds, grid snapping, hours,
+levels and variables pass the source implementation's own validation rather than a browser copy.
+The response carries the canonical request digest, every deterministic monthly shard, exact frame
+count and grid dimensions, and the source implementation's conservative storage ceiling with no
+compression credit. The accepted default reproduces 72 shards, 8,764 frames and request digest
+`297204dd6d576828dece605bb4a94ce96c35b6cce0a8152f85b1174e853eb5aa`.
+
+Planning imports no CDS client and makes no network call. It reports `network_used: false` and
+reports execution separately as `READY_TO_SUBMIT` or `NETWORK_DISABLED`.
+Generic R13 analysis geometry is shown beside the valid acquisition plan as a separate readiness
+assessment: failure of that heuristic does not falsely say the ERA5 request itself is malformed.
+The browser therefore exposes every scientific selection needed by the downloader without making
+the dangerous leap from "valid plan" to "job submitted".
+
+Submission is a separate call requiring the exact reviewed request digest and an affirmative
+network acknowledgement. The server accepts no path: `CDSJobStore` derives a content-addressed
+directory below `CDS_JOB_DIR`, performs the existing conservative free-space preflight before a
+client is constructed, and atomically journals every state. Work is bounded by the planned monthly
+shards. Cancellation is cooperative between shards because CDS cannot revoke an already queued
+remote materialisation; verified shards remain, and resume revalidates them through the production
+downloader rather than requesting them twice. A `QUEUED`, `RUNNING`, or `CANCELLING` journal found
+after process loss becomes `INTERRUPTED` and requires explicit resume. `COMPLETE` alone emits a
+self-hashed acquisition record carrying the exact request and every shard digest. That record is
+transfer/integrity provenance, not source agreement, analysis, evidence or a finding. The current
+worker registry is process-local; deployments must run this embedded executor in one API process
+until an external multi-worker queue is qualified.
+
 ### 3.6zr Workflow navigation and persistent context (`frontend/src/App.tsx`, TG11.0, `ed-dev`)
 
 The shell groups its eleven destinations by the scientific workflow: **Acquire, Analyse,
@@ -4028,10 +4060,1453 @@ authoritative refusal, so editing browser state cannot license an inadmissible c
 column name is interpreted: generic-file profiles are derived only after the researcher supplies
 roles, units and the sample relationship.
 
+### 3.6zzd Representation-structure admission and benchmark contract (`src/benchmarks/representation_structure.py`, `dataset_ingress.py`, TG16.0, `ed-dev`)
+
+The first G16 recipes have one shared authoritative admission rule: only a declared
+`independent` sample relationship is accepted. Grouped samples name group-held-out confirmation
+with benchmarked nulls as the missing contract; ordered samples name blocked and embargoed
+confirmation with benchmarked nulls. The existing G14 representation plan now uses the same
+function, so a later G16 recipe cannot weaken the refusal by copying it.
+
+Two paired sample-table benchmarks freeze nine cases before any G16 estimator exists. The planted
+half contains an exact duplicate, distinct noisy copies, complementary candidates, an XOR pair
+that is weak individually, and signal that survives conditioning. The safeguard half contains
+independent features, nuisance-only marginal association, a conditional null, and a collider
+whose conditioning-induced association must never be described as nuisance removal. Each case
+uses its own seed-derived stream so adding one fixture cannot change the others.
+
+The acceptance contract fixes 200 replications, alpha 0.05, a maximum null rejection rate of
+0.075 and minimum planted-effect detection rate of 0.80 for later operation-level gates. TG16.0
+verifies the constructions with elementary independent oracles; it does **not** implement or
+validate redundancy, conditional-information or stable-subspace estimation. The premature
+`association_redundancy` capability added during G15 has therefore been removed. No G16 operation
+is advertised until its backend recipe, refusal, null calibration and planted power check exist.
+
+### 3.6zze Candidate redundancy structure (`src/analysis_engine/representation_structure.py`, `dataset_ingress.py`, `src/api/ingress.py`, TG16.1, `ed-dev`)
+
+The first G16 operation is `redundancy_structure_audit`. Its immutable plan is bound to the exact
+file bytes and declaration and freezes every unordered pair from two to six raw features. Group
+size is exactly two in this bounded recipe. Each pair pays for three hypotheses: positive
+interaction information and the conditional information increment of each member beyond the
+other. Equiprobable bins, Miller-Madow entropy correction, conditional nulls, permutation count,
+seed, alpha and Benjamini-Yekutieli correction are all sealed before enumeration. At least five
+rows per possible three-variable joint cell are required, and a permutation ensemble unable to
+survive the full correction is refused before computation.
+
+The redundancy null shuffles one candidate within target bins, preserving both candidate/target
+marginals while breaking their remaining arrangement. Each conditional-increment null shuffles
+the target within bins of the other candidate. Exact candidate identity is also recorded as
+deterministic structural evidence. A pair is `supported_redundancy` when identity or corrected
+positive interaction evidence supports it, `supported_complementarity` only when both corrected
+conditional increments survive, and otherwise `unresolved`. This ordering means noisy copies are
+not renamed complementary merely because each noisy measurement adds a small increment. The XOR
+control takes the other path: its singleton information is weak but both joint increments survive,
+so it remains visible as supported complementarity.
+
+This is deliberately not a partial-information decomposition. Interaction information is not
+reported as the number of independent information pieces, and no outcome removes, selects or
+recommends a feature. `POST /api/v1/ingress/structure/plan` and
+`POST /api/v1/ingress/structure/audit` expose the content-bound workflow; both retain the shared
+independent-sample refusal. The operation entered the capability registry only after the paired
+benchmarks ran the frozen 200-replication family. Exact-duplicate/noisy-copy power is 1.00/0.94,
+complementary/XOR power is 1.00/1.00, the independent false-claim rate is 0.02, and every
+one-candidate safeguard makes no pair claim. The focused gate reports 4 PASS, 0 FAIL, 0
+NOT_YET_RUNNABLE.
+
+### 3.6zzf Conditional-information audit (`src/analysis_engine/conditional_information.py`, `dataset_ingress.py`, `src/api/ingress.py`, TG16.2, `ed-dev`)
+
+The second G16 operation is `conditional_information_audit`. It explicitly estimates
+`I(candidate; target | declared nuisance)` for every one of one to six declared raw features and
+exactly one researcher-declared nuisance. The immutable plan binds the exact bytes and declaration
+and freezes the complete candidate family, equiprobable bins, Miller-Madow conditional mutual
+information, support rule, conditional null, permutations, seed, alpha and global
+Benjamini-Yekutieli correction. A surrogate count whose p-value floor cannot survive that complete
+family refuses before computation.
+
+The admission rule requires at least five rows per possible candidate/target cell in every
+nuisance stratum, at least two occupied candidate and target levels per stratum, and an average of
+at least five rows per occupied candidate/target/nuisance cell. Missing analysis values and any
+failure of that overlap/effective-support rule refuse at planning. The first bounded null is a
+sealed linear conditional-randomisation model: fit target on the declared nuisance, permute the
+model residuals, reconstruct the target and rediscretise it for each draw. This preserves the
+fitted target/nuisance relationship that an invalid global target permutation would destroy. Its
+frozen adequacy screen also refuses absolute quadratic residual correlation above 0.20 or a
+nuisance-stratum residual-variance ratio above 4; passing that bounded screen is not a general
+certificate that every conditional model is correctly specified.
+
+Outcomes are `supported_conditional_association` or `unresolved`. The nuisance label is a declared
+statistical role, not evidence that it is a confounder; responses never say "confounding removed",
+"nuisance-free" or causal. In particular, the collider control correctly produces supported
+conditional association while the response says collider and post-treatment interpretations are
+outside what the computation can decide. `POST /api/v1/ingress/conditional/plan` and
+`POST /api/v1/ingress/conditional/audit` expose the content-bound workflow and repeat the shared
+independent-sample refusal.
+
+The operation entered the capability registry after the paired 200-replication acceptance family.
+Every applicable case met support admission. Signal-survival and collider conditional-association
+detection were 1.00; nuisance-only and conditional-null false-claim rates were 0.055 and 0.045,
+below the frozen 0.075 ceiling. The focused paired gate reports 6 PASS, 0 FAIL and 0
+NOT_YET_RUNNABLE.
+
+### 3.6zzg Stable-subspace generation (`src/analysis_engine/stable_subspace.py`, `dataset_ingress.py`, `src/api/ingress.py`, TG16.3, `ed-dev`)
+
+The third G16 operation is `stable_subspace_generation`. Its immutable plan binds the exact file
+and declaration, two to six raw features, every searched dimension/positive-ridge combination,
+generate fraction, preprocessing, objective, optional nuisance-stability rule, optimiser,
+restarts, iterations, perturbations, seeds, target-permutation ensemble, alpha and global
+Benjamini-Yekutieli correction. Dimensions must be compact: from one through feature count minus
+one. The plan deterministically reserves at least 40 confirmation rows, seals both partition-index
+digests and marks confirmation unopened; TG16.3 computes only on at least 80 generate rows.
+
+Generate-only means and sample standard deviations scale the features. The bounded linear
+objective combines supervised covariance, a small covariance-retention term and, when exactly one
+nuisance is declared, a penalty for target-covariance changes across nuisance tertiles. A seeded
+block power iteration runs the sealed restart/iteration family for each dimension and ridge.
+Target permutations refit the complete supervised search rather than testing a target-selected
+span as if it were fixed, and all members pay one BY correction. A member must survive that
+generate association test, a 10% Gaussian perturbation family with maximum normalised projector
+distance at most 0.10, and, where applicable, a generate-tertile explained-fraction range no
+larger than 0.35.
+
+Each span is identified by `P = QQ^T`; sign changes and within-span basis rotations therefore do
+not change its scientific identity. A basis is also returned only so the frozen transform can be
+applied unchanged by the later TG16.4 confirmation slice. The response calls passing members
+`candidate_compact_stable_subspace` and everything else `unresolved`; it says neither "optimal"
+nor confirmed and stores no evidence or claim-rung movement. Nuisance-region stability is
+generate-only description, not conditional information or evidence that nuisance was removed.
+`POST /api/v1/ingress/subspace/plan` and `POST /api/v1/ingress/subspace/generate` expose the
+workflow and repeat the authoritative independent-sample refusal.
+
+The paired 200-replication family measured exact-duplicate, noisy-copy and complementary linear
+candidate rates of 1.00 each. The nonlinear XOR rate is 0.025 and the independent false-candidate
+rate is 0.055, below the 0.075 ceiling; all one-feature cases produce no compact subspace. The
+focused paired gate reports 8 PASS, 0 FAIL and 0 NOT_YET_RUNNABLE. Confirmation remains unopened
+and is not implied by this gate.
+
+#### 3.6zzh Held-out stable-subspace confirmation (TG16.4)
+
+TG16.4 adds an explicit freeze/confirm boundary to TG16.3. The freeze operation accepts the exact
+content-bound generation plan and its digested generation response. It seals every searched
+member—not merely the passing candidates—including its projector, application basis and generate
+status; generate-only feature means and scales; the original feature/target/nuisance declaration;
+the complete-family Benjamini-Yekutieli correction; and a fresh bounded target-permutation
+ensemble. When nuisance is declared, its two tertile cuts are computed from generate rows and
+sealed with the unchanged explained-fraction-range threshold of 0.35. Confirmation outcomes
+therefore choose no threshold, region, dimension, regularization or family member.
+
+`confirm_stable_subspaces` applies the frozen standardization and bases to at least 40 untouched
+rows. Its statistic is held-out explained fraction in the fixed projected scores. Target
+permutations leave the projector fixed, because refitting it would be a second representation
+search on held-out data; p-values are nevertheless corrected over the complete TG16.3 family.
+With nuisance, the generate-derived cuts must leave at least `max(10, 2*(largest_dimension+1))`
+confirmation rows in every region or the operation refuses. A generated candidate must survive
+both the corrected association and the frozen nuisance-region stability rule to become
+`internally_replicated_candidate`; other outcomes are `not_replicated` and
+`not_a_generate_candidate`.
+
+`POST /api/v1/ingress/subspace/freeze` records server sealing time, returns the field-digested
+seal and stores it with the programme's existing preregistration records. `POST
+/api/v1/ingress/subspace/confirm` accepts the file, stored seal digest and optional independently
+published copy of that digest, but no scientific knobs. The held-out identity excludes filename and binds exact content,
+declaration and random index digest. The shared durable held-out ledger is keyed by that partition,
+not by the seal, so any later attempt under the same or another seal is refused. A completed
+receipt opens the partition once, stores no evidence and moves no rung. Its claim is internal
+replication within one dataset only—not external certification, optimality, causality or feature
+selection advice.
+
+The paired frozen benchmark uses 200 replications of 156 generate plus 68 confirmation rows. The
+exact-duplicate, noisy-copy and complementary-linear internal-replication rates are 1.000 each;
+XOR is 0.005 and the independent null is 0.000, both below 0.075. One-feature cases cannot enter
+the compact family. The focused paired gate is 10 PASS, 0 FAIL and 0 NOT_YET_RUNNABLE.
+
+#### 3.6zzi External stable-subspace certification (TG16.5)
+
+TG16.5 is the only stable-subspace boundary allowed to emit an
+`external_replication_receipt`. A published definition is derived from a generated candidate
+already frozen inside a TG16.4 seal and binds the source content/declaration, feature order,
+target and optional nuisance roles, generate-only means/scales, basis/projector, nuisance cuts
+and stability threshold. Publication itself is explicitly not a replication result.
+
+The separately frozen transfer contract is created without target bytes. It binds one to six
+distinct published candidates from one source family, a different target content digest, exact
+row count and sample-table declaration, acquisition identifier/time/source, the researcher's
+`independent_of_origin=true` declaration, a no-adaptation policy, target-permutation ensemble,
+alpha and complete-family Benjamini-Yekutieli correction. This first recipe requires identical
+column roles and units and permits no preprocessing, schema, unit or span adaptation. A later
+adaptive recipe would be a different frozen family, not an option on this one.
+
+Certification verifies the independently published transfer-seal digest before spending data.
+It then commits the whole content-addressed target to the shared durable ledger before any
+target-dependent validation, so a wrong digest, malformed file or inadequate nuisance-region
+support discovered after opening still consumes that target. Source scaling and every span are
+applied unchanged; projectors remain fixed under target permutation. The receipt certifies the
+executed test and records the declared acquisition provenance, but does not prove that declaration,
+universal optimality, causality, population transportability or a use/remove decision.
+
+The HTTP progression is `/subspace/publish`, `/subspace/transfer/freeze`, then
+`/subspace/transfer/certify`. The generic sample-table UI now presents TG16.1 through TG16.5 in
+that scientific order and exposes every served ingress route. It also labels Argo/TESS acquisitions
+as reproducible datasets rather than studies: a study still begins only through the evidence
+surface. Acquisition domain/path selection is browser-persistent, and the Argo measure control
+updates both archive projection and reduction so salinity cannot be requested from a
+temperature-only collection.
+
+The paired 200-replication gate uses 156 source-generate, 68 source-confirmation and 68 separately
+generated external rows. Exact-duplicate, noisy-copy and complementary-linear receipt rates are
+1.000 each; XOR, the independent null and every one-feature case are 0.000. The focused paired
+gate is 12 PASS, 0 FAIL and 0 NOT_YET_RUNNABLE.
+
+#### 3.6zzj Four-domain flagship benchmark contract (TG17.0)
+
+`src/benchmarks/multidomain_flagship.py` freezes the scientific and product target before a G17
+manifest, adapter or orchestrator exists. The flagship domains are reanalysis, Argo, TESS and the
+existing `order_book` domain. The order-book source contract is a licensed, content-addressed user
+record rather than a fabricated public feed; it is retained because irregular aggregated support,
+no physical metric and `lag_policy="none"` make it a stronger falsification of the abstraction
+than another gridded geophysical source.
+
+The contract separates `calendar_aligned` co-occurrence from `scale_shape_aligned` structural
+transfer and freezes week, three-month and six-month duration presets. It also fixes the later
+operation-level acceptance policy at 200 replications, alpha 0.05, maximum null rejection 0.075,
+minimum planted detection 0.80, at most 10,000 family members, 4 GiB planned materialization and
+one hour planned runtime. Those are qualification thresholds and resource ceilings, not an
+implemented multi-domain operation.
+
+The paired benchmarks contain six known-answer cases across four different clocks, meanings and
+units: one calendar-coincident event, one common motif at different calendar positions and native
+scales, independent records sharing only an outer interval, independent values with strongly
+shared gaps, an apparent event order that must refuse four-domain precedence because order book
+has no lag policy, and a 24,576-member family that must refuse before acquisition against the
+10,000-member cap. Random values use distinct labelled `SeedBundle` streams per case and domain;
+the null oracle is independent construction, not the statistically false demand that every finite
+null realization display near-zero sample correlation.
+
+The construction gate is 2 PASS, 0 FAIL and 0 NOT_YET_RUNNABLE. It emits no acquisition,
+translation, mining result, evidence or capability. Both records are automatically visible through
+the existing registry-backed benchmark API/UI; the saved Experiment Composer recipe belongs to
+TG17.1, where the manifest contract exists.
+
+#### 3.6zzk Versioned experiment manifest and Composer preflight (TG17.1)
+
+`src/core/experiment_manifest.py` defines the immutable `CrossDomainExperimentSpec`. It is the
+single scientific configuration for G17: comparison mode, exact offset-bearing UTC windows,
+observation roles and measures, source and adapter identities and parameters, coverage policy,
+family axes, nulls, correction, labelled seeds and hard resource caps all live in this record.
+`canonical_bytes` is the one sorted compact JSON encoding used to derive `manifest_sha256` and
+the `g17:{sha256}` run identity. A parsed canonical manifest serializes to the same bytes. Saved
+drafts are mutable pointers to immutable, content-addressed revisions; moving a draft pointer does
+not rewrite or remove the earlier revision.
+
+The built-in `g17-flagship-calendar` recipe expresses TG17.0's reanalysis, Argo, TESS and order-
+book quartet in that schema. Its week, three-month and six-month labels carry explicit start, end
+and stride values and jointly price one 288-member family. Measures, semantics and units remain
+native declarations. The recipe intentionally has no fabricated local order-book binding, so its
+first metadata preflight is `REFUSED` with the stable remedy to select a content-addressed record.
+
+`preflight_manifest` resolves the declared native addressing and reports each exact requested
+window, expected samples where a nominal product cadence makes that meaningful, unknown samples
+for sparse or irregular support, gap status, estimated bytes and access needs. Reanalysis remains
+a regular grid extent, Argo remains sparse point support, and TESS remains intersecting sector
+support whose exact coverage cannot be inferred merely from an intersection. The preflight reads
+no measurement values and uses no network in this shell slice. With a local binding, sparse and
+sector-bounded sources remain `PARTIAL` only when the frozen policy permits partial coverage;
+`complete_required` refuses instead. No interval, domain or family member is silently removed.
+
+`src/api/experiment_composer.py` exposes `GET /api/v1/experiment-composer`, the recipe list and
+`GET /api/v1/experiment-composer/recipes/g17-flagship-calendar`, `POST .../manifests/validate`,
+`POST .../manifests/preflight`, `PUT/GET .../drafts/{draft_id}`, and immutable
+`GET .../manifests/{manifest_sha256}`. The `ExperimentComposer` UI uses those routes through typed
+client methods. It provides visible mode, policy and exact-window controls, displays the complete
+quartet/family and per-domain coverage matrix, and remembers the saved draft pointer across a
+browser refresh. The shell-selected study id is updated on save. The legacy parameter-sweep UI
+remains separately named and available.
+
+This slice does not acquire the quartet, create a canonical structural trajectory, run a
+statistic, write evidence or move a claim rung. The disabled **Run experiment — not available
+yet** control names that boundary; TG17.2--TG17.6 fill it in without introducing a second
+scientific configuration. The receipt field is reserved to carry the same manifest digest when a
+receipt exists in TG17.9; TG17.1 does not manufacture one to satisfy a round-trip demonstration.
+
+#### 3.6zzl Canonical structural trajectory and inspectable contract (TG17.2)
+
+`src/core/structural_trajectory.py` defines the smallest record shared by later cross-domain
+mining. A `StructuralTrajectory` carries labelled, benchmark-defined structural channels; exact
+native `[start, end)` support and validity; a dimensionless structural-scale coordinate with its
+native-duration mapping; source, variable, native semantics and units; content-addressed native
+record identity and retained locator; adapter definition, version and configuration digests; all
+assumption violations; and per-channel lineage sufficient to reconstruct every canonical value.
+Its NumPy arrays and mappings are immutable copies. The content-addressed native record remains
+beside the projection and is never overwritten.
+
+`StructuralAdapterDeclaration` makes the scientific translation contract executable: required
+axes and roles, invariances, consumed information, output clock/support, missing-data behaviour,
+legitimate null family, leakage risks, refused operations and allowed channels are all declared.
+The first allowed channel, `standardized_level`, has the frozen known-answer definition
+`(native_value - valid_native_mean) / valid_native_population_std`; it remains explicitly a
+within-record dimensionless level and never licenses semantic equivalence or native-magnitude
+comparison. The definition is benchmark identified and content addressed. Convenience numbers
+cannot be added as unnamed channels.
+
+The TG17.2 conformance pass independently checks native/adapter/config digests, semantic and unit
+identity, the exact unchanged clock, intervals and gaps, structural-to-native scale mapping,
+assumption-violation propagation, one-to-one native indices and recomputed channel values. A
+semantic substitution, unbenchmarked channel, dropped limit, compaction, filling or undeclared
+interpolation fails. `mine_structural_peak` is the initial deliberately small domain-blind mining
+seam: the same function consumes the reanalysis, Argo and TESS known-answer trajectories without
+a domain switch.
+
+`src/benchmarks/structural_trajectory.py` supplies deterministic TG17-fixture declarations and
+the full-fidelity preview payload. `POST /api/v1/experiment-composer/manifests/representation-
+preview` binds that preview to the current manifest digest and returns every native interval,
+validity bit, unit, scale mapping, adapter/config/native digest and value lineage. The Composer's
+**Inspect structural contract** action renders the three domain cards with native support,
+coverage, units, scale, limits and identities. It labels the values as deterministic known-answer
+records, not acquired observations. Live acquisition translation, the fourth production adapter,
+cross-domain statistics, evidence and rung movement remain unavailable until later G17 slices.
+
+#### 3.6zzm Adapter registry, schema-driven controls and conformance kit (TG17.3)
+
+`src/core/experiment_adapter.py` makes acquisition plus structural translation a registered
+`DomainExperimentAdapter` rather than an orchestrator switch. One registration supplies the
+domain declaration, a typed `ControlSchema`, the acquisition planner, the translator
+configuration, the materializer, the structural declaration and translator, capability
+derivation, the null builder and the provenance renderer. `EXPERIMENT_ADAPTERS` is an ordinary
+`Registry`, so the acquisition catalogue, the Composer controls and the metadata preflight all
+read one source rather than three hand-maintained lists.
+
+Window arithmetic is deliberately **not** an adapter responsibility. `plan_acquisition` returns
+only what the domain knows - support kind, native cadence, whether an extent establishes exact
+coverage, access, and cost per day - and the framework's `plan_windows` derives expected samples,
+bytes and gap status identically for every domain. Four adapters computing their own expected
+sample counts would have become four definitions of "expected" whose coverage-matrix columns
+could not be compared.
+
+An adapter cannot register over a domain that has not passed `onboard_domain`; it cannot claim
+exact coverage on sparse or sector-bounded support; and a domain whose lag policy declares no
+admissible floor has `precedence` added to its refused operations by construction rather than by
+an author remembering (R21).
+
+`src/core/adapter_conformance.py` executes what a declaration claims. Ten checks cover control
+schema agreement, coverage honesty, bounded resource planning, deterministic translation, content
+addressing, axis and role validation, gap preservation, refusal propagation, declared invariances
+and null suitability. The invariance checks are the interesting half: `INVARIANCE_PROBES` applies
+the named transform to the native record and compares every canonical channel, so an adapter
+claiming `native_value_positive_scaling` must actually have it. An invariance with no registered
+probe reports `NOT_PROBED` rather than `PASS` - silently passing an unexecuted claim is the
+failure the kit exists to prevent.
+
+`src/core/structural_nulls.py` supplies the domain-legitimate null in the framework rather than
+per adapter. `circular_clock_shift` rolls the canonical values by a seeded offset and leaves the
+native clock, interval support, gaps and marginal distribution exactly where they were, destroying
+only cross-record alignment. The surrogate is labelled as one: it carries a `null:` trajectory id
+and recomputed lineage and digests, so it cannot masquerade as a projection that reconstructs.
+
+**Two fixes this slice forced.** TG17.2's `assert_structural_conformance` reconstructed every
+canonical value from a hardcoded standardized-level formula and compared every configuration
+digest against `{"ddof": 0}`. That made the supposedly domain-blind conformance pass carry one
+domain's mathematics inside it: a second channel definition failed conformance for having
+different - correct - arithmetic. `LINEAGE_RECONSTRUCTORS` now dispatches on the operation the
+lineage itself declares, and an operation with no registered reconstructor **fails**, because a
+canonical value nobody can independently rebuild is not provenanced by carrying a digest. The
+translator configuration became a declared part of the adapter contract for the same reason.
+
+`src/adapters/standardized_level_adapter.py` is the onboarding-cost measurement. Four domains
+running the same benchmarked translation share one implementation; each domain module supplies
+only its declaration, controls, acquisition plan, accepted semantics and units, and record
+binding. `src/adapters/reanalysis.py` is that list and nothing else. `extensions/argo_float.py`
+and `extensions/tess_lightcurve.py` register through the same public seam from outside `src`,
+so the extension point is exercised by this programme's own adapters rather than demonstrated
+separately.
+
+**The bespoke record family.** `src/adapters/bespoke_record.py` generalises order book out of
+being a finance adapter. Three flagship domains reach a public archive with a documented
+addressing scheme; the fourth is whatever record a researcher holds - a venue's aggregated trade
+volume, a clinic's appointment log, a factory line's cycle counter. Writing the one example into
+the code would have left every other bespoke record needing another adapter, so the module is the
+family and `order_book` is its first saved declaration.
+
+Its fence is TG8.4's rule, imported rather than restated: *detection may create a required
+declaration; it may never satisfy one*. `assert_record_admissible` observes the clock with
+`clock_facts`, converts that into obligations with `required_violations`, and refuses until the
+researcher's domain has already declared them. `assert_domain_admits_channel_table` refuses a
+domain whose declared axes a flat record cannot supply; an aggregate footprint obliges
+`aggregated_values`; and identity is the record's sha256, never a filename, because a file edited
+in place keeps its name and becomes a different record. Until a record is bound the acquisition
+plan carries a refusal rather than a plan, which is why the flagship recipe still preflights as
+`REFUSED` - with wording no longer specific to order books.
+
+A bespoke domain is therefore added by declaration alone, with no code. That is **not** evidence
+that the adapter seam works: a data-driven instance tests an adapter's parameters, not the
+registry's extension point. TG17.3's acceptance is met by the synthetic fifth adapter in
+`src/tests/test_adapter_registry.py`, which carries genuinely different structural mathematics
+(a monotone rank channel), is defined outside `src/adapters` and `extensions` in a module the
+application never imports, and reaches the registry, the control schema, the conformance kit and
+the domain-blind mining seam without any edit to the orchestrator, the generic API routes or the
+UI.
+
+`src/api/experiment_composer.py` serves the registry at `GET .../adapters`
+and `POST .../adapters/{adapter_id}/conformance` - each list row already carries the whole
+adapter description, so a per-adapter route would have been an endpoint nothing reaches - and
+`preflight_manifest` now resolves every coverage row through the registered adapter - replacing
+the literal `source_plans` table and its `channel_table:local` special case. A manifest naming a
+domain with no registered adapter, an adapter its domain does not have, a source its adapter does
+not reach, or parameters its controls refuse now refuses by name at preflight rather than at run
+time. `frontend/src/components/AdapterControls.tsx` renders the declared schema; its only switch
+is on a control's `kind`, and the Composer contains no per-domain form.
+
+This slice does not acquire a live archive, run a cross-domain statistic, write evidence or move a
+claim rung. The `source_binding` control makes the deterministic known-answer binding a visible
+choice recorded in the manifest, and the live binding refuses by naming TG17.6.
+
+#### 3.6zzn Clock, Support and Coverage Semantics (TG17.4, `ed-dev`)
+
+`src/core/structural_alignment.py` replaces row-index comparison with interval arithmetic over
+the half-open `[start, end)` support that TG17.2's canonical record already preserved. Every
+number this module produces is derived from support, and the guarantee it exists to hold is one
+sentence: **changing row density alone cannot manufacture support.** Splitting every hourly
+record into sixty minutely rows over the same support produces sixty times the rows, the same
+occupied duration, the same overlap and the same effective sample size; a pipeline counting
+overlapping row *pairs* would have reported a 3600-fold increase in shared evidence for a file
+that gained no information at all. `effective_sample_size` is therefore overlap **duration**
+divided by the coarser of the two native scales, and the raw row count is carried into every
+report and used by nothing, so a reader can see the number they would have reached for next to
+the number that is evidence.
+
+Half-open bites at the boundary. `[a, b)` and `[b, c)` abut and do not overlap; a closed
+convention would have reported a coincidence at every boundary in every regularly sampled
+record. Supports are unioned rather than summed, so overlapping bins and shared sector months
+occupy the world once, and a zero-width support is refused outright rather than silently
+contributing nothing while still counting as an observation.
+
+**Nothing bins, compacts, forward-fills or interpolates by default.** The only kernel that runs
+without being named in the manifest is `exact_support_overlap`, which transforms nothing. Every
+other kernel - `symmetric_tolerance`, `common_grid_aggregate`, `carry_forward` - is a declared
+adapter operation: it is frozen in the manifest's new `AlignmentPolicy` and travels inside the
+manifest digest, it must be admitted by *every* participating adapter through the adapter
+contract's new `admissible_kernels`, its parameters have no framework defaults (a tolerance the
+framework picked is a scientific choice nobody made), and it reports in seconds how much of the
+resulting overlap it created rather than observed. A kernel that invents values is refused
+outright over a domain declaring `irregular_sampling` or `aggregated_values`, because
+interpolating across an irregular clock manufactures exactly the simultaneity the experiment
+exists to test for. Admissibility is a domain judgement rather than a framework one: reanalysis
+admits tolerance and grid aggregation because a gridded product declares a cadence and a valid
+interval per step; Argo admits tolerance but not a grid, because the array does not keep the
+nominal cycle a grid would assume; TESS admits a grid but not tolerance, because widening sector
+support would blur the observational gap that decides whether a target was observed at all; and
+the bespoke family admits only the kernel that transforms nothing. No adapter admits
+`carry_forward`.
+
+The two modes cannot borrow each other's vocabulary. `assert_mode_admits_relationship` is a name
+lookup rather than a convention: calendar mode may speak of co-occurrence, precedence and lead
+lag and may not silently search normalized scale ratios; scale/shape mode compares a normalized
+coordinate that retains its mapping back to each native duration - so a match is reported as a
+shape recurring at 1.8 hours here and 46 days there, never as an unqualified similarity - and
+may not emit simultaneity, precedence or causal language at any confidence. The manifest refuses
+a mode/relationship mismatch where the search is declared rather than where the result is
+worded, because by the latter point the search has already happened. A study wanting both modes
+declares both and `combined_family_multiplier` prices the union.
+
+The calendar is UTC seconds and nothing else. `elapsed_seconds` refuses a naive local timestamp
+by name, and `nominal_day_discrepancy` reports the difference between the window a researcher
+declared and the `days x 86400` a nominal denominator would assume - which is an hour, four
+percent, across a daylight-saving transition, in the direction that flatters coverage.
+
+Consequences are shown before the freeze and measured after it. `preflight_manifest` gains an
+`alignment` block that binds the declared kernel against every participating adapter, states the
+true elapsed seconds of each window, and reports each pair as either established from metadata
+or **bounded by the window** - a domain whose plan does not establish exact coverage is not
+given an overlap number that would later turn out to have been a guess, which for three of the
+four flagship domains is the honest answer. `POST /api/v1/experiment-composer/manifests/alignment`
+then measures the support the deterministic known-answer records actually have, stating the
+binding in every response, and `frontend/src/components/CoverageTimeline.tsx` draws it: bars
+positioned by time rather than by index, so a sparse record cannot look dense because it happens
+to have as many rows, with the gap count, the governing scale, the effective sample size, the
+seconds the kernel created and the row count greyed out beside them.
+
+`src/benchmarks/alignment_fixtures.py` carries the six adversarial cases and their known
+answers: unequal cadence (28 effective observations, not 168), abutting boundary (nothing),
+a daylight-saving day (82,800 seconds, where a nominal denominator would report 95.8% coverage
+for a record that covers the window completely), a sparse Argo-shaped profile (36 hours of nine
+ascents inside ninety days), an interrupted light curve (the two-day downlink gap survives a
+continuous partner, and the overlap is two intervals rather than one) and non-stationary support
+(the effective sample size is labelled an upper bound rather than corrected).
+
+This slice acquires nothing, runs no cross-domain statistic, writes no evidence and moves no
+claim rung.
+
+
+#### 3.6zzo Multi-Domain Family Accounting and Domain-Legitimate Nulls (TG17.5, `ed-dev`)
+
+`src/core/experiment_family.py` turns a manifest into the one thing rule R18 can act on: a
+declared search, enumerated as axes, priced exactly, before anything is acquired. Until this
+slice the family size was a product written inline in `preflight_manifest` - pairs x channels x
+scales x windows x relationships - which is the mistake `src/core/family.py`'s own docstring
+warns about, and there was a second copy of it in the browser. Both are gone. The family is now
+one `SearchSpecification` over eight declared axes: domain set, window, channel, scale,
+relationship, lag, representation and motif. Each was a knob a researcher can turn after seeing
+a result, and a family priced without one is short by exactly the factor nobody wrote down; the
+manifest's `FamilyDefinition` gained `domain_arities`, `lags_seconds`, `representations` and
+`motifs` so that turning any of them changes the number and the manifest digest together.
+
+Domain combinations are **unioned across arities, not multiplied**: a study testing pairs and
+triples of four domains declares 6 + 4 = 10 combinations, and the count is `sum C(n, k)` because
+a member is one combination. The flagship's declaration reads, in the words the Composer prints,
+*"6 domain sets x 3 windows x 4 channels x 4 scales x 1 relationship = 288 declared tests."*
+
+**The arithmetic this slice made visible was not comfortable.** 288 tests corrected under
+Benjamini-Yekutieli at alpha 0.05 need roughly **35,953 surrogates** before one member can be
+rejected; the TG17.0 acceptance policy declares 200 replications, at which the largest
+affordable family is **four members**. The flagship as written could have run to completion,
+cost the full amount and been arithmetically incapable of rejecting anything - reporting nothing
+for a reason that is not the data, and indistinguishable afterwards from a clean negative. This
+is D8 at four-domain scale, and finding it before acquisition is the entire purpose of the
+check. Two defects are logged against it (D76, D77). The remedy is the one R18 already admits
+and TG3.2 already implements, so the manifest gained a `ConfirmationPolicy`: a study declares
+itself either `confirmatory_only`, in which case it is priced at its complete declared family
+and refused if it cannot resolve it, or `generate_then_confirm`, in which case it must name the
+held-out partition it will confirm on and how many members it will confirm. The flagship now
+declares the second, and every payload states plainly that its generate stage produces
+candidates and not claims: the p-values there are uncorrected and the selection used the data.
+
+**A screen never shrinks the correction unit.** `ScreenedSearch` holds a pairwise screen and the
+complete search it lives inside, and `correct_over_candidates` refuses the number of survivors
+by name - the survivors were chosen by looking at the data, so correcting over them prices a
+family selected after the fact. The one thing that permits a smaller number is a *named*
+held-out partition, because a confirmatory family is legitimately small only when it was frozen
+before that partition was opened.
+
+**Precedence availability is reported beside the family, never subtracted from it.** Two of the
+four flagship domains declare no justified lag policy, so any member pairing them at a
+precedence relationship was never testable. `precedence_availability` counts those through
+`audit_admissibility` and leaves `family_size` alone: a family narrowed to what survived is a
+family chosen after looking. A domain without a precedence policy still takes part in structural
+association, and both facts appear on the receipt.
+
+`family_expansion` prices the same declaration with one more domain, one more duration, one more
+scale and one more channel, so the decision is available while it can still be made: a fifth
+domain takes the flagship from 288 to 480 tests and from 35,953 to 64,819 required surrogates.
+`frontend/src/components/FamilyPlan.tsx` draws the axes, the multiplication, the correction unit
+beside its held-out partition, and that expansion table.
+
+`src/core/structural_nulls.py` became a registry of declared `NullFamily` objects, each carrying
+the comparison **mode** it answers for and a named list of what it preserves and destroys.
+A calendar null is refused for a scale/shape question at the manifest, where the question is
+declared: a clock shift is no null for a comparison that never referred to a clock, and a
+partner reassignment is no null for a shared calendar interval. Four admissible families are
+registered - `independent_native_clock_shift`, `whole_cycle_clock_shift` (whole cycles only, so
+seasonal phase survives), `within_group_clock_shift` (never moves a value across a declared group
+boundary) and `scale_partner_reassignment` (alters no record at all; only the correspondence
+under test is broken) - and their parameters have no framework defaults, for the reason TG17.4
+gave for kernels. `global_value_shuffle` is **registered and refused**, with its reason stated:
+every domain can execute it, which is precisely why it needs to be refusable by name rather than
+quietly absent, and it destroys the autocorrelation, cyclic phase, gaps and profile support that
+would otherwise produce the apparent structure under test.
+
+Which nulls a domain's support can carry is a domain judgement, declared through the adapter
+contract's new `admissible_nulls` and checked against every participating adapter in preflight.
+Reanalysis admits the seasonal shift because a reanalysis field is strongly seasonal and the
+plain shift would produce a surrogate whose annual phase is wrong everywhere; Argo admits the
+grouped shift because a float belongs to a deployment whether or not a study says so; TESS admits
+the grouped shift but not the seasonal one, because a sector is a real boundary and no annual
+cycle is claimed for a target; the bespoke family admits only the plain shift, because its clock
+is whatever the depositor wrote down and a session length the framework inferred would be a
+scientific choice nobody made.
+
+`src/benchmarks/family_calibration.py` calibrates the TG17.0 fixtures **at the frozen family
+level**, which is the level the acceptance is stated at: six pairs, one correction, 999
+replications, and what is counted is rejections after correction rather than raw p-values. The
+statistic is a support-weighted correlation over the intersection of two records' declared
+`[start, end)` supports, weighted by the seconds they actually share - so it inherits TG17.4's
+invariant, and rewriting a record at twice the row density over identical support gives the
+identical number. The planted `shared_calendar_event` is confirmed on 6 of 6 pairs;
+`same_window_unrelated`, `gap_alias` and `inadmissible_precedence` each reject 0 of 6, so an
+identical outer interval and a shared observation gap do not become shared structure.
+
+`src/benchmarks/shape_calibration.py` is the scale/shape counterpart, added in TG17.11 because
+the `scale_shape_calibration` gate read `NOT_IMPLEMENTED` rather than `NOT_RUN`: the mode had a
+registered null and an enumeration of shared normalized coordinates, but no statistic in between.
+`shape_recurrence` is the same support-weighted correlation carried onto a **phase** axis — each
+record's declared support divided by its declared native duration, the two intersected by the same
+linear sweep, each contribution weighted by the phase actually shared. Resampling both records
+onto a common phase grid would manufacture the correspondence under test, exactly as binning onto
+a common calendar grid would manufacture simultaneity, so it is not done.
+
+Three properties are measured rather than asserted, and they are kept as three separate functions
+because a single sweep varying more than one would report one number for several effects and make
+the invariance claim unfalsifiable.
+
+* **Scale invariance is exact.** `invariance.py` leaves `scale_normalised` out of `MATCHERS`
+  because its denominator is an *estimated* spatial scale drifting +3.6% to -2.6% across a sixfold
+  range. This denominator is a declared `StructuralScale.native_value`, so there is no estimator to
+  drift: `measure_scale_invariance` moves the statistic by at most **1.1e-16** across the same
+  sixfold range, against 0.37% for `relative_geometry`.
+* **Row density stops mattering, measurably.** `measure_cadence_dependence` finds movement below
+  1e-9 down to about 16 rows per native cycle, then 2.7% at 8, 11.7% at 4 and 15.6% at 2. That is
+  real information loss rather than a fault — two rows per cycle cannot represent a second
+  harmonic — so it is reported as a limit and not as invariance. `MINIMUM_ROWS_PER_CYCLE` is read
+  off those figures at 8, below which a comparison is refused by name.
+* **The phase window is a trade-off, and it is stated.** A phase comparison is phase-locked, so a
+  mis-declared native duration drifts the records apart once per cycle: a 10% error costs 15% of
+  the statistic over one cycle, 40% over two and 93% over six. `measure_phase_window_tradeoff`
+  publishes that table so a study cannot pick its own sensitivity by accident. The phase axis
+  imports no estimator drift, but it does import the declaration's own error.
+
+The slice also established that **no G17 flagship record can serve as a scale/shape fixture at its
+declared scale**: each declares its structural scale as its own row cadence and so resolves 1.00
+rows per native cycle, which is below the floor and is refused. The scale/shape fixtures must
+therefore be built rather than borrowed from TG17.0.
+
+`src/core/calibration_record.py` carries a second recording as of TG17.15 slice 5, and one thing
+the first did not need: `scale_shape_supersession`, which recomputes TG17.11's refusal rather than
+quoting it and reads `SUPERSEDED`, `NOT_SUPERSEDED` or `VOID`. Section 7.1g.
+
+`src/benchmarks/pool_calibration.py` is TG17.15 slice 4's calibration of the pool-substitution
+null, described in section 7.1f. Slice 5 added `WITNESS_REALISATIONS` and `witness_digest`, which
+make a fifty-minute recording checkable in seconds: realisation `i` runs at `seed + i`, so a short
+run at the recorded seed is the leading prefix of the recorded one rather than merely similar. It builds its own records rather than borrowing `shape_fixtures`'
+pairings, because the pool null admits on declared marginals and every record therefore needs a
+`RecordProfile` that is a consequence of how it was actually built.
+
+`src/benchmarks/shape_fixtures.py` carries the four frozen scale/shape cases and the inference
+they are scored under. Two properties of the null had to be settled before any fixture could be
+written, and both were measured rather than reasoned about.
+
+**The family size is solved, not chosen, and it is 105.** Partner reassignment replaces a
+pairing's right member with another right member of the same inventory, so a member's surrogate
+statistic takes only as many values as it has admissible alternative partners — `k - 1` for `k`
+disjoint pairings. The p-value floor is therefore `1/k` however many replications are paid for,
+and Benjamini-Yekutieli permits a rejection only where `1/k <= alpha/H_k`.
+`minimum_resolvable_family` solves that against the real `adjust`, and at alpha 0.05 the answer is
+105: at 104 the most favourable result the null can produce, every member beating every
+alternative, still rejects nothing. This is the quantitative form of the TG17.11 slice 1 finding —
+the declared families of three and four domains are short by a factor of about twenty-five.
+
+**The Monte Carlo template is refused by name, with its error measured.** Drawing 999 whole
+reassignments and dividing by 1,000, as calendar mode correctly does, reports 0.001 for a member
+that beats its `k - 1` alternatives when the exact tail probability is `1/k`. The replications
+resample the same handful of values and the denominator asserts a resolution the null lacks; the
+error is a factor of `k` and it is anti-conservative. Measured on a wholly unrelated inventory of
+six pairings over 200 realisations it rejects at a family-wise rate of **74%** against a nominal
+5%, while the exact partner test rejects at **0%**. Calendar mode is unaffected, and that is
+measured too: an independent clock shift over records of 56 and 1,344 rows gives 397 distinct
+surrogate statistics in 400 draws. The distinction is whether the null's support exceeds the
+number of draws, a property of the null and not of the code, so `monte_carlo_partner_p_values` is
+kept and refused the way `global_value_shuffle` is.
+
+`exact_partner_p_values` scores each declared pairing by its rank among the alternatives that
+could legitimately have replaced it, drawing that reference set from `admissible_partners` so the
+test and the null cannot disagree about what the family is. The planted case rejects 105 of 105 in
+20 of 20 realisations; `same_normalisation_unrelated` (own pairings 0.339 against alternatives
+0.346) and `native_scale_alias` (own 0.812 against alternatives 0.845 — a raw correlation that
+would look conclusive under any threshold, and which the null absorbs entirely) each reject 0 of
+105 with a family-wise error of 0% over 20 realisations; `degenerate_inventory` is refused rather
+than scored.
+
+`calibrate_shape_family` runs those cases as the calibration proper. Each scoreable case is run
+over 20 independent realisations, each one family of 105 corrected once under Benjamini-Yekutieli
+at alpha 0.05 and with no replications at all — the null's support is enumerated, and resampling it
+would claim a resolution it lacks. The planted case rejects 105 of 105 in 20 of 20 realisations;
+both safeguards reject 0 in 2,100 member tests; the degenerate inventory is refused. Because 20
+realisations bound a zero count only at 14% by the rule of three, `null_lattice_error` measures the
+same rate where draws are nearly free — under the global null a member's exact p-value is uniform
+on the lattice, so a family can be drawn without building a record — and reports 0.000 over 20,000
+draws, a one-sided 95% upper bound of 0.015%. Both are carried, because the lattice treats members
+as independent and a shared statistic grid makes that only approximately true.
+
+`detection_profile` reports the operating characteristic, which is this design's least obvious
+property. Every genuinely recurring member sits at the same p-value floor, so there is no partial
+power: a family either rejects or does not. The declared family is the smallest that can reject at
+all and is therefore knife-edge — 104 of 105 pairings recurring rejects 0.9% of the time, 105 of
+105 rejects always. `minimum_family_for_detected_fraction` solves the inventory each sparsity needs
+against the real correction: 105 pairings to detect a wholly recurring family, 120 for 90%, 149 for
+75%, 243 for 50%, 550 for 25%, 1,586 for 10%. A study declaring 105 correspondences of which 90
+recur reports nothing, however strong each match is.
+
+The Monte Carlo error's dependence on inventory size is what makes it a trap rather than an
+approximation, and is measured: on wholly unrelated inventories the family-wise false-positive rate
+is 76.7% at k=6, 50.0% at k=12, 10.0% at k=30 and 0.0% at k=60 and k=105, against a nominal 5%,
+with the exact test at 0.0% throughout. The wrong method is safe only at the inventory sizes where
+the right method already works.
+
+**TG17.11 slice 5 - the gate reads REFUSED, because the blocker is an inapplicable method rather
+than an absent one (2026-09-03).** `scale_shape_calibration` was the only one of TG17.10's seven
+gates reading `NOT_IMPLEMENTED`, and that sentence is now false: `shape_fixtures` registers a
+calibration and it meets every expectation frozen in its module. The gate is nonetheless still
+blocking, and `scale_shape_applicability` in `experiment_qualification.py` computes why in
+milliseconds, without acquiring a record or running a calibration.
+
+**Two bounds that do not meet.** From below, a member of a `k`-pairing family has `k - 1`
+admissible alternative partners, so its exact p-value cannot fall below `1/k`; solved against the
+real Benjamini-Yekutieli correction at alpha 0.05, no family smaller than **105 pairings** can
+reject even when every member is a perfect planted match. From above, `reassign_scale_partners`
+enumerates the reassignments an inventory admits and refuses above **8 pairings** rather than adopt
+a sampler whose uniformity is assumed rather than demonstrated. The largest inventory the declared
+null will draw from is therefore an order of magnitude smaller than the smallest inventory that
+could reject: there is **no inventory size at which the null as the qualification manifests declare
+it - drawn, with a replication count - can produce a rejection.** What can is the exact partner
+test, which enumerates the same finite support instead of resampling it, and which the registered
+calibration is built on; no declared manifest requests it.
+
+G17's two candidate domain families never reach that argument. The quartet compared all-against-all
+gives six pairings admitting exactly one distinguishable reassignment, and the triple that remains
+after `order_book` declines the null under D83 gives three pairings admitting none. Both refusals
+are recorded in the qualification record verbatim from the null itself rather than restated, so a
+change to either surfaces as a changed record rather than as a sentence that quietly went stale.
+
+**Why `REFUSED` and not `PASS`, `FAIL` or `NOT_IMPLEMENTED`.** The apparatus already reserves
+`REFUSED` for a declared scientific limit that blocks release exactly as a failure does, which is
+what `offline_matrix` carries for the same mode one level down. `PASS` would report a calibration
+this module never executed and whose fixtures no declared plan can reach; `FAIL` would say
+something broke; `NOT_IMPLEMENTED` is no longer true. The record accordingly carries a
+`scale_shape_calibration` section naming the calibration's entry point, stating
+`calibration_executed_here: false`, and asserting only quantities it computed - a guard checks that
+no power or rejection-rate key appears in it. **A calibrated method the declared plans cannot
+reach, a method that does not exist, and a method that ran and failed are three different facts.**
+
+Five guards, twenty-one in the file. Three mutations were run against them: awarding the gate
+`PASS` fails two, hard-coding `declared_null_can_ever_reject` true while adding a power number
+fails two, and replacing the null's own refusal text with a fixed string fails one.
+
+**TG17.12 - the calendar calibration reaches its gate, and what a recording is bound to
+(2026-09-03).** `calendar_calibration` was the last gate whose `NOT_RUN` was true of the record and
+false of the world. `family_calibration.calibrate_family` runs the frozen calendar family on
+TG17.0 fixtures and has always passed; nothing carried that measurement into the qualification
+record, so a gate and a measurement sat a few imports apart with no channel between them.
+
+**The gate still does not run it.** A calibration is a scientific measurement and
+`experiment_qualification` is a release gate; running four cases at 999 replications inside plan
+assembly would make an HTTP route's cost depend on a benchmark's. `src/core/calibration_record.py`
+is the channel that separation needs, and it is the same separation TG17.11 stated one gate down.
+`qualification_plan()` assembles in **22 ms warm**, and a guard fails if it exceeds a second.
+
+**What a recording is bound to, and why that is the whole design.** A receipt saying "it passed" is
+a sentence, not evidence: it survives every later change to the thing it describes. A recording
+here binds two digests and is read as *unrun* if either moves. The **declared contract** - the
+cases and the rejection counts frozen with them, the family size, alpha, correction, replications,
+channel, null family and seed - is digested from `CALIBRATION_CASES` rather than restated, so
+relaxing an expectation moves the digest instead of leaving a stale pass agreeing with the weaker
+declaration; that is precisely what `CALIBRATION_CASES` says in its own comment that it exists to
+prevent. The **source** of the four modules that decide what the measurement is - the calibration,
+the fixtures it builds, the null it draws from and the correction it applies - is digested with
+line endings normalised, so a Windows clone and a POSIX one agree about the same file.
+
+Neither digest makes a recording tamper-evident against an editor of this repository, and the
+source binding covers four files rather than the whole transitive import graph. That boundary is
+stated rather than hidden, because the real backstop is elsewhere: the live calibration already
+runs in the test suite on every pass, and
+`test_the_recording_the_release_gate_reads_matches_this_live_calibration` compares what it produced
+against what the gate is being told, case by case. A recording that drifts from reality fails a
+test rather than quietly qualifying a release.
+
+**Four outcomes, three of them blocking.** Absent, unbound from its contract, or unbound from its
+source all read `NOT_RUN` - a recording made against something else is not a weaker pass, it is a
+measurement of a different thing. A recording whose cases missed their frozen answers reads `FAIL`,
+because a calibration that ran and failed is a different fact from one that did not run. Only a
+bound recording with `all_met` reads `PASS`.
+
+**What it recorded.** Every case met the answer frozen with its fixture at 999 replications on a
+family of six: `shared_calendar_event` rejects **6 of 6** after correction, and
+`same_window_unrelated`, `gap_alias` and `inadmissible_precedence` each reject **0**. `all_met` is
+true, and the record carries the timestamp, both digests and each case's declared bounds beside
+what it did.
+
+**The contrast with TG17.11, computed rather than asserted.** Both modes have a p-value floor and
+they buy it differently. The scale/shape null's floor is fixed by the inventory - a `k`-pairing
+family enumerates `k` partners and cannot go below `1/k` - so it is bought with domains, and it has
+an enumeration ceiling an order of magnitude below what its correction needs. The calendar null's
+floor is `1 / (1 + replications)`: its surrogates are clock shifts the record itself supports, so
+there is no ceiling and the floor is bought with computation. Both configurations are checked
+against the real correction rather than declared sound: the calibration family resolves at
+**999 replications against 293 required**, and the calendar plan the manifests actually declare
+resolves **4 corrected members at 200 replications against 166 required**. Two bounds that do not
+meet, against two that meet with room to spare - and a guard asserts the inequality rather than
+the numbers.
+
+Twelve guards in a new `test_calibration_record.py`, plus the drift backstop in
+`test_experiment_family.py`. The verdict is unmoved: `NOT_RELEASEABLE`, with a guard saying so, and
+`calendar_calibration` is the first of the seven gates to be non-blocking.
+
+Two new routes: `GET /api/v1/experiment-composer/null-families` generates the null catalogue from
+the null registry crossed with the adapter registry, so a family no domain admits is visibly
+unusable rather than absent; `POST /api/v1/experiment-composer/manifests/family` prices the
+declared search in human terms before acquisition.
+
+This slice acquires nothing, runs no confirmatory statistic, writes no evidence and moves no
+claim rung. A calibration on fixtures with known answers is not a result about any domain.
+
+
+#### 3.6zzp Content-Addressed, Resumable Experiment Orchestrator (TG17.6, `ed-dev`)
+
+`src/core/experiment_run.py` executes a frozen manifest as one state machine -
+`DRAFT -> PREFLIGHTED -> FROZEN -> ACQUIRING -> TRANSLATING -> MINING -> CONFIRMING -> COMPLETE`,
+with `REFUSED`, `FAILED` and `CANCELLED` as the explicit ways out. The transitions are a table
+rather than a sequence of branches, so the question a reviewer actually asks about a long run -
+what was allowed to happen next, and who says so - is answered by reading one dictionary.
+
+**The failure this component exists to prevent is not a crash.** A four-domain study is a long job
+over remote archives, and long jobs get interrupted: a laptop sleeps, a token expires, a browser is
+refreshed, TESS times out. Every interruption offers the same recovery - start again, and run
+whatever is available this time - and taking it substitutes a smaller experiment for the declared
+one while producing a receipt indistinguishable from a study that always intended to be that size.
+Three properties close that off.
+
+**Run identity is the manifest.** `run_sha256` is a content address over the schema and the
+manifest digest and nothing else: no clock, no UUID, no machine. Executing an identical manifest
+twice therefore *is* the same run, so `POST /api/v1/experiment-runs` resumes rather than creates,
+and a refreshed browser or a second tab cannot start a rival copy. The Composer has no "new run"
+control, because there is no such operation.
+
+**Every step is content-addressed and idempotent.** A step key is the digest of the run, the stage,
+the component and the digests of that step's declared inputs, and a completed step is published
+immutably through `src.core.publication.publish_new_bytes` and replayed from disk rather than
+recomputed. That is what "resume without duplicate network acquisition" means concretely. Because
+the key contains the input digests it is also the drift check: a changed native artefact re-keys
+its translation, so a resumed run cannot pair new data with a stale translation. Operational
+failures are deliberately *not* published under a step address - a timeout is a fact about a
+network at a moment, not a function of the declared inputs, and publishing it there would make a
+successful retry look like one address disagreeing with itself.
+
+**A retry may not author a new plan.** `retry` re-executes only the components whose recorded
+status was `FAILED` or `TIMED_OUT`, and both `execute` and `retry` refuse a manifest whose digest
+differs from the frozen one. The distinction the whole design turns on is between an operational
+failure and a refusal: `FAILED`/`TIMED_OUT` mean the archive could not be asked and are retryable;
+`REFUSED`/`MISSING` are the archive answering, and asking again is only asking until the answer is
+convenient. A refusal produces the terminal `REFUSED` state, and its remedy is `editable_copy`,
+which writes a new mutable draft and leaves the frozen run byte-identical. There is no `unfreeze`:
+a frozen run edited after seeing how it went is a plan chosen with knowledge of the result, and
+nothing in the artefacts recovers that six months later.
+
+**Partial acquisition is decided by the frozen `CoveragePolicy` and by nothing else.**
+`decide_stage` is a pure function of the manifest and the component statuses - deliberately, so the
+decision that turns a partial acquisition into either a smaller experiment or a refusal can be
+audited without reconstructing a run. `complete_required` refuses; `partial_permitted` admits the
+run only while the completed fraction stays at or above the declared minimum; and the receipt lists
+every missing component by name in both cases. A refusal outranks a failure, and a failure outranks
+a missing component, because "we could not ask" is not "the answer is no".
+
+**Progress cannot leak an unopened result, by construction rather than by discipline.** A
+`ComponentOutcome` carries a status, an artefact digest, a bounded work estimate and a remediation
+string, and has nowhere to put a measurement value - so a progress feed watched during `MINING`
+reports that mining is happening and cannot report what it found. The work estimate is bounded
+because the plan is declared: every step was named before the run started.
+
+The journal is the only state. `runs/<run_id>/journal.jsonl` is append-only and fsync'd per line,
+and the run's state, step outcomes, stage decisions and held-out openings are all folded from it,
+so there is no second state file to fall out of step with it and a crash can only lose the tail. A
+torn final line is skipped on replay rather than raising: a half-written event is an event that did
+not happen, and the step it described is still keyed by its content and will simply be executed.
+
+Held-out partitions obey their ledger. `HeldOutOpenings` records which run first opened a partition;
+re-opening within the same run is a resume, and a *different* run is refused by name with
+`SpentTargetError`. `src.core.preregistration` remains the authority on what an opening means - the
+sealed partition identity, the frozen confirmatory family, the digests that make the seal checkable
+- and this records only the fact a retry needs to consult.
+
+`src/core/run_workers.py` registers the stage-worker suites (standard E1) rather than letting a
+request supply behaviour, and **everything registered today acquires nothing**: `fixture_dry_run`
+completes every component so a frozen plan can be rehearsed end to end before a byte is requested,
+and `fixture_transient_failure` times out each acquisition component on its first attempt and
+completes it on retry, reading "first attempt" from the run's own journal so the rehearsal behaves
+identically across a restart or four separate HTTP requests. An operator who first meets the retry
+path on the night a remote archive times out is an operator who will reach for "start again". The
+domain workers that acquire and translate for real arrive with the slices that own them and
+register here beside these; the orchestrator does not change when they do.
+
+`src/api/experiment_runs.py` serves eight routes under `/api/v1/experiment-runs`, each idempotent
+in the same sense the machine is, and `frontend/src/components/RunMonitor.tsx` puts the
+machine in the browser: the declared state trail drawn from the backend's own table, per-component
+statuses and digests, a bounded progress bar, the components the run did not produce, and Retry and
+"open an editable copy" as two buttons that are never both live - because the answer to "the
+archive says no" is not "ask again".
+
+Widening the verification set to every suite that uses the shared `client` fixture also found
+**D78**, and the shared fixture itself gained the filesystem half of D24's reasoning: routes that
+persist fall back to `data/` when nothing binds them, and for a run that is worse than untidy,
+because a run identity is the content address of its manifest - an unbound test posting a manifest
+would resume, and then advance, whatever real run that manifest already had.
+
+This slice acquires nothing, runs no confirmatory statistic, writes no evidence and moves no claim
+rung. The registered suites are rehearsals, and a rehearsal that completes is not a result.
+
+
+#### 3.6zzq The Guided Path and the Four-Rung Ladder (TG17.7, `ed-dev`)
+
+The workbench before this slice was four acquisition surfaces and a Composer whose panels a
+researcher could visit in any order. Nothing about that was broken, and that is the problem: the
+order of operations *is* the scientific discipline. The family is priced before acquisition
+because a family priced afterwards is priced knowing what the data looked like. The null is
+admitted by the domain before the statistic exists because a null chosen after seeing the
+statistic is not a null. A UI that permits those in any order has not made an error - it has made
+the error **undetectable**, because no receipt can distinguish an experiment that was declared
+from one that was assembled.
+
+`src/core/composer_path.py` therefore holds the workflow as a registry rather than as a layout.
+`COMPOSER_PATH` carries the seven steps - question, domains, observation, preflight, analysis,
+freeze and run, interpret - each one a `PathStep` that decides its own status from the manifest,
+and `compose_state` returns **one** `next_action`. The browser renders that; it does not compute
+it. Three properties follow from being a registry rather than a component:
+
+*   A precondition is stated once, where the step is. An eighth step registers instead of being
+    remembered in a component, a route and a test.
+*   "What may I do now" has one answer with one owner. Two enabled controls meaning two different
+    scientific commitments cannot both be next, because `next_action` is one field.
+*   The path is ordered by declared ordinals, not by registry order. `domains` sorts before
+    `question`, so reading the workflow out in name order would silently have swapped the first
+    two steps - which is exactly the class of mistake the path exists to prevent, and is what the
+    ordering test pins.
+
+Statuses are three-valued: `SATISFIED`, `ACTION_REQUIRED`, `BLOCKED`. "You have not done this"
+and "this cannot be done yet" are different sentences and only one of them is the researcher's
+move; a UI shown the wrong one sends them looking for a control that will not help. A blocked
+step keeps its tab and its reason - the whole flagship blocks at preflight, naming `order_book`
+and saying that a bespoke record is the only thing that establishes what it observed, rather than
+dropping the domain and reporting a complete three-domain study.
+
+**The ladder is the other half.** `STAGE_LADDER` names four things a researcher can possess -
+acquired material, an executed run, a finding, admitted evidence - each with what it *is*, what
+it is **not**, and its own gate. They appear together because the mistake is never inside one of
+them: downloading four archives feels like having a study, and a completed run feels like a
+result. No rung is reached by doing the previous one. This surface can move a researcher across
+the first two and structurally cannot move them across the last two, and it says so while
+reporting progress.
+
+Three smaller things the path made honest. Duration presets are resolved **on the server**, in
+calendar terms, and applied as the explicit instants they resolved to - a manifest storing "six
+months" would mean different things on different days and its content address would not change
+when it did. Writing the presets as fixed day counts was caught in test: 182 days from the
+flagship's own anchor is 2026-07-02, so a researcher pressing the preset that described their own
+window would have moved its boundary and re-addressed the manifest. The domain menu filters
+nothing; a domain with no declared observation comes back unselectable with the reason, because
+an adapter says how a domain is translated and does not say what is measured, in which units, in
+which role or from which record - a menu that guessed that would be inventing the observation.
+And the preregistration summary is generated from the bytes that are hashed, since a
+preregistration signed after reading a summary the UI composed itself is a preregistration of the
+summary.
+
+`src/api/experiment_composer.py` gains seven routes and its `workflow` field is now generated from
+the registered path rather than maintained beside it. `POST /path/state` deliberately **looks for**
+a run at the manifest's content address and never opens one: `RunStore.open` publishes a frozen
+manifest, so a read of where a draft stands must not be the thing that freezes it.
+`frontend/src/components/ComposerPath.tsx` renders the stepper as a keyboard-operable tablist,
+the single next action, the ladder, the domain menu, the presets, the summary, the advanced
+manifest inspector and a two-press confirmation for destructive actions;
+`ExperimentComposer.tsx` becomes the workbench over them and keeps the researcher's place across
+navigation and refresh.
+
+**The first browser test in this repository.** Every other check here reads source or calls HTTP,
+and neither proves a page renders - `tsc` passed and every backend test was green while the
+hypothesis card would have thrown *"Objects are not valid as a React child"* on first paint, which
+is why `test_frontend_contract.py` exists and what TG11.6 recorded it could not close.
+`frontend/playwright.config.ts` serves the real API and the real frontend and drives Chromium;
+`frontend/e2e/composer-path.spec.ts` walks the whole path through roles and visible names only,
+and `npm run test:e2e` (or `npx playwright test`) runs everything in `frontend/e2e/`. That
+directory is the browser surface: TG17.8 added `comparison-views.spec.ts` beside it, and the
+complete suite is **30 tests** - 11 for the path, 19 for the views. The backend is pointed at a scratch state directory for the same
+reason the pytest `client` fixture is bound to `tmp_path`: a run identity is the content address
+of its manifest, so an unbound browser posting the flagship would resume, and then advance,
+whatever real run that plan already had. It found **D79** within minutes of existing - a checkbox
+bound to the server's echo of the selection rather than to the manifest, which snapped back and
+briefly reported the opposite of the choice just made while every source-level and HTTP test
+stayed green.
+
+This slice acquires nothing, runs no statistic, records no finding and admits no evidence. Every
+status it reports is a fact about a declaration.
+
+
+#### 3.6zzr The Views a Picture May Not Draw (TG17.8, `ed-dev`)
+
+Every G17 slice up to this one refuses a bad **declaration**. This one refuses a bad **picture**,
+which is harder, because a picture is persuasive before it is read. Put a reanalysis temperature
+series and an order-book depth series on one y-axis and the eye performs a comparison the manifest
+never authorised: it sees one curve above another and concludes *larger*. Draw them left to right
+and it concludes *first, therefore before*. Nothing in the arithmetic said either thing. The chart
+said both, and a reader who believes the chart has been handed a result this study is structurally
+incapable of producing.
+
+So in `src/core/comparison_views.py` the axis is not a rendering detail. `Axis` declares what a
+coordinate *means*, and a `native_magnitude` axis carrying more than one domain raises
+`MagnitudeEquivalenceError` when it is **constructed**. There is no plotting call to police,
+because a view holding such an axis never finishes being built and therefore cannot reach a
+browser, an export or a screenshot. `SHARED_AXIS_KINDS` is the whole rule, and
+`native_magnitude` is the one kind absent from it.
+
+Four properties follow, each answering a specific way a chart lies:
+
+*   **Absence is not zero.** A coverage cell is `COVERED`, `SPARSE`, `ABSENT` or `REFUSED` - a
+    named state, never a float, in the payload *and* in the component, which draws from
+    `CELL_STYLE` and has no numeric path into it. A gap rendered as 0.0 is the most expensive
+    graphical mistake available here: it turns "we could not look" into "we looked and found
+    nothing", which is the difference between an unasked question and a null result.
+*   **Every mark carries its artefact or says why it has none.** `Mark` requires exactly one of
+    `artifact_sha256` and `no_artifact_reason`; both, or neither, raises.
+*   **A role is carried in three channels.** `register_encoding` refuses a role that duplicates
+    another's colour, marker *or* word. Colour alone cannot separate a generated candidate from a
+    held-out confirmation for a reader who cannot see it, and that separation is the entire
+    scientific content of the generate/confirm split.
+*   **Every visual has its table.** `render_view` returns `table` beside `body`, built from the
+    same values, and the browser prints it under the picture on one toggle.
+
+**The distinction this slice turns on: what may be declared is not what may be drawn.**
+`MODE_RELATIONSHIPS["calendar_aligned"]` admits `causality`, and that stays correct - a study
+holding an external intervention design may declare and test it. No view here may draw it, because
+every alignment this framework computes is observational and the design that would license the
+arrow has no field in `CrossDomainExperimentSpec` to be declared in. Refusing the *declaration*
+would forbid a legitimate study; permitting the *drawing* would let any co-occurrence be read as a
+cause. So `REQUIRES_EXTERNAL_DESIGN` sits beside `NEVER_ADMISSIBLE_READINGS`
+(`magnitude_equivalence`, `semantic_equivalence`, refused in both modes), the contract serves
+`declarable_by_mode` and `renderable_by_mode` as two lists, and a manifest that declares
+`causality` still gets its matrix cells - occupied by the refusal and its reason, because a blank
+cell is indistinguishable from one nobody thought about.
+
+`frontend/src/components/ComparisonViews.tsx` renders them inside the composer's Interpret step
+and `src/api/comparison_views.py` serves them; `frontend/e2e/comparison-views.spec.ts` drives all
+seven in Chromium through roles and visible names only.
+
+The seven views are a registry ordered by ordinal: coverage timeline, native record beside
+canonical trajectory, native-to-structural scale mapping, pair/triple/quartet result matrix, motif
+correspondence and transfer, nulls with correction and resolution, and provenance drill-down.
+Selecting a window answers per domain and returns `merged_interval: null` on purpose - one merged
+extent would show four domains agreeing about coverage only one of them addresses, which is the
+shared-axis mistake in temporal clothing.
+
+**What is not measured says so.** No stage worker produces values yet, so result and null cells
+render `NOT_YET_MEASURED` with the reason - and `ViewContext.results_exist` requires a `MINING/`
+artefact rather than trusting `state == "COMPLETE"`, because TG17.6 lets a run complete under
+`partial_permitted` with mining components missing by name. What *is* shown now is the correction
+denominator, the declared search size and the p-value floor: all arithmetic about the declaration,
+computable before a byte exists, and worth reading before committing to the plan rather than after.
+Like the composer path, these routes look for a run at the manifest's content address and never
+open one - a read must not be the act that freezes a plan.
+
+
+### 3.6zzs The portable experiment receipt (`src/core/experiment_receipt.py`, TG17.9, `ed-dev`)
+
+TG17.6's `receipt()` is a live projection of an append-only journal. TG17.9 adds the different
+object a reviewer needs: a canonical, content-addressed `cross-domain-experiment-bundle/v1` which
+can reconstruct the run without the browser, its local storage, the run directory or a later
+adapter registry. Only a `COMPLETE` run can be sealed as a completed experiment; other terminal
+states retain their honest live receipt and are refused an export rather than being made to look
+complete.
+
+The bundle's registered fields are `schema`, `bundle_sha256`, `run_identity`, `manifest`,
+`preflight`, `sources`, `adapters`, `artefacts`, `inference`, `environment`, `events`,
+`run_receipt`, `results`, `refusals`, `evidence_handoff`, `methods_report` and `claim_boundary`.
+`RECEIPT_FIELDS` gives every one a label and explanation. The capability endpoint, Composer,
+Platform & evidence panel and documentation audit all consume or check that registry, so adding
+an unexplained export field fails rather than silently enlarging the trust surface.
+
+The scientific identities stay separate inside the bundle:
+
+* `sources` keeps the manifest's acquisition identity beside the adapter-resolved source plan;
+* `adapters` keeps the manifest binding, registered version, definition digest and exact
+  translator configuration. The current contracts are `reanalysis.standardized-level`,
+  `argo_float.standardized-level`, `tess_lightcurve.standardized-level` and
+  `order_book.bespoke_record`;
+* `artefacts` separates native acquisition, canonical translation, mining and confirmation
+  digests rather than presenting one undifferentiated list;
+* `inference` carries the complete family, null definitions, correction, alpha, confirmation
+  policy and labelled seeds; and
+* `environment` is captured in the journal at `FROZEN`, not guessed on the machine that later
+  exports it. It records the TG17.9 software contract, Python/platform identity and the relevant
+  installed scientific-package versions.
+
+The registry-derived preflight, source plans and adapter contracts are captured in that same
+freeze event. A legacy TG17.6 run may be exported only when re-deriving its preflight produces the
+exact digest already recorded in its journal; if the installed planner or adapter changed, export
+refuses rather than presenting a current contract as historical fact.
+
+Replay verifies more than an outer checksum. It parses the exact manifest, re-derives the run
+identity, checks every event against that run, walks the declared transition table, refuses a step
+the manifest did not declare, folds the event sequence back into a receipt and requires the
+embedded `run_receipt` to be identical. An attacker who edits the state or artefact list and
+recomputes `bundle_sha256` therefore still fails semantic replay. Unknown top-level fields also
+fail: a claim nobody registered cannot hide in a permissive envelope.
+
+**D81, found by the first rendered import.** Python serialised an integral JSON number as `1.0`;
+the browser's `JSON.parse`/`JSON.stringify` round trip emitted the same number as `1`. The first
+checksum treated those incidental spellings as different, so an untouched downloaded bundle
+failed on re-import. Bundle canonicalisation now normalises integral numbers according to the JSON
+number model before hashing. The real browser round trip and a focused spelling-loss regression
+both pin the fix.
+
+`methods_report` is deterministic Markdown rendered from the bundle's fields, not a second
+configuration. It names identity, mode, domains, windows, family size, correction, sources,
+result-artefact count, refusals and the limitation that reviewable methods are not publication
+readiness or independent replication. Bundle and report are atomically published with
+`publish_new_bytes`; a second export reuses byte-identical content and can never overwrite it.
+
+The handoff is deliberately below evidence. Its categories show the declared plan and execution
+lineage as present, and `registered_hypothesis`, `admitted_evidence`, `independent_replication` and
+`claim_promotion` as absent. `automatic_actions` is empty. The browser action only navigates to a
+separate evidence-study draft with the proposed study identifier; it appends nothing and moves no
+rung. A registered rehearsal may produce mining/confirmation stage markers, but their event detail
+declares `fixture:` and the bundle moves them to `fixture_artefacts`; `measured_results` remains
+absent rather than being inferred from the mere existence of a `MINING/` digest.
+
+The generated trust surface registers three operations: `export_completed_run`,
+`verify_and_replay_bundle` and `open_reviewable_study_draft`. It also publishes four structural
+refusals: `non_complete_export`, `digest_mismatch`, `automatic_evidence_admission` and
+`publication_readiness`. `frontend/src/components/ExperimentReceipt.tsx` renders the same contract
+inside both the Composer Interpret step and Platform & evidence. It exports JSON and Markdown,
+imports a user-selected bundle through read-only replay, and shows every evidence category before
+offering the separate handoff. `src/api/experiment_receipts.py` is the transport boundary for the
+generated contract, completed-run export, plain-text methods report and read-only replay.
+
+
+### 3.6zzt The release qualification ledger (`src/core/experiment_qualification.py`, TG17.10, `ed-dev`)
+
+G17 opened with a promise about what "complete" would mean: a clean browser drives four domains
+through the generic path with no handwritten JSON, no hidden endpoint and no domain branch in the
+runner or the UI. TG17.10 is the ledger that decides whether that promise has been kept, and it is
+built so that it cannot answer *yes* on apparatus evidence alone.
+
+The frozen matrix is three declared durations (`week`, `three_months`, `six_months`) crossed with
+the two comparison modes, giving six cells. Each cell is derived from the single flagship recipe
+rather than from a second configuration: `qualification_manifest` narrows the recipe to one named
+window, sets the mode, and lets the mode carry its own relationship, null family and claim
+language - `co_occurrence` under `independent_native_clock_shift` for calendar alignment,
+`shape_recurrence` under `scale_partner_reassignment` for scale/shape. Every cell keeps explicit
+UTC boundaries, the complete-family correction and `duration_selected_before_results`, so no
+duration can be chosen after a result is seen. The order-book observation is bound by the content
+digest of its known-answer record, never by a filename.
+
+`execute_offline_qualification` then does exactly what a deterministic process can honestly do:
+preflight each manifest, and — for a plan the registered declarations admit — open its run,
+execute the `fixture_dry_run` suite, export the TG17.9 bundle and replay it. A cell passes only
+when the preflight refuses nothing, the run completes,
+the same manifest digest appears in the preflight, the run identity, the exported bundle and the
+replayed receipt, integrity verifies, the results are marked unmeasured with no artefacts, and
+every evidence category from `measured_results` to `claim_promotion` is `ABSENT` with no automatic
+action. Re-running the qualification resumes the identical runs rather than manufacturing new
+ones, because a run identity is still the content address of its plan.
+
+**The matrix does not go green, and that is the result.** Three of the six cells come back
+`REFUSED` before anything executes. `order_book.bespoke_record` declares that it cannot carry
+`scale_partner_reassignment`: that null alters no record, so admitting it would claim the domain
+has a native duration worth comparing shapes across, and a depositor-supplied record's native
+scale is whatever the depositor wrote down. The frozen quartet therefore **cannot be qualified in
+scale/shape mode at all**, and the ledger records the refusal with its reason rather than
+narrowing the quartet or widening a default until the table turns green.
+
+The distinction between `REFUSED` and `FAIL` is load-bearing in both the record and the rendered
+view. Nothing in the apparatus broke; a domain's declared contract forbids the plan. Both block
+release, and collapsing them would tell a reader the instrument is defective when what actually
+happened is that it obeyed a scientific declaration. A refused cell opens **no run**: a run
+identity would be an experiment address for something that was never conducted, and a later
+reader could not distinguish a declined plan from an unexecuted one.
+
+Recovery is measured separately and more sharply than the existing broad-outage rehearsal.
+`fixture_single_remote_failure` in `src/core/run_workers.py` times out exactly one remote-shaped
+acquisition - TESS in the frozen quartet - and completes the other three. The run is then reloaded
+through a *fresh* `RunStore`, which is the process-boundary contract: the worker's memory is gone
+and only the journal survives. The retry must name that one component, the failed component must
+show two attempts while the other three show one, the run identity must be unchanged, and the
+recovered run must still export a bundle that replays as `VERIFIED`.
+
+**What the ledger refuses to certify.** Seven gates are registered, and the deterministic ones are
+the minority. `offline_matrix` and `restart_recovery` are computed here. `browser_no_glue` and
+`synthetic_fifth_adapter` are recorded as `NOT_RUN` because only a rendered browser test and a
+source-edit audit can measure them; a backend rehearsal is not allowed to award them.
+`calendar_calibration` read `NOT_RUN` until TG17.12 gave it a channel; it now reads `PASS`, and
+it is the first scientific gate to clear. `scale_shape_calibration` read `NOT_IMPLEMENTED` until
+TG17.11 registered a calibration for that mode; it now reads `REFUSED`, because what blocks it is
+an inapplicable method rather than an absent one - the declared null's support is too small to
+resolve anything at the sizes it will draw from and too large to draw from at the sizes that could
+resolve, and both candidate domain families are refused by the null before size is reached. `live_sources` is
+`NOT_RUN`: network stays opt-in, and archive coverage with its operational refusals requires a
+separately dated live record. `scientist_actions` reports `NOT_MEASURED` for the action count,
+adapter-specific framework edits and refusal-explanation time rather than inventing numbers.
+
+The verdict is therefore `NOT_RELEASEABLE`, and it is structurally unable to be anything else
+while any gate is unpassed. `verify_qualification_record` re-derives `qualification_sha256` over
+the whole record and additionally refuses a `RELEASEABLE` verdict that carries a non-passing gate,
+so a tampered or optimistically edited ledger fails verification rather than releasing anything.
+`RECORD_KIND` labels every artefact `deterministic_known_answer_rehearsal_not_acquired_data`.
+
+`src/api/experiment_qualification.py` is the transport boundary: `GET` returns the complete plan
+including everything the process cannot certify, and `POST /rehearse` executes only the
+deterministic gates against the configured run directory.
+`frontend/src/components/ExperimentQualification.tsx` renders the matrix and gate list in
+Platform & evidence, so the unrun gates are visible on the trust surface next to the passing ones
+rather than being a backend detail. A refused cell carries its reason on screen, naming the
+adapter that refused it; a status word alone would read as a defect.
+
+`src/core/live_source_evidence.py` is the TG17.14 evidence boundary for the remaining live gate.
+It derives the four source identities from the flagship manifest and binds a future recording to
+the adapter and acquisition sources that decide what was measured. Three domains must demonstrate
+network use against their declared archives; `order_book` must demonstrate the opposite, because
+the fourth flagship member is a content-addressed bespoke local record and has no public archive
+by design. Reading the channel never performs acquisition. Missing, stale, partial or malformed
+evidence reads `NOT_RUN`; a recorded operational refusal reads `REFUSED`; an executed contract
+failure reads `FAIL`; only four complete passing outcomes read `PASS`.
+
+The same module is the operator boundary. Its `plan` command is network-dark and prints the
+frozen bounded requests and caps. Its `run` command requires two independent permissions: the
+process environment must contain `SPECTRALEARTH_ALLOW_NETWORK=1`, and the operator must supply
+`--confirm-network-access I_AUTHORIZE_BOUNDED_ARCHIVE_REQUESTS`. It then records a fresh,
+self-hashed result rather than teaching the ledger how to acquire. The ERA5/CDS request is one
+day, four times, one level and a 9 by 9 grid (324 values); Argo is capped at 200 profiles; TESS is
+capped at two products and 64 MiB. All are transport qualification, not scientific sampling.
+The bespoke record additionally requires explicit provenance and licence declarations, and any
+content digest matching a committed fabricated channel demonstration is refused before a provider
+call; a fixture cannot acquire the word "live" merely by being passed to a different command.
+If a provider refuses or an implementation fails before returning its summary, the reporter marks
+network use unknown and records only that a network attempt was authorised; an exception is not
+evidence that bytes crossed the boundary.
+
+**D82, found by the clean-browser gate.** The no-glue test could compose a four-domain scale/shape
+plan in the browser and was then refused at execution: a held-out confirmation partition is spent
+exactly once, the frozen flagship default had already been opened by another plan, and the refusal
+correctly told the scientist to declare a new partition - which the Composer offered no way to
+declare. Any plan edited in the browser was therefore executable at most once in the lifetime of a
+deployment, which would have made the no-glue path unachievable for the second researcher without
+hand-editing a manifest. The analysis step now carries an explicit *Held-out confirmation
+partition* control, and the acceptance test declares its own partition through it.
+
+**D83, caught by the full suite, not by the slice.** To make the scale/shape cells admissible,
+TG17.10 first widened the *framework default* `admissible_nulls` in four places — the
+`DomainExperimentAdapter` dataclass and the three adapter builders — to include
+`scale_partner_reassignment`. Every targeted suite, the production build and the whole browser
+suite passed. What that change actually did was answer, on behalf of every adapter author, a
+question only an adapter author can answer: whether a domain's support carries a given surrogate
+family. It silently overruled the order-book adapter's own documented refusal, and it would have
+pre-admitted the null for a fifth adapter nobody has written. The only thing that objected was
+`test_experiment_family.py`'s pinned per-domain declaration, in a full-suite run. The defaults are
+reverted; the three domains that do admit the null declare it individually with a stated reason;
+and the qualification matrix now reports the resulting refusal instead of the green table the
+widened default had bought. The near-miss is recorded because the failure mode is the programme's
+central one: a framework default quietly making a scientific choice.
+
+
+### 3.6zzu Spatial sampling adequacy (`src/analysis_engine/spatial_power.py`, T4C.5i, `ed-dev`)
+
+R13's edge exclusion is exact and unchanged: coefficients within one filter support of a boundary
+are contaminated and never analysed. R13's *size floor* is a different thing -- `MIN_VALID_INTERIOR
+= 128` px, rounded up to a power of two -- and its own comment admits it is a judgement. This
+module replaces what that constant was standing in for (D84).
+
+The constant was guarding the wrong risk. `transfer_entropy` consumes 1-D series, and
+`scale_signature` collapses space first as `energy_density[t, s] = sum(coefficient**2) /
+values.size`. The joint histogram's samples are **frames, not pixels**, and their adequacy is
+already checked against `MIN_SAMPLES_PER_CELL`. The valid interior instead sets how many
+independent structures contribute to each per-frame scalar, which makes crop size beyond edge
+exclusion a **power** criterion. The direction is favourable: too few structures make the scalar a
+noisy summary, which attenuates a dependence estimate toward zero. An undersized crop cannot forge
+a PASS; it can forge a FAIL that is really *"the instrument could not have seen it"*.
+
+**Decorrelation and effective samples.** `spatial_decorrelation` reports, per axis, the first lag
+whose autocorrelation -- pooled over the perpendicular axis, so a 139x139 interior contributes 139
+lines to each estimate -- falls below `1/e`. That is deliberately the same convention
+`cross_scale.decorrelation_frames` uses for the Theiler window, and a test pins the two estimators
+to agree within 3 px on identical 1-D structure so they cannot drift apart.
+`effective_spatial_samples` then divides interior area by decorrelation area. Raw pixel counts are
+never treated as independent.
+
+**The trust horizon, and the artefact it refuses.** Centring a window on its own mean forces the
+sample autocorrelation to decay at long lags whether or not the field decorrelates. Measured: a
+40 px interior of a field with 60 px structure -- roughly one structure -- reports a confident
+"19 px decorrelation length" when searched to half its width, the convention the temporal
+estimator can afford over thousands of frames. That length is shorter than the real structure, so
+it inflates the sample count in the optimistic direction. `TRUST_HORIZON_FRACTION = 0.25` bounds
+the search; beyond it the honest report is **saturation**, and saturation returns `None` rather
+than the searched limit, because substituting "as far as we looked" converts ignorance into a
+number. Saturation is also the module's one model-free refusal: an interior that never decorrelates
+within itself holds about one structure, and no constant is needed to know that is not a sample.
+
+**Attenuation is measured, not modelled from assumptions.** `attenuation_curve` recomputes the
+transfer entropy over concentric sub-crops of the *same* interior. Frames, bins and lag are
+identical at every size, so the joint histogram's sample count is constant and the small-sample
+entropy bias is common to every row; only spatial precision varies, which is what makes the curve
+readable as attenuation at all.
+
+`extrapolate_attenuation` states its model so it can be disagreed with. Averaging over `E`
+independent structures leaves the per-frame scalar with sampling variance proportional to `1/E`;
+for weak dependence a transfer entropy behaves like a squared correlation, attenuated by a
+reliability factor `1/(1 + c/E)`. So `TE(E) = TE_inf / (1 + c/E)`, and `1/TE` is linear in `1/E`
+with intercept `1/TE_inf`. The fit uses the largest crops only, and produces **no number** in two
+distinct situations that must not be conflated:
+
+*   a **non-positive intercept** -- the fitted line reaches zero at a finite sample count, so the
+    curve is still climbing and no plateau is in view. The fit may be excellent (R^2 0.999 in the
+    pinned case); this is the strongest available evidence that the crop is inadequate, and
+    reporting it as a fit failure would misdiagnose it;
+*   a **poor fit** -- the weak-dependence approximation does not hold, which it does not near the
+    `log(bins)` entropy ceiling.
+
+**The verdict spends no threshold of its own.** `power_verdict` compares the measured and
+extrapolated effects against the study's already-frozen detection threshold. Both below it, the
+effect is absent whatever the crop and an absence is an adequately powered `FAIL`. Both above, the
+verdict stands on its own evidence. Straddling it, an unlimited crop would have detected what this
+one cannot, so the result is `INVALID` for inadequate power rather than a negative finding. That
+is the FAIL/INVALID separation the frozen T4C.6 decision rule always required and nothing derived.
+
+Everything is computed on the generate/train partition only; deciding whether the instrument is
+adequate must not spend the confirmatory partition.
+
+**The threshold the verdict spends is derived, not chosen.** `power_verdict` needs a detection
+threshold in nats, and nothing in the campaign states one: significance there is decided by a
+surrogate ensemble and a Benjamini-Yekutieli correction over a declared family, which is a
+statement about p-values. `detection_rank` converts the design to the one integer that governs
+its reach -- since a surrogate p-value is `(1 + k) / (1 + n)`, the whole question is the largest
+`k` that still clears the strictest corrected level in the family. That level is the one at
+**rank 1**, which is the honest case to plan for: a study looking for a single real effect cannot
+rely on the laxer thresholds a step-up procedure grants only once several tests are rejected.
+For the campaign's 36 tests, BY at 0.05 and 4,999 shifts, the answer is `k = 0` -- the observation
+must beat **every** surrogate, and the p-value floor of 1/5000 clears the required 3.33e-4 by a
+factor of only 1.66. A design that cannot reach the level at any `k` has no minimum detectable
+effect at all rather than a very large one, and is reported that way.
+
+`minimum_detectable_effect` then reads the threshold off the measured ensemble as its
+`k + 1`-th largest value. Nothing distributional enters: it is an order statistic of the same
+circular-shift ensemble the gate is referenced against, so it carries the estimator's small-sample
+entropy bias exactly as the observation does. A test pins the boundary to the gate's own
+machinery -- `screen` over the declared family -- and confirms the rejection flips across it and
+nowhere else.
+
+**Why no confidence interval is attached to it.** The surrogate seed is preregistered, so the
+ensemble is frozen and the `k + 1`-th largest of *that* ensemble is the literal decision boundary
+of the exact test that will run, not an estimate of one. Two earlier versions attached uncertainty
+anyway and both were wrong. A Clopper-Pearson bound on the threshold's exceedance probability
+compares quantities that can never meet, the bound being about `(k + 1 + z*sqrt(k)) / n` against a
+required level of about `(k + 1) / n`. A bootstrap of the order statistic was then miscalibrated
+in the dangerous direction: at rank 1 a resample can never exceed the sample maximum, so the
+interval is one-sided by construction, and four independent ensembles of 4,999 draws all landed
+above its upper limit -- raising the rank to 10 left coverage at 3 in 20. The fault was the
+question, not the estimator: an interval describes the same study drawn with a different seed,
+which is precisely what preregistering the seed exists to rule out.
+
+**The constants are demoted, not deleted (step 6).** `MIN_VALID_INTERIOR` and
+`RECOMMENDED_VALID_PARENT_SIDE` remain, and remain 128, because a reported recommendation is
+useful and an unreported one is a number in someone's head. What changed is their standing and
+their reach:
+
+*   **They declare themselves.** Both carry, in the code and in every payload that reports them,
+    what they are -- a judgement about how much uncontaminated span makes a spatial statistic
+    comfortable to look at -- and what they are not: a derived power criterion. `check_crop_size`
+    returns `heuristic_valid_interior` and `minimum_size_basis`; `assess_shape` returns
+    `heuristic: True` and a `limitation` naming `spatial_power.py` as the thing that answers the
+    question the constant was standing in for.
+*   **The power-of-two rounding left the refusal path entirely.** `minimum_crop_size` now returns
+    the requirement (324 px at four levels, 532 at five) rather than the next power of two (512,
+    1024), and `assess_shape`'s recommended threshold is the alignment-respecting requirement
+    (352 native cells for DTCWT level 4) rather than its dyadic round-up (512). The dyadic size is
+    reported beside each -- `dyadic_crop_size`, `dyadic_operational_size`,
+    `dyadic_operational_shape` -- and refused on nowhere. The reason is simple: no statistical
+    statement distinguishes a 400 px crop from a 512 px one, so refusing the first was refusing an
+    inconvenient pixel count rather than an inadequate one. SWT is undecimated and has no dyadic
+    size requirement at all.
+*   **The word "statistically recommended" is gone from the refusal.** It now reads *R13 heuristic
+    interior*, says the threshold is a judgement rather than a derivation, and points at the
+    derived criterion. A refusal that overstates its own authority is worse than a permissive one:
+    it teaches the caller to trust a number that was never measured.
+
+**What this closes, and what it does not.** D84's *contradiction* is closed. The frozen T4C.6 crop
+is 161 px at db2 SWT level 3; the accumulated support contaminates 11 px per side, leaving a 139 px
+valid interior, and `gate_campaign` admitted it against the 128 px heuristic while the planner
+raised its raw 150 px requirement to 256 and refused the same crop. With the rounding gone the
+threshold is 150 px and both gates admit it, which is pinned as a test against the defect's own
+case. What is *not* closed is whether 139 px of interior is enough -- that is a power question,
+answered by this module, and the FAIL/INVALID adjudication that consumes the answer is step 5's
+deferred half. D84 stays open on the adjudication, not on the disagreement.
+
+**The refusal names an axis, never a constant (step 5).** `spatial_power_refusal` is the record
+the gate consults before it is allowed to call an absence a result, and `REMEDY_AXES` fixes the
+only vocabulary it may answer in: crop size, frame count, scale count. A refusal that names a
+number tells the caller what to type; a refusal that names an axis tells them what to *acquire*,
+and that difference is the whole of D84. `crop_for_effect` inverts the attenuation fit already
+reported -- ``E_required = slope / (1/target - intercept)``, the interior scaling as `sqrt(E)`
+because a fixed field's independent structures grow with area -- and refuses in three cases where
+a number would be an invention: a target at or above the unlimited-crop ceiling (no crop closes an
+absence), a largest sub-crop whose decorrelation saturated (nothing to scale from), and a measured
+area exponent outside `AREA_EXPONENT_BOUNDS` (the length is still growing with the window, so area
+scaling would extrapolate through the saturation this module exists to catch). `family_for_effect`
+reports the largest family that would have detected the effect and marks it
+`admissible_after_seeing_data: False`, because shrinking a preregistered family after the data are
+in is how a null result is converted into a finding.
+
+**`frames_for_resolution`, and the defect it found (D85).** `_shift_null` draws its circular shifts
+**with replacement** from `admissible_shifts`, so requesting 4,999 surrogates always returns 4,999
+numbers and a nominal p-value floor of 1/5000 -- whether or not the record contains 4,999 distinct
+admissible shifts. The exact test's reference set is the shifts themselves; its smallest attainable
+p-value is `1 / (1 + D)` for `D` of them, and beyond `D` further draws buy resampling precision and
+no resolution at all. `check_power` counts the draws and cannot see this. Applied to the frozen
+T4C.6 campaign, the train partition of 4,382 frames leaves 4,329 distinct shifts and resolves the
+corrected level comfortably; the **confirmatory partition of 2,914 frames leaves 2,912 against the
+3,005 required**, so its best attainable p-value is 3.433e-4 where the declared 36-test family
+needs 3.327e-4. Fed through the repository's own `screen`, that is q = 0.0516 against alpha = 0.05:
+**the campaign as frozen cannot replicate on its confirmatory half at any effect size.** The
+campaign is left frozen and unedited and the finding is recorded as D85; re-freezing is a
+supersession, not a repair.
+
+The audit runs ahead of the data, using the most favourable Theiler window of one frame, so a
+partition that fails it cannot be rescued by any window -- which is what makes it safe to refuse on
+*before* acquisition. `review_gate_campaign` reports it and `preflight_gate_campaign` refuses on
+it, in that order and deliberately: a frozen campaign that cannot resolve its own family must stay
+loadable and reviewable or the defect could not be recorded against it. What it must not do is
+spend 2.5 GB.
+
+**The derivation is published, and it decides (step 7).** Steps 1-4 produced quantities nothing
+consulted. Step 7 runs them inside `run_cached_gate` and puts every one of them in the receipt,
+which is what turns a power claim from something a reader must accept into something a reviewer
+can audit. The receipt gains a `spatial_power` block carrying, per scale, the median spatial
+decorrelation length per axis and the effective sample count of the valid interior -- measured on
+the **train partition only**, from an evenly spaced subsample of frames and every orientation of
+the scale, with a saturated interior contributing no length rather than the length that was
+searched to. Beside it sits the measured attenuation curve, the surrogate-derived minimum
+detectable effect, the `spatial_power_refusal` record with its remedy axes, and a
+`power_adjudication` block stating which rule produced the scientific verdict.
+
+Four decisions in that block are load-bearing:
+
+*   **The audit is of the train partition's best case.** A spatial-power audit answers one
+    question -- if this run reports an absence, could the instrument have seen it? -- and the test
+    that came closest to surviving is the binding one. Selection is by p-value, then excess, then
+    label, so ties resolve identically on every machine. It is taken from **train** because
+    selecting what to audit after seeing the held-out result is the move the split exists to
+    prevent.
+*   **The detection threshold is the sweep's own, not a fresh one.** The minimum detectable effect
+    is the `k + 1`-th largest value of a surrogate ensemble, and `cross_scale_dependency` keeps
+    only that ensemble's summary -- carrying 4,999 numbers per test through every receipt would
+    multiply its size by two orders of magnitude for a quantity nothing read. So the audit
+    *reconstructs* the ensemble through `shift_null_ensemble` from `surrogate_seed`, and the
+    receipt records whether the reconstruction matched the published summary. An audit that
+    reseeded would be characterising a different null and reporting it as this study's decision
+    boundary; where the reproduction fails, the run is INVALID rather than quietly thresholded.
+*   **The curve is measured on the window both interiors can supply.** Two scales lose different
+    margins to the same filter, so the concentric sub-crops are taken at the smaller interior's
+    sizes. Where the interiors differ the curve's largest row is therefore *not* the sweep's own
+    estimate, which used each scale's full interior. Both numbers are published side by side and
+    neither is adjusted into the other, because the adjustment between them would be a correction
+    nothing measured.
+*   **The curve is accumulated, not held.** `StreamedAttenuation` builds the identical record one
+    frame at a time; 4,382 frames of a 139 px interior is 677 MB per scale before the orientations
+    are counted, so the array form cannot be used here. A test asserts *equality* with
+    `attenuation_curve` rather than a tolerance -- the cheap path is trustworthy only if it
+    computes the quantity the expensive path's own tests characterise.
+
+**The FAIL/INVALID boundary, which is step 5's deferred half.** `_power_adjudication` leaves
+`evaluate_replication_gate`'s verdict exactly as it found it and decides the *scientific* verdict
+beside it, so the receipt shows both and says which rule moved which. In the real gate role a FAIL
+survives as a negative finding only where the derived record returns ADEQUATE; where the record
+returns INVALID, could not be measured, or could not reproduce the sweep's ensemble, the run is
+INVALID and names the deficit and its remedy axis. A PASS is never downgraded, and the record says
+why rather than staying silent: spatial imprecision attenuates toward the null, so an undersized
+crop cannot manufacture a positive -- only an absence that is a property of the instrument. Under
+synthetic acceptance the block is computed and published in full and adjudicates nothing, because
+orchestration evidence must not acquire a verdict it did not earn.
+
+**What has and has not been shown.** The mechanism exists, is exercised end to end on the
+synthetic acceptance fixture, and every branch of the boundary is pinned by test. No real gate has
+run, so no atmospheric FAIL has been adjudicated by it and no measured attenuation curve for the
+frozen ERA5 crop exists. D84's remaining half -- whether 139 px of interior is *enough* -- now has
+an apparatus that will answer it rather than an unanswered question, but the answer itself waits on
+acquisition, and acquisition still waits on step 8 and on D85.
+
+
 ### 3.11 Ground-Truth Benchmark Suite (`src/benchmarks/`)
 
-Added in T3.5.17 (standard E7). Twenty synthetic datasets whose correct answer is known
-*before* analysis, of which **twelve are null benchmarks** whose answer is "there is nothing
+Added in T3.5.17 (standard E7). Twenty-four synthetic datasets whose correct answer is known
+*before* analysis, of which **thirteen are null benchmarks** whose answer is "there is nothing
 here". This is distinct from `synthetic_generator/`, which exists to keep the UI alive
 offline and declares no truth.
 
@@ -4041,7 +5516,7 @@ offline and declares no truth.
 *   `seeding.py` - `SeedSequence.spawn` derivation from a root seed and a **`zlib.crc32`**
     label hash (Python's `hash()` on a string is salted per process and would break
     cross-session reproducibility).
-*   `fields.py` / `sequences.py` - the fifteen datasets, including
+*   `fields.py` / `sequences.py` / `cross_domain.py` - the twenty pre-G16 datasets, including
     `advected_vortex_periodic_sequence`, added in TG2.3 so that a benchmark declaring a
     torus draws one (defect D59), and `planted_motif` / `motif_null`, the TG3.5 pair that
     differ only in whether anything was planted, and `planted_precedence` /
@@ -4051,10 +5526,20 @@ offline and declares no truth.
     refusals (Section 3.6x); and `planted_cross_domain` / `cross_domain_null`, TG4.3's paired
     records at coupling one and zero, carrying different units, semantics and native clocks
     through one exact-clock, held-out relationship pass (Section 3.6y).
+*   `representation_structure.py` - TG16.0's paired
+    `representation_structure_planted` / `representation_structure_safeguards` sample-table
+    family and the calibration/power thresholds later G16 operations must meet before
+    registration; TG16.1, TG16.2 and TG16.3 add the redundancy-structure,
+    conditional-information, stable-subspace generation, held-out confirmation and external
+    no-adaptation certification
+    operation-level calibration gates to both datasets.
+*   `multidomain_flagship.py` - TG17.0's paired four-domain construction contract: two planted
+    calendar/scale cases and four null or refusal safeguards, with thresholds fixed before the
+    first configurable experiment operation exists.
 *   `runner.py`, `__main__.py` - report and CLI (`python -m src.benchmarks`, exit 1 on any
     failure, usable directly as a CI gate).
 
-Current status: **29 PASS, 0 FAIL, 0 NOT_YET_RUNNABLE**. See Section 7.2f.
+Current status: **43 PASS, 0 FAIL, 0 NOT_YET_RUNNABLE**. See Section 7.2f.
 
 ### 3.13 Cloud-Native ERA5 over Zarr (`src/data_layer/zarr_source.py`, T3.5.18)
 
@@ -4092,8 +5577,10 @@ becomes a single seek.
 **R13 enforced, not documented.** `edge_exclusion(j) = floor((1 + (L-1)·(2^j-1))/2)` uses the
 support of the complete inherited low-pass cascade, not merely the filter applied at level `j`.
 For a 14-tap filter it gives 7/20/46/98 px per side at levels 1–4, and
-`minimum_crop_size` returns 512 for four levels and 1024 for five when 128 valid pixels are
-required. A crop below
+`minimum_crop_size` returns 324 for four levels and 532 for five when 128 valid pixels are
+required. Those figures were 512 and 1024 until T4C.5i step 6 removed the power-of-two rounding
+from the refusal path; `dyadic_crop_size` still reports the rounded size as an operational
+convention, and nothing is refused on it. A crop below
 the floor is **refused**, naming the minimum and the measured valid interior, because a 64x64
 crop has *zero* valid interior at level 4: cross-scale analysis on it is not noisy but
 arithmetically impossible, and every edge coefficient looks exactly like a strong, localised,
@@ -4180,6 +5667,12 @@ consent, atomic resume, tamper refusal, exact timestamp enforcement, cache conve
 complete lazy Dataset/DataLoader interface. It does **not** prove CDS credentials, queue service,
 wire transfer, current NetCDF conversion or ERA5 agreement. No live request or multi-year NZ
 crop has run, so this is T5.2c partial infrastructure and D43 remains open.
+
+**Subsequent live acceptance (T4C.5m/T4C.5n) supersedes that operational status, not the offline
+evidence above.** The CDS route later acquired the complete six-year, 8,764-frame NZ record;
+WeatherBench overlap passed at the opening and at a separately acquired interior window; queue
+time, transferred bytes, cache identity and returned schema are recorded; and D43 is closed.
+The remaining T5.2 dependency is use by the real T5.3/T5.4 laboratory experiment, not acquisition.
 
 ### 3.13b Calendar splits and physical forecast time (`regional_forecast.py`, `evaluation.py`, T5.2d)
 
@@ -4340,9 +5833,684 @@ reason in the test itself.
 *   **`GET /hypothesis/proposals`** — the only exemption, recorded in the test: the discovery
     call returns the same records, so a separate listing adds no capability.
 
+### 3.18 Research archive and acquisition-route visibility (TG18.1)
+
+The workbench now has one **Research archive** entry point over seven existing ledgers: published
+studies, experiment runs, atmospheric gate receipts, evaluation receipts, Zarr acquisition probe
+records, completed CDS acquisition records, and benchmark fixtures. The archive is an index, not a new evidence store. It preserves
+the record classes visibly as `SCIENTIFIC EVIDENCE`, `EXPERIMENT RUN`, `GATE RECEIPT`,
+`EVALUATION RECEIPT`, `ACQUISITION RECORD`, and `VALIDATION FIXTURE`; it never promotes one class
+into another. In particular, pytest studies created under temporary test roots are not durable
+research records, and a passing benchmark fixture is not a published study. An empty published-
+study ledger is therefore rendered as an honest absence with a route back to the Composer.
+
+Acquire now begins with a researcher-facing **Source routes** inventory for the selected domain.
+Registered cloud-grid entries carry a display label, provider, and product family while retaining
+their stable internal IDs. The implemented CDS regional downloader is listed as
+`DURABLE_JOB_AVAILABLE`: its variables, date/time, region, pressure-level, grid and analysis-depth
+controls are configurable through the metadata-only browser planner described in §3.6zqa. The
+separate confirmed browser job exposes storage preflight, bounded progress, cancellation, explicit
+resume and its completion-only record; the CLI remains available. Keeping planning, active work,
+and completed acquisition as separate statuses prevents validation from masquerading as transfer.
+
+The record/study context strip remains persistent in application state, but is rendered only when
+a record or study is selected. It stays pinned to the top of the scrolling workspace beneath the
+instrument header, while an empty context consumes no vertical space. It is therefore persistent
+working context rather than a second unconditional application header.
+
+At compact widths the workflow rail is a labelled, stateful menu controlled by a native button
+with `aria-controls` and `aria-expanded`; choosing a workspace closes it. At desktop widths the
+rail and main workspace occupy the viewport below the instrument header and scroll independently.
+Connection state is three-valued in presentation (`checking`, `connected`, `unreachable`), so an
+unfinished startup probe is not rendered as a failure. These are shell semantics only and do not
+change a scientific request, result or refusal.
+
+The next TG18.1 density slice gives every direct workspace child one shared 112-rem scientific
+canvas, centres it on wider displays, raises legacy 10/11-pixel workspace metadata to an 11/12-
+pixel floor, and gives text-entry controls a 40-pixel minimum height. At 639 px, desktop panel
+padding and gaps contract; below 480 px, inherited two-to-five-column grids become one readable
+column. Long identifiers wrap rather than widening the page, empty states lose desktop-only height,
+and Plotly field labels no longer fall below 10 px. The compact workflow menu is now a fixed,
+scrimmed drawer: opening it locks background scroll and moves focus to the current workspace;
+Escape, the scrim or a selection closes it, Tab remains inside it, and Escape/scrim restore focus
+to the trigger. Below 400 px the connection control becomes an icon with a complete accessible
+name so the brand, status and menu fit the 320-pixel floor.
+
+Rendered narrow-width inspection is now **RUN**, in Chromium, at 320, 375, 414 and 768 CSS pixels
+across all four product modes, and it found two defects that the source contract and the production
+build had both passed. Neither was visible above the compact breakpoints, which is the argument for
+the measurement rather than for the rule.
+
+First, the shared canvas rule `.workspace-main > *` also selected the two `sr-only` children — the
+workspace heading and the polite live-status paragraph. Giving them `width: min(100%, 112rem)` and
+`margin-inline: auto` overrode the one-pixel clipped box that makes them screen-reader-only, and
+because they are absolutely positioned with no positioned ancestor they escaped the workspace's own
+clipping and widened the document. Every workspace scrolled horizontally by 14 pixels at a 320-pixel
+viewport. The rule now excludes `.sr-only`.
+
+Second, the below-480-pixel reflow collapsed `grid-cols-2..5` to one explicit track but left
+`col-span-*` children untouched. A child spanning two columns of a one-column grid causes the
+browser to create an implicit second track, so the two-column layout returned while the declared
+template still read as one column. Spans are now released with the tracks. The same pass found that
+the 11/12-pixel metadata floor covered `text-[10px]` and `text-[11px]` but never `text-[9px]`, which
+is used across Acquire, the lineage nodes and the capability profile; that step is now raised too.
+
+The inspection asserts measured layout, not restated CSS: document scroll width, content past the
+right edge that no ancestor scrolls, computed font size on every text-owning element, rendered
+control height, header containment, and both the used track count and the rendered row occupancy of
+each collapsed grid. It also drives the drawer — scrim, scroll lock, focus placement, the Tab loop,
+Escape and outside-click dismissal and focus restoration — and captures 21 named viewport artefacts.
+Two boundaries are stated rather than claimed: the sticky record/study context is **not** covered,
+because it renders only once a record or study is selected and no workspace reached by this
+inspection selects one, so its pinning remains a source-level contract only; and Plotly label floors
+are **not** covered, because those axes exist only after a transform has run against real data.
+Below 352 pixels the drawer occupies the full viewport width and outside-click dismissal is
+unavailable by construction — Escape, the trigger and selection remain, which is why the inspection
+treats none of them as optional. This is not an accessibility conformance audit; TG18.4 owns
+rendered assistive-technology acceptance.
+
+### 3.11.1 The figure data contract
+
+Every gridded panel in the platform renders through exactly two components, `Heatmap2D` and
+`LineChart`, so the text/table equivalent TG18.2 requires is implemented once at that seam and
+reaches all fifteen call sites. Before this, both carried an `sr-only` caption describing the
+*shape* of the data — "heat map with 128 rows and 128 columns" — which tells a reader that a figure
+exists, not what it says. The values themselves were reachable only through a Plotly hover tooltip:
+mouse-only, ephemeral, and absent from any exported or printed copy.
+
+`src/components/FigureData.tsx` supplies the shared parts: a named disclosure, a contract list, a
+table, and a cell inspector. The boundary it draws is the load-bearing design decision, because G18
+may not recompute, summarize, promote or reinterpret a scientific value, and the obvious
+implementation — a tidy row of mean, median, slope and correlation under every plot — would violate
+that on the first line. The rule adopted instead is: **transcribe what the figure already encodes,
+and state what the figure could not encode.**
+
+A sample's value is the encoding itself, made readable and keyboard-reachable rather than
+pointer-only, so it is transcription. Axis ranges and colour-bar limits are already drawn on the
+figure, so repeating them in text is transcription too — which is why the heat map reports the
+range *shown on this figure* rather than the range *of the data*, and names whether the limits were
+supplied for cross-panel comparison or derived from that panel alone and therefore not comparable.
+Non-finite samples and points discarded by a logarithmic axis are what the encoding silently omits:
+a gap in a line and an uncoloured cell are indistinguishable from an absence of structure, and
+Plotly drops every non-positive sample from a log axis without a mark, so those counts are stated.
+A mean is none of those things. It appears nowhere on the figure, and it is not in the panel. That
+refusal is printed on the page rather than left in a comment, so a reader who wonders why there is
+no mean is answered where they are looking.
+
+The two families diverge only where the data forces it. A line chart is enumerated: every point of
+every series, with its index, both axis values and whether it was actually drawn; beyond 2,000 rows
+the table is capped and says so, because silent truncation is the failure being avoided. A field
+cannot be enumerated — a 721x1440 ERA5 crop is over a million samples — so the heat map equivalent
+is *addressed* rather than listed. The researcher names a row and column and reads the exact sample
+back with its coordinates, its units and whether it falls inside the valid interior; the control
+clamps to the field rather than accepting an index it cannot answer, and the panel states the cell
+count it is declining to tabulate and why. Both scans are deferred until the disclosure is opened,
+so a research-size field is not walked to populate a panel nobody asked for.
+
+The acceptance suite drives both families with real backend data. Its load-bearing assertion is
+agreement: the exact sample is read out of the live Plotly trace and compared with what the panel
+printed, because a text panel rendering plausible numbers unrelated to the trace would satisfy every
+structural check. It also asserts the refusal in the markup and not only in the prose — no `dt` in
+the contract may be labelled Mean, Median, Slope, Correlation or Standard deviation.
+
+### 3.11.2 The comparison contract
+
+`src/components/FigureComparison.tsx` decides whether a group of gridded panels may be read against
+one another, states the decision above the panels, and supplies the shared colour range and shared
+cell address that follow from it.
+
+The defect it closes was structural rather than cosmetic. Plotly derives a panel's colour range
+from that panel's own extremes unless given explicit limits, and `zRange` was supplied at exactly
+one call site in the entire frontend (`DTCWTScientificView`). Every other side-by-side pair —
+clean against perturbed field, original against padded domain, and **original target against its
+inverse reconstruction** — rendered on two independent autoscales. The last of those is the sharp
+case: comparing a field with its own inverse *is* an error judgement, and under independent
+autoscaling a reconstruction that lost most of its amplitude produces a near-identical picture,
+with the discrepancy surviving only in two small colour-bar tick ranges where a reader is not
+looking.
+
+Forcing a shared scale everywhere would have traded a silent visual error for a louder one. Two
+fields in different units must never share a raw magnitude axis (R19–R21), and two fields that are
+not the same measured quantity have no shared meaning to normalise. So the module does not apply a
+shared scale; it decides whether one is **admissible**, and every branch returns a reason written
+for the page rather than for a log. It refuses on mismatched units, on mismatched quantity, on an
+undeclared relationship, on a panel holding no finite sample, and on a group of one.
+
+The declaration cannot be inferred, and this is the design decision that carries the feature. Units
+alone establish nothing — two unitless synthetic fields are not related by being equally unitless.
+The relationship is knowledge the call site has and a generic component does not: `F` and `F̂` are
+the same quantity because one is the reconstruction of the other. A caller therefore declares a
+`quantity` key, and panels share a scale only when that key and their units both agree. Omitting it
+refuses, so a pair becomes comparable only through an explicit, reviewable claim in the source
+rather than through a default that no one revisits.
+
+Scale comparability and cell correspondence are decided and reported separately, because a pair can
+honestly have one without the other. Addressing row 7, column 11 in two panels names the same
+sample only if the grids have the same shape; the padded-boundary pair is deliberately reshaped, so
+it keeps its shared colour range — which is what makes padding's effect on magnitude visible rather
+than normalised away — while linked addressing is refused and says why. Where the grids do
+correspond, one address drives every panel's cell inspector at once, which is the readable form of
+the same claim the shared scale makes.
+
+The acceptance suite has two halves for a stated reason. The decision function is exercised
+directly, through the dev server's own module graph, because several branches — mismatched units,
+mismatched quantity, an undeclared relationship — are not reachable through the current UI, where
+every declared pair happens to agree; verifying them only through the screen would leave the
+refusals unchecked until a future call site needed them, which is when a silent wrong answer would
+cost most. The rendered half then confirms the decision reaches the figures: the notice is visible
+without opening any disclosure, and both traces carry identical explicit limits rather than two
+autoscales.
+
+### 3.11.3 The validity and uncertainty overlay
+
+`src/components/FigureValidity.tsx` states the sub-range a claim was fitted over, and the
+uncertainty attached to what came out of it, on the figure the claim refers to.
+
+The defect it closes is a misreading the platform actively invited. The power spectral density
+chart draws every wavenumber bin the transform produced. The exponents quoted for it are not
+fitted over all of them: the backend fits across `[k_min, k_max]`, uses `n_points` of the bins
+under a stated `weighting`, and returns `slope_standard_error`, `r_squared` and an explicit
+`assumptions` list. On the running platform that band is `0.649` to `pi rad/pixel` while the
+figure draws from `0.237` - so roughly the lowest third of the plotted abscissa lies outside the
+fit. Before this slice the figure showed the whole curve with no mark on it, beta appeared in a
+card some distance below, and the assumptions were returned by the API, typed in `api.ts`, and
+rendered **nowhere at all**. The only reading available to a researcher was that the exponent
+described the curve on screen.
+
+This belongs to the figure contract rather than beside it. A fit domain and a standard error are
+the same kind of thing as the missingness already recorded there: facts the picture cannot convey,
+which it must therefore state. Everything shown is transcribed - `k_min`, `k_max`, `n_points`, the
+weighting, the standard error and the goodness of fit are backend numbers, and the assumption
+strings are carried verbatim (R22, R23), because a paraphrased assumption is a different
+assumption. `regime_interpretation` is deliberately *not* carried: it is the analysis layer's
+reading of what the exponent means, it already appears where the exponent is quoted, and a
+conclusion repeated beside a picture hardens into a caption.
+
+What the module refuses to do is the load-bearing half. It does not draw the fitted power law, and
+it draws no plus/minus one sigma envelope around it. Both are the obvious next step and both would
+require the view to evaluate a model at every plotted abscissa; a curve rendered by the browser is
+indistinguishable on screen from measured data, and an envelope is a confidence statement with a
+shape. That is the mean-under-the-plot temptation of section 3.11.1 in better clothes, and the
+refusal is printed on the page rather than only recorded here. `test_frontend_contract.py` asserts
+the absence mechanically - no `Math.exp`, no `Math.pow`, no reference to `intercept_ln_c` in the
+module body.
+
+Every branch of the decision returns a reason written for the page. A band is refused when its
+limits are not both finite, when it does not run upwards, and when it lies entirely off what the
+figure draws - the last mattering most, since a silently absent band is indistinguishable from a
+fit that spanned the whole figure. A band that overruns the drawn extent is **clamped** rather than
+merely described, so the mark on screen is the one the prose names; the clamp is also what keeps a
+zero lower bound away from a logarithmic axis, where `log10(0)` would place the band nowhere. Two
+details make the overlay survive the figures it exists for: shape coordinates are projected into
+log space when the axis is logarithmic, since Plotly reads them as `log10` of the value and a
+fitted spectrum is read on log-log axes; and the sentence that does the real work - that samples
+outside the band are drawn but were not used - appears on *both* marked branches. An earlier draft
+carried it only on the unclipped one, which is precisely the branch the platform's own spectra do
+not take; the rendered acceptance test caught it.
+
+Values are stated with whatever the producer stood behind. A value with an uncertainty is printed
+as a bound; a value with none is flagged, with the reason `api.ts` already gives for typing the
+standard error as load-bearing rather than decorative - a number quoted without one cannot be
+compared against a reference value, because nothing says whether the difference exceeds the spread.
+A fit that did not run (fewer than four usable bins) is reported as not produced rather than as
+`NaN`, while its band stays marked, since which bins the backend looked at is true regardless of
+whether a usable exponent emerged.
+
+The shading has a text equivalent: the tabulated points carry an *in declared domain* column, and
+membership returns three states rather than two - inside, outside, and no band declared - because
+a sample outside a band and a sample on a figure with no band are different facts that must not
+collapse into one bare "no".
+
+`Heatmap2D`'s `validInset` is the precedent this generalises and was deliberately **not**
+retrofitted. Its only caller, `DTCWTScientificView`, draws six panels per level and already states
+the inset once at level scope; routing it through here would repeat that statement six times. An
+inset is also the intersection of two axis bands, so the per-axis shading would draw a cross where
+the heat map correctly draws a box. It stays as it is until a second figure needs a validity region
+of its own.
+
+The acceptance suite is split for the same reason as section 3.11.2: the refusals are unreachable
+through the current UI, where the backend's own fit always lands on screen, so the decision
+function is exercised directly through the dev server's module graph and the rendered half confirms
+the decision reaches the figure - including that the band arrives as a `paper`-referenced rectangle
+spanning the full plot height, so it reads as a restriction on the abscissa rather than a box drawn
+around part of the curve.
+
+### 3.11.4 Resizable comparison panes
+
+`src/components/ResizableFigurePair.tsx` wraps the three gridded pairs already governed by the
+comparison contract. The resize is presentation state only: both children remain mounted, the
+shared colour limits and linked address remain unchanged, and a sentence beside the control states
+that boundary rather than asking a reader to infer it from an unlabelled handle.
+
+At widths of 768 px and above, the two panes begin equal and may be divided from 25/75 through
+75/25. The divider is an accessible vertical separator with its current allocation exposed as a
+value. Pointer drag, Left/Right arrows, accelerated Shift+arrow steps, Home/End bounds and
+Enter/Space reset all reach the same clamped state; double-click also restores equality. Plotly
+normally hears only window resizing, so the component publishes a resize notification after the
+grid tracks change. It does not touch a trace or derive a replacement value.
+
+Below 768 px there is no defensible horizontal canvas to divide. CSS removes the inapplicable
+separator and returns both figures to their original one-column document order, rather than
+retaining a keyboard control whose movement has no visible effect. The rendered acceptance tests
+measure the pane boxes rather than trusting the CSS text, compare both live Plotly data arrays and
+shared limits before and after resizing, exercise every keyboard boundary, and verify the narrow
+stack. Six tests pass.
+
+### 3.11.5 Publication export
+
+`src/components/FigureExport.tsx` now supplies one publication action from both figure-family
+seams, so every `Heatmap2D` and `LineChart` call site receives it without a second inventory. PNG
+and SVG remain picture-only convenience downloads. **Publication HTML** is the archival reading
+sheet: a 1200x800 vector snapshot of the live Plotly figure, its title and supplied caption, the
+fully evaluated figure facts, producer-authored validity/uncertainty statements and qualifiers,
+the presentation boundary, and an export timestamp in one self-contained, printable file.
+
+The distinction matters. A bare image drops the explanation that a fit covers only part of a
+curve, the assumptions attached to its exponent, the provenance of a shared colour range and the
+fact that a missing sample was not drawn. The sheet carries those statements verbatim. A heat-map
+scan remains deferred until the export is requested; the exported missingness is then evaluated
+rather than represented by the unopened on-screen disclosure's em dash. Line-chart fit claims,
+standard errors, fit bases and assumption strings come from `FigureValidity`'s existing decisions.
+
+The browser does not refit, summarise or reinterpret anything. `Plotly.toImage` reads the mounted
+figure without `relayout` or `react`, and the acceptance test compares the complete live data and
+layout objects before and after export. The HTML contains no script and no connection back to the
+application or claim ladder. Four rendered tests open the downloaded files and verify the vector,
+caption, exact grid/missingness, shared-range provenance, fit domain, uncertainty, assumptions and
+no-analysis boundary. This closes TG18.2; the older PNG/SVG buttons alone did not.
+
+### 3.11.6 The global research journey
+
+`frontend/src/components/ResearchJourney.tsx` keeps the complete outer journey — **Acquire,
+Inspect, Design, Run, Compare, Admit, Report** — visible above every workspace. It is a navigation
+map, not a progress calculation. Acquire, Inspect, Admit and Report open their corresponding
+workspaces; Design, Run and Compare open the relevant panel in the existing Experiment Composer.
+The shell sends that panel name through `requestedStep`, but sends no status with it. Composer
+continues to ask `/api/v1/experiment-composer/path/state` which steps are satisfied or blocked and
+which single action is legitimate next.
+
+That distinction prevents the map from becoming a second, disagreeing scientific workflow. The
+map states on screen that it neither advances nor replaces the claim ladder, and Composer's
+four-part acquired-material/executed-run/finding/admitted-evidence ladder remains visible on the
+Compare handoff. The only blockers the shell itself names are absences of ordinary UI context:
+Inspect with no selected record points to exactly one remediation, Acquire a record; Admit with no
+selected study points to exactly one remediation, open Composer and save a study. They make no
+claim about whether an experiment is scientifically ready. Once in Composer, its server-owned
+blocked reason and next action take over unchanged.
+
+The original gridded workspaces remain in the Scientific workflow rail. Each now carries both the
+text label `Legacy · Gridded field line` and a separate amber inset/background treatment through
+`data-workflow-line="legacy-gridded"`; the non-colour label is part of the distinction, not an
+ornament. Selecting one clears the journey's current-location mark rather than implying that a
+compatibility tool is one of the seven evidence stages.
+
+Five rendered tests verify all seven stages and their order, both context blockers and their one
+remediation, the Run/Compare Composer handoff, continued visibility of the distinct claim ladder,
+the Report destination, and all eight labelled legacy tools remaining reachable. The clean full
+Chromium suite passes 109/109, including the existing Composer and narrow-width contracts.
+
+### 3.11.7 Rendered responsive and assistive-technology acceptance
+
+TG11.6 remains the source contract; `frontend/e2e/assistive-acceptance.spec.ts` adds the rendered
+inspection it deliberately could not claim. At desktop (1440 x 900), laptop (1024 x 768) and
+narrow (375 x 667) viewports, a keyboard-only route now verifies that the skip link is the first
+Tab stop, carries the shared three-pixel focus indicator, moves focus into the workspace, and that
+a real workspace change focuses its newly named heading. The compact drawer additionally returns
+focus to its trigger after Escape. A 640 CSS-pixel viewport at device scale factor two exercises
+the reflow exposed by a 1280-pixel browser at 200% zoom: all seven journey actions remain present,
+the journey changes to four columns, and the document does not scroll horizontally.
+
+The inspection calculates contrast from rendered foreground and composited background colours for
+the shell title, journey heading, boundary, stage labels, blockers and actions, applying the 4.5:1
+normal-text or 3:1 large-text threshold as appropriate. It emulates `prefers-reduced-motion:
+reduce` and measures the resulting animation and transition durations. A colour-removal stylesheet
+then demonstrates that current location, both blockers, both remediations and the claim-ladder
+boundary remain named in text and semantics; a separate accessibility-tree-oriented check verifies
+the ordered list, seven named buttons, two named next actions and `aria-current`.
+
+That first keyboard run found a real focus defect: React StrictMode replayed the mount effect and
+focused the hidden workspace heading before the researcher's first Tab. `App.tsx` now compares the
+previous and current workspace identifiers, so StrictMode replay cannot steal initial focus while
+an actual route change still receives focus. The skip link also explicitly focuses that named
+heading after fragment navigation. Eleven rendered TG18.4 tests pass; together with the journey
+and narrow-width suites the touched boundary is 35/35, and a clean full Chromium run is 120/120.
+This is bounded browser engineering evidence, not a screen-reader audit or WCAG certification.
+
+
+### 3.11.8 The UI qualification gate, and what it found
+
+TG18.5 is a test suite and nothing else. Nothing it measures is rendered back into the product: a
+UI that grades itself on screen publishes a claim about the UI, and the claims this programme
+publishes are about the science. `frontend/e2e/ui-qualification.spec.ts` asserts that the shell
+serves exactly the qualified workspace inventory in order, that all twenty open from a clean
+browser and name themselves in the workspace heading, that every reachable journey destination
+lands on an inventoried workspace rather than App.tsx's fallback name, and that a clean browser
+disables nothing and claims no reason it is not entitled to. The gate writes its inventory out
+rather than deriving it from the page, because a self-derived list shrinks to match a shell that
+has lost a workspace; `test_frontend_contract.py` holds the other end against `WORKFLOW_NAV`.
+
+The rendered gate alone is not sufficient, and the reason is a coverage hole it exposed rather
+than a limitation of the technique. `ResearchJourney.tsx` carries its seven destination workspace
+identifiers separately from `WORKFLOW_NAV`. Two of the seven stages, Inspect and Admit, are
+blocked in a clean browser and correctly substitute a remediation for their own action, so their
+destinations are never clicked. Renaming `domainWorkbench` in the journey alone was confirmed to
+pass the complete rendered suite, TG18.3's journey tests included, while sending a researcher who
+had selected a record to a heading reading "Scientific workbench workspace". A static
+cross-check now resolves all seven destinations and every `JOURNEY_STAGE_BY_WORKSPACE` key
+against the served identifiers, covering the stages no clean-browser run can reach.
+
+This gate qualifies apparatus reachability. It is not evidence that any workspace computes
+anything correctly, and it must not be read as one.
+
+**Fourth slice (2026-09-04) - the channel from a rendered run into the release ledger.** TG17.10
+registered two gates it could not award itself: `browser_no_glue`, because "a deterministic backend
+rehearsal cannot observe a rendered browser and must not award itself a gate on someone else's
+evidence", and `scientist_actions`, unmeasured on both counts. TG18.5 set its own constraint for
+closing them - *the ledger may ingest a measurement with its provenance, and may never synthesize
+one it did not receive* - and the design follows TG17.12's shape, because the problem is the same.
+
+**Recording and deciding are separate and separately owned.** `frontend/e2e/qualification-reporter.ts`
+is a Playwright reporter that writes `measurements/browser_run.json`: every test that ran with its
+spec and outcome, the artefacts produced with their digests, and the source digest of every spec in
+the suite. It decides nothing. `src/core/browser_evidence.py` decides, and every one of its
+decisions can be a refusal.
+
+**Two bindings, and the second is the one that was actually needed.** The first is the spec source:
+a recording is a measurement of a particular set of assertions, so weakening a spec returns the gate
+to `NOT_RUN` rather than letting a pass earned by stronger assertions be spent by weaker ones. The
+second is run completeness. Running one spec is the normal way to work on a test, and Playwright
+reports it as `passed` - a recording that looks green and covers a fifteenth of the suite. The
+reporter therefore records both the specs that ran and the whole inventory it found on disk, and the
+gate refuses when they disagree, naming every spec that did not run. That refusal was verified
+before the first full run: a green four-test invocation of `ui-qualification.spec.ts` read `NOT_RUN`
+and listed the other fourteen specs.
+
+**The outcomes are kept apart the way this module keeps them everywhere.** Absent, stale, or partial
+means the run has not happened *for this code* and reads `NOT_RUN`. A run that happened and failed
+reads `FAIL`. Only a complete run of the suite this checkout contains, with nothing failed, reads
+`PASS`.
+
+**The counts are reported, never produced.** `scientist_actions` now carries the measured 14 actions
+to a completed run and 3 + 4 across the refusal, and the counts frozen in slice 3 are restated in
+`browser_evidence.py` so a *drifted* count reads `NOT_MEASURED` rather than being reported as the
+new number - a gate that reports whatever number it is handed is not a gate, and a path that grew
+two actions has to be re-measured and re-frozen deliberately. The wall-clock figures are carried
+only under names ending `_unasserted`, and a guard asserts that no key ending `_seconds` exists
+without it. `adapter_specific_framework_edits` stays `NOT_MEASURED` in both shapes: it is a
+source-edit audit belonging to `synthetic_fifth_adapter`, and no rendered run may award it.
+
+Neither binding is tamper-evidence against someone editing this repository. What they are proof
+against is drift, which is the failure that actually happens.
+
+Measured: **136 of 136** across all 15 specs from a cleaned `.e2e-state`, so `browser_no_glue` reads
+`PASS`. The plan assembles in **26 ms warm** and a guard fails if it exceeds a second, because a
+release gate that opened a browser would make an HTTP route's cost depend on a test suite's.
+
+**Second slice (2026-09-04) - one representative path per product mode, and the assertion that
+holds the four apart.** Opening a workspace is not operating it, so `product-modes.spec.ts` walks
+the characteristic path of each of the four modes TG18.0 identified - interactive instrument
+(Spectral transforms), guided commitment workflow (Composer), read-only claim surface (Findings),
+trust and qualification surface (Platform & evidence) - and captures a named artefact at the state
+each path reaches, at 1440 and 1920 CSS pixels. Those are the desktop widths the narrow-width
+inspection does not cover; between them the two files now span 320 to 1920.
+
+The load-bearing assertion is not any of the four paths. TG18.0's constraint is that "a change
+that improves one by making another ambiguous is not a successful redesign", and that is a
+property of the modes *together*: four per-mode checks could each pass while the modes converged
+on one another. So each mode declares a **signature** - the observable that makes it that mode,
+found by role and accessible name so it cannot be satisfied by a class or a test id - and the
+suite asserts that **every signature appears in exactly one of the four**. The signatures are the
+composition-path tablist, the findings-panels tablist, the qualification matrix table, and the
+on-demand transform action.
+
+Each path also asserts what its mode is *for*, including one thing each mode must not have. The
+instrument recomputes on demand and the answer must still arrive carrying both figure-data
+equivalents (TG18.2's rule). The commitment workflow serves seven ordered steps and **exactly one**
+next legitimate action naming its own `/api/v1/` route, because a commitment workflow offering two
+is presenting a choice that is the researcher's to record. The claim surface opens every panel and
+must offer no way to compute or freeze one - a read-only surface that can recompute a claim leaves
+a reader unable to tell a recorded finding from a fresh one. The trust surface must show **both** a
+cleared gate and an uncleared one carrying its reason: a ledger showing only passes is an
+advertisement, and one showing only failures cannot be told apart from a broken build. TG17.12 is
+what made the first `PASS` available to show.
+
+Nothing here asserts a pixel, so an artefact cannot pass or fail anything; it is a record of what
+the path reached, for a human reader. The artefacts are written to the gitignored `e2e/artifacts/`,
+which is a constraint on the remaining evidence-channel slice rather than an oversight: what
+reaches the qualification ledger has to be a manifest and a digest of the artefact set, never the
+images.
+
+Three mutations were run against the product source rather than against the suite. Giving Findings
+a compute affordance fails the read-only path at both viewports (2 of 10). Relabelling the findings
+tablist as the composition path fails the claim path *and* the uniqueness assertion at both
+viewports (4 of 10) - that second failure is the convergence the assertion exists to catch, and it
+is the one a per-mode check would have missed. Removing the qualification matrix's accessible name
+fails the trust path and the uniqueness assertion (4 of 10). All three restored byte-identically
+and the suite returned to 10 of 10.
+
+One measurement was discarded rather than recorded: a first attempt at the second mutation reported
+all ten failing, because that run began while the dev server was still reloading the file the
+previous mutation had just restored. Re-run in isolation it fails the four it should. A mutation
+that appears to kill everything is evidence about the harness, not about the guard.
+
+**Third slice (2026-09-04) - the two numbers `scientist_actions` refuses to invent, and the
+distinction between them.** TG17.10 shipped with `scientist_actions` reading `NOT_MEASURED` for the
+action count and for `refusal_explanation_time_seconds`. `scientist-actions.spec.ts` measures both
+in a rendered browser, and the design turns on which of them an assertion may hold.
+
+**An action count is deterministic, so it is asserted.** Every action is one activation of one
+visible control, located by role and accessible name; a control that cannot be found that way is
+not one a researcher could have used. The count is produced by the walk itself through a small
+harness rather than maintained by hand beside it, so it cannot drift from the path it describes.
+Measured: **14 actions** from a clean browser to a `COMPLETE` run of the frozen plan, and **3** to
+reach the preflight refusal with **4** more to clear it.
+
+**A wall-clock duration is not, so it is recorded and asserted by nothing.** How long a refusal
+takes to explain itself is a property of the machine that ran the suite. Asserting it would fail
+the gate for reasons that have nothing to do with the interface and, worse, would let it pass on a
+fast machine while the interface got slower. The committed recording carries 0.264 s and
+2.835 s as context, marked unasserted, beside the counts that are. They are not the 0.3 s
+and 4.74 s slice 3 first measured: slice 4's full-suite run re-recorded them on a
+differently loaded machine, so both moved while the interface did not. A gate asserting
+either would have failed on that alone, two days after it was written.
+
+**What the count is not.** It is the number of actions on the declared representative path, which
+is an upper bound on the shortest route and not a claim about a minimum - another researcher could
+reach the same state differently. The measurement says so in its own `claim_boundary` rather than
+leaving a reader to assume otherwise. `adapter_specific_framework_edits`, the third `NOT_MEASURED`
+field, is deliberately untouched: it is a source-edit audit belonging to `synthetic_fifth_adapter`,
+and no browser can observe it.
+
+The measurement is written to `measurements/scientist_actions.json`, which is committed rather than
+gitignored like `e2e/artifacts/`, because the remaining slice has to be able to read it.
+
+Three mutations, all against the product. Making the run ask a second time before executing grows
+the path by one action and fails the count (1 of 2). Renaming `Inspect metadata coverage` fails both
+tests, because a walk that cannot find a control by its visible name does not quietly find another
+route. Rendering the preflight refusal without the domain it refuses fails the refusal measurement
+(1 of 2), which is the guard that the refusal must *explain* itself rather than merely appear. All
+three restored byte-identically and the file returned to 2 of 2.
+
+**The slice's full-suite measurement found an intermittent failure in an older spec, which is worth
+more than the slice itself.** `composer-path.spec.ts` waited on
+`getByRole('heading', { name: 'Experiment Composer' })`. Playwright matches an accessible name by
+substring, and the shell's own sr-only workspace heading reads "Experiment Composer workspace", so
+the locator resolves to two headings the moment the served panel renders and strict mode fails the
+run. Which of the two exists first depends on when the API answers, so the failure is intermittent:
+it failed once in a 134-test run and passed 11 of 11 on isolated re-run. The locator is now
+`exact`, and the spec passed 33 of 33 across three repeats.
+
+That defect is recorded here rather than in the defect ledger because nothing in the product was
+wrong - the ambiguity was in the test - but it is exactly the failure mode a qualification gate
+cannot tolerate. TG18.5's remaining slice feeds a measured browser run into the release ledger, and
+an intermittently failing suite there would produce an intermittently blocking gate, which is
+indistinguishable from a real refusal at the moment a reader most needs to tell them apart.
+
+
+**The TG18.5 close-out, and the condition that was enforced by habit alone.** The phase's five
+declared scope items are delivered. Three of the close-out's findings are recorded rather than
+resolved by rewording, because each is a statement about what this instrument does that a later
+reader would otherwise have to rediscover.
+
+*A cleared gate now states its basis on screen, and TG18.5's own "nothing it measures is reported
+back inside the product" is narrower than that.* No UI-quality surface exists: the
+`scientist_actions` counts are declared in `frontend/src/types/api.ts` and read by no component, so
+the fourteen actions, the three to the refusal, the four to clear it and both wall-clock durations
+appear nowhere in the product. What appears is one gate in the release registry that has always
+rendered, and `browser_no_glue`'s detail now describes a run instead of an absence. Suppressing it
+while every refusal continues to show its reason would make a `PASS` *less* inspectable than a
+refusal, which inverts the property the trust surface exists to hold. The line actually held is: no
+UI-quality surface, and no UI-quality measurement outside the release registry's own verdict and the
+basis for it.
+
+*`qualification_plan()` is no longer uniformly cold, and the two kinds of `NOT_RUN` in it mean
+different things.* Three gates read recordings at assembly time - `browser_no_glue` and
+`calendar_calibration` `PASS`, `scale_shape_calibration` `REFUSED` - while `offline_matrix` and
+`restart_recovery` read `NOT_RUN` until an executed run fills them. Both block release identically.
+One says a measurement has not been received for this checkout; the other says this call did not
+perform a run. A reader who collapses them will misread a cold plan as a failing one.
+
+*The programme's own bookkeeping had drifted, and nothing objected.* `roadmap.md` §10.2 admits no
+claim of completion without recorded command output in `VERIFICATION.md`. TG17.11, TG17.12 and
+TG18.0 through TG18.4 all reached a terminal state with that file silent about them, while the
+atmospheric line was recorded correctly throughout - so the failure was not of discipline in general
+but of a specific unguarded condition. `test_documentation.py` now holds both directions: a dated
+phase marked complete must have an entry, and a phase still marked in progress must not. The rule
+keys on the date a heading carries, so the undated seam phases (TG0.x-TG2.x), recorded under the
+slice headings before that convention existed, are exempt by construction rather than by a list that
+would need maintaining. The seven missing entries are backfilled from the commits that recorded them
+and are labelled as transcribed rather than re-measured: re-running the suites today would attribute
+this tree to phases that closed against earlier ones, which is a worse record than a transcribed one.
+
+**What G18 did not clear.** `roadmap_cross_domain.md` §6.19 requires a complete G17 capability to
+pass both the clean-browser no-glue test and the synthetic fifth-adapter test. The first now passes.
+`synthetic_fifth_adapter` remains `NOT_RUN`, and it owns `adapter_specific_framework_edits`, the one
+field TG18.5 left unmeasured throughout because no rendered browser can observe a source-edit audit.
+G17 completion is therefore still unclaimable and the verdict is unmoved at `NOT_RELEASEABLE`.
+
+### 3.11.8 The source-edit audit, and the claim a test name was carrying (TG17.13)
+
+`synthetic_fifth_adapter` has read `NOT_RUN` since TG17.10, and `adapter_specific_framework_edits`
+`NOT_MEASURED`, for a reason that turned out to be wrong. The stated reason was that a source-edit
+audit is not something a deterministic backend rehearsal may award itself. The actual reason is
+that **no such audit had ever been written**.
+
+TG17.3's acceptance test is called
+`test_synthetic_fifth_adapter_reaches_the_registry_and_conforms_without_framework_edits`, and it
+proves the first half of its own name: a fifth domain carrying genuinely different mathematics - a
+monotone rank channel - reaches the registry, the control schema, the conformance kit and the
+domain-blind mining seam from a module the application never imports. Nothing in the repository
+proved the second half. "without framework edits" was carried in a test name and asserted nowhere,
+which is the same shape as TG18.5 slice 1's finding one gate over: a property claimed by naming it.
+
+**`src/core/extension_audit.py` measures it, and separates two things that must not be run
+together.** The *installation* claim is absolute: no framework source may name
+`synthetic_rank_sensor` or `monotone_rank`, there is no admissible reason for one to, and no
+declaration may excuse it. That is the half the gate turns on, and it holds -
+`installation_required_framework_edits` is **0** across seventeen framework sources. The *standing
+glue count* is reported rather than asserted, because "glue must trend to zero rather than merely
+move files" is a property of the whole surface over time and not of one adapter's installation. A
+count that blocked release would make an unrelated archive's acquisition semantics a release
+decision; a count that went unpublished would let glue accumulate behind a green gate.
+
+**Every occurrence is declared, and a declaration is a sentence rather than a suppression.** The
+scan reports all eighteen places a framework source names a registered domain. Each is declared
+with a kind and a reason, or the audit refuses - so an occurrence cannot be waved through by adding
+it to a list without also writing down why it is there. Only `BRANCH` counts as glue: a source that
+*names* a domain in prose, or carries a named recipe's own content, has not been edited to make
+that domain work, while a source that *behaves* differently because of the name has. TG17.0's
+flagship quartet naming its four domains is the recipe's subject; the known-answer preview route
+naming three is that frozen fixture's identity and dispatches on nothing.
+
+**The number is 1, not 0, and that is the finding.**
+`AcquisitionView.tsx` renders `CDSPlanner` behind `domainName === 'reanalysis'`. Copernicus
+acquisition is a long-running job with queue position, progress and resumption rather than a fetch,
+so the planner is not a form the generic control schema can currently express - but that is a
+reason the glue exists, not a reason it stops being glue, and the audit counts it.
+
+**A comment was asserting the property this gate exists to measure, and was wrong.**
+`AdapterControls.tsx` said there was deliberately no `domain === 'reanalysis'` branch *anywhere*.
+True of that file, false of the surface, and it pointed a reader away from the single place such a
+branch does live. Narrowed to the claim it can support, with the exception named.
+
+**The audit's own first version passed vacuously**, which is why an empty registry is now a refusal.
+It read `registered_domains()` cold, before anything loads the adapters, scanned for an empty set of
+names, found nothing and reported a clean surface with `adapter_specific_framework_edits` of 0. That
+is the defect this repository has already met three times - D64, D74 and D75, each a guard passing
+because it could not see what it was checking - and it is caught here by the same instinct that a
+silence has to be explained before it is believed.
+
+### 3.11.9 The channel the fifth-adapter gate had no way to read (TG17.13 slice 2)
+
+Slice 1 wrote the audit. The gate still read `NOT_RUN`, because an audit nothing carries into the
+qualification record is a measurement with no channel to the thing it should decide - the gap
+TG17.12 closed for `calendar_calibration` and TG18.5 slice 4 closed for `browser_no_glue`.
+`src/core/extension_evidence.py` is that channel, and **the design decision is which half of the
+evidence gets recorded at all.**
+
+**The source-edit audit is read live.** `read_extension_conformance` re-runs
+`audit_framework_edits` on every call rather than trusting a receipt. It is exact, it reads
+committed source, and it costs milliseconds. A recording of a fact that can be recomputed is only a
+way to be wrong later, so this half has no recording and cannot go stale.
+
+**The acceptance run is recorded, because it cannot be read from this side at all.** TG17.3's
+acceptance requires the fifth adapter to be defined in a module *the application never imports* - it
+lives in `src/tests/test_adapter_registry.py`, and nothing under `src/core` may reach it. That is
+the constraint under test, not an inconvenience, and it is exactly why the run must be recorded by
+the test and read back here. Copying the recording shape onto both halves would have been the
+symmetric answer and the wrong one.
+
+**Recording and deciding stay apart, and deciding is on the reading side.** The test supplies
+apparatus only it owns - the adapter, the native record, the window - and
+`measure_extension_conformance` performs all eight checks and decides whether they passed. A test
+that deleted its own assertions therefore changes nothing about what is recorded; the checks are
+not there. What the test can still do is stop calling the recorder, and the answer to that is
+`NOT_RUN`.
+
+**What the recording is bound to.** The declared contract covers the fifth adapter's names, the
+framework sources, what counts as glue, the eight checks a run must perform, and **every declared
+occurrence with its written reason**. Including the reasons verbatim is deliberate: the audit's
+discipline is that an occurrence is excused by a written reason rather than by membership of a
+list, and a digest over only the source and domain would let a reason be rewritten under a
+recording that still looked current. The source binding covers every framework source the audit
+scans, the audit itself, the conformance kit, the trajectory contract, the onboarding path, and the
+test module that defines the adapter - so a weakened acceptance test returns the gate to `NOT_RUN`
+until the measurement is actually made again. Neither digest is tamper-evidence, and neither is
+meant to be; what they are proof against is drift.
+
+**The gate publishes the number it does not block on.** `synthetic_fifth_adapter` reads `PASS`:
+eight checks passed, installation required **0** framework edits across the seventeen generic
+surfaces, and standing adapter-specific glue is **1**, named in the gate's own `detail` as
+`AcquisitionView.tsx:243`. Suppressing that count on a pass would let glue accumulate behind a green
+light; blocking on it would make an unrelated archive's acquisition semantics a release decision.
+The two are different facts and the record keeps them apart.
+
+**A guard passed because it could not see what it was checking, for the fifth time.** The
+`defined_outside_the_application` check first compared `translate.__module__` against dotted package
+prefixes. Under pytest's import mode that string is the bare `test_adapter_registry`, which starts
+with none of them - and would have started with none of them whatever the module was called. It is
+now resolved from the defining *file*, made repository-relative, and checked against directory
+roots; a callable whose source cannot be located is a **refusal**, because an unanswerable question
+is not a satisfied one. D64, D74, D75, slice 1's vacuous registry scan, and now this.
+
+**A mutation pass with no baseline cannot tell a killed mutant from a broken suite**, and this
+slice's first run proved it. M3 - the module-name fallback - was reported caught. It was not: the
+single failure that run was a test of my own that asserted `__module__ == "builtins"` for a callable
+compiled from a string, where the exec scope carried no `__name__` and the attribute was therefore
+`None`. Every other mutation's count was inflated by that same failing test. The script now runs an
+unmutated baseline and refuses to report unless it is green; against a green baseline of 51 tests,
+six mutations were applied and six were caught.
+
+**Fixing the broken test found a real defect in the code under it.** `inspect.getsourcefile` returns
+a pseudo-filename such as `<no file>` for code compiled from a string whose module carries a loader,
+and on Windows `Path("<no file>").resolve()` yields an absolute path inside the repository without
+raising - so `defining_source` would have reported a located source that cannot be read, and the
+`defined_outside_the_application` check would have passed on it. The resolved path must now be an
+existing file.
+
 ## 3.12 HTTP API Surface
 
-75 routes. Listed here because an undocumented endpoint is an untested contract.
+153 routes. Listed here because an undocumented endpoint is an untested contract. The count and this table were both wrong until TG17.3 (defect D75): the guard enumerated a hand-maintained list of ten source files and could not see four mounted routers.
 
 | Method | Route | Notes |
 |---|---|---|
@@ -4395,6 +6563,14 @@ reason in the test itself.
 | POST | `/api/v1/export/field` | a 2D field as CSV, JSON, NetCDF4 or a zipped Zarr store, provenance embedded (T3.5.23) |
 | POST | `/api/v1/export/table` | hypotheses, benchmarks or metrics as CSV or JSON, provenance embedded |
 | GET | `/api/v1/data/zarr/catalogue` | known cloud ERA5 stores, the network gate, and the R13 crop floor (T3.5.18) |
+| GET | `/api/v1/data/cds` | CDS planner vocabulary, accepted request defaults, network gate and explicit no-network planning boundary (TG18.1) |
+| POST | `/api/v1/data/cds/plan` | validate and hash an exact CDS request, enumerate monthly shards and conservatively price bytes; acquires no values (TG18.1) |
+| GET | `/api/v1/data/cds/jobs` | durable CDS jobs in server-owned storage; active, interrupted and completed states remain distinct (TG18.1) |
+| POST | `/api/v1/data/cds/jobs` | require exact-digest and network confirmation, preflight storage, then open the content-addressed job (TG18.1) |
+| GET | `/api/v1/data/cds/jobs/{job_id}` | durable bounded shard progress and operational state, with no server path disclosed |
+| POST | `/api/v1/data/cds/jobs/{job_id}/cancel` | request a cooperative stop between monthly shards; verified work remains resumable |
+| POST | `/api/v1/data/cds/jobs/{job_id}/resume` | explicitly resume an interrupted, cancelled or failed job after repeating storage preflight |
+| GET | `/api/v1/data/cds/jobs/{job_id}/record` | completion-only request/shard integrity record; not evidence or a finding |
 | GET | `/api/v1/data/zarr/cached` | crops already materialised locally; works with no network |
 | POST | `/api/v1/data/zarr/inspect` | chunk structure and chunk-hostility for a proposed crop - **metadata only** |
 | GET | `/api/v1/data/zarr/probes` | the probe ledger, with the transcription debt published (TG10.3) |
@@ -4421,6 +6597,77 @@ reason in the test itself.
 | GET | `/api/v1/findings/studies/{study_id}/outputs` | the five outputs untranslated, for checking the wording changed no fact |
 | GET | `/api/v1/findings/studies/{study_id}/translation` | the finding rendered in one domain's words; R9's six figures whole or absent |
 | GET | `/api/v1/reviews/studies/{study_id}` | verified recorded calls, round-robin outcomes and cost receipts bound to the latest exact bundle revision; read-only and never claim permission (TG11.5) |
+
+| GET | `/api/v1/profiles` | registered Argo profile sources and the access each needs (TG12.2) |
+| POST | `/api/v1/profiles/inspect` | what a profile query would return, from metadata; opens no values (TG12.2) |
+| POST | `/api/v1/profiles/acquire` | acquire profiles against an explicit network opt-in (TG12.2) |
+| GET | `/api/v1/lightcurves` | registered TESS/SPOC light-curve sources and the access each needs (TG12.3) |
+| POST | `/api/v1/lightcurves/inspect` | which sectors intersect a request, never reported as exact coverage (TG12.3) |
+| POST | `/api/v1/lightcurves/acquire` | acquire light curves against an explicit network opt-in (TG12.3) |
+| POST | `/api/v1/ingress/probe` | what an uploaded record is, stated without deciding what any domain may do about it (TG16.0) |
+| POST | `/api/v1/ingress/plan` | the declared representation plan for a probed record (TG16.0) |
+| POST | `/api/v1/ingress/capabilities` | paths derived from explicit semantics and exact bytes; infers no column meaning (TG16.0) |
+| POST | `/api/v1/ingress/audit` | the record's declared plan re-derived and compared (TG16.0) |
+| POST | `/api/v1/ingress/structure/plan` | the frozen structure-mining plan before any outcome is opened (TG16.1) |
+| POST | `/api/v1/ingress/structure/audit` | that plan re-derived from its own declaration (TG16.1) |
+| POST | `/api/v1/ingress/conditional/plan` | the conditional-dependence family and its correction, priced before it is run (TG16.2) |
+| POST | `/api/v1/ingress/conditional/audit` | that family re-derived and compared (TG16.2) |
+| POST | `/api/v1/ingress/subspace/plan` | the bounded sealed linear subspace family, priced before generation (TG16.3) |
+| POST | `/api/v1/ingress/subspace/generate` | generate-only scaling and fitting within the sealed family (TG16.3) |
+| POST | `/api/v1/ingress/subspace/freeze` | freeze all confirmation settings before opening the reserved outcomes (TG16.4) |
+| POST | `/api/v1/ingress/subspace/confirm` | apply the frozen family unchanged and spend its held-out partition once (TG16.4) |
+| POST | `/api/v1/ingress/subspace/publish` | publish one generated candidate definition; claims no replication (TG16.5) |
+| POST | `/api/v1/ingress/subspace/transfer/freeze` | bind published definitions to target metadata before target values are supplied (TG16.5) |
+| POST | `/api/v1/ingress/subspace/transfer/certify` | spend and open one target, then execute its no-adaptation transfer contract once (TG16.5) |
+| GET | `/api/v1/experiment-composer` | the comparison modes, duration presets, registered domains and the explicit boundary of what is not yet available (TG17.1/TG17.3) |
+| GET | `/api/v1/experiment-composer/recipes` | saved complete manifests, not code generators or hidden defaults (TG17.1) |
+| GET | `/api/v1/experiment-composer/recipes/g17-flagship-calendar` | the TG17.0 quartet expressed in the manifest schema (TG17.1) |
+| GET | `/api/v1/experiment-composer/adapters` | every registered `DomainExperimentAdapter` and its typed control schema, generated from the registry (TG17.3) |
+| POST | `/api/v1/experiment-composer/adapters/{adapter_id}/conformance` | the conformance kit run against that adapter's deterministic known-answer record; declared-but-unprobed invariances report `NOT_PROBED` rather than passing (TG17.3) |
+| GET | `/api/v1/experiment-composer/alignment-kernels` | every declared alignment kernel and which registered adapters admit it; a kernel no adapter admits is visibly unusable rather than absent (TG17.4) |
+| POST | `/api/v1/experiment-composer/manifests/alignment` | the support this manifest's domains actually share, measured from the deterministic known-answer records and labelled as such (TG17.4) |
+| GET | `/api/v1/experiment-composer/null-families` | every declared null family, its comparison mode, what it preserves and destroys, and which registered adapters admit it; a refused family is shown with its reason rather than omitted (TG17.5) |
+| POST | `/api/v1/experiment-composer/manifests/family` | the complete declared search priced in human terms before acquisition: the multiplication, the R18 correction unit, what one more domain or duration would cost, and which precedence members are unavailable (TG17.5) |
+| GET | `/api/v1/experiment-runs` | the run state machine as the backend enforces it, the registered stage-worker suites and what each acquires (nothing, today), and every run on disk (TG17.6) |
+| POST | `/api/v1/experiment-runs` | open or resume the run this manifest identifies; the identity is the manifest's content address, so posting it twice resumes rather than forking, and the response says which happened (TG17.6) |
+| GET | `/api/v1/experiment-runs/{run_id}` | the receipt: state history, artefact digests, every component the run did not produce, the stage decisions and the frozen coverage policy that made them (TG17.6) |
+| GET | `/api/v1/experiment-runs/{run_id}/progress` | stage, per-component status and digest, bounded work and remediation; there is no field here for a result, because the type it comes from has none (TG17.6) |
+| POST | `/api/v1/experiment-runs/{run_id}/execute` | drive the frozen plan with a registered worker suite, replaying every completed step from its content address (TG17.6) |
+| POST | `/api/v1/experiment-runs/{run_id}/retry` | re-execute only the components that failed operationally; a refusal is not retryable and a retry may not carry a new manifest (TG17.6) |
+| POST | `/api/v1/experiment-runs/{run_id}/cancel` | cancel a run that has not reached a terminal state, with its reason recorded (TG17.6) |
+| POST | `/api/v1/experiment-runs/{run_id}/editable-copy` | the remedy for a refusal: a new editable draft of the same manifest, leaving the frozen run untouched (TG17.6) |
+| GET | `/api/v1/comparison-views` | the seven registered views with their axes, legend roles and claim boundaries, plus the two reading lists - what a manifest may declare against what a picture may draw - and the three refusals the views are built on (TG17.8) |
+| GET | `/api/v1/comparison-views/encodings` | the legend in declared order: each role's colour, marker and word, and why the distinction is carried in three channels rather than one (TG17.8) |
+| POST | `/api/v1/comparison-views/render` | every view over one manifest, each with its accessible table built from the same values as its body (TG17.8) |
+| POST | `/api/v1/comparison-views/render/{view_id}` | one view, for refreshing a panel without refetching the set; an unregistered view id is a 404 naming the registered ones (TG17.8) |
+| POST | `/api/v1/comparison-views/linked-selection` | what one selected window contributes, **per domain** in its own native terms; `merged_interval` is always null, because a merged extent would show agreement about coverage only one domain addresses (TG17.8) |
+| POST | `/api/v1/comparison-views/readings/check` | whether a mode may draw a reading, and the reason when it may not; served rather than inferred so the refusal is written once (TG17.8) |
+| GET | `/api/v1/experiment-receipts` | generated operations, adapters, refusals, lineage and every explained bundle field; shared by Composer, Platform & evidence and the documentation guard (TG17.9) |
+| POST | `/api/v1/experiment-receipts/runs/{run_id}/export` | seal one COMPLETE run as an immutable machine-readable bundle and Markdown report; no study or evidence is created (TG17.9) |
+| GET | `/api/v1/experiment-receipts/runs/{run_id}/methods` | the deterministic scientist-readable methods and limitations report generated from the sealed configuration (TG17.9) |
+| POST | `/api/v1/experiment-receipts/replay` | verify a bundle, semantically replay its journal and return a read-only audit projection; writes no run or evidence state (TG17.9) |
+| GET | `/api/v1/experiment-qualification` | the complete seven-gate release ledger with its frozen three-duration by two-mode matrix, including every gate this process cannot certify (TG17.10) |
+| POST | `/api/v1/experiment-qualification/rehearse` | execute the deterministic apparatus gates only - six known-answer cells and the single-remote-failure restart - and return a self-hashed, still `NOT_RELEASEABLE` record (TG17.10) |
+| POST | `/api/v1/experiment-composer/manifests/validate` | one immutable manifest's content digest and run identity (TG17.1) |
+| POST | `/api/v1/experiment-composer/manifests/preflight` | metadata-only coverage planning from each domain's registered adapter, plus the alignment block: the frozen kernel, each window's true elapsed seconds and each pair's shared support or the reason metadata cannot establish it; no network and no measurement values (TG17.1/TG17.3/TG17.4) |
+| POST | `/api/v1/experiment-composer/manifests/representation-preview` | the canonical `StructuralTrajectory` contract on frozen fixtures, labelled as known-answer data (TG17.2) |
+| PUT | `/api/v1/experiment-composer/drafts/{draft_id}` | move a draft pointer to a new immutable content-addressed revision (TG17.1) |
+| GET | `/api/v1/experiment-composer/drafts/{draft_id}` | the manifest a saved draft currently points at (TG17.1) |
+| GET | `/api/v1/experiment-composer/manifests/{manifest_sha256}` | one immutable manifest revision by content digest (TG17.1) |
+| GET | `/api/v1/experiment-composer/path` | the seven registered steps, their questions, controls and claim boundaries, plus the four-rung ladder; the browser renders this rather than holding its own copy of the workflow (TG17.7) |
+| POST | `/api/v1/experiment-composer/path/state` | where one manifest stands on the path and the **single** next legitimate action; metadata-only, and it looks for a run at the manifest's content address rather than opening one (TG17.7) |
+| GET | `/api/v1/experiment-composer/window-presets` | `week`, `three_months` and `six_months` resolved against one anchor on the server, in calendar terms, returned as the explicit UTC instants the manifest will store (TG17.7) |
+| GET | `/api/v1/experiment-composer/domain-menu` | every registered domain with the assumptions it breaks, its licence and its admissible kernels and nulls; nothing is filtered out, and a domain with no declared observation is returned unselectable with the reason (TG17.7) |
+| POST | `/api/v1/experiment-composer/preregistration-summary` | the frozen plan in generated sentences, rendered from the bytes that are hashed so the browser cannot paraphrase it (TG17.7) |
+| POST | `/api/v1/experiment-composer/manifests/export` | a machine-readable envelope carrying the canonical manifest and its digest (TG17.7) |
+| POST | `/api/v1/experiment-composer/manifests/import` | accept an exported envelope, refusing one whose body disagrees with its declared digest (TG17.7) |
+| GET | `/api/v1/gate` | what the gate store holds, and the four things this surface refuses to do (T4C.5j) |
+| GET | `/api/v1/gate/campaigns` | every preregistered ERA5 gate design, each labelled ACTIVE or RETIRED from the store's own supersessions |
+| GET | `/api/v1/gate/campaigns/{campaign_id}` | one zero-network preregistration review; a retired design is served in full with its defect intact |
+| GET | `/api/v1/gate/supersessions` | every checked retirement, with the defects it names and what it defers to the run |
+| GET | `/api/v1/gate/supersessions/{supersession_id}` | re-runs every stated reason against both campaigns and publishes the outcomes side by side |
+| GET | `/api/v1/gate/receipts` | published runs; an empty store reports NOT_YET_MEASURED as an absence of runs, not of findings |
+| GET | `/api/v1/gate/receipts/{receipt_id}` | one hash-verified receipt with the gate verdict, the scientific verdict and the rule that moved it |
 
 ## 3A. Phase 4A - The Time Axis and the Artifact Store
 
@@ -4940,6 +7187,14 @@ measure, fits thresholds on train and reuses them unchanged on test, and refuses
 bytes differ between passes. The final receipt authenticates the plan, climatology, source
 streams, train/test results and verdict and is published atomically without overwrite.
 
+T4C.5i step 7 adds one more bounded pass and two more receipt blocks. After the sweep,
+`_spatial_power_audit` re-reads the train anomalies to measure how much of the estimate the crop's
+spatial precision costs, and `_power_adjudication` decides -- for a real-evidence role only --
+whether an absence is a negative finding or an inadequately powered run. Both are described under
+`analysis_engine/spatial_power.py` above; what matters here is that the gate's own verdict is left
+untouched and the scientific verdict is derived beside it, so a receipt records the protocol
+decision and the power decision separately rather than presenting one as the other.
+
 This work found five defects rather than hiding them behind the external-data blocker: D46
 (whole-record CDS materialisation), D47 (whole-record coefficient/climatology residency), D48
 (an advection floor documented as filter support but implemented as `2**level`) and D49 (a gate
@@ -4995,6 +7250,858 @@ reserve; D: had 1,180.06 GiB free and therefore passed capacity. Readiness remai
 the absent optional `cdsapi` dependency, absent standard CDS credential configuration and
 disabled explicit network consent. The preflight inspected no secret, constructed no client
 and used no network.
+
+**T4C.5i step 8 retires that campaign without editing it.** D85 established that its
+confirmatory partition could not resolve its own declared family, and a frozen design that
+cannot reach its own decision must not simply be corrected in place: editing it destroys the
+record that the original rule existed and leaves a reader unable to distinguish a correction
+from a result-driven revision. `CampaignSupersession` is therefore a third artifact naming both
+campaigns by content hash, published immutably beside them at
+`campaigns/t4c6_nz_era5_temperature_850_v1_superseded_by_v2.json`.
+
+What makes it more than a note is that **every stated reason is a check, and recording the
+supersession runs it against both campaigns.** A reason is admissible only where the superseded
+campaign genuinely fails it *and* the successor genuinely passes, so the record cannot be
+written for a defect that was not real, cannot claim a repair that did not happen, and cannot be
+back-dated onto a campaign it does not describe. Properties the predecessor already held are
+declared separately under `preserved` and must hold for **both**, because a repair that silently
+drops a design property it was not repairing is a second change wearing the first one's reason.
+A reason naming a check the registry does not implement is refused outright: an unverifiable
+reason is a note, and a note cannot retire a frozen design.
+
+The successor `t4c6-nz-era5-temperature-850-campaign-v2`
+(`c66284d619d7439638ec5e1886671894df4d12708ab3cdced245d7e5f80fa23c`) extends the record to six
+whole calendar years, 2018--2023: 8,764 frames, a 5,258/3,498 split, 3,496 distinct admissible
+shifts against the 3,005 required. **Everything the defect was not about is unchanged** -- crop,
+variable, level, transform, family of 36, lags, embargo, seed, correction, canary and overlap --
+and a test asserts that rather than trusting the diff.
+
+**The minimal repair was refused by the record's own checks, and that is the substantive finding
+of this step.** Extending to 2023-02-27 gives exactly the 3,007 confirmatory frames
+`frames_required` asked for, and clears the pre-acquisition audit. But that audit uses the most
+favourable Theiler window of one frame, because the window is derived from a series that does
+not exist before acquisition, and `cross_scale`'s sweep sets it from the measured temporal
+decorrelation of the very series under test. The minimal record resolves at a window of one
+frame **and no more**; the six-year record resolves up to 245 frames, sixty-one days at this
+cadence. The `resolution_margin` check states that margin as an admissibility condition, and
+refuses the minimal design as a repair that would have reproduced D85 after the 2.8 GB transfer
+rather than before it. The check is a designed margin, not a prediction: the guarantee is the
+run-time refusal, which re-runs the audit at the measured window and returns INVALID.
+
+A supersession bites at the **acquisition** boundary, not the reading boundary.
+`review_gate_campaign` still loads and reports the retired v1 with its defect intact --
+otherwise the defect could not be recorded against the artifact it belongs to -- while
+`preflight_gate_campaign(..., supersessions=[...])` and `gate_campaign preflight --supersession`
+refuse to spend on it. `gate_campaign review-supersession` re-runs every check against both
+campaigns and prints the two outcomes side by side, so a reviewer reads the numbers that made
+the retirement admissible rather than the fact that a constructor allowed it.
+
+**What step 8 does not establish.** The record's `deferred_to_run` block names this explicitly
+and the review republishes it: D84 is *not* closed by the re-freeze -- the crop is unchanged and
+whether 139 px of valid interior suffices remains a question about a field that does not exist,
+adjudicated at run time by step 7's `power_adjudication`. D85's own pre-acquisition margin is a
+design decision, not a measurement of the derived window. D43 is untouched: no data has been
+acquired for either campaign, and the successor is a design rather than a record. The
+supersession is not a result and does not by itself license the successor's acquisition.
+
+### 3C.5j The gate record as a read-only surface (`src/api/gate.py`, `frontend/src/components/GateRecordView.tsx`, T4C.5j)
+
+Everything above this line was reachable only from the command line and the filesystem. A
+reviewer had to know which file to open, and the two distinctions the T4C line exists to draw
+were the two buried deepest: that a **retired** design is still readable but must not be
+acquired, and that a FAIL is a negative finding only where the derived spatial-power record
+shows the absence was detectable. Neither can be checked by being told it holds. T4C.5j serves
+them, and nothing else.
+
+**Seven GET routes and no other verb.** `GET /api/v1/gate` publishes what the store holds and
+what the surface refuses; `/gate/campaigns` and `/gate/campaigns/{id}` serve the index and the
+zero-network preregistration review; `/gate/supersessions` and `/gate/supersessions/{id}` serve
+the retirements; `/gate/receipts` and `/gate/receipts/{id}` serve published runs. There is
+deliberately **no preflight route and no acquisition route**. A preflight probes local storage
+and credential configuration, which is a fact about a machine rather than about the science, and
+an acquisition spends a 2.8 GB transfer under a mandatory order that a browser button cannot
+represent. That the surface is read-only is a property of the routing table, and a test asserts
+the served method set for the whole prefix is exactly `{"GET"}` -- not a property of the
+handlers behaving well.
+
+**A refusal is rendered, not implied.** The four refusals are served as data and displayed by
+the panel, because a reader who cannot find the acquire button is otherwise left to conclude the
+apparatus is unfinished. This is the same reasoning as TG17.10's refused qualification cells.
+
+**Retirement is derived from content.** A campaign is retired here if and only if some
+supersession in the store names it by **fingerprint** -- not by identifier, not by file name,
+and not by a flag, which a frozen artifact could not carry without being edited. This is the
+same comparison `preflight_gate_campaign` refuses on, so the surface and the spend agree by
+construction rather than by transcription. A test renames all three files and asserts the
+retirement survives, because a retirement defeated by `cp` is not a scientific record.
+
+**The retired design is served in full, and its retirement precedes it.** Hiding it would
+destroy the record of what was actually preregistered, and `resolvable: false` is the defect
+itself; the panel therefore shows v1 with its failure visible on the row that names it. The
+retirement banner is rendered **above** the design body, and a contract test asserts that
+ordering by source position: a researcher who has scrolled as far as the calendar split has
+already begun reading the plan as live.
+
+**An empty receipt list is labelled.** The store holds no receipts, because no gate has run. An
+empty table rendered bare reads as *no relationship was found*, which is the opposite claim and
+the more attractive one, so the route returns `NOT_YET_MEASURED` with the sentence "This is an
+absence of runs, not an absence of findings" and the panel shows it as a banner rather than as
+whitespace. A receipt that does not authenticate is refused with 409 and listed as unreadable;
+a store holding only such a file still reports `NOT_YET_MEASURED`.
+
+**Both verdicts, always.** `/gate/receipts/{id}` serves `gate_verdict`, `scientific_verdict` and
+the `power_adjudication` that separates them, and the panel renders the pair side by side with
+the reason. Serving the scientific verdict alone would hide the FAIL/INVALID boundary; serving
+the gate's alone would publish an absence that is a property of the crop as a negative finding
+about the atmosphere.
+
+**What this does not do.** It adds no science. It cannot acquire, run, edit, re-freeze or
+promote anything, it reads no field and touches no network, and it does not close D43, D84 or
+D85. The receipt route has never served a real receipt, because none exists.
+
+### 3C.5k The first live acquisition, and what "the routes agree" means (`src/data_layer/era5_overlap.py`, `src/analysis_engine/gate_campaign.py`, T4C.5k)
+
+The mandatory order ran live against campaign v2 for the first time. Steps 1 and 2 passed and
+step 3 stopped the campaign, which is the order working rather than the order failing. Nothing
+below closes D43: the multi-year record was never requested.
+
+**The store was probed before it was read.** `1a28d5980c97a38e`, dated and checked in, records
+the 0.25-degree WeatherBench store as chunked `(1, 13, 721, 1440)` at 53.99 MB, which is 520.7x
+amplification for the eight-frame overlap. That is D43's original diagnosis confirmed at the
+finer store, and it is also the argument for the two-route design: the same arithmetic puts the
+8,764-frame record at roughly 473 GB through this route, so the overlap comes from WeatherBench
+and the record comes from CDS. The window itself cost 237.5 MB in 61.9 s -- 286x realised, under
+the chunk-arithmetic bound because of compression.
+
+**A tolerance in Kelvin was the wrong instrument, and the first live comparison proved it.**
+ERA5 arrives through CDS packed per GRIB field. Each frame's values lie exactly on a binary
+lattice whose step changes with the field's range: the canary's eight frames sit on 2^-10 K and
+2^-9 K. `DEFAULT_ATOL['t']` was 1e-4 K, a tenth of the coarser step, so the check demanded more
+precision than the route can express and failed at 7.324e-4 K with coordinates exact and units
+compatible. The repair is not a wider constant. `encoding_step` measures the lattice a frame
+actually occupies, and the `encoding_relative` criterion asks the only question the two routes
+can answer: do they agree as closely as the coarser of them can represent?
+
+**The refusal in `encoding_step` is the part that took a second attempt.** Every float32 value
+already lies on a binary lattice -- the one its own exponent defines -- so a search that accepted
+any lattice would always succeed, and would then judge an unpacked route against its own
+representation error. The step must be at least two bits coarser than float32's spacing in that
+range before it counts as packing. The CDS route clears that by five bits; WeatherBench's frames
+sit exactly at the float32 ulp and are correctly reported as not packed, which is why the
+criterion is applied to the primary route only. The first version of the function had a
+refusal branch that could never fire, and a test written to exercise it is what exposed that.
+
+**The bound was declared, not fitted.** One step: half for round-to-nearest re-quantisation of a
+single underlying value, half for the independent route's undocumented pipeline. Fitting it to
+the observation it was about to judge would have made the whole cross-route check ornamental.
+Two windows have now been measured against it, the gate window at 0.72 steps and an independent
+2019 window at 0.44, and the independent window's signed error lies wholly within +/-0.5 steps --
+exact re-quantisation of the same numbers -- while disagreeing *more* in Kelvin than the gate
+window does. That inversion is the clearest statement of why the unit had to change.
+
+**The criterion moved into the frozen design.** This was the more serious half of D86. The rule
+authorising a multi-gigabyte transfer lived in module code, so it could be changed without
+superseding anything: the one decision in the campaign that no preregistration governed was the
+decision to spend. `GateCampaign` now carries an optional `overlap_criterion`, and
+`preflight_gate_campaign` refuses to reach READY_FOR_CANARY without one. Optional, because v1
+and v2 must stay loadable and reviewable exactly as frozen -- they are the record of what was
+preregistered -- and the field is omitted from the mapping when absent so their fingerprints are
+byte-identical to what the documentation already records. A test pins both.
+
+**Campaign v3 is a supersession, not an edit.** Its single reason re-runs
+`overlap_criterion_declared` against both designs, and that check refuses an absolute tolerance
+finer than the primary route's step as well as a missing one, so an unsatisfiable criterion
+cannot be preregistered either. Everything else is carried through untouched and stated as
+preserved: v2's six whole calendar years and its D85 repair. D84, D85 and D43 are all listed as
+deferred to the run.
+
+**Both verdicts are kept.** The absolute receipt recording the FAIL is preserved beside the
+encoding-relative one recording the PASS, at a criterion-keyed path. A cache is a fact about
+what the archive returned; a verdict is a judgement under a stated rule, and overwriting the
+first judgement would erase why the successor exists.
+
+**What this did not establish, and what T4C.5m then did.** At the close of T4C.5k no
+multi-year record had been acquired, no crop had been frozen against real data, T4C.6 had not
+run and no gate verdict existed. All four of those are now false; see 3C.5m. D84 and D85 remain
+open.
+
+### 3C.5m The record, and the first verdict (`src/analysis_engine/gate_campaign.py`, `src/data_layer/zarr_source.py`, T4C.5m)
+
+*What it is.* The remainder of D43's mandatory order, run live: acquire the multi-year record,
+verify it against the independent route, and run the frozen T4C.6 gate on it. It is the first
+time this programme has produced a scientific verdict from data it fetched itself.
+
+*What now exists that did not before.* A complete regional ERA5 record in the canonical cache --
+8,764 frames of 161x161 at 850 hPa for 2018 to 2023, assembled from 72 monthly CDS shards for
+338.905 MB in 5,853.7 s, `content_key a07c23ec89f953c1`. An overlap receipt binding it to the
+WeatherBench route at 0.71875 of a packing step. And a gate receipt, `plan_sha256 dd9fc47c`,
+served from the checked-in store: **PASS**, ten links replicated in train and test, no problems.
+
+*The defect the record found.* The gate refused to admit it. D86 had moved the agreement rule
+into the campaign envelope so that no acquisition could be authorised by a rule outside the
+frozen design, and had taught the acquisition to use it -- but nothing had taught the admission
+path, which still read the unsuffixed manifest fields belonging to the absolute criterion. The
+record carries an encoding-relative PASS and `NOT RUN` under the absolute one, so it was
+refused. Recorded as **D87**. Two layers were involved and the second was invisible until the
+first was fixed: `CachedFieldReader.source_provenance` hardcoded the same three field names, so
+criterion-specific evidence never reached the gate at all. The refusal was the correct
+behaviour of a wrong rule, and the symmetric hazard is the worse one: an absolute PASS would
+have admitted a record whose campaign declared something else.
+
+*Why the fix is `run_campaign_gate` and not an argument.* A plan does not carry the agreement
+rule; the envelope does. Passing the criterion into `run_cached_gate` from the call site would
+let the rule that admits a record be chosen after the record is in hand, which is precisely
+what D86 exists to prevent. The campaign-level entry point takes the campaign, refuses one that
+declares no criterion, refuses one a supplied supersession has retired -- a verdict carries
+forward as evidence in a way a review does not -- and hands the frozen rule down. `run_cached_gate`
+still accepts the criterion, defaulting to `absolute`, so an undeclared run refuses rather than
+being admitted by a rule nobody chose. No fingerprint changed: this was a code defect, not a
+design change.
+
+*What the verdict is, and is not.* It adjudicates the frozen T4C.6 relationship family on this
+exact crop -- one variable, one level, one region, six years. It is not causality, not
+universality, not forecast skill, not operational readiness. The power adjudication did not
+apply and says why: a PASS is not an absence, and spatial imprecision biases toward the null,
+so the derived power record cannot overturn it. **D84 and D85 therefore remain open and did not
+gate this result**; they govern whether an absence was detectable, and a PASS does not route
+through them. The independent cross-route check covers eight of the 8,764 frames, because that
+is the window the frozen design specifies; the other 8,756 are guaranteed structurally -- exact
+equality against the complete expected calendar, cross-shard coordinate and variable identity,
+finiteness, and a content hash over the published store -- rather than against a second archive.
+A second independent window mid-record would close that, and has not been acquired.
+
+*One thing learned, recorded so it is not re-derived.* The gate panel's `measurement_status`
+assertion had read `NOT_YET_MEASURED` for the whole life of the surface, carrying a note that
+if it ever changed a receipt existed and the documentation had to say so. It changed. A
+tripwire that names its own consequence is worth more than a comment, because the person who
+trips it is told what else to go and fix.
+
+### 3C.5n The audit window, and why it authorises nothing (`src/data_layer/era5_overlap.py`, T4C.5n)
+
+*What it is.* A second independent WeatherBench window, 2021-07-01/02, compared against the
+middle of the acquired record. The frozen campaign's overlap window is the record's first two
+days, so before this the record's values were verified against a second archive only at their
+start; 8,756 of 8,764 frames rested on structural guarantees alone. 237.7 MB, 62.9 s,
+`content_key 19c03cdcde90ceb2`.
+
+*The result, which is also a third test of D86's diagnosis.* `passed`, **0.46875** of a packing
+step against 1.0 allowed, zero mismatches over 207,368 values, receipt `0f32c89a`. All eight
+frames sit on 2^-9 K, coarser than January's mixture of 2^-10 and 2^-9. The window therefore
+disagrees *more* in Kelvin than the gate window does -- 9.155e-4 against 7.324e-4 -- while
+agreeing *better* once measured in the unit the route can actually express. That inversion was
+the original evidence for changing the unit, and this is the first time it has been reproduced
+on a window acquired after the rule was frozen, so it cannot be an artefact of how the rule was
+derived.
+
+*Why it is an audit and not an authorisation.* The campaign names exactly one overlap window,
+and that window is what admitted the record. This one was compared after the record had already
+been admitted and gated. If the code allowed it to be read back as the authorising receipt then
+the evidence admitting a record could be chosen after the record was in hand -- D86's failure
+arriving through a different door. So a labelled receipt binds under its own manifest fields,
+`validate_overlap_evidence` accepts only the two bare criterion names and is structurally
+incapable of reading a labelled one, the receipt states `authorises: "nothing..."` in its own
+body, and a label that could pass for a criterion is refused. The label travels inside the
+`criterion` block rather than beside it, because the receipt's top-level key set is
+exact-checked and a new field there would have invalidated every receipt already written --
+including the two the verdict rests on.
+
+*What it does not establish.* Two windows out of 8,764 frames is two windows. The audit
+raises the independently verified fraction from the record's first two days to its first two
+days and one mid-record pair, and the remaining frames still rest on exact calendar equality,
+cross-shard coordinate identity, finiteness and the content hash. It does not revisit the gate
+verdict and cannot: it authorises nothing, by construction.
+
+*One thing learned, recorded so it is not re-derived.* The new `label` parameter collided with
+an existing loop variable of the same name inside `verify_cached_era5_overlap`, so every
+receipt silently bound as `..._encoding_relative_independent` -- a passing-looking change that
+wrote its evidence under the wrong name. It was caught because the tests assert on the manifest
+*field names* rather than only on `passed`. A test that checks a verdict and not where the
+verdict was filed would have missed it.
+
+## 3D. Phase 4D - `SpectralFeature` and `SpectralFeatureTrack`
+
+4C asked whether cross-scale organisation exists at all, and answered it with numbers collapsed
+over whole bands. 4D asks *where*: it turns a band into a list of located maxima, and a sequence
+of those lists into tracks. Everything below is about the places that turn is lossy, because each
+of them is a place where a plausible-looking number would be a false one.
+
+### 3D.1 Located maxima (`src/analysis_engine/spectral_feature.py`, T4D.1)
+
+`detect_features` walks every `(time, scale, orientation)` band of a `CoefficientField` and
+returns the local maxima of coefficient magnitude above a per-scale threshold, positioned on the
+parent grid with a sub-pixel refinement, each carrying the band it came from and the threshold it
+cleared. Four decisions in it are load-bearing.
+
+**Maxima are regional, not strict.** A feature centred exactly between two samples produces two
+exactly equal samples, and a strict "greater than all eight neighbours" test rejects both. A
+symmetric feature at a half-pixel position would therefore be invisible -- which is precisely the
+position a smoothly advecting feature passes through twice per pixel of travel, so a tracker built
+on a strict detector would watch features blink out and back as they drift. A connected group of
+equal-valued pixels is instead one candidate, accepted only when everything adjoining the group is
+strictly lower, positioned at the group's centroid. The half-pixel case lands exactly on the
+midpoint; a flat top is one detection at its centre rather than sixteen or none. Each feature
+carries `plateau_pixels`, because a maximum spread over sixteen pixels is genuinely located less
+sharply than one spread over two, and the sub-pixel parabola is applied only to a single peak --
+a plateau's samples are equal by definition and its curvature is not informative.
+
+**The threshold is fitted once over the whole record and can be frozen.** A threshold refitted per
+frame would make a quiet frame and a stormy one report the same number of features by
+construction, and any count across the record would then be a statement about the normalisation.
+`threshold_values` re-supplies a frozen set, so held-out frames inherit the yardstick rather than
+setting it -- the same train-to-test discipline `scale_signature` already uses.
+
+**Detections inside the R13 margin are refused, not flagged.** One pixel further in than the
+statistics mask, because a maximum is defined by its neighbours and the neighbours of a
+margin-edge pixel are contaminated. A tracker fed edge detections reports births and deaths that
+are artefacts of where the crop was cut.
+
+**What is *not* claimed.** A feature is a place where this transform at this scale found
+concentrated energy. It is not a physical object; a real family reports `phase: None` rather than
+inventing zero; and clearing a multiple of the record's RMS is not a test against a null, so no
+significance is attached to it. The roadmap's phrase "surrogate-calibrated threshold" is therefore
+not yet met: the threshold here is `sigma x RMS`, and the surrogate-calibrated path is
+`src/core/extraction.calibrate`, which calibrates on the field rather than on its coefficients.
+
+### 3D.2 Tracks, and the registration they turned out to need (`src/analysis_engine/spectral_tracking.py`, T4D.2)
+
+**This slice is a bridge, not a second tracker.** Frame-to-frame association already exists in
+`src/core/tracking.py` (TG2.3) and it is not a sketch: the association radius is *derived* from
+the alpha the search was calibrated at and the frame's own density rather than chosen; the scale
+and orientation gates are declared rates that are refused outright when the features cannot
+measure them; an associator's answer is checked against the gates that admitted it; and the clock
+is every frame that was searched, so a frame that found nothing ends a track instead of being
+silently bridged. Writing a second tracker would have meant writing a second set of those
+refusals, and the second set is the one that would be weaker. What was missing was the
+translation from banded coefficient maxima into `src/core/feature.SpectralFeature`, and every
+lossy step in that translation is recorded rather than smoothed over: a separable `LH`/`HL`/`HH`
+label is not given an angle (`HH` answers to both diagonal signs, and a gate on a manufactured
+angle would appear in a receipt while refusing nothing); scale is the dyadic octave, because only
+its ratios are ever read; and the significance field stays empty.
+
+**D88, found by the acceptance test.** Pooling bands into one frame is what makes a scale gate
+mean anything -- there is no scale ratio to gate inside a single band -- and pooling is exactly
+what exposed the defect. An undecimated band has the parent grid's *shape*, and the module
+docstring said so; it was silent about *registration*. The analysis filters are anchored at index
+0 rather than at their centres, so a band's response is displaced by half its accumulated
+support: half a pixel at level 1, **22.5 pixels at db2 level 4**, and the displacement grows with
+level, so two levels of one decomposition are twelve pixels out of register *with each other*.
+Associating them compares filter against filter. Nothing that collapses a band to a scalar was
+ever affected -- energies, RMS, the scale signature and the cross-scale gate all move no mass
+under a circular shift -- which is why it survived until something read a coefficient's index as
+a place. `stationary.analysis_delay` now derives the shift, `CoefficientField.parent_alignment`
+declares it per scale, `detect_features` subtracts it, and the bridge **refuses** to pool levels
+that cannot be registered exactly.
+
+**Only a linear-phase bank can be registered exactly.** `haar` is symmetric, so its delay is one
+number and subtracting it puts a planted blob at the same place at every level. An orthogonal
+Daubechies filter of length four or more can be neither symmetric nor antisymmetric: its delay
+depends on what it is filtering, so a residual survives the common shift and grows with the
+level's dilation. That is a property of the filter, not of the implementation, and the only fix
+is a filter with the property -- so `db2` and `db3` are refused for cross-scale linking by name,
+with the two ways out (a linear-phase bank, or one level at a time) stated in the refusal.
+
+**What the acceptance test measures, and why it is not the roadmap's sentence.** The roadmap asks
+for an advected vortex recovered "with position error < 1 px". A *detail* wavelet is a
+derivative-like filter: a symmetric blob has zero detail response exactly at its middle and two
+maxima on its flanks, about one analysing width out along the axis its band high-passes. So a
+detail-coefficient maximum is never at the structure's centre, and the distance between them
+grows as the structure does. Two things follow, and both are checked instead:
+
+*   The **transverse** coordinate -- the axis the band low-passes -- *is* the structure's, and it
+    tracks the recorded trajectory to under a pixel over all 24 frames.
+*   The **velocity** is advection plus the structure's own growth along the high-passed axis
+    alone, a prediction with no free parameter, since both the velocity and the doubling time were
+    recorded before this module existed. It holds for every band to better than 0.11 cells/step.
+
+The `< 1 px` position criterion in field space is met by `src/core/extraction` and is already
+recorded as the `4D.position` benchmark check at 0.052 cells; it is not attainable from
+detail-coefficient maxima, and the module says so rather than reporting a number that would look
+like it.
+
+**A growing structure is several tracks, not one that migrates.** The bank is redundant, so a
+vortex whose width doubles does not leave one level for the next -- it excites both at once, and
+the coarse level's detections appear *beside* the fine level's. Scale evolution is therefore in
+the population of tracks (the coarse band lights up later and never earlier) rather than in any
+one track's `scale_velocity`, and the octave gate keeps a level-5 detection from stealing a
+level-4 track. Reporting it as one migrating track would require claiming a merge, and this
+tracker does not claim one.
+
+### 3D.3 The sentence, and the four things it may not say (`src/analysis_engine/spectral_narrative.py`, T4D.3)
+
+A narrative is the most dangerous artefact in Phase 4D, and the module says so in its first
+paragraph. Every other output here is a number with units attached, and a number that is misread
+is usually misread visibly. A sentence is believed. *"Travelled south-east over six frames while
+its dominant scale doubled"* reads as a description of weather, and nothing in the grammar admits
+that all three clauses are claims about a bank of filters. So this module is mostly refusals about
+wording, and the arithmetic in it is the easy half. Four of those refusals are load-bearing, and
+each has a measurement behind it rather than a preference:
+
+*   **It never says the structure travelled.** A detail coefficient peaks at a structure's flank
+    (3D.2), so what moved between two frames is the maximum. Every sentence names the maximum as
+    its subject, and the entitlement states that the along-axis speed is advection together with
+    growth and that the two are not separable from one track.
+*   **It never says a track's dominant scale doubled.** A track that holds one level has a scale
+    velocity of exactly zero, which is a true statement about the track and a false one about the
+    structure. The per-track sentence says the level was held and points at the population; the
+    population sentence is where the growth is reported, and on the vortex what it reports is
+    measured: level 4's maxima **weaken by 31.6% and 32.7%** across the record while level 5's
+    **strengthen by 18.9% and 17.0%**, and level 5 is not excited until frame 9. That is the
+    honest form of "the dominant scale doubled", and it is not available from any single track.
+*   **It never says north without a grid that knows where north is.** A bearing needs the sign
+    relating row order to latitude and the cosine that stops a degree of longitude being counted
+    as long as a degree of latitude. A `latlon` grid supplies both and the bearing is taken in
+    metres; every other grid gets *"toward increasing row and increasing col"*, which is uglier
+    and true. The cosine is not cosmetic: at 60 degrees north an equal displacement in row and
+    column is a bearing of 26.6 degrees, not 45, so omitting it rotates the answer and changes
+    the compass word rather than only a number.
+*   **It never says energy when it measured magnitude.** The roadmap's example ends "coefficient
+    energy rose 43%". Energy is the square of magnitude, so a 43% rise in one is a **104.5%** rise
+    in the other. Both are reported, each under its own name, in the same clause.
+
+The band ordering is offered in the vocabulary R7 permits and no higher: a **candidate precursor
+relationship** between two bands of one record, carrying in the same sentence that it was not
+tested against a null and that it is not a structure moving up the bank. `assert_no_causal_language`
+imports `OUTSIDE_THE_LADDER` from `claim_ladder` rather than restating it, so there is one list in
+the programme of what it will not say, and it runs over every rendered sentence before a narrative
+is returned. It does *not* scan the entitlement, for the reason `src.core.translation` does not:
+the entitlement names "mechanism" precisely in order to refuse it, and scanning the sentence that
+holds the line would refuse the line. `structural_signature` renders the same track with no
+variable, no dataset and no units, which is the string R19 permits to leave a domain.
+
+Two smaller things are recorded because they are the kind that rot quietly. `_bearing` reads
+`lat0` without checking it, and that is deliberate: `GridSpec` refuses to construct a `latlon`
+grid without one, so a check there would be a branch no input can reach, and an unreachable
+refusal reads in a receipt like a case that was considered and covered. And a percentage change
+from a first magnitude of zero is refused rather than rendered as infinity -- it is undefined,
+which is a third thing.
+
+### 3E.1 A tracking pass, read as TG3.3's attributed graphs (`src/analysis_engine/spectral_constellation.py`, T4E.1)
+
+The roadmap opens Phase 4E by asking for an attributed graph. One already exists, in TG3.3, and it
+is the stronger of the two designs: eight typed relations, each of which either divides by
+something the two features carry themselves or declares that it cannot; a `RelationValue` that is
+dimensionless by construction or is `None`, with no third case; relations that **refuse by name**
+rather than treating an absent quantity as agreement; a carried record R19 protects; and a matcher
+that refuses above `MAX_MATCH_NODES` rather than approximating. Writing a second graph in the
+atmospheric line would mean writing a second set of those refusals, and -- the same argument 3D.2
+made about the tracker -- the second set is the one that would be weaker. It would also produce
+edges in cells, which is exactly the number TG3.3 exists to refuse.
+
+What was genuinely missing is the **enumeration**, and the attributes a *track* has that a feature
+does not. `constellations_from_set` is `C(n, k)` over a whole set with no notion of a frame: over
+the 8,764-frame T4C.5m record that is not a sweep anybody can run, and it would pair a maximum in
+January with one in March. The unit of co-occurrence here is the searched frame, and the unit of
+identity is the track, which is what makes an onset, an age, a velocity and a rate of change
+available at all. So T4E.1 enumerates the co-present tracks of each searched frame, hands each
+pair and triple to `constellation()`, and carries the track-derived facts alongside the graph.
+
+**The split is the design.** `FrameConstellation.graph` is the comparable half -- dimensionless,
+domain-free, the only half a match or a cluster may read. `.nodes` and `.relations` are the
+**carried** half: cells, frames, raw coefficient magnitudes, band labels. Those are exactly the
+numbers R19 refuses across a domain boundary, and they are present because a researcher reading
+one record needs them and because T4F.5 has to project a pattern back onto the map. Promoting one
+of them into a comparison would be a visible edit, not the consequence of a key nobody removed.
+
+**The pass declares three of the eight relations and refuses five by name.** On T4D features
+`distance`, `relative_scale` and `succession` are measurable; `temporal_lag` and `co_occurrence`
+have no `temporal_scale` to divide by, `direction` and `convergence` no `orientation`, and
+`containment` no `extent`. The five appear in the receipt with the field each one lacks, rather
+than being dropped -- a relation that treated an absent quantity as agreement would sit in a
+receipt constraining nothing. The declaration is made once over the whole pass rather than per
+frame, because a relation axis that changes frame by frame has a declared size that is not the
+number of tests that ran, which is the failure `relation_axis` exists to prevent.
+
+**`succession` is not the ordering that carries information here.** It orders the two
+*observations*, and inside a constellation they are in the same frame by construction, so it is
+always false. The informative ordering is between the two tracks' **onsets**, and that is carried
+-- with the censoring flag that makes it honest.
+
+Four things the carried half is not permitted to mean, each with a measurement behind it:
+
+*   **A separation is between two flanks, not two structures.** A detail coefficient peaks at a
+    structure's flank (3D.2), so two nodes from different bands are two flanks displaced by the
+    difference of two offsets that both grow with the structure. On the vortex at frame 9 the
+    `L4/LH` and `L4/HL` maxima of one vortex are **1.4447 scale lengths / 11.56 cells** apart.
+    `same_band` is on every relation so a caller can decline the cross-band ones.
+*   **A cross-band strength ratio is a ratio of filter gains until it is normalised.** Bands of a
+    redundant bank have no common gain, and the detection's own per-band threshold proves it. At
+    frame 9 the `L4/LH -> L5/LH` raw ratio is **1.755** -- the coarse band looks stronger by three
+    quarters -- while each strength divided by its own band's RMS gives **0.554**, making it the
+    weaker of the two. The two disagree about the *sign* of the comparison, which is why both are
+    carried and neither is called the strength ratio.
+*   **An onset offset can be a lower bound.** A track alive in the first searched frame did not
+    begin there; the record did. Both level-4 tracks are left-censored, so the nine-frame offset
+    to level 5 is a bound and `onset_offset_censored` says so.
+*   **A bearing in the carried half is not a compass.** Degrees in the row-column plane, from
+    `+row` toward `+col`, with no grid consulted; the compass lives in `spectral_narrative`
+    (3D.3), which has a grid to ask, and TG3.3's `direction` is the invariant form.
+
+The budgets are refusals rather than truncations. A frame with more co-present tracks than the
+cap, or a sweep that would exceed the constellation budget, stops and names the numbers, because a
+silently truncated sweep produces a T4E.4 support count that is a count of what fitted. There is
+no null, no support count and no significance in this module: a constellation here is **one
+observation of one arrangement in one frame**, and recurrence is T4E.3 and T4E.4.
+
+`networkx`, which the roadmap lists for this phase, is not adopted. At two and three nodes there
+is no graph algorithm to run -- the graphs are complete, with one edge or three -- and TG3.3's
+`AttributedGraph` already supplies the immutable, hashable, `describe()`-carrying value the rest
+of the tree is built from. T4E.3 did not add `networkx`: at cardinality two or three, enumerating
+the at-most-six correspondences and running deterministic complete link is smaller and more
+auditable than adding a graph dependency.
+
+### 3E.2 The invariant signature, and the axis the benchmark does not have (`src/analysis_engine/spectral_invariance.py`, T4E.2)
+
+T4E.2 asks for invariance by construction: distances normalised by the members' scales, bearings
+relative to the configuration's own principal axis, strengths normalised within the
+configuration, and scale invariance as a **separate, explicit toggle** that can be run on and
+off and compared. Two of those four already existed, and TG3.4 had already measured that one of
+them does not do what the specification assumes.
+
+*   *"Distances normalised by the participating features' scales"* is TG3.3's `distance`
+    relation. TG3.4 measured it on real extracted features and it is **not** rescaling-invariant:
+    it divides a separation by an *estimated* spatial scale, the estimate runs about +3.6% high
+    at sigma 3 and about -2.6% low at sigma 18, and the whole of that drift lands in the
+    quotient -- 4.8% movement at `scale_factor=3` against a 3.3% noise floor. TG3.4 left it out
+    of `MATCHERS` on purpose, because a registry entry carries a declaration and this one has
+    none it can demonstrate.
+*   What does survive a rescaling is a separation divided by *another separation*: TG3.4's
+    `relative_geometry`, measured to reproduce to 0.37%. Its price is three features. Two
+    features have one separation, and its ratio to itself is 1 for every configuration in
+    every domain.
+
+So the toggle is not a normalisation this module invents; it is a **choice between two matchers
+that already exist**, and the honest content of the slice is the choice, the two blocks neither
+matcher measures, and the number attached to what the choice costs.
+
+`scale_invariant=False` -- *scale-specific*. Geometry is `distance`. Available at cardinality 2
+and 3; translation-, rotation- and reflection-invariant; **not** rescaling-invariant, and it
+says so in its own receipt rather than in a footnote. The scale block carries the members'
+absolute scales in cells, so the signature stops at the domain boundary.
+
+`scale_invariant=True` -- *the universality hook*. Geometry is `shape_ratio`. No estimated
+quantity enters, so rescaling invariance joins the other three. The scale block keeps only the
+ratios between the members' scales, so every entry is dimensionless and this is the only mode
+that could be compared with a configuration from another domain.
+
+**What the toggle costs, measured on the vortex pass: 87 of 135 constellations -- every pair.**
+That is the comparison the specification asks for, and `compare_scale_modes` returns it as a
+number rather than an argument. It deliberately does *not* count how many distinct
+configurations each mode sees: that is a count of clusters, it needs a tolerance calibrated
+against replicates rather than chosen, and it is T4E.3.
+
+**The bearings, and what the slice found.** "Bearings measured relative to the constellation's
+own principal axis" assumes the configuration has one. `planted_configuration` -- the benchmark
+this programme supplies for invariance, and the one TG3.4's gate runs on -- is an **equilateral**
+triangle, so its position covariance is isotropic and the axis is whatever the noise decided.
+Measured over 24 field-noise realisations of the same planting, through the real extraction
+pipeline: the anisotropy `lambda_1 / lambda_2` stayed between 1.0077 and 1.0421 while the
+recovered axis angle scattered from 0.78 to 158.08 degrees -- effectively uniform over the
+half-circle, a circular standard deviation near 50 degrees -- and the shape ratios over the same
+replicates reproduced to 0.218%. A bearing block written without a guard would have emitted a
+confident angle that was pure noise, on the exact configuration the roadmap nominates for
+testing invariance. `AXIS_ISOTROPY_FLOOR` is that measurement rather than a choice, in the same
+spirit as TG3.4's calibrated match tolerance, and `calibrate_axis_admission` re-measures it.
+Clearing it is a minimum and not a precision claim. The vortex triples clear it by two orders of
+magnitude -- the smallest observed anisotropy is 85.22 -- which is why the bearings on this
+record are usable at all.
+
+Three further properties are stated in the module because the obvious reading of each is wrong:
+
+*   **A bearing is folded to [0, 90] degrees**, because an edge is unordered and a principal
+    axis has no sign. That makes the signature invariant to reflection as well as rotation --
+    a consequence, not a preference. Telling a configuration from its mirror image would need an
+    orientation convention on the grid, and these features declare none (`has_orientation:
+    False` on every one of them), which is the refusal 3D.3 already made when it declined to
+    give a compass word to a grid that never said which way was north.
+*   **At two and three nodes the bearings add no degree of freedom.** Three points' pairwise
+    separations determine the triangle up to similarity and reflection, so the angles are a
+    function of the geometry block rather than an addition to it. They are kept because they are
+    the readable form and because 4F must project a configuration back onto a map.
+*   **The canonical order is a minimisation over correspondences, not a sort.** The vector is
+    minimised lexicographically over all node permutations -- six at most, since the enumeration
+    stops at three. Sorting each block on its own is cheaper and wrong: two configurations can
+    then agree on sorted separations and sorted strengths with no single correspondence that
+    makes both true at once, which is a matcher reporting an agreement it cannot exhibit.
+
+The strength block divides each member's magnitude by its own band's RMS before normalising
+within the configuration, for the reason 3E.1 recorded: a raw ratio across two bands is a ratio
+of filter gains, and on this record the raw and normalised ratios disagree about which member is
+the stronger. A member with no recorded band RMS is refused rather than compared.
+
+Nothing in this module reports a p-value, a null, a match or a support count. A signature is a
+description of one configuration in one frame; two equal signatures are two descriptions that
+agree. T4E.3 now supplies the separately calibrated approximate decision below.
+
+### 3E.3 Approximate matching with a measured radius (`src/analysis_engine/spectral_clustering.py`, T4E.3)
+
+T4E.3 compares the four named blocks T4E.2 already made canonical; it does not flatten an
+`AttributedGraph` into a second, anonymous representation. `AttributeWeights` has no defaults:
+geometry, bearings, relative strength and scale must each be declared, including an intentional
+zero. Within a block, geometry/strength/scale use symmetric relative difference and folded
+bearings use angular difference divided by 90 degrees. Each block is RMS-reduced before the
+declared weighted RMS across blocks, so a triangle's three edges do not receive three times the
+scientific weight merely because the graph has three edge values. The complete formula and the
+four weights are in every catalogue receipt and content-hashed as the metric identity.
+
+Before a number is computed, `SignatureFamily` requires the same invariance mode, cardinality,
+bearing availability and (for scale-specific records) scale units. A difference in any of these
+is a difference in what was measured, not noise. Scale-invariant signatures deliberately drop
+the scale unit from that family: their scale block is geometric-mean-normalised ratios, which is
+the dimensionless cross-domain quantity T4E.2 promised.
+
+The tolerance is measured, not accepted as a float. `calibrate_signature_tolerance` takes at
+least two declared measurements of the same physical configuration, measures every replicate
+pair under the declared metric and wraps the maximum in TG3.4's existing `MatchTolerance` record.
+`SignatureTolerance` then binds that measurement to the metric digest and signature family, so a
+radius calibrated under one weighting cannot be reused after a weight, mode, unit, cardinality or
+axis-admission change. Its receipt carries every pair distance and the finite-replicate
+false-rejection limitation; it is a measured noise floor, not a population quantile.
+
+Clustering is deterministic complete-link agglomeration. A merge is allowed only if every
+cross-member distance and every member-to-candidate-centroid distance is at most the calibrated
+radius. This prevents the single-link bridge failure in which A resembles B and B resembles C
+but A and C are farther apart than the calibration permits. A deterministic medoid supplies the
+node correspondence frame for the arithmetic centroid. Each `ConstellationPattern` exposes that
+centroid, the calibrated tolerance radius and the observed member radius. `support_observed` is
+only the number of supplied members and says explicitly that it is not T4E.4 minimum-support
+mining, recurrence evidence, a p-value or a discovery.
+
+**D92, found by the first acceptance run.** T4E.2's exact canonicalisation is correct for exact
+invariance, but it is discontinuous at an ordering boundary: a small perturbation can make a
+different edge lexicographically first. Comparing two canonical vectors component by component
+then attaches strengths and scales to different physical vertices and calls the mismatch noise.
+On the acceptance replicates it inflated the scale block RMS from about 10% to 47.4%, widened the
+whole tolerance to 0.342, and incorrectly joined a doubled absolute scale at distance 0.333 in
+scale-specific mode. The metric now searches every valid node correspondence (six at three
+nodes), moving edge and node attributes together, before taking its minimum. The same calibration
+then measures 0.206 and the doubled scale remains 0.333, so the two scale-specific patterns split;
+the scale-invariant pair is identical and joins. Location, rotation and the held 10% geometry,
+strength and scale perturbation join in one pattern. This is approximate attributed-graph
+matching, not exact subgraph isomorphism.
+
+### 3E.4 Bounded minimum-support mining (`src/analysis_engine/spectral_mining.py`, T4E.4)
+
+T4E.4 consumes a complete T4E.3 `PatternCatalogue`; it cannot accept raw signatures and therefore
+cannot silently substitute exact equality for the calibrated clustering decision. Its support unit
+is one distinct `ConstellationSignature.key`. Repeating the same key in the input is refused rather
+than counted twice, because duplicated storage is not a second physical occurrence. Every pattern
+receives a `SupportDecision` containing its support, centroid, calibrated radius, observed radius
+and either `SUPPORTED` or `PRUNED_BELOW_MINIMUM`.
+
+The miner sorts candidates by decreasing support. Once it reaches the first count below the
+inclusive threshold, every remaining count is also below it and the tail is pruned without further
+eligibility work. The receipt still lists that whole tail and its counts; early pruning cannot turn
+an unexamined candidate into a missing one. A threshold larger than all counts consequently returns
+a complete result with zero supported patterns, not an error and not an ambiguous empty list.
+
+`MiningBudget` makes both resource limits mandatory: a positive integer candidate cap and a
+positive finite monotonic-clock duration. Candidate count is checked before the sweep, while the
+deadline encloses identity validation, support preflight, every candidate decision and receipt
+completion. Either overrun raises `MiningBudgetExceededError` with `partial_result: false`; the API
+may safely show its remedy, and no prefix is returned. The elapsed value is explicitly named
+`elapsed_seconds_unasserted` because wall time is operational evidence, not a deterministic test
+claim.
+
+The acceptance catalogue contains a planted five-occurrence pattern and a two-occurrence pattern.
+At minimum support three exactly the first survives. This establishes a bounded deterministic
+frequency filter only. The result's claim boundary says it is not recurrence significance, a null
+test, a p-value, predictive evidence or a discovery; those questions begin in Phase 4F.
+
+### 3F.1 The timed event substrate (`src/analysis_engine/spectral_events.py`, T4F.1)
+
+Phase 4F asks which small configurations at `t` precede which structures at `t + delta`. The
+existing engine mines scalar run metrics out of flattened `results` JSON and structurally cannot
+express `A4 -> A8 -> B8 -> C16`, because nothing in that record carries an order. T4F.1 supplies
+the ordered substrate the question needs and stops there: it counts no sequences, and support,
+confidence, recurrence intervals and lift begin at T4F.2.
+
+`events_from_catalogue` reads a complete T4E.3 `PatternCatalogue` against an explicit
+`ObservationGrid` and returns an `EventSeries` of `PatternEvent` records, each one occurrence at
+one searched frame. The grid is a separate mandatory argument rather than a field recovered from
+the catalogue, and that is the substantive design decision in the slice: **a catalogue records
+what was found and can never record what was looked at.** Three consequences follow, and each is
+a refusal rather than a default.
+
+*   **The clock must be named.** `ObservationGrid.time_units` is mandatory and non-blank. T4F.2
+    asks whether the gap between occurrences recurs, and a number with no unit cannot answer it.
+    A member signature that carries a different unit than the grid declares is refused; a member
+    carrying none is *counted* in `time_units_uncarried_by_members` rather than assumed to agree.
+*   **An event must be at a frame that was searched.** An occurrence at a time the pass never
+    examined is refused by name, because it asserts a sighting where nothing looked.
+*   **A gap is not an absence unless a cadence says so.** The searched frames are by construction
+    complete in themselves, so they cannot distinguish a frame that was read and found empty from
+    an instant that was never read. With a declared `cadence` -- checked to within
+    `CADENCE_TOLERANCE` against the lattice the frames actually occupy, so a wrong cadence is
+    refused rather than manufacturing missing frames -- a span is `MEASURED` or
+    `SPANS_UNOBSERVED_TIME` with the missing count attached. Without one every span is
+    `COVERAGE_UNDECLARED`, for the reason T4E.1 reports a refused relation by name instead of
+    dropping it.
+
+**Simultaneity is not order.** Events are sorted by `(time, pattern_id, identity)`, and two events
+on the same frame are reported through `co_occurrences()` as simultaneous with no order between
+them. A succession read off list position would be an arrow that came from tuple comparison rather
+than from the record, which is the exact fabrication `A4 -> A8` exists to avoid. The receipt says
+so in `co_occurrence_basis`.
+
+Two further refusals are inherited deliberately. Occurrence identity is the same JSON spelling of
+`ConstellationSignature.key` that T4E.4 counts support in, and a repeated identity is refused
+because sequencing it twice would manufacture a transition. Mixing scale modes in one series is
+refused because the modes answer different questions -- whether a configuration recurs at any
+scale, or at this one -- and ordering them together would sequence two questions as though they
+were one. An empty catalogue is refused rather than returned as a series with no events, so an
+unrun clustering cannot be read as a scientific absence.
+
+T4F.2 later added one method to this object rather than to its own: `observation_of_window` answers whether a *proposed* window was wholly searched, which `coverage_between` cannot, because a window is offered by a lag rather than found in the record and can therefore run off the end of what the pass looked at. That case is named `WINDOW_TRUNCATED_BY_RECORD` and kept apart from a hole in the middle, because the two bias a confidence in different ways.
+
+This slice found and fixed **D93**: T4E.2 signed each constellation with a bare float `time` and
+dropped the `time_units` its `FrameConstellation` carried, so every clustered pattern downstream
+held an unnamed clock. The fix is at the seam -- the signature now carries the frame's unit and
+publishes it -- rather than a unit re-declared by each consumer.
+
+### 3F.2 Counted sequences and repeated gaps (`src/analysis_engine/spectral_sequences.py`, T4F.2)
+
+T4F.1 built the ordered substrate and counted nothing on it. T4F.2 does the counting the phase was
+built for -- `A4 -> A8 -> B8 -> C16` as a chain with a support and a confidence attached -- and
+stops before the question T4F.3 asks. `mine_frequent_sequences` returns a `SequenceMiningResult`
+over an `EventSeries`; `recurrence_report` asks separately whether the gap between one pattern's
+occurrences recurs.
+
+**A transition is only defined against a declared window.** `TransitionWindow` names a minimum and
+a maximum lag in the grid's own unit. The minimum is strictly positive, so two events on one frame
+can never form a step: T4F.1 refused to sort simultaneity into an order and this module refuses to
+count one. A window that admits no lag on the grid's own cadence lattice is refused rather than
+returning zeros, because a zero from an unreachable window measures the window and not the record,
+and a lag declared in one unit against frames declared in another is refused rather than converted.
+
+**The denominator is the part that can be quietly wrong, so it is computed rather than assumed.**
+Confidence is the fraction of antecedent occurrences that were followed, and an occurrence belongs
+in that fraction only if the whole window it could have been followed in was actually searched.
+`ObservationGrid.observation_of_window` -- added to T4F.1's grid in this task, because the grid is
+what knows what was looked at -- classifies a proposed window three ways and the three are kept
+apart deliberately:
+
+*   `WINDOW_MEASURED`: every instant was searched, so an absence in it was observed and a miss is
+    a miss.
+*   `WINDOW_TRUNCATED_BY_RECORD`: the record ended before the window did. This is classical
+    right-censoring and it is not symmetric -- counting these occurrences as unfollowed drags
+    every confidence down by exactly the tail of the record, so a pattern that fires late would
+    look less predictive than one that fires early for a reason about the record's edge rather
+    than about the pattern. They are excluded from the ratio and counted in
+    `ineligible_truncated_by_record`.
+*   `WINDOW_SPANS_UNOBSERVED_TIME`: an instant inside the window was never read, so a consequent
+    may have occurred there unseen. Excluded, and counted in `ineligible_unobserved_time`.
+
+Completions observed at ineligible antecedents are real sightings and are published as
+`observed_completions_including_ineligible` rather than dropped; they are simply not admissible
+into a ratio whose denominator they cannot join. Without a declared cadence eligibility is
+undecidable at all, and confidence is `None` under `COVERAGE_UNDECLARED` while the support count
+stands, because a pair that was seen was seen.
+
+**The pruning rule is proved rather than assumed.** Extending a sequence lengthens the window an
+antecedent must have observed, so the eligible set can only shrink; and a chain completing for
+`s + (q,)` completes for `s` by taking its prefix. Support is therefore antimonotone under
+extension, the scan generates candidates only by extending sequences that met the minimum, and
+`candidates_pruned_by_antimonotonicity` reports what that saved. The acceptance suite asserts the
+inequality directly over every extension the sweep reached rather than trusting the argument.
+T4E.4's `MiningBudget` and `MiningBudgetExceededError` are reused rather than a second budget
+declared, and either overrun refuses the whole sweep with `partial_result: false`.
+
+**A repeated gap is not a period.** `recurrence_report` tallies T4F.1's spans on the cadence
+lattice, which is the finest interval the pass can resolve. A span marked `SPANS_UNOBSERVED_TIME`
+*bounds* an inter-occurrence interval from above rather than measuring it -- an unseen occurrence
+inside would split it in two -- so it is excluded from the tally, counted as excluded, and kept out
+of the reported longest gap. Four statuses separate the ways a recurrence can fail to be one:
+`NO_MEASURED_SPAN`, `TOO_FEW_MEASURED_SPANS` against a declared minimum of at least two,
+`NO_REPEATED_INTERVAL`, and `INTERVAL_REPEATS` with its modal interval, count and concentration.
+The receipt publishes `admissible_lattice_values` -- how many distinct interval values the record
+was long enough to hold -- because among few of those a repeat is expected under no structure at
+all, and a concentration without that denominator invites the reader to over-read it.
+
+Neither receipt claims more than a count. The sequence boundary says support and confidence are
+not a base rate, a lift, a surrogate comparison, a p-value, a precursor or a cause; the recurrence
+boundary says a repeated interval is not a period, a frequency or an oscillation, that no null was
+drawn, and that whether a concentration exceeds chance is T4F.3's question.
+
+### 3F.3 Precursor tests, and the first null (`src/analysis_engine/spectral_precursors.py`, T4F.3)
+
+T4F.2 counted and claimed nothing. This is the task that asks whether a count means anything:
+**when a small attributed configuration appears at `t`, does the probability of another
+configuration appearing by `t + delta` rise above its base rate, above a surrogate ensemble, at
+admissible lags, under FDR control?** `precursor_report` answers it for every ordered pair at
+every declared lag and refuses to answer it for a design that could not have answered it.
+
+**The base rate is a window probability, and it is measured.** Confidence here is the chance
+that a declared window following an occurrence contains the consequent. Divided by the fraction
+of *frames* carrying the consequent, it would yield a lift that grows with the width of the
+window and with nothing else. So `window_base_rate` drops the **same window** at every searched
+position whose window was wholly observed -- the same eligibility rule that decides an
+antecedent's admissibility -- and reports the rate with the number of positions it was estimated
+over. The reference set is not purged of the antecedent's own occurrences: purging would make the
+denominator depend on which rule is being tested, so two rules sharing a consequent would be
+divided by different numbers, and including them pulls lift toward 1 for a common antecedent,
+which is the conservative direction. That choice is published rather than assumed.
+
+**The null is a statement about alignment.** `circular_antecedent_shift`, the default, rotates
+the antecedent's occurrence times on the searched lattice: the count is preserved exactly, every
+gap inside it is preserved but the one the wrap falls in, the consequent is untouched -- so the
+base rate is invariant and confidence and lift rank the ensemble identically -- and only the
+alignment between the two patterns is destroyed. Rotations smaller than the widest declared lag
+plus one cadence step are never drawn, because such a surrogate retains part of the alignment
+under test and is a blurred copy of the observation rather than a draw from a null; the floor is
+derived from the window and the cadence rather than chosen, and a rotation near the full extent
+is excluded with it because it is a small rotation the other way.
+
+`uniform_antecedent_relocation` is provided and is **anti-conservative by construction**, in the
+way `surrogate_null.per_frame_phase` is: it scatters the antecedent uniformly over the searched
+frames and so destroys the antecedent's own clustering. The acceptance suite measures the
+consequence on one unchanged record -- a clumped antecedent sitting in front of a dense block of
+the consequent reads lift 5.25 either way, is **not distinguished** from the shifting null at
+p = 0.11, and is called a precursor by the scattering null at p = 0.01. The choice of null is
+the hypothesis, and here it decides the finding.
+
+**A lag chosen by the data is a search, so two families are reported and each is corrected on
+its own.** The per-lag family is every (antecedent, consequent, window) triple, every member
+reported whether it looked interesting or not, so no selection precedes the correction. The
+selected-lag family is one member per pair, and its p-value is referenced to the distribution of
+the **maximum across the declared lags** -- which is available exactly because one draw is shared
+across the whole family per antecedent. `precedence.py` names the failure this avoids: testing
+the winner against the null of a single lag prices a search of several as one test. The shared
+draw is not merely asserted: because the ensemble is published on each rule, a test holds the
+selected null to the elementwise maximum of the per-lag ones, and holds a window's ensemble to
+be the same whether it was declared first or second in the family.
+
+**A design that could not reject is refused before anything is counted.** `check_power` is asked
+first, and an ensemble too small for the declared family raises rather than returning a report
+full of non-rejections. This is deliberately *not* T4C.5i's boundary applied late: an
+under-powered study reports an absence indistinguishable from a real one, and the cleanest way
+to honour "an inadequately powered absence is not a negative finding" is never to produce the
+absence. The refusal is a fact about the declared design, before the record is read.
+
+**The receipt publishes the ensemble, not only the verdict.** Each rule carries the confidence
+every surrogate produced, in draw order, with quantiles in the rendered receipt -- a p-value is a
+statement about a distribution, and the distribution is the part a reader can check. Each rule
+also carries R9's six figures or names which one is undefined and why, and `PrecursorRule.figures()`
+builds the programme's own `AssociationFigures` rather than a seventh private home for the same
+six numbers, so a rule that cannot satisfy R9's contract is refused by that contract rather than
+by a check in this file.
+
+**Nothing is reimplemented.** The counting and its eligibility rule are T4F.2's `count_sequence`,
+made public in this task so a second denominator cannot exist -- two would agree on the planted
+case and diverge exactly at the record's edge, which is the case the denominator was written for.
+The empirical p-value is `significance.surrogate_p_value`, the correction and the power check are
+`multiple_comparisons.adjust` and `check_power`. T4F.1's `observation_of_window` became
+logarithmic in this task, because it is called for every antecedent of every rule of every
+surrogate and a linear scan there is the difference between a report in seconds and one in
+minutes; the classification it returns is unchanged.
+
+**What a rejected rule is.** A precursor signature: the antecedent was followed by the consequent
+within the declared window more often than the record's own re-alignments of that antecedent
+were. Not a cause, a driver, a mechanism, a trigger or a forecast, and no intervention is implied
+(R7). The null is a statement about alignment, so both patterns following a third thing this
+record does not contain is entirely consistent with a rejection; the interval assumes an
+independence the record does not have, and says so with the number of overlapping windows
+measured; and the base rate comes from this record alone, so a rule is a statement about this
+record and not about the world.
 
 ## 4. Database Schema and State Tracking (`src/database/models.py`, `session.py`, `migrate.py`)
 
@@ -5136,7 +8243,7 @@ The architecture is highly modular and maintains clean boundaries at several cri
 
 ## 6. Front-End Technical Implementation
 
-The React frontend is fully written and structurally complete. It was installed and built in T3.5.0/T3.5.3 (`npm run build` emits hashed JS and CSS into `dist/`) and wired to the previously unreachable endpoints in T3.5.22. Its **rendered appearance was confirmed by the user on 2026-08-20** (T3.5.25): the platform was started, both servers came up, and the then-nine tabs were reported working. T5.6g added a tenth tab, TG9.2 an eleventh and TG8.4 briefly a twelfth Domain Records tab. TG10.2 consolidated that reader into Acquire, leaving eleven destinations; TG11.0 groups those destinations by workflow rather than numbering them. TG11.1-TG11.5 add Cross-domain analysis, Preregistration, Evidence record, Structure mining, Cross-domain record and Recorded review, bringing the workflow to sixteen destinations. The post-T3.5.25 surfaces compile and build but have **not** been visually inspected in a browser. The earlier confirmation is a user report, not an artefact - **no screenshot per tab exists in this repository**, so T3.5.0's literal evidence clause remains outstanding. Contract tests prove all sixteen current destinations compile, call routes that exist and read fields that are present; they do not prove rendered appearance.
+The React frontend is fully written and structurally complete. It was installed and built in T3.5.0/T3.5.3 (`npm run build` emits hashed JS and CSS into `dist/`) and wired to the previously unreachable endpoints in T3.5.22. Its **rendered appearance was confirmed by the user on 2026-08-20** (T3.5.25): the platform was started, both servers came up, and the then-nine tabs were reported working. T5.6g added a tenth tab, TG9.2 an eleventh and TG8.4 briefly a twelfth Domain Records tab. TG10.2 consolidated that reader into Acquire, leaving eleven destinations; TG11.0 groups those destinations by workflow rather than numbering them. TG11.1-TG11.5 add Cross-domain analysis, Preregistration, Evidence record, Structure mining, Cross-domain record and Recorded review, bringing the workflow to sixteen destinations. T4C.5j adds a seventeenth, the read-only Atmospheric gate record, under Review. The post-T3.5.25 surfaces compile and build but have **not** been visually inspected in a browser. The earlier confirmation is a user report, not an artefact - **no screenshot per tab exists in this repository**, so T3.5.0's literal evidence clause remains outstanding. Contract tests prove all seventeen current destinations compile, call routes that exist and read fields that are present; they do not prove rendered appearance.
 
 *   **Component Visualizations:** `Heatmap2D.tsx` and `LineChart.tsx` wrap `react-plotly.js`; `LineageGraph.tsx` is a hand-rolled SVG node-link renderer with a tooltip inspector and no external graph dependency. All three take reactive props and render spatial fields, PSD curves, coherence ratios, and provenance DAGs.
 *   **Accessibility has a workflow-wide source contract (TG11.6).** The shell provides skip and
@@ -5169,18 +8276,31 @@ See `VERIFICATION.md` for the captured command output behind every statement her
 | Item | Status |
 |---|---|
 | Python venv + dependencies | installed (torch 2.13.0+cu130, numpy 2.2.6, pydantic 1.10.26, SQLAlchemy 2.0.52, xarray 2025.6.1, FastAPI 0.110.3) |
-| Backend test suite | **2745 passed, 1 xfailed** (plus 4 skipped: the opt-in live GCS read, opt-in live store probe, opt-in live Argo acceptance, and opt-in live TESS/MAST acceptance) (was 8 failed / 11 passed at first run; 65 after T3.5.0, 152 after T3.5.7, 222 after T3.5.13, 286 after T3.5.17, 351 after T3.5.6, 379 after T3.5.15, 407 after T3.5.19, 449 after T4C.5, 709 after T4A.4, 781 after T4B.4, 855 after T4C.5, 859 after T4C.5c, 882 after T5.1a CPU acceptance, 883 after RTX acceptance, 890 after portable profiles, 911 after T5.1b/D44, 917 after T5.1c, 933 after T5.1d/D45, 946 after T5.1e, 955 after T5.2a, 957 after T5.2b, 962 after T5.3a, 969 after T5.3b, 981 after T5.2c offline acceptance, 985 after T5.2d, 1000 after T5.0a, 1008 after T5.0b, 1027 after T5.6a offline acceptance, 1042 after T5.6b cube acceptance, 1056 after T5.6c matched evaluation, 1070 after T5.6d truth matching, 1080 after T5.6e orchestration, 1089 after T5.6f portable jobs, 1094 after T5.6g reporting, 1095 after the licence guard, 1102 after T4C.5d gate readiness, 1104 after D50 storage preflight, 1106 after T4C.5e overlap evidence, 1112 after T4C.5f campaign acceptance, 1116 after T4C.5g physical preflight, 1117 after T4C.5h preregistration - the `master` freeze; then on `ed-dev`, 1375 after TG2.1, 1429 after TG2.2, 1477 after TG2.3, 1536 after TG2.4, 1577 after TG3.1, 1621 after TG3.2, 1686 after TG3.3, 1742 after TG3.4, 1787 after TG3.5, 1850 after TG4.1, 1922 after TG4.2, 1972 after TG4.3, 1986 after TG5.1, 2004 after TG5.2 and 2020 after TG5.3, 2044 after TG6.1, 2074 after TG6.2, 2112 after TG6.3, 2167 after TG7.1, 2217 after TG7.2, 2235 after TG7.3, 2236 after TG7.3 live acceptance, 2296 after TG7.4, 2321 after TG9.1/TG9.2 2334 after TG9.3, 2367 after TG8.1, 2420 after TG8.4, 2459 after TG10.1, 2503 after TG10.3, 2509 after TG10.2 2511 after TG11.0, 2521 after TG11.1, 2543 after TG11.2, 2570 after TG11.3, 2619 after TG11.4, 2661 after TG11.4b, 2667 after TG11.6, 2681 after TG11.5, 2694 after TG12.1b/TG12.1c, 2708 after TG12.2a, 2716 after TG12.1d, 2726 after TG12.2b-d, 2741 after TG13/G14 file-first ingress, and 2745 after TG15 capability routing) |
+| Backend test suite | **3978 passed, 1 xfailed** (plus 4 skipped: the opt-in live GCS read, opt-in live store probe, opt-in live Argo acceptance, and opt-in live TESS/MAST acceptance). Measured 2026-09-05 in 3,129.85 s (0:52:09), exit 0, on the tree carrying T4F.3. Nothing failed in this run. It is exactly 52 above the previous measurement of 3926: the 47 test functions T4F.3 added, one of which is parametrised six ways, so nothing was lost in between. |
 | Ground-Truth Benchmark Suite | **29 PASS, 0 FAIL, 0 NOT_YET_RUNNABLE** (`python -m src.benchmarks`, exit 0) |
 | Frontend `npm install` + `npm run build` | passes, emits 1,395 modules + real JS/CSS assets (was: 1 module, no assets) |
 | Backend server | starts, serves OpenAPI, all smoke-tested endpoints return 200 |
 | End-to-end experiment sweep | 9-run parameter sweep completes 9/9, writes 28 lineage nodes / 54 edges, hypothesis engine returns results |
 | Version control | active Git history captures implementation slices; scientific run receipts carry their own content identities rather than treating the current commit as data provenance |
 
+TG17.9 was verified after that last full-suite figure with 21 receipt tests, all 157 frontend
+contract tests, all 80 orchestrator tests and all 26 documentation tests (284 focused tests across
+the four files). The production build transforms 1,408 modules and the full rendered Chromium
+suite is 33/33. The whole backend suite has since been rerun, most recently on 2026-09-05 after
+T4F.3, so **3978** is the last measured full figure rather than being arithmetically
+increased from targeted runs. That run was the first in a while with nothing else competing for
+the machine, and `test_acquisitions_api.py::test_a_server_restart_marks_active_cds_work_
+interrupted_for_explicit_resume` passed in it. The two runs where it failed were both heavily
+contended by concurrent calibration work, which is what a test polling a background worker on a
+two-second wall-clock budget is sensitive to.
+
 Earlier revisions of this document and of `roadmap.md` claimed the platform was "validated"
 and "zero-error". It was not: the first real execution produced 8 test failures and a frontend
-that had never rendered. The ledger below has grown from 18 entries to **68** as a direct result
-of running the code and building tests against independent answers — **66 are fixed, D18 is
-partial, and D43 remains open**.
+that had never rendered. The ledger below has grown from 18 entries to **90** as a direct result
+of running the code and building tests against independent answers — **87 are fixed, D18 is
+partial, and D84 and D85 remain open**. D43, the real-data gate, was closed by T4C.5m; this
+paragraph claimed otherwise for several slices, which is why `test_status_sections_agree_on_the_defect_ledger`
+now reads it as well as the table.
 
 Defects D26-D31 were all found *after* the code they concern was written and passing, by
 tests written against analytic answers rather than against the code's own behaviour. Six of
@@ -5195,6 +8315,464 @@ served route is unreachable from the UI. The platform was started and the nine t
 working by the user on 2026-08-20 (T3.5.25). **No screenshot per tab has been captured**, so
 that clause of T3.5.0 remains open: the rendering is attested by a user, not evidenced by an
 artefact in this repository.
+
+### 7.1a The G17 release gate, as this tree reads it (2026-09-04)
+
+`src.core.experiment_qualification.qualification_plan()` assembles seven gates in about 0.15 s and
+executes none of the measurements they read. Recorded here because the statuses are a property of
+this checkout, and because three of the five statuses mean different things that a summary would
+flatten.
+
+| Gate | Status | Read from |
+|---|---|---|
+| `offline_matrix` | `NOT_RUN` | A run this call did not perform. `execute_offline_qualification()` resolves it to three passing calendar cells and three refused scale/shape cells. |
+| `restart_recovery` | `NOT_RUN` | The same kind: a run not performed, not a recording absent. |
+| `browser_no_glue` | `PASS` | `src/core/browser_evidence.py`, from a recorded Playwright run bound to every spec's source. |
+| `synthetic_fifth_adapter` | `PASS` | `src/core/extension_evidence.py`: a live source-edit audit plus a recorded acceptance run. |
+| `calendar_calibration` | `PASS` | `src/core/calibration_record.py`, bound to the declared contract and the source that decides the measurement. |
+| `scale_shape_calibration` | `REFUSED` | Computed live, plus a recorded calibration read through `src/core/calibration_record.py`. TG17.11's refusal is **superseded, not deleted** (TG17.15 slice 5): the old claim is recomputed on every plan and still holds, the successor is calibrated and recorded, and what still blocks is that no declared manifest requests the calibrated inference and that pool exchangeability on real records is not decidable here. A declared scientific limit, blocking exactly as a failure is. |
+| `live_sources` | `PASS` | TG17.14. `src/core/live_source_evidence.py` reads a dated four-domain run: ERA5 via CDS, Argo GDAC and MAST SPOC each demonstrating network use, and the bespoke order-book record demonstrating **no** network use, which is what its own contract requires. |
+
+Verdict: `NOT_RELEASEABLE`. As of TG17.14 **every scientific gate has been measured** and five
+of the seven read `PASS`; what blocks release is `scale_shape_calibration`, and it is a declared
+scientific limit rather than an unfinished task. That is the arrangement working as designed: four
+archives were reached in four domains and it bought nothing past a refusal, because a refusal
+blocks exactly as a failure does. `§6` condition 19 of `roadmap_cross_domain.md` needs both
+`browser_no_glue` and `synthetic_fifth_adapter`, and as of TG17.13 both read `PASS`.
+
+The two `NOT_RUN` kinds above are deliberately not merged. A measurement this checkout never
+received and a run this particular call did not perform block release identically and mean
+different things, and a reader who cannot tell them apart cannot tell what to go and do.
+
+### 7.1b The four-domain live acquisition (`live_sources`, TG17.14, 2026-09-04)
+
+The first run in this project's history in which real data was pulled from public archives in
+more than one domain. It is an **acquisition and record-binding** qualification, not a scientific
+result: nothing was analysed, compared or claimed, and the record says so in its own
+`claim_boundary`.
+
+| Domain | Status | Network | Observed | Source |
+|---|---|---|---|---|
+| `reanalysis` | `PASS` | used | 324 values | ERA5 t@850 hPa via CDS, 9x9x1x4, 28.5 KB |
+| `argo_float` | `PASS` | used | 10,218 values in 93 profiles | Argo GDAC ERDDAP |
+| `tess_lightcurve` | `PASS` | used | 18,279 finite flux samples | MAST SPOC, TIC 261136679 sector 1 |
+| `order_book` | `PASS` | **not used** | 34,560 values in 2,880 records | researcher-supplied local record |
+
+**The fourth row passes by demonstrating the opposite of the other three.** `order_book` declares
+`network_required_for_pass: false` and a content-addressed local record; a network request on that
+domain would have failed it. The asymmetry is the gate's point rather than an exception to it.
+
+**The run did not clear the release, and could not have.** Five of seven gates now read `PASS` and
+the verdict is still `NOT_RELEASEABLE`, blocked by `scale_shape_calibration`'s TG17.11 refusal.
+Reaching four archives in four domains buys nothing past a declared scientific limit.
+
+**Two defects were found, both by first contact with real data**, which is the argument for having
+run it at all. **D94** was structural and the gate caught it: the reanalysis probe republished a
+32-character cache key in a field named `sha256`, and the record was refused rather than credited.
+**D95** was the archive's real shape: SPOC emits a row for every cadence in the window, including
+815 of 20,076 that carry no timestamp, and `acquire_tess` handed all of them to a collection whose
+invariant is a finite strictly increasing clock. Every synthetic fixture had a clean three-row
+clock, so neither could have been found offline.
+
+**MAST is intermittent, and the record should not be read as though it were not.** Across five
+attempts on 2026-09-04, `Mast.Caom.Filtered.Position` answered three times and timed out twice
+after two bounded 90-second attempts. A timeout is recorded as `REFUSED` with
+`network_used: null` -- not `false`, because after a failed call whether bytes moved is unknown
+and inventing either answer would be a fabrication. The passing record is therefore one of three
+successes in five tries, and a reader deciding whether to depend on this gate should know that the
+binding constraint is a metadata service rather than the science.
+
+**The record binds the code that produced it.** `source_sha256` covers nine acquisition modules,
+so editing any of them returns the gate to `NOT_RUN` until the run is repeated. This was not
+theoretical during TG17.14: fixing D94 and D95 each invalidated the preceding record and forced a
+fresh acquisition, which is the intended cost of binding evidence to the source that produced it.
+
+### 7.1c Which question a correspondence test asks (`src/core/correspondence_estimand.py`, TG17.15 slice 1)
+
+`scale_shape_calibration` refuses, and TG17.11 established that as a fact about the null. This
+slice establishes *why*, and the answer is not about compute.
+
+**Two questions had been travelling under one name.** `joint_structure` asks whether the whole
+observed arrangement of partners is special. `per_correspondence` asks whether one left member's
+affinity for one partner is special against a declared pool of candidates that are not themselves
+hypotheses. They have different reference sets and can disagree on the same data, so
+`require_declared_estimand` refuses an undeclared one by name rather than defaulting: choosing
+silently would be choosing the result.
+
+**The measurement that decides between them is computed, not written down.**
+`joint_reassignment_resolution(k)` runs the null's own enumerator and counts how many *distinct
+partners* one member can actually receive:
+
+| pairings | valid reassignments | distinct partners | honest floor | floor if miscounted |
+|---|---|---|---|---|
+| 4 | 9 | 3 | 0.250 | 0.100 |
+| 6 | 265 | 5 | 0.167 | 0.0038 |
+| 8 | 14,833 | 7 | 0.125 | 0.000067 |
+
+The reassignment count is the derangement number and grows factorially; the partner count is
+`k - 1`. A member's statistic depends only on which partner it received, so those 14,833 draws
+produce seven distinct statistic values. **Treating the reassignment count as the reference-set
+size counts duplicates as independent evidence and is anticonservative by more than a factor of a
+thousand** at k = 8, in the direction that makes a null look easier to reject. It is the most
+likely error in any reimplementation, so it is measured by a function and pinned by a test.
+
+**Two consequences follow, and both are recorded as measurements rather than arguments.**
+
+*   **The gap is structural.** Raising `MAX_REASSIGNABLE_PAIRINGS` above 8 is achievable honestly
+    -- rejection sampling from uniform permutations is exactly uniform on the valid subset -- but
+    it raises the reassignment count and leaves the partner count at `k - 1`. No amount of compute
+    lowers a floor of `1/k`.
+*   **The minimum resolvable joint family has no margin.** At `minimum_resolvable_family()` = 105,
+    putting one member a single step off the floor drops rejections to **zero of 105**, not 104.
+    Graceful degradation begins only at 106. Reaching 105 would not have produced a usable
+    instrument, which is why the rebuild is a change of question and not a bigger inventory.
+
+**The cause is one inventory doing two jobs.** Under `joint_structure` the k pairings are both the
+hypotheses, setting the multiplicity burden, and the source of alternatives, setting the
+resolution; the crossover is `H_k / k <= alpha`. `per_correspondence` separates them, so
+`minimum_pool_size(m)` -- solved against the real correction, like `minimum_resolvable_family` --
+returns 19 for one tested correspondence and 48 for six, and **margin can be bought by enlarging
+the pool at no correction cost**. That property is the whole reason to change, and a test asserts
+it directly: at a pool of 48 one member off the floor rejects nothing, at 96 it rejects five of
+six, and the number of tests is identical in both.
+
+**Benjamini-Yekutieli is named here with its reason.** Members of one family share a partner
+inventory and are therefore dependent; BY is valid under arbitrary dependence and BH is not. The
+correction choice is load-bearing rather than incidental.
+
+The slice declares the question and stops. Its claim boundary says it is not a calibration, not a
+power analysis on real records, not a partner pool and not a result; a guard asserts no power key
+appears in its report.
+
+### 7.1d The partner pool, and the circularity made inexpressible (`src/core/partner_pool.py`, TG17.15 slice 2)
+
+Slice 1's arithmetic cannot be wrong; it is counting. Admission is different in kind, and the
+roadmap named it the slice most likely to go quietly wrong. If pool members differ systematically
+from the observed partner in length, effective sample size, coverage or noise floor, the similarity
+statistic differs for reasons unrelated to affinity, every p-value is wrong, and **nothing
+announces it**. The enumeration bound this design replaces announced itself by refusing; a badly
+curated pool returns a confident number.
+
+**The defence is structural, following the same principle as R22.** Free text cannot corrupt a
+claim level because the gates read only typed fields, not because anyone is careful. Likewise, an
+admission rule here cannot key on the statistic under test because **there is no value in the
+module that is a function of two records**. `build_partner_pool` reads `RecordProfile` objects and
+never records; a profile carries `record_id`, `provenance_key` and the marginals alone. A test
+asserts the field set exactly, so a similarity, distance or affinity field cannot be added without
+failing. The tempting design -- admit candidates that look like plausible partners -- means
+admitting on resemblance to the left member, which is conditioning on the outcome; it is not a
+mistake this module can express.
+
+Reading the left member's *own* marginals is not circular and is required: a record's length,
+cadence and noise floor are not functions of any pairing, and matching a pool to the record under
+test is what exchangeability demands.
+
+**`native_seconds` is recorded and never banded.** Scale/shape mode exists to compare shapes across
+native durations, so a pool banded on duration would refuse the comparison the mode is for. It is
+the one marginal where wide spread is the point, and `AdmissionContract` refuses a band on it by
+name. In the acceptance pool the admitted durations span more than an order of magnitude.
+
+**Four refusals, none of them silent.**
+
+*   A candidate failing any band is carried in `refused` with the check it failed **and the
+    measured numbers**, never dropped. A pool that quietly shrinks is one whose resolution cannot
+    be audited.
+*   The **observed partner must clear the same bands as its own alternatives**. If it does not,
+    the reference set is not exchangeable with the thing it is a reference for, and the p-value
+    compares a record against alternatives it was never comparable to.
+*   A candidate sharing the left member's `provenance_key` is refused as leakage: a duplicate,
+    smoothed copy or overlapping window is evidence *about* the left member, not against it.
+*   A pool below `minimum_pool_size(m)` is refused rather than returned, naming the size the
+    declared number of tested correspondences requires. A pool that cannot resolve would produce
+    a p-value unable to reject at any effect size.
+
+**What the pool reports but does not check.** `spread()` publishes each marginal's pool range and
+the observed partner's percentile within it. The partner is inside every band by construction, so
+this is not a test -- but a partner at the edge of its own pool is exactly where an undeclared
+property is most likely to be doing the work, and a reader who cannot see it cannot judge it.
+
+**The claim boundary is the point of the slice.** Passing every declared band is a **necessary
+condition for exchangeability and not a sufficient one**. It establishes only that no *declared*
+marginal visibly violates it; an unmeasured property may still differ systematically and the pool
+cannot know. A pool that reads as a proof of exchangeability would be more dangerous than no pool
+at all, and the receipt says so in those words.
+
+Four mutations were applied and each was caught: dropping refused candidates silently, permitting a
+band on `native_seconds`, skipping the observed-partner self-check, and admitting a pool below the
+resolvable size.
+
+### 7.1e The exact pool-substitution null, and the family that cannot be re-chosen (`src/core/pool_substitution_null.py`, TG17.15 slice 3)
+
+Slice 1 declared the question and slice 2 built the pool. This is the inference: substitute each
+admitted alternative for the observed partner, rank the observation among them, correct once.
+
+**Nothing is sampled, and the sampled variant is refused by name.** The reference set is a
+*declared finite inventory*, sealed by digest before any statistic existed, so every value the null
+can produce is enumerable. `monte_carlo_pool_substitution` is registered and refused for the reason
+`monte_carlo_partner_p_values` was in scale/shape mode, arriving by a different route: a Monte
+Carlo denominator is **chosen by the caller rather than fixed by the pool**, so a pool of thirty
+alternatives resolving nothing finer than `1/31 = 0.032` could report `p = 0.0001` from ten
+thousand draws with the same apparent authority.
+
+**One statistic path.** The module takes a *callable* and evaluates all `N + 1` values itself; a
+precomputed observed statistic is not an accepted argument. An observed value computed elsewhere
+may carry a different normalisation, window or code version, and the resulting rank would compare
+quantities that were never the same quantity while still returning a number. The observed pair is
+additionally evaluated **twice**, and a statistic that returns two values for it is refused: under
+a non-deterministic statistic the rank depends on evaluation order and the p-value is not exact.
+
+**Orientation is declared and has no default.** A similarity and a distance invert the tail. Under
+the wrong one every reported p-value is about `1 - p`, and the result still looks like a result.
+`require_declared_orientation` refuses `None` the way `require_declared_estimand` does.
+
+**Ties count toward the numerator.** An alternative achieving exactly the observed value is one the
+statistic cannot distinguish from the observation, and treating indistinguishable as beaten would
+manufacture resolution the statistic does not have. A statistic that ties *every* alternative
+yields `p = 1.0`; that is conservative and is reported rather than refused, but it is flagged
+`degenerate`, because a reader seeing only the p-value would read a safeguard passing where there
+was never a test.
+
+**The family size is sealed in the pools, not passed as an argument.** The classic multiplicity
+failure -- run five hundred tests, correct the twenty that survived -- is guarded by `adjust`'s
+`n_tests` only when the caller supplies an honest number. Here each `PartnerPool` already carries
+the `tested_correspondences` it was admitted for, inside its digest, fixed before any p-value
+existed. `correspondence_family` requires every pool to declare the same size **and** the number of
+pools presented to equal it, so narrowing the family contradicts a number that predates the results.
+
+**The defect this slice found in its own first draft, and the number it now publishes.**
+`minimum_pool_size(m)` asks what pool lets **every** member reject when **every** member sits at
+its floor. That is the most favourable world there is, and the first `resolution()` reported it as
+a green light. On the acceptance family it was one: six pools of 58 each clear the required 48, and
+`every_member_can_reject_at_its_own_floor` read `True` -- while a family with three genuine
+correspondences of six rejected **nothing**, all three sitting exactly at the floor with
+`q = 0.083`. Members that do not correspond consume the Benjamini-Yekutieli step-up ranks the
+genuine ones need. `sparsest_detectable_count` now measures, from the floors the pools actually
+have, the fewest genuine members the family could ever reject, and the receipt states it in words:
+
+    powered_for: this family can produce a rejection only if at least 5 of its 6 declared
+    correspondences are genuine.
+
+`minimum_pool_size_for_detected_fraction` sizes a pool for that world before data is acquired. The
+gap is not marginal -- at `m = 6`: all six genuine needs `N = 48`, half needs `N = 97`, one of six
+needs `N = 293`.
+
+**Resolution is re-verified rather than inherited.** `build_partner_pool` refuses an underpowered
+pool, but `PartnerPool` is a public dataclass and a guarantee that depends on which constructor was
+used is a guarantee by convention. The floor is measured again here against the real correction,
+and a directly constructed starved pool is named in `unresolvable_members`.
+
+**Refusals that keep an exact denominator honest.** A record the pool admitted but whose payload is
+absent is refused, not skipped: skipping shrinks the denominator without changing the pool digest
+the p-value is reported against, which is anticonservative and leaves no trace. A non-finite
+statistic is refused for the same reason. An empty pool is refused because `p = 1.0` would be
+arithmetic rather than evidence, and an observed partner appearing inside its own pool is refused
+because it would be counted twice.
+
+Ten mutations were applied and each was caught, including dropping the observation from its own
+reference set, ceasing to count ties, silently skipping a missing payload, narrowing the sealed
+family, and reporting the all-genuine case as the family's real power.
+
+**The claim boundary.** Exact ranks, corrected once at the declared family size. Validity as a tail
+probability rests on the pool being exchangeable, which slice 2 establishes as necessary and not
+sufficient. It is **not** a calibration: no false-positive rate has been measured for this null on
+records with no planted correspondence, and T4C.5h is the standing proof that a null can preserve
+exactly the property it is named after and still get the distribution wrong. That is slice 4.
+
+### 7.1f The calibration, and the margin that had to be measured (`src/benchmarks/pool_calibration.py`, TG17.15 slice 4)
+
+Slice 3 produced exact ranks and said in its own claim boundary that an exact rank is not a
+calibration. This is the measurement that boundary named, and it exists because of one result in
+this repository's history: T4C.5h's surrogate preserved **exactly** the property its method was
+named after and still measured a family-wise false-positive rate of 0.765 against a nominal 0.05.
+Arithmetic being right is not the same as a null being the null it claims.
+
+**The headline: this null does not repeat that defect.** Five declared cases at 200 realisations
+each, `m = 6`, pools of 61 to 470, run through the real `correspondence_family` with the real
+`shape_recurrence` statistic:
+
+| Case | Family-wise error | One-sided 95% bound | Uncorrected per member | Rank uniformity (independent) |
+|---|---|---|---|---|
+| `no_correspondence` | 1/200 | **0.0235** | 55/1200 = 0.046 | KS 0.065, p = 0.35 |
+| `shared_grid_alias` | 2/200 | **0.0311** | 40/1200 = 0.033 | KS 0.073, p = 0.23 |
+| `clean_partner_noisy_pool` | 0/199 | **0.0149** | 54/1194 = 0.045 | KS 0.068, p = 0.30 |
+| `unresolvable_inventory` | — | — | — | 200 of 200 refused |
+
+Every bound clears alpha. The tail is not the whole check, and that is deliberate: **a rate can
+look nominal while the distribution is wrong**, so the shape is compared too. Under exchangeability
+the observation's rank among its `N` alternatives is uniform on `{1, ..., N + 1}` *exactly*, which
+predicts the entire distribution in advance rather than only its 5% tail. It holds.
+
+**Two adversarial nulls, aimed at where the pool contract could be necessary and not sufficient.**
+Slice 2's claim boundary says passing every declared band is a necessary condition for
+exchangeability and not a sufficient one. That is a sentence; these ask it for a number.
+`shared_grid_alias` gives every record the same strong artefact keyed to position within its own
+cycle — a shared instrument cadence, which is not a shared shape. `clean_partner_noisy_pool` draws
+the observed partner systematically cleaner than the inventory while still inside every band, so
+the alternatives its own contract admits are noisier than it is and its statistic should ride
+higher. Both hold the declared rate. The sentence survives contact with a measurement.
+
+**Every rate is an interval and every acceptance reads a bound.** "Zero false positives in twenty
+runs" is not a rate of zero; it is consistent with a true rate of 14%. `certifies` reads the
+one-sided Clopper-Pearson **upper** bound, `attains` reads the **lower** one, and
+`certifies_rate` is a field separate from `within_expectation` so a run too small for its own claim
+reports that rather than passing. `REALISATIONS_FOR_ALPHA` solves for the smallest certifying run
+rather than asserting it — the answer is **59**. The declared 200 is larger for a stated second
+reason: the distribution check resolves `1.36 / sqrt(n)`, which is 0.18 at 59 and 0.096 at 200, so
+a run sized for the tail alone would certify the rate and be blind to the shape.
+
+**The defect this slice found in its own first recorded run.** `planted_correspondence` was
+declared to pass when `minimum_detection` reached 1.0 — every member rejecting. The run measured
+**1,199 of 1,200** and the calibration reported `calibrated: False`. The expectation was wrong, not
+the run: 1,189 of 1,200 members had the true partner at rank 1, and with pools of up to 470
+alternatives a chance candidate will occasionally outrank a real correspondence. Demanding that
+every member reject was demanding a test with **no type-II error**, which is the same mistake as
+reading a point estimate for an error rate, made in the opposite direction and left in place after
+the error rates had been fixed. It is replaced by two criteria derived from what the case is:
+
+* the **statistic** must put the true partner top of its own pool for at least 90% of members,
+  judged on a lower confidence bound rather than a point;
+* every member the statistic did rank first must reject — `maximum_unresolved_at_floor = 0`, which
+  is parameter-free and isolates the failure worth catching.
+
+**Detection is a curve, and it falls off a cliff.** The ladder holds the inventory, the left
+members and every declared marginal fixed across rungs — enforced by pool digest, not described —
+so a rung differs from its neighbour in the planted correlation and nothing else:
+
+| planted `w` | member detection | family detection | uncorrected | at rank 1 |
+|---|---|---|---|---|
+| 1.00 | 1.000 | 1.000 | 1.000 | 0.992 |
+| 0.95 | 0.996 | 1.000 | 1.000 | 0.658 |
+| 0.92 | 0.958 | 1.000 | 1.000 | 0.346 |
+| 0.88 | **0.354** | 0.600 | **0.988** | 0.125 |
+| 0.84 | 0.062 | 0.225 | 0.817 | 0.083 |
+| 0.80 | 0.037 | 0.175 | 0.575 | 0.054 |
+| 0.60 | 0.004 | 0.025 | 0.158 | 0.013 |
+| 0.00 | 0.000 | 0.000 | 0.050 | 0.004 |
+
+At `w = 0.88`, **98.8% of members have an uncorrected p at or under 0.05 and 35.4% survive
+correction**. That gap is not noise; it is the Benjamini-Yekutieli burden at `m = 6` acting exactly
+as slice 3's `sparsest_detectable_count` predicted. When every member corresponds, the step-up
+divides at rank 6 and a pool of 48 suffices; when the family is mixed, a surviving member must
+clear the rank-1 threshold `alpha / (m * H_m) = 0.0034`, which a pool smaller than 293 cannot
+reach. So each rung reports `members_at_their_floor_that_did_not_reject`: a member the statistic
+ranked first that still fails was **short of pool, not short of effect**, and
+`minimum_pool_size_for_detected_fraction` already names the pool it would have needed. The bottom
+rung is a true null reached through the ladder rather than through the case, and the two agree.
+
+**A cost of the admission contract that nothing had measured.** `AdmissionContract` refuses to band
+`native_seconds`, because bounding it would refuse the very comparison scale/shape mode exists for.
+But `cadence_seconds` **is** banded, and cadence is native duration divided by a bounded row
+density — so the cadence band narrows native duration *transitively*, and nothing said so.
+`admission_yield` measures it: an inventory spanning **4.05 decades** of native duration yields
+pools spanning **0.95 to 1.47**, at a yield of 15% to 26%. The pool for a correspondence is far
+more native-scale homogeneous than the inventory it was drawn from. That helps exchangeability and
+constrains the mode's reach, and either way a reader is entitled to see it rather than infer it.
+
+**Why a rank is needed at all, in one number.** `shape_recurrence` returns a magnitude, and the
+magnitude of the weighted correlation between two *independent* smooth profiles averages about 0.26
+over these fixtures and reaches 0.73. A threshold on the statistic would be a threshold on how many
+harmonics a profile happens to carry. The planted weight is recovered faithfully above that floor —
+1.00 measures 0.95, 0.80 measures 0.78, 0.50 measures 0.51 — and swamped below it.
+
+**The dependence the numbers are read under.** One candidate inventory serves every member of a
+family, so their pools overlap and their p-values are dependent. That is deliberate: it is the case
+Benjamini-Yekutieli was chosen for. It also means the six values from one realisation are not
+independent draws, so every statistic requiring independence is computed on **one member per
+realisation** and the pooled figure is reported beside it as a diagnostic whose p-value is
+explicitly not a test.
+
+**Mutation testing found four gaps before it found none.** Fifteen mutations were applied; the first pass caught eleven. Three of the four survivors were real: the refusal ceiling and the count of members ranked first that did not reject were never the *binding* reason in any test, and the ladder's "held fixed" claim was checked on `build_realisation` but not on `detection_profile`. Each is now tested where it binds, and the ladder publishes an `inventory_sha256` per rung so the claim is checked rather than described. The fourth survivor was an **equivalent mutant** and is recorded as one: `_shared_phase` caps the comparison at each record's own declared support, so passing `cycles=SPAN_CYCLES` and inferring the shorter span give the same number for every fixture, and the test asserting they agreed could not fail. The declaration is now a guard that can -- a record not covering the declared window is refused. The second pass caught **15 of 15**.
+
+**The claim boundary.** A measured false-positive rate and detection curve for this null on records
+whose answers were fixed before the method ran. It is evidence that the arithmetic and the
+exchangeability hold together **on these fixtures**. It is not evidence that a pool of real records
+is exchangeable: that rests on properties the fixtures were given by construction, and a real
+inventory would have to be shown to have them. Slice 5 carries this into the release gate by a
+checked supersession of TG17.11's refusal.
+
+### 7.1g The refusal that was superseded rather than deleted (`scale_shape_supersession`, TG17.15 slice 5)
+
+Slice 4 measured a null that works. This slice carries that measurement into the release gate, and
+the interesting part is what it did **not** do: the gate still reads `REFUSED` and the verdict is
+still `NOT_RELEASEABLE`. What moved is the reason, and the old reason was kept.
+
+**Why a supersession rather than an edit.** TG17.11's refusal is a claim about a method: the
+declared joint-reassignment null cannot reject at any inventory size its enumerator will draw from,
+because no family smaller than **105** pairings resolves under Benjamini-Yekutieli at alpha 0.05
+and no inventory larger than **8** is drawn from rather than refused. TG17.15 built a different
+null for a different estimand and calibrated it. Deleting the old refusal at that point would leave
+a repository in which *a limit that was overcome* and *a limit that was edited away* read
+identically. The old claim is therefore kept, and superseded.
+
+**What makes it checked.** `scale_shape_supersession` does not quote its predecessor. It recomputes
+that claim from the two primitives it turned on -- `minimum_resolvable_family()` and
+`MAX_REASSIGNABLE_PAIRINGS` -- using the same functions the gate's own applicability section uses,
+so the two cannot disagree about the world, and a guard asserts they match. Three outcomes:
+
+| Status | Means |
+|---|---|
+| `SUPERSEDED` | The old claim is still true when recomputed, and a successor recording exists, is bound to its contract and source, and passed. |
+| `NOT_SUPERSEDED` | The successor is absent, stale or failed. The old refusal stands alone -- the state this repository was in before this slice. |
+| `VOID` | The predecessor's claim is **no longer true**. It was retired on its own terms rather than superseded, and this record describes a world that no longer holds. |
+
+`VOID` is what makes the word "checked" mean anything, and it is the outcome no run today produces.
+If someone lifts the enumeration cap past the resolvable size, the limit removed itself; calling
+that a supersession would credit this phase with work it did not do. A guard drives the record into
+`VOID` and asserts it says so.
+
+**The second recording, and a backstop that is smaller than the calendar one's.** The calendar
+calibration is cheap enough to re-run whole on every test pass, and is; a guard compares what it
+produced against what the gate is being told. The pool-substitution calibration costs **1,031 s**
+for its five cases plus an eight-rung ladder, so the suite cannot re-run it, and pretending
+otherwise would be the easy lie here. Instead the recording carries a **reproduction witness**:
+`calibrate_case` runs realisation `i` at `seed + i`, so a three-realisation run at the recorded
+seed is not a similar measurement to the recorded one -- it is its leading prefix, exactly. The
+suite recomputes those realisations for every case and compares digests. That is a smaller claim
+than the calendar one's, and the module says so in those words rather than implying an equivalence.
+A case that refuses every realisation witnesses `["REFUSED", ...]` rather than the empty list,
+because an empty digest agrees with every other run that also produced nothing.
+
+**What was recorded.** `all_met: true`, reproducing slice 4's figures exactly: family-wise
+one-sided bounds of **0.0235** (`no_correspondence`, 1 of 200), **0.0311** (`shared_grid_alias`,
+2 of 200) and **0.0149** (`clean_partner_noisy_pool`, 0 of 199) against alpha 0.05, ranks uniform
+on their own lattice (KS 0.0650 / 0.0727 / 0.0684 at p 0.35 / 0.23 / 0.30 on one member per
+realisation), `planted_correspondence` ranking the true partner first for 1,189 of 1,200 members
+with a lower bound of **0.9849** and none of those failing to reject, and `unresolvable_inventory`
+refusing **200 of 200**. The eight ladder rungs carry **one** inventory digest between them.
+
+**Why the gate still refuses, computed rather than asserted.** Two blockers, and the gate publishes
+both with what would discharge each and whether this module can decide it at all.
+
+*   **`declared_inference`, decidable here.** Every frozen scale/shape manifest declares
+    `scale_partner_reassignment` at 200 replications. That is *read back from the six manifests*
+    this module builds, not restated in prose that could go stale independently of the code. The
+    calibrated method is exact pool substitution over a declared partner pool, and no declared
+    manifest requests it. Discharging this is a change to the experiment declaration, not to the
+    gate.
+*   **`pool_exchangeability_on_real_records`, not decidable here.** The calibration is evidence
+    that the arithmetic and the exchangeability hold together on records given the property by
+    construction. Whether an inventory of real records has it is the failure mode TG17.15 named in
+    advance as the one that can be violated silently, and it is a curation obligation that no
+    further measurement on built fixtures reaches. A guard asserts this blocker survives a passing
+    recording, because a blocker nobody can discharge is the one most likely to be quietly dropped
+    once everything else goes green.
+
+A gate that turned green here would be reporting the measurement it can make in place of the one it
+cannot -- the substitution this module has refused to make since TG17.11, when it distinguished a
+calibrated method the declared plans cannot reach from a method that does not exist and from one
+that ran and failed. Slice 5 adds a fourth: a calibrated, applicable, recorded method that answers
+a question no declared plan asks.
+
+**Verification.** Twenty-one new guards across `test_calibration_record.py` (12 to 28) and
+`test_experiment_qualification.py` (22 to 28), plus three in `test_pool_calibration.py` for the
+witness. Fifteen mutations, one uncaught on the first pass and it was a real gap: every guard read
+the recording already on disk, so a break in the code that *writes* one would have passed
+everything and surfaced only after the next fifty-minute re-record. `_trim_case` is now exercised
+directly on a one-realisation outcome. Second pass caught **15 of 15**.
+
+This slice acquires nothing, runs no confirmatory statistic, writes no evidence and moves no claim
+rung. It records a calibration measured on built fixtures and states, in a form a machine
+recomputes, what that does and does not entitle the gate to say.
 
 ### 7.2 Confirmed defects
 
@@ -5250,7 +8828,7 @@ code paths that `architecture.md` previously described as implemented and rigoro
 | D40 | `roadmap.md` rule R13's crop-size table (found while building T4C.1) | **The valid-interior table understates the dual tree by nearly a factor of two.** The table is derived for a single 14-tap filter repeated at every level; DTCWT uses a 19-tap near-symmetric highpass at level 1 and the q-shift pair above it, so the real level-4 margin is **97 parent pixels against the table's 52**. The consequence is concrete rather than theoretical: a 256x256 crop - the roadmap's stated practical minimum for four dyadic levels - leaves DTCWT level 4 a **2x2** valid interior, four coefficients per orientation, on which a participation ratio is almost pure sampling noise. `dtcwt.filter_support` now accumulates the actual cascade, and `scale_signature` reports such a scale as *thin* by name instead of averaging over it. | **FIXED** T4C.1 |
 | D41 | `data_layer/zarr_source.py` vs `transform_engine/stationary.py` (found while building T4C.1) | **Two implementations of rule R13 disagreed by one pixel per side at level 1.** `zarr_source.valid_interior` floored the half-integer radius of an even-length filter while `stationary.valid_interior_halfwidth` used the conservative effective-support halfwidth. The crop module therefore declared one contaminated pixel per side valid at level 1. `edge_exclusion` now derives and halves the full effective support, the R13 table is corrected (`N=64, level 1: 52 -> 50`), and the existing geometry test asserts agreement with the SWT implementation so the definitions cannot drift independently again. | **FIXED** T4C.5a |
 | D42 | `data_layer/adapters.py`, `experiment_engine/actions.py` (found preparing T4C.6) | **Real ERA5 existed beside the Phase 4 pipeline, not inside it.** The Zarr API could inspect and materialise a crop, but `slice_sequence` supplied only a dataset id; the registered source requires the crop specification and therefore could never serve the action that every Phase 4 stage uses. The adapter also assumed `lat`/`lon`, while WeatherBench uses `latitude`/`longitude`. Parameterised source options now flow through the action without entering the unsafe id-only cache, coordinates are normalised onto the physical spine, and source request/provenance survives on the sequence. An offline WeatherBench-shaped test runs cached crop -> `FieldSequence` -> registered action -> artifact and asserts observational, non-simulated provenance. | **FIXED** T4C.5b |
-| D43 | `data_layer/zarr_source.py`, `data_layer/cds_source.py` / T4C.6 data design | **The real-data gate is not laptop-feasible through the catalogued WeatherBench layouts.** The supposedly compromise 0.7-degree store is chunked `(8,13,512,256)`: every eight-frame read transfers all levels and the globe. Live metadata inspection for a three-year, one-variable, 255x255 request estimated 29.88 GB fetched for 1.14 GB wanted (26.2x); the 0.25-degree archive is worse. T5.2c now supplies an offline-accepted, resumable direct regional CDS acquisition and canonical-cache path, but no live CDS request, multi-year NZ crop or cross-route overlap has run. Close only after that acquisition and verification evidence exists, then freeze the crop and run T4C.6. Do not reduce sample or edge-validity requirements to fit the old layout. | **OPEN - acquisition contract implemented; live data gate not run** |
+| D43 | `data_layer/zarr_source.py`, `data_layer/cds_source.py` / T4C.6 data design | **The real-data gate is not laptop-feasible through the catalogued WeatherBench layouts.** The supposedly compromise 0.7-degree store is chunked `(8,13,512,256)`: every eight-frame read transfers all levels and the globe. Live metadata inspection for a three-year, one-variable, 255x255 request estimated 29.88 GB fetched for 1.14 GB wanted (26.2x); the 0.25-degree archive is worse. T5.2c now supplies an offline-accepted, resumable direct regional CDS acquisition and canonical-cache path, but no live CDS request, multi-year NZ crop or cross-route overlap has run. Close only after that acquisition and verification evidence exists, then freeze the crop and run T4C.6. Do not reduce sample or edge-validity requirements to fit the old layout. **FIXED T4C.5m: the record was acquired and the gate ran on it.** The first three steps of the mandatory order ran live against v2 and stopped at step 3 on D86, a defect in the agreement criterion rather than in the data; campaign **v3** repaired it and the canary passed at 0.72 of a packing step. Steps 4 to 6 then ran to completion. The 0.25-degree WeatherBench store was probed before it was read (`1a28d5980c97a38e`, 2026-09-01): its chunks are `(1, 13, 721, 1440)` at 53.99 MB each, 520.7x amplification for the eight-frame overlap, which confirms the original diagnosis at the finer store and is exactly why the record comes from CDS rather than from WeatherBench. **Step 4 acquired the complete record**: 72 monthly CDS shards, **8,764 frames** of 161x161 at 850 hPa for 2018-01-01 to 2023-12-31, `content_key a07c23ec89f953c1`, `content_hash e488f5c3d480f072c834dceae1eeea2a`, **338.905 MB** transferred in **5,853.7 s**, most of it CDS queue rather than wire. The 3.03 GB preflight figure is an upper bound assuming float32 with a 2x safety factor and no compression credit; being 9x under it is the bound refusing to promise rather than a short read, and the frame count is checked exactly at conversion against the full expected calendar. **Step 5 passed** at `max_error_in_steps` 0.71875 against 1.0 allowed, zero mismatches over 207,368 values, receipt `bdfd9c8a`. That figure is identical to the canary's because the record's first eight frames come through the same route: it establishes that the 72-shard concatenation placed the right values at the right timestamps, not a new fact about agreement. **Step 6 returned PASS** on the real record in 753.9 s, with ten links replicated in train and test and no problems; the power adjudication correctly did not apply, because a PASS is not an absence. What the closure does not cover: the independent cross-route check covers eight of 8,764 frames, and the other 8,756 are guaranteed structurally -- exact equality against the complete expected calendar, cross-shard coordinate and variable identity, finiteness, and a content hash over the published store -- rather than against a second archive. **T4C.5n then closed the record's one real evidentiary gap:** an independent WeatherBench window at 2021-07-01/02, 3.5 years into the record and acquired after the verdict, agrees at 0.46875 of a packing step with zero mismatches over another 207,368 values. It is recorded as an audit and authorises nothing, because the campaign names exactly one overlap window and this is not it; what it establishes is that the record's values are verified against a second archive in its interior and not only at its start. Its eight frames all sit on 2^-9 K, and it disagrees *more* in Kelvin (9.155e-4) than the gate window does (7.324e-4) while agreeing *better* in steps -- a third independent demonstration that Kelvin is the wrong unit, and the first from a window acquired after the rule was frozen. D84 and D85 remain open; they govern whether an absence was detectable and a PASS does not route through them. | **FIXED** T4C.5m |
 | D44 | `transform_engine/stationary.py:filter_support` / `data_layer/zarr_source.py:edge_exclusion` (found while building T5.1b) | **The generic R13 budget discarded inherited low-pass support.** It counted only the filter newly applied at level `j`, `(L-1)2^(j-1)+1`, although an SWT coefficient has passed through every preceding low-pass stage. The complete cascade is `1+(L-1)(2^j-1)`. For db2 the level-4 margin changes from 12 to 23 pixels; for the declared generic 14-tap budget it changes from 52 to 98, moving the four/five-level 128-valid-pixel floors from 256/512 to 512/1024. Both implementations, their tests, the tier table and R13 documentation now use the accumulated support. An independent convolution of the dilated filters tests the composition rather than merely repeating the formula. Historical D40/D41 measurements remain recorded but are superseded wherever they relied on the generic table. | **FIXED** T5.1b |
 | D45 | `transform_engine/training.py` convolution paths (found by the first full T5.1d run) | **A transform whose numerical result depended on what ran before it.** `enable_determinism` selects a different cuDNN convolution algorithm; with ambient TF32 enabled, the RTX SWT round-trip maximum error changed from **2.38e-7 to 4.48e-4** on the same seeded input. Focused tests passed because they started in fresh process state; the ordered full suite exposed it. All training convolution calls now scope `allow_tf32=False` locally and restore the caller's policy. A regression test deliberately enables deterministic cuDNN plus TF32, asserts the 3e-6 reconstruction tolerance, and asserts the ambient flag is restored. | **FIXED** T5.1d |
 | D46 | `data_layer/cds_source.py:materialise_cds` | **A resumable download followed by an unbounded conversion.** Monthly shards were each `.load()`ed, retained in a list and concatenated into the complete multi-year five-variable record before Zarr writing. The proposed D43 route could therefore require tens of GB of RAM even though the final cache was chunked. Conversion now validates and appends bounded time blocks to a sibling store, streams its logical content hash and atomically publishes only after exact whole-axis validation. | **FIXED** T4C.5d |
@@ -5282,11 +8860,42 @@ code paths that `architecture.md` previously described as implemented and rigoro
 | D71 | `core/publication.py:publish_new_bytes`, `data_layer/era5_overlap.py`, `analysis_engine/gate_run.py`, `analysis_engine/gate_campaign.py`, `forecasting/evaluation_run.py`, `forecasting/evaluation_job.py` | **The independent ERA5 receipt could not be published on the drive the repository lives on, and the same scientific guarantee had five private implementations.** The measured failure was narrower than the first ledger wording: `era5_overlap` called `os.link` unconditionally and failed on `D:` because exFAT has no hard links; the other four already used Windows rename and therefore did not share that particular failure. They did share an unowned semantics boundary whose implementations had already drifted. `publish_new_bytes` now writes and fsyncs a random same-directory temporary, then uses an OS atomic no-replace primitive: Windows rename, Linux `renameat2(RENAME_NOREPLACE)`, macOS `renamex_np(RENAME_EXCL)`, or POSIX hard-link fallback. It never check-then-renames and never replaces. Eight spawned publishers on the actual repository volume produce exactly one complete winner; existing bytes survive, injected failure leaves neither target nor temporary, all five writer suites pass, and both previously failing CDS overlap cases publish and reload on exFAT. The claim is process-crash atomicity; sudden-power-loss durability remains a filesystem/device property. | **FIXED** TG12.1c (`ed-dev`) |
 | D72 | `data_layer/zarr_source.py:_main` | **The command the UI generates could not run against the store it names.** The Acquire tab's Inspect panel prints a ready-to-paste `materialise` line, and for GLORYS it failed twice over. `--levels` was parsed with `tuple(int(v) for v in ...)`, so the fractional elevation the panel itself supplied raised `ValueError: invalid literal for int() with base 10: '-0.49402499198913574'` before any work began; and the spec was built by calling `CropSpec(...)` directly rather than `crop_for_store(...)`, so `vertical_dim` took ERA5's default of `level` for every store, meaning even a corrected level would have been selected on an axis GLORYS does not have. `crop_for_store` already existed for exactly this and the HTTP route already used it (`api/main.py:1188`); only the CLI had been left behind. This is the **fourth** appearance of one defect: D68 taught `CropSpec` and `ZarrCropRequest` to carry a fractional level, D70 found the readiness assessment still truncating one with `int()`, and this is the entry point a researcher is actually told to use. Levels now parse integer-first, so ERA5's `850,700,500,300` stays integral and no pinned content key moves, while a non-integer literal is kept as a float and an unparseable one is refused by name. Found by a researcher running the command the UI gave them. | **FIXED** TG12.1b (`ed-dev`) |
 | D73 | `data_layer/zarr_source.py`, `data_layer/crop_planner.py`, `api/main.py`, `frontend/components/AcquisitionView.tsx` | **Acquisition discovered transform invalidity after the expensive step, and the command did not preserve the analysis it appeared to plan.** Inspect used one generic 14-tap margin and returned geometry the UI did not render; the generated command omitted `--analysis-levels`, so changing the requested analysis depth still materialised under the CLI default. Crop sizing was therefore a hidden global convention rather than a contract of the requested transform. `TransformSpec` now owns an optional implementation-derived support callback; a content-addressed metadata-only plan reports absolute and named research-policy thresholds, per-level valid interiors, feasible native-coordinate expansion and its re-priced chunk cost. Acquire renders exact transform/filter/depth controls and applies recommended bounds in one action; the generated CLI preserves every setting; explicit materialisation refuses below the recommended threshold before field selection or transfer. Legacy callers remain byte-compatible when no analysis request is supplied. | **FIXED** TG12.1d (`ed-dev`) |
+| D74 | `tests/test_documentation.py:test_route_count_claim_matches_reality` | **The route-count guard stopped reading the route count.** Its claim regex was `(\w+|\d+) routes` searched over the whole document, and TG17.1 wrote the words *"those routes"* into section 3.6zzk - 373 lines above the `## 3.12 HTTP API Surface` heading that carries the claim. From that commit the match was `"those"`, which parses as neither a numeral nor a spelled number, so the parsed value was `None` and the comparison against the served count was never reached. The claim was therefore unchecked from TG17.1 onward, and lifting the regex exposed a second and larger defect underneath it (D75). Fixed by anchoring the search to the section that carries the claim and by failing loudly when the claimed token cannot be parsed as a number: a claim this guard cannot read is a claim it is not checking, and that must fail rather than pass silently. | **FIXED** TG17.3 (`ed-dev`) |
+| D75 | `tests/test_documentation.py:_ROUTE_SOURCES` | **The route guard's coverage was a hand-maintained list, and four mounted routers were not on it.** `_routes()` parsed ten named source files. `src/api/main.py` mounts thirteen routers, and `profiles`, `lightcurves`, `ingress` and `experiment_composer` were absent — so **32 served endpoints were invisible to every check in this file**, including the entire TG16 ingress surface (`/subspace/freeze`, `/subspace/confirm`, `/subspace/transfer/certify` and thirteen more) that carries the held-out and transfer contracts. The count claim the guard validated was a count of the subset its own list named, which is why it read as consistent: architecture.md said 75 and **107 are served**, and the section 3.12 table — headed *"Listed here because an undocumented endpoint is an untested contract"* — was missing 21 rows. Found in TG17.3 while fixing D74: repairing the claim regex let the comparison run for the first time since TG17.1, and it disagreed by more than the routes that slice had added. `src/tests/test_frontend_contract.py` had enumerated `app.routes` since T3.5.22 and could see the composer surface throughout, so the two guards had disagreed about what the API is for four slices. Fixed by deleting the list: routes now come from the application object, which cannot omit a mounted router. The table is complete and the claim reads 107. | **FIXED** TG17.3 (`ed-dev`) |
+| D76 | `src/benchmarks/multidomain_flagship.py:EXPERIMENT_CONTRACT` and `experiment_manifest.flagship_recipe` | **The flagship study could have run to completion and been arithmetically incapable of rejecting anything.** TG17.0 froze an acceptance policy of 200 replications beside a family cap of 10,000 members, and TG17.1's flagship declared 288 tests (6 pairs x 3 windows x 4 channels x 4 scales). Rejecting one member of a family of 288 under Benjamini-Yekutieli at alpha 0.05 needs a raw p-value near `0.05 / (288 x H_288)` = 2.8e-5, so it needs about **35,953 surrogates**; 200 replications give a p-value floor of 1/201 and afford a family of **four**. The declared cap was therefore three orders of magnitude above what the declared ensemble could resolve, and nothing checked the two against each other: the family size was a product written inline in `preflight_manifest` and was compared only against the cap. A pass in that configuration returns an empty result for an arithmetic reason and is indistinguishable afterwards from a clean negative — D8 at four-domain scale. Found in TG17.5 the first time the manifest was priced through `SearchSpecification.account()`. Fixed by building the family from declared axes and running R18's check in preflight before acquisition, and by giving the manifest a `ConfirmationPolicy`: a study is either `confirmatory_only`, priced at its complete declared family and refused when it cannot resolve it, or `generate_then_confirm`, which must name the held-out partition it will confirm on and how many members — the remedy R18 already admitted and TG3.2 already implemented. The flagship now declares the split, four confirmatory members at 200 replications, and every payload states that its generate stage produces candidates and not claims. | **FIXED** TG17.5 (`ed-dev`) |
+| D77 | `experiment_manifest.flagship_recipe` nulls | **A declared null parameter that nothing read.** The flagship declared `"parameters": {"preserve_gaps": true}` on its null since TG17.1. `circular_clock_shift` takes a trajectory and a seed; the key was carried into the manifest digest, displayed as part of the frozen configuration and acted on by nothing — a setting a researcher believes is in force and is not, sitting inside every surrogate the study would have drawn. Found in TG17.5 when the null registry gained a `resolve` that refuses unknown parameters. Fixed by deleting it: the gap preservation it appeared to request is a property of the family, declared in `preserves` where a reader can check it, and an undeclared parameter now refuses by name rather than being ignored. | **FIXED** TG17.5 (`ed-dev`) |
+| D78 | `tests/test_analysis_api.py:test_all_thirteen_sequence_and_cross_domain_benchmarks_pass_through_http` | **A hard-coded benchmark count turned an acceptance test into a guard that stopped before the thing it guards.** The test asserted `len(names) == 13` - a literal written at TG11.1 - and then posted those names to `/api/v1/benchmarks/run` to prove the ground truth crosses the HTTP boundary. TG17.0 registered `multidomain_flagship_planted` and `multidomain_flagship_safeguards`, so the count became 15 and the assertion aborted the test **before the HTTP call**. From that slice onward the two benchmarks carrying the four-domain flagship's planted and safeguard answers were never exercised across the API boundary, and the failure read as a stale number rather than as the coverage gap it was. It survived four slices because TG17.1-17.5 each verified against targeted suites that did not include `test_analysis_api.py`, which is the same shape as D64 and D74: a guard that stops covering new code silently. Found in TG17.6 when the verification set was widened to every suite that uses the shared `client` fixture. Fixed by deriving the count from the registry with a floor so coverage cannot shrink unnoticed, and by naming the two flagship benchmarks explicitly. | **FIXED** TG17.6 (`ed-dev`) |
+| D79 | `frontend/src/components/ComposerPath.tsx:DomainMenuPanel` | **A checkbox waited for the server to tell it what the researcher had just chosen.** The domain menu's checked state was bound to `row.selected` from the `GET /domain-menu` payload. Unchecking a domain updated the manifest immediately, but the control is *controlled*, so React re-rendered it from the previous payload and it snapped back to checked - then flipped again about 200ms later when the refetched menu arrived. For that window the control reported the **opposite** of the choice just made, which in a surface whose entire job is to make a commitment explicit is worse than a lag: a researcher who looked away and back would have read the study as still containing a domain they had removed. Every source-level and HTTP test passed throughout, because both the manifest and the payload were correct - only the rendered control was wrong, and nothing in this repository rendered anything. Found within minutes of the TG17.7 Playwright suite existing, by `uncheck()` refusing to confirm the state change. Fixed by driving the checkbox from the manifest the browser already holds: the selection is a fact about the plan, and the menu is a catalogue. The server still echoes `selected`; nothing renders from it. | **FIXED** TG17.7 (`ed-dev`) |
+| D80 | `tests/test_experiment_manifest.py:test_composer_api_has_no_run_route_and_says_what_is_not_yet_real` | **A test pinned a served capability claim that had become false a slice earlier.** It asserted `"run experiment" in contract["not_yet_available"]` on `GET /api/v1/experiment-composer`. That was true when TG17.1 wrote it. TG17.6 shipped the orchestrator, added `/api/v1/experiment-runs` and put an *Open or resume the run* button in the Composer itself - and this assertion did not fail, it **held the stale claim in place**. For an entire slice the composer contract told every client that running an experiment was not yet available while the run contract on the next router described the state machine that ran it, so two served documents disagreed about what the system can do, which is the exact failure that field exists to prevent. Worse than an unchecked claim: a wrong claim held by a passing test. Found in TG17.7 when the contract's `not_yet_available` was corrected and the guard objected to the truth. Fixed by asserting the boundary that is still real - composing and running are different routers, and the composer serves no run route - and by requiring the composer and run contracts to name the same missing capability rather than each keeping its own list. | **FIXED** TG17.7 (`ed-dev`) |
+| D81 | `core/experiment_receipt.py:_canonical` | **An untouched bundle failed after passing through the browser.** Python emitted an integral JSON number as `1.0`; JavaScript has one numeric type and emitted the same value as `1` after `JSON.parse`/`JSON.stringify`. The first bundle digest hashed Python's spelling rather than the JSON number model, so the TG17.9 acceptance path exported a valid bundle and immediately rejected it on import even though no scientific value changed. Source, API and production-build checks all passed; the rendered Playwright import found it. Canonical hashing now normalises integral numbers before serialisation, while booleans remain distinct and content identities stay strings. A focused spelling-loss test and the real browser export/replay path pin the correction. | **FIXED** TG17.9 (`ed-dev`) |
+| D82 | `frontend/src/components/ExperimentComposer.tsx` (analysis step) | **A plan composed in the browser could be executed exactly once, ever.** A held-out confirmation partition is confirmatory exactly once, and the frozen flagship manifest ships with one default partition name. The first run to open it spends it; every later plan derived in the Composer inherited the same name, was correctly refused at execution, and was told to declare a new partition - through a form that had no control for declaring one. The only escape was hand-editing a manifest, which is precisely what the G17 no-glue promise forbids. Found by the TG17.10 clean-browser acceptance test, which had passed preflight, family pricing and freeze before hitting the refusal. Fixed by giving the analysis step an explicit *Held-out confirmation partition* control, so the one-shot rule is enforced against a declaration the scientist can actually make. | **FIXED** TG17.10 (`ed-dev`) |
+| D83 | `core/experiment_adapter.py`, `adapters/standardized_level_adapter.py`, `adapters/bespoke_record.py` | **A framework default answered a scientific question on every adapter author's behalf.** TG17.10's first attempt at an admissible scale/shape matrix added `scale_partner_reassignment` to the *default* `admissible_nulls` in four places rather than declaring it per domain. Whether a domain's support can carry a surrogate family is exactly the judgement the adapter author is held to; the default overruled the order-book adapter's own documented refusal (its comment states that a depositor-supplied record has no native duration worth comparing shapes across) and would have pre-admitted the null for any future adapter. Every targeted suite, the production build and the full browser suite were green; only `test_experiment_family.py::test_each_flagship_adapter_declares_which_nulls_its_support_can_carry` objected, in a full-suite run. Reverted to the single plain shift; the three admitting domains declare the null individually with reasons; the qualification matrix now records three `REFUSED` cells instead of six passes. | **FIXED** TG17.10 (`ed-dev`) |
+| D84 | `data_layer/zarr_source.py:minimum_crop_size`, `crop_planner.py` vs `analysis_engine/gate_campaign.py` | **A preregistered crop is admitted by one geometry gate and refused by another, and the refusing constant is a judgement presented as a statistic.** db2 SWT level 3 has 22 px of accumulated support, so a 161 px crop retains a 139 px valid interior; `MIN_VALID_INTERIOR` is 128, and `gate_campaign` therefore passes the frozen T4C.6 crop, as `review` and `preflight` both reported. `minimum_crop_size` takes the same 128, adds the support to reach a raw minimum of 150, then **rounds up to the next power of two** to 256 and refuses the crop -- describing 256 to the caller as *statistically recommended*. Neither figure is derived: `MIN_VALID_INTERIOR`'s own comment says "this is a judgement", and the rounding is justified as dyadic tidiness and researcher ergonomics. SWT is undecimated and has no dyadic size requirement. The deeper fault is what the constant stands in for: because `transfer_entropy` consumes 1-D series and space is collapsed to one `energy_density` scalar per frame, crop size beyond edge exclusion controls the *precision* of that scalar, not the estimator's sample count. It is a power criterion, not a validity criterion -- an undersized crop attenuates TE toward zero and biases to the null, so it cannot forge a PASS but can forge a FAIL that is really inadequate power. Nothing currently derives that term, so the frozen decision rule's own distinction between an adequately powered FAIL and an underpowered INVALID cannot be made. Found while materialising the T4C.6 WeatherBench overlap; no values were transferred. Fix specified as roadmap T4C.5i. **T4C.5i step 6 closed the contradiction but not the defect:** the power-of-two rounding was removed from the refusal path, so the planner's threshold for this crop is its raw 150 px rather than 256, both gates now admit the 161 px crop, and the refusal no longer calls a judgement *statistically recommended*. Whether 139 px of interior is *sufficient* remains unanswered in the running gate: the derived quantities exist in `analysis_engine/spatial_power.py` but the FAIL/INVALID adjudication that consumes them is step 5's deferred attenuation half. **T4C.5i step 7 built that adjudication:** `run_cached_gate` now measures the attenuation curve on the train partition, derives the detection threshold from the sweep's own reproduced surrogate ensemble, publishes decorrelation lengths, effective samples, the curve and the minimum detectable effect in the receipt, and refuses to record an inadequately powered absence as a FAIL. The apparatus is complete and pinned on synthetic evidence; the frozen crop's own answer waits on acquisition. **T4C.5i step 8 did not close it and says so in the record:** the supersession that retires the campaign for D85 carries the crop through unchanged and lists D84 under `deferred_to_run`, naming `run_cached_gate`'s `power_adjudication` as the thing that will decide it. Only acquisition can now answer it, and D43 blocks that. | **OPEN - blocks T4C.6 acquisition** |
+| D85 | `analysis_engine/cross_scale.py:_shift_null` vs `statistics/multiple_comparisons.py:check_power`; `campaigns/t4c6_nz_era5_temperature_850_v1.json` | **The frozen T4C.6 campaign cannot replicate on its confirmatory partition at any effect size, and the existing power check reports it as adequately powered.** `_shift_null` draws circular shifts *with replacement* from `admissible_shifts`, so the requested 4,999 surrogates always yield 4,999 values and a nominal p-value floor of 1/5000. `check_power` compares that requested count against the 3,005 surrogates the declared 36-test family needs under BY at alpha 0.05, and passes. But the exact test's reference set is the distinct admissible shifts the record contains, and its attainable p-value is bounded by `1 / (1 + D)` however many draws are taken. The train partition of 4,382 frames supplies 4,329 distinct shifts and resolves the level; the test partition of 2,914 frames supplies 2,912 against 3,005, giving a best attainable p of 3.433e-4 where 3.327e-4 is required. Passed through the repository's own `screen` that is q = 0.0516 against alpha = 0.05, so no observation on the confirmatory half can be declared significant at rank 1 and the replication gate cannot PASS. About 3,007 test frames would supply the distinct shifts required. Found by T4C.5i step 5's `frames_for_resolution` while wiring the derived refusal into the acquisition path; no data was acquired. The campaign is left frozen and unedited -- the fix is the recorded supersession specified as T4C.5i step 8, not an edit. `preflight_gate_campaign` now refuses on it before any transfer, while `review_gate_campaign` still reports it so the defect can be recorded against the frozen artefact. **T4C.5i step 8 supplies the design that resolves it:** campaign v2 extends the record to six whole calendar years for 3,496 distinct shifts against 3,005, recorded as a checked supersession of v1 rather than an edit of it. The minimal 3,007-frame repair was *refused* by that record's `resolution_margin` check, because it resolves only at the most favourable Theiler window of one frame while the sweep derives the window from the tested series; v2 carries 245 frames of margin. This remains open because a design is not a record: the successor has acquired nothing, the derived window is unmeasured, and the run-time refusal at the measured window is the guarantee. | **OPEN - blocks T4C.6 acquisition** |
+| D86 | `data_layer/era5_overlap.py:DEFAULT_ATOL` vs `analysis_engine/gate_campaign.py` campaign envelope | **The criterion that gates the whole acquisition demanded agreement finer than the primary route can represent, and it was not preregistered.** `DEFAULT_ATOL['t']` is 1e-4 K. ERA5 arrives through CDS packed per GRIB field: the live canary's eight frames sit exactly on binary lattices of 2^-10 K and 2^-9 K, the step changing frame to frame with the field's range. A 1e-4 K tolerance is a tenth of the coarser step, so no pair of archives could satisfy it however well they agreed, and the first live comparison duly failed at `max_abs_error` 7.324e-4 K over 62,163 of 207,368 values with `coordinates_exact: true` and compatible units. **A first pass mis-stated the magnitude and the correction matters:** pooling the eight frames suggested a single 2^-12 K quantum and a disagreement of 3.000 quanta, of which a factor of two looked unexplained. Measured against each frame's own lattice the worst case is 0.72 of a step, and the pooled figure was an artefact of averaging frames that are on different lattices. The evidence that this is encoding and not disagreement: the difference is flat in latitude and longitude, uncorrelated with the field value (-0.0002) and with its spatial gradient (0.0008) where interpolation error would track the gradient, exactly registered (a one-cell roll raises it from 7.3e-4 K to 12.6 K or 30.8 K), and both windows are `expver 0001`, so it is not ERA5 against ERA5T. On a second, independent window never used to gate anything, the signed error lies wholly within +/-0.5 steps -- exact round-to-nearest re-quantisation of the same numbers -- while disagreeing *more* in Kelvin (8.5e-4) than the gate window does (7.3e-4), which is the clearest demonstration that Kelvin is the wrong unit for this question. The second half of the defect was structural and mattered more: the tolerance lived in module code, so the rule authorising a 3 GB transfer could be changed without a supersession -- the preregistration discipline had a hole exactly where the decision to spend was made. **FIXED T4C.5k in both halves.** `encoding_step` measures the lattice a frame actually occupies and refuses when there is none, `verify_cached_era5_overlap` gains an `encoding_relative` criterion judging agreement in steps rather than Kelvin, and `GateCampaign` gains an optional `overlap_criterion` that `preflight_gate_campaign` lists as a blocker when absent. The bound of one step was declared from the encoding and not fitted -- half a step for round-to-nearest, half for the independent route's undocumented pipeline -- and the two measured windows reach 0.72 and 0.44. Campaign v3 freezes it as a checked supersession of v2 whose reason re-runs `overlap_criterion_declared` against both designs; v1 and v2 keep the exact fingerprints they were sealed under, pinned by test, because the optional field is omitted from the mapping when absent. The failing absolute receipt is preserved beside the passing one rather than overwritten. | **FIXED** T4C.5k |
+| D87 | `data_layer/era5_overlap.py:validate_overlap_evidence`, `data_layer/zarr_source.py:CachedFieldReader.source_provenance`, `analysis_engine/gate_run.py:run_cached_gate` (found by running the real record) | **The gate could not admit a record its own campaign had legitimately verified.** D86 moved the agreement rule into the campaign envelope and taught the acquisition to use it, but nothing taught the admission path. `validate_overlap_evidence` read only the unsuffixed manifest fields, which are the *absolute* criterion's; the real record carries `independent_overlap_check_encoding_relative: PASS` at 0.72 steps and `NOT RUN` under the absolute one, so step 6 refused it. Underneath, `CachedFieldReader.source_provenance` hardcoded the same three unsuffixed names, so criterion-specific evidence never reached the gate at all -- the second layer was invisible until the first was fixed. The refusal was the correct behaviour of a wrong rule: an instrument that will not accept properly verified data is as broken as one that accepts unverified data, and the symmetric hazard is worse -- an absolute PASS would have admitted a record whose campaign declared a different rule. **FIXED T4C.5m.** The criterion is named rather than assumed: `validate_overlap_evidence` takes it and reads the matching fields, checks the receipt's own declared name so a PASS cannot be relabelled, the reader carries every criterion the manifest holds, and `run_cached_gate` gains an `overlap_criterion` defaulting to `absolute` so an undeclared run refuses rather than being admitted by a rule nobody chose. The receipt records which rule admitted the record, because a reviewer cannot re-derive that from the numbers. The half that mattered: a plan does not carry the rule and the envelope does, so passing it as a caller argument would let the rule admitting a record be chosen after the record was in hand -- the precise failure D86 exists to prevent. `run_campaign_gate` therefore takes the campaign, refuses one that declares no criterion, refuses one a supplied supersession has retired, and hands the frozen rule to the gate. No fingerprint changed; this was a code defect, not a design change, so no supersession was warranted. | **FIXED** T4C.5m |
+| D88 | `transform_engine/stationary.py:apply_swt2d`, `transform_engine/coefficient_field.py:CoefficientField` (found by T4D.2's acceptance test) | **Every coefficient's parent-grid position was wrong by half its filter's support, and wrong by a different amount at every level.** The class docstring's parent-grid claim was about *shape* -- an undecimated band already has the field's shape and nothing is resampled -- and it was silent about registration. `circular_filter_1d` anchors each analysis filter at index 0 rather than at its centre, so a band's response to a structure at pixel `p` appears at `p + (support - 1) / 2`: half a pixel at level 1, **22.5 pixels at db2 level 4**, growing with level, so level 3 and level 4 of one decomposition sit twelve pixels out of register with each other. Any cross-scale association would have been made on a separation that was mostly filter. It survived because nothing had read a coefficient index as a place before: energies, RMS, the scale signature and the cross-scale gate all collapse a band to a scalar, and a circular shift moves no mass, so **no existing result changes** -- the T4C.6 verdict included, which pairs band-collapsed series and never coordinates. **FIXED T4D.2.** `analysis_delay` derives the shift from the accumulated support the transform already reports; `CoefficientField.parent_alignment` declares it per scale, together with whether subtracting it registers the level *exactly*; `detect_features` subtracts it and records what it subtracted; and the T4D.2 bridge refuses to pool levels that cannot be registered. The half that cannot be fixed by arithmetic: only a linear-phase filter has one delay. An orthogonal Daubechies filter of length four or more is neither symmetric nor antisymmetric, so a residual survives the common shift and grows with the level's dilation -- a property of the filter, not of the implementation. `haar` is refused nothing; `db2` and `db3` are refused cross-scale linking by name, with the two ways out stated. | **FIXED** T4D.2 |
+| D89 | `core/translation.py:assert_no_causal_language` (found by T4D.3, which runs the same guard over its own prose) | **The one guard that stops causal vocabulary reaching a reader passed straight over the shape author-supplied text is most likely to arrive in.** The scan is `\bcauses\b` against the rendered half of each translation unit, and an underscore is a word character, so `co2_causes_warming` does not match: the boundary sits at the string's ends, not at the underscores. An identifier is exactly what reaches `rendered` through an evidence entry's label or an alternative's `closes_when` wording, both of which are authored rather than curated -- the glossary path was screened at registration and was never the way in. Nothing recorded has been rendered through the affected path, so **no existing document changes**; what was wrong was the guard's reach, not an output. **FIXED T4D.3.** Punctuation is flattened to spaces before the word boundaries are applied, in `translation.py` and in T4D.3's own guard, which was written with the same defect and had it caught by the test that put a caller's dataset name into a sentence. The remaining limit is stated rather than closed: a word run together with another with no separator at all is not caught, and the substring match that would catch it also refuses "causeway" -- a guard that fires on innocent text is a guard that gets turned off. | **FIXED** T4D.3 |
+| D90 | `analysis_engine/spectral_tracking.py:_scale_quantity` (found by T4E.1, the first slice to divide a 4D separation by a 4D scale) | **The one relation that makes a configuration recognisable at another location refused on every feature the 4D line produces, for a spelling.** T4D.2 named the position axes `cells` and the dyadic octave `parent-grid px`. TG3.3's `distance` divides a separation by the geometric mean of the two spatial scales and correctly refuses the quotient when the unit *names* differ -- "a location in cells beside a scale in metres is a real state of this record and it is refused rather than coerced". But on an undecimated bank whose levels are all mapped to the parent grid by T4D.1's alignment step, a parent-grid pixel **is** a cell: the two names denote one unit. The effect was silent, because a refusal is recorded on the graph rather than raised, so a mining pass would have run with the geometry missing and reported patterns built from `relative_scale` and `succession` alone. **Nothing already recorded changes** -- no constellation had ever been built from these features before this slice. **FIXED T4E.1.** `_scale_quantity` returns `cells`, the same name `_axes` gives the parent grid; the precision the old name carried is kept in the `scale_basis` provenance string, which records that the octave is counted in cells of the parent grid. The rule itself is untouched and is pinned by a test: a scale genuinely in metres beside a location in cells still refuses. | **FIXED** T4E.1 |
+| D91 | `core/structural_nulls.py:reassign_scale_partners` (found by the TG17.11 scoping pass, the first to probe the null on the family it would actually run) | **The scale/shape null deranges list positions, not pairings, so on the only family the frozen quartet may legally run it reproduces the observation up to half the time and pairs a record with itself.** The module's own docstring states the requirement it violates: "a reassignment that leaves a pairing where it was has not tested it: that member's surrogate would be the observation and its p-value a foregone 1.0". The shuffle guarantees `order[i] != i`, but the *right* members repeat across an all-pairs family, so `rights[order[i]]` frequently equals `rights[i]` and the pairing is unchanged in value while changed in position. Measured on the three domains that admit the null (`argo_float`, `reanalysis`, `tess_lightcurve`; `order_book` declines, D83): over 5,000 draws pair `(argo_float, tess_lightcurve)` is unchanged **50.0%** of the time and `(reanalysis, tess_lightcurve)` is unchanged **50.0%** and self-paired (`tess_lightcurve` against itself) **50.0%**. A surrogate equal to the observation satisfies `null >= observed`, so those two members have a p-value floor of about **0.5** before any correction and **cannot reject at any effect size**. On the four-domain family the same probe gives 19.6-40.6% unchanged and 0.79 self-pairings per draw. The bias is conservative, which is why it is dangerous: a calibration built on this null would have measured near-zero planted power and been read as a well-behaved safeguard result rather than a broken null. **Nothing already recorded is affected** - no scale/shape cell has ever executed (all three are `REFUSED` by D83's per-domain declarations) and no caller outside the registry invokes this family. The fix must derange *effective pairings* rather than positions, and must refuse rather than return the observation when an inventory admits no valid reassignment - two pairs sharing one right member have no derangement at all, and that is a real property of the declared family, not an error to route around. The fix enumerates the reassignments an inventory actually admits — a substituted partner must be neither the one the pairing already had nor the pairing's own left member — deduplicates them by the surrogate they *produce* rather than by the index permutation that produced it, and draws uniformly from those. Every pairing now changes and no record is paired with itself, measured at **0 of 5,000 draws** for both on the inventory that exposed the fault, down from 50%. Two further facts fell out of enumerating the real families, and are findings about the declared inventories rather than defects: **four domains compared all-against-all admit exactly one distinguishable reassignment**, so their null is a constant whose p-value can only be the floor or 1.0 however many surrogates are paid for; and **the three domains that admit the null after D83 admit no reassignment at all**, because one of the three pairings has no substitute partner that is neither its own nor itself. Both are now refused by name rather than answered, and both are pinned by tests. The consequence for TG17.11 is that a scale/shape calibration cannot be built over an all-pairs *domain* family at either size; it must be declared over an inventory of records. | **FIXED** TG17.11 (`ed-dev`) |
+
+| D92 | `analysis_engine/spectral_clustering.py:SignatureMetric.alignment` (found by T4E.3's 10% jitter acceptance) | **Exact canonical order is not a stable approximate correspondence.** T4E.2 correctly minimises a signature lexicographically for exact invariance, but a small noisy change can make another edge first. A componentwise distance between the two canonical vectors then compares strengths and scales attached to different physical vertices. On the T4E.3 same-configuration replicates this inflated the scale-block RMS from about 10% to 47.4%, widened the all-block tolerance to 0.342, and incorrectly admitted a doubled absolute scale whose distance was 0.333. **FIXED T4E.3.** Approximate distance now minimises over every node correspondence (at most six), applying each permutation jointly to node and edge attributes; centroids align to a deterministic medoid for the same reason. The replicate radius is 0.206 after the fix and the doubled scale remains 0.333, so scale-specific clustering splits it while scale-invariant clustering joins it. | **FIXED** T4E.3 (`ed-dev`) |
+| D93 | `analysis_engine/spectral_invariance.py:signature_for` (found by T4F.1 while deriving spans between occurrences) | **The signature dropped the time unit its constellation carried, so every clustered pattern downstream held an unnamed clock.** `FrameConstellation` carries both `time` and `time_units`; `ConstellationSignature` carried `scale_units` beside its scales but only a bare float `time`, and the one construction site passed `constellation.time` without the unit beside it. Nothing had caught it because T4E.2, T4E.3 and T4E.4 never subtract two times: a signature is compared, clustered and counted, and none of those operations is dimensional. T4F.1 is the first consumer to measure a duration, and a duration in unnamed units is not a duration. This is the same shape as D90 -- a unit lost silently at a seam -- and it is the reason T4F.1's `ObservationGrid` requires the unit to be declared and then checks the members against it rather than trusting either side alone. **FIXED T4F.1.** The signature carries `time_units` from the frame it was signed on and publishes it beside `time` in its receipt; `events_from_catalogue` refuses a member whose carried unit disagrees with the grid's, and counts members carrying none rather than assuming they agree. | **FIXED** T4F.1 (`ed-dev`) |
+| D94 | `data_layer/zarr_source.py:streaming_content_hash` published through `cds_source.materialise_cds` and read by `core/live_source_evidence.py:_reanalysis_probe` (found by TG17.14's first live acquisition) | **One value was serving as both a cache key and a published content binding, and the field that carried it claimed a width it did not have.** `streaming_content_hash` returns `hexdigest()[:32]`, which is correct for a cache key and was the width every manifest, cache path and frozen atmospheric receipt had been written under. The live-source probe republished that same 32-character value under the name `sha256`, and `_is_sha256` requires 64. The gate therefore refused the whole record with `reanalysis PASS has no non-empty content-addressed record` -- **the validator working, not failing**: it declined to credit a PASS whose content binding it could not verify. Nothing offline had caught it because no test had ever asked a probe for a real digest, and the reanalysis probe is unreachable without network. **FIXED TG17.14.** The two contracts are now separate functions rather than one value doing both jobs: `streaming_content_sha256` returns the whole digest, `streaming_content_hash` is defined as its first `CONTENT_KEY_CHARS` characters and is **unchanged in value**, so no existing identity moved. `materialise_cds` publishes both and the probe binds to the full one. A test pins the relationship -- 64 hex, key is exactly the prefix, chunk-independence at both widths -- and the pre-existing chunk-independence test still passing is the evidence that no frozen receipt changed. | **FIXED** TG17.14 (`ed-dev`) |
+| D95 | `data_layer/tess_source.py:acquire_tess` (found by TG17.14's first successful MAST acquisition) | **Every cadence the archive emitted without a timestamp was handed to a collection whose stated invariant is a finite strictly increasing clock.** SPOC publishes one row per cadence in the window, including those no photometry was produced for, and those carry a non-finite `TIME`. The real sector-1 product for TIC 261136679 has **815 of them in 20,076 rows**. `LightCurveCollection` refused the lot -- correctly, since a sample with no timestamp is not on a clock -- and the gate recorded `tess_lightcurve` REFUSED rather than record a light curve. Every synthetic fixture in `test_photometry.py` had a clean three-row clock, so the code had never met the shape the archive actually returns. **FIXED TG17.14.** Untimestamped cadences are dropped before the collection is built and **counted**: `unclocked_samples_dropped` travels in `canonical()`, `describe()`, the gate record's `detail` and a `from_canonical` round trip, because a count that reaches no reader is not a count. The record also now states what `observed_values` is -- finite flux among timestamped cadences -- since 20,076 rows, 815 unclocked and 982 further NaN-flux rows reconcile to 18,279 only if the basis is stated. **A first reading of this defect over-claimed and the correction is recorded here rather than quietly dropped:** the duplicate-clock guard was said to have been blinded by NaN. It was not. numpy sorts NaN to the end, so the finite prefix was always compared correctly and `[1.0, nan, 1.0]` refused before this slice exactly as after. The failing test that established this is kept, asserting what is true -- that dropping rows must not remove a duplicate from view. | **FIXED** TG17.14 (`ed-dev`) |
 
 **Root cause common to D20, D23, D25 and D2:** the transform engine — the mathematical core of
 the platform — had **no test file at all**. `src/tests/test_transforms.py` now exists (36 cases
 across FFT, DCT, DWT, DTCWT and hybrid — two thirds of the whole suite) and covers round-trip exactness, energy conservation,
 orthonormality, dtype preservation and shift behaviour.
+
+**Current status of D84/D85 (2026-09-03).** Their terminal labels in the ledger preserve the
+state at discovery and are too broad after T4C.5m: D43 is closed, v3 acquired the complete
+six-year record, and T4C.6 returned PASS. Neither defect invalidates that PASS because both govern
+whether an observed absence was detectable, and attenuation toward the null cannot manufacture a
+positive. They remain open only for the first real negative-result path: D84 must adjudicate
+spatial attenuation as FAIL versus INVALID, and D85 must record attainable null resolution at the
+measured window. They no longer block acquisition of the record that already exists.
 
 ### 7.2c Empirical confirmation of D1
 
@@ -5344,9 +8953,9 @@ the float32 defect ships.
 
 ### 7.2f The false-positive floor (T3.5.17)
 
-`src/benchmarks/` holds twenty datasets whose correct answer is known before analysis.
-Twelve of them are **null benchmarks** - their answer is "there is nothing here". Current
-status: **29 PASS, 0 FAIL, 0 NOT_YET_RUNNABLE.**
+`src/benchmarks/` holds twenty-four datasets whose correct answer is known before analysis.
+Thirteen of them are **null benchmarks** - their answer is "there is nothing here". Current
+status: **43 PASS, 0 FAIL, 0 NOT_YET_RUNNABLE.**
 
 **Nothing is pending any more.** Three gates were defined before the stages that could
 answer them existed, and all three have now graduated to enforced PASSes: `4C.surrogate_null`
@@ -5402,9 +9011,13 @@ able to sit three slices out of date.
 | `test_analysis_data.py` | 7 | diagnostics/data-layer endpoints and independent D17 boundary-ring oracle |
 | `test_artifact_store.py` | 33 | content addressing, checksum verification, handle budget, T4A.3 acceptance |
 | `test_api_infrastructure.py` | 16 | health, listing, pagination, CORS, data-source transparency, benchmark endpoints |
-| `test_benchmarks.py` | 46 | Ground-Truth Benchmark Suite, seed discipline, eager/streamed climatology agreement, D30 determinism |
+| `test_benchmarks.py` | 50 | Ground-Truth Benchmark Suite, seed discipline, eager/streamed climatology agreement, D30 determinism, TG16.0 paired-family completeness, TG16.1-TG16.5 gate registration, and TG17.0 four-domain contract completeness/determinism/refusals |
 | `test_boundary_synthetic.py` | 8 | boundary treatments, windowing, synthetic generators and independent Euclidean-ring oracle |
-| `test_cds_source.py` | 14 | T5.2c monthly CDS planning/CLI, grid-alignment/server-snap refusals, network consent, atomic resume, shard integrity, conservative storage refusal, bounded Zarr publication, plus PASS/FAIL independent-route receipt publication, replay and tamper refusal |
+| `test_cds_source.py` | 24 | T5.2c monthly CDS planning/CLI, grid-alignment/server-snap refusals, network consent, atomic resume, shard integrity, conservative storage refusal, bounded Zarr publication, plus PASS/FAIL independent-route receipt publication, replay and tamper refusal; and T4C.5k's encoding-relative agreement criterion -- a packed frame revealing its binary step and an unpacked one refusing to invent one, D86 itself reproduced as the same pair of fields failing an absolute tolerance finer than the route can express while passing at 0.4 of a packing step, a real 1.4-step disagreement still failing so the criterion is not decoration, and the two criteria kept apart with both receipts surviving because the earlier verdict is why the successor exists, and the lattice search exercised at temperature, geopotential and specific-humidity magnitudes because a residual tolerance that does not scale would refuse a packed geopotential field as though it were unpacked; plus T4C.5m's D87 -- a record admitted only under the criterion that actually judged it, refused under the one that never ran on it, refused for a criterion that does not exist, and a receipt whose declared name has been relabelled refused rather than trusted to the manifest field it sits under; plus T4C.5n's labelled audit window -- an audit binding beside the authorising receipt rather than over it, unreadable to the gate because the criterion argument rejects any name carrying a label, and a label that could pass for a criterion refused outright |
+| `test_correspondence_estimand.py` | 21 | TG17.15 slices 1 and 3 the declared estimand: the derangement counts pinned against the partner counts they diverge from, and the miscounted reference set shown anticonservative by more than a thousandfold in the direction that eases rejection; resolution refused above the size the null itself will enumerate; the declared family unable to reach its own resolvable size; zero of 105 rejecting when one member leaves the floor, against 105 of 106 one size up; the pool size derived against the real correction and falsified one smaller; margin bought from the pool at an identical test count; an undeclared or unregistered estimand refused rather than defaulted; the inadmissible estimand registered so it is refused by name; and the correction's dependence reason and the slice's claim boundary both carried; and, added by slice 3, `minimum_pool_size` shown to be `minimum_pool_size_for_detected_fraction` at fraction one, a sparser family shown to need a much larger pool, a fraction rounding to no planted member refused, and `sparsest_detectable_count` measured from real floors -- six pools of 58 needing five genuine members of six, pools too small to ever reject returning None rather than a number, and the sparse case published in the estimand report beside the favourable one |
+| `test_partner_pool.py` | 20 | TG17.15 slice 2 the partner pool: the profile field set asserted exactly so no joint quantity can be added, and every banded marginal readable from one record alone; `native_seconds` refused a band by name with the admitted pool spanning an order of magnitude; an observed partner failing its own contract, sharing the left member's provenance, or equal to the left member each refused; every refusal carried with its check and its measured numbers, and admitted plus refused equal to what was offered; a record offered twice refused rather than counted twice; a pool below the resolvable size refused naming the required size, which tracks the declared number of tested correspondences; the estimand required and the inadmissible one refused; contracts with no band or a band below one refused; an effective sample size above the nominal count refused; the pool sealed by digest and the digest moving when a member does; the spread reporting where the observation sits inside its own pool; and the claim boundary stating admission is necessary and not sufficient |
+| `test_pool_substitution_null.py` | 35 | TG17.15 slice 3 the exact pool-substitution null: orientation refused when undeclared and the two tails shown to invert the same numbers; the p-value the exact rank with the observation in its own reference set, attaining `1/(N+1)` and never zero; ties counted toward the numerator and an all-tied statistic reported as degenerate rather than as a pass; the observed statistic not an accepted argument and shown to travel the same path as its alternatives, with a non-deterministic statistic refused; a missing payload, a non-finite value, an empty pool and an observed partner inside its own pool each refused; the Monte Carlo variant refused by name with its measurement; a family corrected once at the size sealed in its pools, with narrowing, enlarging, mixed declared sizes and a duplicated correspondence each refused; resolution re-measured against the real correction so a directly constructed starved pool is still named; the sparsest detectable count reported beside the all-genuine case, three genuine of six shown to reject nothing, and a family that can never reject saying so rather than returning a number; results bound to the pool and contract digests; and the claim boundary refusing to call this a calibration |
+| `test_pool_calibration.py` | 53 | TG17.15 slice 4 the calibration: a record profile shown to follow from the record it describes and no fixture near the statistic's resolution floor; the planted weight recovered as the correlation it claims to be, and unrelated records shown not to score near zero so the need for a rank is measured rather than argued; a zero count reported as a bound and never as a rate, the one-sided bound separated from the two-sided interval, the certifying run size solved rather than written down, and the declared run shown to be sized by the distribution check rather than by the tail; a run too small to bound its own rate refusing to pass, in both directions; the detection claim judged on a lower bound and the planted case shown not to require a test free of type-II error; a member ranked first that still does not reject counted and named; refusals counted against a detection claim rather than dropped; a rung of the ladder shown by pool digest to differ from its neighbour only in the planted correlation, the effect grid shown to bracket the measured cliff, and the ladder agreeing with the case where the effect is dialled out; an unresolvable inventory refused rather than scored; the lattice transform inverted exactly and a shifted lattice shown to be flagged; uniformity certified on independent members with the pooled figure named a diagnostic; and the transitive narrowing of native duration by the cadence band guarded so a later change cannot lose it; plus (slice 5) the reproduction witness a recording is checked by -- a short run at a seed shown to be the *leading prefix* of a longer one rather than a similar measurement, a case that refuses every realisation shown to witness its refusals rather than the empty list that would agree with any other empty run, and the digest shown to travel with the seed that addresses it |
 | `test_geometry_registry.py` | 20 | TG1.2 geometry registry: the three builtins' metrics, crops, resamples and provenance unchanged; capability-driven `is_physical`/`length_units`/`latitudes`; a fourth geometry (`polar_scan`) registered from the test module with a non-uniform, non-spherical metric; the Cartesian Laplacian refusing it; `latitude`/`longitude` recognised as a sphere |
 | `test_tracking.py` | 47 | TG2.3 frame-to-frame association: `4D.tracking` moving from NOT_YET_RUNNABLE to PASS with the recorded velocity and doubling time recovered from the field alone; the coincidence gate derived from alpha and the frame's own density and tightening when the frame crowds; a declared bound as a rate against an irregular clock; greedy and Hungarian disagreeing measurably, plus a third associator registered from the test module and two rogue ones refused; the seam crossing that is one track on a torus and two on a plane; the orientation gate reading the convention rather than the number and refused outright on an extractor that reports none; and the empty-frame and short-clock regressions |
 | `test_representation.py` | 59 | TG2.4 representation-induced feature audit: the floor on every plane of every registered lens, and the planted blob that proves the audit can see; the null propagated through the representation against the same null rebuilt inside it, measured on the dual tree where they differ and on the stationary transform where they do not; the FFT magnitude plane whose null nothing can exceed; the family of forty-five planes that rejects on 86% of structureless fields uncorrected, the ensemble refused as too small for it, and the correction registry that prices six identical columns as one test; the declared decimation an array does not have; and the plane R13 leaves no interior in |
@@ -5433,10 +9046,21 @@ able to sit three slices out of date.
 | `test_sample_spine.py` | 28 | TG1.4 sibling sample spine: a rank-3 domain through the unmodified sweep and replication gate, the planted/AR(1) pair, `PhysicalField` still refusing non-2D input, the one-way bridge and its transpose refusal, declaration-not-inference refusals, and a fourth reduction registered from the test module |
 | `test_tabular_domain.py` | 48 | TG0.2 non-atmospheric domain: planted-coupling recovery and AR(1) null through the unmodified sweep, R21/R17 refusals, declaration and adapter validation |
 | `test_coefficient_field.py` | 40 | T4B.1 acceptance: parent-grid alignment, perfect reconstruction per family, lineage-safe summary; DTCWT upsampling declared; LevelBank and level slicing (T4B.4) |
-| `test_documentation.py` | 19 | architecture, roadmap and proprietary named-licence boundary against the code/repository |
+| `test_extension_evidence.py` | 25 | TG17.13 slice 2 the channel from the extension seam's acceptance run to the gate that reports it: this checkout passing on a recording it carries, the standing glue count published by a *passing* gate with every instance named and reasoned, the audit re-read live rather than inherited from the recording, every contract-named check shown to have been performed, an absent recording reading `NOT_RUN`, a recording made against a different contract or different source reading `NOT_RUN` and naming what moved, a weakened acceptance test un-measuring the run through its own bound source, a recording that performed fewer checks refused rather than read as a smaller pass, a run that happened and failed a check reading `FAIL` rather than `NOT_RUN`, an audit that cannot see what it checks reading `NOT_RUN` while a measured framework edit reads `FAIL`, rewriting a declared reason or widening what counts as glue moving the contract digest, and the measurement refusing another adapter, a foreign native record, an empty window list, and a callable whose defining source cannot be located |
+| `test_extension_audit.py` | 11 | TG17.13 the source-edit audit: no framework source names the synthetic fifth adapter, every registered-domain occurrence in the generic seam is declared with a stated kind and reason, and only a behaviour branch counts as glue; an empty registry, a missing source and an undeclared occurrence are each refused rather than scanned past |
+| `test_documentation.py` | 29 | architecture, roadmap and proprietary named-licence boundary against the code/repository, including every registered TG17 receipt operation, adapter, refusal and field having an explicit source-of-truth explanation |
 | `test_dtcwt.py` | 28 | Kingsbury q-shift DTCWT: primitives vs reference, two oracles, orientation, shift invariance, D1 head-to-heads |
 | `test_executor.py` | 38 | Executor backends, seed derivation, ordering, portable CPU/accelerator/HPC profiles, doctor, device/thread policy, SQLite concurrency, byte-identical sweeps (now over a payload that actually draws), D55 thread/serial agreement with the seed-to-draw window held open |
 | `test_experiments.py` | 3 | declarative sweeps and lineage |
+| `test_experiment_manifest.py` | 12 | TG17.1 immutable cross-domain manifest, byte-stable API/run identity, explicit window family, native-support metadata planning, visible partial/refusal policy, content-addressed draft revisions, recipe/API round trip and no premature run route |
+| `test_structural_trajectory.py` | 10 | TG17.2 immutable canonical trajectory, exact native clock/support/gap preservation, domain-blind weather/Argo/TESS mining seam, complete value reconstruction, adapter declarations/digests, semantic-leakage and interpolation refusals, full-fidelity preview and visible API boundary |
+| `test_structural_alignment.py` | 45 | TG17.4 clock, support and coverage semantics: the density invariance that row count alone cannot manufacture support, half-open boundaries and unioned rather than summed supports, the coarser scale governing effective sample size, non-stationary support labelled an upper bound, the true elapsed seconds of a daylight-saving day and the refusal of a naive local timestamp, the six adversarial fixtures against their known answers, declared kernels with no framework-default parameters and their manufactured-overlap accounting, kernel admissibility per adapter and the refusal of a value-inventing kernel over an irregular clock, the two mode vocabularies refusing each other at the manifest, and the preflight and API alignment surfaces (56 pytest cases) |
+| `test_experiment_family.py` | 60 | TG17.5 multi-domain family accounting and mode-specific nulls: the complete declared search as eight priced axes, domain combinations unioned across arities, the lag and representation axes a family used to be short by, R18 refusing 288 tests at 200 replications before acquisition with both remedies priced, the generate/confirm stage and its named held-out partition, a screen that cannot shrink the correction unit and the refusal of correcting over survivors, precedence availability reported without reducing the family, every registered null's mode and preserved features asserted against what the surrogate actually does, the registered-and-refused global shuffle, per-adapter null admissibility, and the frozen-family calibration in which the planted event is confirmed on 6 of 6 pairs and each false-alignment fixture on 0 of 6, and the D91 guards on the scale/shape null: every pairing changes, no record is paired with itself, the draw is uniform over exactly the distinguishable surrogates, and the inventories that admit none or only one are refused rather than answered, and (TG17.12) the recording the release gate reads asserted case by case against this live calibration, so the gate's recorded channel cannot drift from what the calibration actually does (63 pytest cases) |
+| `test_shape_fixtures.py` | 17 | TG17.11 the frozen scale/shape fixtures and the inference they are scored under: the family size solved from the null's own resolution rather than chosen, every fixture record resolving a shape rather than its own cadence, each case checked to have the property its name claims before it is scored, the planted case recovered on 105 of 105 members and each safeguard rejecting 0 of 105, the degenerate inventory refusing rather than reporting a safeguard passing, the p-value floor carried in the result, and the Monte Carlo template refused by name with its anti-conservative error measured against the calendar null that is unaffected, and TG17.11 slice 4's calibration: every case meeting the expectation frozen in the module, the planted case fully recovered and the safeguards firing in none of 2,100 member tests, the artefact recording that it resampled nothing, the correction holding alpha on the null's own p-value lattice over 20,000 draws, the detection profile shown to be a step that names the inventory each sparsity needs, a recurrence too sparse to detect refused with its reason, and the Monte Carlo error measured to be worst at the inventory sizes a study would actually try (18 pytest cases) |
+| `test_shape_calibration.py` | 8 | TG17.11 the scale/shape statistic: a recurring shape separated from an unrelated one across a 2,222-fold native ratio, scale invariance measured at machine precision rather than declared, row density shown not to move the statistic above the resolution floor and refused below it, the cost of a mis-declared native duration shown to compound with the phase window, an unrecognised native unit refused rather than converted, and the finding that no G17 flagship fixture declares a native scale that can carry a shape (8 pytest cases) |
+| `test_experiment_run.py` | 80 | TG17.6 the resumable orchestrator: the transition table checked against itself, run identity as the manifest and nothing else, a re-opened manifest resuming rather than forking, a step address keyed to the artefacts it consumed, a killed run resuming without re-requesting what it had already acquired, a torn journal tail skipped, a timeout leaving the run FAILED with a remediation and a retry re-executing only that component, a retry refusing a new plan and a refusal refusing a retry, an editable copy leaving the frozen run byte-identical, partial coverage decided by the frozen policy in all three directions, a held-out partition no second run can spend, progress with nowhere to carry a result, and the HTTP surface including a browser refresh that resumes the same run |
+| `test_composer_path.py` | 49 | TG17.7 the guided path: seven steps held in a registry and ordered by ordinal rather than by how names sort, one next action that is always the first unsatisfied step, a blocked step distinguished from an undone one, a domain this instance cannot translate blocking rather than being dropped, a null no declared domain admits refusing the analysis step, partial coverage left to the frozen policy, the four ladder rungs with acquisition reaching only the first and a completed run reaching neither a finding nor evidence, calendar presets that round-trip the flagship's own windows, a menu that filters nothing and disables with a reason, a preregistration summary generated from the hashed bytes, an envelope refused when its digest disagrees with its body, and a path read that never opens the run it is reading about |
+| `test_adapter_registry.py` | 15 | TG17.3 registered adapter contract, typed control schemas and their refusal of undeclared parameters, the ten-check conformance kit including executed invariance probes and `NOT_PROBED` reporting, unreconstructable lineage refusal, coverage-honesty and byte-cap failures, the four flagship adapters, the two that register from outside `src`, the bespoke record family's TG8.4 fence, and the synthetic fifth adapter installed through the extension seam with no orchestrator, route or UI edit |
 | `test_exports.py` | 32 | CSV/JSON/NetCDF4/Zarr round trips, embedded provenance, seeded perturbation (D34) |
 | `test_external_fcn3.py` | 9 | T5.6a offline FCN3 request/result schemas, exact global input and ensemble contracts, portability refusals, canonical persistence, file/tree identity and request/artifact tamper isolation |
 | `test_external_ensemble_evaluation.py` | 8 | T5.6c exact truth/initialization alignment, member/mean/persistence errors, analytic CRPS and spread, area-weighted fractional-tie ranks, bounded lazy reads, content identity and scientific refusal contracts |
@@ -5449,9 +9073,10 @@ able to sit three slices out of date.
 | `test_forecasting_artifact_evaluation.py` | 8 | T5.3b/T5.2d checkpoint/config integrity, artifact-bound lineage, persistence-relative metrics, physical-time reporting/refusals, undefined-skill handling and CPU/RTX vendor-neutral accelerator parity |
 | `test_forecasting_protocol.py` | 7 | T5.0a exact schema completeness, canonical identity, immutable nested configuration, evidence requirements, temporal/rollout consistency, persistence and tamper/drift refusal |
 | `test_forecasting_protocol_binding.py` | 4 | T5.0b exact dataset/protocol/checkpoint binding, recomputed coordinate/statistics identities, drift refusals and bound-evaluation cross-run isolation |
-| `test_frontend_contract.py` | 94 | the frontend/backend contract, including dataset-bound navigation gating with visible backend refusal reasons, capability profiles showing yes/no/not-established facts, transform/dataset/cadence readiness claim boundaries, domain-driven acquisition, workflow-grouped navigation, persistent record/study context, the TG11.1 analysis panel's three engine operations, R21 disablement, three-valued verdict and re-read identity check, the TG11.2 preregistration panel's declare-never-decide split, TG11.5's separate GET-only recorded-review workspace with its visible R23 fence, complete argument/cost display and honest empty states, preservation of every ERA5 control, and TG11.6's skip/route focus, bound labels, global focus and reduced-motion rule, keyboard SVG lineage, figure text equivalents and asynchronous-state semantics, plus the UI integrity guards: no fabricated results, no unqualified validation claims, units and slope uncertainty displayed |
-| `test_gate_run.py` | 1 | T4C.5d frozen plan, local-only preflight, bounded train-only climatology/signatures, authenticated synthetic gate receipt, no-overwrite and tamper refusal |
-| `test_gate_campaign.py` | 6 | T4C.5f-h exact campaign identity, strict nested schema, canary/full/WeatherBench drift refusals, pre-transfer R13/physical-lag audit, aggregate storage/readiness, immutable freeze/load, pinned real preregistration and zero-network CLI (8 pytest cases) |
+| `test_frontend_contract.py` | 181 | the frontend/backend contract, including dataset-bound navigation gating with visible backend refusal reasons, capability profiles showing yes/no/not-established facts, transform/dataset/cadence readiness claim boundaries, domain-driven acquisition, workflow-grouped navigation, persistent record/study context, the TG11.1 analysis panel's three engine operations, R21 disablement, three-valued verdict and re-read identity check, the TG11.2 preregistration panel's declare-never-decide split, TG11.5's separate GET-only recorded-review workspace with its visible R23 fence, complete argument/cost display and honest empty states, TG17.1's manifest-driven save/reload/preflight Composer, TG17.2's known-answer structural-contract inspector and disabled premature runner, preservation of every ERA5 control, TG17.3's schema-driven adapter controls with no per-domain branch in the generic composer, every registrable control kind having a renderer, and the adapter/conformance payload shapes, plus TG17.7's guided path rendered entirely from the served contract with no order of operations held in a component, one next action, blocked steps that stay reachable with their reason, a tablist operable by keyboard, a place kept across navigation and refresh, presets applied as the instants the server resolved, and empty panels that read as unasked questions rather than clean results, TG17.8's comparison views with their structural visual refusals, TG17.9's generated trust surface mounted in Composer and Platform, read-only replay, evidence-category absences and explicit navigation-only handoff, TG18.1's class-preserving Research Archive, visible noninteractive acquisition routes, and refusal to treat run or receipt labels as published studies, TG18.2's figure-data contract - every figure family reaching the shared exact-value panel, a named disclosure, keyboard-addressable rather than hover-only value inspection, stated missingness, colour-range provenance, log-axis omission and truncation, and the refusal to author a summary statistic, and TG18.2's comparison contract - every declared pair stating whether a shared colour range is admissible and why, refusing on mismatched units, mismatched quantity, an undeclared relationship or a panel with no finite sample, deciding cell correspondence separately from scale, and reaching at least two panels per contract, TG18.2's validity and uncertainty overlay - a fitted claim stating the band it was taken over and the uncertainty attached to it, refusing to mark a degenerate band, one whose limits are not finite or one lying off the drawn extent, clamping a band that overruns the figure so the mark matches the prose, projecting into log coordinates on a logarithmic axis, flagging a value quoted with no uncertainty, carrying the analysis layer's assumption strings verbatim while leaving its interpretation where it already appears, giving the shading a text equivalent in the tabulated points, and refusing to draw the fitted model or an envelope around it, TG18.2's bounded pointer/keyboard pane resize preserving both children and collapsing to document order at narrow widths, TG18.3's global navigation-only journey, one remediation per shell blocker, Composer-owned scientific status and visibly separate legacy gridded tools, TG18.4's rendered acceptance inventory, StrictMode-safe initial focus and non-colour semantics, and TG18.5's qualification-gate inventory held against the shell's own navigation with every journey destination resolved to a served workspace, including the two blocked stages no clean-browser run can click, plus TG11.6's accessibility and the UI integrity guards |
+| `test_gate_run.py` | 6 | T4C.5d frozen plan, local-only preflight, bounded train-only climatology/signatures, authenticated synthetic gate receipt, no-overwrite and tamper refusal; and for T4C.5i step 7 the derived power record in the receipt -- per-scale decorrelation and effective samples, the attenuation curve measured on the window both interiors supply, the sweep's own surrogate ensemble reproduced, the family's best case selected from train and non-finite rows excluded from it, and every branch of the FAIL/INVALID boundary including the PASS that is deliberately not downgraded, and a decimated family declaring that its matched window is a coefficient-count match rather than a shared area |
+| `test_gate_api.py` | 13 | T4C.5j read-only transport for the gate record: the surface publishing its own four refusals; the whole `/api/v1/gate` prefix asserted to serve `GET` and nothing else, so read-only is a property of the routing table; a retired campaign labelled RETIRED and still served in full with `resolvable: false` intact; retirement matched on fingerprint and therefore surviving a rename of all three files; an older campaign no supersession names left ACTIVE while its defect is still reported, because not being retired is not being sound; a tampered envelope listed as unreadable rather than silently dropped; the supersession review re-run against both campaigns with every reason failing for the retired design and passing for the successor and `deferred_to_run` carrying D84/D85/D43; an empty receipt store reported as an absence of runs rather than of findings; a receipt served with both verdicts and the rule that moved the second; an edited receipt refused with 409 and a store holding only it still NOT_YET_MEASURED; a receipt id that cannot escape its store; and the repository's own store served as a reviewer would open it (D43, D84, D85) |
+| `test_gate_campaign.py` | 25 | T4C.5f-h exact campaign identity, strict nested schema, canary/full/WeatherBench drift refusals, pre-transfer R13/physical-lag audit, aggregate storage/readiness, immutable freeze/load, pinned real preregistration and zero-network CLI; plus T4C.5i's surrogate resolution audit -- D85 pinned on the frozen campaign itself (2,912 distinct shifts against 3,005 required) and acquisition refused on it while review still reports it; plus step 8's checked supersession -- an inadmissible reason, an unrepaired successor, a dropped invariant, a rename, a swapped envelope and the acquisition refusal, from the library and the CLI (19 pytest cases); plus T4C.5m's `run_campaign_gate` -- the agreement rule reaching the gate from the frozen envelope rather than from the caller, and a verdict refused both for a campaign that declares no rule and for one a supplied supersession has retired, because a verdict carries forward as evidence in a way a review does not |
 | `test_grid_operators.py` | 64 | grid metrics, metric-aware gradient/Laplacian, area weighting, physical-wavenumber spectra, D26 |
 | `test_hypothesis.py` | 3 | correlation and categorical hypothesis discovery |
 | `test_imports.py` | 36 | NetCDF/Zarr/CSV/JSON import, dimension pinning, axis identification, laundering guard, benchmark runs over HTTP |
@@ -5462,25 +9087,25 @@ able to sit three slices out of date.
 | `test_stationary.py` | 19 | undecimated SWT: shift invariance, perfect reconstruction, frame constant, PyWavelets oracle, R3 normalisation |
 | `test_statistics.py` | 36 | FDR procedures vs scipy, surrogate preservation properties, calibration on a true null, stationarity gate, screening |
 | `test_training_representations.py` | 43 | T5.1a-e raw/FFT/DCT/Haar/db2/SWT/DTCWT batch contract, reconstruction, immutable context, analytical/PyWavelets/FFT oracles, exact complex-atlas bijection, fused/reference coefficient and gradient agreement, translation equivariance, explicit TF32 precision isolation, Mallat/channel packing, support/redundancy metadata, gradcheck, cached buffers, dtype migration and vendor-neutral accelerator parity |
-| `test_cross_scale.py` | 26 | T4C.3 acceptance plus the frozen T4C.6 protocol: injected cascade/null twin, Theiler windows, exact metric-aware lat/lon support floor, power check, split sufficiency, embargo and three-state replication verdict |
+| `test_cross_scale.py` | 28 | T4C.3 acceptance plus the frozen T4C.6 protocol: injected cascade/null twin, Theiler windows, exact metric-aware lat/lon support floor, power check, split sufficiency, embargo and three-state replication verdict; plus T4C.5i step 7's recovery of a sweep's own surrogate ensemble from its seed, and the seed separating lags from source indices |
 | `test_scale_signature.py` | 29 | T4C.1 acceptance, analytic white-noise values, eager/streamed exact agreement and source-mutation refusal; threshold sensitivity; R13 interiors; T4C.4 power-law core |
 | `test_surrogate_null.py` | 14 | T4C.2 acceptance: spectrum preserved, phase destroyed, organised scores and fBm does not; the two calibrations (wrong null, linear lag) |
 | `test_wavelet_bank.py` | 27 | T4B.2 expansion through the engine's own parameter matrix, the 1,000-combination guard, decompose_bank / extract_scale_signature, the vertical-bank refusals |
 | `test_transforms.py` | 13 | fft/dct/dwt/dtcwt/hybrid round trips; D1 recorded as a strict xfail |
-| `test_zarr_source.py` | 61 | R13 geometry, chunk-hostility, byte counting, streaming content identity, exact chunk-bounded frame reader, cache/provenance round trip, NetCDF engine and HTTP surface; D67 coordinate-only costing that succeeds even when the data-selection path raises `MemoryError` |
+| `test_zarr_source.py` | 63 | R13 geometry, chunk-hostility, byte counting, streaming content identity, exact chunk-bounded frame reader, cache/provenance round trip, NetCDF engine and HTTP surface; D67 coordinate-only costing that succeeds even when the data-selection path raises `MemoryError`; plus T4C.5i step 6's unrounded minimum crop size and separately reported dyadic convention |
 | `test_five_outputs.py` | 38 | TG6.3 the five outputs as a pure function of the bundle: what can be claimed given as the reached rung and every rung beneath it with a fixed entitlement stating what that rung does not license; what cannot be claimed as the exact complement, each unreachable rung naming the gates that stand between, including the case where a rung's own gates all pass but a floor failure or a lower unmet gate blocks the climb; the evidence against carrying every `FAIL` and `INVALID` entry, every contradiction and failure state that is not `NOT_APPLICABLE`, and every passing null result, with `caps_at_observation` agreeing exactly with the ladder's blocking set so what merely argues against a claim is distinguished from what forbids it; eight structural alternatives mapped one-to-one and totally onto the climbing gates, each open exactly while its gate is unsatisfied, alongside alternatives someone recorded; the next observation following its stated precedence of unblock, then climb, then resolve, then nominate nothing and say so, verified over a randomised sweep in which every branch including the empty one occurs and all five rungs are reached; determinism to the digest and across a round trip through disk; labels, summaries and unread payload keys carried to the reader but moving no membership; causal claim kinds refused at every rung, naming R7 |
 | `test_recorded_call.py` | 50 | TG7.1 the recorded-call boundary: every call capturing the verbatim request, the verbatim response bytes, the exact model id, effort, API request id and both timestamps, chained by digest and labelled `recorded-not-reproducible`, with a loaded record claiming determinism refused by name; sampling parameters refused at any depth of the request; the declared schema sent as `output_config.format` with `additionalProperties` closed, and free text, a missing field, an undeclared `claim_level`, a value outside its enumeration, a wrong type and a parse disagreeing with the response bytes each refused, the check surviving a round trip rather than holding only at record time; commentary bound to one exact bundle revision, published beside the bundle and never over it, never overwritten, and refused when spliced from another bundle even where the chain would accept it; and the acceptance test of the phase — a corpus standing on all five rungs plus a blocked and a contradicted bundle, reviewed by all eight roles with commentary demanding promotion, whose every claim level is identical after deleting every LLM output — with a randomised sweep over 300 reviewed bundles, a second over 200 recorded chains, and the smuggling check that refuses recorded wording found inside the evidence chain (R22, R23) |
 | `test_round_robin.py` | 49 | TG7.2 the adversarial round-robin: the eight seats replayed turn by turn against the plan, with a role out of order, a seat answered by a model or at an effort the panel did not seat, an answer against the wrong schema, a second answer to one challenge and a ninth turn on a finished exchange each refused; a malformed turn recorded before it is refused, so nothing paid for is discarded (R23); dissent retired only by concession or by a rebuttal the independent reassessment declines to reopen, with the reassessment able to reopen a dissent but not originate one; the final synthesis refused when it drops an unresolved dissent, invents one, or reports calm while one stands; three agreeing challengers leaving the fourth's objection byte-identical, which is what a hidden count would have broken; a panel needing every seat filled and reporting reviewer overlap rather than refusing it; and a complete exchange over a corpus standing on all five rungs plus a blocked and a contradicted bundle, every seat arguing for promotion by name, moving no claim level — with a randomised sweep over 120 exchanges checking retained dissent against an independently written rule and a second over 80 randomly seated panels re-replaying each recorded chain (R22, R23) |
 | `test_review_cost.py` | 15 | TG7.3 provider-neutral cost control and Gemini 3.5 Flash Batch transport: fixed per-role effort routing; exact structured Batch request, poll and response mapping including the first live operation shape; current Batch response-format enum; API-key non-retention; visible-plus-thinking output accounting and raw/normalized token reconciliation; measured non-zero cache-hit acceptance and configured-but-missed refusal; standard-route, effort, identity, arithmetic, provider-error and tamper refusals; and content-addressed atomic no-overwrite receipt persistence over an eight-call review |
-| `test_translation.py` | 47 | TG7.4 translation, bounded: the restated gate names checked against the ladder's own so the one line of duplication cannot drift; a glossary refused when partial, when it invents a term, and when a phrase carries causal vocabulary, a digit, a comparative asserting a relation of size, or wording reserved to a higher rung; R9's six figures given a structure they did not have, with each of the six load-bearing and a lift that is not confidence over base rate refused; the roadmap's own "82% of the time" rendered welded to the base rate that defuses it; two features of one variable described with their units while a cross-domain pair renders only `structural_signature`, asserted as the absence of variable, dataset and units; entitlements welded into the same string as the claims they bound; commentary quarantined outside the claim text and refused when reproduced inside it; a stale translation of a superseded revision refused; canonical no-overwrite persistence and a tampered document refused on load; a glossary registered from the test module outside `src/` (TG8.1); and the acceptance test of the phase — a corpus on all five rungs plus a blocked and a contradicted bundle, translated into an atmospheric and a financial vocabulary, reading completely differently and asserting identical facts — with three randomised sweeps and nine deliberate mutations of the module, each caught (R7, R9, R19, R22) |
+| `test_translation.py` | 48 | TG7.4 translation, bounded: the restated gate names checked against the ladder's own so the one line of duplication cannot drift; a glossary refused when partial, when it invents a term, and when a phrase carries causal vocabulary, a digit, a comparative asserting a relation of size, or wording reserved to a higher rung; R9's six figures given a structure they did not have, with each of the six load-bearing and a lift that is not confidence over base rate refused; the roadmap's own "82% of the time" rendered welded to the base rate that defuses it; two features of one variable described with their units while a cross-domain pair renders only `structural_signature`, asserted as the absence of variable, dataset and units; entitlements welded into the same string as the claims they bound; commentary quarantined outside the claim text and refused when reproduced inside it; a stale translation of a superseded revision refused; canonical no-overwrite persistence and a tampered document refused on load; a glossary registered from the test module outside `src/` (TG8.1); and the acceptance test of the phase — a corpus on all five rungs plus a blocked and a contradicted bundle, translated into an atmospheric and a financial vocabulary, reading completely differently and asserting identical facts — with three randomised sweeps and nine deliberate mutations of the module, each caught (R7, R9, R19, R22); and D89, a causal word inside an identifier caught now that punctuation is flattened before the word boundaries are applied, with "causeway" still passing so the guard cannot be turned off for firing on innocent text |
 | `test_findings_api.py` | 29 | TG9.1 the read-only claim surface: the wire guard refusing a bare confidence at any depth of any response body and passing one that travels with all six of R9's figures, with the guard's restated field list asserted to still agree with `AssociationFigures`; the acceptance test of the slice — every route served over a corpus that genuinely does report a confidence, with the test refusing to pass vacuously if none is present; a domain registered from the test module reaching `GET /domains` and `GET /glossaries/{name}` without editing `src/api/`; built-in glossaries registered eagerly at import rather than on first request (D35); a GET leaving the bundle bytes and the rung unchanged (R22); an unreadable bundle reported rather than skipped; an absent study root served as an empty list; unknown study and unknown glossary both 404; a blocked study reported as blocked; a partial figure set served as no figures rather than a subset; and one study in two vocabularies reading differently while serving identical `structural_keys` (R9, R22) |
 | `test_domain_onboarding.py` | 33 | TG8.1 the onboarding contract: the adapter recipe as a tuple the API serves, the checklist generates from and the tests assert against, so the documented contract and the enforced one cannot drift; the acceptance criterion of the slice — a third domain onboarded in one file outside `src/`, with the six files it would otherwise have had to touch hashed before and after and asserted byte-identical, live in all three registries and served by `GET /findings/domains`; the geometry/violation biconditional in all four combinations, refusing a domain that names a metric geometry while renouncing the metric and one that supplies neither, with `pixel` shown to sit on the renouncing side and an unregistered geometry refused by the registry that owns the vocabulary; atomicity, with a refused glossary, a refused geometry and an injected failure between the writes each leaving all three registries exactly as they were; re-onboarding refused by name until asked for explicitly, and a name the glossary would normalise differently refused as the half-onboarded state in a subtler form; a piecemeal domain audited as incomplete rather than passing for a checked one, and a declaration registered without wording still appearing in the listing — the TG9.1 omission with its halves swapped; the digest stable across equal declarations and moved by a single changed phrase; the built-ins held to the contract they document, either entry point registering the whole pair, and a half-registered built-in repaired rather than skipped; and the plugin domain asserted to break the two assumptions no registered domain had broken, with five deliberate mutations each caught (E13, E15, R17, R21) |
 | `test_channels_api.py` | 24 | TG8.4 the ingestion seam over HTTP: inspection reporting a record's columns, rows and clock while choosing neither a clock column nor a domain, and refusing to substitute a price column for a timestamp that runs backwards even though the price increases; an irregular clock turned into an obligation on whichever domain is chosen rather than filled in, and the aggregate obligation stated because no column declares itself one; the property the two-call shape rests on — the refusal inspection advertises and the refusal reading enforces are the same refusal — checked against a third domain onboarded for the purpose, because both built-ins agree about ragged clocks and could not show the difference; a loaded record carrying its domain's refusals, the attribution caveat and the sentence saying a plot is not an analysis; an aggregate channel marked and its declaration required; a gridded domain refused for a channel table in its own words including E14; the adapter's reasoning surviving to the researcher rather than becoming "invalid file"; a binary upload redirected to the route that reads binary; and a channel honestly named `confidence` served rather than mistaken for a bare claim, which is why channels are a list of named entries and not a mapping (E14, E15, R9, R17, R22) |
 | `test_presence.py` | 13 | TG12.2a/D69 explicit per-sample presence: strict boolean shape and binding absent values, observed-invalid distinction, minimum viable support and receipt counts, biconditional domain enforcement, tabular refusal without a mask, partition slicing and gap embargo, physical-lag decorrelation and sparse refusal, fixed-N shift-null audit, the controlled Argo-like candidate measurement, masked frame-lag refusal, all-true result identity, presence-bound partition identity without measure reads, and API/UI wire semantics (E5-E14, R6, D65) |
 | `test_stores.py` | 37 | TG10.1/TG12.1 gridded-store registry: the four ERA5 stores and externally registered GLORYS source under declared domains; malformed declarations refused; measured versus unmeasured chunk facts; read-only catalogue compatibility; pinned ERA5 crop identity; declared depth and fractional negative-elevation selection; GLORYS citing the persisted 2.02x probe while the rejected 72.52x layout remains in the ledger; no runtime import of `copernicusmarine`; and the independent fifth-store extension acceptance (E1, E2, E14, R17) |
 | `test_store_probe.py` | 34 | TG10.3 probing as a recorded act: a local store's structure and chunk sizes read without transferring data, the worst chunk reported rather than the mean against a fixture whose two variables differ in width because an identical pair could not tell the two apart; the acceptance criterion, a deliberately hostile store characterised as hostile with nothing materialised, no cache entry created and the figure agreeing exactly with the prediction from chunk metadata alone; hostility shown to be a property of a pairing, the same store amplifying 30x for a request that straddles its chunks and under 4x for one that lines up; three-valued hostility with `None` never folded into `False`; a refusal recorded as a result — network switched off, an unopenable path, a directory that is not Zarr, and five open failures classified with their text kept verbatim, because the difference between "no such bucket" and "403" is a typo versus an account; seven incoherent records refused, including an amplification with no crop attached and a refusal with no reason; the digest covering the observation and not the day it was taken; a ledger that keeps an earlier probe rather than replacing it; atomic content-addressed persistence that never rewrites an existing record; the registration gate in five parts — a claimed measurement with no probe, a probe of another store's URI, an unrecorded digest, a figure the cited probe denies, and a store that both cites a look and says nobody looked — with the error asserted to name the claim, the remedy and the honest alternative after a mutation showed a weaker assertion passing; the four transcriptions counted as debt and asserted to carry exactly what was recorded and no more; the probe routes including a recorded result where `/inspect` returns 409; and an opt-in live probe of the real WeatherBench store, **NOT RUN** (E1, E5, D43, D62) |
-| `test_crop_planner.py` | 8 | TG12.1d/D73 transform-owned support and derived absolute/recommended crop thresholds; an external support callback without planner edits and pre-source refusal without one; symmetric coordinate expansion, edge/source infeasibility and revised chunk cost; plan identity moving with transform or coordinate observations but not field values; metadata-before-selection materialisation refusal; and invalid filter configuration refused as a client parameter (R13) |
-| `test_acquisitions_api.py` | 6 | TG10.2-TG13.2 domain-first catalogue, complete registered grid and light-curve reachability, channel-table E14 admission/refusal, limits and attribution caveats, and mechanical known-violation coverage backed by available acquisition paths |
+| `test_crop_planner.py` | 12 | TG12.1d/D73 transform-owned support and derived absolute/recommended crop thresholds; an external support callback without planner edits and pre-source refusal without one; symmetric coordinate expansion, edge/source infeasibility and revised chunk cost; plan identity moving with transform or coordinate observations but not field values; metadata-before-selection materialisation refusal; and invalid filter configuration refused as a client parameter (R13); and for T4C.5i step 6 the demoted heuristic threshold -- the requirement rather than its dyadic round-up, the threshold declaring itself a heuristic and naming what replaces it, the convention never moving a verdict, and D84's own 161 px crop now admitted by both gates (12 pytest cases) |
+| `test_acquisitions_api.py` | 13 | TG10.2-TG18.1 domain-first catalogue, complete registered grid and light-curve reachability, channel-table E14 admission/refusal, limits and attribution caveats, mechanical known-violation coverage backed by available acquisition paths, human-facing grid-source identity, metadata-only CDS planning, exact submission confirmation, server-owned preflight, bounded progress, cooperative cancellation, completion-only records and restart-safe explicit resume |
 | `test_analysis_api.py` | 7 | TG11.1 the domain-analysis engine through HTTP: the read-only capability boundary, association over the full re-uploaded record, precedence admitted only by a declared floor, the R21 refusal reaching the caller before any computation, a three-valued gate verdict over server-derived record facts, an unknown configuration key refused rather than ignored, and the acceptance criterion — all thirteen `sequence` and `cross_domain` benchmarks reproduced through the live HTTP client with every null still answering "there is nothing here" |
 | `test_preregistration_api.py` | 17 | TG11.2 the generate/confirm split over HTTP: the sealed family matching the shape the sweep actually emits, a partition identity that ignores what the file was called (D65) and separates two splits of one record, sealing that narrows by lag and is timed by the server clock, a confirmatory lag that was never generated refused, an edited seal naming the field that changed, a wrong published digest refused, confirmation taking every setting from the seal and spending the partition, the same held-out data refused a second confirmation under a second individually honest seal, two seals frozen before any opening still buying only one look, a partition the seal did not name refused, a refused confirmation leaving the partition unspent, and TG11.1's gate refused on a spent partition |
 | `test_evidence_api.py` | 22 | TG11.3 the evidence write path: a study opened at revision zero claiming nothing, a second study under one identifier refused, an identifier that could traverse a directory refused, an append linked to the head it names, a stale head refused with nothing written, earlier revisions kept rather than rewritten, the read surface serving the latest revision and folding the earlier ones into one row (D66), a request carrying a rung refused rather than ignored, a payload asserting a rung refused at any depth, a payload asserting `temporal_precedence` refused and told which route computes it, the rung moving only because the evidence moved it, one FAIL entry capping the chain at observation through the wire, commentary refused a category, a bare confidence refused on the way in, an entry that cannot be back-dated, a causally worded hypothesis registered with the ceiling stated, the precedence verdict computed here and citing the bytes and the configuration it came from, an underpowered sweep recorded INCONCLUSIVE rather than as a negative, a domain with no admissible lag floor writing nothing, and a stale head refused before the sweep runs |
@@ -5488,9 +9113,67 @@ able to sit three slices out of date.
 | `test_cross_domain_api.py` | 35 | TG11.4b the cross-domain record: two native clocks intersected exactly, with what each side retained and discarded reported; clocks that share no observation refused rather than resampled, and the refusal naming interpolation as the thing it declines; an irregular native clock refusing precedence by name; a column whose semantics or units were not declared refused rather than defaulted (R19); an unknown reading setting refused rather than ignored; two records from one domain refused as not a cross-domain study; a family declared in seconds converted onto the common cadence; only pairs that cross the boundary counted as members; a duration below either domain’s physical floor refused rather than dropped and one the common clock cannot express refused rather than rounded; the price agreeing with the family the generate pass actually searches; the partition identity ignoring what the files were called (D65); generation reading nothing from the held-out partition and writing nothing; every run setting sealed inside the specification and the seal visible where the programme lists what it froze; the frozen members re-derived from the record rather than reconstructed from their labels; an edited seal refused at load and spending nothing; **the planted relationship confirmed on data it was not selected from and the same pipeline over an uncoupled pair confirming nothing**; both operands’ semantics and units restored to the receipt; the partition opened once; a wrong pair of records confirming nothing and costing nothing; a published digest that disagrees with the seal spending nothing; a seal frozen by another surface refused; the confirm route accepting the two records and nothing else; and no route on the surface accepting a lag in frames |
 | `test_reviews_api.py` | 8 | TG11.5's read-only recorded-review boundary: explicit absence without reassurance, complete verified record/outcome/cost serving, exact latest-bundle binding, record-digest linkage, malformed and unknown artifacts reported rather than skipped, unknown-study 404, GET-only routing, and a read leaving the evidence bundle byte-identical (R22, R23) |
 | `test_profiles.py` | 10 | TG12.2b-d immutable profiles, declared reductions, and bounded Argo seam: profile spec machine-independence and scatter preservation, preflight counts, observed-invalid distinction from absence, per-float reduction enforcing violations, depth-bin aggregation identity shifts, profile collection round trips, argo parent flat-channel refusal, profile reduction registry discoverability, and profile API contract refusal visibility (E15, R17) |
-| `test_photometry.py` | 9 | TG13.1 atomic TESS onboarding and precedence refusal, canonical bounded requests, metadata-only exact-product preflight, checksum-valid BJD_TDB parsing and value-bound identity, pre-download caps, immutable collection replay, source discovery, API claim boundaries, and an explicit opt-in bounded live MAST acceptance (E14, E15, R17, R21) |
-| `test_dataset_ingress.py` | 8 | G14/G15 file probing without semantic inference, explicit sample roles/relationships/units, content-bound routing with explained spatial refusals, grouped/ordered split-leakage refusal, R18 family sealing and permutation-resolution refusal, planted generate/confirm recovery, changed-file and tampered-plan refusal, and the complete multipart HTTP workflow |
-  | **total** | **2401** | |
+| `test_photometry.py` | 13 | TG13.1 atomic TESS onboarding and precedence refusal, canonical bounded requests, metadata-only exact-product preflight, bounded transient-timeout retry, checksum-valid BJD_TDB parsing and value-bound identity, pre-download caps, immutable collection replay, source discovery, API claim boundaries, and an explicit opt-in bounded live MAST acceptance (E14, E15, R17, R21) |
+| `test_dataset_ingress.py` | 9 | G14/G15 file probing without semantic inference, explicit sample roles/relationships/units, content-bound routing with explained spatial refusals, grouped/ordered split-leakage refusal, TG16.0's shared independent-only admission contract, R18 family sealing and permutation-resolution refusal, planted generate/confirm recovery, changed-file and tampered-plan refusal, and the complete multipart HTTP workflow |
+| `test_representation_structure.py` | 6 | TG16.1 complete pair enumeration, joint redundancy/complementarity/XOR/null discrimination, sealed estimator/null/family and permutation-resolution refusal, content/tamper binding, non-removal claim boundary, earned capability registration, and multipart plan/run workflow |
+| `test_conditional_information.py` | 6 | TG16.2 conditional-signal/null/collider discrimination, overlap and effective-support admission, sealed conditional-randomisation family and permutation-resolution refusal, content/tamper binding, conditional-only claim boundary, earned nuisance capability, and multipart plan/run workflow |
+| `test_stable_subspace.py` | 13 | TG16.3 span/projector invariance, planted linear and null discrimination, optional nuisance-region stability boundary, sealed complete family/optimizer/partition and permutation-resolution refusal, content/tamper binding and multipart plan/generate; TG16.4 unchanged held-out application, complete-family correction, nuisance-overlap refusal, content-bound seal, publication check and durable one-opening ledger; TG16.5 published definitions, no-adaptation external contract, provenance/content binding, target spending, and multipart certification |
+| `test_comparison_views.py` | 65 | TG17.8 the comparison views and the pictures they refuse to draw: a native-magnitude axis carrying two domains refusing to be constructed and `native_magnitude` asserted to be the only unshareable kind, `magnitude_equivalence` and `semantic_equivalence` refused in both modes, causality declarable by a manifest and drawable by no view, a declared causal relationship occupying its matrix cells as a refusal rather than vanishing, every role distinguishable in colour, marker and word with a duplicate in any one channel refused, a mark requiring exactly one of an artefact digest and a reason it has none, absent coverage as a named state that is never a measured zero, the bespoke domain keeping a refused row, one shared coordinate carrying different native durations per domain, every matrix cell showing its correction denominator, a manifest with no motif saying so rather than showing an empty grid, `results_exist` requiring a mining artefact rather than trusting a COMPLETE state, a linked selection answering per domain with no merged interval, and a rendered view that does not open the run it describes |
+| `test_experiment_receipt.py` | 21 | TG17.9 completed-only export, exact explained field set, self-hash, manifest/run/result/refusal identity through replay, reconstruction with no run store or UI state, changed bytes and unknown fields refused, a forged-and-rehashed receipt caught by semantic journal replay, impossible transitions refused, source and adapter identities, native/canonical/result role separation, full inference declaration, freeze-time environment identity, methods-report digest and claim boundary, evidence absences with no automatic action, idempotent immutable publication, generated trust contract, HTTP export/replay/report, non-complete refusal and the browser's integral-number spelling round trip (D81) |
+| `test_spatial_power.py` | 58 | T4C.5i spatial sampling adequacy: white noise decorrelating at one pixel, constructed correlation lengths of 4/8/16 px recovered, effective samples falling as structure grows, pixel count never treated as sample count, a crop that never decorrelates reporting saturation instead of a length, the searched limit never substituted for an unmeasured one, the mean-centring artefact demonstrated at half the interior and refused inside the trust horizon, a larger crop measuring what a smaller one could not, a constant interior counted as one sample, masked and 1-D inputs refused, the spatial and temporal 1/e conventions pinned to agree, a planted coupling attenuating as the crop shrinks, only spatial precision varying across the curve, the extrapolation exceeding every measured crop, a still-climbing curve refusing distinctly from a badly fitting one, and the same field yielding ADEQUATE and INVALID verdicts when only the crop changes; the campaign design admitting exactly one ranking, the BY dependence penalty pinned to the repository's own, the required level agreeing with `required_surrogates`, a design that cannot reject having no minimum detectable effect rather than a large one, the threshold sitting at the ensemble maximum at rank 1 and deeper for a smaller family, non-finite surrogates discarded and counted, the derived threshold driving the power verdict, and -- the load-bearing one -- the threshold falling exactly where `screen` over the declared family changes its mind; and for step 5 the train partition resolving the corrected level where the test partition cannot, that finding reproduced independently through the gate's own `screen`, extra draws not repairing a short record, a wider Theiler window costing resolution, the crop that closes a deficit exceeding the one measured and growing with the target, no crop being named for a target above the ceiling, a reduced family being reported and refused, resolution binding before the threshold is consulted, an attenuation deficit naming crop and refusing family, and no refusal naming a bare constant (58 pytest cases); and for step 7 the streamed curve equalling the array curve exactly rather than approximately, orientations collapsing as a signature collapses them, a curve refusing to be read from a subset of the record, a frame refusing to be counted twice, and both paths taking their sub-crop sizes from one place |
+| `test_browser_evidence.py` | 16 | TG18.5 slice 4 the channel from a rendered browser run to the two gates TG17.10 refused to award itself: a checkout with no recorded run reading `NOT_RUN`, a complete run beside the specs it ran reading `PASS` as the control, a green single-spec run refused as partial however green it is, weakening any spec returning the gate to `NOT_RUN` and naming the file while the recording stays readable, a run that happened and failed reading `FAIL` rather than `NOT_RUN`, a spec recorded but since deleted named rather than ignored, the action counts matching what the module froze with a drifted count reading `NOT_MEASURED` rather than reporting the new number, an absent measurement keeping every field intact, the source-edit audit staying unmeasured even when the browser ran, wall-clock reaching the record only under a name ending `_unasserted`, the gate assembling in under a second without opening a browser, one passing gate leaving the verdict `NOT_RELEASEABLE`, and every spec on disk bound rather than only the ones a run chose |
+| `test_calibration_record.py` | 28 | TG17.12 the channel from a calibration measured outside orchestration to the release gate that reports it: the recorded calendar calibration meeting every answer frozen with its fixture and each case inside its own declared bounds, a checkout with no recording reading `NOT_RUN` rather than inheriting this one, a recording copied beside the source it was made against still reading `PASS` as the control, a change to the statistic returning the gate to `NOT_RUN` and naming the file that moved while the recording stays readable, a relaxed frozen expectation unbinding the recording through the contract digest, a recording whose cases did not meet their answers reading `FAIL` rather than `NOT_RUN` because a calibration that ran and failed is a different fact from one that did not run, source digests agreeing across line endings so a Windows clone does not read its own recording as stale, the gate assembling in under a second and never executing the calibration, one passing gate leaving the verdict `NOT_RELEASEABLE`, the calendar null's floor asserted as `1/(1+replications)` and resolvable at both the calibration family and the declared plan, the two modes shown to buy their floor differently with only the calendar one able to reject, and the applicability section claiming nothing about acquired data; and (TG17.15 slice 5) the second recording and the supersession that carries it: the recorded pool calibration meeting its declared contract with every error rate clearing alpha on a bound that is shown to be above its own point estimate, the recorded witness recomputed case by case from the seed it names so a fifty-minute measurement is checkable in seconds, the recorded ladder shown to have run every rung against one inventory, a change to the null the calibration ranks against unbinding the recording while leaving it readable, a relaxed declared expectation unbinding it through the contract digest, a case that missed its expectation reading `FAIL` and a run too small to bound its own rate reading `FAIL` rather than passing, the supersession holding only while the predecessor's claim recomputes true, a predecessor whose claim stopped being true reading `VOID` rather than crediting this phase with a limit that removed itself, an absent successor leaving the old refusal standing, the supersession stating what it does *not* replace, the two estimands' inventories shown to differ by the two numbers rather than by an adjective, and the trimming that writes a recording exercised directly so a break in it cannot wait fifty minutes to surface |
+| `test_live_source_evidence.py` | 18 | TG17.14's network-dark evidence boundary and explicit runner: the flagship quartet derived rather than copied, three archive bindings kept distinct from the bespoke local binding, absence and partial coverage reading `NOT_RUN`, a public PASS without network use refused, the local record forbidden to invent network use, source drift unbinding a readable record, operational refusal kept distinct from executed failure, exact measurement times plus coverage and non-empty content identity required, a complete current four-domain recording reaching the release ledger without clearing its independent refusals, frozen bounded requests rendered without network, two permissions required before any probe, a reporter-shaped complete run read back as PASS, provider refusal kept distinct from implementation failure, the CLI demanding its exact acknowledgement, the local record digest binding exact bytes rather than normalising line endings as source code does, an edited evidence record failing its self-hash, and committed fabricated demo data forbidden from satisfying the live local binding |
+| `test_experiment_qualification.py` | 28 | TG17.10 the release gate itself: three durations by two modes with no cell missing, explicit dates and complete-family correction frozen before results, every matrix manifest preflighting without a refusal, the two modes carrying different relationship/null/language contracts, the order-book record bound by content rather than filename, every admissible cell executing/exporting/replaying with one manifest identity throughout, the scale/shape quartet refused before execution by the order book's own declaration with a refused cell opening no run and keeping its reason, the scale-partner null admitted per domain and never by framework default (D83), one timed-out acquisition retried alone across a process boundary, the single-failure suite registered as fixture-only, a fully green offline rehearsal still unable to make the verdict `RELEASEABLE`, scientist-action measurements reported as `NOT_MEASURED` rather than invented, the record self-hashed with tampering detected, a repeat qualification resuming identical runs, the HTTP plan and rehearsal keeping the unrun gates visible, and (TG17.11) the scale/shape gate refused rather than unimplemented or passed, stating applicability without claiming the calibration's result, the declared null unable to reject at any inventory size it will draw from, both declared domain families carrying the null's own refusal verbatim, and the whole determination made without acquiring or calibrating anything; and (TG17.15 slice 5) the gate still refusing after the supersession with the reason rather than the status being what moved, the superseded claim recomputed from the same primitives the applicability section uses so the two cannot disagree, the declared inference read back from the six frozen manifests rather than restated, the blockers published with what would discharge each and which one this module cannot decide, the exchangeability blocker shown to survive a passing recording, and the gate reading a tens-of-minutes recording without running it |
+| `test_spectral_feature.py` | 15 | T4D.1 located maxima: a planted blob recovered sub-pixel at three positions including one exactly between samples, the refinement beating the integer peak it starts from, the R13 margin excluding a detection the detector demonstrably can see, the margin recorded even when not applied, a threshold fitted over the record rather than per frame so a quiet frame reports nothing beside a loud one, frozen thresholds inherited verbatim and a threshold above the peak yielding nothing, a threshold that would accept everything refused, truncation recorded with the strongest kept rather than silently dropped, a real family reporting no phase rather than inventing zero and a complex one reporting the phase it has, a flat top as one detection at its centroid carrying its own imprecision, a feature exactly between two samples found at the midpoint, a plateau on a slope refused as a maximum, the claim boundary travelling with the detection, and every band visited and labelled |
+| `test_spectral_tracking.py` | 19 | T4D.2 linking those maxima: the two level-4 bands running the whole 24-frame sequence unbroken (D1's aliasing, absent), the transverse coordinate of every band's track within a pixel of the recorded trajectory, the velocity equal to advection plus the structure's own growth along the axis its band high-passes -- a prediction with no free parameter, checked for every band -- the coarse band excited later and never earlier, no track spanning two levels because the octave gate refuses it; and for D88 the levels of a linear-phase bank agreeing on where a blob is while the unaligned view is marked not comparable, a db2 bank refused for cross-scale linking by name with one-level-at-a-time still allowed, and a decimated family unable to declare an alignment at all; plus a separable band label never becoming an angle and the orientation gate refused on it, a complex family passing its declared angle through, a threshold crossing never reported as a significance, the representation naming the filter and not only the family, a plateau carried as positional uncertainty, domain/dataset/variable required rather than defaulted, a grid that closes in longitude refused a flat declaration, two sets of detection settings refused, a search that found nothing returning no tracking result, and the clock being every frame that was searched |
+| `test_spectral_constellation.py` | 45 | T4E.1 the bridge to TG3.3's attributed graphs: every constellation carrying a real `AttributedGraph` whose declared relations are exactly what `measurable_relations` reports, three of the eight measurable and the other five refused by name with the field each one lacks; D90 pinned on the units themselves rather than on the symptom, with `distance` measured on every pair of the pass and a scale genuinely in metres still refused so the fix cannot be read as a weakening; `succession` asserted false for every ordered pair of every constellation, which is why the onsets are carried separately; the enumeration checked against the combinatorics of its own frame census frame by frame and 318 nodes checked against the tracks they came from; the flank separation of two bands following one vortex, `same_band` on every pair, and the claim boundary naming both; the raw and band-normalised strength ratios disagreeing about the sign of the comparison, with the band RMS recovered exactly from the threshold and its sigma, and a detection that recorded no threshold refused a normalised strength and saying so; left-censoring set from the tracker's own clock, the nine-frame offset carried as a bound, and an uncensored pair carrying no note; the plane angle checked against six hand-built displacements, declared not to be a compass in its own receipt, refused between two coincident nodes, and wrapped on a periodic axis with two tracks disagreeing about where it closes refused; rates local to the node so two frames of one track differ, a single sighting given no rate, velocity or scale velocity, a held level reporting exactly zero rather than a least-squares residue, and a signed radial velocity; and the refusals -- only pairs and triples, a frame over the node cap refused rather than sampled, a budget overrun refused whole rather than returned as a prefix, R19 left to TG3.3 rather than re-implemented, D88 registration required across scales but not within one, a missing registration receipt not treated as a failing one, a node with no scale refused, the carried half required to be the same size as the comparable half, and the absent self-loop check shown to be unreachable rather than added |
+| `test_spectral_clustering.py` | 16 | T4E.3 approximate attributed-graph matching: all four block weights required, finite and published; the symmetric dimensionless distance and each reduction stated; mode, cardinality, axis availability and scale-unit changes refused before arithmetic; an unavailable sole weighted block refused; calibration requiring at least two same-family replicates, reusing TG3.4's `MatchTolerance`, retaining every pair distance and taking their maximum; D92 pinned directly where 10% noise flips T4E.2's canonical order, with correspondence searched again and node/edge attributes moved together; the roadmap acceptance at another location, after a 73-degree rotation and under held 10% geometry/strength/scale jitter; doubled absolute scale split in scale-specific mode and joined in scale-invariant mode; tolerance invalidated by a weight change; a single-link bridge kept as two patterns by complete link; deterministic pattern membership and IDs under input reversal; centroid plus calibrated and observed radii exposed; the T4E.4 support boundary explicit; and empty input refused rather than reported as a scientific absence |
+| `test_spectral_mining.py` | 14 | T4E.4 bounded minimum-support mining: both hard budgets positive and mandatory; support a positive integral threshold rather than a boolean or fraction; planted five- and two-occurrence patterns separated at minimum three and equality admitted at five; every supported or early-pruned candidate still reporting its distinct-identity count and support unit; the entire decreasing-support tail pruned at the first miss; candidate cap refused before a partial sweep; wall-clock deadline enclosing both preflight and the scan and exposing no partial result; duplicate constellation keys refused rather than counted twice; a threshold above all candidates returning a complete empty result; input permutation unable to change IDs, counts or decisions; and the receipt publishing its algorithm, budgets, unasserted elapsed time and explicit non-significance boundary |
+| `test_spectral_events.py` | 18 | T4F.1 the timed event substrate: the grid refusing an unnamed time unit, an empty frame list, repeated or reordered frames and a cadence the frames do not lie on; coverage measured against the declared cadence, reported incomplete with its missing count across an unsearched frame, and refused as undecidable without a cadence; the searched frames unrecoverable from the catalogue; an empty catalogue, an occurrence at an unsearched frame, two scale modes in one series, a repeated occurrence identity and a member unit disagreeing with the grid each refused by name; members carrying no unit counted rather than assumed to agree; event order invariant to input permutation; two patterns on one frame reported as simultaneous and unordered; per-pattern spans in the declared unit; and the receipt publishing its schema, grid and claim boundary |
+| `test_spectral_sequences.py` | 33 | T4F.2 counted sequences and repeated gaps: a zero or negative minimum lag refused because it would make two events on one frame a succession, lags required finite, ordered and in a named unit, a lag declared in another unit than the grid refused rather than converted, and a window no frame on the cadence can fall inside refused rather than counted as zero while the same window is admitted on a grid fine enough to reach it; a proposed window classified measured, holed or truncated with the three kept apart and undecidable without a cadence; the planted four-fold chain counted at both lengths with the reversed chain present as a zero rather than omitted, two patterns sharing a frame counted as no step in either direction, and a pattern following itself counted as the chain it is; a censored antecedent excluded from the denominator while an antecedent whose searched window held nothing stays in it as a miss, an unread window excluded and counted apart, a completion at an inadmissible antecedent published rather than dropped, the count standing and the ratio refused without a cadence, a pattern with no admissible antecedent reporting that rather than a zero ratio, and no sequence claiming more support than the occurrences it was counted over; support asserted antimonotone under extension over every extension the sweep reached and the examined and pruned candidate counts asserted against the arithmetic that rule implies; a length below two, a fractional or non-positive minimum support, an implicit series, window or budget, and either budget overrun each refused whole; and for recurrence, a repeated gap reported with its count and share, a gap containing an unread instant bounding rather than measuring and kept out of the longest, a series whose every gap is unmeasured, an undeclared cadence reporting which kind of ignorance it is, gaps that never agree, a tally below the declared minimum refusing a modal interval, a single gap refused as a recurrence, an absent pattern refused rather than reported empty, and the receipt publishing the lattice count that is the denominator of its own coincidence |
+| `test_spectral_precursors.py` | 47 | T4F.3 precursor tests: the base rate measured as a window probability rather than a frame one and shown to grow with the window, estimated only over positions whose window was wholly observed, identical for two antecedents sharing a consequent, published with the sample size it was estimated over, and refused as a lift when the consequent never fell in any observed window; lift held to confidence over base rate, the interval bracketing it and narrowing as the denominator grows, the interval held to the defining property of the score interval so a normal approximation that gives a perfect record no width at all is refused, the overlapping windows that break its independence assumption counted rather than only disclaimed with two anchors exactly a window apart counted as sharing one, and R9's six figures either built as the programme's own carrier or refused whole, the surrogate-corrected lift shown to be against the ensemble while the plain lift is against the base rate; the planted precursor clearing the null while its reverse does not, the same unchanged record called a precursor by the scattering null and not by the shifting one, the rotation preserving the antecedent's count and every gap but the wrapped one, rotations below the widest declared lag never drawn, an ensemble larger than the record's distinct rotations refused, the null's identity and what it preserves and destroys travelling in the receipt, the easy null carrying its own warning, and one seed redrawing one ensemble; a lag family required as a declared object and refused empty, duplicated, mixed in unit or declared in a unit the grid does not use, overlapping windows reported rather than refused, one draw shown to be shared across the family so the maximum has a null and a window's ensemble does not depend on where it was declared, the chosen lag referenced to the maximum, and each family corrected against its own size; an under-powered design refused before anything is counted, the family sized by what was declared rather than by what was reported even when a member returned no number at all, a family whose every member clears alpha raw and none of them corrected showing that the status follows the correction, correction shown to move p-values only upwards, and every member reported including those that found nothing; a grid without a cadence, a pattern preceding itself, an unknown null or correction, an alpha or interval level outside (0, 1), an empty ensemble, an undeclared seed, an unaffordable budget and a pattern the series does not contain each refused by name; the ensemble a p-value came from published rather than only summarised; no status naming a term the ladder places outside itself; and the counting shown to be T4F.2's own rather than a second implementation of it |
+| `test_spectral_invariance.py` | 46 | T4E.2 the invariant signature: the principal axis checked against the covariance eigendecomposition it stands for over 50 random configurations, exactly collinear points reporting an infinite anisotropy rather than a failure, and three axes refused rather than projected; the `planted_configuration` benchmark measured over 24 field-noise realisations to be isotropic with an axis angle spanning 0.78 to 158.08 degrees, the module's isotropy floor asserted to be the number that measurement produced, a configuration at the benchmark's own anisotropy refused an axis by name, and the vortex triples shown to clear the floor by two orders of magnitude; invariance measured rather than declared, with translation, three rotations, reflection and every relabelling asserted to leave the signature vector identical to floating-point precision in both modes; a uniform rescaling leaving the scale-free shape alone while an estimator that missed the rescaling moves the scale-specific geometry by exactly the factor it missed; the canonical order shown to matter, with two configurations that agree on independently sorted blocks and have no correspondence making both true at once; the toggle priced at 87 of 135 with the loss attributed by cardinality; a position in metres beside a scale in cells refusing the scale-specific mode and signing in the scale-invariant one, which is what R19's own refusal message tells the caller to do; and the refusals -- a pair asked for a scale-free shape, a pair's axis refused for a different reason than an isotropic triple's, a constellation stripped of its features, a member with no band RMS, an unknown mode, blocks that disagree about cardinality, a floor calibrated on one realisation or on collinear replicates, and the mixed-unit refusal left to the extractor rather than copied |
+| `test_spectral_narrative.py` | 25 | T4D.3 the prose, and what it may not say: every number in a sentence checked against the track it came from including the spoken speed against `Track.speed()` for all four tracks, the subject of every sentence being the coefficient maximum and not the structure, and the frame count being of frames searched rather than frames found; no track of a growing vortex claiming its own scale doubled -- each holding one level at a scale velocity of exactly zero with the word absent from the prose -- while the growth that did happen is measured across bands, level 4 weakening as level 5 strengthens and is first excited nine frames later, offered as a candidate precursor relationship carrying that it was not tested against a null and claims no merge, with one band supporting no ordering at all; a cartesian grid refused every compass word and given axis-relative wording, the sign that makes a row northward read from the grid so one displacement on two grids gives opposite points, the cosine of the latitude shortening a degree of longitude before the bearing is taken so 60 degrees north gives 26.6 and not 45, a track that returned to where it started given no bearing, and the missing-`lat0` branch shown to be unreachable rather than added; energy reported as the square under its own name so the roadmap's own 43% becomes 104.5%, and a change from zero refused rather than rendered infinite; the guard using the programme's one list of words for every entry in it, a causal word in a caller's own dataset name refused before a reader sees it, the guard's own limit asserted so a substring match cannot creep in, and the entitlement allowed to name the boundary the sentences may not cross and appearing exactly once however many tracks there are; plus a single sighting supporting no direction, speed or growth, a search that found nothing refused as an empty list of sentences, and the structural signature naming no variable, dataset or units |
+  | **total** | **3568** | |
+
+### 7.4a Browser suite inventory
+
+The table above counts Python test functions only. Every check in it reads source or calls HTTP,
+and neither proves a page renders — the reason `frontend/e2e/` exists is recorded in section 3.6zzq,
+along with the defect (D79) it found within minutes of existing. That directory is now a second
+suite of comparable weight, and it was documented nowhere as a whole: a reader could learn its size
+only by listing the directory, which is precisely the condition section 7.4 was written to end.
+
+Run with `npm run test:e2e` from `frontend/`, or `npx playwright test --list` to reproduce this
+table. Playwright manages its own servers and its own scratch state directory; a hand-started
+backend must not be left running beside it, because `reuseExistingServer` would adopt one that is
+not bound to the scratch state.
+
+| Spec | Tests | What it holds |
+|---|---|---|
+| `composer-path.spec.ts` | 11 | TG17.7 the guided path walked through roles and visible names only |
+| `comparison-views.spec.ts` | 19 | TG17.8 the comparison views and their structural visual refusals |
+| `experiment-receipt.spec.ts` | 3 | TG17.9 export and read-only replay through a real browser, where D81 was found |
+| `flagship-qualification.spec.ts` | 2 | TG17.10 the apparatus gate path |
+| `narrow-width.spec.ts` | 19 | TG18.1 measured layout, the drawer and its focus contract at four viewports (three of the tests run once per viewport, which is why the file declares ten and Playwright collects nineteen) |
+| `figure-data.spec.ts` | 9 | TG18.2 the figure data contract reaching both figure families |
+| `comparison-contract.spec.ts` | 12 | TG18.2 shared-scale admissibility, half through the dev server's module graph because the refusals are unreachable on screen |
+| `validity-uncertainty.spec.ts` | 19 | TG18.2 the declared fit domain and stated uncertainty, split the same way |
+| `resizable-panes.spec.ts` | 6 | TG18.2 pointer and keyboard pane sizing, Plotly data/scale preservation and narrow-width document order |
+| `publication-export.spec.ts` | 4 | TG18.2 downloaded vector reading sheets, including evaluated missingness, producer qualifications and live-figure immutability |
+| `research-journey.spec.ts` | 5 | TG18.3 all seven global stages, one remediation per context blocker, Composer/ladder separation and reachable distinguished legacy tools |
+| `assistive-acceptance.spec.ts` | 11 | TG18.4 keyboard order and focus at three layouts, zoom-equivalent reflow, rendered contrast, reduced motion, non-colour and semantic acceptance |
+| `ui-qualification.spec.ts` | 4 | TG18.5 served-workspace inventory, reachability with self-naming, journey destinations and unexplained disablement |
+| `scientist-actions.spec.ts` | 2 | TG18.5 the two numbers `scientist_actions` refuses to invent: the visible actions a researcher takes from a clean browser to a completed run of the frozen plan, and the actions between meeting the preflight refusal and clearing it, both asserted, with the wall-clock durations written into the measurement and asserted by nothing |
+| `product-modes.spec.ts` | 5 | TG18.5 one representative path through each of TG18.0's four product modes at two desktop viewports, with a named artefact at the state each path reaches, and the signature-uniqueness assertion that holds the modes apart (the file declares five and Playwright collects ten, once per viewport) |
+| **suite** | **136** | from a cleaned `.e2e-state`, Chromium, 2026-09-04 |
+
+The counts are guarded by `test_documentation.py`, but only as far as a static reader honestly can:
+the file set must match `frontend/e2e/` exactly in both directions, and each stated count must be at
+least the literal `test(` declarations in that file. A parametrised loop cannot be counted without
+running Playwright, so the total is recorded as a measured run with its date rather than asserted as
+a derivation — the same distinction section 7.4 draws between test functions and pytest cases.
 ### 7.2h A surrogate null that was not the null it claimed (T4C.5)
 
 The most instructive defect of the project so far, because it passed every structural check.

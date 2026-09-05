@@ -35,6 +35,17 @@ def _read(*parts: str) -> str:
     return io.open(os.path.join(FRONTEND, *parts), encoding="utf-8").read()
 
 
+def _strip_comments(source: str) -> str:
+    """Source without its comments, for checks about code rather than about prose.
+
+    A doc comment that explains *why there is no domain branch here* must name a domain to say
+    so. Refusing the explanation would push the reasoning out of the file it belongs in, which
+    costs more than the check gains.
+    """
+    without_blocks = re.sub(r"/\*.*?\*/", "", source, flags=re.S)
+    return re.sub(r"^\s*//.*$", "", without_blocks, flags=re.M)
+
+
 @pytest.fixture(scope="module")
 def api_service() -> str:
     return _read("services", "api.ts")
@@ -144,6 +155,16 @@ def test_navigation_follows_the_scientific_workflow_and_labels_the_grid_line(app
     assert "name: 'Recorded review'" in app_source
     assert "Recorded argument; never claim permission" in app_source
     assert 'aria-label="Scientific workflow"' in app_source
+    assert 'id="scientific-workflow-nav"' in app_source
+    assert 'aria-controls="scientific-workflow-nav"' in app_source
+    assert "aria-expanded={mobileNavOpen}" in app_source
+    assert "setMobileNavOpen(false)" in app_source
+    assert "workflow-nav-scrim" in app_source
+    assert "event.key === 'Escape'" in app_source
+    assert "event.key !== 'Tab'" in app_source
+    assert "event.preventDefault(); last.focus()" in app_source
+    assert "document.body.style.overflow = 'hidden'" in app_source
+    assert "mobileNavTriggerRef.current?.focus()" in app_source
     assert re.search(r"name: '\d+\.", app_source) is None
 
 
@@ -173,6 +194,22 @@ def test_global_keyboard_focus_and_reduced_motion_are_not_panel_options():
     assert ":focus-visible" in css and "outline: 3px solid" in css
     assert ".skip-link:focus" in css
     assert "prefers-reduced-motion: reduce" in css
+    # The canvas rule must exclude `sr-only` children.  Giving the workspace heading and the
+    # live-status paragraph a real width and `margin-inline: auto` overrides the 1px clipped box
+    # that makes them screen-reader-only; being absolutely positioned, they then escape the
+    # workspace's clipping and widen the document by 14px at every viewport (TG18.1).
+    assert ".workspace-main > *:not(.sr-only)" in css and "--workspace-max" in css
+    assert ".workspace-main > * {" not in css
+    # The metadata floor covers every legacy sub-11px step, not only 10 and 11.
+    assert '.workspace-main [class~="text-[9px]"]' in css
+    assert '.workspace-main [class~="text-[10px]"]' in css
+    # Collapsing tracks without releasing `col-span-*` leaves an implicit column behind.
+    assert "grid-column: auto" in css
+    assert ".workspace-main .grid.grid-cols-2" in css
+    assert "grid-template-columns: minmax(0, 1fr)" in css
+    assert ".workflow-nav-scrim" in css
+    assert "position: sticky" in css and ".research-context" in css
+    assert "min-height: 2.5rem" in css
 
 
 def test_retry_and_lineage_nodes_are_keyboard_operable(app_source):
@@ -194,11 +231,169 @@ def test_visualisations_have_text_equivalents():
         assert "<figcaption" in source and 'className="sr-only"' in source
     assert "rows and" in heatmap and "Value units" in heatmap
     assert "series.map(item => item.name).join" in line
+    # A caption describing the shape of the data is not an equivalent; both families must reach
+    # the shared exact-value panel (TG18.2).
+    for source in (heatmap, line):
+        assert "FigureDataDisclosure" in source and "FigureContract" in source
+
+
+def test_figure_data_panels_transcribe_without_authoring_a_statistic():
+    """The text equivalent may restate what a figure encodes and name what it could not encode.
+    It may not derive a new number: G18 is presentation only, and a statistic authored by a view
+    is indistinguishable on screen from one the analysis layer stands behind."""
+    figure_data = _read("components", "FigureData.tsx")
+    heatmap = _read("components", "Heatmap2D.tsx")
+    line = _read("components", "LineChart.tsx")
+    export = _read("components", "FigureExport.tsx")
+
+    # `<details>` groups carry an explicit accessible name; an unnamed one is announced only as
+    # a disclosure triangle (the TG17.8 defect that recurred as D82).
+    assert "aria-label={name}" in figure_data
+    # Exact values are keyboard-addressable rather than hover-only, and the readout is live.
+    assert 'aria-live="polite"' in figure_data and "<output" in figure_data
+    assert 'type="number"' in figure_data
+    assert "htmlFor={rowId}" in figure_data and "htmlFor={columnId}" in figure_data
+    assert "CellInspector" in heatmap
+
+    # Missingness and normalization provenance are stated, not inferred by the reader.
+    assert "Missing samples" in heatmap and "not finite" in heatmap
+    assert "supplied, shared across panels" in heatmap
+    assert "derived from this panel alone" in heatmap
+    # A log axis silently discards non-positive samples; the count is part of the contract.
+    assert "non-positive" in line and "Points drawn" in line
+    # Truncation is stated rather than silent.
+    assert "MAX_TABULATED_POINTS" in line and "Showing the first" in line
+
+    # The refusal, in both the prose and the absence of the statistics themselves.
+    for source in (heatmap, line):
+        assert "derives no summary statistic" in source
+        assert "<FigureExport" in source, "every figure family must expose publication export"
+    body = _strip_comments(figure_data + heatmap + line)
+    for forbidden in ("'Mean'", '"Mean"', "'Median'", "'Std", "'Correlation'"):
+        assert forbidden not in body
+
+    # The publication form is a self-contained vector sheet with the same stated facts and
+    # producer qualifications. It snapshots the live plot and never mutates or recomputes it.
+    assert "Publication HTML" in export and "Plotly as any).toImage" in export
+    assert "Figure reading contract" in export
+    assert "Producer statements and qualifications" in export
+    assert "performs no scientific analysis" in export
+    assert "Plotly.relayout" not in export and "Plotly.react" not in export
+    assert "facts: () => factsFor(scanValues())" in heatmap
+    assert "facts: () => factsFor(scanOmissions())" in line
+    assert "decision.statement.qualifiers" in line
+
+
+def test_side_by_side_fields_carry_a_stated_comparison_contract(app_source):
+    """Two heat maps side by side are an invitation to compare them, and Plotly autoscales each
+    panel to its own extremes unless told otherwise -- so an inverse reconstruction that lost most
+    of its amplitude rendered as a near-identical picture beside its original, with the difference
+    surviving only in two small colour-bar ranges. `zRange` was supplied at exactly one call site
+    in the whole frontend before TG18.2."""
+    comparison = _read("components", "FigureComparison.tsx")
+
+    # Comparability is decided, not assumed, and every branch carries a reason written for the
+    # page rather than for a log.
+    assert "buildComparisonContract" in comparison
+    for refusal in ("different units", "different quantities",
+                    "does not declare which quantity", "no finite sample"):
+        assert refusal in comparison, refusal
+    # Scale comparability and cell correspondence are separate claims: a pair can honestly have
+    # one without the other.
+    assert "linked" in comparison and "differ in shape" in comparison
+
+    contracts = app_source.count("buildComparisonContract(")
+    assert contracts, "no gridded pair declares a comparison contract"
+    # Every contract that is built is also stated on the page and offered a shared address...
+    assert app_source.count("<FigureComparisonNotice") == contracts
+    assert app_source.count("useLinkedAddress(") == contracts
+    # ...and reaches at least two panels, since a contract governing one panel governs nothing.
+    assert app_source.count("zRange={") >= 2 * contracts
+
+
+def test_figures_state_the_domain_a_claim_was_fitted_over(app_source):
+    """A power spectrum is drawn across every wavenumber bin; the exponent quoted for it is not.
+
+    The backend fits over ``[k_min, k_max]`` with ``n_points`` of those bins, and returns a
+    standard error, an R-squared, a weighting scheme and an explicit ``assumptions`` list. Before
+    TG18.2 the figure showed the whole curve, the exponent sat in a card below it, and the
+    assumptions were returned by the API, typed in ``api.ts`` and rendered nowhere at all -- so
+    the only available reading was that the exponent described the curve on screen.
+    """
+    validity = _read("components", "FigureValidity.tsx")
+    line = _read("components", "LineChart.tsx")
+
+    # Whether a declared band may honestly be drawn is decided, and every branch carries a reason
+    # written for the page.
+    assert "buildValidityContract" in validity
+    for refusal in ("not both finite numbers", "encloses nothing", "lies entirely",
+                    "was not produced"):
+        assert refusal in validity, refusal
+    # The sentence the whole overlay exists for, present on both marked branches: a band that
+    # runs off the figure must not lose it, and that is the branch the platform's own spectra
+    # take, since the fit reaches Nyquist and the plotted bins stop short.
+    assert validity.count("drawn but were not used") == 2
+    # A value quoted without an uncertainty is flagged, not silently rendered as exact.
+    assert "no uncertainty supplied" in validity
+    assert "cannot be compared against a reference value" in validity
+    # Plotly reads shape coordinates on a log axis as log10 of the value, and a fitted spectrum
+    # is read on log-log axes.
+    assert "Math.log10" in validity
+    # The band is clamped to what is drawn, so the mark on screen is the one the prose describes.
+    assert "markedFrom" in validity and "markedTo" in validity
+
+    # The claim language the analysis layer authored is carried, not paraphrased (R22, R23), and
+    # its interpretation is deliberately not repeated beside the figure.
+    assert "assumptions" in validity and "qualifiers" in validity
+    body = _strip_comments(validity)
+    assert "regime_interpretation" not in body
+
+    # The refusal that keeps this an overlay rather than a second analysis: the view states the
+    # fit, it does not draw it.
+    assert "no uncertainty envelope is drawn around it" in validity
+    for forbidden in ("Math.exp(", "Math.pow(", "** slope", "intercept_ln_c"):
+        assert forbidden not in body, forbidden
+
+    # The chart states the decision outside the disclosure, draws only the bands it accepted, and
+    # gives the shading a text equivalent in the tabulated points.
+    assert "FigureValidityNotice" in line
+    assert "validityShapes(validityContract" in line
+    assert "insideMarkedDomains" in line and "in declared domain" in line
+
+    # Every figure that declares a domain also states it and offers the uncertainty beside it.
+    declared = app_source.count("validity={")
+    assert declared, "no figure declares a validity domain"
+    assert app_source.count("uncertainties={") == declared
+
+
+def test_declared_figure_pairs_share_a_bounded_accessible_resizer(app_source):
+    """Pane width is presentation state, not a fourth comparison decision.
+
+    Both figures must remain mounted, and the interaction must be operable without a pointer.
+    Narrow-screen stacking is a reading-order requirement rather than a squeezed resizer.
+    """
+    resizer = _read("components", "ResizableFigurePair.tsx")
+    css = _read("index.css")
+
+    assert 'role="separator"' in resizer
+    assert 'aria-orientation="vertical"' in resizer
+    assert "aria-valuemin={25}" in resizer and "aria-valuemax={75}" in resizer
+    for key in ("ArrowLeft", "ArrowRight", "Home", "End", "Enter"):
+        assert key in resizer, key
+    assert "setPointerCapture" in resizer
+    assert "Pane width changes presentation only" in resizer
+    assert "children[0]" in resizer and "children[1]" in resizer
+
+    declared_pairs = app_source.count("<FigureComparisonNotice")
+    assert app_source.count("<ResizableFigurePair") == declared_pairs
+    assert "@media (max-width: 767px)" in css
+    assert ".resizable-figure-pair__separator" in css and "display: none" in css
 
 
 def test_async_workflow_surfaces_expose_busy_state(all_sources):
     for name in ("AcquisitionView", "DomainAnalysisView", "PreregistrationView", "EvidenceView",
-                 "StructureMiningView", "CrossDomainRecordView", "FindingsView"):
+                 "StructureMiningView", "CrossDomainRecordView", "FindingsView",
+                 "GateRecordView"):
         source = _read("components", f"{name}.tsx")
         assert "aria-busy=" in source, name
     assert 'role="alert"' in all_sources and 'role="status"' in all_sources
@@ -220,6 +415,32 @@ def test_record_and_study_are_shell_owned_persistent_context(app_source):
         "clearing shell context must clear the panel")
     assert "interface ChannelRecordSelection" in _read("types", "api.ts")
     assert "onSelectStudy?.(row.study_id as string)" in findings
+
+
+def test_g17_composer_is_visible_manifest_driven_and_honest_about_the_runner():
+    app = _read("App.tsx")
+    view = _read("components", "ExperimentComposer.tsx")
+    service = _read("services", "api.ts")
+    assert "Experiment Composer" in app
+    assert "<ExperimentComposer onSelectStudy={setSelectedStudyId}" in app
+    assert "getFlagshipRecipe" in view and "preflightExperimentManifest(manifest)" in view
+    assert "saveExperimentDraft(manifest.study_id, manifest)" in view
+    assert "loadExperimentManifest(result.manifest_sha256)" in view
+    assert "localStorage.getItem(SAVED_DRAFT_KEY)" in view
+    assert "No network used and no measurement values opened." in view
+    assert "/experiment-composer/manifests/preflight" in service
+
+
+def test_g17_composer_exposes_honest_structural_contract_preview():
+    view = _read("components", "ExperimentComposer.tsx")
+    service = _read("services", "api.ts")
+    types = _read("types", "api.ts")
+    assert "Inspect structural contract" in view
+    assert "Deterministic known-answer records, not acquired observations" in view
+    assert "native_record.content_sha256" in view
+    assert "adapter.definition_sha256" in view
+    assert "/experiment-composer/manifests/representation-preview" in service
+    assert "StructuralTrajectoryPreview" in types
 
 
 def test_domain_analysis_uses_the_persistent_full_record_and_cannot_write(app_source, api_service):
@@ -597,11 +818,14 @@ def test_data_source_payload_carries_the_observational_flag(client):
 def test_zarr_catalogue_payload_has_the_fields_the_form_reads(client):
     body = client.get("/api/v1/data/zarr/catalogue").json()
     for key in ("stores", "network_enabled", "network_env_var", "r13_minimum_crop",
-                "analysis_transforms", "r13_legacy_note"):
+                "r13_dyadic_operational_crop", "analysis_transforms", "r13_legacy_note"):
         assert key in body
     first = next(iter(body["stores"].values()))
     assert "note" in first, "the store picker shows the note; it must be present"
-    assert body["r13_minimum_crop"]["4"] == 512
+    # T4C.5i step 6: the table is the requirement; the dyadic rounding is reported separately.
+    assert body["r13_minimum_crop"]["4"] == 324
+    assert body["r13_dyadic_operational_crop"]["4"] == 512
+    assert "not a derived power criterion" in body["r13_legacy_note"]
 
 
 def test_training_readiness_payload_carries_every_scientific_caveat_the_ui_reads(client):
@@ -1207,3 +1431,935 @@ def test_the_domain_records_view_formats_no_scientific_quantity(all_sources):
     assert "%" not in view.replace("100%", ""), "no percentage may be composed in this view"
     for field in ("confidence", "base_rate", "lift", "surrogate_corrected"):
         assert field not in view, "the records view must read no claim-bearing field: %s" % field
+
+# ---------------------------------------------------------- TG17.3 schema-driven controls
+
+
+def test_adapter_controls_contain_no_domain_branch():
+    """The review rule TG17.3 states: a hardcoded form in the generic composer fails.
+
+    Checked mechanically because it is the kind of rule that erodes one convenient special case
+    at a time. The panel may switch on a control's declared `kind`; it may not know that
+    reanalysis has a pressure level or that TESS has sectors.
+    """
+    panel = _strip_comments(_read("components", "AdapterControls.tsx"))
+    for domain in ("reanalysis", "argo", "tess", "order_book", "era5"):
+        assert domain not in panel.lower(), (
+            "AdapterControls.tsx names the domain %r; a fifth adapter would then need this "
+            "file edited, which is exactly what the registry exists to prevent" % domain)
+    composer = _strip_comments(_read("components", "ExperimentComposer.tsx"))
+    assert "AdapterControlPanel" in composer
+    for domain in ("era5", "argo_float", "tess_lightcurve", "order_book"):
+        assert domain not in composer, (
+            "ExperimentComposer.tsx names the domain %r rather than rendering the registered "
+            "schema" % domain)
+
+
+def test_adapter_controls_render_every_declared_control_kind():
+    """A control kind the backend can register and the UI cannot render is an unusable control."""
+    from src.core.experiment_adapter import CONTROL_KINDS
+
+    panel = _read("components", "AdapterControls.tsx")
+    for kind in CONTROL_KINDS:
+        if kind == "text":
+            continue  # the default branch
+        assert "'%s'" % kind in panel, (
+            "control kind %r can be registered but has no renderer, so an adapter declaring it "
+            "would produce a control a researcher cannot operate" % kind)
+
+
+def test_adapter_payload_has_the_fields_the_control_panel_reads(client):
+    body = client.get("/api/v1/experiment-composer/adapters").json()
+    assert body["adapters"], "the domain selector reads this list"
+    for row in body["adapters"]:
+        assert {"adapter_id", "domain", "definition_sha256", "controls",
+                "declaration", "implements", "onboarding_cost"} <= set(row)
+        for field in row["controls"]["fields"]:
+            assert {"name", "label", "kind", "help", "required", "default", "choices",
+                    "minimum", "maximum", "units"} <= set(field)
+            assert field["help"].strip(), "every control renders its declared help text"
+
+
+def test_conformance_payload_has_the_fields_the_report_panel_reads(client):
+    body = client.post(
+        "/api/v1/experiment-composer/adapters/reanalysis.standardized-level/conformance",
+        json={}).json()
+    assert {"adapter_id", "domain", "conformant", "counts", "checks",
+            "claim_boundary", "record_kind"} <= set(body)
+    assert body["record_kind"] == "deterministic_known_answer_not_acquired_data"
+    for check in body["checks"]:
+        assert {"check", "status", "detail", "evidence"} <= set(check)
+        assert check["status"] in {"PASS", "FAIL", "NOT_APPLICABLE", "NOT_PROBED"}
+
+
+# ------------------------------------------------- TG17.4 clock, support and coverage
+
+
+def test_the_coverage_view_draws_support_by_time_and_not_by_index():
+    """A sparse record must not be able to look dense because it has as many rows.
+
+    Positions come from the support bounds and the window; nothing here indexes into an array
+    to decide where a bar starts. This is the visual half of the invariant the backend holds.
+    """
+    view = _strip_comments(_read("components", "CoverageTimeline.tsx"))
+    assert "window_end_seconds - row.window_start_seconds" in view
+    assert "row.intervals.map" in view
+    assert "raw_row_count" in view, "the row count is shown as the number that is not evidence"
+    assert "rows_are_not_evidence" in view
+
+
+def test_the_coverage_view_shows_manufactured_overlap_separately():
+    """Support a kernel created is never mixed into support the records contain."""
+    view = _read("components", "CoverageTimeline.tsx")
+    assert "manufactured_overlap_seconds" in view
+    assert "created by the declared kernel" in view
+    assert "effective_sample_size" in view and "governing_scale_seconds" in view
+
+
+def test_the_kernel_picker_offers_no_default_for_a_declared_parameter():
+    """A tolerance the form pre-filled is a scientific choice nobody made."""
+    picker = _read("components", "CoverageTimeline.tsx")
+    assert "no default — this is a scientific choice" in picker
+    assert "manufactures_simultaneity" in picker
+    assert "no registered adapter admits this" in picker
+
+
+def test_the_coverage_view_contains_no_domain_branch():
+    view = _strip_comments(_read("components", "CoverageTimeline.tsx"))
+    for domain in ("reanalysis", "argo", "tess", "order_book", "era5"):
+        assert domain not in view.lower(), (
+            "CoverageTimeline.tsx names the domain %r; coverage is drawn from declared support "
+            "and a fifth domain must reach it without this file being edited" % domain)
+
+
+def test_alignment_kernel_payload_has_the_fields_the_picker_reads(client):
+    body = client.get("/api/v1/experiment-composer/alignment-kernels").json()
+    assert body["kernels"], "the kernel selector reads this list"
+    for row in body["kernels"]:
+        assert {"name", "summary", "required_parameters", "manufactures_simultaneity",
+                "invents_values", "refused_over_violations", "admitted_by",
+                "usable_across_all_registered_domains"} <= set(row)
+    assert body["default"] == "exact_support_overlap"
+
+
+def test_alignment_payload_has_the_fields_the_coverage_view_reads(client):
+    recipe = client.get("/api/v1/experiment-composer/recipes/g17-flagship-calendar").json()
+    body = client.post("/api/v1/experiment-composer/manifests/alignment",
+                       json=recipe["canonical_manifest"]).json()
+    assert body["record_binding"] == "benchmark_known_answer"
+    assert body["row_indices_were_not_compared"] is True
+    for row in body["coverage"]:
+        assert {"label", "window_start_seconds", "window_end_seconds", "intervals", "gaps",
+                "gap_count", "covered_fraction", "raw_row_count", "valid_row_count",
+                "rows_are_not_evidence", "support_is_stationary",
+                "native_scale_seconds"} <= set(row)
+    for pair in body["pairs"]:
+        assert {"left", "right", "overlap_seconds", "manufactured_overlap_seconds",
+                "governing_scale_seconds", "effective_sample_size",
+                "effective_sample_size_basis", "row_counts_not_used", "status"} <= set(pair)
+
+
+def test_the_preflight_alignment_block_is_shaped_as_the_type_declares(client):
+    recipe = client.get("/api/v1/experiment-composer/recipes/g17-flagship-calendar").json()
+    body = client.post("/api/v1/experiment-composer/manifests/preflight",
+                       json=recipe["canonical_manifest"]).json()
+    alignment = body["alignment"]
+    assert alignment["measurement_values_opened"] is False
+    for window in alignment["windows"]:
+        assert {"name", "window_seconds", "clock", "clock_note", "pairs"} <= set(window)
+        assert {"elapsed_seconds", "nominal_seconds", "discrepancy_seconds",
+                "clock_is_uniform"} <= set(window["clock"])
+
+
+def test_the_runner_the_composer_now_offers_still_acquires_nothing():
+    """The disabled "not available yet" button is gone; what replaced it must not overclaim.
+
+    Until TG17.6 this test asserted the composer refused to offer a runner at all. It now offers
+    one, so the check moved to the thing that was actually being protected: the runner executes
+    the declared state machine against registered suites that open no archive, and the browser
+    says so beside the button rather than leaving a researcher to infer it from a run that
+    completed.
+    """
+    composer = _read("components", "ExperimentComposer.tsx")
+    monitor = _read("components", "RunMonitor.tsx")
+    assert "Run experiment — not available yet" not in composer
+    assert "runContract.not_yet_available" in composer
+    assert "A completed run is an executed plan, not evidence." in composer
+    assert "this is a rehearsal, not data" in monitor
+
+
+# ------------------------------------------ TG17.5 family accounting and declared nulls
+
+
+def test_the_browser_no_longer_computes_its_own_family_size():
+    """The fourth copy of the family formula, removed.
+
+    A product in the browser could disagree with the receipt — and it did: it multiplied pairs
+    by channels, scales, windows and relationships, and knew nothing of the arities, lags,
+    representations or motifs the manifest declares. The Composer now shows the number the
+    server priced, so a researcher cannot read the size of their own search two ways.
+    """
+    composer = _strip_comments(_read("components", "ExperimentComposer.tsx"))
+    assert "n * (n - 1) / 2" not in composer
+    assert "declaredFamily" in composer
+    assert "experimentFamily" in composer
+
+
+def test_the_family_panel_shows_the_multiplication_and_what_one_more_axis_costs():
+    view = _read("components", "FamilyPlan.tsx")
+    assert "in_human_terms" in view
+    assert "expansion_cost" in view
+    assert "what one more of each would cost, before the freeze" in view
+    assert "surrogates_required_after" in view
+
+
+def test_the_family_panel_keeps_the_correction_unit_beside_its_held_out_partition():
+    """A smaller correction unit is legitimate only because a partition was closed."""
+    view = _read("components", "FamilyPlan.tsx")
+    assert "correction_unit_members" in view
+    assert "held_out_partition" in view
+    assert "generate_then_confirm" in view
+
+
+def test_the_family_panel_reports_precedence_availability_without_shrinking_the_family():
+    view = _read("components", "FamilyPlan.tsx")
+    assert "unavailable_precedence_members" in view
+    assert "domains_without_precedence_policy" in view
+    assert "family_size" in view
+
+
+def test_a_refused_null_is_shown_disabled_with_its_reason_rather_than_hidden():
+    view = _read("components", "FamilyPlan.tsx")
+    assert "inadmissible_reason" in view
+    assert "disabled" in view
+    assert "preserves" in view and "destroys" in view
+
+
+def test_a_declared_null_parameter_is_offered_with_no_default():
+    view = _read("components", "FamilyPlan.tsx")
+    assert "no default — this is a scientific choice" in view
+
+
+def test_the_family_panel_has_no_domain_branch():
+    view = _strip_comments(_read("components", "FamilyPlan.tsx"))
+    for domain in ("reanalysis", "argo", "tess", "order_book"):
+        assert domain not in view
+
+
+def test_the_family_payload_is_shaped_as_the_type_declares(client):
+    recipe = client.get("/api/v1/experiment-composer/recipes/g17-flagship-calendar").json()
+    body = client.post("/api/v1/experiment-composer/manifests/family",
+                       json=recipe["canonical_manifest"]).json()
+    assert {"schema", "axes", "in_human_terms", "family_size", "declared_surrogates",
+            "account", "correction", "largest_affordable_family", "resource_requirement",
+            "expansion_cost", "screen_and_confirm", "precedence"} <= set(body)
+    assert {"stage", "declared_search_members", "correction_unit_members",
+            "held_out_partition", "surrogates_required", "affordable"} <= set(body["correction"])
+    assert {"axis", "declared_values", "examples", "contributes"} <= set(body["axes"][0])
+
+
+def test_the_null_family_payload_is_shaped_as_the_type_declares(client):
+    body = client.get("/api/v1/experiment-composer/null-families").json()
+    assert {"schema", "families", "modes", "note", "claim_boundary"} <= set(body)
+    family = body["families"][0]
+    assert {"name", "modes", "operates_on", "preserves", "destroys", "parameters",
+            "admissible", "inadmissible_reason", "admitted_by",
+            "usable_across_all_registered_domains"} <= set(family)
+
+
+# ------------------------------------------ TG17.6 the orchestrated, resumable run
+
+
+def test_the_browser_has_no_create_run_operation_only_open_or_resume():
+    """A "new run" button would be a second run of a plan that already has one.
+
+    The identity is the content address of the manifest, so posting it again resumes. The label
+    the researcher reads has to say that, because the whole guarantee is invisible otherwise.
+    """
+    composer = _read("components", "ExperimentComposer.tsx")
+    assert "Open or resume the run" in composer
+    assert "openExperimentRun" in composer
+    assert "Run experiment — not available yet" not in composer
+
+
+def test_the_runner_draws_the_state_machine_the_backend_enforces():
+    view = _read("components", "RunMonitor.tsx")
+    assert "machine.work_stages" in view
+    assert "machine.terminal_states" in view
+    assert "RunStateTrail" in view
+
+
+def test_a_retry_and_an_editable_copy_are_offered_for_different_failures():
+    """Asking the archive again is not the remedy for the archive saying no."""
+    view = _strip_comments(_read("components", "RunMonitor.tsx"))
+    assert "progress.retryable" in view
+    assert "progress.state === 'REFUSED'" in view
+    assert "Only an operational failure can be retried." in view
+    assert "The refused run is left exactly as it is." in view
+
+
+def test_the_progress_view_reports_replay_rather_than_re_request():
+    view = _read("components", "RunMonitor.tsx")
+    assert "replayed, not re-requested" in view
+    assert "component.reused" in view
+
+
+def test_the_progress_bar_is_bounded_by_the_declared_plan():
+    view = _read("components", "RunMonitor.tsx")
+    assert "bounded_work" in view
+    assert "declared steps" in view
+    assert 'aria-valuemax={work.total_steps}' in view
+
+
+def test_the_runner_names_every_component_the_run_did_not_produce():
+    view = _read("components", "RunMonitor.tsx")
+    assert "missing_components" in view
+    assert "Components this run did not produce" in view
+    assert "coverage_policy" in view
+
+
+def test_a_rehearsal_suite_is_labelled_as_acquiring_nothing():
+    view = _read("components", "RunMonitor.tsx")
+    assert "capabilities.acquires === false" in view
+    assert "this is a rehearsal, not data" in view
+
+
+def test_the_runner_has_no_domain_branch():
+    view = _strip_comments(_read("components", "RunMonitor.tsx"))
+    for domain in ("reanalysis", "argo", "tess", "order_book"):
+        assert domain not in view
+
+
+def test_the_run_contract_payload_is_shaped_as_the_type_declares(client):
+    body = client.get("/api/v1/experiment-runs").json()
+    assert {"schema", "state_machine", "worker_suites", "runs", "available_now",
+            "not_yet_available", "claim_boundary"} <= set(body)
+    assert {"states", "work_stages", "terminal_states", "transitions", "component_statuses",
+            "retryable_statuses"} <= set(body["state_machine"])
+    assert {"name", "description", "capabilities"} <= set(body["worker_suites"][0])
+
+
+def test_the_run_progress_and_receipt_payloads_are_shaped_as_the_types_declare(client):
+    recipe = client.get("/api/v1/experiment-composer/recipes/g17-flagship-calendar").json()
+    opened = client.post("/api/v1/experiment-runs", json=recipe["canonical_manifest"]).json()
+    assert {"run_id", "run_sha256", "manifest_sha256", "resumed", "progress",
+            "receipt"} <= set(opened)
+    progress = client.get("/api/v1/experiment-runs/%s/progress" % opened["run_id"]).json()
+    assert {"run_id", "state", "stages", "bounded_work", "retryable", "results_visible",
+            "claim_boundary"} <= set(progress)
+    assert {"stage", "components"} <= set(progress["stages"][0])
+    assert {"component", "status", "artifact_sha256", "remediation",
+            "reused"} <= set(progress["stages"][0]["components"][0])
+    receipt = client.get("/api/v1/experiment-runs/%s" % opened["run_id"]).json()
+    assert {"state", "history", "artefacts", "missing_components", "stage_decisions",
+            "bounded_work", "coverage_policy", "confirmation", "claim_boundary"} <= set(receipt)
+
+
+# ----------------------------------------------- TG17.7 the guided path in the browser
+
+
+def _composer() -> str:
+    return _read("components", "ExperimentComposer.tsx")
+
+
+def _path_view() -> str:
+    return _read("components", "ComposerPath.tsx")
+
+
+def test_the_composer_holds_no_copy_of_the_order_of_operations():
+    """The order of operations *is* the scientific discipline.
+
+    A family priced after acquisition is priced knowing what the data looked like. A component
+    that decided for itself which step comes next would be a second opinion about that, and the
+    one a researcher followed would not be the one the receipt records.
+    """
+    view = _strip_comments(_composer())
+    assert "composerPathState" in view
+    assert "pathState.steps" in view
+    for step_id in ("question", "domains", "observation", "preflight", "analysis",
+                    "freeze_and_run", "interpret"):
+        assert "panel('%s'" % step_id in view, step_id
+    assert "ordinal <" not in view and "ordinal >" not in view, (
+        "step order is the server's; comparing ordinals here would re-derive it")
+
+
+def test_exactly_one_next_action_is_rendered_and_it_comes_from_the_server():
+    view = _strip_comments(_path_view())
+    assert "state.next_action" in view
+    assert "Next legitimate action" in view
+    assert "Blocked before" in view
+    assert view.count("action.label") == 1, "one action means one label"
+
+
+def test_the_path_is_operable_without_a_mouse():
+    """TG9.4's condition, applied to the surface a whole experiment is declared through."""
+    view = _path_view()
+    assert 'role="tablist"' in view and 'role="tab"' in view
+    assert "aria-selected" in view and "aria-controls" in view
+    assert "ArrowRight" in view and "ArrowLeft" in view and "Home" in view and "End" in view
+    assert "tabIndex" in view, "only the active tab is in the tab order"
+    assert "focus:ring" in view, "keyboard focus must be visible"
+    assert 'aria-hidden="true"' in view, "decorative icons must be hidden from a screen reader"
+
+
+def test_every_step_panel_is_a_labelled_tabpanel():
+    view = _composer()
+    assert 'role="tabpanel"' in view
+    assert "aria-labelledby={`composer-tab-${stepId}`}" in view
+    assert "aria-busy={!!busy}" in view
+
+
+def test_a_blocked_step_stays_reachable_rather_than_disappearing():
+    """Hiding a blocked step hides the reason it is blocked, which is the useful part."""
+    view = _strip_comments(_path_view())
+    assert "steps.map(" in view
+    assert "disabled" not in view.split("role=\"tablist\"")[1].split("</div>")[0], (
+        "no step tab may be disabled; a step nobody can open is a refusal nobody can read")
+
+
+def test_the_researcher_keeps_their_place_across_navigation_and_refresh():
+    view = _composer()
+    assert "ACTIVE_STEP_KEY" in view
+    assert "localStorage.getItem(ACTIVE_STEP_KEY)" in view
+    assert "localStorage.setItem(ACTIVE_STEP_KEY" in view
+
+
+def test_an_unavailable_domain_is_shown_disabled_with_the_backend_s_reason():
+    """A control that vanishes when it becomes inadmissible is indistinguishable from one that
+    was never offered."""
+    view = _strip_comments(_path_view())
+    assert "row.selectable" in view
+    assert "row.unavailable_reason" in view
+    assert "Unavailable:" in view
+    assert ".filter(" not in view.split("menu.domains.map(")[0].split("<ul")[-1], (
+        "the menu is rendered whole; filtering it here would hide a refusal"
+    )
+
+
+def test_the_domain_menu_shows_what_each_domain_breaks_before_it_is_chosen():
+    view = _path_view()
+    assert "row.breaks" in view
+    assert "Breaks:" in view
+    assert "no declared assumption" in view
+
+
+def test_the_browser_never_invents_an_observation_for_a_domain():
+    """An adapter says how a domain is translated; it does not say what is measured, in which
+    units, in which role, or from which record."""
+    view = _strip_comments(_composer())
+    assert "option?.observation" in view
+    assert "option.observation as any" in view
+    assert "domainMenu.minimum_domains" in view
+
+
+def test_a_preset_is_applied_as_the_instants_the_server_resolved_it_to():
+    view = _strip_comments(_composer())
+    assert "composerWindowPresets" in view
+    assert "preset.start_utc" in view and "preset.end_utc" in view
+    assert "setDate" not in view and "getMonth" not in view, (
+        "a boundary computed twice is two boundaries"
+    )
+
+
+def test_the_preregistration_summary_is_the_server_s_sentences_not_the_ui_s():
+    view = _strip_comments(_path_view())
+    assert "summary.sentences" in view
+    assert "summary.manifest_sha256" in view
+    composer = _strip_comments(_composer())
+    assert "composerPreregistrationSummary" in composer
+
+
+def test_the_ladder_separates_acquisition_a_run_a_finding_and_evidence():
+    view = _path_view()
+    assert "StageLadder" in view
+    assert "rung.is_not" in view and "rung.gate" in view and "rung.why_not" in view
+    assert "Not:" in view
+
+
+def test_a_destructive_action_asks_twice_and_says_what_is_lost():
+    view = _path_view()
+    assert "ConfirmButton" in view
+    assert 'role="alertdialog"' in view
+    assert "confirmLabel" in view
+    composer = _composer()
+    assert "ConfirmButton" in composer
+
+
+def test_the_advanced_manifest_inspector_is_disclosed_and_never_required():
+    view = _path_view()
+    assert "ManifestInspector" in view
+    assert "<details" in view
+    assert "never requires editing this" in view
+    assert "composerExportManifest" in _composer()
+    assert "composerImportManifest" in _composer()
+
+
+def test_every_empty_panel_says_an_unasked_question_is_not_a_clean_result():
+    """An empty panel that reads as reassurance is the failure this whole programme is about."""
+    view = _composer()
+    assert "an unasked question, not a clean" in view
+    assert "not a null result" in view
+    assert "an unknown cost, not a small one" in view
+
+
+def test_the_path_view_has_no_domain_branch():
+    view = _strip_comments(_path_view())
+    for domain in ("reanalysis", "argo", "tess", "order_book"):
+        assert domain not in view
+
+
+def test_the_path_payloads_are_shaped_as_the_types_declare(client):
+    contract = client.get("/api/v1/experiment-composer/path").json()
+    assert {"schema", "steps", "step_statuses", "duration_presets", "ladder", "note",
+            "claim_boundary"} <= set(contract)
+    assert {"step_id", "ordinal", "title", "question", "settles", "controls", "action_label",
+            "action_route", "claim_boundary"} <= set(contract["steps"][0])
+    recipe = client.get("/api/v1/experiment-composer/recipes/g17-flagship-calendar").json()
+    state = client.post("/api/v1/experiment-composer/path/state",
+                        json=recipe["canonical_manifest"]).json()
+    assert {"schema", "manifest_sha256", "study_id", "steps", "satisfied", "next_action",
+            "ladder", "run_state", "claim_boundary"} <= set(state)
+    assert {"status", "reason", "detail"} <= set(state["steps"][0])
+    assert {"step_id", "label", "route", "status", "why", "blocked"} <= set(state["next_action"])
+    assert {"rung", "title", "is", "is_not", "gate", "reached", "why_not"} <= set(state["ladder"][0])
+
+
+# --------------------------------------------- TG17.8 the comparison views in the browser
+
+
+def _views() -> str:
+    return _read("components", "ComparisonViews.tsx")
+
+
+def test_the_view_component_holds_no_claim_boundary_of_its_own():
+    """What may be concluded is a scientific fact, so it is served rather than written here.
+
+    A boundary a component composed would be a second boundary, and the sentence a reader saw
+    under a chart would not be the sentence a receipt could show them afterwards.
+    """
+    view = _views()
+    assert "may_not_conclude" in view and "may_conclude" in view
+    assert "mode_forbids" in view
+    for invented in ("co-occurrence only", "carries no clock", "no common ruler"):
+        assert invented not in view, (
+            "the boundary text belongs to the server; %r here is a second copy" % invented)
+
+
+def test_the_coverage_cell_is_drawn_from_a_named_state_and_never_from_a_number():
+    """The graphical failure this slice exists for.
+
+    A cell whose width came from a fraction would draw absent support as a zero-width bar, and a
+    reader would see "we looked and found nothing" where the truth is "we could not look".
+    """
+    view = _strip_comments(_views())
+    assert "CELL_STYLE" in view
+    for state in ("COVERED", "SPARSE", "ABSENT", "REFUSED"):
+        assert state in view, state
+    assert "width:" not in view.replace(" ", "")
+    assert "cell.value" not in view
+    assert "is_measured_zero" not in view, (
+        "the component must not need the flag; it never has a number to mistake for a state")
+
+
+def test_every_role_is_drawn_in_its_colour_its_marker_and_its_word():
+    view = _views()
+    assert "item.colour" in view
+    assert "item.marker" in view
+    assert "item.word" in view
+
+
+def test_the_numbers_behind_every_view_are_reachable_from_the_view():
+    view = _views()
+    assert "AccessibleTable" in view
+    assert "payload.table" in view or "view.table" in view
+    assert "Show the numbers behind each view" in view
+    assert "<caption" in view
+
+
+def test_an_unregistered_view_renders_rather_than_breaking_the_page():
+    """A view the server registers and this build has no drawing for still shows its table,
+    its legend and its boundary. Falling through to a crash would make a new view look like a
+    broken one, which is the wrong signal in both directions."""
+    view = _views()
+    assert "default: return null;" in view
+
+
+def test_the_selection_is_cleared_when_the_plan_changes():
+    view = _views()
+    assert "setSelection(null)" in view
+    assert "why_not_merged" in view
+
+
+def test_the_views_have_no_domain_branch():
+    view = _strip_comments(_views())
+    for domain in ("reanalysis", "argo", "tess", "order_book"):
+        assert domain not in view
+
+
+def test_the_composer_shows_the_views_on_the_interpret_step():
+    composer = _composer()
+    assert "ComparisonViews" in composer
+    assert "Comparison views" in composer
+
+
+def test_the_view_payloads_are_shaped_as_the_types_declare(client):
+    contract = client.get("/api/v1/comparison-views").json()
+    assert {"schema", "views", "encodings", "axis_kinds", "shared_axis_kinds", "coverage_cells",
+            "readings", "mode_forbids", "refusals", "routes", "not_yet_available",
+            "claim_boundary"} <= set(contract)
+    assert {"view_id", "ordinal", "title", "question", "axes", "roles", "may_conclude",
+            "may_not_conclude", "selectable"} <= set(contract["views"][0])
+    assert {"role", "word", "colour", "marker", "ordinal", "definition",
+            "admits_claim"} <= set(contract["encodings"][0])
+    recipe = client.get("/api/v1/experiment-composer/recipes/g17-flagship-calendar").json()
+    manifest = recipe["canonical_manifest"]
+    rendered = client.post("/api/v1/comparison-views/render/coverage_timeline",
+                           json=manifest).json()
+    assert {"schema", "view_id", "ordinal", "title", "question", "mode", "manifest_sha256",
+            "axes", "legend", "body", "table", "results_exist", "run_state", "may_conclude",
+            "may_not_conclude", "mode_forbids", "claim_boundary"} <= set(rendered)
+    assert {"name", "kind", "domains", "units", "shared", "why"} <= set(rendered["axes"][0])
+    assert {"columns", "rows"} <= set(rendered["table"])
+    selection = client.post("/api/v1/comparison-views/linked-selection",
+                            json={"manifest": manifest, "window": "week"}).json()
+    assert {"schema", "window", "manifest_sha256", "contributions", "merged_interval",
+            "why_not_merged", "claim_boundary"} <= set(selection)
+    assert {"domain", "state", "reason", "native_interval",
+            "contributes"} <= set(selection["contributions"][0])
+
+
+def test_every_served_comparison_view_has_a_drawing_or_a_declared_fallback():
+    """The guard that catches a view registered on the server and forgotten in the browser."""
+    from src.core.comparison_views import ordered_views
+
+    view = _views()
+    for served in ordered_views():
+        assert "case '%s':" % served.view_id in view, served.view_id
+
+
+def test_tg17_receipt_trust_surface_is_reachable_in_composer_and_platform():
+    receipt = _read("components", "ExperimentReceipt.tsx")
+    composer = _read("components", "ExperimentComposer.tsx")
+    app = _read("App.tsx")
+    assert "<ExperimentReceiptPanel runId={receipt?.run_id}" in composer
+    assert "<ExperimentReceiptPanel trustOnly" in app
+    assert "setActiveTab('evidence')" in app
+    for key in ("operations", "adapters", "refusals", "receipt_fields", "lineage",
+                "claim_boundary"):
+        assert "capabilities.%s" % key in receipt or key == "adapters", key
+
+
+def test_tg17_receipt_import_is_read_only_and_shows_every_evidence_absence():
+    receipt = _read("components", "ExperimentReceipt.tsx")
+    assert "replayExperimentReceipt" in receipt
+    assert "openEvidence" not in receipt
+    assert "automatic_actions" not in receipt  # there is deliberately no renderer that executes them
+    assert "evidence_handoff.categories.map" in receipt
+    assert "Open a separate evidence-study draft" in receipt
+
+
+def test_tg17_receipt_wire_shapes_cover_export_replay_and_the_generated_contract(client):
+    capabilities = client.get("/api/v1/experiment-receipts").json()
+    assert {"schema", "software_version", "operations", "adapters", "refusals",
+            "receipt_fields", "lineage", "claim_boundary"} <= set(capabilities)
+    assert capabilities["operations"] and capabilities["adapters"]
+    assert all({"name", "label", "meaning"} <= set(row)
+               for row in capabilities["receipt_fields"])
+    typescript = _read("types", "api.ts")
+    for shape in ("ExperimentReceiptCapabilities", "ExperimentReplayBundle",
+                  "ExperimentReceiptExport", "ExperimentReceiptReplay"):
+        assert "interface %s" % shape in typescript
+
+
+def test_tg17_qualification_gate_is_reachable_and_never_hides_blockers():
+    view = _read("components", "ExperimentQualification.tsx")
+    app = _read("App.tsx")
+    assert "<ExperimentQualificationPanel" in app
+    assert "record.gates.map" in view
+    assert "record.matrix.map" in view
+    assert "record.verdict" in view
+    assert "Run offline qualification" in view
+    assert "live-source acceptance are different gates" in view
+
+
+def test_mode_switch_changes_relationship_null_and_language_as_one_revision():
+    composer = _read("components", "ExperimentComposer.tsx")
+    assert "const switchMode" in composer
+    assert "mode_relationships?.[mode]" in composer
+    assert "row.modes.includes(mode)" in composer
+    assert "selectedAdapters.every" in composer
+    assert "family: { ...manifest.family, relationships: [relationships[0]] }" in composer
+    assert "method: family.name, parameters: {}" in composer
+    assert "onChange={() => switchMode(mode)}" in composer
+
+
+def test_qualification_wire_shapes_match_the_served_plan(client):
+    plan = client.get("/api/v1/experiment-qualification").json()
+    assert {"schema", "qualification_sha256", "verdict", "record_kind", "matrix", "gates",
+            "scientist_actions", "claim_boundary"} <= set(plan)
+    assert len(plan["matrix"]) == 6
+    assert {"cell_id", "duration", "mode", "start_utc", "end_utc", "manifest_sha256",
+            "family_correction", "record_kind", "status"} <= set(plan["matrix"][0])
+    assert {"gate_id", "title", "status", "blocking", "detail"} <= set(plan["gates"][0])
+    typescript = _read("types", "api.ts")
+    for shape in ("ExperimentQualificationGate", "ExperimentQualificationCell",
+                  "ExperimentQualificationRecord"):
+        assert "interface %s" % shape in typescript
+
+
+def test_qualification_client_uses_only_the_two_public_routes():
+    service = _read("services", "api.ts")
+    assert "experimentQualificationPlan" in service
+    assert "rehearseExperimentQualification" in service
+    assert "`${BASE_URL}/experiment-qualification`" in service
+    assert "`${BASE_URL}/experiment-qualification/rehearse`" in service
+
+
+# ======================================================== T4C.5j: the atmospheric gate record
+
+def _gate_client_section(api_service: str) -> str:
+    """The gate methods only. Everything after the marker comment is this surface."""
+    marker = "T4C.5j: the atmospheric gate record"
+    assert marker in api_service, "the gate client section must be identifiable"
+    return api_service.split(marker, 1)[1]
+
+
+def test_the_gate_panel_reaches_every_route_the_surface_serves(app_source, api_service):
+    """A served route with no consumer is the gap this whole slice was opened to close."""
+    for path in ("/gate`", "/gate/campaigns`", "/gate/campaigns/$", "/gate/supersessions`",
+                 "/gate/supersessions/$", "/gate/receipts`", "/gate/receipts/$"):
+        assert path in api_service, path
+    assert "GateRecordView" in app_source
+    assert "activeTab === 'gate'" in app_source
+    assert "id: 'gate', name: 'Atmospheric gate record'" in app_source
+
+
+def test_no_gate_request_this_client_can_send_changes_anything(api_service):
+    """Read-only must be a property of the client too, not only of the routing table.
+
+    A panel that can only read is what makes the missing acquire button a refusal rather than an
+    omission a later slice might casually fill in.
+    """
+    section = _gate_client_section(api_service)
+    for verb in ("'POST'", "'PUT'", "'PATCH'", "'DELETE'", "FormData"):
+        assert verb not in section, verb
+
+
+def test_the_gate_panel_shows_a_retirement_before_the_design_it_retires():
+    """A reader who has reached the calendar split is already reading the design as live."""
+    view = _read("components", "GateRecordView.tsx")
+    assert view.index("openCampaign.retired_by &&") < view.index("Decision rule"), (
+        "the retirement banner must precede the design body, not follow it")
+    assert "acquisition {openCampaign.retired_by.acquisition}" in view
+    assert "surface.refusals.map" in view, (
+        "the refusals must be rendered from the server's list, not implied by absent buttons")
+
+
+def test_the_gate_panel_shows_a_retired_design_rather_than_hiding_it():
+    """Hiding the retired design would erase the record of what was actually preregistered."""
+    view = _read("components", "GateRecordView.tsx")
+    assert "Read design" in view
+    assert "row.resolvable ? 'yes' : 'no'" in view, (
+        "the defect that retired a design must be visible on the row that names it")
+    assert "openSupersession.deferred_to_run.map" in view, (
+        "a retirement must show what it did not settle as prominently as its reasons")
+
+
+def test_the_gate_panel_names_an_empty_receipt_list_as_an_absence_of_runs():
+    """Rendered bare, an empty list reads as an absence of findings - the opposite claim."""
+    view = _read("components", "GateRecordView.tsx")
+    assert "NOT_YET_MEASURED" in view
+    assert "receipts.statement" in view
+
+
+def test_the_gate_panel_never_shows_one_verdict_without_the_other():
+    """The FAIL/INVALID boundary is only legible if both verdicts and the rule are on screen."""
+    view = _read("components", "GateRecordView.tsx")
+    assert "openReceipt.gate_verdict" in view and "openReceipt.scientific_verdict" in view
+    assert "Replication rule returned" in view
+    assert "openReceipt.power_adjudication.reason" in view
+    assert "power_applied" in view
+
+
+def test_the_gate_panel_shows_an_undeclared_agreement_rule_as_a_refusal():
+    """D86. A campaign that never preregistered the rule authorising its own acquisition must
+    say so on the row. An empty cell would read as a formatting gap rather than as the reason
+    that design may not be acquired at all."""
+    view = _read("components", "GateRecordView.tsx")
+    assert "Agreement rule" in view
+    assert "row.overlap_criterion === null" in view
+    assert "not preregistered" in view
+    # And the rule that is declared is shown in the unit it is actually applied in, because a
+    # bound in Kelvin is what D86 was.
+    assert "encoding step" in view
+
+
+# ============================================================= TG18: research instrument shell
+
+def test_research_archive_keeps_record_classes_distinct_and_reachable(app_source):
+    archive = _read("components", "ResearchArchive.tsx")
+
+    assert "Research archive" in app_source
+    assert "activeTab === 'researchArchive'" in app_source
+    for classification in ("SCIENTIFIC EVIDENCE", "EXPERIMENT RUN", "GATE RECEIPT",
+                           "EVALUATION RECEIPT", "ACQUISITION RECORD",
+                           "VALIDATION FIXTURE"):
+        assert classification in archive
+    for method in ("listStudies", "experimentRunContract", "listGateReceipts",
+                   "listEvaluationReports", "zarrProbes", "listCDSJobs", "listBenchmarks"):
+        assert "apiService.%s(" % method in archive
+    assert "job.state === 'COMPLETE' && job.acquisition_record" in archive
+    assert "a passing fixture is not a published study" in archive
+
+
+def test_acquire_surfaces_noninteractive_routes_and_human_source_identity():
+    source = _read("components", "AcquisitionView.tsx")
+    planner = _read("components", "CDSPlanner.tsx")
+    service = _read("services", "api.ts")
+
+    assert "catalogue.operational_routes" in source
+    assert "route.ui_status" in source
+    assert "option.label || option.name" in source
+    assert "option.provider || option.product_family" in source
+    assert "Source routes" in source
+    assert "<CDSPlanner" in source
+    assert "apiService.cdsCapabilities(" in planner
+    assert "apiService.planCDS(" in planner
+    assert "apiService.submitCDSJob(" in planner
+    assert "apiService.cancelCDSJob(" in planner
+    assert "apiService.resumeCDSJob(" in planner
+    assert "apiService.getCDSAcquisitionRecord(" in planner
+    assert "Validate plan — no network" in planner
+    assert "Planning uses no network" in planner
+    assert "plan.network_used" in planner
+    assert "A validated plan is not a job" in planner
+    assert "Submit durable acquisition job" in planner
+    assert "Server managed" in planner
+    assert "/data/cds/plan" in service
+
+
+def test_findings_refuses_to_treat_a_run_or_receipt_label_as_a_published_study():
+    findings = _read("components", "FindingsView.tsx")
+    archive = _read("components", "ResearchArchive.tsx")
+
+    assert "publishedStudyId" in findings
+    assert "studies.some(" in findings
+    assert "apiService.getTranslation(publishedStudyId, glossaryName)" in findings
+    assert "Current context is not published" in findings
+    assert "No LLM action is required" in findings
+    gate_mapping = archive.split("...gates.receipts.map", 1)[1].split(
+        "...evaluations.map", 1)[0]
+    assert "studyId:" not in gate_mapping
+
+
+# ------------------------------------------------ TG18.3 the global guided research journey
+
+
+def test_the_global_journey_is_navigation_and_not_a_second_scientific_judge(app_source):
+    journey = _read("components", "ResearchJourney.tsx")
+    composer = _read("components", "ExperimentComposer.tsx")
+    for stage in ("Acquire", "Inspect", "Design", "Run", "Compare", "Admit", "Report"):
+        assert "label: '%s'" % stage in journey
+    assert 'aria-label="Guided research journey"' in journey
+    assert "Navigation only" in journey
+    assert "does not advance or replace the claim ladder" in journey
+    assert "requestedStep" in composer
+    assert "composerPathState" in composer
+    assert "setPathState" in composer
+    # The shell sends a panel name, never a verdict about the panel.
+    for scientific_status in ("SATISFIED", "ACTION_REQUIRED", "INCONCLUSIVE", "PASS", "FAIL"):
+        assert scientific_status not in journey
+    assert "ResearchJourney" in app_source
+
+
+def test_every_global_blocker_names_one_remediation_and_legacy_tools_stay_distinct(app_source):
+    journey = _read("components", "ResearchJourney.tsx")
+    assert "Blocked:" in journey
+    assert "Next legitimate action:" in journey
+    assert "no record is selected for inspection" in journey
+    assert "no study is selected for evidence admission" in journey
+    assert "data-workflow-line={'context' in tab ? 'legacy-gridded' : 'evidence'}" in app_source
+    assert "legacy-workspace-entry" in app_source
+    assert "Legacy · {tab.context}" in app_source
+
+
+# --------------------------------------- TG18.4 rendered accessibility acceptance
+
+
+def test_assistive_acceptance_complements_the_source_contract_without_claiming_certification(
+        app_source):
+    acceptance = io.open(os.path.join(REPO_ROOT, "frontend", "e2e",
+                                      "assistive-acceptance.spec.ts"), encoding="utf-8").read()
+    css = _read("index.css")
+
+    assert "not WCAG certification" in acceptance
+    assert "not a screen-reader" in acceptance
+    for concern in ("keyboard route", "focus indicator", "reflow", "contrast",
+                    "reduced-motion preference", "text cues"):
+        assert concern in acceptance
+    for layout in ("desktop", "laptop", "narrow"):
+        assert f"name: '{layout}'" in acceptance
+    assert "prefers-reduced-motion: reduce" in css
+    assert "window.requestAnimationFrame(() => workspaceHeadingRef.current?.focus())" in app_source
+    assert "previousActiveTabRef.current !== activeTab" in app_source
+
+
+def test_rendered_non_colour_acceptance_keeps_status_words_and_semantics():
+    acceptance = io.open(os.path.join(REPO_ROOT, "frontend", "e2e",
+                                      "assistive-acceptance.spec.ts"), encoding="utf-8").read()
+
+    assert "journey location and blockers remain named when colour is removed" in acceptance
+    assert "Blocked: no record is selected for inspection." in acceptance
+    assert "Blocked: no study is selected for evidence admission." in acceptance
+    assert "aria-current" in acceptance
+    assert "accessibleNames" in acceptance
+
+
+# --------------------------------------- TG18.5 UI qualification gate
+
+
+def _workflow_nav_ids(app_source: str) -> set:
+    nav = app_source[app_source.index("const WORKFLOW_NAV"):app_source.index("] as const;")]
+    return set(re.findall(r"\{ id: '([^']+)', name:", nav))
+
+
+def test_every_journey_destination_resolves_to_a_served_workspace(app_source):
+    """A clean browser cannot reach the blocked stages' own destinations, so nothing rendered
+    exercises them. Inspect and Admit substitute a remediation while they are blocked, which is
+    correct behaviour that also hides a renamed or mistyped workspace identifier behind it. The
+    journey holds these strings separately from WORKFLOW_NAV; only a static cross-check covers
+    all seven regardless of which are reachable today."""
+    journey = _read("components", "ResearchJourney.tsx")
+    served = _workflow_nav_ids(app_source)
+
+    targets = set(re.findall(r"workspace: '([^']+)'", journey))
+    assert len(targets) >= 5, "the journey's workspace identifiers are no longer parseable"
+    unresolved = sorted(t for t in targets if t not in served)
+    assert not unresolved, (
+        "the journey navigates to workspaces the shell does not serve, which lands the researcher "
+        "on App.tsx's fallback heading instead of the workspace asked for:\n  %s\nserved:\n  %s"
+        % ("\n  ".join(unresolved), "\n  ".join(sorted(served))))
+
+    # The reverse map decides which stage a workspace lights up; a stale key silently lights none.
+    stage_map = app_source[app_source.index("const JOURNEY_STAGE_BY_WORKSPACE"):]
+    stage_map = stage_map[:stage_map.index("};")]
+    mapped = set(re.findall(r"^\s*(\w+): '", stage_map, re.MULTILINE))
+    assert mapped, "JOURNEY_STAGE_BY_WORKSPACE is no longer parseable"
+    assert not sorted(m for m in mapped if m not in served), (
+        "JOURNEY_STAGE_BY_WORKSPACE keys a workspace the shell does not serve")
+
+
+def test_the_qualification_gate_inventories_every_served_workspace(app_source):
+    """The rendered gate writes its inventory out rather than deriving it from the page. That is
+    deliberate - a self-derived list shrinks to match a shell that lost a workspace - and it is
+    only safe while this holds the other end against WORKFLOW_NAV."""
+    gate = io.open(os.path.join(REPO_ROOT, "frontend", "e2e", "ui-qualification.spec.ts"),
+                   encoding="utf-8").read()
+    nav = app_source[app_source.index("const WORKFLOW_NAV"):app_source.index("] as const;")]
+    names = re.findall(r"\{ id: '[^']+', name: '([^']+)'", nav)
+
+    listed = re.findall(r"^  '([^']+)',$", gate, re.MULTILINE)
+    assert listed == names, (
+        "the qualification gate's workspace inventory has drifted from WORKFLOW_NAV\n"
+        "gate:  %s\nshell: %s" % (listed, names))
+    assert "not evidence that any workspace computes anything correctly" in gate

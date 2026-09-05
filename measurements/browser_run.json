@@ -1,0 +1,317 @@
+{
+  "schema": "browser-run/v1",
+  "recorded_utc": "2026-09-03T20:34:54.533Z",
+  "finished_utc": "2026-09-03T20:42:39.556Z",
+  "status": "passed",
+  "totals": {
+    "passed": 136,
+    "failed": 0,
+    "skipped": 0
+  },
+  "spec_inventory": [
+    "assistive-acceptance.spec.ts",
+    "comparison-contract.spec.ts",
+    "comparison-views.spec.ts",
+    "composer-path.spec.ts",
+    "experiment-receipt.spec.ts",
+    "figure-data.spec.ts",
+    "flagship-qualification.spec.ts",
+    "narrow-width.spec.ts",
+    "product-modes.spec.ts",
+    "publication-export.spec.ts",
+    "research-journey.spec.ts",
+    "resizable-panes.spec.ts",
+    "scientist-actions.spec.ts",
+    "ui-qualification.spec.ts",
+    "validity-uncertainty.spec.ts"
+  ],
+  "specs_that_ran": [
+    "assistive-acceptance.spec.ts",
+    "comparison-contract.spec.ts",
+    "comparison-views.spec.ts",
+    "composer-path.spec.ts",
+    "experiment-receipt.spec.ts",
+    "figure-data.spec.ts",
+    "flagship-qualification.spec.ts",
+    "narrow-width.spec.ts",
+    "product-modes.spec.ts",
+    "publication-export.spec.ts",
+    "research-journey.spec.ts",
+    "resizable-panes.spec.ts",
+    "scientist-actions.spec.ts",
+    "ui-qualification.spec.ts",
+    "validity-uncertainty.spec.ts"
+  ],
+  "outcomes": [
+    {
+      "spec": "assistive-acceptance.spec.ts",
+      "passed": 11,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "spec": "comparison-contract.spec.ts",
+      "passed": 12,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "spec": "comparison-views.spec.ts",
+      "passed": 19,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "spec": "composer-path.spec.ts",
+      "passed": 11,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "spec": "experiment-receipt.spec.ts",
+      "passed": 3,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "spec": "figure-data.spec.ts",
+      "passed": 9,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "spec": "flagship-qualification.spec.ts",
+      "passed": 2,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "spec": "narrow-width.spec.ts",
+      "passed": 19,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "spec": "product-modes.spec.ts",
+      "passed": 10,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "spec": "publication-export.spec.ts",
+      "passed": 4,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "spec": "research-journey.spec.ts",
+      "passed": 5,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "spec": "resizable-panes.spec.ts",
+      "passed": 6,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "spec": "scientist-actions.spec.ts",
+      "passed": 2,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "spec": "ui-qualification.spec.ts",
+      "passed": 4,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "spec": "validity-uncertainty.spec.ts",
+      "passed": 19,
+      "failed": 0,
+      "skipped": 0
+    }
+  ],
+  "spec_sha256": {
+    "assistive-acceptance.spec.ts": "380bff381bb1ff33a360e320924c7f91b70fac2c696c68f3dccfc65ad78dda6a",
+    "comparison-contract.spec.ts": "a421e341d27f138402b79e2e054f4860d2e5f4cf428f5a53ba97225431531496",
+    "comparison-views.spec.ts": "5f236564c9aa463e3c9d2d024358dd5b3be496acb7197e8e5858b5944f1cf0a0",
+    "composer-path.spec.ts": "5caf882af8894d0bade96a95dfea7fb0e23b56beff1df3fee2165b2562a94fb2",
+    "experiment-receipt.spec.ts": "4c775b8e87204ed760fafeb34900e0b01790c117a9e56adf8a862da02d540901",
+    "figure-data.spec.ts": "f421ccf8d2c22ef0aabe88090511604249ce7445ec1b8a34bc137b2a82b1ae81",
+    "flagship-qualification.spec.ts": "c269677b39e113f196faa83dce3c291765c0f81ea9c0172397cc54e29f35cfbe",
+    "narrow-width.spec.ts": "606fddd2755fef8694d924b467034c03cd1a6e20017e542bb991440659e6e696",
+    "product-modes.spec.ts": "26937a31b4c024cf0ad2b42b2aaa0e4b977a7abb991f576b2d7050cbdd006de7",
+    "publication-export.spec.ts": "97cb50c9c0a648fda0e2583cabcc4069f4a8e6485e18a75cf7fd5396357fe7e2",
+    "research-journey.spec.ts": "b6663c05680aa1b3c0a79a2cfc7732c477791f229b221f6d023b728e71ef9192",
+    "resizable-panes.spec.ts": "3b37a1b7b68b2c1e5cbe524cb06ffbc1cad442933eceb99e71e25699924f2705",
+    "scientist-actions.spec.ts": "8aba1d5dc737f48b6b489eb36ce4fb3e6d81bc99bc4a5845e566886747f2d915",
+    "ui-qualification.spec.ts": "884fb8f21dda0c6b8af3d00839434f9e88aee906af6919710c34dfef3ae137b9",
+    "validity-uncertainty.spec.ts": "f04280278ef1bbc90369d79f83d1a08a30fa59dd782a61fbd2da6810f67e57f4"
+  },
+  "artefacts": [
+    {
+      "name": "200-percent-zoom-equivalent.png",
+      "bytes": 262606,
+      "sha256": "d949a118ff7c3933a8165152aa07ac8cf0219c76520da79ba904845f01d7224f"
+    },
+    {
+      "name": "320-floor-acquire-data.png",
+      "bytes": 53689,
+      "sha256": "25ddbe3b136d5f8309a5f792a2c3944545edec11bce1aa133155fb6957426090"
+    },
+    {
+      "name": "320-floor-experiment-composer.png",
+      "bytes": 60184,
+      "sha256": "a91e7afc7d284176d4656c8b59b2794cd0bd0ca95de13047fe74f613fdea22e4"
+    },
+    {
+      "name": "320-floor-findings.png",
+      "bytes": 51994,
+      "sha256": "88f3890e07049618db4c0ebff0889b6b4b21c94fb8b8e84c39e6ac4b3297672b"
+    },
+    {
+      "name": "320-floor-platform-evidence.png",
+      "bytes": 53179,
+      "sha256": "56af3a94593b371013749ec6c1beed17b78fbfac0294146dfc9ec5942eaa8022"
+    },
+    {
+      "name": "320-floor-spectral-transforms.png",
+      "bytes": 53177,
+      "sha256": "38defb0f2e799e2bc91e5ed5b6040ec355563b2c16bb4cc8eae68a5fbcd173a5"
+    },
+    {
+      "name": "375-phone-acquire-data.png",
+      "bytes": 57849,
+      "sha256": "16eba17b4cb6ec023ee1976759aa23a314922719e1e1ba4f21e10239b16c7283"
+    },
+    {
+      "name": "375-phone-drawer-open.png",
+      "bytes": 48943,
+      "sha256": "b686ab55c825f9880b6719b869b0a80db7869a2171f9c530d2936210fab2ab88"
+    },
+    {
+      "name": "375-phone-experiment-composer.png",
+      "bytes": 66185,
+      "sha256": "d21ba0ce5cec312a537b10b0748eef31383cc49d27a366b65a69a2b2294d5896"
+    },
+    {
+      "name": "375-phone-findings.png",
+      "bytes": 58068,
+      "sha256": "deec7e8668790ffa6f4a6ef8e10919c0d05b6523bc5bcdbaccde1bd7dc7e780c"
+    },
+    {
+      "name": "375-phone-platform-evidence.png",
+      "bytes": 59181,
+      "sha256": "6c1af664ed947e03f4c8cf0139def64f81dc83ce7e314be6697bb7d3132fdad9"
+    },
+    {
+      "name": "375-phone-spectral-transforms.png",
+      "bytes": 57616,
+      "sha256": "858de2f63d3633f36ba024cc0c6ebae240fd30023a52b7c44e43a73059b17b0a"
+    },
+    {
+      "name": "414-phone-large-acquire-data.png",
+      "bytes": 85500,
+      "sha256": "14c3b5f7cc0145f3c3c119373d85bd2f38f705c9b75db536a585a5cad48da330"
+    },
+    {
+      "name": "414-phone-large-experiment-composer.png",
+      "bytes": 93833,
+      "sha256": "df94758d090ef87d43a126d5220b567c1519ca23b5e3c35932926e3088f9b659"
+    },
+    {
+      "name": "414-phone-large-findings.png",
+      "bytes": 83136,
+      "sha256": "ef5b904609efcd26ddd8f343acc51230d56eeced9ab263e027593010acfb01de"
+    },
+    {
+      "name": "414-phone-large-platform-evidence.png",
+      "bytes": 85648,
+      "sha256": "119b21fa25cc4402d87bbde9fcd8583d8bac43e65b4cfd5c0d90a46ad608a598"
+    },
+    {
+      "name": "414-phone-large-spectral-transforms.png",
+      "bytes": 83330,
+      "sha256": "0c4721a1c851457a456cd9714f8f14362500a0601abd87d9c55b76f44b33005f"
+    },
+    {
+      "name": "768-tablet-acquire-data.png",
+      "bytes": 134352,
+      "sha256": "e850ef55a94bd8e96f7c291cbf78be5f900cbba38c51fa03dfc74a4bdc424579"
+    },
+    {
+      "name": "768-tablet-experiment-composer.png",
+      "bytes": 152370,
+      "sha256": "3a50b03bcac31ecff23955d0ae76011637f0badeb643f975035f796016d223a7"
+    },
+    {
+      "name": "768-tablet-findings.png",
+      "bytes": 154919,
+      "sha256": "cf2a8000e60f58a73c0d4c46db72d9239e0d8ca6ca6a40bb574038625f216945"
+    },
+    {
+      "name": "768-tablet-platform-evidence.png",
+      "bytes": 137460,
+      "sha256": "d307bdd2e9c3d0fa311f71cbf3214a87d8380dfc4ab2fa9e1b2b321e1052dad5"
+    },
+    {
+      "name": "768-tablet-spectral-transforms.png",
+      "bytes": 127432,
+      "sha256": "bdd6b48a928fcfad7df2850426f7e5978eee0928d1ba72e0bf081589d169301a"
+    },
+    {
+      "name": "comparison-reconstruction.png",
+      "bytes": 301470,
+      "sha256": "e4d5c87f37cf687afe75208309a3e475cea720664d0a590c74fa04557e8b0bc6"
+    },
+    {
+      "name": "desktop-1440-mode-claim.png",
+      "bytes": 203991,
+      "sha256": "ec4d829f1136bd4064ec60e02e7a7901a794b7d101e39a6c24bb83779c7ab0dc"
+    },
+    {
+      "name": "desktop-1440-mode-commitment.png",
+      "bytes": 219478,
+      "sha256": "3b2212deff6c95871f9bd731861a9851e8b88deec0e0b35e85d822d1c860c033"
+    },
+    {
+      "name": "desktop-1440-mode-instrument.png",
+      "bytes": 185913,
+      "sha256": "f45998dd979a50e00a7e1ec3a00e5ce87a1c79f5c44d28c96262d7e063fd2432"
+    },
+    {
+      "name": "desktop-1440-mode-qualification.png",
+      "bytes": 198921,
+      "sha256": "219e15185243c1a07f603bbdf3cb7d918ac6d7a60dfa6ba8ec058a246692fd55"
+    },
+    {
+      "name": "figure-data-heatmap.png",
+      "bytes": 39782,
+      "sha256": "2ee918e73fb8306a108bf483abce94332196c9e73fe33c091a343531f953b510"
+    },
+    {
+      "name": "wide-1920-mode-claim.png",
+      "bytes": 203109,
+      "sha256": "fa11000cbc6b01c7419a29d817273d68d835351d686cadde0c8632338d9c9d28"
+    },
+    {
+      "name": "wide-1920-mode-commitment.png",
+      "bytes": 240306,
+      "sha256": "2e344343f4cf18d220439ba85977cc1b7f0684cc7d62f385164068855b710688"
+    },
+    {
+      "name": "wide-1920-mode-instrument.png",
+      "bytes": 228689,
+      "sha256": "04afbd0007fb15e6cf2ac98bb5b58c0e11073e429c73214ac2341d5e3579ed7e"
+    },
+    {
+      "name": "wide-1920-mode-qualification.png",
+      "bytes": 248339,
+      "sha256": "117a7632a57c89a80ab7190f37244a2099e0e83167e6e37861719ff5c2049cdb"
+    }
+  ],
+  "claim_boundary": "A record of what a rendered browser run did. Artefact digests attest that a file of those bytes existed when the run finished, never that a human read it and never that what it shows is correct. Nothing here is evidence about any scientific result."
+}

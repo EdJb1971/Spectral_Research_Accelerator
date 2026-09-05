@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import io
+import json
 import os
 from pathlib import Path
 
@@ -33,22 +34,28 @@ def spec(**changes) -> LightCurveSpec:
     return LightCurveSpec(**values)
 
 
-def fits_bytes(flux_offset: float = 0.0) -> bytes:
+def fits_bytes(flux_offset: float = 0.0, times=None, quality=None) -> bytes:
+    """A SPOC-shaped product. `times` may carry NaN, as every real one does."""
     primary = fits.PrimaryHDU()
     primary.header["TICID"] = int(TIC)
     primary.header["RA_OBJ"] = RA
     primary.header["DEC_OBJ"] = DEC
+    time_array = np.array([1.0, 1.01, 1.03] if times is None else times, dtype=np.float64)
+    n = time_array.size
+    def ramp(start, step):
+        return np.array([start + step * index for index in range(n)], dtype=np.float32)
+    flux = ramp(100.0, 1.0)
+    if n == 3 and times is None:
+        flux = np.array([100.0, 101.0 + flux_offset, 99.5], dtype=np.float32)
+    quality_array = np.array(
+        ([0, 32, 0] if n == 3 else [0] * n) if quality is None else quality, dtype=np.int32)
     columns = [
-        fits.Column(name="TIME", format="D", array=np.array([1.0, 1.01, 1.03])),
-        fits.Column(name="PDCSAP_FLUX", format="E",
-                    array=np.array([100.0, 101.0 + flux_offset, 99.5], dtype=np.float32)),
-        fits.Column(name="PDCSAP_FLUX_ERR", format="E",
-                    array=np.array([0.1, 0.1, 0.2], dtype=np.float32)),
-        fits.Column(name="SAP_FLUX", format="E",
-                    array=np.array([110.0, 111.0, 109.5], dtype=np.float32)),
-        fits.Column(name="SAP_FLUX_ERR", format="E",
-                    array=np.array([0.2, 0.2, 0.3], dtype=np.float32)),
-        fits.Column(name="QUALITY", format="J", array=np.array([0, 32, 0], dtype=np.int32)),
+        fits.Column(name="TIME", format="D", array=time_array),
+        fits.Column(name="PDCSAP_FLUX", format="E", array=flux),
+        fits.Column(name="PDCSAP_FLUX_ERR", format="E", array=ramp(0.1, 0.0)),
+        fits.Column(name="SAP_FLUX", format="E", array=ramp(110.0, 1.0)),
+        fits.Column(name="SAP_FLUX_ERR", format="E", array=ramp(0.2, 0.0)),
+        fits.Column(name="QUALITY", format="J", array=quality_array),
     ]
     table = fits.BinTableHDU.from_columns(columns)
     table.header["BJDREFI"] = 2457000
@@ -57,6 +64,10 @@ def fits_bytes(flux_offset: float = 0.0) -> bytes:
     output = io.BytesIO()
     fits.HDUList([primary, table]).writeto(output, checksum=True)
     return output.getvalue()
+
+
+def fake_download(payload: bytes):
+    return lambda _uri, _maximum: payload
 
 
 def fake_query(payload_size: int):
@@ -123,6 +134,54 @@ def test_acquisition_parses_archive_time_flags_and_binds_every_value():
         "equal-length products with different flux values must never collide"
 
 
+def test_cadences_the_archive_never_timestamped_are_dropped_and_counted():
+    """D95, found by the first real MAST acquisition in TG17.14.
+
+    SPOC emits one row per cadence in the window, including the ones no photometry was
+    produced for, and those carry a non-finite TIME. The real sector-1 product for TIC
+    261136679 has 815 of them in 20,076 rows. Every synthetic fixture in this suite had a
+    clean clock, so `acquire_tess` had never met one and handed all of them to a collection
+    whose stated invariant is a finite strictly increasing clock. The gate refused the whole
+    domain rather than record a light curve, which is the invariant working.
+
+    A row with no timestamp cannot be placed on a clock, so it is dropped -- but the count
+    is a property of the record and travels with it rather than vanishing.
+    """
+    payload = fits_bytes(times=[1.0, float("nan"), 1.01, float("nan"), 1.03],
+                         quality=[0, 128, 0, 128, 0])
+    collection = acquire_tess(spec(), query=fake_query(len(payload)),
+                              download=fake_download(payload))
+    assert collection.n_samples == 3
+    assert collection.unclocked_samples_dropped == 2
+    assert np.all(np.isfinite(collection.times_bjd_tdb))
+    assert np.all(np.diff(collection.times_bjd_tdb) > 0)
+    assert collection.describe()["unclocked_samples_dropped"] == 2
+    assert collection.canonical()["unclocked_samples_dropped"] == 2
+    # The count survives a round trip, or a receipt could lose what was discarded.
+    assert LightCurveCollection.from_canonical(
+        collection.canonical()).unclocked_samples_dropped == 2
+
+
+def test_dropping_untimestamped_rows_does_not_weaken_the_duplicate_clock_check():
+    """The check that D95's fix must not cost.
+
+    Worth stating what this is *not*, because the first reading of D95 got it wrong: the
+    duplicate check was never blind to untimestamped rows. numpy sorts NaN to the end, so
+    the finite prefix was always compared correctly, and `[1.0, nan, 1.0]` refused before
+    this slice exactly as it does after. What the drop must not do is remove a duplicate
+    from view by removing the rows around it, so the duplicate is placed beside the gap.
+    """
+    payload = fits_bytes(times=[1.0, float("nan"), 1.0, 1.03], quality=[0, 128, 0, 0])
+    with pytest.raises(InvalidParameterError, match="duplicate or reversed"):
+        acquire_tess(spec(), query=fake_query(len(payload)), download=fake_download(payload))
+
+
+def test_a_product_with_no_timestamped_cadence_at_all_is_refused_by_name():
+    payload = fits_bytes(times=[float("nan")] * 3, quality=[128, 128, 128])
+    with pytest.raises(InvalidParameterError, match="actually timestamped"):
+        acquire_tess(spec(), query=fake_query(len(payload)), download=fake_download(payload))
+
+
 def test_download_caps_refuse_before_a_product_is_opened():
     payload = fits_bytes()
     downloads = []
@@ -153,6 +212,30 @@ def test_source_is_registered_with_bounded_capabilities():
     source = register_tess_source()
     assert LIGHTCURVE_SOURCES.get("mast_tess_spoc") is source
     assert source.describe()["metadata_preflight"] is True
+
+
+def test_mast_metadata_query_retries_one_transient_transport_timeout(monkeypatch):
+    import src.data_layer.tess_source as source
+
+    class Response:
+        def __enter__(self): return self
+        def __exit__(self, *_args): return False
+        def read(self, _limit):
+            return json.dumps({"status": "COMPLETE", "data": []}).encode()
+
+    calls = []
+    def opened(_request, timeout):
+        calls.append(timeout)
+        if len(calls) == 1:
+            raise TimeoutError("transient MAST timeout")
+        return Response()
+
+    monkeypatch.setenv(source.NETWORK_ENV_VAR, "1")
+    monkeypatch.setattr(source, "urlopen", opened)
+    monkeypatch.setattr(source.time, "sleep", lambda _seconds: None)
+    result = source._mast_query({"service": "Mast.Caom.Filtered.Position", "params": {}})
+    assert result["status"] == "COMPLETE"
+    assert calls == [source.MAST_TIMEOUT_SECONDS, source.MAST_TIMEOUT_SECONDS]
 
 
 def test_api_exposes_refusals_and_never_claims_acquisition_is_a_finding(monkeypatch, tmp_path):
