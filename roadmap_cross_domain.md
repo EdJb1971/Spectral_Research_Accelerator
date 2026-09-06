@@ -142,18 +142,27 @@ may reach the network without the maintainer's explicit say-so.
   is refused an ordering outright because it makes every pattern's scale statistic exactly
   one. Ranked by how often it preceded the target -- the phrase the specification uses -- the
   leading answer is a pattern the null did not distinguish; ranked by the corrected p-value it
-  is the planted precursor. **This remains the larger outstanding body of
-  work in the repository** -- T4F.5-8 and all of 4G remain. 4G is gated behind T4F.6: if
+  is the planted precursor. **T4F.5 has now put that table back on the map.** A pattern
+  projects to a footprint -- the parent cells inside the transform's own filter support -- and
+  never to a pixel, because a detail coefficient peaks on a structure's flank: on the planted
+  vortex the peak cell is not the planted cell in a single one of twenty-four frames, and the
+  footprint recovers it only while the level that found the structure can still reach back to
+  it. Each grid gives what it has and refuses the rest, and a rule's historical instances come
+  from the same per-anchor decision its support was counted with, reconciled against its
+  published figures before they are shown. **This remains the larger outstanding body of
+  work in the repository** -- T4F.6-8 and all of 4G remain. 4G is gated behind T4F.6: if
   nothing recognisable is recovered, the pipeline is presumed broken and 4G does not start.
+  T4F.5's own second acceptance clause waits there too: a real-ERA5 `recognised` pattern
+  projecting onto a physically sensible footprint cannot be checked until T4F.6 exists.
 * Defects **D84** and **D85** are open and **D18** is partial. Ninety-two of ninety-five are
   fixed. This session found three: **D93** (a time unit dropped at the T4E.2 signing seam, T4F.1),
   **D94** (a cache key republished as a `sha256`) and **D95** (untimestamped SPOC cadences), the
   last two by TG17.14's first contact with real archives.
-* The last measured **full backend run is 4,036 passed, 4 skipped, 1 xfailed**, exit 0, on
-  2026-09-06 in 1:01:05 -- the tree carrying T4F.4. It replaces the 3,978 measured after
-  T4F.3 and the 3,926 after T4F.2. The rise is exactly 58: the 58 test
-  functions T4F.4 added, so nothing was lost in between, and this run had nothing else competing for the
-  machine. Do not quote a larger figure without running the suite again.
+* The last measured **full backend run is 4,103 passed, 4 skipped, 1 xfailed**, exit 0,
+  on 2026-09-06 in 0:42:04 -- the tree carrying T4F.5. It replaces the 4,036 measured after
+  T4F.4 and the 3,978 after T4F.3. The rise is exactly 67: the 67 test
+  functions T4F.5 added, so nothing was lost in between. Do not quote a larger figure without
+  running the suite again.
 
 **Two habits this line holds to, because both were learned by being caught out.** A guard that
 passes because it cannot see what it is checking has now been met five times (D64, D74, D75, and

@@ -10725,3 +10725,246 @@ status this module can emit contains a term `claim_ladder.OUTSIDE_THE_LADDER` na
 4036 passed, 4 skipped, 1 xfailed, 6 warnings in 3665.97s (1:01:05)
 exit code 0
 ```
+
+## T4F.5 -- evidence projection, and the flank that makes a pixel a lie (2026-09-06, `ed-dev`)
+
+`src/analysis_engine/spectral_projection.py`, verified by `src/tests/test_spectral_projection.py`
+(67 test functions, 67 pytest cases). Measured 2026-09-06 with no network.
+
+```
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_spectral_projection.py -q
+67 passed, 1 warning in 3.16s
+
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_spectral_projection.py
+    src/tests/test_spectral_queries.py src/tests/test_spectral_precursors.py
+    src/tests/test_spectral_sequences.py src/tests/test_spectral_events.py
+    src/tests/test_spectral_clustering.py src/tests/test_spectral_invariance.py
+    src/tests/test_spectral_constellation.py src/tests/test_spectral_mining.py
+    src/tests/test_spectral_feature.py src/tests/test_spectral_tracking.py
+    src/tests/test_spectral_narrative.py -q
+427 passed, 1 warning in 50.89s
+```
+
+T4F.3 produced a corrected table and T4F.4 made it askable from either end. Both answer in
+pattern identities, and an integer is not evidence. This task says where on the parent grid, in
+which frames, at what value of the field, and over which occurrences.
+
+**The acceptance record, and why it is graded across all of it.** The T4D.2 benchmark
+`advected_vortex_sequence`: one Gaussian vortex on a known straight trajectory, growing on a
+known schedule, over 24 frames of a 128x128 crop, whose centre cell the benchmark records for
+every frame. Decomposed with an undecimated haar bank at levels 4 and 5, detected at 4 sigma,
+tracked, and enumerated as T4E.1 pairs. The projection is then graded against the recorded
+centre in **every** frame rather than at a chosen one, because the interesting result is where
+it stops working.
+
+```
+=== the map, from the record itself
+  grid                cartesian 128x128, 31 km cells
+  coordinates         PROJECTED_OFFSET_FROM_CROP_ORIGIN -- "this grid declares a metric but no
+                      latitude, so these are distances from the crop's own cell (0, 0) and not
+                      a position on the Earth"
+  vertical            NO_VERTICAL_COORDINATE
+  time                FRAME_ON_THE_RECORD_CLOCK -- no epoch, so a frame and not a date
+  filter support      level 4: 16 cells   level 5: 32 cells      (the dyadic octave labels are
+                                                                  8 and 16 -- different numbers)
+```
+
+**A coefficient maximum is not a pixel, and the record proves it rather than the docstring
+asserting it.** A detail wavelet is derivative-like, so a symmetric blob has no maximum at its
+centre and two on its flanks, about one analysing width out along the axis the band high-passes.
+Measured over every occurrence in the record:
+
+```
+=== offset from the planted centre, by band
+band     n   mean offset / vortex width   reach   holds the planted cell
+L4/LH   50            1.079                 8     frames 0-8
+L4/HL   50            1.080                 8     frames 0-6, 8-9
+L5/LH   33            1.277                16     frames 9-19  (every frame it detects)
+L5/HL   41            1.248                16     frames 9-23  (every frame it detects)
+
+the peak cell equals the planted cell in 0 of 174 member projections
+the offsets run from 6.06 to 15.15 cells
+```
+
+So the roadmap's acceptance -- *for a planted synthetic precursor, projection recovers the exact
+grid cells that were planted* -- is met, and it is met by the footprint and never by the peak.
+Projecting the maximum onto one pixel would have been wrong by six to fifteen cells in every
+frame of the record while printing two decimal places.
+
+**And it is met with a boundary in it, which is the finding.** A footprint reaches half the
+filter support, and the flank offset grows with the structure. Level 4 reaches eight cells and
+holds the planted cell out to frame 9; from frame 10, when the vortex is wider than eight cells,
+it loses it in all fifteen remaining frames. Level 5 reaches sixteen and never loses it. The
+suite checks containment against that geometry rather than against the code -- a member whose
+offset is more than a cell inside the reach must contain the planted cell and one more than a
+cell outside it must not, with the five frames that sit within a cell of the boundary left to
+the measurement, since there the answer turns on where the planted half-cell rounds. **A
+coefficient at a level far finer than the structure points away from it by more than its own
+reach, and evidence should be read at the level that resolves the thing.**
+
+**An intersection is not a location either, and the measurement corrected the prose.** The first
+version of this module said the intersection of two members is "where those offsets cannot all
+be pointing away from". The record says otherwise:
+
+```
+L5/LH + L5/HL   (one level, two axes)          11 occurrences, planted cell inside  11 / 11
+L4/LH + L5/LH   (one orientation, two levels)  11 occurrences, planted cell inside   0 / 11
+```
+
+Two bands that resolve different axes have flanks pointing in different directions and their
+overlap straddles what excited them; two bands of one orientation have flanks pointing the same
+way and their overlap sits beside it, non-empty and wrong. Both counts are pinned in the suite,
+the sentence in the receipt now says both, and an occurrence whose members all share an
+orientation carries a `common_caution` saying so. This is the second time in this phase that a
+measurement has corrected a sentence that sounded right.
+
+**Each grid, level and clock says only what it can.** A `latlon` grid gives degrees in its own
+convention, with a longitude past a closing grid's seam and the cell it names both brought back
+inside the grid's own range; a `cartesian` grid gives northing and easting in metres and names
+them a distance from the crop's own origin rather than a place; a `pixel` grid gives cells and
+refuses degrees by name. The task asks for pressure levels: a level set without the coordinate
+it is a value of is reported as a number, because calling it hectopascals is the assumption
+TG1.5 exists to refuse, and this record declares no vertical coordinate at all. A frame is a
+frame unless the *record* carries a calendar -- a decomposition's own clock is
+`FieldSequence.times_seconds` by construction, so the field cannot know whether its numbers are
+dates and the record it came from can.
+
+**The field's values and the anomaly magnitudes are inputs.** Values under a footprint come from
+the record the coefficients were taken from, refused if its length, grid or clock disagree with
+the decomposition; an anomaly comes from a supplied anomaly record. A raw value is never called
+an anomaly and this record's own time mean is never quietly subtracted to make one, because
+which baseline was removed is a decision belonging to whoever removed it (R11). With nothing
+supplied the footprint says the values are unknown and states that they are not zero and not the
+coefficient.
+
+**The historical instances are the ones the rule was counted on.** The per-anchor decision moved
+into `spectral_sequences.anchor_verdicts`, which `count_sequence` now tallies and this module
+lists; `window_completions` is likewise the one place a window's completions are found. A second
+implementation would have agreed on the planted case and diverged exactly at the record's edge,
+which is the case the eligibility rule was written for. On the acceptance record:
+
+```
+=== 1 -> 2 at lag [1, 3] frames, 113 surrogates, seed 20260906, family of two
+supp 8   elig 9   occurrences 11   truncated 2   unobserved 0
+conf 0.8889   base 0.3419   lift 2.600   p 0.0088   q 0.0263   PRECURSOR_SIGNATURE
+
+  anchor   verdict                           completions
+     6.0   SUPPORTING                        [8.0]
+    13.0   SUPPORTING                        [15.0]
+    ...
+    60.0   ELIGIBLE_AND_NOT_FOLLOWED         []          (the consequent at 64 is four frames
+                                                          out, and the window reaches three)
+   118.0   INELIGIBLE_TRUNCATED_BY_RECORD    [119.0]     (followed, and still not support)
+   119.0   INELIGIBLE_TRUNCATED_BY_RECORD    []
+```
+
+The anchor at 118 is the one worth reading. Something did follow it, one frame later, and it is
+still not support: its window reaches to 121 and the record stops at 119, so nobody watched the
+rest of it. Counting it would price the tail of every record as a success whenever the
+consequent happens to be common, which is the asymmetry T4F.2's denominator was built to refuse.
+With frames 62 and 63 unsearched instead, the anchor at 60 stops being an eligible failure and
+becomes undecidable -- `INELIGIBLE_SPANS_UNOBSERVED_TIME` -- and the two are different findings:
+one lowers the confidence, the other leaves the denominator. Every enumerated total is
+reconciled against the figures the rule published before any of this is shown, and a series that
+produces different ones is refused by name rather than displayed.
+
+**Per-scale contribution is a share of this pattern's own members and of nothing else,** because
+the bank is undecimated and therefore redundant: per-scale coefficient energies do not partition
+the field's variance, and a structure straddling two levels appears in both shares. The suite
+holds the shares to the squared magnitudes of the pattern's own member nodes over their total,
+on a pattern that genuinely spans two levels so that dividing by the largest rather than by the
+total would be visible.
+
+**Mutation testing: 67 mutations in two batches, 43 + 24, all caught but one shown to be
+equivalent.**
+
+```
+batch one:  32 CAUGHT, 11 MISSED
+  MISSED  end the footprint one cell further out
+  MISSED  do not record that the crop cut the footprint
+  MISSED  treat a one-column footprint at the seam as wrapping
+  MISSED  take the union of the footprints rather than the intersection
+  MISSED  keep the column overlap when the rows do not overlap at all
+  MISSED  order a pattern's occurrences by track rather than by time
+  MISSED  share the magnitudes rather than their squares
+  MISSED  divide each share by the largest rather than by the total
+  MISSED  count a truncated anchor that happened to complete as support
+  MISSED  report an unobserved window as truncated by the record
+  MISSED  list completions from a window one frame wider than the one counted
+
+batch two (24 new, aimed where the first batch did not):  16 CAUGHT, 6 MISSED
+  MISSED  read every scale's support off the first level          <- equivalent, see below
+  MISSED  test containment against only the first segment of a wrapped footprint
+  MISSED  clip a column past the seam instead of wrapping it
+  MISSED  truncate a sub-pixel row to a cell instead of rounding it
+  MISSED  project the consequent's pattern at the antecedent's frame
+  MISSED  project a member measured at a scale this decomposition does not carry
+
+after closing every real gap: 43 CAUGHT + 23 CAUGHT, 1 equivalent
+```
+
+**The equivalent one, stated rather than counted as a kill.** `_interior_halfwidth(field, scale,
+position)` takes its level from `int(scale)` whenever the scale label parses as an integer and
+falls back to `position` only when it does not; `spectral_tracking._scale_quantity` refuses any
+scale label that is not a positive integer level, so nothing that can produce a track -- and
+therefore nothing that can produce a constellation to project -- can reach that fallback.
+Passing `position + 1` is the correct contract of the helper and the mutation to `1` cannot be
+observed. It is recorded here rather than closed with a test that would have to construct a
+field the rest of the phase refuses.
+
+**What the sixteen real gaps were.** Five were the fixture being too tidy again, in a new way:
+every occurrence on the acceptance record is of one advecting vortex, so its members always
+overlap, no anchor was ever both truncated and followed, no consequent ever sat just outside the
+declared window, no unobserved window ever failed to complete, and the catalogue's members were
+already in time order when they reached the projection. Those were closed by building the cases
+-- a consequent four frames after an anchor and another inside a truncated window, two unsearched
+frames that make an eligible failure undecidable, a catalogue handed to the index with its
+members reversed, and an intersection taken between two footprints seventeen frames apart on one
+trajectory. The rest were assertions weaker than they looked: a footprint's side length was
+allowed a one-cell range so widening it stayed inside, containment was never tested across the
+two segments of a wrapped footprint, the sub-pixel rounding of a centre cell was only ever
+compared against itself, the intersection was never asserted to lie *inside* its members, a
+share was only checked to sum to one on a pattern that had a single scale, and the antecedent
+end of an instance was never checked to be the antecedent's pattern.
+
+**What is refused rather than defaulted.** A detection whose positions were never aligned to the
+parent grid is refused by name (D88): an unaligned index sits at the filter's anchor rather than
+where it responded, by tens of cells at coarse levels, so a footprint drawn from it would be in
+the wrong place by an amount that grows with scale. A constellation that dropped the features it
+was built from cannot be projected, because nothing else can say which filter's support its
+nodes have. A member measured at a scale this decomposition does not carry is refused rather
+than given the nearest one. A catalogue whose members have no constellation in the supplied
+extraction is refused with the count and the first missing key, because a projection that
+skipped them would understate the evidence while looking complete. A selected-lag row is refused
+where a counted rule is required. And a signature is refused with the reason: it carries no
+position, by design, which is what makes it comparable.
+
+**Nothing is claimed beyond a footprint.** The claim boundary refuses *cause*, *driver*,
+*mechanism*, *trigger*, *forecast* and *intervention* by name (R7), carries T4F.3's own boundary
+beside it on a rule projection, and states the thing this task most invites a reader to forget:
+a footprint is **where a coefficient of this transform was, not where a structure is**, and the
+field values reported under it are the record's own values at those cells rather than evidence
+that the coefficient measured them. No verdict, status or basis name this module emits contains
+a term `claim_ladder.OUTSIDE_THE_LADDER` names.
+
+**The half of the acceptance that has not run.** "On real ERA5, a `recognised` pattern from
+T4F.6 projects onto a physically sensible footprint -- verified by eye" needs T4F.6, which does
+not exist, and a real-ERA5 mining pass, which has not been run. It is outstanding, and T4F.6 is
+where it comes due.
+
+**Documentation guards.**
+
+```
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_documentation.py -q
+29 passed, 2 warnings in 1645.10s (0:27:25)
+# re-run on the final tree, sharing the machine with the full suite above; an
+# earlier standalone run of the same 29 guards took 273.08s (0:04:33)
+```
+
+**Full backend suite.**
+
+```
+> .\.venv\Scripts\python.exe -m pytest src/tests -q
+4103 passed, 4 skipped, 1 xfailed, 6 warnings in 2524.94s (0:42:04)
+exit code 0
+```

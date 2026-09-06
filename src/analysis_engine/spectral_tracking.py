@@ -91,6 +91,12 @@ def _spans_globe(grid) -> bool:
     return abs(span - 360.0) < 1e-6
 
 
+#: The public name for the seam test, read by T4F.5's projection. One definition, so a
+#: tracker that links across the date line and a footprint that wraps at it cannot disagree
+#: about whether this grid closes.
+spans_globe = _spans_globe
+
+
 def _scale_quantity(scale: Any) -> Quantity:
     """The dyadic octave of a level, as a length whose *ratios* are the transform's own.
 

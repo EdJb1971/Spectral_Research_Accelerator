@@ -8022,6 +8022,14 @@ not a base rate, a lift, a surrogate comparison, a p-value, a precursor or a cau
 boundary says a repeated interval is not a period, a frequency or an oscillation, that no null was
 drawn, and that whether a concentration exceeds chance is T4F.3's question.
 
+**One anchor, one verdict, three readers.** The decision about a single antecedent
+occurrence -- was its window wholly searched, and did the chain complete inside it -- lives in
+`anchor_verdicts`. `count_sequence` tallies those verdicts into a support and a denominator,
+T4F.3's null counts surrogates through the same tally, and T4F.5 lists them as the instances
+behind a rule. A second implementation of that loop would agree on every planted case and
+diverge exactly at the record's edge, which is the case the eligibility rule exists for, and the
+divergence would show up as a projection exhibiting occurrences the correction never saw.
+
 ### 3F.3 Precursor tests, and the first null (`src/analysis_engine/spectral_precursors.py`, T4F.3)
 
 T4F.2 counted and claimed nothing. This is the task that asks whether a count means anything:
@@ -8160,6 +8168,72 @@ on the required side of the ordering, and nothing on that side that could be mea
 three different findings, and only the first is a negative result. Every considered row comes
 back including the ones that found nothing, with the rows that named the target counted apart
 from the whole family, so a reader can see the denominator the answer came from.
+
+### 3F.5 Evidence projection (`src/analysis_engine/spectral_projection.py`, T4F.5)
+
+A rule is an ordered pair of integers, and an integer is not evidence. This section puts one
+back on the parent grid: which cells, in which frames, at what value of the field, and over
+which occurrences. The mapping is direct rather than inferred -- the bank is undecimated, every
+scale already lives on the parent grid, and T4D.1 removes each level's analysis delay (D88)
+before a position is reported -- so what needs care is not the arithmetic but the claims.
+
+**A footprint, never a pixel.** A coefficient is the response of a filter covering many parent
+cells, so a projection is the set of cells inside that filter's own support -- the same
+`filter_support` R13 cuts the contaminated margin with -- and its extent is the measured support
+rather than the dyadic octave label the scale ratios use (16 cells against 8 at haar level 4).
+Two footprints are intersected as boxes, and a grid whose columns close on a circle of longitude
+gives a footprint at the seam two column segments rather than one span across the world.
+
+**The measurement that makes the point.** A detail wavelet is derivative-like, so a symmetric
+structure has no maximum at its centre and two on its flanks, one analysing width out along the
+axis the band high-passes. On the T4D.2 acceptance record the flank offset is `1.08` times the
+vortex's own width at level 4 and `1.26` at level 5, and **not once in twenty-four frames does a
+member's peak cell coincide with the planted cell** -- projecting a maximum onto one pixel would
+have been wrong by six to twelve cells while looking precise to two decimals. The footprint
+recovers the planted cell instead, and only while the level that found the structure can reach
+back to it: level 4 reaches eight cells and holds the planted cell out to frame 9, losing it in
+every frame after; level 5 reaches sixteen and holds it in all fifteen frames it detects
+anything. That boundary is measured rather than assumed, and it says something a reader needs:
+**evidence should be read at the level that resolves the thing.**
+
+**An intersection is not a location either.** Two bands of one level resolving different axes
+have flanks pointing different ways and their overlap straddles what excited them -- on this
+record the LH/HL pair contains the planted cell in 11 of 11 occurrences. Two bands of one
+orientation at two levels have flanks pointing the *same* way, and their overlap is beside the
+structure rather than over it: 11 of 11 occurrences exclude the planted cell. The receipt warns
+when every member shares an orientation, and both counts are pinned in the suite, because the
+second is what stops the first being read as a rule.
+
+**Each grid says only what it can.** A `latlon` grid gives degrees in its own convention; a
+`cartesian` grid gives offsets in metres from the crop's own origin, which is a distance and not
+a place, and says so; a `pixel` grid gives cells and refuses degrees by name. A level with no
+declared axis is a number rather than hectopascals (TG1.5), and a frame is a frame unless the
+record supplied carries a calendar -- a decomposition's own clock is float seconds by
+construction, so the field cannot say whether its numbers are dates and the record can.
+
+**Values and anomalies are inputs.** The field's values under a footprint are read from the
+record the coefficients came from, which must be supplied and is checked against the
+decomposition's length, grid and clock; an anomaly is read from a supplied anomaly record. A raw
+value is never called an anomaly and this record's own time mean is never quietly subtracted to
+make one, because which baseline was removed is a decision belonging to whoever removed it
+(R11). With nothing supplied the projection says the values are unknown, which is a smaller
+answer than the wrong one and is not zero.
+
+**The instances are the ones the rule was counted on.** The per-anchor decision now lives once,
+in `spectral_sequences.anchor_verdicts`: `count_sequence` tallies it into a support and a
+denominator and this module lists it as instances, so the occurrences shown and the support a
+correction was paid on cannot come from two implementations that agree on the planted case and
+diverge at the record's edge. Every enumerated total is reconciled against the figures the rule
+published before anything is shown, and a disagreement refuses -- it means the series in hand is
+not the series the rule was measured on. Anchors that did not support the rule are listed under
+their own verdicts: eligible and unfollowed, truncated by the record's end, or spanning
+unobserved time. On the acceptance record the anchor at 118 *is* followed at 119 and is still
+not support, because the rest of its window was never watched.
+
+**Per-scale contribution is a share of this pattern's own members and of nothing else.** The
+bank is redundant, so per-scale coefficient energies do not partition the field's variance and a
+structure straddling two levels appears in both shares. The sentence saying so travels with
+every share.
 
 ## 4. Database Schema and State Tracking (`src/database/models.py`, `session.py`, `migrate.py`)
 
@@ -8334,7 +8408,7 @@ See `VERIFICATION.md` for the captured command output behind every statement her
 | Item | Status |
 |---|---|
 | Python venv + dependencies | installed (torch 2.13.0+cu130, numpy 2.2.6, pydantic 1.10.26, SQLAlchemy 2.0.52, xarray 2025.6.1, FastAPI 0.110.3) |
-| Backend test suite | **4036 passed, 1 xfailed** (plus 4 skipped: the opt-in live GCS read, opt-in live store probe, opt-in live Argo acceptance, and opt-in live TESS/MAST acceptance). Measured 2026-09-06 in 3,665.97 s (1:01:05), exit 0, on the tree carrying T4F.4. Nothing failed in this run. It is exactly 58 above the previous measurement of 3978, which is the 58 test functions T4F.4 added, so nothing was lost in between. |
+| Backend test suite | **4103 passed, 1 xfailed** (plus 4 skipped: the opt-in live GCS read, opt-in live store probe, opt-in live Argo acceptance, and opt-in live TESS/MAST acceptance). Measured 2026-09-06 in 2,524.94 s (0:42:04), exit 0, on the tree carrying T4F.5. Nothing failed in this run. It is exactly 58 above the previous measurement of 3978, which is the 58 test functions T4F.4 added, so nothing was lost in between. |
 | Ground-Truth Benchmark Suite | **29 PASS, 0 FAIL, 0 NOT_YET_RUNNABLE** (`python -m src.benchmarks`, exit 0) |
 | Frontend `npm install` + `npm run build` | passes, emits 1,395 modules + real JS/CSS assets (was: 1 module, no assets) |
 | Backend server | starts, serves OpenAPI, all smoke-tested endpoints return 200 |
@@ -8344,9 +8418,9 @@ See `VERIFICATION.md` for the captured command output behind every statement her
 TG17.9 was verified after that last full-suite figure with 21 receipt tests, all 157 frontend
 contract tests, all 80 orchestrator tests and all 26 documentation tests (284 focused tests across
 the four files). The production build transforms 1,408 modules and the full rendered Chromium
-suite is 33/33. The whole backend suite has since been rerun, most recently on 2026-09-05 after
-T4F.4, so **4036** is the last measured full figure rather than being arithmetically
-increased from targeted runs. That run was the first in a while with nothing else competing for
+suite is 33/33. The whole backend suite has since been rerun, most recently on 2026-09-06
+after T4F.5, so **4103** is the last measured full figure rather than being
+arithmetically increased from targeted runs. That run was the first in a while with nothing else competing for
 the machine, and `test_acquisitions_api.py::test_a_server_restart_marks_active_cds_work_
 interrupted_for_explicit_resume` passed in it. The two runs where it failed were both heavily
 contended by concurrent calibration work, which is what a test polling a background worker on a
@@ -9191,10 +9265,11 @@ able to sit three slices out of date.
 | `test_spectral_events.py` | 18 | T4F.1 the timed event substrate: the grid refusing an unnamed time unit, an empty frame list, repeated or reordered frames and a cadence the frames do not lie on; coverage measured against the declared cadence, reported incomplete with its missing count across an unsearched frame, and refused as undecidable without a cadence; the searched frames unrecoverable from the catalogue; an empty catalogue, an occurrence at an unsearched frame, two scale modes in one series, a repeated occurrence identity and a member unit disagreeing with the grid each refused by name; members carrying no unit counted rather than assumed to agree; event order invariant to input permutation; two patterns on one frame reported as simultaneous and unordered; per-pattern spans in the declared unit; and the receipt publishing its schema, grid and claim boundary |
 | `test_spectral_sequences.py` | 33 | T4F.2 counted sequences and repeated gaps: a zero or negative minimum lag refused because it would make two events on one frame a succession, lags required finite, ordered and in a named unit, a lag declared in another unit than the grid refused rather than converted, and a window no frame on the cadence can fall inside refused rather than counted as zero while the same window is admitted on a grid fine enough to reach it; a proposed window classified measured, holed or truncated with the three kept apart and undecidable without a cadence; the planted four-fold chain counted at both lengths with the reversed chain present as a zero rather than omitted, two patterns sharing a frame counted as no step in either direction, and a pattern following itself counted as the chain it is; a censored antecedent excluded from the denominator while an antecedent whose searched window held nothing stays in it as a miss, an unread window excluded and counted apart, a completion at an inadmissible antecedent published rather than dropped, the count standing and the ratio refused without a cadence, a pattern with no admissible antecedent reporting that rather than a zero ratio, and no sequence claiming more support than the occurrences it was counted over; support asserted antimonotone under extension over every extension the sweep reached and the examined and pruned candidate counts asserted against the arithmetic that rule implies; a length below two, a fractional or non-positive minimum support, an implicit series, window or budget, and either budget overrun each refused whole; and for recurrence, a repeated gap reported with its count and share, a gap containing an unread instant bounding rather than measuring and kept out of the longest, a series whose every gap is unmeasured, an undeclared cadence reporting which kind of ignorance it is, gaps that never agree, a tally below the declared minimum refusing a modal interval, a single gap refused as a recurrence, an absent pattern refused rather than reported empty, and the receipt publishing the lattice count that is the denominator of its own coincidence |
 | `test_spectral_queries.py` | 58 | T4F.4 bidirectional queries: coarse and fine read off the catalogue's own member scales as an interval order, the statistic held to the geometric mean of every member node's scale and the range to every member rather than the first, one pattern finer than another only where the ranges are disjoint so ranges that touch at one scale are not separated, the relation asserted transitive where it holds and published as partial with the pairs it cannot order named, the measured gap reported between disjoint ranges and refused between overlapping ones, cardinality shown not to be scale, a scale-invariant catalogue refused on the exact fact that its geometric-mean statistic is 1.0 for every pattern, and a missing scale unit, two units in one catalogue, a non-positive scale and an empty catalogue each refused by name; top-down and bottom-up shown to be one selection differing only in the target's role and the counterpart's side, the two directions asserted to return the very same row object, the wrong side and the unorderable counted apart from each other and from the answer, no default direction, and a target the declared family never asked about in that role refused rather than answered with an empty list; nothing recomputed, every figure asserted identical to the report's own row, the declared family's size published beside an answer smaller than it, each of the two families corrected against its own size, and the shortcut this module refuses priced by measuring the q-value a narrowed family would have bought; every ranking key ranked on every entry, the support ranking shown to put a pattern the null did not distinguish first while the corrected ranking puts the planted precursor first, the leader named for each key, the disagreement published, support held to the count that succeeded rather than the count that was eligible, a censored row given no rank under any key and sorted below every measured one, ties broken deterministically, and a support ranking of the selected-lag family refused by name; nothing distinguished, nothing orderable and nothing measurable kept apart as three different answers; and no status naming a term the ladder places outside itself, with the claim boundary refusing causal vocabulary, disclaiming a second test and stating that a direction word is about scale and not about influence |
+| `test_spectral_projection.py` | 67 | T4F.5 evidence projection: a footprint taken from the transform's own filter support rather than from the dyadic octave label, every cell in it within that reach of the maximum, its own boundary rows included, a seam-crossing footprint kept as two column segments and sampled and tested for containment across both, and a clipped one saying so on either axis; the acceptance measured over the whole record rather than at a chosen frame -- the flank offset 1.08 and 1.26 structure widths at the two levels, the peak cell never once the planted cell, containment holding exactly while the level can reach back, level 4 losing the vortex from frame 10 and level 5 holding it in all fifteen frames it detects; the LH/HL intersection over the planted cell in 11 of 11 occurrences and the LH/LH intersection beside it in 11 of 11 with the receipt warning when every member shares an orientation, the intersection asserted inside every member and reported empty in both coordinates when the rows do not meet; degrees only from a grid with a latitude, metres named as a distance from the crop origin and refused as a position, a pixel grid refused degrees by name, a longitude and its cell both coming back inside the grid's own range, a sub-pixel position naming its nearest cell, an undeclared level refused hectopascals, and a frame dated only where the record supplied carries a calendar; the field's values read from the supplied record and checked against it, the record refused on a different length, grid or clock, an anomaly read from an anomaly record and never made from a raw one, and both absences named rather than left as zero; per-scale shares held to the squared magnitudes of this pattern's own members over their total, with the redundancy of the bank published beside them; the index refusing a catalogue whose members this extraction lacks and bound to a genuinely clustered one; and the instances decided by `anchor_verdicts` rather than a second denominator -- every anchor listed under its own verdict, a truncated anchor that was followed still not support, an unobserved window kept apart from a truncated one, a completion four frames out not listed against a three-frame window, every total reconciled against the rule's own figures and a series that disagrees refused, and a rule the null explained keeping its instances |
 | `test_spectral_precursors.py` | 47 | T4F.3 precursor tests: the base rate measured as a window probability rather than a frame one and shown to grow with the window, estimated only over positions whose window was wholly observed, identical for two antecedents sharing a consequent, published with the sample size it was estimated over, and refused as a lift when the consequent never fell in any observed window; lift held to confidence over base rate, the interval bracketing it and narrowing as the denominator grows, the interval held to the defining property of the score interval so a normal approximation that gives a perfect record no width at all is refused, the overlapping windows that break its independence assumption counted rather than only disclaimed with two anchors exactly a window apart counted as sharing one, and R9's six figures either built as the programme's own carrier or refused whole, the surrogate-corrected lift shown to be against the ensemble while the plain lift is against the base rate; the planted precursor clearing the null while its reverse does not, the same unchanged record called a precursor by the scattering null and not by the shifting one, the rotation preserving the antecedent's count and every gap but the wrapped one, rotations below the widest declared lag never drawn, an ensemble larger than the record's distinct rotations refused, the null's identity and what it preserves and destroys travelling in the receipt, the easy null carrying its own warning, and one seed redrawing one ensemble; a lag family required as a declared object and refused empty, duplicated, mixed in unit or declared in a unit the grid does not use, overlapping windows reported rather than refused, one draw shown to be shared across the family so the maximum has a null and a window's ensemble does not depend on where it was declared, the chosen lag referenced to the maximum, and each family corrected against its own size; an under-powered design refused before anything is counted, the family sized by what was declared rather than by what was reported even when a member returned no number at all, a family whose every member clears alpha raw and none of them corrected showing that the status follows the correction, correction shown to move p-values only upwards, and every member reported including those that found nothing; a grid without a cadence, a pattern preceding itself, an unknown null or correction, an alpha or interval level outside (0, 1), an empty ensemble, an undeclared seed, an unaffordable budget and a pattern the series does not contain each refused by name; the ensemble a p-value came from published rather than only summarised; no status naming a term the ladder places outside itself; and the counting shown to be T4F.2's own rather than a second implementation of it |
 | `test_spectral_invariance.py` | 46 | T4E.2 the invariant signature: the principal axis checked against the covariance eigendecomposition it stands for over 50 random configurations, exactly collinear points reporting an infinite anisotropy rather than a failure, and three axes refused rather than projected; the `planted_configuration` benchmark measured over 24 field-noise realisations to be isotropic with an axis angle spanning 0.78 to 158.08 degrees, the module's isotropy floor asserted to be the number that measurement produced, a configuration at the benchmark's own anisotropy refused an axis by name, and the vortex triples shown to clear the floor by two orders of magnitude; invariance measured rather than declared, with translation, three rotations, reflection and every relabelling asserted to leave the signature vector identical to floating-point precision in both modes; a uniform rescaling leaving the scale-free shape alone while an estimator that missed the rescaling moves the scale-specific geometry by exactly the factor it missed; the canonical order shown to matter, with two configurations that agree on independently sorted blocks and have no correspondence making both true at once; the toggle priced at 87 of 135 with the loss attributed by cardinality; a position in metres beside a scale in cells refusing the scale-specific mode and signing in the scale-invariant one, which is what R19's own refusal message tells the caller to do; and the refusals -- a pair asked for a scale-free shape, a pair's axis refused for a different reason than an isotropic triple's, a constellation stripped of its features, a member with no band RMS, an unknown mode, blocks that disagree about cardinality, a floor calibrated on one realisation or on collinear replicates, and the mixed-unit refusal left to the extractor rather than copied |
 | `test_spectral_narrative.py` | 25 | T4D.3 the prose, and what it may not say: every number in a sentence checked against the track it came from including the spoken speed against `Track.speed()` for all four tracks, the subject of every sentence being the coefficient maximum and not the structure, and the frame count being of frames searched rather than frames found; no track of a growing vortex claiming its own scale doubled -- each holding one level at a scale velocity of exactly zero with the word absent from the prose -- while the growth that did happen is measured across bands, level 4 weakening as level 5 strengthens and is first excited nine frames later, offered as a candidate precursor relationship carrying that it was not tested against a null and claims no merge, with one band supporting no ordering at all; a cartesian grid refused every compass word and given axis-relative wording, the sign that makes a row northward read from the grid so one displacement on two grids gives opposite points, the cosine of the latitude shortening a degree of longitude before the bearing is taken so 60 degrees north gives 26.6 and not 45, a track that returned to where it started given no bearing, and the missing-`lat0` branch shown to be unreachable rather than added; energy reported as the square under its own name so the roadmap's own 43% becomes 104.5%, and a change from zero refused rather than rendered infinite; the guard using the programme's one list of words for every entry in it, a causal word in a caller's own dataset name refused before a reader sees it, the guard's own limit asserted so a substring match cannot creep in, and the entitlement allowed to name the boundary the sentences may not cross and appearing exactly once however many tracks there are; plus a single sighting supporting no direction, speed or growth, a search that found nothing refused as an empty list of sentences, and the structural signature naming no variable, dataset or units |
-  | **total** | **3626** | |
+  | **total** | **3693** | |
 
 ### 7.4a Browser suite inventory
 

@@ -79,8 +79,25 @@ supersedes the other.
   outright because that mode makes every pattern's scale statistic exactly 1.0. Every ranking
   key is available with its rank on every entry: ranked by how often it preceded the target the
   leading answer is a pattern the null did not distinguish, and ranked by the corrected p-value
-  it is the planted precursor, so the choice of ranking decides the answer. **T4F.5 evidence
-  projection is next.**
+  it is the planted precursor, so the choice of ranking decides the answer.
+* Phase 4 frontier: **T4F.5 is DONE, and it puts a rule back on the map without claiming the
+  map knows more than it does.** A pattern projects to a *footprint* -- the parent cells inside
+  the transform's own filter support, the same number R13 cuts the contaminated margin with --
+  and never to a pixel, because a detail coefficient peaks on a structure's flank rather than at
+  its centre. On the planted vortex that flank sits 1.08 structure widths out at level 4 and 1.26
+  at level 5, and **the peak cell is not the planted cell in a single one of twenty-four
+  frames**; the footprint recovers it, and only while the level that found the structure can
+  still reach back to it, so level 4 holds the planted cell to frame 9 and loses it in all
+  fifteen frames after while level 5 holds it throughout. Evidence should be read at the level
+  that resolves the thing. Two members' overlap is not a location either: one level's LH and HL
+  bands contain the planted cell in 11 of 11 occurrences, and one orientation's two levels
+  exclude it in 11 of 11 because both flanks point the same way. Each grid says only what it can
+  -- degrees, or metres named as a distance from the crop's own origin, or cells and nothing else
+  -- an undeclared level stays a number rather than becoming hectopascals, and a frame is dated
+  only where the record carries a calendar. The historical instances come from the same
+  per-anchor decision the support was counted with, and every total is reconciled against the
+  rule's published figures before anything is shown. **T4F.6, the known-phenomenon
+  cross-reference that gates all of 4G, is next.**
 * Cross-domain line: **TG17.14 is DONE and `live_sources` reads `PASS`.** On 2026-09-04 the
   authorised bounded run reached ERA5 through CDS, Argo GDAC and MAST SPOC, each demonstrating
   real network use, while the bespoke order-book family demonstrated a content-addressed local
@@ -143,7 +160,7 @@ supersedes the other.
   vector publication sheets that preserve the figure's reading contract. Under
   G18 none of this may recompute, summarize, promote or reinterpret a scientific value, so each
   addition transcribes what the analysis layer produced or states that it produced nothing.
-* Last measured full backend run: **4036 passed, 4 skipped, 1 xfailed**, exit 0 (2026-09-06, 1:01:05).
+* Last measured full backend run: **4103 passed, 4 skipped, 1 xfailed**, exit 0 (2026-09-06, 0:42:04).
 * Last measured browser suite: **136/136** in Chromium from a cleaned `.e2e-state` (2026-09-04).
   It is inventoried in `architecture.md` section 7.4a; it is the only check here that proves a
   page renders.

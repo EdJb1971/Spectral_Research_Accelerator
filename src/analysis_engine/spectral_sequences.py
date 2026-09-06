@@ -253,23 +253,57 @@ def times_by_pattern(series: EventSeries) -> Dict[int, List[float]]:
     return times
 
 
+def window_completions(times: Dict[int, List[float]], pattern_id: int, earlier: float,
+                       window: TransitionWindow) -> List[float]:
+    """The occurrences of `pattern_id` that land inside the window opened at `earlier`.
+
+    Public because T4F.5 projects the occurrences a rule was counted on, and the one thing that
+    must not exist twice is the decision about which occurrences those are. A projection reading
+    a window one sample wider than the count did would show a supporting instance the support
+    never contained.
+    """
+    candidates = times.get(int(pattern_id))
+    if not candidates:
+        return []
+    low = bisect.bisect_left(candidates, earlier + float(window.minimum_lag))
+    high = bisect.bisect_right(candidates, earlier + float(window.maximum_lag))
+    return candidates[low:high]
+
+
 def _completes(sequence: Sequence[int], anchor: float, times: Dict[int, List[float]],
                window: TransitionWindow) -> bool:
     """Does a chain start at `anchor` whose every step lands inside the window?"""
     reachable = [anchor]
     for pattern_id in sequence[1:]:
-        candidates = times.get(int(pattern_id))
-        if not candidates:
-            return False
         found: List[float] = []
         for earlier in reachable:
-            low = bisect.bisect_left(candidates, earlier + float(window.minimum_lag))
-            high = bisect.bisect_right(candidates, earlier + float(window.maximum_lag))
-            found.extend(candidates[low:high])
+            found.extend(window_completions(times, int(pattern_id), earlier, window))
         if not found:
             return False
         reachable = sorted(set(found))
     return True
+
+
+def anchor_verdicts(sequence: Sequence[int], series: EventSeries,
+                    times: Dict[int, List[float]],
+                    window: TransitionWindow) -> List[Tuple[float, str, bool]]:
+    """`(anchor, window status, completed)` for every occurrence of the first pattern.
+
+    The one place an anchor's eligibility and its completion are decided. `count_sequence`
+    tallies these into a support and a denominator; T4F.5's projection lists them as the
+    instances behind a rule. Two implementations of this loop would agree on the planted case
+    and diverge exactly at the record's edge, which is the case the eligibility rule was
+    written for -- and the projection would then exhibit occurrences the correction never saw.
+    """
+    grid = series.grid
+    reach = (len(sequence) - 1) * float(window.maximum_lag)
+    verdicts: List[Tuple[float, str, bool]] = []
+    for anchor in times.get(sequence[0], []):
+        status, _observed, _missing = grid.observation_of_window(
+            anchor + float(window.minimum_lag), anchor + reach)
+        verdicts.append((float(anchor), status,
+                         _completes(sequence, anchor, times, window)))
+    return verdicts
 
 
 def count_sequence(sequence: Tuple[int, ...], series: EventSeries,
@@ -284,16 +318,12 @@ def count_sequence(sequence: Tuple[int, ...], series: EventSeries,
     """
     grid = series.grid
     anchors = times.get(sequence[0], [])
-    reach = (len(sequence) - 1) * float(window.maximum_lag)
     support = 0
     eligible = 0
     completions = 0
     truncated = 0
     unobserved = 0
-    for anchor in anchors:
-        status, _observed, _missing = grid.observation_of_window(
-            anchor + float(window.minimum_lag), anchor + reach)
-        completed = _completes(sequence, anchor, times, window)
+    for _anchor, status, completed in anchor_verdicts(sequence, series, times, window):
         if completed:
             completions += 1
         if status == WINDOW_MEASURED:
