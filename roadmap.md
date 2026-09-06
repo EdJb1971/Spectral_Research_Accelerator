@@ -84,12 +84,26 @@ An entry needing a field the record lacks is unassessable rather than unrecognis
 so for the upper-level entry on a single-level record. **The acceptance has not been run**: it
 needs a maintainer-frozen catalogue, a declared documented event, and a real mining pass over
 the 8,764-frame record that has never been performed, so **Phase 4G is still gated** and T4F.5's
-second acceptance clause is still outstanding. **Not done:** the real-ERA5 gate *review*; the
-T4F.6 gate run itself, T4F.7-8, 4G and 4H; T5.4-5, the remaining T5.6 inference/real-data work, T5.7, and the T5.8 irregular-observation/spatial-downscaling track. Per-task evidence blocks sit under each task below; a task without a **DONE** or **PARTIAL** label has not been started. |
+second acceptance clause is still outstanding. **T4F.7 is DONE:** R14's cross-region re-test, on a record built to give four different
+answers at once. Five declared boxes of one field: the rule holds in two held-out regions, does
+not hold in a third that carries both patterns in the wrong order, and is not assessable in a
+fourth that carries nothing -- and the verdict is `regional` because of the third, or `general`
+under a design that declares three held-out boxes rather than four. A region that never carried
+the antecedent did not fail the test, and neither did one that carried it but never the
+consequent; rendering either as locality would turn missing data into a finding. A held-out
+region may supply occurrences but not help define a pattern, so identities are matched into at
+T4E.3's own calibrated radius and leakage refuses `general`; measuring that found that T4E.2's
+signature cannot tell two band orientations apart at all, being invariant to rotation by
+construction. Membership is decided on T4F.5's footprints rather than on a maximum, with the
+three ways of not being inside a box counted apart. The gaps between boxes are published in
+cells and kilometres and `general` is refused while their independence is unestablished, and
+physiography is declared with a source rather than derived from a field that carries no
+coastline. It has been exercised on a synthetic record only. **Not done:** the real-ERA5 gate
+*review*; the T4F.6 gate run itself, T4F.8, 4G and 4H; T5.4-5, the remaining T5.6 inference/real-data work, T5.7, and the T5.8 irregular-observation/spatial-downscaling track. Per-task evidence blocks sit under each task below; a task without a **DONE** or **PARTIAL** label has not been started. |
 | **Phase chronology correction (2026-09-03)** | The pre-run sentences embedded in the long phase-progress history are superseded by the later evidence in that same row: campaign v3 acquired the complete 8,764-frame record and T4C.6 returned PASS. A PASS does not exercise the FAIL/INVALID absence adjudication, so D84/D85 remain relevant only to a future negative result; they did not block or invalidate the recorded PASS. The v3 receipt is present and served by the read-only gate record. |
 | Ownership / licence | **Declared in `LICENSE.md`.** Edward Jonathan Bentley retains the proprietary SpectralEarth core. Adam Frank Bentley has a named perpetual, worldwide, royalty-free grant for lawful personal, academic, research and commercial use/modification, without public redistribution or sublicensing of the core. Independent extensions and upstream contributions remain separately governed. This bespoke text has not been professionally reviewed. |
 | **Accessibility** | **Workflow-wide source contract, TG11.6 DONE.** Skip and route focus, globally visible focus, bound legacy labels, reduced motion, announced asynchronous state, keyboard SVG lineage and figure text equivalents now cover both platform lines. Rendered assistive-technology inspection remains NOT RUN, so no WCAG conformance level is claimed (see `roadmap_cross_domain.md`). |
-| Backend test suite | **4190 passed, 1 xfailed** Plus four explicit skips: the opt-in live GCS read, opt-in live store probe, opt-in live Argo acceptance, and opt-in live TESS/MAST acceptance. Measured 2026-09-06 in 2,728.53 s (0:45:28), exit 0, on the tree carrying T4F.6. Nothing failed in this run. |
+| Backend test suite | **4244 passed, 1 xfailed** Plus four explicit skips: the opt-in live GCS read, opt-in live store probe, opt-in live Argo acceptance, and opt-in live TESS/MAST acceptance. Measured 2026-09-07 in 3,468.18 s (0:57:48), exit 0, on the tree carrying T4F.7. Nothing failed in this run. |
 | Ground-Truth Benchmark Suite | **29 PASS, 0 FAIL, 0 NOT_YET_RUNNABLE.** Twenty datasets with declared known answers, twelve of them nulls. CI-ready via `python -m src.benchmarks` (exit 0). |
 | Backend compute modules | **Written, executed and tested.** `physical_core` carries `GridSpec` + metric-aware operators; `analysis_engine` gained `spectra.py` and `climatology.py`; `transform_engine` gained the undecimated `stationary.py` and a real `dtcwt.py`; `statistics/` and `core/` are new packages. |
 | Physical units and wavenumbers | **Correct as of T3.5.13.** Gradients metric-aware, spectra on a physical `k` axis, domain statistics area-weighted, and every quantity carries its units. Previously all of it was pixel-space and unlabelled (D13). |
@@ -118,7 +132,7 @@ is partial. Phase 3.5's 25 implementation tasks are complete; the literal screen
 requested by T3.5.0 is still absent, and D18's cross-device agreement remains partial because
 only the T5.1a-e slice has CPU/CUDA parity evidence and ROCm/MPS are unmeasured. Phase 4A-4C.6
 are complete through the recorded real-data PASS; a separate human review of that receipt
-remains. T4D.1-3, T4E.1-4 and T4F.1-5 are complete and T4F.6 is partial -- the physical gate is built and discriminates, but it has never been run, so 4G is still gated. T4F.7-8, 4G and optional 4H remain
+remains. T4D.1-3, T4E.1-4 and T4F.1-5 are complete and T4F.6 is partial -- the physical gate is built and discriminates, but it has never been run, so 4G is still gated. T4F.7 is complete. T4F.8, 4G and optional 4H remain
 undone. See
 Section 4 for per-task evidence.
 
@@ -2324,7 +2338,60 @@ attributed to one component.
 **T4G.3 Strict evaluation *(R6)***. All predictive terms computed only across `split_temporal` with embargo. Report per-term contributions, never a single opaque number.
 **Acceptance:** the scorer ranks a deliberately-crippled representation (e.g. random orthogonal basis) below a physically-appropriate one, and ranks a busy-but-uninformative wavelet below a sparse-but-predictive one - the distinction that motivated the whole design.
 
-**T4F.7 Cross-region generalisation *(implements R14)***. Re-test every candidate pattern on held-out regions; report where it holds and where it fails, with physiography noted. A pattern is labelled `regional` or `general` accordingly.
+**T4F.7 Cross-region generalisation *(implements R14)*** -- DONE. Re-test every candidate pattern on held-out regions; report where it holds and where it fails, with physiography noted. A pattern is labelled `regional` or `general` accordingly.
+
+**Met.** `src/analysis_engine/spectral_regions.py` and 54 tests in
+`src/tests/test_spectral_regions.py`. A declared `RegionPartition` -- hashed, exactly one
+discovery region, no overlaps -- is re-tested with each region's own T4F.3 `precursor_report`,
+and the held-out regions are corrected as one family.
+
+**The acceptance is a record built to disagree with itself.** Five boxes of one 260-frame
+field: `A` where the rule is found, `B` built identically, `C` built with the same two
+structures at a longer lag, `D` built with the consequent *before* the antecedent, and `E` left
+empty. The module returns four different answers, and has to: the rule **holds** in `B`
+(lift 4.47) and `C` (lift 3.72) after correction over four declared held-out regions, **does not
+hold** in `D` (support 0 of 24, lift 0.0), and `E` is **not assessable** because it never carried
+the antecedent at all. Verdict `regional`. Declaring three held-out boxes instead of four returns
+`general` on the same record.
+
+**A region where nothing occurred did not fail the test; it never took it.** That is the
+distinction the task turns on, and it has two forms kept apart: a region carrying no occurrence
+of the antecedent, and one carrying the antecedent but never the consequent, where the base rate
+is zero and no lift exists. Rendering either as `regional` would turn an absence of data into
+evidence of locality.
+
+**A region is held out only if the identity was not fitted on it.** `match_into_catalogue` holds
+the centroids and the calibrated radius fixed so a held-out region can supply occurrences without
+helping to define what a pattern is, and `identity_leakage` refuses `general` when it did --
+R6's leak with a map in place of a calendar. Measuring this found that **T4E.2's signature cannot
+distinguish two band orientations, by construction**: it is invariant to rotation, so on this
+record the same `L3/HL` signatures sit a median 0.447 from their own centroid and 0.585 from the
+`L3/LH` one, both far inside a calibrated radius of 0.959. A catalogue whose patterns differ only
+by orientation therefore cannot be matched into by signature distance, and the suite's own
+catalogue is declared rather than fitted for that reason.
+
+**Membership is decided on footprints, and there are three ways of not having one.** T4F.5
+measured that a maximum sits about one analysing width from what excited it, so placing a
+configuration by that cell would put it in the wrong box at a boundary. Of this record's 1,063
+configurations, 281 sit wholly inside a declared box; 364 straddle two of them, 397 reach out of
+the one box they touch into undeclared ground, and 21 are outside every box. The three failures
+are counted apart because they say different things about the *declaration* -- boxes drawn closer
+together than the transform's own footprints reach, versus ground nobody declared.
+
+**Adjacent boxes are not independent and this module will not pretend otherwise.** The gap
+between every pair is published in cells and in kilometres; with no declared decorrelation length
+the independence of the regions is `UNESTABLISHED` and `general` is refused, and with one
+declared, held-out regions closer to the discovery region than it are named. On this record at a
+declared 1,500 km, `B`, `D` and `E` are named and `C` is not.
+
+**Physiography is declared, not derived**, with a source required for the same reason T4F.6
+requires a citation. R14 asks for re-testing on similar *and* dissimilar ground, so `general` is
+refused when no assessed region declares a physiography, and refused again when every one of them
+declares the same class.
+
+**Not claimed.** This has been exercised on a synthetic record only. Applying it to the acquired
+ERA5 record waits on the same mining pass T4F.6's gate waits on, and no atmospheric region has
+been compared with any other.
 
 **T4F.8 Follow-up experiment proposals.** Extend the existing `_propose_numerical_followup` / `_propose_categorical_followup` pattern to propose experiments that *test* a discovered precursor - the platform closing its own loop.
 

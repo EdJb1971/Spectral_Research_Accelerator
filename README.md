@@ -117,9 +117,23 @@ supersedes the other.
   **The acceptance has not been run** -- it needs a maintainer-frozen catalogue, a declared
   documented cyclogenesis event, and a real mining pass over the 8,764-frame record that has
   never been performed -- so **Phase 4G is still gated**, and T4F.5's second acceptance clause
-  waits with it. **T4F.7, cross-region generalisation, is next** on the code line; the next
-  scientific step is the gate run itself, which needs a maintainer before it needs a
-  machine.
+  waits with it.
+* **T4F.7 is DONE: a rule now has to say where it holds and where it does not.** R14's point is
+  that a pattern found in one place is a fact about that place until it is re-tested somewhere
+  else -- "we found a thing about the Alps" and "we found a thing about the atmosphere" are both
+  valuable and they are not the same claim. Five declared boxes of one record: the rule holds in
+  two held-out regions, does not hold in a third that carries both patterns in the wrong order,
+  and is **not assessable** in a fourth that carries nothing at all. That third label is the
+  point of the task: a region where the pattern never occurred did not fail the test, it never
+  took it, and reporting it as failure would turn missing data into evidence of locality. A
+  held-out region may supply occurrences but may not help define what a pattern is, and checking
+  that turned up something worth knowing -- the signature this platform compares configurations
+  with is invariant to rotation by construction, so it cannot tell a zonal structure from a
+  meridional one at all. How far apart the boxes are is published rather than assumed, and
+  physiography is something a maintainer declares with a source, not something a temperature
+  field can be asked. Exercised on a synthetic record only. **T4F.8, follow-up experiment
+  proposals, is next** on the code line; the next scientific step is still the T4F.6 gate run,
+  which needs a maintainer before it needs a machine.
 * Cross-domain line: **TG17.14 is DONE and `live_sources` reads `PASS`.** On 2026-09-04 the
   authorised bounded run reached ERA5 through CDS, Argo GDAC and MAST SPOC, each demonstrating
   real network use, while the bespoke order-book family demonstrated a content-addressed local
@@ -182,7 +196,7 @@ supersedes the other.
   vector publication sheets that preserve the figure's reading contract. Under
   G18 none of this may recompute, summarize, promote or reinterpret a scientific value, so each
   addition transcribes what the analysis layer produced or states that it produced nothing.
-* Last measured full backend run: **4190 passed, 4 skipped, 1 xfailed**, exit 0 (2026-09-06, 0:45:28).
+* Last measured full backend run: **4244 passed, 4 skipped, 1 xfailed**, exit 0 (2026-09-07, 0:57:48).
 * Last measured browser suite: **136/136** in Chromium from a cleaned `.e2e-state` (2026-09-04).
   It is inventoried in `architecture.md` section 7.4a; it is the only check here that proves a
   page renders.

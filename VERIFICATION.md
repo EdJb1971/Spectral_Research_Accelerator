@@ -11217,3 +11217,165 @@ physically sensible footprint, waits on the same run.
 4190 passed, 4 skipped, 1 xfailed, 6 warnings in 2728.53s (0:45:28)
 exit code 0
 ```
+
+## T4F.7 -- where a rule holds, where it does not, and where it never took the test (2026-09-07, `ed-dev`)
+
+`src/analysis_engine/spectral_regions.py`, verified by `src/tests/test_spectral_regions.py`
+(54 test functions, 54 pytest cases). Measured 2026-09-07 with no network.
+
+```
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_spectral_regions.py -q
+54 passed, 1 warning in 8.08s
+
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_spectral_regions.py
+    src/tests/test_spectral_reference.py src/tests/test_spectral_projection.py
+    src/tests/test_spectral_queries.py src/tests/test_spectral_precursors.py
+    src/tests/test_spectral_sequences.py src/tests/test_spectral_events.py
+    src/tests/test_spectral_clustering.py src/tests/test_spectral_invariance.py
+    src/tests/test_spectral_constellation.py src/tests/test_spectral_mining.py
+    src/tests/test_spectral_feature.py src/tests/test_spectral_tracking.py
+    src/tests/test_spectral_narrative.py -q
+568 passed, 1 warning in 60.43s (0:01:00)
+```
+
+R14 says a pattern that holds in only one region is a local quirk until shown otherwise:
+"we found a thing about the Alps" and "we found a thing about the atmosphere" are both valuable
+and they are not the same claim. This task re-tests a rule in declared held-out regions and
+labels it `general` or `regional`.
+
+**The acceptance record is built to give four different answers at once.** One 128x184 field of
+260 frames, carrying two structures whose orientations a detail bank separates cleanly: a zonal
+ridge (sy=2, sx=24) that excites `L3/HL` and a meridional one that excites `L3/LH`. Five boxes,
+and four constructions:
+
+```
+  A  (16-56, 16-56)     discovery   zonal at e+1, meridional at e+3     the chain
+  B  (16-56, 72-112)    held out    the same, identically built         the chain
+  C  (16-56, 128-168)   held out    zonal at e+2, meridional at e+5     the chain, longer lag
+  D  (72-112, 16-56)    held out    meridional at e+0, zonal at e+6     both, in the wrong order
+  E  (72-112, 72-112)   held out    nothing at all
+```
+
+Episode starts are jittered off any lattice on purpose: a periodic schedule is reproduced exactly
+by every rotation that is a multiple of its period, which would put a mode of the shifting null
+on the observed value and make a real effect look like chance.
+
+**The four answers.**
+
+```
+  region  role       outcome                 occurrences  support  lift   q
+  A       discovery  HOLDS                        76 / 13   38/76   3.89   0.029   (not in the family)
+  B       held out   HOLDS                        81 / 21   55/81   4.47   0.0346
+  C       held out   HOLDS                        23 / 20   14/23   3.72   0.0346
+  D       held out   DOES_NOT_HOLD                24 / 23    0/24   0.00   1.0
+  E       held out   NOT_ASSESSABLE                0 /  0       -      -      -
+
+  verdict: regional -- held in 2 of the 3 held-out regions that could be assessed,
+                       and did not hold in D
+  corrected over 4 declared held-out regions, of which 3 returned a p-value
+```
+
+Declaring three held-out boxes (`B`, `C`, `E`) rather than four returns **`general`** on the
+same record and the same figures. That is a different declared design, not a narrowing, and it is
+why the partition carries a digest: a region set chosen after the outcomes are known is a
+different design from the one that was declared, and the digest is what makes those two tellable
+apart.
+
+**`E` did not fail. It never took the test.** This is the distinction the whole task turns on,
+and it has two forms, kept apart: a region carrying no occurrence of the antecedent at all, and
+one carrying the antecedent but never the consequent -- where the base rate is zero, no lift
+exists, and the honest statement is that the configuration was absent rather than that the
+association was. Rendering either as `regional` turns an absence of data into evidence of
+locality, which is exactly how a fact about a crop becomes a fact about the atmosphere.
+
+**A held-out region may supply occurrences but may not help define a pattern.** A centroid is
+fitted to whatever it was clustered from, so a clustering that saw the held-out regions has
+defined the thing being re-tested using the data it is being re-tested on -- R6's leak with a map
+in place of a calendar. `match_into_catalogue` holds every centroid and every calibrated radius
+fixed and admits a signature only if the radius contains it; `identity_leakage` counts the
+*fitted* members that came from held-out ground and refuses `general` when there are any.
+
+**Building that measured something worth recording: T4E.2's signature cannot tell two band
+orientations apart, and that is by construction.** It is invariant to rotation, which is what
+T4E.2 was for. On this record the same `L3/HL` signatures sit a median **0.447** from their own
+centroid and **0.585** from the `L3/LH` one, both far inside a calibrated radius of **0.959** --
+an `HL` configuration matches the `LH` centroid about as readily as its own. A catalogue whose
+patterns differ only by band orientation therefore cannot be matched into by signature distance,
+and the suite's own catalogue is declared rather than fitted for that reason, with `fitted=()`
+saying so.
+
+**Membership is decided on T4F.5's footprints, and there are three ways of not having one.**
+A maximum sits about one analysing width from what excited it, so placing a configuration by that
+cell puts it in the wrong box at a boundary. Of 1,063 configurations:
+
+```
+  281  wholly inside exactly one declared box   (A 89, B 102, C 43, D 47, E 0)
+  364  straddling two declared boxes            -- drawn closer than the footprints reach
+  397  reaching out of the one box they touch   -- into ground nobody declared
+   21  outside every declared box
+```
+
+The three failures are counted apart because they say different things about the *declaration*,
+and none of them is quietly given to whichever region held more of it.
+
+**Independence is published, never assumed.** The gap between every pair of regions is reported
+in cells and in kilometres. With no declared decorrelation length the status is `UNESTABLISHED`
+and `general` is refused; with one declared, the held-out regions closer to the discovery region
+than it are named -- at 1,500 km on this record that is `B`, `D` and `E`, and not `C` at 2,232 km.
+Closeness is judged on the **widest** kilometre reading the grid supports, which matters on a
+lat/lon crop where a gap in cells is a range: the suite pins that on a spherical regrid where the
+two ends of the range straddle the declared length and disagree.
+
+**Physiography is declared with a source**, for the same reason T4F.6 requires a citation: a
+field of one variable at one level carries no coastline and no orography, so anything the module
+said about the surface would be invention. `general` is refused when no assessed region declares
+one, and refused again when every assessed region declares the same class -- R14 asks for similar
+*and* dissimilar ground, and three similar boxes do not answer it.
+
+**Mutation testing: 47 mutations, 41 killed on the first pass and all six survivors closed.**
+Every survivor was real. Two came from the fixture being tidier than the world: every grid in the
+suite was isotropic, so "the widest kilometre reading" and "the narrowest" were the same number
+and nothing distinguished them, and a pixel grid was never run through the independence check at
+all. Two were unexercised branches of the matcher -- taking the nearest pattern rather than the
+first, and refusing a signature of another family. One was a footprint test loose enough to pass
+for a box with one bound taken from a maximum. And one was a grid check reachable only when no
+region carries anything, since `events_from_catalogue` refuses a bad grid on every other path.
+All six were closed with real cases and re-run:
+
+```
+> mutate_t4f7.py       41/47 killed
+> mutate_t4f7b.py       6/6  killed   (the survivors, after the tests that bind them)
+```
+
+**Refusals this module makes.** A physiography with no source. A region with an unknown role, a
+reversed box or a negative one. A partition with no discovery region, two of them, no held-out
+region, overlapping boxes or two regions of one name. A grid that is not an `ObservationGrid`. A
+pattern asked to precede itself. An empty catalogue offered to the matcher, which would be
+clustering under another name. Anything that is not a `ConstellationSet`, a `RegionPartition`, a
+`Geography` or a `Generalisation`.
+
+**The claim boundary.** `general` says the rule was measured again in at least two held-out
+regions, cleared the null in every one that could be assessed, and did so across declared and
+differing physiography -- and nothing else. It refuses *cause*, *driver*, *mechanism*, *trigger*,
+*forecast* and *intervention* by name, states that it is not a claim about anywhere the rule has
+not been tested, and states that `unassessable` licenses nothing at all. The T4F.3 boundary the
+figures inherit travels with it.
+
+**Not claimed.** This has been exercised on a synthetic record only. No atmospheric region has
+been compared with any other, and applying it to the acquired ERA5 record waits on the same
+mining pass T4F.6's gate waits on.
+
+**Documentation guards.**
+
+```
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_documentation.py -q
+29 passed, 2 warnings in 465.89s (0:07:45)
+```
+
+**Full backend suite.**
+
+```
+> .\.venv\Scripts\python.exe -m pytest src/tests -q
+4244 passed, 4 skipped, 1 xfailed, 6 warnings in 3468.18s (0:57:48)
+exit code 0
+```
