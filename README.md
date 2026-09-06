@@ -96,8 +96,30 @@ supersedes the other.
   -- an undeclared level stays a number rather than becoming hectopascals, and a frame is dated
   only where the record carries a calendar. The historical instances come from the same
   per-anchor decision the support was counted with, and every total is reconciled against the
-  rule's published figures before anything is shown. **T4F.6, the known-phenomenon
-  cross-reference that gates all of 4G, is next.**
+  rule's published figures before anything is shown.
+* **T4F.6 is PARTIAL: R10's physical gate is built, it discriminates, and it has not been run.**
+  A mined pattern is measured off the footprints T4F.5 drew, turned into kilometres and hours
+  through the record's own metric and calendar, and labelled `recognised`, `unrecognised` or --
+  the third label, which is the one that keeps the other two honest -- `unassessable`, because
+  an entry needing a field the record does not carry has not been checked and found absent. All
+  three verdicts are reached on the same real patterns: PASS against a catalogue whose envelopes
+  fit, FAIL against one whose envelopes do not, with R10's standing presumption that the
+  pipeline is broken written into the receipt, and INVALID against a catalogue so wide that
+  nothing could have fallen outside it, which licenses nothing and is not a FAIL. The ranking
+  key decides the verdict -- with a top-N of one the same report passes ranked by corrected
+  p-value and fails ranked by support -- so it is hashed into a declaration along with the top-N, the catalogue's digest
+  and a required naming of the documented event and its source. A catalogue is a draft until a
+  maintainer signs it, and the gate refuses to adjudicate under a draft including the one this
+  repository ships, whose envelopes are a first reading rather than values quoted from any
+  paper. What bounds the whole exercise is a measurement of the record: on the acquired ERA5
+  crop a cell is 27.80 km north-south and between 13.90 and 26.12 km east-west, so sixteen cells
+  is anywhere from 222 to 445 km, and an envelope narrower than that cannot exclude anything.
+  **The acceptance has not been run** -- it needs a maintainer-frozen catalogue, a declared
+  documented cyclogenesis event, and a real mining pass over the 8,764-frame record that has
+  never been performed -- so **Phase 4G is still gated**, and T4F.5's second acceptance clause
+  waits with it. **T4F.7, cross-region generalisation, is next** on the code line; the next
+  scientific step is the gate run itself, which needs a maintainer before it needs a
+  machine.
 * Cross-domain line: **TG17.14 is DONE and `live_sources` reads `PASS`.** On 2026-09-04 the
   authorised bounded run reached ERA5 through CDS, Argo GDAC and MAST SPOC, each demonstrating
   real network use, while the bespoke order-book family demonstrated a content-addressed local
@@ -160,7 +182,7 @@ supersedes the other.
   vector publication sheets that preserve the figure's reading contract. Under
   G18 none of this may recompute, summarize, promote or reinterpret a scientific value, so each
   addition transcribes what the analysis layer produced or states that it produced nothing.
-* Last measured full backend run: **4103 passed, 4 skipped, 1 xfailed**, exit 0 (2026-09-06, 0:42:04).
+* Last measured full backend run: **4190 passed, 4 skipped, 1 xfailed**, exit 0 (2026-09-06, 0:45:28).
 * Last measured browser suite: **136/136** in Chromium from a cleaned `.e2e-state` (2026-09-04).
   It is inventoried in `architecture.md` section 7.4a; it is the only check here that proves a
   page renders.

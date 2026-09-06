@@ -534,6 +534,23 @@ class Geography:
             self._raw = np.asarray(values.raw_times, dtype="datetime64[ns]")
         self._calendar = self._raw is not None
 
+    # ------------------------------------------------------------------ the clock, in public
+
+    @property
+    def has_calendar(self) -> bool:
+        """Whether a frame of this record can be dated at all."""
+        return self._calendar
+
+    def calendar_times(self) -> Optional[np.ndarray]:
+        """The record's own timestamps, or `None` when it has none.
+
+        Public because T4F.6 must convert a lag in frames into a lag in hours before it can
+        compare one with a phenomenon's declared lead, and the cadence it needs is the one this
+        record actually carries. Deriving it anywhere else would let a gate measure its lead on
+        a clock the projection would refuse to print.
+        """
+        return None if self._raw is None else np.asarray(self._raw)
+
     # ------------------------------------------------------------------ horizontal
 
     def place(self, row: float, col: float) -> Place:

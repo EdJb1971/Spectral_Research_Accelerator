@@ -10968,3 +10968,252 @@ where it comes due.
 4103 passed, 4 skipped, 1 xfailed, 6 warnings in 2524.94s (0:42:04)
 exit code 0
 ```
+
+## T4F.6 -- the physical gate, and what it takes to keep one able to fail (2026-09-06, `ed-dev`)
+
+`src/analysis_engine/spectral_reference.py`, verified by `src/tests/test_spectral_reference.py`
+(87 test functions, 87 pytest cases). Measured 2026-09-06 with no network.
+
+```
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_spectral_reference.py -q
+87 passed, 1 warning in 3.55s
+
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_spectral_reference.py
+    src/tests/test_spectral_projection.py src/tests/test_spectral_queries.py
+    src/tests/test_spectral_precursors.py src/tests/test_spectral_sequences.py
+    src/tests/test_spectral_events.py src/tests/test_spectral_clustering.py
+    src/tests/test_spectral_invariance.py src/tests/test_spectral_constellation.py
+    src/tests/test_spectral_mining.py src/tests/test_spectral_feature.py
+    src/tests/test_spectral_tracking.py src/tests/test_spectral_narrative.py -q
+514 passed, 1 warning in 97.06s (0:01:37)
+```
+
+R10 says that discovering the already-known is the validation signal: if the top-ranked mined
+precursors are not recognisable, the prior is that the pipeline is broken rather than that
+physics has been overturned. That makes this task a gate, and a gate is worth exactly what it
+can fail. Everything below is about protecting that.
+
+**The record, as the bridge reads it.** The same `advected_vortex_sequence` benchmark T4D.2
+through T4F.5 are graded on, this time carried on a six-hourly calendar so that a lag in frames
+has an hour to become.
+
+```
+=== the record, as the bridge reads it
+  grid                cartesian grid 128x128, dy=31000.0 m, dx=31000.0 m
+  observable          amplitude@no-declared-level
+  cell                31.00 to 31.00 km   (ratio 1.000)
+  cadence             6 hours per frame, measured from the record's own timestamps
+  filter support      level 4: 16 cells   level 5: 32 cells
+```
+
+**Every mined pattern, measured off the footprints T4F.5 drew.** The horizontal scale is the
+filter support, not the dyadic octave label; the two differ by a factor of two and an entry
+declares which convention its envelope is in, so a catalogue read in the wrong one is wrong by
+exactly that factor and looks entirely reasonable.
+
+```
+  id  bands                 support (cells)  scale (km)      separation (km)
+  1   L4/HL + L4/LH          16 to 16         496 to 496      526.2 to 612.6
+  2   L4/HL + L5/HL          16 to 32         496 to 992       26.5 to  71.1
+  3   L4/HL + L5/LH          16 to 32         496 to 992      410.9 to 558.3
+  4   L4/LH + L4/HL          16 to 16         496 to 496      268.4 to 523.4
+  5   L4/LH + L5/HL          16 to 32         496 to 992      416.9 to 639.6
+  6   L4/LH + L5/LH          16 to 32         496 to 992       43.3 to  72.2
+  7   L5/LH + L5/HL          32 to 32         992 to 992      464.1 to 588.8
+```
+
+**The labels, against two declared entries.** `mesoscale-vortex-pair` is 300-700 km with a 3-24
+hour lead, two members and a 200-700 km separation; `planetary-wave-train` is 3000-8000 km with
+a 72-240 hour lead, and is a declared decoy -- nothing that size was planted here.
+
+```
+  1   recognised     consistent=mesoscale-vortex-pair    excluded=planetary-wave-train
+  2   unrecognised   consistent=-                        excluded=both
+  3   recognised     consistent=mesoscale-vortex-pair    excluded=planetary-wave-train
+  4   recognised     consistent=mesoscale-vortex-pair    excluded=planetary-wave-train
+  5   recognised     consistent=mesoscale-vortex-pair    excluded=planetary-wave-train
+  6   unrecognised   consistent=-                        excluded=both
+  7   unrecognised   consistent=-                        excluded=both
+  discrimination  DISCRIMINATING -- 7 of 7 patterns were excluded by at least one entry
+  digest (draft)   6f0670f808283c14d982ebfc672ce359...
+  digest (frozen)  6f0670f808283c14d982ebfc672ce359...   <- signing does not move it
+```
+
+Patterns 2 and 6 are excluded by **separation alone**: they clear the scale envelope and their
+members sit 26 to 72 km apart, far inside a 200 km floor. Pattern 7 is excluded by scale alone.
+Both facts are asserted rather than observed, by re-labelling against the same entry with the
+criterion removed and taking the difference.
+
+**All three verdicts, on one report.** The same seven patterns, the same 120-frame planted event
+series and the same corrected table, adjudicated under four declarations.
+
+```
+  envelopes that fit, top 1        PASS      4G may start: True
+        rank 1 of the q_value ranking is rule 1 -> 2, whose antecedent is consistent with
+        mesoscale-vortex-pair
+  the same, ranked by support      FAIL      4G may start: False
+        no antecedent among the top 1 by support is consistent with any declared phenomenon, on
+        a catalogue that excluded 10 pattern-entry pairs and so was capable of recognising one.
+        The standing interpretation of a FAIL is that the pipeline is broken (R10), and Phase
+        4G does not start
+  only the decoy entry             FAIL      4G may start: False
+        no antecedent among the top 2 by q_value is consistent with any declared phenomenon, on
+        a catalogue that excluded 7 pattern-entry pairs [...]
+  an envelope nothing falls outside INVALID   4G may start: False
+        the catalogue excluded no pattern on any criterion, so it could not have failed
+        anything and a PASS from it would record the width of its envelopes rather than the
+        content of the record
+        the cross-reference could not have failed, so it cannot have passed either. This is not
+        a FAIL: nothing has been learned about the pipeline
+        every labelled pattern is consistent with every entry, so these labels separate nothing
+```
+
+Three things in that block are the point of the task. **The ranking key decides the verdict** --
+T4F.4 measured that a q-value ranking and a support ranking put different rules first, and at a
+declared top-N of one that difference is the whole gate -- so the key, the top-N, the catalogue
+digest and a required naming of the documented event are hashed into a `GateDeclaration` before
+the run. **A catalogue that excluded nothing returns INVALID, not PASS**, because recognition by
+imprecision is this task's own failure mode. And **INVALID is not FAIL**: it licenses nothing,
+says so in its own reason, and is T4C.5i's boundary arriving at the physical gate.
+
+**The measurement that bounds the whole exercise, taken from the acquired record.** T4C.5k's
+ERA5 crop is 161x161 at 0.25 degrees, latitudes -60 to -20 and longitudes 140 to 180. Its
+meridional spacing is constant; its zonal spacing is not.
+
+```
+  observable          t@850 pressure_hpa
+  cell                13.899 to 27.799 km   (ratio 2.000)
+  zonal variation     61.08%   aspect ratio 1.3054
+  (GridSpec.anisotropy's own warning: "The zonal metric varies by 61.1% across this lat/lon
+   patch (13899 m at one edge, 26122 m at the other).")
+
+  a footprint there:
+    level 3    8 cells     111.2 to    222.4 km
+    level 4   16 cells     222.4 to    444.8 km
+    level 5   32 cells     444.8 to    889.6 km
+    level 6   64 cells     889.6 to   1779.1 km
+    level 7  128 cells    1779.1 to   3558.2 km
+```
+
+A scale in cells is therefore a **range** of kilometres spanning a factor of two on that crop,
+before any measurement error at all, and an envelope narrower than that range cannot exclude
+anything there. The gate does not assume this away: it counts the exclusions the catalogue
+actually made and refuses to pass when there were none.
+
+**The shipped reference, and why it is a draft.**
+
+```
+  status draft   entries 4   digest 27ad0d61c2b02bdc47f08e9515b77fa9...
+    extratropical-cyclone-thermal-couplet   500-2000 km    6-48 h    checkable here
+    frontal-wave                            200- 800 km    6-24 h    checkable here
+    blocking-onset                         2000-6000 km   48-168 h   checkable here
+    upper-level-pv-precursor                800-3000 km   12-72 h    UNASSESSABLE: needs
+                                                                     pv@315 K or z@500 hPa
+  overlapping pairs published beside the labels: 5 of the 6 possible pairs
+```
+
+Every entry carries a real citation (Sinclair 1995; Sanders and Gyakum 1980; Rex 1950; Hoskins,
+McIntyre and Robertson 1985), and **none of the envelopes is a number quoted from any of those
+papers** -- they are the implementer's first reading, which is exactly why the catalogue's status
+is `draft` and why `physical_gate` refuses to adjudicate under it. Choosing which phenomena count
+as recognisable, and in what ranges, is the scientific content of this gate; this module will
+not make that choice on anyone's behalf.
+
+The fourth entry is in the catalogue *because* this record cannot check it. Classical
+cyclogenesis is an upper-level disturbance overtaking a low-level baroclinic zone, and a
+single-level record of 850 hPa temperature has no upper level in it. That entry is
+`unassessable` here for every pattern, permanently, and calling it `unrecognised` instead would
+record the contents of a crop as a fact about the atmosphere.
+
+**A lead in hours needs this record's clock.** A window is a lag on the event series' own
+observation grid; a cadence is a property of the decomposed record. `lead_for` converts one with
+the other only after checking that every frame the series searched is a frame of the record. The
+120-frame planted series is not the 24-frame record, so its lead is refused by name, and a
+series built on the record's own frames converts a 1-to-3-frame window to 6 to 18 hours.
+
+**Mutation testing: 77 mutations in four batches, 76 killed and one shown unreachable.**
+Every survivor was a real gap and five of them shared one cause -- every grid in the suite was
+isotropic or had `dlat == dlon`, so "the cell's shorter side" and "the zonal side" were the same
+number and nothing distinguished them; the `overlapping_pairs` conjunction had no pair agreeing
+on exactly one of scale and lead; and no entry's cardinality or separation criterion had ever
+been the sole reason for an exclusion. The others were untested refusals (`cardinality` below
+two, an empty projection, a series naming no searched frames) and two unexercised gate branches
+(a rule whose figure the report never measured, and a report carrying no measured figure at
+all). All twelve were closed with real cases and re-run:
+
+```
+> mutate_t4f6.py       55/67 killed
+> mutate_t4f6b.py      12/12 killed   (the survivors, after the tests that bind them)
+> mutate_t4f6c.py       3/4  killed   (the rewritten length-unit path)
+> mutate_t4f6d.py       5/6  killed   (the three receipt corrections below)
+> mutate_t4f6d.py       6/6  killed   (after the test that binds the sixth)
+```
+
+The fourth batch-c mutant is **unreachable rather than missed**, and is recorded as such. Reading
+the module back found that a physical grid's length was converted with a silent fallback -- an
+unrecognised unit was treated as though it were already kilometres -- which is the exact
+assumption this module refuses everywhere else, so it became a refusal. Both physical geometries
+this programme ships declare `m`, so no `GridSpec` that can be built without registering a new
+geometry can reach that refusal, and a test for it would have to mutate a global registry to
+exist. The kilometre spellings were removed for the same reason: a conversion nothing can
+exercise is not one to ship, and a grid declaring kilometres is now refused too.
+
+**Three corrections from reading the module back, all of them about what a receipt says.**
+`criteria_assessed` counted the observable check, which the decision rule excludes, so a receipt
+could show a two beside a declared floor of two when a single envelope had actually been
+decided; it is now `substantive_criteria_decided` and publishes the floor next to itself.
+`criterion_exclusions` counted pattern-entry pairs rather than criteria, which the gate's own
+FAIL reason had said correctly and the receipt key had not; it is now
+`pattern_entry_exclusions`. And the "this label separates nothing" caution required that no
+entry be unassessable, which made it quietly narrower than its own docstring -- an entry the
+record cannot check discriminates in neither direction, so it can no longer rescue a label that
+separated nothing. Each is bound by a test and by a mutant.
+
+**Refusals this module makes.** An entry with no citation, no observable, a scale not in
+kilometres, a lead not in hours, a negative lead, a cardinality below two or an unknown scale
+convention. A catalogue that is empty or names one entry twice. A declaration with no documented
+period, an unknown ranking key or a top-N that is not a positive integer. A gate under a draft
+catalogue. A pixel grid asked for kilometres, and a physical grid whose length is declared in
+anything but metres -- unreachable for the two geometries this programme ships, and a refusal
+rather than a fallback because the only fallback available is to assume the unit. A record with
+no calendar, or with uneven frames, asked for hours. A pattern with nothing on the map. A geography that is not one, a report that is
+not one, a variable the record cannot name.
+
+**The claim boundary.** A `recognised` label states consistency with a declared envelope and
+never identity; every consistent entry is listed rather than the nearest chosen, and a pattern
+consistent with every entry is flagged as separating nothing. The gate's boundary refuses
+*cause*, *driver*, *mechanism*, *trigger*, *forecast* and *intervention* by name, states that
+`PASS` licenses the start of Phase 4G and claims nothing about the atmosphere, and states that
+`INVALID` must never be read or reported as a `FAIL`.
+
+**Not met, and not runnable yet.** The acceptance -- "on a real ERA5 period containing a
+documented cyclogenesis event, the mining pass ranks a `recognised` pattern corresponding to it
+in the top results" -- **has not been run**, so T4F.6 is `PARTIAL` and **Phase 4G remains
+gated**. Three things are missing and none of them is code:
+
+1.  a maintainer must review, correct and freeze a reference catalogue, the shipped one being
+    explicitly a draft;
+2.  a documented cyclogenesis event on the 2018-2023 record must be declared with its source,
+    which is the `period_justification` the declaration requires and does not invent;
+3.  the mining pass itself -- T4D through T4F.5 over the real 8,764-frame record, on anomalies
+    against a training-only climatology per R11 -- has never been run, on this record or any
+    other.
+
+T4F.5's own second acceptance clause, a real-ERA5 `recognised` pattern projecting onto a
+physically sensible footprint, waits on the same run.
+
+**Documentation guards.**
+
+```
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_documentation.py -q
+29 passed, 2 warnings in 285.02s (0:04:45)
+# re-run on the final tree, after the figures above were filled in
+```
+
+**Full backend suite.**
+
+```
+> .\.venv\Scripts\python.exe -m pytest src/tests -q
+4190 passed, 4 skipped, 1 xfailed, 6 warnings in 2728.53s (0:45:28)
+exit code 0
+```

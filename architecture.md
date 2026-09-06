@@ -8235,6 +8235,71 @@ bank is redundant, so per-scale coefficient energies do not partition the field'
 structure straddling two levels appears in both shares. The sentence saying so travels with
 every share.
 
+### 3F.6 The physical gate (`src/analysis_engine/spectral_reference.py`, T4F.6)
+
+R10's question is not statistical: do the things this pipeline finds look like the things
+already known to be there? A mined pattern is checked against a declared catalogue of known
+phenomena and labelled `recognised` or `unrecognised`, and a `PASS` is what licenses Phase 4G to
+start. This section is a gate rather than a feature, so most of its design is about preserving
+the one property a gate has to have, which is the ability to fail.
+
+**The catalogue is a declaration, and this code will not sign it.** Every `Phenomenon` carries a
+citation and a set of `observables` the record must hold; the `ReferenceCatalogue` carries a
+sha256 over its own canonical content, and that digest deliberately excludes the signature, so
+freezing an unchanged catalogue leaves a receipt traceable to the draft that was reviewed. A
+catalogue is `draft` until `freeze(signed_by=...)` is called and `physical_gate` refuses to
+adjudicate under a draft. The shipped `draft_southern_ocean_reference` is exactly that: four
+entries for the T4C.5k record with real citations and envelopes that are the implementer's first
+reading rather than values quoted from any paper, waiting for a maintainer to correct.
+
+**`recognised` means consistent with an envelope, never `is`.** Every entry a pattern is
+consistent with is listed rather than the nearest chosen, the catalogue's own overlapping pairs
+are published beside the labels, and a pattern consistent with every entry is flagged as
+separating nothing. Consistency on a single criterion is not recognition and is reported as
+unassessable: `MINIMUM_ASSESSED_CRITERIA` is two, and the observable check is not one of them,
+because "this record holds the right field" is not evidence about the pattern.
+
+**The record's geometry sets the ceiling, and it is measured before anything is adjudicated.**
+`PhysicalBridge` turns cells into kilometres through the grid's own metric and frames into hours
+through the record's own timestamps, and both are intervals. On the benchmark's isotropic
+cartesian grid a cell is 31 km and a level-4 footprint is 496 km exactly. On the T4C.5k ERA5
+crop the meridional spacing is 27.80 km everywhere and the zonal spacing runs 13.90 to 26.12 km,
+so the same 16 cells are anywhere from 222 to 445 km -- a factor of two before any measurement
+error, and the reason an envelope narrower than that cannot exclude anything there. A cell is
+taken by its shorter and its longer side rather than by one axis, a pixel grid is refused
+kilometres outright, and a record with no calendar is refused hours.
+
+**A lead in hours needs the record's own clock.** A window is a lag on the event series'
+observation grid and a cadence is a property of the decomposed record, and `lead_for` converts
+one with the other only after checking the necessary condition that every frame the series
+searched is a frame of the record. A series on another lattice has its lead refused by name
+rather than multiplied by a cadence that does not describe it.
+
+**Three outcomes, because "could not check" is not "checked and absent".** An entry needing an
+observable the record lacks is `unassessable` for every pattern -- the shipped catalogue's
+`upper-level-pv-precursor` is permanently so on a single-level record, which is the honest
+answer for classical cyclogenesis on 850 hPa temperature alone. `Discrimination` then counts, on
+the patterns actually labelled, how many exclusions the catalogue made; a catalogue that
+excluded nothing yields `INVALID`, not `PASS`, because recognition by imprecision is the failure
+mode this task invites. `INVALID` licenses nothing and is not a `FAIL`: this is T4C.5i's
+FAIL/INVALID boundary arriving at the physical gate.
+
+**What a verdict licenses.** `GateDeclaration` hashes the catalogue digest, the ranking key, the
+top-N and a required `period_justification` naming the documented event and its source, so a
+period justified after the answer was seen is a different declaration from the one the receipt
+names. `PASS` sets `phase_4g_may_start` and claims nothing about the atmosphere; `FAIL` carries
+R10's standing interpretation that the pipeline is broken. The ranking is a view of figures the
+report already published and nothing is recomputed, which is T4F.4's discipline: on the
+acceptance record the same table passes ranked by `q_value` and fails ranked by `support`
+at a declared top-N of one, and a
+rule whose figure the report never measured is counted and left out rather than sorted as though
+a missing lift were a low one.
+
+**Not run.** The acceptance -- a `recognised` pattern in the top results on a real ERA5 period
+containing a documented cyclogenesis event -- has not been performed. It needs a
+maintainer-frozen catalogue, a declared documented event, and a mining pass over the real
+8,764-frame record that has never been run, so Phase 4G remains gated.
+
 ## 4. Database Schema and State Tracking (`src/database/models.py`, `session.py`, `migrate.py`)
 
 The database layer (`src/database/`) is fully configured using SQLAlchemy and targets a persistent or in-memory SQLite database (`spectral_earth.db`). 
@@ -8408,7 +8473,7 @@ See `VERIFICATION.md` for the captured command output behind every statement her
 | Item | Status |
 |---|---|
 | Python venv + dependencies | installed (torch 2.13.0+cu130, numpy 2.2.6, pydantic 1.10.26, SQLAlchemy 2.0.52, xarray 2025.6.1, FastAPI 0.110.3) |
-| Backend test suite | **4103 passed, 1 xfailed** (plus 4 skipped: the opt-in live GCS read, opt-in live store probe, opt-in live Argo acceptance, and opt-in live TESS/MAST acceptance). Measured 2026-09-06 in 2,524.94 s (0:42:04), exit 0, on the tree carrying T4F.5. Nothing failed in this run. It is exactly 58 above the previous measurement of 3978, which is the 58 test functions T4F.4 added, so nothing was lost in between. |
+| Backend test suite | **4190 passed, 1 xfailed** (plus 4 skipped: the opt-in live GCS read, opt-in live store probe, opt-in live Argo acceptance, and opt-in live TESS/MAST acceptance). Measured 2026-09-06 in 2,728.53 s (0:45:28), exit 0, on the tree carrying T4F.6. Nothing failed in this run. It is exactly 87 above the previous measurement of 4103, which is the 87 test functions T4F.6 added, so nothing was lost in between. |
 | Ground-Truth Benchmark Suite | **29 PASS, 0 FAIL, 0 NOT_YET_RUNNABLE** (`python -m src.benchmarks`, exit 0) |
 | Frontend `npm install` + `npm run build` | passes, emits 1,395 modules + real JS/CSS assets (was: 1 module, no assets) |
 | Backend server | starts, serves OpenAPI, all smoke-tested endpoints return 200 |
@@ -8419,12 +8484,15 @@ TG17.9 was verified after that last full-suite figure with 21 receipt tests, all
 contract tests, all 80 orchestrator tests and all 26 documentation tests (284 focused tests across
 the four files). The production build transforms 1,408 modules and the full rendered Chromium
 suite is 33/33. The whole backend suite has since been rerun, most recently on 2026-09-06
-after T4F.5, so **4103** is the last measured full figure rather than being
+after T4F.6, so **4190** is the last measured full figure rather than being
 arithmetically increased from targeted runs. That run was the first in a while with nothing else competing for
 the machine, and `test_acquisitions_api.py::test_a_server_restart_marks_active_cds_work_
-interrupted_for_explicit_resume` passed in it. The two runs where it failed were both heavily
-contended by concurrent calibration work, which is what a test polling a background worker on a
-two-second wall-clock budget is sensitive to.
+interrupted_for_explicit_resume` passed in it. The three runs where it failed were all heavily
+contended. The most recent was on 2026-09-06, a T4F.6 run that took 1:04:54 against this
+one's 0:45:28 because mutation batches were sharing the machine; the test passed on its own
+in 44.00 s immediately afterwards and passed again in the clean rerun that produced the figure
+above. That is what a test polling a background worker on a two-second wall-clock budget is
+sensitive to.
 
 Earlier revisions of this document and of `roadmap.md` claimed the platform was "validated"
 and "zero-error". It was not: the first real execution produced 8 test failures and a frontend
@@ -9269,7 +9337,8 @@ able to sit three slices out of date.
 | `test_spectral_precursors.py` | 47 | T4F.3 precursor tests: the base rate measured as a window probability rather than a frame one and shown to grow with the window, estimated only over positions whose window was wholly observed, identical for two antecedents sharing a consequent, published with the sample size it was estimated over, and refused as a lift when the consequent never fell in any observed window; lift held to confidence over base rate, the interval bracketing it and narrowing as the denominator grows, the interval held to the defining property of the score interval so a normal approximation that gives a perfect record no width at all is refused, the overlapping windows that break its independence assumption counted rather than only disclaimed with two anchors exactly a window apart counted as sharing one, and R9's six figures either built as the programme's own carrier or refused whole, the surrogate-corrected lift shown to be against the ensemble while the plain lift is against the base rate; the planted precursor clearing the null while its reverse does not, the same unchanged record called a precursor by the scattering null and not by the shifting one, the rotation preserving the antecedent's count and every gap but the wrapped one, rotations below the widest declared lag never drawn, an ensemble larger than the record's distinct rotations refused, the null's identity and what it preserves and destroys travelling in the receipt, the easy null carrying its own warning, and one seed redrawing one ensemble; a lag family required as a declared object and refused empty, duplicated, mixed in unit or declared in a unit the grid does not use, overlapping windows reported rather than refused, one draw shown to be shared across the family so the maximum has a null and a window's ensemble does not depend on where it was declared, the chosen lag referenced to the maximum, and each family corrected against its own size; an under-powered design refused before anything is counted, the family sized by what was declared rather than by what was reported even when a member returned no number at all, a family whose every member clears alpha raw and none of them corrected showing that the status follows the correction, correction shown to move p-values only upwards, and every member reported including those that found nothing; a grid without a cadence, a pattern preceding itself, an unknown null or correction, an alpha or interval level outside (0, 1), an empty ensemble, an undeclared seed, an unaffordable budget and a pattern the series does not contain each refused by name; the ensemble a p-value came from published rather than only summarised; no status naming a term the ladder places outside itself; and the counting shown to be T4F.2's own rather than a second implementation of it |
 | `test_spectral_invariance.py` | 46 | T4E.2 the invariant signature: the principal axis checked against the covariance eigendecomposition it stands for over 50 random configurations, exactly collinear points reporting an infinite anisotropy rather than a failure, and three axes refused rather than projected; the `planted_configuration` benchmark measured over 24 field-noise realisations to be isotropic with an axis angle spanning 0.78 to 158.08 degrees, the module's isotropy floor asserted to be the number that measurement produced, a configuration at the benchmark's own anisotropy refused an axis by name, and the vortex triples shown to clear the floor by two orders of magnitude; invariance measured rather than declared, with translation, three rotations, reflection and every relabelling asserted to leave the signature vector identical to floating-point precision in both modes; a uniform rescaling leaving the scale-free shape alone while an estimator that missed the rescaling moves the scale-specific geometry by exactly the factor it missed; the canonical order shown to matter, with two configurations that agree on independently sorted blocks and have no correspondence making both true at once; the toggle priced at 87 of 135 with the loss attributed by cardinality; a position in metres beside a scale in cells refusing the scale-specific mode and signing in the scale-invariant one, which is what R19's own refusal message tells the caller to do; and the refusals -- a pair asked for a scale-free shape, a pair's axis refused for a different reason than an isotropic triple's, a constellation stripped of its features, a member with no band RMS, an unknown mode, blocks that disagree about cardinality, a floor calibrated on one realisation or on collinear replicates, and the mixed-unit refusal left to the extractor rather than copied |
 | `test_spectral_narrative.py` | 25 | T4D.3 the prose, and what it may not say: every number in a sentence checked against the track it came from including the spoken speed against `Track.speed()` for all four tracks, the subject of every sentence being the coefficient maximum and not the structure, and the frame count being of frames searched rather than frames found; no track of a growing vortex claiming its own scale doubled -- each holding one level at a scale velocity of exactly zero with the word absent from the prose -- while the growth that did happen is measured across bands, level 4 weakening as level 5 strengthens and is first excited nine frames later, offered as a candidate precursor relationship carrying that it was not tested against a null and claims no merge, with one band supporting no ordering at all; a cartesian grid refused every compass word and given axis-relative wording, the sign that makes a row northward read from the grid so one displacement on two grids gives opposite points, the cosine of the latitude shortening a degree of longitude before the bearing is taken so 60 degrees north gives 26.6 and not 45, a track that returned to where it started given no bearing, and the missing-`lat0` branch shown to be unreachable rather than added; energy reported as the square under its own name so the roadmap's own 43% becomes 104.5%, and a change from zero refused rather than rendered infinite; the guard using the programme's one list of words for every entry in it, a causal word in a caller's own dataset name refused before a reader sees it, the guard's own limit asserted so a substring match cannot creep in, and the entitlement allowed to name the boundary the sentences may not cross and appearing exactly once however many tracks there are; plus a single sighting supporting no direction, speed or growth, a search that found nothing refused as an empty list of sentences, and the structural signature naming no variable, dataset or units |
-  | **total** | **3693** | |
+| `test_spectral_reference.py` | 87 | T4F.6 the physical gate: all three verdicts reached on real coefficients rather than on stubs -- PASS against a catalogue whose envelopes fit the planted pair, FAIL against one whose envelopes do not with R10's presumption stated in the receipt, and INVALID against one so wide that nothing could have fallen outside it; the ranking key shown to decide the verdict, with the same report passing by `q_value` and failing by `support` and the two declarations hashing differently, and a rule whose lift the record could not measure counted and left out of the ranking while a report carrying no measured figure at all is INVALID rather than empty; a draft catalogue refused adjudication and the shipped southern-ocean reference refused with it, signing shown not to move the digest while editing any envelope does, two entries agreeing on only one of scale and lead shown not to be an overlapping pair, and a declaration with no documented period, no known ranking key or a nonsensical top-N each refused by name; the bridge measured on four grids -- 31 km and isotropic on the benchmark, 13.899 to 27.799 km on the T4C.5k ERA5 crop where 16 cells becomes 222.4 to 444.8 km at a 61.08% zonal variation the grid itself warns about, an anisotropic cartesian grid taken by its shorter side, and a lat/lon grid coarser in longitude than in latitude where the meridional side is the shorter one -- with a pixel grid refused kilometres, an undated record refused hours, an unevenly spaced record refused a cadence, and a level set without its axis spelled as a number rather than as hectopascals; the cadence measured from the record's own timestamps and a lead refused by name when the series' frames are not the record's or when it names no searched frames at all, while a series on the record's own frames converts a 1-to-3-frame window to 6 to 18 hours; a pattern measured from the footprints T4F.5 drew, its separation recomputed here from the centres so a single axis cannot pass, the filter support and the dyadic octave label shown to be a factor of two apart with an entry declared against each one reading the other number, and a pattern with nothing on the map refused rather than measured; the observable checked before every other criterion and an entry needing a 500 hPa field labelled unassessable rather than unrecognised for every pattern; cardinality and separation each shown to exclude on their own; consistency on one criterion alone refused as recognition with the observable check shown never to count as evidence; a pattern consistent with every entry flagged as separating nothing; the two reasons a cross-reference can be wholly unassessable told apart in the receipt; the ranked rule's label shown to read the measurement the cross-reference already took rather than a second one; the receipt counting only the criteria the decision rule counts and publishing the floor beside the count, naming a pattern-entry exclusion what it is, and an entry the record cannot check shown not to rescue a label that separates nothing; and the claim boundary naming the six refused words, saying that PASS licenses Phase 4G and nothing else, and that INVALID must never be read as a FAIL |
+  | **total** | **3780** | |
 
 ### 7.4a Browser suite inventory
 

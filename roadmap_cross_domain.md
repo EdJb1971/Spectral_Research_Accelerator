@@ -149,19 +149,26 @@ may reach the network without the maintainer's explicit say-so.
   footprint recovers it only while the level that found the structure can still reach back to
   it. Each grid gives what it has and refuses the rest, and a rule's historical instances come
   from the same per-anchor decision its support was counted with, reconciled against its
-  published figures before they are shown. **This remains the larger outstanding body of
-  work in the repository** -- T4F.6-8 and all of 4G remain. 4G is gated behind T4F.6: if
-  nothing recognisable is recovered, the pipeline is presumed broken and 4G does not start.
-  T4F.5's own second acceptance clause waits there too: a real-ERA5 `recognised` pattern
-  projecting onto a physically sensible footprint cannot be checked until T4F.6 exists.
+  published figures before they are shown. **T4F.6 has now built the gate that stands between
+  all of this and Phase 4G, and has not run it.** A pattern is labelled against a declared
+  catalogue of known phenomena as `recognised`, `unrecognised` or `unassessable`, the third
+  being the label that stops an instrument's blindness from being recorded as a fact about the
+  atmosphere; the gate reaches PASS, FAIL and INVALID on the same real patterns, refuses to
+  adjudicate under a catalogue no maintainer has signed, and returns INVALID rather than PASS
+  when the catalogue excluded nothing, because recognition by imprecision is this task's own
+  failure mode. **This remains the larger outstanding body of work in the repository.** The
+  T4F.6 gate run, T4F.7-8 and all of 4G remain, and 4G is still gated: the acceptance needs a
+  maintainer-frozen catalogue, a documented cyclogenesis event declared with its source, and a
+  real mining pass over the acquired 8,764-frame ERA5 record that has never been performed.
+  T4F.5's own second acceptance clause waits on the same run.
 * Defects **D84** and **D85** are open and **D18** is partial. Ninety-two of ninety-five are
   fixed. This session found three: **D93** (a time unit dropped at the T4E.2 signing seam, T4F.1),
   **D94** (a cache key republished as a `sha256`) and **D95** (untimestamped SPOC cadences), the
   last two by TG17.14's first contact with real archives.
-* The last measured **full backend run is 4,103 passed, 4 skipped, 1 xfailed**, exit 0,
-  on 2026-09-06 in 0:42:04 -- the tree carrying T4F.5. It replaces the 4,036 measured after
-  T4F.4 and the 3,978 after T4F.3. The rise is exactly 67: the 67 test
-  functions T4F.5 added, so nothing was lost in between. Do not quote a larger figure without
+* The last measured **full backend run is 4,190 passed, 4 skipped, 1 xfailed**, exit 0,
+  on 2026-09-06 in 0:45:28 -- the tree carrying T4F.6. It replaces the 4,103 measured after
+  T4F.5 and the 4,036 after T4F.4. The rise is exactly 87: the 87 test
+  functions T4F.6 added, so nothing was lost in between. Do not quote a larger figure without
   running the suite again.
 
 **Two habits this line holds to, because both were learned by being caught out.** A guard that
