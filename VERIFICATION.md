@@ -10513,3 +10513,215 @@ term `claim_ladder.OUTSIDE_THE_LADDER` names.
 3978 passed, 4 skipped, 1 xfailed, 6 warnings in 3129.85s (0:52:09)
 exit 0
 ```
+
+## T4F.4 -- bidirectional queries, and the ranking that decides the answer (2026-09-05, `ed-dev`)
+
+`src/analysis_engine/spectral_queries.py`, verified by `src/tests/test_spectral_queries.py`
+(58 test functions, 58 pytest cases). Measured 2026-09-05 with no network.
+
+```
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_spectral_queries.py -q
+58 passed, 1 warning in 2.63s
+
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_spectral_queries.py
+    src/tests/test_spectral_precursors.py src/tests/test_spectral_events.py
+    src/tests/test_spectral_sequences.py src/tests/test_spectral_mining.py
+    src/tests/test_spectral_clustering.py src/tests/test_spectral_invariance.py -q
+245 passed, 1 warning in 51.08s
+```
+
+T4F.3 produced a corrected table. This task makes it askable from either end. The design is one
+sentence -- both directions are one selection over that table and nothing is recomputed -- and
+everything below is what that sentence rules out.
+
+**The acceptance record, printed rather than described.** Six patterns on a 220-frame grid. The
+target `B` occurs at eighteen irregular times; `A` sits two frames in front of every third of
+them; `C` is common, evenly spread on every seventh frame, and related to nothing; `D` spans
+`B`'s scale range; `E` is coarser than `B`; `F` is fine but every occurrence is censored by the
+record's end. Window `[1, 3]` frames, 199 circular-shift surrogates, seed 20260905, alpha 0.05,
+Benjamini-Yekutieli, and a family of four declared before the record was read:
+
+```
+=== the ordering, measured from the catalogue's own scales (units: cells)
+  A  scale   2.520   range [  2.0,   4.0]
+  B  scale  20.159   range [ 16.0,  32.0]
+  C  scale   3.557   range [  3.0,   5.0]
+  D  scale  20.000   range [ 10.0,  40.0]
+  E  scale  80.635   range [ 64.0, 128.0]
+  F  scale   1.260   range [  1.0,   2.0]
+  not orderable: A/C, A/F, B/D
+
+=== the declared family: four antecedents, one target, one lag, 199 shifts
+rule   supp elig   conf    base   lift      p       q   status
+A->B     6    6   1.000  0.249   4.02  0.0050  0.0417  PRECURSOR_SIGNATURE
+C->B     9   31   0.290  0.249   1.17  0.3300  1.0000  NOT_DISTINGUISHED_FROM_NULL
+D->B     0    4   0.000  0.249   0.00  1.0000  1.0000  NOT_DISTINGUISHED_FROM_NULL
+E->B     0    4   0.000  0.249   0.00  1.0000  1.0000  NOT_DISTINGUISHED_FROM_NULL
+```
+
+**The measurement this task exists to make.** The same query, the same report, two rankings:
+
+```
+=== top-down on B, ranked by q_value -> PRECURSOR_SIGNATURES_FOUND
+    rows naming it 4; withheld: 1 overlapping scale, 1 wrong side
+    1. A  supp  6  lift  4.02  q 0.0417  PRECURSOR_SIGNATURE
+    2. C  supp  9  lift  1.17  q 1.0000  NOT_DISTINGUISHED_FROM_NULL
+
+=== top-down on B, ranked by support -> PRECURSOR_SIGNATURES_FOUND
+    rows naming it 4; withheld: 1 overlapping scale, 1 wrong side
+    1. C  supp  9  lift  1.17  q 1.0000  NOT_DISTINGUISHED_FROM_NULL
+    2. A  supp  6  lift  4.02  q 0.0417  PRECURSOR_SIGNATURE
+```
+
+The roadmap words this task's top-down question as *what fine configurations most commonly
+preceded it*. Answered literally, by how often the counterpart was followed by the target, the
+first answer is a pattern the null did not distinguish from chance -- it wins because it occurs
+more often, not because it precedes anything. Ranked by the corrected p-value the first answer
+is the planted precursor. Nothing about the data differs between those two blocks. **The choice
+of ranking decides the answer**, as the choice of null decided the finding one task earlier.
+Every entry therefore carries its rank under *every* key, `rankings_disagree` is published on
+the result, and the frequency key carries the sentence saying that it is not a measure of
+association and that the reader should look at which entries the null distinguished before
+reading the order.
+
+**A query is a view, and a view is not a test.** The shortcut is to re-run the inference
+restricted to the pattern being asked about -- one target, a handful of counterparts, a family
+of one instead of four -- and watch every q-value fall. That is choosing the family after seeing
+the record, which is the failure `precursor_report` avoids one level down by reporting every
+member of the declared family whether it looked interesting or not. Nothing here recomputes a
+p-value, a q-value or a status: the suite asserts every returned figure is identical to the
+report's own row, and the family the correction was paid on is published beside every answer
+with its declared size (4) next to an answer of 2. The cost of the shortcut is measured rather
+than warned about: the same rule, the same record, the same seed and the same null give
+`p = 0.0050` either way, and `q = 0.0417` in the declared family against `q = 0.0050` in a
+family narrowed to it alone. A caller who genuinely wants the narrower family must declare it
+before the record is read, by passing `pairs=` to `precursor_report`.
+
+**Coarse and fine are measured, and the record is allowed to refuse them.** `scale_ordering`
+reads the catalogue's own member scales in the catalogue's own units and builds an interval
+order: a pattern occupies the range of scales its members actually spanned, and one pattern is
+finer than another only when those ranges are disjoint. Ranges that overlap -- or merely touch,
+since sharing a scale is sharing a scale -- are not orderable, and naming one of them the coarser
+would be an ordering taken from a sort rather than from the record, which is the fabrication
+`spectral_events` refuses when it publishes simultaneous events unordered. The relation is
+partial by construction, the pairs it cannot order are published, and on this record three of
+fifteen pairs are unorderable. In the top-down answer above, `D` is withheld because its range
+spans the target's and `E` because it is coarser rather than finer; both are counted, and
+counted apart from each other, so an answer of two out of four cannot be mistaken for an answer
+of two out of two. The statistic is the geometric mean of every member node's scale and the range
+spans every member rather than the first, which the suite holds to on a pattern whose members
+disagree.
+
+**Cardinality is not scale.** A five-node constellation is bigger than a three-node one, not
+coarser. Two catalogues carrying the same scales at cardinality three and four produce an
+identical ordering.
+
+**Under scale invariance there is nothing to order, and the refusal is exact.** T4E.2's
+universality hook divides every signature's scales by their own geometric mean, so that statistic
+is exactly 1.0 for every pattern in such a catalogue and an ordering built on it would order
+floating-point residue. A separate test asserts that exactness to 1e-12 on three unrelated scale
+triples, so the refusal rests on a measured fact rather than on caution. That mode buys
+cross-domain comparability by discarding absolute scale, and a direction query is a question
+about absolute scale; the module says which one was asked for.
+
+**Both directions are one engine.** The direction fixes two things and nothing else: which role
+the target plays in the rule, and which side of the ordering the counterpart must sit on. A
+top-down entry on the target and the matching bottom-up entry on the antecedent are asserted to
+be the *same row object*, by identity, so a fix to one direction cannot fail to reach the other.
+What is not true is that one direction's answer can be read off the other's: confidence divides
+by a different denominator each way, so `A -> B` and `B -> A` are two hypotheses, both declared
+and both corrected, and `directional_pair` puts them side by side rather than deriving one from
+the other.
+
+**An empty answer says which kind of empty it is.** Nothing distinguished from the null, nothing
+on the required side of the ordering, and nothing on that side that could be measured at all are
+three different findings and only the first is a negative result; each has its own status and
+each is exercised on a record built for it. A censored antecedent is returned rather than dropped,
+carries no rank under any key -- its support is zero because there was nothing to count, and
+ranking that zero against a measured one would put a censored row in a league table of
+associations -- and sorts below every measured entry.
+
+**Mutation testing: 61 mutations in two batches, 37 + 24, all caught after the gaps were closed.**
+
+```
+batch one:  31 CAUGHT, 6 MISSED
+  MISSED  call touching scale ranges orderable
+  MISSED  publish the per-lag family's size beside a selected-lag answer
+  MISSED  read the eligible count where the support count was asked for
+  MISSED  take the leading entry from the bottom of the ranking
+  MISSED  return the entries in table order rather than in the order that was asked for
+  MISSED  drop the report's own boundary from the query receipt
+
+batch two (the six re-aimed, plus eighteen new):  19 CAUGHT, 5 MISSED
+  MISSED  report the whole family as the rows that named the target
+  MISSED  publish the counterpart's scale range as the target's
+  MISSED  word the top-down question as a search for something coarser
+  MISSED  estimate a pattern's scale range from its first member alone
+  MISSED  claim the family was declared after the record was read
+
+after closing every gap: 37 CAUGHT + 24 CAUGHT, 0 MISSED
+```
+
+Every one of the eleven was a real gap; none was an equivalent mutant and none was a fault in the
+harness. Four of them share a cause worth naming: **the acceptance fixture was too tidy.** Every
+rule in it named the target, so reporting the whole family as the rows naming the target changed
+no number; every member of a pattern carried identical scales, so estimating the range from the
+first member alone changed no range; the decoy had both more support and more eligible trials
+than the planted rule, so ranking by the eligible count reproduced the support order exactly.
+Closing those needed records built for the purpose -- a family containing a rule that names
+something else, a pattern whose members occupy different scales, and a two-lag family in which
+support and eligibility disagree about the order (`[9, 6, 5, 0]` by support against `[31, 6, 31,
+6]` eligible).
+
+The other seven were assertions that were weaker than they looked. Two ranges that *touch* at one
+scale were never tried, so nothing distinguished a strict boundary from an inclusive one -- and
+the strict one is right, because two patterns sharing a scale are not separated by the record.
+`top_by` was checked only for disagreeing with itself across keys, which survives being taken
+from the bottom of the ranking rather than the top. The receipt's copy of the report's own claim
+boundary was checked by substring, which survives being replaced by that substring. The question
+text each direction publishes was compared with the constant it came from, so both moved
+together; it is now compared with the side the direction actually selects. The rest --
+`target_scale_range`, `declared_before_the_record_was_read`, and the two families' separate
+sizes -- were quantities nothing had read.
+
+**Sorting the unmeasured.** One batch-one miss deserves its own line because it is nearly an
+equivalent mutant and is not one. Removing the "unranked last" term from the entry sort leaves
+the remaining key ordering measured entries identically, so it is invisible on every fixture
+whose entries were all measured. It becomes visible only on an answer that mixes a measured
+counterpart with a censored one, where the censored row would otherwise sort *first*. That
+record is now in the suite.
+
+**What is refused rather than defaulted.** There is no default direction, because "what preceded
+this" and "what follows this" are two hypotheses about the same pair and a silently chosen one
+would answer a question nobody asked. A target the declared family never asked about in the
+required role is refused by name rather than answered with an empty list, which would read as
+"nothing preceded it" when the truth is that nothing asked. An ordering that does not carry a
+scale range for every pattern the report tested is refused, because a query answering from a
+subset it never mentions lies about its denominator. A support ranking of the selected-lag
+family is refused by name, because a selected-lag row is one pair's strongest declared lag and
+the count belongs to the lag that won rather than to the pair. A catalogue with no scale unit,
+with two scale units, with a non-positive scale, or with no patterns at all is refused, as is a
+query handed something that is not a completed report.
+
+**Nothing here is causal, and nothing here is a direction of influence.** The claim boundary
+refuses *cause*, *driver*, *mechanism*, *trigger*, *forecast* and *intervention* by name (R7),
+carries the report's own boundary unaltered beside it, states that a query is a view of a test
+that has already been corrected and not a second test, and states the thing the words most
+invite a reader to forget: **top-down names a query whose target is the coarser of the two
+patterns, and asserts nothing about which of them acts on the other.** A test asserts that no
+status this module can emit contains a term `claim_ladder.OUTSIDE_THE_LADDER` names.
+
+**Documentation guards.**
+
+```
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_documentation.py -q
+29 passed
+```
+
+**Full backend suite.**
+
+```
+> .\.venv\Scripts\python.exe -m pytest src/tests -q
+4036 passed, 4 skipped, 1 xfailed, 6 warnings in 3665.97s (1:01:05)
+exit code 0
+```
