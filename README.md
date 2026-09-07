@@ -210,7 +210,7 @@ supersedes the other.
   vector publication sheets that preserve the figure's reading contract. Under
   G18 none of this may recompute, summarize, promote or reinterpret a scientific value, so each
   addition transcribes what the analysis layer produced or states that it produced nothing.
-* Last measured full backend run: **4294 passed, 4 skipped, 1 xfailed**, exit 0 (2026-09-07, 1:06:31).
+* Last measured full backend run: **4348 passed, 4 skipped, 1 xfailed**, exit 0 (2026-09-08, 0:42:20).
 * Last measured browser suite: **136/136** in Chromium from a cleaned `.e2e-state` (2026-09-04).
   It is inventoried in `architecture.md` section 7.4a; it is the only check here that proves a
   page renders.

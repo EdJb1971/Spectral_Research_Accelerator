@@ -11569,7 +11569,7 @@ produced, and the measurement that stopped it.
 
 ### What was produced, and stands
 
-**The declaration** -- `data/gate_receipts/t4f6-tasman-mining-declaration.json`, written before
+**The declaration** -- `data/mining_declarations/t4f6-tasman-mining-declaration.json`, written before
 the record was read, sha256 `a649afccda2e3f4025ccb7af3123a3cbae58ada143772a7aea45affd181fcaac`.
 It fixes the detection threshold, the co-presence cap, the split, the climatology model and the
 transform depth, and lists what it does not fix.
@@ -11777,3 +11777,100 @@ what those tests needed.
 and whether identity should be declared rather than discovered, are T4E.6 and T4E.7's questions.
 Nothing about the acquired record's physics is claimed either: this is a measurement of the
 instrument, taken on real data.
+
+## T4E.6 -- a radius has two error rates, and this programme measured one (2026-09-07, `ed-dev`)
+
+`src/analysis_engine/spectral_clustering.py`, verified by
+`src/tests/test_spectral_discrimination.py` (22 test functions). Closes the first half of D97.
+
+```
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_spectral_discrimination.py -q
+22 passed, 1 warning in 7.91s
+
+> .\.venv\Scripts\python.exe -m pytest src/tests -q
+4348 passed, 4 skipped, 1 xfailed, 6 warnings in 2540.82s (0:42:20)
+exit code 0
+```
+
+The first attempt at that full figure was **discarded rather than published**: the laptop slept
+eight hours into it and resumed the next morning. The run survived and was still working when
+checked -- 19.97 s of CPU in a 20 s window -- but several tests here judge against wall-clock
+budgets, and a suspension can produce a spurious pass as readily as a spurious failure. It was
+stopped and re-run on an awake machine. That earlier run also found a real defect and is the
+reason `data/mining_declarations/` exists: the T4F.6 mining declaration had been written into
+`data/gate_receipts/`, which the read-only T4C gate record serves, and the store correctly
+reported itself unreadable rather than skipping a file whose schema it did not know.
+
+`calibrate_signature_tolerance` returned a radius and stated a **false-rejection** rate. The
+complementary rate -- how often that radius calls two configurations that are not the same one a
+single pattern -- was never computed, and it is the rate that decides whether a pattern means
+anything. It cannot be computed from replicates alone, because a set of replicates contains no
+example of two different things. So the calibration now takes an optional `contrast` population
+and returns a `Discrimination` on every tolerance it produces: both rates and both distance
+distributions where a contrast was supplied, and a **named refusal** where it was not.
+
+**The refusal is the design.** `ADMISSION_RATE_NOT_MEASURED` is not zero and is not small; the
+record omits the keys it did not measure rather than emitting nulls, because a key present with
+a null invites a reader to treat it as a measurement of nothing.
+
+**`best_operating_point` returns `None` when no radius holds both rates at the level asked for**,
+and that is the answer this task exists to make reachable. It is a fact about the signature
+rather than about the search.
+
+### What it measured on the acquired record, and the two things that came out
+
+Calibrating from the longest run of repeated observations -- which is what the pipeline naturally
+reaches for, being where the most replicate pairs are:
+
+```
+  radius 0.641357   false-split 0.00%   admitted 21.47%   separation 2.535
+  same        min 0.0316  q05 0.0912  median 0.3537  q95 0.6356  max 0.6414
+  different   min 0.0076  q05 0.3048  median 0.8840  q95 1.0898  max 1.1790
+
+  both rates <= 5%    NONE EXISTS
+  both rates <= 10%   NONE EXISTS
+  both rates <= 20%   radius 0.5380  (split 10.7%, admitted 14.9%)
+  best achievable     radius 0.5380, worst rate 14.9%
+```
+
+**First: the radius is arbitrary.** Repeating the calibration on 25 different configurations from
+the same record, with the same metric and the same instrument:
+
+```
+  radius      min 0.1683   median 0.6999   max 1.1220     a factor of 6.7
+  admission   min  8.9%    median  21.5%   max  84.5%
+  separation  min 0.681    median  2.420   max  4.108
+```
+
+The longest run sits at the 48th percentile of those radii and the 52nd of those admission rates,
+so the pipeline's natural choice is not biased -- it is simply arbitrary, which is worse than
+biased because nothing signals it. A radius that moves by a factor of nearly seven depending on
+which configuration happened to supply the replicates is a property of the sample and not of the
+instrument.
+
+**Second: the one rate the calibration did report is a tautology at its own operating point.**
+The radius *is* the largest replicate-pair distance, so no replicate pair can exceed it and the
+measured false-split rate at the calibrated radius is identically **0.00%** -- on every one of
+those 25 runs, and on any input whatever. The `1/(pairs+1)` figure the basis quotes is an assumed
+rate for *future* comparisons under a distributional assumption, not a measurement of this
+record. Both facts are pinned by tests, so a later calibration that reports a real, non-tautological
+split rate will break them and have to replace them.
+
+### What this does not do
+
+**It does not move the radius.** T4E.6 measures what the existing calibration produces; choosing
+a better radius is T4E.7, and the suite asserts that supplying a contrast leaves both the value
+and the replicate distances unchanged.
+
+It also does not settle what "different" means. The contrast population here is drawn from other
+track sets, and two different track sets may legitimately be the same *kind* of configuration --
+which is what clustering is for. So the admission figures are an upper bound on what a labelled
+contrast would give, and the suite says so rather than reporting them as a false-acceptance rate.
+On the repository's own tracked fixture the same overlap appears and no radius reaches both rates
+at a fifth; that is pinned too, and if a future signature makes it fail, the signature improved
+and the assertion should be tightened rather than removed.
+
+**Mutation testing: 19 mutations, 19 killed.** Two survived a first pass and both were real: a
+distance falling exactly on the radius was not tested on either side, and the operating-point
+search returned the only qualifying radius on a population where "first" and "smallest" could not
+be told apart. Both are now bound by populations built to distinguish them.

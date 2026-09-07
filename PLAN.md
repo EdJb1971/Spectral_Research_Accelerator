@@ -31,7 +31,7 @@ invariant signatures and identity (T4E.1-3); frequency, sequences, precursor tes
 surrogate null with multiplicity control (T4E.4, T4F.1-3); bidirectional queries (T4F.4);
 evidence projection back onto the map (T4F.5); a physical gate that can return PASS, FAIL and
 INVALID (T4F.6); cross-region generalisation (T4F.7); refutable follow-up proposals (T4F.8).
-4,294 backend tests, 29 documentation guards, mutation testing on every Phase 4 module.
+4,348 backend tests, 32 documentation guards, mutation testing on every Phase 4 module.
 
 **Never done:** the instrument has never produced a scientific claim about the atmosphere. Not
 one. Everything above is apparatus.
@@ -74,7 +74,8 @@ useful when all five hold:
    design fixed before the record was read.
 5. **It says only that.** No claim outside the boundary each module already publishes.
 
-Points 1 and 2 are the open ones. 3, 4 and 5 are built and unexercised on real data.
+Points 1 and 2 are the open ones. 3, 4 and 5 are built and unexercised on real data. Point 2's
+*measurement* now exists (T4E.6); what it measures is not yet defensible, which is T4E.7.
 
 ---
 
@@ -82,7 +83,7 @@ Points 1 and 2 are the open ones. 3, 4 and 5 are built and unexercised on real d
 
 Each item names its acceptance. Nothing here is started unless it says so.
 
-### T4E.6 — Publish what the tolerance admits *(fixes half of D97)*
+### ~~T4E.6 — Publish what the tolerance admits~~ — **complete 2026-09-07**
 
 Make the calibration two-sided. It must return, and refuse to be used without, **both** error
 rates: the false-split rate it already states, and the rate at which the radius admits pairs the
@@ -96,6 +97,14 @@ rates moving in opposite directions as the radius is swept.
 
 *Why first:* it is small, it turns an unmeasured assumption into a published measurement, and
 every subsequent decision needs the number it produces.
+
+**Outcome.** Both rates are now published or refused by name, `best_operating_point` returns
+`None` where no radius holds both, and the measurement found two things that sharpen T4E.7. The
+radius is **arbitrary** — a factor of 6.7 across 25 configurations of the same record, with the
+pipeline's natural choice sitting mid-distribution rather than at an extreme. And the rate the
+old calibration reported is a **tautology**: it is identically zero at its own radius by
+construction. On the acquired record no radius holds both rates below 10%. See `roadmap.md` for
+the evidence.
 
 ### T4E.7 — Calibrate without replicates *(fixes the rest of D97)*
 
@@ -146,7 +155,7 @@ radius, the component structure changes with it and the ceiling has to be re-mea
 ### T4F.6 — Run the gate *(unblocks Phase 4G)*
 
 The full mining pass over the acquired record and a real adjudication. The declaration is written
-and digested (`data/gate_receipts/t4f6-tasman-mining-declaration.json`), and the training-only
+and digested (`data/mining_declarations/t4f6-tasman-mining-declaration.json`), and the training-only
 climatology is fitted and saved. What remains is everything above, plus the maintainer's two
 declarations.
 

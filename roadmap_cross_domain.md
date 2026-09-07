@@ -192,11 +192,11 @@ may reach the network without the maintainer's explicit say-so.
   own task and its own acceptance. This session found three: **D93** (a time unit dropped at the T4E.2 signing seam, T4F.1),
   **D94** (a cache key republished as a `sha256`) and **D95** (untimestamped SPOC cadences), the
   last two by TG17.14's first contact with real archives.
-* The last measured **full backend run is 4,294 passed, 4 skipped, 1 xfailed**, exit 0,
-  on 2026-09-07 in 1:06:31 -- the tree carrying T4F.8. It replaces the 4,244 measured after
-  T4F.7 and the 4,190 after T4F.6. The rise is exactly 50: the 50 test
-  functions T4F.8 added, so nothing was lost in between. Do not quote a larger figure without
-  running the suite again.
+* The last measured **full backend run is 4,348 passed, 4 skipped, 1 xfailed**, exit 0,
+  on 2026-09-08 in 0:42:20 -- the tree carrying T4E.6. It replaces the 4,294 measured after
+  T4F.8 and the 4,244 after T4F.7. The rise is exactly 54: 29 cases from T4E.5's
+  suite, 22 from T4E.6's and 3 new documentation guards, so nothing was lost in between. Do
+  not quote a larger figure without running the suite again.
 
 **Two habits this line holds to, because both were learned by being caught out.** A guard that
 passes because it cannot see what it is checking has now been met five times (D64, D74, D75, and

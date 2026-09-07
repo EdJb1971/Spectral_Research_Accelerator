@@ -105,6 +105,8 @@ def _record():
                                                 max_nodes_per_frame=32)
         signatures = list(sign_constellations(constellations,
                                               scale_invariant=False).signatures)
+        _CACHE["constellations"] = constellations
+        _CACHE["tracked"] = tracked
         _CACHE["record"] = signatures
     return _CACHE["record"]
 

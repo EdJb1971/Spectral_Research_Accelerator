@@ -103,7 +103,7 @@ coastline. It has been exercised on a synthetic record only. **T4F.8 is DONE:** 
 | **Phase chronology correction (2026-09-03)** | The pre-run sentences embedded in the long phase-progress history are superseded by the later evidence in that same row: campaign v3 acquired the complete 8,764-frame record and T4C.6 returned PASS. A PASS does not exercise the FAIL/INVALID absence adjudication, so D84/D85 remain relevant only to a future negative result; they did not block or invalidate the recorded PASS. The v3 receipt is present and served by the read-only gate record. |
 | Ownership / licence | **Declared in `LICENSE.md`.** Edward Jonathan Bentley retains the proprietary SpectralEarth core. A designated Named Licensee may be granted a perpetual, worldwide, royalty-free right of lawful personal, academic, research and commercial use/modification, without public redistribution or sublicensing of the core; no designation is recorded in this repository. Independent extensions and upstream contributions remain separately governed. This bespoke text has not been professionally reviewed. |
 | **Accessibility** | **Workflow-wide source contract, TG11.6 DONE.** Skip and route focus, globally visible focus, bound legacy labels, reduced motion, announced asynchronous state, keyboard SVG lineage and figure text equivalents now cover both platform lines. Rendered assistive-technology inspection remains NOT RUN, so no WCAG conformance level is claimed (see `roadmap_cross_domain.md`). |
-| Backend test suite | **4294 passed, 1 xfailed** Plus four explicit skips: the opt-in live GCS read, opt-in live store probe, opt-in live Argo acceptance, and opt-in live TESS/MAST acceptance. Measured 2026-09-07 in 3,991.25 s (1:06:31), exit 0, on the tree carrying T4F.8. Nothing failed in this run. |
+| Backend test suite | **4348 passed, 1 xfailed** Plus four explicit skips: the opt-in live GCS read, opt-in live store probe, opt-in live Argo acceptance, and opt-in live TESS/MAST acceptance. Measured 2026-09-08 in 2,540.82 s (0:42:20), exit 0, on the tree carrying T4E.6. Nothing failed in this run. |
 | Ground-Truth Benchmark Suite | **29 PASS, 0 FAIL, 0 NOT_YET_RUNNABLE.** Twenty datasets with declared known answers, twelve of them nulls. CI-ready via `python -m src.benchmarks` (exit 0). |
 | Backend compute modules | **Written, executed and tested.** `physical_core` carries `GridSpec` + metric-aware operators; `analysis_engine` gained `spectra.py` and `climatology.py`; `transform_engine` gained the undecimated `stationary.py` and a real `dtcwt.py`; `statistics/` and `core/` are new packages. |
 | Physical units and wavenumbers | **Correct as of T3.5.13.** Gradients metric-aware, spectra on a physical `k` axis, domain statistics area-weighted, and every quantity carries its units. Previously all of it was pixel-space and unlabelled (D13). |
@@ -2004,7 +2004,7 @@ component, so 843,000 configurations would need 5.7 TB.
 Lance-Williams update supports because a merged cluster's neighbours are the intersection of its
 parents'; and the ceiling re-measured on the acquired record.
 
-**T4E.6 Publish what the tolerance admits *(fixes half of D97)* -- SPECIFIED, NOT STARTED.**
+**T4E.6 Publish what the tolerance admits *(fixes half of D97)* -- DONE.**
 `calibrate_signature_tolerance` states a false-rejection rate and never computes the
 complementary one -- how often the radius admits pairs the record does not call the same
 configuration -- and that is the rate deciding whether a pattern means anything. Make the
@@ -2014,6 +2014,26 @@ returned together and refused apart.
 **Acceptance:** a tolerance cannot be obtained without both rates attached; on the acquired record
 the receipt reproduces D97's measured figures; and on a synthetic record with a planted identity
 the two rates move in opposite directions as the radius is swept.
+
+**Met**, with one clause read rather than followed literally. "Both rates attached" is enforced as
+*the question is always answered*: where no contrast population is supplied the tolerance carries
+`ADMISSION_RATE_NOT_MEASURED` and no number, rather than the calibration being made impossible.
+Requiring a contrast outright would have made a valid one-sided noise-floor measurement
+unobtainable; recording the silence as a refusal keeps it honest without that. 22 tests, 19
+mutations all killed.
+
+**It found two things nothing had reached before.** The calibrated radius is **arbitrary**: across
+25 configurations of the same record with the same metric it spans 0.1683 to 1.1220, a factor of
+6.7, with the admission rate running 8.9% to 84.5% -- and the longest run, which the pipeline
+naturally reaches for, sits at the 48th percentile rather than at an extreme, so nothing signals
+the arbitrariness. And the rate the calibration *did* report is a **tautology at its own operating
+point**: the radius is the largest replicate-pair distance, so the measured false-split rate there
+is identically zero on any input whatever. Both are pinned by tests, so a calibration that later
+reports a real split rate will break them and have to replace them.
+
+On the acquired record no radius holds both rates below 10%; the best achievable is 0.5380 at a
+worst rate of 14.9%. **T4E.6 measures the radius and does not move it** -- the suite asserts that
+supplying a contrast leaves the value unchanged -- and choosing a defensible one is T4E.7.
 
 **T4E.7 Calibrate without replicates *(fixes the rest of D97)* -- SPECIFIED, NOT STARTED.** The
 calibration asks for repeated measurements of one physical configuration and **a real atmospheric

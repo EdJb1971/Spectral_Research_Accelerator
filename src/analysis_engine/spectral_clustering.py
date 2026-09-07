@@ -292,6 +292,167 @@ class SignatureMetric:
         return self.alignment(left, right)[2]
 
 
+#: The admission rate was measured against a real contrast population.
+DISCRIMINATION_MEASURED = "MEASURED"
+#: No contrast was supplied, so what this radius admits is unknown. This is not zero and it is
+#: not small; it is unmeasured, and a radius carrying it is not defensible on that ground.
+DISCRIMINATION_UNMEASURED = "ADMISSION_RATE_NOT_MEASURED"
+
+DISCRIMINATION_NOTE = (
+    "A radius has two error rates and this programme measured only one of them until T4E.6. "
+    "The false-split rate -- how often two measurements of one configuration land outside the "
+    "radius -- is what a replicate calibration reports. The admission rate -- how often two "
+    "configurations that are not the same land inside it -- is the one that decides whether a "
+    "pattern means anything, and it cannot be computed from replicates alone because replicates "
+    "contain no example of two different things. Both are reported here, or the second is "
+    "reported as unmeasured; neither is ever defaulted to a number nobody measured.")
+
+
+def _quantiles(values: Sequence[float]) -> Dict[str, float]:
+    ordered = sorted(float(value) for value in values)
+    if not ordered:
+        return {}
+
+    def at(fraction: float) -> float:
+        return ordered[min(int(fraction * len(ordered)), len(ordered) - 1)]
+
+    return {"minimum": ordered[0], "q05": at(0.05), "median": at(0.5), "q95": at(0.95),
+            "maximum": ordered[-1]}
+
+
+def _variance(values: Sequence[float]) -> float:
+    if len(values) < 2:
+        return 0.0
+    mean = sum(values) / len(values)
+    return sum((value - mean) ** 2 for value in values) / (len(values) - 1)
+
+
+@dataclass(frozen=True)
+class Discrimination:
+    """What a radius splits and what it admits, or a named refusal for the second."""
+
+    status: str
+    radius: Optional[float]
+    n_same_pairs: int
+    n_different_pairs: int
+    same: Mapping[str, float]
+    different: Mapping[str, float]
+    false_split_rate: Optional[float]
+    admission_rate: Optional[float]
+    separation: Optional[float]
+    note: str
+
+    @property
+    def measured(self) -> bool:
+        return self.status == DISCRIMINATION_MEASURED
+
+    def as_record(self) -> Dict[str, Any]:
+        record: Dict[str, Any] = {
+            "status": self.status,
+            "radius": self.radius,
+            "n_same_configuration_pairs": self.n_same_pairs,
+            "same_configuration_distances": dict(self.same),
+            "false_split_rate": self.false_split_rate,
+            "basis": DISCRIMINATION_NOTE,
+            "note": self.note,
+        }
+        if self.measured:
+            record.update({
+                "n_different_configuration_pairs": self.n_different_pairs,
+                "different_configuration_distances": dict(self.different),
+                "admission_rate": self.admission_rate,
+                "standardised_separation": self.separation,
+            })
+        return record
+
+
+def measure_discrimination(same_distances: Sequence[float],
+                           different_distances: Sequence[float],
+                           radius: float) -> Discrimination:
+    """Both error rates of one radius, against two measured distance populations.
+
+    `same_distances` are distances between measurements of one configuration; a value above the
+    radius is a **split** of something that should have stayed together. `different_distances`
+    are distances between configurations that are not the same one; a value at or below the
+    radius is an **admission** of something the radius does not distinguish. Neither rate is a
+    property of the radius alone -- both are properties of the radius *and* the populations, so
+    both populations travel in the record.
+    """
+    same = [float(value) for value in same_distances]
+    if not same:
+        raise InvalidParameterError(
+            "same_distances", 0,
+            "at least one distance between measurements of one configuration")
+    limit = float(radius)
+    if not math.isfinite(limit) or limit < 0.0:
+        raise InvalidParameterError("radius", radius, "a finite non-negative radius")
+    split = sum(1 for value in same if value > limit) / float(len(same))
+
+    different = [float(value) for value in different_distances]
+    if not different:
+        return Discrimination(
+            status=DISCRIMINATION_UNMEASURED, radius=limit, n_same_pairs=len(same),
+            n_different_pairs=0, same=_quantiles(same), different={},
+            false_split_rate=split, admission_rate=None, separation=None,
+            note=("No contrast population was supplied, so what this radius admits has not been "
+                  "measured. That is not the same as admitting nothing: a replicate calibration "
+                  "contains no example of two different configurations and therefore cannot "
+                  "produce this number by itself."))
+    admitted = sum(1 for value in different if value <= limit) / float(len(different))
+    pooled = math.sqrt(0.5 * (_variance(same) + _variance(different)))
+    same_median = sorted(same)[len(same) // 2]
+    different_median = sorted(different)[len(different) // 2]
+    separation = (0.0 if pooled == 0.0 else (different_median - same_median) / pooled)
+    return Discrimination(
+        status=DISCRIMINATION_MEASURED, radius=limit, n_same_pairs=len(same),
+        n_different_pairs=len(different), same=_quantiles(same),
+        different=_quantiles(different), false_split_rate=split, admission_rate=admitted,
+        separation=separation,
+        note=("At this radius, %.2f%% of same-configuration pairs are split and %.2f%% of "
+              "different-configuration pairs are admitted. The two medians are %.4f and %.4f, "
+              "%.3f pooled standard deviations apart."
+              % (100.0 * split, 100.0 * admitted, same_median, different_median, separation)))
+
+
+def discrimination_curve(same_distances: Sequence[float],
+                         different_distances: Sequence[float],
+                         radii: Optional[Sequence[float]] = None) -> Tuple[Discrimination, ...]:
+    """Both rates across a sweep of radii, so the whole trade-off is visible at once.
+
+    A single operating point can flatter a metric. The curve is what makes a later change to the
+    signature judgeable: if it does not move this, it did not improve discrimination.
+    """
+    if radii is None:
+        pool = sorted(set(float(value) for value in same_distances)
+                      | set(float(value) for value in different_distances))
+        if not pool:
+            raise InvalidParameterError("radii", None, "distances to sweep over, or explicit radii")
+        step = max(1, len(pool) // 64)
+        radii = pool[::step]
+    return tuple(measure_discrimination(same_distances, different_distances, float(radius))
+                 for radius in radii)
+
+
+def best_operating_point(same_distances: Sequence[float],
+                         different_distances: Sequence[float],
+                         target_rate: float) -> Optional[Discrimination]:
+    """The smallest radius holding **both** rates at or below `target_rate`, or `None`.
+
+    `None` is the answer that matters. It says no radius separates these two populations at the
+    rate asked for, which is a fact about the signature and not about the search -- and it is
+    what a caller must be able to discover before building an identity on top of it.
+    """
+    if not 0.0 < float(target_rate) < 1.0:
+        raise InvalidParameterError("target_rate", target_rate, "a rate strictly between 0 and 1")
+    for row in discrimination_curve(same_distances, different_distances):
+        if not row.measured:
+            return None
+        if row.false_split_rate <= float(target_rate) \
+                and row.admission_rate <= float(target_rate):
+            return row
+    return None
+
+
 @dataclass(frozen=True)
 class SignatureTolerance:
     """A TG3.4 ``MatchTolerance`` bound to one metric and one signature family."""
@@ -300,6 +461,10 @@ class SignatureTolerance:
     metric_digest: str
     family: SignatureFamily
     pair_distances: Tuple[float, ...]
+    #: What this radius admits as well as what it splits (T4E.6). Never absent: where no
+    #: contrast population was supplied it carries a named refusal rather than a silence, so a
+    #: reader cannot mistake "not measured" for "measured and small".
+    discrimination: Optional[Discrimination] = None
 
     @property
     def value(self) -> float:
@@ -311,6 +476,15 @@ class SignatureTolerance:
             "metric_digest": self.metric_digest,
             "family": self.family.describe(),
             "pair_distances": list(self.pair_distances),
+            "discrimination": (
+                Discrimination(
+                    status=DISCRIMINATION_UNMEASURED, radius=self.value,
+                    n_same_pairs=len(self.pair_distances), n_different_pairs=0,
+                    same=_quantiles(self.pair_distances), different={},
+                    false_split_rate=None, admission_rate=None, separation=None,
+                    note=("This tolerance was built without a discrimination measurement at "
+                          "all, so neither rate is attached to it.")).as_record()
+                if self.discrimination is None else self.discrimination.as_record()),
         })
         return body
 
@@ -321,13 +495,25 @@ def _points(signatures: Iterable[ConstellationSignature]) -> Tuple[SignaturePoin
 
 def calibrate_signature_tolerance(
         replicates: Sequence[ConstellationSignature], *,
-        metric: SignatureMetric) -> SignatureTolerance:
+        metric: SignatureMetric,
+        contrast: Sequence[ConstellationSignature] = ()) -> SignatureTolerance:
     """Measure the single-comparison radius from known same-configuration replicates.
 
     This is the signature-space counterpart of TG3.4's ``calibrate_match_tolerance`` and
     deliberately reuses its measured record type.  The maximum of all replicate-pair
     distances is a noise floor, not an estimated population quantile; its finite-replicate
     false-rejection limitation is retained in the basis.
+
+    **`contrast` decides whether the returned radius is defensible (T4E.6).** It is a population
+    of signatures known *not* to be the configuration the replicates measure, and without it the
+    admission rate -- how often this radius calls two different things one pattern -- cannot be
+    computed, because replicates contain no example of two different things. Supplying none is
+    permitted and is recorded as a refusal on the returned tolerance rather than passed over: a
+    reader of `describe()` always learns whether the question was asked.
+
+    See D97 for why this matters and for what a real record does to the assumption underneath
+    it: an atmospheric record contains no replicates at all, and the radius this returns there is
+    dominated by physical evolution rather than by measurement noise.
     """
     points = _points(replicates)
     if len(points) < 2:
@@ -361,9 +547,20 @@ def calibrate_signature_tolerance(
                "is the measured noise floor and has an approximate single-comparison "
                "false-rejection rate of %.3g"
                % (len(points), pairs, components, 1.0 / (pairs + 1))))
+    contrast_points = _points(contrast) if contrast else ()
+    for point in contrast_points:
+        if point.family != family:
+            raise InvalidParameterError(
+                "contrast", point.family.describe(),
+                "the signature family the replicates were measured in (%s). A distance between "
+                "different measured quantities is not a number, so it cannot be a contrast for "
+                "this radius either" % family.describe())
+    across = [metric.distance(left, right)
+              for left in points for right in contrast_points]
     return SignatureTolerance(
         measurement=measurement, metric_digest=metric.digest, family=family,
-        pair_distances=tuple(rows))
+        pair_distances=tuple(rows),
+        discrimination=measure_discrimination(rows, across, measurement.value))
 
 
 def _centroid(points: Sequence[SignaturePoint], metric: SignatureMetric) -> SignaturePoint:
@@ -514,4 +711,7 @@ __all__ = [
     "AttributeWeights", "CLUSTER_SCHEMA", "ConstellationPattern", "METRIC_SCHEMA",
     "PatternCatalogue", "SignatureFamily", "SignatureMetric", "SignaturePoint",
     "SignatureTolerance", "calibrate_signature_tolerance", "cluster_signatures",
+    "Discrimination", "DISCRIMINATION_MEASURED", "DISCRIMINATION_UNMEASURED",
+    "DISCRIMINATION_NOTE", "measure_discrimination", "discrimination_curve",
+    "best_operating_point",
 ]
