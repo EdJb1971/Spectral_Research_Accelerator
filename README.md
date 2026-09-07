@@ -216,8 +216,8 @@ supersedes the other.
   page renders.
 * Open defects: **D84, D85 and D96**; D18 partial. D43 is closed. **D96 gates Phase 4G**: the
   identity step that turns signed configurations into patterns is complete-linkage clustering
-  implemented directly, measured on real signatures from the acquired record at 7.5 s for 50
-  points, 61 s for 100 and 767 s for 200 -- an exponent of about 3.7 -- against a training
+  implemented directly, measured on real signatures from the acquired record at 5.5 s for 50
+  points, 40 s for 100 and 347 s for 200 -- an exponent of about 3 -- against a training
   period that presents roughly 843,000 of them. It was never characterised, because every
   test in the repository clusters a few dozen points. The mining pass the T4F.6 gate
   adjudicates is therefore not merely unperformed; on this implementation it cannot be
@@ -286,7 +286,7 @@ laboratory config has yet been supplied: the motivating experiment is therefore 
 coordinate and train-statistics hashes, checks exact UTC splits and data/transform/model/training
 semantics, and creates one dataset/protocol/checkpoint identity. Passing that binding to the
 evaluator upgrades the record to schema v3 and refuses cross-run substitution or samples outside
-the declared held-out split. This is ready for Adam's real manifest, but the current acceptance
+the declared held-out split. This is ready for a real manifest, but the current acceptance
 fixture is synthetic; there is deliberately no UI "ready" badge claiming a real experiment yet.
 
 FourCastNet 3 is the first partially implemented external global-judge track under T5.6. Its
@@ -419,7 +419,7 @@ prediction = adapter.predict(batch["inputs"], lead_count=batch["targets"].shape[
 ```
 
 T5.3a uses only the final history frame and records that Markov assumption in provenance. The
-actual professor/laboratory architecture and its history semantics remain unintegrated; no
+actual external/laboratory architecture and its history semantics remain unintegrated; no
 current evidence compares representation skill.
 
 T5.3b adds the model-artifact and held-out evaluation contract around that seam. Laboratory code
@@ -538,7 +538,7 @@ Run the same local capability check on any machine:
 * `hpc` runs only inside a detected Slurm, PBS or LSF allocation, uses scheduler local rank for
   GPU placement, and refuses accidental execution on a login node.
 
-For example, Adam can use `auto` on his laptop and set `SPECTRAL_PROFILE=hpc` inside an
+For example, a laptop can use `auto` while `SPECTRAL_PROFILE=hpc` is set inside an
 allocated cluster job. The application does not connect to, submit to or depend on the HPC
 system; the same repository and commands run in both places. Remote submission, environment
 modules/containers and artifact transfer remain site-specific work until the actual cluster
@@ -690,7 +690,7 @@ shards plus the complete temporary Zarr without assuming compression, combines b
 share a drive, and refuses unless at least 5 GiB or 10% of the working requirement remains free
 afterwards. The storage decision is recorded in the acquisition/cache manifest.
 
-Those bounds and dates are an interface example, **not Emily's experiment specification**.
+Those bounds and dates are an interface example, **not any real experiment specification**.
 Materialisation uses the same scientific arguments plus explicit `--download-dir`, `--cache-dir`
 and `--time-chunk`; it still refuses unless the network gate and standard CDS credentials are set.
 
@@ -787,7 +787,7 @@ without splitting them into two requests, and NOAA HRRR/GFS object-store retriev
 
 SpectralEarth is proprietary software; it is not released under an open-source licence.
 Copyright remains with Edward Jonathan Bentley. [The repository licence](LICENSE.md) grants
-Adam Frank Bentley a named, perpetual, worldwide and royalty-free right to use and modify the
+a designated Named Licensee a perpetual, worldwide and royalty-free right to use and modify the
 platform for lawful personal, academic, scientific and commercial work, while reserving public
 redistribution and sublicensing of the SpectralEarth core. Independently authored extensions
 remain separate under the terms stated there. Third-party libraries, datasets, papers and model

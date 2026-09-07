@@ -395,10 +395,16 @@ def test_architecture_does_not_claim_the_frontend_was_never_built(architecture):
 
 
 def test_proprietary_licence_preserves_owner_and_named_researcher_boundary(licence):
-    """The intended family grant must not silently become all-rights-reserved or open source."""
+    """The grant must not silently become all-rights-reserved or open source.
+
+    It must also not name a private individual. The designated-licensee structure exists so the
+    grant can be real without a personal name and address sitting in a public repository, and
+    this guard holds both halves: the terms of the grant survive, and no third party's personal
+    details come back.
+    """
     required = (
         "Edward Jonathan Bentley", "ed.j.bentley@gmail.com",
-        "Adam Frank Bentley", "adam.f.bentley@gmail.com",
+        "Named Licensee", "designates in writing",
         "perpetual", "worldwide", "royalty-free", "commercial activity",
         "high-performance-computing", "Independent Extension",
         "must not", "publicly distribute", "sublicensed",
@@ -408,6 +414,15 @@ def test_proprietary_licence_preserves_owner_and_named_researcher_boundary(licen
         assert text in licence, "LICENSE.md has lost the declared term %r" % text
     assert "not an open-source" in licence
     assert "does not assign or transfer ownership" in licence
+    # No third party's contact details, whoever they are. Naming the individuals this once
+    # protected would put them back in the repository, so the guard is written against the
+    # shape of the thing rather than against two particular people.
+    # The tail group repeats rather than allowing dots freely, so a sentence's full stop
+    # after an address is not read as part of it.
+    addresses = set(re.findall(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+", licence))
+    assert addresses <= {"ed.j.bentley@gmail.com"}, (
+        "LICENSE.md carries a third party's email address (%s); a personal grant is designated "
+        "in writing and is not published here" % ", ".join(sorted(addresses)))
 
 # ============================================================== status-section drift
 

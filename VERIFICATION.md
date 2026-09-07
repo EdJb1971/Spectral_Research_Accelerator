@@ -3749,7 +3749,7 @@ Clean full regression from the moved external-drive workspace:
 
 The skip remains the opt-in live-GCS check and the xfail remains the declared historical
 degenerate-DTCWT comparison. This run proves the integration seam, deterministic fixture and
-autograd path. The tiny residual model is not Adam's model, is not trained to skill and supplies
+autograd path. The tiny residual model is not any external model, is not trained to skill and supplies
 no evidence that one representation forecasts better than another. Actual laboratory-model
 configuration/checkpoint lineage and its train/evaluate protocol remain T5.3 outstanding work.
 
@@ -3795,7 +3795,7 @@ and 967 passes**: the new source modules and test file were not yet in `architec
 an honest ordered gate failure, not a numerical failure. The inventory and claimed totals were
 then updated before the clean rerun recorded below.
 
-The actual professor/laboratory architecture, weights, history semantics and declared training
+The actual external/laboratory architecture, weights, history semantics and declared training
 recipe have still not been supplied or executed. This slice makes a real model verifiable and
 evaluable when supplied; it provides no present evidence of forecast or representation skill.
 
@@ -3929,7 +3929,7 @@ python -m pytest -q src/tests/test_forecasting_protocol.py \
 ```
 
 The tests use a clearly fictional laboratory path, hashes and protocol. They prove contract
-behaviour only. No professor/Adam repository, configuration, coordinate hash or normalisation
+behaviour only. No external repository, configuration, coordinate hash or normalisation
 artifact was supplied, so the actual motivating experiment is **NOT FROZEN**, T5.0 remains
 partial and this slice makes no scientific-skill claim.
 
@@ -3971,7 +3971,7 @@ python -m pytest src/tests/test_forecasting_protocol_binding.py \
 
 The eight new executed cases include exact binding plus deliberate source, grid, cadence,
 normalisation, split, unbound-training and cross-run substitution failures. All identities and
-evidence are synthetic fixtures. No real professor/Adam configuration, data crop, statistics,
+evidence are synthetic fixtures. No real external configuration, data crop, statistics,
 checkpoint or scientific-skill evidence was created, so T5.0 remains partial and the UI remains
 truthfully unpromoted.
 
@@ -4278,7 +4278,7 @@ Clean full regression for the delivered tree:
 
 The focused end-to-end cases use synthetic Zarr forecast and ERA5 stores. They prove portable
 contract identity, relocation, authenticated local preflight, refusal behavior, CLI operation
-and deterministic receipt binding. They do not show that Adam's laptop or HPC allocation was
+and deterministic receipt binding. They do not show that any real laptop or HPC allocation was
 used, that FCN3 or CDS ran, or that any real forecast has accuracy, calibration, spectral
 fidelity or skill. No evaluation result was added to the UI.
 
@@ -4330,7 +4330,7 @@ Clean full regression for the delivered T5.6g tree:
 
 ## Proprietary ownership and named researcher licence
 
-`LICENSE.md` now records Edward Jonathan Bentley as owner and gives Adam Frank Bentley a named,
+`LICENSE.md` now records Edward Jonathan Bentley as owner and provides for a designated Named Licensee with a
 perpetual, worldwide, royalty-free licence to use and modify SpectralEarth for lawful personal,
 academic, research and commercial work, including institutional/cloud/HPC execution. The core
 cannot be publicly redistributed, sold as a platform or sublicensed without Edward's separate
@@ -11625,18 +11625,29 @@ iteration enumerates all pairs of surviving clusters, recomputes every cross-dis
 scratch, and merges one pair. Measured on real signatures from this record:
 
 ```
-      n   seconds   patterns   measured exponent
-     50      7.51          3
-    100     60.58          3       3.01
-    200    766.94          4       3.66
+      n   seconds   patterns   largest   measured exponent
+     50      5.52          4        25
+    100     39.65          7        33        2.84
+    200    347.37         10        74        3.13
 ```
 
-Extrapolated at exponent 3 -- **conservative**, since the measurement is 3.66:
+Extrapolated at exponent 3:
 
 ```
-  n =    86,562  (600 frames)          6.2e10 s     ~2,000 years
-  n =   843,113  (5,844 train frames)  5.8e13 s     ~1,800,000 years
+  n =    86,562  (600 frames)          2.8e10 s     ~900 years
+  n =   843,113  (5,844 train frames)  2.6e13 s     ~800,000 years
 ```
+
+**A first measurement of this defect was pessimistic by about a factor of two and is corrected
+here rather than quietly replaced.** It reported 7.51 / 60.58 / 766.94 s and an exponent of 3.66.
+The tolerance had been calibrated from three arbitrary signatures, which is not what
+`calibrate_signature_tolerance` is for: it takes repeated measurements of *one physical
+configuration* and returns their largest pairwise distance as a noise floor. Calibrated properly
+-- from seven successive observations of one track pair, which is what "the same configuration
+observed again" means on a real record -- the tolerance is **0.4797** against the 0.8387 first
+used. A tolerance that is too large merges more, and this algorithm's cost grows with cluster
+size, so the error ran in exactly the direction of the defect being claimed. The defect stands
+unchanged; the figures did not.
 
 600 frames of this record produce 86,562 cardinality-2 constellations; the training period
 produces about 843,000. Every test in this repository clusters tens of points, no test clusters

@@ -181,10 +181,10 @@ may reach the network without the maintainer's explicit say-so.
   run.
 * Defects **D84**, **D85** and **D96** are open and **D18** is partial. Ninety-two of ninety-six are
   fixed. **D96 is the one that gates Phase 4G**: `cluster_signatures` is complete-linkage
-  agglomerative implemented directly, measured at O(n^3.7) on real signatures from the
-  acquired record -- 7.5 s at n=50, 767 s at n=200 -- and the training period of that record
-  presents about 843,000 constellations. Extrapolated conservatively at exponent 3 that is
-  1.8 million years. Every test in the repository clusters tens of points and no document
+  agglomerative implemented directly, measured at about O(n^3) on real signatures from the
+  acquired record -- 5.5 s at n=50, 347 s at n=200 -- and the training period of that record
+  presents about 843,000 constellations. Extrapolated at exponent 3 that is
+  800,000 years. Every test in the repository clusters tens of points and no document
   stated the cost anywhere, so it was never known to be the binding constraint. The mining
   pass T4F.6's gate waits on is therefore not merely unperformed: on the current identity
   step it cannot be performed, and a replacement changes what a pattern *is* and needs its
@@ -208,7 +208,7 @@ measures the machine.
 ## 1. Relationship to SpectralEarth, and the claim boundary
 
 SpectralEarth is a rigorous atmospheric research instrument. It continues independently under
-`master` for Adam's use and extension, and this line must not destabilise it.
+`master` for downstream use and extension, and this line must not destabilise it.
 
 This is a **fork, not a successor.** The two lines share history to `bce1afc` and share the
 standing rules R1--R16 and standards E1--E11 in `roadmap.md`, which are inherited here in full

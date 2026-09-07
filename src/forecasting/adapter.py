@@ -1,6 +1,6 @@
 """Minimal, explicit forecasting bridge for the Phase 5 laboratory workflow.
 
-This module does not contain a weather model.  It defines the narrow contract by which Adam's
+This module does not contain a weather model.  It defines the narrow contract by which an external
 existing model can become the downstream judge of an accepted training representation:
 
 ``dataset history -> representation -> step model -> inverse -> physical prediction``.

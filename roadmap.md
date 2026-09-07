@@ -11,7 +11,7 @@ Everything below either serves that question or gets cut.
 
 ### External research alignment and the claim boundary
 
-The supplied EGU poster *Spectral representations for regional AI-based weather prediction* by Emily
+The supplied EGU poster *Spectral representations for regional AI-based weather prediction* (author
 O'Riordan (Victoria University of Wellington) is relevant external context, not a result of
 this project. It asks whether Fourier, DCT, Haar, db2 and DTCWT representations change forecast
 skill in a controlled lightweight neural model over the New Zealand ERA5 domain at 850 hPa.
@@ -30,7 +30,7 @@ implemented its neural architecture, autoregressive training schedule or matched
 comparison. Phase 5's remaining model work is a proposal to integrate that judge, not evidence
 that the laboratory architecture or experiment exists inside SpectralEarth. T5.3a-b supplies
 the generic adapter, persistence/smoke baselines, verified artifact contract and held-out
-evaluator described below; Adam's model and weights have not been supplied or executed.
+evaluator described below; no external model or weights have been supplied or executed.
 
 Consequently:
 
@@ -101,7 +101,7 @@ physiography is declared with a source rather than derived from a field that car
 coastline. It has been exercised on a synthetic record only. **T4F.8 is DONE:** the platform's existing follow-up proposers are optimisers -- they propose the parameter range or category that made the metric better, so no outcome would retract the finding that prompted them -- and this task adds the refutable kind: a re-test on ground the finding was not made on, carrying a prediction digested before the record is read and a named condition that would retract it, refused outright when that condition is one no outcome could satisfy. A rule that did not clear its null gets a power proposal instead, which carries no prediction and can confirm nothing, and is refused when the study was already big enough to detect the effect. The occurrence count a design needs is computed from quantities the record can be read for without counting the pair. No proposal has been run. **Not done:** the real-ERA5 gate
 *review*; the T4F.6 gate run itself, 4G and 4H; T5.4-5, the remaining T5.6 inference/real-data work, T5.7, and the T5.8 irregular-observation/spatial-downscaling track. Per-task evidence blocks sit under each task below; a task without a **DONE** or **PARTIAL** label has not been started. |
 | **Phase chronology correction (2026-09-03)** | The pre-run sentences embedded in the long phase-progress history are superseded by the later evidence in that same row: campaign v3 acquired the complete 8,764-frame record and T4C.6 returned PASS. A PASS does not exercise the FAIL/INVALID absence adjudication, so D84/D85 remain relevant only to a future negative result; they did not block or invalidate the recorded PASS. The v3 receipt is present and served by the read-only gate record. |
-| Ownership / licence | **Declared in `LICENSE.md`.** Edward Jonathan Bentley retains the proprietary SpectralEarth core. Adam Frank Bentley has a named perpetual, worldwide, royalty-free grant for lawful personal, academic, research and commercial use/modification, without public redistribution or sublicensing of the core. Independent extensions and upstream contributions remain separately governed. This bespoke text has not been professionally reviewed. |
+| Ownership / licence | **Declared in `LICENSE.md`.** Edward Jonathan Bentley retains the proprietary SpectralEarth core. A designated Named Licensee may be granted a perpetual, worldwide, royalty-free right of lawful personal, academic, research and commercial use/modification, without public redistribution or sublicensing of the core; no designation is recorded in this repository. Independent extensions and upstream contributions remain separately governed. This bespoke text has not been professionally reviewed. |
 | **Accessibility** | **Workflow-wide source contract, TG11.6 DONE.** Skip and route focus, globally visible focus, bound legacy labels, reduced motion, announced asynchronous state, keyboard SVG lineage and figure text equivalents now cover both platform lines. Rendered assistive-technology inspection remains NOT RUN, so no WCAG conformance level is claimed (see `roadmap_cross_domain.md`). |
 | Backend test suite | **4294 passed, 1 xfailed** Plus four explicit skips: the opt-in live GCS read, opt-in live store probe, opt-in live Argo acceptance, and opt-in live TESS/MAST acceptance. Measured 2026-09-07 in 3,991.25 s (1:06:31), exit 0, on the tree carrying T4F.8. Nothing failed in this run. |
 | Ground-Truth Benchmark Suite | **29 PASS, 0 FAIL, 0 NOT_YET_RUNNABLE.** Twenty datasets with declared known answers, twelve of them nulls. CI-ready via `python -m src.benchmarks` (exit 0). |
@@ -2256,7 +2256,7 @@ not, so the positional fallback is unreachable for anything that can produce a c
 -- depends on a task that does not exist yet and on a real-ERA5 mining pass that has not been
 run. It is outstanding rather than met, and T4F.6 is where it comes due.
 
-**T4F.6 Known-phenomenon cross-reference *(implements R10 - this is a validation gate, not a feature)*** -- PARTIAL (the gate is built and discriminates; it has not been run, and as of 2026-09-07 it **cannot** be: the mining pass it adjudicates is blocked by **D96**, an identity step measured at O(n^3.7) against a training period presenting ~843,000 constellations). Maintain a small reference catalogue of known synoptic precursor phenomena with their expected scale ranges, lags and geometries. Every mined pattern is checked against it and labelled `recognised` / `unrecognised`.
+**T4F.6 Known-phenomenon cross-reference *(implements R10 - this is a validation gate, not a feature)*** -- PARTIAL (the gate is built and discriminates; it has not been run, and as of 2026-09-07 it **cannot** be: the mining pass it adjudicates is blocked by **D96**, an identity step measured at about O(n^3) against a training period presenting ~843,000 constellations). Maintain a small reference catalogue of known synoptic precursor phenomena with their expected scale ranges, lags and geometries. Every mined pattern is checked against it and labelled `recognised` / `unrecognised`.
 **Acceptance:** on a real ERA5 period containing a documented cyclogenesis event, the mining pass ranks a `recognised` pattern corresponding to it in the top results. **If nothing recognisable is recovered, the pipeline is presumed broken and 4G does not start.** Only then are `unrecognised` high-lift patterns promoted for human review.
 
 **Delivered.** `src/analysis_engine/spectral_reference.py` and 72 tests in
@@ -2499,7 +2499,7 @@ implemented unless its acceptance evidence appears in `VERIFICATION.md`.
     immutability and drift detection.
     **Outstanding:** no genuine laboratory repository/config, coordinate/statistics hashes or
     evidence SHA-256 has been supplied. The test fixture is deliberately synthetic and is not
-    Emily's/Adam's protocol. T5.0 remains partial and T5.3c cannot select model semantics from
+    an external protocol. T5.0 remains partial and T5.3c cannot select model semantics from
     poster estimates.
     **Delivered T5.0b:** `src/forecasting/binding.py` compares prepared dataset provenance to
     every observable frozen field: source/version, variables/level, cadence, histories/leads,
@@ -2574,7 +2574,7 @@ implemented unless its acceptance evidence appears in `VERIFICATION.md`.
     `hpc` recognises Slurm/PBS/LSF allocation and local rank while refusing login-node use.
     `python -m src.core.doctor` performs CPU and detected-accelerator FFT/backward smoke tests
     and emits attachable JSON. This is local placement/preflight, not cluster submission or
-    artifact synchronisation; those require Adam's actual HPC contract.
+    artifact synchronisation; those require a real HPC contract.
 *   **T5.2 Build `RegionalForecastDataset` -- PARTIAL (T5.2a-d and live acquisition accepted; real model use remains downstream).** Materialise and rechunk a provenance-carrying New
     Zealand crop with aligned 850-hPa `t/q/u/v/z`, timestamps and grid coordinates. Yield input
     histories and lead-time targets as tensors; apply `split_temporal` and a lag-sufficient
@@ -2624,7 +2624,7 @@ implemented unless its acceptance evidence appears in `VERIFICATION.md`.
     samples/batches, and reports frames plus hours. Missing,
     irregular or tampered timing is refused. The manifest-only UI truthfully shows ratio dates
     as unfrozen, cadence as `NOT VERIFIED` and physical lead labels as unavailable. This prevents
-    Emily's ambiguous "6 hourly forecast steps" from being silently interpreted as six-hourly
+    an ambiguous "6 hourly forecast steps" from being silently interpreted as six-hourly
     data. Focused backend/UI contracts and the 1,385-module production build pass; browser render
     inspection was not run because no controllable browser was attached.
     **Live acceptance completed later by T4C.5m/T4C.5n:** the CDS path acquired the six-year,
@@ -2659,7 +2659,7 @@ implemented unless its acceptance evidence appears in `VERIFICATION.md`.
     provenance and a single-checkpoint/no-uncertainty claim boundary are recorded. Seven tests
     include tamper/config-drift refusal and CPU/RTX evaluator parity through the vendor-neutral
     CUDA/ROCm API.
-    **Outstanding:** Adam's actual model code/interface, weights, history semantics and declared
+    **Outstanding:** a real model's code/interface, weights, history semantics and declared
     optimiser/schedule have not been supplied or run. Multiple independently trained seeds,
     uncertainty, temporal dependence and correction-family inference belong to T5.4/T5.5.
     T5.3b proves a usable integration/evaluation contract, not the laboratory experiment or
@@ -2667,7 +2667,7 @@ implemented unless its acceptance evidence appears in `VERIFICATION.md`.
     **T5.3c Model-semantics adapters -- NOT STARTED:** after T5.0 freezes the actual protocol,
     select and test the required semantic adapter: final-frame autoregressive, full-history
     autoregressive, or direct multi-horizon. Each must declare history use, rollout and physical
-    lead-time mapping in provenance. Do not implement all variants speculatively or coerce Adam's
+    lead-time mapping in provenance. Do not implement all variants speculatively or coerce a real
     model into the current Markov adapter; an unsupported protocol must be refused explicitly.
 *   **T5.4 Run the boundary-support/domain-size study.** Cross representation with nested
     domains at fixed resolution, dates and central New Zealand evaluation window. Report
@@ -2697,7 +2697,7 @@ implemented unless its acceptance evidence appears in `VERIFICATION.md`.
     identical NZ variables/dates/leads, then independently analyse error by scale, orientation,
     location and boundary distance. These are **authors'/publisher claims to test**, not
     SpectralEarth findings. FCN3's learned spherical Morlet kernels are not the same intervention
-    as inserting Haar/db2/SWT/DTCWT representations into Adam's regional model.
+    as inserting Haar/db2/SWT/DTCWT representations into an external regional model.
 
     **T5.6a FCN3/Earth2Studio inference contract -- PARTIAL:**
 
@@ -2716,7 +2716,7 @@ implemented unless its acceptance evidence appears in `VERIFICATION.md`.
        canonical forecast-cube adapter before common evaluation.
     5. **Implemented as T5.6c:** extend held-out evaluation with ensemble mean/member metrics, CRPS, spread-skill ratio and
        rank diagnostics, plus the existing persistence comparison and multiscale error analysis.
-       Freeze dates, NZ crop, variables and correction families before comparing with Adam's
+       Freeze dates, NZ crop, variables and correction families before comparing with an external
        model. Never use FCN3 evaluation years as a fresh test set without accounting for its
        published 1980-2015 train, 2016-2017 test and 2018-2019 evaluation partitions.
 
@@ -2831,7 +2831,7 @@ implemented unless its acceptance evidence appears in `VERIFICATION.md`.
     **Still outstanding:** there is no Earth2Studio worker process, environment lock, real model
     card/package/checkpoint hash, NGC access, 72-channel initial condition, forecast execution,
     real canonical artifact, real matched ERA5 truth run, dependence-aware uncertainty or comparison
-    with Adam's model. T5.6a proves bytes/declarations, T5.6b proves schema/units/finiteness/crop
+    with an external model. T5.6a proves bytes/declarations, T5.6b proves schema/units/finiteness/crop
     lineage, T5.6c proves metric implementation, T5.6d-e prove exact synthetic matching and
     reproducible orchestration, T5.6f proves portable offline invocation, and T5.6g proves
     verified evidence presentation; none proves
@@ -2896,7 +2896,7 @@ implemented unless its acceptance evidence appears in `VERIFICATION.md`.
     ConvNP or other downscaler adapter. Compatibility does not establish forecast/downscaling
     skill, observational representativeness or operational readiness.
 
-    **External interface case reviewed 2026-08-22:** Emily O'Riordan's
+    **External interface case reviewed 2026-08-22:** the external
     [deepsensorNZ](https://github.com/oriordanemily/deepsensorNZ) at commit
     `68dd21f7aab5c375dfbe34637cd469ba4592243a` motivated this gap: it combines ERA5/WRF gridded
     context, station context/targets, high-resolution auxiliary fields and probabilistic ConvNP

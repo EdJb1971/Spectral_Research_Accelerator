@@ -23,7 +23,7 @@ def complete_protocol():
     return {
         "schema": "motivating-forecast-protocol/v1",
         "protocol_revision": 1,
-        "experiment_id": "professor-wavelet-forecast-replication",
+        "experiment_id": "external-wavelet-forecast-replication",
         "evidence_reference": "laboratory/configs/nz-wavelet.yaml@4d3c2b1",
         "evidence_sha256": SHA_A,
         "domain": {

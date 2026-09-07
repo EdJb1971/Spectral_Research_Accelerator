@@ -19,7 +19,10 @@ schemas, tests, designs and other original materials distributed in this reposit
 with later versions released by the Owner under this licence. It excludes third-party materials
 identified in section 8.
 
-**Named Licensee** means Adam Frank Bentley, contactable at adam.f.bentley@gmail.com.
+**Named Licensee** means any person or organisation the Owner designates in writing.
+No designation is recorded in this repository: a personal grant is a private arrangement
+between the Owner and the licensee, and publishing a name and an address here served no
+purpose the licence itself needed.
 
 **Modification** means a change to, adaptation of, or derivative work based on the Software.
 
@@ -39,7 +42,7 @@ permission to use the Software; it does not assign or transfer ownership.
 All rights not expressly granted are reserved. No licence is granted to any patent, trade mark,
 trade name, logo or other branding right.
 
-## 3. Personal grant to Adam Frank Bentley
+## 3. Personal grant to a Named Licensee
 
 Subject to this licence, the Owner grants the Named Licensee a worldwide, royalty-free,
 non-exclusive, non-transferable licence that is perpetual and irrevocable except following an
