@@ -538,7 +538,22 @@ def window_base_rate(series: EventSeries, consequent: int,
     return hits / float(positions), positions, hits
 
 
-def _wilson(successes: int, trials: int, level: float) -> Optional[Tuple[float, float]]:
+def wilson_interval(successes: float, trials: int,
+                    level: float) -> Optional[Tuple[float, float]]:
+    """The Wilson score interval, or `None` when there were no trials.
+
+    Public because T4F.8 has to ask what interval a *proposed* number of trials would produce
+    before any of them are run, and a second copy of this arithmetic there would be a second
+    thing to keep in step with `INTERVAL_METHOD`. The assumption in `INTERVAL_ASSUMPTION`
+    travels with every use of it.
+
+    `successes` is a count on every measurement path and this function does nothing to make it
+    otherwise. It is typed as a float only so that a *design* question -- what interval would
+    `n` trials give if the true proportion were `p` -- can be asked as `p * n` without rounding
+    to a whole occurrence. Rounding there is not a rounding error: it makes the answer
+    non-monotone in `n`, so a study of 336 trials can fail a separation that 335 passes, and a
+    search for the smallest sufficient `n` would return an arbitrary member of a jagged set.
+    """
     if trials <= 0:
         return None
     z = NormalDist().inv_cdf(1.0 - (1.0 - level) / 2.0)
@@ -547,6 +562,23 @@ def _wilson(successes: int, trials: int, level: float) -> Optional[Tuple[float, 
     centre = (p + z * z / (2.0 * trials)) / denominator
     half = z * math.sqrt(p * (1.0 - p) / trials + z * z / (4.0 * trials * trials)) / denominator
     return (max(centre - half, 0.0), min(centre + half, 1.0))
+
+
+def eligible_anchors(series: EventSeries, antecedent: int, window: TransitionWindow, *,
+                     times: Optional[Mapping[int, Sequence[float]]] = None) -> List[float]:
+    """The antecedent's occurrences whose whole window this record actually observed.
+
+    This is the denominator a confidence is taken over, and it is public because T4F.8 needs to
+    know how many trials a region can supply *before* proposing a test on it -- a count that
+    says nothing about the alignment under test, only about how much of the record is there.
+    """
+    if times is None:
+        times = times_by_pattern(series)
+    grid = series.grid
+    return [float(time) for time in times.get(int(antecedent), [])
+            if grid.observation_of_window(
+                float(time) + float(window.minimum_lag),
+                float(time) + float(window.maximum_lag))[0] == WINDOW_MEASURED]
 
 
 def _overlapping_windows(anchors: Sequence[float], window: TransitionWindow) -> int:
@@ -764,11 +796,8 @@ def precursor_report(
                     0.0 if surrogate.confidence is None else float(surrogate.confidence))
             per_lag_nulls.append(null_confidences)
 
-            eligible_anchors = [time for time in times.get(antecedent, [])
-                                if grid.observation_of_window(
-                                    time + float(window.minimum_lag),
-                                    time + float(window.maximum_lag))[0] == WINDOW_MEASURED]
-            overlapping = _overlapping_windows(eligible_anchors, window)
+            anchors = eligible_anchors(series, antecedent, window, times=times)
+            overlapping = _overlapping_windows(anchors, window)
 
             if counted.confidence_status != CONFIDENCE_MEASURED:
                 status = (RULE_UNDECIDABLE if counted.confidence is None
@@ -791,7 +820,7 @@ def precursor_report(
                 continue
 
             confidence = float(counted.confidence)
-            interval = _wilson(counted.support, counted.eligible_antecedents,
+            interval = wilson_interval(counted.support, counted.eligible_antecedents,
                                float(interval_confidence))
             lift_interval = None if interval is None else (interval[0] / rate,
                                                            interval[1] / rate)
@@ -933,5 +962,5 @@ __all__ = [
     "RULE_PRECURSOR", "RULE_NOT_DISTINGUISHED", "RULE_NO_ELIGIBLE_ANTECEDENT",
     "RULE_BASE_RATE_ZERO", "RULE_UNDECIDABLE",
     "LagFamily", "PrecursorRule", "SelectedLagRule", "PrecursorReport",
-    "precursor_report", "window_base_rate",
+    "precursor_report", "window_base_rate", "wilson_interval", "eligible_anchors",
 ]

@@ -157,7 +157,7 @@ may reach the network without the maintainer's explicit say-so.
   adjudicate under a catalogue no maintainer has signed, and returns INVALID rather than PASS
   when the catalogue excluded nothing, because recognition by imprecision is this task's own
   failure mode. **This remains the larger outstanding body of work in the repository.** The
-  T4F.6 gate run, T4F.8 and all of 4G remain, and 4G is still gated: the acceptance needs a
+  T4F.6 gate run and all of 4G remain, and 4G is still gated: the acceptance needs a
   maintainer-frozen catalogue, a documented cyclogenesis event declared with its source, and a
   real mining pass over the acquired 8,764-frame ERA5 record that has never been performed.
   T4F.5's own second acceptance clause waits on the same run. **T4F.7 is DONE**: a rule is
@@ -165,15 +165,28 @@ may reach the network without the maintainer's explicit say-so.
   region that never carried the pattern reported as not having taken the test rather than as
   having failed it, and with `general` refused while the identity was fitted on held-out ground,
   while the regions' independence is unestablished, or while every region assessed is of one
-  declared physiography. It has been exercised on a synthetic record only.
+  declared physiography. It has been exercised on a synthetic record only. **T4F.8 is DONE**:
+  the platform's two existing follow-up proposers are optimisers -- they propose the parameter
+  range or the category that made the metric better, so no outcome of the proposed run would
+  retract the finding that prompted it -- and this task adds the refutable kind. A re-test is
+  proposed only on ground the finding was not made on, only for a rule that cleared its own
+  null, and only where the identity was not fitted on the target; it carries a prediction
+  digested before the target record is read and a named statistic, direction and threshold that
+  would retract it, and is refused when that condition is one no outcome could satisfy. A rule
+  that did not clear its null gets a power proposal instead, which carries no prediction and can
+  confirm nothing, and which is refused when the study already carried the occurrences the
+  effect needed -- a negative from an adequately powered study is a result. The occurrence count
+  a design needs is computed from quantities the record can be read for without counting the
+  pair under test, and it must be enough to confirm and enough to retract. No proposal has been
+  run.
 * Defects **D84** and **D85** are open and **D18** is partial. Ninety-two of ninety-five are
   fixed. This session found three: **D93** (a time unit dropped at the T4E.2 signing seam, T4F.1),
   **D94** (a cache key republished as a `sha256`) and **D95** (untimestamped SPOC cadences), the
   last two by TG17.14's first contact with real archives.
-* The last measured **full backend run is 4,244 passed, 4 skipped, 1 xfailed**, exit 0,
-  on 2026-09-07 in 0:57:48 -- the tree carrying T4F.7. It replaces the 4,190 measured after
-  T4F.6 and the 4,103 after T4F.5. The rise is exactly 54: the 54 test
-  functions T4F.7 added, so nothing was lost in between. Do not quote a larger figure without
+* The last measured **full backend run is 4,294 passed, 4 skipped, 1 xfailed**, exit 0,
+  on 2026-09-07 in 1:06:31 -- the tree carrying T4F.8. It replaces the 4,244 measured after
+  T4F.7 and the 4,190 after T4F.6. The rise is exactly 50: the 50 test
+  functions T4F.8 added, so nothing was lost in between. Do not quote a larger figure without
   running the suite again.
 
 **Two habits this line holds to, because both were learned by being caught out.** A guard that

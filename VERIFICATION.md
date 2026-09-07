@@ -11379,3 +11379,183 @@ mining pass T4F.6's gate waits on.
 4244 passed, 4 skipped, 1 xfailed, 6 warnings in 3468.18s (0:57:48)
 exit code 0
 ```
+
+## T4F.8 -- a proposal is a test, or it is a suggestion (2026-09-07, `ed-dev`)
+
+`src/analysis_engine/spectral_proposals.py`, verified by `src/tests/test_spectral_proposals.py`
+(50 test functions, 50 pytest cases). Measured 2026-09-07 with no network.
+
+```
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_spectral_proposals.py -q
+50 passed, 1 warning in 7.16s
+
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_spectral_proposals.py
+    src/tests/test_spectral_regions.py src/tests/test_spectral_reference.py
+    src/tests/test_spectral_projection.py src/tests/test_spectral_queries.py
+    src/tests/test_spectral_precursors.py src/tests/test_spectral_sequences.py
+    src/tests/test_spectral_events.py src/tests/test_spectral_clustering.py
+    src/tests/test_spectral_invariance.py src/tests/test_spectral_constellation.py
+    src/tests/test_spectral_mining.py src/tests/test_spectral_feature.py
+    src/tests/test_spectral_tracking.py src/tests/test_spectral_narrative.py -q
+618 passed, 1 warning in 106.51s (0:01:46)
+```
+
+**The platform already proposed follow-ups, and both of them were optimisers.**
+`_propose_numerical_followup` saw a positive correlation between a parameter and a metric and
+proposed a sweep of larger values of that parameter; `_propose_categorical_followup` fixed the
+best-performing category and re-ran everything else. The direction in each is chosen so as to
+improve the metric, which means **no outcome of the proposed run would retract the finding that
+prompted it**. That is a useful thing to run and it is not a test, and a procedure that only ever
+produces confirmations is not closing a loop, it is closing a circle. Both now say so in their
+own docstrings and point at this module.
+
+**A proposal that cannot come back negative is refused.** Every re-test carries a named
+statistic, a direction and a threshold: the finding is retracted if the Wilson upper bound on the
+re-test's own confidence, at the declared alpha, falls at or below the base rate that same re-test
+measures -- that is, if the antecedent did no better than dropping the same window anywhere on the
+lattice. The threshold is then checked against the range that statistic can attain, and three ways
+it fails are pinned: a base rate of zero, where a Wilson upper bound is strictly positive at any
+number of trials so no experiment could ever satisfy the condition; a base rate the ground could
+not produce at all; and a threshold outside [0, 1], which every outcome meets and which therefore
+distinguishes nothing.
+
+**The prediction is digested before the record is read.** The digest covers the design alone --
+the rule, the target region and its partition digest, the prediction, the refutation, the required
+occurrences and the declared alpha, correction, null and ensemble size. It excludes the status,
+the lead, the signatory and the date, because none of those was declared in advance. The suite
+pins that both ways: signing does not move the digest, and neither does reading the same design
+through a different record (one with a calendar, one without, giving a measured lead and a
+refusal), while changing the target, the alpha, the correction, the null or the ensemble size each
+does. As in T4F.6 the code will not sign -- `register(registered_by=..., registered_on=...)` needs
+a name and a date, and a blank one is refused.
+
+**Which rule gets which kind, and why there are two.**
+
+```
+  rule status                    re-test        power proposal
+  PRECURSOR_SIGNATURE            proposed       refused: no absence to interpret
+  NOT_DISTINGUISHED_FROM_NULL    refused        proposed
+```
+
+A confirmation proposed for a rule the record could not distinguish from its own surrogates would
+manufacture a discovery out of a negative result, and it is the easiest way for a proposal engine
+to look productive. But a tool that proposes follow-ups only for the things that worked has
+publication bias built into it, so a negative gets a proposal too -- of the other kind. **A power
+proposal carries no prediction and no refutation, and both are `None` rather than filled in with
+something plausible**: nothing about the alignment is being asserted, so there is nothing an
+outcome could retract. It can convert an absence that means nothing into one that means something
+and it can confirm nothing at all. It is refused when the study that produced the negative already
+carried the occurrences an effect of the declared size needs, because that is a real negative and
+asking for more data until it changes is chasing it.
+
+The effect size a power proposal is sized on is a **declared** doubling of the base rate, not the
+confidence the record happened to show -- sizing a study on the effect that record produced is
+sizing it on noise.
+
+**Power is computed from quantities the record can be read for without performing the test.** The
+quantity under test is the alignment between antecedent and consequent. The design quantities are
+not: how many of the antecedent's occurrences have a wholly observed window, and how often the
+consequent falls in a window dropped anywhere on the lattice, are properties of the record, and
+neither counts the pair. Both helpers were **promoted out of `spectral_precursors`**
+(`eligible_anchors`, `wilson_interval`) rather than copied, so there is one definition of each; the
+promotion was behaviour-preserving and that suite's 52 tests were re-run to say so.
+
+**Separability is required in both directions, and neither direction is the redundant one.**
+
+```
+  detectable   the interval around the predicted effect excludes the base rate  -> can confirm
+  refutable    the interval around the base rate excludes the predicted effect  -> can retract
+```
+
+Sweeping every pair of proportions to two decimal places: **2,052 pairs have some `n` that could
+detect the effect and could not retract it, and 1,973 have some `n` the other way about.** Neither
+condition subsumes the other, so a design sized on one of them alone is systematically too small
+about half the time. The suite pins one case of each -- 323 to 327 detectable and not refutable at
+0.35 against 0.30, and 195 refutable and not detectable at 0.54 against 0.47 -- and pins the
+margin at n=24, predicted 0.5, base rate 0.3, where the null interval's upper bound sits at
+0.50004, four hundred-thousandths above the prediction. Reading either interval from the wrong end
+would have sized that study at 24 rather than 25.
+
+**The design interval is taken at `p * n` and not at a whole number of occurrences.** Rounding
+there is not a rounding error: it makes separability **non-monotone in `n`**, so a study of 336
+trials fails a separation that 335 passes, and a search for the smallest sufficient design returns
+an arbitrary member of a jagged set. This was measured on the first implementation, which returned
+357 where 335 would have done. With the rounding removed the suite asserts monotonicity outright
+over five pairs and asserts the search returns the smallest sufficient `n`.
+
+**The proposals are made about rules the record actually produced.** The T4F.7 acceptance record
+is re-used because it already carries both things this task needs:
+
+```
+  region  rule status                    confidence  base rate  eligible  proposal
+  A       PRECURSOR_SIGNATURE                 0.500      0.128        76   the finding
+  B       PRECURSOR_SIGNATURE                 0.679      0.152        81   TESTABLE  (needs 8)
+  C       PRECURSOR_SIGNATURE                 0.609      0.163        23   UNDERPOWERED with no
+                                                                          record supplied
+  D       NOT_DISTINGUISHED_FROM_NULL         0.000      0.163        24   power: needs 32
+```
+
+**A ground that was offered and could not be read borrows nothing.** A target supplying no record
+at all and a target supplying a record with no readable base rate are different situations, and
+conflating them substitutes the discovery region's own figure for ground that refused to give one.
+The first is `UNDERPOWERED` and names the acquisition it needs; the second is refused, for both
+kinds of proposal. **This was a real defect**, found by mutation testing and fixed here.
+
+**Closing the loop.** `followup_experiment_config` returns the same `parameter_matrix` shape the
+experiment engine already accepts -- so the platform can run its own follow-up -- with the rule,
+the window and the target region added to the parent's matrix, the retraction condition stated in
+words in the description, and the whole proposal record in the metadata. The parent's matrix is
+not mutated. A refused proposal gets neither a config nor a registration; an underpowered one gets
+both, because it is a design somebody may want to fund.
+
+**Refusals this module makes.** A rule that is not a `PrecursorRule` or a partition that is not a
+`RegionPartition`. A correction this programme does not implement, at proposal and at
+registration. A target region the partition does not declare, or the discovery region itself. A
+catalogue whose identities leaked into held-out ground. A refutation condition no outcome could
+satisfy. A ground that was supplied and gave no base rate. A target confidence that is not a
+proportion. A registration with no author or no date. A refused proposal offered for registration
+or for a runnable config. A parent config that is not a mapping.
+
+**Mutation testing: 58 mutations, 57 killed and one argued equivalent.**
+
+```
+> mutate_t4f8.py        46/55 killed
+> mutate_t4f8b.py       11 mutants -- the eight survivors after the tests that bind them,
+                        plus three for the defect they exposed -- 10/11, then 1/1 on the last
+```
+
+Nine survived the first pass. Eight were real: two refutation branches no test constructed, two
+uncovered ends of the two design intervals, one power-proposal guard that ignored the surrogate
+ensemble, one digest that could have covered the status and the lead without any test noticing,
+one that could have dropped the target region from the design, and one correction check at
+registration. All eight are now bound. The ninth is **equivalent**: an early return in
+`required_occurrences` for a prediction no better than the base rate, whose absence changes
+nothing because the search below reaches the ceiling and returns the same `None`. It is kept
+because it says so in one line rather than after seventeen doublings, and the duplicate copy of
+that same comparison in `propose_re_test` was removed so there is one place it is decided.
+
+**The claim boundary.** A proposal is a design, not a result. Every figure marked `predicted_` is
+what the discovery would imply if it holds on the new ground and none of them has been measured
+there. It refuses *cause*, *driver*, *mechanism*, *trigger*, *forecast* and *intervention* by
+name, states that registering one makes it traceable rather than true, states that `TESTABLE` is
+not a prediction that the re-test will succeed, and states that a power proposal can confirm
+nothing. The T4F.3 boundary the predicted figures inherit travels with it.
+
+**Not claimed.** No proposal has been run. This module produces designs; whether the platform
+executes its own proposals is Phase 4G's question. Nothing here has been applied to the acquired
+ERA5 record, which waits on the same mining pass T4F.6's gate waits on.
+
+**Documentation guards.**
+
+```
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_documentation.py -q
+29 passed, 2 warnings in 496.51s (0:08:16)
+```
+
+**Full backend suite.**
+
+```
+> .\.venv\Scripts\python.exe -m pytest src/tests -q
+4294 passed, 4 skipped, 1 xfailed, 6 warnings in 3991.25s (1:06:31)
+exit code 0
+```

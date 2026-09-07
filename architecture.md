@@ -8342,6 +8342,70 @@ discovery region than it are named. **Physiography is declared with a source**, 
 a field that carries no coastline, and `general` is refused when no assessed region declares one
 or when every one declares the same class -- R14 asks for similar *and* dissimilar ground.
 
+### 3F.8 Follow-up experiment proposals (`src/analysis_engine/spectral_proposals.py`, T4F.8)
+
+The platform already proposed follow-ups. `PatternDiscoveryEngine._propose_numerical_followup`
+saw a positive correlation and proposed a sweep of larger values of that parameter;
+`_propose_categorical_followup` fixed the best category and re-ran. Both are useful and **neither
+is a test**: the proposed run is chosen so as to improve the metric, so no outcome of it would
+retract the finding that prompted it. A procedure that only ever produces confirmations is not
+closing a loop, it is closing a circle. Both now say so in their own docstrings and point here.
+
+**A proposal that cannot come back negative is refused.** Every re-test carries a named
+statistic, a threshold and the direction that retracts the finding -- the Wilson upper bound on
+the re-test's own confidence falling at or below the base rate the re-test itself measures -- and
+the threshold is checked against the range that statistic can attain. A base rate of zero is the
+case that matters: a Wilson upper bound is strictly positive for any number of trials, so "at or
+below zero" is a condition no experiment could ever satisfy, and the proposal is refused rather
+than dressed up.
+
+**The prediction is registered before the record is read.** `Registration` digests the design
+alone -- the rule, the ground, the prediction, the refutation, the required occurrences and the
+declared alpha, correction, null and ensemble size -- and excludes the status, the lead, the
+signatory and the date, because none of those was declared in advance. Signing does not move the
+digest; changing any part of the design does. As in T4F.6 the code will not sign.
+
+**A follow-up may not be proposed on the ground the finding was made on**, and a target whose
+pattern identities were fitted there is R6's leak with a map in place of a calendar. The target
+must be a declared held-out region of a T4F.7 partition, whose digest travels with the proposal.
+
+**A rule that did not clear its null gets no re-test, and a rule that did gets no power
+proposal.** Proposing a confirmation for a negative manufactures a finding; proposing a power
+increase for a positive asks for data to strengthen something rather than to make an
+uninformative absence informative. A negative *does* get a proposal, because a tool that proposes
+follow-ups only for the things that worked has publication bias built into it -- but a power
+proposal carries **no prediction and no refutation**, and both are `None` rather than filled in
+with something plausible. It is refused when the study that produced the negative already carried
+the occurrences an effect of the declared size needs: that is a real negative, and asking for
+more data until it changes is chasing it.
+
+**Power is computed from what can be read without performing the test.** The quantity under test
+is the alignment; the design quantities are not. How many of the antecedent's occurrences have a
+wholly observed window, and how often the consequent falls in a window dropped anywhere on the
+lattice, are properties of the record, and neither counts the pair. Both helpers were promoted out
+of `spectral_precursors` (`eligible_anchors`, `wilson_interval`) rather than copied, so there is
+one definition of each. `required_occurrences` is the smallest number of eligible antecedent
+occurrences at which the predicted effect separates from the base rate **in both directions**: the
+interval around the effect excludes the base rate, so the experiment could confirm, and the
+interval around the base rate excludes the effect, so it could retract. Sweeping every pair of
+proportions to two decimal places, 2,052 pairs have some `n` that could detect and not retract and
+1,973 have some `n` the other way about -- neither condition subsumes the other, so a design sized
+on one of them is systematically too small about half the time.
+
+The design interval is taken at `p * n` rather than at a whole number of occurrences. Rounding
+there is not a rounding error: it makes separability **non-monotone in `n`**, so a study of 336
+trials fails a separation that 335 passes, and a search for the smallest sufficient design returns
+an arbitrary member of a jagged set rather than the smallest one.
+
+**A ground that was offered and could not be read borrows nothing.** A target supplying no record
+at all is a different situation from one supplying a record with no readable base rate, and
+conflating them substitutes the discovery region's own figure for ground that refused to give
+one. The first is `UNDERPOWERED` with the acquisition it needs named; the second is refused.
+
+`followup_experiment_config` returns the same `parameter_matrix` shape the experiment engine
+already accepts, carrying the whole proposal in its metadata, so the platform can run its own
+follow-up. A refused proposal gets neither a config nor a registration.
+
 ## 4. Database Schema and State Tracking (`src/database/models.py`, `session.py`, `migrate.py`)
 
 The database layer (`src/database/`) is fully configured using SQLAlchemy and targets a persistent or in-memory SQLite database (`spectral_earth.db`). 
@@ -8515,7 +8579,7 @@ See `VERIFICATION.md` for the captured command output behind every statement her
 | Item | Status |
 |---|---|
 | Python venv + dependencies | installed (torch 2.13.0+cu130, numpy 2.2.6, pydantic 1.10.26, SQLAlchemy 2.0.52, xarray 2025.6.1, FastAPI 0.110.3) |
-| Backend test suite | **4244 passed, 1 xfailed** (plus 4 skipped: the opt-in live GCS read, opt-in live store probe, opt-in live Argo acceptance, and opt-in live TESS/MAST acceptance). Measured 2026-09-07 in 3,468.18 s (0:57:48), exit 0, on the tree carrying T4F.7. Nothing failed in this run. It is exactly 54 above the previous measurement of 4190, which is the 54 test functions T4F.7 added, so nothing was lost in between. |
+| Backend test suite | **4294 passed, 1 xfailed** (plus 4 skipped: the opt-in live GCS read, opt-in live store probe, opt-in live Argo acceptance, and opt-in live TESS/MAST acceptance). Measured 2026-09-07 in 3,991.25 s (1:06:31), exit 0, on the tree carrying T4F.8. Nothing failed in this run. It is exactly 50 above the previous measurement of 4244, which is the 50 test functions T4F.8 added, so nothing was lost in between. |
 | Ground-Truth Benchmark Suite | **29 PASS, 0 FAIL, 0 NOT_YET_RUNNABLE** (`python -m src.benchmarks`, exit 0) |
 | Frontend `npm install` + `npm run build` | passes, emits 1,395 modules + real JS/CSS assets (was: 1 module, no assets) |
 | Backend server | starts, serves OpenAPI, all smoke-tested endpoints return 200 |
@@ -8526,13 +8590,13 @@ TG17.9 was verified after that last full-suite figure with 21 receipt tests, all
 contract tests, all 80 orchestrator tests and all 26 documentation tests (284 focused tests across
 the four files). The production build transforms 1,408 modules and the full rendered Chromium
 suite is 33/33. The whole backend suite has since been rerun, most recently on 2026-09-07
-after T4F.7, so **4244** is the last measured full figure rather than being
+after T4F.8, so **4294** is the last measured full figure rather than being
 arithmetically increased from targeted runs. `test_acquisitions_api.py::test_a_server_restart_
 marks_active_cds_work_interrupted_for_explicit_resume` passed in it. The three runs where that
 test failed were all heavily contended. The most recent was on 2026-09-06, a T4F.6 run that took
 1:04:54 because mutation batches were sharing the machine; the test passed on its own in 44.00 s
 immediately afterwards and passed again in the uncontended rerun that measured 4190 in 0:45:28.
-The 0:57:48 above sits between those two, so this run was not the quietest the machine has been
+The 1:06:31 above is slower than both, so this run was not the quietest the machine has been
 either. That is what a test polling a background worker on a two-second wall-clock budget is
 sensitive to.
 
@@ -9380,8 +9444,9 @@ able to sit three slices out of date.
 | `test_spectral_invariance.py` | 46 | T4E.2 the invariant signature: the principal axis checked against the covariance eigendecomposition it stands for over 50 random configurations, exactly collinear points reporting an infinite anisotropy rather than a failure, and three axes refused rather than projected; the `planted_configuration` benchmark measured over 24 field-noise realisations to be isotropic with an axis angle spanning 0.78 to 158.08 degrees, the module's isotropy floor asserted to be the number that measurement produced, a configuration at the benchmark's own anisotropy refused an axis by name, and the vortex triples shown to clear the floor by two orders of magnitude; invariance measured rather than declared, with translation, three rotations, reflection and every relabelling asserted to leave the signature vector identical to floating-point precision in both modes; a uniform rescaling leaving the scale-free shape alone while an estimator that missed the rescaling moves the scale-specific geometry by exactly the factor it missed; the canonical order shown to matter, with two configurations that agree on independently sorted blocks and have no correspondence making both true at once; the toggle priced at 87 of 135 with the loss attributed by cardinality; a position in metres beside a scale in cells refusing the scale-specific mode and signing in the scale-invariant one, which is what R19's own refusal message tells the caller to do; and the refusals -- a pair asked for a scale-free shape, a pair's axis refused for a different reason than an isotropic triple's, a constellation stripped of its features, a member with no band RMS, an unknown mode, blocks that disagree about cardinality, a floor calibrated on one realisation or on collinear replicates, and the mixed-unit refusal left to the extractor rather than copied |
 | `test_spectral_narrative.py` | 25 | T4D.3 the prose, and what it may not say: every number in a sentence checked against the track it came from including the spoken speed against `Track.speed()` for all four tracks, the subject of every sentence being the coefficient maximum and not the structure, and the frame count being of frames searched rather than frames found; no track of a growing vortex claiming its own scale doubled -- each holding one level at a scale velocity of exactly zero with the word absent from the prose -- while the growth that did happen is measured across bands, level 4 weakening as level 5 strengthens and is first excited nine frames later, offered as a candidate precursor relationship carrying that it was not tested against a null and claims no merge, with one band supporting no ordering at all; a cartesian grid refused every compass word and given axis-relative wording, the sign that makes a row northward read from the grid so one displacement on two grids gives opposite points, the cosine of the latitude shortening a degree of longitude before the bearing is taken so 60 degrees north gives 26.6 and not 45, a track that returned to where it started given no bearing, and the missing-`lat0` branch shown to be unreachable rather than added; energy reported as the square under its own name so the roadmap's own 43% becomes 104.5%, and a change from zero refused rather than rendered infinite; the guard using the programme's one list of words for every entry in it, a causal word in a caller's own dataset name refused before a reader sees it, the guard's own limit asserted so a substring match cannot creep in, and the entitlement allowed to name the boundary the sentences may not cross and appearing exactly once however many tracks there are; plus a single sighting supporting no direction, speed or growth, a search that found nothing refused as an empty list of sentences, and the structural signature naming no variable, dataset or units |
 | `test_spectral_reference.py` | 87 | T4F.6 the physical gate: all three verdicts reached on real coefficients rather than on stubs -- PASS against a catalogue whose envelopes fit the planted pair, FAIL against one whose envelopes do not with R10's presumption stated in the receipt, and INVALID against one so wide that nothing could have fallen outside it; the ranking key shown to decide the verdict, with the same report passing by `q_value` and failing by `support` and the two declarations hashing differently, and a rule whose lift the record could not measure counted and left out of the ranking while a report carrying no measured figure at all is INVALID rather than empty; a draft catalogue refused adjudication and the shipped southern-ocean reference refused with it, signing shown not to move the digest while editing any envelope does, two entries agreeing on only one of scale and lead shown not to be an overlapping pair, and a declaration with no documented period, no known ranking key or a nonsensical top-N each refused by name; the bridge measured on four grids -- 31 km and isotropic on the benchmark, 13.899 to 27.799 km on the T4C.5k ERA5 crop where 16 cells becomes 222.4 to 444.8 km at a 61.08% zonal variation the grid itself warns about, an anisotropic cartesian grid taken by its shorter side, and a lat/lon grid coarser in longitude than in latitude where the meridional side is the shorter one -- with a pixel grid refused kilometres, an undated record refused hours, an unevenly spaced record refused a cadence, and a level set without its axis spelled as a number rather than as hectopascals; the cadence measured from the record's own timestamps and a lead refused by name when the series' frames are not the record's or when it names no searched frames at all, while a series on the record's own frames converts a 1-to-3-frame window to 6 to 18 hours; a pattern measured from the footprints T4F.5 drew, its separation recomputed here from the centres so a single axis cannot pass, the filter support and the dyadic octave label shown to be a factor of two apart with an entry declared against each one reading the other number, and a pattern with nothing on the map refused rather than measured; the observable checked before every other criterion and an entry needing a 500 hPa field labelled unassessable rather than unrecognised for every pattern; cardinality and separation each shown to exclude on their own; consistency on one criterion alone refused as recognition with the observable check shown never to count as evidence; a pattern consistent with every entry flagged as separating nothing; the two reasons a cross-reference can be wholly unassessable told apart in the receipt; the ranked rule's label shown to read the measurement the cross-reference already took rather than a second one; the receipt counting only the criteria the decision rule counts and publishing the floor beside the count, naming a pattern-entry exclusion what it is, and an entry the record cannot check shown not to rescue a label that separates nothing; and the claim boundary naming the six refused words, saying that PASS licenses Phase 4G and nothing else, and that INVALID must never be read as a FAIL |
+| `test_spectral_proposals.py` | 50 | T4F.8 follow-up proposals: both kinds built on rules the T4F.7 record actually produced -- a real signature in `A` at confidence 0.5 over 76 eligible antecedents and a real negative in `D` at 0 of 24 -- so a re-test is proposed about a finding and a power increase about an absence rather than about hand-written figures; a refutation carrying a named statistic, a direction and a threshold checked against the range that statistic can attain, with a zero base rate, a missing one and one above unity each shown unreachable and the zero case refused because a Wilson upper bound is strictly positive at any number of trials; the discovery region, an undeclared region and a leaked identity each refusing a re-test, and the partition digest travelling with the proposal; a rule that did not clear its null refused a re-test and one that did refused a power increase, the power proposal asserted to carry no prediction and no refutation, its effect size shown to be a declared doubling of the base rate rather than the confidence the record happened to show, and a negative from a study that already carried the 24 occurrences a smaller effect needs refused as chasing while one whose ensemble could not have rejected stays a gap; separability required in both directions with the two shown to come apart each way -- 323 to 327 detectable and not refutable at 0.35 against 0.30, 195 refutable and not detectable at 0.54 against 0.47 -- and the n=24 case pinned where the null bound sits 0.00004 above the prediction so reading either interval from the wrong end would size the study at 24 rather than 25; separability asserted monotone in `n` over five pairs because the design interval is taken at `p * n`, the search asserted to return the smallest sufficient `n` and to return no number rather than a huge one for proportions too close to separate; the required count pinned at 8 against 81 available on this record, a target supplying nothing naming the acquisition it needs, a thinned target naming its shortfall, and an ensemble too small to reject after correction making the design underpowered whatever the ground supplies; a ground offered and unreadable refused rather than given the discovery's base rate, for both kinds; signing shown not to move a digest while the target, alpha, correction, null and ensemble size each do, the lead and the status shown to be outside the digest by giving one design two different records, an underpowered design still registrable and a refused one neither registrable nor runnable, and the code refusing to sign; the lead refused on a record with no calendar and on a series counted on another clock while a dated record gives 6 to 18 hours; and the config asserted to be the shape the experiment engine already runs, to leave the parent's matrix unmutated, to state the retraction condition in words, and to carry the claim boundary, the inherited T4F.3 boundary and the note that the two existing proposers are optimisers |
 | `test_spectral_regions.py` | 54 | T4F.7 cross-region generalisation: one 260-frame five-box record built to give four answers at once -- the rule holding in two held-out regions at lift 4.47 and 3.72 after correction over four declared ones, not holding in a third that carries both patterns in the wrong order at support 0 of 24, and not assessable in a fourth that carries nothing -- with the verdict `regional` on that design and `general` on one declaring three held-out boxes; a region carrying the antecedent but never the consequent shown to be unassessable rather than failing, because a base rate of zero is not a lift of zero; membership decided on footprints with every placed configuration's whole box asserted inside its region and the three ways of not being placed counted apart at 364, 397 and 21 of 1,063; the identity matcher shown to hold every centroid and radius fixed and to admit only what the radius contains while a fitted member outside it is left alone, an empty catalogue refused as clustering under another name, leakage measured on the fitted members alone and shown to refuse `general`, and T4E.2's rotation invariance measured as the reason a band-orientation catalogue cannot be matched into -- 0.447 to its own centroid against 0.585 to the other, inside a radius of 0.959; the gaps published in cells and kilometres with a pixel grid refused kilometres by name, independence unestablished without a declared decorrelation length and the too-close regions named with one; `general` refused separately for leakage, for unestablished independence, for an undeclared physiography and for a single declared class, and refused for one assessable region against a floor of two; a reversed or negative box, an unknown role, two discovery regions, none, no held-out region, overlapping boxes and duplicate names each refused by name, and the partition digest shown to move with the declared design; and the claim boundary naming the six refused words, saying that `general` is not a claim about anywhere untested and that `unassessable` licenses nothing |
-  | **total** | **3834** | |
+  | **total** | **3884** | |
 
 ### 7.4a Browser suite inventory
 

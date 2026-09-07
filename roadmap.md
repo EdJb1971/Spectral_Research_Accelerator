@@ -98,12 +98,12 @@ construction. Membership is decided on T4F.5's footprints rather than on a maxim
 three ways of not being inside a box counted apart. The gaps between boxes are published in
 cells and kilometres and `general` is refused while their independence is unestablished, and
 physiography is declared with a source rather than derived from a field that carries no
-coastline. It has been exercised on a synthetic record only. **Not done:** the real-ERA5 gate
-*review*; the T4F.6 gate run itself, T4F.8, 4G and 4H; T5.4-5, the remaining T5.6 inference/real-data work, T5.7, and the T5.8 irregular-observation/spatial-downscaling track. Per-task evidence blocks sit under each task below; a task without a **DONE** or **PARTIAL** label has not been started. |
+coastline. It has been exercised on a synthetic record only. **T4F.8 is DONE:** the platform's existing follow-up proposers are optimisers -- they propose the parameter range or category that made the metric better, so no outcome would retract the finding that prompted them -- and this task adds the refutable kind: a re-test on ground the finding was not made on, carrying a prediction digested before the record is read and a named condition that would retract it, refused outright when that condition is one no outcome could satisfy. A rule that did not clear its null gets a power proposal instead, which carries no prediction and can confirm nothing, and is refused when the study was already big enough to detect the effect. The occurrence count a design needs is computed from quantities the record can be read for without counting the pair. No proposal has been run. **Not done:** the real-ERA5 gate
+*review*; the T4F.6 gate run itself, 4G and 4H; T5.4-5, the remaining T5.6 inference/real-data work, T5.7, and the T5.8 irregular-observation/spatial-downscaling track. Per-task evidence blocks sit under each task below; a task without a **DONE** or **PARTIAL** label has not been started. |
 | **Phase chronology correction (2026-09-03)** | The pre-run sentences embedded in the long phase-progress history are superseded by the later evidence in that same row: campaign v3 acquired the complete 8,764-frame record and T4C.6 returned PASS. A PASS does not exercise the FAIL/INVALID absence adjudication, so D84/D85 remain relevant only to a future negative result; they did not block or invalidate the recorded PASS. The v3 receipt is present and served by the read-only gate record. |
 | Ownership / licence | **Declared in `LICENSE.md`.** Edward Jonathan Bentley retains the proprietary SpectralEarth core. Adam Frank Bentley has a named perpetual, worldwide, royalty-free grant for lawful personal, academic, research and commercial use/modification, without public redistribution or sublicensing of the core. Independent extensions and upstream contributions remain separately governed. This bespoke text has not been professionally reviewed. |
 | **Accessibility** | **Workflow-wide source contract, TG11.6 DONE.** Skip and route focus, globally visible focus, bound legacy labels, reduced motion, announced asynchronous state, keyboard SVG lineage and figure text equivalents now cover both platform lines. Rendered assistive-technology inspection remains NOT RUN, so no WCAG conformance level is claimed (see `roadmap_cross_domain.md`). |
-| Backend test suite | **4244 passed, 1 xfailed** Plus four explicit skips: the opt-in live GCS read, opt-in live store probe, opt-in live Argo acceptance, and opt-in live TESS/MAST acceptance. Measured 2026-09-07 in 3,468.18 s (0:57:48), exit 0, on the tree carrying T4F.7. Nothing failed in this run. |
+| Backend test suite | **4294 passed, 1 xfailed** Plus four explicit skips: the opt-in live GCS read, opt-in live store probe, opt-in live Argo acceptance, and opt-in live TESS/MAST acceptance. Measured 2026-09-07 in 3,991.25 s (1:06:31), exit 0, on the tree carrying T4F.8. Nothing failed in this run. |
 | Ground-Truth Benchmark Suite | **29 PASS, 0 FAIL, 0 NOT_YET_RUNNABLE.** Twenty datasets with declared known answers, twelve of them nulls. CI-ready via `python -m src.benchmarks` (exit 0). |
 | Backend compute modules | **Written, executed and tested.** `physical_core` carries `GridSpec` + metric-aware operators; `analysis_engine` gained `spectra.py` and `climatology.py`; `transform_engine` gained the undecimated `stationary.py` and a real `dtcwt.py`; `statistics/` and `core/` are new packages. |
 | Physical units and wavenumbers | **Correct as of T3.5.13.** Gradients metric-aware, spectra on a physical `k` axis, domain statistics area-weighted, and every quantity carries its units. Previously all of it was pixel-space and unlabelled (D13). |
@@ -132,7 +132,7 @@ is partial. Phase 3.5's 25 implementation tasks are complete; the literal screen
 requested by T3.5.0 is still absent, and D18's cross-device agreement remains partial because
 only the T5.1a-e slice has CPU/CUDA parity evidence and ROCm/MPS are unmeasured. Phase 4A-4C.6
 are complete through the recorded real-data PASS; a separate human review of that receipt
-remains. T4D.1-3, T4E.1-4 and T4F.1-5 are complete and T4F.6 is partial -- the physical gate is built and discriminates, but it has never been run, so 4G is still gated. T4F.7 is complete. T4F.8, 4G and optional 4H remain
+remains. T4D.1-3, T4E.1-4 and T4F.1-5 are complete and T4F.6 is partial -- the physical gate is built and discriminates, but it has never been run, so 4G is still gated. T4F.7 and T4F.8 are complete. 4G and optional 4H remain
 undone. See
 Section 4 for per-task evidence.
 
@@ -2317,27 +2317,6 @@ training-only climatology per R11 -- has never been run, on this record or any o
 three happen there is no `recognised` pattern on real data, and **T4F.5's own second acceptance
 clause, which waits on one, is still outstanding.**
 
-### Phase 4G - `RepresentationScore`
-
-**T4G.1 Baseline forecasters *(de-risks Phase 5)***
-Persistence and optical-flow advection. Cheap, CPU-only, no model weights.
-**Additionally:** WeatherBench 2 publishes *precomputed forecasts* from operational and ML
-models (IFS HRES, GraphCast, Pangu, and others) alongside ERA5 ground truth. Those errors let
-the score face an external predictive target without running a model, pulling an informative
-diagnostic forward into Phase 4G at low compute cost. This is not a direct validation of
-representation choice because those forecasters were not trained on the candidate
-representations. Failure to track their error structure is evidence against the score's claimed
-generality, but does not by itself identify whether the cause is the formula, low power, domain
-shift or forecaster mismatch.
-**Rationale:** persistence and precomputed forecast errors are cheap falsification probes. A
-failure against either requires diagnosis before model integration; it is not automatically
-attributed to one component.
-
-**T4G.2 The score.** Recurrence + sparsity + temporal persistence + cross-scale coherence + spatial coherence + **predictive information** + generalisation. Predictive information is the **anchor** term; without it the score rewards whichever wavelet is busiest.
-
-**T4G.3 Strict evaluation *(R6)***. All predictive terms computed only across `split_temporal` with embargo. Report per-term contributions, never a single opaque number.
-**Acceptance:** the scorer ranks a deliberately-crippled representation (e.g. random orthogonal basis) below a physically-appropriate one, and ranks a busy-but-uninformative wavelet below a sparse-but-predictive one - the distinction that motivated the whole design.
-
 **T4F.7 Cross-region generalisation *(implements R14)*** -- DONE. Re-test every candidate pattern on held-out regions; report where it holds and where it fails, with physiography noted. A pattern is labelled `regional` or `general` accordingly.
 
 **Met.** `src/analysis_engine/spectral_regions.py` and 54 tests in
@@ -2393,7 +2372,87 @@ declares the same class.
 ERA5 record waits on the same mining pass T4F.6's gate waits on, and no atmospheric region has
 been compared with any other.
 
-**T4F.8 Follow-up experiment proposals.** Extend the existing `_propose_numerical_followup` / `_propose_categorical_followup` pattern to propose experiments that *test* a discovered precursor - the platform closing its own loop.
+**T4F.8 Follow-up experiment proposals -- DONE.** Extend the existing
+`_propose_numerical_followup` / `_propose_categorical_followup` pattern to propose experiments
+that *test* a discovered precursor - the platform closing its own loop.
+
+**Met.** `src/analysis_engine/spectral_proposals.py`, verified by
+`src/tests/test_spectral_proposals.py` (50 tests, 8.07 s).
+
+**The two existing proposers are optimisers, and that is the whole problem.** One proposes the
+parameter range that made the metric better; the other fixes the winning category and re-runs.
+No outcome of either would retract the finding that prompted it, so neither is a test, and a
+procedure that only ever produces confirmations is closing a circle rather than a loop. Both now
+carry that in their own docstrings.
+
+**A proposal that cannot come back negative is refused.** Every re-test names the statistic, the
+direction and the threshold that would retract the finding, and the threshold is checked against
+the range the statistic can attain. A base rate of zero leaves a condition no experiment could
+satisfy, because a Wilson upper bound is strictly positive at any number of trials, and the
+proposal is refused rather than dressed up in words.
+
+**The prediction is digested before the record is read**, over the design alone: the rule, the
+ground, the prediction, the refutation, the required occurrences and the declared alpha,
+correction, null and ensemble size. The status, the lead, the signatory and the date are excluded
+because none of them was declared in advance -- so one design read through two different records
+has one digest. As in T4F.6, the code will not sign.
+
+**A re-test is proposed only on ground the finding was not made on**, only for a rule that
+cleared its own null, and only where the identities were not fitted on the target. A rule that
+did *not* clear its null gets the other kind: a power proposal, which carries no prediction and
+no refutation and says so, because a tool that proposes follow-ups only for the things that
+worked has publication bias built into it. That proposal is refused when the study already
+carried the occurrences an effect of the declared size needs -- a negative from an adequately
+powered study is a result, and asking for more data until it changes is chasing it.
+
+**Power is computed from quantities the record can be read for without performing the test.**
+The eligible-anchor count and the base rate are properties of the record and neither counts the
+pair, so reading them does not touch the alignment under test. `required_occurrences` returns the
+smallest number of occurrences that separates the predicted effect from the base rate in **both**
+directions -- able to confirm and able to retract. Sweeping every pair of proportions to two
+decimal places, 2,052 pairs have an `n` that could detect and not retract and 1,973 have one the
+other way about, so neither condition subsumes the other. The design interval is taken at `p * n`
+rather than at a whole number of occurrences, because rounding makes separability non-monotone in
+`n`: 336 trials fail a separation that 335 passes.
+
+On the T4F.7 record the re-test of `A`'s rule onto `B` needs 8 eligible antecedent occurrences
+and `B` supplies 81, so it is `TESTABLE`; onto `C` with no record supplied it is `UNDERPOWERED`
+and names the acquisition it needs. `D`'s negative needs 32 occurrences for a doubling of its base
+rate and carried 24, so its power proposal stands.
+
+**Mutation testing: 58 mutations, 57 killed and one argued equivalent.** The survivors found a
+real defect -- a target that was *offered* and turned out to have no readable base rate was
+quietly given the discovery region's, a borrowed measurement standing in for a refused one. That
+is now its own case and is refused, for both kinds of proposal. The equivalent mutant is an early
+return in `required_occurrences` whose absence changes nothing, since the search below reaches
+the ceiling and returns the same answer; it is kept for legibility and documented as equivalent.
+
+**Not claimed.** No proposal has been run. This produces designs, and every figure in one is
+what the discovery implies rather than anything measured on the target ground. Whether the
+platform executes its own proposals is Phase 4G's question, not this one's.
+
+---
+
+### Phase 4G - `RepresentationScore`
+
+**T4G.1 Baseline forecasters *(de-risks Phase 5)***
+Persistence and optical-flow advection. Cheap, CPU-only, no model weights.
+**Additionally:** WeatherBench 2 publishes *precomputed forecasts* from operational and ML
+models (IFS HRES, GraphCast, Pangu, and others) alongside ERA5 ground truth. Those errors let
+the score face an external predictive target without running a model, pulling an informative
+diagnostic forward into Phase 4G at low compute cost. This is not a direct validation of
+representation choice because those forecasters were not trained on the candidate
+representations. Failure to track their error structure is evidence against the score's claimed
+generality, but does not by itself identify whether the cause is the formula, low power, domain
+shift or forecaster mismatch.
+**Rationale:** persistence and precomputed forecast errors are cheap falsification probes. A
+failure against either requires diagnosis before model integration; it is not automatically
+attributed to one component.
+
+**T4G.2 The score.** Recurrence + sparsity + temporal persistence + cross-scale coherence + spatial coherence + **predictive information** + generalisation. Predictive information is the **anchor** term; without it the score rewards whichever wavelet is busiest.
+
+**T4G.3 Strict evaluation *(R6)***. All predictive terms computed only across `split_temporal` with embargo. Report per-term contributions, never a single opaque number.
+**Acceptance:** the scorer ranks a deliberately-crippled representation (e.g. random orthogonal basis) below a physically-appropriate one, and ranks a busy-but-uninformative wavelet below a sparse-but-predictive one - the distinction that motivated the whole design.
 
 ### Phase 4H - Learned graph encoder (OPTIONAL, ceiling estimator only)
 

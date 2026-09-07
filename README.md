@@ -131,8 +131,22 @@ supersedes the other.
   with is invariant to rotation by construction, so it cannot tell a zonal structure from a
   meridional one at all. How far apart the boxes are is published rather than assumed, and
   physiography is something a maintainer declares with a source, not something a temperature
-  field can be asked. Exercised on a synthetic record only. **T4F.8, follow-up experiment
-  proposals, is next** on the code line; the next scientific step is still the T4F.6 gate run,
+  field can be asked. Exercised on a synthetic record only.
+* **T4F.8 is DONE: the platform now proposes experiments that could tell it it was wrong.** It
+  already proposed follow-ups, and both of them were optimisers -- propose the parameter range
+  that made the metric better, fix the category that won and re-run. Neither could produce a
+  result that would retract the finding that prompted it, which makes them useful and makes them
+  not tests. The new kind is refutable: a re-test on ground the finding was **not** made on,
+  carrying a prediction digested before the target record is read and a named condition that
+  would retract it -- and refused outright when that condition turns out to be one no possible
+  outcome could satisfy, which is what a zero base rate leaves you with. A rule that *failed* its
+  null gets a proposal too, because a tool that only follows up its successes has publication
+  bias built into it; that proposal carries no prediction, can confirm nothing, and is refused
+  when the study was already large enough to have found the effect -- asking for more data until
+  a negative goes away is chasing it. How many occurrences a design needs is computed from
+  quantities the record can be read for without ever counting the pair under test, and it has to
+  be enough to confirm *and* enough to retract. No proposal has been run: this produces designs.
+  **Phase 4G is next** on the code line; the next scientific step is still the T4F.6 gate run,
   which needs a maintainer before it needs a machine.
 * Cross-domain line: **TG17.14 is DONE and `live_sources` reads `PASS`.** On 2026-09-04 the
   authorised bounded run reached ERA5 through CDS, Argo GDAC and MAST SPOC, each demonstrating
@@ -196,7 +210,7 @@ supersedes the other.
   vector publication sheets that preserve the figure's reading contract. Under
   G18 none of this may recompute, summarize, promote or reinterpret a scientific value, so each
   addition transcribes what the analysis layer produced or states that it produced nothing.
-* Last measured full backend run: **4244 passed, 4 skipped, 1 xfailed**, exit 0 (2026-09-07, 0:57:48).
+* Last measured full backend run: **4294 passed, 4 skipped, 1 xfailed**, exit 0 (2026-09-07, 1:06:31).
 * Last measured browser suite: **136/136** in Chromium from a cleaned `.e2e-state` (2026-09-04).
   It is inventoried in `architecture.md` section 7.4a; it is the only check here that proves a
   page renders.
