@@ -6,7 +6,7 @@ the task history, `architecture.md` holds the defect ledger and the design, and 
 holds the measurements. When this document and one of those disagree, **they are right and this
 is stale.**
 
-Last revised 2026-09-07.
+Last revised 2026-09-08.
 
 ---
 
@@ -30,8 +30,9 @@ so that its absence from the top of the list is deliberate rather than forgotten
 invariant signatures and identity (T4E.1-3); frequency, sequences, precursor tests against a
 surrogate null with multiplicity control (T4E.4, T4F.1-3); bidirectional queries (T4F.4);
 evidence projection back onto the map (T4F.5); a physical gate that can return PASS, FAIL and
-INVALID (T4F.6); cross-region generalisation (T4F.7); refutable follow-up proposals (T4F.8).
-4,348 backend tests, 32 documentation guards, mutation testing on every Phase 4 module.
+INVALID (T4F.6); cross-region generalisation (T4F.7); refutable follow-up proposals (T4F.8); and a
+clustering radius calibrated against a null with no replicates anywhere (T4E.7).
+32 documentation guards, mutation testing on every Phase 4 module.
 
 **Never done:** the instrument has never produced a scientific claim about the atmosphere. Not
 one. Everything above is apparatus.
@@ -39,12 +40,16 @@ one. Everything above is apparatus.
 **Why not**, in the order the causes actually run:
 
 ```
-  D97   the identity calibration has no valid input on a real record
-    |     a tolerance calibrated from "replicates" that a real record cannot supply
+  D98   the null available for calibrating identity destroys the features,
+    |     not only their recurrence  (69,580 signatures against a median 16,090)
+    v
+  D97   the identity calibration has no defensible radius on a real record
+    |     the replicate route has no valid input; the null route (T4E.7) works on
+    |     synthetic data and returns nothing on the acquired record
     v
   D96   the identity step cannot process a real record
-    |     because that tolerance admits most pairs, the tolerance graph is one
-    |     component, and clustering it is quadratic-and-worse
+    |     because the replicate tolerance admits most pairs, the tolerance graph is
+    |     one component, and clustering it is quadratic-and-worse
     v
   the T4D-T4F.5 mining pass has never run on the acquired record
     |
@@ -52,8 +57,9 @@ one. Everything above is apparatus.
   T4F.6's gate has never been adjudicated  ->  Phase 4G is gated
 ```
 
-The chain matters. It was read the other way round until 2026-09-07, and fixing D96 first would
-have made an unfounded answer arrive faster.
+The chain matters. It was read from D96 upwards until 2026-09-07, and fixing D96 first would have
+made an unfounded answer arrive faster. T4E.7 added the top link on 2026-09-08 by building the
+calibration and finding that the null it has to run against is not clean.
 
 ---
 
@@ -74,8 +80,10 @@ useful when all five hold:
    design fixed before the record was read.
 5. **It says only that.** No claim outside the boundary each module already publishes.
 
-Points 1 and 2 are the open ones. 3, 4 and 5 are built and unexercised on real data. Point 2's
-*measurement* now exists (T4E.6); what it measures is not yet defensible, which is T4E.7.
+Points 1 and 2 are the open ones. 3, 4 and 5 are built and unexercised on real data. Point 2 now
+has both a measurement (T4E.6) and a method that needs no replicates (T4E.7); what neither has is
+a radius on the acquired record, because the only null available there does not isolate
+recurrence (D98).
 
 ---
 
@@ -106,7 +114,7 @@ old calibration reported is a **tautology**: it is identically zero at its own r
 construction. On the acquired record no radius holds both rates below 10%. See `roadmap.md` for
 the evidence.
 
-### T4E.7 — Calibrate without replicates *(fixes the rest of D97)*
+### ~~T4E.7 — Calibrate without replicates~~ — **complete 2026-09-08**
 
 A real record has no repeated measurements of one state, so the radius must be found some other
 way. Calibrate against a **null**, which is this programme's own idiom already (T4F.3, and
@@ -122,6 +130,41 @@ and returns no radius rather than an indefensible one.
 *Open question this must answer:* whether the T4E.2 signature discriminates at all on real data.
 If it does not, that is the finding, and section 4 is what follows from it.
 
+**Outcome.** The method works and the record does not yield to it. On synthetic data the chosen
+radius admits none of the pairs that are not one configuration and groups 85.6% of those that
+are, without ever seeing a label. On the acquired record it returns **no radius**, at two
+sampling budgets that agree, and the reason is now two named facts rather than an impression.
+**D98**: the surrogate-record null produces a quarter of the record's signatures, so the only
+excess it shows sits in the bulk where a difference between feature populations sits, and in the
+close-pair tail the excess is *negative*. **And the ceiling**: under the strictest reading of
+identity the record's 69,580 signatures come from 64,153 distinct tracked constellations seen a
+mean of 1.08 times, putting the mixture fraction at 2.8e-06 against a band of 0.0387. The open
+question is therefore **not yet answered** — what was measured is that this null cannot answer
+it. See `roadmap.md` for the evidence.
+
+### T4E.8 — A null that isolates recurrence *(fixes D98)*
+
+T4E.7's calibration is sound and has nothing clean to run against. A `spatiotemporal_phase`
+surrogate destroys phase organisation, which destroys the features themselves, so the null
+population is not the record's features without their recurrence — it is a different, sparser
+population. What is needed is a null that keeps the feature population exactly and destroys only
+the relationship that makes two signatures the same configuration: permuting which frames a
+tracked configuration's observations are drawn from, or reassigning signatures between tracks,
+are two candidates, and choosing between them is a scientific declaration rather than an
+implementation detail.
+
+*Acceptance:* the null produces a signature population within a declared factor of the record's
+own; the calibration recovers a planted grouping against it on synthetic data as it does against
+the present one; and on the acquired record it returns either a radius with both rates published
+or a refusal whose reason is no longer about the null. `ATTRIBUTE_PERMUTATION_NULL` already exists
+as the cheap, deliberately anti-conservative comparison, and its caveat says why it cannot be the
+answer.
+
+*Also to settle here:* what "the same configuration" is being calibrated for. Under the strictest
+reading the acquired record's ceiling is 2.8e-06 of pairs and no null can rescue it; the question
+clustering exists for is about different constellations of the same *kind*, and that reading has
+to be made explicit before a radius means anything.
+
 ### T4F.9 — The pilot: one honest end-to-end result
 
 Run the whole loop on a **declared** design small enough to finish and large enough for the
@@ -132,7 +175,7 @@ projection, and the gate. Declared as a pilot, explicitly **not** T4F.6's accept
 digest, the declared design and every figure's provenance. **A FAIL or an INVALID is a success
 for this task.** What is not acceptable is a verdict nobody can interpret.
 
-*Blocked on:* T4E.7 (an identity worth adjudicating), plus two maintainer declarations that are
+*Blocked on:* T4E.8 (an identity worth adjudicating), plus two maintainer declarations that are
 not code — a frozen, reviewed reference catalogue, and a documented cyclogenesis event declared
 with its source. The draft catalogue exists and matches the record's region exactly; it needs
 four envelopes read and either accepted or corrected. The code refuses to sign it, by design.
@@ -149,7 +192,7 @@ the cross-distance matrix is dense per component, so one component of 843,000 ne
 update supports naturally because a merged cluster's neighbours are the *intersection* of its
 parents'; then re-measure the ceiling.
 
-*Why after T4E.7:* scaling should follow knowing what is being scaled. If T4E.7 changes the
+*Why after the calibration:* scaling should follow knowing what is being scaled. If T4E.8 changes the
 radius, the component structure changes with it and the ceiling has to be re-measured anyway.
 
 ### T4F.6 — Run the gate *(unblocks Phase 4G)*
@@ -168,15 +211,26 @@ answers, and neither is a failure.
 
 ## 4. The fork this plan is waiting on
 
-T4E.7 will answer a question that decides the architecture, and it is worth naming now so the
-answer is not a surprise:
+T4E.7 was meant to answer a question that decides the architecture. It did not, and the shape
+of its non-answer is worth reading carefully:
 
 **Can identity be discovered on this data, or must it be declared?**
 
-Three findings already point one way. T4F.7 measured that the signature is rotation-invariant by
+T4E.7 tried to answer this and returned a fourth possibility that was not on the list: *not
+against any null this programme currently has*. That is neither a yes nor a no, and reading it as
+a no would be exactly the pre-emption this section warns against.
+
+Four findings already point one way. T4F.7 measured that the signature is rotation-invariant by
 construction and cannot separate band orientations. Both the T4F.5 and T4F.7 suites built their
-catalogues by declaration because clustering would not separate what they needed. And D97 shows
-the calibrated radius admitting most of the record.
+catalogues by declaration because clustering would not separate what they needed. D97 shows the
+calibrated radius admitting most of the record. And T4E.7 adds the fourth, which is the sharpest
+of them: on the acquired record the signature pairs are *further apart* than a surrogate null's
+throughout the close-pair tail — the record shows less near-identity than chance, not more.
+
+The fourth finding is also the one most easily over-read, and D98 is why. That null produces a
+quarter of the record's signatures, so the comparison is against a sparser and more homogeneous
+population, and a homogeneous population's few features are generically alike. The finding is
+real and it is not yet evidence about the signature.
 
 If discovery cannot be made to work, the alternative is already built and already used: a
 declared, cited, frozen catalogue that the code refuses to sign, with configurations **matched

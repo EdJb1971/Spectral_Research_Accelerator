@@ -210,18 +210,25 @@ supersedes the other.
   vector publication sheets that preserve the figure's reading contract. Under
   G18 none of this may recompute, summarize, promote or reinterpret a scientific value, so each
   addition transcribes what the analysis layer produced or states that it produced nothing.
-* Last measured full backend run: **4348 passed, 4 skipped, 1 xfailed**, exit 0 (2026-09-08, 0:42:20).
+* Last measured full backend run: **4441 passed, 4 skipped, 1 xfailed**, exit 0 (2026-09-08, 1:04:59; the same day's earlier run of 4348 took 0:42:20 and the difference in duration is unexplained).
 * Last measured browser suite: **136/136** in Chromium from a cleaned `.e2e-state` (2026-09-04).
   It is inventoried in `architecture.md` section 7.4a; it is the only check here that proves a
   page renders.
-* Open defects: **D84, D85, D96 and D97**; D18 partial. D43 is closed. **`PLAN.md` orders
+* Open defects: **D84, D85, D96, D97 and D98**; D18 partial. D43 is closed. **`PLAN.md` orders
   what remains.** **D97 is the one that gates everything**: the tolerance deciding what a
   *pattern* is is calibrated from repeated measurements of one physical configuration, and a
   real atmospheric record contains none -- the distance between two observations of one
   tracked configuration grows monotonically with the gap between them, so what comes back is
-  physical evolution rather than a noise floor. Its complementary error rate has never been
-  computed. Measured on three slices spanning the acquired record, at the radius that splits
-  5% of same-configuration pairs, 60-69% of pairs from different configurations are admitted.
+  physical evolution rather than a noise floor. Measured on three slices spanning the acquired
+  record, at the radius that splits 5% of same-configuration pairs, 60-69% of pairs from
+  different configurations are admitted. T4E.6 added the missing complementary rate and found
+  the published one to be identically zero at its own operating point; T4E.7 built a
+  calibration that needs no replicates at all and recovers a planted identity on synthetic data
+  without labels, and **on the acquired record it returns no radius**, which is why D97 stays
+  open. **D98 is why it returns none**: the only null available for the question -- a
+  phase-randomised surrogate put through the same pipeline -- produces a quarter of the
+  record's signatures, so it destroys the features and not merely their recurrence, and in the
+  close-pair tail the record's signature pairs are *further apart* than that null's.
   **D96 is downstream of it**: because most pairs fall inside the radius, the tolerance graph
   is one connected component, which is what makes the clustering unusably slow. **D96 gates Phase 4G**: the
   identity step that turns signed configurations into patterns is complete-linkage clustering

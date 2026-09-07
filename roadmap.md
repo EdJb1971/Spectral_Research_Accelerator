@@ -56,7 +56,7 @@ skill, show the counterexamples, or report that no robust relationship survives.
 ## 1. Honest Technical Status
 
 Verified against the code on 2026-09-02. Every claim here is backed by captured output in
-`VERIFICATION.md`; `architecture.md` Section 7 holds the full defect ledger (D1-D97, of which **92 fixed, 1 partial (D18), 4 open (D84, D85, D96, D97)**). **`PLAN.md` is where the remaining work is ordered**; this document is the task history and the evidence.
+`VERIFICATION.md`; `architecture.md` Section 7 holds the full defect ledger (D1-D98, of which **92 fixed, 1 partial (D18), 5 open (D84, D85, D96, D97, D98)**). **`PLAN.md` is where the remaining work is ordered**; this document is the task history and the evidence.
 
 The numbers in this table are checked by `src/tests/test_documentation.py`, which parses them
 out of this file and compares them against the source. That guard exists because this table
@@ -103,7 +103,7 @@ coastline. It has been exercised on a synthetic record only. **T4F.8 is DONE:** 
 | **Phase chronology correction (2026-09-03)** | The pre-run sentences embedded in the long phase-progress history are superseded by the later evidence in that same row: campaign v3 acquired the complete 8,764-frame record and T4C.6 returned PASS. A PASS does not exercise the FAIL/INVALID absence adjudication, so D84/D85 remain relevant only to a future negative result; they did not block or invalidate the recorded PASS. The v3 receipt is present and served by the read-only gate record. |
 | Ownership / licence | **Declared in `LICENSE.md`.** Edward Jonathan Bentley retains the proprietary SpectralEarth core. A designated Named Licensee may be granted a perpetual, worldwide, royalty-free right of lawful personal, academic, research and commercial use/modification, without public redistribution or sublicensing of the core; no designation is recorded in this repository. Independent extensions and upstream contributions remain separately governed. This bespoke text has not been professionally reviewed. |
 | **Accessibility** | **Workflow-wide source contract, TG11.6 DONE.** Skip and route focus, globally visible focus, bound legacy labels, reduced motion, announced asynchronous state, keyboard SVG lineage and figure text equivalents now cover both platform lines. Rendered assistive-technology inspection remains NOT RUN, so no WCAG conformance level is claimed (see `roadmap_cross_domain.md`). |
-| Backend test suite | **4348 passed, 1 xfailed** Plus four explicit skips: the opt-in live GCS read, opt-in live store probe, opt-in live Argo acceptance, and opt-in live TESS/MAST acceptance. Measured 2026-09-08 in 2,540.82 s (0:42:20), exit 0, on the tree carrying T4E.6. Nothing failed in this run. |
+| Backend test suite | **4441 passed, 1 xfailed** Plus four explicit skips: the opt-in live GCS read, opt-in live store probe, opt-in live Argo acceptance, and opt-in live TESS/MAST acceptance. Measured 2026-09-08 in 3,899.66 s (1:04:59), exit 0, on the tree carrying T4E.7. Nothing failed in this run. The duration is 53% above the same day's earlier 0:42:20 for reasons this slice did not introduce; see `architecture.md` section 7.1. |
 | Ground-Truth Benchmark Suite | **29 PASS, 0 FAIL, 0 NOT_YET_RUNNABLE.** Twenty datasets with declared known answers, twelve of them nulls. CI-ready via `python -m src.benchmarks` (exit 0). |
 | Backend compute modules | **Written, executed and tested.** `physical_core` carries `GridSpec` + metric-aware operators; `analysis_engine` gained `spectra.py` and `climatology.py`; `transform_engine` gained the undecimated `stationary.py` and a real `dtcwt.py`; `statistics/` and `core/` are new packages. |
 | Physical units and wavenumbers | **Correct as of T3.5.13.** Gradients metric-aware, spectra on a physical `k` axis, domain statistics area-weighted, and every quantity carries its units. Previously all of it was pixel-space and unlabelled (D13). |
@@ -132,7 +132,7 @@ is partial. Phase 3.5's 25 implementation tasks are complete; the literal screen
 requested by T3.5.0 is still absent, and D18's cross-device agreement remains partial because
 only the T5.1a-e slice has CPU/CUDA parity evidence and ROCm/MPS are unmeasured. Phase 4A-4C.6
 are complete through the recorded real-data PASS; a separate human review of that receipt
-remains. T4D.1-3, T4E.1-4 and T4F.1-5 are complete and T4F.6 is partial -- the physical gate is built and discriminates, but it has never been run, so 4G is still gated. T4F.7 and T4F.8 are complete. **T4E.5 is in progress and T4E.6, T4E.7 and T4F.9 are specified and not started** -- see `PLAN.md`, which orders what remains. 4G and optional 4H remain
+remains. T4D.1-3, T4E.1-4 and T4F.1-5 are complete and T4F.6 is partial -- the physical gate is built and discriminates, but it has never been run, so 4G is still gated. T4F.7 and T4F.8 are complete. **T4E.5 is in progress, T4E.6 and T4E.7 are done, and T4E.8 and T4F.9 are specified and not started** -- see `PLAN.md`, which orders what remains. 4G and optional 4H remain
 undone. See
 Section 4 for per-task evidence.
 
@@ -2035,25 +2035,99 @@ On the acquired record no radius holds both rates below 10%; the best achievable
 worst rate of 14.9%. **T4E.6 measures the radius and does not move it** -- the suite asserts that
 supplying a contrast leaves the value unchanged -- and choosing a defensible one is T4E.7.
 
-**T4E.7 Calibrate without replicates *(fixes the rest of D97)* -- SPECIFIED, NOT STARTED.** The
-calibration asks for repeated measurements of one physical configuration and **a real atmospheric
-record contains none**: measured on the acquired record, the distance between two observations of
-one tracked configuration grows monotonically with the gap between them, so what the function
-returns is physical evolution rather than a noise floor. Calibrate against a null instead, which
-is this programme's own idiom (T4F.3, and `surrogate_null.py` already exists): measure the
-distance distribution between configurations the record itself says are unrelated, and locate the
-radius where the observed departs from it. That needs no replicates.
+**T4E.7 Calibrate without replicates *(the second half of D97)* -- DONE.** The calibration
+asks for repeated measurements of one physical configuration and **a real atmospheric record
+contains none**. Calibrate against a null instead: measure the distance distribution the record
+produces between configurations that are not the same one, and locate the radius where the
+observed departs from it. `src/analysis_engine/spectral_null_calibration.py`, verified by
+`src/tests/test_spectral_null_calibration.py`.
 
 **Acceptance:** on a synthetic record with a planted identity the chosen radius recovers the
 planted grouping; on the acquired record a radius is chosen with both error rates published; and
 where the two distributions do not separate the calibration **refuses and returns no radius**
 rather than an indefensible one.
 
-**The question this answers:** whether the T4E.2 signature discriminates at all on real data. If
-it does not, identity may have to be *declared* rather than discovered -- which is what both the
-T4F.5 and T4F.7 suites already do, and what T4F.6's reference catalogue and T4F.7's
-`match_into_catalogue` already implement. That would be a change of scientific model needing its
-own task. Measure before pre-empting it.
+**Met on the first and third clauses. The second is answered rather than met, and the answer is
+the task's main result.** On a synthetic record of twelve configurations observed ten times each,
+the calibration -- which never sees the labels -- chooses radius 0.033979, and against those
+labels it admits **none** of the 6,600 pairs that are not one configuration and groups 462 of the
+540 that are (85.6%); its mixture fraction reads 0.0696 against a true 0.0756. The refusal path
+is exercised on a record where every configuration is observed exactly once, and returns no
+radius. **On the acquired record it also returns no radius**, at two sampling budgets that agree
+to within 0.001 on the band, so publishing a radius anyway would have been the failure this task
+exists to prevent.
+
+**Why the acquired record gives none, in two parts, both measured.** The excess over the
+surrogate-record null *is* significant -- 0.0916 at p = 0.05 -- but its maximum sits at
+`r = 0.8271`, and no radius clears the simultaneous band before the null already admits a quarter
+of its own pairs. In the close-pair tail the excess is **negative**: the record has fewer
+near-identical signature pairs than its own surrogate null, because phase randomisation produces
+a homogeneous field whose few features are generic and therefore alike while the record's are
+diverse. That is **D98**, now in the ledger: the null removes the features as well as their
+recurrence (69,580 signatures against a median of 16,090, a factor of 4.3), so what it measures
+in the bulk is a difference between two feature populations and not recurrence. Separately, under
+the strictest reading of identity -- the same tracked constellation observed again -- the record's
+69,580 signatures come from 64,153 distinct constellations seen a mean of 1.08 times, which puts
+the mixture fraction's ceiling at **2.8e-06**, some 13,700 times below the band. Exact recurrence
+is undetectable on this record by arithmetic rather than by implementation. Recurrence in the
+sense clustering exists for -- different constellations that are the same *kind* -- is not
+bounded by that number and remains open.
+
+**Four design decisions were forced by measurements that contradicted a first implementation**,
+each recorded in `VERIFICATION.md` with the figure that forced it. A Benjamini-Yekutieli sweep
+over 64 radii would have needed 7,588 surrogates on this record to be capable of rejecting
+anything, each a full pipeline re-run, so the test is one maximum statistic with a simultaneous
+band rather than a corrected sweep that would have returned a clean-looking negative. A grid
+spaced evenly in quantile cannot see recurrence below about 1.5% of pairs and steps by 13.9% at
+64 points over 4,000 pairs, so it is geometric and its size is derived from the declared target,
+and a grid too coarse for that target is refused with the count that would suffice. The mixture
+fraction read at the null's median returned **negative** values on a record whose planted
+grouping the separation test had just detected cleanly, so it is read in the close-pair tail
+under a declared cap. And the contamination rate is an **estimate, not a bound** -- an earlier
+draft of this module claimed otherwise, and measurement against labels put it below the truth at
+17 of 73 radii, by up to 0.11 inside the region a radius is chosen from.
+
+**No absolute split rate is published.** It is not identifiable from a record with neither labels
+nor replicates, and the estimate a first implementation did publish read 1.91% against a true
+12.53%. This is the successor to T4E.6's finding that the old rate was zero by construction: the
+fix is not a better estimate of that quantity but the statement that the quantity cannot be had.
+A fifth refusal status was also removed after mutation testing asked what could reach it -- a
+non-positive mixture fraction cannot coexist with a significant excess, because the largest
+observed distance puts `F_obs` at 1 while `F_null` is at most 1.
+
+77 test functions, 93 cases, 38 mutations all killed across two batches. Eleven of the twelve
+first-pass survivors were real gaps and are now bound by tests; the twelfth was the unreachable
+status. **D97 is not closed** -- nothing in the pipeline consumes the new calibration yet, and on
+real data it still yields no radius -- and **D98 is opened**.
+
+**T4E.8 A null that isolates recurrence *(fixes D98)* -- SPECIFIED, NOT STARTED.** T4E.7's
+calibration is sound and has nothing clean to run against. A `spatiotemporal_phase` surrogate
+destroys phase organisation, and phase organisation is what makes a feature, so the null
+population is not the record's features without their recurrence -- it is a different and much
+sparser population, a quarter the size. Every excess it shows in the bulk is therefore a
+comparison between two feature populations, and in the close-pair tail the record's pairs are
+*further apart* than the null's. Build a null that keeps the feature population exactly and
+destroys only the relationship that makes two signatures the same configuration. Two candidates:
+permute which frames a tracked configuration's observations are drawn from, or reassign
+signatures between tracks. Choosing between them is a scientific declaration about what "the same
+configuration" means, not an implementation detail, and it belongs in the task's declaration.
+
+**Acceptance:** the null produces a signature population within a declared factor of the record's
+own, and the factor is published; the calibration recovers a planted grouping against it on
+synthetic data as it does against the present one; and on the acquired record it returns either a
+radius with both rates published or a refusal whose reason is no longer about the null.
+`ATTRIBUTE_PERMUTATION_NULL` already exists in `spectral_null_calibration.py` as the cheap,
+deliberately anti-conservative comparison, and its caveat says why it cannot itself be the answer:
+permuting signature components independently scatters the null off the surface real signatures
+occupy.
+
+**What this cannot fix, and must say so.** Under the strictest reading of identity -- the same
+tracked constellation observed again -- the acquired record's 480-frame slice yields 69,580
+signatures from 64,153 distinct constellations, a mean of 1.08 observations each, and a mixture
+fraction ceiling of 2.8e-06 against a measured band of 0.0387. No null rescues that; the reading
+itself has to change. The question clustering exists for is whether *different* constellations are
+the same kind, and T4E.8 must state which reading its radius is calibrated for before the radius
+means anything.
 
 ### Phase 4F - Transition and Precursor Mining
 
@@ -2511,7 +2585,7 @@ as a pilot and explicitly **not** T4F.6's acceptance.
 catalogue digest, the declared design and every figure's provenance. **A FAIL or an INVALID is a
 success for this task.** What is not acceptable is a verdict nobody can interpret.
 
-**Blocked on:** T4E.7, for an identity worth adjudicating; and on two declarations that are not
+**Blocked on:** T4E.8, for an identity worth adjudicating; and on two declarations that are not
 code -- a frozen, reviewed reference catalogue, and a documented cyclogenesis event declared with
 its source. The draft catalogue exists and matches the acquired record's region exactly; it needs
 four envelopes read and either accepted or corrected. The code refuses to sign it, by design.

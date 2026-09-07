@@ -11874,3 +11874,203 @@ and the assertion should be tightened rather than removed.
 distance falling exactly on the radius was not tested on either side, and the operating-point
 search returned the only qualifying radius on a population where "first" and "smallest" could not
 be told apart. Both are now bound by populations built to distinguish them.
+
+## T4E.7 -- a radius measured against a null, and a record that will not give one (2026-09-08, `ed-dev`)
+
+`src/analysis_engine/spectral_null_calibration.py`, verified by
+`src/tests/test_spectral_null_calibration.py` (77 test functions, 93 cases). Closes the second
+limb of D97 as a *method*; does **not** close D97, and opens D98.
+
+```
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_spectral_null_calibration.py -q
+93 passed, 1 warning in 27.96s
+```
+
+The replicate calibration has no valid input on a real record (D97) and the one rate it reported
+is zero by construction (T4E.6). This asks a question the record can answer instead: how many
+pairs of signatures land close together, and how many would land that close if the record
+contained no recurring configuration at all? The second number is a null. The difference is what
+recurrence has to explain.
+
+### The acceptance, on a synthetic record with a planted identity
+
+Twelve configurations, each observed ten times with 2% jitter; nineteen null populations of the
+same size with no configuration observed twice. The calibration sees only distances.
+
+```
+  status    MEASURED          radius 0.033979
+  separation statistic 0.1593, p = 0.05 (the floor at 19 members), band 0.0595
+  recurrence fraction 0.0696       true fraction 0.0756
+  published  contamination 0.0000   relative loss 0.0699   admission 0.0000
+
+  against the labels it never saw:
+    0 of 6,600 pairs that are NOT the same configuration are admitted
+    462 of 540 pairs that ARE the same configuration are grouped (85.6%)
+```
+
+The refusal path is exercised on the same machinery with every configuration observed exactly
+once: `OBSERVED_DOES_NOT_DEPART_FROM_NULL`, no radius.
+
+### Four design decisions, each forced by a measurement that contradicted the first draft
+
+**A corrected per-radius sweep cannot reject anything.** A surrogate p-value floors at
+`1/(1+n)`; Benjamini-Yekutieli over 64 radii needs a raw p near `alpha / (64 * H_64)`, about
+`1.6e-4`. `multiple_comparisons.required_surrogates` puts that at **7,588 surrogates** for the
+acquired record's sweep, each one a full pipeline re-run over a whole surrogate record. The first
+implementation did exactly this and returned a clean-looking negative on a synthetic record whose
+planted grouping was obvious. The sweep is now **one maximum statistic** -- the largest excess
+anywhere on the curve, with its null distribution built leave-one-out from the ensemble -- which
+is a simultaneous band across every radius at once and owes no correction.
+
+**A grid spaced evenly in quantile cannot see the tail.** Its first point sits at `1/n_radii`,
+above the entire same-configuration mass whenever recurrence is under about 1.5% of pairs. The
+grid is geometric in quantile, and `n_radii` now defaults to whatever resolves the declared
+target rate: a sweep of 64 points over 4,000 pairs steps by **13.9%**, so a target of 10% was
+unreachable for a reason that had nothing to do with the record, and passing a grid too coarse
+for the target is now refused outright with the count that would suffice.
+
+**The mixture fraction read in the bulk is noise.** A record with `C` distinct configurations
+supplies only `C` draws of the unrelated-pair distribution however many signatures it contains,
+so `F_obs` there carries an error of order `1/sqrt(C)` while the fraction being estimated is of
+order `1/C`. Read at the null's median, the estimator returned **negative** fractions
+(-0.4353, -0.7208, -0.6211, -1.0133 across four tuning points) on a synthetic record whose
+planted grouping the separation test had just detected cleanly. It is now read only where the
+excess clears the band and the null fraction is at or below a declared cap of 0.25.
+
+**The contamination rate is an estimate, not a bound.** An earlier draft of this module claimed
+it was an upper bound. Measured against labels on a planted synthetic, at **17 of 73 radii** the
+published rate sat *below* the truth, by up to 0.11 even inside the region a radius is chosen
+from. It substitutes the null's close-pair fraction for the record's own unrelated one, and the
+two differ by however well the null describes the record. It matched the truth exactly at the
+radius actually chosen (0.0000 against 0.0000) and wanders in the bulk, where no operating point
+is ever taken. The limitation is pinned by a test that fails if the rate ever becomes a bound.
+
+### No absolute split rate is published, because none is identifiable
+
+It would be `1 - F_same(r)` with `F_same = excess / pi + F_null`. The fraction is read where the
+same-configuration component is assumed saturated, so where it has not saturated the estimate
+returns `pi * F_same` and every split rate derived from it is optimistic. Measured on a planted
+synthetic against labels the module never saw, the first implementation published **1.91%
+against a true 12.53%**. An error rate optimistic by six-fold is worse than an absent one. This
+is the successor to T4E.6's finding that the old rate was zero by construction: the fix is not a
+better estimate of that quantity but the statement that the quantity cannot be had from a record
+with neither labels nor replicates.
+
+### A refusal that nothing could reach, removed
+
+`NO_RECURRENCE_FRACTION_ESTIMABLE` was a fifth status until mutation testing asked what would
+produce it. The largest observed distance puts `F_obs` at 1 while `F_null` can be at most 1, so
+the maximum excess is non-negative on **every** input; it is zero only when every null distance
+lies inside the record's own range, and then every leave-one-out statistic is non-negative too
+and the p-value is 1. Confirmed over 500 random ensembles: the smallest maximum excess seen was
+0.1539 and no trial was significant with a non-positive one. The status was removed rather than
+left as a refusal nobody could ever see.
+
+### Where the estimator works, measured rather than asserted
+
+Eleven synthetic records, each with a planted grouping, sweeping the number of recurring
+configurations and how often each is observed. `pi` is the true mixture fraction. `R` recurring configurations are each observed `k` times
+alongside `S` configurations observed once, for `N` signatures in all; the jitter is 0.02 unless
+a row says otherwise, and every null member is `N` configurations observed once each.
+
+```
+  R    k    S |    N     pi | status                              pi_hat  spread  radius
+  5   40    0 |  200 0.1960 | RECURRENCE_FRACTION_UNSTABLE        0.1517  0.3171       -
+ 10   20    0 |  200 0.0955 | RECURRENCE_FRACTION_UNSTABLE        0.1520  0.4867       -
+ 20   10    0 |  200 0.0452 | RECURRENCE_FRACTION_UNSTABLE        0.0805  0.1191       -
+ 40    5    0 |  200 0.0201 | OBSERVED_DOES_NOT_DEPART_FROM_NULL       -       -       -
+ 20   10  200 |  400 0.0113 | NO_RADIUS_HOLDS_BOTH_RATES          0.0435  0.0273       -
+ 50    8    0 |  400 0.0175 | OBSERVED_DOES_NOT_DEPART_FROM_NULL       -       -       -
+100    4    0 |  400 0.0075 | NO_RADIUS_HOLDS_BOTH_RATES          0.0402  0.0055       -
+ 25   16    0 |  400 0.0376 | MEASURED  (jitter 0.02)             0.0377  0.0199  0.0462
+ 25   16    0 |  400 0.0376 | MEASURED  (jitter 0.005)            0.0399  0.0227  0.0115
+ 25   16    0 |  400 0.0376 | MEASURED  (jitter 0.08)             0.0331  0.0097  0.1311
+  0    0  400 |  400 0.0000 | OBSERVED_DOES_NOT_DEPART_FROM_NULL       -       -       -
+```
+
+**No row publishes a wrong radius.** Where it measures, the fraction lands within 0.005 of the
+truth; everywhere else it refuses, and the pure-null record refuses on the separation test. The
+unstable rows are the regime where a record contains too few distinct configurations for its own
+unrelated-pair distribution to be sampled, which is a real limitation and is refused rather than
+averaged over.
+
+### On the acquired record: no radius, and the reason is specific
+
+480 frames of the acquired 8,764-frame ERA5 record, levels 3-7, sigma 3.5, cardinality-2
+signatures. The null is nineteen `spatiotemporal_phase` surrogates of the anomaly sequence put
+through the identical pipeline -- decomposition, tracking, constellations, signing -- so it
+carries the record's full 3D power spectrum and its temporal autocorrelation and no coherent
+feature that could recur.
+
+```
+  record        69,580 signatures      null members 13,264 - 19,364, median 16,090
+                                        6,000 pairs        40,000 pairs
+  status                     RECURRENCE_FRACTION_UNSTABLE   RECURRENCE_FRACTION_UNSTABLE
+  radius                                            none                           none
+  maximum excess                    0.0916 at r = 0.8271           0.0858 at r = 0.9347
+  simultaneous band                               0.0387                         0.0398
+  whole-sweep p                                     0.05                           0.05
+  radii clearing the band                      13 of 77                       12 of 97
+  smallest of them             r = 0.3707, F_null 0.2515      r = 0.3926, F_null 0.2768
+  a corrected sweep would need            7,588 surrogates             10,004 surrogates
+```
+
+**The two budgets agree, so the refusal is about the record and not about the sample.** A 6.7x
+increase in sampled pairs moved the band from 0.0387 to 0.0398 and changed nothing else.
+
+**In the close-pair tail the excess is negative.** The record has *fewer* near-identical
+signature pairs than its own surrogate null, at every radius up to a null fraction of about 0.05:
+
+```
+  radius    F_obs    F_null   excess
+  0.0342   0.0072   0.0091  -0.0019
+  0.0614   0.0170   0.0226  -0.0056
+  0.0876   0.0302   0.0360  -0.0058
+  0.1019   0.0400   0.0430  -0.0030
+  0.1207   0.0532   0.0520  +0.0011
+```
+
+Phase randomisation produces a homogeneous field whose features are generic and therefore alike;
+the record's are diverse. The excess only becomes positive from about `r = 0.12` and only clears
+the band from `r = 0.37`, where the null already admits a quarter of its pairs -- which is where
+a difference between two *feature populations* would show, not where recurrence would.
+
+**And the null is not clean**, which the calibration now says by name: the record produced 69,580
+signatures and the median surrogate 16,090, a factor of **4.3**. The null was meant to destroy
+recurrence and keep the features; producing a quarter of them means it removed the structure the
+features are found in. This is D98. The warning is only visible because population sizes travel
+with the distances: both populations had been sampled to a common number of pairs, so no pair
+count could have shown it.
+
+### How much recurrence this record could contain at all
+
+Under the strictest available reading of "the same configuration" -- the same tracked
+constellation, observed again at a later frame -- measured directly on the record:
+
+```
+  signatures                        69,580
+  distinct tracked constellations   64,153
+  observations per constellation    max 8, median 1, mean 1.08
+  observed more than once            4,444  (6.9% of constellations)
+  same-configuration pairs           6,838 of 2,420,653,410
+  ceiling on the mixture fraction    2.825e-06
+```
+
+That ceiling is **13,700 times smaller than the simultaneous band**. Under this reading, exact
+recurrence is undetectable by pair-distance mixture on this record by four orders of magnitude,
+and it is arithmetic rather than an implementation limit: the fraction is quadratically small
+because the record produces many signatures and each configuration is seen about once.
+
+**This does not settle the broader question**, and must not be read as though it did. Clustering
+exists to find that *different* tracked constellations are the same recurring kind, and the
+fraction of pairs that are the same kind is not bounded by the number above. What the acquired
+record shows is that the strict reading is hopeless at this scale, and that the only excess the
+record does exhibit against this null sits in the bulk where a feature-population difference
+would sit.
+
+**Mutation testing: 38 mutations, 38 killed**, across two batches. Twelve survived the first pass
+and eleven of them were real gaps in the suite -- boundaries exactly on the band and exactly on
+the cap, a null member tying the observed fraction, the contamination rate's exact value rather
+than an inequality, the loss's floor at zero, the best-achievable being the smallest worst rate,
+a spread exactly at the tolerance, a distance exactly at a radius, and duplicate radii. The
+twelfth is the removed status above.
