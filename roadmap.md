@@ -56,7 +56,7 @@ skill, show the counterexamples, or report that no robust relationship survives.
 ## 1. Honest Technical Status
 
 Verified against the code on 2026-09-02. Every claim here is backed by captured output in
-`VERIFICATION.md`; `architecture.md` Section 7 holds the full defect ledger (D1-D95, of which **92 fixed, 1 partial (D18), 2 open (D84, D85)**).
+`VERIFICATION.md`; `architecture.md` Section 7 holds the full defect ledger (D1-D96, of which **92 fixed, 1 partial (D18), 3 open (D84, D85, D96)**).
 
 The numbers in this table are checked by `src/tests/test_documentation.py`, which parses them
 out of this file and compares them against the source. That guard exists because this table
@@ -2256,7 +2256,7 @@ not, so the positional fallback is unreachable for anything that can produce a c
 -- depends on a task that does not exist yet and on a real-ERA5 mining pass that has not been
 run. It is outstanding rather than met, and T4F.6 is where it comes due.
 
-**T4F.6 Known-phenomenon cross-reference *(implements R10 - this is a validation gate, not a feature)*** -- PARTIAL (the gate is built and discriminates; it has not been run). Maintain a small reference catalogue of known synoptic precursor phenomena with their expected scale ranges, lags and geometries. Every mined pattern is checked against it and labelled `recognised` / `unrecognised`.
+**T4F.6 Known-phenomenon cross-reference *(implements R10 - this is a validation gate, not a feature)*** -- PARTIAL (the gate is built and discriminates; it has not been run, and as of 2026-09-07 it **cannot** be: the mining pass it adjudicates is blocked by **D96**, an identity step measured at O(n^3.7) against a training period presenting ~843,000 constellations). Maintain a small reference catalogue of known synoptic precursor phenomena with their expected scale ranges, lags and geometries. Every mined pattern is checked against it and labelled `recognised` / `unrecognised`.
 **Acceptance:** on a real ERA5 period containing a documented cyclogenesis event, the mining pass ranks a `recognised` pattern corresponding to it in the top results. **If nothing recognisable is recovered, the pipeline is presumed broken and 4G does not start.** Only then are `unrecognised` high-lift patterns promoted for human review.
 
 **Delivered.** `src/analysis_engine/spectral_reference.py` and 72 tests in

@@ -179,8 +179,16 @@ may reach the network without the maintainer's explicit say-so.
   a design needs is computed from quantities the record can be read for without counting the
   pair under test, and it must be enough to confirm and enough to retract. No proposal has been
   run.
-* Defects **D84** and **D85** are open and **D18** is partial. Ninety-two of ninety-five are
-  fixed. This session found three: **D93** (a time unit dropped at the T4E.2 signing seam, T4F.1),
+* Defects **D84**, **D85** and **D96** are open and **D18** is partial. Ninety-two of ninety-six are
+  fixed. **D96 is the one that gates Phase 4G**: `cluster_signatures` is complete-linkage
+  agglomerative implemented directly, measured at O(n^3.7) on real signatures from the
+  acquired record -- 7.5 s at n=50, 767 s at n=200 -- and the training period of that record
+  presents about 843,000 constellations. Extrapolated conservatively at exponent 3 that is
+  1.8 million years. Every test in the repository clusters tens of points and no document
+  stated the cost anywhere, so it was never known to be the binding constraint. The mining
+  pass T4F.6's gate waits on is therefore not merely unperformed: on the current identity
+  step it cannot be performed, and a replacement changes what a pattern *is* and needs its
+  own task and its own acceptance. This session found three: **D93** (a time unit dropped at the T4E.2 signing seam, T4F.1),
   **D94** (a cache key republished as a `sha256`) and **D95** (untimestamped SPOC cadences), the
   last two by TG17.14's first contact with real archives.
 * The last measured **full backend run is 4,294 passed, 4 skipped, 1 xfailed**, exit 0,

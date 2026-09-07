@@ -11559,3 +11559,121 @@ ERA5 record, which waits on the same mining pass T4F.6's gate waits on.
 4294 passed, 4 skipped, 1 xfailed, 6 warnings in 3991.25s (1:06:31)
 exit code 0
 ```
+
+## The T4F.6 gate run, attempted (2026-09-07, `ed-dev`) -- D96
+
+The maintainer asked for the gate run. It cannot be performed, and the reason is not either of
+the two declarations it was known to be waiting on. **T4E.3's identity clustering does not scale
+to a real record, by about ten orders of magnitude.** This entry records the attempt, what it
+produced, and the measurement that stopped it.
+
+### What was produced, and stands
+
+**The declaration** -- `data/gate_receipts/t4f6-tasman-mining-declaration.json`, written before
+the record was read, sha256 `a649afccda2e3f4025ccb7af3123a3cbae58ada143772a7aea45affd181fcaac`.
+It fixes the detection threshold, the co-presence cap, the split, the climatology model and the
+transform depth, and lists what it does not fix.
+
+Two choices in it are worth naming because both were nearly made the wrong way round:
+
+*   **The threshold.** At sigma 3.5 -- the value every fixture in this programme uses -- a real
+    atmospheric frame holds 25 co-present tracks and `extract_constellations` refuses against
+    its default cap of 24. At sigma 4.0 it fits. Choosing 4.0 for that reason would have let
+    the software's budget decide what counts as a feature. The cap was raised instead; the
+    threshold was left where it was.
+*   **The transform depth.** The programme's existing configuration is four levels. On this grid
+    the bridge measures 13.899 to 27.799 km per cell, so four levels reach 445 km, and three of
+    the catalogue's four entries would have come back unrecognised for a reason with nothing to
+    do with the atmosphere. Level 8 is refused by R13 (support 256 px on a 161-cell field), so
+    seven is the deepest this record admits, and levels 3 to 7 are what the catalogue's own
+    envelopes reach:
+
+```
+  level  support     reach on this grid     catalogue entry            envelope
+    3     8 cells     111 -  222 km         frontal-wave                200-800   levels 3-5
+    4    16 cells     222 -  445 km         cyclone thermal couplet     500-2000  levels 5-7
+    5    32 cells     445 -  890 km         upper-level PV precursor    800-3000  unassessable:
+    6    64 cells     890 - 1779 km                                               single level
+    7   128 cells    1779 - 3558 km         blocking-onset             2000-6000  larger than
+    8   256 cells    REFUSED by R13                                               the record
+```
+
+`blocking-onset` is **unassessable on this crop permanently**, and for a physical reason rather
+than a software one: the crop is 2,226 to 4,184 km wide zonally and 4,453 km meridionally, so
+the upper half of its envelope does not fit inside the record at all.
+
+**The training-only climatology (R11)** -- fitted on the 5,844 frames of 2018-2021 alone,
+streaming one frame at a time so the record is never resident. Rank 9 of 9, condition number
+3.237, `fitted_on_all_frames: False`.
+
+```
+  train  raw var 47.281 -> anomaly var 10.330   78.2% removed   (40 sampled frames)
+  test   raw var 49.568 -> anomaly var 10.744   78.3% removed   (40 sampled frames)
+```
+
+Those two numbers agreeing is the check that matters: a climatology overfitted to its training
+years removes visibly less out of sample, and this one does not.
+
+**The declared configuration runs.** 600 frames of real anomalies at levels 3-7 decompose in
+15.9 s, float32 coefficients are accepted downstream, and tracking takes 11.2 s for 9,248
+features in 6,688 tracks.
+
+### D96 -- `cluster_signatures` is O(n^3.7) and has never been run on more than a few dozen points
+
+`cluster_signatures` is complete-linkage agglomerative clustering implemented directly: every
+iteration enumerates all pairs of surviving clusters, recomputes every cross-distance from
+scratch, and merges one pair. Measured on real signatures from this record:
+
+```
+      n   seconds   patterns   measured exponent
+     50      7.51          3
+    100     60.58          3       3.01
+    200    766.94          4       3.66
+```
+
+Extrapolated at exponent 3 -- **conservative**, since the measurement is 3.66:
+
+```
+  n =    86,562  (600 frames)          6.2e10 s     ~2,000 years
+  n =   843,113  (5,844 train frames)  5.8e13 s     ~1,800,000 years
+```
+
+600 frames of this record produce 86,562 cardinality-2 constellations; the training period
+produces about 843,000. Every test in this repository clusters tens of points, no test clusters
+more than a few dozen, and **no document states the algorithm's cost anywhere**. It was never
+characterised, so it was never known to be the binding constraint.
+
+This is not a compute budget that a longer run would clear. An optimal exact complete-linkage
+implementation is O(n^2 log n) with O(n^2) memory, which at n = 843,000 is 7e11 pairs and
+infeasible on any machine this programme targets. **The identity step needs a different
+algorithm at this scale, not a faster version of this one** -- blocking or bucketing on the
+signature space, or a streaming leader assignment -- and since a change there changes what a
+"pattern" *is*, it is a scientific component and needs its own task, its own acceptance, and a
+demonstration that it agrees with the present definition wherever the present one can be run.
+
+Two budgets were also found to bind, and both refuse rather than sample, which is correct:
+
+```
+  max_nodes_per_frame   45 observed in 600 frames against a raised cap of 48
+  max_constellations    ~843,000 projected against a default of 200,000
+```
+
+### An observation, not yet a finding
+
+At n = 200 the clustering returned **4 patterns**, and at n = 50 it returned 3, against a
+calibrated tolerance of 0.8387. A catalogue of four patterns drawn from thirty-one thousand
+configurations is barely discriminating, and it points the same way as T4F.7's measurement that
+T4E.2's signature is invariant to rotation by construction and cannot separate band
+orientations. Whether the tolerance calibration is too permissive on real data is a separate
+question from D96 and has not been established here -- n only reached 200.
+
+### What this means for the gate
+
+**Phase 4G remains gated, and the reason has changed.** It was recorded as waiting on three
+things: a maintainer-frozen catalogue, a documented event declared with its source, and a mining
+pass that had never been run. The first two still wait on the maintainer and are unchanged. The
+third is not merely unperformed: **on the current implementation it cannot be performed**, and
+the roadmap's wording understated that because nobody had measured the identity step.
+
+Nothing here adjudicates anything. No pattern was labelled, no gate verdict was reached, and the
+draft catalogue remains unsigned.

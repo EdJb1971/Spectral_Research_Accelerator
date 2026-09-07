@@ -1,0 +1,156 @@
+{
+  "schema": "t4f6-mining-pass-declaration/v1",
+  "declared_by": "Edward Jonathan Bentley, maintainer (analysis parameters); drafted by Claude Opus 5 at the maintainer's direction",
+  "declared_on": "2026-09-07",
+  "status": "declared_before_the_record_was_read",
+  "purpose": "The T4D-T4F.5 mining pass over the acquired ERA5 record, whose output T4F.6's physical_gate is to adjudicate. This file fixes every analysis choice before any of them could be informed by a result. It is written first and digested so that a choice changed afterwards is visible as a changed digest rather than as a better answer.",
+  "record": {
+    "path": "data/era5_cache/a07c23ec89f953c1.zarr",
+    "variable": "t",
+    "level_hpa": 850,
+    "frames": 8764,
+    "shape": [
+      161,
+      161
+    ],
+    "latitude_range": [
+      -20.0,
+      -60.0
+    ],
+    "longitude_range": [
+      140.0,
+      180.0
+    ],
+    "first_time_unix": 1514764800,
+    "last_time_unix": 1704045600,
+    "cadence_hours": 6.0,
+    "span": "2018-01-01T00:00Z to 2023-12-31T18:00Z, six whole years"
+  },
+  "detection_threshold": {
+    "threshold_sigma": 3.5,
+    "grounds": "The value every fixture in this programme uses, carried across unchanged rather than re-chosen here. It is declared on that basis and not on what the enumeration could hold.",
+    "max_nodes_per_frame": 48,
+    "cap_grounds": "Raised from the default 24 because a real atmospheric frame at this threshold holds up to 25 co-present tracks and the default refuses rather than samples. Raising the cap preserves complete enumeration; lowering the threshold until it fit would have let the software's budget decide what counts as a feature. Pairs are O(n^2), so the worst measured frame emits 300 constellations and the cost of the raise is negligible.",
+    "measured_before_declaring": {
+      "slice": "first 120 frames",
+      "features_at_3.5": 1378,
+      "per_frame_mean": 11.5,
+      "per_frame_max": 25,
+      "note": "This measurement was taken to size the cap, not to choose the threshold."
+    }
+  },
+  "split": {
+    "rule": "R6 and R11",
+    "train": {
+      "from": "2018-01-01T00:00Z",
+      "to": "2021-12-31T18:00Z",
+      "frames": 5844,
+      "whole_annual_cycles": 4
+    },
+    "test": {
+      "from": "2022-01-01T00:00Z",
+      "to": "2023-12-31T18:00Z",
+      "frames": 2920,
+      "whole_annual_cycles": 2
+    },
+    "climatology": "Fitted on the training frames alone (R11), then subtracted from every frame including the held-out ones. No test-period value enters the fit.",
+    "identity": "Any clustering that defines what a pattern is runs on training constellations only; held-out constellations are matched into the resulting catalogue at its own calibrated tolerance and never re-clustered (R6, and T4F.7's leakage rule)."
+  },
+  "climatology_model": {
+    "method": "streaming harmonic, fit_harmonic_climatology_stream",
+    "periods_hours": [
+      24.0,
+      8766.0
+    ],
+    "n_harmonics": 2,
+    "rank_rtol": 1e-10,
+    "grounds": "The diurnal and annual cycles with two harmonics each, which is this programme's declared default and is not tuned here."
+  },
+  "transform": {
+    "family": "swt",
+    "levels": 7,
+    "wavelet": "haar",
+    "levels_read": [
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "grounds": "The undecimated transform because T4F.5's projection requires every scale to share the parent grid. The depth is not a preference: level 8 has support 256 px and the transform refuses it on a 161-cell field under R13, so 7 is the deepest this record admits. Levels 3 to 7 are read because that is what the catalogue's own declared envelopes reach on this grid, measured through the T4F.6 bridge rather than chosen.",
+    "reach_km_per_level": {
+      "3": [
+        111.2,
+        222.4
+      ],
+      "4": [
+        222.4,
+        444.8
+      ],
+      "5": [
+        444.8,
+        889.6
+      ],
+      "6": [
+        889.6,
+        1779.1
+      ],
+      "7": [
+        1779.1,
+        3558.3
+      ]
+    },
+    "cell_km": [
+      13.899,
+      27.799
+    ],
+    "amended": "Superseded the initial levels=4, which was carried across from the programme's existing configuration before the bridge had been consulted. At 4 levels the deepest reach is 445 km and three of the catalogue's four entries could not have been seen at all, so every one of them would have come back unrecognised for a reason with nothing to do with the atmosphere. Amended before any mining was performed and before any result existed to be informed by."
+  },
+  "what_this_declaration_does_not_fix": [
+    "RESOLVED before the pass: which scales the analysis reads. It was derived from the reference catalogue's own declared envelopes through the T4F.6 physical bridge -- a measurement of this grid, not a choice -- and is recorded in `transform` above, together with the amendment it superseded.",
+    "The precursor lag family, the null, the surrogate count, the alpha and the correction. These are T4F.3's declaration and are to be fixed in the same manner before any counting.",
+    "The reference catalogue itself, which is a separate scientific declaration the maintainer must freeze and sign. The code refuses to sign it and this file does not stand in for that signature.",
+    "The documented cyclogenesis event and its source, which the gate declaration requires as its period justification."
+  ],
+  "claim_boundary": "This file declares a design. It records no result, licenses no claim, and its existence does not mean the mining pass has been run or that the gate has been adjudicated.",
+  "envelope_coverage": {
+    "frontal-wave": {
+      "envelope_km": [
+        200,
+        800
+      ],
+      "reachable": "fully, levels 3-5"
+    },
+    "extratropical-cyclone-thermal-couplet": {
+      "envelope_km": [
+        500,
+        2000
+      ],
+      "reachable": "fully, levels 5-7"
+    },
+    "upper-level-pv-precursor": {
+      "envelope_km": [
+        800,
+        3000
+      ],
+      "reachable": "levels 6-7, but the entry is unassessable on this record regardless: it needs an upper level and this is a single-level field"
+    },
+    "blocking-onset": {
+      "envelope_km": [
+        2000,
+        6000
+      ],
+      "reachable": "levels 7 reaches 3558 km and no further -- level 8 is refused by R13 on a 161-cell field, and the crop is itself only 2226 to 4184 km wide zonally and 4453 km meridionally. The upper half of this envelope is larger than the record. Expected to return unassessable on scale, which is the true answer and is not the same as unrecognised."
+    }
+  },
+  "execution": {
+    "decomposition": "Chunked in time, cast to float32 and reduced to the read levels before accumulation, because the whole record at this depth is 27.3 GB in float64 against 15.3 GB of memory. The arithmetic is unchanged; only what is held at once is.",
+    "tracking": "The training and test periods are tracked separately. They are disjoint by declaration, so the single track boundary this creates is one the design already draws, and no track is broken that the split did not already break.",
+    "measured_costs": {
+      "decompose_s_per_frame": 0.017,
+      "track_s_per_120_frames": 5.76,
+      "basis": "measured on the first 120 and 200 frames of this record"
+    },
+    "known_risk": "At levels 3-7 more bands are read than the 120-frame probe measured at one level, so the raised co-presence cap of 48 may still bind. If it does the extraction refuses rather than samples, and that refusal is to be reported rather than worked around by lowering the threshold."
+  }
+}

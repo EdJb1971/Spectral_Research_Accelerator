@@ -214,7 +214,14 @@ supersedes the other.
 * Last measured browser suite: **136/136** in Chromium from a cleaned `.e2e-state` (2026-09-04).
   It is inventoried in `architecture.md` section 7.4a; it is the only check here that proves a
   page renders.
-* Open defects: **D84 and D85**; D18 partial. D43 is closed. D91, the scale/shape null
+* Open defects: **D84, D85 and D96**; D18 partial. D43 is closed. **D96 gates Phase 4G**: the
+  identity step that turns signed configurations into patterns is complete-linkage clustering
+  implemented directly, measured on real signatures from the acquired record at 7.5 s for 50
+  points, 61 s for 100 and 767 s for 200 -- an exponent of about 3.7 -- against a training
+  period that presents roughly 843,000 of them. It was never characterised, because every
+  test in the repository clusters a few dozen points. The mining pass the T4F.6 gate
+  adjudicates is therefore not merely unperformed; on this implementation it cannot be
+  performed. D91, the scale/shape null
   deranging list positions rather than pairings, is fixed in TG17.11's first slice. Fixing
   it established two facts about the declared families themselves: four domains compared
   all-against-all admit exactly one distinguishable reassignment, and the three that admit
