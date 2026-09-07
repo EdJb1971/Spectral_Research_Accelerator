@@ -214,7 +214,16 @@ supersedes the other.
 * Last measured browser suite: **136/136** in Chromium from a cleaned `.e2e-state` (2026-09-04).
   It is inventoried in `architecture.md` section 7.4a; it is the only check here that proves a
   page renders.
-* Open defects: **D84, D85 and D96**; D18 partial. D43 is closed. **D96 gates Phase 4G**: the
+* Open defects: **D84, D85, D96 and D97**; D18 partial. D43 is closed. **`PLAN.md` orders
+  what remains.** **D97 is the one that gates everything**: the tolerance deciding what a
+  *pattern* is is calibrated from repeated measurements of one physical configuration, and a
+  real atmospheric record contains none -- the distance between two observations of one
+  tracked configuration grows monotonically with the gap between them, so what comes back is
+  physical evolution rather than a noise floor. Its complementary error rate has never been
+  computed. Measured on three slices spanning the acquired record, at the radius that splits
+  5% of same-configuration pairs, 60-69% of pairs from different configurations are admitted.
+  **D96 is downstream of it**: because most pairs fall inside the radius, the tolerance graph
+  is one connected component, which is what makes the clustering unusably slow. **D96 gates Phase 4G**: the
   identity step that turns signed configurations into patterns is complete-linkage clustering
   implemented directly, measured on real signatures from the acquired record at 5.5 s for 50
   points, 40 s for 100 and 347 s for 200 -- an exponent of about 3 -- against a training

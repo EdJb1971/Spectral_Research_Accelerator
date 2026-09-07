@@ -11688,3 +11688,92 @@ the roadmap's wording understated that because nobody had measured the identity 
 
 Nothing here adjudicates anything. No pattern was labelled, no gate verdict was reached, and the
 draft catalogue remains unsigned.
+
+## D97 -- the identity calibration has no valid input on a real record (2026-09-07, `ed-dev`)
+
+Measured while deciding how to fix D96. It is recorded before any fix because it changes what
+the fix should be: D96 -- the identity step being unusably slow -- turns out to be a symptom of
+this, and making the clustering faster would have delivered the same unfounded answer sooner.
+
+### What the calibration asks for, and what a real record can give it
+
+`calibrate_signature_tolerance` takes `replicates` -- *"at least two measurements of the same
+physical configuration"* -- and returns their largest pairwise distance, describing it as a
+measured noise floor with an approximate single-comparison **false-rejection** rate of
+1/(pairs+1). That is a sound procedure when replicates exist. Every fixture in this programme
+plants the same structure repeatedly and varies only the noise, so every test passes.
+
+**A real atmospheric record contains no replicates.** The atmosphere is never in the same state
+twice. The closest thing available is the same tracked configuration at successive frames, and
+that is not a replicate either -- it is the same structure six hours older. Measured on the
+acquired record, the distance between two observations of one track set grows monotonically with
+the gap between them:
+
+```
+  gap (frames)      n     median      q95      max
+        1        1686     0.2359   0.6612   1.1478
+        2         983     0.3148   0.6989   1.1125
+        3         280     0.3176   0.7291   1.0497
+        4          99     0.3673   0.8229   0.9240
+        5          36     0.4902   0.8717   0.9091
+```
+
+That gradient is physical evolution. Whatever is handed to the calibration on a real record, the
+number that comes back is dominated by how much the atmosphere changed between looks, not by how
+precisely the signature measures.
+
+### The error rate that was never computed
+
+Against pairs drawn from *different* track sets (median 0.5451, q95 1.1100), even the tightest
+same-configuration sample -- adjacent frames only -- overlaps almost completely:
+
+```
+  radius                          same-configuration split   different-set pairs admitted
+  1.1478  (max of adjacent)                  0.00%                      97.08%
+  0.6612  (q95 of adjacent)                  5.04%                      61.69%
+  0.2359  (median of adjacent)              50.00%                      11.88%
+```
+
+There is no good radius. At a 5% false-split rate the radius admits **62%** of pairs drawn from
+different configurations; to admit only 12% it must split half of all same-configuration pairs.
+The standardised separation of the two distributions is 1.172.
+
+**Confirmed on three 480-frame slices spanning the record**, so this is a property of the
+instrument on this data and not of one window:
+
+```
+  slice          separation   admitted at a 5% false-split radius
+  frames    0- 480   1.172                61.69%
+  frames 4000-4480   0.879                69.27%
+  frames 7500-7980   1.620                60.20%
+```
+
+### One caveat, stated plainly
+
+"Different track sets" is **not** the same as "different pattern types". Grouping distinct
+occurrences into one pattern is precisely what the clustering is *for*, so a pair from two track
+sets falling inside the radius is not by itself an error, and the admission figures above are
+therefore not a false-acceptance rate. What the measurement does establish is narrower and still
+decisive: the spread between observations of *one* configuration is comparable to the spread
+across the whole population, so any radius calibrated from the former necessarily admits most of
+the latter.
+
+### Why this gates the phase
+
+Because most pairs lie inside the calibrated radius, the tolerance graph on this record is a
+single connected component from about a thousand configurations upward, and the clustering
+returns a few very large patterns -- 25 patterns from 8,000 configurations, averaging 320
+members. Any precursor rule mined on those identities is a statement about very large,
+heterogeneous categories, and the T4F.6 gate would be adjudicating patterns whose discrimination
+has never been measured.
+
+This also explains three earlier observations that were recorded separately and never connected:
+T4F.7's measurement that T4E.2's signature is invariant to rotation by construction and cannot
+separate band orientations; and the fact that both the T4F.5 and T4F.7 suites built their
+catalogues by **declaration** rather than by clustering, because clustering would not separate
+what those tests needed.
+
+**Not claimed.** No fix is attempted here. Whether the signature can be made more discriminating,
+and whether identity should be declared rather than discovered, are T4E.6 and T4E.7's questions.
+Nothing about the acquired record's physics is claimed either: this is a measurement of the
+instrument, taken on real data.

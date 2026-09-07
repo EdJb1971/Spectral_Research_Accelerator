@@ -179,8 +179,9 @@ may reach the network without the maintainer's explicit say-so.
   a design needs is computed from quantities the record can be read for without counting the
   pair under test, and it must be enough to confirm and enough to retract. No proposal has been
   run.
-* Defects **D84**, **D85** and **D96** are open and **D18** is partial. Ninety-two of ninety-six are
-  fixed. **D96 is the one that gates Phase 4G**: `cluster_signatures` is complete-linkage
+* Defects **D84**, **D85**, **D96** and **D97** are open and **D18** is partial. Ninety-two of ninety-seven are
+  fixed. **`PLAN.md` orders what remains across both lines**; this document is the cross-domain
+  task history. **D97 gates the science line and D96 is downstream of it.** **D96 is the one that gates Phase 4G**: `cluster_signatures` is complete-linkage
   agglomerative implemented directly, measured at about O(n^3) on real signatures from the
   acquired record -- 5.5 s at n=50, 347 s at n=200 -- and the training period of that record
   presents about 843,000 constellations. Extrapolated at exponent 3 that is

@@ -53,6 +53,11 @@ def licence():
 
 
 @pytest.fixture(scope="module")
+def plan():
+    return _read("PLAN.md")
+
+
+@pytest.fixture(scope="module")
 def readme():
     return _read("README.md")
 
@@ -542,6 +547,44 @@ def _readme_frontier(readme):
     end = readme.find("**What has not been done**", start)
     assert end != -1, "the frontier block must be followed by the '**What has not been done**' list"
     return readme[start:end]
+
+
+def test_plan_disclaims_being_the_status_of_record(plan):
+    """PLAN.md is the plan. If it starts carrying evidence it becomes a fourth thing to keep
+    in step, which is the problem it was written to solve."""
+    flat = " ".join(plan.split())
+    assert "This document is the plan, and only the plan" in flat
+    assert "they are right and this is stale" in flat
+    for pointer in ("roadmap.md", "architecture.md", "VERIFICATION.md"):
+        assert pointer in plan, "PLAN.md must name %s as where the record lives" % pointer
+
+
+def test_plan_open_defects_match_the_ledger(plan, architecture):
+    """Every defect the plan calls blocking must be open in the ledger, and every open defect
+    must be either in the plan's order or in its deliberately-not-next list."""
+    import re as _re
+    open_ids = {row.split("|")[1].strip()
+                for row in architecture.splitlines()
+                if row.startswith("| D") and "**OPEN**" in row}
+    named = set(_re.findall(r"D[0-9]+", plan))
+    missing = open_ids - named
+    assert not missing, (
+        "PLAN.md does not account for open defect(s) %s -- put them in the order or in "
+        "'Deliberately not next'" % ", ".join(sorted(missing)))
+    invented = {item for item in named if item not in open_ids
+                and "| %s |" % item not in architecture}
+    assert not invented, "PLAN.md names defect(s) the ledger does not define: %s" % invented
+
+
+def test_plan_does_not_mark_work_done_that_the_roadmap_has_not(plan, roadmap):
+    """The plan may say a task is in progress or not started. It may not award a DONE the
+    task history has not recorded, because the evidence lives there and not here."""
+    import re as _re
+    for task in _re.findall(r"### (T4[A-Z]\.\d+)", plan):
+        assert "**%s" % task in roadmap or task in roadmap, (
+            "PLAN.md plans %s but roadmap.md does not define it" % task)
+    assert "DONE" not in plan, (
+        "PLAN.md must not record completions; roadmap.md is where a DONE carries its evidence")
 
 
 def test_readme_disclaims_being_the_status_of_record(readme):

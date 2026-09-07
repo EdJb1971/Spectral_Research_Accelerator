@@ -56,7 +56,7 @@ skill, show the counterexamples, or report that no robust relationship survives.
 ## 1. Honest Technical Status
 
 Verified against the code on 2026-09-02. Every claim here is backed by captured output in
-`VERIFICATION.md`; `architecture.md` Section 7 holds the full defect ledger (D1-D96, of which **92 fixed, 1 partial (D18), 3 open (D84, D85, D96)**).
+`VERIFICATION.md`; `architecture.md` Section 7 holds the full defect ledger (D1-D97, of which **92 fixed, 1 partial (D18), 4 open (D84, D85, D96, D97)**). **`PLAN.md` is where the remaining work is ordered**; this document is the task history and the evidence.
 
 The numbers in this table are checked by `src/tests/test_documentation.py`, which parses them
 out of this file and compares them against the source. That guard exists because this table
@@ -132,7 +132,7 @@ is partial. Phase 3.5's 25 implementation tasks are complete; the literal screen
 requested by T3.5.0 is still absent, and D18's cross-device agreement remains partial because
 only the T5.1a-e slice has CPU/CUDA parity evidence and ROCm/MPS are unmeasured. Phase 4A-4C.6
 are complete through the recorded real-data PASS; a separate human review of that receipt
-remains. T4D.1-3, T4E.1-4 and T4F.1-5 are complete and T4F.6 is partial -- the physical gate is built and discriminates, but it has never been run, so 4G is still gated. T4F.7 and T4F.8 are complete. 4G and optional 4H remain
+remains. T4D.1-3, T4E.1-4 and T4F.1-5 are complete and T4F.6 is partial -- the physical gate is built and discriminates, but it has never been run, so 4G is still gated. T4F.7 and T4F.8 are complete. **T4E.5 is in progress and T4E.6, T4E.7 and T4F.9 are specified and not started** -- see `PLAN.md`, which orders what remains. 4G and optional 4H remain
 undone. See
 Section 4 for per-task evidence.
 
@@ -1987,6 +1987,54 @@ two-occurrence cluster: minimum support three retains exactly the former. The re
 this deterministic frequency filter is not recurrence significance, a null test, predictive
 evidence or a discovery.
 
+**T4E.5 The identity step at record scale *(fixes D96)* -- IN PROGRESS.** `cluster_signatures`
+is complete-linkage agglomerative clustering implemented directly, measured at about O(n^3) on
+real signatures, against a training period presenting some 843,000 configurations. Replace the
+implementation without touching the definition.
+
+`src/analysis_engine/spectral_identity.py` exists and is exact where tested: identical receipts
+against the original on the acquired ERA5 record at 79x, 200x and 393x speedups, and about
+O(n^1.6). **It is not finished.** 26 of 37 mutants are killed and eleven are alive, including the
+radius condition, the exact verification behind the box filter, the weights in the vectorised
+distance, the family check and the pattern ordering. It also does not yet close D96: the
+cross-distance matrix is dense per component, and on this record the tolerance graph is a single
+component, so 843,000 configurations would need 5.7 TB.
+
+**Acceptance:** every mutant killed or argued equivalent; the cross-distances sparse, which the
+Lance-Williams update supports because a merged cluster's neighbours are the intersection of its
+parents'; and the ceiling re-measured on the acquired record.
+
+**T4E.6 Publish what the tolerance admits *(fixes half of D97)* -- SPECIFIED, NOT STARTED.**
+`calibrate_signature_tolerance` states a false-rejection rate and never computes the
+complementary one -- how often the radius admits pairs the record does not call the same
+configuration -- and that is the rate deciding whether a pattern means anything. Make the
+calibration two-sided: both error rates, both distributions, their overlap and their separation,
+returned together and refused apart.
+
+**Acceptance:** a tolerance cannot be obtained without both rates attached; on the acquired record
+the receipt reproduces D97's measured figures; and on a synthetic record with a planted identity
+the two rates move in opposite directions as the radius is swept.
+
+**T4E.7 Calibrate without replicates *(fixes the rest of D97)* -- SPECIFIED, NOT STARTED.** The
+calibration asks for repeated measurements of one physical configuration and **a real atmospheric
+record contains none**: measured on the acquired record, the distance between two observations of
+one tracked configuration grows monotonically with the gap between them, so what the function
+returns is physical evolution rather than a noise floor. Calibrate against a null instead, which
+is this programme's own idiom (T4F.3, and `surrogate_null.py` already exists): measure the
+distance distribution between configurations the record itself says are unrelated, and locate the
+radius where the observed departs from it. That needs no replicates.
+
+**Acceptance:** on a synthetic record with a planted identity the chosen radius recovers the
+planted grouping; on the acquired record a radius is chosen with both error rates published; and
+where the two distributions do not separate the calibration **refuses and returns no radius**
+rather than an indefensible one.
+
+**The question this answers:** whether the T4E.2 signature discriminates at all on real data. If
+it does not, identity may have to be *declared* rather than discovered -- which is what both the
+T4F.5 and T4F.7 suites already do, and what T4F.6's reference catalogue and T4F.7's
+`match_into_catalogue` already implement. That would be a change of scientific model needing its
+own task. Measure before pre-empting it.
+
 ### Phase 4F - Transition and Precursor Mining
 
 **T4F.1 New substrate.** The existing engine mines *scalar run metrics* out of flattened `results` JSON and structurally **cannot** express `A4 -> A8 -> B8 -> C16`. This needs an event table and sequence counting, not another correlation loop. - **DONE**
@@ -2432,6 +2480,21 @@ what the discovery implies rather than anything measured on the target ground. W
 platform executes its own proposals is Phase 4G's question, not this one's.
 
 ---
+
+**T4F.9 The pilot: one honest end-to-end result -- SPECIFIED, NOT STARTED.** The instrument has
+never produced a scientific claim about the atmosphere. Run the whole loop on a **declared**
+design small enough to finish and large enough for the statistics -- climatology, anomalies,
+tracking, constellations, identity, sequences, precursors, projection and the gate -- declared
+as a pilot and explicitly **not** T4F.6's acceptance.
+
+**Acceptance:** a gate verdict, PASS or FAIL or INVALID, with a receipt naming the frozen
+catalogue digest, the declared design and every figure's provenance. **A FAIL or an INVALID is a
+success for this task.** What is not acceptable is a verdict nobody can interpret.
+
+**Blocked on:** T4E.7, for an identity worth adjudicating; and on two declarations that are not
+code -- a frozen, reviewed reference catalogue, and a documented cyclogenesis event declared with
+its source. The draft catalogue exists and matches the acquired record's region exactly; it needs
+four envelopes read and either accepted or corrected. The code refuses to sign it, by design.
 
 ### Phase 4G - `RepresentationScore`
 
