@@ -43,6 +43,13 @@ D98 remains open for recurrence inference and is not repaired by this labelled a
 ### T4E.8 ? Finish a defensible identity definition and its validation ? in progress
 
 Slices 1 and 2 are implemented; the acquired-record acceptance remains unmet.
+**Slice 3 is specified in `roadmap.md` and not started.** It makes the identity target a
+declared, enumerated field the audit refuses to run without, types the label source by
+provenance, refuses `kind_recurrence` against record-derived proxy labels as circular, opens
+the external-reference path through `match_into_catalogue`, and surfaces target, evidence and
+refusal in the interface. It is deliberately question-preserving: it blocks the unanswered
+question rather than answering it, and it must reproduce the slice-2 figures bit-for-bit.
+Slice 3 does not close this task; item 1 below remains the maintainer's decision.
 
 Next:
 

@@ -132,7 +132,7 @@ is partial. Phase 3.5's 25 implementation tasks are complete; the literal screen
 requested by T3.5.0 is still absent, and D18's cross-device agreement remains partial because
 only the T5.1a-e slice has CPU/CUDA parity evidence and ROCm/MPS are unmeasured. Phase 4A-4C.6
 are complete through the recorded real-data PASS; a separate human review of that receipt
-remains. T4D.1-3, T4E.1-4 and T4F.1-5 are complete and T4F.6 is partial -- the physical gate is built and discriminates, but it has never been run, so 4G is still gated. T4F.7 and T4F.8 are complete. **T4E.5 is in progress, T4E.6 and T4E.7 are done, and T4E.8 is in progress (slices 1 and 2 implemented, acquired-record acceptance unmet), and T4F.9 is not started** -- see `PLAN.md`, which orders what remains. 4G and optional 4H remain
+remains. T4D.1-3, T4E.1-4 and T4F.1-5 are complete and T4F.6 is partial -- the physical gate is built and discriminates, but it has never been run, so 4G is still gated. T4F.7 and T4F.8 are complete. **T4E.5 is in progress, T4E.6 and T4E.7 are done, T4E.8 is in progress (slices 1 and 2 implemented, acquired-record acceptance unmet, slice 3 specified), and T4F.9 is not started** -- see `PLAN.md`, which orders what remains. 4G and optional 4H remain
 undone. See
 Section 4 for per-task evidence.
 
@@ -2100,7 +2100,7 @@ first-pass survivors were real gaps and are now bound by tests; the twelfth was 
 status. **D97 is not closed** -- nothing in the pipeline consumes the new calibration yet, and on
 real data it still yields no radius -- and **D98 is opened**.
 
-**T4E.8 A radius the record's own labels can defend *(addresses D98, D99, D100)* -- IN PROGRESS; slices 1 and 2 implemented, acquired-record acceptance unmet.**
+**T4E.8 A radius the record's own labels can defend *(addresses D98, D99, D100)* -- IN PROGRESS; slices 1 and 2 implemented, acquired-record acceptance unmet, slice 3 specified and not started.**
 
 *Specified below as a null-building task. Slice 1 measured that the null was not the binding constraint, so everything from here to the slice-1 block is the superseded specification, kept because the reasoning in it is why the measurement was worth taking.*
 
@@ -2205,6 +2205,92 @@ audit is approved for mining. A second, explicitly descriptive design amendment 
 no threshold or acceptance criterion. Both audit versions remain in
 `data/identity_calibration/`. T4E.8 stays open; a cleaner null, the pilot and scaling do not
 turn its failed discrimination criterion into a pass.
+
+**T4E.8 slice 3 -- Make the identity target a declared object the audit must be given -- SPECIFIED, NOT STARTED.**
+
+*Slice 2 failed its criterion, and the reason it failed is not a threshold. Three distinct
+questions -- continuity of an evolving tracked constellation, persistence of a spatial
+configuration, and recurrence of the same physical kind in a different constellation -- were
+being measured with one mechanism and one label source, and nothing in the design said which
+was intended. This slice does not answer that question. It makes the question askable, refuses
+to proceed while it is unanswered, and makes the third target evaluable at all. Choosing the
+target remains a scientific act for the maintainer, not a default the software supplies.*
+
+**The gap this addresses.** `data/identity_calibration/t4e8-spatial-design-v2.json` has a
+`labels` field, but it is prose describing the track-key mechanism; there is no field anywhere
+that states what those labels are evidence *for*. `tools/audit_spatial_identity.py:_labels`
+derives repeat and unrelated pairs from `sorted(track_ids)` inline, so the tool can only ever
+evaluate track continuity and spatial persistence. Recurrence of a physical kind -- the target
+the mining, sequence and precursor machinery downstream actually requires -- is not merely
+unmeasured, it is currently unevaluable, because the only label source available is derived
+from the same record the identity is derived from. `spectral_identity_audit.py` is already
+label-agnostic; it takes distance sequences and knows nothing about where they came from. The
+defect is above it, in the tool and the design.
+
+**Limb 1: a declared target.** An `identity_target` field becomes required in the audit design.
+It is enumerated, not free text -- `track_continuity`, `spatial_persistence`, `kind_recurrence`
+-- and each enumerant carries, as data rather than commentary, what it claims to recognise,
+which evidence classes can validate it, and what a pass under it does not license. A design
+without the field is refused by name before any source value is read. The refusal names the
+three targets rather than selecting one.
+
+**Limb 2: label provenance, and the circularity check.** The label source becomes a declared,
+typed input with an explicit provenance class: `record_derived_proxy` for tracked keys, and
+`external_reference` for labels from a reviewed catalogue supplied from outside the record.
+`_labels` becomes one implementation of that interface rather than the only path, and an
+external-reference source consuming an existing `PatternCatalogue` through
+`spectral_regions.py:match_into_catalogue` becomes the second. Its centroids, metric and radius
+already come from the supplied catalogue and none of them moves, which is the property that
+makes a held-out evaluation possible.
+
+The pairing of target and evidence class is then checked, and this is the substantive limb.
+`kind_recurrence` declared against `record_derived_proxy` labels must be **refused by name**,
+because tracked keys are produced by the same record and pipeline whose identity is under test,
+and a definition validated against them is validated against itself. Equally, `track_continuity`
+against those labels must state in the receipt that a high score demonstrates agreement with
+the tracker rather than independent identity. Neither refusal nor caveat may be suppressed by a
+flag. This check is the one mechanism that would have caught the present confusion without a
+human noticing it.
+
+**Limb 3: the choice is surfaced, not buried.** The declared target, its evidence class, its
+claim boundary and any refusal from limb 2 appear in the interface alongside the audit's
+numbers, at equal weight to them. A refusal to evaluate a target on inadmissible labels is a
+first-class result and renders as one. No accessibility level and no rendered-evidence claim is
+made without its captured evidence, per the standing constraint.
+
+**What this slice explicitly does not do.** It does not choose the target. It does not supply,
+review or sign a catalogue -- code does not sign a scientific declaration for a person. It does
+not approve a mining radius, alter the frozen mining declaration, change any threshold, window
+or weight, or re-open the slice-2 verdict. It closes neither T4E.8 nor D97, D98, D99 or D100.
+It converts an unaskable question into a blocked one, which is the only progress available while
+the target is undecided.
+
+**Acceptance.**
+
+1. A design lacking `identity_target` is refused by name, before source values are read, with
+   the three targets and their evidence classes stated in the refusal.
+2. Each of the three targets round-trips into the receipt with its evidence class, its claim
+   boundary and its provenance.
+3. `kind_recurrence` against `record_derived_proxy` labels is refused by name, and the refusal
+   states the circularity rather than a generic validation message. `track_continuity` against
+   the same labels publishes its tracker-agreement caveat in the receipt.
+4. **The slice-2 design, amended only by adding `identity_target: spatial_persistence` and
+   `evidence_class: record_derived_proxy`, reproduces `t4e8-spatial-audit-v2-clean.json`
+   bit-for-bit on every census, error, AUC, stratum and feasibility figure.** A declaration
+   mechanism that moves a measurement is a defect in the mechanism.
+5. The `external_reference` path is exercised end to end against a synthetic catalogue with a
+   planted identity, recovering it, and against one whose family or scope does not match the
+   signatures, refusing it.
+6. The interface renders target, evidence class, boundary and refusal, with captured evidence.
+7. Targeted mutation testing to the standard set by slice 2 -- every mutation of the new
+   admissibility and refusal logic killed by a failing test, with no timeout or collection
+   failure counted as a kill.
+
+**Dependency note.** Slice 3 unblocks the maintainer's decision; it does not substitute for it.
+Whichever target is chosen, `kind_recurrence` additionally requires a reviewed, cited, frozen
+catalogue before it can be evaluated, and that catalogue is an input this programme must be
+given rather than one it can generate. T4F.9 and T4F.6 remain gated on the decision and on
+whatever validation the chosen target then demands.
 
 ### Phase 4F - Transition and Precursor Mining
 
