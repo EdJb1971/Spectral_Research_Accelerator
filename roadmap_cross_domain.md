@@ -33,6 +33,33 @@ hold the implementation and evidence, and `PLAN.md` orders this atmospheric work
 not discharge G17's separate scale/shape declarations and real-record curation requirements;
 G19 remains specified and unstarted.
 
+**Exploratory apparatus, 2026-09-08 -- mutual k-NN alignment. NOT a G-phase task, not
+scheduled, and gating nothing.** `src/analysis_engine/representation_alignment.py` implements
+the metric the Platonic Representation Hypothesis (arXiv:2405.07987v5) uses to argue that
+neural representations are converging: each representation is reduced to a kernel over
+datapoints, and two are compared by the mean intersection of the k-NN sets they induce. It was
+written to audit that paper, not to enter this programme's inference layer, and it is recorded
+here because the audit bears directly on R19 and R20.
+
+The paper's claim is structural agreement between distance structures; its conclusion is
+convergence on a shared model of reality. **R19 says structural comparison never licenses
+semantic comparison, and that step is the paper's entire thesis.** **R20 is the second
+exposure**: no experiment in it contradicts the hypothesis, and its limitations are framed as
+refinements rather than as tests it could have failed. The module therefore carries
+`ALIGNMENT_BOUNDARY` on every report and `describe_measurement` returns `unresolved` when a
+value sits inside its own null.
+
+The paper states no reference for its headline cross-modal 0.16 -- `baseline`, `chance`,
+`null`, `shuffl*` and `surrogate` do not occur in its 27 pages -- but its Appendix C states
+k = 10 over 1024 samples, and the chance level of the metric is k/(n-1) in closed form. That
+is 0.00978, so 0.16 is about 16x chance and **the missing reference, once computed, supports
+the paper**. What the closed form cannot see is non-semantic pairing structure, and WIT is
+Wikipedia, where one article's image and caption share a subject; only a permuted pairing
+removes that. `permutation_null` implements it. No real-model measurement has been run, nothing
+has been downloaded, and doing so would open a second domain under R17 with its own cost.
+`VERIFICATION.md` carries the captured figures and `architecture.md` section 3.6zzf-alt the
+implementation.
+
 Maintained at the top so that the frontier does not have to be reconstructed from the five
 thousand lines below. `VERIFICATION.md` carries the captured output behind every figure here, and
 `architecture.md` describes what exists rather than what is planned.

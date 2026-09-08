@@ -132,6 +132,12 @@ and calibrated, but release still requires a manifest that requests that inferen
 curated real-record partner pools with a justified exchangeability/admission argument.
 An atmospheric identity improvement does not discharge either obligation.
 
+One piece of exploratory apparatus sits outside every phase and is deliberately unscheduled:
+`representation_alignment.py`, written to audit the Platonic Representation Hypothesis, which
+supplies the mutual k-NN metric, its closed-form chance floor k/(n-1) and a permutation null.
+It gates nothing, no model has been downloaded or evaluated, and running it on real
+representations would open a second domain under R17. It is not next unless it is chosen.
+
 G18's interface programme is complete according to its recorded acceptance. G19's
 multi-turn conversation with the evidence is specified and not started. Schedule it
 explicitly after the current identity decision; it is not an implicit next task in the

@@ -238,7 +238,12 @@ supersedes the other.
   flip. Excluding both, a radius of 0.0972 groups 90% of stationary repeats while admitting
   4.5% of unrelated pairs -- the first identity radius on this record the programme can defend,
   and it rests on 124 pairs.
-  **T4E.8 slice 2 now adds an opt-in spatial-geometry identity mode.** Bands and strengths
+  **T4E.8 slice 3 makes the identity target a declared field the audit refuses to run
+  without**, and refuses `kind_recurrence` against record-derived proxy labels as circular,
+  because tracked keys come from the same pipeline whose identity is under test. Naming the
+  slice-2 design's target reproduced its figures bit-for-bit. No target is chosen and no radius
+  is approved; choosing one remains the maintainer's scientific decision.
+  **T4E.8 slice 2 adds an opt-in spatial-geometry identity mode.** Bands and strengths
   stay carried while spatial separation remains comparable within a declared record/grid and
   source. Its three-window real-data audit improves AUC but fails the declared two-sided
   criterion; no mining radius is approved. See architecture.md section 3E.8 and PLAN.md for

@@ -12313,6 +12313,68 @@ unevaluable from the audit tool, which refuses every evidence class but `record_
 by name because no serialisation for a signed `PatternCatalogue` exists. No target is chosen and
 no radius is approved.
 
+**Mutual k-NN alignment and its missing reference (2026-09-08, exploratory, not a phase task).**
+
+Apparatus written while auditing the Platonic Representation Hypothesis (arXiv:2405.07987v5),
+which compares two representations by reducing each to a kernel and measuring the mean
+intersection of the k-NN sets they induce. Nothing here is trained, downloaded or evaluated;
+the acceptance is entirely synthetic and no real-model measurement has been run.
+
+```
+$ .venv/Scripts/python.exe -m pytest src/tests/test_representation_alignment.py -q
+25 passed   # 19 test functions, 25 parametrised cases
+```
+
+**What the paper's own text contains.** Read in full -- v5 PDF, 27 pages, 110,001 characters,
+case-insensitive over the text layer, which includes figure captions but not text baked into
+plot images:
+
+```
+baseline      0     shuffl*       0     chance        0     null          0
+surrogate     0     untrained     0     significan*   0     confidence    0
+error bar     1     (Figure 2 only)
+permut*       3     (all weight-space symmetry and citations; no permutation test)
+control       3     (all three in the bibliography)
+random*       7     (includes 1 randomly initialised ResNet-50 among the 78 vision models,
+                     plotted as a category in the Figure 2 UMAP)
+```
+
+**The floor, computed from the settings the paper does state.** Appendix C declares k = 10
+nearest neighbours over 1000 Places-365 images for vision-vision, and k = 10 over 1024 WIT
+samples for cross-modal. Two independent uniform k-subsets of the other n-1 points intersect
+in k^2/(n-1) on average, so the metric's chance level is k/(n-1):
+
+```
+cross-modal (WIT)           n=1024  k=10   chance = 0.00978   measured 0.16 = 16.4x chance
+vision-vision (Places-365)  n=1000  k=10   chance = 0.01001
+```
+
+Section 6 of the paper asks whether 0.16 "is indicative of strong alignment with the remaining
+gap being 'noise' or does it signify poor alignment with major differences left to explain."
+Against the uniform floor the answer is available in closed form and **supports the paper**:
+the measured value is about sixteen times chance. This is recorded as a result, not as a
+criticism withdrawn -- the floor was never stated, and a number whose reference is absent
+cannot be read even when the reading turns out to be favourable.
+
+**A wrong claim of this programme's own, corrected in place.** The first version of the
+acceptance test asserted that strong kernel structure would lift the permutation null well
+above k/(n-1). It does not: under a uniform permutation the right-hand neighbour sets land
+uniformly whatever structure they carry. Measured over 120-200 permutations:
+
+```
+structure     null_mean   analytic k/(n-1)   ratio
+clustered     0.05622     0.05587            1.006
+gaussian      0.05567     0.05587            0.997
+duplicated    0.05616     0.05587            1.005
+```
+
+The closed form is therefore a reliable estimate of the null *mean*, which makes it more useful
+than first claimed. It supplies no spread, so it is still not a threshold, and it cannot see
+pairing structure that is real but not semantic. WIT is drawn from Wikipedia, where images and
+captions from one article share a subject; two unrelated representations of such a sample would
+align above the uniform floor. Only a permuted pairing removes that residue, and that
+measurement has not been run.
+
 Extracted from the final receipt (printed by the verification extraction command):
 
 ```
