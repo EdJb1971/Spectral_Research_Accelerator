@@ -22,7 +22,30 @@ The wider cross-domain programme remains active and has separate dependencies in
 
 ## 1. Current decision point
 
-> **One decision blocks everything below it: what is identity meant to recognise?**
+> **Decided 2026-09-09 by the maintainer: `kind_recurrence` is the primary scientific
+> target. `track_continuity` and `spatial_persistence` are diagnostics for it, and a result
+> under either does not license it.**
+
+`declare_identity_target` now records that distinction as data rather than as prose: a
+declaration carries a `role`, and a diagnostic must name the target it is diagnostic for and
+publishes a boundary saying its result does not license that target. Labelling a circular
+evaluation "diagnostic" does not admit it -- `kind_recurrence` against record-derived proxy
+labels is still refused, because the role governs what is claimed from a result and never what
+evidence is admissible.
+
+**What the decision costs, stated plainly.** `kind_recurrence` admits only `external_reference`
+evidence, so the primary target needs a reviewed, cited catalogue and a serialisation for it,
+and neither exists. `audit_spatial_identity.py` refuses every evidence class but the proxy one
+by name for exactly that reason. So the primary target is **currently unevaluable from the
+tool**, the catalogue moves onto the critical path, and it was already a T4F.9 prerequisite.
+The diagnostics remain measurable now and are worth measuring; they are not progress toward the
+target.
+
+**What it does not change.** T4E.11 is still required and still blocks. Whichever target is
+aimed at, the criterion has to survive a change of partition, and T4E.10 measured that the
+present one does not.
+
+The three targets, for reference:
 
 Three targets are declared in `spectral_identity_audit.py` and they are not the same
 question. **`track_continuity`** -- the same evolving tracked constellation, observed again.
@@ -30,9 +53,10 @@ question. **`track_continuity`** -- the same evolving tracked constellation, obs
 -- the same physical kind recurring in a different constellation, which is the target the
 mining, sequence and precursor machinery downstream actually requires.
 
-Tracked keys are proxy labels for the first only. Slice 3 now refuses `kind_recurrence`
-against them by name, because labels drawn from the pipeline under test validate a
-definition against itself.
+Tracked keys are proxy labels for the first only. Slice 3 refuses `kind_recurrence` against
+them by name, because labels drawn from the pipeline under test validate a definition against
+itself. That refusal is why the decision above puts the catalogue on the critical path rather
+than deferring it.
 
 **What each choice costs.** `track_continuity` scores well and means little: it asks identity
 to reproduce the tracker that made its labels. `spatial_persistence` is measured and fails its
@@ -41,9 +65,13 @@ one 6-hour step and lose it over a track's life, which is the regime mining need
 `kind_recurrence` requires a reviewed, cited catalogue and a serialisation for it, neither of
 which exists; that catalogue is already a T4F.9 prerequisite, so it is not additional work.
 
-Do not redefine the target or weaken the acceptance criterion to make a candidate pass.
-Choosing is a scientific act and it is the maintainer's, not the software's. D96, D97, D98,
-D99 and D100 all remain open and none is repaired by making that choice.
+Do not redefine the target or weaken the acceptance criterion to make a candidate pass, and
+do not report a diagnostic result as progress toward the primary target. D96, D97, D98, D99 and
+D100 all remain open and none was repaired by making the choice.
+
+**Next, in order.** T4E.11 candidate B is declared and awaiting the maintainer's adoption;
+nothing is measured until it is adopted. After that, the catalogue `kind_recurrence` requires --
+sourcing it, deciding its independence class, and a serialisation the audit tool can load.
 
 ## 2. Ordered atmospheric work
 

@@ -2100,7 +2100,7 @@ first-pass survivors were real gaps and are now bound by tests; the twelfth was 
 status. **D97 is not closed** -- nothing in the pipeline consumes the new calibration yet, and on
 real data it still yields no radius -- and **D98 is opened**.
 
-**T4E.8 A radius the record's own labels can defend *(addresses D98, D99, D100)* -- IN PROGRESS; slices 1-3 implemented, acquired-record acceptance unmet, identity target undecided.**
+**T4E.8 A radius the record's own labels can defend *(addresses D98, D99, D100)* -- IN PROGRESS; slices 1-5 implemented, acquired-record acceptance unmet. Identity target decided 2026-09-09: `kind_recurrence` primary, `track_continuity` and `spatial_persistence` diagnostic.**
 
 *Specified below as a null-building task. Slice 1 measured that the null was not the binding constraint, so everything from here to the slice-1 block is the superseded specification, kept because the reasoning in it is why the measurement was worth taking.*
 

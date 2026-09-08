@@ -12385,6 +12385,49 @@ release decision, but it does mean two gates that read PASS now read NOT_RUN and
 were not isolated to a cause; the run predates no clean baseline for this suite size, so they
 are reported as measured rather than attributed.
 
+**T4E.8 slice 5 (2026-09-09): the identity target decided, and the role recorded as data.**
+
+The maintainer's declared position: **`kind_recurrence` is the primary scientific target;
+`track_continuity` and `spatial_persistence` are diagnostics for it.** The machinery could not
+express that -- a declaration carried one target and one evidence class, so a diagnostic
+measurement and the target it informs were recorded identically. `DECLARATION_ROLES` and the
+`role` / `diagnostic_for` arguments close that gap.
+
+```
+$ .venv/Scripts/python.exe -m pytest src/tests/test_identity_target_declaration.py     src/tests/test_identity_api.py -q
+50 passed
+
+>>> declare_identity_target("spatial_persistence", "record_derived_proxy",
+...                         role="diagnostic", diagnostic_for="kind_recurrence")
+role                : diagnostic
+diagnostic_for      : kind_recurrence
+diagnostic_boundary : A result here is diagnostic. It does not license 'kind_recurrence',
+                      whose own acceptance and admissible evidence are unchanged by anything
+                      measured under 'spatial_persistence'.
+```
+
+The rule that matters is that a role changes what is claimed from a result and **never** what
+evidence is admissible:
+
+```
+kind_recurrence + record_derived_proxy, role=diagnostic
+  -> InvalidParameterError: ... validated against itself ...   (circularity is not launderable)
+spatial_persistence + proxy, role=diagnostic, no diagnostic_for
+  -> MissingParameterError: 'diagnostic_for'
+spatial_persistence, diagnostic_for=spatial_persistence
+  -> InvalidParameterError: a measurement is not a diagnostic for itself
+kind_recurrence + external_reference, role=primary, diagnostic_for=spatial_persistence
+  -> InvalidParameterError: naming both leaves it unclear which one a result is about
+```
+
+**The cost of the decision, recorded with it.** `kind_recurrence` admits only
+`external_reference`, so the primary target requires a reviewed, cited catalogue and a
+serialisation the audit tool can load, and neither exists;
+`audit_spatial_identity.py` refuses every other evidence class by name. The primary target is
+therefore **unevaluable from the tool today**, and the catalogue moves onto the critical path,
+where it was already a T4F.9 prerequisite. The diagnostics stay measurable and are worth
+measuring, and a result under either is not progress toward the target.
+
 **T4E.10 (2026-09-09): no operating point transfers, and the reason is not the estimator.**
 
 ```

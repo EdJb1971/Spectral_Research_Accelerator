@@ -43,6 +43,13 @@ class IdentityTarget:
 #: naming a target cannot silently reword a receipt that has already been cited.
 PROXY_LABEL_BOUNDARY = "Tracked-key proxy labels, not independent measurements or physical ground truth"
 
+#: What a declaration is for. A programme can legitimately measure one target while aiming at
+#: another -- `spatial_persistence` on tracked keys is informative about the record even though
+#: `kind_recurrence` is the question the mining machinery needs answered -- but the two must not
+#: be recorded identically. A diagnostic that passes is not progress toward the target it
+#: diagnoses, and a receipt that cannot tell them apart is one paragraph away from claiming it is.
+DECLARATION_ROLES = ("primary_scientific_target", "diagnostic")
+
 EVIDENCE_CLASSES: Registry[EvidenceClass] = Registry("identity evidence class")
 IDENTITY_TARGETS: Registry[IdentityTarget] = Registry("identity target")
 
@@ -82,12 +89,21 @@ IDENTITY_TARGETS.add("kind_recurrence", IdentityTarget(
     description="The target the mining, sequence and precursor machinery requires.")
 
 
-def declare_identity_target(target: str, evidence: str) -> Dict[str, Any]:
-    """Admit a target/evidence pairing, or refuse it by name. No default is supplied.
+def declare_identity_target(target: str, evidence: str, *,
+                            role: str = "primary_scientific_target",
+                            diagnostic_for: Optional[str] = None) -> Dict[str, Any]:
+    """Admit a target/evidence pairing and its role, or refuse by name. No default target.
 
     The refusal that matters is `kind_recurrence` against record-derived labels: those labels
     are produced by the same record and pipeline whose identity is under test, so a definition
-    validated against them is validated against itself. That is not a bound to be relaxed.
+    validated against them is validated against itself. That is not a bound to be relaxed, and
+    it applies whatever the role -- declaring a circular evaluation "diagnostic" does not make
+    it admissible, it only changes what is claimed from it.
+
+    `role` separates the question a programme is aiming at from the questions it measures on
+    the way. A diagnostic must name the target it is diagnostic for and carries an explicit
+    statement that its result does not license that target, because "the diagnostic passed" and
+    "the target is met" are one careless sentence apart.
     """
     if not target:
         raise MissingParameterError("identity_target", "an identity audit",
@@ -105,8 +121,34 @@ def declare_identity_target(target: str, evidence: str) -> Dict[str, Any]:
             "rather than relaxing this pairing"
             % (target, ", ".join(specification.admissible_evidence), evidence,
                evidence_specification.provenance.lower()))
+    if role not in DECLARATION_ROLES:
+        raise InvalidParameterError("role", role,
+                                    "one of: " + ", ".join(DECLARATION_ROLES))
+    if role == "diagnostic":
+        if not diagnostic_for:
+            raise MissingParameterError(
+                "diagnostic_for", "a diagnostic identity declaration",
+                required=IDENTITY_TARGETS.names())
+        IDENTITY_TARGETS.get(diagnostic_for)
+        if diagnostic_for == target:
+            raise InvalidParameterError(
+                "diagnostic_for", diagnostic_for,
+                "a target other than %r; a measurement is not a diagnostic for itself, and "
+                "recording it as one would let its own result stand in for its own "
+                "acceptance" % target)
+    elif diagnostic_for:
+        raise InvalidParameterError(
+            "diagnostic_for", diagnostic_for,
+            "nothing, because this declaration is a primary scientific target rather than a "
+            "diagnostic; naming both would leave it unclear which one a result is about")
     return {
         "identity_target": target,
+        "role": role,
+        "diagnostic_for": diagnostic_for,
+        "diagnostic_boundary": (
+            "A result here is diagnostic. It does not license %r, whose own acceptance and "
+            "admissible evidence are unchanged by anything measured under %r."
+            % (diagnostic_for, target)) if role == "diagnostic" else None,
         "recognises": specification.recognises,
         "evidence_class": evidence,
         "evidence_provenance": evidence_specification.provenance,

@@ -259,3 +259,66 @@ def test_labels_and_errors_compose_into_a_report_that_states_its_provenance():
     assert report["auc"] == 1.0
     assert report["label_boundary"] == declaration["label_boundary"]
     assert math.isfinite(report["radius"])
+
+
+# -------------------------------------- the target aimed at, and the ones measured on the way
+
+def test_a_diagnostic_names_what_it_is_diagnostic_for_and_what_it_does_not_license():
+    """The maintainer's declared position: kind_recurrence is the target, the others inform it.
+
+    "The diagnostic passed" and "the target is met" are one careless sentence apart, so the
+    boundary travels in the declaration rather than in a reader's memory.
+    """
+    declaration = declare_identity_target(
+        "spatial_persistence", "record_derived_proxy",
+        role="diagnostic", diagnostic_for="kind_recurrence")
+    assert declaration["role"] == "diagnostic"
+    assert declaration["diagnostic_for"] == "kind_recurrence"
+    assert "does not license 'kind_recurrence'" in declaration["diagnostic_boundary"]
+
+
+def test_a_primary_target_carries_no_diagnostic_boundary():
+    declaration = declare_identity_target("kind_recurrence", "external_reference")
+    assert declaration["role"] == "primary_scientific_target"
+    assert declaration["diagnostic_for"] is None
+    assert declaration["diagnostic_boundary"] is None
+
+
+def test_calling_a_circular_evaluation_diagnostic_does_not_admit_it():
+    """The role changes what is claimed from a result, never what evidence is admissible."""
+    with pytest.raises(InvalidParameterError) as raised:
+        declare_identity_target("kind_recurrence", "record_derived_proxy",
+                                role="diagnostic", diagnostic_for="spatial_persistence")
+    assert "validated against itself" in str(raised.value)
+
+
+def test_a_diagnostic_without_a_target_is_refused():
+    with pytest.raises(MissingParameterError) as raised:
+        declare_identity_target("spatial_persistence", "record_derived_proxy",
+                                role="diagnostic")
+    assert "diagnostic_for" in str(raised.value)
+
+
+def test_nothing_is_a_diagnostic_for_itself():
+    with pytest.raises(InvalidParameterError) as raised:
+        declare_identity_target("spatial_persistence", "record_derived_proxy",
+                                role="diagnostic", diagnostic_for="spatial_persistence")
+    assert "not a diagnostic for itself" in str(raised.value)
+
+
+def test_a_primary_target_may_not_also_name_a_diagnostic_target():
+    with pytest.raises(InvalidParameterError):
+        declare_identity_target("kind_recurrence", "external_reference",
+                                diagnostic_for="spatial_persistence")
+
+
+def test_an_unknown_role_is_refused_and_names_the_roles():
+    with pytest.raises(InvalidParameterError) as raised:
+        declare_identity_target("spatial_persistence", "record_derived_proxy", role="exploratory")
+    assert "primary_scientific_target" in str(raised.value)
+
+
+def test_a_diagnostic_for_an_unknown_target_is_refused_with_its_correction():
+    with pytest.raises(UnknownNameError):
+        declare_identity_target("spatial_persistence", "record_derived_proxy",
+                                role="diagnostic", diagnostic_for="kind_recurrance")
