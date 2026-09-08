@@ -56,7 +56,7 @@ skill, show the counterexamples, or report that no robust relationship survives.
 ## 1. Honest Technical Status
 
 Verified against the code on 2026-09-02. Every claim here is backed by captured output in
-`VERIFICATION.md`; `architecture.md` Section 7 holds the full defect ledger (D1-D100, of which **92 fixed, 1 partial (D18), 7 open (D84, D85, D96, D97, D98, D99, D100)**). **`PLAN.md` is where the remaining work is ordered**; this document is the task history and the evidence.
+`VERIFICATION.md`; `architecture.md` Section 7 holds the full defect ledger (D1-D101, of which **92 fixed, 1 partial (D18), 8 open (D84, D85, D96, D97, D98, D99, D100, D101)**). **`PLAN.md` is where the remaining work is ordered**; this document is the task history and the evidence.
 
 The numbers in this table are checked by `src/tests/test_documentation.py`, which parses them
 out of this file and compares them against the source. That guard exists because this table

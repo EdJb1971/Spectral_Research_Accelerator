@@ -214,7 +214,7 @@ supersedes the other.
 * Last measured browser suite: **136/136** in Chromium from a cleaned `.e2e-state` (2026-09-04).
   It is inventoried in `architecture.md` section 7.4a; it is the only check here that proves a
   page renders.
-* Open defects: **D84, D85, D96, D97, D98, D99 and D100**; D18 partial. D43 is closed. **`PLAN.md` orders
+* Open defects: **D84, D85, D96, D97, D98, D99, D100 and D101**; D18 partial. D43 is closed. **`PLAN.md` orders
   what remains.** **D97 is the one that gates everything**: the tolerance deciding what a
   *pattern* is is calibrated from repeated measurements of one physical configuration, and a
   real atmospheric record contains none -- the distance between two observations of one
@@ -234,7 +234,11 @@ supersedes the other.
   against 27% of unrelated pairs admitted. A null cannot beat labels, so D98 was never the
   binding constraint. **D99** is: a tracked feature changes wavelet band between adjacent
   frames in 60.8% of same-configuration pairs, and scale-specific signing puts that into the
-  comparable vector. **D100** is a component weighted as a discriminator that scores a coin
+  comparable vector. **D101** is that the benchmark suite certifies the wrong identity
+  implementation: `src/core/motif.py` is exercised against planted and null scenes, while the
+  T4E path those defects describe appears nowhere in `src/benchmarks/` and has never been run
+  against an answer known by construction.
+  **D100** is a component weighted as a discriminator that scores a coin
   flip. Excluding both, a radius of 0.0972 groups 90% of stationary repeats while admitting
   4.5% of unrelated pairs -- the first identity radius on this record the programme can defend,
   and it rests on 124 pairs.

@@ -12454,5 +12454,19 @@ claimed suite totals : architecture (4441, 1) / roadmap (4441, 1)
 RESULT               : ok
 ```
 
+Re-run 2026-09-08 after T4E.9's specification opened D101. The block above is the earlier
+dated capture and is left as it was measured.
+
+```
+$ .venv/Scripts/python.exe tools/audit_docs.py
+undocumented modules : none
+undocumented routes  : none
+defects              : 101 defined, 92 fixed, partial ['D18'], open ['D84', 'D85', 'D96', 'D97', 'D98', 'D99', 'D100', 'D101']
+test functions       : 4071
+stale inventory rows : none
+claimed suite totals : architecture (4441, 1) / roadmap (4441, 1)
+RESULT               : ok
+```
+
 The full-suite count remains the dated T4E.7 measurement, not an arithmetic increment from
 focused tests. No frontend implementation changed and no fresh rendered acceptance is claimed.

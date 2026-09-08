@@ -89,8 +89,17 @@ uses it. Analytical band independence alone does not close the acquired-record t
 
 ### T4E.9 ? Certified synthetic ground truth for the identity step ? not specified
 
-**The cheapest thing on the table that could move T4E.8, because it attacks the ground-truth
-problem instead of waiting on a catalogue.** Every difficulty in T4E.8 comes from the same
+**This task now also closes D101.** Specifying it uncovered that this repository holds two
+identity layers over one shared geometric core, and the benchmark suite certifies the wrong
+one. `src/core/motif.py` is exercised against planted and null scenes; the T4E path --
+`signature_for`, `SignatureMetric`, `cluster_signatures`, the path T4E.8 measures and T4F.6
+would adjudicate -- appears nowhere in `src/benchmarks/`. Its only ground-truth-like evidence
+is T4E.7's check, which plants replicates at the signature level and so skips detection,
+tracking and constellation extraction. **The T4E identity step has never been run against an
+answer known by construction.**
+
+**It is also the cheapest thing on the table that could move T4E.8, because it attacks the
+ground-truth problem instead of waiting on a catalogue.** Every difficulty in T4E.8 comes from the same
 place: a real atmospheric record supplies no replicates (D97), no honest null (D98) and no
 independent labels, so `kind_recurrence` waits on a catalogue nobody has signed.
 
