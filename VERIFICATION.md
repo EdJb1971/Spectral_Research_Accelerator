@@ -12174,3 +12174,129 @@ absence as a measurement. And single-block weightings re-minimise the node align
 block alone, so "scales only" scoring an AUC of 0.378 is an artefact of re-alignment rather than
 a measurement of the scales block; the per-block shares above are taken under the full metric's
 alignment, which is the only way they mean anything.
+
+
+## T4E.8 slice 2 ? spatial identity, independently measured error rates, and unmet acceptance (2026-09-08)
+
+Implemented an opt-in `spatial_geometry` signing mode through `SIGNATURE_MODES`. It compares
+pairwise spatial separations and admitted bearings in a declared record/grid and source;
+detector scales and band-normalised strengths remain carried. The existing scalar and
+accelerated clustering contracts consume the new comparable blocks and refuse old-family
+radii. No existing scientific declaration was signed or silently amended.
+
+### Acquired-record audit
+
+The first design was written before the candidate's source values were read. It is explicitly
+exploratory and informed by slice 1. The saved climatology is fitted on the existing training
+period; only frames 0:1440 are opened, not the 2022-2023 forecast-test period. The first window
+sets the radius and the next two apply it unchanged. Track-key labels are proxies for continuity,
+not independent ground truth for an unchanged spatial configuration or a recurring physical kind.
+All-pair error rates below refer to these proxies. Distinct-key negatives can share a track.
+
+Captured terminal output:
+
+```
+$ .venv/Scripts/python.exe -m tools.audit_spatial_identity --output data/identity_calibration/t4e8-spatial-audit.json
+Design sha256: 10509a4e3e11aa9f79f6e03e88730ccd5cfe1945c04929bd925d9c5a0eb134ed
+Window 0:480: 69580 configurations, 6838 repeat pairs
+Window 480:960: 51395 configurations, 3652 repeat pairs
+Window 960:1440: 52765 configurations, 5607 repeat pairs
+Receipt: data/identity_calibration/t4e8-spatial-audit.json; DISCRIMINATION_CRITERIA_NOT_MET; 84.08 s
+```
+
+A descriptive amendment adds the monotone empirical-feasibility diagnostic after inspecting
+those results. It changes no window, threshold, weight or acceptance. The final code also binds
+the comparable family to the feature source as well as the declared grid scope; reusing a scope
+string cannot cross a dataset boundary. All non-test Python sources and the audit script are
+hashed before execution and checked unchanged before publishing the final receipt.
+
+```
+$ .venv/Scripts/python.exe -m tools.audit_spatial_identity --design data/identity_calibration/t4e8-spatial-design-v2.json --output data/identity_calibration/t4e8-spatial-audit-v2.json
+Design sha256: fb1b64fbf4cf41db46768a4a100ebf74df6746add60141f590727d0f0ab54448
+Window 0:480: 69580 configurations, 6838 repeat pairs
+Window 480:960: 51395 configurations, 3652 repeat pairs
+Window 960:1440: 52765 configurations, 5607 repeat pairs
+Receipt: data/identity_calibration/t4e8-spatial-audit-v2.json; DISCRIMINATION_CRITERIA_NOT_MET; 144.52 s
+```
+
+Extracted from the final receipt (printed by the verification extraction command):
+
+```
+window       signatures repeats legacy_AUC spatial_AUC fixed_split fixed_admission admission_at_all_repeat_r90
+   0:480     69580    6838  0.7866  0.8877  0.293946  0.104800  0.332800
+ 480:960     51395    3652  0.8288  0.8947  0.288061  0.093600  0.319500
+ 960:1440    52765    5607  0.8043  0.8952  0.256287  0.108950  0.305100
+```
+
+The frozen stationary radius is `0.13807521070069662`. In the calibration window the stationary
+population grows from 124 band-stable pairs to 188 pairs (169 distinct contributing track keys),
+with 19 observations in its upper decile. Those are dependent pairs; no iid confidence interval
+or effective-sample-size claim is made. Stationary band-flipped pairs in that window have AUC
+0.9471 under spatial geometry, against 0.9489 for band-stable pairs. This removes the earlier
+large band penalty at fixed/near-stationary positions, not the positional effects of detector
+flanks or physical evolution.
+
+The final diagnostic finds **no radius meeting both empirical 10% bounds on the all-repeat
+proxy populations in any window**. At the smallest radius admitting at least 90% of repeated-key
+pairs, the different-key admission is 33.28%, 31.95% and 30.51%. This follows from monotonicity
+of admission in radius; it is not evidence that all possible identity definitions or independent
+physical labels would fail. `approved_mining_radius` is `null`. T4E.8 acceptance, D97 and the
+pilot remain unresolved. The original signatures/declaration still carry D99/D100; the opt-in
+mode removes those comparable attributes but is not an accepted pipeline replacement.
+
+### Analytical and mutation evidence
+
+The early focused run found one backward-compatible error-contract regression (the unknown-mode
+exception changed type); restoring `InvalidParameterError` exposed the legacy test's required
+explanatory wording, which was restored too. These failures were corrected rather than the
+legacy test being weakened. A subsequent broad focused attempt recorded 133 passing cases and
+that one wording failure before the final corrected regression below.
+
+The new acceptance file has 24 test functions / 45 parametrised cases. They check exact 3-4-5
+separation, nonconstant two-node identity, band/magnitude independence, translation/rotation/
+reflection/permutation invariance, missing carried strength, empty blocks, scope and source
+refusal, unsupported periodic geometry, old-radius refusal, scalar/accelerated agreement,
+absolute counts, ties, empty populations, invalid inputs and monotone radius feasibility.
+
+```
+$ .venv/Scripts/python.exe -m tools.mutate_spatial_identity
+baseline: BASELINE_PASS
+band_normalisation: KILLED
+constant_pair_shape: KILLED
+strengths_comparable: KILLED
+scales_comparable: KILLED
+node_order_not_canonical: KILLED
+source_not_bound: KILLED
+baseline: BASELINE_PASS
+mixed_families_compared: KILLED
+carried_scales_reenter_point: KILLED
+baseline: BASELINE_PASS
+split_radius_tie: KILLED
+admission_radius_tie: KILLED
+auc_ties_count_as_wins: KILLED
+recall_rounds_down: KILLED
+feasibility_always_true: KILLED
+```
+
+All three unmutated module-reload baselines passed all 45 cases. All 13 targeted mutations
+were killed by test failures, with no timeout or collection failure counted as a kill.
+`measurements/t4e8_spatial_mutations.json` preserves each subprocess's captured output.
+The harness changes modules in isolated interpreter namespaces and never edits source files.
+This is a bounded audit of these changes, not exhaustive mutation coverage and not completion
+of T4E.5's separate unfinished mutation programme.
+
+### Documentation and regression
+
+```
+$ .venv/Scripts/python.exe tools/audit_docs.py
+undocumented modules : none
+undocumented routes  : none
+defects              : 100 defined, 92 fixed, partial ['D18'], open ['D84', 'D85', 'D96', 'D97', 'D98', 'D99', 'D100']
+test functions       : 4034
+stale inventory rows : none
+claimed suite totals : architecture (4441, 1) / roadmap (4441, 1)
+RESULT               : ok
+```
+
+The full-suite count remains the dated T4E.7 measurement, not an arithmetic increment from
+focused tests. No frontend implementation changed and no fresh rendered acceptance is claimed.

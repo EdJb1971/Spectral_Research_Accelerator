@@ -76,6 +76,8 @@ class SignatureFamily:
     cardinality: int
     has_bearings: bool
     scale_units: Optional[str]
+    comparison_scope: Optional[str] = None
+    comparison_source: Tuple[str, ...] = ()
 
     def describe(self) -> Dict[str, Any]:
         return {
@@ -83,6 +85,9 @@ class SignatureFamily:
             "cardinality": self.cardinality,
             "has_bearings": self.has_bearings,
             "scale_units": self.scale_units,
+            **({"comparison_scope": self.comparison_scope}
+               if self.comparison_scope is not None else {}),
+            **({"comparison_source": list(self.comparison_source)} if self.comparison_source else {}),
         }
 
 
@@ -112,10 +117,19 @@ class SignaturePoint:
                 "SignaturePoint.bearings", len(self.bearings),
                 "%d edge bearings for cardinality %d" %
                 (expected_edges, self.family.cardinality))
-        if len(self.strengths) != self.family.cardinality or len(self.scales) != self.family.cardinality:
+        from src.analysis_engine.spectral_invariance import SIGNATURE_MODES
+        specification = SIGNATURE_MODES.get(self.family.mode)
+        if specification.requires_scope and (not self.family.comparison_scope
+                                             or not self.family.scale_units
+                                             or not self.family.comparison_source):
+            raise InvalidParameterError("SignaturePoint.family", self.family.describe(),
+                                        "a record/grid scope and spatial geometry units")
+        if (len(self.strengths) != (self.family.cardinality if specification.strengths else 0)
+                or len(self.scales) != (self.family.cardinality if specification.scales else 0)):
             raise InvalidParameterError(
                 "SignaturePoint", (len(self.strengths), len(self.scales)),
-                "one strength and one scale value per constellation member")
+                "exactly the strength and scale blocks declared by this signature mode; "
+                "carried attributes must not enter the comparable point")
         for name, block in self.blocks().items():
             if any(not math.isfinite(value) for value in block):
                 raise InvalidParameterError(
@@ -135,21 +149,18 @@ class SignaturePoint:
         if not isinstance(signature, ConstellationSignature):
             raise InvalidParameterError(
                 "signature", type(signature).__name__, "a ConstellationSignature from T4E.2")
-        if signature.scale_invariant:
-            reference = math.exp(sum(math.log(value) for value in signature.scales)
-                                 / len(signature.scales))
-            scales = tuple(value / reference for value in signature.scales)
-            units = None
-        else:
-            scales = tuple(signature.scales)
-            units = signature.scale_units
+        blocks = signature.comparison_blocks()
+        units = (signature.geometry_units if signature.comparison_scope is not None else
+                 None if signature.scale_invariant else signature.scale_units)
         return cls(
             family=SignatureFamily(
                 mode=signature.mode, cardinality=signature.cardinality,
-                has_bearings=signature.bearings is not None, scale_units=units),
+                has_bearings=signature.bearings is not None, scale_units=units,
+                comparison_scope=signature.comparison_scope,
+                comparison_source=signature.comparison_source),
             geometry=tuple(signature.geometry),
             bearings=None if signature.bearings is None else tuple(signature.bearings),
-            strengths=tuple(signature.strengths), scales=scales)
+            strengths=blocks["strengths"], scales=blocks["scales"])
 
     def blocks(self) -> Dict[str, Tuple[float, ...]]:
         return {
@@ -198,8 +209,8 @@ class SignaturePoint:
         return SignaturePoint(
             family=self.family, geometry=edge_block(geometry),
             bearings=None if bearings is None else edge_block(bearings),
-            strengths=tuple(self.strengths[index] for index in order),
-            scales=tuple(self.scales[index] for index in order))
+            strengths=tuple(self.strengths[index] for index in order) if self.strengths else (),
+            scales=tuple(self.scales[index] for index in order) if self.scales else ())
 
 
 def _relative(left: float, right: float) -> float:
@@ -512,8 +523,9 @@ def calibrate_signature_tolerance(
     reader of `describe()` always learns whether the question was asked.
 
     See D97 for why this matters and for what a real record does to the assumption underneath
-    it: an atmospheric record contains no replicates at all, and the radius this returns there is
-    dominated by physical evolution rather than by measurement noise.
+    it: repeated track keys exist in an atmospheric record, but they label continuity rather
+    than repeated measurements of an unchanged physical state. The radius can consequently be
+    dominated by physical evolution rather than by measurement noise (T4E.8).
     """
     points = _points(replicates)
     if len(points) < 2:

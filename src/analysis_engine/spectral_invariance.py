@@ -108,12 +108,29 @@ from __future__ import annotations
 import itertools
 import math
 from dataclasses import dataclass, field as dc_field
-from typing import Any, Dict, Iterator, List, Mapping, Optional, Sequence, Tuple
+from typing import Any, Callable, Dict, Iterator, List, Mapping, Optional, Sequence, Tuple
 
 from src.analysis_engine.spectral_constellation import ConstellationSet, FrameConstellation
 from src.core.constellation import RelationContext
 from src.core.errors import InvalidParameterError
 from src.core.invariance import SHAPE_RATIO, relative_geometry, scale_normalised
+from src.core.registry import Registry
+
+
+@dataclass(frozen=True)
+class SignatureMode:
+    """Declared identity semantics; adding a mode uses this registry, not a matcher fork."""
+
+    geometry: Callable
+    relation: str
+    invariance: Tuple[str, ...]
+    strengths: bool = True
+    scales: bool = True
+    scale_ratios: bool = False
+    requires_scope: bool = False
+
+
+SIGNATURE_MODES: Registry[SignatureMode] = Registry("spectral signature mode")
 
 #: The receipt schema for one signature.
 SIGNATURE_SCHEMA = "spectral-constellation-signature/v1"
@@ -329,14 +346,25 @@ class ConstellationSignature:
     bands: Tuple[str, ...]
     refusals: Mapping[str, str] = dc_field(default_factory=dict)
     time_units: Optional[str] = None
+    comparison_scope: Optional[str] = None
+    geometry_units: Optional[str] = None
+    strengths_carried: Tuple[Optional[float], ...] = ()
+    comparison_source: Tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
-        if self.mode not in SCALE_MODES:
+        if self.mode not in SIGNATURE_MODES:
+            raise InvalidParameterError("ConstellationSignature.mode", self.mode,
+                                        "one of %s. The mode names which quantity the geometry "
+                                        "was divided by, or declares raw record separation; "
+                                        "unknown semantics cannot be compared" % SIGNATURE_MODES.names())
+        specification = SIGNATURE_MODES.get(self.mode)
+        if specification.requires_scope and (
+                not isinstance(self.comparison_scope, str) or not self.comparison_scope.strip()
+                or not self.geometry_units or not self.comparison_source):
             raise InvalidParameterError(
-                "ConstellationSignature.mode", self.mode,
-                "one of %s. The mode names which quantity the geometry was divided by, and a "
-                "signature that does not say cannot be compared with one that does"
-                % sorted(SCALE_MODES))
+                "ConstellationSignature.comparison_scope", self.comparison_scope,
+                "a declared record/grid comparison scope and geometry units; spatial "
+                "separations cannot be compared just because two records both say cells")
         expected = self.cardinality * (self.cardinality - 1) // 2
         if len(self.geometry) != expected:
             raise InvalidParameterError(
@@ -355,7 +383,7 @@ class ConstellationSignature:
 
     @property
     def invariant_to(self) -> Tuple[str, ...]:
-        return MODE_INVARIANCE[self.mode]
+        return SIGNATURE_MODES.get(self.mode).invariance
 
     @property
     def cross_domain_comparable(self) -> bool:
@@ -377,12 +405,22 @@ class ConstellationSignature:
         cells, and a length in cells has no ratio to a length in metres. T4E.3's clustering
         declares a weighting per attribute, which is where a block in cells acquires one.
         """
-        block = list(self.geometry)
-        if self.bearings is not None:
-            block.extend(self.bearings)
-        block.extend(self.strengths)
-        block.extend(self._scale_ratios() if self.scale_invariant else self.scales)
-        return tuple(block)
+        return tuple(value for block in self.comparison_blocks().values() for value in block)
+
+    def comparison_blocks(self) -> Dict[str, Tuple[float, ...]]:
+        """One authority for vector(), scalar matching and accelerated matching.
+
+        In spatial_geometry the detector's bands and strengths remain carried metadata.
+        They are absent blocks, not zero-weight observations or fabricated unit values.
+        """
+        specification = SIGNATURE_MODES.get(self.mode)
+        return {
+            "geometry": self.geometry,
+            "bearings": () if self.bearings is None else self.bearings,
+            "strengths": self.strengths if specification.strengths else (),
+            "scales": ((self._scale_ratios() if specification.scale_ratios else self.scales)
+                       if specification.scales else ()),
+        }
 
     def _scale_ratios(self) -> Tuple[float, ...]:
         reference = math.exp(sum(math.log(value) for value in self.scales) / len(self.scales))
@@ -431,6 +469,24 @@ class ConstellationSignature:
         }
         if self.refusals:
             body["refusals"] = dict(self.refusals)
+        if SIGNATURE_MODES.get(self.mode).requires_scope:
+            body.update({
+                "schema": "spectral-constellation-signature/v2",
+                "comparison_scope": self.comparison_scope,
+                "comparison_source": list(self.comparison_source),
+                "geometry_units": self.geometry_units,
+                "geometry_basis": "pairwise spatial separations in the declared record/grid",
+                "strengths_carried": list(self.strengths_carried),
+                "strengths_basis": "band-RMS-normalised strengths carried only; not compared",
+                "scale_block_in_vector": "absent; detector scales are carried only",
+                "comparable_blocks": list(name for name, block in
+                                           self.comparison_blocks().items() if block),
+                "claim_boundary": (
+                    "Exploratory spatial identity within one declared record/grid. "
+                    "Invariant to detector band and magnitude at fixed positions, not to "
+                    "physical evolution, rescaling, latitude-dependent grid metrics or "
+                    "cross-domain transfer. Track continuity is a proxy label, not ground truth."),
+            })
         return body
 
 
@@ -444,6 +500,7 @@ class SignatureSet:
     refused: Mapping[str, int] = dc_field(default_factory=dict)
     axis_refused: int = 0
     floor: float = AXIS_ISOTROPY_FLOOR
+    comparison_scope: Optional[str] = None
 
     def __len__(self) -> int:
         return len(self.signatures)
@@ -467,18 +524,21 @@ class SignatureSet:
             "schema": SIGNATURE_SCHEMA,
             "mode": self.mode,
             "scale_invariant": self.scale_invariant,
-            "geometry_relation": SCALE_MODES[self.mode],
+            "geometry_relation": SIGNATURE_MODES.get(self.mode).relation,
             "considered": self.considered,
             "signed": len(self.signatures),
             "refused": dict(self.refused),
             "axis_refused": self.axis_refused,
             "isotropy_floor": self.floor,
-            "invariant_to": list(MODE_INVARIANCE[self.mode]),
+            "invariant_to": list(SIGNATURE_MODES.get(self.mode).invariance),
             "cross_domain_comparable": self.scale_invariant,
             "by_cardinality": {str(size): len(self.of_cardinality(size))
                                for size in sorted({item.cardinality
                                                    for item in self.signatures})},
             "claim_boundary": CLAIM_BOUNDARY,
+            **({"comparison_scope": self.comparison_scope,
+                "schema": "spectral-constellation-signature/v2"}
+               if SIGNATURE_MODES.get(self.mode).requires_scope else {}),
         }
 
 
@@ -534,9 +594,49 @@ def _strength_block(constellation: FrameConstellation) -> Tuple[float, ...]:
     return tuple(value / reference for value in values)
 
 
+def _spatial_geometry(constellation: FrameConstellation,
+                      context: RelationContext) -> Dict[Tuple[int, int], float]:
+    """O(k^2) separations via the existing unit/domain/period-aware location contract.
+
+    These are grid separations, not kilometres. No band estimate enters the denominator.
+    A pair retains its separation and therefore does not suffer the scale-free pair collapse.
+    """
+    if any(axis.periodic for feature in constellation.features for axis in feature.location.axes):
+        raise InvalidParameterError("spatial_geometry.axes", "periodic",
+                                    "a nonperiodic planar record; principal-axis bearings "
+                                    "have no declared wrapped-coordinate convention")
+    values = {}
+    for left, right in _edge_pairs(constellation.cardinality):
+        distance = constellation.features[left].separation_to(
+            constellation.features[right], periods=context.periods)
+        if not distance.units or not math.isfinite(distance.value) or distance.value <= 0:
+            raise InvalidParameterError(
+                "spatial_geometry.separation", distance.value,
+                "a positive finite separation with declared units; coincident detections "
+                "do not define the positive relative-distance identity used here")
+        values[left, right] = float(distance.value)
+    return values
+
+
+SIGNATURE_MODES.add("scale_specific", SignatureMode(
+    lambda constellation, context: _geometry_values(constellation, "scale_specific", context),
+    SCALE_MODES["scale_specific"], MODE_INVARIANCE["scale_specific"]))
+SIGNATURE_MODES.add("scale_invariant", SignatureMode(
+    lambda constellation, context: _geometry_values(constellation, "scale_invariant", context),
+    SCALE_MODES["scale_invariant"], MODE_INVARIANCE["scale_invariant"], scale_ratios=True))
+SIGNATURE_MODES.add("spatial_geometry", SignatureMode(
+    _spatial_geometry, "record_separation", ("translation", "rotation", "reflection"),
+    strengths=False, scales=False, requires_scope=True),
+    description="Spatial configuration identity within a declared record/grid; bands and "
+                "strengths are carried only, and absolute separation remains discriminating.",
+    capabilities={"cross_domain": False, "band_independent": True, "requires_scope": True})
+
+
 def signature_for(constellation: FrameConstellation, *, scale_invariant: bool = False,
                   axis_floor: float = AXIS_ISOTROPY_FLOOR,
-                  context: Optional[RelationContext] = None) -> ConstellationSignature:
+                  context: Optional[RelationContext] = None,
+                  mode: Optional[str] = None,
+                  comparison_scope: Optional[str] = None) -> ConstellationSignature:
     """The invariant signature of one frame constellation, in one of the two modes.
 
     Refuses rather than approximates: a pair asked for the scale-invariant mode is refused by
@@ -554,7 +654,15 @@ def signature_for(constellation: FrameConstellation, *, scale_invariant: bool = 
             "a constellation carrying its features. The geometry is measured from the "
             "coefficients rather than from the carried summary, which has already been "
             "rounded for reading")
-    mode = "scale_invariant" if scale_invariant else "scale_specific"
+    mode = mode or ("scale_invariant" if scale_invariant else "scale_specific")
+    specification = SIGNATURE_MODES.get(mode)
+    if scale_invariant and mode != "scale_invariant":
+        raise InvalidParameterError("signature_for.mode", mode,
+                                    "a mode consistent with scale_invariant=True")
+    scale_invariant = specification.scale_ratios
+    if specification.requires_scope and (not isinstance(comparison_scope, str) or not comparison_scope.strip()):
+        raise InvalidParameterError("signature_for.comparison_scope", comparison_scope,
+                                    "an explicit record/grid scope before spatial signing")
     size = constellation.cardinality
     if scale_invariant and size < 3:
         raise InvalidParameterError(
@@ -567,8 +675,8 @@ def signature_for(constellation: FrameConstellation, *, scale_invariant: bool = 
 
     context = context or RelationContext()
     axes = _coord_axes(constellation)
-    geometry = _geometry_values(constellation, mode, context)
-    strengths = _strength_block(constellation)
+    geometry = specification.geometry(constellation, context)
+    strengths = _strength_block(constellation) if specification.strengths else ()
     scales = tuple(float(node.scale) for node in constellation.nodes)
     scale_units = constellation.nodes[0].scale_units
     admission = admit_axis(constellation, floor=axis_floor)
@@ -580,7 +688,7 @@ def signature_for(constellation: FrameConstellation, *, scale_invariant: bool = 
                     for pair in _edge_pairs(size)}
     else:
         refusals["bearings"] = admission.refusal or "no principal axis"
-    if not scale_invariant:
+    if mode == "scale_specific":
         refusals["rescaling"] = (
             "this mode divides by an estimated spatial scale, and TG3.4 measured that the "
             "estimate drifts with the scale being estimated, so the signature is not claimed "
@@ -589,6 +697,9 @@ def signature_for(constellation: FrameConstellation, *, scale_invariant: bool = 
             "the scale block is in %s. A ratio of scales in cells to scales in metres is not "
             "a number, so this signature stops at the domain boundary"
             % (scale_units if scale_units else "this record's own units"))
+    if specification.requires_scope:
+        refusals["rescaling"] = "absolute spatial separation changes under rescaling"
+        refusals["cross_domain"] = "spatial identity is restricted to the declared record/grid scope"
 
     best: Optional[Tuple[Tuple[float, ...], Tuple[int, ...]]] = None
     for order in itertools.permutations(range(size)):
@@ -601,8 +712,10 @@ def signature_for(constellation: FrameConstellation, *, scale_invariant: bool = 
             for a, b in edges:
                 pair = (order[a], order[b])
                 block.append(bearings.get(pair, bearings.get((pair[1], pair[0]), math.nan)))
-        block.extend(strengths[index] for index in order)
-        block.extend(scales[index] for index in order)
+        if specification.strengths:
+            block.extend(strengths[index] for index in order)
+        if specification.scales:
+            block.extend(scales[index] for index in order)
         candidate = (tuple(block), tuple(order))
         if best is None or candidate[0] < best[0]:
             best = candidate
@@ -618,18 +731,29 @@ def signature_for(constellation: FrameConstellation, *, scale_invariant: bool = 
 
     return ConstellationSignature(
         key=constellation.key(), time=constellation.time, cardinality=size, mode=mode,
-        order=order, geometry=ordered_geometry, geometry_relation=SCALE_MODES[mode],
+        order=order, geometry=ordered_geometry, geometry_relation=specification.relation,
         bearings=ordered_bearings,
-        strengths=tuple(strengths[index] for index in order),
+        strengths=tuple(strengths[index] for index in order) if strengths else (),
         scales=tuple(scales[index] for index in order), scale_units=scale_units,
         axis=admission,
         track_ids=tuple(constellation.track_ids[index] for index in order),
         bands=tuple(constellation.bands[index] for index in order),
-        refusals=refusals, time_units=constellation.time_units)
+        refusals=refusals, time_units=constellation.time_units,
+        comparison_scope=comparison_scope if specification.requires_scope else None,
+        geometry_units=(constellation.nodes[0].coord_units if specification.requires_scope else None),
+        strengths_carried=(tuple(constellation.nodes[index].strength_sigma for index in order)
+                           if not specification.strengths else ()),
+        comparison_source=(tuple(constellation.features[0].semantic_key)
+                           + (constellation.features[0].representation,
+                              repr(tuple((a.name, a.role, a.units, a.periodic)
+                                         for a in constellation.features[0].location.axes)))
+                           if specification.requires_scope else ()))
 
 
 def sign_constellations(constellations: ConstellationSet, *, scale_invariant: bool = False,
-                        axis_floor: float = AXIS_ISOTROPY_FLOOR) -> SignatureSet:
+                        axis_floor: float = AXIS_ISOTROPY_FLOOR,
+                        mode: Optional[str] = None,
+                        comparison_scope: Optional[str] = None) -> SignatureSet:
     """Sign a whole extraction pass, counting by name what could not be signed.
 
     A constellation the mode cannot express is skipped and counted rather than raised, because
@@ -641,14 +765,22 @@ def sign_constellations(constellations: ConstellationSet, *, scale_invariant: bo
         raise InvalidParameterError(
             "sign_constellations.constellations", None,
             "a ConstellationSet from T4E.1's extraction")
-    mode = "scale_invariant" if scale_invariant else "scale_specific"
+    mode = mode or ("scale_invariant" if scale_invariant else "scale_specific")
+    specification = SIGNATURE_MODES.get(mode)
+    if scale_invariant and mode != "scale_invariant":
+        raise InvalidParameterError("sign_constellations.mode", mode,
+                                    "a mode consistent with scale_invariant=True")
+    if specification.requires_scope and (not isinstance(comparison_scope, str) or not comparison_scope.strip()):
+        raise InvalidParameterError("sign_constellations.comparison_scope", comparison_scope,
+                                    "an explicit record/grid scope before spatial signing")
     signed: List[ConstellationSignature] = []
     refused: Dict[str, int] = {}
     axis_refused = 0
     for item in constellations:
         try:
             signature = signature_for(item, scale_invariant=scale_invariant,
-                                      axis_floor=axis_floor)
+                                      axis_floor=axis_floor, mode=mode,
+                                      comparison_scope=comparison_scope)
         except InvalidParameterError:
             reason = ("cardinality %d: no shape without a second separation" % item.cardinality
                       if scale_invariant and item.cardinality < 3 else
@@ -660,7 +792,8 @@ def sign_constellations(constellations: ConstellationSet, *, scale_invariant: bo
         signed.append(signature)
     return SignatureSet(signatures=tuple(signed), mode=mode,
                         considered=len(constellations), refused=refused,
-                        axis_refused=axis_refused, floor=float(axis_floor))
+                        axis_refused=axis_refused, floor=float(axis_floor),
+                        comparison_scope=comparison_scope if specification.requires_scope else None)
 
 
 def compare_scale_modes(constellations: ConstellationSet, *,

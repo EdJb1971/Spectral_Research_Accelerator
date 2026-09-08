@@ -132,7 +132,7 @@ is partial. Phase 3.5's 25 implementation tasks are complete; the literal screen
 requested by T3.5.0 is still absent, and D18's cross-device agreement remains partial because
 only the T5.1a-e slice has CPU/CUDA parity evidence and ROCm/MPS are unmeasured. Phase 4A-4C.6
 are complete through the recorded real-data PASS; a separate human review of that receipt
-remains. T4D.1-3, T4E.1-4 and T4F.1-5 are complete and T4F.6 is partial -- the physical gate is built and discriminates, but it has never been run, so 4G is still gated. T4F.7 and T4F.8 are complete. **T4E.5 is in progress, T4E.6 and T4E.7 are done, and T4E.8 and T4F.9 are specified and not started** -- see `PLAN.md`, which orders what remains. 4G and optional 4H remain
+remains. T4D.1-3, T4E.1-4 and T4F.1-5 are complete and T4F.6 is partial -- the physical gate is built and discriminates, but it has never been run, so 4G is still gated. T4F.7 and T4F.8 are complete. **T4E.5 is in progress, T4E.6 and T4E.7 are done, and T4E.8 is in progress (slices 1 and 2 implemented, acquired-record acceptance unmet), and T4F.9 is not started** -- see `PLAN.md`, which orders what remains. 4G and optional 4H remain
 undone. See
 Section 4 for per-task evidence.
 
@@ -2100,7 +2100,7 @@ first-pass survivors were real gaps and are now bound by tests; the twelfth was 
 status. **D97 is not closed** -- nothing in the pipeline consumes the new calibration yet, and on
 real data it still yields no radius -- and **D98 is opened**.
 
-**T4E.8 A radius the record's own labels can defend *(fixes D98, D99, D100)* -- SLICE 1 DONE, REST NOT STARTED.**
+**T4E.8 A radius the record's own labels can defend *(addresses D98, D99, D100)* -- IN PROGRESS; slices 1 and 2 implemented, acquired-record acceptance unmet.**
 
 *Specified below as a null-building task. Slice 1 measured that the null was not the binding constraint, so everything from here to the slice-1 block is the superseded specification, kept because the reasoning in it is why the measurement was worth taking.*
 
@@ -2176,6 +2176,35 @@ to separate the repeats it can be checked on.
 that. It does not bound a **labelled** radius, which needs no mixture fraction at all and is what
 slice 1 measured. So the strict reading is not hopeless as that paragraph implies -- it is
 hopeless for a null, and usable with labels. The broad reading remains unmeasured and unlabelled.
+
+**Slice 2 (2026-09-08): an explicit spatial identity, and a failed operating criterion.**
+The registered `spatial_geometry` mode compares pairwise separation in a declared record/grid
+and admitted bearings. It carries detector scales, bands and strengths without comparing them.
+This resolves band/magnitude sensitivity at fixed positions in this candidate definition,
+preserves discrimination between differently separated pairs, and requires matching scope,
+source and units. Original modes and the frozen mining declaration are not silently changed.
+`spectral_identity_audit.py` supplies two-sided descriptive errors and empirical feasibility;
+`tools/audit_spatial_identity.py` makes the real-data measurement reproducible from a hashed
+exploratory design. Tests and captured output are recorded in `VERIFICATION.md` under T4E.8
+slice 2; the architecture's section 3E.8 describes the implementation and boundaries.
+
+The unchanged first window reproduces 69,580 signatures and 6,838 repeated-key pairs. The
+candidate's all-pair AUC is 0.8877, and its stationary calibration radius is 0.138075. Applied
+unchanged in two disjoint training windows, it gives split/admission rates of **28.81%/9.36%**
+and **25.63%/10.895%**. Neither meets the declared 10%/10% criterion. These are tracked-key
+proxy labels, not physical ground truth or independent samples. Removing the band condition
+grows the calibration stratum to 188 pairs from 169 keys; it does not establish adequate
+tail precision or recognition of the same physical kind in another constellation.
+
+**Next dependency.** The remaining question is the identity target and its independent
+validation: continuity of evolving tracks, persistence of spatial configuration and recurrence
+of a physical kind must not be conflated. A scientific declaration and suitable labels or a
+reviewed catalogue are needed before that target can change. No radius from this exploratory
+audit is approved for mining. A second, explicitly descriptive design amendment reports whether
+*any* radius meets both empirical bounds on these already inspected populations; it changes
+no threshold or acceptance criterion. Both audit versions remain in
+`data/identity_calibration/`. T4E.8 stays open; a cleaner null, the pilot and scaling do not
+turn its failed discrimination criterion into a pass.
 
 ### Phase 4F - Transition and Precursor Mining
 

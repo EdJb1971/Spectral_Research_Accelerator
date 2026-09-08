@@ -24,6 +24,15 @@ the cost of a refactor, not for the cost of a platform.
 
 ## 0. Current position (2026-09-04, `ed-dev`)
 
+**Atmospheric implementation update, 2026-09-08:** T4E.8 slice 2 adds the registered,
+record-scoped `spatial_geometry` identity mode and a reproducible two-sided real-data audit.
+It removes detector bands and strengths from the candidate's comparable vector, but its
+fixed-radius evaluation fails the declared identity criterion. T4E.8 remains open; the pilot
+and full T4F.6 adjudication have not run. `architecture.md` section 3E.8 and `VERIFICATION.md`
+hold the implementation and evidence, and `PLAN.md` orders this atmospheric work. This does
+not discharge G17's separate scale/shape declarations and real-record curation requirements;
+G19 remains specified and unstarted.
+
 Maintained at the top so that the frontier does not have to be reconstructed from the five
 thousand lines below. `VERIFICATION.md` carries the captured output behind every figure here, and
 `architecture.md` describes what exists rather than what is planned.

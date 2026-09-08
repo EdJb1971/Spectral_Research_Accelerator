@@ -1,5 +1,23 @@
 # Identity-calibration receipts
 
+**T4E.8 slice 2:** `t4e8-spatial-design.json` and `t4e8-spatial-audit.json` preserve the
+first exploratory spatial-identity audit. `t4e8-spatial-design-v2.json` openly amends it to
+add a monotone empirical feasibility diagnostic; `t4e8-spatial-audit-v2.json` is the final
+source-bound rerun. The amendment changes no window, threshold, weight or radius rule.
+These designs are engineering declarations, not signed scientific preregistrations.
+The candidate improves discrimination but fails its fixed-radius acceptance. No mining radius
+is approved. All windows are within the existing training period; repeated track keys are
+proxy labels and pairs are dependent. Reproduce without network access using:
+
+```
+.venv/Scripts/python.exe -m tools.audit_spatial_identity --design data/identity_calibration/t4e8-spatial-design-v2.json --output NEW_RECEIPT_PATH
+```
+
+The command refuses an existing output path and checks that its source and design did not
+change during measurement. Historical receipts are retained even when their source bindings
+are superseded. Their captured versions are evidence of what ran, not claims that the current
+source remains identical.
+
 What T4E.7's null calibration returned on the acquired ERA5 record, and the sweep it returned it
 from. These are **not** gate receipts and must not live in `data/gate_receipts/`: that directory
 is served by the read-only T4C gate record, which reports any file whose schema it does not

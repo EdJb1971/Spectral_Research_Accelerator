@@ -238,6 +238,12 @@ supersedes the other.
   flip. Excluding both, a radius of 0.0972 groups 90% of stationary repeats while admitting
   4.5% of unrelated pairs -- the first identity radius on this record the programme can defend,
   and it rests on 124 pairs.
+  **T4E.8 slice 2 now adds an opt-in spatial-geometry identity mode.** Bands and strengths
+  stay carried while spatial separation remains comparable within a declared record/grid and
+  source. Its three-window real-data audit improves AUC but fails the declared two-sided
+  criterion; no mining radius is approved. See architecture.md section 3E.8 and PLAN.md for
+  the current decision point. The 60.8% census above counts all repeated-key pairs, not only
+  adjacent-frame pairs, and track keys are proxy labels rather than physical ground truth.
   **D96 is downstream of it**: because most pairs fall inside the radius, the tolerance graph
   is one connected component, which is what makes the clustering unusably slow. **D96 gates Phase 4G**: the
   identity step that turns signed configurations into patterns is complete-linkage clustering
