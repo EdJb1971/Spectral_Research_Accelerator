@@ -8505,7 +8505,12 @@ Stationary calibration support grows from 124 band-stable pairs to 188 pairs, re
 The mechanism removes D99/D100 from this opt-in definition, but neither the original mining
 pipeline nor the general identity criterion is repaired by that fact. D96-D100 remain open.
 The pilot and Phase 4G are still gated. See the T4E.8 slice 2 entry in `VERIFICATION.md` and
-`data/identity_calibration/t4e8-spatial-audit-v2.json` for the final audit receipt.
+`data/identity_calibration/t4e8-spatial-audit-v2.json` for the audit receipt as it was first
+taken. That receipt records `code_dirty: true`, because it was measured from an uncommitted
+tree. `data/identity_calibration/t4e8-spatial-audit-v2-clean.json` is the same design re-run
+against committed revision `b902b87` with `code_dirty: false`, and is the citable receipt.
+Every scientific figure is bit-for-bit identical between the two; only wall-clock timings
+differ. The earlier receipt is retained as the record of what was actually run first.
 
 ### 3F.9 The identity step at record scale (`src/analysis_engine/spectral_identity.py`, T4E.5)
 

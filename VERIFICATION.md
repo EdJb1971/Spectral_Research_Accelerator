@@ -12219,6 +12219,28 @@ Window 960:1440: 52765 configurations, 5607 repeat pairs
 Receipt: data/identity_calibration/t4e8-spatial-audit-v2.json; DISCRIMINATION_CRITERIA_NOT_MET; 144.52 s
 ```
 
+That run was taken from an uncommitted tree, so its receipt records `code_dirty: true` and
+cannot be cited against a revision. The slice was committed as `b902b87` and the identical
+design re-run against the clean tree, which is the citable receipt:
+
+```
+$ .venv/Scripts/python.exe -m tools.audit_spatial_identity --design data/identity_calibration/t4e8-spatial-design-v2.json --output data/identity_calibration/t4e8-spatial-audit-v2-clean.json
+Design sha256: fb1b64fbf4cf41db46768a4a100ebf74df6746add60141f590727d0f0ab54448
+Window 0:480: 69580 configurations, 6838 repeat pairs
+Window 480:960: 51395 configurations, 3652 repeat pairs
+Window 960:1440: 52765 configurations, 5607 repeat pairs
+Receipt: data/identity_calibration/t4e8-spatial-audit-v2-clean.json; DISCRIMINATION_CRITERIA_NOT_MET; 80.99 s
+```
+
+`code_dirty` is `false` and `code_revision` is `b902b87dc5318de0a3750162042c162efccc37ec`.
+`design_sha256`, `source_declaration_sha256` and `metric_digest` are unchanged. Comparing the
+two receipts field by field, the only differences anywhere are `code_dirty`, `code_revision`
+and the four `elapsed_seconds` timings; every window's census, candidate errors, AUCs, strata
+and feasibility diagnostic are bit-for-bit identical. The verdict is unchanged and
+`approved_mining_radius` remains `null`. The faster wall clock is contention, not a
+measurement difference. The figures tabulated below were extracted from the first receipt and
+hold unchanged for the clean one.
+
 Extracted from the final receipt (printed by the verification extraction command):
 
 ```

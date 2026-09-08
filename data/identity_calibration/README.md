@@ -2,8 +2,11 @@
 
 **T4E.8 slice 2:** `t4e8-spatial-design.json` and `t4e8-spatial-audit.json` preserve the
 first exploratory spatial-identity audit. `t4e8-spatial-design-v2.json` openly amends it to
-add a monotone empirical feasibility diagnostic; `t4e8-spatial-audit-v2.json` is the final
-source-bound rerun. The amendment changes no window, threshold, weight or radius rule.
+add a monotone empirical feasibility diagnostic; `t4e8-spatial-audit-v2.json` is the
+source-bound rerun, taken from an uncommitted tree and so carrying `code_dirty: true`.
+`t4e8-spatial-audit-v2-clean.json` re-runs that same design against committed revision
+`b902b87`; it is the citable receipt, and it reproduces every figure of the dirty one
+exactly, differing only in wall-clock timings. The amendment changes no window, threshold, weight or radius rule.
 These designs are engineering declarations, not signed scientific preregistrations.
 The candidate improves discrimination but fails its fixed-radius acceptance. No mining radius
 is approved. All windows are within the existing training period; repeated track keys are
