@@ -87,9 +87,16 @@ bounds on an appropriate evaluation population, and calibration support adequate
 precision claimed. The declaration must explicitly adopt the new mode before any pipeline
 uses it. Analytical band independence alone does not close the acquired-record task.
 
-### T4E.9 ? Certified synthetic ground truth for the identity step ? not specified
+### T4E.9 ? Certified synthetic ground truth for the identity step ? implemented, reports FAIL
 
-**This task now also closes D101.** Specifying it uncovered that this repository holds two
+**Done, and it moved the problem.** The benchmark exists and reports: the T4E identity
+definition separates a certified motif perfectly (AUC 1.0, zero admissions in 11,985 negative
+pairs), and the frozen radius splits 46.7% of motif pairs while a feasible radius exists. D101
+is closed. **What remains of D97 is now named precisely: the operating point, not the record.**
+The next slice against it is an estimator of the radius that transfers -- measurable entirely on
+synthetic scenes, with no catalogue, no atmosphere and a known answer.
+
+**This task closed D101.** Specifying it uncovered that this repository holds two
 identity layers over one shared geometric core, and the benchmark suite certifies the wrong
 one. `src/core/motif.py` is exercised against planted and null scenes; the T4E path --
 `signature_for`, `SignatureMetric`, `cluster_signatures`, the path T4E.8 measures and T4F.6

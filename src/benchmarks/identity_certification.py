@@ -1,0 +1,305 @@
+"""T4E.9: the T4E identity path against an answer that holds by construction (closes D101).
+
+This repository carries two identity layers over one shared geometric core. `src/core/motif.py`
+is exercised by `planted_motif` and `motif_null` and has been since TG3.5. The T4E path --
+`spectral_constellation.extract_constellations`, `spectral_invariance.sign_constellations`,
+`spectral_clustering.SignatureMetric` -- is the one T4E.8 measures, the one T4F.6 would
+adjudicate, and the one D96, D97, D99 and D100 all describe, and until this module it appeared
+nowhere in `src/benchmarks/`. Its only ground-truth-like evidence was T4E.7's synthetic check,
+which plants replicates at the *signature* level and so tests the matcher while skipping
+detection, tracking and constellation extraction entirely.
+
+**What makes the answer certified rather than merely planted.** The motif generator places a
+scalene triangle of declared arm ratios at a uniformly random centre and a uniformly random
+rotation in each scene, among distractors drawn under the same minimum separation the surrogate
+null uses. So the three motif features are known by construction in every scene, and the
+transformation between any two scenes' motifs is a translation and a rotation -- exactly the
+invariance `spatial_geometry` declares. A cross-scene pair of motif configurations is a true
+positive *by construction*, not by proxy label. Every other cross-scene pair is a true negative
+by construction, because distractors are drawn independently per scene.
+
+This is the two-sided measurement T4E.6 requires, taken against construction rather than
+against tracked keys. It says nothing about the atmosphere: a real record has no planted
+motif, and passing here does not discharge T4E.8's acquired-record acceptance or approve any
+mining radius. What it settles is whether the T4E identity definition can recover a known
+answer at all.
+"""
+
+from __future__ import annotations
+
+import itertools
+import math
+from typing import Any, Dict, List, Optional, Sequence, Tuple
+
+import numpy as np
+
+from src.analysis_engine.spectral_clustering import (
+    AttributeWeights, SignatureMetric, SignaturePoint,
+)
+from src.analysis_engine.spectral_constellation import extract_constellations
+from src.analysis_engine.spectral_identity_audit import (
+    labelled_errors, radius_feasibility, recall_radius)
+from src.analysis_engine.spectral_invariance import sign_constellations
+from src.benchmarks.core import Benchmark, CheckResult, Outcome, register_benchmark, stage_check
+from src.benchmarks.seeding import SeedBundle, derive
+from src.benchmarks import fields as F
+from src.core.feature import FeatureSet
+from src.core.tracking import MotionBounds, SearchVolume, Track, TrackingResult
+from src.physical_core.field import PhysicalField
+
+
+#: Declared before the measurement. Changing any of these changes what is being certified.
+CARDINALITY = 3
+MODE = "spatial_geometry"
+SCENES_PER_PARTITION = 6
+#: Disjoint seed blocks. Calibration fixes the radius; the two evaluation blocks never inform it.
+CALIBRATION_SEEDS = tuple(range(100, 100 + SCENES_PER_PARTITION))
+EVALUATION_SEEDS = tuple(range(200, 200 + SCENES_PER_PARTITION))
+NULL_SEEDS = tuple(range(500, 500 + SCENES_PER_PARTITION))
+#: The radius admits this fraction of calibration motif pairs, then is frozen.
+CALIBRATION_RECALL = 0.9
+#: Acceptance. Both must hold on the evaluation partitions for a PASS.
+MAX_FALSE_SPLIT = 0.10
+MAX_FALSE_ADMISSION = 0.10
+#: A planted position must claim exactly one feature this close, in cells. The generator
+#: guarantees at least 30 cells between features, so half of that cannot be ambiguous.
+LABEL_TOLERANCE_CELLS = 15.0
+WEIGHTS = AttributeWeights(geometry=1.0, bearings=1.0, strengths=1.0, scales=1.0)
+SCOPE = "t4e9/planted-motif/256-cell-grid"
+
+CLAIM_BOUNDARY = (
+    "Certified on synthetic scenes whose motif is known by construction. It measures the T4E "
+    "identity path, not the atmosphere: no mining radius is approved and T4E.8's "
+    "acquired-record acceptance is not discharged by any outcome here.")
+
+
+class UnlabelledScene(RuntimeError):
+    """A scene whose planted features could not be identified in the extraction, by name.
+
+    Guessing here would be worse than failing: a mislabelled motif turns a true positive into
+    a true negative silently, and the error rates would then measure the labelling.
+    """
+
+
+def _scene(seed: int, *, plant: bool) -> Tuple[List[Any], List[Tuple[float, float]]]:
+    """One scene's extracted features, and the positions the generator planted the motif at."""
+    bundle = derive("t4e9/scene/%s/%d" % ("planted" if plant else "null", seed))
+    field = F.build_planted_motif(bundle, scene_seed=seed, plant=plant)
+    features = F._invariance_features(field.data.numpy(), dataset="planted_motif")
+    if len(features) != F._MOTIF_FEATURES_PER_SCENE:
+        raise UnlabelledScene(
+            "scene %d yielded %d features where the generator planted %d"
+            % (seed, len(features), F._MOTIF_FEATURES_PER_SCENE))
+    positions = F._motif_scene_positions(seed, plant=plant)
+    motif = positions[:F._MOTIF_CONFIGURATION_SIZE] if plant else []
+    return features, motif
+
+
+def _motif_track_ids(features: Sequence[Any],
+                     planted: Sequence[Tuple[float, float]]) -> Tuple[int, ...]:
+    """Which extracted features are the planted motif, by nearest position. Refuses ambiguity."""
+    claimed: Dict[int, Tuple[float, float]] = {}
+    for position in planted:
+        distances = [math.hypot(float(f.location.coords["row"]) - position[0],
+                                float(f.location.coords["col"]) - position[1])
+                     for f in features]
+        index = int(np.argmin(distances))
+        if distances[index] > LABEL_TOLERANCE_CELLS:
+            raise UnlabelledScene(
+                "planted motif position (%.1f, %.1f) has no extracted feature within %.1f "
+                "cells; nearest is %.1f away" % (position[0], position[1],
+                                                 LABEL_TOLERANCE_CELLS, distances[index]))
+        if index in claimed:
+            raise UnlabelledScene(
+                "two planted positions both claim extracted feature %d; the labelling is "
+                "ambiguous and a guess would be measured as an error rate" % index)
+        claimed[index] = position
+    return tuple(sorted(claimed))
+
+
+def _signed_scene(seed: int, *, plant: bool):
+    """Constellations of one scene, signed through the T4E path, with the motif identified."""
+    features, planted = _scene(seed, plant=plant)
+    motif_ids = _motif_track_ids(features, planted) if plant else ()
+    tracks = tuple(Track(index, FeatureSet([feature]), {})
+                   for index, feature in enumerate(features))
+    tracking = TrackingResult(
+        features=FeatureSet(list(features)), associator="hungarian", alpha=0.05,
+        bounds=MotionBounds(max_doublings=0.5),
+        volume=SearchVolume({"row": 1024.0, "col": 1024.0}, units="cells"),
+        times=(0.0,), tracks=tracks)
+    constellations = extract_constellations(tracking, cardinalities=(CARDINALITY,))
+    signed = sign_constellations(constellations, mode=MODE, comparison_scope=SCOPE)
+    if len(signed) != len(constellations):
+        raise UnlabelledScene(
+            "scene %d signed %d of %d constellations; a partial population would make the "
+            "error rates measure the refusals" % (seed, len(signed), len(constellations)))
+    points, is_motif = [], []
+    for constellation, signature in zip(constellations, signed):
+        points.append(SignaturePoint.from_signature(signature))
+        is_motif.append(bool(plant) and tuple(sorted(constellation.track_ids)) == motif_ids)
+    if plant and sum(is_motif) != 1:
+        raise UnlabelledScene(
+            "scene %d holds %d motif configurations where exactly one was planted"
+            % (seed, sum(is_motif)))
+    return points, is_motif
+
+
+def _partition(seeds: Sequence[int], *, plant: bool):
+    return [_signed_scene(seed, plant=plant) for seed in seeds]
+
+
+def _cross_scene_distances(partition, metric: SignatureMetric):
+    """Distances split by construction: motif-to-motif, and everything else.
+
+    Only cross-scene pairs are formed. Two configurations inside one scene share features and
+    are never independent observations of anything.
+    """
+    positive, negative = [], []
+    for (left_points, left_motif), (right_points, right_motif) in itertools.combinations(
+            partition, 2):
+        for i, left in enumerate(left_points):
+            for j, right in enumerate(right_points):
+                distance = metric.distance(left, right)
+                if left_motif[i] and right_motif[j]:
+                    positive.append(distance)
+                else:
+                    negative.append(distance)
+    return positive, negative
+
+
+def certify(*, calibration_seeds: Sequence[int] = CALIBRATION_SEEDS,
+            evaluation_seeds: Sequence[int] = EVALUATION_SEEDS,
+            null_seeds: Sequence[int] = NULL_SEEDS) -> Dict[str, Any]:
+    """Calibrate a radius on one partition, then apply it unchanged to two it never saw."""
+    metric = SignatureMetric(WEIGHTS)
+
+    calibration = _partition(calibration_seeds, plant=True)
+    calibration_positive, _ = _cross_scene_distances(calibration, metric)
+    radius = recall_radius(calibration_positive, CALIBRATION_RECALL)
+    if radius is None:
+        return {
+            "outcome": "INVALID", "radius": None,
+            "reason": ("no calibration motif pairs were formed, so no radius exists; an "
+                       "unmeasured population is not a permissive one"),
+            "claim_boundary": CLAIM_BOUNDARY,
+        }
+
+    evaluation = _partition(evaluation_seeds, plant=True)
+    positive, negative = _cross_scene_distances(evaluation, metric)
+    null = _partition(null_seeds, plant=False)
+    _, null_negative = _cross_scene_distances(null, metric)
+
+    planted_errors = labelled_errors(
+        positive, negative, radius,
+        "Construction labels: the motif is planted, not inferred, and distractors are drawn "
+        "independently per scene")
+    null_errors = labelled_errors(
+        [], null_negative, radius,
+        "Construction labels: nothing recurs in these scenes, so every admission is a false "
+        "positive")
+
+    split = planted_errors["false_split_rate"]
+    admission = planted_errors["false_admission_rate"]
+    null_admission = null_errors["false_admission_rate"]
+    if split is None or admission is None or null_admission is None:
+        outcome, reason = "INVALID", "an evaluation population was empty and is unmeasured"
+    elif (split <= MAX_FALSE_SPLIT and admission <= MAX_FALSE_ADMISSION
+            and null_admission <= MAX_FALSE_ADMISSION):
+        outcome, reason = "PASS", "both error rates are within their declared bounds"
+    else:
+        outcome, reason = "FAIL", (
+            "declared bounds are split <= %.2f and admission <= %.2f; measured split %.4f, "
+            "admission %.4f, null admission %.4f"
+            % (MAX_FALSE_SPLIT, MAX_FALSE_ADMISSION, split, admission, null_admission))
+
+    # Descriptive amendment, added after the first run was read and changing no window,
+    # threshold, weight or acceptance criterion: it reports whether ANY radius meets both
+    # bounds on this evaluation population. A frozen radius that fails while a feasible one
+    # exists is a statement about the calibration procedure, not about the definition.
+    feasibility = radius_feasibility(
+        positive, negative, max_split=MAX_FALSE_SPLIT, max_admission=MAX_FALSE_ADMISSION,
+        label_boundary="Construction labels; descriptive only, and not an approved radius")
+
+    return {
+        "outcome": outcome, "reason": reason, "radius": radius,
+        "empirical_radius_feasibility": feasibility,
+        "mode": MODE, "cardinality": CARDINALITY,
+        "calibration": {"seeds": list(calibration_seeds),
+                        "motif_pairs": len(calibration_positive),
+                        "recall": CALIBRATION_RECALL},
+        "planted_evaluation": {"seeds": list(evaluation_seeds), **planted_errors},
+        "null_evaluation": {"seeds": list(null_seeds), **null_errors},
+        "acceptance": {"max_false_split": MAX_FALSE_SPLIT,
+                       "max_false_admission": MAX_FALSE_ADMISSION},
+        "claim_boundary": CLAIM_BOUNDARY,
+    }
+
+
+@stage_check("4E.identity_certified")
+def _check_identity_certified(field: PhysicalField, truth: Dict[str, Any]) -> CheckResult:
+    """**The T4E.9 gate**: can the T4E identity path recover an answer known by construction?
+
+    The radius is calibrated on scenes the evaluation never sees and then frozen, because a
+    radius chosen after the evaluation was read is not a measurement of anything. Both error
+    rates are reported against construction, and the null partition -- same feature count,
+    same family, nothing recurring -- supplies the false-positive rate where the correct
+    answer is that there is nothing to find.
+    """
+    try:
+        result = certify()
+    except UnlabelledScene as refusal:
+        return CheckResult("4E.identity_certified", Outcome.FAIL,
+                           "scene labelling refused: %s" % refusal, measured=None)
+    if result["outcome"] == "INVALID":
+        return CheckResult("4E.identity_certified", Outcome.NOT_YET_RUNNABLE,
+                           result["reason"], measured=result)
+    if result["outcome"] == "FAIL":
+        return CheckResult("4E.identity_certified", Outcome.FAIL, result["reason"],
+                           measured=result)
+    return CheckResult(
+        "4E.identity_certified", Outcome.PASS,
+        "radius %.6f frozen on %d calibration motif pairs; planted split %.4f, admission "
+        "%.4f; null admission %.4f"
+        % (result["radius"], result["calibration"]["motif_pairs"],
+           result["planted_evaluation"]["false_split_rate"],
+           result["planted_evaluation"]["false_admission_rate"],
+           result["null_evaluation"]["false_admission_rate"]),
+        measured=result)
+
+
+def truth_identity_certified(n: int = 256, **_: Any) -> Dict[str, Any]:
+    return {
+        "path_under_test": "spectral_constellation -> spectral_invariance -> "
+                           "spectral_clustering (the T4E identity path)",
+        "mode": MODE,
+        "cardinality": CARDINALITY,
+        "scenes_per_partition": SCENES_PER_PARTITION,
+        "configurations_per_scene": math.comb(F._MOTIF_FEATURES_PER_SCENE, CARDINALITY),
+        "motif_configurations_per_planted_scene": 1,
+        "expected_motif_configurations_per_null_scene": 0,
+        "calibration_recall": CALIBRATION_RECALL,
+        "max_false_split": MAX_FALSE_SPLIT,
+        "max_false_admission": MAX_FALSE_ADMISSION,
+        "labels": "construction, not proxy: the motif is planted and the distractors are not",
+        "claim_boundary": CLAIM_BOUNDARY,
+    }
+
+
+def build_identity_certification(bundle: SeedBundle, n: int = 256,
+                                 **_: Any) -> PhysicalField:
+    """The first calibration scene, so the field shown is one the result was computed from."""
+    return F.build_planted_motif(bundle, n=n, scene_seed=CALIBRATION_SEEDS[0], plant=True)
+
+
+register_benchmark(Benchmark(
+    name="t4e_identity_certified",
+    kind="field",
+    description=("The T4E identity path against a motif known by construction: a radius frozen "
+                 "on one partition, both error rates measured on two it never saw, and a null "
+                 "partition where the right answer is nothing. Closes D101."),
+    gates=("4E.identity_certified",),
+    build=build_identity_certification,
+    known_answer=truth_identity_certified,
+    checks=(_check_identity_certified,),
+))

@@ -12313,6 +12313,64 @@ unevaluable from the audit tool, which refuses every evidence class but `record_
 by name because no serialisation for a signed `PatternCatalogue` exists. No target is chosen and
 no radius is approved.
 
+**T4E.9 (2026-09-08): the T4E identity path against an answer known by construction.**
+
+The first measurement of `spectral_constellation` -> `spectral_invariance` ->
+`spectral_clustering` against certified ground truth. `src/benchmarks/` had never touched that
+path (D101). Six planted scenes calibrate a radius and freeze it; six more planted scenes and
+six null scenes -- same feature count, same family, nothing recurring -- evaluate it. Six
+features choose three, so each scene yields exactly 20 configurations of which exactly one is
+the motif. Only cross-scene pairs are formed.
+
+```
+$ .venv/Scripts/python.exe -m pytest src/tests/test_identity_certification.py -q
+14 passed in 171.63s
+
+frozen radius            : 0.006563   (90% recall on 15 calibration motif pairs, then frozen)
+planted evaluation       : motif pairs 15, other pairs 5985
+                           AUC 1.0000  split 0.4667  admission 0.0000
+null evaluation          : motif pairs 0 (unmeasured, not zero), other pairs 6000
+                           admission 0.0000
+feasible radius exists   : True, at 0.010801 -> split 0.0667, admission 0.0000
+OUTCOME                  : FAIL
+```
+
+**The result separates into two halves and only one of them fails.** The identity definition
+discriminates perfectly: AUC 1.0, and **zero admissions across 11,985 different-configuration
+pairs** spanning both the planted evaluation and the null partition. That is the question D101
+asked -- can the T4E path recover an answer known by construction -- and the answer is yes.
+
+What fails is the radius. Calibrated at 90% recall on 15 cross-scene motif pairs and frozen,
+it splits 46.7% of motif pairs in a partition it had never seen, against a declared 10% bound.
+A descriptive amendment added after that first run -- changing no window, threshold, weight or
+acceptance criterion, in the same manner as T4E.8 slice 2's -- reports that a feasible radius
+does exist, at 0.010801, giving split 6.7% and admission 0%.
+
+The suite, measured after the benchmark was registered:
+
+```
+$ .venv/Scripts/python.exe -m src.benchmarks
+PASS 43   FAIL 1   NOT_YET_RUNNABLE 0
+FAILED: one or more benchmarks did not reproduce their known answer.
+```
+
+`summarise(run_all())` agrees at 43/1/0. The suite is red, and it is meant to be: the FAIL is
+`4E.identity_certified` reporting a measured result, not a broken build. Recording it as
+`NOT_YET_RUNNABLE` to keep the column green would be hiding a finding behind a status.
+
+Two staleness corrections found while recording this. `architecture.md` section 7.1 had claimed
+**29 PASS** for this suite; the true figure before T4E.9 was 43 PASS, 0 FAIL.
+`test_benchmark_status_in_docs_matches_a_real_run` uses `re.search`, so it checks only the
+first such triple in the file and had never guarded that second copy. Both are now corrected
+and the gap in the guard is recorded beside the row it let drift.
+
+**Why this matters for D97.** The failure is measured with perfect labels, total separation and
+no atmosphere at all. So `calibrate at a recall quantile, then freeze` does not transfer at this
+support even when the answer is certain, which is a property of the procedure rather than of the
+record. D97's second limb is now isolated from every atmospheric confound. The benchmark reports
+FAIL rather than silence, D101 is closed by the measurement existing, and no mining radius is
+approved by any of it.
+
 **Mutual k-NN alignment and its missing reference (2026-09-08, exploratory, not a phase task).**
 
 Apparatus written while auditing the Platonic Representation Hypothesis (arXiv:2405.07987v5),

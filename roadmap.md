@@ -56,7 +56,7 @@ skill, show the counterexamples, or report that no robust relationship survives.
 ## 1. Honest Technical Status
 
 Verified against the code on 2026-09-02. Every claim here is backed by captured output in
-`VERIFICATION.md`; `architecture.md` Section 7 holds the full defect ledger (D1-D101, of which **92 fixed, 1 partial (D18), 8 open (D84, D85, D96, D97, D98, D99, D100, D101)**). **`PLAN.md` is where the remaining work is ordered**; this document is the task history and the evidence.
+`VERIFICATION.md`; `architecture.md` Section 7 holds the full defect ledger (D1-D101, of which **93 fixed, 1 partial (D18), 7 open (D84, D85, D96, D97, D98, D99, D100)**). **`PLAN.md` is where the remaining work is ordered**; this document is the task history and the evidence.
 
 The numbers in this table are checked by `src/tests/test_documentation.py`, which parses them
 out of this file and compares them against the source. That guard exists because this table
@@ -2313,7 +2313,7 @@ catalogue before it can be evaluated, and that catalogue is an input this progra
 given rather than one it can generate. T4F.9 and T4F.6 remain gated on the decision and on
 whatever validation the chosen target then demands.
 
-**T4E.9 Certified synthetic ground truth for the identity step -- SPECIFIED, NOT STARTED.**
+**T4E.9 Certified synthetic ground truth for the identity step *(fixes D101, evidence for D97)* -- IMPLEMENTED 2026-09-08; the benchmark reports FAIL.**
 
 *Every difficulty in T4E.8 traces to one absence: a real atmospheric record supplies no
 replicates (D97), no honest null (D98) and no independent labels, so `kind_recurrence` waits on
@@ -2350,6 +2350,28 @@ by name against a target that is analytic rather than proxy-labelled; the recove
 compared to its construction value with the comparison's own boundary stated; and an explicit
 verdict including INVALID. A failure is a complete result and is informative about the
 definition. No radius is approved by this task under any outcome.
+
+**Outcome (2026-09-08): the benchmark reports FAIL, and the failure is the useful half.**
+`src/benchmarks/identity_certification.py` registers `t4e_identity_certified`. It routes the
+T4E path through the existing planted-motif scenes -- extraction, constellations, signing under
+`spatial_geometry`, and `SignatureMetric` matching -- with construction labels recovered by
+nearest planted position and **refused rather than guessed** when a position has no feature near
+it or two positions claim one. Three disjoint seed blocks: calibration freezes the radius, and
+neither evaluation partition informs it.
+
+The identity definition separates perfectly: **AUC 1.0**, and **zero admissions across 11,985
+different-configuration pairs** spanning the planted evaluation and the null partition. D101 is
+closed by that measurement existing. What fails is the radius -- frozen at 0.006563 from 15
+calibration pairs, it splits **46.7%** of evaluation motif pairs against a 10% bound, while a
+feasible radius exists at 0.010801 giving 6.7% and 0%.
+
+**So the two halves separate.** The definition can recover a certified answer; the
+calibrate-at-a-recall-quantile-then-freeze procedure does not transfer at this support, with
+perfect labels, total separation and no atmosphere. That is evidence about D97 isolated from
+every atmospheric confound, and it names what the next slice of D97 has to address: not a
+better record, a better estimator of the operating point. The FAIL stands rather than being
+tuned away; no threshold, partition or weight was changed after the first run, and the only
+amendment was the descriptive feasibility diagnostic. No mining radius is approved.
 
 ### Phase 4F - Transition and Precursor Mining
 
