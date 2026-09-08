@@ -2440,7 +2440,7 @@ choice and each needs its own task and acceptance. This also reaches **D96**: it
 by the radius, so a radius that cannot be frozen is a workload that cannot be predicted, and the
 identity criterion must settle before the algorithm that consumes it does.
 
-**T4E.11 An identity criterion that survives a change of partition -- SPECIFIED, NOT STARTED.**
+**T4E.11 An identity criterion that survives a change of partition -- IN PROGRESS. Candidate B declared, adopted 2026-09-09, and falsified on development evidence the same day.**
 
 *T4E.10 closed off the estimator route. Four blocks of six scenes from one generator with
 identical parameters differ 1.88x in mean same-configuration distance, so a frozen absolute
@@ -2469,6 +2469,28 @@ is being adopted and why before evaluating it, and record an amendment openly if
 Nothing here approves a mining radius or discharges T4E.8's acquired-record acceptance. A
 criterion that holds on synthetic blocks still has to be argued for on a real record, where the
 partitions differ by more.
+
+**Candidate B outcome (2026-09-09): adopted before measurement, falsified by it.** The
+normaliser was pinned in the declaration -- within a partition, each configuration's distance to
+its nearest neighbour among other scenes, then the median -- and adopted in a separate record so
+the declared artifact kept its hash. Measured on the four development blocks, the raw spread of
+1.876x became **1.991x**: dividing by that scale left the disagreement wider than it found it.
+
+The reason is measured and is narrower than the declaration anticipated. The normaliser varies
+only 1.084x while the same-configuration scale varies 1.876x, sits 7-14x above it, and
+correlates -0.21 with it. A median over every configuration's nearest cross-scene neighbour is
+dominated by the unrelated majority -- 114 of 120 configurations in a block are not the motif --
+so it measures the nearest-*unrelated* distance, a different regime from the one the radius
+works in. **The declaration's stated falsification reasoning was wrong**: it said failure would
+show the shape moving rather than the scale, and that is not established. The scale still moves;
+this normaliser does not see it. That correction is recorded in the adoption record rather than
+edited into the declaration, which stays byte-identical and still verifies against the hash it
+was adopted under.
+
+**What this does not authorise.** Trying normalisers until one works. A different normaliser is
+candidate B-prime and needs its own declaration and adoption; the alternative is candidate C.
+Either way the next step is a declaration, not a measurement. The reserved confirmatory blocks
+were not built and remain reserved.
 
 **Dependency.** This blocks D96's algorithm work, because the clustering's workload is set by
 whatever identity criterion it consumes, and it is what makes the identity-target decision

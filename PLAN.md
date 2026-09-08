@@ -69,8 +69,14 @@ Do not redefine the target or weaken the acceptance criterion to make a candidat
 do not report a diagnostic result as progress toward the primary target. D96, D97, D98, D99 and
 D100 all remain open and none was repaired by making the choice.
 
-**Next, in order.** T4E.11 candidate B is declared and awaiting the maintainer's adoption;
-nothing is measured until it is adopted. After that, the catalogue `kind_recurrence` requires --
+**Next, in order.** T4E.11 candidate B was adopted on 2026-09-09 and **falsified on
+development evidence the same day**: normalising by each partition's label-free close-pair
+scale left the spread wider (1.876x to 1.991x), because that normaliser varies only 1.084x and
+measures the nearest-*unrelated* distance rather than the same-configuration one. The reserved
+confirmatory blocks are untouched. What comes next is a declaration, not a measurement: either
+a different label-free normaliser as candidate B-prime, or candidate C, the rank-based criterion
+with no absolute scale to transfer. Trying variants until one works is what R20 forbids, so the
+choice is declared first and evaluated alone. After that, the catalogue `kind_recurrence` requires --
 sourcing it, deciding its independence class, and a serialisation the audit tool can load.
 
 ## 2. Ordered atmospheric work

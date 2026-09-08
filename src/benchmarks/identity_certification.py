@@ -270,6 +270,74 @@ def certify(*, calibration_seeds: Sequence[int] = CALIBRATION_SEEDS,
     }
 
 
+#: T4E.11 candidate B, adopted 2026-09-09. Declared in
+#: `data/identity_calibration/t4e11-normalised-distance-declaration.json` (sha256 ee9715ea...)
+#: before any of it was measured, and adopted separately so the declared artifact keeps its hash.
+NORMALISER_NAME = "median_nearest_cross_scene_neighbour"
+
+
+def partition_normaliser(partition, metric: SignatureMetric) -> Optional[float]:
+    """Candidate B's scale for one partition, computed without any label.
+
+    For every configuration, the distance to its nearest neighbour among configurations from
+    *other* scenes in this partition; the normaliser is the median of those values. Label-free
+    by construction, so it is computable on a real record and cannot smuggle the answer into
+    the scale it divides by. A median of minima rather than a mean or an extremum, so one
+    badly extracted scene moves it a little rather than a lot. And it is taken from the
+    close-pair regime the radius operates in: a scale read off the bulk of the distance
+    distribution would be set by unrelated pairs and would track a different quantity.
+    """
+    if len(partition) < 2:
+        return None
+    nearest = []
+    for index, (points, _) in enumerate(partition):
+        others = [point for other, (candidates, _) in enumerate(partition) if other != index
+                  for point in candidates]
+        for point in points:
+            nearest.append(min(metric.distance(point, other) for other in others))
+    return float(np.median(nearest)) if nearest else None
+
+
+def measure_normalised_blocks(blocks: Sequence[Sequence[int]] = None) -> Dict[str, Any]:
+    """Candidate B's development evaluation: does normalising collapse the 1.88x spread?
+
+    The declaration states the assumption this rests on -- that the label-free close-pair scale
+    moves with the same-configuration scale between partitions -- and states that it is an
+    assumption rather than a measurement. This is the measurement. It runs on the four blocks
+    that informed the declaration, so it is development evidence and is not confirmation of
+    anything.
+    """
+    blocks = tuple(blocks) if blocks is not None else EXCHANGEABILITY_BLOCKS
+    metric = SignatureMetric(WEIGHTS)
+    rows = []
+    for seeds in blocks:
+        partition = _partition(seeds, plant=True)
+        raw, _ = _cross_scene_distances(partition, metric)
+        scale = partition_normaliser(partition, metric)
+        array = np.asarray(raw, dtype=np.float64)
+        normalised = array / scale
+        rows.append({
+            "seeds": list(seeds), "pairs": int(array.size), "normaliser": scale,
+            "raw_mean": float(array.mean()), "raw_median": float(np.median(array)),
+            "normalised_mean": float(normalised.mean()),
+            "normalised_median": float(np.median(normalised)),
+            "normalised_max": float(normalised.max()),
+        })
+    raw_means = np.asarray([row["raw_mean"] for row in rows])
+    norm_means = np.asarray([row["normalised_mean"] for row in rows])
+    return {
+        "candidate": "B_comparably_scaled_distance",
+        "normaliser": NORMALISER_NAME,
+        "blocks": rows,
+        "raw_mean_ratio": float(raw_means.max() / raw_means.min()),
+        "normalised_mean_ratio": float(norm_means.max() / norm_means.min()),
+        "evidence_class": "development",
+        "boundary": ("Measured on the four blocks that informed the declaration. Development "
+                     "evidence only; the reserved confirmatory blocks are untouched and this "
+                     "is not confirmation of candidate B."),
+    }
+
+
 #: T4E.10. Independent scene blocks of the declared size, used to measure whether blocks drawn
 #: from one generator are exchangeable at all. If they are not, no radius frozen on one of them
 #: transfers to another, whatever estimator produced it.

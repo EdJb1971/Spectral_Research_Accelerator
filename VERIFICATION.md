@@ -12385,6 +12385,51 @@ release decision, but it does mean two gates that read PASS now read NOT_RUN and
 were not isolated to a cause; the run predates no clean baseline for this suite size, so they
 are reported as measured rather than attributed.
 
+**T4E.11 candidate B (2026-09-09): adopted before measurement, falsified by it.**
+
+Declared in `t4e11-normalised-distance-declaration.json` (sha256 `ee9715ea...`) before anything
+was measured, and adopted by the maintainer on 2026-09-09 in a separate record so the declared
+artifact keeps its hash. Development evaluation only; the reserved confirmatory blocks were not
+built.
+
+```
+block         normaliser   raw mean  norm mean   norm med
+100-105         0.065395   0.004575     0.0700     0.0653
+200-205         0.061142   0.006941     0.1135     0.1037
+300-305         0.061610   0.008580     0.1393     0.1317
+400-405         0.066280   0.008585     0.1295     0.1292
+
+raw mean spread        : 1.876x
+normalised mean spread : 1.991x
+```
+
+**The candidate is falsified.** Normalising did not collapse the spread it was adopted to
+collapse; it left it marginally wider.
+
+```
+normaliser spread across blocks : 1.084x
+same-config mean spread         : 1.876x
+normaliser / same-config mean   : 14.29, 8.81, 7.18, 7.72
+correlation(normaliser, same-config mean) over 4 blocks : -0.210
+```
+
+The normaliser barely moves while the quantity it was meant to track moves a lot, sits seven to
+fourteen times above that quantity, and does not correlate with it. A median over every
+configuration's nearest cross-scene neighbour is dominated by the unrelated majority -- 114 of
+120 configurations per block are not the motif -- so it measures the nearest-**unrelated**
+distance, a different regime from the same-configuration one the radius operates in.
+
+**A correction to the declaration's own reasoning, recorded rather than edited away.** The
+declaration said failure would show the *shape* was moving rather than the scale. That is not
+established: the same-configuration scale still moves 1.876x, and this particular label-free
+normaliser simply does not track it. It also described the normaliser as "taken from the
+close-pair regime the radius operates in", which was wrong in exactly the way the measurement
+exposed. Whether another label-free normaliser would track it is open and needs its own
+declaration; trying variants until one works is what R20's sequential discipline exists to
+prevent. The declaration file is byte-identical so it still verifies against the hash it was
+adopted under, and the outcome and this correction live in
+`t4e11-normalised-distance-adoption.json`.
+
 **T4E.8 slice 5 (2026-09-09): the identity target decided, and the role recorded as data.**
 
 The maintainer's declared position: **`kind_recurrence` is the primary scientific target;

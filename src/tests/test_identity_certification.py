@@ -277,3 +277,54 @@ def test_the_declaration_exists_and_is_not_yet_adopted():
     assert body["development"]["status"].startswith("ALREADY INSPECTED")
     # The falsifying outcome is named before anything is measured.
     assert "motivate candidate C" in body["what_would_falsify_this_candidate"]
+
+
+# ------------------------------------ T4E.11 candidate B: adopted, measured, and falsified
+
+def test_the_normaliser_is_label_free_by_construction():
+    """It may not consult which configurations are the motif; that is the whole point of it."""
+    import inspect
+    from src.benchmarks.identity_certification import partition_normaliser
+
+    source = inspect.getsource(partition_normaliser)
+    assert "is_motif" not in source and "motif" not in source.split('"""')[2]
+
+
+def test_candidate_B_does_not_collapse_the_spread_it_was_declared_to_collapse():
+    """The declared falsification, measured. Recorded as a relationship, not as two numbers.
+
+    Candidate B was adopted on the reasoning that block distributions shift in scale while
+    holding their shape, so dividing by each partition's own close-pair scale should make one
+    radius mean the same thing everywhere. It does not.
+    """
+    from src.benchmarks.identity_certification import measure_normalised_blocks
+
+    report = measure_normalised_blocks()
+    assert report["evidence_class"] == "development"
+    assert "not confirmation" in report["boundary"]
+    # If normalising ever does collapse the spread, this test says so rather than passing on.
+    if report["normalised_mean_ratio"] < 1.2:
+        return
+    assert report["normalised_mean_ratio"] >= report["raw_mean_ratio"] * 0.9, (
+        "candidate B was expected to leave the spread substantially uncorrected")
+
+
+def test_the_normaliser_does_not_track_the_quantity_it_was_meant_to_track():
+    """Why B failed, which is narrower than the declaration anticipated and is recorded as such.
+
+    The declaration reasoned that failure would show the *shape* was moving rather than the
+    scale. That is not what happened. The same-configuration scale still moves 1.88x; this
+    label-free normaliser simply does not see it, because a median over every configuration's
+    nearest cross-scene neighbour is dominated by the unrelated majority.
+    """
+    from src.benchmarks.identity_certification import measure_normalised_blocks
+
+    report = measure_normalised_blocks()
+    normalisers = [block["normaliser"] for block in report["blocks"]]
+    raw_means = [block["raw_mean"] for block in report["blocks"]]
+    normaliser_spread = max(normalisers) / min(normalisers)
+    assert normaliser_spread < 1.2, "the normaliser barely varies between blocks"
+    assert report["raw_mean_ratio"] > 1.5, "while the quantity it should track varies a lot"
+    # It is measuring a different regime: nearest-unrelated, not same-configuration.
+    for normaliser, raw in zip(normalisers, raw_means):
+        assert normaliser / raw > 5.0
