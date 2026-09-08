@@ -132,7 +132,7 @@ is partial. Phase 3.5's 25 implementation tasks are complete; the literal screen
 requested by T3.5.0 is still absent, and D18's cross-device agreement remains partial because
 only the T5.1a-e slice has CPU/CUDA parity evidence and ROCm/MPS are unmeasured. Phase 4A-4C.6
 are complete through the recorded real-data PASS; a separate human review of that receipt
-remains. T4D.1-3, T4E.1-4 and T4F.1-5 are complete and T4F.6 is partial -- the physical gate is built and discriminates, but it has never been run, so 4G is still gated. T4F.7 and T4F.8 are complete. **T4E.5 is in progress, T4E.6 and T4E.7 are done, T4E.8 is in progress (slices 1 and 2 implemented, acquired-record acceptance unmet, slice 3 specified), and T4F.9 is not started** -- see `PLAN.md`, which orders what remains. 4G and optional 4H remain
+remains. T4D.1-3, T4E.1-4 and T4F.1-5 are complete and T4F.6 is partial -- the physical gate is built and discriminates, but it has never been run, so 4G is still gated. T4F.7 and T4F.8 are complete. **T4E.5 is in progress, T4E.6 and T4E.7 are done, T4E.8 is in progress (slices 1-3 implemented, acquired-record acceptance unmet, identity target undecided), and T4F.9 is not started** -- see `PLAN.md`, which orders what remains. 4G and optional 4H remain
 undone. See
 Section 4 for per-task evidence.
 
@@ -2100,7 +2100,7 @@ first-pass survivors were real gaps and are now bound by tests; the twelfth was 
 status. **D97 is not closed** -- nothing in the pipeline consumes the new calibration yet, and on
 real data it still yields no radius -- and **D98 is opened**.
 
-**T4E.8 A radius the record's own labels can defend *(addresses D98, D99, D100)* -- IN PROGRESS; slices 1 and 2 implemented, acquired-record acceptance unmet, slice 3 specified and not started.**
+**T4E.8 A radius the record's own labels can defend *(addresses D98, D99, D100)* -- IN PROGRESS; slices 1-3 implemented, acquired-record acceptance unmet, identity target undecided.**
 
 *Specified below as a null-building task. Slice 1 measured that the null was not the binding constraint, so everything from here to the slice-1 block is the superseded specification, kept because the reasoning in it is why the measurement was worth taking.*
 
@@ -2206,7 +2206,7 @@ no threshold or acceptance criterion. Both audit versions remain in
 `data/identity_calibration/`. T4E.8 stays open; a cleaner null, the pilot and scaling do not
 turn its failed discrimination criterion into a pass.
 
-**T4E.8 slice 3 -- Make the identity target a declared object the audit must be given -- SPECIFIED, NOT STARTED.**
+**T4E.8 slice 3 -- Make the identity target a declared object the audit must be given -- IMPLEMENTED 2026-09-08; limbs 1 and 2 delivered, limb 3 not delivered.**
 
 *Slice 2 failed its criterion, and the reason it failed is not a threshold. Three distinct
 questions -- continuity of an evolving tracked constellation, persistence of a spatial
@@ -2285,6 +2285,27 @@ the target is undecided.
 7. Targeted mutation testing to the standard set by slice 2 -- every mutation of the new
    admissibility and refusal logic killed by a failing test, with no timeout or collection
    failure counted as a kill.
+
+**Implementation outcome (2026-09-08).** Limbs 1 and 2 are delivered as specified.
+`IDENTITY_TARGETS` and `EVIDENCE_CLASSES` are registries; `declare_identity_target` refuses an
+absent target, an unknown name and every inadmissible pairing by name, and the audit calls it
+before opening a source value. `catalogue_labels` opens the external-reference path through
+`match_into_catalogue` and reports unmatched signatures as unlabelled rather than negative.
+Acceptance 1, 2, 3, 5 and 7 are met by 21 tests and 12 of 12 killed mutations; acceptance 4 is
+met exactly -- the v3 receipt reproduces `t4e8-spatial-audit-v2-clean.json` bit-for-bit at the
+same frozen radius and verdict. `architecture.md` section 3E.9 describes the implementation.
+
+**Acceptance 6 is not met, and the specification was wrong to assume it could be.** Limb 3
+asked for the declaration to be surfaced in the interface. Nothing in `src/api` or
+`frontend/src` reads identity-calibration receipts: the audit is a local-only CLI writing JSON,
+and there is no view to extend. Delivering it means a new API endpoint over local receipt files
+and a new view, which is its own task with its own acceptance, not a limb of this one. The
+declaration is published in the receipt so a future surface has one authority to read.
+**A second gap is recorded rather than worked around:** no serialisation for a signed
+`PatternCatalogue` exists, so `tools/audit_spatial_identity.py` refuses any evidence class other
+than `record_derived_proxy` by name. `kind_recurrence` is evaluable in the library and tested
+there, and remains unevaluable from the tool until a reviewed catalogue and a format for it
+exist. T4E.8 stays open and no radius is approved.
 
 **Dependency note.** Slice 3 unblocks the maintainer's decision; it does not substitute for it.
 Whichever target is chosen, `kind_recurrence` additionally requires a reviewed, cited, frozen

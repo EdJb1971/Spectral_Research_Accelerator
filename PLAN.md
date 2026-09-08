@@ -5,7 +5,7 @@ not the status of record. `roadmap.md` and `roadmap_cross_domain.md` hold task h
 `architecture.md` describes the implementation and defects, and `VERIFICATION.md` holds
 measurements. When they disagree with this document, **they are right and this is stale.**
 
-Last revised 2026-09-08, after T4E.8 slice 2.
+Last revised 2026-09-08, after T4E.8 slice 3.
 
 ## 0. The question this sequence serves
 
@@ -42,20 +42,28 @@ D98 remains open for recurrence inference and is not repaired by this labelled a
 
 ### T4E.8 ? Finish a defensible identity definition and its validation ? in progress
 
-Slices 1 and 2 are implemented; the acquired-record acceptance remains unmet.
-**Slice 3 is specified in `roadmap.md` and not started.** It makes the identity target a
-declared, enumerated field the audit refuses to run without, types the label source by
-provenance, refuses `kind_recurrence` against record-derived proxy labels as circular, opens
-the external-reference path through `match_into_catalogue`, and surfaces target, evidence and
-refusal in the interface. It is deliberately question-preserving: it blocks the unanswered
-question rather than answering it, and it must reproduce the slice-2 figures bit-for-bit.
-Slice 3 does not close this task; item 1 below remains the maintainer's decision.
+Slices 1, 2 and 3 are implemented; the acquired-record acceptance remains unmet.
+
+**Slice 3 changed what is blocking.** The audit now refuses to run without a declared
+`identity_target` and `evidence_class`, and refuses `kind_recurrence` against record-derived
+proxy labels as circular. Naming the slice-2 design's target reproduced its figures
+bit-for-bit, so the declaration cost no measurement. Two things it did not deliver are open
+and recorded in `roadmap.md`: no interface surface renders the declaration, because none reads
+identity-calibration receipts; and `kind_recurrence` is evaluable only in the library, because
+no serialisation for a signed `PatternCatalogue` exists for the audit tool to load.
+
+**The decision below is now the only thing holding this task.** It was always a scientific
+question; it is now also a refusal the software will not step around.
 
 Next:
 
-1. Make the intended identity target explicit and review it against the measurements in
-   `architecture.md` section 3E.8 and the T4E.8 verification entries. The new mode is
-   record-scoped grid geometry, not location-independent physical morphology.
+1. **Choose the identity target.** `track_continuity`, `spatial_persistence` and
+   `kind_recurrence` are declared in `spectral_identity_audit.py` with what each recognises and
+   does not license; review them against the measurements in `architecture.md` sections 3E.8
+   and 3E.9 and the T4E.8 verification entries. The slice-2 mode is record-scoped grid geometry,
+   not location-independent physical morphology. Choosing `kind_recurrence` additionally
+   requires a reviewed catalogue and a format for it; that is an input this programme must be
+   given, not one it can generate.
 2. Establish labels or an independently justified reference for that target. Keep
    exploratory development windows distinct from any future confirmatory evaluation;
    the three audited windows are already inspected training data.

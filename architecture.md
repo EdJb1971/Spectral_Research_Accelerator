@@ -3,7 +3,9 @@
 
 This document provides a detailed, truthful architectural blueprint of the **SpectralEarth Research Platform** as it exists today. It delineates the core design, the unified data spine, the key modules, database representations, API boundaries, and the architectural seams that decouple the platform's layers.
 
-**Current implementation frontier (2026-09-08, T4E.8 slice 2).** An opt-in, registered
+**Current implementation frontier (2026-09-08, T4E.8 slice 3).** The audit now refuses to run
+without a declared identity target and evidence class, and refuses `kind_recurrence` against
+record-derived labels as circular; section 3E.9 describes it. An opt-in, registered
 `spatial_geometry` identity mode now compares spatial separations and admitted bearings within
 a declared record/grid and source. Detector bands and strengths remain carried metadata.
 Its acquired-record audit improves discrimination but does not supply an approved mining
@@ -8512,6 +8514,60 @@ against committed revision `b902b87` with `code_dirty: false`, and is the citabl
 Every scientific figure is bit-for-bit identical between the two; only wall-clock timings
 differ. The earlier receipt is retained as the record of what was actually run first.
 
+### 3E.9 A declared identity target, and evidence admissible for it (T4E.8 slice 3)
+
+`src/analysis_engine/spectral_identity_audit.py` now carries two registries. `IDENTITY_TARGETS`
+holds `track_continuity`, `spatial_persistence` and `kind_recurrence`; each `IdentityTarget`
+states what it recognises, which evidence classes may validate it, what it does not license,
+and any caveat owed to a particular evidence class -- as data, not commentary. `EVIDENCE_CLASSES`
+holds `record_derived_proxy` and `external_reference`, each carrying its provenance, whether it
+is independent of the record under test, and the label boundary that travels with every figure
+computed from it. Both use the existing `Registry`, so an unknown name is refused with its
+correction rather than defaulting.
+
+`declare_identity_target(target, evidence)` admits a pairing or refuses it. An absent target or
+evidence class raises `MissingParameterError` naming the alternatives. **The substantive rule is
+that `kind_recurrence` against `record_derived_proxy` is refused**: tracked keys are produced by
+the same record and pipeline whose identity is under test, so a definition validated against
+them is validated against itself. `track_continuity` on those labels is admitted with the
+complementary caveat, that a high score demonstrates agreement with the tracker rather than
+independent identity. Neither the refusal nor the caveat can be suppressed by a flag.
+`tools/audit_spatial_identity.py` calls this before opening any source value, so a design that
+has not said what identity it means costs nothing to refuse, and the returned declaration is
+published in the receipt.
+
+`catalogue_labels` supplies the external-reference path. It routes through
+`spectral_regions.py:match_into_catalogue`, whose centroids, metric and tolerance radius all come
+from the supplied catalogue and none of which move, and labels two signatures a positive pair
+when they land in the same reviewed pattern. Signatures the catalogue does not place are counted
+as **unlabelled, never as negatives** -- a configuration the catalogue cannot recognise is not
+known to be different. A catalogue whose signature family does not match the signatures under
+test is refused rather than reported as total disagreement, negatives cannot be drawn from a
+single identity, and a negative population the patterns cannot supply is refused by name rather
+than left to look like a hang.
+
+`PROXY_LABEL_BOUNDARY` pins verbatim the wording every T4E.8 figure to date was published
+under, and is the default for `labelled_errors` and `radius_feasibility`, so declaring a target
+cannot silently reword a receipt that has already been cited.
+
+**Boundaries.** This slice chooses no target, signs no catalogue and approves no radius. It
+does not close T4E.8, D97, D98, D99 or D100. The declared target is a statement of intent whose
+scientific justification remains the maintainer's; the software checks admissibility, not
+correctness. `tools/audit_spatial_identity.py` still derives labels from tracked keys only, and
+**refuses any other evidence class by name**, because no serialisation for a signed
+`PatternCatalogue` exists in this repository -- so `kind_recurrence` remains unevaluable from
+that tool until a reviewed catalogue and its file format exist. The library path is tested.
+No interface surface renders the declaration: nothing in `src/api` or `frontend/src` reads
+identity-calibration receipts, and none was added here.
+
+**Reproduction.** `t4e8-spatial-design-v3.json` amends the slice-2 design by naming its target
+and evidence class and changes nothing else. Its receipt
+`data/identity_calibration/t4e8-spatial-audit-v3.json`, bound to clean revision `3fc491a`,
+reproduces `t4e8-spatial-audit-v2-clean.json` bit-for-bit on every census, error, AUC, stratum
+and feasibility figure, at the same frozen radius `0.13807521070069662` and the same
+`DISCRIMINATION_CRITERIA_NOT_MET` verdict. A declaration mechanism that moved a measurement
+would be a defect in the mechanism.
+
 ### 3F.9 The identity step at record scale (`src/analysis_engine/spectral_identity.py`, T4E.5)
 
 **In progress. Not accepted, and not yet used by anything.** It exists in the tree, it is exact
@@ -9663,8 +9719,9 @@ able to sit three slices out of date.
 | `test_spectral_identity.py` | 24 | T4E.5 the identity step at record scale, **in progress**: the fast clustering held to the original by comparing whole receipts rather than counts at six sizes (24 test functions, 29 pytest cases), every pattern's members, centroid vector and observed radius asserted equal, and agreement held under a tolerance widened four-fold to force a single component and under a tolerance of zero; the decomposition's justification tested rather than asserted, with a record whose graph genuinely splits, no pattern drawing members from two components, and every cross-component pair checked to be beyond the tolerance; the `2*tanh(|dlog|/2)` identity verified over 20,000 draws with the supremum of a relative difference shown to be below 2; the box shown never to exclude a true neighbour, checked against brute force on every pair, and shown not to filter on a block the metric ignores; the per-component bound derived rather than fitted and checked against `T*sqrt(n*sum_w/w)` on four blocks at declared weights; the union count pinned as a spanning structure equal to `n_points - n_components` and **not** an edge count, against a brute-force count showing the true neighbourhood is denser; and a component too large refused rather than approximated. Eleven mutants survive and are not yet closed. |
 | `test_spectral_proposals.py` | 50 | T4F.8 follow-up proposals: both kinds built on rules the T4F.7 record actually produced -- a real signature in `A` at confidence 0.5 over 76 eligible antecedents and a real negative in `D` at 0 of 24 -- so a re-test is proposed about a finding and a power increase about an absence rather than about hand-written figures; a refutation carrying a named statistic, a direction and a threshold checked against the range that statistic can attain, with a zero base rate, a missing one and one above unity each shown unreachable and the zero case refused because a Wilson upper bound is strictly positive at any number of trials; the discovery region, an undeclared region and a leaked identity each refusing a re-test, and the partition digest travelling with the proposal; a rule that did not clear its null refused a re-test and one that did refused a power increase, the power proposal asserted to carry no prediction and no refutation, its effect size shown to be a declared doubling of the base rate rather than the confidence the record happened to show, and a negative from a study that already carried the 24 occurrences a smaller effect needs refused as chasing while one whose ensemble could not have rejected stays a gap; separability required in both directions with the two shown to come apart each way -- 323 to 327 detectable and not refutable at 0.35 against 0.30, 195 refutable and not detectable at 0.54 against 0.47 -- and the n=24 case pinned where the null bound sits 0.00004 above the prediction so reading either interval from the wrong end would size the study at 24 rather than 25; separability asserted monotone in `n` over five pairs because the design interval is taken at `p * n`, the search asserted to return the smallest sufficient `n` and to return no number rather than a huge one for proportions too close to separate; the required count pinned at 8 against 81 available on this record, a target supplying nothing naming the acquisition it needs, a thinned target naming its shortfall, and an ensemble too small to reject after correction making the design underpowered whatever the ground supplies; a ground offered and unreadable refused rather than given the discovery's base rate, for both kinds; signing shown not to move a digest while the target, alpha, correction, null and ensemble size each do, the lead and the status shown to be outside the digest by giving one design two different records, an underpowered design still registrable and a refused one neither registrable nor runnable, and the code refusing to sign; the lead refused on a record with no calendar and on a series counted on another clock while a dated record gives 6 to 18 hours; and the config asserted to be the shape the experiment engine already runs, to leave the parent's matrix unmutated, to state the retraction condition in words, and to carry the claim boundary, the inherited T4F.3 boundary and the note that the two existing proposers are optimisers |
 | `test_spectral_regions.py` | 54 | T4F.7 cross-region generalisation: one 260-frame five-box record built to give four answers at once -- the rule holding in two held-out regions at lift 4.47 and 3.72 after correction over four declared ones, not holding in a third that carries both patterns in the wrong order at support 0 of 24, and not assessable in a fourth that carries nothing -- with the verdict `regional` on that design and `general` on one declaring three held-out boxes; a region carrying the antecedent but never the consequent shown to be unassessable rather than failing, because a base rate of zero is not a lift of zero; membership decided on footprints with every placed configuration's whole box asserted inside its region and the three ways of not being placed counted apart at 364, 397 and 21 of 1,063; the identity matcher shown to hold every centroid and radius fixed and to admit only what the radius contains while a fitted member outside it is left alone, an empty catalogue refused as clustering under another name, leakage measured on the fitted members alone and shown to refuse `general`, and T4E.2's rotation invariance measured as the reason a band-orientation catalogue cannot be matched into -- 0.447 to its own centroid against 0.585 to the other, inside a radius of 0.959; the gaps published in cells and kilometres with a pixel grid refused kilometres by name, independence unestablished without a declared decorrelation length and the too-close regions named with one; `general` refused separately for leakage, for unestablished independence, for an undeclared physiography and for a single declared class, and refused for one assessable region against a floor of two; a reversed or negative box, an unknown role, two discovery regions, none, no held-out region, overlapping boxes and duplicate names each refused by name, and the partition digest shown to move with the declared design; and the claim boundary naming the six refused words, saying that `general` is not a claim about anywhere untested and that `unassessable` licenses nothing |
+  | `test_identity_target_declaration.py` | 18 | T4E.8 slice 3 the declared identity target: an absent target or evidence class refused by name, a misspelling refused with its correction, `kind_recurrence` against record-derived proxy labels refused as circular, `track_continuity` admitted with its tracker-agreement caveat, every target round-tripping what it recognises and does not license, the published proxy wording pinned verbatim so naming a target cannot reword a cited receipt, and the external-reference path recovering two planted identities from a reviewed catalogue while refusing a mismatched family, a single identity, a non-catalogue and a negative population the patterns cannot supply |
   | `test_spectral_spatial_identity.py` | 24 | T4E.8 spatial geometry, detector-band/magnitude independence, source/scope refusal, analytic distances, old-radius refusal, scalar/accelerated agreement and two-sided proxy-label diagnostics |
-| **total** | **4034** | |
+| **total** | **4052** | |
 
 ### 7.4a Browser suite inventory
 

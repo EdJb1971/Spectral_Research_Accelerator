@@ -7,6 +7,12 @@ source-bound rerun, taken from an uncommitted tree and so carrying `code_dirty: 
 `t4e8-spatial-audit-v2-clean.json` re-runs that same design against committed revision
 `b902b87`; it is the citable receipt, and it reproduces every figure of the dirty one
 exactly, differing only in wall-clock timings. The amendment changes no window, threshold, weight or radius rule.
+**T4E.8 slice 3:** `t4e8-spatial-design-v3.json` amends v2 by naming the identity target
+(`spatial_persistence`) and evidence class (`record_derived_proxy`) it was already measuring,
+and changes nothing else. `t4e8-spatial-audit-v3.json` is its receipt, bound to clean revision
+`3fc491a`, and reproduces `t4e8-spatial-audit-v2-clean.json` bit-for-bit on every figure. The
+audit now refuses to run at all without those two fields, and refuses `kind_recurrence` against
+record-derived labels as circular.
 These designs are engineering declarations, not signed scientific preregistrations.
 The candidate improves discrimination but fails its fixed-radius acceptance. No mining radius
 is approved. All windows are within the existing training period; repeated track keys are

@@ -12241,6 +12241,78 @@ and feasibility diagnostic are bit-for-bit identical. The verdict is unchanged a
 measurement difference. The figures tabulated below were extracted from the first receipt and
 hold unchanged for the clean one.
 
+**T4E.8 slice 3 (2026-09-08): a declared target, and the reproduction that proves the
+declaration changed no measurement.**
+
+```
+$ .venv/Scripts/python.exe -m pytest src/tests/test_identity_target_declaration.py -q
+21 passed   # 18 test functions, 21 parametrised cases
+$ .venv/Scripts/python.exe -m pytest src/tests/test_identity_target_declaration.py     src/tests/test_spectral_spatial_identity.py src/tests/test_spectral_invariance.py     src/tests/test_spectral_clustering.py src/tests/test_spectral_regions.py -q
+190 passed
+$ .venv/Scripts/python.exe -m tools.mutate_identity_target
+baselines_passed: true; mutants: 12; killed: 12; survivors: []
+```
+
+The twelve mutations all weaken the declaration or its admissibility rule, which is logic a
+passing run never exercises. `admissibility_never_refuses`, `kind_recurrence_admits_proxy_labels`,
+`absent_target_falls_through`, `absent_evidence_falls_through`, `proxy_wording_reworded`,
+`caveat_never_published`, `proxy_claims_independence`, `declared_boundary_ignored`,
+`catalogue_family_unchecked`, `unmatched_counted_as_an_identity`, `catalogue_type_unchecked` and
+`negative_budget_unbounded` were each killed by a failing assertion, with no timeout or
+collection failure counted as a kill. `negative_budget_unbounded` survived a first run because
+no test covered the budget; rather than delete an untested guard, the budget was made an
+argument and the refusal pinned, which is recorded here because the first figure was 11 of 12.
+
+The refusals, all raised before any source value is opened:
+
+```
+$ .venv/Scripts/python.exe -m tools.audit_spatial_identity --design <no identity_target> ...
+MissingParameterError: Missing required parameter 'identity_target' for 'an identity audit'.
+Required parameters for 'an identity audit': kind_recurrence, spatial_persistence, track_continuity.
+
+$ ... --design <identity_target: kind_recurrence, evidence_class: record_derived_proxy> ...
+InvalidParameterError: Parameter 'evidence_class' = 'record_derived_proxy' is invalid: expected
+evidence admissible for target 'kind_recurrence': external_reference. record_derived_proxy labels
+are labels computed from the same record and pipeline whose identity is under test, so a
+definition validated against them is validated against itself; choose admissible labels rather
+than relaxing this pairing.
+
+$ ... --design <identity_target: spatial_persistance> ...
+UnknownNameError: Unknown identity target 'spatial_persistance'. Did you mean
+'spatial_persistence'? Available: kind_recurrence, spatial_persistence, track_continuity.
+```
+
+The reproduction. `t4e8-spatial-design-v3.json` is the slice-2 design with `identity_target`
+and `evidence_class` added and nothing else changed:
+
+```
+$ .venv/Scripts/python.exe -m tools.audit_spatial_identity --design data/identity_calibration/t4e8-spatial-design-v3.json --output data/identity_calibration/t4e8-spatial-audit-v3.json
+Design sha256: e93b5e3246e07688ba5affe007c464a3b9dcd0b6e6e30e002bb618010f5a0464
+Identity target: spatial_persistence via record_derived_proxy
+Caveat: Repeated tracked keys bound how far geometry drifts over a track's lifetime; genuine morphological change is scored as a split, not as an error.
+Window 0:480: 69580 configurations, 6838 repeat pairs
+Window 480:960: 51395 configurations, 3652 repeat pairs
+Window 960:1440: 52765 configurations, 5607 repeat pairs
+Receipt: data/identity_calibration/t4e8-spatial-audit-v3.json; DISCRIMINATION_CRITERIA_NOT_MET; 140.61 s
+```
+
+`code_dirty` is `false` at revision `3fc491a`. Compared field by field against
+`t4e8-spatial-audit-v2-clean.json`, every window's census, candidate errors, AUCs, strata and
+feasibility diagnostic are **bit-for-bit identical**, at the same frozen radius
+`0.13807521070069662` and the same `DISCRIMINATION_CRITERIA_NOT_MET` verdict with
+`approved_mining_radius` `null`. Only `elapsed_seconds`, the new `identity_declaration` block,
+and the expected provenance fields -- design, design hash, source hashes, revision -- differ.
+Naming what was already being measured moved no measurement, which is the whole of what this
+slice claims.
+
+**Not delivered.** The specification's limb 3 asked for the declaration to be surfaced in the
+interface. Nothing in `src/api` or `frontend/src` reads identity-calibration receipts, so there
+is no view to extend and none was invented; the declaration is published in the receipt instead.
+`kind_recurrence` is exercised and tested through the library's `catalogue_labels`, but is
+unevaluable from the audit tool, which refuses every evidence class but `record_derived_proxy`
+by name because no serialisation for a signed `PatternCatalogue` exists. No target is chosen and
+no radius is approved.
+
 Extracted from the final receipt (printed by the verification extraction command):
 
 ```
