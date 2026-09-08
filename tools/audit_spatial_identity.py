@@ -24,7 +24,8 @@ import xarray as xr
 from src.analysis_engine.climatology import StreamingHarmonicClimatology
 from src.analysis_engine.spectral_clustering import AttributeWeights, SignatureMetric, SignaturePoint
 from src.analysis_engine.spectral_constellation import extract_constellations
-from src.analysis_engine.spectral_identity_audit import labelled_errors, recall_radius, radius_feasibility
+from src.analysis_engine.spectral_identity_audit import (
+    declare_identity_target, labelled_errors, radius_feasibility, recall_radius)
 from src.analysis_engine.spectral_invariance import sign_constellations
 from src.analysis_engine.spectral_tracking import track_spectral_features
 from src.physical_core.field import PhysicalField
@@ -141,6 +142,21 @@ def run(design_path, output):
         p.as_posix() for p in Path("src").rglob("*.py") if "tests" not in p.parts)
     source_hashes = {p: digest_file(p) for p in source_files}
     print("Design sha256: " + design_hash, flush=True)
+    # The target is admitted before any source value is opened, so a design that has not
+    # said what identity it means costs nothing to refuse.
+    declaration = declare_identity_target(design.get("identity_target"),
+                                          design.get("evidence_class"))
+    print("Identity target: %s via %s" % (declaration["identity_target"],
+                                          declaration["evidence_class"]), flush=True)
+    if declaration["caveat"]:
+        print("Caveat: " + declaration["caveat"], flush=True)
+    if declaration["evidence_class"] != "record_derived_proxy":
+        raise ValueError(
+            "NO_LOCAL_LABEL_SOURCE: this tool derives labels from tracked keys only. "
+            "Evidence class %r needs a reviewed catalogue, and no serialisation for a signed "
+            "PatternCatalogue exists in this repository yet, so one cannot be loaded here. "
+            "The library path is spectral_identity_audit.catalogue_labels."
+            % declaration["evidence_class"])
     for field in ("record_path", "climatology_path", "source_declaration"):
         if not Path(design[field]).exists():
             raise ValueError("LOCAL_INPUT_MISSING: " + design[field])
@@ -182,15 +198,18 @@ def run(design_path, output):
                 reports[mode] = {
                     "diagnostic_stationary_r90_not_an_approved_radius": diagnostic_radius,
                     "all_pairs": labelled_errors(distances, negatives,
-                                                  frozen_radius if mode == design["signature_mode"] else diagnostic_radius),
+                                                  frozen_radius if mode == design["signature_mode"] else diagnostic_radius,
+                                                  declaration["label_boundary"]),
                     "strata": {name: labelled_errors(distances[np.asarray(mask, dtype=bool)], negatives,
-                                                       frozen_radius if mode == design["signature_mode"] else diagnostic_radius)
+                                                       frozen_radius if mode == design["signature_mode"] else diagnostic_radius,
+                                                       declaration["label_boundary"])
                                for name, mask in masks.items()},
                 }
                 if design.get("report_empirical_radius_feasibility", False):
                     reports[mode]["empirical_radius_feasibility"] = radius_feasibility(
                         distances, negatives, max_split=design["acceptance_max_false_split"],
-                        max_admission=design["acceptance_max_false_admission"])
+                        max_admission=design["acceptance_max_false_admission"],
+                        label_boundary=declaration["label_boundary"])
                 del signed, points
             result = {**window, "source_values_float64_sha256": source_hash,
                       "census": census, "modes": reports, "elapsed_seconds": time.perf_counter() - tick}
@@ -219,6 +238,7 @@ def run(design_path, output):
         "code_dirty": bool(subprocess.check_output(["git", "status", "--porcelain"], text=True).strip()),
         "torch_version": torch.__version__, "numpy_version": np.__version__,
         "frozen_radius": frozen_radius, "windows": results,
+        "identity_declaration": declaration,
         "status": "DIAGNOSTIC_CRITERIA_MET" if passed else "DISCRIMINATION_CRITERIA_NOT_MET",
         "approved_mining_radius": None,
         "elapsed_seconds": time.perf_counter() - started,

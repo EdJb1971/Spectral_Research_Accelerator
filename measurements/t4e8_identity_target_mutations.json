@@ -1,0 +1,128 @@
+{
+  "baselines_passed": true,
+  "boundary": "A kill means a mutated run reached pytest and reported a failing assertion. Timeouts and import failures are not kills.",
+  "killed": 12,
+  "mutants": 12,
+  "records": [
+    {
+      "killed_by_failing_test": false,
+      "module": "src.analysis_engine.spectral_identity_audit",
+      "mutant": "baseline",
+      "returncode": 0,
+      "tail": [
+        "21 passed, 1 warning in 2.35s"
+      ]
+    },
+    {
+      "killed_by_failing_test": true,
+      "module": "src.analysis_engine.spectral_identity_audit",
+      "mutant": "admissibility_never_refuses",
+      "returncode": 1,
+      "tail": [
+        "1 failed, 20 passed, 1 warning in 2.30s"
+      ]
+    },
+    {
+      "killed_by_failing_test": true,
+      "module": "src.analysis_engine.spectral_identity_audit",
+      "mutant": "kind_recurrence_admits_proxy_labels",
+      "returncode": 1,
+      "tail": [
+        "2 failed, 19 passed, 1 warning in 2.27s"
+      ]
+    },
+    {
+      "killed_by_failing_test": true,
+      "module": "src.analysis_engine.spectral_identity_audit",
+      "mutant": "absent_target_falls_through",
+      "returncode": 1,
+      "tail": [
+        "1 failed, 20 passed, 1 warning in 2.38s"
+      ]
+    },
+    {
+      "killed_by_failing_test": true,
+      "module": "src.analysis_engine.spectral_identity_audit",
+      "mutant": "absent_evidence_falls_through",
+      "returncode": 1,
+      "tail": [
+        "1 failed, 20 passed, 1 warning in 3.05s"
+      ]
+    },
+    {
+      "killed_by_failing_test": true,
+      "module": "src.analysis_engine.spectral_identity_audit",
+      "mutant": "proxy_wording_reworded",
+      "returncode": 1,
+      "tail": [
+        "1 failed, 20 passed, 1 warning in 2.69s"
+      ]
+    },
+    {
+      "killed_by_failing_test": true,
+      "module": "src.analysis_engine.spectral_identity_audit",
+      "mutant": "caveat_never_published",
+      "returncode": 1,
+      "tail": [
+        "2 failed, 19 passed, 1 warning in 2.54s"
+      ]
+    },
+    {
+      "killed_by_failing_test": true,
+      "module": "src.analysis_engine.spectral_identity_audit",
+      "mutant": "proxy_claims_independence",
+      "returncode": 1,
+      "tail": [
+        "1 failed, 20 passed, 1 warning in 2.54s"
+      ]
+    },
+    {
+      "killed_by_failing_test": true,
+      "module": "src.analysis_engine.spectral_identity_audit",
+      "mutant": "declared_boundary_ignored",
+      "returncode": 1,
+      "tail": [
+        "2 failed, 19 passed, 1 warning in 3.25s"
+      ]
+    },
+    {
+      "killed_by_failing_test": true,
+      "module": "src.analysis_engine.spectral_identity_audit",
+      "mutant": "catalogue_family_unchecked",
+      "returncode": 1,
+      "tail": [
+        "1 failed, 20 passed, 1 warning in 2.46s"
+      ]
+    },
+    {
+      "killed_by_failing_test": true,
+      "module": "src.analysis_engine.spectral_identity_audit",
+      "mutant": "unmatched_counted_as_an_identity",
+      "returncode": 1,
+      "tail": [
+        "1 failed, 20 passed, 1 warning in 2.89s"
+      ]
+    },
+    {
+      "killed_by_failing_test": true,
+      "module": "src.analysis_engine.spectral_identity_audit",
+      "mutant": "catalogue_type_unchecked",
+      "returncode": 1,
+      "tail": [
+        "1 failed, 20 passed, 1 warning in 2.38s"
+      ]
+    },
+    {
+      "killed_by_failing_test": true,
+      "module": "src.analysis_engine.spectral_identity_audit",
+      "mutant": "negative_budget_unbounded",
+      "returncode": 1,
+      "tail": [
+        "1 failed, 20 passed, 1 warning in 2.43s"
+      ]
+    }
+  ],
+  "schema": "t4e8-slice3-mutation-audit/v1",
+  "survivors": [],
+  "test_file": "src/tests/test_identity_target_declaration.py"
+}
