@@ -155,3 +155,66 @@ def test_the_check_reports_the_measurement_rather_than_swallowing_it():
     assert result.measured["claim_boundary"] == CLAIM_BOUNDARY
     if result.outcome is Outcome.FAIL:
         assert "declared bounds" in result.detail
+
+
+# ------------------------------------------------------ T4E.10: does any radius transfer at all?
+
+def test_blocks_from_one_generator_are_not_exchangeable():
+    """The finding that redirects D97: the premise of a frozen radius fails before the estimator.
+
+    Four blocks of six scenes, identical generator and identical parameters. A tolerance bound
+    is distribution-free but not assumption-free -- it covers the population its sample came
+    from. If blocks differ, calibration and evaluation are not one population and no bound
+    calibrated on the first says anything about the second, at any support.
+    """
+    from src.benchmarks.identity_certification import measure_block_exchangeability
+
+    report = measure_block_exchangeability()
+    assert len(report["blocks"]) == 4
+    for block in report["blocks"]:
+        assert block["pairs"] == 15
+    # Asserted as a floor, so a narrowing of the spread fails this test and says so.
+    assert report["block_mean_ratio"] > 1.5, (
+        "blocks were expected to differ; if they no longer do, the T4E.10 finding has moved")
+    assert "same generator" in report["boundary"]
+
+
+def test_the_tolerance_bound_refuses_the_support_the_certification_actually_has():
+    """Six scenes give 15 cross-scene motif pairs, and 90/90 needs 22."""
+    from src.benchmarks.identity_certification import certify_estimators
+
+    result = certify_estimators()
+    thin = result["supports"]["below_requirement"]
+    assert thin["calibration_pairs"] == 15
+    assert thin["required_support"] == 22
+    assert thin["estimators"]["nonparametric_tolerance_bound"]["outcome"] == "REFUSED"
+
+
+def test_no_estimator_transfers_even_where_the_support_is_sufficient():
+    """Recorded as a relationship: if one ever holds, this test says so rather than passing on."""
+    from src.benchmarks.identity_certification import certify_estimators
+
+    result = certify_estimators()
+    thick = result["supports"]["above_requirement"]
+    assert thick["calibration_pairs"] >= thick["required_support"]
+    outcomes = {name: item["outcome"] for name, item in thick["estimators"].items()}
+    holding = [name for name, outcome in outcomes.items() if outcome == "HOLDS"]
+    if holding:
+        for name in holding:
+            errors = thick["estimators"][name]["planted_evaluation"]
+            assert errors["false_split_rate"] <= 0.10
+        return
+    assert set(outcomes.values()) == {"DOES_NOT_HOLD"}
+    # The tolerance bound is still the best of them: a guarantee it cannot honour across
+    # non-exchangeable blocks still beats a quantile that claims none.
+    split = {name: thick["estimators"][name]["planted_evaluation"]["false_split_rate"]
+             for name in outcomes}
+    assert split["nonparametric_tolerance_bound"] < split["empirical_quantile"]
+
+
+def test_a_refusal_is_recorded_as_correct_behaviour_not_as_a_failure():
+    from src.benchmarks.identity_certification import certify_estimators
+
+    result = certify_estimators()
+    assert "correct behaviour, not a failure" in result["refusal_boundary"]
+    assert result["claim_boundary"] == CLAIM_BOUNDARY

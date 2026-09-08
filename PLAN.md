@@ -134,6 +134,37 @@ about the definition and would cost no catalogue.
 Needs its own task, design and acceptance before it runs, declared first. Adopting an external
 project's ceilings is a scientific choice and must not be made silently by software.
 
+### T4E.11 ? An identity criterion that survives a change of partition ? not specified
+
+**T4E.10 removed the option of fixing this with a better estimator.** Four blocks of six scenes
+from one generator, identical parameters, differ **1.88x** in mean same-configuration distance.
+A frozen absolute radius therefore cannot transfer between partitions -- not because the
+estimator was poor, but because calibration and evaluation are not one population. A real
+record's disjoint windows will differ more than synthetic blocks do, not less.
+
+Three candidates, each a scientific choice needing its own task and acceptance before it is
+measured:
+
+1. **Per-partition calibration.** Each window sets its own radius. Cheap and honest, but it
+   changes what a pattern is between windows, so recurrence across windows needs its own
+   argument and may become unstateable.
+2. **A distance whose scale is comparable across partitions.** Normalise the metric so a radius
+   means the same thing everywhere -- by the partition's own distance distribution, or by a
+   quantity the record supplies. This keeps one criterion but changes the metric, which is a
+   change to what identity *is*.
+3. **An identity criterion that is not a radius.** A relative or rank-based rule -- nearest
+   neighbour with a margin, mutual nearest neighbours -- has no absolute scale to transfer.
+   `representation_alignment.py` already implements the mutual k-NN machinery and its
+   chance floor, though it was written for a different purpose.
+
+Acceptance for whichever is chosen: measured on the T4E.9 scenes across at least four blocks,
+both error rates reported or refused by name, and **the criterion must hold on blocks it was not
+calibrated on** -- which is precisely the test every estimator has now failed. Do not select one
+by measuring all three and keeping the winner; that is R20's forbidden move.
+
+**This is now what blocks the identity target decision from mattering.** Whichever target is
+chosen, it needs a criterion that transfers.
+
 ### T4F.9 ? One interpretable end-to-end pilot ? not started
 
 After identity is defensible, freeze a pilot design small enough to finish and large
@@ -244,6 +275,9 @@ over an existing endpoint does not meet this section.
 
 ## 6. Deliberately not next
 
+- D96's algorithm work: its workload is set by the radius, and T4E.10 measured that the radius
+  does not transfer. Optimising the clustering now would optimise against an unstable number.
+  T4E.11 comes first.
 - Phase 4G representation scoring: gated on the required T4F.6 PASS.
 - Running `representation_alignment.py` on real models: needs downloads and opens a second
   domain under R17. Not next unless chosen.

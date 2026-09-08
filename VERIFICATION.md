@@ -12385,6 +12385,81 @@ release decision, but it does mean two gates that read PASS now read NOT_RUN and
 were not isolated to a cause; the run predates no clean baseline for this suite size, so they
 are reported as measured rather than attributed.
 
+**T4E.10 (2026-09-09): no operating point transfers, and the reason is not the estimator.**
+
+```
+$ .venv/Scripts/python.exe -m pytest src/tests/test_operating_point.py -q
+21 passed   # 15 test functions, 21 parametrised cases
+$ .venv/Scripts/python.exe -m pytest src/tests/test_identity_certification.py -q
+18 passed in 402.18s
+```
+
+**The support requirement, in closed form.** For the k-th smallest of n samples the covered
+proportion is `Beta(k, n-k+1)`, so a bound of coverage p at confidence gamma exists only where
+some k satisfies `P(Beta(k, n-k+1) >= p) >= gamma`. The maximum gives `1 - p**n >= gamma`, so
+`n >= log(1-gamma)/log(p)`:
+
+```
+coverage  confidence  required n
+0.90      0.90        22
+0.95      0.95        59
+0.90      0.50         7
+0.99      0.90       230
+```
+
+T4E.9 calibrated on **15** pairs at 90/90. The guarantee was unavailable before any radius was
+computed, and `nonparametric_tolerance_bound` refuses there rather than issuing one:
+
+```
+support of 15 cannot carry coverage 0.900 at confidence 0.900; 22 observations are required
+and no order statistic of 15 supplies it. A radius issued here would carry no guarantee at all.
+```
+
+**Every estimator, calibrated then frozen, applied to partitions it never saw.**
+
+```
+below_requirement: 15 calibration pairs (required 22)
+  empirical_quantile             DOES_NOT_HOLD  r=0.006563  split 0.4667  admission 0.0000
+  bootstrap_upper                DOES_NOT_HOLD  r=0.007706  split 0.2667  admission 0.0000
+  nonparametric_tolerance_bound  REFUSED
+
+above_requirement: 28 calibration pairs (required 22)
+  empirical_quantile             DOES_NOT_HOLD  r=0.006563  split 0.4667  admission 0.0000
+  bootstrap_upper                DOES_NOT_HOLD  r=0.006835  split 0.4000  admission 0.0000
+  nonparametric_tolerance_bound  DOES_NOT_HOLD  r=0.008468  split 0.2000  admission 0.0000
+```
+
+The tolerance bound is much the best of the three -- 20.0% against the quantile's 46.7% -- and
+still fails the 10% bound. Admissions are **zero** everywhere, so the failure is entirely on the
+split side.
+
+**Why sufficient support does not rescue it.** Four blocks of six scenes, one generator,
+identical parameters:
+
+```
+block 100-105  pairs 15  mean 0.004575  median 0.004268  max 0.008468
+block 200-205  pairs 15  mean 0.006941  median 0.006341  max 0.010923
+block 300-305  pairs 15  mean 0.008580  median 0.008115  max 0.012859
+block 400-405  pairs 15  mean 0.008585  median 0.008562  max 0.016097
+
+block mean min/max 0.004575 / 0.008585   ratio 1.88   sd 0.001895
+```
+
+A tolerance bound is distribution-free but not assumption-free: it covers the population its
+sample was drawn from. These blocks are not one population. A radius calibrated on the first
+therefore carries no guarantee about the second **at any support** -- and T4E.9's calibration
+block is the tightest of the four, which is exactly why its frozen radius was too small
+everywhere else.
+
+**What this settles and what it does not.** It settles that the live half of D97 is not "find a
+better estimator": a frozen absolute radius is the wrong object when disjoint partitions of one
+generator differ by 1.88x, and disjoint windows of a real atmospheric record will differ more,
+not less. It reaches D96 too, because that defect's workload is set by the radius and a radius
+that cannot be frozen is a workload that cannot be predicted. It approves no mining radius,
+closes no defect, and is measured on synthetic scenes, so it is a property of the estimator and
+the partitions rather than of the atmosphere. A REFUSED outcome above is correct behaviour and
+is recorded as such: scoring it as a failure would reward the estimator that answers anyway.
+
 **T4E.9 (2026-09-08): the T4E identity path against an answer known by construction.**
 
 The first measurement of `spectral_constellation` -> `spectral_invariance` ->

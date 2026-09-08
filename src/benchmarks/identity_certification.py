@@ -37,6 +37,7 @@ from src.analysis_engine.spectral_clustering import (
     AttributeWeights, SignatureMetric, SignaturePoint,
 )
 from src.analysis_engine.spectral_constellation import extract_constellations
+from src.analysis_engine.operating_point import ESTIMATORS, estimate, required_support
 from src.analysis_engine.spectral_identity_audit import (
     labelled_errors, radius_feasibility, recall_radius)
 from src.analysis_engine.spectral_invariance import sign_constellations
@@ -233,6 +234,113 @@ def certify(*, calibration_seeds: Sequence[int] = CALIBRATION_SEEDS,
         "acceptance": {"max_false_split": MAX_FALSE_SPLIT,
                        "max_false_admission": MAX_FALSE_ADMISSION},
         "claim_boundary": CLAIM_BOUNDARY,
+    }
+
+
+#: T4E.10. Independent scene blocks of the declared size, used to measure whether blocks drawn
+#: from one generator are exchangeable at all. If they are not, no radius frozen on one of them
+#: transfers to another, whatever estimator produced it.
+EXCHANGEABILITY_BLOCKS = (tuple(range(100, 106)), tuple(range(200, 206)),
+                          tuple(range(300, 306)), tuple(range(400, 406)))
+
+
+def measure_block_exchangeability(blocks: Sequence[Sequence[int]] = EXCHANGEABILITY_BLOCKS
+                                  ) -> Dict[str, Any]:
+    """Same-configuration distance summaries per block, and the spread between blocks.
+
+    A tolerance bound is distribution-free but not assumption-free: it covers the population
+    the calibration sample was drawn from. If disjoint blocks of scenes built by one generator
+    have visibly different distance distributions, the calibration sample and the evaluation
+    population are not one population, and no bound calibrated on the first carries a
+    guarantee about the second at any support.
+    """
+    metric = SignatureMetric(WEIGHTS)
+    summaries = []
+    for seeds in blocks:
+        distances, _ = _cross_scene_distances(_partition(seeds, plant=True), metric)
+        array = np.asarray(distances, dtype=np.float64)
+        summaries.append({
+            "seeds": list(seeds), "pairs": int(array.size),
+            "mean": float(array.mean()), "median": float(np.median(array)),
+            "max": float(array.max()),
+        })
+    means = np.asarray([item["mean"] for item in summaries])
+    return {
+        "blocks": summaries,
+        "block_mean_min": float(means.min()), "block_mean_max": float(means.max()),
+        "block_mean_ratio": float(means.max() / means.min()),
+        "block_mean_sd": float(means.std(ddof=1)) if len(means) > 1 else None,
+        "boundary": ("Every block is built by the same generator with the same parameters. A "
+                     "ratio above one is variation between blocks, not between designs."),
+    }
+
+
+#: T4E.10. Two calibration supports, chosen before measuring: six scenes give 15 cross-scene
+#: motif pairs, below the 22 a 90/90 tolerance bound needs, and eight give 28, above it.
+ESTIMATOR_SUPPORTS = {"below_requirement": tuple(range(100, 106)),
+                      "above_requirement": tuple(range(100, 108))}
+COVERAGE = CALIBRATION_RECALL
+CONFIDENCE = 0.9
+
+
+def certify_estimators(*, evaluation_seeds: Sequence[int] = EVALUATION_SEEDS,
+                       null_seeds: Sequence[int] = NULL_SEEDS) -> Dict[str, Any]:
+    """T4E.10: every declared operating-point estimator, calibrated then frozen, at two supports.
+
+    The evaluation partitions are the same ones T4E.9 used and neither informs any radius. A
+    refusal is recorded as an outcome in its own right: an estimator that declines to name a
+    radius on support that cannot carry its guarantee has behaved correctly, and scoring that
+    as a failure would reward the estimator that answers anyway.
+    """
+    metric = SignatureMetric(WEIGHTS)
+    evaluation = _partition(evaluation_seeds, plant=True)
+    positive, negative = _cross_scene_distances(evaluation, metric)
+    null = _partition(null_seeds, plant=False)
+    _, null_negative = _cross_scene_distances(null, metric)
+
+    results: Dict[str, Any] = {}
+    for support_name, seeds in ESTIMATOR_SUPPORTS.items():
+        calibration = _partition(seeds, plant=True)
+        calibration_positive, _ = _cross_scene_distances(calibration, metric)
+        per_estimator = {}
+        for name in ESTIMATORS.names():
+            point = estimate(name, calibration_positive, coverage=COVERAGE,
+                             confidence=CONFIDENCE)
+            if point.refused:
+                per_estimator[name] = {"outcome": "REFUSED", **point.describe()}
+                continue
+            planted = labelled_errors(positive, negative, point.radius,
+                                      "Construction labels, not proxy")
+            nulled = labelled_errors([], null_negative, point.radius,
+                                     "Construction labels: nothing recurs here")
+            split, admission = planted["false_split_rate"], planted["false_admission_rate"]
+            null_admission = nulled["false_admission_rate"]
+            holds = (split is not None and admission is not None
+                     and null_admission is not None
+                     and split <= MAX_FALSE_SPLIT and admission <= MAX_FALSE_ADMISSION
+                     and null_admission <= MAX_FALSE_ADMISSION)
+            per_estimator[name] = {
+                "outcome": "HOLDS" if holds else "DOES_NOT_HOLD",
+                **point.describe(),
+                "planted_evaluation": planted, "null_evaluation": nulled,
+            }
+        results[support_name] = {
+            "calibration_seeds": list(seeds),
+            "calibration_pairs": len(calibration_positive),
+            "required_support": required_support(COVERAGE, CONFIDENCE),
+            "estimators": per_estimator,
+        }
+    return {
+        "block_exchangeability": measure_block_exchangeability(),
+        "coverage": COVERAGE, "confidence": CONFIDENCE,
+        "acceptance": {"max_false_split": MAX_FALSE_SPLIT,
+                       "max_false_admission": MAX_FALSE_ADMISSION},
+        "evaluation_seeds": list(evaluation_seeds), "null_seeds": list(null_seeds),
+        "supports": results,
+        "claim_boundary": CLAIM_BOUNDARY,
+        "refusal_boundary": ("A REFUSED outcome is correct behaviour, not a failure: the "
+                             "support could not carry the declared guarantee and the "
+                             "estimator declined to issue a radius that would carry none."),
     }
 
 

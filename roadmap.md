@@ -2373,6 +2373,107 @@ better record, a better estimator of the operating point. The FAIL stands rather
 tuned away; no threshold, partition or weight was changed after the first run, and the only
 amendment was the descriptive feasibility diagnostic. No mining radius is approved.
 
+**T4E.10 An operating point that transfers *(the live half of D97)* -- IMPLEMENTED 2026-09-09; no estimator holds, and the reason redirects the defect.**
+
+*T4E.9 measured the failure without the atmosphere in the way. With construction labels, total
+separation and AUC 1.0, a radius calibrated at 90% recall on 15 cross-scene motif pairs and
+frozen still split 46.7% of motif pairs in a partition it had never seen. So the problem is not
+the record. `calibrate at a recall quantile, then freeze` is the wrong estimator, and this task
+asks which estimator is right and whether the support the programme actually has can carry one.*
+
+**Why the present estimator cannot work, stated before anything is built.** `recall_radius` is
+an empirical quantile: r90 of 15 samples is the 14th smallest. What the acceptance needs is not
+an estimate of the population's 90th percentile but a bound that will still admit 90% of pairs
+it has never seen -- a one-sided nonparametric tolerance bound, not a quantile. Those are
+different objects and the second is strictly wider. For the k-th smallest of n samples the
+covered proportion is distributed Beta(k, n-k+1), so a bound covering proportion p with
+confidence gamma exists only when some k satisfies P(Beta(k, n-k+1) >= p) >= gamma. Using the
+maximum, that is 1 - p^n >= gamma, so **n >= log(1-gamma)/log(p)**. At p = gamma = 0.9 the
+requirement is **n >= 22**, and T4E.9 calibrated on 15. No choice of order statistic fixes
+that: the support was insufficient for the guarantee before the radius was computed.
+
+**What this task builds.** A registry of declared operating-point estimators, so adding one is a
+declaration rather than a fork, each stating what it guarantees and what it needs:
+`empirical_quantile`, the present behaviour, kept so its failure stays measurable;
+`nonparametric_tolerance_bound`, which **refuses by name when the support cannot carry the
+declared coverage and confidence, and states the n that would**; and at least one estimator that
+widens with uncertainty rather than refusing, so the refusal is a choice and not the only option.
+
+**How it is measured.** Through `t4e_identity_certified`'s scenes, because the answer holds by
+construction there and neither an atmosphere nor a catalogue is involved. Each estimator is
+calibrated on one partition and applied unchanged to two it never saw, at **two supports**: six
+scenes giving 15 cross-scene motif pairs, which is below the requirement, and eight scenes
+giving 28, which is above it. Both error rates reported or refused by name; an explicit verdict
+including INVALID.
+
+**Acceptance.** An estimator whose declared error rate holds on a partition it never saw, at a
+support the programme can actually reach, with the refusal fired at the support that cannot
+carry it. **A refusal at 15 pairs is a pass for the estimator and a finding about the design**,
+not a failure to be tuned away. If no estimator holds at either support, that is a complete
+result and it redirects D96, because a radius that cannot be set is a workload that cannot be
+predicted.
+
+**Claim boundary.** This is measured on synthetic scenes and settles a property of the
+estimator, not of the atmosphere. It approves no mining radius, discharges no part of T4E.8's
+acquired-record acceptance, and closes neither D96 nor D97 on its own. What it can do is tell
+this programme whether the operating point is estimable at the support a real record supplies.
+
+**Outcome (2026-09-09): no estimator holds, and the acceptance's own premise is what failed.**
+`src/analysis_engine/operating_point.py` registers the three estimators. The support arithmetic
+holds exactly: 90% coverage at 90% confidence needs 22 observations, T4E.9 had 15, and
+`nonparametric_tolerance_bound` refuses there naming 22 -- which is a pass for the estimator and
+the finding about the design the specification anticipated. At 28 pairs it names a radius and
+still fails, splitting 20.0% against a 10% bound, though that is less than half the empirical
+quantile's 46.7%. Admissions are zero throughout.
+
+The reason is exchangeability rather than support. Four blocks of six scenes from one generator
+with identical parameters have mean same-configuration distances spanning **1.88x** (0.004575 to
+0.008585), and T4E.9's calibration block is the tightest of the four. Calibration and evaluation
+are not one population, so no distribution-free bound calibrated on one carries a guarantee about
+the other at any support.
+
+**So the live half of D97 is no longer "find a better estimator".** A frozen absolute radius is
+the wrong object when partitions differ this much, and a real record's windows will differ more.
+The remaining candidates -- per-partition calibration, a distance whose scale is comparable
+across partitions, or an identity criterion that is not a radius at all -- are each a scientific
+choice and each needs its own task and acceptance. This also reaches **D96**: its workload is set
+by the radius, so a radius that cannot be frozen is a workload that cannot be predicted, and the
+identity criterion must settle before the algorithm that consumes it does.
+
+**T4E.11 An identity criterion that survives a change of partition -- SPECIFIED, NOT STARTED.**
+
+*T4E.10 closed off the estimator route. Four blocks of six scenes from one generator with
+identical parameters differ 1.88x in mean same-configuration distance, so a frozen absolute
+radius cannot transfer between partitions however well it is estimated. This task asks what
+criterion can, and it is a change to what identity is rather than to how a number is computed.*
+
+Three candidates. **Per-partition calibration**: each window sets its own radius, which is cheap
+and honest but changes what a pattern is between windows, so recurrence across windows needs its
+own argument and may become unstateable -- and recurrence across windows is what the mining,
+sequence and precursor machinery exists to find. **A comparably scaled distance**: normalise the
+metric so a radius means the same thing in every partition, by the partition's own distance
+distribution or by a quantity the record supplies; this keeps one criterion but changes the
+metric, which changes identity itself. **A criterion with no absolute scale**: a rank-based rule
+such as nearest neighbour with a margin, or mutual nearest neighbours, which has nothing to
+transfer; `src/analysis_engine/representation_alignment.py` already implements mutual k-NN and
+its closed-form chance floor k/(n-1), written for a different purpose and reusable here.
+
+**Acceptance.** Measured on T4E.9's scenes across at least four blocks, calibrated where
+calibration applies and evaluated on blocks it never saw, with both error rates reported or
+refused by name and an explicit verdict including INVALID. The criterion must hold on blocks it
+was not calibrated on, which is exactly what every estimator in T4E.10 failed to do. **R20
+governs the selection**: do not measure all three and keep the winner. Declare which criterion
+is being adopted and why before evaluating it, and record an amendment openly if that changes.
+
+**Claim boundary.** Synthetic scenes settle a property of the criterion, not of the atmosphere.
+Nothing here approves a mining radius or discharges T4E.8's acquired-record acceptance. A
+criterion that holds on synthetic blocks still has to be argued for on a real record, where the
+partitions differ by more.
+
+**Dependency.** This blocks D96's algorithm work, because the clustering's workload is set by
+whatever identity criterion it consumes, and it is what makes the identity-target decision
+actionable: whichever target is chosen needs a criterion that transfers.
+
 ### Phase 4F - Transition and Precursor Mining
 
 **T4F.1 New substrate.** The existing engine mines *scalar run metrics* out of flattened `results` JSON and structurally **cannot** express `A4 -> A8 -> B8 -> C16`. This needs an event table and sequence counting, not another correlation loop. - **DONE**
