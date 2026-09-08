@@ -12074,3 +12074,103 @@ the cap, a null member tying the observed fraction, the contamination rate's exa
 than an inequality, the loss's floor at zero, the best-achievable being the smallest worst rate,
 a spread exactly at the tolerance, a distance exactly at a radius, and duplicate radii. The
 twelfth is the removed status above.
+
+## T4E.8 slice 1 -- the record's own labels, and the radius they give (2026-09-08, `ed-dev`)
+
+Receipt: `data/identity_calibration/t4e8-replicate-census.json`. No module changed; this slice is
+a measurement that reversed the task's premise before any of it was built.
+
+T4E.8 was specified as *build a better null*. Before building one, the acquired record was asked
+what its own labels say, because a signature carries `track_ids` and a `time`, so the strictest
+reading of identity -- the same tracked constellation, observed again -- is **already labelled in
+the record**. Labels need no null and no mixture: both error rates are counts.
+
+### The record has replicates, and `calibrate_signature_tolerance` says it has none
+
+Its docstring reads "an atmospheric record contains no replicates at all". The 480-frame slice
+holds 69,580 signatures over 64,153 distinct tracked constellations, of which **4,444 are
+observed more than once**, giving **6,838 within-key pairs**. The claim is wrong in letter. It is
+right in effect, and this slice measures why.
+
+### The labelled discrimination bounds anything a null could achieve
+
+At the best balanced operating point over all 6,838 pairs, against 20,000 sampled unrelated ones:
+
+```
+  weighting                 AUC    radius   grouped(same)   admitted(different)
+  declared 1,1,1,1       0.7827    0.3621          0.7164                0.2883
+  geometry only          0.7995    0.4060          0.7314                0.2679
+```
+
+**A null cannot beat labels.** With perfect ground truth the record groups 73% of genuine repeats
+while admitting 27% of unrelated pairs, so no null -- however clean -- could have produced a
+defensible radius under this reading. **D98 is real and is not the binding constraint**, and
+T4E.8 as specified could not have reached its acceptance.
+
+### What the within-key distance is actually measuring
+
+It is monotone in how far the tracks physically moved, over pairs one frame (6 h) apart:
+
+```
+  furthest track moved      n    median   q0.95      max   unrelated admitted at median
+        0 cells            32    0.0488  0.3634   0.3951   0.0111
+      <= 1 cell           454    0.1055  0.6118   0.8746   0.0432
+      <= 3 cells         1951    0.2208  0.6835   1.1573   0.1113
+      <= 6 cells         2852    0.3208  0.7069   1.2068   0.2356
+       > 6 cells          138    0.2947  0.8036   1.0229   0.1927
+```
+
+Median displacement over all within-key pairs is 3.25 cells. So the strict reading conflates *one
+state measured twice* with *an evolving system observed twice*, and the second dominates: this is
+physical evolution, exactly as the docstring warned, and it is the reason the radius is
+indefensible -- not the null.
+
+### The band flips more often than not
+
+**A node changed wavelet band in 4,160 of the 6,838 within-key pairs -- 60.8%.** The same two
+tracked features, one frame apart, are more often than not detected in different bands. Signing
+with `scale_invariant=False` puts the band into the `scales` block, so this instability enters the
+comparable vector directly. That is **D99**.
+
+### Once both are excluded, a radius exists on the acquired record
+
+The stratum that is a noise floor rather than a trajectory -- one frame apart, no band change,
+furthest track moved at most one cell -- holds 124 pairs, 1.8% of the within-key set:
+
+```
+  stratum                        n      AUC   median   r@90% recall   unrelated admitted
+  clean (noise floor)          124   0.9692   0.0472         0.1400               0.0633
+  clean, weights 1,1,0,1       124   0.9726   0.0211         0.0972               0.0449
+  same cell, band flipped       64   0.7274   0.3485         0.4339               0.3716
+  evolving                    6650   0.7797   0.3055         0.6096               0.5613
+```
+
+**This is the first defensible identity radius this programme has measured on the acquired
+record**: 0.0972, grouping 90% of genuine stationary repeats while admitting 4.5% of unrelated
+pairs, both rates absolute counts against the record's own labels, with no null and no mixture
+anywhere in the derivation.
+
+Three limitations travel with it and none is cosmetic. The stratum holds **124 pairs**, so the
+90th percentile rests on about a dozen observations and its tail is coarse. The stratum is a
+**biased** sample of "the same configuration" by construction -- it is a noise floor, so the
+radius admits near-stationary repeats and will reject a configuration that recurs after moving,
+which is the thing clustering exists to find. And the band-flipped row shows that two observations
+of the same two tracks, in the same place, one frame apart, are as far apart as unrelated pairs
+whenever the band changes: **a detection instability wearing the costume of a signature
+difference.**
+
+### The strengths block carries no discrimination
+
+Weighted alone over the 6,650 evolving pairs it scores an **AUC of 0.5053** -- a coin flip -- while
+contributing 4.3% of same-pair squared distance against 1.3% of different-pair, so it widens the
+gap it is weighted to close. Dropping it improves every stratum measured, though within the clean
+stratum the improvement (0.9692 to 0.9726 on 124 pairs) is inside the noise and is not claimed.
+That is **D100**.
+
+Two things measured here are **not** findings and are recorded so they are not read as such. The
+`bearings` block reports zero on every pair because this family is cardinality 2 with
+`has_bearings: False` -- the block does not exist, and an earlier draft of the census reported its
+absence as a measurement. And single-block weightings re-minimise the node alignment over that
+block alone, so "scales only" scoring an AUC of 0.378 is an artefact of re-alignment rather than
+a measurement of the scales block; the per-block shares above are taken under the full metric's
+alignment, which is the only way they mean anything.

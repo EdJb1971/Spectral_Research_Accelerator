@@ -56,7 +56,7 @@ skill, show the counterexamples, or report that no robust relationship survives.
 ## 1. Honest Technical Status
 
 Verified against the code on 2026-09-02. Every claim here is backed by captured output in
-`VERIFICATION.md`; `architecture.md` Section 7 holds the full defect ledger (D1-D98, of which **92 fixed, 1 partial (D18), 5 open (D84, D85, D96, D97, D98)**). **`PLAN.md` is where the remaining work is ordered**; this document is the task history and the evidence.
+`VERIFICATION.md`; `architecture.md` Section 7 holds the full defect ledger (D1-D100, of which **92 fixed, 1 partial (D18), 7 open (D84, D85, D96, D97, D98, D99, D100)**). **`PLAN.md` is where the remaining work is ordered**; this document is the task history and the evidence.
 
 The numbers in this table are checked by `src/tests/test_documentation.py`, which parses them
 out of this file and compares them against the source. That guard exists because this table
@@ -2100,8 +2100,11 @@ first-pass survivors were real gaps and are now bound by tests; the twelfth was 
 status. **D97 is not closed** -- nothing in the pipeline consumes the new calibration yet, and on
 real data it still yields no radius -- and **D98 is opened**.
 
-**T4E.8 A null that isolates recurrence *(fixes D98)* -- SPECIFIED, NOT STARTED.** T4E.7's
-calibration is sound and has nothing clean to run against. A `spatiotemporal_phase` surrogate
+**T4E.8 A radius the record's own labels can defend *(fixes D98, D99, D100)* -- SLICE 1 DONE, REST NOT STARTED.**
+
+*Specified below as a null-building task. Slice 1 measured that the null was not the binding constraint, so everything from here to the slice-1 block is the superseded specification, kept because the reasoning in it is why the measurement was worth taking.*
+
+T4E.7's calibration is sound and has nothing clean to run against. A `spatiotemporal_phase` surrogate
 destroys phase organisation, and phase organisation is what makes a feature, so the null
 population is not the record's features without their recurrence -- it is a different and much
 sparser population, a quarter the size. Every excess it shows in the bulk is therefore a
@@ -2128,6 +2131,51 @@ fraction ceiling of 2.8e-06 against a measured band of 0.0387. No null rescues t
 itself has to change. The question clustering exists for is whether *different* constellations are
 the same kind, and T4E.8 must state which reading its radius is calibrated for before the radius
 means anything.
+
+
+**Slice 1 (2026-09-08) reversed the premise before anything was built, and is DONE.** A signature
+carries `track_ids` and a `time`, so the strictest reading of identity is *already labelled in the
+record*: 4,444 tracked constellations are observed more than once, giving 6,838 within-key pairs.
+`calibrate_signature_tolerance`'s docstring says "an atmospheric record contains no replicates at
+all"; that is wrong in letter, and this slice measured why it is right in effect.
+
+**Met.** Receipt at `data/identity_calibration/t4e8-replicate-census.json`; measurements in
+`VERIFICATION.md`.
+
+* **A null cannot beat labels, and the labels give 73%/27%.** Over all 6,838 within-key pairs the
+  best balanced operating point groups 0.7164 of genuine repeats while admitting 0.2883 of
+  unrelated ones (AUC 0.7827; 0.7995 on geometry alone). So a clean null could not have produced
+  a defensible radius under this reading, and **D98, though real, is not the binding constraint**.
+  T4E.8 as originally specified -- build a better null -- could not have reached its acceptance.
+* **The within-key distance measures physical evolution, not measurement noise.** One frame apart,
+  it rises monotonically with how far the tracks moved: 0.0488 at zero cells, 0.1055 at one,
+  0.2208 at three, 0.3208 at six, against a median displacement of 3.25 cells.
+* **The band flips in 60.8% of same-configuration pairs** (4,160 of 6,838), and scale-specific
+  signing puts that into the comparable vector. **D99.**
+* **`strengths` scores AUC 0.5053 weighted alone** over 6,650 pairs while contributing 4.3% of
+  same-pair squared distance against 1.3% of different-pair. **D100.**
+* **A defensible radius exists once both are excluded.** On the 124 pairs one frame apart with no
+  band change and at most one cell of motion, a radius of 0.0972 groups 90% of them and admits
+  **4.5%** of unrelated pairs -- both rates absolute counts against the record's own labels, no
+  null and no mixture anywhere. This is the first identity radius on the acquired record this
+  programme can defend. It rests on 124 pairs, and it is a *noise floor*: it admits near-stationary
+  repeats and will reject a configuration that recurs after moving, which is the thing clustering
+  exists to find.
+
+**What remains, re-specified by that measurement.** The maintainer's declaration is taken: fix the
+signature before building any null. In order -- close D99, since a band that flips more often than
+it holds defeats every downstream radius; close D100 by deciding whether a carried coefficient
+magnitude belongs in the comparable half at all, which is a declaration and not a tuning exercise;
+then re-measure the labelled discrimination, since the 124-pair stratum should grow as the band
+stabilises. A null is needed only for the *broad* reading -- different constellations that are the
+same kind -- for which no labels exist, and it should be built against a signature already known
+to separate the repeats it can be checked on.
+
+**The ceiling paragraph above still holds, with one correction slice 1 forces.** The
+2.8e-06 ceiling bounds what a *population-level* calibration could ever see, and nothing changes
+that. It does not bound a **labelled** radius, which needs no mixture fraction at all and is what
+slice 1 measured. So the strict reading is not hopeless as that paragraph implies -- it is
+hopeless for a null, and usable with labels. The broad reading remains unmeasured and unlabelled.
 
 ### Phase 4F - Transition and Precursor Mining
 

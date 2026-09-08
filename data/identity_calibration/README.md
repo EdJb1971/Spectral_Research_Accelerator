@@ -10,6 +10,13 @@ reason.
 * `t4e7-acquired-record-6000.json` — 6,000 pairs sampled from each population.
 * `t4e7-acquired-record-40000.json` — 40,000 pairs, on the same signatures and the same null.
 
+* `t4e8-replicate-census.json` -- T4E.8 slice 1, and the only receipt here that involves no null
+  at all. The record labels its own strictest reading of identity: a signature carries the
+  `track_ids` it was signed from, so two signatures sharing them are one tracked constellation
+  observed twice. There are 6,838 such pairs. Both rates in this receipt are absolute counts
+  against those labels, which is why it carries no p-value, no band and no mixture fraction --
+  there is nothing in it to estimate.
+
 **Both return no radius**, with status `RECURRENCE_FRACTION_UNSTABLE`, and they agree: the
 simultaneous band moves from 0.0387 to 0.0398 across a 6.7× increase in sampled pairs and
 nothing else changes. That is what makes the refusal a fact about the record rather than about

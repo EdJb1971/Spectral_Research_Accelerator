@@ -214,7 +214,7 @@ supersedes the other.
 * Last measured browser suite: **136/136** in Chromium from a cleaned `.e2e-state` (2026-09-04).
   It is inventoried in `architecture.md` section 7.4a; it is the only check here that proves a
   page renders.
-* Open defects: **D84, D85, D96, D97 and D98**; D18 partial. D43 is closed. **`PLAN.md` orders
+* Open defects: **D84, D85, D96, D97, D98, D99 and D100**; D18 partial. D43 is closed. **`PLAN.md` orders
   what remains.** **D97 is the one that gates everything**: the tolerance deciding what a
   *pattern* is is calibrated from repeated measurements of one physical configuration, and a
   real atmospheric record contains none -- the distance between two observations of one
@@ -225,10 +225,19 @@ supersedes the other.
   the published one to be identically zero at its own operating point; T4E.7 built a
   calibration that needs no replicates at all and recovers a planted identity on synthetic data
   without labels, and **on the acquired record it returns no radius**, which is why D97 stays
-  open. **D98 is why it returns none**: the only null available for the question -- a
+  open. **D98 is part of why it returns none**: the only null available for the question -- a
   phase-randomised surrogate put through the same pipeline -- produces a quarter of the
   record's signatures, so it destroys the features and not merely their recurrence, and in the
   close-pair tail the record's signature pairs are *further apart* than that null's.
+  T4E.8's replicate census then found that the record **does** hold replicates under the
+  strictest reading -- 6,838 labelled pairs -- and that they group only 73% of genuine repeats
+  against 27% of unrelated pairs admitted. A null cannot beat labels, so D98 was never the
+  binding constraint. **D99** is: a tracked feature changes wavelet band between adjacent
+  frames in 60.8% of same-configuration pairs, and scale-specific signing puts that into the
+  comparable vector. **D100** is a component weighted as a discriminator that scores a coin
+  flip. Excluding both, a radius of 0.0972 groups 90% of stationary repeats while admitting
+  4.5% of unrelated pairs -- the first identity radius on this record the programme can defend,
+  and it rests on 124 pairs.
   **D96 is downstream of it**: because most pairs fall inside the radius, the tolerance graph
   is one connected component, which is what makes the clustering unusably slow. **D96 gates Phase 4G**: the
   identity step that turns signed configurations into patterns is complete-linkage clustering

@@ -252,7 +252,10 @@ def test_every_referenced_defect_id_is_defined(architecture, roadmap, verificati
         referenced = {"D" + n for n in re.findall(r"\bD(\d+)\b", doc)}
         # Ignore anything above the ledger's range: those are not defect references
         # (for example a "D40" would be a typo worth catching, but "D2026" is a date).
-        dangling = sorted(d for d in referenced - defined if int(d[1:]) <= 99)
+        # The bound is the ledger's own highest entry rather than a literal, which was 99
+        # until D100 existed -- a constant chosen when three digits could only be a year.
+        highest = max(int(d[1:]) for d in defined)
+        dangling = sorted(d for d in referenced - defined if int(d[1:]) <= highest)
         assert not dangling, "%s references undefined defects: %s" % (doc_name, dangling)
 
 

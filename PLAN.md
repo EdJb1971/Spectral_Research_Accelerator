@@ -31,7 +31,9 @@ invariant signatures and identity (T4E.1-3); frequency, sequences, precursor tes
 surrogate null with multiplicity control (T4E.4, T4F.1-3); bidirectional queries (T4F.4);
 evidence projection back onto the map (T4F.5); a physical gate that can return PASS, FAIL and
 INVALID (T4F.6); cross-region generalisation (T4F.7); refutable follow-up proposals (T4F.8); and a
-clustering radius calibrated against a null with no replicates anywhere (T4E.7).
+clustering radius calibrated against a null with no replicates anywhere (T4E.7). The record does
+hold replicates under the strictest reading of identity, and T4E.8's first slice measured what they
+say (see section 3).
 32 documentation guards, mutation testing on every Phase 4 module.
 
 **Never done:** the instrument has never produced a scientific claim about the atmosphere. Not
@@ -40,12 +42,17 @@ one. Everything above is apparatus.
 **Why not**, in the order the causes actually run:
 
 ```
-  D98   the null available for calibrating identity destroys the features,
-    |     not only their recurrence  (69,580 signatures against a median 16,090)
+  D99   a tracked feature changes wavelet band between adjacent frames more often
+    |     than it keeps it  (4,160 of 6,838 same-configuration pairs, 60.8%),
+    |     and scale-specific signing puts that into the comparable vector
+    |
+  D100  the strengths block is weighted as a discriminator and is a coin flip
+    |     (AUC 0.5053 over 6,650 pairs)
     v
   D97   the identity calibration has no defensible radius on a real record
-    |     the replicate route has no valid input; the null route (T4E.7) works on
-    |     synthetic data and returns nothing on the acquired record
+    |     the replicate route was thought to have no valid input -- it has 6,838
+    |     labelled pairs, which give 73% grouped against 27% admitted; the null
+    |     route (T4E.7) works on synthetic data and returns nothing on the record
     v
   D96   the identity step cannot process a real record
     |     because the replicate tolerance admits most pairs, the tolerance graph is
@@ -58,8 +65,12 @@ one. Everything above is apparatus.
 ```
 
 The chain matters. It was read from D96 upwards until 2026-09-07, and fixing D96 first would have
-made an unfounded answer arrive faster. T4E.7 added the top link on 2026-09-08 by building the
-calibration and finding that the null it has to run against is not clean.
+made an unfounded answer arrive faster. T4E.7 added a top link on 2026-09-08 by building the
+calibration and finding that the null it has to run against is not clean -- and T4E.8's first
+slice, the same day, replaced that link with these two. **D98 is still open and is no longer at
+the top**: the record's own labels bound what any null could achieve at 73% grouped against
+27% admitted, so a clean null was never going to produce a defensible radius. What was
+stopping it is the band flipping and a component that does not discriminate.
 
 ---
 
@@ -142,28 +153,50 @@ mean of 1.08 times, putting the mixture fraction at 2.8e-06 against a band of 0.
 question is therefore **not yet answered** — what was measured is that this null cannot answer
 it. See `roadmap.md` for the evidence.
 
-### T4E.8 — A null that isolates recurrence *(fixes D98)*
+### T4E.8 — A radius the record's own labels can defend *(fixes D98, D99, D100)*
 
-T4E.7's calibration is sound and has nothing clean to run against. A `spatiotemporal_phase`
-surrogate destroys phase organisation, which destroys the features themselves, so the null
-population is not the record's features without their recurrence — it is a different, sparser
-population. What is needed is a null that keeps the feature population exactly and destroys only
-the relationship that makes two signatures the same configuration: permuting which frames a
-tracked configuration's observations are drawn from, or reassigning signatures between tracks,
-are two candidates, and choosing between them is a scientific declaration rather than an
-implementation detail.
+**Slice 1 is done (2026-09-08) and reversed the task.** A signature carries `track_ids` and a
+`time`, so the strictest reading of identity is already labelled in the record: 4,444 tracked
+constellations are observed more than once, giving 6,838 within-key pairs. Measured against those
+labels — no null, no mixture, both rates absolute — the record groups 73% of genuine repeats while
+admitting 27% of unrelated pairs. **A null cannot beat labels**, so building a better one could
+never have reached the original acceptance. D98 stays open and stops being the blocker.
 
-*Acceptance:* the null produces a signature population within a declared factor of the record's
-own; the calibration recovers a planted grouping against it on synthetic data as it does against
-the present one; and on the acquired record it returns either a radius with both rates published
-or a refusal whose reason is no longer about the null. `ATTRIBUTE_PERMUTATION_NULL` already exists
-as the cheap, deliberately anti-conservative comparison, and its caveat says why it cannot be the
-answer.
+What is blocking it is two things the census found. **D99:** a node changes wavelet band in 60.8%
+of same-configuration pairs, and `scale_invariant=False` signing puts that into the comparable
+vector — restricted to stationary pairs, the ones that keep their band separate at AUC 0.9692 and
+the ones that flip at 0.7274, which is unrelated-pair territory with the tracks in the same place.
+**D100:** the `strengths` block scores AUC 0.5053 weighted alone, a coin flip, while contributing
+4.3% of same-pair squared distance against 1.3% of different-pair.
 
-*Also to settle here:* what "the same configuration" is being calibrated for. Under the strictest
-reading the acquired record's ceiling is 2.8e-06 of pairs and no null can rescue it; the question
-clustering exists for is about different constellations of the same *kind*, and that reading has
-to be made explicit before a radius means anything.
+And the census found a radius. On the 124 pairs one frame apart with no band change and at most
+one cell of motion, **0.0972 groups 90% of them and admits 4.5% of unrelated pairs** — the first
+identity radius on the acquired record this programme can defend. It rests on 124 pairs and it is
+a noise floor, so it will reject a configuration that recurs after moving, which is the thing
+clustering exists to find. See `VERIFICATION.md` and
+`data/identity_calibration/t4e8-replicate-census.json`.
+
+*What remains.* The maintainer's declaration is taken: **fix the signature before building any
+null.** Close D99 first — a band that flips more often than it holds defeats every downstream
+radius, and the fix is a choice between stabler band assignment in tracking, scale-invariant
+signing, and an explicit band-change term in the metric. Then D100, which is a declaration about
+whether a carried coefficient magnitude of this bank belongs in the comparable half at all, and
+not a licence to tune weights against labels. Then re-measure the labelled discrimination: the
+124-pair stratum should grow as the band stabilises, and it is the benchmark everything else is
+scored on.
+
+*Acceptance:* the band-change rate over same-configuration pairs is reported and materially
+reduced, or the signature no longer depends on the band; the labelled discrimination is re-measured
+on the acquired record and published as two absolute rates; and the clean stratum is large enough
+that its 90th percentile does not rest on a dozen pairs. A null is needed only for the **broad**
+reading — different constellations that are the same kind — for which no labels exist, and it
+should be built last, against a signature already known to separate the repeats it can be checked
+on.
+
+*What this still cannot do.* Under the strict reading the mixture-fraction ceiling is 2.8e-06
+against a band of 0.0387, so no population-level calibration will ever see it. That bounds a
+null-calibrated radius and **not** a labelled one, which needs no mixture fraction — the
+distinction slice 1 turned on. The broad reading remains unmeasured and unlabelled.
 
 ### T4F.9 — The pilot: one honest end-to-end result
 
@@ -175,7 +208,7 @@ projection, and the gate. Declared as a pilot, explicitly **not** T4F.6's accept
 digest, the declared design and every figure's provenance. **A FAIL or an INVALID is a success
 for this task.** What is not acceptable is a verdict nobody can interpret.
 
-*Blocked on:* T4E.8 (an identity worth adjudicating), plus two maintainer declarations that are
+*Blocked on:* T4E.8 (an identity worth adjudicating — slice 1 done, D99 and D100 open), plus two maintainer declarations that are
 not code — a frozen, reviewed reference catalogue, and a documented cyclogenesis event declared
 with its source. The draft catalogue exists and matches the record's region exactly; it needs
 four envelopes read and either accepted or corrected. The code refuses to sign it, by design.
