@@ -218,3 +218,62 @@ def test_a_refusal_is_recorded_as_correct_behaviour_not_as_a_failure():
     result = certify_estimators()
     assert "correct behaviour, not a failure" in result["refusal_boundary"]
     assert result["claim_boundary"] == CLAIM_BOUNDARY
+
+
+# ----------------------------------------- T4E.11: the confirmatory blocks, reserved in code
+
+def test_the_reserved_confirmatory_blocks_are_refused_by_development_code():
+    """Intention is not a reservation. Looking once is the whole cost, so the refusal is
+    raised before the scene is built rather than before a result is reported."""
+    from src.benchmarks.identity_certification import ReservedSceneOpened, _partition
+
+    with pytest.raises(ReservedSceneOpened) as raised:
+        _partition([700, 701], plant=True)
+    assert "reserved for T4E.11's confirmatory evaluation" in str(raised.value)
+    assert "never been generated" in str(raised.value)
+
+
+def test_the_reservation_covers_every_declared_confirmatory_block():
+    from src.benchmarks.identity_certification import RESERVED_CONFIRMATORY_SEEDS
+
+    declared = {seed for start in (700, 710, 720, 730) for seed in range(start, start + 6)}
+    assert RESERVED_CONFIRMATORY_SEEDS == declared
+    assert len(RESERVED_CONFIRMATORY_SEEDS) == 24
+
+
+def test_no_development_partition_overlaps_a_reserved_block():
+    from src.benchmarks.identity_certification import (
+        ESTIMATOR_SUPPORTS, EXCHANGEABILITY_BLOCKS, RESERVED_CONFIRMATORY_SEEDS,
+    )
+
+    used = set(CALIBRATION_SEEDS) | set(EVALUATION_SEEDS) | set(NULL_SEEDS)
+    for seeds in ESTIMATOR_SUPPORTS.values():
+        used |= set(seeds)
+    for seeds in EXCHANGEABILITY_BLOCKS:
+        used |= set(seeds)
+    assert not used & RESERVED_CONFIRMATORY_SEEDS
+
+
+def test_a_confirmatory_run_may_reach_them_only_by_saying_so():
+    """The escape exists and is explicit; a silent one would make the guard decorative."""
+    from src.benchmarks.identity_certification import _refuse_reserved
+
+    _refuse_reserved([700, 701], confirmatory=True)
+    with pytest.raises(Exception):
+        _refuse_reserved([700], confirmatory=False)
+
+
+def test_the_declaration_exists_and_is_not_yet_adopted():
+    """Code does not sign a scientific declaration for a person."""
+    import json
+    from pathlib import Path
+
+    body = json.loads(Path(
+        "data/identity_calibration/t4e11-normalised-distance-declaration.json"
+    ).read_text(encoding="utf-8"))
+    assert body["status"] == "declared_before_measurement"
+    assert "NOT VALID until the maintainer has reviewed" in body["declared_by"]
+    assert body["confirmatory"]["status"].startswith("RESERVED AND NOT YET GENERATED")
+    assert body["development"]["status"].startswith("ALREADY INSPECTED")
+    # The falsifying outcome is named before anything is measured.
+    assert "motivate candidate C" in body["what_would_falsify_this_candidate"]

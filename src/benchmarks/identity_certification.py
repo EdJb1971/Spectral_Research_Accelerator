@@ -74,6 +74,38 @@ CLAIM_BOUNDARY = (
     "acquired-record acceptance is not discharged by any outcome here.")
 
 
+#: T4E.11 reserves these blocks for a confirmatory evaluation and they have never been built.
+#: Declared in `data/identity_calibration/t4e11-normalised-distance-declaration.json` before
+#: they existed. Sequential preregistered attempts still accumulate multiplicity -- three
+#: candidates tried and the first success reported is three tests reported as one -- and
+#: untouched blocks are what converts that into a single confirmatory test. This constant is
+#: the mechanism: intention alone has already been shown insufficient elsewhere in this
+#: programme, which is why `audit_spatial_identity.py` refuses the forecast period in code.
+RESERVED_CONFIRMATORY_SEEDS = frozenset(
+    seed for start in (700, 710, 720, 730) for seed in range(start, start + 6))
+
+
+class ReservedSceneOpened(RuntimeError):
+    """A confirmatory block was reached by development code, refused by name.
+
+    Looking is the whole cost. A block inspected during development is development data
+    afterwards however it is later described, so the refusal has to come before the scene is
+    built rather than before it is reported.
+    """
+
+
+def _refuse_reserved(seeds, *, confirmatory: bool) -> None:
+    if confirmatory:
+        return
+    reserved = sorted(set(int(seed) for seed in seeds) & RESERVED_CONFIRMATORY_SEEDS)
+    if reserved:
+        raise ReservedSceneOpened(
+            "scene seeds %s are reserved for T4E.11's confirmatory evaluation and have never "
+            "been generated. Building them here would make them development data. Pass "
+            "confirmatory=True only from a run whose declaration has been amended to adopt a "
+            "criterion." % reserved)
+
+
 class UnlabelledScene(RuntimeError):
     """A scene whose planted features could not be identified in the extraction, by name.
 
@@ -146,7 +178,8 @@ def _signed_scene(seed: int, *, plant: bool):
     return points, is_motif
 
 
-def _partition(seeds: Sequence[int], *, plant: bool):
+def _partition(seeds: Sequence[int], *, plant: bool, confirmatory: bool = False):
+    _refuse_reserved(seeds, confirmatory=confirmatory)
     return [_signed_scene(seed, plant=plant) for seed in seeds]
 
 

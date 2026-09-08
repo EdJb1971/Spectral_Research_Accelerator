@@ -1,0 +1,108 @@
+{
+  "schema": "t4e11-identity-criterion-declaration/v1",
+  "status": "declared_before_measurement",
+  "task": "T4E.11",
+  "candidate": "B_comparably_scaled_distance",
+  "declared_by": "Edward Jonathan Bentley, maintainer (scientific choice); drafted by Claude Opus 5 at the maintainer's direction and NOT VALID until the maintainer has reviewed and adopted it",
+  "declared_on": "2026-09-09",
+  "why_this_candidate_and_not_another": "T4E.10 measured that a frozen absolute radius does not transfer between partitions: four blocks of six scenes from one generator with identical parameters have mean same-configuration distances of 0.004575, 0.006941, 0.008580 and 0.008585, a 1.88x spread. The decisive additional observation is that the LOCATION moves far more than the SHAPE: median/mean ratios across those blocks span only 1.092x and max/mean 1.251x, against 1.88x for the mean itself. A distribution family that shifts in scale while holding its shape is the case a scale normalisation is for. Had the shape moved as much as the location, this candidate would have been close to hopeless and candidate C would be next instead. That reasoning is recorded here because it is the justification for trying B before C, and because it is falsifiable: if the normalisation fails, the shape was moving after all.",
+  "criterion": {
+    "statement": "Two configurations are the same when their metric distance, divided by their partition's own close-pair scale, is at most a declared normalised radius.",
+    "normaliser_name": "median_nearest_cross_scene_neighbour",
+    "normaliser_definition": "Within one partition, for every configuration compute the metric distance to its nearest neighbour among configurations from OTHER scenes in that partition. The partition's normaliser is the median of those per-configuration values.",
+    "why_this_normaliser": "It is label-free, so it is computable on a real record where no construction labels exist and it cannot smuggle the answer into the scale. It is robust, being a median of minima rather than a mean or an extremum. And it measures the scale of CLOSE pairs, which is the regime the radius operates in; a normaliser taken from the bulk of the distance distribution would be dominated by unrelated pairs and would track a different quantity.",
+    "assumption_this_rests_on": "That the label-free close-pair scale moves with the same-configuration scale between partitions. This is an assumption and not a measurement. It is exactly what the development evaluation below tests, and if it is false this candidate fails and that failure motivates candidate C.",
+    "what_changes": "The metric's scale, and therefore what identity is. It is not a change to how a number is estimated from a sample.",
+    "what_does_not_change": "The signature mode, the attribute weights, the cardinality, the construction labels, the acceptance bounds, and the evaluation and null partitions T4E.9 used."
+  },
+  "radius_estimator": "nonparametric_tolerance_bound at coverage 0.9 and confidence 0.9, applied to normalised same-configuration distances. T4E.10 established it needs at least 22 observations, so any partition supplying fewer must produce a refusal and not a radius.",
+  "development": {
+    "blocks": [
+      [
+        100,
+        101,
+        102,
+        103,
+        104,
+        105
+      ],
+      [
+        200,
+        201,
+        202,
+        203,
+        204,
+        205
+      ],
+      [
+        300,
+        301,
+        302,
+        303,
+        304,
+        305
+      ],
+      [
+        400,
+        401,
+        402,
+        403,
+        404,
+        405
+      ]
+    ],
+    "status": "ALREADY INSPECTED. These four blocks informed T4E.10 and this declaration, and renaming them does not make them untouched. Results on them are development evidence only and may not be reported as confirmation.",
+    "purpose": "Test the assumption above: does normalising by the label-free close-pair scale collapse the 1.88x spread in same-configuration distance between blocks?"
+  },
+  "confirmatory": {
+    "blocks": [
+      [
+        700,
+        701,
+        702,
+        703,
+        704,
+        705
+      ],
+      [
+        710,
+        711,
+        712,
+        713,
+        714,
+        715
+      ],
+      [
+        720,
+        721,
+        722,
+        723,
+        724,
+        725
+      ],
+      [
+        730,
+        731,
+        732,
+        733,
+        734,
+        735
+      ]
+    ],
+    "status": "RESERVED AND NOT YET GENERATED. Declared here before they exist. They must not be built, extracted, signed or inspected until a criterion has been adopted on development evidence and this declaration amended to record that adoption.",
+    "enforcement": "src/benchmarks/identity_certification.py refuses these seeds by name outside a confirmatory run, in the same way audit_spatial_identity.py refuses windows past the training period.",
+    "why_they_exist": "Sequential preregistered attempts still accumulate multiplicity: three candidates tried and the first success reported is three tests reported as one. Reserving untouched blocks converts that into a single confirmatory test of whichever criterion is adopted."
+  },
+  "acceptance": {
+    "development": "The normalised same-configuration distance distributions of the four development blocks agree materially better than 1.88x. This is a precondition for proceeding, not a result.",
+    "confirmatory": "On the reserved blocks, calibrated where calibration applies and evaluated on blocks that never informed the radius: false split at most 0.10 and false admission at most 0.10, both reported or refused by name, with an explicit verdict including INVALID.",
+    "a_refusal_is_an_outcome": "A partition with fewer than 22 same-configuration observations must refuse rather than issue a radius, and that refusal is correct behaviour rather than a failure."
+  },
+  "what_would_falsify_this_candidate": "Normalised block distributions that still differ materially, which would mean the shape was moving rather than the scale and would motivate candidate C, the rank-based criterion with no absolute scale to transfer. That outcome is a complete result and is to be recorded, not tuned away.",
+  "governing_rules": [
+    "R20: candidates are declared and evaluated one at a time. Measuring all three and keeping the winner is not available, and this declaration is void if B is evaluated alongside C.",
+    "Already inspected data do not become untouched by renaming them.",
+    "Code does not sign a scientific declaration for a person; this file is not adopted until the maintainer says so."
+  ],
+  "claim_boundary": "Synthetic scenes settle a property of the criterion, not of the atmosphere. Nothing here approves a mining radius, discharges T4E.8's acquired-record acceptance, or closes D96, D97 or D98. A criterion that holds on synthetic blocks still has to be argued for on a real record, whose disjoint windows will differ by more than synthetic blocks do. No frame of the 2022-2023 forecast-test period is opened by any part of this."
+}
