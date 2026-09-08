@@ -3,16 +3,51 @@
 
 This document provides a detailed, truthful architectural blueprint of the **SpectralEarth Research Platform** as it exists today. It delineates the core design, the unified data spine, the key modules, database representations, API boundaries, and the architectural seams that decouple the platform's layers.
 
-**Current implementation frontier (2026-09-08, T4E.8 slice 3).** The audit now refuses to run
-without a declared identity target and evidence class, and refuses `kind_recurrence` against
-record-derived labels as circular; section 3E.9 describes it. An opt-in, registered
-`spatial_geometry` identity mode now compares spatial separations and admitted bearings within
-a declared record/grid and source. Detector bands and strengths remain carried metadata.
-Its acquired-record audit improves discrimination but does not supply an approved mining
-radius. T4E.8 remains in progress; T4F.9 and the full T4F.6 adjudication have not run. The
-independent cross-domain G17 release remains withheld and G19 remains unstarted. Section 3E.8
-describes the new implementation; `VERIFICATION.md` holds its measurements. Historical slice
-narratives below are dated evidence, not replacements for this frontier or the defect ledger.
+**Where to look.** Section 0 below is the single status table and the authority for what is
+implemented. Sections 3 and 7 describe each implementation and the defect ledger. Historical
+slice narratives further down are dated evidence of what was measured when; they are not
+status, and section 0 supersedes them wherever they disagree.
+
+---
+
+## 0. Implementation status — the authority
+
+**This table is the single source of truth for what is implemented.** Where any other
+document disagrees with it, this table is right and the other document is stale. `PLAN.md`
+says what to do next and deliberately does not restate status; `roadmap.md` and
+`roadmap_cross_domain.md` hold task *history*, which is what was done and why, not what the
+current state is; `VERIFICATION.md` holds the captured output behind each figure. Sections 3
+and 7 below describe the implementations and the defect ledger in full.
+
+Last revised 2026-09-08.
+
+| Task | State | Gate on it | Detail |
+|---|---|---|---|
+| Phases 1–3.5 | **Complete**, D18 partial | — | Only the T5.1a–e slice has CPU/CUDA parity evidence; ROCm and MPS are unmeasured. The literal screenshot T3.5.0 asked for is still absent. |
+| Phase 4A–4C.6 | **Complete** through the recorded real-data PASS | — | A separate human review of that receipt remains outstanding. §3A–3C |
+| T4D.1–3, T4E.1–4 | **Complete** | — | §3D, §3E |
+| T4E.5 scalable identity | **In progress** | D96 | Exact on tested inputs but still uses dense component cross-distances; recorded mutation work incomplete. A different radius changes the workload, so old measurements cannot close D96. §3F.9 |
+| T4E.6 two-sided error | **Done** | — | Both error rates reported or refused by name. |
+| T4E.7 null calibration | **Done** | — | Needs no replicates; recovers a planted identity on synthetic data. Returns *no radius* on the acquired record. |
+| T4E.8 defensible identity | **In progress** — slices 1–3 implemented, **acceptance unmet** | D97–D100; blocks T4F.9 | Slice 2's spatial mode fails the declared 10%/10% criterion (split 25.6–29.4%, admission 9.4–10.9%); no radius meets both bounds in any window. Slice 3 makes the identity target a declared field and refuses circular evidence. **The identity target is undecided and that decision is the maintainer's.** §3E.8, §3E.9 |
+| T4F.1–5, T4F.7, T4F.8 | **Complete** | — | §3F |
+| T4F.6 full mining + adjudication | **Partial — never run** | T4E.8, T4E.5, signed declarations | The physical gate is built and discriminates, but has not been run on the record. Blocks Phase 4G. |
+| T4F.9 interpretable pilot | **Not started** | T4E.8 acceptance; a reviewed catalogue; a documented cyclogenesis event | — |
+| Phase 4G representation scoring | **Gated** | Requires a T4F.6 PASS | — |
+| Phase 4H learned encoder | **Not started, optional** | — | Ceiling estimator, not a deliverable. |
+| Phase 5 forecast comparison | **Interfaces only** | External model must be supplied and bound | §3, T5.3a |
+| G17 cross-domain | **In progress — release withheld** | `scale_shape_calibration` REFUSED | Every scientific gate measured; five of seven PASS. TG17.15's replacement inference is calibrated, but no declared manifest requests it and pool exchangeability on real records is not decidable here. §7.1a–7.1g |
+| G18 interface programme | **Done** per its recorded acceptance | — | §7.1a |
+| G19 conversation with evidence | **Specified, not started** | Schedule explicitly | `roadmap_cross_domain.md` |
+| `representation_alignment.py` | **Exploratory apparatus — not a phase task** | Gates nothing | Mutual k-NN alignment, closed-form chance floor `k/(n-1)`, permutation null. Synthetic acceptance only; no model downloaded or evaluated. §3.6zzf-alt |
+
+**Open defects:** D18 (partial), D84, D85, D96, D97, D98, D99, D100. The full ledger with
+findings, evidence and fix status is §7.2. No defect above is closed by anything in this table.
+
+**Standing verdicts.** The atmospheric programme has produced no trustworthy independently
+checkable finding about the atmosphere yet: the mining pass and T4F.6 adjudication have not
+completed, and no identity radius is approved for mining. The G17 release verdict is
+`NOT_RELEASEABLE`. Both are current as of the date above.
 
 ---
 

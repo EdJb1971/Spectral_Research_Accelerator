@@ -132,9 +132,9 @@ is partial. Phase 3.5's 25 implementation tasks are complete; the literal screen
 requested by T3.5.0 is still absent, and D18's cross-device agreement remains partial because
 only the T5.1a-e slice has CPU/CUDA parity evidence and ROCm/MPS are unmeasured. Phase 4A-4C.6
 are complete through the recorded real-data PASS; a separate human review of that receipt
-remains. T4D.1-3, T4E.1-4 and T4F.1-5 are complete and T4F.6 is partial -- the physical gate is built and discriminates, but it has never been run, so 4G is still gated. T4F.7 and T4F.8 are complete. **T4E.5 is in progress, T4E.6 and T4E.7 are done, T4E.8 is in progress (slices 1-3 implemented, acquired-record acceptance unmet, identity target undecided), and T4F.9 is not started** -- see `PLAN.md`, which orders what remains. 4G and optional 4H remain
-undone. See
-Section 4 for per-task evidence.
+remains. T4D.1-3, T4E.1-4 and T4F.1-5 are complete and T4F.6 is partial -- the physical gate is built and discriminates, but it has never been run, so 4G is still gated. T4F.7 and T4F.8 are complete. **Current status for every task above lives in `architecture.md` section 0, which is the
+authority; this document is history and does not restate it.** `PLAN.md` orders what remains.
+See Section 4 below for per-task evidence.
 
 ---
 

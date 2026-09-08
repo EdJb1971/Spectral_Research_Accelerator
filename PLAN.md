@@ -1,9 +1,13 @@
 # PLAN ? what remains to make SpectralEarth truthfully useful
 
-**This document is the plan, and only the plan.** It states priorities and acceptance,
-not the status of record. `roadmap.md` and `roadmap_cross_domain.md` hold task history,
-`architecture.md` describes the implementation and defects, and `VERIFICATION.md` holds
-measurements. When they disagree with this document, **they are right and this is stale.**
+**This is the document to work through. This document is the plan, and only the plan.** It
+states priorities, the next action and its acceptance -- nothing else. It does not restate
+status, because a plan that carries status becomes another thing to keep in step.
+
+**For what is implemented, read `architecture.md` section 0.** That one table is the single
+authority. `roadmap.md` and `roadmap_cross_domain.md` hold task history -- what was done and
+why -- and `VERIFICATION.md` holds the captured output behind every figure. When any of them
+disagrees with this document, **they are right and this is stale.**
 
 Last revised 2026-09-08, after T4E.8 slice 3.
 
@@ -18,25 +22,28 @@ The wider cross-domain programme remains active and has separate dependencies in
 
 ## 1. Current decision point
 
-The record is acquired and T4C.6 passed. The downstream tracking, constellation,
-precursor, projection, physical-gate and generalisation machinery exists. The full
-mining pass and T4F.6 adjudication have not completed on that record.
+> **One decision blocks everything below it: what is identity meant to recognise?**
 
-T4E.6 and T4E.7 supplied two-sided error reporting and null calibration. T4E.8 slice 1
-identified band instability and a nondiscriminating strength component. Slice 2 now
-supplies an explicit, registered `spatial_geometry` mode and a reproducible local audit.
-It removes detector-band and magnitude dependence at fixed positions, but the measured
-candidate fails the declared acquired-record identity criterion. No mining radius is approved.
+Three targets are declared in `spectral_identity_audit.py` and they are not the same
+question. **`track_continuity`** -- the same evolving tracked constellation, observed again.
+**`spatial_persistence`** -- a spatial configuration keeping its geometry. **`kind_recurrence`**
+-- the same physical kind recurring in a different constellation, which is the target the
+mining, sequence and precursor machinery downstream actually requires.
 
-**The immediate unresolved question is what identity is meant to recognise.** Continuity
-of an evolving tracked constellation, persistence of spatial geometry and recurrence of
-the same physical kind in different constellations are distinct targets. Track keys are
-proxy labels for the first; they are not independent ground truth for the other two.
-Do not redefine that target or weaken the acceptance criterion to make the candidate pass.
+Tracked keys are proxy labels for the first only. Slice 3 now refuses `kind_recurrence`
+against them by name, because labels drawn from the pipeline under test validate a
+definition against itself.
 
-D99 and D100 are absent from the new candidate's comparable vector, but the original
-mining declaration still uses the old mode. D97 remains unresolved; D96 remains downstream.
-D98 remains open for recurrence inference and is not repaired by this labelled audit.
+**What each choice costs.** `track_continuity` scores well and means little: it asks identity
+to reproduce the tracker that made its labels. `spatial_persistence` is measured and fails its
+declared criterion, and the failure is informative -- configurations hold their geometry over
+one 6-hour step and lose it over a track's life, which is the regime mining needs.
+`kind_recurrence` requires a reviewed, cited catalogue and a serialisation for it, neither of
+which exists; that catalogue is already a T4F.9 prerequisite, so it is not additional work.
+
+Do not redefine the target or weaken the acceptance criterion to make a candidate pass.
+Choosing is a scientific act and it is the maintainer's, not the software's. D96, D97, D98,
+D99 and D100 all remain open and none is repaired by making that choice.
 
 ## 2. Ordered atmospheric work
 
