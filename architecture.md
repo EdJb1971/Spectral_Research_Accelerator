@@ -30,6 +30,7 @@ Last revised 2026-09-08.
 | T4E.6 two-sided error | **Done** | — | Both error rates reported or refused by name. |
 | T4E.7 null calibration | **Done** | — | Needs no replicates; recovers a planted identity on synthetic data. Returns *no radius* on the acquired record. |
 | T4E.8 defensible identity | **In progress** — slices 1–3 implemented, **acceptance unmet** | D97–D100; blocks T4F.9 | Slice 2's spatial mode fails the declared 10%/10% criterion (split 25.6–29.4%, admission 9.4–10.9%); no radius meets both bounds in any window. Slice 3 makes the identity target a declared field and refuses circular evidence. **The identity target is undecided and that decision is the maintainer's.** §3E.8, §3E.9 |
+| T4E.9 certified synthetic ground truth | **Specified, not started** | Could inform T4E.8; gates nothing | Run identity over `benchmarks/fields.py` generators whose answers hold by construction, to test whether the definition recovers a certified quantity at all. Validates the apparatus, not the atmosphere. `roadmap.md` |
 | T4F.1–5, T4F.7, T4F.8 | **Complete** | — | §3F |
 | T4F.6 full mining + adjudication | **Partial — never run** | T4E.8, T4E.5, signed declarations | The physical gate is built and discriminates, but has not been run on the record. Blocks Phase 4G. |
 | T4F.9 interpretable pilot | **Not started** | T4E.8 acceptance; a reviewed catalogue; a documented cyclogenesis event | — |

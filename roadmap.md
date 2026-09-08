@@ -2313,6 +2313,44 @@ catalogue before it can be evaluated, and that catalogue is an input this progra
 given rather than one it can generate. T4F.9 and T4F.6 remain gated on the decision and on
 whatever validation the chosen target then demands.
 
+**T4E.9 Certified synthetic ground truth for the identity step -- SPECIFIED, NOT STARTED.**
+
+*Every difficulty in T4E.8 traces to one absence: a real atmospheric record supplies no
+replicates (D97), no honest null (D98) and no independent labels, so `kind_recurrence` waits on
+a catalogue nobody has signed. This task asks whether the identity definition can recover an
+answer that is known by construction, which requires no catalogue and no person's signature.*
+
+`src/benchmarks/fields.py` already synthesises fields whose answers are derivable independently
+of the analysis code: `S(k) ~ k^-beta` built in the Fourier domain has that exponent by
+construction, and fBm carries a known Hurst exponent. The task is to run detection, tracking,
+constellation extraction and the identity step over such a field under a declared design, and
+measure whether identity recovers structure that is provably present -- with both error rates,
+as T4E.6 requires, and a refusal rather than a number wherever the population is unmeasured.
+
+**The external reference, and what admitting it would cost.** `certified-invariants`
+(adamfbentley) works the same substrate from the other end: exact Fisher-information ceilings
+and Le Cam minimax floors over Gaussian random fields with structured spectra, under
+preregistered gates with a committed failure ledger. Its ceilings are a *candidate* certified
+target for this task and its methodology is close to this programme's own. It is also what
+Phase 4H already anticipates as an optional ceiling estimator. **Admitting an external
+project's ceilings is a scientific choice and requires its own declaration**, not a silent
+import: that project records certificate estimates occasionally exceeding their own ceilings,
+flagged as estimator failures, which is the same species of problem as D97 and must be measured
+here before any ceiling is treated as truth. Nothing about this task requires network access or
+a second domain under R17; the existing local generators are sufficient to start.
+
+**Claim boundary, recorded before anything is built.** This validates the apparatus, not the
+atmosphere. A pass does not discharge T4E.8's acquired-record acceptance, does not approve a
+mining radius, and closes none of D96-D100. What it settles is whether the identity definition
+can recover a certified answer at all -- currently unknown, because T4E.7's synthetic check
+plants replicates by construction rather than recovering an independently certified quantity.
+
+**Acceptance.** A declared design fixed before measurement; both error rates reported or refused
+by name against a target that is analytic rather than proxy-labelled; the recovered quantity
+compared to its construction value with the comparison's own boundary stated; and an explicit
+verdict including INVALID. A failure is a complete result and is informative about the
+definition. No radius is approved by this task under any outcome.
+
 ### Phase 4F - Transition and Precursor Mining
 
 **T4F.1 New substrate.** The existing engine mines *scalar run metrics* out of flattened `results` JSON and structurally **cannot** express `A4 -> A8 -> B8 -> C16`. This needs an event table and sequence counting, not another correlation loop. - **DONE**

@@ -87,6 +87,37 @@ bounds on an appropriate evaluation population, and calibration support adequate
 precision claimed. The declaration must explicitly adopt the new mode before any pipeline
 uses it. Analytical band independence alone does not close the acquired-record task.
 
+### T4E.9 ? Certified synthetic ground truth for the identity step ? not specified
+
+**The cheapest thing on the table that could move T4E.8, because it attacks the ground-truth
+problem instead of waiting on a catalogue.** Every difficulty in T4E.8 comes from the same
+place: a real atmospheric record supplies no replicates (D97), no honest null (D98) and no
+independent labels, so `kind_recurrence` waits on a catalogue nobody has signed.
+
+`src/benchmarks/fields.py` already synthesises fields whose answers are derivable independently
+of the analysis code -- `S(k) ~ k^-beta` by construction, fBm at a known Hurst exponent. Run
+detection, tracking, constellation extraction and identity over such a field and ask whether the
+identity step recovers structure that is *provably* present. That is ground truth no person has
+to sign.
+
+The external project `certified-invariants` (adamfbentley) works the same substrate from the
+other end: exact Fisher-information ceilings and Le Cam minimax floors on Gaussian random fields
+with structured spectra, with preregistered gates and a committed failure ledger. Its ceilings
+are a candidate certified target for the same experiment, and its own recorded limitation --
+certificate estimates that sometimes exceed their ceilings, flagged as estimator failures -- is
+the same species as D97 and must be checked before any ceiling is imported as truth. This is
+also what Phase 4H already calls an optional ceiling estimator.
+
+**Boundary, stated before anything is built.** This validates the *apparatus*, not the
+atmosphere. A pass here does not discharge T4E.8's acquired-record acceptance and does not
+license a mining radius. What it settles is whether the identity definition can recover a known
+answer at all -- which is currently unknown, because T4E.7's synthetic check plants replicates
+by construction rather than recovering a certified quantity. A failure here would be decisive
+about the definition and would cost no catalogue.
+
+Needs its own task, design and acceptance before it runs, declared first. Adopting an external
+project's ceilings is a scientific choice and must not be made silently by software.
+
 ### T4F.9 ? One interpretable end-to-end pilot ? not started
 
 After identity is defensible, freeze a pilot design small enough to finish and large
@@ -139,6 +170,24 @@ and calibrated, but release still requires a manifest that requests that inferen
 curated real-record partner pools with a justified exchangeability/admission argument.
 An atmospheric identity improvement does not discharge either obligation.
 
+**G7 and G19 must be able to reach the documents of record, and currently cannot.** G19's own
+rule is right and is not in question: *retrieve at the granularity of a complete record, never a
+fragment of one*, because a receipt stripped of its `claim_boundary` is the exact failure this
+platform exists to prevent. The gap is the corpus, not the rule. G19 addresses receipts,
+qualification plans and `EvidenceBundle`s -- but a researcher meeting a refusal asks *why*, and
+the answer lives in the defect ledger, the status table and this plan, which are markdown
+documents and not bounded structured objects. A conversation that can quote a gate receipt but
+cannot reach D97 or D98 will explain a refusal without its reason.
+
+G19 already says what to do about it: *a record too large to enter whole is a signal that the
+platform owes a deterministic summary view it computes itself.* `architecture.md` section 0 is
+exactly that view for status, and it was written to be entered whole. Before G19 starts, decide
+which documents of record are addressable, and supply a deterministic computed view for each one
+too large to enter entire -- the defect ledger and the standing rules being the two that matter
+most. The same corpus serves G7's adversarial review: a layer that argues with a finding needs
+the finding's defects reachable, or it argues with half of it. Neither may touch a gate (R22),
+and nothing here changes that.
+
 One piece of exploratory apparatus sits outside every phase and is deliberately unscheduled:
 `representation_alignment.py`, written to audit the Platonic Representation Hypothesis, which
 supplies the mutual k-NN metric, its closed-form chance floor k/(n-1) and a permutation null.
@@ -150,9 +199,39 @@ multi-turn conversation with the evidence is specified and not started. Schedule
 explicitly after the current identity decision; it is not an implicit next task in the
 atmospheric sequence. `roadmap_cross_domain.md` remains the broader programme's task history.
 
-## 5. Deliberately not next
+## 5. The interface, as an instrument rather than a control panel
+
+G18 is complete against its recorded acceptance, and that acceptance was about the interface
+working. The standing requirement is stronger and is not yet met everywhere:
+
+> **The interface must expose the scientific contract, not merely operate the backend. A refusal
+> ranks equal to a value, and renders as a first-class result rather than an error state.**
+
+Three known gaps, in the order they bite:
+
+1. **The identity declaration is invisible.** T4E.8 slice 3 makes the identity target and its
+   evidence class declared, refusable inputs -- the most consequential scientific choice in the
+   atmospheric sequence -- and nothing in `src/api` or `frontend/src` reads an
+   identity-calibration receipt. The choice a researcher must make knowingly is currently made
+   by editing a JSON design by hand. Target, evidence class, claim boundary and the circularity
+   refusal all belong on screen at the weight of the numbers beside them.
+2. **Refusals still read as absence.** Wherever a figure is unavailable because a gate refused,
+   the reason, its named defect and its claim boundary must travel with the empty space. An
+   unexplained blank is indistinguishable from a bug and teaches a researcher to distrust the
+   instrument.
+3. **No view states what a number may not be used for.** Every receipt in this programme carries
+   a `claim_boundary`; the interface should never show the value without it.
+
+Acceptance for any interface slice: rendered evidence captured in `VERIFICATION.md`, refusals
+demonstrated on screen rather than described, and no WCAG level claimed without the required
+rendered and assistive-technology evidence. An interface slice that only adds a control panel
+over an existing endpoint does not meet this section.
+
+## 6. Deliberately not next
 
 - Phase 4G representation scoring: gated on the required T4F.6 PASS.
+- Running `representation_alignment.py` on real models: needs downloads and opens a second
+  domain under R17. Not next unless chosen.
 - Phase 4H learned encoder: optional ceiling estimator, not the immediate deliverable.
 - Phase 5 real forecast comparison: interfaces exist; the external model and experiment
   remain to be supplied and bound.
@@ -163,7 +242,7 @@ atmospheric sequence. `roadmap_cross_domain.md` remains the broader programme's 
   assistive-technology evidence.
 - Professional licence review: still absent and deprioritised.
 
-## 6. Standing constraints
+## 7. Standing constraints
 
 - Nothing reaches the network without the maintainer's explicit say-so.
 - Declare scientific parameters before confirmatory reads; preserve exploratory history
