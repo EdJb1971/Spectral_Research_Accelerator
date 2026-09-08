@@ -225,12 +225,11 @@ working. The standing requirement is stronger and is not yet met everywhere:
 
 Three known gaps, in the order they bite:
 
-1. **The identity declaration is invisible.** T4E.8 slice 3 makes the identity target and its
-   evidence class declared, refusable inputs -- the most consequential scientific choice in the
-   atmospheric sequence -- and nothing in `src/api` or `frontend/src` reads an
-   identity-calibration receipt. The choice a researcher must make knowingly is currently made
-   by editing a JSON design by hand. Target, evidence class, claim boundary and the circularity
-   refusal all belong on screen at the weight of the numbers beside them.
+1. ~~**The identity declaration is invisible.**~~ **Closed by T4E.8 slice 4.** `/api/v1/identity/*`
+   and `IdentityDeclarationView` render the admissibility matrix, the circularity refusal at the
+   weight of an admission, the caveat an admitted pairing still owes, receipts with their claim
+   boundaries, and the surface's own refusals. Read-only: choosing remains a person's act.
+   Evidence is rendered, not described -- see `architecture.md` section 3E.11.
 2. **Refusals still read as absence.** Wherever a figure is unavailable because a gate refused,
    the reason, its named defect and its claim boundary must travel with the empty space. An
    unexplained blank is indistinguishable from a bug and teaches a researcher to distrust the

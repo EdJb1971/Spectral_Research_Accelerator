@@ -2363,3 +2363,44 @@ def test_the_qualification_gate_inventories_every_served_workspace(app_source):
         "the qualification gate's workspace inventory has drifted from WORKFLOW_NAV\n"
         "gate:  %s\nshell: %s" % (listed, names))
     assert "not evidence that any workspace computes anything correctly" in gate
+
+
+# ---------------------------------------------------- T4E.8 slice 4: the identity declaration
+
+def test_the_identity_panel_renders_a_refusal_at_the_weight_of_an_admission():
+    """PLAN section 5's requirement, checked in source: a refusal is a result, not an absence.
+
+    The panel must render the server's refusal text, not merely omit the inadmissible pairing.
+    A surface that showed only the workable combinations would hide the one cell -- recurrence
+    of a physical kind judged against labels drawn from the same pipeline -- that a researcher
+    most needs to read.
+    """
+    source = _read("components", "IdentityDeclarationView.tsx")
+    assert "cell.refusal" in source, "the panel must render the server's refusal text"
+    assert "cell.caveat" in source, "an admitted pairing may still owe a caveat"
+    assert "data-testid=\"refused\"" in source
+    assert "data-testid=\"admitted\"" in source
+
+
+def test_the_identity_panel_shows_a_claim_boundary_beside_every_receipt():
+    source = _read("components", "IdentityDeclarationView.tsx")
+    assert "claim_boundary" in source
+    assert "label_boundary" in source
+    assert "approved_mining_radius" in source, (
+        "a receipt's approved radius must be visible; its absence is the finding")
+
+
+def test_the_identity_panel_offers_no_way_to_choose_a_target():
+    """Choosing is a scientific act. The panel must not grow a control that performs it."""
+    source = _strip_comments(_read("components", "IdentityDeclarationView.tsx"))
+    for forbidden in ("<select", "<form", "onSubmit", "method=\"post\""):
+        assert forbidden not in source, (
+            "the identity panel must not offer a control that chooses a target: %s" % forbidden)
+    assert "targets.refusals.map" in source, (
+        "refusals must be rendered from the server's list, not implied by missing buttons")
+
+
+def test_an_undeclared_receipt_is_labelled_rather_than_hidden():
+    source = _read("components", "IdentityDeclarationView.tsx")
+    assert "data-testid=\"undeclared\"" in source
+    assert "undeclared_note" in source

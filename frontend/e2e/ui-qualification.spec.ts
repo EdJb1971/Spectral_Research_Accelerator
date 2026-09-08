@@ -36,6 +36,7 @@ const SERVED_WORKSPACES = [
   'Forecast evaluation',
   'Recorded review',
   'Atmospheric gate record',
+  'Identity declaration',
   'Research archive',
   'Findings',
   'Platform & evidence',

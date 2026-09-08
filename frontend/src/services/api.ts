@@ -1286,6 +1286,19 @@ export const apiService = {
   // kind, which is the contract rather than an unfinished section. The two write-shaped things
   // a reader might look for - preflight and acquisition - are deliberately absent: the first
   // reports on a machine rather than on the science, and the second spends a 2.8 GB transfer.
+  async identityTargets(): Promise<types.IdentityTargets> {
+    return handleResponse<types.IdentityTargets>(await fetch(`${BASE_URL}/identity/targets`));
+  },
+
+  async listIdentityAudits(): Promise<types.IdentityAuditIndex> {
+    return handleResponse<types.IdentityAuditIndex>(await fetch(`${BASE_URL}/identity/audits`));
+  },
+
+  async identityAudit(name: string): Promise<types.IdentityAuditView> {
+    return handleResponse<types.IdentityAuditView>(
+      await fetch(`${BASE_URL}/identity/audits/${encodeURIComponent(name)}`));
+  },
+
   async gateSurface(): Promise<types.GateSurface> {
     return handleResponse<types.GateSurface>(await fetch(`${BASE_URL}/gate`));
   },

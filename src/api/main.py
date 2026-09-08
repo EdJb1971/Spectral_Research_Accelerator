@@ -128,6 +128,7 @@ from src.api.comparison_views import router as comparison_views_router  # noqa: 
 from src.api.experiment_receipts import router as experiment_receipts_router  # noqa: E402
 from src.api.experiment_qualification import router as experiment_qualification_router  # noqa: E402
 from src.api.gate import router as gate_router  # noqa: E402
+from src.api.identity import router as identity_router  # noqa: E402
 from src.api.cds import router as cds_router  # noqa: E402
 
 app.include_router(findings_router)
@@ -179,6 +180,7 @@ app.include_router(comparison_views_router)
 app.include_router(experiment_receipts_router)
 app.include_router(experiment_qualification_router)
 app.include_router(gate_router)
+app.include_router(identity_router)
 # TG18.1: metadata-only CDS planning plus a separately confirmed, durable acquisition-job
 # surface. Planning cannot use network; execution writes only server-owned operational records.
 app.include_router(cds_router)

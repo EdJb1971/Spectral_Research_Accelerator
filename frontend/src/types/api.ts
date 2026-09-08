@@ -3194,3 +3194,78 @@ export interface GateReceiptView {
   claim_boundary: string;
   network_used: boolean;
 }
+
+/** T4E.8 slice 4: the identity declaration surface. A refusal is a value here, not an error. */
+export interface IdentityEvidenceCell {
+  evidence_class: string;
+  admitted: boolean;
+  refusal: string | null;
+  caveat?: string | null;
+  label_boundary?: string;
+  evidence_provenance?: string;
+  independent_of_record: boolean;
+}
+
+export interface IdentityTargetRow {
+  identity_target: string;
+  recognises: string;
+  does_not_license: string;
+  evidence: IdentityEvidenceCell[];
+}
+
+export interface IdentityEvidenceClass {
+  evidence_class: string;
+  provenance: string;
+  independent_of_record: boolean;
+  label_boundary: string;
+}
+
+export interface IdentityTargets {
+  targets: IdentityTargetRow[];
+  evidence_classes: IdentityEvidenceClass[];
+  choosing_is_not_automated: string;
+  refusals: string[];
+  network_used: boolean;
+}
+
+export interface IdentityDeclaration {
+  identity_target: string;
+  recognises: string;
+  evidence_class: string;
+  evidence_provenance: string;
+  evidence_independent_of_record: boolean;
+  label_boundary: string;
+  does_not_license: string;
+  caveat: string | null;
+  admissible_evidence: string[];
+}
+
+export interface IdentityAuditSummary {
+  file: string;
+  schema: string | null;
+  status: string | null;
+  approved_mining_radius: number | null;
+  frozen_radius: number | null;
+  identity_declaration: IdentityDeclaration | null;
+  code_revision: string | null;
+  code_dirty: boolean | null;
+  design_sha256: string | null;
+  windows: number;
+  claim_boundary: string | null;
+}
+
+export interface IdentityAuditIndex {
+  audits: IdentityAuditSummary[];
+  unreadable: Record<string, string>[];
+  audits_without_a_declared_target: string[];
+  undeclared_note: string;
+  refusals: string[];
+  network_used: boolean;
+}
+
+export interface IdentityAuditView {
+  audit: Record<string, any>;
+  summary: IdentityAuditSummary;
+  refusals: string[];
+  network_used: boolean;
+}

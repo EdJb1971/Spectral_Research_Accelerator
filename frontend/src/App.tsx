@@ -22,6 +22,7 @@ import StructureMiningView from './components/StructureMiningView';
 import CrossDomainRecordView from './components/CrossDomainRecordView';
 import ReviewView from './components/ReviewView';
 import GateRecordView from './components/GateRecordView';
+import IdentityDeclarationView from './components/IdentityDeclarationView';
 import DatasetCapabilityProfile from './components/DatasetCapabilityProfile';
 import ExperimentComposer from './components/ExperimentComposer';
 import ResearchArchive from './components/ResearchArchive';
@@ -63,6 +64,7 @@ import {
   FileLock2,
   Lock,
   Landmark,
+  Target,
   MessageSquare,
   Menu,
   X
@@ -95,6 +97,7 @@ const WORKFLOW_NAV = [
   { section: 'Review', note: 'Recorded argument; never claim permission', items: [
     { id: 'review', name: 'Recorded review', icon: MessageSquare },
     { id: 'gate', name: 'Atmospheric gate record', icon: Landmark, context: 'Gridded field line' },
+    { id: 'identity', name: 'Identity declaration', icon: Target, context: 'Gridded field line' },
   ] },
   { section: 'Read', items: [
     { id: 'researchArchive', name: 'Research archive', icon: Archive },
@@ -2798,6 +2801,16 @@ export default function App() {
               browser button cannot represent. */}
           {activeTab === 'gate' && (
             <GateRecordView onError={(message) => setError(message)} />
+          )}
+
+          {/* T4E.8 slice 4. What identity is meant to recognise was, until this panel, chosen
+              by hand-editing a JSON design. It is the most consequential scientific choice in
+              the atmospheric sequence, and the inadmissible pairing -- recurrence of a physical
+              kind judged against labels drawn from the same pipeline -- renders at the same
+              weight as the admissible ones, because that refusal is the cell a researcher most
+              needs to read. The panel offers no way to choose: choosing is a scientific act. */}
+          {activeTab === 'identity' && (
+            <IdentityDeclarationView onError={(message) => setError(message)} />
           )}
 
         </main>

@@ -12313,6 +12313,78 @@ unevaluable from the audit tool, which refuses every evidence class but `record_
 by name because no serialisation for a signed `PatternCatalogue` exists. No target is chosen and
 no radius is approved.
 
+**T4E.8 slice 4 (2026-09-09): the identity declaration rendered, refusals included.**
+
+`PLAN.md` section 5 requires that the interface expose the scientific contract rather than
+operate the backend, that a refusal rank equal to a value, and that evidence be **rendered**
+rather than described. The last of those is why this entry carries a browser run.
+
+```
+$ .venv/Scripts/python.exe -m pytest src/tests/test_identity_api.py -q
+21 passed   # 16 test functions, 21 parametrised cases
+
+$ .venv/Scripts/python.exe -m pytest src/tests/test_frontend_contract.py -q
+185 passed
+
+$ cd frontend && ./node_modules/.bin/tsc --noEmit -p tsconfig.json
+(clean)
+
+$ cd frontend && npm run build
+built in 1m 22s
+
+$ cd frontend && ./node_modules/.bin/playwright test e2e/identity-declaration.spec.ts
+  ok 1 every declared target is drawn with what it does not license (4.7s)
+  ok 2 the circular pairing is on screen as a refusal, with its reason (2.8s)
+  ok 3 a refusal is drawn at the weight of an admission, not as an error (3.7s)
+  ok 4 an admitted pairing still shows the caveat it owes (3.1s)
+  ok 5 receipts show their claim boundary and that no radius is approved (3.1s)
+  ok 6 a receipt written before the declaration existed is labelled, not hidden (2.6s)
+  ok 7 a receipt opens whole rather than in fragments (3.5s)
+  ok 8 the panel offers no control that chooses a target (2.9s)
+  8 passed (36.3s)
+```
+
+Test 3 is the one the section was written for. "Equal weight" is a claim about a picture, so it
+is measured as one: the refused and admitted cells' bounding boxes are compared and required to
+agree within four pixels. Test 8 is its complement -- the panel must contain no `select` and no
+`form`, because the server serves no route that would accept a choice, and the refusals are
+rendered from the server's own list rather than implied by an absence of buttons.
+
+Two contract guards failed while wiring this and both were right.
+`test_no_served_route_is_unreachable_from_the_ui` refused `/api/v1/identity/audits/*` until the
+panel actually consumed it, which is why a receipt can be opened whole rather than only
+summarised. `test_the_qualification_gate_inventories_every_served_workspace` refused the new
+workspace until it was added to the qualification inventory in `e2e/ui-qualification.spec.ts`.
+
+This closes gap 1 of `PLAN.md` section 5. Gaps 2 and 3 remain open, and **no WCAG level is
+claimed**: this run is a rendered functional inspection, not an assistive-technology audit.
+
+**The cost of this slice, recorded rather than absorbed.** The full browser suite was run after
+the change: **140 passed, 4 failed, 10.3 h**. The failures are not a broken panel. Recorded
+evidence in this programme is bound to the source it was measured against, and this slice added
+`e2e/identity-declaration.spec.ts`, edited `e2e/ui-qualification.spec.ts` and edited
+`frontend/src/App.tsx`. The release plan therefore reports:
+
+```
+Clean-browser no-glue path: NOT_RUN
+  The source of identity-declaration.spec.ts, ui-qualification.spec.ts has changed since the
+  run was recorded.
+Synthetic fifth-adapter no-edit test: NOT_RUN
+  The source of frontend/src/App.tsx has changed since the run was recorded.
+```
+
+`flagship-qualification.spec.ts` then fails because it asserts the gate text, which now reads
+NOT_RUN where it read PASS. Confirmed in isolation: 1 failed, 1 passed in 1.1 m. This is the
+binding working, and is the same behaviour TG17.14 demonstrated when editing an acquisition
+module returned `live_sources` to NOT_RUN and invalidated a passing record.
+
+**Restoring them requires a fresh full-suite run and its recording; it has not been done.** The
+G17 verdict was already `NOT_RELEASEABLE` on `scale_shape_calibration`, so this changes no
+release decision, but it does mean two gates that read PASS now read NOT_RUN and the tables in
+`architecture.md` and `roadmap_cross_domain.md` say so. The remaining 3 of the 4 suite failures
+were not isolated to a cause; the run predates no clean baseline for this suite size, so they
+are reported as measured rather than attributed.
+
 **T4E.9 (2026-09-08): the T4E identity path against an answer known by construction.**
 
 The first measurement of `spectral_constellation` -> `spectral_invariance` ->
