@@ -1267,3 +1267,85 @@ def test_the_result_is_development_evidence_and_says_so():
     report = _consistency_report()
     assert report["evidence_class"] == "development"
     assert "reserved confirmatory blocks are untouched" in report["boundary"]
+
+
+# ------------------------------------ The reserved evidence, split rather than spent
+#
+# Partitions 700-715 were opened once, for a confirmatory evaluation of T4E.12 candidate 2, and
+# are inspected data permanently. Partitions 720-735 have never been generated and are refused
+# in code even under confirmatory=True, because candidate 2's k was chosen after a probe and
+# they are kept for a criterion whose structural choices are fixed blind.
+
+
+def test_the_still_reserved_partitions_are_refused_even_under_confirmatory():
+    """Enforced in code rather than intended, which is this programme's own standard.
+
+    Intention has already been shown insufficient here -- it is why the forecast period is
+    refused in code too. A flag that opens every reserved block at once would make the split a
+    note in a document rather than a property of the system.
+    """
+    import pytest
+    from src.benchmarks.identity_certification import (
+        OPENED_CONFIRMATORY_SEEDS, RESERVED_CONFIRMATORY_SEEDS,
+        ReservedSceneOpened, STILL_RESERVED_CONFIRMATORY_SEEDS, _refuse_reserved)
+
+    assert sorted(OPENED_CONFIRMATORY_SEEDS) == list(range(700, 706)) + list(range(710, 716))
+    assert sorted(STILL_RESERVED_CONFIRMATORY_SEEDS) == \
+        list(range(720, 726)) + list(range(730, 736))
+    assert OPENED_CONFIRMATORY_SEEDS | STILL_RESERVED_CONFIRMATORY_SEEDS == \
+        RESERVED_CONFIRMATORY_SEEDS
+    assert not (OPENED_CONFIRMATORY_SEEDS & STILL_RESERVED_CONFIRMATORY_SEEDS)
+    for seed in sorted(STILL_RESERVED_CONFIRMATORY_SEEDS):
+        for confirmatory in (False, True):
+            with pytest.raises(ReservedSceneOpened):
+                _refuse_reserved([seed], confirmatory=confirmatory)
+
+
+def test_the_opened_partitions_still_refuse_development_code():
+    """Spent for one confirmatory run does not mean available to anything that asks."""
+    import pytest
+    from src.benchmarks.identity_certification import (
+        OPENED_CONFIRMATORY_SEEDS, ReservedSceneOpened, _refuse_reserved)
+
+    for seed in sorted(OPENED_CONFIRMATORY_SEEDS):
+        with pytest.raises(ReservedSceneOpened):
+            _refuse_reserved([seed], confirmatory=False)
+    _refuse_reserved(sorted(OPENED_CONFIRMATORY_SEEDS), confirmatory=True)
+
+
+def test_the_amendment_records_what_a_confirmatory_pass_cannot_establish():
+    """The ceiling survives the result, because it was fixed before the result existed."""
+    import json
+    from pathlib import Path
+
+    body = json.loads(Path(
+        "data/identity_calibration/t4e12-confirmatory-amendment.json"
+    ).read_text(encoding="utf-8"))
+    assert body["outcome"]["false_split_every_partition_every_richness"] == 0.0
+    assert body["outcome"]["false_admission_every_partition_every_richness"] == 0.0
+    cannot = " ".join(body["outcome"]["what_this_still_does_not_establish"])
+    assert "cannot retrospectively make the choice of k blind" in cannot
+    assert "REMAINS DEVELOPMENT ONLY" in cannot
+    assert "not yet a defensible real-world recurrence rule" in \
+        body["outcome"]["the_maintainer_s_framing_still_governs_the_write_up"]
+
+
+def test_the_confirmatory_result_reproduces_on_the_partitions_that_were_spent():
+    """Measured on 700-715 at the cheapest declared richness, and it holds.
+
+    The full three-richness sweep is recorded in
+    `measurements/t4e12_candidate_2_confirmatory.json`; this re-runs the sparsest level so the
+    claim in the documents is checked by the suite rather than only asserted.
+    """
+    from src.benchmarks.identity_certification import measure_consistency_criterion
+
+    report = measure_consistency_criterion(
+        richness_levels=(6,), blocks=(tuple(range(700, 706)), tuple(range(710, 716))),
+        null_blocks=(), confirmatory=True)
+    assert report["evidence_class"] == "confirmatory"
+    assert "720-735 remain reserved" in report["boundary"]
+    assert "null evidence remains development only" in report["boundary"]
+    for row in report["planted_blocks"]:
+        assert row["false_split_rate"] == 0.0
+        assert row["false_admission_rate"] == 0.0
+        assert row["admitted"] == row["motif_pairs"] == 15

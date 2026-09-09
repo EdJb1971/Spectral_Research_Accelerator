@@ -86,6 +86,20 @@ CLAIM_BOUNDARY = (
 RESERVED_CONFIRMATORY_SEEDS = frozenset(
     seed for start in (700, 710, 720, 730) for seed in range(start, start + 6))
 
+#: Opened 2026-09-09 by `data/identity_calibration/t4e12-confirmatory-amendment.json`, for a
+#: confirmatory evaluation of T4E.12 candidate 2 and nothing else. Once built these are
+#: inspected data permanently; renaming them later does not change that.
+OPENED_CONFIRMATORY_SEEDS = frozenset(
+    seed for start in (700, 710) for seed in range(start, start + 6))
+
+#: Still reserved, and refused EVEN WHEN `confirmatory=True`. The maintainer split the reserved
+#: evidence rather than spending it: candidate 2's `k` was chosen after a feasibility probe on
+#: the development blocks, so a confirmatory run of it cannot test a structural choice made
+#: blind. These two partitions are kept for a criterion whose structural choices ARE fixed
+#: blind, which is what the reserved evidence was for. The split is enforced here rather than
+#: intended, because intention has already been shown insufficient in this programme.
+STILL_RESERVED_CONFIRMATORY_SEEDS = RESERVED_CONFIRMATORY_SEEDS - OPENED_CONFIRMATORY_SEEDS
+
 
 class ReservedSceneOpened(RuntimeError):
     """A confirmatory block was reached by development code, refused by name.
@@ -97,9 +111,18 @@ class ReservedSceneOpened(RuntimeError):
 
 
 def _refuse_reserved(seeds, *, confirmatory: bool) -> None:
+    wanted = set(int(seed) for seed in seeds)
+    held = sorted(wanted & STILL_RESERVED_CONFIRMATORY_SEEDS)
+    if held:
+        raise ReservedSceneOpened(
+            "scene seeds %s are still reserved and are refused even under confirmatory=True. "
+            "The 2026-09-09 amendment opened 700-715 for T4E.12 candidate 2 and deliberately "
+            "kept these for a criterion whose structural choices are fixed without seeing "
+            "them. Opening them needs a further amendment and the maintainer's decision."
+            % held)
     if confirmatory:
         return
-    reserved = sorted(set(int(seed) for seed in seeds) & RESERVED_CONFIRMATORY_SEEDS)
+    reserved = sorted(wanted & RESERVED_CONFIRMATORY_SEEDS)
     if reserved:
         raise ReservedSceneOpened(
             "scene seeds %s are reserved for T4E.11's confirmatory evaluation and have never "
@@ -583,13 +606,15 @@ def _motif_member_ids(features: Sequence[Any],
     return tuple(order)
 
 
-def _scene_with_motif_membership(seed: int, *, plant: bool, richness: Optional[int] = None):
+def _scene_with_motif_membership(seed: int, *, plant: bool, richness: Optional[int] = None,
+                                confirmatory: bool = False):
     """One signed scene, plus which motif vertices each configuration holds.
 
     Returns `(points, is_motif, membership)` where `membership[i]` is the frozenset of motif
     vertex numbers configuration `i` contains. The first two elements are exactly what
     `_signed_scene` returns, so the criteria can be run against this unchanged.
     """
+    _refuse_reserved([seed], confirmatory=confirmatory)
     features, planted = _scene(seed, plant=plant, richness=richness)
     members = _motif_member_ids(features, planted) if plant else ()
     tracks = tuple(Track(index, FeatureSet([feature]), {})
@@ -819,7 +844,7 @@ def measure_consistency_criterion(
         richness_levels: Sequence[int] = (6, 9, 12),
         blocks: Sequence[Sequence[int]] = None,
         null_blocks: Sequence[Sequence[int]] = None,
-        *, k: Optional[int] = None) -> Dict[str, Any]:
+        *, k: Optional[int] = None, confirmatory: bool = False) -> Dict[str, Any]:
     """Candidate 2's development evaluation, against T4E.12's four declared conditions.
 
     Unlike candidate 1 this is evaluable at every declared richness, because there is no tail
@@ -831,7 +856,8 @@ def measure_consistency_criterion(
     metric = SignatureMetric(WEIGHTS)
 
     def evaluate(seeds, richness, *, plant):
-        scenes = [_scene_with_motif_membership(seed, plant=plant, richness=richness)
+        scenes = [_scene_with_motif_membership(seed, plant=plant, richness=richness,
+                                              confirmatory=confirmatory)
                   for seed in seeds]
         incomparable = 0
         trimmed = []
@@ -888,6 +914,7 @@ def measure_consistency_criterion(
     return {
         "candidate": "2_consistency_across_the_partition",
         "criterion": CRITERION_CONSISTENCY_NAME,
+        "confirmatory": bool(confirmatory),
         "richness_levels": [int(value) for value in richness_levels],
         "planted_blocks": planted, "null_blocks": nulls,
         "acceptance_boundary": (
@@ -899,10 +926,18 @@ def measure_consistency_criterion(
             "Nothing recurs there, so every admitted pair is false by construction and the "
             "count is the criterion's false-positive rate where the answer is none. This is "
             "what candidates C and D failed at, at 116 and 62 matches respectively."),
-        "evidence_class": "development",
-        "boundary": ("Measured on blocks that informed the declaration and the feasibility "
-                     "probe disclosed in it. Development evidence only; the reserved "
-                     "confirmatory blocks are untouched."),
+        "evidence_class": "confirmatory" if confirmatory else "development",
+        "boundary": (
+            ("Measured on partitions 700-715, opened once by the 2026-09-09 amendment and "
+             "spent permanently. This is unseen-data evidence for both error rates, and it "
+             "does NOT establish that a blind structural choice would have produced the same "
+             "result: k was chosen after a probe on the development blocks. Partitions "
+             "720-735 remain reserved and are refused in code. No confirmatory null was "
+             "declared, so null evidence remains development only.")
+            if confirmatory else
+            ("Measured on blocks that informed the declaration and the feasibility probe "
+             "disclosed in it. Development evidence only; the reserved confirmatory blocks "
+             "are untouched.")),
     }
 
 

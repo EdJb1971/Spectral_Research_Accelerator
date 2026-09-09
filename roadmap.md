@@ -2803,11 +2803,39 @@ configuration absent from one scene outright; nothing about recurrence *across* 
 which the mining machinery needs; no mining radius, no discharge of T4E.8's acceptance, no
 closure of D96 to D100; and nothing about `kind_recurrence`, which still has no catalogue.
 
-**What would now be worth measuring.** A criterion of this shape with `k` below `S`, declared
-before any probe of how coincidental groups behave at that `k`, is the obvious route to
-something that could transfer to a real record -- and the reserved blocks would then be
-spendable on a structural choice made blind. That is the maintainer's decision and nothing here
-authorises it.
+**Confirmatory evaluation (2026-09-09): the reserved evidence was split, and candidate 2
+reproduces.** The maintainer opened **two** of the four reserved partitions -- 700-705 and
+710-715 -- under `t4e12-confirmatory-amendment.json`, and kept the other two.
+
+```
+CONFIRMATORY -- partitions built for the first and only time
+rich  block      configs   C props  admitted    motif    split     admit
+6     700-705         20       148        15       15   0.0000   0.0000
+6     710-715         20       122        15       15   0.0000   0.0000
+9     700-705         84       546        15       15   0.0000   0.0000
+9     710-715         84       530        15       15   0.0000   0.0000
+12    700-705        220      1518        15       15   0.0000   0.0000
+12    710-715        219      1376        15       15   0.0000   0.0000
+```
+
+Every partition admits 15 pairs, the motif's complete clique, and nothing else, out of 122 to
+1518 pairs candidate C proposes. Both error rates 0.0000 throughout. The development result was
+not an artefact of the blocks it was developed on.
+
+**720-725 and 730-735 have never been generated and are refused in code even under
+`confirmatory=True`** -- `STILL_RESERVED_CONFIRMATORY_SEEDS`, enforced rather than intended.
+They are kept for a criterion whose key structural choices are fixed without seeing them, most
+obviously a criterion of this shape with `k` below `S` declared before anyone probes how
+coincidental groups behave at that `k`. Spending them needs a further amendment.
+
+**What this pass still cannot establish.** Not that a blind structural choice would have
+produced it: `k = S` followed a probe, and fresh scenes cannot retrospectively make that choice
+blind. Not anything about rejection where nothing recurs -- no confirmatory null was declared,
+so that evidence remains development only. Not partial recurrence, not recurrence across
+partitions, no mining radius, no discharge of T4E.8's acceptance, no closure of D96 to D100, and
+nothing about `kind_recurrence`, which still has no catalogue. The maintainer's framing was
+fixed before these numbers existed and is unchanged by them: a strong diagnostic of whether the
+signature can sustain coherent identity, not a defensible real-world recurrence rule.
 
 **Candidate B outcome (2026-09-09): adopted before measurement, falsified by it.** The
 normaliser was pinned in the declaration -- within a partition, each configuration's distance to

@@ -263,11 +263,37 @@ configuration absent from one scene outright; nothing about recurrence *across* 
 which the mining machinery needs; no mining radius, no discharge of T4E.8's acceptance, no
 closure of D96 to D100; and nothing about `kind_recurrence`, which still has no catalogue.
 
-**So the next choice is yours, and it is narrower than any before it.** A criterion of this
-shape with `k` below the partition size -- declared *before* any probe of how coincidental
-groups behave at that `k` -- is the obvious route to something that could transfer to a real
-record, and the reserved blocks would then be spendable on a structural choice made blind. That
-is the first time in this sequence the confirmatory evidence would be worth what it costs.
+**Confirmed on reserved evidence, and the reservation was split rather than spent.** Two
+of the four reserved partitions were opened under `t4e12-confirmatory-amendment.json` and the
+result reproduces exactly:
+
+```
+CONFIRMATORY -- partitions built for the first and only time
+rich  block      configs   C props  admitted    motif    split     admit
+6     700-705         20       148        15       15   0.0000   0.0000
+6     710-715         20       122        15       15   0.0000   0.0000
+9     700-705         84       546        15       15   0.0000   0.0000
+9     710-715         84       530        15       15   0.0000   0.0000
+12    700-705        220      1518        15       15   0.0000   0.0000
+12    710-715        219      1376        15       15   0.0000   0.0000
+```
+
+15 pairs admitted per partition -- the motif's complete clique -- out of 122 to 1518 proposed,
+with both error rates 0.0000 at every richness. **720-725 and 730-735 have never been generated
+and are refused in code even under `confirmatory=True`.**
+
+**What this does not settle.** `k = S` followed a probe, so fresh scenes cannot make that choice
+blind retrospectively. No confirmatory null was declared, so rejection-where-nothing-recurs
+stays development evidence. `k = S` still rejects a configuration absent from one scene, so it
+says nothing about a record with partial recurrence, and nothing about recurrence *across*
+partitions, which is what mining needs.
+
+**So the next step is `k < S`, declared blind** -- structural choices fixed before anyone probes
+how coincidental groups behave at that `k`. That is what the two held partitions exist for, and
+it is the route to something that could transfer to a real record.
+
+**Still unmoved**: the catalogue `kind_recurrence` requires, which is the primary scientific
+target and remains unevaluable from the tool without a reviewed, cited source.
 
 **Still unmoved by any of this**: the catalogue `kind_recurrence` requires, which is the primary
 scientific target and remains unevaluable from the tool without a reviewed, cited source.

@@ -12385,6 +12385,51 @@ release decision, but it does mean two gates that read PASS now read NOT_RUN and
 were not isolated to a cause; the run predates no clean baseline for this suite size, so they
 are reported as measured rather than attributed.
 
+**T4E.12 candidate 2, CONFIRMATORY (2026-09-09): reproduces on partitions 700-715.**
+
+Authorised by `t4e12-confirmatory-amendment.json`, which opened two of the four reserved
+partitions and kept the other two. Partitions 700-705 and 710-715 were built for the first and
+only time for this run and are inspected data permanently.
+
+```
+CONFIRMATORY -- partitions built for the first and only time
+rich  block      configs   C props  admitted    motif    split     admit
+6     700-705         20       148        15       15   0.0000   0.0000
+6     710-715         20       122        15       15   0.0000   0.0000
+9     700-705         84       546        15       15   0.0000   0.0000
+9     710-715         84       530        15       15   0.0000   0.0000
+12    700-705        220      1518        15       15   0.0000   0.0000
+12    710-715        219      1376        15       15   0.0000   0.0000
+
+matched fraction 1/m at every level, including 1/219 where one configuration
+was refused as incomparable. Two such refusals in total.
+```
+
+**It reproduces exactly.** Every partition at every richness admits 15 pairs -- C(6,2), the
+motif's complete clique -- and nothing else, out of 122 to 1518 pairs candidate C proposes. Both
+error rates are 0.0000 throughout. So candidate 2's development result was not an artefact of
+the four blocks it was developed on.
+
+**The reserved evidence was split rather than spent.** The maintainer opened two of the four
+partitions and kept 720-725 and 730-735, which have never been generated and are refused **in
+code** even under `confirmatory=True` -- `STILL_RESERVED_CONFIRMATORY_SEEDS`, enforced rather
+than intended, because intention has already been shown insufficient in this programme.
+
+**What a confirmatory pass here still cannot establish.** Not that a blind structural choice
+would have produced it: `k = S` was chosen after a probe showed coincidental groups topping out
+at 5 on the development blocks, and fresh scenes cannot retrospectively make that choice blind.
+Not anything about rejection where nothing recurs -- **no confirmatory null was declared**, so
+the null evidence remains development only. Not anything about partial recurrence, since `k = S`
+rejects a configuration absent from one scene outright. Not anything about recurrence *across*
+partitions, which the mining machinery needs. And no mining radius, no discharge of T4E.8's
+acceptance, no closure of D96 to D100, and nothing about `kind_recurrence`, which still has no
+catalogue.
+
+**The maintainer's framing was fixed before these numbers existed and is unchanged by them**:
+candidate 2 is a strong diagnostic of whether the signature can sustain coherent identity, not a
+defensible real-world recurrence rule. What has been strengthened is the diagnostic; what has
+not changed is that it is one.
+
 **T4E.12 candidate 2 (2026-09-09): all four acceptance conditions met on development
 evidence.**
 
