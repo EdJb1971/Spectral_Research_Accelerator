@@ -270,6 +270,97 @@ def certify(*, calibration_seeds: Sequence[int] = CALIBRATION_SEEDS,
     }
 
 
+#: T4E.11 candidate C, adopted 2026-09-09. Declared in
+#: `t4e11-mutual-nearest-neighbour-declaration.json` (sha256 6b7105cc...) before it was
+#: measured, and adopted separately so the declared artifact keeps its hash.
+CRITERION_C_NAME = "mutual_nearest_neighbour_per_scene_pair"
+
+
+def mutual_nearest_matches(left, right, metric: SignatureMetric):
+    """Candidate C for one ordered scene pair: the mutual nearest-neighbour partial matching.
+
+    `a` and `b` match when `b` is `a`'s nearest neighbour in the right scene AND `a` is `b`'s
+    nearest neighbour in the left. No radius, no threshold and no normaliser, so there is no
+    magnitude to carry between partitions -- which is the whole point, after a frozen radius
+    (T4E.10) and a normalised one (candidate B) both failed to transfer.
+
+    This is a matching rule and not a single-winner rule: it returns as many pairs as the two
+    scenes support. It assumes one-to-one correspondence at the instance level, not that a
+    physical kind occurs once per scene.
+    """
+    left_points, right_points = left[0], right[0]
+    if not left_points or not right_points:
+        return []
+    forward = [min(range(len(right_points)),
+                   key=lambda j: metric.distance(a, right_points[j]))
+               for a in left_points]
+    backward = [min(range(len(left_points)),
+                    key=lambda i: metric.distance(left_points[i], b))
+                for b in right_points]
+    return [(i, j) for i, j in enumerate(forward) if backward[j] == i]
+
+
+def measure_criterion_c(blocks: Sequence[Sequence[int]] = None,
+                        null_blocks: Sequence[Sequence[int]] = None) -> Dict[str, Any]:
+    """Candidate C's development evaluation: does it recover the motif, stably, and refuse noise?
+
+    Transfer means something different here. B had a radius to carry between blocks; C has
+    nothing to carry, so what must hold is that the error rates are similar across blocks whose
+    distance magnitudes differ by 1.876x. A good average across unstable blocks is a failure.
+
+    The null blocks do more work than they did for a radius. A rank-based rule always returns
+    some nearest neighbour, so its false-admission rate where nothing recurs is the number that
+    decides whether it means anything at all.
+    """
+    blocks = tuple(blocks) if blocks is not None else EXCHANGEABILITY_BLOCKS
+    null_blocks = tuple(null_blocks) if null_blocks is not None else (NULL_SEEDS,)
+    metric = SignatureMetric(WEIGHTS)
+
+    def evaluate(seeds, *, plant):
+        partition = _partition(seeds, plant=plant)
+        if len(partition) < 2:
+            return {"seeds": list(seeds), "refused":
+                    "a partition of fewer than two scenes has no cross-scene pair"}
+        matched = motif_matched = motif_total = 0
+        for left, right in itertools.combinations(partition, 2):
+            pairs = mutual_nearest_matches(left, right, metric)
+            matched += len(pairs)
+            left_motif = left[1].index(True) if any(left[1]) else None
+            right_motif = right[1].index(True) if any(right[1]) else None
+            if left_motif is not None and right_motif is not None:
+                motif_total += 1
+                if (left_motif, right_motif) in pairs:
+                    motif_matched += 1
+        return {
+            "seeds": list(seeds), "scene_pairs": len(partition) * (len(partition) - 1) // 2,
+            "matches_returned": matched, "motif_pairs": motif_total,
+            "motif_pairs_matched": motif_matched,
+            "false_split_rate": (None if not motif_total
+                                 else (motif_total - motif_matched) / motif_total),
+            "false_admission_rate": (None if not matched
+                                     else (matched - motif_matched) / matched),
+        }
+
+    planted = [evaluate(seeds, plant=True) for seeds in blocks]
+    nulls = [evaluate(seeds, plant=False) for seeds in null_blocks]
+    splits = [row["false_split_rate"] for row in planted if row.get("false_split_rate") is not None]
+    admissions = [row["false_admission_rate"] for row in planted
+                  if row.get("false_admission_rate") is not None]
+    return {
+        "candidate": "C_mutual_nearest_neighbour_no_absolute_scale",
+        "criterion": CRITERION_C_NAME,
+        "planted_blocks": planted, "null_blocks": nulls,
+        "false_split_range": [min(splits), max(splits)] if splits else None,
+        "false_admission_range": [min(admissions), max(admissions)] if admissions else None,
+        "stability_boundary": ("Transfer here is stability of the error rates across blocks, "
+                               "not portability of a number. A good average across unstable "
+                               "blocks is a failure."),
+        "evidence_class": "development",
+        "boundary": ("Measured on the blocks that informed the declaration. Development "
+                     "evidence only; the reserved confirmatory blocks are untouched."),
+    }
+
+
 #: T4E.11 candidate B, adopted 2026-09-09. Declared in
 #: `data/identity_calibration/t4e11-normalised-distance-declaration.json` (sha256 ee9715ea...)
 #: before any of it was measured, and adopted separately so the declared artifact keeps its hash.

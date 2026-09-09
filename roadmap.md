@@ -2440,7 +2440,7 @@ choice and each needs its own task and acceptance. This also reaches **D96**: it
 by the radius, so a radius that cannot be frozen is a workload that cannot be predicted, and the
 identity criterion must settle before the algorithm that consumes it does.
 
-**T4E.11 An identity criterion that survives a change of partition -- IN PROGRESS. Candidate B declared, adopted 2026-09-09, and falsified on development evidence the same day.**
+**T4E.11 An identity criterion that survives a change of partition -- IN PROGRESS. Candidates B and C both declared, adopted and falsified on development evidence, 2026-09-09. C produced the sequence's first positive finding: the ordering transfers where magnitudes do not.**
 
 *T4E.10 closed off the estimator route. Four blocks of six scenes from one generator with
 identical parameters differ 1.88x in mean same-configuration distance, so a frozen absolute
@@ -2491,6 +2491,29 @@ was adopted under.
 candidate B-prime and needs its own declaration and adoption; the alternative is candidate C.
 Either way the next step is a declaration, not a measurement. The reserved confirmatory blocks
 were not built and remain reserved.
+
+**Candidate C outcome (2026-09-09): falsified, and informative.** Declared as mutual
+nearest-neighbour per ordered scene pair -- no radius, no threshold, no normaliser, so nothing
+to carry between partitions. Two corrections were made *before* adoption after external review:
+the one-to-one assumption was restated at the instance level, because the draft had misdescribed
+the criterion as permitting one match per scene pair when the rule returns a partial matching
+that can hold many; and the scope was fixed as a domain-agnostic mechanism carrying atmospheric
+evidence only, since cross-domain use needs its own declared experiment under R19.
+
+**Split is 0.0000 in all four blocks.** Every construction-labelled motif pair is recovered,
+across blocks whose magnitudes differ 1.876x. Neither a frozen radius nor a normalised one could
+do that, so **the ordering transfers where the magnitudes do not** -- a finding about this
+signature that survives the candidate's failure. What fails is rejection: mutual
+nearest-neighbour always returns a match, so the null block yields **116 matches where the
+answer is none**, admission 1.0000, and the planted blocks return 120-150 matches of which 15
+are motifs.
+
+**The declaration's escalation was wrong and is corrected.** It said failure would implicate the
+signature rather than the criteria. It does not: the shape transferred, and what is missing is a
+rejection test, which can itself be rank-based and scale-free. That is candidate D and needs its
+own declaration; adding it here and re-measuring is what R20 forbids. This is the second
+consecutive declaration whose falsification reasoning over-reached, and that pattern is recorded
+in the adoption records rather than left for a reader to notice.
 
 **Dependency.** This blocks D96's algorithm work, because the clustering's workload is set by
 whatever identity criterion it consumes, and it is what makes the identity-target decision

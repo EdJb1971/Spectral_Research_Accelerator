@@ -73,10 +73,19 @@ D100 all remain open and none was repaired by making the choice.
 development evidence the same day**: normalising by each partition's label-free close-pair
 scale left the spread wider (1.876x to 1.991x), because that normaliser varies only 1.084x and
 measures the nearest-*unrelated* distance rather than the same-configuration one. The reserved
-confirmatory blocks are untouched. What comes next is a declaration, not a measurement: either
-a different label-free normaliser as candidate B-prime, or candidate C, the rank-based criterion
-with no absolute scale to transfer. Trying variants until one works is what R20 forbids, so the
-choice is declared first and evaluated alone. After that, the catalogue `kind_recurrence` requires --
+confirmatory blocks are untouched. Candidate C was then declared,
+corrected after external review, adopted and **falsified on development evidence the same day**
+-- but it produced the first genuinely positive finding of the sequence. Mutual
+nearest-neighbour recovers **every** motif pair in **every** block (split 0.0000) despite the
+1.876x magnitude spread: **the ordering transfers where the magnitudes do not.** It fails
+because it cannot decline -- 116 matches on a null block where the answer is none.
+
+**So the next choice is narrower than it was.** The shape is not in doubt; the rule lacks a
+rejection test, and such a test can itself be rank-based and scale-free (nearest against
+second-nearest within one scene pair). That is candidate D and needs its own declaration and
+adoption. The alternative reading -- that three failures implicate the signature rather than the
+criteria -- is available but is **not** supported by C's result, and the declaration that
+claimed it would be has been corrected. The reserved confirmatory blocks remain untouched. After that, the catalogue `kind_recurrence` requires --
 sourcing it, deciding its independence class, and a serialisation the audit tool can load.
 
 ## 2. Ordered atmospheric work

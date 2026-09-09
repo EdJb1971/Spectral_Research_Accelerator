@@ -328,3 +328,65 @@ def test_the_normaliser_does_not_track_the_quantity_it_was_meant_to_track():
     # It is measuring a different regime: nearest-unrelated, not same-configuration.
     for normaliser, raw in zip(normalisers, raw_means):
         assert normaliser / raw > 5.0
+
+
+# --------------------------------- T4E.11 candidate C: adopted, measured, falsified precisely
+
+def test_candidate_C_has_no_threshold_to_transfer():
+    """The property it was adopted for: no radius, no normaliser, nothing to carry."""
+    import inspect
+    from src.benchmarks.identity_certification import mutual_nearest_matches
+
+    source = inspect.getsource(mutual_nearest_matches)
+    body = source.split('"""')[2]
+    for magnitude in ("radius", "threshold", "normalis", "<=", ">="):
+        assert magnitude not in body, (
+            "candidate C must compare orderings, not magnitudes: found %r" % magnitude)
+
+
+def test_candidate_C_recovers_every_motif_pair_in_every_block():
+    """The half that works, and the property both a frozen and a normalised radius lacked.
+
+    Asserted as a bound rather than as the measured zero, so an improvement cannot fail it.
+    """
+    from src.benchmarks.identity_certification import measure_criterion_c
+
+    report = measure_criterion_c()
+    assert report["evidence_class"] == "development"
+    for block in report["planted_blocks"]:
+        assert block["false_split_rate"] <= MAX_FALSE_SPLIT
+    low, high = report["false_split_range"]
+    assert high - low <= 0.05, "the recall half must be stable across blocks, not merely good"
+
+
+def test_candidate_C_cannot_decline_to_match_and_that_is_what_falsifies_it():
+    """The declared falsification, measured: a rule that always answers has no rejection.
+
+    The null block keeps the feature count and the family and drops only the repetition, so
+    every match returned there is a false positive by construction.
+    """
+    from src.benchmarks.identity_certification import measure_criterion_c
+
+    report = measure_criterion_c()
+    null = report["null_blocks"][0]
+    assert null["motif_pairs"] == 0
+    if null["matches_returned"] == 0:
+        return  # a later criterion may decline; this test would then say so.
+    assert null["false_admission_rate"] == 1.0, (
+        "with nothing recurring, every match is false by construction")
+    for block in report["planted_blocks"]:
+        assert block["false_admission_rate"] > MAX_FALSE_ADMISSION
+
+
+def test_the_failure_is_precision_and_not_the_shape_of_the_criterion():
+    """Why the declaration's own escalation does not follow from this result.
+
+    The declaration said a failure would mean the question is unanswerable by a criterion of
+    this shape and the next move is the signature. The measurement says something narrower: the
+    ordering transfers perfectly and it is the absence of a rejection rule that fails.
+    """
+    from src.benchmarks.identity_certification import measure_criterion_c
+
+    report = measure_criterion_c()
+    assert max(report["false_split_range"]) == 0.0
+    assert min(report["false_admission_range"]) > 0.5

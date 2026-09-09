@@ -12385,6 +12385,62 @@ release decision, but it does mean two gates that read PASS now read NOT_RUN and
 were not isolated to a cause; the run predates no clean baseline for this suite size, so they
 are reported as measured rather than attributed.
 
+**T4E.11 candidate C (2026-09-09): the ordering transfers; the rule cannot decline.**
+
+Declared in `t4e11-mutual-nearest-neighbour-declaration.json` before measurement and adopted
+separately. Two corrections were made to the declaration *before* adoption, after external
+review the maintainer sought: the one-to-one assumption was restated at the instance level,
+because the draft wording had misdescribed the criterion as permitting one match per scene pair
+when mutual nearest-neighbour returns a partial matching that can hold many; and the scope was
+made explicit as a domain-agnostic mechanism carrying atmospheric evidence only. The superseded
+draft (sha256 `836812a0...`) was never adopted and nothing was measured under it; the adopted
+declaration is `6b7105cc...`.
+
+```
+block         pairs  matches  motif  found    split    admit
+100-105          15      121     15     15   0.0000   0.8760
+200-205          15      121     15     15   0.0000   0.8760
+300-305          15      152     15     15   0.0000   0.9013
+400-405          15      136     15     15   0.0000   0.8897
+NULL 500-505     15      116      0      0      n/a   1.0000
+
+split range     : [0.0, 0.0]
+admission range : [0.8760, 0.9013]
+```
+
+**The recall half is exactly what the task wanted, and nothing before it managed.** Split is
+0.0000 in every block: every construction-labelled motif pair is recovered, across blocks whose
+distance magnitudes differ by 1.876x. A frozen radius could not do that (T4E.10) and a
+normalised one could not either (candidate B). **The ordering transfers where the magnitudes do
+not**, which is a real finding about this signature and survives the candidate's failure.
+
+**The rejection half fails completely.** Mutual nearest-neighbour always returns a match, so it
+matches whatever is mutually nearest whether or not anything recurs. The null block -- same
+feature count, same family, nothing repeated -- yields **116 matches where the correct answer is
+none**, a false-admission rate of 1.0000. The planted blocks return 120 to 150 matches of which
+15 are motifs. The candidate is falsified in exactly the manner its declaration named in
+advance.
+
+**A correction to the declaration's escalation, recorded rather than edited away.** It said a
+failure would mean the question is not answerable by a criterion of this shape on this
+signature, and that the next move would be the signature rather than a fourth criterion. That
+does not follow. The shape did not fail; the ordering transferred perfectly. What failed is
+that the rule is incomplete, having no rejection test -- and a rejection test can itself be
+rank-based and scale-free, comparing the nearest distance to the second-nearest within one
+scene pair. Trying that is candidate D and needs its own declaration under R20; adding it here
+and re-measuring is precisely the move the sequential discipline forbids.
+
+**A pattern, recorded because it is about this programme's own method.** This is the second
+consecutive declaration whose *what would falsify this* reasoning was wrong in the same
+direction. Candidate B predicted failure would show the shape moving rather than the scale; it
+did not. Candidate C predicted failure would implicate the signature; it does not. Both
+acceptance conditions were correct and both results are unambiguous, so the declarations earned
+their keep. But that field has now over-reached twice and should be read as a hypothesis about
+the failure rather than a conclusion licensed in advance.
+
+The reserved confirmatory blocks were not built. No mining radius is approved -- there is no
+radius -- and no defect is closed.
+
 **T4E.11 candidate B (2026-09-09): adopted before measurement, falsified by it.**
 
 Declared in `t4e11-normalised-distance-declaration.json` (sha256 `ee9715ea...`) before anything
