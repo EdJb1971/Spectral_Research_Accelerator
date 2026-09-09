@@ -288,9 +288,44 @@ stays development evidence. `k = S` still rejects a configuration absent from on
 says nothing about a record with partial recurrence, and nothing about recurrence *across*
 partitions, which is what mining needs.
 
-**So the next step is `k < S`, declared blind** -- structural choices fixed before anyone probes
-how coincidental groups behave at that `k`. That is what the two held partitions exist for, and
-it is the route to something that could transfer to a real record.
+**So the next step was `k < S`, declared blind, and it is now declared.** T4E.13 candidate 3
+is candidate 2's criterion at `k = S - 1`, by the rule *tolerate exactly one absence* -- the
+only `k` below `S` nameable without choosing a free fraction, and the smallest step that admits
+partial recurrence at all. It is fixed in
+`data/identity_calibration/t4e13-partial-recurrence-declaration.json` and in code, **not
+adopted, and measured nowhere**: eight tests assert the absence of any measurement, adoption
+record or measuring call, because a single run at any `k` below `S` before adoption would spend
+the only property this candidate has.
+
+**What is being claimed, exactly.** That the value of `k`, the rule fixing it, and every
+structural choice around it were committed before any measurement at any `k` below the partition
+size, on any block, planted or null. Candidate 2 could not claim that -- its `k = S` followed a
+feasibility probe -- and that gap is the one thing its confirmatory pass could not close.
+
+**What was already known, disclosed rather than hidden.** Candidate 2's exact run shows no
+coincidental group reaching 6 anywhere; the greedy probe found some reaching 5 at richness 9.
+So `k = S - 1` sits **at** the observed coincidental ceiling. That points away from tuning
+rather than towards it: the safe choice was `k = S`, which is already known to work, and this is
+the value most likely to fail. What remains unknown is how many coincidental groups reach 5,
+which is the only quantity the error rate depends on.
+
+**Two results are arithmetic, not evidence, and are derived before the fact.** Admissions are
+non-decreasing as `k` falls, so candidate 3 admits a superset of candidate 2 on every partition.
+Candidate 2's false split is 0.0000 everywhere, so candidate 3's is 0.0000 everywhere **before
+it is run** -- acceptance condition 1 is passed by arithmetic and carries no evidential weight.
+The same monotonicity says the criterion cannot be inert the way candidate 1 was, which admitted
+nothing anywhere and was therefore never tested. The entire empirical content is on the
+admission side, and the declaration says so in those words rather than discovering it later.
+
+**The relaxation is small and its transfer value is small with it.** On a long record `S` is
+large and `S - 1` is nearly as strict as `S`, so tolerating one absence does not solve the
+transfer problem candidate 2 named -- it is one rung on that ladder. A criterion that transfers
+will need `k` as a proportion of `S`, and the proportion will need its own evidence.
+
+**What it needs from you.** Adoption, or a correction to the declaration. Nothing runs until
+then, and the last two reserved partitions -- 720-735, never generated, refused in code -- stay
+closed whatever adoption says; they are worth spending only if candidate 3 first meets its
+conditions on development evidence.
 
 **Still unmoved**: the catalogue `kind_recurrence` requires, which is the primary scientific
 target and remains unevaluable from the tool without a reviewed, cited source.

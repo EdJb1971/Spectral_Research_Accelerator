@@ -2803,6 +2803,43 @@ configuration absent from one scene outright; nothing about recurrence *across* 
 which the mining machinery needs; no mining radius, no discharge of T4E.8's acceptance, no
 closure of D96 to D100; and nothing about `kind_recurrence`, which still has no catalogue.
 
+**T4E.13 (2026-09-09): candidate 3 declared, and the structural choice made blind.** The
+step candidate 2's own limitation section demanded: `k = S - 1`, by the rule *tolerate exactly
+one absence*, fixed in `t4e13-partial-recurrence-declaration.json` and in code before any
+measurement at any `k` below the partition size. Not adopted, and measured nowhere -- eight
+tests assert that absence rather than intend it.
+
+**What is being claimed, exactly.** That the value of `k`, the rule fixing it, and every
+structural choice around it were committed before any measurement at any `k` below the partition
+size, on any block, planted or null. Candidate 2 could not claim that -- its `k = S` followed a
+feasibility probe -- and that gap is the one thing its confirmatory pass could not close.
+
+**What was already known, disclosed rather than hidden.** Candidate 2's exact run shows no
+coincidental group reaching 6 anywhere; the greedy probe found some reaching 5 at richness 9.
+So `k = S - 1` sits **at** the observed coincidental ceiling. That points away from tuning
+rather than towards it: the safe choice was `k = S`, which is already known to work, and this is
+the value most likely to fail. What remains unknown is how many coincidental groups reach 5,
+which is the only quantity the error rate depends on.
+
+**Two results are arithmetic, not evidence, and are derived before the fact.** Admissions are
+non-decreasing as `k` falls, so candidate 3 admits a superset of candidate 2 on every partition.
+Candidate 2's false split is 0.0000 everywhere, so candidate 3's is 0.0000 everywhere **before
+it is run** -- acceptance condition 1 is passed by arithmetic and carries no evidential weight.
+The same monotonicity says the criterion cannot be inert the way candidate 1 was, which admitted
+nothing anywhere and was therefore never tested. The entire empirical content is on the
+admission side, and the declaration says so in those words rather than discovering it later.
+
+**The relaxation is small and its transfer value is small with it.** On a long record `S` is
+large and `S - 1` is nearly as strict as `S`, so tolerating one absence does not solve the
+transfer problem candidate 2 named -- it is one rung on that ladder. A criterion that transfers
+will need `k` as a proportion of `S`, and the proportion will need its own evidence.
+
+**What would make the last two reserved partitions worth spending.** Candidate 3 meeting its
+conditions on development evidence, and nothing less. 720-735 are the programme's last untouched
+partitions and a confirmatory pass on a falsified candidate would spend them for nothing. If
+candidate 3 does pass, a confirmatory pass there would establish the thing candidate 2's could
+not: that a blind structural choice produced the result.
+
 **Confirmatory evaluation (2026-09-09): the reserved evidence was split, and candidate 2
 reproduces.** The maintainer opened **two** of the four reserved partitions -- 700-705 and
 710-715 -- under `t4e12-confirmatory-amendment.json`, and kept the other two.

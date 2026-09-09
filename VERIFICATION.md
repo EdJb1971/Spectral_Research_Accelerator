@@ -12385,6 +12385,51 @@ release decision, but it does mean two gates that read PASS now read NOT_RUN and
 were not isolated to a cause; the run predates no clean baseline for this suite size, so they
 are reported as measured rather than attributed.
 
+**T4E.13 candidate 3 (2026-09-09): declared, fixed in code, and measured nowhere.**
+
+`data/identity_calibration/t4e13-partial-recurrence-declaration.json`, status
+`declared_before_measurement`. Candidate 2's criterion at `k = S - 1` by the rule *tolerate
+exactly one absence*.
+
+**What is being claimed, exactly.** That the value of `k`, the rule fixing it, and every
+structural choice around it were committed before any measurement at any `k` below the partition
+size, on any block, planted or null. Candidate 2 could not claim that -- its `k = S` followed a
+feasibility probe -- and that gap is the one thing its confirmatory pass could not close.
+
+**What was already known, disclosed rather than hidden.** Candidate 2's exact run shows no
+coincidental group reaching 6 anywhere; the greedy probe found some reaching 5 at richness 9.
+So `k = S - 1` sits **at** the observed coincidental ceiling. That points away from tuning
+rather than towards it: the safe choice was `k = S`, which is already known to work, and this is
+the value most likely to fail. What remains unknown is how many coincidental groups reach 5,
+which is the only quantity the error rate depends on.
+
+**Two results are arithmetic, not evidence, and are derived before the fact.** Admissions are
+non-decreasing as `k` falls, so candidate 3 admits a superset of candidate 2 on every partition.
+Candidate 2's false split is 0.0000 everywhere, so candidate 3's is 0.0000 everywhere **before
+it is run** -- acceptance condition 1 is passed by arithmetic and carries no evidential weight.
+The same monotonicity says the criterion cannot be inert the way candidate 1 was, which admitted
+nothing anywhere and was therefore never tested. The entire empirical content is on the
+admission side, and the declaration says so in those words rather than discovering it later.
+
+**The relaxation is small and its transfer value is small with it.** On a long record `S` is
+large and `S - 1` is nearly as strict as `S`, so tolerating one absence does not solve the
+transfer problem candidate 2 named -- it is one rung on that ladder. A criterion that transfers
+will need `k` as a proportion of `S`, and the proportion will need its own evidence.
+
+**What is verified here is an absence.** Eight tests hold the structure: `k` derived as a
+function of the partition size rather than the literal 5, unequal partitions refused rather than
+pooled, monotonicity in `k` checked on a toy metric rather than assumed, the declaration's
+disclosure and its arithmetic-not-evidence clause asserted against the file, the `k` profile's
+adjudicates-nothing status asserted against the code, and -- the one that matters --
+**no candidate 3 measurement, adoption record or measuring call exists anywhere in the
+repository**, asserted rather than intended. A single run at any `k` below `S` before adoption
+would spend the only property this candidate has, silently.
+
+**Nothing is licensed by any of it.** No result exists. Partitions 720-735 have never been
+generated and are refused in code under `confirmatory=True`; this declaration does not open them
+and adopting it will not. No mining radius, no discharge of T4E.8's acceptance, no closure of
+D96 to D100, and nothing about `kind_recurrence`, which still has no catalogue.
+
 **T4E.12 candidate 2, CONFIRMATORY (2026-09-09): reproduces on partitions 700-715.**
 
 Authorised by `t4e12-confirmatory-amendment.json`, which opened two of the four reserved

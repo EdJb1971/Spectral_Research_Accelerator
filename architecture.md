@@ -31,6 +31,7 @@ Last revised 2026-09-08.
 | T4E.7 null calibration | **Done** | — | Needs no replicates; recovers a planted identity on synthetic data. Returns *no radius* on the acquired record. |
 | T4E.8 defensible identity | **In progress** — slices 1–5 implemented, **acceptance unmet**; target decided 2026-09-09 | D97–D100; blocks T4F.9 | Slice 2's spatial mode fails the declared 10%/10% criterion (split 25.6–29.4%, admission 9.4–10.9%); no radius meets both bounds in any window. Slice 3 makes the identity target a declared field and refuses circular evidence. **Target decided 2026-09-09: `kind_recurrence` primary, the other two diagnostic.** That needs `external_reference` evidence, so a reviewed catalogue and a serialisation for it are now on the critical path and the primary target is unevaluable from the tool until they exist. §3E.8, §3E.9, §3E.11 |
 | T4E.8 slice 4 identity declaration on screen | **Implemented** | Closes PLAN §5 gap 1 | `/api/v1/identity/*` and `IdentityDeclarationView` render the admissibility matrix with the circular pairing refused at the weight of an admission, receipts with their claim boundaries, and the surface's own refusals. Read-only; choosing remains a person's act. 8 rendered browser tests. §3E.11 |
+| T4E.13 partial recurrence at k below the partition size | **Declared and fixed in code; not adopted and measured nowhere** | Candidate 2's criterion with `k = S - 1` by the rule *tolerate exactly one absence*, the only `k` below `S` nameable without choosing a free fraction. The first criterion in the sequence whose structural choice was fixed **before any measurement at any `k` below `S`** — the gap candidate 2's confirmatory pass could not close. Disclosed rather than hidden: `k = S - 1` sits at the coincidental ceiling candidate 2 exposed, so it is the value most likely to fail, not the safe one. Recall is **passed by arithmetic** — admissions are monotone in `k`, so candidate 2's 0.0000 split is inherited before the run — and the declaration says so, so the whole empirical content is the admission side. Partitions 720–735 stay closed and adopting this does not open them. §3E.21 | Nothing measured, so nothing licensed |
 | T4E.11 a criterion that survives a partition change | **B, C and D all adopted before measurement and falsified by it; two diagnostics redirect to T4E.12** |
 | T4E.12 what the signature must carry | **Candidate 2 meets all four acceptance conditions on development evidence and reproduces on two reserved partitions; two partitions deliberately held** | Scaling measured: recall survives richness (split 0.0000 at 6, 9 and 12 features) but the matched fraction of configurations stays constant (~0.23), so admission climbs to 0.979 and the shortfall widens x33 → x423. Acceptance is a per-pair rate at three richness levels, never an admission fraction — amended in the open so candidates need not be signature changes, because multiplicity is a property of the procedure. Candidate 1 makes the admission threshold alpha/m², tightening by construction; declared at sha256 `f0c45d92...`, adopted and **falsified**: it admits nothing at any richness (split 1.0), richness 6 cannot support the model at all, and the null admits 0.0000 per scene pair against a nominal 0.05 — so the tail model is conservative and **the signature was not tested**. Candidate 2 abandons per-pair verdicts for consistency across the whole partition; its feasibility probe found the motif reaching a clique of 6 in every scene of every block while nothing else exceeded 5. Declared at sha256 `639485af...` and measured: **15 pairs admitted per block at every richness — the motif's complete clique — and nothing else, with the null admitting 0 of 116, 595 and 1486 proposed pairs.** The recall half was near-guaranteed by construction; the rejection half is the finding. **Confirmed on partitions 700–715, opened once**: both error rates 0.0000 at every richness, 15 admitted per partition out of 122–1518 proposed. Partitions 720–735 stay reserved and are refused in code, because k followed a probe and they are kept for a blind structural choice. No confirmatory null was declared, so null evidence remains development only. §3E.17, §3E.18, §3E.19, §3E.20 | Blocks D96; the identity target needs it | B: normalising by each partition's label-free close-pair scale left the spread wider (1.876x → 1.991x). C: mutual nearest-neighbour recovers **every** motif pair in **every** block (split 0.0000) despite the 1.876x magnitude spread — the ordering transfers where magnitudes do not — but cannot decline, returning 116 matches on a null block where the answer is none. D: a dimensionless margin at tau = 0.8 costs **nothing** in recall (split 0.0000 on every block, counts falling as predicted) but rejects too little — null retention 0.5345 against an accepted 0.10 — and the ratio distributions **overlap**, 0.240 against 0.293. The diagnostic that followed shows the ground truth is sound (only 29% of false admissions share motif structure), that the signature never confuses the motif with a partial copy (0 of 1080), and that the binding constraint is a per-pair false rate of 1.019% against prior odds of 1:399 — a **36-fold** shortfall no threshold can close. Confirmatory blocks untouched. §3E.13, §3E.14, §3E.15, §3E.16 |
 | T4E.10 an operating point that transfers | **Implemented; no estimator holds** | Redirects D97 and D96 | 90/90 needs 22 observations and T4E.9 had 15, so the tolerance bound refuses there and names 22. At 28 it names a radius and still fails (split 20.0% vs 46.7% for the quantile). The reason is that four blocks from one generator differ 1.88x in mean distance, so calibration and evaluation are not one population and no bound transfers at any support. §3E.12 |
@@ -8709,6 +8710,58 @@ D97, isolated from the real record: the calibration's failure is not only the at
 messiness. D101 is closed by the benchmark existing and reporting; D97 gains this evidence and
 stays open. No mining radius is approved and T4E.8's acquired-record acceptance is untouched.
 
+### 3E.21 Candidate 3 declared: partial recurrence, and the first blind structural choice (T4E.13)
+
+Declared in `data/identity_calibration/t4e13-partial-recurrence-declaration.json`. **Not
+adopted, and measured nowhere.** The criterion is fixed in code -- `ABSENCES_TOLERATED`,
+`consistency_k_for`, `measure_partial_recurrence_criterion` -- and no result exists for it,
+which is the point rather than an omission.
+
+Candidate 2's criterion with one change: a consistent set is admitted when it spans at least
+`k = S - 1` scenes rather than all `S`. The rule fixing `k` is **tolerate exactly one absence**
+-- the only `k` below `S` nameable without choosing a free fraction, and the smallest step that
+admits partial recurrence at all. `k` is a function of the partition size, not the literal
+number 5, so its error rates stay comparable across partitions of different sizes; blocks of
+differing sizes are refused by name rather than pooled.
+
+**What is being claimed, exactly.** That the value of `k`, the rule fixing it, and every
+structural choice around it were committed before any measurement at any `k` below the partition
+size, on any block, planted or null. Candidate 2 could not claim that -- its `k = S` followed a
+feasibility probe -- and that gap is the one thing its confirmatory pass could not close.
+
+**What was already known, disclosed rather than hidden.** Candidate 2's exact run shows no
+coincidental group reaching 6 anywhere; the greedy probe found some reaching 5 at richness 9.
+So `k = S - 1` sits **at** the observed coincidental ceiling. That points away from tuning
+rather than towards it: the safe choice was `k = S`, which is already known to work, and this is
+the value most likely to fail. What remains unknown is how many coincidental groups reach 5,
+which is the only quantity the error rate depends on.
+
+**Two results are arithmetic, not evidence, and are derived before the fact.** Admissions are
+non-decreasing as `k` falls, so candidate 3 admits a superset of candidate 2 on every partition.
+Candidate 2's false split is 0.0000 everywhere, so candidate 3's is 0.0000 everywhere **before
+it is run** -- acceptance condition 1 is passed by arithmetic and carries no evidential weight.
+The same monotonicity says the criterion cannot be inert the way candidate 1 was, which admitted
+nothing anywhere and was therefore never tested. The entire empirical content is on the
+admission side, and the declaration says so in those words rather than discovering it later.
+
+**The relaxation is small and its transfer value is small with it.** On a long record `S` is
+large and `S - 1` is nearly as strict as `S`, so tolerating one absence does not solve the
+transfer problem candidate 2 named -- it is one rung on that ladder. A criterion that transfers
+will need `k` as a proportion of `S`, and the proportion will need its own evidence.
+
+**The `k` profile adjudicates nothing.** The sweep over `k` in {6, 5, 4, 3} is characterisation
+of how the criterion degrades as tolerance widens, which the mining path needs and no
+measurement supplies. R20 forbids the horse race and the declaration forbids it specifically: a
+`k` made attractive by the sweep is a further candidate needing its own declaration, and one
+that **cannot** claim blindness because the profile will have been seen. That consequence is
+recorded in advance.
+
+**The last two reserved partitions stay closed.** 720-735 have never been generated and are
+refused in code under `confirmatory=True`. This declaration does not open them and adopting it
+does not open them; they are worth spending only if candidate 3 meets its conditions on
+development evidence first, and a confirmatory pass on a falsified candidate would spend the
+programme's last untouched partitions for nothing.
+
 ### 3E.20 Candidate 2 on reserved evidence, and the reservation that was kept (T4E.12)
 
 Authorised by `t4e12-confirmatory-amendment.json`, which opened **two** of the four reserved
@@ -10469,10 +10522,10 @@ able to sit three slices out of date.
   | `test_representation_alignment.py` | 19 | Mutual k-NN alignment between two kernels, the metric arXiv:2405.07987 reports as 0.16 out of 1 without a reference: self-alignment exactly 1, rotation invariance of the inner-product kernel, alignment falling monotonically as two views are driven apart, deterministic tie-breaking; the closed-form chance floor k/(n-1) checked against random neighbour sets and shown to survive strongly clustered and nine-fold duplicated kernels to under one percent -- a first version of that test asserted the opposite and is corrected in place; a paired view clearing its permuted pairing while two unrelated representations come back unresolved; and the refusals -- a non-square kernel, two kernels over different point sets, a non-finite similarity, a neighbour count outside [1, n-1], a null with no permutations, and an exceedance never reported as exactly zero |
   | `test_operating_point.py` | 15 | T4E.10 identity operating-point estimators: the closed-form required support checked against the order statistic it derives from, the tolerance bound refusing thin support and naming the 22 observations that would carry 90/90, that bound never narrower than the empirical quantile it replaces, an empty population refusing rather than returning zero, the empirical quantile publishing that it guarantees nothing and recording the confidence it was given and ignored, the bootstrap widening rather than refusing while naming its own weakness and staying deterministic per seed, every registered estimator publishing a guarantee, only the tolerance bound declaring that it refuses, and the refusals -- an unknown estimator corrected, a coverage or confidence outside (0,1), and a negative or non-finite distance |
   | `test_identity_api.py` | 16 | T4E.8 slice 4 the identity declaration surface: every target served with what it does not license, the circular `kind_recurrence` x `record_derived_proxy` pairing served as a refusal rather than omitted, an admitted pairing still carrying its tracker-agreement caveat, the matrix covering every target against every evidence class, receipts written before slice 3 listed and named undeclared rather than hidden, an unreadable receipt reported rather than skipped and a non-object JSON document distinguished from an empty store, a path refused where a file name was required, a missing receipt 404 naming what was asked for and an unparseable one 422 rather than 500, the surface read-only under POST/PUT/DELETE, and the refusals published rather than implied by an absence of buttons |
-  | `test_identity_certification.py` | 86 | T4E.9 the T4E identity path against a motif known by construction: the benchmark registered and naming the path it certifies, three disjoint partitions so a radius is never evaluated on what calibrated it, exactly one motif configuration in a planted scene and none in a null one, construction labels taken from the generator and refused rather than guessed when a planted position has no feature near it or two positions claim one, only cross-scene pairs formed, the definition's separation asserted as a floor, nothing admitted where nothing recurs with the absent positive population left unmeasured rather than zero, the frozen-radius failure pinned as a relationship to the feasible radius rather than as two numbers, an empty calibration returning INVALID rather than a permissive radius, and every result stating what it does not license |
+  | `test_identity_certification.py` | 94 | T4E.9 the T4E identity path against a motif known by construction: the benchmark registered and naming the path it certifies, three disjoint partitions so a radius is never evaluated on what calibrated it, exactly one motif configuration in a planted scene and none in a null one, construction labels taken from the generator and refused rather than guessed when a planted position has no feature near it or two positions claim one, only cross-scene pairs formed, the definition's separation asserted as a floor, nothing admitted where nothing recurs with the absent positive population left unmeasured rather than zero, the frozen-radius failure pinned as a relationship to the feasible radius rather than as two numbers, an empty calibration returning INVALID rather than a permissive radius, every result stating what it does not license, and T4E.13's criterion fixed in code while asserted to be measured nowhere -- `k` derived as a function of the partition size, unequal partitions refused rather than pooled, monotonicity in `k` checked on a toy rather than assumed, and the absence of any candidate 3 measurement or adoption record asserted rather than intended |
   | `test_identity_target_declaration.py` | 26 | T4E.8 slice 3 the declared identity target: an absent target or evidence class refused by name, a misspelling refused with its correction, `kind_recurrence` against record-derived proxy labels refused as circular, `track_continuity` admitted with its tracker-agreement caveat, every target round-tripping what it recognises and does not license, the published proxy wording pinned verbatim so naming a target cannot reword a cited receipt, and the external-reference path recovering two planted identities from a reviewed catalogue while refusing a mismatched family, a single identity, a non-catalogue and a negative population the patterns cannot supply |
   | `test_spectral_spatial_identity.py` | 24 | T4E.8 spatial geometry, detector-band/magnitude independence, source/scope refusal, analytic distances, old-radius refusal, scalar/accelerated agreement and two-sided proxy-label diagnostics |
-| **total** | **4200** | |
+| **total** | **4208** | |
 
 ### 7.4a Browser suite inventory
 

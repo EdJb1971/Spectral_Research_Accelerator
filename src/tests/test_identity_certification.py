@@ -1349,3 +1349,142 @@ def test_the_confirmatory_result_reproduces_on_the_partitions_that_were_spent():
         assert row["false_split_rate"] == 0.0
         assert row["false_admission_rate"] == 0.0
         assert row["admitted"] == row["motif_pairs"] == 15
+
+
+# --------------------------------- T4E.13 candidate 3: partial recurrence, declared blind
+#
+# The criterion is fixed in code here and MEASURED NOWHERE until the maintainer adopts its
+# declaration. These tests therefore exercise the mechanics on toy metrics only. A test that
+# ran the criterion on blocks 100-405 would BE the measurement, and would destroy the one
+# property this candidate has that candidate 2 could not have.
+
+
+def test_the_declaration_for_candidate_3_is_not_yet_adopted():
+    """Code does not sign a scientific declaration for a person."""
+    import json
+    from pathlib import Path
+
+    body = json.loads(Path(
+        "data/identity_calibration/t4e13-partial-recurrence-declaration.json"
+    ).read_text(encoding="utf-8"))
+    assert body["status"] == "declared_before_measurement"
+    assert "NOT VALID until the maintainer has reviewed" in body["declared_by"]
+    assert body["confirmatory"]["status"].startswith("STILL RESERVED AND NOT YET GENERATED")
+    assert body["development"]["status"].startswith("ALREADY INSPECTED")
+    assert "would NOT license" in body["what_a_failure_would_and_would_not_license"]
+
+
+def test_the_declaration_derives_its_recall_result_instead_of_reporting_it_later():
+    """Candidate 1's lesson, applied before adoption rather than after the fact.
+
+    Monotonicity makes condition 1 a matter of arithmetic. A declaration that let that pass as
+    evidence would be claiming a finding it already knew it would get.
+    """
+    import json
+    from pathlib import Path
+
+    body = json.loads(Path(
+        "data/identity_calibration/t4e13-partial-recurrence-declaration.json"
+    ).read_text(encoding="utf-8"))
+    derived = body["what_is_derivable_before_measuring_and_must_not_be_reported_as_a_finding"]
+    assert "SUPERSET" in derived["monotonicity"]
+    assert "0.0000" in derived["the_consequence_for_recall"]
+    assert "admitted nothing anywhere" in derived["the_criterion_cannot_be_inert"]
+    assert "PASSED BY ARITHMETIC" in body["acceptance"]["condition_1_recall"]
+    assert "carries no evidential weight" in body["acceptance"]["condition_1_recall"]
+
+
+def test_the_declaration_discloses_what_was_known_before_k_was_fixed():
+    """Blindness is a claim about timing, and a claim about timing has to state its own limits.
+
+    k = S - 1 sits at the coincidental ceiling candidate 2 already exposed. Saying so is what
+    separates a severe test from a lucky one, and it is stated before the numbers exist.
+    """
+    import json
+    from pathlib import Path
+
+    body = json.loads(Path(
+        "data/identity_calibration/t4e13-partial-recurrence-declaration.json"
+    ).read_text(encoding="utf-8"))
+    claim = body["the_blindness_claim_stated_exactly"]
+    known = " ".join(claim["what_is_already_known_and_is_disclosed_rather_than_hidden"])
+    assert "no coincidental group reaches 6" in known
+    assert "reached 5" in known
+    assert "most likely to fail" in claim["why_that_disclosure_does_not_void_the_claim"]
+    assert "new candidate needing a new declaration" in claim["what_would_void_the_claim"]
+    assert "cannot claim" in body["the_k_profile"]["what_it_is_explicitly_not_for"] or         "will NOT be able to make" in body["the_k_profile"]["what_it_is_explicitly_not_for"]
+
+
+def test_k_is_a_function_of_the_partition_size_and_not_a_constant():
+    """A literal 5 would silently change meaning when S changed, and the rates would not compare."""
+    import pytest
+    from src.benchmarks.identity_certification import ABSENCES_TOLERATED, consistency_k_for
+
+    assert ABSENCES_TOLERATED == 1
+    assert consistency_k_for(6) == 5
+    assert consistency_k_for(9) == 8
+    assert consistency_k_for(3) == 2
+    assert [consistency_k_for(6, absences=a) for a in (0, 1, 2, 3)] == [6, 5, 4, 3]
+    with pytest.raises(ValueError):
+        consistency_k_for(6, absences=5)          # k = 1 is not a correspondence
+    with pytest.raises(ValueError):
+        consistency_k_for(6, absences=-1)
+
+
+def test_partitions_of_different_sizes_are_refused_rather_than_pooled():
+    """k tracks S, so unequal blocks would be measured under different criteria and averaged."""
+    import pytest
+    from src.benchmarks.identity_certification import _partition_size
+
+    assert _partition_size([[1, 2, 3], [4, 5, 6]]) == 3
+    with pytest.raises(ValueError):
+        _partition_size([[1, 2, 3], [4, 5]])
+
+
+def test_lowering_k_can_only_add_admissions_never_remove_them():
+    """The monotonicity the declaration derives, checked on toys rather than assumed.
+
+    This is what makes candidate 3's recall arithmetic rather than evidence, so it is worth a
+    test of its own: if it failed, the declaration's central derivation would be wrong.
+    """
+    from src.benchmarks.identity_certification import consistency_admitted_pairs
+
+    class _Ladder:
+        """Configuration 0 agrees across all four scenes; configuration 1 across the first three."""
+
+        def distance(self, a, b):
+            return 0.0 if a == b else 1.0 + abs(a - b)
+
+    partition = [([0, 1, 2], [False] * 3), ([0, 1, 2], [False] * 3),
+                 ([0, 1, 2], [False] * 3), ([0, 2, 3], [False] * 3)]
+    previous = None
+    for k in (4, 3, 2):
+        admitted = set(consistency_admitted_pairs(partition, _Ladder(), k=k))
+        if previous is not None:
+            assert previous <= admitted, "lowering k removed an admission at k=%d" % (k,)
+        previous = admitted
+
+
+def test_the_criterion_is_measured_nowhere_before_its_declaration_is_adopted():
+    """The blindness claim is a property of the repository, not of a sentence in a file.
+
+    Candidate 3's whole value is that k was fixed before any measurement at any k below S. A
+    committed measurement, a recorded result or a test that ran one would spend that value
+    silently, so its absence is asserted rather than intended.
+    """
+    from pathlib import Path
+
+    assert not list(Path("measurements").glob("t4e13*")), "a candidate 3 measurement exists"
+    assert not list(Path("data/identity_calibration").glob("t4e13*adoption*")),         "an adoption record exists, so this test is the one that should have been deleted"
+    suite = Path("src/tests/test_identity_certification.py").read_text(encoding="utf-8")
+    for call in ("measure_partial_recurrence" + "_criterion(", "measure_k" + "_profile("):
+        assert call not in suite, "%s is called in the suite, which would be the measurement" % call
+
+
+def test_the_k_profile_is_declared_to_adjudicate_nothing():
+    """R20 forbids the horse race, and a sweep is the shape a horse race arrives in."""
+    from src.benchmarks.identity_certification import PROFILE_ABSENCES, measure_k_profile
+
+    assert PROFILE_ABSENCES == (0, 1, 2, 3)
+    assert "adjudicates nothing" in measure_k_profile.__doc__ or         "Characterisation, not adjudication" in measure_k_profile.__doc__
+    assert "own declaration" in measure_k_profile.__doc__

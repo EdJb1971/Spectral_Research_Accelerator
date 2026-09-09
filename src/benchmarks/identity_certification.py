@@ -942,6 +942,168 @@ def measure_consistency_criterion(
 
 
 # ---------------------------------------------------------------------------------------------
+# T4E.13 candidate 3: partial recurrence, at a clique size below the partition.
+#
+# Declared in `data/identity_calibration/t4e13-partial-recurrence-declaration.json` and NOT
+# MEASURED until that declaration is adopted.
+#
+# Candidate 2 passed at k = S and its own declaration says why that is not enough: a real
+# pattern need not appear in every window, and k = S rejects a configuration absent from a
+# single scene outright. This candidate takes the minimal step off that setting -- tolerate
+# exactly one absence -- and it is the first criterion in the sequence whose k was fixed before
+# ANY measurement at ANY k below S. That is the whole point of it; the relaxation itself is
+# small and its transfer value is small with it.
+#
+# Two things about this candidate are arithmetic rather than evidence, and are derived here
+# because candidate 1 failed on properties that were derivable before adoption and were not
+# derived:
+#
+#   * admitted(k) is non-decreasing as k falls, since a group spanning S scenes also spans
+#     S - 1. So candidate 3 admits a SUPERSET of candidate 2 on every partition.
+#   * candidate 2's false split is 0.0000 everywhere, so candidate 3's is 0.0000 everywhere
+#     BEFORE it is run. Acceptance condition 1 is passed by arithmetic and carries no
+#     evidential weight. The entire empirical content is on the admission side.
+#
+# The same monotonicity says the criterion cannot be inert the way candidate 1 was.
+
+#: How many scenes a consistent group may be absent from. Declared as ONE, by the rule "tolerate
+#: exactly one absence" -- the only k below S nameable without choosing a free fraction. Not to
+#: be moved after measurement: a different tolerance is a different candidate needing its own
+#: declaration, and it will not be able to make this one's blindness claim.
+ABSENCES_TOLERATED = 1
+CRITERION_PARTIAL_NAME = "mutual_nearest_neighbour_consistency_tolerating_one_absence"
+
+#: The clique sizes swept for the declared k profile. Characterisation of how the criterion
+#: degrades as the tolerance widens, which is what the mining path needs. It adjudicates
+#: NOTHING: the criterion under evaluation is k = S - 1 and R20 forbids picking a winner from
+#: a sweep. See `the_k_profile` in the declaration.
+PROFILE_ABSENCES = (0, 1, 2, 3)
+
+
+def consistency_k_for(partition_size: int, *, absences: int = ABSENCES_TOLERATED) -> int:
+    """The declared clique size as a FUNCTION of the partition size, not a constant.
+
+    The criterion is "at most `absences` scenes missing", so k tracks S. A criterion whose k
+    were the literal number 5 would silently become stricter or laxer when S changed and its
+    error rates would not be comparable across partitions of different sizes.
+    """
+    partition_size, absences = int(partition_size), int(absences)
+    if absences < 0:
+        raise ValueError("a negative number of tolerated absences is not a relaxation")
+    k = partition_size - absences
+    if k < 2:
+        raise ValueError(
+            "tolerating %d absences in a %d-scene partition leaves k = %d, and a correspondence "
+            "needs at least two scenes" % (absences, partition_size, k))
+    return k
+
+
+def _partition_size(blocks: Sequence[Sequence[int]]) -> int:
+    """One S for the whole measurement, or a refusal by name.
+
+    k is a function of S, so blocks of differing sizes would be measured under different
+    criteria and their error rates pooled as though they were one. That is refused rather than
+    averaged.
+    """
+    sizes = {len(seeds) for seeds in blocks}
+    if len(sizes) != 1:
+        raise ValueError(
+            "blocks of sizes %s cannot share one criterion, because k is a function of the "
+            "partition size" % (sorted(sizes),))
+    return sizes.pop()
+
+
+def measure_partial_recurrence_criterion(
+        richness_levels: Sequence[int] = (6, 9, 12),
+        blocks: Sequence[Sequence[int]] = None,
+        null_blocks: Sequence[Sequence[int]] = None,
+        *, absences: int = ABSENCES_TOLERATED,
+        confirmatory: bool = False) -> Dict[str, Any]:
+    """Candidate 3 at k = S - `absences`, against T4E.13's five declared conditions.
+
+    Delegates to candidate 2's measurement with the derived k, so the population, the proposer
+    and both error-rate definitions are identical and candidates C, D, 2 and 3 stay directly
+    comparable. That identity is a declared property of this candidate, not a convenience.
+    """
+    blocks = tuple(blocks) if blocks is not None else EXCHANGEABILITY_BLOCKS
+    null_blocks = tuple(null_blocks) if null_blocks is not None else (NULL_SEEDS,)
+    scenes = _partition_size(tuple(blocks) + tuple(null_blocks))
+    k = consistency_k_for(scenes, absences=absences)
+    report = measure_consistency_criterion(
+        richness_levels=richness_levels, blocks=blocks, null_blocks=null_blocks,
+        k=k, confirmatory=confirmatory)
+    report.update({
+        "candidate": "3_partial_recurrence_at_k_below_the_partition_size",
+        "criterion": CRITERION_PARTIAL_NAME,
+        "partition_size": scenes,
+        "absences_tolerated": int(absences),
+        "clique_size_required": k,
+        "acceptance_boundary": (
+            "Condition 1: worst false split at most 0.10 -- DECLARED IN ADVANCE TO BE PASSED BY "
+            "ARITHMETIC, by monotonicity from candidate 2, and carrying no evidential weight. "
+            "Condition 2: the matched fraction must FALL as richness grows. Condition 3: false "
+            "admission at most 0.10 at every richness and a non-increasing shortfall. Condition "
+            "4: the null must admit ZERO, not near zero. Condition 5: refusals reported by "
+            "name, verdict to include INVALID."),
+        "what_is_arithmetic_rather_than_evidence": (
+            "admitted(k) is non-decreasing as k falls, so candidate 3 admits a superset of "
+            "candidate 2 and inherits its 0.0000 false split before being run. The recall half "
+            "of this measurement is not a finding. The entire empirical content is how many "
+            "coincidental groups span exactly %d scenes, and whether that grows with richness."
+            % (k,)),
+        "blindness": (
+            "k was fixed by the rule 'tolerate exactly one absence' in the T4E.13 declaration, "
+            "before any measurement at any k below the partition size. What was already known "
+            "and is disclosed there: candidate 2's exact run shows no coincidental group "
+            "reaches S, and a greedy probe found some reaching S - 1. That points away from "
+            "tuning -- k = S - 1 sits AT the observed coincidental ceiling and is the value "
+            "most likely to fail."),
+    })
+    return report
+
+
+def measure_k_profile(richness_levels: Sequence[int] = (6, 9, 12),
+                      blocks: Sequence[Sequence[int]] = None,
+                      null_blocks: Sequence[Sequence[int]] = None,
+                      *, absences: Sequence[int] = PROFILE_ABSENCES,
+                      confirmatory: bool = False) -> Dict[str, Any]:
+    """How the criterion degrades as the tolerance widens. Characterisation, not adjudication.
+
+    The mining path needs to know the shape of this curve and no measurement so far supplies
+    it. It decides nothing: the criterion under evaluation is k = S - 1, judged alone against
+    its own conditions. Any other k made attractive by this sweep is a further candidate that
+    needs its own declaration -- and one that will NOT be able to claim blindness, because this
+    profile will have been seen. That consequence is declared in advance rather than discovered.
+    """
+    blocks = tuple(blocks) if blocks is not None else EXCHANGEABILITY_BLOCKS
+    null_blocks = tuple(null_blocks) if null_blocks is not None else (NULL_SEEDS,)
+    scenes = _partition_size(tuple(blocks) + tuple(null_blocks))
+    rungs = []
+    for tolerated in absences:
+        report = measure_partial_recurrence_criterion(
+            richness_levels=richness_levels, blocks=blocks, null_blocks=null_blocks,
+            absences=tolerated, confirmatory=confirmatory)
+        rungs.append({
+            "absences_tolerated": int(tolerated),
+            "clique_size_required": consistency_k_for(scenes, absences=tolerated),
+            "planted_blocks": report["planted_blocks"], "null_blocks": report["null_blocks"],
+        })
+    return {
+        "profile": "t4e13_k_profile",
+        "partition_size": scenes,
+        "declared_operating_point": consistency_k_for(scenes),
+        "rungs": rungs,
+        "evidence_class": "confirmatory" if confirmatory else "development",
+        "this_adjudicates_nothing": (
+            "R20 forbids the horse race and the T4E.13 declaration forbids it by name. The "
+            "criterion under evaluation is k = S - 1. A k selected from this sweep is a new "
+            "candidate needing its own declaration and its own evidence, and it cannot claim "
+            "its structural choice was blind."),
+        "claim_boundary": CLAIM_BOUNDARY,
+    }
+
+
+# ---------------------------------------------------------------------------------------------
 # T4E.12 candidate 1: a rule that counts its own comparisons.
 #
 # Declared in `data/identity_calibration/t4e12-multiplicity-declaration.json` (sha256
