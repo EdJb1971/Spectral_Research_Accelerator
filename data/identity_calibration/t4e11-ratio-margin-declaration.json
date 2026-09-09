@@ -1,0 +1,126 @@
+{
+  "schema": "t4e11-identity-criterion-declaration/v1",
+  "status": "declared_before_measurement",
+  "task": "T4E.11",
+  "candidate": "D_mutual_nearest_neighbour_with_a_dimensionless_margin",
+  "declared_by": "Edward Jonathan Bentley, maintainer (scientific choice); drafted by Claude Opus 5 at the maintainer's direction and NOT VALID until the maintainer has reviewed and adopted it",
+  "declared_on": "2026-09-09",
+  "supersedes_nothing": "Candidates B and C are falsified, not superseded. Their declarations, adoptions and outcomes are kept in full and unedited.",
+  "why_this_candidate_and_why_now": "Candidate C measured one thing cleanly: mutual nearest-neighbour recovered EVERY construction-labelled motif pair in every development block -- false split 0.0000 four times over -- across blocks whose distance magnitudes differ 1.876x. The ordering transfers where the magnitudes do not. C failed on the other half only: having no rejection test it always returns a match, and on a null block where nothing recurs it returned 116 matches of which every one is false. So the deficiency is named and narrow, and the question this candidate asks is narrow to match: can a rejection test be added that is itself scale-free, so that it inherits the transfer C demonstrated rather than reintroducing the magnitude dependence T4E.10 ruled out?",
+  "criterion": {
+    "statement": "Within an ordered pair of scenes (A, B), configurations a and b match when (i) they are mutual nearest neighbours, exactly as in candidate C, AND (ii) the margin test holds in both directions: d(a,b) <= tau * d(a, second nearest in B) and d(a,b) <= tau * d(second nearest in A, b). No absolute distance appears anywhere; tau is a ratio of two distances measured within the same scene pair.",
+    "name": "mutual_nearest_neighbour_with_ratio_margin",
+    "tau": 0.8,
+    "why_this_is_still_scale_free": "Both quantities in each test are distances between configurations of the same two scenes, so the ratio is dimensionless and any rescaling of the metric within a partition leaves it unchanged. There is no magnitude to carry between blocks. That is precisely the property T4E.10 showed an absolute radius cannot have, and it is why this is not candidate B in another costume: B divided by an estimated partition scale and the estimate was the failure point, whereas D divides by a distance the same scene pair supplies directly.",
+    "where_tau_comes_from_and_why_it_is_not_fitted": "tau = 0.8 is the canonical nearest/second-nearest ratio threshold from Lowe (2004), Distinctive Image Features from Scale-Invariant Keypoints, IJCV 60(2), where it is reported as the operating point of the same test on an unrelated correspondence problem. It is taken because it has an external provenance and is therefore not answerable to this record, NOT because it is expected to be optimal here. It is pinned in this file before measurement and is not to be moved. A tau selected by looking at these blocks would be fitted to already-inspected data and could not be reported as a criterion at all.",
+    "a_structural_property_derivable_before_measurement": "D is a strict narrowing of C: condition (ii) can only remove pairs C returned, never add one. Therefore D's false split can only be greater than or equal to C's 0.0000, and D's match count can only be less than or equal to C's. The entire question is whether the trade is close to free -- whether the margin discards the null's matches without discarding the motif's. This is stated in advance so that neither outcome can be presented afterwards as a surprise.",
+    "what_changes": "That the rule may decline. Identity becomes a relational rule that can return no match for a configuration, which is what C could not do.",
+    "what_does_not_change": "The signature mode, the attribute weights, the cardinality, the construction labels, the mutual nearest-neighbour rule itself, and the evaluation and null partitions."
+  },
+  "refusals_the_criterion_must_make": "A scene with fewer than two configurations has no second nearest neighbour, so the margin test is undefined and the pair must be refused by name rather than admitted by default or silently counted as a non-match. A scene pair with no configurations, or a partition of fewer than two scenes, refuses as in candidate C.",
+  "how_the_error_rates_are_defined": "Unchanged from candidate C, so the two are directly comparable on the same blocks. False split: a construction-labelled motif pair the rule does not match. False admission: a matched pair that is not a motif pair. Both counted over ordered scene pairs within a partition, both reported or refused by name.",
+  "the_null_is_where_this_candidate_is_decided": "On the null partition every match is false by construction, so its false-admission rate is 1.0 whenever it returns anything at all and carries no information by itself. The informative statistic is therefore RETENTION: the number of matches D returns on the null as a fraction of the 116 that C returned there. A margin that is doing its job discards almost all of them. The statistic is defined here, before it is computed.",
+  "development": {
+    "blocks": [
+      [
+        100,
+        101,
+        102,
+        103,
+        104,
+        105
+      ],
+      [
+        200,
+        201,
+        202,
+        203,
+        204,
+        205
+      ],
+      [
+        300,
+        301,
+        302,
+        303,
+        304,
+        305
+      ],
+      [
+        400,
+        401,
+        402,
+        403,
+        404,
+        405
+      ]
+    ],
+    "null_blocks": [
+      [
+        500,
+        501,
+        502,
+        503,
+        504,
+        505
+      ]
+    ],
+    "status": "ALREADY INSPECTED. These blocks informed T4E.10 and candidates B and C. Results on them are development evidence and may not be reported as confirmation.",
+    "purpose": "Does a dimensionless margin reject what does not recur without losing what does, and does it do so at the same tau in every block?"
+  },
+  "confirmatory": {
+    "blocks": [
+      [
+        700,
+        701,
+        702,
+        703,
+        704,
+        705
+      ],
+      [
+        710,
+        711,
+        712,
+        713,
+        714,
+        715
+      ],
+      [
+        720,
+        721,
+        722,
+        723,
+        724,
+        725
+      ],
+      [
+        730,
+        731,
+        732,
+        733,
+        734,
+        735
+      ]
+    ],
+    "status": "STILL RESERVED AND NOT YET GENERATED. Three falsifications have not unreserved them and neither does this declaration. They are opened only after a criterion succeeds on development evidence and an amendment records that.",
+    "enforcement": "RESERVED_CONFIRMATORY_SEEDS in src/benchmarks/identity_certification.py refuses them before a scene is built."
+  },
+  "acceptance": {
+    "development_recall": "False split at most 0.10 on every development block individually.",
+    "development_rejection": "Null retention at most 0.10 -- the margin must discard at least ninety per cent of the matches candidate C returned where nothing recurs.",
+    "development_stability": "Both quantities materially stable between the four blocks. Stability is the property the whole task is about; a good average across unstable blocks is a fail, as it was for C.",
+    "confirmatory": "On the reserved blocks, both error rates within 0.10, reported or refused by name, with an explicit verdict including INVALID.",
+    "a_refusal_is_an_outcome": "Undefined margins and empty partitions must refuse rather than report zero errors."
+  },
+  "a_diagnostic_that_is_not_a_criterion": "The distribution of the nearest/second-nearest ratio, separately for motif pairs and for everything else, will also be recorded, because if D fails it says whether the two distributions overlap or merely sit either side of a badly placed tau. It is a DIAGNOSTIC and is declared as one. Any tau read off it would be fitted to already-inspected blocks, and reporting such a tau as an operating point is forbidden by this declaration. If the diagnostic suggests a better tau, that is a candidate E, needing its own declaration, its own adoption, and -- because these blocks would then have chosen it -- an evaluation on data those blocks did not select.",
+  "what_would_falsify_this_candidate": "A false split above 0.10, meaning the margin discards motif pairs; or a null retention above 0.10, meaning it does not discard much of anything; or either quantity swinging between blocks, meaning the ratio is as partition-dependent as the magnitudes were. Any of these is a complete result and is to be recorded, not tuned away.",
+  "what_a_failure_would_and_would_not_license": "It would license this: at tau = 0.8 the nearest/second-nearest contrast on this signature does not separate recurrence from coincidence in these scenes. It would NOT license concluding that the signature is at fault, that no rank-based criterion can work, or that the criteria route is exhausted. This restriction is written deliberately. The stated falsification reasoning of candidates B and C both over-reached in exactly that direction -- B claimed a failure would show the shape moving, C claimed a failure would implicate the signature -- and neither was supported by the measurement that followed. The acceptance conditions were right both times; the diagnosis field was not. It is narrowed here on purpose.",
+  "governing_rules": [
+    "R20: candidate D is evaluated alone. It is not compared against B or C to pick a winner; both are already falsified and their results stand on their own.",
+    "Already inspected data do not become untouched by renaming them.",
+    "Code does not sign a scientific declaration for a person; this file is not adopted until the maintainer says so."
+  ],
+  "scope": "Atmospheric identity path. The mechanism -- mutual nearest neighbour with a dimensionless margin -- is domain-agnostic, but the evidence produced here is atmospheric and synthetic. Cross-domain use requires its own declared experiment and its own qualification, per R19.",
+  "claim_boundary": "Synthetic scenes settle a property of the criterion, not of the atmosphere. Nothing here approves a mining radius, discharges T4E.8's acquired-record acceptance, or closes D96, D97 or D98. The primary scientific target remains kind_recurrence, which needs external_reference evidence no criterion of this kind supplies. No frame of the 2022-2023 forecast-test period is opened by any part of this."
+}

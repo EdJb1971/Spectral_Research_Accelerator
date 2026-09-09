@@ -390,3 +390,138 @@ def test_the_failure_is_precision_and_not_the_shape_of_the_criterion():
     report = measure_criterion_c()
     assert max(report["false_split_range"]) == 0.0
     assert min(report["false_admission_range"]) > 0.5
+
+
+# ------------------------------------ T4E.11 candidate D: declared, implemented, not yet measured
+#
+# These tests exercise the criterion's mechanics on constructed toy scenes only. The development
+# blocks are NOT evaluated here: the declaration in
+# `data/identity_calibration/t4e11-ratio-margin-declaration.json` has not been adopted, and
+# measuring before adoption is the move sequential preregistration exists to prevent.
+
+
+class _AbsoluteMetric:
+    """A one-dimensional stand-in, so the mechanics are tested without the signature path.
+
+    `scale` exists to test the property candidate D was declared for: the criterion is a ratio
+    of two distances from the same scene pair, so multiplying every distance by a constant must
+    leave its output identical.
+    """
+
+    def __init__(self, scale=1.0):
+        self.scale = scale
+
+    def distance(self, a, b):
+        return abs(a - b) * self.scale
+
+
+def _toy(points):
+    return (list(points), [False] * len(points))
+
+
+def test_tau_is_pinned_at_the_value_its_declaration_names():
+    """It is 0.8 because Lowe (2004) says so, not because these blocks were consulted."""
+    import json
+    from pathlib import Path
+    from src.benchmarks.identity_certification import MARGIN_TAU
+
+    body = json.loads(Path(
+        "data/identity_calibration/t4e11-ratio-margin-declaration.json"
+    ).read_text(encoding="utf-8"))
+    assert MARGIN_TAU == body["criterion"]["tau"] == 0.8
+    assert "Lowe (2004)" in body["criterion"]["where_tau_comes_from_and_why_it_is_not_fitted"]
+
+
+def test_the_declaration_for_candidate_D_is_not_yet_adopted():
+    """Code does not sign a scientific declaration for a person."""
+    import json
+    from pathlib import Path
+
+    body = json.loads(Path(
+        "data/identity_calibration/t4e11-ratio-margin-declaration.json"
+    ).read_text(encoding="utf-8"))
+    assert body["status"] == "declared_before_measurement"
+    assert "NOT VALID until the maintainer has reviewed" in body["declared_by"]
+    assert body["confirmatory"]["status"].startswith("STILL RESERVED AND NOT YET GENERATED")
+    assert body["development"]["status"].startswith("ALREADY INSPECTED")
+    # The failure it would license is narrowed on purpose, after two declarations over-reached.
+    assert "would NOT license" in body["what_a_failure_would_and_would_not_license"]
+
+
+def test_the_margin_is_a_ratio_and_survives_a_change_of_scale():
+    """The declared property: rescale every distance and the criterion does not notice.
+
+    This is what an absolute radius cannot do (T4E.10) and what candidate B's estimated
+    normaliser failed to achieve. Here it holds by construction rather than by estimate.
+    """
+    from src.benchmarks.identity_certification import ratio_margin_matches
+
+    left, right = _toy([0.0, 10.0, 25.0]), _toy([0.2, 10.4, 25.9])
+    unscaled = ratio_margin_matches(left, right, _AbsoluteMetric(1.0))
+    for scale in (0.001, 3.7, 1000.0):
+        assert ratio_margin_matches(left, right, _AbsoluteMetric(scale)) == unscaled
+    assert unscaled, "the toy scenes should match at all, or the test proves nothing"
+
+
+def test_candidate_D_can_only_remove_what_candidate_C_returned():
+    """Stated in the declaration before measurement, so neither outcome can surprise afterwards.
+
+    D is C plus a filter, so its false split can only rise from C's 0.0000 and its match count
+    can only fall. The whole question the declaration asks is whether that trade is close to
+    free -- which these toy scenes do not answer and are not meant to.
+    """
+    from src.benchmarks.identity_certification import (
+        mutual_nearest_matches, ratio_margin_matches)
+
+    metric = _AbsoluteMetric()
+    for left_points, right_points in (
+            ([0.0, 10.0], [0.1, 10.5]),
+            ([0.0, 1.0], [0.5, 0.6]),
+            ([0.0, 1.0, 2.0, 3.0], [0.05, 1.9, 2.95, 7.0])):
+        left, right = _toy(left_points), _toy(right_points)
+        loose = set(mutual_nearest_matches(left, right, metric))
+        tight = set(ratio_margin_matches(left, right, metric))
+        assert tight <= loose
+
+
+def test_the_margin_declines_where_candidate_C_could_not():
+    """The deficiency candidate D was declared to address, on a case built to show it.
+
+    Both pairs are mutual nearest neighbours, so candidate C returns both. One of them is barely
+    nearer than its runner-up, and the margin drops it.
+    """
+    from src.benchmarks.identity_certification import (
+        mutual_nearest_matches, ratio_margin_matches)
+
+    metric = _AbsoluteMetric()
+    left, right = _toy([0.0, 1.0]), _toy([0.5, 0.6])
+    assert len(mutual_nearest_matches(left, right, metric)) == 2
+    assert ratio_margin_matches(left, right, metric) == [(1, 1)]
+
+
+def test_an_undefined_margin_is_refused_by_name_rather_than_decided():
+    """A scene of one configuration has no second nearest neighbour, so the test cannot be run.
+
+    Admitting the pair would make the rule strongest where it has the least evidence; counting
+    it as a non-match would charge a false split to a test that was never applied. The
+    declaration requires a named refusal, and this is it.
+    """
+    import pytest
+    from src.benchmarks.identity_certification import UndefinedMargin, ratio_margin_matches
+
+    with pytest.raises(UndefinedMargin):
+        ratio_margin_matches(_toy([0.0]), _toy([0.1, 5.0]), _AbsoluteMetric())
+    with pytest.raises(UndefinedMargin):
+        ratio_margin_matches(_toy([0.1, 5.0]), _toy([0.0]), _AbsoluteMetric())
+    # An empty scene is a different case and keeps candidate C's behaviour.
+    assert ratio_margin_matches(_toy([]), _toy([0.1, 5.0]), _AbsoluteMetric()) == []
+
+
+def test_the_ratio_diagnostic_is_labelled_as_one_wherever_it_is_reported():
+    """It may inform a candidate E; it may not be read as an operating point for this one."""
+    import inspect
+    from src.benchmarks.identity_certification import margin_ratios, measure_criterion_d
+
+    assert "DIAGNOSTIC and not a criterion" in inspect.getdoc(margin_ratios)
+    source = inspect.getsource(measure_criterion_d)
+    assert "is_a_diagnostic_not_a_criterion" in source

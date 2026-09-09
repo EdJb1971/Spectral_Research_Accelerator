@@ -361,6 +361,176 @@ def measure_criterion_c(blocks: Sequence[Sequence[int]] = None,
     }
 
 
+#: T4E.11 candidate D, declared in `t4e11-ratio-margin-declaration.json` (sha256 b2ba2b4e...).
+#: Pinned before measurement and not answerable to this record: it is the canonical
+#: nearest/second-nearest ratio from Lowe (2004), IJCV 60(2), taken for its external provenance
+#: rather than because it is expected to be optimal here. A tau read off these already-inspected
+#: blocks would be fitted and could not be reported as a criterion at all.
+MARGIN_TAU = 0.8
+CRITERION_D_NAME = "mutual_nearest_neighbour_with_ratio_margin"
+
+
+class UndefinedMargin(Exception):
+    """A scene with one configuration has no second nearest neighbour, so the margin is undefined.
+
+    Declared as a refusal rather than a default. Admitting the pair would mean the rule is
+    strongest exactly where it has the least evidence, and counting it as a non-match would
+    charge a false split to a test that was never applied.
+    """
+
+
+def _pair_distances(left, right, metric: SignatureMetric):
+    """The full cross-scene distance matrix for one ordered pair, computed once."""
+    return [[metric.distance(a, b) for b in right[0]] for a in left[0]]
+
+
+def ratio_margin_matches(left, right, metric: SignatureMetric, *, tau: float = MARGIN_TAU):
+    """Candidate D: candidate C, narrowed by a margin that is a ratio and not a distance.
+
+    A mutual nearest-neighbour pair is kept only when its distance is at most `tau` times the
+    distance to the second nearest, in BOTH directions. Both quantities come from the same two
+    scenes, so the test is dimensionless: rescaling the metric within a partition leaves it
+    unchanged, and there is no magnitude to carry between blocks. That is the property T4E.10
+    showed an absolute radius cannot have, and it is what distinguishes this from candidate B,
+    which divided by an *estimated* partition scale and failed at the estimate.
+
+    This is a strict narrowing of candidate C: condition (ii) can only remove pairs, never add
+    one. So the false split can only rise from C's 0.0000 and the match count can only fall.
+    The question the declaration asks is whether that trade is close to free.
+    """
+    if not left[0] or not right[0]:
+        return []
+    if len(left[0]) < 2 or len(right[0]) < 2:
+        raise UndefinedMargin(
+            "a scene with fewer than two configurations has no second nearest neighbour, so the "
+            "margin test is undefined and the scene pair is refused rather than decided")
+    distances = _pair_distances(left, right, metric)
+    kept = []
+    for i, j in mutual_nearest_matches(left, right, metric):
+        near = distances[i][j]
+        forward_second = min(d for k, d in enumerate(distances[i]) if k != j)
+        backward_second = min(distances[k][j] for k in range(len(distances)) if k != i)
+        if near <= tau * forward_second and near <= tau * backward_second:
+            kept.append((i, j))
+    return kept
+
+
+def margin_ratios(left, right, metric: SignatureMetric):
+    """The declared diagnostic: each mutual pair's nearest/second-nearest ratio, motif or not.
+
+    A DIAGNOSTIC and not a criterion. It says, if candidate D fails, whether the motif and
+    non-motif ratio distributions overlap or merely sit either side of a badly placed tau. A tau
+    read off it would be fitted to already-inspected blocks; the declaration forbids reporting
+    such a tau as an operating point, and doing so would need a candidate E evaluated on data
+    these blocks did not select.
+    """
+    if len(left[0]) < 2 or len(right[0]) < 2:
+        raise UndefinedMargin("no second nearest neighbour, so no ratio exists to report")
+    distances = _pair_distances(left, right, metric)
+    left_motif = left[1].index(True) if any(left[1]) else None
+    right_motif = right[1].index(True) if any(right[1]) else None
+    motif, other = [], []
+    for i, j in mutual_nearest_matches(left, right, metric):
+        near = distances[i][j]
+        second = min(min(d for k, d in enumerate(distances[i]) if k != j),
+                     min(distances[k][j] for k in range(len(distances)) if k != i))
+        ratio = None if second == 0 else near / second
+        if ratio is None:
+            continue
+        (motif if (i == left_motif and j == right_motif) else other).append(ratio)
+    return {"motif": motif, "other": other}
+
+
+def measure_criterion_d(blocks: Sequence[Sequence[int]] = None,
+                        null_blocks: Sequence[Sequence[int]] = None,
+                        *, tau: float = MARGIN_TAU) -> Dict[str, Any]:
+    """Candidate D's development evaluation, against the statistics its declaration named.
+
+    Two of the three acceptance conditions are the familiar error rates. The third is
+    RETENTION, defined in the declaration before it was computed: on the null partition every
+    match is false by construction, so the false-admission rate there is 1.0 whenever anything
+    is returned and carries no information by itself. What discriminates is how much of
+    candidate C's null output the margin discards. C is therefore measured alongside D on the
+    same null blocks, as the denominator of that fraction and for no other purpose -- this is
+    not a comparison to pick a winner, which R20 forbids and which would be meaningless anyway
+    since C is already falsified.
+    """
+    blocks = tuple(blocks) if blocks is not None else EXCHANGEABILITY_BLOCKS
+    null_blocks = tuple(null_blocks) if null_blocks is not None else (NULL_SEEDS,)
+    metric = SignatureMetric(WEIGHTS)
+
+    def evaluate(seeds, *, plant):
+        partition = _partition(seeds, plant=plant)
+        if len(partition) < 2:
+            return {"seeds": list(seeds), "refused":
+                    "a partition of fewer than two scenes has no cross-scene pair"}
+        matched = motif_matched = motif_total = baseline = refused = 0
+        ratios = {"motif": [], "other": []}
+        for left, right in itertools.combinations(partition, 2):
+            try:
+                pairs = ratio_margin_matches(left, right, metric, tau=tau)
+            except UndefinedMargin:
+                refused += 1
+                continue
+            baseline += len(mutual_nearest_matches(left, right, metric))
+            for key, values in margin_ratios(left, right, metric).items():
+                ratios[key].extend(values)
+            matched += len(pairs)
+            left_motif = left[1].index(True) if any(left[1]) else None
+            right_motif = right[1].index(True) if any(right[1]) else None
+            if left_motif is not None and right_motif is not None:
+                motif_total += 1
+                if (left_motif, right_motif) in pairs:
+                    motif_matched += 1
+        return {
+            "seeds": list(seeds), "scene_pairs": len(partition) * (len(partition) - 1) // 2,
+            "scene_pairs_refused_for_undefined_margin": refused,
+            "matches_returned": matched,
+            "matches_returned_by_candidate_C": baseline,
+            "retention_of_candidate_C": (None if not baseline else matched / baseline),
+            "motif_pairs": motif_total, "motif_pairs_matched": motif_matched,
+            "false_split_rate": (None if not motif_total
+                                 else (motif_total - motif_matched) / motif_total),
+            "false_admission_rate": (None if not matched
+                                     else (matched - motif_matched) / matched),
+            "margin_ratio_diagnostic": {
+                "is_a_diagnostic_not_a_criterion": (
+                    "Recorded to say whether the distributions overlap. A tau read off it is "
+                    "fitted to already-inspected blocks and may not be reported as an "
+                    "operating point."),
+                "motif_pairs": len(ratios["motif"]),
+                "motif_ratio_range": ([min(ratios["motif"]), max(ratios["motif"])]
+                                      if ratios["motif"] else None),
+                "other_pairs": len(ratios["other"]),
+                "other_ratio_range": ([min(ratios["other"]), max(ratios["other"])]
+                                      if ratios["other"] else None),
+            },
+        }
+
+    planted = [evaluate(seeds, plant=True) for seeds in blocks]
+    nulls = [evaluate(seeds, plant=False) for seeds in null_blocks]
+    splits = [row["false_split_rate"] for row in planted
+              if row.get("false_split_rate") is not None]
+    admissions = [row["false_admission_rate"] for row in planted
+                  if row.get("false_admission_rate") is not None]
+    retentions = [row["retention_of_candidate_C"] for row in nulls
+                  if row.get("retention_of_candidate_C") is not None]
+    return {
+        "candidate": "D_mutual_nearest_neighbour_with_a_dimensionless_margin",
+        "criterion": CRITERION_D_NAME, "tau": tau,
+        "planted_blocks": planted, "null_blocks": nulls,
+        "false_split_range": [min(splits), max(splits)] if splits else None,
+        "false_admission_range": [min(admissions), max(admissions)] if admissions else None,
+        "null_retention_range": [min(retentions), max(retentions)] if retentions else None,
+        "acceptance_boundary": (
+            "False split at most 0.10 on every block, null retention at most 0.10, and both "
+            "materially stable between blocks. A good average across unstable blocks is a fail."),
+        "evidence_class": "development",
+        "boundary": ("Measured on the blocks that informed the declaration. Development "
+                     "evidence only; the reserved confirmatory blocks are untouched."),
+    }
+
+
 #: T4E.11 candidate B, adopted 2026-09-09. Declared in
 #: `data/identity_calibration/t4e11-normalised-distance-declaration.json` (sha256 ee9715ea...)
 #: before any of it was measured, and adopted separately so the declared artifact keeps its hash.

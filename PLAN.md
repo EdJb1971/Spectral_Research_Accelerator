@@ -80,12 +80,24 @@ nearest-neighbour recovers **every** motif pair in **every** block (split 0.0000
 1.876x magnitude spread: **the ordering transfers where the magnitudes do not.** It fails
 because it cannot decline -- 116 matches on a null block where the answer is none.
 
-**So the next choice is narrower than it was.** The shape is not in doubt; the rule lacks a
-rejection test, and such a test can itself be rank-based and scale-free (nearest against
-second-nearest within one scene pair). That is candidate D and needs its own declaration and
-adoption. The alternative reading -- that three failures implicate the signature rather than the
-criteria -- is available but is **not** supported by C's result, and the declaration that
-claimed it would be has been corrected. The reserved confirmatory blocks remain untouched. After that, the catalogue `kind_recurrence` requires --
+**Candidate D is now declared and implemented, and is waiting on one thing: your
+adoption.** It is C plus the rejection test C lacked, in the only form that keeps what C
+achieved -- a mutual pair survives only when its distance is at most `tau` times the distance
+to the second nearest, in both directions. Both distances come from the same scene pair, so the
+test is a ratio and there is nothing to carry between partitions. `tau` is pinned at **0.8**,
+the canonical value from Lowe (2004), taken because it has an external provenance and is
+therefore not answerable to this record; a `tau` chosen by looking at these blocks would be
+fitted and is routed to a candidate E instead.
+
+**What is deliberately not done yet.** The development blocks have not been evaluated. The
+criterion is implemented and its mechanics are tested on constructed scenes only, because
+measuring before adoption is exactly what sequential preregistration exists to prevent. The
+declaration is `data/identity_calibration/t4e11-ratio-margin-declaration.json`, sha256
+`b2ba2b4e...`. **Adopting it is not a prediction that it will work**; it fixes in advance what
+would count as success and what as failure. One outcome is already fixed by construction: D can
+only remove matches C made, so its false split can only rise from 0.0000 and its match count
+can only fall, and the question is whether that trade is close to free. The reserved
+confirmatory blocks remain untouched. After that, the catalogue `kind_recurrence` requires --
 sourcing it, deciding its independence class, and a serialisation the audit tool can load.
 
 ## 2. Ordered atmospheric work

@@ -2440,7 +2440,7 @@ choice and each needs its own task and acceptance. This also reaches **D96**: it
 by the radius, so a radius that cannot be frozen is a workload that cannot be predicted, and the
 identity criterion must settle before the algorithm that consumes it does.
 
-**T4E.11 An identity criterion that survives a change of partition -- IN PROGRESS. Candidates B and C both declared, adopted and falsified on development evidence, 2026-09-09. C produced the sequence's first positive finding: the ordering transfers where magnitudes do not.**
+**T4E.11 An identity criterion that survives a change of partition -- IN PROGRESS. Candidates B and C both declared, adopted and falsified on development evidence, 2026-09-09. C produced the sequence's first positive finding: the ordering transfers where magnitudes do not. Candidate D is declared and implemented as of 2026-09-09 and awaits the maintainer's adoption; nothing has been measured under it.**
 
 *T4E.10 closed off the estimator route. Four blocks of six scenes from one generator with
 identical parameters differ 1.88x in mean same-configuration distance, so a frozen absolute
@@ -2469,6 +2469,33 @@ is being adopted and why before evaluating it, and record an amendment openly if
 Nothing here approves a mining radius or discharges T4E.8's acquired-record acceptance. A
 criterion that holds on synthetic blocks still has to be argued for on a real record, where the
 partitions differ by more.
+
+**Candidate D, declared 2026-09-09 and not yet adopted.** Candidate C's failure was named and
+narrow -- it recovered every motif pair and could not decline -- so candidate D adds the one
+thing it lacked, a rejection test, and adds it in a form that keeps what C had. A mutual
+nearest-neighbour pair is kept only when its distance is at most `tau` times the distance to
+the second nearest, in both directions. Both distances come from the same scene pair, so the
+test is dimensionless and there is nothing to carry between partitions; this is not candidate B
+in another costume, because B divided by an *estimated* partition scale and the estimate was
+where it failed.
+
+`tau` is pinned at **0.8**, the canonical nearest/second-nearest ratio from Lowe (2004), IJCV
+60(2). It is taken for its external provenance -- it is not answerable to this record -- and
+explicitly not because it is expected to be optimal here. A `tau` read off these
+already-inspected blocks would be fitted and could not be reported as a criterion at all; the
+declaration says so in advance and routes any such value to a candidate E evaluated on data
+these blocks did not select. **Acceptance** is false split at most 0.10 on every block, null
+retention at most 0.10 -- the fraction of candidate C's 116 null matches the margin keeps --
+and both materially stable between blocks.
+
+One property is derivable before measurement and is recorded before it: D is a strict
+narrowing of C, so its false split can only rise from C's 0.0000 and its match count can only
+fall. The whole question is whether that trade is close to free. **The declaration's
+falsification reasoning is deliberately narrower than its two predecessors'**, which both
+over-reached in the same direction: a failure here licenses only that this contrast does not
+separate at this `tau` on these scenes, and not that the signature is at fault. The criterion is
+implemented and its mechanics are tested on constructed scenes; the development blocks are
+untouched until the maintainer adopts it, and the confirmatory blocks stay reserved regardless.
 
 **Candidate B outcome (2026-09-09): adopted before measurement, falsified by it.** The
 normaliser was pinned in the declaration -- within a partition, each configuration's distance to

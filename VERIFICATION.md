@@ -12385,6 +12385,24 @@ release decision, but it does mean two gates that read PASS now read NOT_RUN and
 were not isolated to a cause; the run predates no clean baseline for this suite size, so they
 are reported as measured rather than attributed.
 
+**T4E.11 candidate D (2026-09-09): declared and implemented; NOT MEASURED.**
+
+The criterion is `mutual_nearest_neighbour_with_ratio_margin` -- candidate C narrowed by a
+dimensionless margin at `tau = 0.8`, whose value comes from Lowe (2004) rather than from these
+blocks. It is declared in `t4e11-ratio-margin-declaration.json` (sha256 `b2ba2b4e...`) and the
+declaration is **not adopted**, so no development block has been evaluated under it and no error
+rate for it exists in this document or anywhere else.
+
+What has been verified is mechanics, on constructed toy scenes with a one-dimensional stand-in
+metric: that the criterion is invariant to rescaling every distance by a constant (the property
+it was declared for), that it can only remove pairs candidate C returned, that it declines a
+mutual pair which is barely nearer than its runner-up where C could not, that a scene of one
+configuration raises `UndefinedMargin` rather than being admitted or scored as a split, and that
+the ratio diagnostic is labelled a diagnostic wherever it is reported.
+
+The reserved confirmatory blocks were not built. No mining radius is approved -- there is still
+no radius -- and no defect is closed.
+
 **T4E.11 candidate C (2026-09-09): the ordering transfers; the rule cannot decline.**
 
 Declared in `t4e11-mutual-nearest-neighbour-declaration.json` before measurement and adopted
