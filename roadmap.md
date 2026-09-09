@@ -2521,6 +2521,45 @@ the measurement supports. The narrowing was the right correction.
 re-measuring. Reading an operating point off the diagnostic. The confirmatory blocks remain
 reserved; four falsifications have not unreserved them.
 
+**The diagnostic that followed, 2026-09-09, and where it sends the programme.** Four candidates
+had been falsified against a ground truth no declaration had examined. `decompose_matched_pairs`
+asks what the false admissions are. It adopts nothing and reports no operating point.
+
+| class | available | C matched | rate | D matched | rate |
+|---|---|---|---|---|---|
+| **motif** | 60 | 60 | **100%** | 60 | **100%** |
+| shared_2 | 1620 | 89 | 5.49% | 54 | 3.33% |
+| shared_1 | 1620 | 36 | 2.22% | 17 | 1.05% |
+| **crossed_2** | 1080 | **0** | **0.000%** | **0** | **0.000%** |
+| crossed_1 | 10800 | 170 | 1.57% | 80 | 0.74% |
+| unrelated | 8820 | 175 | 1.98% | 93 | 1.05% |
+| *null, unrelated* | 6000 | 116 | 1.93% | 62 | **1.03%** |
+
+**The suspicion that prompted it was wrong.** Nine of twenty configurations per scene share two
+motif features and therefore recur by construction, so the ground truth might have been scoring
+real recurrence as error. It is not: only 29% of candidate D's non-motif matches hold the same
+motif vertices, and that class is enriched just 3.2x over unrelated. **The ground truth is
+sound.**
+
+**What the signature does well is now measured too.** 60 of 60 motif pairs recovered. A
+background rate that does not notice whether a motif is present -- 1.054% planted against 1.033%
+null -- which is why the null's retention was never a null-specific artefact. And `crossed_2` at
+**0 of 1080**: the full motif is never matched to a configuration holding two of its own three
+features.
+
+**The binding constraint is a number.** 400 candidate pairs per scene pair, one true positive:
+prior odds 1:399. Candidate D's per-pair false rate is 1.019%, a specificity of 98.98%. The
+declared 0.10 bound needs 0.028% -- a **36-fold** reduction. No threshold on these distances can
+supply it, and that is the brief for **T4E.12**.
+
+**T4E.12 What the signature measures -- NOT STARTED. Opened 2026-09-09 by the diagnostic
+above.** T4E.11 established what a criterion cannot fix. This task asks what the signature would
+have to carry for a cardinality-three configuration over six features to be identifiable against
+1:399 odds, and it is a change to the signature rather than to any rule applied over its
+distances. R20 governs it as it governed T4E.11: declare before measuring, evaluate alone, and
+record a falsification as a result. **Acceptance is not yet specified** and the reserved
+confirmatory blocks stay reserved while it is written.
+
 **Candidate B outcome (2026-09-09): adopted before measurement, falsified by it.** The
 normaliser was pinned in the declaration -- within a partition, each configuration's distance to
 its nearest neighbour among other scenes, then the median -- and adopted in a separate record so

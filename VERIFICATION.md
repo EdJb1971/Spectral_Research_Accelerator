@@ -12385,6 +12385,45 @@ release decision, but it does mean two gates that read PASS now read NOT_RUN and
 were not isolated to a cause; the run predates no clean baseline for this suite size, so they
 are reported as measured rather than attributed.
 
+**T4E.11 diagnostic (2026-09-09): what the false admissions are. The ground truth is
+sound and the constraint is specificity.**
+
+A diagnostic, not a criterion: `decompose_matched_pairs` adopts nothing, chooses no threshold
+and reports no operating point. Run after four candidates had been falsified against a ground
+truth no declaration had examined. Pooled over four planted blocks, 60 scene pairs, 20
+configurations per scene.
+
+| class | available | C matched | rate | D matched | rate |
+|---|---|---|---|---|---|
+| **motif** | 60 | 60 | **100%** | 60 | **100%** |
+| shared_2 | 1620 | 89 | 5.49% | 54 | 3.33% |
+| shared_1 | 1620 | 36 | 2.22% | 17 | 1.05% |
+| **crossed_2** | 1080 | **0** | **0.000%** | **0** | **0.000%** |
+| crossed_1 | 10800 | 170 | 1.57% | 80 | 0.74% |
+| unrelated | 8820 | 175 | 1.98% | 93 | 1.05% |
+| *null, unrelated* | 6000 | 116 | 1.93% | 62 | **1.03%** |
+
+`shared_n` pairs hold the SAME motif vertices -- the same physical features replanted -- and
+`crossed_n` pairs hold motif vertices that are not the same ones. Separating those two is the
+point; a count of shared features cannot.
+
+**The hypothesis fails.** Only 71 of candidate D's 244 non-motif matches (29%) hold the same
+motif vertices, and `shared_2` is enriched just 3.2x over unrelated. The ground truth is not
+scoring real recurrence as error to any material degree.
+
+**Three positive findings.** 60 of 60 motif pairs recovered by both criteria. The background
+rate does not notice whether a motif is present (1.054% planted against 1.033% null), so the
+null's retention was never a null-specific artefact. `crossed_2` is 0 of 1080: the full motif
+is never matched to a configuration holding two of its own three features.
+
+**The binding constraint, as a number.** 400 candidate pairs per scene pair against one true
+positive -- prior odds 1:399. Candidate D's per-pair false rate is 244/23,940 = 1.019%,
+specificity 98.98%. The declared 0.10 admission bound requires 0.028%: a 36-fold reduction. No
+threshold on these distances supplies it, which is what opens T4E.12.
+
+The reserved confirmatory blocks were not built. No mining radius is approved and no defect is
+closed.
+
 **T4E.11 candidate D (2026-09-09): the margin costs no recall, rejects too little, and
 the distributions overlap.**
 

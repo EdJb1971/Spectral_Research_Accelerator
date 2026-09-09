@@ -1,0 +1,206 @@
+{
+  "diagnostic": "what the false admissions are, by construction",
+  "is_a_diagnostic_not_a_criterion": "Nothing is adopted, no threshold is chosen and no operating point is reported. A change to the ground truth suggested by this is a scientific choice needing its own declaration, and any criterion evaluated against a changed ground truth is a new measurement, not a re-reading of an old one.",
+  "tau": 0.8,
+  "classes": {
+    "motif": "both configurations are the full planted motif; the only true positive.",
+    "shared_2": "both hold the SAME two motif vertices -- the same two physical features, replanted -- so they share one motif edge at fixed length and bearing plus two members with identical strengths and scales. Scored as a false admission by the current ground truth.",
+    "shared_1": "both hold the same single motif vertex.",
+    "crossed_2": "both hold two motif vertices but not the same two.",
+    "crossed_1": "both hold one motif vertex but not the same one.",
+    "unrelated": "no motif vertex in common; unambiguously a coincidence."
+  },
+  "planted_blocks": [
+    {
+      "seeds": [
+        100,
+        101,
+        102,
+        103,
+        104,
+        105
+      ],
+      "configurations_per_scene": 20,
+      "cross_scene_pairs_available": {
+        "shared_1": 405,
+        "crossed_1": 2700,
+        "unrelated": 2205,
+        "shared_2": 405,
+        "crossed_2": 270,
+        "motif": 15
+      },
+      "matched_by_candidate_C": {
+        "unrelated": 37,
+        "shared_2": 17,
+        "crossed_1": 44,
+        "motif": 15,
+        "shared_1": 8
+      },
+      "matched_by_candidate_D": {
+        "unrelated": 23,
+        "shared_2": 10,
+        "crossed_1": 16,
+        "motif": 15,
+        "shared_1": 6
+      }
+    },
+    {
+      "seeds": [
+        200,
+        201,
+        202,
+        203,
+        204,
+        205
+      ],
+      "configurations_per_scene": 20,
+      "cross_scene_pairs_available": {
+        "crossed_1": 2700,
+        "crossed_2": 270,
+        "shared_2": 405,
+        "unrelated": 2205,
+        "shared_1": 405,
+        "motif": 15
+      },
+      "matched_by_candidate_C": {
+        "shared_2": 19,
+        "crossed_1": 36,
+        "motif": 15,
+        "unrelated": 42,
+        "shared_1": 9
+      },
+      "matched_by_candidate_D": {
+        "shared_2": 10,
+        "crossed_1": 17,
+        "motif": 15,
+        "unrelated": 22,
+        "shared_1": 3
+      }
+    },
+    {
+      "seeds": [
+        300,
+        301,
+        302,
+        303,
+        304,
+        305
+      ],
+      "configurations_per_scene": 20,
+      "cross_scene_pairs_available": {
+        "shared_1": 405,
+        "crossed_1": 2700,
+        "unrelated": 2205,
+        "shared_2": 405,
+        "crossed_2": 270,
+        "motif": 15
+      },
+      "matched_by_candidate_C": {
+        "unrelated": 53,
+        "crossed_1": 44,
+        "shared_2": 33,
+        "motif": 15,
+        "shared_1": 7
+      },
+      "matched_by_candidate_D": {
+        "crossed_1": 21,
+        "shared_2": 22,
+        "motif": 15,
+        "unrelated": 24,
+        "shared_1": 4
+      }
+    },
+    {
+      "seeds": [
+        400,
+        401,
+        402,
+        403,
+        404,
+        405
+      ],
+      "configurations_per_scene": 20,
+      "cross_scene_pairs_available": {
+        "unrelated": 2205,
+        "crossed_1": 2700,
+        "shared_1": 405,
+        "shared_2": 405,
+        "crossed_2": 270,
+        "motif": 15
+      },
+      "matched_by_candidate_C": {
+        "shared_2": 20,
+        "unrelated": 43,
+        "crossed_1": 46,
+        "motif": 15,
+        "shared_1": 12
+      },
+      "matched_by_candidate_D": {
+        "shared_2": 12,
+        "unrelated": 24,
+        "motif": 15,
+        "crossed_1": 26,
+        "shared_1": 4
+      }
+    }
+  ],
+  "null_blocks": [
+    {
+      "seeds": [
+        500,
+        501,
+        502,
+        503,
+        504,
+        505
+      ],
+      "configurations_per_scene": 20,
+      "cross_scene_pairs_available": {
+        "unrelated": 6000
+      },
+      "matched_by_candidate_C": {
+        "unrelated": 116
+      },
+      "matched_by_candidate_D": {
+        "unrelated": 62
+      }
+    }
+  ],
+  "planted_totals": {
+    "available": {
+      "shared_1": 1620,
+      "crossed_1": 10800,
+      "unrelated": 8820,
+      "shared_2": 1620,
+      "crossed_2": 1080,
+      "motif": 60
+    },
+    "candidate_C": {
+      "unrelated": 175,
+      "shared_2": 89,
+      "crossed_1": 170,
+      "motif": 60,
+      "shared_1": 36
+    },
+    "candidate_D": {
+      "unrelated": 93,
+      "shared_2": 54,
+      "crossed_1": 80,
+      "motif": 60,
+      "shared_1": 17
+    }
+  },
+  "null_totals": {
+    "available": {
+      "unrelated": 6000
+    },
+    "candidate_C": {
+      "unrelated": 116
+    },
+    "candidate_D": {
+      "unrelated": 62
+    }
+  },
+  "evidence_class": "development",
+  "boundary": "Computed on the blocks that informed four declarations. Development evidence; the reserved confirmatory blocks are untouched."
+}

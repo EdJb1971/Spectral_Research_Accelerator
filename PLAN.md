@@ -9,7 +9,7 @@ authority. `roadmap.md` and `roadmap_cross_domain.md` hold task history -- what 
 why -- and `VERIFICATION.md` holds the captured output behind every figure. When any of them
 disagrees with this document, **they are right and this is stale.**
 
-Last revised 2026-09-08, after T4E.8 slice 3.
+Last revised 2026-09-09, after T4E.11 candidate D and the diagnostic that redirects to T4E.12.
 
 ## 0. The question this sequence serves
 
@@ -97,16 +97,35 @@ permissive -- but **the distributions overlap**, and no threshold separates them
 overlap is narrow, which is exactly what makes it dangerous: a `tau` chosen to sit inside it
 would be fitted to blocks now inspected four times over.
 
-**So the next move is no longer another threshold.** Four criteria have now been declared and
-falsified on the same signature, and D's result says why in a way the earlier three could not:
-the ordering carries real information (C), the margin is stable and costs no recall (D), and
-what is missing is separation between recurrence and coincidence in the tail. That is a
-statement about the *signature's* discriminating power, and unlike candidate C's declaration --
-which claimed this without support -- it is now supported. **The honest options are two**: a
-candidate E declared against data these blocks did not select, or turning to what the signature
-measures rather than how its distances are thresholded. The reserved confirmatory blocks remain
-untouched, and four falsifications have not unreserved them. After that, the catalogue `kind_recurrence` requires --
-sourcing it, deciding its independence class, and a serialisation the audit tool can load.
+**A diagnostic then settled where to go next, and it is the signature.** Before
+declaring anything further, `decompose_matched_pairs` asked what the false admissions actually
+are -- a question none of the four declarations had asked of a ground truth all four were
+measured against. It adopts nothing and reports no operating point.
+
+**The suspicion it was built to test was wrong, and that is worth stating plainly.** Nine of
+every twenty configurations in a scene share two motif features, which recur by construction,
+so the ground truth might have been scoring real recurrence as error. Only **29%** of candidate
+D's non-motif matches hold the same motif vertices, and that class is enriched just 3.2x over
+unrelated. **The ground truth is sound.**
+
+**What the signature does well is now measured, not assumed.** 60 of 60 motif pairs recovered.
+A background match rate that does not notice whether a motif is present -- 1.054% in the
+planted blocks against 1.033% in the null -- so the null's retention was never an artefact of
+the null. And the hardest discrimination in the scene, the full motif against a configuration
+holding two of its own three features, is **0 matches out of 1080**.
+
+**The constraint is arithmetic and it is a number.** Each scene pair offers 400 candidate pairs
+and holds one true positive: prior odds 1:399. Candidate D's per-pair false rate is **1.019%**,
+a specificity of 98.98%, and the declared 0.10 bound needs **0.028%** -- a **36-fold**
+reduction. No threshold placed on these distances can supply that.
+
+**So T4E.12 is the next task and it is about the signature**, not a fifth criterion: what would
+a cardinality-three configuration over six features have to carry to be identifiable against
+1:399 odds? Its acceptance is not yet written, and writing it is the next slice. The reserved
+confirmatory blocks remain untouched, and four falsifications have not unreserved them.
+
+After that, the catalogue `kind_recurrence` requires -- sourcing it, deciding its independence
+class, and a serialisation the audit tool can load.
 
 ## 2. Ordered atmospheric work
 

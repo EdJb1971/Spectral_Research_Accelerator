@@ -612,3 +612,103 @@ def test_the_diagnostic_says_the_distributions_overlap_rather_than_that_tau_is_m
     # Every motif ratio sits far below the pinned tau, which is what makes 0.8 the wrong value
     # here -- but being the wrong value is not the same as there being a right one.
     assert motif_high < report["tau"]
+
+
+# ------------------------------------ The diagnostic on the ground truth, after four failures
+#
+# Not a criterion and not preregistered: it adopts nothing, chooses no threshold and reports no
+# operating point. It asks what the pairs called false admissions actually are, which no
+# declaration had asked.
+
+
+def _decomposition():
+    """One run, reused. Each call rebuilds five partitions through the full T4E path."""
+    from src.benchmarks.identity_certification import decompose_matched_pairs
+
+    if not hasattr(_decomposition, "_cached"):
+        _decomposition._cached = decompose_matched_pairs()
+    return _decomposition._cached
+
+
+def test_the_diagnostic_reports_no_operating_point_and_says_so():
+    """Four criteria have been falsified; a diagnostic is not the place to smuggle in a fifth."""
+    report = _decomposition()
+    assert "Nothing is adopted" in report["is_a_diagnostic_not_a_criterion"]
+    assert report["evidence_class"] == "development"
+
+
+def test_the_labelling_is_not_what_the_false_admissions_are():
+    """The hypothesis this diagnostic was built to test, and it does not survive.
+
+    Nine of every twenty configurations in a scene share two motif features, which recur by
+    construction, so the suspicion was that the ground truth was scoring real partial recurrence
+    as error. It is not: most false admissions hold no motif vertex in common at all.
+    """
+    totals = _decomposition()["planted_totals"]["candidate_D"]
+    non_motif = sum(count for key, count in totals.items() if key != "motif")
+    same_vertices = totals.get("shared_2", 0) + totals.get("shared_1", 0)
+    assert same_vertices < non_motif / 2, (
+        "if this ever fails, the ground truth is scoring recurrence as error and the finding "
+        "changes")
+
+
+def test_the_signature_never_confuses_the_motif_with_a_partial_copy_of_itself():
+    """The hardest discrimination in the scene, and the signature wins it outright.
+
+    A `crossed_2` pair is the full motif against a configuration holding two of its three
+    features -- one shared motif edge at fixed length and bearing, two members with identical
+    strengths and scales, one member different. Not one such pair is matched by either
+    criterion, out of more than a thousand available.
+    """
+    report = _decomposition()
+    assert report["planted_totals"]["available"]["crossed_2"] > 1000
+    for criterion in ("candidate_C", "candidate_D"):
+        assert report["planted_totals"][criterion].get("crossed_2", 0) == 0
+
+
+def test_every_motif_pair_is_recovered_in_the_decomposition_too():
+    """The same 60 out of 60, arrived at by a second route, which is worth having."""
+    report = _decomposition()
+    assert report["planted_totals"]["available"]["motif"] == 60
+    for criterion in ("candidate_C", "candidate_D"):
+        assert report["planted_totals"][criterion]["motif"] == 60
+
+
+def test_the_background_coincidence_rate_does_not_notice_whether_a_motif_is_present():
+    """Why the null block's retention was never a null-specific artefact.
+
+    Unrelated configurations -- no motif vertex in common -- match at essentially the same rate
+    in the planted blocks as in the null. The same background operates everywhere, and it is
+    that background, not the null's construction, which sets the false-admission floor.
+    """
+    report = _decomposition()
+    rates = []
+    for key in ("planted_totals", "null_totals"):
+        totals = report[key]
+        rates.append(totals["candidate_D"].get("unrelated", 0)
+                     / totals["available"]["unrelated"])
+    assert abs(rates[0] - rates[1]) < 0.005, (
+        "planted %.5f against null %.5f" % tuple(rates))
+
+
+def test_the_binding_constraint_is_specificity_and_the_shortfall_is_a_number():
+    """What revisiting the signature has to achieve, stated as a factor rather than a wish.
+
+    Each scene pair offers 400 candidate pairs and holds one true positive, so a per-pair false
+    rate near one per cent yields four false admissions for every true one. Reaching the
+    declared bound of 0.10 with 15 true positives per block requires the rate to fall by more
+    than an order of magnitude. No threshold placed on this distance can supply that, which is
+    why the next move is the signature and not a fifth criterion.
+    """
+    report = _decomposition()
+    totals = report["planted_totals"]
+    available = sum(count for key, count in totals["available"].items() if key != "motif")
+    matched = sum(count for key, count in totals["candidate_D"].items() if key != "motif")
+    rate = matched / available
+    true_positives = totals["available"]["motif"]
+    # False admissions permitted at the declared bound, pooled over the same blocks.
+    permitted = MAX_FALSE_ADMISSION * true_positives / (1.0 - MAX_FALSE_ADMISSION)
+    assert rate > 0.005, "the measured background rate, recorded so a change would be visible"
+    assert matched / permitted > 10.0, (
+        "the shortfall is more than an order of magnitude: %d false admissions against %.1f "
+        "permitted" % (matched, permitted))

@@ -27,6 +27,7 @@ answer at all.
 
 from __future__ import annotations
 
+import collections
 import itertools
 import math
 from typing import Any, Dict, List, Optional, Sequence, Tuple
@@ -528,6 +529,188 @@ def measure_criterion_d(blocks: Sequence[Sequence[int]] = None,
         "evidence_class": "development",
         "boundary": ("Measured on the blocks that informed the declaration. Development "
                      "evidence only; the reserved confirmatory blocks are untouched."),
+    }
+
+
+# ---------------------------------------------------------------------------------------------
+# A diagnostic on the ground truth itself, run after four candidates were falsified against it.
+#
+# It adopts nothing, thresholds nothing and reports no operating point. It asks one arithmetic
+# question that none of the four declarations thought to ask: WHAT ARE the pairs the error rates
+# have been calling false admissions?
+#
+# Each scene holds six features -- three motif, three distractors -- and the signature is
+# cardinality three, so each scene yields C(6,3) = 20 configurations, of which exactly one is
+# the motif, NINE share two motif features, nine share one, and one shares none. The nine that
+# share two carry the same two physical features, replanted under translation and rotation, in
+# every scene of every block: one motif edge at fixed length and bearing, and two members with
+# identical strengths and scales. That is recurring structure by construction, and the labelling
+# scores a criterion that finds it as wrong.
+#
+# Whether that matters is not a matter of opinion, and this measures it.
+
+
+def _motif_member_ids(features: Sequence[Any],
+                      planted: Sequence[Tuple[float, float]]) -> Tuple[int, ...]:
+    """The motif's feature indices IN PLANTED ORDER, so a vertex is identifiable across scenes.
+
+    `_motif_track_ids` sorts, which is right for asking whether a configuration is the motif and
+    wrong for asking WHICH motif vertices it holds. Vertex k is the same physical feature in
+    every scene, so the sets must be comparable between scenes and a sorted tuple destroys that.
+    Ambiguity is refused there and stays refused here; this reuses that labelling rather than
+    repeating it.
+    """
+    claimed: Dict[int, Tuple[float, float]] = {}
+    order: List[int] = []
+    for position in planted:
+        distances = [math.hypot(float(f.location.coords["row"]) - position[0],
+                                float(f.location.coords["col"]) - position[1])
+                     for f in features]
+        index = int(np.argmin(distances))
+        if distances[index] > LABEL_TOLERANCE_CELLS or index in claimed:
+            raise UnlabelledScene(
+                "the motif labelling is ambiguous for this scene; refused rather than guessed")
+        claimed[index] = position
+        order.append(index)
+    return tuple(order)
+
+
+def _scene_with_motif_membership(seed: int, *, plant: bool):
+    """One signed scene, plus which motif vertices each configuration holds.
+
+    Returns `(points, is_motif, membership)` where `membership[i]` is the frozenset of motif
+    vertex numbers configuration `i` contains. The first two elements are exactly what
+    `_signed_scene` returns, so the criteria can be run against this unchanged.
+    """
+    features, planted = _scene(seed, plant=plant)
+    members = _motif_member_ids(features, planted) if plant else ()
+    tracks = tuple(Track(index, FeatureSet([feature]), {})
+                   for index, feature in enumerate(features))
+    tracking = TrackingResult(
+        features=FeatureSet(list(features)), associator="hungarian", alpha=0.05,
+        bounds=MotionBounds(max_doublings=0.5),
+        volume=SearchVolume({"row": 1024.0, "col": 1024.0}, units="cells"),
+        times=(0.0,), tracks=tracks)
+    constellations = extract_constellations(tracking, cardinalities=(CARDINALITY,))
+    signed = sign_constellations(constellations, mode=MODE, comparison_scope=SCOPE)
+    if len(signed) != len(constellations):
+        raise UnlabelledScene(
+            "scene %d signed %d of %d constellations; a partial population would make the "
+            "decomposition measure the refusals" % (seed, len(signed), len(constellations)))
+    points, is_motif, membership = [], [], []
+    for constellation, signature in zip(constellations, signed):
+        points.append(SignaturePoint.from_signature(signature))
+        held = frozenset(members.index(track) for track in constellation.track_ids
+                         if track in members)
+        membership.append(held)
+        is_motif.append(bool(plant) and len(held) == CARDINALITY)
+    if plant and sum(is_motif) != 1:
+        raise UnlabelledScene(
+            "scene %d holds %d motif configurations where exactly one was planted"
+            % (seed, sum(is_motif)))
+    return points, is_motif, membership
+
+
+def _pair_class(left_members: frozenset, right_members: frozenset) -> str:
+    """What a matched pair actually is, in the language of the construction.
+
+    `shared_2` and `shared_1` are pairs whose two configurations hold the SAME motif vertices --
+    the same physical features, replanted -- so they share real recurring structure that the
+    ground truth nonetheless scores as a false admission. `crossed` holds motif features that
+    are not the same ones, and `unrelated` holds none in common. Only the last of these is
+    unambiguously a coincidence.
+    """
+    shared = left_members & right_members
+    if len(shared) == CARDINALITY:
+        return "motif"
+    if left_members == right_members and shared:
+        return "shared_%d" % len(shared)
+    if shared:
+        return "crossed_%d" % len(shared)
+    return "unrelated"
+
+
+def decompose_matched_pairs(blocks: Sequence[Sequence[int]] = None,
+                            null_blocks: Sequence[Sequence[int]] = None,
+                            *, tau: float = MARGIN_TAU) -> Dict[str, Any]:
+    """What the false admissions ARE, decomposed by the construction rather than by the label.
+
+    A DIAGNOSTIC. It adopts nothing, chooses no threshold and reports no operating point. It
+    exists because four candidates were falsified against a ground truth that no declaration had
+    examined, and because the arithmetic of the scene population -- nine of twenty configurations
+    sharing two motif features -- says that ground truth cannot be scoring only confusion.
+
+    Both criteria are decomposed. Candidate C's matches say what the ordering finds; candidate
+    D's say what survives the margin. That is not the comparison R20 forbids: both are already
+    falsified and neither is being selected over the other.
+    """
+    blocks = tuple(blocks) if blocks is not None else EXCHANGEABILITY_BLOCKS
+    null_blocks = tuple(null_blocks) if null_blocks is not None else (NULL_SEEDS,)
+    metric = SignatureMetric(WEIGHTS)
+
+    def evaluate(seeds, *, plant):
+        scenes = [_scene_with_motif_membership(seed, plant=plant) for seed in seeds]
+        counts = {"C": collections.Counter(), "D": collections.Counter()}
+        available = collections.Counter()
+        for left, right in itertools.combinations(scenes, 2):
+            pair = ((left[0], left[1]), (right[0], right[1]))
+            for name, matches in (("C", mutual_nearest_matches(*pair, metric)),
+                                  ("D", ratio_margin_matches(*pair, metric, tau=tau))):
+                for i, j in matches:
+                    counts[name][_pair_class(left[2][i], right[2][j])] += 1
+            for i in range(len(left[0])):
+                for j in range(len(right[0])):
+                    available[_pair_class(left[2][i], right[2][j])] += 1
+        return {
+            "seeds": list(seeds),
+            "configurations_per_scene": len(scenes[0][0]),
+            "cross_scene_pairs_available": dict(available),
+            "matched_by_candidate_C": dict(counts["C"]),
+            "matched_by_candidate_D": dict(counts["D"]),
+        }
+
+    planted = [evaluate(seeds, plant=True) for seeds in blocks]
+    nulls = [evaluate(seeds, plant=False) for seeds in null_blocks]
+
+    def totalled(rows, key):
+        total = collections.Counter()
+        for row in rows:
+            total.update(row[key])
+        return dict(total)
+
+    return {
+        "diagnostic": "what the false admissions are, by construction",
+        "is_a_diagnostic_not_a_criterion": (
+            "Nothing is adopted, no threshold is chosen and no operating point is reported. A "
+            "change to the ground truth suggested by this is a scientific choice needing its own "
+            "declaration, and any criterion evaluated against a changed ground truth is a new "
+            "measurement, not a re-reading of an old one."),
+        "tau": tau,
+        "classes": {
+            "motif": "both configurations are the full planted motif; the only true positive.",
+            "shared_2": "both hold the SAME two motif vertices -- the same two physical "
+                        "features, replanted -- so they share one motif edge at fixed length "
+                        "and bearing plus two members with identical strengths and scales. "
+                        "Scored as a false admission by the current ground truth.",
+            "shared_1": "both hold the same single motif vertex.",
+            "crossed_2": "both hold two motif vertices but not the same two.",
+            "crossed_1": "both hold one motif vertex but not the same one.",
+            "unrelated": "no motif vertex in common; unambiguously a coincidence.",
+        },
+        "planted_blocks": planted, "null_blocks": nulls,
+        "planted_totals": {
+            "available": totalled(planted, "cross_scene_pairs_available"),
+            "candidate_C": totalled(planted, "matched_by_candidate_C"),
+            "candidate_D": totalled(planted, "matched_by_candidate_D"),
+        },
+        "null_totals": {
+            "available": totalled(nulls, "cross_scene_pairs_available"),
+            "candidate_C": totalled(nulls, "matched_by_candidate_C"),
+            "candidate_D": totalled(nulls, "matched_by_candidate_D"),
+        },
+        "evidence_class": "development",
+        "boundary": ("Computed on the blocks that informed four declarations. Development "
+                     "evidence; the reserved confirmatory blocks are untouched."),
     }
 
 
