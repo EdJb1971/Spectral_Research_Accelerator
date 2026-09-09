@@ -2592,8 +2592,19 @@ one record need not hold on a denser one. That is T4E.10's transfer problem agai
 declaration had looked -- and it means **no rule whose match count scales with the configuration
 count can succeed**, whatever threshold is placed on its distances.
 
-**Acceptance.** A candidate is a change to what the signature carries, declared before it is
-measured, and it must satisfy all of:
+**Acceptance.** A candidate is declared before it is measured and must satisfy all of:
+
+*(Amended 2026-09-09, in the open, before any candidate was declared under it. As first written
+this clause said a candidate is "a change to what the signature carries". That was too narrow
+and the scaling measurement above is what shows it: what the measurement indicts is a decision
+rule that does not know how many comparisons it is making, and multiplicity is a property of the
+procedure rather than of the signature. Restricting candidates to signature changes would have
+excluded the class of candidate the evidence actually points at. The four numbered conditions
+are unchanged; only the admissible class of candidate is widened. Note in particular that a
+change to the attribute weights -- which are all 1.0 and have never been calibrated -- CANNOT
+satisfy condition 2 on its own, because a nearest-neighbour matching returns at most one pair
+per configuration whatever the weights are, so reweighting changes which pairs match and never
+how many.)*
 
 1. **Recall unchanged.** False split at most 0.10 at every richness measured, individually.
 2. **A match count that does not track the population.** The matched fraction of configurations
@@ -2618,6 +2629,44 @@ not of the atmosphere. Nothing here approves a mining radius, discharges T4E.8's
 acceptance, or closes D96, D97, D98, D99 or D100. The primary target remains `kind_recurrence`,
 which needs `external_reference` evidence no signature change supplies. The reserved
 confirmatory blocks stay reserved.
+
+**Candidate 1, declared 2026-09-09 and not yet adopted.** A rule that counts its own
+comparisons. Candidate C proposes the pairs; a pair is admitted only when a distance as small as
+its own would arise with probability at most `alpha / m^2` under a tail model fitted to that
+same scene pair's own cross-scene distances. `alpha = 0.05` is a declared family-wise error rate
+-- the expected false admissions per ordered scene pair if the model holds -- and not a tuned
+threshold. The bound therefore tightens by construction as scenes get richer, 1.25e-4 at six
+features to 6.9e-8 at twelve, which is the `1/m^2` scaling the acceptance demands.
+
+**Why not the attribute weights, which are all 1.0 and were never calibrated.** They cannot
+satisfy condition 2, and that is derivable rather than measurable: a nearest-neighbour matching
+returns at most one pair per configuration whatever the weights are, so reweighting changes
+which pairs match and never how many. Declaring it would have spent a preregistration to learn
+something available on paper.
+
+**The tail model is peaks-over-threshold** -- the 1st percentile of the scene pair's own
+distances as threshold, a generalised Pareto on the exceedances below it -- because
+extreme-value theory is what licenses stating a probability of 1e-7 from hundreds of thousands
+of samples. A thin population, too few exceedances or a non-converging fit is **refused by
+name**: admitting on a failed fit would make the rule most permissive where its model is least
+supported. Three assumptions are declared rather than discovered later: the null is contaminated
+by the true correspondences it contains, the generalised Pareto is asymptotic theory on a finite
+sample, and configurations sharing features are not independent, so the correction is a working
+one rather than an exact guarantee.
+
+**A diagnostic separates two failures that would otherwise be confused.** If the tail model is
+right, admissions per scene pair equal `alpha` by construction whatever the signature is like.
+So the null blocks' admission count tests the tail model rather than the signature: near 0.05
+means the model holds and any remaining failure is the signature's; far above it means the fit
+is wrong here and the signature has not been tested at all.
+
+**The falsification field is narrowed in the same way candidate D's was**, and for the same
+reason: T4E.11's candidates B and C both over-reached there, D's was narrowed in response and
+proved correct. A failure here licenses only that a correction of this form, with this tail
+model, at this `alpha`, does not separate recurrence from coincidence in these scenes -- not
+that multiplicity correction is the wrong idea, and not that the signature is adequate or
+hopeless. The criterion is implemented and its mechanics are tested on constructed scenes; the
+development blocks are untouched until the maintainer adopts it.
 
 **Candidate B outcome (2026-09-09): adopted before measurement, falsified by it.** The
 normaliser was pinned in the declaration -- within a partition, each configuration's distance to

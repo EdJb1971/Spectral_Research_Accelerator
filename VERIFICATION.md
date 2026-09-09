@@ -12385,6 +12385,40 @@ release decision, but it does mean two gates that read PASS now read NOT_RUN and
 were not isolated to a cause; the run predates no clean baseline for this suite size, so they
 are reported as measured rather than attributed.
 
+**T4E.12 candidate 1 (2026-09-09): declared and implemented; NOT MEASURED.**
+
+The criterion is `multiplicity_aware_tail_admission` -- candidate C's pairs, admitted only when
+a distance as small as their own would arise with probability at most `alpha / m^2` under a tail
+model fitted to that scene pair's own distances. Declared in
+`t4e12-multiplicity-declaration.json` (sha256 `f0c45d92...`). The declaration is **not adopted**,
+so no development block has been evaluated under it and no error rate for it exists in this
+document or anywhere else.
+
+The T4E.12 acceptance clause was **amended in the open** before this candidate was declared. As
+first written it required a candidate to be "a change to what the signature carries"; the
+scaling measurement shows what is indicted is a decision rule that does not know how many
+comparisons it is making, and multiplicity is a property of the procedure. The four numbered
+acceptance conditions are unchanged; only the admissible class of candidate is widened.
+
+What has been verified is mechanics, on constructed scenes and a synthetic gamma sample:
+
+- the admission bound is `alpha / m^2` and falls by more than two orders of magnitude between
+  20 and 220 configurations, by construction rather than by calibration;
+- the admitted set is unchanged when every distance is rescaled, so the criterion is scale-free
+  as candidates C and D were;
+- the tail probability is monotone in the distance and equals the exceedance rate at the
+  threshold itself;
+- a thin population, too few exceedances, or an all-NaN sample raises `TailModelRefused` rather
+  than admitting on a fit that does not exist;
+- the criterion admits no pair candidate C did not propose, and an empty scene returns no model
+  rather than a fitted one;
+- and the derivation behind not declaring the obvious candidate is recorded as a test: a
+  nearest-neighbour matching returns at most one pair per configuration whatever the weights
+  are, so reweighting cannot move the matched fraction that acceptance condition 2 is about.
+
+The reserved confirmatory blocks were not built. No mining radius is approved and no defect is
+closed.
+
 **T4E.12 scaling diagnostic (2026-09-09): recall survives richness; the rule's match
 count does not.**
 

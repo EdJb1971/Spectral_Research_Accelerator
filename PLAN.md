@@ -144,10 +144,36 @@ scene together and never of the signature alone -- T4E.10's transfer problem in 
 threshold is placed on its distances.
 
 **So T4E.12 accepts on a per-pair rate measured at three richness levels**, requiring the
-matched fraction to fall as richness grows and the shortfall not to widen. The next slice is a
-declared candidate under that acceptance. The attribute weights are currently all 1.0 and have
-never been calibrated, which makes them the obvious first candidate and exactly the kind that
-must be declared before measurement and evaluated on scenes that did not select it.
+matched fraction to fall as richness grows and the shortfall not to widen.
+
+**Candidate 1 is declared and implemented, and waiting on your adoption.** It is not the
+attribute weights. Those are all 1.0 and were never calibrated, which made them the obvious
+first move, but they **cannot** satisfy the acceptance: a nearest-neighbour matching returns at
+most one pair per configuration whatever the weights are, so reweighting changes which pairs
+match and never how many, and the matched fraction stays pinned near the measured 0.23. That is
+derivable on paper, so declaring it would have spent a preregistration to learn nothing.
+
+What the scaling law actually indicts is **multiplicity**: the rule does not know it is making
+726,000 comparisons rather than 400. So the T4E.12 acceptance clause was **amended in the open**
+-- as first written it required a candidate to be a change to the signature, which would have
+excluded the class of candidate the evidence points at. The four numbered conditions are
+unchanged.
+
+Candidate 1 admits a pair only when a distance as small as its own would arise with probability
+at most `alpha / m^2` under a tail model fitted to that scene pair's own distances, with
+`alpha = 0.05` a declared family-wise error rate rather than a tuned threshold. The bound
+tightens by construction as scenes get richer, 1.25e-4 to 6.9e-8, which is the `1/m^2` scaling
+the acceptance demands.
+
+**Nothing has been measured.** The declaration is
+`data/identity_calibration/t4e12-multiplicity-declaration.json`, sha256 `f0c45d92...`, and only
+its mechanics are tested -- scale-freedom, the tightening bound, monotone tail probabilities,
+and refusals by name where the model cannot be fitted. **Adopting it is not a prediction that it
+will work.** Its null blocks carry a diagnostic that separates two failures which would
+otherwise be confused: if the tail model is right, admissions per scene pair equal `alpha`
+whatever the signature is like, so a null admission count near 0.05 means any remaining failure
+is the signature's, and one far above it means the tail model is wrong and the signature has not
+been tested at all.
 
 The reserved confirmatory blocks remain untouched, and four falsifications have not unreserved
 them.

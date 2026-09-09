@@ -1,0 +1,133 @@
+{
+  "schema": "t4e12-identity-criterion-declaration/v1",
+  "status": "declared_before_measurement",
+  "task": "T4E.12",
+  "candidate": "1_multiplicity_aware_admission_via_a_declared_tail_model",
+  "declared_by": "Edward Jonathan Bentley, maintainer (scientific choice); drafted by Claude Opus 5 at the maintainer's direction and NOT VALID until the maintainer has reviewed and adopted it",
+  "declared_on": "2026-09-09",
+  "why_this_candidate_and_why_not_the_obvious_one": "The obvious first candidate was the attribute weights, which are all 1.0 and have never been calibrated. It is not declared here because it CANNOT satisfy acceptance condition 2, and that is derivable without measuring: a nearest-neighbour matching returns at most one pair per configuration whatever the weights are, so reweighting changes which pairs match and never how many. The matched fraction would stay pinned near the measured 0.23 and the shortfall would keep widening. Declaring it would spend a preregistration to learn something derivable on paper.\n\nWhat the scaling measurement indicts is multiplicity. At six features a scene pair offers 400 candidate pairs; at twelve it offers 726,000. Candidates B, C and D applied the same decision to each pair in ignorance of how many pairs there were, so their admissions grew with the population while the truth stayed at one per scene pair. A rule that knows how many comparisons it is making can hold its admissions roughly constant as the population grows, which is exactly the shape acceptance conditions 2 and 3 require.",
+  "criterion": {
+    "statement": "Within an ordered pair of scenes (A, B): form the mutual nearest-neighbour matching as in candidate C. For each matched pair, compute the probability p that a distance as small as d(a,b) arises under a tail model fitted to that same scene pair's own cross-scene distance distribution. Admit the pair only if p <= alpha / m^2, where m^2 is the number of candidate pairs the scene pair offers and alpha is a declared family-wise error rate.",
+    "name": "multiplicity_aware_tail_admission",
+    "alpha": 0.05,
+    "what_alpha_is": "A declared error rate, not a tuned threshold: the expected number of false admissions per ordered scene pair if the tail model is correct. It is 0.05 because that is the conventional family-wise rate, fixed here before measurement. It is NOT to be moved.",
+    "the_tail_model": "Peaks-over-threshold. The null population for a scene pair is all m^2 cross-scene distances it offers; the threshold is that population's 1st-percentile distance; the exceedances below it are fitted with a generalised Pareto distribution (scipy.stats.genpareto on the negated distances). p is then the fitted tail probability of the observed distance. Extreme-value theory is what makes this the right family for the minimum of many draws, and it is why a tail probability of 1e-7 can be stated from hundreds of thousands of samples rather than requiring billions.",
+    "why_this_is_still_scale_free": "The null is the same scene pair's own distances, so the admission decision is invariant to rescaling the metric within a partition, exactly as candidates C and D were. There is no absolute radius to carry between partitions -- which T4E.10 ruled out -- and no estimated normaliser to be wrong about, which is where candidate B failed.",
+    "how_it_becomes_multiplicity_aware": "The admission threshold is alpha / m^2 and therefore tightens automatically as scenes get richer: 1.25e-4 at six features, 6.9e-8 at twelve. That is the 1/m^2 scaling the acceptance demands, obtained by construction rather than by calibration.",
+    "what_changes": "That the rule counts its own comparisons. Admission becomes a statement about how surprising a distance is among all the distances that scene pair offers, rather than about the distance itself or its ratio to another.",
+    "what_does_not_change": "The signature mode, the attribute weights, the cardinality, the construction labels, the mutual nearest-neighbour rule that proposes the pairs, and the scenes."
+  },
+  "assumptions_this_encodes_and_declares": [
+    "That the m^2 cross-scene distances of a scene pair are an acceptable null for that scene pair. They are contaminated by the true correspondences themselves -- one in 400 at six features, one in 726,000 at twelve -- and that contamination is accepted rather than removed, because removing it would require the labels the criterion is not allowed to see.",
+    "That the lower tail of that distribution is approximated by a generalised Pareto. This is asymptotic theory applied to a finite sample and it may simply be wrong here; the diagnostic below is what would say so.",
+    "That the m^2 distances are treated as exchangeable for the purpose of the tail fit, although configurations sharing features are not independent. The correction is therefore a working one rather than an exact family-wise guarantee, and is declared as such."
+  ],
+  "refusals_the_criterion_must_make": "Fewer than 50 exceedances below the threshold, or a generalised Pareto fit that does not converge, or a non-finite tail probability: the scene pair is REFUSED by name and contributes to neither error rate. A refusal is an outcome. Admitting on a failed fit would make the rule most permissive exactly where its model is least supported.",
+  "development": {
+    "richness_levels": [
+      6,
+      9,
+      12
+    ],
+    "blocks": [
+      [
+        100,
+        101,
+        102,
+        103,
+        104,
+        105
+      ],
+      [
+        200,
+        201,
+        202,
+        203,
+        204,
+        205
+      ],
+      [
+        300,
+        301,
+        302,
+        303,
+        304,
+        305
+      ],
+      [
+        400,
+        401,
+        402,
+        403,
+        404,
+        405
+      ]
+    ],
+    "null_blocks": [
+      [
+        500,
+        501,
+        502,
+        503,
+        504,
+        505
+      ]
+    ],
+    "status": "ALREADY INSPECTED. These blocks informed T4E.10, T4E.11's four candidates and the scaling measurement that produced this task's acceptance. Results on them are development evidence and may not be reported as confirmation."
+  },
+  "confirmatory": {
+    "blocks": [
+      [
+        700,
+        701,
+        702,
+        703,
+        704,
+        705
+      ],
+      [
+        710,
+        711,
+        712,
+        713,
+        714,
+        715
+      ],
+      [
+        720,
+        721,
+        722,
+        723,
+        724,
+        725
+      ],
+      [
+        730,
+        731,
+        732,
+        733,
+        734,
+        735
+      ]
+    ],
+    "status": "STILL RESERVED AND NOT YET GENERATED. Four falsifications across T4E.11 did not unreserve them and neither does this declaration.",
+    "enforcement": "RESERVED_CONFIRMATORY_SEEDS in src/benchmarks/identity_certification.py refuses them before a scene is built."
+  },
+  "acceptance": {
+    "condition_1_recall": "False split at most 0.10 at every richness level individually.",
+    "condition_2_matched_fraction": "The matched fraction of configurations must FALL as richness grows, rather than holding near the 0.23 that candidates C and D held. This is the condition the obvious candidate could not meet and the reason this one was declared instead.",
+    "condition_3_shortfall": "Measured at all three richness levels, the ratio of achieved to required per-pair false rate must be non-increasing, and the 0.10 admission bound must be met at the RICHEST level tested. Meeting it only at six features is the failure this task exists to prevent.",
+    "condition_4_refusals": "Refusals reported by name, with an explicit verdict including INVALID.",
+    "null_blocks": "On the null partition, where nothing recurs, admissions should approach alpha per scene pair rather than the 62 candidate D returned."
+  },
+  "a_diagnostic_that_separates_two_different_failures": "If the tail model is correct, the number of admissions per scene pair is alpha by construction, whatever the signature is like. So the measured admission count per scene pair on the NULL blocks is a direct test OF THE TAIL MODEL rather than of the signature: near 0.05 means the model holds and any remaining failure is the signature's; far above it means the generalised Pareto fit is wrong here and the signature has not been tested at all. The fitted shape parameters and the exceedance counts are recorded for the same reason. This is a DIAGNOSTIC; no threshold may be read off it.",
+  "what_would_falsify_this_candidate": "A false split above 0.10 at any richness, meaning the correction discards true correspondences. Or a matched fraction that does not fall with richness, meaning the correction is not doing what its arithmetic says. Or a shortfall that widens, or an admission rate above 0.10 at twelve features. Any of these is a complete result and is to be recorded, not tuned away.",
+  "what_a_failure_would_and_would_not_license": "It would license this: a multiplicity correction of this form, with this tail model, at alpha = 0.05, does not make this signature's distances separate recurrence from coincidence in these scenes. Whether the fault lies with the tail model or with the signature is answered by the null-block diagnostic above and by nothing else. It would NOT license concluding that multiplicity correction is the wrong idea, that the signature is adequate, or that the signature is hopeless. That restriction is deliberate: the falsification reasoning of T4E.11's candidates B and C both over-reached in exactly that way, candidate D's was narrowed in response and proved correct, and this one is narrowed the same way.",
+  "governing_rules": [
+    "R20: candidate 1 is evaluated alone and is not compared against T4E.11's candidates to pick a winner. Candidate D appears in the measurement only as the proposer of pairs and as the denominator of the matched-fraction comparison, which is arithmetic and not adjudication.",
+    "Already inspected data do not become untouched by renaming them.",
+    "Code does not sign a scientific declaration for a person; this file is not adopted until the maintainer says so."
+  ],
+  "scope": "Atmospheric identity path. The mechanism is domain-agnostic but the evidence produced here is atmospheric and synthetic. Cross-domain use requires its own declared experiment and its own qualification, per R19.",
+  "claim_boundary": "Synthetic scenes at several densities settle a property of the criterion and its tail model, not of the atmosphere. Nothing here approves a mining radius, discharges T4E.8's acquired-record acceptance, or closes D96, D97, D98, D99 or D100. The primary scientific target remains kind_recurrence, which needs external_reference evidence no criterion of this kind supplies. No frame of the 2022-2023 forecast-test period is opened by any part of this."
+}

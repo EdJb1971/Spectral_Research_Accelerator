@@ -33,6 +33,7 @@ import math
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 import numpy as np
+from scipy.stats import genpareto
 
 from src.analysis_engine.spectral_clustering import (
     AttributeWeights, SignatureMetric, SignaturePoint,
@@ -719,6 +720,119 @@ def decompose_matched_pairs(blocks: Sequence[Sequence[int]] = None,
         "boundary": ("Computed on the blocks that informed four declarations. Development "
                      "evidence; the reserved confirmatory blocks are untouched."),
     }
+
+
+# ---------------------------------------------------------------------------------------------
+# T4E.12 candidate 1: a rule that counts its own comparisons.
+#
+# Declared in `data/identity_calibration/t4e12-multiplicity-declaration.json` (sha256
+# f0c45d92...) and NOT MEASURED until that declaration is adopted.
+#
+# Candidates B, C and D each applied the same decision to every candidate pair in ignorance of
+# how many pairs there were. At six features a scene pair offers 400; at twelve it offers
+# 726,000. So their admissions grew with the population while the truth stayed at one pair per
+# scene pair, and the shortfall widened x33, x184, x423. This candidate makes the admission
+# threshold alpha / m^2, which tightens by construction as scenes get richer.
+#
+# The obvious candidate -- recalibrating the attribute weights, which are all 1.0 and never were
+# calibrated -- is NOT this one, and the reason is derivable rather than measured: a
+# nearest-neighbour matching returns at most one pair per configuration whatever the weights
+# are, so reweighting changes which pairs match and never how many.
+
+#: The declared family-wise error rate: expected false admissions per ordered scene pair if the
+#: tail model holds. Declared before measurement and not to be moved.
+ADMISSION_ALPHA = 0.05
+#: The tail model's threshold, as a percentile of the scene pair's own distance population.
+TAIL_PERCENTILE = 1.0
+#: Below this many exceedances the fit is refused rather than trusted.
+MIN_EXCEEDANCES = 50
+CRITERION_MULTIPLICITY_NAME = "multiplicity_aware_tail_admission"
+
+
+class TailModelRefused(Exception):
+    """The tail model could not be fitted, so no admission decision is available, by name.
+
+    Admitting on a failed fit would make the rule most permissive exactly where its model is
+    least supported. A refusal contributes to neither error rate.
+    """
+
+
+def fit_lower_tail(distances: Sequence[float], *, percentile: float = TAIL_PERCENTILE,
+                   min_exceedances: int = MIN_EXCEEDANCES):
+    """A generalised Pareto fitted to how small the small distances get. Peaks over threshold.
+
+    Extreme-value theory is what licenses stating a tail probability of 1e-7 from a few hundred
+    thousand samples: the exceedances below a high threshold converge to this family whatever
+    the parent distribution is. The distances are negated so the LOWER tail becomes an upper
+    one, which is the orientation `genpareto` is written for.
+
+    Refuses rather than extrapolates when the support is thin or the fit does not converge.
+    """
+    values = np.asarray(list(distances), dtype=float)
+    values = values[np.isfinite(values)]
+    if values.size < min_exceedances:
+        raise TailModelRefused(
+            "%d finite distances is below the %d needed to fit a tail"
+            % (values.size, min_exceedances))
+    threshold = float(np.percentile(values, percentile))
+    exceedances = -(values[values <= threshold]) + threshold
+    exceedances = exceedances[exceedances > 0.0]
+    if exceedances.size < min_exceedances:
+        raise TailModelRefused(
+            "%d exceedances below the %.1fth percentile is below the %d needed"
+            % (exceedances.size, percentile, min_exceedances))
+    try:
+        shape, location, scale = genpareto.fit(exceedances, floc=0.0)
+    except Exception as error:                                   # pragma: no cover - scipy path
+        raise TailModelRefused("the generalised Pareto fit did not converge: %s" % (error,))
+    if not (math.isfinite(shape) and math.isfinite(scale)) or scale <= 0.0:
+        raise TailModelRefused(
+            "the fit returned shape %r and scale %r, which describe no distribution"
+            % (shape, scale))
+    rate = float(exceedances.size) / float(values.size)
+    return {"threshold": threshold, "shape": float(shape), "scale": float(scale),
+            "exceedance_rate": rate, "exceedances": int(exceedances.size),
+            "population": int(values.size)}
+
+
+def tail_probability(distance: float, model: Dict[str, Any]) -> float:
+    """How surprising this distance is under the fitted lower tail. Small means surprising."""
+    if distance > model["threshold"]:
+        # Above the threshold the model says nothing sharper than the empirical rate.
+        return 1.0
+    excess = model["threshold"] - float(distance)
+    survival = float(genpareto.sf(excess, model["shape"], loc=0.0, scale=model["scale"]))
+    probability = model["exceedance_rate"] * survival
+    if not math.isfinite(probability):
+        raise TailModelRefused("the tail probability is not finite")
+    return probability
+
+
+def multiplicity_aware_matches(left, right, metric: SignatureMetric,
+                               *, alpha: float = ADMISSION_ALPHA):
+    """T4E.12 candidate 1. Candidate C proposes the pairs; this decides which survive.
+
+    A matched pair is admitted only when a distance as small as its own would arise with
+    probability at most `alpha / m^2` under a tail model fitted to that same scene pair's own
+    cross-scene distances. The threshold therefore tightens automatically as scenes get richer
+    -- 1.25e-4 at six features, 6.9e-8 at twelve -- which is the 1/m^2 scaling the acceptance
+    demands, obtained by construction rather than by calibration.
+
+    The null is the scene pair's own distances, so the decision is invariant to rescaling the
+    metric within a partition, as candidates C and D were. Returns `(pairs, model)`; raises
+    `TailModelRefused` rather than deciding without a model.
+    """
+    if not left[0] or not right[0]:
+        return [], None
+    distances = _pair_distances(left, right, metric)
+    flat = [value for row in distances for value in row]
+    model = fit_lower_tail(flat)
+    candidates = len(left[0]) * len(right[0])
+    bound = alpha / float(candidates)
+    model = dict(model, candidate_pairs=candidates, admission_bound=bound, alpha=alpha)
+    kept = [(i, j) for i, j in mutual_nearest_matches(left, right, metric)
+            if tail_probability(distances[i][j], model) <= bound]
+    return kept, model
 
 
 # ---------------------------------------------------------------------------------------------

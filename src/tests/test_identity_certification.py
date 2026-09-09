@@ -811,3 +811,141 @@ def test_the_shortfall_grows_with_richness_rather_than_closing():
     assert rates == sorted(rates, reverse=True), "the measured rate does fall with richness"
     assert shortfalls == sorted(shortfalls), "and the shortfall nonetheless widens"
     assert shortfalls[-1] > 10.0 * 1.0 and shortfalls[-1] > shortfalls[0] * 5.0
+
+
+# ------------------------------------ T4E.12 candidate 1: declared, implemented, NOT measured
+#
+# Mechanics on constructed scenes only. The development blocks are not evaluated here: the
+# declaration in `data/identity_calibration/t4e12-multiplicity-declaration.json` is not adopted,
+# and measuring before adoption is what sequential preregistration exists to prevent.
+
+
+def _spread_scene(count, *, seed, spacing=1.0):
+    """A one-dimensional toy scene large enough for a tail fit to have support."""
+    import numpy as np
+
+    rng = np.random.default_rng(seed)
+    return (sorted(float(x) for x in rng.uniform(0.0, count * spacing, size=count)),
+            [False] * count)
+
+
+def test_the_declaration_for_T4E12_candidate_1_is_not_yet_adopted():
+    """Code does not sign a scientific declaration for a person."""
+    import json
+    from pathlib import Path
+
+    body = json.loads(Path(
+        "data/identity_calibration/t4e12-multiplicity-declaration.json"
+    ).read_text(encoding="utf-8"))
+    assert body["status"] == "declared_before_measurement"
+    assert "NOT VALID until the maintainer has reviewed" in body["declared_by"]
+    assert body["confirmatory"]["status"].startswith("STILL RESERVED AND NOT YET GENERATED")
+    assert body["development"]["status"].startswith("ALREADY INSPECTED")
+    assert "would NOT license" in body["what_a_failure_would_and_would_not_license"]
+
+
+def test_the_declaration_says_why_the_obvious_candidate_was_not_declared():
+    """Reweighting cannot satisfy condition 2, and the reason is derivable, not measured."""
+    import json
+    from pathlib import Path
+    from src.benchmarks.identity_certification import ADMISSION_ALPHA
+
+    body = json.loads(Path(
+        "data/identity_calibration/t4e12-multiplicity-declaration.json"
+    ).read_text(encoding="utf-8"))
+    assert ADMISSION_ALPHA == body["criterion"]["alpha"] == 0.05
+    assert "CANNOT satisfy acceptance condition 2" in \
+        body["why_this_candidate_and_why_not_the_obvious_one"]
+
+
+def test_reweighting_could_not_have_satisfied_condition_2_and_here_is_why():
+    """The derivation the declaration rests on, recorded as a test rather than as a claim.
+
+    A mutual nearest-neighbour matching returns at most one pair per configuration, so its
+    output is bounded by the smaller scene however the metric is weighted. The matched fraction
+    is therefore pinned no matter what the weights do, which is exactly acceptance condition 2's
+    demand and exactly what reweighting cannot move.
+    """
+    from src.benchmarks.identity_certification import mutual_nearest_matches
+
+    for scale in (0.5, 1.0, 7.0):
+        left, right = _spread_scene(30, seed=1), _spread_scene(24, seed=2)
+        matches = mutual_nearest_matches(left, right, _AbsoluteMetric(scale))
+        assert len(matches) <= min(len(left[0]), len(right[0]))
+        assert len({i for i, _ in matches}) == len(matches), "one pair per configuration"
+
+
+def test_the_admission_threshold_tightens_as_the_square_of_the_population():
+    """The property the candidate was declared for, and the shape the acceptance demands.
+
+    The bound is alpha / m^2, so it falls by four orders of magnitude between the sparsest and
+    richest scenes measured -- by construction rather than by calibration.
+    """
+    from src.benchmarks.identity_certification import ADMISSION_ALPHA
+
+    bounds = [ADMISSION_ALPHA / (m * m) for m in (20, 84, 220)]
+    assert bounds[0] > bounds[1] > bounds[2]
+    assert bounds[0] / bounds[2] > 100.0
+
+
+def test_a_tail_that_cannot_be_fitted_is_refused_by_name():
+    """Admitting on a failed fit would make the rule most permissive where its model is weakest."""
+    import pytest
+    from src.benchmarks.identity_certification import TailModelRefused, fit_lower_tail
+
+    with pytest.raises(TailModelRefused):
+        fit_lower_tail([0.1, 0.2, 0.3])
+    with pytest.raises(TailModelRefused):
+        fit_lower_tail([float("nan")] * 500)
+
+
+def test_the_tail_probability_falls_as_the_distance_falls():
+    """Monotone, and equal to the exceedance rate at the threshold itself."""
+    import numpy as np
+    from src.benchmarks.identity_certification import fit_lower_tail, tail_probability
+
+    sample = np.random.default_rng(0).gamma(2.0, 0.1, size=40000)
+    model = fit_lower_tail(sample)
+    threshold = model["threshold"]
+    probabilities = [tail_probability(threshold * f, model) for f in (1.0, 0.5, 0.1, 0.01)]
+    assert probabilities == sorted(probabilities, reverse=True)
+    assert abs(probabilities[0] - model["exceedance_rate"]) < 1e-9
+    assert tail_probability(threshold * 2.0, model) == 1.0
+
+
+def test_the_decision_does_not_notice_a_rescaling_of_the_metric():
+    """Scale-free, as candidates C and D were: the null is the scene pair's own distances.
+
+    T4E.10 ruled out an absolute radius and candidate B failed at an estimated normaliser. This
+    criterion has neither -- rescale every distance and the admitted set is unchanged.
+    """
+    from src.benchmarks.identity_certification import multiplicity_aware_matches
+
+    left, right = _spread_scene(90, seed=11), _spread_scene(90, seed=12)
+    baseline, model = multiplicity_aware_matches(left, right, _AbsoluteMetric(1.0))
+    assert model["candidate_pairs"] == 8100
+    assert model["admission_bound"] == model["alpha"] / 8100
+    for scale in (0.002, 55.0):
+        rescaled, other = multiplicity_aware_matches(left, right, _AbsoluteMetric(scale))
+        assert rescaled == baseline
+        assert other["candidate_pairs"] == model["candidate_pairs"]
+
+
+def test_the_criterion_admits_no_more_than_candidate_C_proposed():
+    """It decides among candidate C's pairs; it cannot invent one."""
+    from src.benchmarks.identity_certification import (
+        multiplicity_aware_matches, mutual_nearest_matches)
+
+    left, right = _spread_scene(90, seed=21), _spread_scene(90, seed=22)
+    proposed = set(mutual_nearest_matches(left, right, _AbsoluteMetric()))
+    admitted, _ = multiplicity_aware_matches(left, right, _AbsoluteMetric())
+    assert set(admitted) <= proposed
+
+
+def test_an_empty_scene_returns_no_model_rather_than_a_fitted_one():
+    """A refusal is an outcome, and an absent scene is not a thin tail."""
+    from src.benchmarks.identity_certification import multiplicity_aware_matches
+
+    pairs, model = multiplicity_aware_matches(([], []), _spread_scene(90, seed=31),
+                                              _AbsoluteMetric())
+    assert pairs == [] and model is None
