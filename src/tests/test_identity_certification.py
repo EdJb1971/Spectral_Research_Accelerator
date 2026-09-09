@@ -813,11 +813,12 @@ def test_the_shortfall_grows_with_richness_rather_than_closing():
     assert shortfalls[-1] > 10.0 * 1.0 and shortfalls[-1] > shortfalls[0] * 5.0
 
 
-# ------------------------------------ T4E.12 candidate 1: declared, implemented, NOT measured
+# ------------------------------------ T4E.12 candidate 1: adopted, measured, falsified
 #
-# Mechanics on constructed scenes only. The development blocks are not evaluated here: the
-# declaration in `data/identity_calibration/t4e12-multiplicity-declaration.json` is not adopted,
-# and measuring before adoption is what sequential preregistration exists to prevent.
+# Declared and committed at its hash before any development block was evaluated, adopted
+# separately in `t4e12-multiplicity-adoption.json`, and falsified by the measurement that
+# followed. The toy-scene tests below check mechanics; the block tests after them record what
+# the measurement said, including that it did not test the signature.
 
 
 def _spread_scene(count, *, seed, spacing=1.0):
@@ -949,3 +950,320 @@ def test_an_empty_scene_returns_no_model_rather_than_a_fitted_one():
     pairs, model = multiplicity_aware_matches(([], []), _spread_scene(90, seed=31),
                                               _AbsoluteMetric())
     assert pairs == [] and model is None
+
+
+def _multiplicity_report():
+    """One measurement at a single richness and block, reused. The full sweep is far larger."""
+    from src.benchmarks.identity_certification import measure_multiplicity_criterion
+
+    if not hasattr(_multiplicity_report, "_cached"):
+        _multiplicity_report._cached = measure_multiplicity_criterion(
+            richness_levels=(6, 9), blocks=(tuple(range(100, 104)),),
+            null_blocks=(tuple(range(500, 504)),))
+    return _multiplicity_report._cached
+
+
+def test_the_declaration_was_adopted_before_it_was_measured():
+    """The adoption record names the hash the declaration had when it was adopted."""
+    import hashlib
+    import json
+    from pathlib import Path
+
+    declaration = Path("data/identity_calibration/t4e12-multiplicity-declaration.json")
+    adoption = json.loads(Path(
+        "data/identity_calibration/t4e12-multiplicity-adoption.json"
+    ).read_text(encoding="utf-8"))
+    assert adoption["adopts_sha256"] == hashlib.sha256(declaration.read_bytes()).hexdigest()
+    assert "not a prediction" in adoption["what_adoption_does_not_mean"]
+    assert "alpha stays at 0.05" in adoption["what_is_not_adjustable_by_this_adoption"]
+
+
+def test_the_tail_model_has_no_support_at_six_features_and_says_so():
+    """Derivable before adoption and not derived: 50 exceedances at the 1st percentile needs
+    at least 5,000 distances, so at least 71 configurations, so at least nine features.
+
+    Six features offer 400 distances and four exceedances. Every scene pair is refused by name,
+    which is the declared behaviour -- but it means the candidate could never have been
+    evaluated at the sparsest of its own three declared richness levels.
+    """
+    report = _multiplicity_report()
+    sparse = [row for row in report["planted_blocks"] if row["richness"] == 6]
+    assert sparse, "richness 6 must be measured, even though it can only refuse"
+    for row in sparse:
+        assert row["scene_pairs_refused"] == row["scene_pairs"]
+        assert row["admitted"] == 0
+
+
+def test_candidate_1_admits_nothing_which_is_what_falsifies_it():
+    """The declared falsification, measured. Recorded, not tuned away.
+
+    Acceptance condition 1 allows a false split of 0.10. Where the model could be fitted at
+    all, nothing was admitted and the split is 1.0.
+    """
+    report = _multiplicity_report()
+    fitted = [row for row in report["planted_blocks"]
+              if row["richness"] == 9 and row["scene_pairs_refused"] == 0]
+    assert fitted
+    for row in fitted:
+        assert row["pairs_proposed_by_candidate_C"] > 0, "candidate C proposed pairs to judge"
+        assert row["admitted"] == 0
+        assert row["false_split_rate"] > MAX_FALSE_SPLIT
+
+
+def test_the_null_says_the_tail_model_is_conservative_so_the_signature_was_not_tested():
+    """The most important line of the measurement, and it was declared in advance.
+
+    If the tail model were correct, admissions per scene pair would equal alpha by construction
+    whatever the signature is like. Nominal 0.05, measured 0.0000: the model under-admits
+    relative to its own nominal rate, so the failure is not a verdict on the signature.
+    """
+    report = _multiplicity_report()
+    nulls = [row for row in report["null_blocks"] if row["scene_pairs_refused"] == 0]
+    assert nulls, "at least one null partition must have been evaluable"
+    for row in nulls:
+        assert row["admitted_per_scene_pair"] is not None
+        assert row["admitted_per_scene_pair"] < report["alpha"] / 10.0, (
+            "far below alpha, which the declaration's diagnostic did not name")
+    assert "not a verdict on the signature" not in report["acceptance_boundary"]
+    assert "tail model" in report["the_null_tests_the_tail_model_not_the_signature"]
+
+
+def test_a_configuration_the_metric_cannot_compare_is_refused_rather_than_dropped_silently():
+    """Found while measuring, named rather than worked around.
+
+    At twelve features a few configurations are so nearly isotropic that their principal axis
+    is refused, so they carry no bearing block and the metric will not compare them with
+    anything that does. They are excluded and COUNTED, and a scene whose motif fell in the
+    minority family would refuse outright rather than be measured around.
+    """
+    import inspect
+    from src.benchmarks.identity_certification import comparable_subset
+
+    report = _multiplicity_report()
+    for row in report["planted_blocks"] + report["null_blocks"]:
+        assert row["configurations_refused_as_incomparable"] == 0, (
+            "none are expected at six or nine features; the count exists to be visible")
+    assert "REFUSAL and not a rejection" in inspect.getdoc(comparable_subset)
+
+
+# ------------------------------------ T4E.12 candidate 2: adopted, measured, and it passes
+#
+# The first candidate in this sequence to meet its acceptance conditions. Adopted for a
+# DEVELOPMENT experiment only, with the reserved confirmatory blocks deliberately withheld
+# because k was chosen after a feasibility probe on these same blocks. The tests below record
+# what was measured AND which half of it is informative.
+
+
+def _graph(*edges):
+    """A partner map built from explicit mutual nearest-neighbour edges."""
+    import collections
+
+    partners = collections.defaultdict(dict)
+    for left, right in edges:
+        partners[left][right[0]] = right[1]
+        partners[right][left[0]] = left[1]
+    return partners
+
+
+def test_the_declaration_for_candidate_2_is_not_yet_adopted():
+    """Code does not sign a scientific declaration for a person."""
+    import json
+    from pathlib import Path
+
+    body = json.loads(Path(
+        "data/identity_calibration/t4e12-consistency-declaration.json"
+    ).read_text(encoding="utf-8"))
+    assert body["status"] == "declared_before_measurement"
+    assert "NOT VALID until the maintainer has reviewed" in body["declared_by"]
+    assert body["confirmatory"]["status"].startswith("STILL RESERVED AND NOT YET GENERATED")
+    assert "would NOT license" in body["what_a_failure_would_and_would_not_license"]
+
+
+def test_the_declaration_carries_the_feasibility_check_candidate_1_lacked():
+    """The lesson from candidate 1, written into the next declaration rather than only recorded.
+
+    It must show the criterion CAN admit something in principle, disclose that a probe was run
+    before the declaration, and be honest that the probe informed the choice of k.
+    """
+    import json
+    from pathlib import Path
+
+    body = json.loads(Path(
+        "data/identity_calibration/t4e12-consistency-declaration.json"
+    ).read_text(encoding="utf-8"))
+    feasibility = body["feasibility_checked_before_adoption"]
+    assert "cannot be inert" in feasibility["derivable_without_the_probe"]
+    assert "probe informed the choice of k" in feasibility["the_honest_disclosure_about_k"]
+    assert body["limitations_declared_now_rather_than_discovered_later"]
+    # Success is a live possibility here, so what a success would NOT license is declared too.
+    assert "would NOT approve a mining radius" in \
+        body["what_a_success_would_and_would_not_license"]
+
+
+def test_a_fully_agreeing_set_is_found_whole():
+    """Three configurations that all name each other are one correspondence, not three pairs."""
+    from src.benchmarks.identity_certification import consistent_group
+
+    partners = _graph(((0, 0), (1, 0)), ((0, 0), (2, 0)), ((1, 0), (2, 0)))
+    assert consistent_group((0, 0), partners) == ((0, 0), (1, 0), (2, 0))
+
+
+def test_a_set_that_does_not_close_is_cut_back_to_what_agrees():
+    """A names B and C, but B and C do not name each other, so the three are not a group."""
+    from src.benchmarks.identity_certification import consistent_group
+
+    partners = _graph(((0, 0), (1, 0)), ((0, 0), (2, 0)))
+    assert len(consistent_group((0, 0), partners)) == 2
+
+
+def test_the_largest_agreeing_set_is_found_exactly_and_not_greedily():
+    """Why the criterion enumerates rather than walks.
+
+    Here node (0,0) has partners in scenes 1, 2 and 3, but only two of the three agree with
+    each other. A greedy walk that accepted partners in the order it met them could return a
+    pair; the exact rule returns the triple that closes.
+    """
+    from src.benchmarks.identity_certification import consistent_group
+
+    partners = _graph(((0, 0), (1, 0)), ((0, 0), (2, 0)), ((0, 0), (3, 0)),
+                      ((2, 0), (3, 0)))
+    group = consistent_group((0, 0), partners)
+    assert len(group) == 3
+    assert {scene for scene, _ in group} == {0, 2, 3}
+
+
+def test_one_configuration_per_scene_or_it_is_not_a_correspondence():
+    """A group may not hold two configurations from the same scene, however well they agree."""
+    from src.benchmarks.identity_certification import consistent_group
+
+    partners = _graph(((0, 0), (1, 0)), ((0, 0), (1, 1)))
+    group = consistent_group((0, 0), partners)
+    assert len({scene for scene, _ in group}) == len(group)
+
+
+def test_the_criterion_admits_only_pairs_inside_groups_that_span_enough_scenes():
+    """The rule itself, on a partition where one group closes and another does not."""
+    from src.benchmarks.identity_certification import consistency_admitted_pairs
+
+    class _Cycle:
+        """Distances that make configuration 0 of every scene mutually nearest throughout."""
+
+        def distance(self, a, b):
+            return 0.0 if (a == 0 and b == 0) else 1.0 + abs(a - b)
+
+    partition = [([0, 1, 2], [False, False, False]) for _ in range(4)]
+    admitted = consistency_admitted_pairs(partition, _Cycle(), k=4)
+    assert admitted, "the agreeing groups span the whole partition and must be admitted"
+    # Under this metric every configuration is its counterpart's mutual nearest neighbour, so
+    # all three form partition-spanning groups. What the rule must never do is pair a
+    # configuration with a different index, which would not be a consistent correspondence.
+    assert all(i == j for _, i, _, j in admitted)
+    assert len(admitted) == 18, "three groups across four scenes give six pairs each"
+    # Demanding more scenes than the partition holds admits nothing rather than erroring.
+    assert consistency_admitted_pairs(partition, _Cycle(), k=5) == []
+
+
+def test_a_group_of_fewer_than_two_scenes_is_refused_as_meaningless():
+    """A correspondence needs two scenes; asking for fewer is a parameter error, not a result."""
+    import pytest
+    from src.benchmarks.identity_certification import consistency_admitted_pairs
+
+    with pytest.raises(ValueError):
+        consistency_admitted_pairs([([0], [False])] * 3, _AbsoluteMetric(), k=1)
+
+
+def _consistency_report():
+    """One measurement at two richness levels, reused. The declared sweep is far larger."""
+    from src.benchmarks.identity_certification import measure_consistency_criterion
+
+    if not hasattr(_consistency_report, "_cached"):
+        _consistency_report._cached = measure_consistency_criterion(
+            richness_levels=(6, 9), blocks=(tuple(range(100, 106)),),
+            null_blocks=(tuple(range(500, 506)),))
+    return _consistency_report._cached
+
+
+def test_the_adoption_withholds_the_confirmatory_blocks_and_says_why():
+    """The maintainer's decision, recorded in the maintainer's words and stricter than asked.
+
+    The declaration would have allowed the reserved blocks to be opened by a later amendment.
+    The maintainer declined to spend them on this candidate at all, because k was influenced by
+    the feasibility probe, so they stay clean for a criterion whose structural choices were
+    fixed blind.
+    """
+    import hashlib
+    import json
+    from pathlib import Path
+
+    declaration = Path("data/identity_calibration/t4e12-consistency-declaration.json")
+    adoption = json.loads(Path(
+        "data/identity_calibration/t4e12-consistency-adoption.json"
+    ).read_text(encoding="utf-8"))
+    assert adoption["adopts_sha256"] == hashlib.sha256(declaration.read_bytes()).hexdigest()
+    assert adoption["adopted_as"] == "DEVELOPMENT_EXPERIMENT_ONLY"
+    assert "genuinely clean" in adoption["the_confirmatory_blocks_are_explicitly_withheld"]
+    assert "not yet a defensible real-world recurrence rule" in \
+        adoption["the_maintainer_s_own_framing_of_this_candidate"]
+
+
+def test_the_rejection_half_is_the_finding_and_the_null_admits_nothing():
+    """What five previous candidates could not do, and the informative half of this result.
+
+    Candidate C returned 116 matches on a null partition and candidate D returned 62. This
+    criterion returns none, at either richness, out of the hundreds of pairs candidate C still
+    proposes there.
+    """
+    report = _consistency_report()
+    for row in report["null_blocks"]:
+        assert row["pairs_proposed_by_candidate_C"] > 100, (
+            "candidate C must still be proposing pairs, or nothing is being rejected")
+        assert row["admitted"] == 0
+
+
+def test_the_recall_half_was_very_nearly_guaranteed_and_is_not_the_finding():
+    """Recorded so the result is not over-read, including by its own author later.
+
+    The scenes are built with the motif in every scene and this criterion admits configurations
+    present in every scene. Candidate C had already recovered every motif pair in every block,
+    so the motif's match graph is complete and a partition-spanning group exists by
+    construction. Condition 1 could hardly have failed; it is checked, not celebrated.
+    """
+    report = _consistency_report()
+    for row in report["planted_blocks"]:
+        assert row["false_split_rate"] <= MAX_FALSE_SPLIT
+        assert row["motif_pairs_admitted"] == row["motif_pairs"]
+
+
+def test_no_false_admission_survives_at_any_richness_measured():
+    """The admission bound met, which no earlier candidate managed at any richness."""
+    report = _consistency_report()
+    for row in report["planted_blocks"]:
+        assert row["false_admission_rate"] == 0.0
+        assert row["admitted"] == row["motif_pairs"], (
+            "exactly the motif's complete clique is admitted and nothing else")
+        assert row["shortfall_factor"] == 0.0
+
+
+def test_the_matched_fraction_falls_as_one_over_the_configuration_count():
+    """Acceptance condition 2, and the shape it asked for.
+
+    Only one group spans the partition, so the admitted count is fixed at C(S,2) however rich
+    the scene, and the matched fraction is therefore exactly 1/m. No matching-based candidate
+    could deliver this: a matching returns at most one pair per configuration, so its matched
+    fraction is pinned.
+    """
+    report = _consistency_report()
+    fractions = {}
+    for row in report["planted_blocks"]:
+        fractions[row["richness"]] = row["matched_fraction"]
+        assert abs(row["matched_fraction"]
+                   - 1.0 / row["configurations_per_scene"]) < 1e-9
+    ordered = [fractions[key] for key in sorted(fractions)]
+    assert ordered == sorted(ordered, reverse=True), "it must fall as richness grows"
+
+
+def test_the_result_is_development_evidence_and_says_so():
+    """No confirmatory evidence for this candidate exists, and none will under this adoption."""
+    report = _consistency_report()
+    assert report["evidence_class"] == "development"
+    assert "reserved confirmatory blocks are untouched" in report["boundary"]

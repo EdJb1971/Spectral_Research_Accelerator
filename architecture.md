@@ -32,7 +32,7 @@ Last revised 2026-09-08.
 | T4E.8 defensible identity | **In progress** — slices 1–5 implemented, **acceptance unmet**; target decided 2026-09-09 | D97–D100; blocks T4F.9 | Slice 2's spatial mode fails the declared 10%/10% criterion (split 25.6–29.4%, admission 9.4–10.9%); no radius meets both bounds in any window. Slice 3 makes the identity target a declared field and refuses circular evidence. **Target decided 2026-09-09: `kind_recurrence` primary, the other two diagnostic.** That needs `external_reference` evidence, so a reviewed catalogue and a serialisation for it are now on the critical path and the primary target is unevaluable from the tool until they exist. §3E.8, §3E.9, §3E.11 |
 | T4E.8 slice 4 identity declaration on screen | **Implemented** | Closes PLAN §5 gap 1 | `/api/v1/identity/*` and `IdentityDeclarationView` render the admissibility matrix with the circular pairing refused at the weight of an admission, receipts with their claim boundaries, and the surface's own refusals. Read-only; choosing remains a person's act. 8 rendered browser tests. §3E.11 |
 | T4E.11 a criterion that survives a partition change | **B, C and D all adopted before measurement and falsified by it; two diagnostics redirect to T4E.12** |
-| T4E.12 what the signature must carry | **Specified; candidate 1 declared and implemented, not adopted, not measured** | Scaling measured: recall survives richness (split 0.0000 at 6, 9 and 12 features) but the matched fraction of configurations stays constant (~0.23), so admission climbs to 0.979 and the shortfall widens x33 → x423. Acceptance is a per-pair rate at three richness levels, never an admission fraction — amended in the open so candidates need not be signature changes, because multiplicity is a property of the procedure. Candidate 1 makes the admission threshold alpha/m², tightening by construction; declared at sha256 `f0c45d92...` and **not measured**. §3E.17, §3E.18 | Blocks D96; the identity target needs it | B: normalising by each partition's label-free close-pair scale left the spread wider (1.876x → 1.991x). C: mutual nearest-neighbour recovers **every** motif pair in **every** block (split 0.0000) despite the 1.876x magnitude spread — the ordering transfers where magnitudes do not — but cannot decline, returning 116 matches on a null block where the answer is none. D: a dimensionless margin at tau = 0.8 costs **nothing** in recall (split 0.0000 on every block, counts falling as predicted) but rejects too little — null retention 0.5345 against an accepted 0.10 — and the ratio distributions **overlap**, 0.240 against 0.293. The diagnostic that followed shows the ground truth is sound (only 29% of false admissions share motif structure), that the signature never confuses the motif with a partial copy (0 of 1080), and that the binding constraint is a per-pair false rate of 1.019% against prior odds of 1:399 — a **36-fold** shortfall no threshold can close. Confirmatory blocks untouched. §3E.13, §3E.14, §3E.15, §3E.16 |
+| T4E.12 what the signature must carry | **Candidate 2 meets all four acceptance conditions on development evidence; no confirmatory evidence exists by decision** | Scaling measured: recall survives richness (split 0.0000 at 6, 9 and 12 features) but the matched fraction of configurations stays constant (~0.23), so admission climbs to 0.979 and the shortfall widens x33 → x423. Acceptance is a per-pair rate at three richness levels, never an admission fraction — amended in the open so candidates need not be signature changes, because multiplicity is a property of the procedure. Candidate 1 makes the admission threshold alpha/m², tightening by construction; declared at sha256 `f0c45d92...`, adopted and **falsified**: it admits nothing at any richness (split 1.0), richness 6 cannot support the model at all, and the null admits 0.0000 per scene pair against a nominal 0.05 — so the tail model is conservative and **the signature was not tested**. Candidate 2 abandons per-pair verdicts for consistency across the whole partition; its feasibility probe found the motif reaching a clique of 6 in every scene of every block while nothing else exceeded 5. Declared at sha256 `639485af...` and measured: **15 pairs admitted per block at every richness — the motif's complete clique — and nothing else, with the null admitting 0 of 116, 595 and 1486 proposed pairs.** The recall half was near-guaranteed by construction; the rejection half is the finding. Development evidence only; blocks 700–735 withheld by decision because k followed a probe. §3E.17, §3E.18, §3E.19 | Blocks D96; the identity target needs it | B: normalising by each partition's label-free close-pair scale left the spread wider (1.876x → 1.991x). C: mutual nearest-neighbour recovers **every** motif pair in **every** block (split 0.0000) despite the 1.876x magnitude spread — the ordering transfers where magnitudes do not — but cannot decline, returning 116 matches on a null block where the answer is none. D: a dimensionless margin at tau = 0.8 costs **nothing** in recall (split 0.0000 on every block, counts falling as predicted) but rejects too little — null retention 0.5345 against an accepted 0.10 — and the ratio distributions **overlap**, 0.240 against 0.293. The diagnostic that followed shows the ground truth is sound (only 29% of false admissions share motif structure), that the signature never confuses the motif with a partial copy (0 of 1080), and that the binding constraint is a per-pair false rate of 1.019% against prior odds of 1:399 — a **36-fold** shortfall no threshold can close. Confirmatory blocks untouched. §3E.13, §3E.14, §3E.15, §3E.16 |
 | T4E.10 an operating point that transfers | **Implemented; no estimator holds** | Redirects D97 and D96 | 90/90 needs 22 observations and T4E.9 had 15, so the tolerance bound refuses there and names 22. At 28 it names a radius and still fails (split 20.0% vs 46.7% for the quantile). The reason is that four blocks from one generator differ 1.88x in mean distance, so calibration and evaluation are not one population and no bound transfers at any support. §3E.12 |
 | T4E.9 certified synthetic ground truth | **Implemented; benchmark reports FAIL** | Closed D101; evidence for D97 | `t4e_identity_certified` routes the T4E path through planted and null scenes. The definition separates perfectly (AUC 1.0, zero admissions in 11,985 negative pairs); the frozen radius splits 46.7% of motif pairs while a feasible radius exists. §3E.10 |
 | T4F.1–5, T4F.7, T4F.8 | **Complete** | — | §3F |
@@ -8709,11 +8709,124 @@ D97, isolated from the real record: the calibration's failure is not only the at
 messiness. D101 is closed by the benchmark existing and reporting; D97 gains this evidence and
 stays open. No mining radius is approved and T4E.8's acquired-record acceptance is untouched.
 
+### 3E.19 Candidate 2: identity as consistency across the partition (T4E.12)
+
+`consistency_admitted_pairs` implements the criterion declared in
+`t4e12-consistency-declaration.json` (sha256 `639485af...`), adopted at that hash as a
+**development experiment only**, and it is the first candidate in this sequence to meet its
+acceptance conditions.
+
+| richness | configs/scene | C proposed | **admitted** | split | admission | shortfall |
+|---|---|---|---|---|---|---|
+| 6 | 20 | 121–152 | **15** | 0.0000 | **0.0000** | x0.00 |
+| 9 | 84 | 485–585 | **15** | 0.0000 | **0.0000** | x0.00 |
+| 12 | 220 | 1440–1590 | **15** | 0.0000 | **0.0000** | x0.00 |
+| **null 6** | 20 | 116 | **0** | — | — | — |
+| **null 9** | 84 | 595 | **0** | — | — | — |
+| **null 12** | 220 | 1486 | **0** | — | — | — |
+
+**All four acceptance conditions are met, on development evidence.** Every block at every
+richness admits exactly 15 pairs -- C(6,2), the motif's complete clique -- and nothing else.
+Zero false admissions anywhere. The null partitions admit nothing at any richness, against the
+116, 595 and 1486 pairs candidate C proposes there. The matched fraction falls as exactly `1/m`:
+0.0500, 0.0119, 0.00455. Four configurations were refused as incomparable at richness 12 and
+none at 6 or 9.
+
+**Which half of this is informative, stated so the result is not over-read.** The recall half
+was very nearly guaranteed before it was measured: the scenes are built with the motif in every
+scene, this criterion admits configurations present in every scene, and candidate C had already
+recovered every motif pair in every block (false split 0.0000), so the motif's match graph is
+complete and a partition-spanning group exists **by construction**. Condition 1 could hardly
+have failed. **The rejection half is the real finding** -- zero false admissions, and a null
+that admits none of 116, 595 or 1486 proposed pairs. That is what five previous candidates could
+not do.
+
+**The maintainer's ceiling, fixed before the numbers were known and unchanged by them.**
+*"Candidate 2 looks like a strong diagnostic of whether the signature can sustain coherent
+identity. It is not yet a defensible real-world recurrence rule."* This result is evidence that
+the signature **can** sustain coherent identity across a partition. It is not a recurrence
+criterion and is not reported as one.
+
+**The confirmatory blocks were deliberately withheld and remain clean.** The maintainer declined
+to spend blocks 700-735 on this candidate because `k` was influenced by the feasibility probe on
+these same blocks, so they stay reserved for a criterion whose key structural choices were fixed
+without seeing them. That is stricter than the declaration itself asked for. **No confirmatory
+evidence for this candidate exists or will exist under this adoption.**
+
+**What this does not establish**: nothing about a record with partial recurrence, since `k = S`
+rejects a configuration absent from a single scene outright; nothing about recurrence *across*
+partitions, which is what the mining, sequence and precursor machinery downstream requires;
+no mining radius, no discharge of T4E.8's acquired-record acceptance, no closure of D96 to D100;
+and nothing about the primary target `kind_recurrence`, which admits only `external_reference`
+evidence and still has no catalogue.
+
+Five candidates have now been falsified, in three different ways, and all five asked the same
+question: given one pair of configurations, is it a match? None used what the partition offers.
+The motif is in every scene, so its mutual nearest-neighbour matches form a complete graph;
+a coincidence between two scenes has no reason to extend to the rest. Here a set of
+configurations, at most one per scene, is **consistent** when every member is the mutual nearest
+neighbour of every other, and only pairs inside sets spanning at least `k` scenes are admitted.
+`k` is the partition size.
+
+**It is exact, not greedy.** Mutual nearest-neighbour matching gives a configuration at most one
+partner in any other scene, so a node's candidate group is determined by the node and holds at
+most `S` members; `consistent_group` enumerates the largest agreeing subset outright. That
+matters because the feasibility probe used a greedy walk, which can miss the largest agreeing
+set, and a criterion whose output depended on a walk order would not have reproducible error
+rates.
+
+**What it contains that no previous candidate did**: no radius, no ratio, no threshold, no
+fitted model, no estimated normaliser. So there is nothing to carry between partitions
+(T4E.10's failure), nothing to estimate wrongly (candidate B's) and nothing whose statistical
+support can run out (candidate 1's) -- it is evaluable at richness 6, where candidate 1 refused
+every scene pair.
+
+**The feasibility check candidate 1 lacked, done before declaring and disclosed in the
+declaration.**
+
+```
+clique sizes reached by mutual-nearest-neighbour consistency, six-scene partitions
+                        motif          non-motif spread            null
+100-105 rich 6     6,6,6,6,6,6    1:21  2:53  3:32  4:8            --
+100-105 rich 9     6,6,6,6,6,6    1:55  2:249 3:150 4:44           --
+300-305 rich 6     6,6,6,6,6,6    1:7   2:51  3:41  4:15           --
+300-305 rich 9     6,6,6,6,6,6    1:56  2:245 3:141 4:51 5:5       --
+NULL    rich 6              --    1:22  2:51  3:46  4:1
+NULL    rich 9              --    1:47  2:260 3:156 4:41
+```
+
+The motif reached a clique of 6 in every scene of every block; no non-motif configuration
+exceeded 5 anywhere; the null reached 4 at most. That establishes the criterion can admit the
+answer and can reject the null -- it is not inert the way candidate 1 was. It does **not**
+establish the error rates, and its greedy walk makes its group sizes a lower bound rather than
+the criterion's own output.
+
+**And the probe informed the choice of `k`, which the declaration says plainly.** "Consistent
+across every scene of the window" is defensible before any measurement and is the strictest
+setting available, so it is not a number tuned to a result -- but the probe was seen, and anyone
+reading the eventual result should weigh the development evidence accordingly. That is why
+confirmatory evidence would be worth more here than at any earlier point in this sequence.
+
+**Three limitations are declared now rather than discovered later.** `k = S` will not transfer
+to an acquired record, where a real pattern need not appear in every window and this criterion
+rejects a configuration absent from a single scene with no partial credit. It inherits every
+assumption of the mutual nearest-neighbour rule that proposes its pairs. And consistency within
+one partition says nothing about recurrence across partitions, which is what the mining,
+sequence and precursor machinery downstream actually needs.
+
+**A clause the earlier declarations did not need.** For the first time in this sequence success
+is a live possibility, so the declaration states what a success would *not* license: not a
+mining radius, not T4E.8's acceptance, not D96 to D100, not anything about the atmosphere, and
+not a confirmed result -- which needs the reserved blocks, and opening those is a separate
+decision requiring its own amendment.
+
+Nothing here approves a radius and no defect is closed.
+
 ### 3E.18 Candidate 1: a rule that counts its own comparisons (T4E.12)
 
 `multiplicity_aware_matches` implements the criterion declared in
-`t4e12-multiplicity-declaration.json` (sha256 `f0c45d92...`). **It has not been measured.** The
-declaration is not adopted and the development blocks are untouched until it is.
+`t4e12-multiplicity-declaration.json` (sha256 `f0c45d92...`), adopted separately at that hash,
+and **falsified by the measurement that followed**.
 
 Candidate C proposes the pairs, exactly as before. What is new is the decision: a matched pair
 is admitted only when a distance as small as its own would arise with probability at most
@@ -8757,6 +8870,71 @@ admission count tests THE TAIL MODEL, not the signature: near 0.05 means the mod
 remaining failure is the signature's; far above it means the fit is wrong here and the signature
 has not been tested at all.
 
+**The measurement: it admits nothing, anywhere.**
+
+```
+rich   block      pairs refused  C proposed  admitted   split
+6      100-105       15      15         121         0     n/a
+6      200-205       15      15         121         0     n/a
+6      300-305       15      15         152         0     n/a
+6      400-405       15      15         136         0     n/a
+9      100-105       15       0         568         0  1.0000
+9      200-205       15       0         485         0  1.0000
+9      300-305       15       0         585         0  1.0000
+9      400-405       15       0         566         0  1.0000
+12     100-105       15       0        1446         0  1.0000
+12     200-205       15       0        1440         0  1.0000
+12     300-305       15       0        1590         0  1.0000
+12     400-405       15       0        1488         0  1.0000
+
+NULL rich=9    admitted 0, per scene pair 0.0000   (alpha = 0.05 expected)
+NULL rich=12   admitted 0, per scene pair 0.0000   (alpha = 0.05 expected)
+
+motif tail probability against the bound, sampled in four scene pairs
+  100-105 rich 9    6.47e-5 vs 7.09e-6    x9.1
+  100-105 rich 12   6.22e-6 vs 1.03e-6    x6.0
+  300-305 rich 9    2.50e-5 vs 7.09e-6    x3.5
+  300-305 rich 12   1.59e-5 vs 1.04e-6    x15.3
+```
+
+**Falsified on condition 1.** Where the model could be fitted, nothing was admitted and the
+false split is 1.0 against an accepted 0.10.
+
+**Richness 6 could never have been evaluated, and that was derivable before adoption.** Fifty
+exceedances at a 1st-percentile threshold needs at least 5,000 distances, so at least 71
+configurations, so at least nine features. Six features offer 400 distances and four
+exceedances. Every scene pair refused by name -- the declared behaviour, at a richness level the
+declaration itself listed.
+
+**The null is the line that matters most, and it was declared in advance.** If the tail model
+were correct, admissions per scene pair would equal `alpha` by construction whatever the
+signature is like. Nominal 0.05, measured **0.0000**. The fitted model is *conservative*: it
+under-admits relative to its own nominal rate. **So this measurement is not a verdict on the
+signature. The signature was not cleanly tested.**
+
+**A gap in the declaration's own diagnostic, recorded rather than edited away.** It named "far
+above alpha" as indicting the tail model and did not name "far below alpha", which is what
+happened. The direction that occurred was not one the declaration prepared to interpret.
+
+**How short it falls, and what is not claimed.** The motif's fitted tail probability sits 9.1x,
+6.0x, 3.5x and 15.3x above the bound in the four scene pairs sampled -- a single-digit to
+low-double-digit factor, not orders of magnitude. **No trend in richness is claimed**: one block
+improves with richness and the other worsens, on two blocks, which settles nothing.
+
+**The lesson, which is about how declarations are drafted here.** Candidate D taught that the
+falsification-licensing field must be narrow, and that correction held. This one exposes a check
+that was missing: a **feasibility test** before adoption -- can this criterion admit anything at
+all, in principle, at the support declared for it? Both failures above answer no, and both were
+available on paper without a measurement.
+
+**What survives.** The refusal machinery did what it was declared to do. And a previously
+unnamed condition was found and named: at twelve features a few configurations are so nearly
+isotropic that `sign_constellations` refuses their principal axis, so they carry no bearing
+block and `SignatureMetric` will not compare them with anything that does. Measured extent: none
+at six or nine features, and 1, 1 and 2 configurations out of 1,320 in three of the four blocks
+at twelve. `comparable_subset` refuses those by name, counts them in every row, and refuses
+outright if the motif itself falls in the minority family.
+
 Nothing here approves a radius and no defect is closed.
 
 ### 3E.17 How the identity problem scales with scene richness (T4E.12)
@@ -8776,6 +8954,12 @@ exactly the scenes it built before.
 **Recall is untouched by richness.** False split is 0.0000 at every level: the motif is still
 the mutual nearest neighbour against 219 rivals rather than 19. The signature carries what is
 needed to identify the configuration.
+
+**A qualification added 2026-09-09, after candidate 1's measurement.** This sweep ran on
+block 100-105 alone at each richness. It would have *failed* on three of the four blocks at
+twelve features, because those contain configurations the metric refuses to compare -- see
+§3E.18. The scaling law stands for the block it was measured on and its evidence base is one
+block per level, which is narrower than the original wording implied.
 
 **The rule matches a constant fraction of whatever it is given** -- 0.233, 0.255, 0.218 of
 configurations -- because a nearest-neighbour matching returns at most one pair per
@@ -10236,10 +10420,10 @@ able to sit three slices out of date.
   | `test_representation_alignment.py` | 19 | Mutual k-NN alignment between two kernels, the metric arXiv:2405.07987 reports as 0.16 out of 1 without a reference: self-alignment exactly 1, rotation invariance of the inner-product kernel, alignment falling monotonically as two views are driven apart, deterministic tie-breaking; the closed-form chance floor k/(n-1) checked against random neighbour sets and shown to survive strongly clustered and nine-fold duplicated kernels to under one percent -- a first version of that test asserted the opposite and is corrected in place; a paired view clearing its permuted pairing while two unrelated representations come back unresolved; and the refusals -- a non-square kernel, two kernels over different point sets, a non-finite similarity, a neighbour count outside [1, n-1], a null with no permutations, and an exceedance never reported as exactly zero |
   | `test_operating_point.py` | 15 | T4E.10 identity operating-point estimators: the closed-form required support checked against the order statistic it derives from, the tolerance bound refusing thin support and naming the 22 observations that would carry 90/90, that bound never narrower than the empirical quantile it replaces, an empty population refusing rather than returning zero, the empirical quantile publishing that it guarantees nothing and recording the confidence it was given and ignored, the bootstrap widening rather than refusing while naming its own weakness and staying deterministic per seed, every registered estimator publishing a guarantee, only the tolerance bound declaring that it refuses, and the refusals -- an unknown estimator corrected, a coverage or confidence outside (0,1), and a negative or non-finite distance |
   | `test_identity_api.py` | 16 | T4E.8 slice 4 the identity declaration surface: every target served with what it does not license, the circular `kind_recurrence` x `record_derived_proxy` pairing served as a refusal rather than omitted, an admitted pairing still carrying its tracker-agreement caveat, the matrix covering every target against every evidence class, receipts written before slice 3 listed and named undeclared rather than hidden, an unreadable receipt reported rather than skipped and a non-object JSON document distinguished from an empty store, a path refused where a file name was required, a missing receipt 404 naming what was asked for and an unparseable one 422 rather than 500, the surface read-only under POST/PUT/DELETE, and the refusals published rather than implied by an absence of buttons |
-  | `test_identity_certification.py` | 63 | T4E.9 the T4E identity path against a motif known by construction: the benchmark registered and naming the path it certifies, three disjoint partitions so a radius is never evaluated on what calibrated it, exactly one motif configuration in a planted scene and none in a null one, construction labels taken from the generator and refused rather than guessed when a planted position has no feature near it or two positions claim one, only cross-scene pairs formed, the definition's separation asserted as a floor, nothing admitted where nothing recurs with the absent positive population left unmeasured rather than zero, the frozen-radius failure pinned as a relationship to the feasible radius rather than as two numbers, an empty calibration returning INVALID rather than a permissive radius, and every result stating what it does not license |
+  | `test_identity_certification.py` | 82 | T4E.9 the T4E identity path against a motif known by construction: the benchmark registered and naming the path it certifies, three disjoint partitions so a radius is never evaluated on what calibrated it, exactly one motif configuration in a planted scene and none in a null one, construction labels taken from the generator and refused rather than guessed when a planted position has no feature near it or two positions claim one, only cross-scene pairs formed, the definition's separation asserted as a floor, nothing admitted where nothing recurs with the absent positive population left unmeasured rather than zero, the frozen-radius failure pinned as a relationship to the feasible radius rather than as two numbers, an empty calibration returning INVALID rather than a permissive radius, and every result stating what it does not license |
   | `test_identity_target_declaration.py` | 26 | T4E.8 slice 3 the declared identity target: an absent target or evidence class refused by name, a misspelling refused with its correction, `kind_recurrence` against record-derived proxy labels refused as circular, `track_continuity` admitted with its tracker-agreement caveat, every target round-tripping what it recognises and does not license, the published proxy wording pinned verbatim so naming a target cannot reword a cited receipt, and the external-reference path recovering two planted identities from a reviewed catalogue while refusing a mismatched family, a single identity, a non-catalogue and a negative population the patterns cannot supply |
   | `test_spectral_spatial_identity.py` | 24 | T4E.8 spatial geometry, detector-band/magnitude independence, source/scope refusal, analytic distances, old-radius refusal, scalar/accelerated agreement and two-sided proxy-label diagnostics |
-| **total** | **4177** | |
+| **total** | **4196** | |
 
 ### 7.4a Browser suite inventory
 

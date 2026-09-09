@@ -1,0 +1,57 @@
+{
+  "schema": "t4e12-adoption/v1",
+  "adopts": "data/identity_calibration/t4e12-consistency-declaration.json",
+  "adopts_sha256": "639485af9ad2574c8a6ab0d3f6c0e14dacb32c0cf5ae8c6b2cc400fb262efdf0",
+  "adopted_by": "Edward Jonathan Bentley, maintainer",
+  "adopted_on": "2026-09-09",
+  "adopted_as": "DEVELOPMENT_EXPERIMENT_ONLY",
+  "what_was_adopted": "The preregistration is in force and candidate 2 may be measured on the already-inspected development blocks and the null, at the three declared richness levels. Nothing else.",
+  "the_maintainer_s_own_framing_of_this_candidate": "Recorded in the maintainer's words because it sets the ceiling on how any result may be reported: 'Candidate 2 looks like a strong diagnostic of whether the signature can sustain coherent identity. It is not yet a defensible real-world recurrence rule.' A success is therefore evidence about the signature's coherence and not a recurrence criterion, and it is to be written up that way whatever the numbers say.",
+  "the_confirmatory_blocks_are_explicitly_withheld": "The maintainer declined to spend blocks 700-735 on this candidate, and gave the reason: the declaration admits that k was influenced by the feasibility probe, so those blocks would not be testing a structural choice made blind. They stay genuinely clean until there is a criterion whose key structural choices were fixed without seeing them. This is a decision about what the reserved evidence is FOR, not a deferral for convenience, and it is stronger than what this declaration itself asked for.",
+  "what_adoption_does_not_mean": "It is not a prediction that candidate 2 will work, and -- given the framing above -- a success would not make it the identity criterion either. It says only that the experiment is worth running and that the conditions for reading it were fixed before it ran.",
+  "what_is_not_adjustable_by_this_adoption": "k stays at the partition size. Lowering it to rescue recall is specifically forbidden by the declaration and is not licensed here. The mutual nearest-neighbour rule that proposes the pairs, the signature, the weights, the cardinality and the scenes are all unchanged.",
+  "scope_adopted": "Atmospheric identity path only. Cross-domain use of the same mechanism requires its own declared experiment and its own qualification, per R19.",
+  "governing": [
+    "R20: candidate 2 is evaluated alone. Candidates C and D appear only as the proposer of pairs and as arithmetic references, which is not adjudication.",
+    "Development results on the already-inspected blocks are development evidence and may not be reported as confirmation. With the confirmatory blocks withheld, NO confirmatory evidence for this candidate exists or will exist under this adoption."
+  ],
+  "development_outcome": {
+    "status": "ALL FOUR ACCEPTANCE CONDITIONS MET ON DEVELOPMENT EVIDENCE",
+    "measured_on": "2026-09-09",
+    "false_split_at_every_richness": 0.0,
+    "false_admission_at_every_richness": 0.0,
+    "null_admissions": {
+      "richness_6": 0,
+      "richness_9": 0,
+      "richness_12": 0
+    },
+    "null_pairs_proposed_by_candidate_C": {
+      "richness_6": 116,
+      "richness_9": 595,
+      "richness_12": 1486
+    },
+    "admitted_per_block": 15,
+    "matched_fraction_by_richness": {
+      "6": 0.05,
+      "9": 0.0119,
+      "12": 0.004545
+    },
+    "configurations_refused_as_incomparable": {
+      "richness_6": 0,
+      "richness_9": 0,
+      "richness_12": 4
+    },
+    "summary": "Every block at every richness admitted exactly 15 pairs -- C(6,2), the motif's complete clique -- and nothing else. Zero false admissions anywhere. The null partitions admitted nothing at any richness, against the 116, 595 and 1486 pairs candidate C proposed there. The matched fraction falls as exactly 1/m: 0.0500, 0.0119, 0.00455.",
+    "WHICH_HALF_OF_THIS_IS_INFORMATIVE": "The recall half was very nearly guaranteed before the measurement and should not be reported as a discovery. The scenes are built with the motif in every scene, and this criterion admits configurations present in every scene; candidate C had already recovered every motif pair in every block at every richness (false split 0.0000), which means the motif's match graph is complete and a partition-spanning group therefore exists by construction. Condition 1 could hardly have failed. THE REJECTION HALF IS THE REAL FINDING: zero false admissions, and a null that admits none of 116, 595 or 1486 proposed pairs. That is what five previous candidates could not do.",
+    "the_maintainer_s_ceiling_applies_to_this_result": "Recorded before the numbers were known and unchanged by them: 'Candidate 2 looks like a strong diagnostic of whether the signature can sustain coherent identity. It is not yet a defensible real-world recurrence rule.' This result is evidence that the signature CAN sustain coherent identity across a partition. It is not a recurrence criterion and is not to be reported as one.",
+    "what_this_result_does_not_establish": [
+      "Nothing confirmatory. These blocks have been inspected repeatedly -- by T4E.10, four T4E.11 candidates, the scaling measurement, candidate 1 and the feasibility probe -- and the confirmatory blocks were deliberately withheld, so no confirmatory evidence for this candidate exists or will exist under this adoption.",
+      "Nothing about a record with partial recurrence. k = S rejects a configuration absent from a single scene outright. A real pattern need not appear in every window, and this criterion would reject it if it did not.",
+      "Nothing about recurrence ACROSS partitions, which is what the mining, sequence and precursor machinery downstream requires. Consistency was measured within a partition.",
+      "No mining radius, no discharge of T4E.8's acquired-record acceptance, and no closure of D96, D97, D98, D99 or D100.",
+      "Nothing about the primary scientific target. kind_recurrence admits only external_reference evidence and still has no catalogue."
+    ],
+    "the_structural_choice_was_not_made_blind": "k was chosen after a feasibility probe on these same blocks showed coincidental groups topping out at 5. The declaration disclosed this before measurement and the maintainer withheld the reserved blocks BECAUSE of it, so that they stay clean for a criterion whose key structural choices were fixed without seeing them. That withholding is a decision about what the reserved evidence is for, and it is stricter than the declaration asked.",
+    "what_would_now_be_worth_measuring": "A criterion of this shape with k below S, declared before any probe of how coincidental groups behave at that k, is the obvious route to something that could transfer to a real record. It would need its own declaration, and the reserved blocks would then be spendable on a structural choice made blind. That is a decision for the maintainer and nothing here authorises it."
+  }
+}

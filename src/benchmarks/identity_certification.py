@@ -723,6 +723,190 @@ def decompose_matched_pairs(blocks: Sequence[Sequence[int]] = None,
 
 
 # ---------------------------------------------------------------------------------------------
+# T4E.12 candidate 2: identity as consistency across the partition, not a verdict on one pair.
+#
+# Declared in `data/identity_calibration/t4e12-consistency-declaration.json` and NOT MEASURED
+# until that declaration is adopted.
+#
+# Every candidate before this one asked the same question -- given ONE pair of configurations,
+# is it a match? -- and five failed in three different ways. None used what the partition
+# actually offers: the motif is in every scene, so its matches form a complete graph, while a
+# coincidental match between two scenes has no reason to extend to the rest.
+#
+# The feasibility probe that preceded this declaration is disclosed in it and is the reason it
+# was written: across six-scene partitions the motif reached a clique of 6 in every scene of
+# every block at richness 6 and 9, and no non-motif configuration ever exceeded 5.
+
+#: Declared clique size: a configuration must be consistently matched across this many scenes.
+#: Set to the partition size, which is the strictest possible value and is a statement about
+#: what recurrence means rather than a number tuned to these blocks. See the declaration's
+#: limitation section: on an acquired record recurrence is partial and this will not transfer.
+CONSISTENCY_K = None  # None means "every scene in the partition"
+CRITERION_CONSISTENCY_NAME = "mutual_nearest_neighbour_consistency_across_the_partition"
+
+
+def _partner_map(partition, metric: SignatureMetric):
+    """For each configuration, its mutual nearest neighbour in each other scene, if any.
+
+    Mutual nearest-neighbour matching returns a one-to-one partial matching, so a configuration
+    has AT MOST ONE partner in any other scene. That is what makes the consistency test exact
+    and cheap rather than a general clique search: the candidate group of a node is determined
+    by the node, and only its internal agreement has to be checked.
+    """
+    partners: Dict[Tuple[int, int], Dict[int, int]] = collections.defaultdict(dict)
+    for a, b in itertools.combinations(range(len(partition)), 2):
+        for i, j in mutual_nearest_matches(partition[a], partition[b], metric):
+            partners[(a, i)][b] = j
+            partners[(b, j)][a] = i
+    return partners
+
+
+def consistent_group(node, partners) -> Tuple[Tuple[int, int], ...]:
+    """The largest set of mutually agreeing partners containing `node`, computed exactly.
+
+    The candidate members are `node` plus its unique partner in each other scene, so there are
+    at most as many as there are scenes and the maximum clique among them can be enumerated
+    outright. No greedy approximation: a greedy walk can miss the largest agreeing set, and a
+    criterion that sometimes misses one would make its own error rates unreproducible.
+    """
+    candidates = [node] + [(scene, index) for scene, index in sorted(partners[node].items())]
+    best: Tuple[Tuple[int, int], ...] = (node,)
+    for size in range(len(candidates), 1, -1):
+        if size <= len(best):
+            break
+        for subset in itertools.combinations(candidates, size):
+            if node not in subset:
+                continue
+            if len({scene for scene, _ in subset}) != len(subset):
+                continue          # one configuration per scene, or it is not a correspondence
+            agreeing = all(partners[left].get(right[0]) == right[1]
+                           for left, right in itertools.permutations(subset, 2))
+            if agreeing:
+                best = subset
+                break
+        if len(best) == size:
+            break
+    return best
+
+
+def consistency_admitted_pairs(partition, metric: SignatureMetric, *, k: Optional[int] = None):
+    """T4E.12 candidate 2: admit the pairs inside groups that agree across at least `k` scenes.
+
+    `k` defaults to the whole partition, which is the declared setting. Returns the admitted
+    cross-scene pairs as `(scene_a, index_a, scene_b, index_b)` with `scene_a < scene_b`, so the
+    error rates are counted over exactly the population candidates C and D were counted over and
+    the three are directly comparable.
+
+    There is no radius, no ratio, no threshold and no fitted model -- so nothing to carry
+    between partitions, nothing to estimate wrongly, and nothing whose support can run out. What
+    it uses instead is the partition's own structure.
+    """
+    wanted = len(partition) if k is None else int(k)
+    if wanted < 2:
+        raise ValueError("a consistency group of fewer than two scenes is not a correspondence")
+    partners = _partner_map(partition, metric)
+    admitted = set()
+    for node in list(partners):
+        group = consistent_group(node, partners)
+        if len(group) < wanted:
+            continue
+        for (a, i), (b, j) in itertools.combinations(sorted(group), 2):
+            admitted.add((a, i, b, j))
+    return sorted(admitted)
+
+
+def measure_consistency_criterion(
+        richness_levels: Sequence[int] = (6, 9, 12),
+        blocks: Sequence[Sequence[int]] = None,
+        null_blocks: Sequence[Sequence[int]] = None,
+        *, k: Optional[int] = None) -> Dict[str, Any]:
+    """Candidate 2's development evaluation, against T4E.12's four declared conditions.
+
+    Unlike candidate 1 this is evaluable at every declared richness, because there is no tail
+    model whose support can run out -- which was the first of candidate 1's two feasibility
+    failures and is fixed by construction rather than by argument.
+    """
+    blocks = tuple(blocks) if blocks is not None else EXCHANGEABILITY_BLOCKS
+    null_blocks = tuple(null_blocks) if null_blocks is not None else (NULL_SEEDS,)
+    metric = SignatureMetric(WEIGHTS)
+
+    def evaluate(seeds, richness, *, plant):
+        scenes = [_scene_with_motif_membership(seed, plant=plant, richness=richness)
+                  for seed in seeds]
+        incomparable = 0
+        trimmed = []
+        for scene in scenes:
+            keep, dropped = comparable_subset(scene)
+            incomparable += len(dropped)
+            trimmed.append(([scene[0][i] for i in keep], [scene[1][i] for i in keep]))
+        admitted = consistency_admitted_pairs(trimmed, metric, k=k)
+        scene_pairs = len(trimmed) * (len(trimmed) - 1) // 2
+        configurations = len(trimmed[0][0])
+        candidates = sum(len(trimmed[a][0]) * len(trimmed[b][0])
+                         for a, b in itertools.combinations(range(len(trimmed)), 2))
+        motif_index = [scene[1].index(True) if any(scene[1]) else None for scene in trimmed]
+        motif_admitted = motif_total = 0
+        if plant:
+            for a, b in itertools.combinations(range(len(trimmed)), 2):
+                motif_total += 1
+                if (a, motif_index[a], b, motif_index[b]) in set(admitted):
+                    motif_admitted += 1
+        proposed = sum(len(mutual_nearest_matches(trimmed[a], trimmed[b], metric))
+                       for a, b in itertools.combinations(range(len(trimmed)), 2))
+        row = {
+            "seeds": list(seeds), "richness": int(richness),
+            "clique_size_required": len(trimmed) if k is None else int(k),
+            "configurations_per_scene": configurations,
+            "configurations_refused_as_incomparable": incomparable,
+            "scene_pairs": scene_pairs, "candidate_pairs": candidates,
+            "pairs_proposed_by_candidate_C": proposed,
+            "admitted": len(admitted),
+            "matched_fraction": (len(admitted) / scene_pairs) / configurations,
+        }
+        if plant:
+            false_admissions = len(admitted) - motif_admitted
+            required = required_pair_rate(
+                configurations_as_features(configurations, allow_trimmed=True))
+            row.update({
+                "motif_pairs": motif_total, "motif_pairs_admitted": motif_admitted,
+                "false_split_rate": (motif_total - motif_admitted) / motif_total,
+                "false_admission_rate": (None if not admitted
+                                         else false_admissions / len(admitted)),
+                "false_pair_rate": false_admissions / (candidates - motif_total),
+                "required_pair_rate": required["required_pair_rate"],
+                "shortfall_factor": ((false_admissions / (candidates - motif_total))
+                                     / required["required_pair_rate"]),
+            })
+        return row
+
+    planted, nulls = [], []
+    for richness in richness_levels:
+        for seeds in blocks:
+            planted.append(evaluate(seeds, richness, plant=True))
+        for seeds in null_blocks:
+            nulls.append(evaluate(seeds, richness, plant=False))
+    return {
+        "candidate": "2_consistency_across_the_partition",
+        "criterion": CRITERION_CONSISTENCY_NAME,
+        "richness_levels": [int(value) for value in richness_levels],
+        "planted_blocks": planted, "null_blocks": nulls,
+        "acceptance_boundary": (
+            "Condition 1: worst false split at most 0.10 at every richness. Condition 2: the "
+            "matched fraction must FALL as richness grows. Condition 3: the shortfall must be "
+            "non-increasing and the 0.10 admission bound met at the richest level. Condition 4: "
+            "refusals reported by name."),
+        "what_the_null_measures": (
+            "Nothing recurs there, so every admitted pair is false by construction and the "
+            "count is the criterion's false-positive rate where the answer is none. This is "
+            "what candidates C and D failed at, at 116 and 62 matches respectively."),
+        "evidence_class": "development",
+        "boundary": ("Measured on blocks that informed the declaration and the feasibility "
+                     "probe disclosed in it. Development evidence only; the reserved "
+                     "confirmatory blocks are untouched."),
+    }
+
+
+# ---------------------------------------------------------------------------------------------
 # T4E.12 candidate 1: a rule that counts its own comparisons.
 #
 # Declared in `data/identity_calibration/t4e12-multiplicity-declaration.json` (sha256
@@ -833,6 +1017,195 @@ def multiplicity_aware_matches(left, right, metric: SignatureMetric,
     kept = [(i, j) for i, j in mutual_nearest_matches(left, right, metric)
             if tail_probability(distances[i][j], model) <= bound]
     return kept, model
+
+
+def comparable_subset(scene):
+    """The configurations of one scene that share its dominant signature family, and the rest.
+
+    Found while measuring T4E.12 candidate 1, and named here rather than worked around. At
+    twelve features a small number of configurations are so nearly isotropic that
+    `sign_constellations` refuses their principal axis -- correctly, because
+    `AXIS_ISOTROPY_FLOOR` says an elongation that small is indistinguishable from noise -- so
+    they carry no bearing block. `SignatureMetric` then refuses to compare them with anything
+    that does, because distances between different measured quantities are not numbers.
+
+    Measured extent: none at six or nine features in any block, and 1, 1 and 2 configurations
+    out of 1,320 in three of the four blocks at twelve. The planted motif carries a bearing
+    block in every scene of every block at every richness measured, so excluding these cannot
+    manufacture a recall the criterion did not earn -- but the counts are reported in every row
+    rather than asserted, because that is the reader's judgement and not this function's.
+
+    The excluded configurations are a REFUSAL and not a rejection: they are not counted as
+    splits, admissions or candidate pairs. A configuration the metric cannot compare has not
+    been judged.
+    """
+    points, is_motif = scene[0], scene[1]
+    if not points:
+        return [], []
+    families = collections.Counter(point.family.has_bearings for point in points)
+    dominant = families.most_common(1)[0][0]
+    keep = [index for index, point in enumerate(points)
+            if point.family.has_bearings == dominant]
+    dropped = [index for index in range(len(points)) if index not in set(keep)]
+    if any(is_motif[index] for index in dropped):
+        raise UnlabelledScene(
+            "the planted motif is in the minority signature family, so excluding that family "
+            "would remove the answer; refused rather than measured around")
+    return keep, dropped
+
+
+def measure_multiplicity_criterion(
+        richness_levels: Sequence[int] = (6, 9, 12),
+        blocks: Sequence[Sequence[int]] = None,
+        null_blocks: Sequence[Sequence[int]] = None,
+        *, alpha: float = ADMISSION_ALPHA) -> Dict[str, Any]:
+    """T4E.12 candidate 1's development evaluation, against the four conditions declared for it.
+
+    Adopted in `t4e12-multiplicity-adoption.json` at the hash the declaration was committed
+    under. The conditions are richness-wise rather than block-wise, because the scaling
+    measurement showed an admission fraction is a property of the signature and the scene
+    together: recall at every richness, a matched fraction that FALLS as richness grows, a
+    shortfall that does not widen with the bound met at the richest level, and refusals by name.
+
+    Candidate D's matched fraction is the arithmetic reference for condition 2 and candidate C
+    proposes the pairs. Neither is adjudication; both are already falsified.
+    """
+    blocks = tuple(blocks) if blocks is not None else EXCHANGEABILITY_BLOCKS
+    null_blocks = tuple(null_blocks) if null_blocks is not None else (NULL_SEEDS,)
+    metric = SignatureMetric(WEIGHTS)
+
+    def evaluate(seeds, richness, *, plant):
+        partition = [_scene_with_motif_membership(seed, plant=plant, richness=richness)
+                     for seed in seeds]
+        admitted = motif_admitted = motif_total = candidates = refused = 0
+        proposed = margin_kept = incomparable = 0
+        shapes = []
+        trimmed = []
+        for scene in partition:
+            keep, dropped = comparable_subset(scene)
+            incomparable += len(dropped)
+            trimmed.append(([scene[0][i] for i in keep], [scene[1][i] for i in keep]))
+        for left, right in itertools.combinations(trimmed, 2):
+            pair = (left, right)
+            candidates += len(left[0]) * len(right[0])
+            proposed += len(mutual_nearest_matches(*pair, metric))
+            try:
+                margin_kept += len(ratio_margin_matches(*pair, metric))
+            except UndefinedMargin:
+                pass
+            try:
+                pairs, model = multiplicity_aware_matches(*pair, metric, alpha=alpha)
+            except TailModelRefused:
+                refused += 1
+                continue
+            if model is not None:
+                shapes.append(model["shape"])
+            admitted += len(pairs)
+            if plant:
+                motif_total += 1
+                if (left[1].index(True), right[1].index(True)) in pairs:
+                    motif_admitted += 1
+        scene_pairs = len(partition) * (len(partition) - 1) // 2
+        configurations = len(trimmed[0][0])
+        row = {
+            "seeds": list(seeds), "richness": int(richness),
+            "configurations_per_scene": configurations,
+            "configurations_refused_as_incomparable": incomparable,
+            "scene_pairs": scene_pairs, "scene_pairs_refused": refused,
+            "candidate_pairs": candidates,
+            "pairs_proposed_by_candidate_C": proposed,
+            "pairs_kept_by_candidate_D": margin_kept,
+            "admitted": admitted,
+            "admitted_per_scene_pair": (None if scene_pairs == refused
+                                        else admitted / (scene_pairs - refused)),
+            "matched_fraction": (None if scene_pairs == refused else
+                                 (admitted / (scene_pairs - refused)) / configurations),
+            "candidate_D_matched_fraction": (
+                None if not scene_pairs else (margin_kept / scene_pairs) / configurations),
+            "fitted_shape_range": ([min(shapes), max(shapes)] if shapes else None),
+        }
+        if plant:
+            false_admissions = admitted - motif_admitted
+            required = required_pair_rate(
+                configurations_as_features(configurations, allow_trimmed=True))
+            row.update({
+                "motif_pairs": motif_total, "motif_pairs_admitted": motif_admitted,
+                "false_split_rate": (None if not motif_total
+                                     else (motif_total - motif_admitted) / motif_total),
+                "false_admission_rate": (None if not admitted
+                                         else false_admissions / admitted),
+                "false_pair_rate": false_admissions / (candidates - motif_total),
+                "required_pair_rate": required["required_pair_rate"],
+                "shortfall_factor": ((false_admissions / (candidates - motif_total))
+                                     / required["required_pair_rate"]),
+            })
+        return row
+
+    planted, nulls = [], []
+    for richness in richness_levels:
+        for seeds in blocks:
+            planted.append(evaluate(seeds, richness, plant=True))
+        for seeds in null_blocks:
+            nulls.append(evaluate(seeds, richness, plant=False))
+
+    def pooled(richness):
+        rows = [row for row in planted if row["richness"] == richness]
+        splits = [row["false_split_rate"] for row in rows
+                  if row.get("false_split_rate") is not None]
+        fractions = [row["matched_fraction"] for row in rows
+                     if row.get("matched_fraction") is not None]
+        shortfalls = [row["shortfall_factor"] for row in rows
+                      if row.get("shortfall_factor") is not None]
+        admissions = [row["false_admission_rate"] for row in rows
+                      if row.get("false_admission_rate") is not None]
+        return {
+            "richness": int(richness),
+            "worst_false_split": max(splits) if splits else None,
+            "matched_fraction_range": [min(fractions), max(fractions)] if fractions else None,
+            "false_admission_range": [min(admissions), max(admissions)] if admissions else None,
+            "worst_shortfall_factor": max(shortfalls) if shortfalls else None,
+        }
+
+    return {
+        "candidate": "1_multiplicity_aware_admission_via_a_declared_tail_model",
+        "criterion": CRITERION_MULTIPLICITY_NAME, "alpha": alpha,
+        "richness_levels": [int(value) for value in richness_levels],
+        "planted_blocks": planted, "null_blocks": nulls,
+        "by_richness": [pooled(value) for value in richness_levels],
+        "acceptance_boundary": (
+            "Condition 1: worst false split at most 0.10 at every richness. Condition 2: the "
+            "matched fraction must FALL as richness grows rather than holding near candidate "
+            "D's 0.23. Condition 3: the shortfall must be non-increasing across the three "
+            "levels and the 0.10 admission bound met at the richest. Condition 4: refusals "
+            "reported by name."),
+        "the_null_tests_the_tail_model_not_the_signature": (
+            "If the tail model is correct, admissions per scene pair equal alpha by "
+            "construction whatever the signature is like. So a null admission count near alpha "
+            "means the model holds and any remaining failure is the signature's; far above it "
+            "means the fit is wrong here and the signature has not been tested at all."),
+        "evidence_class": "development",
+        "boundary": ("Measured on the blocks that informed the declaration and its acceptance. "
+                     "Development evidence only; the reserved confirmatory blocks are "
+                     "untouched."),
+    }
+
+
+def configurations_as_features(configurations: int, cardinality: int = CARDINALITY,
+                              *, allow_trimmed: bool = False) -> int:
+    """Invert C(f, k) for the small feature counts this task uses. Exact, and refuses otherwise.
+
+    `allow_trimmed` accepts a count slightly below an exact C(f, k), which is what a scene looks
+    like after `comparable_subset` has removed configurations the metric cannot compare. It
+    returns the smallest feature count whose configuration total is at least the one given, so
+    the required per-pair rate is computed against the population the scene would have had --
+    the stricter of the two readings.
+    """
+    for features in range(cardinality, 200):
+        total = math.comb(features, cardinality)
+        if total == configurations or (allow_trimmed and total >= configurations):
+            return features
+    raise ValueError("%d is not C(f, %d) for any feature count under 200"
+                     % (configurations, cardinality))
 
 
 # ---------------------------------------------------------------------------------------------

@@ -1,0 +1,140 @@
+{
+  "schema": "t4e12-identity-criterion-declaration/v1",
+  "status": "declared_before_measurement",
+  "task": "T4E.12",
+  "candidate": "2_consistency_across_the_partition",
+  "declared_by": "Edward Jonathan Bentley, maintainer (scientific choice); drafted by Claude Opus 5 at the maintainer's direction and NOT VALID until the maintainer has reviewed and adopted it",
+  "declared_on": "2026-09-09",
+  "why_this_candidate": "Five candidates have been declared and falsified across T4E.11 and T4E.12, in three different ways: B and C and D admitted too much, and candidate 1 admitted nothing because its tail model was conservative. All five asked the same question -- given ONE pair of configurations, is it a match? None used what the partition itself offers. The motif is present in every scene, so its mutual nearest-neighbour matches form a complete graph across the partition, while a coincidence between two scenes has no reason to extend to the rest. This candidate makes identity a property of that structure rather than a verdict on a distance.",
+  "criterion": {
+    "statement": "Across a partition of S scenes, form the mutual nearest-neighbour matching for every ordered scene pair, exactly as candidate C does. A set of configurations, at most one per scene, is CONSISTENT when every one of its members is the mutual nearest neighbour of every other. Admit the cross-scene pairs inside consistent sets spanning at least k scenes, and no others.",
+    "name": "mutual_nearest_neighbour_consistency_across_the_partition",
+    "k": "the partition size S, which is 6 for these scenes",
+    "why_k_is_the_whole_partition": "It is the strictest available setting and it is a statement about what recurrence means -- a pattern that recurs in the window recurs in the window -- rather than a number chosen to fit. It is NOT to be lowered after measurement; a lower k is a further candidate needing its own declaration.",
+    "the_computation_is_exact_and_not_greedy": "Mutual nearest-neighbour matching gives a configuration at most one partner in any other scene, so a node's candidate group is determined by the node and has at most S members. The largest agreeing subset is therefore enumerated outright rather than approximated. This matters: the feasibility probe below used a GREEDY walk, which can miss the largest agreeing set, and a criterion whose output depended on the order of a walk would have error rates that are not reproducible.",
+    "what_changes": "That identity is a property of a set of scenes rather than of a pair. A configuration is the same as another because the whole partition agrees, not because a number is small.",
+    "what_does_not_change": "The signature mode, the attribute weights, the cardinality, the construction labels, the mutual nearest-neighbour rule that proposes the pairs, the scenes, and the definitions of the two error rates -- so candidates C, D and this one are counted over exactly the same population and are directly comparable.",
+    "what_it_contains_that_no_previous_candidate_did": "No radius, no ratio, no threshold, no fitted model and no estimated normaliser. So there is nothing to carry between partitions (T4E.10's failure), nothing to estimate wrongly (candidate B's), and nothing whose statistical support can run out (candidate 1's)."
+  },
+  "feasibility_checked_before_adoption": {
+    "why_this_section_exists": "Candidate 1 failed two conditions that were derivable before it was adopted and were not derived: its tail model had no support at six features, and a point inside its own fitting sample could not be assigned a probability far below the exceedance rate over the exceedance count. The lesson recorded from that failure is that a declaration must show its criterion CAN admit something, in principle, at the support declared for it. This section is that check, and it is disclosed rather than assumed.",
+    "the_probe": "A feasibility probe was run on already-inspected blocks 100-105 and 300-305 and the null 500-505, at richness 6 and 9, before this declaration was written. Clique sizes reached by mutual nearest-neighbour consistency across the six-scene partition: the motif reached 6 in every scene of every block, and no non-motif configuration exceeded 5 anywhere -- the distribution ran 1:21 2:53 3:32 4:8 at 100-105 richness 6, and 1:56 2:245 3:141 4:51 5:5 at 300-305 richness 9. The null reached 4 at most.",
+    "what_the_probe_establishes_and_what_it_does_not": "It establishes that the criterion can admit the answer and can reject the null, so it is not inert the way candidate 1 was. It does NOT establish the error rates, which are what the measurement is for, and it used a greedy clique walk where the criterion uses an exact one, so its numbers are a lower bound on group sizes and not the criterion's own output.",
+    "the_honest_disclosure_about_k": "The probe informed the choice of k. 'Consistent across every scene of the window' is defensible before any measurement and is the strictest setting available, so it is not a number tuned to a result -- but this declaration will not pretend the probe was not seen. Anyone reading the eventual result should know that the threshold was chosen after learning that coincidences top out at 5, and should weigh the development evidence accordingly. That is precisely why confirmatory evidence on blocks these did not select would be worth more here than at any earlier point in this sequence.",
+    "derivable_without_the_probe": "Candidate C recovers every construction-labelled motif pair in every block at every richness measured (false split 0.0000, T4E.11 and the T4E.12 scaling sweep). A complete graph over the motif's occurrences therefore exists by construction, so a consistent set spanning the whole partition exists for the motif whatever the coincidences do. The criterion cannot be inert.",
+    "why_acceptance_condition_2_is_reachable": "If only the motif spans the partition, the admitted count is one group per block regardless of richness, so the matched fraction falls as 1/m as the configuration count m grows. Condition 2 asks exactly for a matched fraction that falls with richness, which no matching-based candidate could deliver because a matching returns at most one pair per configuration. This one can, because it discards most of that matching."
+  },
+  "limitations_declared_now_rather_than_discovered_later": [
+    "k = S WILL NOT TRANSFER TO AN ACQUIRED RECORD. A real pattern need not appear in every window, and this criterion rejects a configuration absent from a single scene outright, with no partial credit. Success on these synthetic partitions therefore says nothing about a record where recurrence is partial, and the mining path will need a declared k below S with its own evidence.",
+    "The criterion inherits every assumption of the mutual nearest-neighbour rule that proposes its pairs, including one-to-one correspondence at the instance level.",
+    "Consistency is measured over the scenes of one partition. It says nothing about whether the same configuration recurs across partitions, which is what the mining, sequence and precursor machinery downstream actually needs."
+  ],
+  "development": {
+    "richness_levels": [
+      6,
+      9,
+      12
+    ],
+    "blocks": [
+      [
+        100,
+        101,
+        102,
+        103,
+        104,
+        105
+      ],
+      [
+        200,
+        201,
+        202,
+        203,
+        204,
+        205
+      ],
+      [
+        300,
+        301,
+        302,
+        303,
+        304,
+        305
+      ],
+      [
+        400,
+        401,
+        402,
+        403,
+        404,
+        405
+      ]
+    ],
+    "null_blocks": [
+      [
+        500,
+        501,
+        502,
+        503,
+        504,
+        505
+      ]
+    ],
+    "status": "ALREADY INSPECTED, and now doubly so: these blocks informed T4E.10, T4E.11's four candidates, the scaling measurement, candidate 1, and the feasibility probe disclosed above. Results on them are development evidence and may not be reported as confirmation."
+  },
+  "confirmatory": {
+    "blocks": [
+      [
+        700,
+        701,
+        702,
+        703,
+        704,
+        705
+      ],
+      [
+        710,
+        711,
+        712,
+        713,
+        714,
+        715
+      ],
+      [
+        720,
+        721,
+        722,
+        723,
+        724,
+        725
+      ],
+      [
+        730,
+        731,
+        732,
+        733,
+        734,
+        735
+      ]
+    ],
+    "status": "STILL RESERVED AND NOT YET GENERATED. Five falsifications did not unreserve them and neither does this declaration nor its feasibility probe. Opening them requires its own amendment and the maintainer's explicit decision.",
+    "why_they_matter_more_here_than_before": "Because k was chosen after seeing the probe. Development evidence for this candidate is weaker than for its predecessors for exactly that reason.",
+    "enforcement": "RESERVED_CONFIRMATORY_SEEDS in src/benchmarks/identity_certification.py refuses them before a scene is built."
+  },
+  "acceptance": {
+    "condition_1_recall": "False split at most 0.10 at every richness level individually.",
+    "condition_2_matched_fraction": "The matched fraction of configurations must FALL as richness grows.",
+    "condition_3_shortfall": "Measured at all three richness levels, the ratio of achieved to required per-pair false rate must be non-increasing, and the 0.10 admission bound must be met at the RICHEST level tested.",
+    "condition_4_refusals": "Refusals reported by name, with an explicit verdict including INVALID.",
+    "null_blocks": "On the null partition, where nothing recurs, admissions should be at or near zero, against the 116 candidate C returned and the 62 candidate D returned."
+  },
+  "what_would_falsify_this_candidate": "A false split above 0.10 at any richness, meaning consistency discards true correspondences. Or admissions on the null blocks, meaning coincidences do span the partition after all. Or a matched fraction that does not fall with richness, or a shortfall that widens. Any of these is a complete result and is to be recorded, not tuned away -- and lowering k to rescue recall is specifically forbidden.",
+  "what_a_failure_would_and_would_not_license": "It would license this: consistency across the whole partition, as defined here, does not separate recurrence from coincidence in these scenes. It would NOT license concluding that the signature is inadequate, that partition structure is the wrong resource, or that a lower k would fail. The falsification reasoning of T4E.11's candidates B and C both over-reached in that direction; candidate D's was narrowed in response and proved correct, and candidate 1's was narrowed the same way. This one follows them.",
+  "what_a_success_would_and_would_not_license": "This clause is added because, for the first time in this sequence, success is a live possibility and the temptation to over-read it will be correspondingly greater. A success on these blocks would license only that the criterion separates recurrence from coincidence ON ALREADY-INSPECTED SYNTHETIC PARTITIONS AT k = S, with a k chosen after a probe on those same blocks. It would NOT approve a mining radius, discharge T4E.8's acquired-record acceptance, close D96, D97, D98, D99 or D100, or say anything about the atmosphere. It would not license reporting a confirmed result: that needs the reserved blocks, and opening them is a separate decision requiring its own amendment.",
+  "governing_rules": [
+    "R20: candidate 2 is evaluated alone. Candidates C and D appear only as the proposer of pairs and as arithmetic references, which is not adjudication.",
+    "Already inspected data do not become untouched by renaming them.",
+    "Code does not sign a scientific declaration for a person; this file is not adopted until the maintainer says so."
+  ],
+  "scope": "Atmospheric identity path. The mechanism is domain-agnostic but the evidence produced here is atmospheric and synthetic. Cross-domain use requires its own declared experiment and its own qualification, per R19.",
+  "claim_boundary": "Synthetic scenes settle a property of the criterion, not of the atmosphere. Nothing here approves a mining radius, discharges T4E.8's acquired-record acceptance, or closes D96, D97, D98, D99 or D100. The primary scientific target remains kind_recurrence, which needs external_reference evidence no criterion of this kind supplies. No frame of the 2022-2023 forecast-test period is opened by any part of this."
+}

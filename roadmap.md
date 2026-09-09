@@ -2665,8 +2665,149 @@ reason: T4E.11's candidates B and C both over-reached there, D's was narrowed in
 proved correct. A failure here licenses only that a correction of this form, with this tail
 model, at this `alpha`, does not separate recurrence from coincidence in these scenes -- not
 that multiplicity correction is the wrong idea, and not that the signature is adequate or
-hopeless. The criterion is implemented and its mechanics are tested on constructed scenes; the
-development blocks are untouched until the maintainer adopts it.
+hopeless. **Candidate 1 outcome (2026-09-09): adopted before measurement, falsified by it, and it
+did not test the signature.** It admitted **nothing**: not one pair across four blocks at nine
+features, four at twelve, or either null partition. False split is 1.0 wherever it could be
+computed, against an accepted 0.10.
+
+**Richness 6 was never evaluable and that was derivable before adoption.** Fifty exceedances at
+a 1st-percentile threshold needs at least 5,000 distances, hence 71 configurations, hence nine
+features; six features give 400 distances and four exceedances. Every scene pair refused by
+name, at a richness level the declaration itself listed.
+
+**The null carries the reading that matters, and the declaration fixed it in advance.** If the
+tail model held, admissions per scene pair would equal `alpha` whatever the signature is like.
+Nominal 0.05, measured **0.0000** -- the fitted model under-admits relative to its own nominal
+rate. So the failure is the model's and **the signature was not cleanly tested**. The
+declaration's diagnostic named "far above alpha" as indicting the model and never named "far
+below", which is the direction that occurred; that gap is recorded rather than edited away.
+
+**How short, and what is not claimed.** The motif's fitted tail probability sits 9.1x, 6.0x,
+3.5x and 15.3x above the bound in four sampled scene pairs -- a single-digit to low-double-digit
+factor, not orders of magnitude. **No trend in richness is claimed**: one block improves with
+richness, the other worsens, on two blocks.
+
+**The lesson, which is about drafting rather than about the atmosphere.** Candidate D taught
+that the falsification-licensing field must be narrow, and that held here. This candidate
+exposes a missing check: a **feasibility test** before adoption -- can the criterion admit
+anything at all, in principle, at the support declared for it? Both failures above answer no and
+both were available on paper.
+
+**A condition found and named while measuring.** At twelve features a few configurations are so
+nearly isotropic that `sign_constellations` refuses their principal axis, so they carry no
+bearing block and `SignatureMetric` refuses to compare them with anything that does -- correctly,
+because distances between different measured quantities are not numbers. Extent: none at six or
+nine features, 1, 1 and 2 of 1,320 in three of four blocks at twelve. `comparable_subset`
+refuses them by name and counts them in every row, and refuses outright if the motif itself
+falls in the minority family. **This also qualifies the scaling measurement above**, which ran
+on block 100-105 alone and would have failed on three of the four blocks at twelve features: its
+evidence base is one block per richness level, narrower than first written.
+
+**What this does not authorise.** Raising `alpha`, moving the threshold percentile or the
+exceedance minimum, or dropping richness 6 from the declared levels. Each is tuning against
+blocks inspected many times over, and each is a further candidate needing its own declaration
+and evaluation on data these blocks did not select. The reserved confirmatory blocks remain
+reserved; five falsifications have not unreserved them.
+
+**Candidate 2, declared 2026-09-09 and not yet adopted: identity as consistency across the
+partition.** All five falsified candidates asked the same question -- given one pair of
+configurations, is it a match? None used what the partition offers. The motif is in every scene,
+so its mutual nearest-neighbour matches form a complete graph, while a coincidence between two
+scenes has no reason to extend to the rest. A set of configurations, at most one per scene, is
+**consistent** when every member is the mutual nearest neighbour of every other; only pairs
+inside sets spanning at least `k` scenes are admitted, and `k` is the partition size.
+
+**It carries no radius, ratio, threshold, fitted model or estimated normaliser.** So there is
+nothing to transfer between partitions, nothing to estimate wrongly, and nothing whose support
+can run out -- it is evaluable at richness 6, where candidate 1 refused every scene pair. The
+computation is **exact rather than greedy**: mutual nearest-neighbour gives at most one partner
+per scene, so the candidate group is determined and the largest agreeing subset is enumerated
+outright.
+
+**The feasibility check candidate 1 lacked was done first and is disclosed in the declaration.**
+
+```
+clique sizes reached by mutual-nearest-neighbour consistency, six-scene partitions
+                        motif          non-motif spread
+100-105 rich 6     6,6,6,6,6,6    1:21  2:53  3:32  4:8
+100-105 rich 9     6,6,6,6,6,6    1:55  2:249 3:150 4:44
+300-305 rich 6     6,6,6,6,6,6    1:7   2:51  3:41  4:15
+300-305 rich 9     6,6,6,6,6,6    1:56  2:245 3:141 4:51 5:5
+NULL    rich 6              --    1:22  2:51  3:46  4:1
+NULL    rich 9              --    1:47  2:260 3:156 4:41
+```
+
+The motif reached 6 in every scene of every block; nothing else exceeded 5; the null reached 4.
+So the criterion can admit the answer and reject the null -- it is not inert. It does not
+establish the error rates, and the probe's greedy walk makes its sizes a lower bound rather than
+the criterion's own output.
+
+**The probe informed `k`, and the declaration says so plainly.** "Consistent across every scene
+of the window" is defensible a priori and is the strictest setting available, so it is not a
+number tuned to a result -- but it was chosen after learning that coincidences top out at 5.
+Development evidence for this candidate is therefore weaker than for its predecessors, which is
+exactly why confirmatory evidence would be worth more here than at any earlier point.
+
+**Three limitations, declared now.** `k = S` will not transfer to an acquired record, where a
+real pattern need not appear in every window and this rejects a configuration absent from one
+scene with no partial credit. It inherits the mutual nearest-neighbour rule's assumptions. And
+consistency within one partition says nothing about recurrence across partitions, which is what
+the mining machinery downstream needs.
+
+**A clause the earlier declarations did not need.** Success is a live possibility for the
+first time, so the declaration states what a success would NOT license: not a mining radius, not
+T4E.8's acceptance, not D96 to D100, not anything about the atmosphere, and not a confirmed
+result -- which needs the reserved blocks, and opening those is a separate decision requiring
+its own amendment.
+
+**Candidate 2 outcome (2026-09-09): adopted as a development experiment, and it passes.**
+
+```
+rich  block      configs   C props  admitted    split    admit  shortfall
+6     100-105         20       121        15   0.0000   0.0000      x0.00
+6     200-205         20       121        15   0.0000   0.0000      x0.00
+6     300-305         20       152        15   0.0000   0.0000      x0.00
+6     400-405         20       136        15   0.0000   0.0000      x0.00
+9     (four blocks)   84   485-585        15   0.0000   0.0000      x0.00
+12    (four blocks)  220 1440-1590        15   0.0000   0.0000      x0.00
+
+NULL rich=6    C proposed 116     ADMITTED 0
+NULL rich=9    C proposed 595     ADMITTED 0
+NULL rich=12   C proposed 1486    ADMITTED 0
+
+matched fraction by richness: 0.05000, 0.01190, 0.00455  (exactly 1/m)
+incomparable configurations refused: 0, 0, 4
+```
+
+**All four acceptance conditions met, on development evidence.** Every block at every
+richness admits exactly 15 pairs -- C(6,2), the motif's complete clique -- and nothing else.
+
+**Which half is informative.** The recall half was very nearly guaranteed: the scenes are built
+with the motif in every scene, this criterion admits configurations present in every scene, and
+candidate C had already recovered every motif pair in every block, so a partition-spanning group
+exists **by construction**. **The rejection half is the finding** -- zero false admissions, and
+a null admitting none of 116, 595 or 1486 proposed pairs, where candidate C returned 116 and
+candidate D returned 62.
+
+**The maintainer's ceiling, fixed before the numbers were known.** *"Candidate 2 looks like a
+strong diagnostic of whether the signature can sustain coherent identity. It is not yet a
+defensible real-world recurrence rule."* This is evidence that the signature **can** sustain
+coherent identity across a partition, and is not reported as a recurrence criterion.
+
+**The confirmatory blocks were withheld by decision and remain clean**, because `k` was
+influenced by the feasibility probe on these same blocks. That is stricter than the declaration
+asked. **No confirmatory evidence for this candidate exists or will exist under this adoption.**
+
+**What it does not establish**: nothing about partial recurrence, since `k = S` rejects a
+configuration absent from one scene outright; nothing about recurrence *across* partitions,
+which the mining machinery needs; no mining radius, no discharge of T4E.8's acceptance, no
+closure of D96 to D100; and nothing about `kind_recurrence`, which still has no catalogue.
+
+**What would now be worth measuring.** A criterion of this shape with `k` below `S`, declared
+before any probe of how coincidental groups behave at that `k`, is the obvious route to
+something that could transfer to a real record -- and the reserved blocks would then be
+spendable on a structural choice made blind. That is the maintainer's decision and nothing here
+authorises it.
 
 **Candidate B outcome (2026-09-09): adopted before measurement, falsified by it.** The
 normaliser was pinned in the declaration -- within a partition, each configuration's distance to

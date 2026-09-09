@@ -12385,7 +12385,163 @@ release decision, but it does mean two gates that read PASS now read NOT_RUN and
 were not isolated to a cause; the run predates no clean baseline for this suite size, so they
 are reported as measured rather than attributed.
 
-**T4E.12 candidate 1 (2026-09-09): declared and implemented; NOT MEASURED.**
+**T4E.12 candidate 2 (2026-09-09): all four acceptance conditions met on development
+evidence.**
+
+Declared in `t4e12-consistency-declaration.json` (sha256 `639485af...`), committed at that hash
+before any development block was evaluated, and adopted in
+`t4e12-consistency-adoption.json` as a **development experiment only**, with the reserved
+confirmatory blocks explicitly withheld by the maintainer.
+
+```
+rich  block      configs   C props  admitted    split    admit  shortfall
+6     100-105         20       121        15   0.0000   0.0000      x0.00
+6     200-205         20       121        15   0.0000   0.0000      x0.00
+6     300-305         20       152        15   0.0000   0.0000      x0.00
+6     400-405         20       136        15   0.0000   0.0000      x0.00
+9     (four blocks)   84   485-585        15   0.0000   0.0000      x0.00
+12    (four blocks)  220 1440-1590        15   0.0000   0.0000      x0.00
+
+NULL rich=6    C proposed 116     ADMITTED 0
+NULL rich=9    C proposed 595     ADMITTED 0
+NULL rich=12   C proposed 1486    ADMITTED 0
+
+matched fraction by richness: 0.05000, 0.01190, 0.00455  (exactly 1/m)
+incomparable configurations refused: 0, 0, 4
+```
+
+**All four acceptance conditions met, on development evidence.** Every block at every
+richness admits exactly 15 pairs -- C(6,2), the motif's complete clique -- and nothing else.
+
+**Which half is informative.** The recall half was very nearly guaranteed: the scenes are built
+with the motif in every scene, this criterion admits configurations present in every scene, and
+candidate C had already recovered every motif pair in every block, so a partition-spanning group
+exists **by construction**. **The rejection half is the finding** -- zero false admissions, and
+a null admitting none of 116, 595 or 1486 proposed pairs, where candidate C returned 116 and
+candidate D returned 62.
+
+**The maintainer's ceiling, fixed before the numbers were known.** *"Candidate 2 looks like a
+strong diagnostic of whether the signature can sustain coherent identity. It is not yet a
+defensible real-world recurrence rule."* This is evidence that the signature **can** sustain
+coherent identity across a partition, and is not reported as a recurrence criterion.
+
+**The confirmatory blocks were withheld by decision and remain clean**, because `k` was
+influenced by the feasibility probe on these same blocks. That is stricter than the declaration
+asked. **No confirmatory evidence for this candidate exists or will exist under this adoption.**
+
+**What it does not establish**: nothing about partial recurrence, since `k = S` rejects a
+configuration absent from one scene outright; nothing about recurrence *across* partitions,
+which the mining machinery needs; no mining radius, no discharge of T4E.8's acceptance, no
+closure of D96 to D100; and nothing about `kind_recurrence`, which still has no catalogue.
+
+**T4E.12 candidate 2 (2026-09-09): declared and implemented; NOT MEASURED.** *SUPERSEDED the
+same day by the entry above, which records the adoption and the measurement. Kept unedited as
+the record of the state the declaration was in before it was adopted; its statements about
+adoption and measurement are no longer true.*
+
+The criterion is `mutual_nearest_neighbour_consistency_across_the_partition`: a set of
+configurations, at most one per scene, is consistent when every member is the mutual nearest
+neighbour of every other, and only pairs inside sets spanning at least `k` scenes are admitted,
+with `k` the partition size. Declared in `t4e12-consistency-declaration.json` (sha256
+`639485af...`). The declaration is **not adopted**, so no development block has been evaluated
+under it and no error rate for it exists in this document or anywhere else.
+
+**A feasibility probe was run before the declaration was written and is disclosed in it.** This
+is the standing lesson from candidate 1, which failed two conditions derivable in advance.
+
+```
+clique sizes reached by mutual-nearest-neighbour consistency, six-scene partitions
+                        motif          non-motif spread
+100-105 rich 6     6,6,6,6,6,6    1:21  2:53  3:32  4:8
+100-105 rich 9     6,6,6,6,6,6    1:55  2:249 3:150 4:44
+300-305 rich 6     6,6,6,6,6,6    1:7   2:51  3:41  4:15
+300-305 rich 9     6,6,6,6,6,6    1:56  2:245 3:141 4:51 5:5
+NULL    rich 6              --    1:22  2:51  3:46  4:1
+NULL    rich 9              --    1:47  2:260 3:156 4:41
+```
+
+The motif reached a clique of 6 in every scene of every block; no non-motif configuration
+exceeded 5; the null reached 4 at most. That establishes the criterion is not inert. It does not
+establish error rates, and the probe used a greedy clique walk where the criterion uses an exact
+enumeration, so its group sizes are a lower bound rather than the criterion's own output. The
+probe also informed the choice of `k`, which the declaration states plainly.
+
+What has been verified is mechanics, on constructed partner graphs: a fully agreeing set is
+found whole; a set that does not close is cut back to what agrees; the largest agreeing subset
+is found exactly where a greedy walk could return a smaller one; a group may not hold two
+configurations from the same scene; only pairs inside groups spanning enough scenes are
+admitted, and demanding more scenes than the partition holds admits nothing rather than
+erroring; and a group of fewer than two scenes is refused as meaningless.
+
+The reserved confirmatory blocks were not built. No mining radius is approved and no defect is
+closed.
+
+**T4E.12 candidate 1 (2026-09-09): it admits nothing, and it did not test the
+signature.**
+
+Declared in `t4e12-multiplicity-declaration.json` (sha256 `f0c45d92...`), committed at that hash
+before any development block was evaluated, and adopted separately in
+`t4e12-multiplicity-adoption.json`.
+
+```
+rich   block      pairs refused  C proposed  admitted   split
+6      100-105       15      15         121         0     n/a
+6      200-205       15      15         121         0     n/a
+6      300-305       15      15         152         0     n/a
+6      400-405       15      15         136         0     n/a
+9      100-105       15       0         568         0  1.0000
+9      200-205       15       0         485         0  1.0000
+9      300-305       15       0         585         0  1.0000
+9      400-405       15       0         566         0  1.0000
+12     100-105       15       0        1446         0  1.0000
+12     200-205       15       0        1440         0  1.0000
+12     300-305       15       0        1590         0  1.0000
+12     400-405       15       0        1488         0  1.0000
+
+NULL rich=9    admitted 0, per scene pair 0.0000   (alpha = 0.05 expected)
+NULL rich=12   admitted 0, per scene pair 0.0000   (alpha = 0.05 expected)
+
+motif tail probability against the bound, sampled in four scene pairs
+  100-105 rich 9    6.47e-5 vs 7.09e-6    x9.1
+  100-105 rich 12   6.22e-6 vs 1.03e-6    x6.0
+  300-305 rich 9    2.50e-5 vs 7.09e-6    x3.5
+  300-305 rich 12   1.59e-5 vs 1.04e-6    x15.3
+```
+
+**Falsified on acceptance condition 1**: where the model could be fitted, nothing was admitted
+and the false split is 1.0 against an accepted 0.10.
+
+**Richness 6 was never evaluable**, and that was derivable before adoption: 50 exceedances at a
+1st-percentile threshold needs at least 5,000 distances, hence at least 71 configurations, hence
+at least nine features. Six features give 400 and 4. Refused by name at every scene pair.
+
+**The null carries the important reading, and it was fixed in advance.** If the tail model held,
+admissions per scene pair would equal `alpha` whatever the signature is like. Nominal 0.05,
+measured 0.0000: the fitted model under-admits relative to its own nominal rate, so the failure
+is the model's and **the signature was not cleanly tested**.
+
+**A gap in the declaration's diagnostic**: it named "far above alpha" as indicting the model and
+never named "far below", which is the direction that occurred.
+
+**How short, and what is not claimed**: the motif's tail probability sits 9.1x, 6.0x, 3.5x and
+15.3x above the bound in four sampled scene pairs. No trend in richness is claimed -- one block
+improves and the other worsens.
+
+**A condition found and named while measuring**: at twelve features a few configurations are so
+nearly isotropic that their principal axis is refused, so they carry no bearing block and the
+metric will not compare them with anything that does. None at six or nine features; 1, 1 and 2
+of 1,320 in three of four blocks at twelve. `comparable_subset` refuses them by name and counts
+them. This also qualifies the T4E.12 scaling entry below, which ran on block 100-105 alone and
+would have failed on three of the four blocks at twelve features.
+
+The reserved confirmatory blocks were not built. No mining radius is approved and no defect is
+closed.
+
+**T4E.12 candidate 1 (2026-09-09): declared and implemented; NOT MEASURED.** *SUPERSEDED
+the same day by the entry above, which records the adoption and the measurement. Kept unedited
+because it is the record of the state the declaration was in before it was adopted; every
+statement below was true when written and the ones about adoption and measurement are no
+longer true now.*
 
 The criterion is `multiplicity_aware_tail_admission` -- candidate C's pairs, admitted only when
 a distance as small as their own would arise with probability at most `alpha / m^2` under a tail

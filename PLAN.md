@@ -165,15 +165,112 @@ at most `alpha / m^2` under a tail model fitted to that scene pair's own distanc
 tightens by construction as scenes get richer, 1.25e-4 to 6.9e-8, which is the `1/m^2` scaling
 the acceptance demands.
 
-**Nothing has been measured.** The declaration is
-`data/identity_calibration/t4e12-multiplicity-declaration.json`, sha256 `f0c45d92...`, and only
-its mechanics are tested -- scale-freedom, the tightening bound, monotone tail probabilities,
-and refusals by name where the model cannot be fitted. **Adopting it is not a prediction that it
-will work.** Its null blocks carry a diagnostic that separates two failures which would
-otherwise be confused: if the tail model is right, admissions per scene pair equal `alpha`
-whatever the signature is like, so a null admission count near 0.05 means any remaining failure
-is the signature's, and one far above it means the tail model is wrong and the signature has not
-been tested at all.
+**Candidate 1 was adopted and falsified the same day, and it did not test the
+signature.** It admitted **nothing** -- not one pair across four blocks at nine features, four
+at twelve, or either null. False split 1.0 against an accepted 0.10.
+
+**The null tells us why, and the declaration fixed that reading in advance.** If the tail model
+held, admissions per scene pair would equal `alpha` whatever the signature is like. Nominal
+0.05, measured **0.0000**: the model under-admits relative to its own nominal rate. So this is a
+verdict on the tail model, **not on the signature**.
+
+**Two failures were derivable before adoption and I did not derive them.** Richness 6 can never
+support the model -- 50 exceedances at a 1st-percentile threshold needs 5,000 distances and six
+features give 400. And the motif sits inside the sample the tail is fitted to, so its estimated
+probability cannot fall far below the exceedance rate over the exceedance count. Sampled
+directly, the motif's tail probability is 9.1x, 6.0x, 3.5x and 15.3x above the bound -- short by
+a single-digit to low-double-digit factor, with **no trend in richness claimed**, because one
+block improves and another worsens.
+
+**So the standing lesson is a new check on declarations here.** Candidate D fixed the
+falsification-licensing field and that correction held. What was missing this time is a
+**feasibility test**: can this criterion admit anything at all, in principle, at the support
+declared for it? That check now belongs in every declaration before adoption.
+
+**A condition was found and named while measuring**: at twelve features a few configurations are
+too nearly isotropic to carry a bearing block, and the metric refuses to compare them with ones
+that do. It is rare -- 1, 1 and 2 of 1,320 in three of four blocks, none at six or nine -- but
+it **qualifies the scaling measurement**, which ran on block 100-105 alone and would have failed
+on three of the four blocks at twelve features.
+
+**What is not authorised**: raising `alpha`, moving the threshold percentile or exceedance
+minimum, or dropping richness 6. Each is tuning against blocks inspected many times over. Five
+falsifications have not unreserved the confirmatory blocks.
+
+**Candidate 2 is declared and implemented, and waiting on your adoption.** Every falsified
+candidate asked the same question -- is *this pair* a match? None used what the partition
+offers. The motif is in every scene, so its matches form a complete graph; a coincidence between
+two scenes has no reason to extend to the rest. So a set of configurations, one per scene, is
+**consistent** when every member is the mutual nearest neighbour of every other, and only pairs
+inside sets spanning the whole partition are admitted.
+
+**It has no radius, ratio, threshold, fitted model or normaliser** -- nothing to transfer,
+nothing to estimate wrongly, nothing whose support runs out. It is evaluable at richness 6,
+where candidate 1 could only refuse.
+
+**The feasibility check is done and disclosed**, which is the standing lesson from candidate 1.
+Across six-scene partitions the motif reached a clique of **6 in every scene of every block**,
+no non-motif configuration exceeded **5**, and the null reached **4**. So it can admit the
+answer and reject the null. It is not inert.
+
+**Two things to hold in mind when the result comes back.** The probe informed the choice of
+`k`, and the declaration says so — development evidence here is weaker than for its
+predecessors, not stronger, which is why confirmatory evidence would now be worth more than at
+any earlier point. And `k` = every scene **will not transfer to an acquired record**, where a
+real pattern need not appear in every window; that limitation is declared rather than left to be
+discovered.
+
+**Adopted as a development experiment on 2026-09-09, and it passes.**
+
+```
+rich  block      configs   C props  admitted    split    admit  shortfall
+6     100-105         20       121        15   0.0000   0.0000      x0.00
+6     200-205         20       121        15   0.0000   0.0000      x0.00
+6     300-305         20       152        15   0.0000   0.0000      x0.00
+6     400-405         20       136        15   0.0000   0.0000      x0.00
+9     (four blocks)   84   485-585        15   0.0000   0.0000      x0.00
+12    (four blocks)  220 1440-1590        15   0.0000   0.0000      x0.00
+
+NULL rich=6    C proposed 116     ADMITTED 0
+NULL rich=9    C proposed 595     ADMITTED 0
+NULL rich=12   C proposed 1486    ADMITTED 0
+
+matched fraction by richness: 0.05000, 0.01190, 0.00455  (exactly 1/m)
+incomparable configurations refused: 0, 0, 4
+```
+
+**All four acceptance conditions met, on development evidence.** Every block at every
+richness admits exactly 15 pairs -- C(6,2), the motif's complete clique -- and nothing else.
+
+**Which half is informative.** The recall half was very nearly guaranteed: the scenes are built
+with the motif in every scene, this criterion admits configurations present in every scene, and
+candidate C had already recovered every motif pair in every block, so a partition-spanning group
+exists **by construction**. **The rejection half is the finding** -- zero false admissions, and
+a null admitting none of 116, 595 or 1486 proposed pairs, where candidate C returned 116 and
+candidate D returned 62.
+
+**The maintainer's ceiling, fixed before the numbers were known.** *"Candidate 2 looks like a
+strong diagnostic of whether the signature can sustain coherent identity. It is not yet a
+defensible real-world recurrence rule."* This is evidence that the signature **can** sustain
+coherent identity across a partition, and is not reported as a recurrence criterion.
+
+**The confirmatory blocks were withheld by decision and remain clean**, because `k` was
+influenced by the feasibility probe on these same blocks. That is stricter than the declaration
+asked. **No confirmatory evidence for this candidate exists or will exist under this adoption.**
+
+**What it does not establish**: nothing about partial recurrence, since `k = S` rejects a
+configuration absent from one scene outright; nothing about recurrence *across* partitions,
+which the mining machinery needs; no mining radius, no discharge of T4E.8's acceptance, no
+closure of D96 to D100; and nothing about `kind_recurrence`, which still has no catalogue.
+
+**So the next choice is yours, and it is narrower than any before it.** A criterion of this
+shape with `k` below the partition size -- declared *before* any probe of how coincidental
+groups behave at that `k` -- is the obvious route to something that could transfer to a real
+record, and the reserved blocks would then be spendable on a structural choice made blind. That
+is the first time in this sequence the confirmatory evidence would be worth what it costs.
+
+**Still unmoved by any of this**: the catalogue `kind_recurrence` requires, which is the primary
+scientific target and remains unevaluable from the tool without a reviewed, cited source.
 
 The reserved confirmatory blocks remain untouched, and four falsifications have not unreserved
 them.
