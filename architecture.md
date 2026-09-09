@@ -8712,7 +8712,8 @@ stays open. No mining radius is approved and T4E.8's acquired-record acceptance 
 
 ### 3E.21 Candidate 3 declared: partial recurrence, and the first blind structural choice (T4E.13)
 
-Declared in `data/identity_calibration/t4e13-partial-recurrence-declaration.json`. **Not
+Declared in `data/identity_calibration/t4e13-partial-recurrence-declaration.json` at sha256
+`55631fa2...`, bound by content identity at commit `9b40b65`. **Not
 adopted, and measured nowhere.** The criterion is fixed in code -- `ABSENCES_TOLERATED`,
 `consistency_k_for`, `measure_partial_recurrence_criterion` -- and no result exists for it,
 which is the point rather than an omission.

@@ -12387,8 +12387,9 @@ are reported as measured rather than attributed.
 
 **T4E.13 candidate 3 (2026-09-09): declared, fixed in code, and measured nowhere.**
 
-`data/identity_calibration/t4e13-partial-recurrence-declaration.json`, status
-`declared_before_measurement`. Candidate 2's criterion at `k = S - 1` by the rule *tolerate
+`data/identity_calibration/t4e13-partial-recurrence-declaration.json`, sha256
+`55631fa2df03cda7e1d62304abebc362582e722a4e7177e5fb14cd3a5858b99c`, committed at `9b40b65`;
+status `declared_before_measurement`. Candidate 2's criterion at `k = S - 1` by the rule *tolerate
 exactly one absence*.
 
 **What is being claimed, exactly.** That the value of `k`, the rule fixing it, and every
