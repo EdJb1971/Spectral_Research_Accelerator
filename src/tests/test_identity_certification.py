@@ -392,12 +392,11 @@ def test_the_failure_is_precision_and_not_the_shape_of_the_criterion():
     assert min(report["false_admission_range"]) > 0.5
 
 
-# ------------------------------------ T4E.11 candidate D: declared, implemented, not yet measured
+# ------------------------------------ T4E.11 candidate D: adopted, measured, and falsified
 #
-# These tests exercise the criterion's mechanics on constructed toy scenes only. The development
-# blocks are NOT evaluated here: the declaration in
-# `data/identity_calibration/t4e11-ratio-margin-declaration.json` has not been adopted, and
-# measuring before adoption is the move sequential preregistration exists to prevent.
+# The declaration was written, committed and hashed before the development blocks were evaluated,
+# and adopted separately in `t4e11-ratio-margin-adoption.json`. The toy-scene tests below check
+# the criterion's mechanics; the block tests after them record what the measurement said.
 
 
 class _AbsoluteMetric:
@@ -525,3 +524,91 @@ def test_the_ratio_diagnostic_is_labelled_as_one_wherever_it_is_reported():
     assert "DIAGNOSTIC and not a criterion" in inspect.getdoc(margin_ratios)
     source = inspect.getsource(measure_criterion_d)
     assert "is_a_diagnostic_not_a_criterion" in source
+
+
+def _candidate_d_report():
+    """One measurement, reused. Each call rebuilds five partitions through the full T4E path."""
+    import functools
+    from src.benchmarks.identity_certification import measure_criterion_d
+
+    if not hasattr(_candidate_d_report, "_cached"):
+        _candidate_d_report._cached = measure_criterion_d()
+    return _candidate_d_report._cached
+
+
+def test_the_declaration_for_candidate_D_was_adopted_before_it_was_measured():
+    """The adoption record names the hash the declaration had when it was adopted."""
+    import hashlib
+    import json
+    from pathlib import Path
+
+    declaration = Path("data/identity_calibration/t4e11-ratio-margin-declaration.json")
+    adoption = json.loads(Path(
+        "data/identity_calibration/t4e11-ratio-margin-adoption.json"
+    ).read_text(encoding="utf-8"))
+    assert adoption["adopts_sha256"] == hashlib.sha256(declaration.read_bytes()).hexdigest()
+    assert "not a prediction that D will work" in adoption["what_adoption_does_not_mean"]
+    assert "stays at 0.8" in adoption["tau_is_not_adjustable_by_this_adoption"]
+
+
+def test_the_margin_costs_nothing_in_recall_which_was_not_guaranteed():
+    """The trade the declaration asked about, in the direction that went well.
+
+    D can only remove pairs C returned, so the false split could only rise from C's 0.0000. It
+    did not rise at all: every construction-labelled motif pair survives the margin in every
+    block. Asserted as a bound, so an improvement cannot fail it.
+    """
+    report = _candidate_d_report()
+    assert report["evidence_class"] == "development"
+    for block in report["planted_blocks"]:
+        assert block["false_split_rate"] <= MAX_FALSE_SPLIT
+    low, high = report["false_split_range"]
+    assert high - low <= 0.05, "recall must be stable across blocks, not merely good on average"
+
+
+def test_the_structural_prediction_made_before_measurement_holds():
+    """Declared in advance so that neither outcome could be presented afterwards as a surprise.
+
+    D is C plus a filter, so on every block it must return no more matches than C did.
+    """
+    report = _candidate_d_report()
+    for block in report["planted_blocks"] + report["null_blocks"]:
+        assert block["matches_returned"] <= block["matches_returned_by_candidate_C"]
+        assert block["scene_pairs_refused_for_undefined_margin"] == 0
+
+
+def test_candidate_D_fails_the_rejection_condition_it_was_declared_against():
+    """The declared falsification, measured. Recorded, not tuned away.
+
+    Acceptance required the margin to discard at least ninety per cent of the matches candidate
+    C returned where nothing recurs. It discards roughly half. The null partition keeps the
+    feature count and the family and drops only the repetition, so every match it returns there
+    is false by construction.
+    """
+    report = _candidate_d_report()
+    null = report["null_blocks"][0]
+    assert null["motif_pairs"] == 0
+    assert null["false_admission_rate"] == 1.0
+    assert null["retention_of_candidate_C"] > MAX_FALSE_ADMISSION, (
+        "the declaration accepted at most 0.10 retention; this is the number that falsifies it")
+
+
+def test_the_diagnostic_says_the_distributions_overlap_rather_than_that_tau_is_misplaced():
+    """Why no operating point may be read off this, however tempting the ranges look.
+
+    The declaration anticipated exactly this question -- whether a failure means the motif and
+    non-motif ratio distributions overlap, or merely sit either side of a badly placed tau. They
+    overlap: the largest motif ratio exceeds the smallest ratio the null block produces. The
+    overlap is narrow, which is the tempting part, and a tau chosen to exploit it would be
+    fitted to blocks that have already been inspected four times over. That is a candidate E,
+    needing its own declaration and an evaluation on data these blocks did not select.
+    """
+    report = _candidate_d_report()
+    motif_high = max(block["margin_ratio_diagnostic"]["motif_ratio_range"][1]
+                     for block in report["planted_blocks"])
+    null_low = report["null_blocks"][0]["margin_ratio_diagnostic"]["other_ratio_range"][0]
+    assert motif_high > null_low, (
+        "if this ever ceases to hold, the distributions have separated and the finding changes")
+    # Every motif ratio sits far below the pinned tau, which is what makes 0.8 the wrong value
+    # here -- but being the wrong value is not the same as there being a right one.
+    assert motif_high < report["tau"]

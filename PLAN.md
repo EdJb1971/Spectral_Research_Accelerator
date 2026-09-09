@@ -80,24 +80,32 @@ nearest-neighbour recovers **every** motif pair in **every** block (split 0.0000
 1.876x magnitude spread: **the ordering transfers where the magnitudes do not.** It fails
 because it cannot decline -- 116 matches on a null block where the answer is none.
 
-**Candidate D is now declared and implemented, and is waiting on one thing: your
-adoption.** It is C plus the rejection test C lacked, in the only form that keeps what C
-achieved -- a mutual pair survives only when its distance is at most `tau` times the distance
-to the second nearest, in both directions. Both distances come from the same scene pair, so the
-test is a ratio and there is nothing to carry between partitions. `tau` is pinned at **0.8**,
-the canonical value from Lowe (2004), taken because it has an external provenance and is
-therefore not answerable to this record; a `tau` chosen by looking at these blocks would be
-fitted and is routed to a candidate E instead.
+Candidate D was then declared, adopted and **falsified on development evidence the same
+day** -- the cleanest failure of the four, and the most informative. D is C narrowed by a
+dimensionless margin: a mutual pair survives only when its distance is at most `tau` times the
+distance to the second nearest, both directions, with `tau` pinned at **0.8** from Lowe (2004)
+for its external provenance.
 
-**What is deliberately not done yet.** The development blocks have not been evaluated. The
-criterion is implemented and its mechanics are tested on constructed scenes only, because
-measuring before adoption is exactly what sequential preregistration exists to prevent. The
-declaration is `data/identity_calibration/t4e11-ratio-margin-declaration.json`, sha256
-`b2ba2b4e...`. **Adopting it is not a prediction that it will work**; it fixes in advance what
-would count as success and what as failure. One outcome is already fixed by construction: D can
-only remove matches C made, so its false split can only rise from 0.0000 and its match count
-can only fall, and the question is whether that trade is close to free. The reserved
-confirmatory blocks remain untouched. After that, the catalogue `kind_recurrence` requires --
+**The margin costs nothing in recall.** Split stayed at **0.0000 on every block** and the match
+counts fell everywhere, exactly as the declaration predicted before measuring: what it discarded
+was entirely non-motif. **It fails on rejection** -- null retention **0.5345** against an
+accepted 0.10, keeping 62 of candidate C's 116 matches where the answer is none.
+
+**And the diagnostic settles the question that was actually open.** Motif ratios run 0.020 to
+0.293; the null block's begin at **0.240**. So the contrast is real and 0.8 is far too
+permissive -- but **the distributions overlap**, and no threshold separates them cleanly. The
+overlap is narrow, which is exactly what makes it dangerous: a `tau` chosen to sit inside it
+would be fitted to blocks now inspected four times over.
+
+**So the next move is no longer another threshold.** Four criteria have now been declared and
+falsified on the same signature, and D's result says why in a way the earlier three could not:
+the ordering carries real information (C), the margin is stable and costs no recall (D), and
+what is missing is separation between recurrence and coincidence in the tail. That is a
+statement about the *signature's* discriminating power, and unlike candidate C's declaration --
+which claimed this without support -- it is now supported. **The honest options are two**: a
+candidate E declared against data these blocks did not select, or turning to what the signature
+measures rather than how its distances are thresholded. The reserved confirmatory blocks remain
+untouched, and four falsifications have not unreserved them. After that, the catalogue `kind_recurrence` requires --
 sourcing it, deciding its independence class, and a serialisation the audit tool can load.
 
 ## 2. Ordered atmospheric work

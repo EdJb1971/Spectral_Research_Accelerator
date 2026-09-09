@@ -2440,7 +2440,7 @@ choice and each needs its own task and acceptance. This also reaches **D96**: it
 by the radius, so a radius that cannot be frozen is a workload that cannot be predicted, and the
 identity criterion must settle before the algorithm that consumes it does.
 
-**T4E.11 An identity criterion that survives a change of partition -- IN PROGRESS. Candidates B and C both declared, adopted and falsified on development evidence, 2026-09-09. C produced the sequence's first positive finding: the ordering transfers where magnitudes do not. Candidate D is declared and implemented as of 2026-09-09 and awaits the maintainer's adoption; nothing has been measured under it.**
+**T4E.11 An identity criterion that survives a change of partition -- IN PROGRESS. Candidates B and C both declared, adopted and falsified on development evidence, 2026-09-09. C produced the sequence's first positive finding: the ordering transfers where magnitudes do not. Candidate D was declared, adopted and falsified on 2026-09-09: the margin costs nothing in recall and does not reject, and the ratio distributions overlap.**
 
 *T4E.10 closed off the estimator route. Four blocks of six scenes from one generator with
 identical parameters differ 1.88x in mean same-configuration distance, so a frozen absolute
@@ -2488,14 +2488,38 @@ these blocks did not select. **Acceptance** is false split at most 0.10 on every
 retention at most 0.10 -- the fraction of candidate C's 116 null matches the margin keeps --
 and both materially stable between blocks.
 
-One property is derivable before measurement and is recorded before it: D is a strict
+One property is derivable before measurement and was recorded before it: D is a strict
 narrowing of C, so its false split can only rise from C's 0.0000 and its match count can only
-fall. The whole question is whether that trade is close to free. **The declaration's
-falsification reasoning is deliberately narrower than its two predecessors'**, which both
-over-reached in the same direction: a failure here licenses only that this contrast does not
-separate at this `tau` on these scenes, and not that the signature is at fault. The criterion is
-implemented and its mechanics are tested on constructed scenes; the development blocks are
-untouched until the maintainer adopts it, and the confirmatory blocks stay reserved regardless.
+fall. The whole question was whether that trade is close to free.
+
+**Candidate D outcome (2026-09-09): adopted before measurement, falsified by it, and the
+cleanest failure of the four.** The margin **cost nothing in recall**: false split stayed at
+0.0000 in all four blocks, so every motif pair survives it, and the counts fell on every
+block as predicted. What it discarded was entirely non-motif. It failed the one condition
+it was declared against -- **null retention 0.5345** where acceptance required at most 0.10.
+It removed 54 of candidate C's 116 null matches and kept 62 where the correct answer is none.
+
+**The diagnostic answers the question the declaration asked, and the answer is the unwelcome
+one.** Motif ratios run 0.020 to 0.293 across the four blocks; non-motif ratios reach 0.9997
+and the null block's begin at 0.240. So the contrast is genuinely informative and `tau = 0.8`
+is far too permissive for it -- but **the distributions overlap**, 0.240 against 0.293, and no
+threshold separates them cleanly. The overlap is narrow, which is what makes it dangerous: a
+`tau` chosen to sit inside it would be fitted to blocks now inspected four times over. That is
+a candidate E and needs an evaluation on data these blocks did not select.
+
+**Two limitations are recorded as limitations rather than results.** Retention was measured
+against the single declared null partition, so its stability across nulls is untested. The
+diagnostic stores extremes rather than distributions, so the *mass* of the overlap -- how many
+motif pairs sit above 0.240 -- is not known from this run.
+
+**The declaration diagnosed its own failure correctly, which the two before it did not.** D's
+falsification field was narrowed deliberately in response to that pattern, to license only that
+at `tau = 0.8` this contrast does not separate in these scenes. That is exactly and only what
+the measurement supports. The narrowing was the right correction.
+
+**What this does not authorise.** Moving `tau`. Adding a second rejection test to D and
+re-measuring. Reading an operating point off the diagnostic. The confirmatory blocks remain
+reserved; four falsifications have not unreserved them.
 
 **Candidate B outcome (2026-09-09): adopted before measurement, falsified by it.** The
 normaliser was pinned in the declaration -- within a partition, each configuration's distance to

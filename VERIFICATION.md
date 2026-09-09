@@ -12385,20 +12385,52 @@ release decision, but it does mean two gates that read PASS now read NOT_RUN and
 were not isolated to a cause; the run predates no clean baseline for this suite size, so they
 are reported as measured rather than attributed.
 
-**T4E.11 candidate D (2026-09-09): declared and implemented; NOT MEASURED.**
+**T4E.11 candidate D (2026-09-09): the margin costs no recall, rejects too little, and
+the distributions overlap.**
 
-The criterion is `mutual_nearest_neighbour_with_ratio_margin` -- candidate C narrowed by a
-dimensionless margin at `tau = 0.8`, whose value comes from Lowe (2004) rather than from these
-blocks. It is declared in `t4e11-ratio-margin-declaration.json` (sha256 `b2ba2b4e...`) and the
-declaration is **not adopted**, so no development block has been evaluated under it and no error
-rate for it exists in this document or anywhere else.
+Declared in `t4e11-ratio-margin-declaration.json` (sha256 `b2ba2b4e...`), committed at that hash
+before any development block was evaluated, and adopted separately in
+`t4e11-ratio-margin-adoption.json`. `tau = 0.8` comes from Lowe (2004), IJCV 60(2) -- taken for
+its external provenance, explicitly not because it was expected to be optimal here.
 
-What has been verified is mechanics, on constructed toy scenes with a one-dimensional stand-in
-metric: that the criterion is invariant to rescaling every distance by a constant (the property
-it was declared for), that it can only remove pairs candidate C returned, that it declines a
-mutual pair which is barely nearer than its runner-up where C could not, that a scene of one
-configuration raises `UndefinedMargin` rather than being admitted or scored as a split, and that
-the ratio diagnostic is labelled a diagnostic wherever it is reported.
+```
+block           pairs  matches  C match  motif  found    split    admit
+100-105            15       70      121     15     15   0.0000   0.7857
+200-205            15       67      121     15     15   0.0000   0.7761
+300-305            15       86      152     15     15   0.0000   0.8256
+400-405            15       81      136     15     15   0.0000   0.8148
+NULL 500-505       15       62      116      0      0      n/a   1.0000
+
+false split range   : [0.0, 0.0]
+null retention      : 0.5345   (accepted: at most 0.10)
+refusals            : 0
+
+diagnostic, NOT an operating point
+  motif ratios, four blocks : 0.020 to 0.293
+  null block ratios         : 0.240 to 0.996
+```
+
+**The margin costs nothing in recall.** Split stayed at 0.0000 on every block and match counts
+fell on every block, so both directions of the structural prediction made before measurement
+held exactly: what the margin discarded was entirely non-motif. The one condition it was
+declared against is the one that fails -- it removed 54 of candidate C's 116 null matches and
+kept 62 where the correct answer is none.
+
+**The declared diagnostic answers the question the declaration posed.** Not "was `tau` badly
+placed" but "do the distributions overlap": **they overlap**, 0.240 against 0.293. The contrast
+is genuinely informative and 0.8 is far too permissive for this signature, but no threshold
+separates recurrence from coincidence cleanly. The overlap is narrow, which is what makes it
+dangerous; a `tau` chosen to sit inside it would be fitted to blocks now inspected four times
+over, and the declaration forbids reporting such a value as an operating point.
+
+**Two limitations, recorded as limitations rather than results.** Retention was measured against
+the single declared null partition, so its stability across nulls is untested. The diagnostic
+stores extremes rather than distributions, so the mass of the overlap is unknown from this run.
+
+**The declaration diagnosed its own failure correctly, which the two before it did not.** Its
+falsification field was narrowed on purpose after candidates B and C both over-reached, and
+licenses only that at `tau = 0.8` this contrast does not separate in these scenes -- exactly
+and only what the measurement supports.
 
 The reserved confirmatory blocks were not built. No mining radius is approved -- there is still
 no radius -- and no defect is closed.

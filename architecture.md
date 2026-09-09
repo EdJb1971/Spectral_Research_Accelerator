@@ -31,7 +31,7 @@ Last revised 2026-09-08.
 | T4E.7 null calibration | **Done** | — | Needs no replicates; recovers a planted identity on synthetic data. Returns *no radius* on the acquired record. |
 | T4E.8 defensible identity | **In progress** — slices 1–5 implemented, **acceptance unmet**; target decided 2026-09-09 | D97–D100; blocks T4F.9 | Slice 2's spatial mode fails the declared 10%/10% criterion (split 25.6–29.4%, admission 9.4–10.9%); no radius meets both bounds in any window. Slice 3 makes the identity target a declared field and refuses circular evidence. **Target decided 2026-09-09: `kind_recurrence` primary, the other two diagnostic.** That needs `external_reference` evidence, so a reviewed catalogue and a serialisation for it are now on the critical path and the primary target is unevaluable from the tool until they exist. §3E.8, §3E.9, §3E.11 |
 | T4E.8 slice 4 identity declaration on screen | **Implemented** | Closes PLAN §5 gap 1 | `/api/v1/identity/*` and `IdentityDeclarationView` render the admissibility matrix with the circular pairing refused at the weight of an admission, receipts with their claim boundaries, and the surface's own refusals. Read-only; choosing remains a person's act. 8 rendered browser tests. §3E.11 |
-| T4E.11 a criterion that survives a partition change | **B and C adopted and falsified; D declared and implemented, not adopted, not measured** | Blocks D96; the identity target needs it | B: normalising by each partition's label-free close-pair scale left the spread wider (1.876x → 1.991x). C: mutual nearest-neighbour recovers **every** motif pair in **every** block (split 0.0000) despite the 1.876x magnitude spread — the ordering transfers where magnitudes do not — but cannot decline, returning 116 matches on a null block where the answer is none. D: a dimensionless margin (nearest/second-nearest at tau = 0.8, external provenance) supplies the rejection test C lacked and is implemented but **not measured** pending adoption. Confirmatory blocks untouched. §3E.13, §3E.14, §3E.15 |
+| T4E.11 a criterion that survives a partition change | **Candidates B, C and D all adopted before measurement and falsified by it** | Blocks D96; the identity target needs it | B: normalising by each partition's label-free close-pair scale left the spread wider (1.876x → 1.991x). C: mutual nearest-neighbour recovers **every** motif pair in **every** block (split 0.0000) despite the 1.876x magnitude spread — the ordering transfers where magnitudes do not — but cannot decline, returning 116 matches on a null block where the answer is none. D: a dimensionless margin at tau = 0.8 costs **nothing** in recall (split 0.0000 on every block, counts falling as predicted) but rejects too little — null retention 0.5345 against an accepted 0.10 — and the ratio distributions **overlap**, 0.240 against 0.293. Confirmatory blocks untouched. §3E.13, §3E.14, §3E.15 |
 | T4E.10 an operating point that transfers | **Implemented; no estimator holds** | Redirects D97 and D96 | 90/90 needs 22 observations and T4E.9 had 15, so the tolerance bound refuses there and names 22. At 28 it names a radius and still fails (split 20.0% vs 46.7% for the quantile). The reason is that four blocks from one generator differ 1.88x in mean distance, so calibration and evaluation are not one population and no bound transfers at any support. §3E.12 |
 | T4E.9 certified synthetic ground truth | **Implemented; benchmark reports FAIL** | Closed D101; evidence for D97 | `t4e_identity_certified` routes the T4E path through planted and null scenes. The definition separates perfectly (AUC 1.0, zero admissions in 11,985 negative pairs); the frozen radius splits 46.7% of motif pairs while a feasible radius exists. §3E.10 |
 | T4F.1–5, T4F.7, T4F.8 | **Complete** | — | §3F |
@@ -8711,8 +8711,8 @@ stays open. No mining radius is approved and T4E.8's acquired-record acceptance 
 ### 3E.15 Candidate D: a rejection test that is a ratio, not a distance (T4E.11)
 
 `ratio_margin_matches` implements the criterion declared in
-`t4e11-ratio-margin-declaration.json` (sha256 `b2ba2b4e...`). **It has not been measured.** The
-declaration is not adopted, and the development blocks are not touched until it is.
+`t4e11-ratio-margin-declaration.json` (sha256 `b2ba2b4e...`), adopted separately so the
+declared artifact keeps its hash, and **falsified by the measurement that followed**.
 
 Candidate C failed for one named reason: it always returns a match. D keeps C's rule and adds
 the missing rejection test in the only form that preserves what C achieved -- a mutual pair is
@@ -8740,10 +8740,46 @@ exists because a null partition's false-admission rate is 1.0 whenever it return
 carries no information alone. Candidate C is recomputed there solely as that denominator, which
 is not the comparison R20 forbids.
 
-One property is stated before measurement rather than after: D is a strict narrowing of C, so
-false split can only rise from C's 0.0000 and matches can only fall. The question is whether the
-trade is close to free. Nothing here approves a radius -- there is still no radius -- and no
-defect is closed.
+One property was stated before measurement rather than after: D is a strict narrowing of
+C, so false split can only rise from C's 0.0000 and matches can only fall.
+
+| block | scene pairs | matches | C's matches | motif pairs | matched | split | admission |
+|---|---|---|---|---|---|---|---|
+| 100-105 | 15 | 70 | 121 | 15 | 15 | 0.0000 | 0.7857 |
+| 200-205 | 15 | 67 | 121 | 15 | 15 | 0.0000 | 0.7761 |
+| 300-305 | 15 | 86 | 152 | 15 | 15 | 0.0000 | 0.8256 |
+| 400-405 | 15 | 81 | 136 | 15 | 15 | 0.0000 | 0.8148 |
+| **null 500-505** | 15 | **62** | **116** | 0 | 0 | -- | **1.0000** |
+
+**The margin costs nothing in recall.** Split stayed at 0.0000 on every block, so every motif
+pair survives it, and the match counts fell everywhere as predicted: what the margin discarded
+was entirely non-motif. Both directions of the structural prediction held exactly, which means
+the trade was measured cleanly.
+
+**It fails the one condition it was declared against.** Null retention is **0.5345** where
+acceptance required at most 0.10. It removed 54 of candidate C's 116 null matches and kept 62
+where the correct answer is none. No scene pair refused for an undefined margin.
+
+**The declared diagnostic answers the question it was declared to answer.** Motif ratios run
+0.020 to 0.293 across the four blocks; non-motif ratios reach 0.9997, and the null block's begin
+at 0.240. The contrast is informative and `tau = 0.8` is far too permissive for this signature
+-- but **the distributions overlap**, 0.240 against 0.293, so no threshold separates them
+cleanly. The overlap is narrow, which is what makes it dangerous. A `tau` chosen to sit inside
+it would be fitted to blocks inspected four times over; the declaration forbids reporting such a
+value as an operating point, and any such attempt is a candidate E requiring an evaluation on
+data these blocks did not select.
+
+**Two limitations, recorded as limitations rather than results.** Retention was measured against
+the single declared null partition, so its stability across nulls is untested. `margin_ratios`
+stores extremes rather than distributions, so the mass of the overlap -- how many motif pairs
+sit above 0.240 -- is unknown from this run.
+
+**The declaration diagnosed its own failure correctly, which the two before it did not.** Its
+falsification field was narrowed deliberately in response to that pattern, and licenses only
+that at `tau = 0.8` this contrast does not separate recurrence from coincidence in these scenes.
+That is exactly and only what the measurement supports.
+
+Nothing here approves a radius -- there is still no radius -- and no defect is closed.
 
 ### 3E.14 Candidate C: the ordering transfers, and the rule cannot decline (T4E.11)
 
@@ -10067,10 +10103,10 @@ able to sit three slices out of date.
   | `test_representation_alignment.py` | 19 | Mutual k-NN alignment between two kernels, the metric arXiv:2405.07987 reports as 0.16 out of 1 without a reference: self-alignment exactly 1, rotation invariance of the inner-product kernel, alignment falling monotonically as two views are driven apart, deterministic tie-breaking; the closed-form chance floor k/(n-1) checked against random neighbour sets and shown to survive strongly clustered and nine-fold duplicated kernels to under one percent -- a first version of that test asserted the opposite and is corrected in place; a paired view clearing its permuted pairing while two unrelated representations come back unresolved; and the refusals -- a non-square kernel, two kernels over different point sets, a non-finite similarity, a neighbour count outside [1, n-1], a null with no permutations, and an exceedance never reported as exactly zero |
   | `test_operating_point.py` | 15 | T4E.10 identity operating-point estimators: the closed-form required support checked against the order statistic it derives from, the tolerance bound refusing thin support and naming the 22 observations that would carry 90/90, that bound never narrower than the empirical quantile it replaces, an empty population refusing rather than returning zero, the empirical quantile publishing that it guarantees nothing and recording the confidence it was given and ignored, the bootstrap widening rather than refusing while naming its own weakness and staying deterministic per seed, every registered estimator publishing a guarantee, only the tolerance bound declaring that it refuses, and the refusals -- an unknown estimator corrected, a coverage or confidence outside (0,1), and a negative or non-finite distance |
   | `test_identity_api.py` | 16 | T4E.8 slice 4 the identity declaration surface: every target served with what it does not license, the circular `kind_recurrence` x `record_derived_proxy` pairing served as a refusal rather than omitted, an admitted pairing still carrying its tracker-agreement caveat, the matrix covering every target against every evidence class, receipts written before slice 3 listed and named undeclared rather than hidden, an unreadable receipt reported rather than skipped and a non-object JSON document distinguished from an empty store, a path refused where a file name was required, a missing receipt 404 naming what was asked for and an unparseable one 422 rather than 500, the surface read-only under POST/PUT/DELETE, and the refusals published rather than implied by an absence of buttons |
-  | `test_identity_certification.py` | 37 | T4E.9 the T4E identity path against a motif known by construction: the benchmark registered and naming the path it certifies, three disjoint partitions so a radius is never evaluated on what calibrated it, exactly one motif configuration in a planted scene and none in a null one, construction labels taken from the generator and refused rather than guessed when a planted position has no feature near it or two positions claim one, only cross-scene pairs formed, the definition's separation asserted as a floor, nothing admitted where nothing recurs with the absent positive population left unmeasured rather than zero, the frozen-radius failure pinned as a relationship to the feasible radius rather than as two numbers, an empty calibration returning INVALID rather than a permissive radius, and every result stating what it does not license |
+  | `test_identity_certification.py` | 42 | T4E.9 the T4E identity path against a motif known by construction: the benchmark registered and naming the path it certifies, three disjoint partitions so a radius is never evaluated on what calibrated it, exactly one motif configuration in a planted scene and none in a null one, construction labels taken from the generator and refused rather than guessed when a planted position has no feature near it or two positions claim one, only cross-scene pairs formed, the definition's separation asserted as a floor, nothing admitted where nothing recurs with the absent positive population left unmeasured rather than zero, the frozen-radius failure pinned as a relationship to the feasible radius rather than as two numbers, an empty calibration returning INVALID rather than a permissive radius, and every result stating what it does not license |
   | `test_identity_target_declaration.py` | 26 | T4E.8 slice 3 the declared identity target: an absent target or evidence class refused by name, a misspelling refused with its correction, `kind_recurrence` against record-derived proxy labels refused as circular, `track_continuity` admitted with its tracker-agreement caveat, every target round-tripping what it recognises and does not license, the published proxy wording pinned verbatim so naming a target cannot reword a cited receipt, and the external-reference path recovering two planted identities from a reviewed catalogue while refusing a mismatched family, a single identity, a non-catalogue and a negative population the patterns cannot supply |
   | `test_spectral_spatial_identity.py` | 24 | T4E.8 spatial geometry, detector-band/magnitude independence, source/scope refusal, analytic distances, old-radius refusal, scalar/accelerated agreement and two-sided proxy-label diagnostics |
-| **total** | **4151** | |
+| **total** | **4156** | |
 
 ### 7.4a Browser suite inventory
 
