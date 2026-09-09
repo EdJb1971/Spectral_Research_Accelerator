@@ -1465,20 +1465,23 @@ def test_lowering_k_can_only_add_admissions_never_remove_them():
         previous = admitted
 
 
-def test_the_criterion_is_measured_nowhere_before_its_declaration_is_adopted():
-    """The blindness claim is a property of the repository, not of a sentence in a file.
-
-    Candidate 3's whole value is that k was fixed before any measurement at any k below S. A
-    committed measurement, a recorded result or a test that ran one would spend that value
-    silently, so its absence is asserted rather than intended.
+def test_the_blindness_guard_was_removed_by_adoption_and_not_by_convenience():
+    """The predecessor of this test asserted that nothing had been measured, and said in its
+    own failure message that an adoption record is what should delete it. That record now
+    exists, so the guard is gone and this stands in its place: the adoption names the
+    declaration by hash, and names it a development experiment only.
     """
+    import json
     from pathlib import Path
 
-    assert not list(Path("measurements").glob("t4e13*")), "a candidate 3 measurement exists"
-    assert not list(Path("data/identity_calibration").glob("t4e13*adoption*")),         "an adoption record exists, so this test is the one that should have been deleted"
-    suite = Path("src/tests/test_identity_certification.py").read_text(encoding="utf-8")
-    for call in ("measure_partial_recurrence" + "_criterion(", "measure_k" + "_profile("):
-        assert call not in suite, "%s is called in the suite, which would be the measurement" % call
+    adoption = json.loads(Path(
+        "data/identity_calibration/t4e13-partial-recurrence-adoption.json"
+    ).read_text(encoding="utf-8"))
+    assert adoption["adopted_as"] == "DEVELOPMENT_EXPERIMENT_ONLY"
+    assert adoption["adopts_sha256"] == (
+        "55631fa2df03cda7e1d62304abebc362582e722a4e7177e5fb14cd3a5858b99c")
+    assert "before any measurement at any k below the partition size" in (
+        adoption["the_blindness_claim_this_adoption_preserves"])
 
 
 def test_the_k_profile_is_declared_to_adjudicate_nothing():
@@ -1488,3 +1491,147 @@ def test_the_k_profile_is_declared_to_adjudicate_nothing():
     assert PROFILE_ABSENCES == (0, 1, 2, 3)
     assert "adjudicates nothing" in measure_k_profile.__doc__ or         "Characterisation, not adjudication" in measure_k_profile.__doc__
     assert "own declaration" in measure_k_profile.__doc__
+
+
+# ------------------------------- T4E.13 candidate 3 measured: falsified, and what survived
+#
+# The measurement is `measurements/t4e13_candidate_3.json` and the outcome is amended into the
+# adoption record in the open. These tests hold the reading of it: which conditions failed,
+# which one held, which number is arithmetic rather than evidence, and what the failure does
+# not license. A falsification is a result and is recorded with the same care as a pass.
+
+
+def _t4e13_outcome():
+    import json
+    from pathlib import Path
+
+    return json.loads(Path(
+        "data/identity_calibration/t4e13-partial-recurrence-adoption.json"
+    ).read_text(encoding="utf-8"))["development_outcome"]
+
+
+def _t4e13_report():
+    import json
+    from pathlib import Path
+
+    return json.loads(Path(
+        "measurements/t4e13_candidate_3.json").read_text(encoding="utf-8"))
+
+
+def test_candidate_3_is_recorded_as_falsified_on_the_conditions_that_actually_failed():
+    """Named conditions and numbers, not a verdict word. Two failed, and the record says which."""
+    outcome = _t4e13_outcome()
+
+    assert outcome["status"].startswith("FALSIFIED")
+    assert outcome["condition_3_admission_FAILED"]["bound"] == 0.10
+    assert outcome["condition_3_admission_FAILED"]["worst"] == 0.80
+    assert outcome["condition_3_admission_FAILED"]["shortfall_factor_worst"] == 36.05
+    rising = outcome["condition_2_matched_fraction_FAILED"]["block_300_305"]
+    assert rising[2] > rising[1], "condition 2 failed because the fraction ROSE at richness 12"
+
+
+def test_the_measurement_on_disk_says_what_the_documents_say():
+    """The write-up is checked against the file rather than trusted.
+
+    Every number quoted in architecture, VERIFICATION, roadmap and PLAN comes from this file. A
+    document that drifted from it would be the failure mode this programme exists to avoid.
+    """
+    report = _t4e13_report()
+
+    assert report["clique_size_required"] == 5 and report["partition_size"] == 6
+    assert report["absences_tolerated"] == 1
+    assert report["evidence_class"] == "development"
+    rows = {(row["richness"], row["seeds"][0]): row for row in report["planted_blocks"]}
+    assert rows[(12, 300)]["admitted"] == 75
+    assert rows[(12, 300)]["motif_pairs_admitted"] == 15
+    assert round(rows[(12, 300)]["false_admission_rate"], 4) == 0.80
+    assert round(rows[(9, 200)]["false_admission_rate"], 4) == 0.40
+    assert all(row["false_split_rate"] == 0.0 for row in report["planted_blocks"])
+    for row in report["planted_blocks"]:
+        if row["richness"] == 6:
+            assert row["false_admission_rate"] == 0.0, "richness 6 did not fail"
+
+
+def test_the_null_held_even_though_the_candidate_failed():
+    """The relaxation broke the planted blocks, not the null, and that distinction is the finding.
+
+    Coincidences need real structure to be coincidental with. Where nothing recurs, tolerating
+    one absence still admits nothing out of 1486 proposed pairs, so the failure is about what
+    partial consistency lets through where there IS something, not about noise.
+    """
+    report = _t4e13_report()
+
+    for row in report["null_blocks"]:
+        assert row["admitted"] == 0, "the null admitted %d at richness %d" % (
+            row["admitted"], row["richness"])
+    richest = max(report["null_blocks"], key=lambda row: row["richness"])
+    assert richest["pairs_proposed_by_candidate_C"] == 1486
+
+
+def test_the_recall_number_is_recorded_as_arithmetic_and_not_as_a_finding():
+    """0.0000 everywhere, derived before the run, and the record refuses to bank it.
+
+    This is the pattern candidate 2's write-up established and it matters more here: a falsified
+    candidate with a perfect-looking recall column is exactly where the temptation to report the
+    wrong half is strongest.
+    """
+    recall = _t4e13_outcome()["condition_1_recall_PASSED_BY_ARITHMETIC"]
+
+    assert "monotonicity" in recall["reading"]
+    assert "NOT a finding" in recall["reading"]
+
+
+def test_no_lower_k_can_rescue_what_this_one_failed():
+    """Derived, not measured: the profile's remaining rungs admit supersets of this one.
+
+    Stated as a test because it is why the k profile is characterisation rather than a search
+    for a working k, and because a sweep is the shape a horse race arrives in.
+    """
+    from src.benchmarks.identity_certification import consistency_admitted_pairs
+
+    class _Ladder:
+        def distance(self, a, b):
+            return 0.0 if a == b else 1.0 + abs(a - b)
+
+    partition = [([0, 1, 2], [False] * 3), ([0, 1, 2], [False] * 3),
+                 ([0, 1, 2], [False] * 3), ([0, 2, 3], [False] * 3)]
+    stricter = set(consistency_admitted_pairs(partition, _Ladder(), k=3))
+    assert stricter <= set(consistency_admitted_pairs(partition, _Ladder(), k=2))
+
+
+def test_the_falsification_does_not_license_the_conclusions_it_is_nearest_to():
+    """Candidates B and C over-reached here. Every declaration since has narrowed the clause."""
+    outcome = _t4e13_outcome()
+
+    refused = " ".join(outcome["what_it_does_NOT_license"])
+    assert "Not that the signature is inadequate" in refused
+    assert "Not that partial recurrence cannot be detected" in refused
+    assert "Not that k = S is the right operating point" in refused
+    assert "kind_recurrence" in refused
+    forbidden = outcome["what_is_specifically_forbidden_from_here"]
+    assert "Raising k back towards S" in forbidden
+    assert "does not unlock it" in forbidden
+
+
+def test_the_reserved_partitions_were_not_spent_on_a_falsified_candidate():
+    """The conditionality was recorded before the numbers existed, which is why it holds now.
+
+    720-735 have never been generated. Spending them was made conditional on candidate 3
+    passing; it did not, so they stay closed, and they stay closed in code rather than in prose.
+    """
+    from pathlib import Path
+
+    import pytest
+    from src.benchmarks.identity_certification import (
+        ReservedSceneOpened, STILL_RESERVED_CONFIRMATORY_SEEDS, _refuse_reserved)
+
+    outcome = _t4e13_outcome()
+    assert "never been generated" in (
+        outcome["the_confirmatory_blocks_were_not_spent_and_now_will_not_be"])
+    assert sorted(STILL_RESERVED_CONFIRMATORY_SEEDS) == (
+        list(range(720, 726)) + list(range(730, 736)))
+    for seed in sorted(STILL_RESERVED_CONFIRMATORY_SEEDS):
+        for confirmatory in (False, True):
+            with pytest.raises(ReservedSceneOpened):
+                _refuse_reserved([seed], confirmatory=confirmatory)
+    assert not list(Path("measurements").glob("*t4e13*confirmatory*"))

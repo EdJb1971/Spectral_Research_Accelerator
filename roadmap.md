@@ -2803,6 +2803,84 @@ configuration absent from one scene outright; nothing about recurrence *across* 
 which the mining machinery needs; no mining radius, no discharge of T4E.8's acceptance, no
 closure of D96 to D100; and nothing about `kind_recurrence`, which still has no catalogue.
 
+**T4E.13 (2026-09-09): candidate 3 measured, and falsified on a choice made blind.** The
+minimal relaxation of candidate 2 -- tolerate exactly one absence, `k = S - 1` -- admits
+coincidences that `k = S` excludes.
+
+```
+CANDIDATE 3, k = 5 of 6 -- development blocks, adopted at sha256 55631fa2...
+rich  block      configs   Cprops  admitted   motif   split    admit  shortfall
+6     100-105         20      121        15      15  0.0000   0.0000       0.00
+6     200-205         20      121        15      15  0.0000   0.0000       0.00
+6     300-305         20      152        15      15  0.0000   0.0000       0.00
+6     400-405         20      136        15      15  0.0000   0.0000       0.00
+9     100-105         84      568        15      15  0.0000   0.0000       0.00
+9     200-205         84      485        25      15  0.0000   0.4000       6.00
+9     300-305         84      585        25      15  0.0000   0.4000       6.00
+9     400-405         84      566        15      15  0.0000   0.0000       0.00
+12    100-105        220     1446        25      15  0.0000   0.4000       6.00
+12    200-205        220     1440        25      15  0.0000   0.4000       6.01
+12    300-305        220     1590        75      15  0.0000   0.8000      36.05
+12    400-405        220     1488        29      15  0.0000   0.4828       8.43
+
+null: 0 admitted at richness 6, 9 and 12, of 116, 595 and 1486 proposed
+```
+
+**FALSIFIED on conditions 3 and 2.** False admission reaches 0.4000 at richness 9 and 0.8000
+at richness 12, against a declared bound of 0.10 at every richness individually -- four to eight
+times over -- and the shortfall widens with richness rather than staying non-increasing, which
+the same condition forbids separately. Condition 2 fails as well: on block 300-305 the matched
+fraction goes 0.0500, 0.0198, 0.0227, rising at the richest level instead of falling. Three
+blocks fall as required; the condition is stated per block, not as an average, so one is enough.
+
+**The declaration predicted the direction, before the run and in writing.** Coincidental groups
+do reach `S - 1`, and the greedy probe under-counted them. What the measurement adds is the
+size: at richness 12 on block 300-305, 75 pairs admitted where 15 are true.
+
+**Condition 4 held, and it is worth recording precisely because the candidate failed.** Where
+nothing recurs, tolerating one absence still admits **nothing** -- 0 of 1486 proposed pairs at
+richness 12. The relaxation did not break the null; it broke the planted blocks, where
+coincidences have real structure to be coincidental with.
+
+**Condition 1 is arithmetic and is not a finding.** The 0.0000 false split everywhere was
+derived before the run: admissions are non-decreasing as `k` falls, so candidate 3 inherits
+candidate 2's recall by monotonicity. The declaration said this in advance so it could not be
+reported as evidence afterwards, and it is not being.
+
+**What the blindness claim bought.** `k`, its rule and every structural choice were committed at
+sha256 `55631fa2...` before any measurement at any `k` below `S`, and nothing moved after the
+numbers appeared. The claim is now spent -- it cannot be made again for these scenes -- and what
+it purchased is that this is a real falsification rather than a criterion that failed to survive
+its own tuning. That is the whole return on the slice, and it is a smaller return than a pass
+would have been.
+
+**The margin is exactly one scene wide.** Consistency across the whole partition excludes
+coincidences; consistency across all but one scene does not. By the same monotonicity the
+profile's remaining rungs cannot rescue anything -- `k = 4` and `k = 3` admit supersets of
+`k = 5` -- so the profile characterises how fast it degrades and adjudicates nothing.
+
+**Blocks 720-735 stay closed and now will not be spent on this.** The adoption made spending
+them conditional on candidate 3 meeting its conditions, and it did not. That conditionality was
+recorded before the numbers existed, which is the only reason it is worth anything now.
+
+**What this does NOT license.** Not that the signature is inadequate -- it is unchanged from
+candidate 2, which passed; what changed is one integer. Not that partition structure is the
+wrong resource -- it is the resource candidate 2 used successfully. Not that partial recurrence
+cannot be detected: this tests one relaxation, the minimal one, and a criterion built *for*
+partial recurrence is a different object from one that merely tolerates it. And specifically not
+that `k = S` is the right operating point for an acquired record -- candidate 2's own limitation
+stands untouched, so what this establishes is that the obvious repair does not work, not that
+the problem has gone away. Raising `k` back towards `S` is forbidden by the declaration and this
+outcome does not unlock it. No mining radius, no discharge of T4E.8's acceptance, no closure of
+D96 to D100, and nothing about `kind_recurrence`, which still has no catalogue.
+
+**What would now be worth declaring.** Not another value of `k`: the profile shows the
+degradation and monotonicity settles the ordering, so no rung below `S - 1` can pass conditions
+`S - 1` already failed. A criterion built *for* partial recurrence -- one that scores how much
+of a window a configuration spans rather than thresholding it, or that admits on evidence
+accumulated across partitions rather than within one -- is a different object and would need its
+own declaration. That is the maintainer's decision and nothing here authorises it.
+
 **T4E.13 (2026-09-09): candidate 3 declared, and the structural choice made blind.** The
 step candidate 2's own limitation section demanded: `k = S - 1`, by the rule *tolerate exactly
 one absence*, fixed in `t4e13-partial-recurrence-declaration.json` and in code before any

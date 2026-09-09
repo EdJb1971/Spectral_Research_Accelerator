@@ -322,10 +322,60 @@ large and `S - 1` is nearly as strict as `S`, so tolerating one absence does not
 transfer problem candidate 2 named -- it is one rung on that ladder. A criterion that transfers
 will need `k` as a proportion of `S`, and the proportion will need its own evidence.
 
-**What it needs from you.** Adoption, or a correction to the declaration. Nothing runs until
-then, and the last two reserved partitions -- 720-735, never generated, refused in code -- stay
-closed whatever adoption says; they are worth spending only if candidate 3 first meets its
-conditions on development evidence.
+**Adopted, measured, and falsified.** Candidate 3 fails conditions 3 and 2: false admission
+0.4000 at richness 9 and 0.8000 at richness 12 against a 0.10 bound, the shortfall widening to
+x36.05, and the matched fraction rising on block 300-305 at the richest level. The declaration
+predicted that direction in writing beforehand. Condition 4 held -- the null admits 0 of 1486
+proposed pairs at richness 12 -- and condition 1's 0.0000 split was arithmetic, derived before
+the run and declared to carry no weight.
+
+```
+CANDIDATE 3, k = 5 of 6 -- development blocks, adopted at sha256 55631fa2...
+rich  block      configs   Cprops  admitted   motif   split    admit  shortfall
+6     100-105         20      121        15      15  0.0000   0.0000       0.00
+6     200-205         20      121        15      15  0.0000   0.0000       0.00
+6     300-305         20      152        15      15  0.0000   0.0000       0.00
+6     400-405         20      136        15      15  0.0000   0.0000       0.00
+9     100-105         84      568        15      15  0.0000   0.0000       0.00
+9     200-205         84      485        25      15  0.0000   0.4000       6.00
+9     300-305         84      585        25      15  0.0000   0.4000       6.00
+9     400-405         84      566        15      15  0.0000   0.0000       0.00
+12    100-105        220     1446        25      15  0.0000   0.4000       6.00
+12    200-205        220     1440        25      15  0.0000   0.4000       6.01
+12    300-305        220     1590        75      15  0.0000   0.8000      36.05
+12    400-405        220     1488        29      15  0.0000   0.4828       8.43
+
+null: 0 admitted at richness 6, 9 and 12, of 116, 595 and 1486 proposed
+```
+
+**The margin between recurrence and coincidence in these scenes is exactly one scene wide.**
+Consistency across the whole partition excludes coincidences; consistency across all but one
+scene does not. Monotonicity settles the rest: `k = 4` and `k = 3` admit supersets of `k = 5`,
+so no lower rung can pass conditions `S - 1` already failed. The `k` profile characterises how
+fast it degrades and adjudicates nothing.
+
+**What the blind declaration bought.** A real falsification rather than a criterion that failed
+to survive its own tuning -- and that is a smaller return than a pass would have been, which is
+what a severe test costs when it goes against you. The claim is spent and cannot be made again
+for these scenes.
+
+**What this does NOT license.** Not that the signature is inadequate -- it is unchanged from
+candidate 2, which passed; what changed is one integer. Not that partition structure is the
+wrong resource -- it is the resource candidate 2 used successfully. Not that partial recurrence
+cannot be detected: this tests one relaxation, the minimal one, and a criterion built *for*
+partial recurrence is a different object from one that merely tolerates it. And specifically not
+that `k = S` is the right operating point for an acquired record -- candidate 2's own limitation
+stands untouched, so what this establishes is that the obvious repair does not work, not that
+the problem has gone away. Raising `k` back towards `S` is forbidden by the declaration and this
+outcome does not unlock it. No mining radius, no discharge of T4E.8's acceptance, no closure of
+D96 to D100, and nothing about `kind_recurrence`, which still has no catalogue.
+
+**So the position is now this.** Candidate 2 works at `k = S` and does not transfer, for the
+reason its own declaration gave. Candidate 3 shows the obvious repair does not work. A criterion
+built *for* partial recurrence -- scoring how much of a window a configuration spans rather than
+thresholding it, or accumulating evidence across partitions rather than within one -- is a
+different object and needs its own declaration. **Blocks 720-735 have still never been
+generated**, and are now the only untouched evidence left in the programme.
 
 **Still unmoved**: the catalogue `kind_recurrence` requires, which is the primary scientific
 target and remains unevaluable from the tool without a reviewed, cited source.
