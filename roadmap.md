@@ -2552,13 +2552,72 @@ prior odds 1:399. Candidate D's per-pair false rate is 1.019%, a specificity of 
 declared 0.10 bound needs 0.028% -- a **36-fold** reduction. No threshold on these distances can
 supply it, and that is the brief for **T4E.12**.
 
-**T4E.12 What the signature measures -- NOT STARTED. Opened 2026-09-09 by the diagnostic
-above.** T4E.11 established what a criterion cannot fix. This task asks what the signature would
-have to carry for a cardinality-three configuration over six features to be identifiable against
-1:399 odds, and it is a change to the signature rather than to any rule applied over its
-distances. R20 governs it as it governed T4E.11: declare before measuring, evaluate alone, and
-record a falsification as a result. **Acceptance is not yet specified** and the reserved
-confirmatory blocks stay reserved while it is written.
+**T4E.12 What the signature must carry -- SPECIFIED 2026-09-09, NOT STARTED.**
+
+*T4E.11 falsified four criteria and its diagnostic said why: the binding constraint is
+specificity against combinatorial odds, not the placement of any threshold. This task asks what
+the signature would have to carry instead, and its first act was to measure how the problem
+scales -- because the acceptance criterion depends on the answer.*
+
+**The scaling measurement (diagnostic, run 2026-09-09 before any criterion was declared).**
+`measure_richness_scaling` varies the feature count, which `_motif_scene_positions` now accepts
+as a parameter defaulting to the frozen six, so every existing caller builds exactly the scenes
+it built before. Candidate D is used as a probe of the signature and is already falsified;
+nothing is adopted and no operating point is reported.
+
+| features | configs | candidate pairs | matches | split | admission | pair rate | required | shortfall |
+|---|---|---|---|---|---|---|---|---|
+| 6 | 20 | 6,000 | 70 | **0.0000** | 0.7857 | 9.19e-3 | 2.79e-4 | **x33** |
+| 9 | 84 | 105,840 | 321 | **0.0000** | 0.9533 | 2.89e-3 | 1.58e-5 | **x184** |
+| 12 | 220 | 726,000 | 720 | **0.0000** | 0.9792 | 9.71e-4 | 2.30e-6 | **x423** |
+
+**Two findings, and they point opposite ways.**
+
+*The signature keeps its recall completely.* False split is **0.0000 at every richness**: the
+planted motif is still the mutual nearest neighbour when it is competing against 219 rival
+configurations rather than 19. The information needed to identify the configuration is present.
+
+*The rule matches a constant fraction of whatever it is given.* Roughly **a quarter** of
+configurations are matched at every richness -- 0.233, 0.255, 0.218 -- because a
+nearest-neighbour matching returns at most one pair per configuration. So false admissions grow
+**linearly** with the configuration count while true correspondences stay at one per scene pair,
+and the admission fraction climbs towards one: 0.786, 0.953, **0.979**.
+
+**The consequence, which is why the acceptance below is not stated as an admission rate.** The
+per-pair false rate does fall as scenes get richer -- a quarter of a growing population is a
+shrinking fraction of its square -- but it falls as `1/m` where a fixed admission bound demands
+`1/m^2`. The gap therefore *widens*: **x33, x184, x423**. An admission fraction is a property of
+the signature and the scene richness together, never of the signature alone, so a bound met on
+one record need not hold on a denser one. That is T4E.10's transfer problem again, in a place no
+declaration had looked -- and it means **no rule whose match count scales with the configuration
+count can succeed**, whatever threshold is placed on its distances.
+
+**Acceptance.** A candidate is a change to what the signature carries, declared before it is
+measured, and it must satisfy all of:
+
+1. **Recall unchanged.** False split at most 0.10 at every richness measured, individually.
+2. **A match count that does not track the population.** The matched fraction of configurations
+   must fall as richness grows rather than holding constant. This is the property every T4E.11
+   candidate lacked and the one the scaling measurement identifies.
+3. **A shortfall that does not widen.** Measured at **at least three richness levels**, the
+   ratio of achieved to required per-pair false rate must be non-increasing, and the admission
+   bound of 0.10 must be met at the richest level tested. Meeting it only at the sparsest level
+   is the failure this task exists to prevent.
+4. **Refusals by name**, and an explicit verdict including INVALID.
+
+**What acceptance may not be.** An admission rate quoted at a single richness. A weight vector
+or threshold calibrated on the four already-inspected blocks -- the attribute weights are
+currently all 1.0 and have never been calibrated, which makes them an obvious candidate and
+exactly the kind that must be declared first and evaluated on scenes that did not select it.
+
+**R20 governs as it governed T4E.11.** Declare the change before measuring it, evaluate it
+alone, and record a falsification as a result rather than trying variants until one passes.
+
+**Claim boundary.** Synthetic scenes at several densities settle a property of the signature,
+not of the atmosphere. Nothing here approves a mining radius, discharges T4E.8's acquired-record
+acceptance, or closes D96, D97, D98, D99 or D100. The primary target remains `kind_recurrence`,
+which needs `external_reference` evidence no signature change supplies. The reserved
+confirmatory blocks stay reserved.
 
 **Candidate B outcome (2026-09-09): adopted before measurement, falsified by it.** The
 normaliser was pinned in the declaration -- within a partition, each configuration's distance to

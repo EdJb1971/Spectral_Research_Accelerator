@@ -712,3 +712,102 @@ def test_the_binding_constraint_is_specificity_and_the_shortfall_is_a_number():
     assert matched / permitted > 10.0, (
         "the shortfall is more than an order of magnitude: %d false admissions against %.1f "
         "permitted" % (matched, permitted))
+
+
+# ------------------------------------ T4E.12: what scene richness does to the identity problem
+#
+# Diagnostics, not criteria. Candidate D appears as a probe of the signature and is already
+# falsified; nothing here adopts it or anything else, and no operating point is reported.
+
+
+def _richness():
+    """One sweep, reused. Each call rebuilds three partitions at three feature counts."""
+    from src.benchmarks.identity_certification import measure_richness_scaling
+
+    if not hasattr(_richness, "_cached"):
+        _richness._cached = measure_richness_scaling()
+    return _richness._cached
+
+
+def test_the_required_pair_rate_is_arithmetic_and_approves_nothing():
+    """It says what a bound demands, never what a signature delivers."""
+    from src.benchmarks.identity_certification import required_pair_rate
+
+    row = required_pair_rate(6)
+    assert row["configurations_per_scene"] == 20
+    assert row["candidate_pairs_per_scene_pair"] == 400
+    assert "approves nothing" in row["boundary"]
+
+
+def test_an_admission_bound_tightens_faster_than_the_scene_grows():
+    """Why a bound met on one record need not hold on a richer one.
+
+    Configurations grow as C(f,3) and candidate pairs as its square, while the number of true
+    correspondences does not grow at all. So the per-pair rate a fixed admission bound permits
+    collapses as scenes get richer -- roughly as the sixth power of the feature count -- and the
+    admission FRACTION is therefore a property of the signature and the scene together, never of
+    the signature alone. That is T4E.10's transfer problem in a new place.
+    """
+    from src.benchmarks.identity_certification import required_pair_rate
+
+    rates = [required_pair_rate(f)["required_pair_rate"] for f in (6, 12, 20)]
+    assert rates[0] > rates[1] > rates[2]
+    assert rates[0] / rates[2] > 1000.0, (
+        "six features to twenty tightens the requirement by more than three orders of magnitude")
+
+
+def test_the_sweep_reports_no_operating_point_and_says_candidate_D_is_a_probe():
+    """Four criteria are falsified; a diagnostic is not the place to revive one."""
+    report = _richness()
+    assert "already falsified" in report["is_a_diagnostic_not_a_criterion"]
+    assert report["evidence_class"] == "development"
+
+
+def test_recall_survives_richness_and_that_is_the_positive_finding():
+    """The motif is still the mutual nearest neighbour among two hundred and twenty rivals.
+
+    The information needed to identify the configuration is present in the signature at every
+    richness measured. What is missing is the ability to decline everything else.
+    """
+    report = _richness()
+    assert [row["features"] for row in report["rows"]] == [6, 9, 12]
+    assert report["rows"][-1]["configurations_per_scene"] >= 220
+    for row in report["rows"]:
+        assert row["false_split_rate"] <= MAX_FALSE_SPLIT
+
+
+def test_the_rule_matches_a_constant_fraction_of_configurations_however_rich_the_scene():
+    """The measured law, and the reason the shortfall grows instead of closing.
+
+    A mutual-nearest-neighbour matching returns at most one pair per configuration, so its
+    output grows LINEARLY with the configuration count while the true correspondences stay at
+    one per scene pair. Roughly a quarter of configurations are matched at every richness
+    measured, so the admission fraction climbs towards one as scenes get richer.
+    """
+    report = _richness()
+    fractions = []
+    for row in report["rows"]:
+        scene_pairs = row["candidate_pairs"] / row["configurations_per_scene"] ** 2
+        fractions.append((row["matches_returned"] / scene_pairs)
+                         / row["configurations_per_scene"])
+    assert max(fractions) - min(fractions) < 0.10, (
+        "the matched fraction is near-constant in richness: %s" % fractions)
+    admissions = [row["false_admission_rate"] for row in report["rows"]]
+    assert admissions == sorted(admissions), "the admission fraction must climb with richness"
+    assert admissions[-1] > 0.95
+
+
+def test_the_shortfall_grows_with_richness_rather_than_closing():
+    """What T4E.12 has to fix, stated as a direction rather than a wish.
+
+    The per-pair false rate does fall as scenes get richer -- a quarter of a growing population
+    is a shrinking fraction of its square -- but it falls as 1/m where the bound demands 1/m^2.
+    So the gap widens. No rule whose match count scales with the configuration count can close
+    it, whatever threshold is placed on the distances.
+    """
+    report = _richness()
+    rates = [row["false_pair_rate"] for row in report["rows"]]
+    shortfalls = [row["shortfall_factor"] for row in report["rows"]]
+    assert rates == sorted(rates, reverse=True), "the measured rate does fall with richness"
+    assert shortfalls == sorted(shortfalls), "and the shortfall nonetheless widens"
+    assert shortfalls[-1] > 10.0 * 1.0 and shortfalls[-1] > shortfalls[0] * 5.0

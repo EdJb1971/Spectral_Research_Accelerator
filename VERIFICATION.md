@@ -12385,6 +12385,36 @@ release decision, but it does mean two gates that read PASS now read NOT_RUN and
 were not isolated to a cause; the run predates no clean baseline for this suite size, so they
 are reported as measured rather than attributed.
 
+**T4E.12 scaling diagnostic (2026-09-09): recall survives richness; the rule's match
+count does not.**
+
+A diagnostic, not a criterion. `measure_richness_scaling` varies the feature count, which the
+generator now accepts as a parameter defaulting to the frozen six, so every existing caller
+builds exactly the scenes it built before. Candidate D is a probe of the signature and is
+already falsified; nothing is adopted and no operating point is reported. Six scenes per
+richness, 15 scene pairs.
+
+| features | configs | candidate pairs | matches | split | admission | pair rate | required | shortfall |
+|---|---|---|---|---|---|---|---|---|
+| 6 | 20 | 6,000 | 70 | **0.0000** | 0.7857 | 9.19e-3 | 2.79e-4 | **x33** |
+| 9 | 84 | 105,840 | 321 | **0.0000** | 0.9533 | 2.89e-3 | 1.58e-5 | **x184** |
+| 12 | 220 | 726,000 | 720 | **0.0000** | 0.9792 | 9.71e-4 | 2.30e-6 | **x423** |
+
+**Recall is untouched by richness.** False split is 0.0000 at every level: the planted motif is
+still the mutual nearest neighbour when competing against 219 rivals rather than 19.
+
+**The rule matches a constant fraction of what it is given** -- 0.233, 0.255, 0.218 of
+configurations -- because a nearest-neighbour matching returns at most one pair per
+configuration. False admissions grow linearly with the configuration count while true
+correspondences stay at one per scene pair, so the admission fraction climbs to 0.979.
+
+**The per-pair rate falls as 1/m where a fixed admission bound demands 1/m^2,** and the
+shortfall widens from x33 to x423. `required_pair_rate` is the arithmetic behind the last two
+columns and approves nothing.
+
+The reserved confirmatory blocks were not built. No mining radius is approved and no defect is
+closed.
+
 **T4E.11 diagnostic (2026-09-09): what the false admissions are. The ground truth is
 sound and the constraint is specificity.**
 

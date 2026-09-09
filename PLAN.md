@@ -119,10 +119,38 @@ and holds one true positive: prior odds 1:399. Candidate D's per-pair false rate
 a specificity of 98.98%, and the declared 0.10 bound needs **0.028%** -- a **36-fold**
 reduction. No threshold placed on these distances can supply that.
 
-**So T4E.12 is the next task and it is about the signature**, not a fifth criterion: what would
-a cardinality-three configuration over six features have to carry to be identifiable against
-1:399 odds? Its acceptance is not yet written, and writing it is the next slice. The reserved
-confirmatory blocks remain untouched, and four falsifications have not unreserved them.
+**T4E.12 is the next task and it is about the signature**, not a fifth criterion. **It is
+now specified, with acceptance, in `roadmap.md`.** Writing that acceptance required measuring
+how the problem scales, because the obvious form of acceptance turns out to be the wrong one.
+
+**Scene richness is now a parameter** -- the generator takes a feature count defaulting to the
+frozen six, so every existing caller builds exactly the scenes it built before -- and the sweep
+at 6, 9 and 12 features says two things that point opposite ways.
+
+*Recall is untouched.* False split **0.0000 at every richness**: the motif is still the mutual
+nearest neighbour against 219 rivals rather than 19. The signature carries what identification
+needs.
+
+*The rule matches a constant fraction of whatever it is given* -- about **a quarter** of
+configurations at every richness -- because a nearest-neighbour matching returns at most one
+pair per configuration. So false admissions grow **linearly** with the configuration count while
+true correspondences stay at one, the admission fraction climbs to **0.979** at twelve features,
+and the shortfall widens **x33 to x423**.
+
+**That is why acceptance is not an admission rate.** The per-pair rate falls as `1/m` where a
+fixed bound demands `1/m^2`, so an admission fraction is a property of the signature and the
+scene together and never of the signature alone -- T4E.10's transfer problem in a new place.
+**No rule whose match count scales with the configuration count can succeed**, whatever
+threshold is placed on its distances.
+
+**So T4E.12 accepts on a per-pair rate measured at three richness levels**, requiring the
+matched fraction to fall as richness grows and the shortfall not to widen. The next slice is a
+declared candidate under that acceptance. The attribute weights are currently all 1.0 and have
+never been calibrated, which makes them the obvious first candidate and exactly the kind that
+must be declared before measurement and evaluated on scenes that did not select it.
+
+The reserved confirmatory blocks remain untouched, and four falsifications have not unreserved
+them.
 
 After that, the catalogue `kind_recurrence` requires -- sourcing it, deciding its independence
 class, and a serialisation the audit tool can load.

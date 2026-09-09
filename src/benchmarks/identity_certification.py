@@ -115,16 +115,23 @@ class UnlabelledScene(RuntimeError):
     """
 
 
-def _scene(seed: int, *, plant: bool) -> Tuple[List[Any], List[Tuple[float, float]]]:
-    """One scene's extracted features, and the positions the generator planted the motif at."""
+def _scene(seed: int, *, plant: bool,
+           richness: Optional[int] = None) -> Tuple[List[Any], List[Tuple[float, float]]]:
+    """One scene's extracted features, and the positions the generator planted the motif at.
+
+    `richness` is the feature count and defaults to the frozen six. It is a parameter for
+    T4E.12, which asks what a signature must carry as scenes get richer; every T4E.9 and
+    T4E.11 caller leaves it alone and builds exactly the scenes it built before.
+    """
+    wanted = F._MOTIF_FEATURES_PER_SCENE if richness is None else int(richness)
     bundle = derive("t4e9/scene/%s/%d" % ("planted" if plant else "null", seed))
-    field = F.build_planted_motif(bundle, scene_seed=seed, plant=plant)
+    field = F.build_planted_motif(bundle, scene_seed=seed, plant=plant, features=wanted)
     features = F._invariance_features(field.data.numpy(), dataset="planted_motif")
-    if len(features) != F._MOTIF_FEATURES_PER_SCENE:
+    if len(features) != wanted:
         raise UnlabelledScene(
             "scene %d yielded %d features where the generator planted %d"
-            % (seed, len(features), F._MOTIF_FEATURES_PER_SCENE))
-    positions = F._motif_scene_positions(seed, plant=plant)
+            % (seed, len(features), wanted))
+    positions = F._motif_scene_positions(seed, plant=plant, features=wanted)
     motif = positions[:F._MOTIF_CONFIGURATION_SIZE] if plant else []
     return features, motif
 
@@ -575,14 +582,14 @@ def _motif_member_ids(features: Sequence[Any],
     return tuple(order)
 
 
-def _scene_with_motif_membership(seed: int, *, plant: bool):
+def _scene_with_motif_membership(seed: int, *, plant: bool, richness: Optional[int] = None):
     """One signed scene, plus which motif vertices each configuration holds.
 
     Returns `(points, is_motif, membership)` where `membership[i]` is the frozenset of motif
     vertex numbers configuration `i` contains. The first two elements are exactly what
     `_signed_scene` returns, so the criteria can be run against this unchanged.
     """
-    features, planted = _scene(seed, plant=plant)
+    features, planted = _scene(seed, plant=plant, richness=richness)
     members = _motif_member_ids(features, planted) if plant else ()
     tracks = tuple(Track(index, FeatureSet([feature]), {})
                    for index, feature in enumerate(features))
@@ -711,6 +718,117 @@ def decompose_matched_pairs(blocks: Sequence[Sequence[int]] = None,
         "evidence_class": "development",
         "boundary": ("Computed on the blocks that informed four declarations. Development "
                      "evidence; the reserved confirmatory blocks are untouched."),
+    }
+
+
+# ---------------------------------------------------------------------------------------------
+# T4E.12: what scene richness does to the identity problem.
+#
+# The T4E.11 diagnostic left a number: candidate D's per-pair false rate is about 1%, against
+# prior odds of 1 true correspondence in 400 candidate pairs. Six features at cardinality three
+# give C(6,3) = 20 configurations, and a scene pair therefore offers 20 x 20 = 400 pairs while
+# holding exactly one true correspondence.
+#
+# Both halves of that scale with the feature count, and they scale differently. Configurations
+# grow as C(f,3), candidate pairs as its square, and the number of true correspondences does not
+# grow at all. So the admission FRACTION is not a property of the signature: it is a property of
+# the signature and the scene richness together, and a bound met on one record need not hold on
+# a richer one. That is T4E.10's transfer problem again, in a place no declaration had looked.
+#
+# `required_pair_rate` derives the consequence, and `measure_richness_scaling` measures whether
+# the per-pair rate itself stays put as richness grows -- which arithmetic cannot settle.
+
+
+def configuration_count(features: int, cardinality: int = CARDINALITY) -> int:
+    """How many configurations a scene of `features` features yields. C(f, k)."""
+    return math.comb(int(features), int(cardinality))
+
+
+def required_pair_rate(features: int, *, admission_bound: float = MAX_FALSE_ADMISSION,
+                       true_pairs_per_scene_pair: int = 1,
+                       cardinality: int = CARDINALITY) -> Dict[str, Any]:
+    """The per-candidate-pair false rate an admission bound demands, at a given richness.
+
+    Arithmetic, not measurement. With `m = C(f, k)` configurations per scene, an ordered scene
+    pair offers `m^2` candidate pairs and holds `t` true correspondences, so an admission
+    fraction of `a` permits `t * a / (1 - a)` false admissions and therefore a per-pair rate of
+    that over `m^2 - t`. The rate falls roughly as the fourth power of the feature count while
+    the signature stays the same, which is the whole point of computing it.
+    """
+    if not 0.0 < admission_bound < 1.0:
+        raise ValueError("an admission bound outside (0, 1) does not name an operating point")
+    configurations = configuration_count(features, cardinality)
+    candidates = configurations * configurations
+    permitted = true_pairs_per_scene_pair * admission_bound / (1.0 - admission_bound)
+    return {
+        "features": int(features),
+        "configurations_per_scene": configurations,
+        "candidate_pairs_per_scene_pair": candidates,
+        "true_pairs_per_scene_pair": int(true_pairs_per_scene_pair),
+        "false_admissions_permitted": permitted,
+        "required_pair_rate": permitted / (candidates - true_pairs_per_scene_pair),
+        "boundary": ("Arithmetic. It says what a bound demands, not what any signature "
+                     "delivers, and it approves nothing."),
+    }
+
+
+def measure_richness_scaling(feature_counts: Sequence[int] = (6, 9, 12),
+                             seeds: Sequence[int] = CALIBRATION_SEEDS,
+                             *, tau: float = MARGIN_TAU) -> Dict[str, Any]:
+    """Does the per-pair false rate hold as scenes get richer? Arithmetic cannot say; this can.
+
+    A DIAGNOSTIC. Candidate D is used as a probe of the signature, not as a candidate being
+    selected: it is already falsified, and nothing here adopts it or anything else. What is
+    being measured is the signature's behaviour as the candidate set grows, which is the
+    question T4E.12 exists to ask.
+
+    If the per-pair rate is roughly constant in richness, then the admission fraction degrades
+    as the fourth power of the feature count and no fixed bound transfers between records of
+    different density. If instead the rate falls as richness grows, the picture is better than
+    the arithmetic alone suggests. Either answer is a result.
+    """
+    metric = SignatureMetric(WEIGHTS)
+    rows = []
+    for count in feature_counts:
+        partition = [_scene_with_motif_membership(seed, plant=True, richness=count)
+                     for seed in seeds]
+        matched = motif_matched = motif_total = candidates = 0
+        for left, right in itertools.combinations(partition, 2):
+            pair = ((left[0], left[1]), (right[0], right[1]))
+            pairs = ratio_margin_matches(*pair, metric, tau=tau)
+            matched += len(pairs)
+            candidates += len(left[0]) * len(right[0])
+            left_motif = left[1].index(True)
+            right_motif = right[1].index(True)
+            motif_total += 1
+            if (left_motif, right_motif) in pairs:
+                motif_matched += 1
+        false_admissions = matched - motif_matched
+        required = required_pair_rate(count)
+        rows.append({
+            "features": int(count),
+            "configurations_per_scene": len(partition[0][0]),
+            "candidate_pairs": candidates,
+            "matches_returned": matched,
+            "motif_pairs": motif_total, "motif_pairs_matched": motif_matched,
+            "false_split_rate": (motif_total - motif_matched) / motif_total,
+            "false_admission_rate": (None if not matched else false_admissions / matched),
+            "false_pair_rate": false_admissions / (candidates - motif_total),
+            "required_pair_rate": required["required_pair_rate"],
+            "shortfall_factor": (false_admissions / (candidates - motif_total))
+                                / required["required_pair_rate"],
+        })
+    return {
+        "diagnostic": "how the identity problem scales with scene richness",
+        "is_a_diagnostic_not_a_criterion": (
+            "Candidate D is a probe here, not a candidate under selection; it is already "
+            "falsified. Nothing is adopted, no threshold is chosen and no operating point is "
+            "reported."),
+        "tau": tau, "seeds": list(seeds), "rows": rows,
+        "evidence_class": "development",
+        "boundary": ("Synthetic scenes at several densities settle a property of the "
+                     "signature, not of the atmosphere. The reserved confirmatory blocks are "
+                     "untouched and no defect is closed."),
     }
 
 
