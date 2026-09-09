@@ -1635,3 +1635,133 @@ def test_the_reserved_partitions_were_not_spent_on_a_falsified_candidate():
             with pytest.raises(ReservedSceneOpened):
                 _refuse_reserved([seed], confirmatory=confirmatory)
     assert not list(Path("measurements").glob("*t4e13*confirmatory*"))
+
+
+# --------------------------------- T4E.14: evidence in which recurrence is PARTIAL
+#
+# Every candidate so far ran on partitions where the motif sits in every scene, so no criterion
+# has been shown a scene in which a true configuration is genuinely absent. These tests hold the
+# test bed that repairs that: what it contains, what it deliberately does not contain, and the
+# reservation that was made before any of it existed.
+
+
+def test_the_partial_presence_seeds_do_not_collide_with_any_existing_evidence():
+    """New seeds, because rebuilding 100-405 at partial presence would put a different artefact
+    behind a familiar name. A collision would silently redefine measured evidence.
+    """
+    from src.benchmarks.identity_certification import (
+        CALIBRATION_SEEDS, EVALUATION_SEEDS, EXCHANGEABILITY_BLOCKS, NULL_SEEDS,
+        PARTIAL_PRESENCE_BLOCKS, PARTIAL_PRESENCE_NULL_BLOCKS, RESERVED_CONFIRMATORY_SEEDS,
+        RESERVED_PARTIAL_PRESENCE_SEEDS)
+
+    existing = set(CALIBRATION_SEEDS) | set(EVALUATION_SEEDS) | set(NULL_SEEDS)
+    existing |= set(RESERVED_CONFIRMATORY_SEEDS)
+    for block in EXCHANGEABILITY_BLOCKS:
+        existing |= set(block)
+    fresh = set(RESERVED_PARTIAL_PRESENCE_SEEDS)
+    for block in PARTIAL_PRESENCE_BLOCKS + PARTIAL_PRESENCE_NULL_BLOCKS:
+        fresh |= set(block)
+    assert not (existing & fresh), sorted(existing & fresh)
+
+
+def test_the_reserved_partial_presence_blocks_are_refused_with_no_flag_to_open_them():
+    """Blocks 720-735 are reserved TOTAL-recurrence partitions and cannot confirm a
+    partial-recurrence criterion, because the property under test is absent from them. So a new
+    reservation was needed, and the only honest moment to make it was before any of these
+    existed. There is deliberately no confirmatory escape: no amendment opening them exists, and
+    a flag that could open them would be a door left ajar for whoever arrives next.
+    """
+    import inspect
+
+    import pytest
+    from src.benchmarks.identity_certification import (
+        RESERVED_PARTIAL_PRESENCE_SEEDS, ReservedPartialPresenceScene,
+        _refuse_reserved_partial_presence, build_partial_presence_partition)
+
+    assert sorted(RESERVED_PARTIAL_PRESENCE_SEEDS) == (
+        list(range(880, 886)) + list(range(890, 896)))
+    for seed in sorted(RESERVED_PARTIAL_PRESENCE_SEEDS):
+        with pytest.raises(ReservedPartialPresenceScene):
+            _refuse_reserved_partial_presence([seed])
+    signature = inspect.signature(_refuse_reserved_partial_presence)
+    assert "confirmatory" not in signature.parameters
+    with pytest.raises(ReservedPartialPresenceScene):
+        build_partial_presence_partition(tuple(range(880, 886)), 3)
+
+
+def test_the_presence_pattern_is_deterministic_disclosed_and_not_contiguous():
+    """Contiguity would be a temporal structure this generator does not have.
+
+    A criterion measured against a contiguous planting rule could score well by discovering the
+    rule rather than the motif, so the subset is uniformly random and reproducible from the
+    block seed and j.
+    """
+    from src.benchmarks.identity_certification import (
+        PARTIAL_PRESENCE_BLOCKS, PRESENCE_LEVELS, presence_pattern)
+
+    contiguous = 0
+    for block in PARTIAL_PRESENCE_BLOCKS:
+        for level in PRESENCE_LEVELS:
+            pattern = presence_pattern(block, level)
+            assert pattern == presence_pattern(block, level), "not deterministic"
+            assert len(pattern) == level and len(set(pattern)) == level
+            assert all(0 <= index < 6 for index in pattern)
+            if list(pattern) == list(range(pattern[0], pattern[0] + level)):
+                contiguous += 1
+    assert contiguous < len(PARTIAL_PRESENCE_BLOCKS) * len(PRESENCE_LEVELS), (
+        "every pattern came out contiguous, which is the structure this rule exists to avoid")
+
+
+def test_the_population_a_criterion_is_judged_against_changes_with_j():
+    """C(j, 2), not C(S, 2). An error rate over the wrong population is the quietest wrong number."""
+    from src.benchmarks.identity_certification import true_motif_pairs
+
+    assert true_motif_pairs([True] * 6) == 15
+    assert true_motif_pairs([True] * 5 + [False]) == 10
+    assert true_motif_pairs([True] * 4 + [False] * 2) == 6
+    assert true_motif_pairs([True] * 3 + [False] * 3) == 3
+    assert true_motif_pairs([False] * 6) == 0
+    assert true_motif_pairs([True, False, True, False, True, False]) == 3
+
+
+def test_presence_levels_exclude_total_recurrence_and_the_degenerate_end():
+    """j = 6 is the existing planted partitions, already measured; j < 3 leaves one true pair."""
+    from src.benchmarks.identity_certification import PRESENCE_LEVELS
+
+    assert PRESENCE_LEVELS == (3, 4, 5)
+    assert 6 not in PRESENCE_LEVELS, "j = 6 is total recurrence and is already measured"
+
+
+def test_the_design_records_what_this_evidence_cannot_repair():
+    """The maintainer authorised two things. Only one of them is buildable here, and the
+    declaration says so rather than quietly delivering half.
+    """
+    import json
+    from pathlib import Path
+
+    body = json.loads(Path(
+        "data/identity_calibration/t4e14-partial-presence-design.json"
+    ).read_text(encoding="utf-8"))
+    cannot = body["what_the_existing_evidence_cannot_settle"]
+    assert "not a distinct phenomenon in this generator" in cannot["recurrence_across_partitions"]
+    assert "does NOT repair the second" in cannot["what_this_design_does_and_does_not_repair"]
+    derivable = body["what_is_derivable_before_the_evidence_is_built"]
+    assert "1.0000" in derivable["candidate_2_will_fail_completely_on_this_evidence"]
+    assert "may not be reported as a discovery" in (
+        derivable["candidate_2_will_fail_completely_on_this_evidence"])
+    assert body["confirmatory"]["status"].startswith("RESERVED AND NOT TO BE GENERATED")
+
+
+def test_no_criterion_is_declared_or_adopted_by_the_evidence_slice():
+    """A test bed is not a rule. The criterion for these partitions needs its own declaration,
+    written before the audit's numbers are used to shape it.
+    """
+    import json
+    from pathlib import Path
+
+    adoption = json.loads(Path(
+        "data/identity_calibration/t4e14-partial-presence-adoption.json"
+    ).read_text(encoding="utf-8"))
+    assert adoption["adopted_as"] == "EVIDENCE_CONSTRUCTION_AND_AUDIT_ONLY"
+    assert "not the adoption of any criterion" in adoption["what_this_is_not"]
+    assert "still owes it" in adoption["what_this_evidence_still_does_not_supply"]

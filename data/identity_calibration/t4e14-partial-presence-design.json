@@ -1,0 +1,73 @@
+{
+  "schema": "t4e14-evidence-design/v1",
+  "status": "declared_before_construction",
+  "task": "T4E.14",
+  "artefact": "partial_presence_partitions",
+  "declared_by": "Edward Jonathan Bentley, maintainer (scientific choice); drafted by Claude Opus 5 at the maintainer's direction and NOT VALID until the maintainer has reviewed and adopted it",
+  "declared_on": "2026-09-10",
+  "why_this_is_evidence_and_not_a_criterion": "T4E.12 candidate 2 passes at k = S and its declaration records that it will not transfer, because a real pattern need not appear in every window. T4E.13 candidate 3 tested the minimal relaxation and was falsified. Both were measured on partitions where the motif is planted in EVERY scene, so recurrence is total and partial recurrence has never been in the evidence at all. A criterion built for partial recurrence, measured on data where recurrence is total, cannot fail for the right reason or pass for the right reason. This declaration therefore fixes a test bed, not a rule, and no criterion is declared or adopted by it.",
+  "what_the_existing_evidence_cannot_settle": {
+    "partial_recurrence": "Every planted scene carries the motif, so no criterion has ever been shown a scene where a true configuration is genuinely absent. Candidate 3's false-split column was 0.0000 by arithmetic partly for this reason: there was no true absence to mis-handle. Its falsification is sound but it was measured on one side only.",
+    "recurrence_across_partitions": "The blocks are disjoint seed ranges over independent draws with the same motif shape at a random centre and rotation. Scenes within a block differ from one another exactly as scenes across blocks do, so 'across partitions' is not a distinct phenomenon in this generator and a criterion measured on it would be the same problem relabelled. Real epoch-to-epoch recurrence needs a record with epochs, which the acquired-record path owes and this does not supply.",
+    "what_this_design_does_and_does_not_repair": "It repairs the first. It does NOT repair the second, and nothing built on it may be reported as evidence about recurrence across genuinely separated epochs."
+  },
+  "construction": {
+    "statement": "A partial-presence partition is S scenes built exactly as the existing planted partitions are, except that the motif is planted in only j of them. The remaining S - j scenes are built with plant = False and are filled with distractors to the same feature count, so presence is not leaked by the number of features a scene holds.",
+    "S": 6,
+    "presence_levels_j": [3, 4, 5],
+    "why_j_stops_at_5": "j = 6 is total recurrence and is exactly the existing planted partitions, already measured by candidates C, D, 2 and 3. Re-generating it under a new name would add nothing and would invite a comparison across differently-constructed evidence.",
+    "why_j_starts_at_3": "A configuration present in fewer than three scenes leaves at most C(2,2) = 1 true cross-scene pair, and a criterion cannot be shown to discriminate on a population of one. Three is the smallest j at which both error rates have room to move.",
+    "which_scenes_hold_the_motif": "A uniformly random subset of size j, drawn from a generator seeded by the block's first seed and j, so the pattern is deterministic, reproducible and disclosed. It is NOT contiguous: these scenes carry no ordering, and planting the motif in a contiguous run would smuggle in a temporal assumption the generator cannot support and a criterion could then exploit.",
+    "the_absent_scenes_are_not_null_scenes": "They are ordinary distractor scenes sitting inside a partition that does contain the motif elsewhere. That is the situation a mining rule actually faces and it is different from the all-null partition, where there is nothing anywhere.",
+    "richness": "The existing knob, unchanged: 6, 9 and 12 features per scene, so C(f,3) configurations per scene and the same population the previous candidates were counted over."
+  },
+  "ground_truth": {
+    "labels_are_construction_not_proxy": "The motif's feature positions are known to the generator. A scene's motif configuration is identified from those positions and REFUSED BY NAME rather than guessed when a planted position has no feature near it or two positions claim one, exactly as the existing planted scenes do.",
+    "presence_labels": "Each scene carries a boolean: does it hold the motif. The true cross-scene motif pairs of a partition are the C(j,2) pairs among present scenes, and no others.",
+    "the_new_error_this_evidence_exposes": "Admitting a pair one of whose members lies in an ABSENT scene is a claim that the motif recurs where it does not. It is counted inside the false-admission rate, and is ALSO to be reported separately as a presence claim, because it is the failure that matters for mining: a rule that hallucinates recurrence in an empty window is worse than one that misses a real one, and a single pooled rate hides which is happening."
+  },
+  "what_is_derivable_before_the_evidence_is_built": {
+    "why_this_section_exists": "Candidate 1 failed on properties derivable before adoption that were not derived. That lesson now applies to evidence as well as to criteria: a test bed on which the outcome is already known settles nothing.",
+    "candidate_2_will_fail_completely_on_this_evidence": "k = S admits only groups spanning every scene. At j < S no such group containing the motif exists, so candidate 2's false split is 1.0000 at every j and every richness BEFORE it is run. That is arithmetic, it is the whole point of building this evidence, and it may not be reported as a discovery about candidate 2 -- its own declaration said this in advance.",
+    "candidate_3_will_not_be_rescued_by_it": "k = S - 1 recovers the motif only at j = 5. At j = 3 and j = 4 its false split is 1.0000 by the same argument. Nothing here reopens a falsified candidate.",
+    "so_what_is_actually_open": "Whether ANY rule can recover a configuration present in j of S scenes without admitting the coincidental groups that T4E.13 showed reach S - 1 freely. Candidate 3 established that a plain threshold at S - 1 cannot. This evidence is what makes the question answerable rather than rhetorical."
+  },
+  "development": {
+    "blocks": [
+      [800, 801, 802, 803, 804, 805],
+      [810, 811, 812, 813, 814, 815],
+      [820, 821, 822, 823, 824, 825],
+      [830, 831, 832, 833, 834, 835]
+    ],
+    "null_blocks": [[850, 851, 852, 853, 854, 855]],
+    "status": "NOT YET GENERATED at the time of this declaration. Once built and inspected they are development evidence permanently, and no later renaming makes them fresh.",
+    "why_new_seeds_rather_than_the_existing_blocks": "Blocks 100-405 are total-recurrence partitions and are among the most inspected data in the programme. Rebuilding them at partial presence would produce a different artefact under a familiar name, which is the confusion this schema exists to prevent."
+  },
+  "confirmatory": {
+    "blocks": [
+      [880, 881, 882, 883, 884, 885],
+      [890, 891, 892, 893, 894, 895]
+    ],
+    "status": "RESERVED AND NOT TO BE GENERATED. Reserved in this declaration, before a single partial-presence scene exists, and to be enforced in code the way RESERVED_CONFIRMATORY_SEEDS is -- refused before a scene is built, including under confirmatory = True, until an amendment opens them.",
+    "why_a_new_reservation_is_needed": "Blocks 720-735 are reserved TOTAL-recurrence partitions. They cannot serve as confirmatory evidence for a partial-recurrence criterion, because the property under test is absent from them. Reserving partial-presence blocks now, before any exist, is the only moment at which it can be done honestly.",
+    "what_it_would_take_to_spend_them": "A criterion that meets its declared acceptance on the development partial-presence blocks, and its own amendment. Nothing in this declaration authorises opening them, and adopting this declaration does not."
+  },
+  "acceptance_for_this_slice": {
+    "this_is_an_audit_not_a_test_of_any_rule": "The slice succeeds if the constructed evidence has the properties claimed for it, and fails if it does not. No criterion is measured.",
+    "condition_1_presence_counts": "Exactly j scenes of each partition carry a motif configuration, and exactly S - j carry none, at every j and every richness.",
+    "condition_2_no_leakage_by_feature_count": "Present and absent scenes hold the same number of features, so a rule cannot infer presence from richness alone.",
+    "condition_3_labels_refuse_rather_than_guess": "Where a planted position has no feature near it, or two positions claim one, the scene is refused by name and not silently mislabelled.",
+    "condition_4_the_absent_scenes_are_ordinary": "Configurations in absent scenes are drawn by the same distractor rule as configurations in present ones, so absence is the absence of the motif and not a different kind of scene.",
+    "condition_5_reproducibility": "The presence pattern is a deterministic function of the block seed and j, and re-running the construction reproduces the same partitions exactly."
+  },
+  "what_this_slice_will_and_will_not_license": "It will license using these partitions as a test bed for a declared partial-recurrence criterion. It will NOT license any claim about a criterion, will not reopen candidate 2 or candidate 3, will not approve a mining radius, will not discharge T4E.8's acquired-record acceptance, will not close D96, D97, D98, D99 or D100, and says nothing about kind_recurrence, which remains the primary scientific target and still has no catalogue.",
+  "governing_rules": [
+    "Declare before constructing, and record what the evidence cannot settle at the same time as what it can.",
+    "Already inspected data do not become untouched by renaming them.",
+    "A named refusal is preferable to an unsupported number.",
+    "Code does not sign a scientific declaration for a person; this file is not adopted until the maintainer says so.",
+    "R19: the mechanism is domain-agnostic but this evidence is atmospheric and synthetic, and cross-domain use requires its own declared experiment."
+  ],
+  "scope": "Atmospheric identity path.",
+  "claim_boundary": "Synthetic scenes settle properties of a criterion, not of the atmosphere. This declaration builds evidence and settles nothing on its own. No frame of the 2022-2023 forecast-test period is opened by any part of it."
+}

@@ -2803,6 +2803,76 @@ configuration absent from one scene outright; nothing about recurrence *across* 
 which the mining machinery needs; no mining radius, no discharge of T4E.8's acceptance, no
 closure of D96 to D100; and nothing about `kind_recurrence`, which still has no catalogue.
 
+**T4E.14 (2026-09-10): evidence in which recurrence is partial.** The maintainer authorised a
+criterion built for partial recurrence *if that is what the work needs*. Resolving that
+conditional against the evidence, rather than assuming it, showed both authorised options were
+untestable as things stood: recurrence across partitions is not a distinct phenomenon in this
+generator, and partial recurrence was absent from the evidence entirely. So the first thing the
+work needed was a test bed, and this is it.
+
+```
+T4E.14 AUDIT -- 39 partial-presence partitions built and checked
+condition 1  presence counts                 MET
+condition 2  no leakage by configuration count MET
+condition 3  labels refused not guessed      MET, 0 refusals
+condition 4  absent scenes are ordinary      MET
+condition 5  reproducible                    MET
+null 850-855 holds nothing anywhere          MET
+
+j        true pairs   example planting patterns
+3            3        [0,2,5] [1,3,4] [0,4,5] [2,4,5]
+4            6        [0,1,3,5] [0,1,4,5] [0,1,3,4] [0,1,2,5]
+5           10        [1,2,3,4,5] [0,2,3,4,5] [0,1,2,3,4] x2
+
+configurations per scene: 20 / 84 / 220 at richness 6 / 9 / 12,
+identical whether or not the scene holds the motif
+```
+
+**Why this is evidence and not a rule.** Candidates B, C, D, 1, 2 and 3 all ran on partitions
+where the motif sits in *every* scene. Recurrence there is total, so no criterion has ever been
+shown a scene in which a true configuration is genuinely absent -- candidate 3's false-split
+column was 0.0000 partly for that reason, and its falsification, though sound, was measured on
+one side only. A criterion built for partial recurrence and measured where recurrence is total
+cannot fail for the right reason or pass for the right reason.
+
+**What the audit checked, and what it deliberately did not.** It checked the test bed, not any
+rule. No candidate was run on these partitions and nothing here adjudicates one.
+
+**Two construction choices that could each have rigged a later result.** The planting subset is
+uniformly random rather than contiguous: these scenes carry no ordering, so a contiguous run
+would introduce temporal structure the generator does not have, and a criterion could then score
+well by discovering the planting rule instead of the motif. And absent scenes hold the same
+number of configurations as present ones -- 20, 84, 220 -- so presence cannot be read off the
+size of a scene for free.
+
+**The population moves with `j` and travels with the partition.** A criterion must recover
+C(j,2) pairs: 3, 6 and 10, against 15 in the total-recurrence partitions. An error rate divided
+by 15 on this evidence would be the quietest possible wrong number.
+
+**Derived in advance, and not findings.** Candidate 2 requires a group spanning every scene, so
+at `j < S` no such group containing the motif exists and its false split is 1.0000 here *before
+it runs*. Candidate 3 recovers the motif only at `j = 5`. Both were stated in the design
+declaration; neither is a discovery about a passing or a falsified candidate.
+
+**A new reservation, made at the only honest moment.** Partial-presence blocks 880-895 were
+reserved before a single partial-presence scene existed, and are refused **unconditionally** --
+`ReservedPartialPresenceScene`, with no `confirmatory` flag, because no amendment opening them
+exists and a flag that could open them would be a door left ajar. Blocks 720-735 stay separately
+reserved and are *total*-recurrence partitions, which is exactly why a new reservation was
+needed: the property under test is absent from them.
+
+**What this does not repair.** Epoch-to-epoch recurrence. The blocks are disjoint seed ranges
+over independent draws, so scenes within a block differ from one another exactly as scenes
+across blocks do, and "across partitions" is not a distinct phenomenon in this generator.
+Partial presence is fixed here; separated epochs remain owed by the acquired-record path, and
+nothing built on these partitions may be reported as evidence about them.
+
+**What comes next, and what it may not borrow.** A criterion declared against these partitions,
+with its own acceptance and its own blindness claim -- written before the audit's numbers are
+used to shape it. It may not borrow candidate 2's `k = S`, which is arithmetically dead here,
+nor candidate 3's `k = S - 1`, which is falsified and recovers only at `j = 5`. That declaration
+is the maintainer's decision and nothing here authorises it.
+
 **T4E.13 (2026-09-09): candidate 3 measured, and falsified on a choice made blind.** The
 minimal relaxation of candidate 2 -- tolerate exactly one absence, `k = S - 1` -- admits
 coincidences that `k = S` excludes.

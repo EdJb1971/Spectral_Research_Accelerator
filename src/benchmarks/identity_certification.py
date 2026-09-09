@@ -942,6 +942,220 @@ def measure_consistency_criterion(
 
 
 # ---------------------------------------------------------------------------------------------
+# T4E.14: evidence in which recurrence is PARTIAL.
+#
+# Declared in `data/identity_calibration/t4e14-partial-presence-design.json` and NOT BUILT until
+# that declaration is adopted.
+#
+# Everything measured so far -- candidates B, C, D, 1, 2 and 3 -- ran on partitions where the
+# motif is planted in EVERY scene. Recurrence there is total, so no criterion has ever been
+# shown a scene in which a true configuration is genuinely absent. Candidate 3's false-split
+# column was 0.0000 partly for that reason: there was no true absence for it to mishandle, and
+# it was therefore measured on one side only. Its falsification stands; what it could not do is
+# fail for the other reason.
+#
+# This section builds partitions where the motif is present in j of S scenes. It is a test bed,
+# not a rule: no criterion is declared, adopted or measured here.
+#
+# Two things about the existing generator are worth stating because they bound what this can
+# repair. Scenes are independent draws with the same motif shape at a random centre and
+# rotation, and the blocks are disjoint seed ranges over them -- so scenes within a block differ
+# from one another exactly as scenes across blocks do, and "across partitions" is not a distinct
+# phenomenon here. This design repairs partial presence. It does NOT supply epoch-to-epoch
+# recurrence, which the acquired-record path still owes.
+
+#: The partial-presence development partitions. New seeds, because blocks 100-405 are
+#: total-recurrence partitions and rebuilding them at partial presence would put a different
+#: artefact behind a familiar name.
+PARTIAL_PRESENCE_BLOCKS = tuple(
+    tuple(range(start, start + SCENES_PER_PARTITION)) for start in (800, 810, 820, 830))
+
+#: The partial-presence null. Nothing is planted anywhere, so the right answer is nothing --
+#: which is a different situation from an ABSENT SCENE inside a partition that does hold the
+#: motif elsewhere, and both are needed.
+PARTIAL_PRESENCE_NULL_BLOCKS = (tuple(range(850, 850 + SCENES_PER_PARTITION)),)
+
+#: How many of the S scenes hold the motif. j = 6 is total recurrence and is the existing
+#: planted partitions, already measured; j < 3 leaves at most one true cross-scene pair, which
+#: is no population to discriminate on.
+PRESENCE_LEVELS = (3, 4, 5)
+
+#: Reserved partial-presence partitions, declared before a single partial-presence scene
+#: existed. Blocks 720-735 are reserved TOTAL-recurrence partitions and cannot serve as
+#: confirmatory evidence for a partial-recurrence criterion, because the property under test is
+#: absent from them. There is exactly one honest moment to reserve these and it is before any
+#: of them exists.
+RESERVED_PARTIAL_PRESENCE_SEEDS = frozenset(
+    seed for start in (880, 890) for seed in range(start, start + SCENES_PER_PARTITION))
+
+
+class ReservedPartialPresenceScene(RuntimeError):
+    """A reserved partial-presence block was reached, refused by name before it is built.
+
+    There is no `confirmatory=True` escape on this one. No amendment opening these exists, so
+    a flag that could open them would be a door left ajar for the convenience of whoever
+    arrives next.
+    """
+
+
+def _refuse_reserved_partial_presence(seeds) -> None:
+    held = sorted(set(int(seed) for seed in seeds) & RESERVED_PARTIAL_PRESENCE_SEEDS)
+    if held:
+        raise ReservedPartialPresenceScene(
+            "partial-presence seeds %s are reserved and are refused unconditionally. They were "
+            "reserved in the T4E.14 design declaration before any partial-presence scene "
+            "existed, and spending them needs a criterion that first meets its acceptance on "
+            "the development blocks, plus its own amendment." % held)
+
+
+def presence_pattern(block: Sequence[int], present_count: int,
+                     *, size: Optional[int] = None) -> Tuple[int, ...]:
+    """Which scenes of a partition hold the motif: a uniformly random subset of size j.
+
+    Deterministic in the block's first seed and j, so the partition is reproducible and the
+    pattern is disclosed rather than incidental.
+
+    NOT contiguous, deliberately. These scenes carry no ordering, so planting the motif in a
+    contiguous run would introduce a temporal structure the generator does not have and a
+    criterion could then exploit -- it would score well by discovering the planting rule.
+    """
+    scenes = len(tuple(block)) if size is None else int(size)
+    wanted = int(present_count)
+    if not 0 <= wanted <= scenes:
+        raise ValueError(
+            "cannot plant the motif in %d of %d scenes" % (wanted, scenes))
+    rng = np.random.default_rng(int(tuple(block)[0]) * 1000 + wanted)
+    return tuple(sorted(int(index) for index in
+                        rng.choice(scenes, size=wanted, replace=False)))
+
+
+def build_partial_presence_partition(block: Sequence[int], present_count: int,
+                                     *, richness: Optional[int] = None):
+    """A partition in which the motif is planted in `present_count` of its scenes.
+
+    Returns `(scenes, presence)` where `scenes` are exactly what the criteria already consume
+    and `presence[i]` says whether scene `i` holds the motif. The absent scenes are ordinary
+    distractor scenes -- same feature count, same minimum-separation rule -- so absence is the
+    absence of the motif and not a different kind of scene, and presence cannot be inferred
+    from how many features a scene holds.
+    """
+    seeds = tuple(int(seed) for seed in block)
+    _refuse_reserved_partial_presence(seeds)
+    present = set(presence_pattern(seeds, present_count))
+    scenes, presence = [], []
+    for index, seed in enumerate(seeds):
+        holds = index in present
+        scenes.append(_scene_with_motif_membership(seed, plant=holds, richness=richness))
+        presence.append(holds)
+    return scenes, presence
+
+
+def true_motif_pairs(presence: Sequence[bool]) -> int:
+    """The cross-scene pairs a criterion is required to recover: C(j, 2), and no others.
+
+    Stated as a function because the population changes with j, and an error rate divided by
+    the wrong population is the quietest way to report the wrong number.
+    """
+    return sum(1 for _ in itertools.combinations(
+        [index for index, holds in enumerate(presence) if holds], 2))
+
+
+def audit_partial_presence(presence_levels: Sequence[int] = PRESENCE_LEVELS,
+                           blocks: Sequence[Sequence[int]] = None,
+                           null_blocks: Sequence[Sequence[int]] = None,
+                           richness_levels: Sequence[int] = (6, 9, 12)) -> Dict[str, Any]:
+    """T4E.14's audit: does the constructed evidence have the properties claimed for it?
+
+    This measures the TEST BED, not any rule. It succeeds if the partitions are what the design
+    declaration says they are and fails if they are not. No criterion appears anywhere in it.
+    """
+    blocks = tuple(blocks) if blocks is not None else PARTIAL_PRESENCE_BLOCKS
+    null_blocks = (tuple(null_blocks) if null_blocks is not None
+                   else PARTIAL_PRESENCE_NULL_BLOCKS)
+    rows, refusals = [], []
+
+    def inspect(block, present_count, richness):
+        try:
+            scenes, presence = build_partial_presence_partition(
+                block, present_count, richness=richness)
+        except UnlabelledScene as error:
+            refusals.append({
+                "block": list(block), "present_count": int(present_count),
+                "richness": int(richness), "refused_by_name": str(error)})
+            return None
+        holds = [any(scene[1]) for scene in scenes]
+        motif_configurations = [sum(1 for flag in scene[1] if flag) for scene in scenes]
+        return {
+            "block": list(block), "present_count": int(present_count),
+            "richness": int(richness),
+            "presence_pattern": list(presence_pattern(block, present_count)),
+            "scenes_holding_the_motif": sum(1 for flag in holds if flag),
+            "scenes_holding_none": sum(1 for flag in holds if not flag),
+            "motif_configurations_per_scene": motif_configurations,
+            "configurations_per_scene": [len(scene[0]) for scene in scenes],
+            "true_motif_pairs": true_motif_pairs(presence),
+        }
+
+    for richness in richness_levels:
+        for present_count in presence_levels:
+            for block in blocks:
+                row = inspect(block, present_count, richness)
+                if row is not None:
+                    rows.append(row)
+        for block in null_blocks:
+            row = inspect(block, 0, richness)
+            if row is not None:
+                row["is_null_partition"] = True
+                rows.append(row)
+
+    planted = [row for row in rows if not row.get("is_null_partition")]
+    nulls = [row for row in rows if row.get("is_null_partition")]
+    return {
+        "audit": "t4e14_partial_presence",
+        "presence_levels": [int(value) for value in presence_levels],
+        "richness_levels": [int(value) for value in richness_levels],
+        "partitions": rows,
+        "refusals": refusals,
+        "condition_1_presence_counts": all(
+            row["scenes_holding_the_motif"] == row["present_count"]
+            and row["scenes_holding_none"] == SCENES_PER_PARTITION - row["present_count"]
+            for row in planted),
+        "condition_2_no_leakage_by_configuration_count": all(
+            len(set(row["configurations_per_scene"])) == 1 for row in rows),
+        "condition_3_labels_refused_rather_than_guessed": {
+            "refused": len(refusals),
+            "note": ("Scenes whose motif labelling is ambiguous are refused by name by "
+                     "_motif_member_ids and counted here. A silent mislabel would put a wrong "
+                     "ground truth under every error rate measured on this evidence."),
+        },
+        "condition_4_absent_scenes_are_ordinary": all(
+            sum(1 for count in row["motif_configurations_per_scene"] if count > 0)
+            == row["present_count"] for row in planted),
+        "condition_5_reproducible": all(
+            row["presence_pattern"] == list(presence_pattern(row["block"],
+                                                             row["present_count"]))
+            for row in planted),
+        "the_null_holds_nothing_anywhere": all(
+            row["scenes_holding_the_motif"] == 0 for row in nulls),
+        "what_is_derivable_and_is_not_a_finding": (
+            "Candidate 2 requires a group spanning every scene, so at j < S no such group "
+            "containing the motif exists and its false split is 1.0000 here BEFORE it is run. "
+            "Candidate 3 recovers the motif only at j = 5. Both are arithmetic, both were "
+            "stated in the design declaration, and neither is a discovery about a falsified "
+            "or a passing candidate."),
+        "what_this_evidence_does_not_supply": (
+            "Epoch-to-epoch recurrence. The blocks are disjoint seed ranges over independent "
+            "draws, so scenes within a block differ from one another exactly as scenes across "
+            "blocks do. Partial presence is repaired here; recurrence across genuinely "
+            "separated epochs is not, and the acquired-record path still owes it."),
+        "reserved": (
+            "Partial-presence blocks 880-895 are refused unconditionally by "
+            "ReservedPartialPresenceScene and have never been built."),
+        "claim_boundary": CLAIM_BOUNDARY,
+    }
+
+
+# ---------------------------------------------------------------------------------------------
 # T4E.13 candidate 3: partial recurrence, at a clique size below the partition.
 #
 # Declared in `data/identity_calibration/t4e13-partial-recurrence-declaration.json` and NOT
