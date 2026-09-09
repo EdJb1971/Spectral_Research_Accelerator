@@ -31,6 +31,7 @@ Last revised 2026-09-08.
 | T4E.7 null calibration | **Done** | — | Needs no replicates; recovers a planted identity on synthetic data. Returns *no radius* on the acquired record. |
 | T4E.8 defensible identity | **In progress** — slices 1–5 implemented, **acceptance unmet**; target decided 2026-09-09 | D97–D100; blocks T4F.9 | Slice 2's spatial mode fails the declared 10%/10% criterion (split 25.6–29.4%, admission 9.4–10.9%); no radius meets both bounds in any window. Slice 3 makes the identity target a declared field and refuses circular evidence. **Target decided 2026-09-09: `kind_recurrence` primary, the other two diagnostic.** That needs `external_reference` evidence, so a reviewed catalogue and a serialisation for it are now on the critical path and the primary target is unevaluable from the tool until they exist. §3E.8, §3E.9, §3E.11 |
 | T4E.8 slice 4 identity declaration on screen | **Implemented** | Closes PLAN §5 gap 1 | `/api/v1/identity/*` and `IdentityDeclarationView` render the admissibility matrix with the circular pairing refused at the weight of an admission, receipts with their claim boundaries, and the surface's own refusals. Read-only; choosing remains a person's act. 8 rendered browser tests. §3E.11 |
+| T4E.15 a criterion for partial recurrence | **Declared and fixed in code; not adopted and measured nowhere** | Closure under the matching: a consistent set is admitted when no member has a mutual nearest neighbour outside it, **whatever its span**. No `k`, no threshold, no fitted model, no parameter of any kind — so the declaration forbids adding one. It keeps what candidate 2 actually exploited (a conjunction with no loose ends) and discards the size. The direct reading of the maintainer's phrasing — admit the widest group — was **discarded by derivation**: coincidences reach 5, so at `j = 3` the widest group is a coincidence and recall would be 1.0000 wrong before the rule ran. Derivably non-inert on total-recurrence evidence; **recall on partial presence is genuinely at risk and is the informative half**, counted against C(j,2). Hallucinated presence bounded as its own condition. No prediction offered, because there is no basis for one. §3E.24 | Nothing measured, so nothing licensed |
 | T4E.14 evidence in which recurrence is partial | **Declared, adopted as construction and audit only, and all five audit conditions met** | The motif planted in `j` of 6 scenes, `j` in {3, 4, 5}, on new seeds 800–835 with a null at 850–855: 39 partitions, 0 labelling refusals, presence counts exact, and configurations per scene identical (20/84/220) whether or not a scene holds the motif, so presence cannot be read off scene size. Planting subsets are uniformly random, **not contiguous** — these scenes carry no ordering, and a contiguous rule is one a criterion could discover instead of the motif. The population a criterion must recover moves to C(j,2) = 3, 6, 10. **No criterion was run**; candidate 2's false split is 1.0000 here by arithmetic and candidate 3 recovers only at `j = 5`, both stated in advance and neither a finding. Partial-presence blocks **880–895 reserved before any partial-presence scene existed** and refused with no `confirmatory` flag. §3E.23 | Licenses use as a test bed for a declared partial-recurrence criterion. Supplies **no** epoch-to-epoch recurrence — the blocks are disjoint seed ranges over independent draws, so "across partitions" is not a distinct phenomenon here, and the acquired-record path still owes it |
 | T4E.13 partial recurrence at k below the partition size | **Adopted and FALSIFIED on conditions 3 and 2; the null held and recall was arithmetic** | Candidate 2's criterion with `k = S - 1` by the rule *tolerate exactly one absence*, the only `k` below `S` nameable without choosing a free fraction. The first criterion in the sequence whose structural choice was fixed **before any measurement at any `k` below `S`** — the gap candidate 2's confirmatory pass could not close. Disclosed rather than hidden: `k = S - 1` sits at the coincidental ceiling candidate 2 exposed, so it is the value most likely to fail, not the safe one. Recall is **passed by arithmetic** — admissions are monotone in `k`, so candidate 2's 0.0000 split is inherited before the run — and the declaration says so, so the whole empirical content is the admission side. Measured: false admission **0.4000 at richness 9 and 0.8000 at richness 12** against a 0.10 bound, with the shortfall widening to **x36.05**, and the matched fraction *rising* on block 300–305 at the richest level. The declaration predicted that direction in writing beforehand — coincidental groups do reach `S − 1` and the greedy probe under-counted them. **Condition 4 held**: the null admits 0 of 1486 proposed at richness 12, so the relaxation broke the planted blocks, not the null. The margin between recurrence and coincidence is **exactly one scene wide**, and by monotonicity `k = 4` and `k = 3` can only be worse. Blocks 720–735 stay closed: spending them was made conditional on this passing, before the numbers existed. §3E.21, §3E.22 | Licenses only that *this* relaxation admits coincidences at richness 9 and 12. Not that the signature is inadequate, not that partial recurrence is undetectable, and not that `k = S` transfers — candidate 2's limitation stands untouched |
 | T4E.11 a criterion that survives a partition change | **B, C and D all adopted before measurement and falsified by it; two diagnostics redirect to T4E.12** |
@@ -8711,6 +8712,74 @@ D97, isolated from the real record: the calibration's failure is not only the at
 messiness. D101 is closed by the benchmark existing and reporting; D97 gains this evidence and
 stays open. No mining radius is approved and T4E.8's acquired-record acceptance is untouched.
 
+### 3E.24 Candidate 4 declared: closure under the matching, with no parameter at all (T4E.15)
+
+Declared in `data/identity_calibration/t4e15-closure-declaration.json`. **Not adopted, and
+measured nowhere.** The criterion is fixed in code -- `is_closed`, `closure_admitted_pairs`,
+`measure_closure_criterion`, `measure_closure_cross_check` -- and no result exists for it.
+
+**The criterion.** Form the mutual nearest-neighbour matching as candidate C does. A set of
+configurations, at most one per scene, is CONSISTENT when every member is the mutual nearest
+neighbour of every other, as in candidate 2. It is CLOSED when no member has a mutual nearest
+neighbour outside the set. Admit the pairs inside sets that are consistent and closed, whatever
+their span.
+
+**There is no `k`, and no parameter of any kind** -- no clique size, no span threshold, no
+radius, no ratio, no fitted model, no estimated normaliser. A group of three is admitted on the
+same terms as a group of six, which is what makes it a criterion *for* partial recurrence rather
+than a criterion with its tolerance widened. Every falsified candidate in this sequence carried
+a number that could be moved after the fact; this one carries none, which is why the declaration
+can forbid adding one outright.
+
+**What closure reads that a span threshold cannot** is the *absence* of outside partners. A
+threshold sees only how far a group reaches and is blind to what its members do elsewhere in the
+partition. A coincidental group whose members also match configurations outside it is not a
+coherent identity however far it reaches; a true group matching nothing outside itself is one
+however short it is. That is what candidate 2 was actually exploiting -- never the number 6, but
+a conjunction with no loose ends.
+
+**A design was discarded by derivation and is recorded rather than forgotten.** Ranking groups
+by span and admitting the widest is the most direct reading of the maintainer's own phrasing,
+and it is dead on arrival: candidate 3 established that coincidental groups reach `S - 1 = 5`,
+so at `j = 3` the widest group in the partition is a coincidence and the motif is rejected
+outright -- false split 1.0000 before the rule runs. Catching that in advance is the discipline
+candidate 1's failure installed.
+
+**Derivable: it cannot be inert on total-recurrence evidence.** A group spanning all `S` scenes
+uses a partner in every other scene, and the matching gives at most one partner per scene, so
+those are *all* of each member's partners and the motif group is closed by construction. So
+candidate 4 admits at least the motif there and cannot fail the way candidate 1 did.
+
+**Not derivable, and the whole substance of the measurement:** whether the motif group is closed
+on *partial*-presence evidence. A motif configuration in a present scene may be the mutual
+nearest neighbour of something unrelated in an absent scene, and closure would then reject the
+motif. Nothing measured so far bears on how often that happens.
+
+**The honest worst case is stated in advance.** Candidate 4 may admit nothing on partial-presence
+evidence. That would be a complete result -- and it is *not* candidate 1's failure, which was
+inert everywhere including where the answer was easy. **No prediction is offered**, because
+unlike candidate 3 there is no basis for one, and a guess dressed as a prediction is worth
+nothing when checked.
+
+**Recall is the informative half here, for the first time.** It is counted against C(j,2) and
+not C(S,2), and it is genuinely at risk rather than arithmetic. Hallucinated presence -- pairs
+touching a scene that holds nothing -- is bounded and reported as a condition of its own,
+because a rule that claims recurrence in an empty window is worse for mining than one that
+misses a real occurrence, and a pooled admission rate hides which is happening.
+
+**Blindness, and its limit.** The structure was fixed before anything was measured on the T4E.14
+evidence and before the `k` profile's rungs at `k = 4` and `k = 3` were seen. Nothing known
+concerns closure: no measurement in this programme has looked at whether a consistent group has
+partners outside itself. The limit is that the declaration was authored before rung `k = 4`
+landed but committed after it, so the git history does not prove the interval -- the claim rests
+on the recorded ordering, not on cryptographic evidence, and it is written down that way rather
+than left to be inferred.
+
+**The reserved evidence stays closed.** Partial-presence blocks 880-895 have never been built
+and are refused unconditionally. Blocks 720-735 could confirm nothing here whatever their
+cleanliness: they are total-recurrence partitions and the property under test is absent from
+them.
+
 ### 3E.23 Evidence in which recurrence is partial, and the reservation made before it existed (T4E.14)
 
 Declared in `data/identity_calibration/t4e14-partial-presence-design.json`, adopted as evidence
@@ -10664,10 +10733,10 @@ able to sit three slices out of date.
   | `test_representation_alignment.py` | 19 | Mutual k-NN alignment between two kernels, the metric arXiv:2405.07987 reports as 0.16 out of 1 without a reference: self-alignment exactly 1, rotation invariance of the inner-product kernel, alignment falling monotonically as two views are driven apart, deterministic tie-breaking; the closed-form chance floor k/(n-1) checked against random neighbour sets and shown to survive strongly clustered and nine-fold duplicated kernels to under one percent -- a first version of that test asserted the opposite and is corrected in place; a paired view clearing its permuted pairing while two unrelated representations come back unresolved; and the refusals -- a non-square kernel, two kernels over different point sets, a non-finite similarity, a neighbour count outside [1, n-1], a null with no permutations, and an exceedance never reported as exactly zero |
   | `test_operating_point.py` | 15 | T4E.10 identity operating-point estimators: the closed-form required support checked against the order statistic it derives from, the tolerance bound refusing thin support and naming the 22 observations that would carry 90/90, that bound never narrower than the empirical quantile it replaces, an empty population refusing rather than returning zero, the empirical quantile publishing that it guarantees nothing and recording the confidence it was given and ignored, the bootstrap widening rather than refusing while naming its own weakness and staying deterministic per seed, every registered estimator publishing a guarantee, only the tolerance bound declaring that it refuses, and the refusals -- an unknown estimator corrected, a coverage or confidence outside (0,1), and a negative or non-finite distance |
   | `test_identity_api.py` | 16 | T4E.8 slice 4 the identity declaration surface: every target served with what it does not license, the circular `kind_recurrence` x `record_derived_proxy` pairing served as a refusal rather than omitted, an admitted pairing still carrying its tracker-agreement caveat, the matrix covering every target against every evidence class, receipts written before slice 3 listed and named undeclared rather than hidden, an unreadable receipt reported rather than skipped and a non-object JSON document distinguished from an empty store, a path refused where a file name was required, a missing receipt 404 naming what was asked for and an unparseable one 422 rather than 500, the surface read-only under POST/PUT/DELETE, and the refusals published rather than implied by an absence of buttons |
-  | `test_identity_certification.py` | 108 | T4E.9 the T4E identity path against a motif known by construction: the benchmark registered and naming the path it certifies, three disjoint partitions so a radius is never evaluated on what calibrated it, exactly one motif configuration in a planted scene and none in a null one, construction labels taken from the generator and refused rather than guessed when a planted position has no feature near it or two positions claim one, only cross-scene pairs formed, the definition's separation asserted as a floor, nothing admitted where nothing recurs with the absent positive population left unmeasured rather than zero, the frozen-radius failure pinned as a relationship to the feasible radius rather than as two numbers, an empty calibration returning INVALID rather than a permissive radius, every result stating what it does not license, and T4E.13's criterion fixed in code while asserted to be measured nowhere -- `k` derived as a function of the partition size, unequal partitions refused rather than pooled, monotonicity in `k` checked on a toy rather than assumed, and, once candidate 3 was adopted and falsified, that guard replaced by the reading of the result -- which conditions failed and by how much, that the null held at 0 of 1486 proposed, that the 0.0000 recall is recorded as arithmetic rather than a finding, that no lower k can rescue what this one failed, that the falsification licenses none of the conclusions nearest to it, that partitions 720-735 stay refused in code, and T4E.14's partial-presence test bed -- seeds that collide with no existing evidence, a reservation refused with no flag to open it, planting patterns that are deterministic and not contiguous, the recoverable population C(j,2) rather than C(S,2), and the design's own record of what this evidence cannot repair |
+  | `test_identity_certification.py` | 118 | T4E.9 the T4E identity path against a motif known by construction: the benchmark registered and naming the path it certifies, three disjoint partitions so a radius is never evaluated on what calibrated it, exactly one motif configuration in a planted scene and none in a null one, construction labels taken from the generator and refused rather than guessed when a planted position has no feature near it or two positions claim one, only cross-scene pairs formed, the definition's separation asserted as a floor, nothing admitted where nothing recurs with the absent positive population left unmeasured rather than zero, the frozen-radius failure pinned as a relationship to the feasible radius rather than as two numbers, an empty calibration returning INVALID rather than a permissive radius, every result stating what it does not license, and T4E.13's criterion fixed in code while asserted to be measured nowhere -- `k` derived as a function of the partition size, unequal partitions refused rather than pooled, monotonicity in `k` checked on a toy rather than assumed, and, once candidate 3 was adopted and falsified, that guard replaced by the reading of the result -- which conditions failed and by how much, that the null held at 0 of 1486 proposed, that the 0.0000 recall is recorded as arithmetic rather than a finding, that no lower k can rescue what this one failed, that the falsification licenses none of the conclusions nearest to it, that partitions 720-735 stay refused in code, and T4E.14's partial-presence test bed -- seeds that collide with no existing evidence, a reservation refused with no flag to open it, planting patterns that are deterministic and not contiguous, the recoverable population C(j,2) rather than C(S,2), the design's own record of what this evidence cannot repair, and T4E.15's criterion fixed in code while asserted to be measured nowhere -- closure broken by a single loose end, closure admitting only a subset of what consistency admits, the criterion carrying no tunable parameter at all, the span-ranking design recorded as discarded by derivation, and the declaration's own worst case and refusal to predict |
   | `test_identity_target_declaration.py` | 26 | T4E.8 slice 3 the declared identity target: an absent target or evidence class refused by name, a misspelling refused with its correction, `kind_recurrence` against record-derived proxy labels refused as circular, `track_continuity` admitted with its tracker-agreement caveat, every target round-tripping what it recognises and does not license, the published proxy wording pinned verbatim so naming a target cannot reword a cited receipt, and the external-reference path recovering two planted identities from a reviewed catalogue while refusing a mismatched family, a single identity, a non-catalogue and a negative population the patterns cannot supply |
   | `test_spectral_spatial_identity.py` | 24 | T4E.8 spatial geometry, detector-band/magnitude independence, source/scope refusal, analytic distances, old-radius refusal, scalar/accelerated agreement and two-sided proxy-label diagnostics |
-| **total** | **4222** | |
+| **total** | **4232** | |
 
 ### 7.4a Browser suite inventory
 

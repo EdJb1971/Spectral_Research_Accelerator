@@ -1765,3 +1765,179 @@ def test_no_criterion_is_declared_or_adopted_by_the_evidence_slice():
     assert adoption["adopted_as"] == "EVIDENCE_CONSTRUCTION_AND_AUDIT_ONLY"
     assert "not the adoption of any criterion" in adoption["what_this_is_not"]
     assert "still owes it" in adoption["what_this_evidence_still_does_not_supply"]
+
+
+# --------------------------------- T4E.15 candidate 4: closure under the matching
+#
+# Declared and fixed in code, MEASURED NOWHERE until the declaration is adopted. These tests
+# exercise the mechanics on toy metrics and explicit partner graphs. A test that ran the
+# criterion on the T4E.14 partitions would BE the measurement.
+
+
+def _t4e15_declaration():
+    import json
+    from pathlib import Path
+
+    return json.loads(Path(
+        "data/identity_calibration/t4e15-closure-declaration.json"
+    ).read_text(encoding="utf-8"))
+
+
+def test_the_declaration_for_candidate_4_is_not_yet_adopted():
+    """Code does not sign a scientific declaration for a person."""
+    body = _t4e15_declaration()
+
+    assert body["status"] == "declared_before_measurement"
+    assert "NOT VALID until the maintainer has reviewed" in body["declared_by"]
+    assert body["confirmatory"]["status"].startswith("RESERVED AND NEVER BUILT")
+    assert body["development"]["status"].startswith("ALL ALREADY INSPECTED")
+    assert "would NOT license" in body["what_a_failure_would_and_would_not_license"]
+
+
+def test_the_criterion_has_no_parameter_to_tune():
+    """No k, no span threshold, no radius, no ratio, no fitted model, no normaliser.
+
+    Every falsified candidate in this sequence carried a number that could be moved after the
+    fact. This one carries none, which is why the declaration can forbid adding one: a
+    parameterised closure rule would be a different candidate and could not claim blindness.
+    """
+    import inspect
+
+    from src.benchmarks.identity_certification import closure_admitted_pairs
+
+    parameters = list(inspect.signature(closure_admitted_pairs).parameters)
+    assert parameters == ["partition", "metric"], parameters
+    body = _t4e15_declaration()
+    assert body["criterion"]["there_is_no_k"].startswith("None")
+    assert "specifically forbidden" in body["what_would_falsify_this_candidate"]
+
+
+def test_closure_is_broken_by_a_single_loose_end():
+    """The property the whole candidate rests on, checked rather than described.
+
+    A group whose members match nothing outside it is closed however short it is; one loose end
+    into another scene breaks it however far it reaches.
+    """
+    import collections
+
+    from src.benchmarks.identity_certification import is_closed
+
+    def graph(*edges):
+        partners = collections.defaultdict(dict)
+        for left, right in edges:
+            partners[left][right[0]] = right[1]
+            partners[right][left[0]] = left[1]
+        return partners
+
+    triangle = [(0, 0), (1, 0), (2, 0)]
+    closed = graph(((0, 0), (1, 0)), ((0, 0), (2, 0)), ((1, 0), (2, 0)))
+    assert is_closed(triangle, closed)
+    loose = graph(((0, 0), (1, 0)), ((0, 0), (2, 0)), ((1, 0), (2, 0)), ((2, 0), (3, 7)))
+    assert not is_closed(triangle, loose)
+
+
+def test_closure_can_only_remove_admissions_never_add_them():
+    """It is candidate 2's consistency plus a further requirement, so it admits a subset.
+
+    Worth a test because it bounds what the measurement can show: closure cannot rescue recall
+    that consistency did not already have, and any recall it reports is recall consistency had.
+    """
+    from src.benchmarks.identity_certification import (
+        closure_admitted_pairs, consistency_admitted_pairs)
+
+    class _Abs:
+        def distance(self, a, b):
+            return abs(a - b)
+
+    partition = [([0.0, 10.0, 20.0], [False] * 3) for _ in range(4)]
+    closed = set(closure_admitted_pairs(partition, _Abs()))
+    consistent = set(consistency_admitted_pairs(partition, _Abs(), k=2))
+    assert closed <= consistent
+    assert closed, "the toy partition admitted nothing, so the test checks nothing"
+
+
+def test_the_span_ranking_design_was_discarded_for_a_derivable_reason_and_is_recorded():
+    """A design killed by derivation is part of the record, not a draft.
+
+    Admitting the widest group is the most direct reading of the maintainer's phrasing, and it
+    is dead on arrival: coincidences reach 5, so at j = 3 the widest group in the partition is a
+    coincidence and the motif is rejected outright.
+    """
+    body = _t4e15_declaration()
+
+    discarded = body["what_is_derivable_before_measuring"]["the_design_this_replaced_and_why"]
+    assert "maximum-span group in the partition is a coincidence" in discarded
+    assert "1.0000 before the rule is run" in discarded
+
+
+def test_the_declaration_states_its_own_worst_case_and_offers_no_prediction():
+    """Candidate 3 predicted its failure direction and was right. Here there is no basis.
+
+    The declaration says so instead of dressing a guess as a prediction, and it separates its
+    own possible inertness from candidate 1's, which was inert everywhere including where the
+    answer was easy.
+    """
+    derivable = _t4e15_declaration()["what_is_derivable_before_measuring"]
+
+    assert "may admit nothing at all" in derivable["the_honest_worst_case"]
+    assert "NOT the same failure as candidate 1" in derivable["the_honest_worst_case"]
+    assert "no comparable basis" in derivable["no_prediction_is_offered"]
+    assert "cannot fail the way candidate 1 did" in (
+        derivable["the_criterion_cannot_be_inert_on_total_recurrence_evidence"])
+
+
+def test_recall_is_counted_against_the_population_that_applies():
+    """C(j,2), not C(S,2). The declaration says so and the condition names it."""
+    body = _t4e15_declaration()
+
+    assert "C(j,2) true pairs and NOT against C(S,2)" in (
+        body["acceptance"]["condition_1_recall_on_partial_presence"])
+    assert "NOT arithmetic this time" in (
+        body["acceptance"]["condition_1_recall_on_partial_presence"])
+
+
+def test_hallucinated_presence_is_a_condition_of_its_own():
+    """Claiming recurrence in a window holding nothing is the failure that matters for mining.
+
+    A single pooled admission rate hides which of the two errors is happening, so the pairs
+    touching an absent scene are counted and bounded separately.
+    """
+    body = _t4e15_declaration()
+
+    assert "worse for mining" in body["acceptance"]["condition_3_no_hallucinated_presence"]
+    assert "reported separately" in body["acceptance"]["condition_3_no_hallucinated_presence"]
+
+
+def test_candidate_4_is_measured_nowhere_before_its_declaration_is_adopted():
+    """The blindness claim is a property of the repository, not a sentence in a file.
+
+    This candidate's structure was fixed before the k profile's rungs at k = 4 and k = 3 were
+    seen, and before anything was measured on the T4E.14 evidence. A committed measurement would
+    spend that silently, so its absence is asserted rather than intended. When candidate 4 is
+    adopted this test is what should be deleted, and replaced by the reading of the result.
+    """
+    from pathlib import Path
+
+    assert not list(Path("measurements").glob("t4e15*")), "a candidate 4 measurement exists"
+    assert not list(Path("data/identity_calibration").glob("t4e15*adoption*")), (
+        "an adoption record exists, so this test is the one that should have been deleted")
+
+
+def test_the_reserved_partial_presence_blocks_are_not_opened_by_this_declaration():
+    """880-895 are the only untouched partial-presence evidence there is."""
+    from pathlib import Path
+
+    import pytest
+    from src.benchmarks.identity_certification import (
+        RESERVED_PARTIAL_PRESENCE_SEEDS, ReservedPartialPresenceScene,
+        build_partial_presence_partition)
+
+    body = _t4e15_declaration()
+    assert "does not open them" in body["confirmatory"]["status"]
+    assert "total-recurrence partitions" in (
+        body["confirmatory"]["why_720_735_are_not_the_right_evidence_here"])
+    for start in (880, 890):
+        with pytest.raises(ReservedPartialPresenceScene):
+            build_partial_presence_partition(tuple(range(start, start + 6)), 3)
+    assert not list(Path("measurements").glob("*88*presence*"))
+    assert len(RESERVED_PARTIAL_PRESENCE_SEEDS) == 12

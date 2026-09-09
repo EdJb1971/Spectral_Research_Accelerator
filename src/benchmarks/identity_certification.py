@@ -942,6 +942,245 @@ def measure_consistency_criterion(
 
 
 # ---------------------------------------------------------------------------------------------
+# T4E.15 candidate 4: closure under the matching.
+#
+# Declared in `data/identity_calibration/t4e15-closure-declaration.json` and NOT MEASURED until
+# that declaration is adopted.
+#
+# T4E.14 built evidence where the motif is present in only j of S scenes, so a criterion can at
+# last be wrong in both directions on the same data. Candidate 2's k = S is arithmetically dead
+# there and candidate 3's k = S - 1 is falsified, so neither may be borrowed.
+#
+# This candidate drops the clique size entirely. What candidate 2 actually exploited was never
+# the number 6 -- it was a conjunction with no loose ends: every motif configuration's partners
+# were ONLY other motif configurations. Closure keeps that and discards the size.
+#
+# A design was discarded for a derivable reason and is recorded rather than forgotten. Ranking
+# groups by span and admitting the widest -- the most direct reading of "score how much of a
+# window a configuration spans rather than thresholding it" -- is dead on arrival: candidate 3
+# showed coincidental groups reach S - 1 = 5, so at j = 3 the widest group in the partition is a
+# coincidence and the motif is rejected outright, false split 1.0000 before the rule runs.
+#
+# What closure reads that a span threshold cannot is the ABSENCE of outside partners. A
+# coincidental group whose members also match configurations elsewhere is not a coherent
+# identity however far it reaches; a true group matching nothing outside itself is one however
+# short it is.
+
+CRITERION_CLOSURE_NAME = "closed_consistent_sets_under_the_mutual_nearest_neighbour_matching"
+
+
+def is_closed(group: Sequence[Tuple[int, int]], partners) -> bool:
+    """True when no member of `group` has a mutual nearest neighbour outside it.
+
+    Closure is tested on the MAXIMAL agreeing set, never on a subset: a subset would
+    automatically fail on the members just removed, so testing subsets would admit nothing and
+    would not be a different rule but a broken one.
+    """
+    members = set(group)
+    for node in group:
+        for scene, index in partners[node].items():
+            if (scene, index) not in members:
+                return False
+    return True
+
+
+def closure_admitted_pairs(partition, metric: SignatureMetric):
+    """T4E.15 candidate 4: admit the pairs inside sets that are consistent AND closed.
+
+    No k, no span threshold, no radius, no ratio, no fitted model, no estimated normaliser. A
+    group of three is admitted on the same terms as a group of six, which is what makes this a
+    criterion FOR partial recurrence rather than a criterion with its tolerance widened.
+
+    Returns the admitted cross-scene pairs as `(scene_a, index_a, scene_b, index_b)` with
+    `scene_a < scene_b`, so the error rates are counted over exactly the population candidates
+    C, D, 2 and 3 were counted over.
+    """
+    partners = _partner_map(partition, metric)
+    admitted = set()
+    for node in list(partners):
+        group = consistent_group(node, partners)
+        if len(group) < 2 or not is_closed(group, partners):
+            continue
+        for (a, i), (b, j) in itertools.combinations(sorted(group), 2):
+            admitted.add((a, i, b, j))
+    return sorted(admitted)
+
+
+def _closure_row(scenes, presence, metric, *, richness):
+    """One partition's counts, with the population that actually applies to it.
+
+    The pairs a criterion must recover are C(j,2) over the PRESENT scenes, not C(S,2). An error
+    rate divided by the wrong population is the quietest way to report a wrong number, so the
+    population is derived from the presence labels rather than assumed.
+    """
+    incomparable = 0
+    trimmed = []
+    for scene in scenes:
+        keep, dropped = comparable_subset(scene)
+        incomparable += len(dropped)
+        trimmed.append(([scene[0][i] for i in keep], [scene[1][i] for i in keep]))
+    admitted = closure_admitted_pairs(trimmed, metric)
+    admitted_set = set(admitted)
+    present = [index for index, holds in enumerate(presence) if holds]
+    motif_index = {index: (trimmed[index][1].index(True) if any(trimmed[index][1]) else None)
+                   for index in range(len(trimmed))}
+    true_pairs, recovered = 0, 0
+    for a, b in itertools.combinations(present, 2):
+        if motif_index[a] is None or motif_index[b] is None:
+            continue
+        true_pairs += 1
+        if (a, motif_index[a], b, motif_index[b]) in admitted_set:
+            recovered += 1
+    absent = {index for index, holds in enumerate(presence) if not holds}
+    hallucinated = sum(1 for a, _, b, _ in admitted if a in absent or b in absent)
+    candidates = sum(len(trimmed[a][0]) * len(trimmed[b][0])
+                     for a, b in itertools.combinations(range(len(trimmed)), 2))
+    row = {
+        "richness": int(richness),
+        "scenes": len(trimmed),
+        "scenes_holding_the_motif": len(present),
+        "configurations_per_scene": len(trimmed[0][0]),
+        "configurations_refused_as_incomparable": incomparable,
+        "candidate_pairs": candidates,
+        "pairs_proposed_by_candidate_C": sum(
+            len(mutual_nearest_matches(trimmed[a], trimmed[b], metric))
+            for a, b in itertools.combinations(range(len(trimmed)), 2)),
+        "admitted": len(admitted),
+        "true_pairs": true_pairs,
+        "true_pairs_recovered": recovered,
+        "pairs_touching_an_absent_scene": hallucinated,
+    }
+    row["false_split_rate"] = (None if not true_pairs
+                               else (true_pairs - recovered) / true_pairs)
+    row["false_admission_rate"] = (None if not admitted
+                                   else (len(admitted) - recovered) / len(admitted))
+    row["hallucinated_presence_rate"] = (None if not admitted
+                                         else hallucinated / len(admitted))
+    return row
+
+
+def measure_closure_criterion(presence_levels: Sequence[int] = None,
+                              blocks: Sequence[Sequence[int]] = None,
+                              null_blocks: Sequence[Sequence[int]] = None,
+                              richness_levels: Sequence[int] = (6, 9, 12)) -> Dict[str, Any]:
+    """Candidate 4 on the T4E.14 partial-presence evidence, against its six declared conditions.
+
+    This is the primary measurement: the first in the sequence where BOTH error rates are
+    genuinely at risk on the same data. Candidate 4's recall here is not arithmetic -- a motif
+    configuration in a present scene may be the mutual nearest neighbour of something unrelated
+    in an absent scene, and closure would then reject the motif. Nothing measured so far bears
+    on how often that happens.
+    """
+    presence_levels = (tuple(presence_levels) if presence_levels is not None
+                       else PRESENCE_LEVELS)
+    blocks = tuple(blocks) if blocks is not None else PARTIAL_PRESENCE_BLOCKS
+    null_blocks = (tuple(null_blocks) if null_blocks is not None
+                   else PARTIAL_PRESENCE_NULL_BLOCKS)
+    metric = SignatureMetric(WEIGHTS)
+    planted, nulls, refusals = [], [], []
+
+    for richness in richness_levels:
+        for present_count in presence_levels:
+            for block in blocks:
+                try:
+                    scenes, presence = build_partial_presence_partition(
+                        block, present_count, richness=richness)
+                except UnlabelledScene as error:
+                    refusals.append({"block": list(block), "richness": int(richness),
+                                     "present_count": int(present_count),
+                                     "refused_by_name": str(error)})
+                    continue
+                row = _closure_row(scenes, presence, metric, richness=richness)
+                row.update({"block": list(block), "present_count": int(present_count)})
+                planted.append(row)
+        for block in null_blocks:
+            scenes, presence = build_partial_presence_partition(block, 0, richness=richness)
+            row = _closure_row(scenes, presence, metric, richness=richness)
+            row.update({"block": list(block), "present_count": 0})
+            nulls.append(row)
+
+    return {
+        "candidate": "4_closure_under_the_matching",
+        "criterion": CRITERION_CLOSURE_NAME,
+        "evidence": "t4e14_partial_presence",
+        "evidence_class": "development",
+        "presence_levels": [int(value) for value in presence_levels],
+        "richness_levels": [int(value) for value in richness_levels],
+        "planted_blocks": planted, "null_blocks": nulls, "refusals": refusals,
+        "acceptance_boundary": (
+            "Condition 1: false split at most 0.10 at every j and richness, counted against "
+            "C(j,2) and NOT C(S,2) -- and NOT arithmetic this time. Condition 2: false "
+            "admission at most 0.10. Condition 3: pairs touching an absent scene at most 0.10 "
+            "of admissions, reported separately. Condition 4: both nulls admit ZERO. Condition "
+            "5: the total-recurrence cross-check. Condition 6: refusals by name."),
+        "why_recall_is_the_informative_half_here": (
+            "On total-recurrence evidence every candidate's recall was near-guaranteed by "
+            "construction, and candidate 3's was arithmetic outright. Here a motif "
+            "configuration in a present scene may be the mutual nearest neighbour of something "
+            "unrelated in an absent scene, and closure would then reject the motif. That risk "
+            "is the substance of this candidate and it was stated before the run."),
+        "boundary": (
+            "Development evidence. The T4E.14 partitions were built and audited on 2026-09-10 "
+            "and are inspected data permanently; a blind declaration does not make them fresh. "
+            "Partial-presence blocks 880-895 have never been built and are refused "
+            "unconditionally. Nothing here concerns recurrence across genuinely separated "
+            "epochs, which this generator cannot produce."),
+        "claim_boundary": CLAIM_BOUNDARY,
+    }
+
+
+def measure_closure_cross_check(blocks: Sequence[Sequence[int]] = None,
+                                null_blocks: Sequence[Sequence[int]] = None,
+                                richness_levels: Sequence[int] = (6, 9, 12)) -> Dict[str, Any]:
+    """Candidate 4 on the TOTAL-recurrence blocks: does closure keep what candidate 2 kept?
+
+    A declared cross-check, not a horse race. Candidate 2 is already adjudicated and candidate 4
+    is judged only against its own conditions; this asks whether closure discards coherent
+    identities where they are unambiguous, which would be a failure of the rule rather than of
+    the evidence.
+
+    That it admits AT LEAST the motif here is derivable and is not a finding: a group spanning
+    all S scenes uses a partner in every other scene, and the matching gives at most one partner
+    per scene, so those are all of each member's partners and the motif group is closed by
+    construction.
+    """
+    blocks = tuple(blocks) if blocks is not None else EXCHANGEABILITY_BLOCKS
+    null_blocks = tuple(null_blocks) if null_blocks is not None else (NULL_SEEDS,)
+    metric = SignatureMetric(WEIGHTS)
+    planted, nulls = [], []
+
+    for richness in richness_levels:
+        for seeds in blocks:
+            scenes = [_scene_with_motif_membership(seed, plant=True, richness=richness)
+                      for seed in seeds]
+            row = _closure_row(scenes, [True] * len(scenes), metric, richness=richness)
+            row["block"] = list(seeds)
+            planted.append(row)
+        for seeds in null_blocks:
+            scenes = [_scene_with_motif_membership(seed, plant=False, richness=richness)
+                      for seed in seeds]
+            row = _closure_row(scenes, [False] * len(scenes), metric, richness=richness)
+            row["block"] = list(seeds)
+            nulls.append(row)
+
+    return {
+        "cross_check": "candidate_4_on_total_recurrence_evidence",
+        "criterion": CRITERION_CLOSURE_NAME,
+        "evidence_class": "development",
+        "planted_blocks": planted, "null_blocks": nulls,
+        "this_is_not_a_horse_race": (
+            "R20 forbids it and the declaration forbids it by name. Candidate 2 is already "
+            "adjudicated. This asks only whether closure discards coherent identities where "
+            "they are unambiguous."),
+        "what_is_derivable_here_and_is_not_a_finding": (
+            "Candidate 4 admits at least the motif's full clique on these blocks, because a "
+            "group spanning every scene uses a partner in every other scene and the matching "
+            "gives at most one per scene, so the motif group is closed by construction."),
+        "claim_boundary": CLAIM_BOUNDARY,
+    }
+
+
+# ---------------------------------------------------------------------------------------------
 # T4E.14: evidence in which recurrence is PARTIAL.
 #
 # Declared in `data/identity_calibration/t4e14-partial-presence-design.json` and NOT BUILT until

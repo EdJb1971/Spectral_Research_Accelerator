@@ -12385,6 +12385,76 @@ release decision, but it does mean two gates that read PASS now read NOT_RUN and
 were not isolated to a cause; the run predates no clean baseline for this suite size, so they
 are reported as measured rather than attributed.
 
+**T4E.15 candidate 4 (2026-09-10): declared, fixed in code, and measured nowhere.**
+
+`data/identity_calibration/t4e15-closure-declaration.json`, status
+`declared_before_measurement`.
+
+**The criterion.** Form the mutual nearest-neighbour matching as candidate C does. A set of
+configurations, at most one per scene, is CONSISTENT when every member is the mutual nearest
+neighbour of every other, as in candidate 2. It is CLOSED when no member has a mutual nearest
+neighbour outside the set. Admit the pairs inside sets that are consistent and closed, whatever
+their span.
+
+**There is no `k`, and no parameter of any kind** -- no clique size, no span threshold, no
+radius, no ratio, no fitted model, no estimated normaliser. A group of three is admitted on the
+same terms as a group of six, which is what makes it a criterion *for* partial recurrence rather
+than a criterion with its tolerance widened. Every falsified candidate in this sequence carried
+a number that could be moved after the fact; this one carries none, which is why the declaration
+can forbid adding one outright.
+
+**What closure reads that a span threshold cannot** is the *absence* of outside partners. A
+threshold sees only how far a group reaches and is blind to what its members do elsewhere in the
+partition. A coincidental group whose members also match configurations outside it is not a
+coherent identity however far it reaches; a true group matching nothing outside itself is one
+however short it is. That is what candidate 2 was actually exploiting -- never the number 6, but
+a conjunction with no loose ends.
+
+**A design was discarded by derivation and is recorded rather than forgotten.** Ranking groups
+by span and admitting the widest is the most direct reading of the maintainer's own phrasing,
+and it is dead on arrival: candidate 3 established that coincidental groups reach `S - 1 = 5`,
+so at `j = 3` the widest group in the partition is a coincidence and the motif is rejected
+outright -- false split 1.0000 before the rule runs. Catching that in advance is the discipline
+candidate 1's failure installed.
+
+**Derivable: it cannot be inert on total-recurrence evidence.** A group spanning all `S` scenes
+uses a partner in every other scene, and the matching gives at most one partner per scene, so
+those are *all* of each member's partners and the motif group is closed by construction. So
+candidate 4 admits at least the motif there and cannot fail the way candidate 1 did.
+
+**Not derivable, and the whole substance of the measurement:** whether the motif group is closed
+on *partial*-presence evidence. A motif configuration in a present scene may be the mutual
+nearest neighbour of something unrelated in an absent scene, and closure would then reject the
+motif. Nothing measured so far bears on how often that happens.
+
+**The honest worst case is stated in advance.** Candidate 4 may admit nothing on partial-presence
+evidence. That would be a complete result -- and it is *not* candidate 1's failure, which was
+inert everywhere including where the answer was easy. **No prediction is offered**, because
+unlike candidate 3 there is no basis for one, and a guess dressed as a prediction is worth
+nothing when checked.
+
+**Recall is the informative half here, for the first time.** It is counted against C(j,2) and
+not C(S,2), and it is genuinely at risk rather than arithmetic. Hallucinated presence -- pairs
+touching a scene that holds nothing -- is bounded and reported as a condition of its own,
+because a rule that claims recurrence in an empty window is worse for mining than one that
+misses a real occurrence, and a pooled admission rate hides which is happening.
+
+**What is verified here is an absence.** Ten tests hold the structure: closure broken by a
+single loose end into another scene, closure admitting only a subset of what consistency admits
+(so it cannot rescue recall consistency did not have), the criterion carrying no tunable
+parameter -- asserted from its signature, not its prose -- the discarded span-ranking design
+recorded with its derivation, the worst case and the refusal to predict, recall counted against
+C(j,2), hallucinated presence as a condition of its own, and **no candidate 4 measurement or
+adoption record anywhere in the repository**.
+
+**Blindness and its limit.** Fixed before anything was measured on the T4E.14 evidence and
+before the `k` profile's rungs at `k = 4` and `k = 3` were seen. The declaration was authored
+before rung `k = 4` landed but committed after it, so the git history does not prove that
+interval; the claim rests on the recorded ordering and is written down as such.
+
+**Nothing is licensed.** No result exists. Blocks 880-895 have never been built and are refused
+unconditionally; 720-735 could confirm nothing here, being total-recurrence partitions.
+
 **T4E.14 partial-presence evidence (2026-09-10): built and audited, all five conditions met.**
 
 Declared in `t4e14-partial-presence-design.json`, adopted as `EVIDENCE_CONSTRUCTION_AND_AUDIT_ONLY`,

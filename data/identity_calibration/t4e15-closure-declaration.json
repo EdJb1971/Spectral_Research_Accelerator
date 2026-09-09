@@ -1,0 +1,69 @@
+{
+  "schema": "t4e12-identity-criterion-declaration/v1",
+  "status": "declared_before_measurement",
+  "task": "T4E.15",
+  "candidate": "4_closure_under_the_matching",
+  "declared_by": "Edward Jonathan Bentley, maintainer (scientific choice); drafted by Claude Opus 5 at the maintainer's direction and NOT VALID until the maintainer has reviewed and adopted it",
+  "declared_on": "2026-09-10",
+  "why_this_candidate": "T4E.14 built evidence in which the motif is present in only j of S scenes, so a criterion can at last be wrong in both directions on the same data. Candidate 2's k = S is arithmetically dead there and candidate 3's k = S - 1 is falsified and recovers only at j = 5, so neither may be borrowed. This candidate abandons the clique SIZE entirely. It keeps what candidate 2 actually exploited, which was never the number 6: it was a conjunction with no loose ends -- every motif configuration's partners were only other motif configurations.",
+  "criterion": {
+    "statement": "Across a partition of S scenes, form the mutual nearest-neighbour matching for every ordered scene pair, exactly as candidate C does. A set of configurations, at most one per scene, is CONSISTENT when every member is the mutual nearest neighbour of every other, as in candidate 2. It is CLOSED when no member has a mutual nearest neighbour outside the set. Admit the cross-scene pairs inside sets that are consistent AND closed, whatever their span, and no others.",
+    "name": "closed_consistent_sets_under_the_mutual_nearest_neighbour_matching",
+    "there_is_no_k": "None. No clique size, no span threshold, no radius, no ratio, no fitted model and no estimated normaliser. A group of three is admitted on the same terms as a group of six. This is what makes it a criterion for partial recurrence rather than a criterion with the tolerance widened.",
+    "what_closure_uses_that_a_threshold_cannot": "The ABSENCE of outside partners. A span threshold reads only how far a group reaches and is blind to what its members do elsewhere in the partition; closure reads exactly that. A coincidental group whose members also match configurations outside it is not a coherent identity however far it reaches, and a true group that matches nothing outside itself is one however short it is.",
+    "why_it_is_evaluated_on_the_maximal_agreeing_set": "Mutual nearest-neighbour matching gives a configuration at most one partner per scene, so a node's candidate group is determined by the node. Closure is tested on the largest agreeing subset containing it: any smaller subset would automatically fail closure on the members just removed, so testing subsets would admit nothing and would not be a different rule but a broken one.",
+    "what_does_not_change": "The signature mode, the attribute weights, the cardinality, the construction labels, the mutual nearest-neighbour rule that proposes the pairs, the exact rather than greedy enumeration, the one-configuration-per-scene requirement and the definitions of both error rates. So it is counted over the same population as candidates C, D, 2 and 3, on evidence those were never shown."
+  },
+  "the_blindness_claim_stated_exactly": {
+    "what_is_claimed": "The criterion, its acceptance conditions and every structural choice in it are fixed in this file before any measurement of it on any evidence, and before the k profile's remaining rungs at k = 4 and k = 3 have been seen.",
+    "what_is_already_known_and_is_disclosed_rather_than_hidden": [
+      "Candidate 2 at k = S admits exactly the motif's clique on the total-recurrence blocks, 15 pairs, with no false admissions and a null admitting nothing.",
+      "Candidate 3 at k = S - 1 is falsified: false admission 0.4000 at richness 9 and 0.8000 at richness 12, so coincidental groups reach S - 1 freely. Its null still admitted nothing.",
+      "The k profile's rungs at k = 6 and k = 5 have been seen and reproduce those two results exactly. The rungs at k = 4 and k = 3 have NOT been seen at the time of this declaration.",
+      "The T4E.14 audit is known in full: 39 partitions, five conditions met, zero labelling refusals. It measured no criterion, so nothing is known about how any rule behaves on that evidence."
+    ],
+    "why_that_disclosure_does_not_void_the_claim": "Nothing known concerns closure. No measurement anywhere in this programme has looked at whether a consistent group has partners outside itself, and no probe of it has been run. The quantity this criterion depends on is unobserved.",
+    "what_would_void_the_claim": "Measuring it and then revising the closure rule, the proposer, the presence levels, the richness levels, the blocks or the acceptance conditions. That would be a new candidate needing a new declaration, and this file would be superseded in the open rather than edited."
+  },
+  "what_is_derivable_before_measuring": {
+    "why_this_section_exists": "Candidate 1 failed on properties derivable before adoption that were not derived, and the discipline has caught two designs since. It caught one for this task too, recorded below, and the rule that replaced it is what this declaration adopts.",
+    "the_design_this_replaced_and_why": "Ranking groups by span and admitting the widest -- the most direct reading of 'scoring how much of a window a configuration spans rather than thresholding it' -- is derivably dead. Candidate 3 established that coincidental groups reach S - 1 = 5. At j = 3 the motif spans at most 3, so the maximum-span group in the partition is a coincidence and the motif is rejected outright: false split 1.0000 before the rule is run. It is recorded here because a design discarded for a derivable reason is part of the record, not a draft.",
+    "the_criterion_cannot_be_inert_on_total_recurrence_evidence": "Candidate 2 admits exactly the motif's 6-scene clique on every total-recurrence block at every richness. A group spanning all S scenes uses a partner in every other scene, and mutual nearest-neighbour matching gives at most one partner per scene, so those partners are ALL of each member's partners and the motif group is closed by construction there. Candidate 4 therefore admits at least the motif on the total-recurrence blocks, and cannot fail the way candidate 1 did.",
+    "what_is_NOT_derivable_and_is_the_substance_of_the_measurement": "Whether the motif group is closed on PARTIAL-presence evidence. A motif configuration in a present scene may be the mutual nearest neighbour of some unrelated configuration in an absent scene; if it is, closure fails and the motif is rejected. Nothing measured so far bears on how often that happens. It is the whole risk of this candidate and it is stated before the run rather than discovered.",
+    "the_honest_worst_case": "Candidate 4 may admit nothing at all on partial-presence evidence. That would be a complete result and is to be recorded as one. It is NOT the same failure as candidate 1's, which admitted nothing anywhere including where the answer was easy: candidate 4 is derivably non-inert on total-recurrence evidence, so an empty result on partial presence would locate the failure at partial presence rather than in the rule's arithmetic.",
+    "no_prediction_is_offered": "Candidate 3's declaration predicted its failure direction and was right. Here there is no comparable basis: the quantity is unobserved, and a guess dressed as a prediction would be worth nothing when checked."
+  },
+  "development": {
+    "primary_evidence": "The T4E.14 partial-presence partitions: blocks 800-835 at presence levels j in {3, 4, 5}, with the partial-presence null 850-855, at richness 6, 9 and 12.",
+    "secondary_evidence": "The total-recurrence blocks 100-405 and the null 500-505, at the same richness levels, as a cross-check that candidate 4 reproduces candidate 2 where candidate 2 works. This is a CROSS-CHECK and not a horse race: candidate 2 is already adjudicated and candidate 4 is judged only against the conditions below.",
+    "status": "ALL ALREADY INSPECTED. The T4E.14 partitions were built and audited on 2026-09-10 and are development evidence permanently; the total-recurrence blocks are the most inspected data in the programme. A blind declaration does not make inspected blocks fresh."
+  },
+  "confirmatory": {
+    "blocks": [
+      [880, 881, 882, 883, 884, 885],
+      [890, 891, 892, 893, 894, 895]
+    ],
+    "status": "RESERVED AND NEVER BUILT. Refused unconditionally in code by ReservedPartialPresenceScene, with no confirmatory flag. This declaration does not open them and adopting it does not.",
+    "when_they_would_be_worth_spending": "If and only if candidate 4 meets its acceptance on the development partial-presence evidence. They are the only untouched partial-presence evidence there is, and a confirmatory pass on a falsified candidate would spend them for nothing.",
+    "why_720_735_are_not_the_right_evidence_here": "They are total-recurrence partitions. The property this candidate is being tested on is absent from them, so they could confirm nothing about partial recurrence however clean they are."
+  },
+  "acceptance": {
+    "condition_1_recall_on_partial_presence": "False split at most 0.10 at every presence level j and every richness individually, counted against C(j,2) true pairs and NOT against C(S,2). This condition is NOT arithmetic this time: unlike candidates 2 and 3 on total-recurrence evidence, candidate 4's recall is genuinely at risk here, and it is the half of the measurement that carries the most information.",
+    "condition_2_admission_on_partial_presence": "False admission at most 0.10 at every j and every richness individually.",
+    "condition_3_no_hallucinated_presence": "Admitted pairs with a member in an ABSENT scene must be at most 0.10 of admissions, and the count is reported separately at every j and richness. A rule that claims recurrence in a window holding nothing is worse for mining than one that misses a real occurrence, and a single pooled admission rate hides which is happening.",
+    "condition_4_null": "On the partial-presence null 850-855 and on the total-recurrence null 500-505, admissions must be ZERO at every richness. Not near zero.",
+    "condition_5_cross_check": "On the total-recurrence blocks, candidate 4 must admit the motif's full clique -- which is derivable -- and its false admission there must be at most 0.10. Failing this would mean closure discards coherent identities where they are unambiguous, and is a failure of the rule rather than of the evidence.",
+    "condition_6_refusals": "Refusals reported by name, with an explicit verdict including INVALID. Configurations refused as incomparable by the near-isotropy rule are counted and surfaced."
+  },
+  "what_would_falsify_this_candidate": "A false split above 0.10 at any j or richness, meaning closure discards true partial recurrence. Or false admission above 0.10. Or any admission on either null. Or hallucinated presence above 0.10. Or failure of the total-recurrence cross-check. Any of these is a complete result and is to be recorded, not tuned away. Adding a span threshold, a tolerance, or any parameter to rescue it is specifically forbidden: a parameterised closure rule is a different candidate and needs its own declaration, and it will not be able to claim blindness.",
+  "what_a_failure_would_and_would_not_license": "It would license this: closure under the mutual nearest-neighbour matching, as defined here, does not separate partial recurrence from coincidence in these scenes at these presence levels. It would NOT license concluding that the signature is inadequate, that partition structure is the wrong resource, that partial recurrence is undetectable, or that some parameterised variant would fail. T4E.11's candidates B and C both over-reached in that direction and every declaration since has narrowed the clause.",
+  "what_a_success_would_and_would_not_license": "A success would license only that the criterion separates partial recurrence from coincidence ON ALREADY-INSPECTED SYNTHETIC PARTITIONS at j in {3, 4, 5}, with a rule fixed blind. It would make spending 880-895 worthwhile and would NOT itself be confirmation. It would not approve a mining radius, discharge T4E.8's acquired-record acceptance, close D96, D97, D98, D99 or D100, and would say nothing about recurrence across genuinely separated epochs, which this generator cannot produce and the acquired-record path still owes.",
+  "governing_rules": [
+    "R20: candidate 4 is evaluated alone against the conditions above. Candidates C, D, 2 and 3 appear only as the proposer of pairs, as derivations, and in a declared cross-check, which is not adjudication.",
+    "Already inspected data do not become untouched by renaming them, and do not become untouched by a blind declaration either.",
+    "A named refusal is preferable to an unsupported number.",
+    "Code does not sign a scientific declaration for a person; this file is not adopted until the maintainer says so."
+  ],
+  "scope": "Atmospheric identity path. The mechanism is domain-agnostic but the evidence is atmospheric and synthetic. Cross-domain use requires its own declared experiment and its own qualification, per R19.",
+  "claim_boundary": "Synthetic scenes settle a property of the criterion, not of the atmosphere. Nothing here approves a mining radius, discharges T4E.8's acquired-record acceptance, or closes D96, D97, D98, D99 or D100. The primary scientific target remains kind_recurrence, which needs external_reference evidence no criterion of this kind supplies. No frame of the 2022-2023 forecast-test period is opened by any part of this."
+}
