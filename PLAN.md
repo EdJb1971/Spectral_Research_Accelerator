@@ -436,6 +436,13 @@ across blocks do, and "across partitions" is not a distinct phenomenon in this g
 Partial presence is fixed here; separated epochs remain owed by the acquired-record path, and
 nothing built on these partitions may be reported as evidence about them.
 
+**The `k` profile is complete** and shows how fast the criterion degrades below the margin:
+false admission 0.0000, 0.6104, 0.9281, 0.9818 at `k` = 6, 5, 4, 3 at the richest level, with
+the motif column constant at 60 throughout because recall is inherited by monotonicity. **The
+null breaks between `k = 5` and `k = 4`** -- 0 pairs at both higher rungs, then 6-132 and
+72-778 where nothing recurs at all. It adjudicates nothing, and any `k` chosen from it could no
+longer claim a blind structural choice.
+
 **T4E.15 (2026-09-10): candidate 4 declared, and it has nothing to tune.** Closure under the
 matching -- a consistent set is admitted when no member has a mutual nearest neighbour outside
 it, whatever its span. Fixed in `t4e15-closure-declaration.json` and in code, **not adopted and

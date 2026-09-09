@@ -12521,6 +12521,49 @@ nothing built on these partitions may be reported as evidence about them.
 on them produces development evidence, and no later renaming makes them fresh. Confirmatory
 evidence for a partial-recurrence criterion needs 880-895, which have never been built.
 
+**T4E.13 k profile (2026-09-10): completed, and it adjudicates nothing.**
+
+`measurements/t4e13_k_profile.json`. Characterisation of how the criterion degrades as the
+tolerance widens, declared as such before it ran.
+
+```
+T4E.13 k PROFILE -- development blocks, totals over the four blocks
+k    rich    admitted     motif  false adm      null
+6    6             60        60     0.0000         0
+6    9             60        60     0.0000         0
+6    12            60        60     0.0000         0
+5    6             60        60     0.0000         0
+5    9             80        60     0.2500         0
+5    12           154        60     0.6104         0
+4    6           129        60     0.5349         6
+4    9           374        60     0.8396        87
+4    12          834        60     0.9281       132
+3    6           336        60     0.8214        72
+3    9          1196        60     0.9498       314
+3    12         3293        60     0.9818       778
+```
+
+**The motif column never moves.** 60 pairs at every rung and every richness -- four blocks of
+15 -- which is the monotonicity the T4E.13 declaration derived before any of this ran:
+admissions are non-decreasing as `k` falls, so recall is inherited and is not a finding at any
+rung. Everything informative is in the other three columns.
+
+**The null breaks between `k = 5` and `k = 4`.** At `k = 6` and `k = 5` it admits nothing at any
+richness. At `k = 4` it admits 6, 87 and 132 pairs, and at `k = 3`, 72, 314 and 778 -- where
+nothing recurs at all. So the one-scene-wide margin is not merely where specificity against
+*structured* coincidence runs out; just below it the criterion begins manufacturing identity out
+of noise, which is a different and worse failure.
+
+**False admission climbs monotonically** from 0.0000 to 0.9818, and at `k = 3`, richness 12,
+3,293 pairs are admitted of which 60 are true. Nothing below `k = S` is recoverable by widening
+further, which the same monotonicity already guaranteed.
+
+**This adjudicates nothing.** R20 forbids the horse race and the T4E.13 declaration forbids it
+by name: the criterion under evaluation was `k = S - 1` and it is falsified on its own
+conditions. A `k` made attractive by this sweep would be a further candidate needing its own
+declaration and its own evidence, and it could not claim its structural choice was blind,
+because this profile has now been seen. That consequence was recorded in advance of running it.
+
 **T4E.13 candidate 3 (2026-09-09): adopted and FALSIFIED.**
 
 Adopted at sha256 `55631fa2df03cda7e1d62304abebc362582e722a4e7177e5fb14cd3a5858b99c` as a

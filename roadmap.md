@@ -2855,12 +2855,46 @@ touching a scene that holds nothing -- is bounded and reported as a condition of
 because a rule that claims recurrence in an empty window is worse for mining than one that
 misses a real occurrence, and a pooled admission rate hides which is happening.
 
-**What the `k` profile added on the way past.** Its rungs reproduce candidate 2 at `k = 6` and
-candidate 3 at `k = 5` exactly, and at `k = 4` **the null itself breaks**: 6, 87 and 132 pairs
-admitted where nothing recurs at all, against 0 at both higher rungs. So the one-scene-wide
-margin holds specificity against structured coincidence, and below it the criterion begins
-inventing identity out of noise. That is characterisation and adjudicates nothing -- R20 and the
-T4E.13 declaration both forbid picking a `k` from it.
+**The `k` profile, completed.** Its rungs reproduce candidate 2 at `k = 6` and candidate 3 at
+`k = 5` exactly through a separate code path.
+
+```
+T4E.13 k PROFILE -- development blocks, totals over the four blocks
+k    rich    admitted     motif  false adm      null
+6    6             60        60     0.0000         0
+6    9             60        60     0.0000         0
+6    12            60        60     0.0000         0
+5    6             60        60     0.0000         0
+5    9             80        60     0.2500         0
+5    12           154        60     0.6104         0
+4    6           129        60     0.5349         6
+4    9           374        60     0.8396        87
+4    12          834        60     0.9281       132
+3    6           336        60     0.8214        72
+3    9          1196        60     0.9498       314
+3    12         3293        60     0.9818       778
+```
+
+**The motif column never moves.** 60 pairs at every rung and every richness -- four blocks of
+15 -- which is the monotonicity the T4E.13 declaration derived before any of this ran:
+admissions are non-decreasing as `k` falls, so recall is inherited and is not a finding at any
+rung. Everything informative is in the other three columns.
+
+**The null breaks between `k = 5` and `k = 4`.** At `k = 6` and `k = 5` it admits nothing at any
+richness. At `k = 4` it admits 6, 87 and 132 pairs, and at `k = 3`, 72, 314 and 778 -- where
+nothing recurs at all. So the one-scene-wide margin is not merely where specificity against
+*structured* coincidence runs out; just below it the criterion begins manufacturing identity out
+of noise, which is a different and worse failure.
+
+**False admission climbs monotonically** from 0.0000 to 0.9818, and at `k = 3`, richness 12,
+3,293 pairs are admitted of which 60 are true. Nothing below `k = S` is recoverable by widening
+further, which the same monotonicity already guaranteed.
+
+**This adjudicates nothing.** R20 forbids the horse race and the T4E.13 declaration forbids it
+by name: the criterion under evaluation was `k = S - 1` and it is falsified on its own
+conditions. A `k` made attractive by this sweep would be a further candidate needing its own
+declaration and its own evidence, and it could not claim its structural choice was blind,
+because this profile has now been seen. That consequence was recorded in advance of running it.
 
 **T4E.14 (2026-09-10): evidence in which recurrence is partial.** The maintainer authorised a
 criterion built for partial recurrence *if that is what the work needs*. Resolving that
