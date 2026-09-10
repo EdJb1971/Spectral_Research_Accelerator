@@ -1,0 +1,40 @@
+{
+  "schema": "t4e26-measurement-adoption/v1",
+  "adopts": "data/identity_calibration/t4e26-peeled-null-declaration.json",
+  "adopts_sha256": "3e374738a8a502072cfe273ae6530ac5bdeb5efda77747a9d8fc50b5281292c4",
+  "adopted_by": "Edward Jonathan Bentley, maintainer",
+  "adopted_on": "2026-09-11",
+  "adopted_as": "NULL_ESTIMATION_PROCEDURE_DIAGNOSTIC_ON_SYNTHETIC_EVIDENCE_ONLY",
+
+  "what_was_adopted": "The design as declared, in full and unamended: single-round peeled-null calibration at alpha = 0.05 on T4E.24's scenes under the same root seed, with the subtraction taken from each feature's own published provenance and refitted nowhere, recalibration on the residual, and re-extraction from the original scene. The five measured quantities, the declared prediction and its falsification condition, the artefact split, and all six acceptance conditions are adopted exactly as written.",
+
+  "the_disclosed_probe_is_adopted_along_with_its_consequence": "The declaration states that a one-scene feasibility probe preceded it and that the prediction is therefore not blind. That disclosure is adopted as part of the record, not waived. The consequence is adopted with it: nothing this slice produces is confirmatory, a pass is a failure to fail rather than a validation, and no later write-up may describe the prediction as having been made blind. The two acceptance bars are T4E.25's, fixed before the probe existed, and they are not to be moved.",
+
+  "the_change_in_the_meaning_of_significance_is_adopted_as_a_reportable_finding": "Not as a caveat. NullCalibration's stated hypothesis concerns a field with the same power spectrum as the frame; a peeled ensemble has the residual's spectrum instead, so a p-value reported through a peeled cut answers a different question. Acceptance condition 5 requires this to appear beside the coverage numbers rather than beneath them, and that placement is the substance of the condition rather than a formatting preference. A procedure that improves coverage by redefining what a detection claims is not a free improvement, and if a successor adopts a peeled null it must state the new hypothesis explicitly.",
+
+  "the_failure_mode_is_adopted_as_a_measured_quantity_not_a_worry": "The extractor declares an isotropic shape model and the plantings are stretched by up to 2.5x, so subtracting an isotropic fit leaves lobes along the stretch axis, and those lobes are measured against a threshold the same subtraction has just lowered. Spurious features are therefore split into those within two fitted widths of a peeled feature and those elsewhere, and the artefact count is reported against the stretch of the nearest planting. A single combined contamination figure would let manufactured features hide inside a background rate and does not satisfy condition 3.",
+
+  "one_round_is_adopted_as_a_stopping_rule_not_a_starting_point": "An iteration count is a free parameter and three falsified criteria in this sequence had theirs chosen after seeing what it did. One round is the only count nameable without choosing one. If one round proves insufficient, that is a result about one round; a successor may declare more, blind, and before measuring. This adoption authorises no second round and no report of what one would give.",
+
+  "what_this_adoption_does_not_do": "It adopts no peeled null into the pipeline, changes no default, and authorises no edit to NullCalibration, local_maximum_extractor or the frame-maximum statistic. It evaluates no other null construction -- no trimmed-spectrum, neighbouring-frame or robust-spectrum variant -- because ranking several nulls on evidence already inspected four times is the horse race R20 forbids. It re-measures no identity criterion and supersedes neither T4E.24 nor T4E.25. The background-calibrated figures are a ceiling and are never to be presented as an achievable operating point.",
+
+  "what_is_not_opened_by_this": "Reserved seeds 720-735 and 880-895 stay closed and the 2022-2023 forecast-test period stays unopened. The slice replants T4E.24's own scenes and needs none of them.",
+
+  "the_evidence_is_on_its_fourth_inspection": "T4E.24 built and inspected these scenes on 2026-09-11; T4E.24's addendum, T4E.25 and now this slice each read them again. They are development evidence permanently and no renaming makes them fresh.",
+
+  "cross_domain": "R19 applies. Any domain calibrating a null on data containing the signal it tests for inherits the same self-inflation and the same procedure is available to it, and the change in the meaning of the p-value transfers with it undiminished. The numbers do not: the gap, the fraction closed and the artefact rate belong to 850 hPa relative vorticity over this crop under this planting. A domain adopting a peeled null owes its own artefact measurement, because that rate depends on how badly the extractor's declared shape model fits its features.",
+
+  "scope_adopted": "Atmospheric identity path only, on synthetic evidence with known truth.",
+
+  "governing": [
+    "Declare the prediction, and the design's strongest objection to itself, before the measurement. Both are in the adopted declaration and neither may be revised after the numbers exist.",
+    "Disclose a probe that informed a declaration rather than letting the declaration read as blind.",
+    "A named refusal is preferable to an unsupported number.",
+    "Evaluate the candidate alone; no horse race (R20).",
+    "If round 0 does not reproduce T4E.24 and T4E.25 exactly, that discrepancy is reported before anything else and the rest is not interpreted until it is explained.",
+    "If the procedure neither closes the gap nor manufactures artefacts, that null result is reported as such -- condition 6 is a permission to return nothing, not a failure state.",
+    "Nothing here approves a mining radius, discharges T4E.8's acquired-record acceptance, or closes D96, D97, D98, D99 or D100. The primary scientific target remains kind_recurrence."
+  ],
+
+  "claim_boundary": "Carried unchanged from the declaration: this measures one null-estimation procedure on synthetic evidence with known truth, at one operating point, for one round, on scenes already inspected four times. It settles nothing about the atmosphere, nothing about any real cyclone, and nothing about whether any identity criterion is correct. It licenses no change to any default and no adoption of a peeled null. A pass here is not validation; it is a failure to fail on the evidence that motivated the question."
+}

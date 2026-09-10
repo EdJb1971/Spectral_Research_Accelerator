@@ -31,6 +31,7 @@ Last revised 2026-09-11.
 | T4E.7 null calibration | **Done** | — | Needs no replicates; recovers a planted identity on synthetic data. Returns *no radius* on the acquired record. |
 | T4E.8 defensible identity | **In progress** — slices 1–5 implemented, **acceptance unmet**; target decided 2026-09-09 | D97–D100; blocks T4F.9 | Slice 2's spatial mode fails the declared 10%/10% criterion (split 25.6–29.4%, admission 9.4–10.9%); no radius meets both bounds in any window. Slice 3 makes the identity target a declared field and refuses circular evidence. **Target decided 2026-09-09: `kind_recurrence` primary, the other two diagnostic.** That needs `external_reference` evidence, so a reviewed catalogue and a serialisation for it are now on the critical path and the primary target is unevaluable from the tool until they exist. §3E.8, §3E.9, §3E.11 |
 | T4E.8 slice 4 identity declaration on screen | **Implemented** | Closes PLAN §5 gap 1 | `/api/v1/identity/*` and `IdentityDeclarationView` render the admissibility matrix with the circular pairing refused at the weight of an admission, receipts with their claim boundaries, and the surface's own refusals. Read-only; choosing remains a person's act. 8 rendered browser tests. §3E.11 |
+| T4E.26 a null estimable from real data | **Adopted 2026-09-11 and MEASURED; prediction held on all three limbs, and its declared failure mode is 84% of the contamination** | Single-round peeled-null calibration: extract, subtract each feature's own published isotropic fit, recalibrate on the residual, re-extract from the original scene. Round zero reproduces T4E.24/25 exactly. The cut falls **15.17 to 8.64** background sigma against a **4.37** oracle, closing a median **0.637** of the gap (deciles 0.000 to 1.041 — a tenth of scenes close nothing, and some overshoot the oracle). Feature recovery 0.6276 to **0.8237**, never-seen features **121 to 39**, intact-configuration coverage 0.0833 to **0.3000** (+0.2167 against a 0.15 bar T4E.25 fixed first), and the newly recovered are **half the brightness** of what round zero had (ratio 12.51 against 24.02), so it reaches the faint population; 0 trials lost. **But 83 of 99 spurious features are lobes the subtraction itself created**, concentrated at stretch 2.5 (54 of 83) exactly as declared, because the extractor's shape model is isotropic and the features are not. §3E.41 | **A peeled p-value answers a different question**: `NullCalibration`'s hypothesis names a field with *the same* power spectrum, and a peeled ensemble has the residual's — so coverage was gained partly by changing what a detection claims, and a successor adopting this must state the new hypothesis. Adopts nothing, changes no default (R20), runs one round, evaluates no other null. **70% of configurations remain incomplete.** The prediction was NOT blind — a one-scene probe preceded it — and these are T4E.24's scenes on their fourth inspection, so a pass is a failure to fail, not a validation |
 | T4E.25 what the detection cut costs | **Adopted 2026-09-11 and MEASURED; declared outcome held, declared mechanism corrected** | The family-wise level swept over four values fixed in advance, on T4E.24 scenes replanted under the same seed so **only the cut varies** -- one surrogate ensemble per scene, every alpha reading its own order statistic off the same maxima. Acceptance condition 2 met **bit-for-bit**: alpha = 0.05 reproduces T4E.24 exactly. A **tenfold** relaxation of alpha buys 9 points of feature recovery (0.6276 to 0.7182) and lifts intact-configuration coverage only 0.0833 to 0.1500, against a declared bar of 0.50 -- so **65%% of configurations still hold a permanently invisible feature**. The predicted *outcome* held; the predicted *mechanism* was wrong -- contamination barely moved (0.042 to 0.075 spurious per scene). A post-hoc diagnostic over 8 scenes finds why: the tail is steep as predicted (10x alpha moves the threshold 1.2x) but the **dominant term was unpredicted** -- a scene-calibrated cut sits **3.53x** above its own background's, because the plantings' power enters every surrogate of the planted field. **Alpha is not what sets this threshold; the signal is.** The null behaving as declared, not a defect. §3E.40 | Licenses only that T4E.24's coverage is a property of the scheme across a declared range rather than of the 0.05 operating point. Selects **no** alpha and changes no default (R20); alters nothing in the extractor or the null; does not establish that scene calibration is the wrong choice, only its price. The 3.53x figure is a diagnostic over 8 scenes with no error bar. Bound unchanged: these are T4E.24's identical-geometry scenes, so the truth is worse |
 | T4E.24 the false absence rate | **Adopted 2026-09-11 and MEASURED; all four acceptance conditions met** | 60 configurations planted with identical geometry into 6 independent phase-randomised backgrounds: 360 scenes, 414 features, 2,484 trials, gate PASS at median 4. Marginal false absence **0.3724**, reproducing T4E.21's loss on a different design. The presence distribution is bimodal -- **121 of 414 features recovered in no scene at all**, 228 in all six, only 65 in between -- so relaxing the tolerance from `k = 6` to `k = 3` moves admission only **0.5507 to 0.6304**. `ABSENCES_TOLERATED = 1` sits at **0.5870**. **Coverage, not the tolerance, is what bounds a partial-recurrence criterion here.** The predicted concentration is confirmed (variance 7.35 against a binomial 1.40) and was close to built in, as declared beforehand. The declaration's stated *mechanism* is **corrected**: absence tracks amplitude against the cut (recovery 0.144 at ratio 8-14, 0.919 at 26-32), not neighbour competition (0.535 to 0.677 across a fivefold separation range). **Derived from the same receipt, exactly: 50 of 60 planted configurations contain at least one feature recovered in no scene at all, so **8.3%%** of configurations survive intact across all six scenes and **16.7%%** are recoverable in principle -- the ceiling that binds is the configuration one, not the 0.63 feature rate.** §3E.39 | Licenses only that the extractor's coverage bounds the criterion on this evidence at `S = 6`. Chooses **no** tolerance and no proportion of `S` (R20); changes nothing in the extractor; says nothing about the atmosphere. Identical geometry is the most favourable case, so recall is an **upper** bound and the absence rate a **lower** one. The number is not quoted for any other domain, though the obligation to measure it transfers |
 | T4E.17 the external catalogue `kind_recurrence` requires | **SIGNED 2026-09-10 on amended terms; the primary target is evaluable for the first time** | IBTrACS v04r01 South Pacific subset (DOI 10.25921/82ty-9e16), bound by sha256 `631f76b9...` and **not committed**. Admissible because it is agency best-track data, not reanalysis — most atmospheric catalogues are reanalysis-derived and would be **circular** against an ERA5 record. Matched in the record's own crop over 2018–2021: **210 observations, 20 storms, 20,241 cross-storm pairs**, base rate 0.391 on `NATURE` (adjudicating) and 0.182 on `USA_SSHS` (characterisation only). Within-storm pairs excluded — that is `spatial_persistence`. `MX`/`NR` refused by name. **The unit of independence is the storm, not the observation**: effective *n* nearer 20 than 20,241. Prior odds ~1:1.6 here against 1:399 synthetic. 2022–2023 forecast-test period **not opened**. §3E.27 | Makes `kind_recurrence` evaluable against labels not derived from the record. Evaluates **no criterion**; one basin, one box, four years, 20 storms; supplies identity, not physics |
@@ -8823,6 +8824,114 @@ All four acceptance conditions are met: the coded gate passed, the full distribu
 rather than a mean, the mechanism and consequence claims are reported separately with the
 mechanism claim carrying its declared caveat, and the two named outcomes did separate.
 
+### 3E.41 Peeling the null works, and manufactures most of its own contamination (T4E.26)
+
+**T4E.26 (2026-09-11): peeling the null works, manufactures most of its own contamination, and
+changes what a detection claims.**
+
+Adopted 2026-09-11 (`t4e26-peeled-null-adoption.json`, binding the declaration by sha256
+`3e374738...`) and measured the same day. One round, `alpha = 0.05`, T4E.24's 360 scenes under the
+same root seed. `measurements/t4e26_peeled_null.json`. Three ensembles per scene -- the scene's
+own, the residual's, and the bare background's -- 71 minutes.
+
+**Acceptance condition 2 first.** Round zero reproduces T4E.24 and T4E.25 exactly: feature
+recovery 0.6276, the presence distribution identical key by key (121/12/20/8/10/15/228),
+configuration coverage 0.1667 and 0.0833, spurious 0.0417 per scene. Every feature had a usable
+width, so nothing was left unsubtracted for want of one.
+
+```
+thresholds, in units of the background's own robust width (median over 360 scenes)
+   round zero 15.17      peeled 8.64      oracle 4.37
+
+fraction of the oracle gap closed, by decile over 360 scenes
+   0.000  0.396  0.488  0.532  0.587  0.637  0.701  0.736  0.798  0.896  1.041
+
+stage        gate med   feature recovery   recoverable    intact      spurious/scene
+round zero       4          0.6276         0.1667(10/60)  0.0833(5/60)    0.042
+peeled           6          0.8237         0.6000(36/60)  0.3000(18/60)   0.275
+
+features never recovered in any scene:  121 -> 39
+newly recovered trials 487, trials lost 0
+median peak-to-background ratio: newly recovered 12.51, already found at round zero 24.02
+```
+
+**The prediction held on all three limbs, against bars fixed by T4E.25 before the probe that
+informed it existed.** Intact-configuration coverage rose **+0.2167** against a 0.15 bar.
+Contamination stayed at 0.275 per scene against a bar of 1.0. And the newly recovered plantings
+are **half the brightness** of those round zero already had -- 12.51 against 24.02 -- so peeling
+reached the faint population rather than re-finding the bright one. Nothing was lost: no trial
+recovered at round zero went missing after peeling.
+
+**The declared failure mode is real, and it is most of the contamination.** Of 99 spurious
+features, **83 (83.8%) fall within two fitted widths of something that was peeled** -- they are
+lobes the subtraction created and the lowered cut then reported. And they concentrate exactly
+where the declaration said they would, on the asymmetric features an isotropic fit cannot
+represent:
+
+```
+stretch of the planting nearest each manufactured feature
+   1.0 -> 18      1.5 -> 11      2.5 -> 54
+```
+
+So the procedure's cost is not a diffuse rise in background noise. It is a specific, predictable
+artefact at stretched features, arising from `local_maximum_extractor`'s declared
+`isotropic_gaussian_on_a_flat_baseline` shape model meeting features that are not isotropic. Only
+16 of 99 spurious features are ordinary contamination.
+
+**THE REPORTED SIGNIFICANCE MEANS SOMETHING ELSE, and this belongs here rather than in a
+footnote.** `NullCalibration` states its hypothesis as no peak exceeding the strongest peak of a
+field with **the same power spectrum** as the frame. A peeled ensemble has the residual's
+spectrum. So every p-value taken through a peeled cut answers a different question, and the
+coverage gained above was gained **partly by changing what a detection claims**. Whether the
+residual's spectrum is the better null for the question actually being asked -- whether *this*
+peak is distinguishable from the background it sits on, rather than from a field that includes
+itself -- is an argument, is labelled as one, and is not settled here. A successor that adopts a
+peeled null must state the new hypothesis explicitly.
+
+**What the numbers do and do not say about the coverage problem.** Peeling more than triples
+intact-configuration coverage and cuts never-seen features from 121 to 39. It does not solve the
+problem: **70% of configurations still hold at least one feature the extractor never recovers**,
+and the gap's first decile is 0.000 -- in a tenth of scenes one round closes nothing at all. The
+top decile exceeds 1.0, meaning some peeled cuts fall *below* the background oracle; that is
+reported rather than clipped, because a peeled null is not bounded by the oracle and pretending
+otherwise would hide an overshoot.
+
+**Disclosed: the gate median moved from 4 to 6.** Both are inside the declared band, and 6 is
+*closer* to the record's own 7 than round zero's 4 was. So the peeled stage is the better density
+match to the record -- which is worth stating plainly, and is also the first time in this
+sequence that a gate reading has moved toward the record rather than sitting at the bottom of its
+band.
+
+**The blindness claim and its limit, restated because it governs how this may be cited.** A
+one-scene feasibility probe preceded the declaration and informed the prediction, which is
+therefore **not blind** and is not reported as if it were. The two acceptance bars are T4E.25's
+and predate the probe. These are T4E.24's scenes on their **fourth inspection**. Nothing here is
+confirmatory: a pass is a failure to fail on the evidence that motivated the question, not a
+validation.
+
+**What is not licensed.** No peeled null is adopted, no default is changed, and nothing in
+`local_maximum_extractor`, `NullCalibration` or the frame-maximum statistic is altered. No second
+round was run and none is reported. No other null construction was evaluated (R20). The oracle is
+a ceiling, not an achievable operating point. The 3.53x figure from T4E.25 and the artefact rate
+here belong to 850 hPa relative vorticity over this crop under this planting and are quoted for
+no other domain -- though a domain adopting a peeled null owes its own artefact measurement,
+because that rate depends on how badly its extractor's declared shape model fits its features.
+D96 through D100 remain open, T4E.8's acquired-record acceptance is untouched, and no reserved
+seed block or frame of the 2022-2023 forecast-test period was read.
+
+**The bound still runs the same way.** Identical geometry across the six scenes remains the most
+favourable case, so every figure above is optimistic and the truth under jitter, drift and
+evolution is worse.
+
+```
+$ .venv/Scripts/python.exe -m pytest src/tests/test_peeled_null.py -q
+17 passed
+```
+
+One test failed while writing this and was itself the error: it asserted a peeled baseline of 5.0
+against a flat field that had no peak planted in it, so the code was right and the test was
+describing a field it had not built. The test was corrected rather than the module.
+
 ### 3E.40 The cut is not a lever, and the reason is not the one predicted (T4E.25)
 
 **T4E.25 (2026-09-11): the cut is not a lever, and the reason is not the one predicted.**
@@ -11662,6 +11771,7 @@ able to sit three slices out of date.
 | `test_constellation.py` | 65 | TG3.3 constellations as attributed graphs: the planted triangle built twice, in cells as a dimensionless amplitude and in metres as a temperature, matching as the same attributed graph, with a relation registered from the test module *without* the dimensionless division making the same two graphs disagree; all eight relations registered with their requirements declared; `direction` and `convergence` refusing against TG2.2's own `reports_orientation: False` capability; `convergence` refused on an undirected axis; a bearing refused across a periodic seam and from a point to itself; the geometric-mean reference that does not follow the larger scale; the relation axis a TG3.1 family may be priced over, 3 against 28; matching exhaustive to 8 nodes and refused above it; and the non-strict graph that did not match itself, found by running it |
 | `test_false_absence.py` | 27 | T4E.24 the false absence rate: the planting envelope pinned to T4E.21's so the result speaks to the same regime; a configuration drawn once and reused across every scene, dropped short rather than crowded when a frame has no room; the pairing rule's claiming, so one extraction can never answer for two plantings and hide a genuine absence, and its independence of planting order; admission monotone in the tolerance, which is arithmetic and so a bug if it fails; both arms of the declared prediction exercised on data built to show each; and the dispersion report refusing to travel without the caveat that its mechanism claim is close to built in |
 | `test_coverage_contamination.py` | 12 | T4E.25 the coverage/contamination sweep: the swept alpha list pinned to the declaration and closed, so a fifth value cannot be added once the curve is visible; a shared surrogate ensemble reproducing `calibrate` exactly at the same alpha, which is what makes the sweep four cuts through one measurement rather than four runs; the threshold monotone in alpha, which is what makes "newly recovered" a set difference rather than an estimate; configuration coverage refusing a configuration holding a never-seen feature, the two coverage measures ordered by construction, and the T4E.24 addendum figures reproduced through the same function that reports them at every alpha |
+| `test_peeled_null.py` | 17 | T4E.26 peeled-null calibration: the subtracted shape rebuilt only from what the extractor published, a feature with no usable width left in place and counted rather than guessed at, the amplitude removed above the baseline rather than the magnitude carrying the baseline with it; and the contamination split that is the whole safeguard -- an artefact radius that scales with the feature it came from, no spurious features reporting no fraction rather than a clean zero, and a gap refusing to be computed where round zero already sits at the oracle |
 | `test_feature_extraction.py` | 47 | a diverged capture-correction scale refused by name rather than acted on, the refusal counted without ending the pass, and a clean Gaussian still extracted so the bound cannot be trimming real features; TG2.2 extraction as a registry: the three planted features recovered across a six-fold range of scales and under rotation, translation and rescaling; both null benchmarks silent across three seeds with the loosened-alpha control that makes the silence mean something; the strict-comparison off-by-one; an unresolvable alpha refused before the ensemble; a second extractor registered from the test module; the periodic-axis seam and the self-scaling R13 refusal; and the one-feature-per-frame handoff to TG2.3 |
 | `test_feature_record.py` | 37 | TG2.1 canonical feature record: features measured off the advected-vortex benchmark recovering its known velocity and scale doubling, the R19 refusals (magnitude, separation, elapsed time, mixed sets), the periodic-axis refusal, orientation conventions and the surrogate resolution floor, a fourth convention and a fourth significance basis registered from the test module, and defect D59 |
 | `test_level_axis.py` | 19 | TG1.5 vertical coordinates: the registry and its sense of up, a height bank labelling its offsets the opposite way to pressure, a fourth coordinate registered from the test module, the declaration travelling from reader to signature, `level_hpa` refusing a non-pressure axis, and the pressure arithmetic unchanged |
@@ -11776,7 +11886,7 @@ able to sit three slices out of date.
   | `test_identity_certification.py` | 131 | T4E.9 the T4E identity path against a motif known by construction: the benchmark registered and naming the path it certifies, three disjoint partitions so a radius is never evaluated on what calibrated it, exactly one motif configuration in a planted scene and none in a null one, construction labels taken from the generator and refused rather than guessed when a planted position has no feature near it or two positions claim one, only cross-scene pairs formed, the definition's separation asserted as a floor, nothing admitted where nothing recurs with the absent positive population left unmeasured rather than zero, the frozen-radius failure pinned as a relationship to the feasible radius rather than as two numbers, an empty calibration returning INVALID rather than a permissive radius, every result stating what it does not license, and T4E.13's criterion fixed in code while asserted to be measured nowhere -- `k` derived as a function of the partition size, unequal partitions refused rather than pooled, monotonicity in `k` checked on a toy rather than assumed, and, once candidate 3 was adopted and falsified, that guard replaced by the reading of the result -- which conditions failed and by how much, that the null held at 0 of 1486 proposed, that the 0.0000 recall is recorded as arithmetic rather than a finding, that no lower k can rescue what this one failed, that the falsification licenses none of the conclusions nearest to it, that partitions 720-735 stay refused in code, and T4E.14's partial-presence test bed -- seeds that collide with no existing evidence, a reservation refused with no flag to open it, planting patterns that are deterministic and not contiguous, the recoverable population C(j,2) rather than C(S,2), the design's own record of what this evidence cannot repair, and T4E.15's criterion fixed in code while asserted to be measured nowhere -- closure broken by a single loose end, closure admitting only a subset of what consistency admits, the criterion carrying no tunable parameter at all, the span-ranking design recorded as discarded by derivation, the declaration's own worst case and refusal to predict, and -- once measured and falsified -- the reading of that result: the conditions that failed with their counts, the mechanism executed rather than described (a pair with no other partners is closed and is therefore admitted, while one loose end rejects a group spanning five scenes), the cross-check showing closure admits more than candidate 2 on the evidence candidate 2 passed, the missed derivation recorded rather than quietly repaired, the constraint the falsification fixes on any successor, and T4E.16's withdrawal held as a derivation rather than a note -- the surrogate reassembly rate computed analytically and by simulation, the record of why the design cannot simply be repaired, the fact that a withdrawn declaration adds nothing to the accumulated multiplicity, and PooledDistances keeping a refused distance as NaN so it can never leak in as a number |
   | `test_identity_target_declaration.py` | 53 | T4E.8 slice 3 the declared identity target: an absent target or evidence class refused by name, a misspelling refused with its correction, `kind_recurrence` against record-derived proxy labels refused as circular, `track_continuity` admitted with its tracker-agreement caveat, every target round-tripping what it recognises and does not license, the published proxy wording pinned verbatim so naming a target cannot reword a cited receipt, and the external-reference path recovering two planted identities from a reviewed catalogue while refusing a mismatched family, a single identity, a non-catalogue and a negative population the patterns cannot supply |
   | `test_spectral_spatial_identity.py` | 24 | T4E.8 spatial geometry, detector-band/magnitude independence, source/scope refusal, analytic distances, old-radius refusal, scalar/accelerated agreement and two-sided proxy-label diagnostics |
-| **total** | **4354** | |
+| **total** | **4371** | |
 
 ### 7.4a Browser suite inventory
 

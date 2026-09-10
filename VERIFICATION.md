@@ -12515,6 +12515,112 @@ read 4315 against an actual 4342. It was corrected to 4342 rather than the test 
 inventory rows and undocumented modules but never the table's own total. The audit is the weaker
 of the two checks and the test caught what it missed.
 
+**T4E.26 (2026-09-11): peeling the null works, manufactures most of its own contamination, and
+changes what a detection claims.**
+
+Adopted 2026-09-11 (`t4e26-peeled-null-adoption.json`, binding the declaration by sha256
+`3e374738...`) and measured the same day. One round, `alpha = 0.05`, T4E.24's 360 scenes under the
+same root seed. `measurements/t4e26_peeled_null.json`. Three ensembles per scene -- the scene's
+own, the residual's, and the bare background's -- 71 minutes.
+
+**Acceptance condition 2 first.** Round zero reproduces T4E.24 and T4E.25 exactly: feature
+recovery 0.6276, the presence distribution identical key by key (121/12/20/8/10/15/228),
+configuration coverage 0.1667 and 0.0833, spurious 0.0417 per scene. Every feature had a usable
+width, so nothing was left unsubtracted for want of one.
+
+```
+thresholds, in units of the background's own robust width (median over 360 scenes)
+   round zero 15.17      peeled 8.64      oracle 4.37
+
+fraction of the oracle gap closed, by decile over 360 scenes
+   0.000  0.396  0.488  0.532  0.587  0.637  0.701  0.736  0.798  0.896  1.041
+
+stage        gate med   feature recovery   recoverable    intact      spurious/scene
+round zero       4          0.6276         0.1667(10/60)  0.0833(5/60)    0.042
+peeled           6          0.8237         0.6000(36/60)  0.3000(18/60)   0.275
+
+features never recovered in any scene:  121 -> 39
+newly recovered trials 487, trials lost 0
+median peak-to-background ratio: newly recovered 12.51, already found at round zero 24.02
+```
+
+**The prediction held on all three limbs, against bars fixed by T4E.25 before the probe that
+informed it existed.** Intact-configuration coverage rose **+0.2167** against a 0.15 bar.
+Contamination stayed at 0.275 per scene against a bar of 1.0. And the newly recovered plantings
+are **half the brightness** of those round zero already had -- 12.51 against 24.02 -- so peeling
+reached the faint population rather than re-finding the bright one. Nothing was lost: no trial
+recovered at round zero went missing after peeling.
+
+**The declared failure mode is real, and it is most of the contamination.** Of 99 spurious
+features, **83 (83.8%) fall within two fitted widths of something that was peeled** -- they are
+lobes the subtraction created and the lowered cut then reported. And they concentrate exactly
+where the declaration said they would, on the asymmetric features an isotropic fit cannot
+represent:
+
+```
+stretch of the planting nearest each manufactured feature
+   1.0 -> 18      1.5 -> 11      2.5 -> 54
+```
+
+So the procedure's cost is not a diffuse rise in background noise. It is a specific, predictable
+artefact at stretched features, arising from `local_maximum_extractor`'s declared
+`isotropic_gaussian_on_a_flat_baseline` shape model meeting features that are not isotropic. Only
+16 of 99 spurious features are ordinary contamination.
+
+**THE REPORTED SIGNIFICANCE MEANS SOMETHING ELSE, and this belongs here rather than in a
+footnote.** `NullCalibration` states its hypothesis as no peak exceeding the strongest peak of a
+field with **the same power spectrum** as the frame. A peeled ensemble has the residual's
+spectrum. So every p-value taken through a peeled cut answers a different question, and the
+coverage gained above was gained **partly by changing what a detection claims**. Whether the
+residual's spectrum is the better null for the question actually being asked -- whether *this*
+peak is distinguishable from the background it sits on, rather than from a field that includes
+itself -- is an argument, is labelled as one, and is not settled here. A successor that adopts a
+peeled null must state the new hypothesis explicitly.
+
+**What the numbers do and do not say about the coverage problem.** Peeling more than triples
+intact-configuration coverage and cuts never-seen features from 121 to 39. It does not solve the
+problem: **70% of configurations still hold at least one feature the extractor never recovers**,
+and the gap's first decile is 0.000 -- in a tenth of scenes one round closes nothing at all. The
+top decile exceeds 1.0, meaning some peeled cuts fall *below* the background oracle; that is
+reported rather than clipped, because a peeled null is not bounded by the oracle and pretending
+otherwise would hide an overshoot.
+
+**Disclosed: the gate median moved from 4 to 6.** Both are inside the declared band, and 6 is
+*closer* to the record's own 7 than round zero's 4 was. So the peeled stage is the better density
+match to the record -- which is worth stating plainly, and is also the first time in this
+sequence that a gate reading has moved toward the record rather than sitting at the bottom of its
+band.
+
+**The blindness claim and its limit, restated because it governs how this may be cited.** A
+one-scene feasibility probe preceded the declaration and informed the prediction, which is
+therefore **not blind** and is not reported as if it were. The two acceptance bars are T4E.25's
+and predate the probe. These are T4E.24's scenes on their **fourth inspection**. Nothing here is
+confirmatory: a pass is a failure to fail on the evidence that motivated the question, not a
+validation.
+
+**What is not licensed.** No peeled null is adopted, no default is changed, and nothing in
+`local_maximum_extractor`, `NullCalibration` or the frame-maximum statistic is altered. No second
+round was run and none is reported. No other null construction was evaluated (R20). The oracle is
+a ceiling, not an achievable operating point. The 3.53x figure from T4E.25 and the artefact rate
+here belong to 850 hPa relative vorticity over this crop under this planting and are quoted for
+no other domain -- though a domain adopting a peeled null owes its own artefact measurement,
+because that rate depends on how badly its extractor's declared shape model fits its features.
+D96 through D100 remain open, T4E.8's acquired-record acceptance is untouched, and no reserved
+seed block or frame of the 2022-2023 forecast-test period was read.
+
+**The bound still runs the same way.** Identical geometry across the six scenes remains the most
+favourable case, so every figure above is optimistic and the truth under jitter, drift and
+evolution is worse.
+
+```
+$ .venv/Scripts/python.exe -m pytest src/tests/test_peeled_null.py -q
+17 passed
+```
+
+One test failed while writing this and was itself the error: it asserted a peeled baseline of 5.0
+against a flat field that had no peak planted in it, so the code was right and the test was
+describing a field it had not built. The test was corrected rather than the module.
+
 **T4E.25 (2026-09-11): the cut is not a lever, and the reason is not the one predicted.**
 
 Adopted 2026-09-11 (`t4e25-coverage-contamination-adoption.json`, binding the declaration by

@@ -1254,6 +1254,48 @@ about the definition and would cost no catalogue.
 Needs its own task, design and acceptance before it runs, declared first. Adopting an external
 project's ceilings is a scientific choice and must not be made silently by software.
 
+### T4E.26 ? A null estimable from real data ? measured 2026-09-11; it works, and it costs something that is not a number
+
+**Measured.** One round of peeled-null calibration closes a median **0.637** of the gap to the
+unavailable oracle, lifts feature recovery from 0.6276 to **0.8237**, cuts never-seen features
+from **121 to 39**, and more than triples intact-configuration coverage, from 0.0833 to
+**0.3000**. The newly recovered plantings are half the brightness of what round zero already had,
+so it reaches the faint population rather than re-finding the bright one, and nothing was lost.
+See `architecture.md` section 3E.41.
+
+**The declared failure mode is real and is most of the contamination.** 83 of 99 spurious
+features are lobes the subtraction itself created, concentrated at stretch 2.5 exactly as
+predicted, because `local_maximum_extractor` declares an isotropic shape model and the features
+are not isotropic. Total contamination stays well inside its bar, but 84% of it is manufactured.
+
+**The cost that is not a number, and the reason this is not simply good news.** A peeled ensemble
+has the residual's power spectrum, not the frame's, so a p-value taken through a peeled cut
+answers a different question from the one `NullCalibration` declares. Part of the coverage above
+was bought by changing what a detection claims. Whether the residual's spectrum is the *better*
+null here is a real argument and it is not settled.
+
+**What is now open, and what it is not.** The coverage problem is improved, not solved: **70% of
+configurations still hold a feature the extractor never recovers**, and in a tenth of scenes one
+round closes nothing. Nothing is adopted. Three things could follow and none has been declared:
+
+1. **Settle the hypothesis question before anything is adopted.** This is the one that blocks the
+   others, because adopting a peeled null without stating its hypothesis is precisely the outcome
+   T4E.26's declaration named as the worst available. It is a scientific argument to be made in
+   the open, not a measurement.
+2. **The artefact is a shape-model problem, and now has a measured size.** An anisotropic
+   extractor, or a subtraction that uses a fitted ellipse rather than the isotropic fit, would
+   attack 84% of the contamination directly. That is a change to the extractor and needs its own
+   task and acceptance (standard E12 asks for a second registered extractor, not a special case
+   inside the first).
+3. **The bound is still the favourable case.** Every figure in T4E.24, T4E.25 and T4E.26 comes
+   from scenes with identical geometry across all six. What jitter, drift and evolution cost has
+   never been measured.
+
+**What is still forbidden.** Adopting a peeled null, changing any default, running a second round
+and reporting it, or ranking this against another null construction. Each is its own declaration
+with its own blindness claim (R20). And these scenes are now on their fourth inspection, so a
+successor that needs a blind result needs fresh evidence, not a rename.
+
 ### T4E.25 ? What the detection cut costs ? measured 2026-09-11; option 2 is narrowed, not closed
 
 **Measured, and it removes the cheapest repair from the table.** Relaxing the family-wise level
