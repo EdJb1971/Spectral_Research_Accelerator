@@ -978,3 +978,56 @@ def test_the_unit_of_independence_is_the_storm_not_the_observation():
     assert record["population"]["core_storms"] == 16
     assert "The unit of independence is the storm: 16, not 154" in (
         record["prediction_tests"]["note"])
+
+
+# ---------------- T4E.20: the synthetic centre test, and the gate that failed by its own rule
+
+
+def _t4e20():
+    import json
+    from pathlib import Path
+
+    return json.loads(
+        Path("measurements/t4e20_synthetic_centre.json").read_text(encoding="utf-8"))
+
+
+def test_the_gate_failed_by_the_declared_criterion_and_the_code_said_otherwise():
+    """The declaration disqualified a background yielding 'hundreds, OR NONE'. It yields none.
+
+    The coded check tested only an upper bound. Recording the mismatch is the point: a validity
+    gate whose code does not match its declaration is not a gate.
+    """
+    correction = _t4e20()["GATE_CORRECTION"]
+
+    assert "never implemented the 'or none' half" in correction["what_happened"]
+    assert "EASIER than the real one" in correction["why_it_matters"]
+    assert "Toward the conclusion, not away from it" in correction["which_way_it_cuts"]
+
+
+def test_the_directional_prediction_is_confirmed_monotonically():
+    """45 degrees at symmetry, 19 at 2.5x stretch. Declared before the measurement."""
+    results = _t4e20()["results"]["cause_A_directional_prediction_CONFIRMED"]
+
+    assert "45.3 degrees" in results["stretch_1.0"]
+    assert "18.9 degrees" in results["stretch_2.5"]
+    assert "toward the broader side" in results["reading"]
+
+
+def test_the_estimator_sizes_correctly_while_mislocating():
+    """A centroid problem, not a scale one -- which rules out the diverged-scale defect."""
+    scale = _t4e20()["results"]["scale_itself_is_recovered_accurately"]
+
+    assert scale["planted_vs_recovered"]["9.00"] == 8.93
+    assert "centroid problem, not a sizing one" in scale["reading"]
+
+
+def test_the_quantitative_claim_is_refused_while_the_mechanism_is_kept():
+    """10.2 km synthetic against 33.8 real, with a failed gate between them."""
+    record = _t4e20()
+
+    assert "DEMONSTRATED as a real mechanism" in record["VERDICT"]
+    assert "NOT established that this accounts for all" in record["VERDICT"]
+    refused = " ".join(record["what_this_does_not_settle"])
+    assert "10.2 km against 33.8 observed" in refused
+    assert "That the extractor should be changed" in refused
+    assert "cannot see a fixed geographic bearing" in refused

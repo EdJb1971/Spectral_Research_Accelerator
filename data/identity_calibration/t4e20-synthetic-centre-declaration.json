@@ -1,0 +1,53 @@
+{
+  "schema": "t4e20-synthetic-centre-recovery/v1",
+  "status": "declared_before_measurement",
+  "task": "T4E.20",
+  "artefact": "how accurately the extractor recovers a cyclone centre that is known by construction",
+  "declared_by": "Edward Jonathan Bentley, maintainer (scientific choice); drafted by Claude Opus 5 at the maintainer's direction and NOT VALID until the maintainer has reviewed and adopted it",
+  "declared_on": "2026-09-10",
+  "why_this_exists": "T4E.19 measured a 33.8 km median offset between an extracted feature and a catalogue cyclone centre, ruled out the catalogue's own uncertainty as its source, found no dependence on storm type, intensity or latitude, and left the estimator surviving in sign at about two per cent of the variance. On real data the true centre is never known, so the offset cannot be attributed. Here it is known by construction, and there is no catalogue uncertainty and no physics to confound it.",
+  "the_background_is_the_load_bearing_choice": {
+    "why": "Planting a vortex on white noise would let the extractor recover it perfectly and would prove nothing. The synthetic field has to have the spectral character of real vorticity or the test is vacuous -- the same mistake T4E.14 was built to avoid on the identity side.",
+    "the_construction": "Each background is a PHASE-RANDOMISED real frame from the acquired vorticity record. Phase randomisation preserves the power spectrum exactly and destroys phase coherence, so the background has the real field's spectral character by construction and provably contains no coherent vortex.",
+    "why_this_is_better_than_a_parametric_background": "A red-noise or fractal background would be a model of the real spectrum, chosen and tuned by us. This one IS the real spectrum, taken from the record the offset was measured on, and it uses machinery already registered in the tool rather than new code with new assumptions.",
+    "what_it_still_is_not": "Phase randomisation Gaussianises the marginal, so the synthetic background is smoother in its extremes than real vorticity, which is heavy-tailed. A real field's incoherent structures are also not perfectly phase-random. Both are disclosed: this is a well-controlled background, not a replica."
+  },
+  "the_planted_vortex": {
+    "profile": "An isotropic Gaussian in relative vorticity, which is exactly the shape `local_maximum_extractor` declares it assumes. Testing it against its own declared assumption first is the point; a profile it does not claim to handle would confound an estimator question with a model-mismatch question.",
+    "parameters_matched_to_the_real_record": "Measured on the acquired record before this declaration: feature sigma median 3.67 cells with range 1.73 to 11.32, frame maximum median 1.009e-3, frame standard deviation median 6.29e-5, peak-to-background ratio median 16.",
+    "declared_sweep": {"sigma_cells": [2.0, 3.67, 6.0, 9.0], "peak_to_background": [8.0, 16.0, 32.0]},
+    "the_asymmetry_treatment": "Cause A says the windowed centroid is pulled toward the broader side of an asymmetric feature. Asymmetry is therefore a declared treatment, not an incidental property: the vortex is stretched along one axis by a factor in {1.0, 1.5, 2.5}, with 1.0 the symmetric control, and the stretch direction is drawn per replicate so no single bearing can masquerade as the result.",
+    "placement": "Uniformly at random in the interior, at least 12 cells from every edge, so the R13 off-frame rule cannot fire and the dateline mode this is not about cannot appear."
+  },
+  "the_predictions_declared_before_the_measurement": {
+    "if_the_estimator_is_sound": "A symmetric vortex at stretch 1.0 is recovered to well inside one cell -- under about 0.5 cells, 13 km -- at every declared sigma and amplitude. Sub-cell centroid estimation is what `_localise` exists to do and its docstring claims 0.27 cells against a benchmark.",
+    "cause_A_predicts": "Offset grows monotonically with the stretch factor and points toward the broader side of the vortex. If asymmetry is the mechanism, stretch 2.5 should show a clearly larger offset than stretch 1.0 and the direction should follow the stretch axis rather than any fixed bearing.",
+    "what_would_indict_something_other_than_asymmetry": "A symmetric vortex recovered with an offset near the real 1.6 cells would mean the estimator is biased regardless of asymmetry, and that neither cause A as stated nor the storms explain the real offset.",
+    "what_would_exonerate_the_estimator_entirely": "Symmetric AND asymmetric vortices both recovered to well under a cell. That would mean the real 33.8 km offset is not the estimator on this class of field at all, and the remaining explanations are the realism of the background, the non-Gaussian shape of a real cyclone, or a genuine difference between an 850 hPa vorticity maximum and an agency's surface centre that T4E.19's storm-type test was too small to see."
+  },
+  "the_validity_check_that_gates_the_whole_slice": {
+    "why": "A synthetic field that behaves nothing like the real one makes every number in this slice meaningless, however carefully they are computed.",
+    "the_check": "Synthetic frames must yield feature counts comparable to the real record under identical extraction: the real record gives a median of 7 features per frame with a range of 0 to 13 on raw extraction. A synthetic frame yielding hundreds, or none, means the background is wrong.",
+    "if_it_fails": "The slice reports that its synthetic evidence is not representative and stops. It does not proceed to measure offsets on a field that cannot stand in for the record, and it does not tune the background until the numbers look right -- that would be fitting the null to the answer."
+  },
+  "acceptance_for_this_slice": {
+    "condition_1": "The validity check passes, or the slice stops and says so.",
+    "condition_2": "Offset against the KNOWN planted centre reported for every cell of the declared sweep, with the number of replicates behind each and the spread, never a single number.",
+    "condition_3": "The symmetric control is reported separately and first, because it is the cleanest test of the estimator and the one whose interpretation does not depend on the asymmetry model.",
+    "condition_4": "Refusals by name: plantings the extractor did not find at all, features refused as unmeasurable, frames that fail extraction.",
+    "condition_5": "If the result does not separate estimator bias from the alternatives, that is the result. This slice may legitimately conclude that a 34 km offset is intrinsic to extraction of this kind, in which case the correct response is to restate the T4E.18 acceptance against a defensible tolerance -- which would be its own declaration, not a consequence of this one."
+  },
+  "what_this_slice_will_not_do": [
+    "It will not modify the extractor. Whether anything needs modifying is what it exists to determine, and a fix designed from the same data that motivated it would be untested.",
+    "It will not test the post-hoc southwest displacement from T4E.19 as though that were a declared hypothesis. If a systematic direction appears here, on data that did not generate the hypothesis, that is genuine evidence and is reported as such.",
+    "It will not evaluate any identity criterion.",
+    "It will not touch the 2022-2023 forecast-test period, whose frames were never acquired."
+  ],
+  "governing_rules": [
+    "Declare the predictions before the measurement.",
+    "A named refusal is preferable to an unsupported number.",
+    "The validity check gates the slice; a background that cannot stand in for the record invalidates everything built on it.",
+    "Code does not sign a scientific declaration for a person; this file is not adopted until the maintainer says so."
+  ],
+  "claim_boundary": "Synthetic fields settle a property of the extractor, not of the atmosphere. Nothing here licenses a claim about cyclones, about the catalogue, or about any identity criterion."
+}

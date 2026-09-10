@@ -12385,6 +12385,51 @@ release decision, but it does mean two gates that read PASS now read NOT_RUN and
 were not isolated to a cause; the run predates no clean baseline for this suite size, so they
 are reported as measured rather than attributed.
 
+**T4E.20: the centroid is pulled toward the broader side, and now it is demonstrated rather than
+hinted at.** 397 vortices planted at known centres on phase-randomised real frames, sweeping
+scale, amplitude and asymmetry. `measurements/t4e20_synthetic_centre.json`.
+
+**The gate failed by its own declared criterion, and the code said otherwise.** The declaration
+required a background yielding feature counts comparable to the record and named "hundreds, **or
+none**" as disqualifying. The phase-randomised backgrounds yield a median of **0** features where
+the record yields **7**; the coded check tested only an upper bound and never implemented the
+"or none" half. So the synthetic problem is *easier* than the real one -- a planted vortex faces
+no competition where a real frame has seven features and a suppression rule between them.
+
+That cuts toward the conclusion rather than away from it: an easier regime that still reaches the
+observed offset at adverse parameters makes the mechanism more credible. What it forbids is the
+quantitative claim that the estimator explains 33.8 km. What it supports is that the mechanism is
+real and can reach that size.
+
+```
+does the offset point ALONG the stretch axis?   (0 = along it, 45 = unrelated)
+  stretch 1.0   45.3 deg  n=107      offset by stretch:  1.0 -> 0.370 cells
+  stretch 1.5   34.7      n=107                          1.5 -> 0.427
+  stretch 2.5   18.9      n=112                          2.5 -> 0.841
+
+symmetric, by scale:      sigma 2 -> 9 gives 0.234, 0.288, 0.580, 0.557 cells
+symmetric, by amplitude:  ratio 8 -> 32 gives 0.686, 0.436, 0.207 cells
+scale recovery:           planted 2.00/3.67/6.00/9.00 -> 2.07/3.79/6.01/8.93
+at the record's medians:  0.368 cells = 10.2 km      (real record: 1.63 cells = 33.8 km)
+at adverse parameters:    4.952 cells = 137.7 km
+not found at all:         35 of 397 (8.8%), counted rather than dropped
+```
+
+**Cause A's directional prediction is confirmed cleanly**: monotone from unrelated at symmetry to
+strongly aligned at 2.5x stretch. **Its magnitude prediction is confirmed too.** And the
+estimator *sizes* a feature almost exactly while mislocating it, so this is a centroid problem
+and not a scale one -- which also rules out the diverged-scale defect fixed earlier as an
+explanation.
+
+**What it does not settle**: that cause A accounts for the *whole* real offset. At the record's
+median parameters it gives 10.2 km against 33.8 observed, and the failed gate forbids treating
+the synthetic figure as a like-for-like prediction. Nor does it establish that the extractor
+should be changed -- a displaced centroid on asymmetric features is a known property of windowed
+centroids, and whether a better estimator exists for this field, and what it would cost
+elsewhere, is separate declared work. The post-hoc southwest displacement from T4E.19 is
+untouched: the stretch axis was drawn uniformly here, so this design cannot see a fixed
+geographic bearing and does not claim to.
+
 **T4E.19: the offset decomposed, and none of the three declared causes survives.** Predictions
 were fixed before the measurement precisely because three causes that all produce "about 35 km"
 are indistinguishable by magnitude. 176 interior observations, 162 paired within 200 km, 154
