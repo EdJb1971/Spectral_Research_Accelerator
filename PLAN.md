@@ -1254,6 +1254,31 @@ about the definition and would cost no catalogue.
 Needs its own task, design and acceptance before it runs, declared first. Adopting an external
 project's ceilings is a scientific choice and must not be made silently by software.
 
+### T4E.25 ? What the detection cut costs ? measured 2026-09-11; option 2 is narrowed, not closed
+
+**Measured, and it removes the cheapest repair from the table.** Relaxing the family-wise level
+tenfold, from 0.05 to 0.50, lifts intact-configuration coverage only from 0.0833 to 0.1500 and
+feature recovery from 0.6276 to 0.7182. **65% of configurations still hold a permanently
+invisible feature.** So T4E.24's coverage is a property of this detection scheme across a
+declared range, not an artefact of the current operating point, and no choice of alpha rescues
+it. See `architecture.md` section 3E.40.
+
+**The reason is worth more than the result.** A scene-calibrated cut sits **3.53x** above its own
+background's, because the plantings' power enters every surrogate of the planted field, while
+a tenfold alpha change moves the threshold only 1.2x. **Alpha is not what sets this threshold;
+the signal is.** That is the null behaving exactly as declared -- the hypothesis is *a
+structureless field with this power spectrum*, and the planted field's spectrum includes the
+plantings -- so it is a price, not a defect.
+
+**What it does to the options listed under T4E.24.** Option 2 (attack coverage rather than the
+criterion) survives, but not via the error level: the lever is the *self-inflation of the null*,
+which is a question about what the null should be conditioned on, not about alpha. Naming that
+question is the obvious next declaration and it has not been written. Options 1 and 3 are
+untouched.
+
+**What is still forbidden.** Choosing an alpha, changing a default, or altering the extractor or
+the null against these numbers. Each is its own declaration with its own blindness claim (R20).
+
 ### T4E.24 ? The false absence rate ? measured 2026-09-11; it constrains what comes next
 
 **Measured, and it moves where the effort belongs.** At `S = 6`, on the most favourable geometry

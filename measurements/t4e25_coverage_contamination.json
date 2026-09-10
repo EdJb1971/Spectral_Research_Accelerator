@@ -1,0 +1,344 @@
+{
+  "measurement": "t4e25_coverage_contamination",
+  "declared_in": "data/identity_calibration/t4e25-coverage-contamination-declaration.json",
+  "declaration_sha256": "ce3126fbc3f276a953a689dfc3f8e78d80c21d6b7b7fcd5eca3d7315f4e0212d",
+  "adopted_in": "data/identity_calibration/t4e25-coverage-contamination-adoption.json",
+  "adoption_sha256": "12bc7d5118a962185c22cdeac29ea6f99011a8a2c52bcd1d8b98d23b1d6a18b4",
+  "measured_on": "2026-09-11",
+  "root_seed": 20260911,
+  "configurations": 60,
+  "scenes_per_configuration": 6,
+  "surrogates_per_scene": 999,
+  "alphas_swept": [
+    0.05,
+    0.1,
+    0.25,
+    0.5
+  ],
+  "the_sweep_is_paired": "One surrogate ensemble per scene; every alpha reads its own order statistic off the same maxima. No difference between alphas can be a sampling difference.",
+  "calibrated_on": "scene",
+  "alphas_excluded_by_the_gate": [],
+  "by_alpha": [
+    {
+      "alpha": 0.05,
+      "gate": {
+        "passed": true,
+        "reasons": [],
+        "median": 4,
+        "maximum": 8,
+        "n_frames": 360
+      },
+      "gate_excluded_this_alpha": false,
+      "trials": 2484,
+      "marginal_false_absence_rate": 0.3723832528180354,
+      "feature_recovery": 0.6276167471819646,
+      "presence_count_distribution": {
+        "0": 121,
+        "1": 12,
+        "2": 20,
+        "3": 8,
+        "4": 10,
+        "5": 15,
+        "6": 228
+      },
+      "admission_rates": {
+        "a=0": {
+          "k": 6,
+          "admitted": 228,
+          "of": 414,
+          "rate": 0.5507246376811594
+        },
+        "a=1": {
+          "k": 5,
+          "admitted": 243,
+          "of": 414,
+          "rate": 0.5869565217391305
+        },
+        "a=2": {
+          "k": 4,
+          "admitted": 253,
+          "of": 414,
+          "rate": 0.6111111111111112
+        },
+        "a=3": {
+          "k": 3,
+          "admitted": 261,
+          "of": 414,
+          "rate": 0.6304347826086957
+        }
+      },
+      "configuration_coverage": {
+        "configurations": 60,
+        "every_feature_seen_at_least_once": 10,
+        "every_feature_seen_in_all_scenes": 5,
+        "recoverable_in_principle": 0.16666666666666666,
+        "intact_across_all_scenes": 0.08333333333333333,
+        "mean_fraction_of_a_configuration_always_present": 0.5721296296296294
+      },
+      "extracted_matching_no_planting": 15,
+      "spurious_per_scene": 0.041666666666666664,
+      "spurious_fraction_of_extracted": 0.009529860228716646,
+      "median_recovered_ratio": 24.024648403666312
+    },
+    {
+      "alpha": 0.1,
+      "gate": {
+        "passed": true,
+        "reasons": [],
+        "median": 5,
+        "maximum": 8,
+        "n_frames": 360
+      },
+      "gate_excluded_this_alpha": false,
+      "trials": 2484,
+      "marginal_false_absence_rate": 0.34782608695652173,
+      "feature_recovery": 0.6521739130434783,
+      "presence_count_distribution": {
+        "0": 114,
+        "1": 14,
+        "2": 11,
+        "3": 6,
+        "4": 16,
+        "5": 16,
+        "6": 237
+      },
+      "admission_rates": {
+        "a=0": {
+          "k": 6,
+          "admitted": 237,
+          "of": 414,
+          "rate": 0.572463768115942
+        },
+        "a=1": {
+          "k": 5,
+          "admitted": 253,
+          "of": 414,
+          "rate": 0.6111111111111112
+        },
+        "a=2": {
+          "k": 4,
+          "admitted": 269,
+          "of": 414,
+          "rate": 0.6497584541062802
+        },
+        "a=3": {
+          "k": 3,
+          "admitted": 275,
+          "of": 414,
+          "rate": 0.6642512077294686
+        }
+      },
+      "configuration_coverage": {
+        "configurations": 60,
+        "every_feature_seen_at_least_once": 11,
+        "every_feature_seen_in_all_scenes": 6,
+        "recoverable_in_principle": 0.18333333333333332,
+        "intact_across_all_scenes": 0.1,
+        "mean_fraction_of_a_configuration_always_present": 0.5947685185185185
+      },
+      "extracted_matching_no_planting": 17,
+      "spurious_per_scene": 0.04722222222222222,
+      "spurious_fraction_of_extracted": 0.010384850335980453,
+      "median_recovered_ratio": 23.686065393353502
+    },
+    {
+      "alpha": 0.25,
+      "gate": {
+        "passed": true,
+        "reasons": [],
+        "median": 5,
+        "maximum": 9,
+        "n_frames": 360
+      },
+      "gate_excluded_this_alpha": false,
+      "trials": 2484,
+      "marginal_false_absence_rate": 0.3136070853462158,
+      "feature_recovery": 0.6863929146537842,
+      "presence_count_distribution": {
+        "0": 93,
+        "1": 16,
+        "2": 19,
+        "3": 10,
+        "4": 8,
+        "5": 19,
+        "6": 249
+      },
+      "admission_rates": {
+        "a=0": {
+          "k": 6,
+          "admitted": 249,
+          "of": 414,
+          "rate": 0.6014492753623188
+        },
+        "a=1": {
+          "k": 5,
+          "admitted": 268,
+          "of": 414,
+          "rate": 0.6473429951690821
+        },
+        "a=2": {
+          "k": 4,
+          "admitted": 276,
+          "of": 414,
+          "rate": 0.6666666666666666
+        },
+        "a=3": {
+          "k": 3,
+          "admitted": 286,
+          "of": 414,
+          "rate": 0.6908212560386473
+        }
+      },
+      "configuration_coverage": {
+        "configurations": 60,
+        "every_feature_seen_at_least_once": 18,
+        "every_feature_seen_in_all_scenes": 6,
+        "recoverable_in_principle": 0.3,
+        "intact_across_all_scenes": 0.1,
+        "mean_fraction_of_a_configuration_always_present": 0.6228439153439154
+      },
+      "extracted_matching_no_planting": 21,
+      "spurious_per_scene": 0.058333333333333334,
+      "spurious_fraction_of_extracted": 0.01216685979142526,
+      "median_recovered_ratio": 23.17592567996055
+    },
+    {
+      "alpha": 0.5,
+      "gate": {
+        "passed": true,
+        "reasons": [],
+        "median": 5,
+        "maximum": 9,
+        "n_frames": 360
+      },
+      "gate_excluded_this_alpha": false,
+      "trials": 2484,
+      "marginal_false_absence_rate": 0.28180354267310787,
+      "feature_recovery": 0.7181964573268922,
+      "presence_count_distribution": {
+        "0": 82,
+        "1": 12,
+        "2": 19,
+        "3": 8,
+        "4": 16,
+        "5": 16,
+        "6": 261
+      },
+      "admission_rates": {
+        "a=0": {
+          "k": 6,
+          "admitted": 261,
+          "of": 414,
+          "rate": 0.6304347826086957
+        },
+        "a=1": {
+          "k": 5,
+          "admitted": 277,
+          "of": 414,
+          "rate": 0.6690821256038647
+        },
+        "a=2": {
+          "k": 4,
+          "admitted": 293,
+          "of": 414,
+          "rate": 0.7077294685990339
+        },
+        "a=3": {
+          "k": 3,
+          "admitted": 301,
+          "of": 414,
+          "rate": 0.7270531400966184
+        }
+      },
+      "configuration_coverage": {
+        "configurations": 60,
+        "every_feature_seen_at_least_once": 21,
+        "every_feature_seen_in_all_scenes": 9,
+        "recoverable_in_principle": 0.35,
+        "intact_across_all_scenes": 0.15,
+        "mean_fraction_of_a_configuration_always_present": 0.6517724867724867
+      },
+      "extracted_matching_no_planting": 27,
+      "spurious_per_scene": 0.075,
+      "spurious_fraction_of_extracted": 0.014908890115958034,
+      "median_recovered_ratio": 22.842581399044402
+    }
+  ],
+  "steps": [
+    {
+      "from_alpha": 0.05,
+      "to_alpha": 0.1,
+      "intact_configuration_coverage": [
+        0.08333333333333333,
+        0.1
+      ],
+      "delta_intact_configuration_coverage": 0.016666666666666677,
+      "delta_recoverable_in_principle": 0.016666666666666663,
+      "delta_feature_recovery": 0.024557165861513686,
+      "spurious_per_scene": [
+        0.041666666666666664,
+        0.04722222222222222
+      ],
+      "delta_spurious_per_scene": 0.005555555555555557,
+      "newly_recovered_trials": 61,
+      "median_ratio_of_the_newly_recovered": 16.91788644782766,
+      "trials_recovered_below_but_not_above": 0,
+      "monotonicity_violated": false
+    },
+    {
+      "from_alpha": 0.1,
+      "to_alpha": 0.25,
+      "intact_configuration_coverage": [
+        0.1,
+        0.1
+      ],
+      "delta_intact_configuration_coverage": 0.0,
+      "delta_recoverable_in_principle": 0.11666666666666667,
+      "delta_feature_recovery": 0.03421900161030589,
+      "spurious_per_scene": [
+        0.04722222222222222,
+        0.058333333333333334
+      ],
+      "delta_spurious_per_scene": 0.011111111111111113,
+      "newly_recovered_trials": 85,
+      "median_ratio_of_the_newly_recovered": 14.00163561715624,
+      "trials_recovered_below_but_not_above": 0,
+      "monotonicity_violated": false
+    },
+    {
+      "from_alpha": 0.25,
+      "to_alpha": 0.5,
+      "intact_configuration_coverage": [
+        0.1,
+        0.15
+      ],
+      "delta_intact_configuration_coverage": 0.04999999999999999,
+      "delta_recoverable_in_principle": 0.04999999999999999,
+      "delta_feature_recovery": 0.03180354267310803,
+      "spurious_per_scene": [
+        0.058333333333333334,
+        0.075
+      ],
+      "delta_spurious_per_scene": 0.016666666666666663,
+      "newly_recovered_trials": 79,
+      "median_ratio_of_the_newly_recovered": 13.096683788704961,
+      "trials_recovered_below_but_not_above": 0,
+      "monotonicity_violated": false
+    }
+  ],
+  "PREDICTION": "Contamination rises faster than configuration coverage at every step, and no declared alpha brings intact-configuration coverage above 0.50 while keeping spurious features below one per scene.",
+  "VERDICT": "PREDICTION_HELD",
+  "steps_meeting_the_declared_falsification_condition": [],
+  "elapsed_seconds": 1449.5,
+  "claim_boundary": "This measures a property of one detection scheme on synthetic evidence with known truth, across four declared levels. It settles nothing about the atmosphere, nothing about any real cyclone, and nothing about whether any identity criterion is correct. It licenses no operating point: choosing an alpha against this curve is a separate declaration owing its own blindness claim (R20). The cut is working as declared and this is the price of that control, not a defect in it.",
+  "what_this_does_not_do": [
+    "It selects no alpha, recommends none, and changes no default.",
+    "It modifies nothing in the extractor or the null and proposes no replacement for the frame-maximum statistic.",
+    "It re-measures no identity criterion and supersedes neither T4E.24 nor T4E.13.",
+    "No reserved seed block (720-735, 880-895) and no frame of the 2022-2023 forecast-test period was read."
+  ],
+  "source_revision": "48bb10078f88108f2e1e28e86bb8c5c4471f409a",
+  "source_code_dirty": true,
+  "final_revision": "48bb10078f88108f2e1e28e86bb8c5c4471f409a",
+  "final_code_dirty": true
+}

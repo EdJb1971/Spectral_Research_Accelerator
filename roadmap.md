@@ -2803,6 +2803,111 @@ configuration absent from one scene outright; nothing about recurrence *across* 
 which the mining machinery needs; no mining radius, no discharge of T4E.8's acceptance, no
 closure of D96 to D100; and nothing about `kind_recurrence`, which still has no catalogue.
 
+### T4E.25 - what the detection cut costs, and what relaxing it buys
+
+**T4E.25 (2026-09-11): the cut is not a lever, and the reason is not the one predicted.**
+
+Adopted 2026-09-11 (`t4e25-coverage-contamination-adoption.json`, binding the declaration by
+sha256 `ce3126fb...`) and measured the same day. 60 configurations at `S = 6`, T4E.24's scenes
+replanted under the same root seed with the family-wise level `alpha` swept over the four
+declared values. `measurements/t4e25_coverage_contamination.json`.
+
+**Acceptance condition 2 first, because the declaration says nothing else may be interpreted
+until it passes.** At `alpha = 0.05` the sweep reproduces T4E.24 **bit-for-bit**: marginal false
+absence 0.3723832528 against 0.3723832528, 2,484 trials, 15 spurious, gate median 4, the presence
+distribution identical key by key, the admission rates identical, and the addendum's
+configuration figures at 10 and 5. The pairing is real, not asserted.
+
+```
+alpha  gate  feature   configurations      configurations   spurious   spurious   median ratio
+       med   recovery  recoverable         intact           per scene  fraction   of recovered
+0.05    4     0.6276    0.1667 (10/60)      0.0833 (5/60)     0.042      0.0095      24.0
+0.10    5     0.6522    0.1833 (11/60)      0.1000 (6/60)     0.047      0.0104      23.7
+0.25    5     0.6864    0.3000 (18/60)      0.1000 (6/60)     0.058      0.0122      23.2
+0.50    5     0.7182    0.3500 (21/60)      0.1500 (9/60)     0.075      0.0149      22.8
+
+step          d intact   d recoverable   d feature   spurious/scene   newly    median ratio
+                                          recovery                    trials   of the new
+0.05 -> 0.10   +0.0167     +0.0167        +0.0246    0.042 -> 0.047     61        16.9
+0.10 -> 0.25   +0.0000     +0.1167        +0.0342    0.047 -> 0.058     85        14.0
+0.25 -> 0.50   +0.0500     +0.0500        +0.0318    0.058 -> 0.075     79        13.1
+```
+
+No alpha was excluded by the gate. Recovery was monotone in alpha at every step, as the design
+assumed; no trial was recovered at a lower alpha and lost at a higher one.
+
+**The declared outcome held. The declared mechanism did not, and the difference matters.**
+
+The prediction was: *"Contamination rises faster than configuration coverage at every step, and
+no declared alpha brings intact-configuration coverage above 0.50 while keeping spurious features
+below one per scene."*
+
+The second clause **holds decisively**. Intact-configuration coverage reaches 0.15 at
+`alpha = 0.50` -- a tenfold relaxation of the declared error level -- against a bar of 0.50. No
+step met the declared falsification condition of a 0.15 absolute rise, so the verdict is
+`PREDICTION_HELD`.
+
+The first clause is **wrong**. Contamination barely moved: 0.042 to 0.075 spurious features per
+scene across the whole sweep, never above 1.5% of everything extracted. Coverage rose more in
+absolute terms than contamination did. The prediction was right about where the sweep ends and
+wrong about what stops it, and reporting only the verdict would hide that.
+
+**What actually stops it, measured rather than asserted.** A post-hoc diagnostic over 8 scenes,
+adopting nothing and reporting no operating point, took the threshold in units of the
+background's own robust width, from the scene's null and from the bare background's null:
+
+```
+alpha    planted-scene null    bare-background null
+0.05          15.47 sigma            4.39 sigma
+0.50          12.95 sigma            3.77 sigma
+
+span 0.05 -> 0.50:  planted x1.195      background x1.165
+the planted-scene null sits x3.53 above the bare-background null at alpha = 0.05
+```
+
+Two things follow, and only one of them was in the prediction.
+
+**The tail is steep, as predicted.** A tenfold change in alpha moves the threshold by about 20%,
+on the planted scene and on the bare background alike. That half of the predicted mechanism is
+confirmed. But a threshold that moves 20% does not admit a flood of noise -- which is why
+contamination stayed flat, and why the second half of the mechanism was wrong.
+
+**The dominant term was not in the prediction at all.** The cut on a scene containing signal sits
+**3.53x higher** than the cut on that scene's own background, because the plantings' power enters
+every surrogate of the planted field. Against a level shift of 3.5x, a lever with 1.2x of travel
+is not a lever. Alpha is not what sets this threshold; the signal is.
+
+**This is the null behaving as declared, not a defect.** The hypothesis `NullCalibration` states
+is *a structureless field with this power spectrum*, and the planted field's power spectrum
+includes the plantings. Phase-randomising a field that contains coherent structure spreads that
+structure's power across the frame and raises its own maxima. The result is conservative by
+construction. It is the same effect recorded at T4E.24's calibration choice, where background
+calibration gave recovery 0.940 against 0.774 -- now quantified as a threshold ratio rather than
+inferred from a recall difference.
+
+**What this licenses.** That coverage is not recoverable by relaxing the declared error level
+within this scheme: a tenfold relaxation buys 9 percentage points of feature recovery and leaves
+**65% of configurations still holding a permanently invisible feature**. T4E.24's coverage figure
+is therefore a property of the detection scheme across a declared range, not an artefact of the
+0.05 operating point -- which is exactly what this slice was declared to establish.
+
+**What it does not license.** No operating point, no alpha, no change to any default (R20). No
+change to the extractor, to `NullCalibration`, or to the frame-maximum statistic, and no
+replacement for any of them. It does not establish that a scene-calibrated cut is the wrong
+choice -- it is the choice the pipeline makes on the real record, and this slice measured its
+price, not its correctness. The 3.53x figure is a diagnostic over 8 scenes with no error bar and
+adjudicates nothing. Nothing here touches the atmosphere, T4E.8's acquired-record acceptance, or
+D96 through D100. The reserved seed blocks and the 2022-2023 forecast-test period were not read.
+
+**The bound still runs the same way.** These are T4E.24's scenes, so geometry is identical across
+the six and the figures remain the favourable case. Real recurrence carries jitter, drift and
+evolution; the true coverage is worse than every number above.
+
+```
+$ .venv/Scripts/python.exe -m pytest src/tests/test_coverage_contamination.py -q
+12 passed
+```
+
 ### T4E.24 - the false absence rate, and what it permits a tolerance to assume
 
 **Why this task existed.** T4E.13 fixed `ABSENCES_TOLERATED = 1` as the minimal relaxation of
