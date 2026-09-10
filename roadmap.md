@@ -2803,6 +2803,153 @@ configuration absent from one scene outright; nothing about recurrence *across* 
 which the mining machinery needs; no mining radius, no discharge of T4E.8's acceptance, no
 closure of D96 to D100; and nothing about `kind_recurrence`, which still has no catalogue.
 
+**T4E.17 (2026-09-10): the external catalogue `kind_recurrence` has always required.** The
+primary scientific target, untouched by everything the synthetic sequence did, and unevaluable
+from the tool until now for want of a catalogue.
+
+```
+T4E.17 -- IBTrACS v04r01, South Pacific subset, sha256 631f76b9..., 35,482,417 bytes
+matching domain: the record's own crop, lat -60..-20, lon 140..180, 850 hPa
+development window: 2018-01-01 .. 2021-12-31   (2022-2023 stays closed)
+
+in-box observations at synoptic hours   210     from 20 distinct storms
+cross-storm pairs (kind_recurrence)  20,241     within-storm pairs excluded
+same kind by NATURE                   7,907     base rate 0.391
+same kind by USA_SSHS                 3,679     base rate 0.182
+storms per season 2018-2021           8, 4, 2, 6
+```
+
+**Why this is the primary target and why it has never been evaluable.** `kind_recurrence`
+admits `external_reference` evidence *alone* -- "a signed, frozen catalogue matched at its own
+declared radius" -- and no such catalogue has existed in this programme. Every measurement to
+date has been on record-derived proxies or synthetic scenes. Seven criteria were declared and
+measured on synthetic partitions and an eighth withdrawn; none of it touched this.
+
+**The admissibility question is the whole difficulty, and most candidates fail it.** Blocking
+indices, IMILAST-style track intercomparisons and most atmospheric-river catalogues are computed
+**from reanalysis**. Against an ERA5 record they are record-derived proxies wearing a
+catalogue's name, and admitting one would reintroduce precisely the circularity
+`external_reference` exists to exclude. IBTrACS passes because it merges operational best-track
+data from the meteorological agencies -- BoM, JMA, NHC, the Shanghai Typhoon Institute and
+others -- assigned by forecasters and post-season review, not by any algorithm run over ERA5.
+
+**The residual dependence is disclosed rather than assumed.** Best-track analysts use whatever
+guidance was operationally available, which can include model fields. The labels are independent
+of *this* record and of ERA5 as reprocessed here; they are not independent of numerical weather
+prediction in general. That is weaker than a purely observational catalogue would give.
+
+**The unit of independence is the storm, not the observation.** There are 20,241 pairs but only
+**20 storms**, and successive six-hourly positions of one cyclone are strongly correlated. Any
+interval computed as though the pairs were independent would be wrong by roughly the square root
+of the clustering factor. Every rate must carry a storm-clustered interval, and the effective
+sample size is nearer 20 than 20,241. This is stated first because it is the single easiest way
+for a result here to be overclaimed.
+
+**Within-storm pairs are excluded by construction.** They bear on `spatial_persistence`, a
+different declared target with different admissible evidence. Counting them here would answer
+the easier question and report it as the harder one.
+
+**The kind label is fixed before any signature is computed.** `NATURE` -- the catalogue's own
+storm-type classification -- adjudicates, because `kind_recurrence` asks what a system *is*;
+`USA_SSHS` is an intensity ordinal and is recorded as declared characterisation only. Both base
+rates were measured before declaring, so choosing the more favourable one afterwards would be a
+horse race. `MX` (agencies disagreed) and `NR` (not reported) are **refusals by name**, not
+classes: treating the catalogue's own uncertainty as ground truth would corrupt every rate built
+on it.
+
+**The prior odds here are nothing like the synthetic ones.** About 1:1.6 on `NATURE` and 1:4.5
+on `USA_SSHS`, against **1:399** in the synthetic partitions. The 36-fold specificity shortfall
+that dominated seven synthetic candidates is substantially a property of that design rather than
+of the identity question, and no rate measured here may be compared directly to the synthetic
+ones.
+
+**The data is bound by digest and is not committed.** 35.5 MB of third-party data does not
+belong in this repository -- the same discipline the acquired record and the market records are
+held to. A re-download that fails to reproduce `631f76b9...` invalidates the evaluation and must
+say so.
+
+**2022-2023 stays closed.** The catalogue lists 393 in-box observations from 13 storms there.
+That number comes from the **catalogue**, not the record: no ERA5 frame of the forecast-test
+period was opened, and none may be. It is disclosed because it was seen.
+
+**What this does NOT do.** It evaluates no criterion -- a rule for this evidence needs its own
+declaration, written before these numbers shape it. It says nothing about any of the seven
+synthetic candidates, none of which transfers here. It covers one basin, one 40-degree box, four
+years and 20 storms, with a coarse six-value kind label two of whose values are refusals. It
+approves no mining radius, discharges nothing of T4E.8's acceptance, and closes none of D96 to
+D100. And the catalogue supplies identity, not physics: a criterion agreeing with it has agreed
+with the contributing agencies' operational judgements, not with the atmosphere.
+
+**What comes next is the maintainer's.** Signing the catalogue, or rejecting it. Then a
+criterion declared against it -- written before these numbers shape it, and unable to borrow
+anything from the synthetic sequence.
+
+**T4E.16 (2026-09-10): candidate 5 declared and withdrawn before adoption, by derivation.**
+The direct repair for the constraint the four measured results fix -- and it does not survive
+its own feasibility check.
+
+**The design.** The bar on a consistent set is set by a within-partition permutation surrogate,
+per group size: admit a set of size `m` only if its diameter is tighter than the tightest set of
+size `m` found in any of 199 surrogate replicates. A max statistic, so family-wise error across
+every set of that size is controlled at 1/200 with **no alpha divided by anything** -- which is
+what made candidate 1 inert. The bar falls with `m` automatically, because large coincidental
+sets are rarer under the surrogate than small ones, and nobody chooses the rate at which it
+falls. That is the constraint the four measured results jointly fix: **the evidence a group
+carries must scale with the group.**
+
+**Withdrawn, because the surrogate can reassemble the motif.** It redistributes the partition's
+*actual* configurations. When the `S` motif copies land in `S` distinct scenes they form the
+same consistent set with **exactly the same diameter**, so the strictly-tighter rule then
+rejects the motif. The rate is combinatorial -- `S!/S^S` = 0.0154 at `S` = 6, confirmed by
+simulation at 0.0166, 0.0168 and 0.0153 for `m` = 20, 84 and 220 -- and over 199 replicates that
+is **0.9642, 0.9657 and 0.9535**. Candidate 5 would have failed conditions 1 and 5 at every
+richness, with about 96% probability, for a reason having nothing to do with the signature. It
+is a permutation null invalidated by its own permutations, the known failure of that
+construction when the signal is a small set of near-duplicates and `S` is small.
+
+**It cannot simply be repaired.** A valid null must *generate* fresh distractor scenes rather
+than redistribute existing ones -- but then every pairwise distance changes per replicate, the
+cached matrix that made the design runnable is worthless, and the cost returns to the measured
+189 hours at richness 12 alone. **A feasible null is invalid here; a valid null is infeasible.**
+Widening `S` would drive `S!/S^S` down fast, but `S` = 6 is the frozen partition size, and
+changing it to rescue a criterion would be tuning the evidence to the rule.
+
+**The declaration had labelled the point honestly, which is why it was checked.** Its derivation
+section said of the large-`m` argument: *an ARGUMENT, NOT A PROOF ... if some surrogate replicate
+produces a size-6 set tighter than the motif, the motif is rejected, and nothing derivable
+excludes that.* Labelling it as argued rather than proved is what made it the next thing to
+compute.
+
+**What was not done.** Not adopted, not measured, not quietly altered into a variant that
+passes. No surrogate was run on the T4E.14 evidence or on any block. The declaration is retained
+unedited, superseded rather than deleted, because a design killed by derivation is part of the
+record.
+
+**The multiplicity position is unchanged.** A declaration withdrawn before adoption and before
+measurement adds nothing to the accumulated multiplicity, because nothing was tested. **Seven
+criteria have been measured in this sequence, not eight**, and both reservations -- 720-735 and
+880-895 -- remain unspent.
+
+**Two things survive and are kept**, because the next design meets the same arithmetic. The cost
+finding: the clique enumeration is free at every richness and the matching is the entire
+expense, at 0.8, 13.5 and 95.3 seconds per partition at richness 6, 9 and 12. And
+`PooledDistances`, which computes a partition's distances once and keeps the metric's refusals
+**as refusals** rather than as numbers -- optimisation must preserve the named refusal.
+
+**What this does NOT license.** Not that size-scaled evidence is the wrong idea: the constraint
+the four measured results fix is untouched, and what failed is one null, not the principle. Not
+that the signature is inadequate -- no measurement was taken. Not that permutation surrogates
+are wrong in general; this one is invalid *here*, at `S` = 6, against a signal of `S`
+near-duplicates. And nothing about `kind_recurrence`, D96 to D100, a mining radius, or
+recurrence across separated epochs.
+
+**What this says about the sequence.** Seven criteria measured, six falsified, one passing but
+non-transferable. The eighth was withdrawn before it could be measured, and for a reason that
+is structural rather than incidental: at `S` = 6 a within-partition null cannot be built that is
+both valid and affordable. That is a statement about what this evidence can support, not about
+the signature -- and it is the strongest argument yet that further criteria on synthetic
+partitions have reached diminishing returns.
+
 **T4E.15 (2026-09-10): candidate 4 measured, and falsified.** Closure under the matching --
 the first criterion in the sequence with nothing to tune, and the first measured on evidence
 where both errors were available at once.

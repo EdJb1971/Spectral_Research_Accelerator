@@ -2071,3 +2071,117 @@ def test_the_reserved_partial_presence_blocks_were_not_spent_on_a_falsified_cand
         with pytest.raises(ReservedPartialPresenceScene):
             build_partial_presence_partition(tuple(range(start, start + 6)), 4)
     assert not list(Path("measurements").glob("*confirmatory*presence*"))
+
+
+# ------------------- T4E.16 candidate 5: withdrawn before adoption, by derivation
+#
+# A permutation surrogate that redistributes the partition's own configurations can reassemble
+# the motif, and does so with probability S!/S^S per replicate. At S = 6 that is 0.0154, which
+# over 199 replicates is about 0.96 -- so the bar at size S would be set to the motif's own
+# diameter and the motif rejected, for a reason with nothing to do with the signature.
+#
+# Nothing was measured. These tests hold the derivation, because a rate recorded only in prose
+# is one the next design can rediscover the expensive way.
+
+
+def _t4e16():
+    import json
+    from pathlib import Path
+
+    return json.loads(Path(
+        "data/identity_calibration/t4e16-size-scaled-evidence-declaration.json"
+    ).read_text(encoding="utf-8"))
+
+
+def test_candidate_5_was_withdrawn_before_adoption_and_never_measured():
+    """A design killed by derivation is part of the record, superseded and not deleted."""
+    from pathlib import Path
+
+    body = _t4e16()
+    assert body["status"] == "WITHDRAWN_BEFORE_ADOPTION_BY_DERIVATION"
+    assert "not adopted, not measured" in body["withdrawal"]["what_was_NOT_done"]
+    assert not list(Path("measurements").glob("t4e16*")), "a candidate 5 measurement exists"
+    assert not list(Path("data/identity_calibration").glob("t4e16*adoption*"))
+
+
+def test_the_surrogate_reassembly_rate_is_combinatorial_and_reproduces():
+    """S!/S^S per replicate, and about 0.96 over 199. Computed, not asserted.
+
+    This is the whole reason candidate 5 was withdrawn: the surrogate redistributes the actual
+    configurations, so when the S motif copies land in S distinct scenes they form the same
+    consistent set with exactly the same diameter, and a strictly-tighter rule then rejects the
+    motif.
+    """
+    import math
+
+    import numpy as np
+
+    scenes = 6
+    analytic = math.factorial(scenes) / float(scenes ** scenes)
+    assert abs(analytic - 0.015432) < 1e-5
+
+    rng = np.random.default_rng(0)
+    per_scene, trials, hits = 20, 4000, 0
+    total = scenes * per_scene
+    for _ in range(trials):
+        order = rng.permutation(total)
+        position = np.empty(total, dtype=int)
+        position[order] = np.arange(total)
+        if len(set((position[:scenes] // per_scene).tolist())) == scenes:
+            hits += 1
+    empirical = hits / float(trials)
+    assert abs(empirical - analytic) < 0.01, (empirical, analytic)
+    assert 1.0 - (1.0 - analytic) ** 199 > 0.9, "the withdrawal rests on this being near-certain"
+
+
+def test_the_withdrawal_records_why_the_design_cannot_simply_be_repaired():
+    """A feasible null is invalid here and a valid null is infeasible. Both halves are recorded."""
+    withdrawal = _t4e16()["withdrawal"]
+
+    assert "189 hours" in withdrawal["why_it_cannot_simply_be_repaired"]
+    assert "tuning the evidence to the rule" in withdrawal["why_it_cannot_simply_be_repaired"]
+    refused = " ".join(withdrawal["what_this_does_NOT_license"])
+    assert "Not that size-scaled evidence is the wrong idea" in refused
+    assert "Not that the signature is inadequate" in refused
+
+
+def test_a_withdrawn_declaration_adds_nothing_to_the_accumulated_multiplicity():
+    """Nothing was tested, so nothing was spent. Seven criteria measured, not eight."""
+    withdrawal = _t4e16()["withdrawal"]
+
+    assert "adds nothing to the accumulated multiplicity" in (
+        withdrawal["the_multiplicity_position_is_unchanged_by_this"])
+    assert "still unspent" in withdrawal["the_multiplicity_position_is_unchanged_by_this"]
+
+
+def test_pooled_distances_keeps_a_refusal_as_a_refusal_and_never_as_a_number():
+    """Optimisation must preserve the named refusal.
+
+    A cache that turned the metric's refusal into a large distance would make a criterion admit
+    or reject on a value the metric declined to supply. The entry stays NaN and is counted.
+    """
+    import numpy as np
+
+    from src.benchmarks.identity_certification import PooledDistances
+
+    class _Refusing:
+        def distance(self, a, b):
+            if a is None or b is None:
+                raise ValueError("no bearing block; cross-family comparison refused")
+            return abs(a - b)
+
+    pooled = PooledDistances([0.0, 1.0, None], _Refusing())
+    assert pooled.refused == 2
+    assert np.isnan(pooled.matrix[0, 2]) and np.isnan(pooled.matrix[1, 2])
+    assert pooled.matrix[0, 1] == 1.0
+    assert np.nanmax(pooled.matrix) == 1.0, "a refusal leaked in as a distance"
+
+
+def test_the_cost_finding_that_outlives_the_withdrawn_candidate():
+    """The enumeration is free and the matching is the whole expense. The next design meets it."""
+    body = _t4e16()
+
+    cost = body["the_computational_requirement_is_part_of_the_criterion"]["measured_cost"]
+    assert "enumeration is free" in cost
+    assert "95.3s at 12" in cost
+    assert "PooledDistances" in body["withdrawal"]["what_survives_and_is_kept"]

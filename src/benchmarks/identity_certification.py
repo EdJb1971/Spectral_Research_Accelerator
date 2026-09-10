@@ -942,6 +942,205 @@ def measure_consistency_criterion(
 
 
 # ---------------------------------------------------------------------------------------------
+# T4E.16 candidate 5: evidence that scales with the size of the group.
+#
+# Declared in `data/identity_calibration/t4e16-size-scaled-evidence-declaration.json` and NOT
+# MEASURED until that declaration is adopted.
+#
+# Four results fix one constraint between them. Candidate 2 works at k = S because a six-scene
+# conjunction is hard to reach by chance. Candidate 3 shows one scene of slack destroys that,
+# and the k profile shows the null itself breaks just below the margin. Candidate 4 shows that
+# dropping the size requirement inverts the rule, because it admits a group of two on the same
+# terms as a group of six. The evidence a group carries must scale with the group, and nothing
+# in this sequence makes it do so.
+#
+# Here the bar is set by a within-partition permutation surrogate, per group size, so nobody
+# chooses the rate at which it falls with size. The comparison is against the TIGHTEST surrogate
+# group of the same size -- a max statistic -- which controls the family-wise error across every
+# group of that size without dividing alpha by anything. Candidate 1 divided alpha by the
+# comparison count and drove its threshold below what its own model could express.
+
+#: Matching `_MOTIF_SURROGATES`, which this generator's own null already uses. Taken for that
+#: precedent rather than chosen; 199 gives the 1/200 floor the rest of the programme works to.
+SURROGATE_REPLICATES = 199
+CRITERION_SIZE_SCALED_NAME = "size_scaled_evidence_against_a_permutation_surrogate"
+
+
+class PooledDistances:
+    """Every pairwise distance in a partition, computed once, with refusals kept as refusals.
+
+    A surrogate permutes WHICH SCENE a configuration occupies and changes no distance between
+    configurations, so recomputing the metric per replicate is pure waste: measured at 95.3
+    seconds per replicate at richness 12, which is 189 hours over the declared design and is why
+    the cache is part of the criterion rather than an implementation detail.
+
+    `SignatureMetric` refuses cross-family comparison by name when one configuration is
+    near-isotropic and carries no bearing block. Those entries are stored as NaN and counted.
+    They are never stored as a large distance: a cache that quietly turned a refusal into a
+    number would make the criterion admit or reject on a value the metric declined to supply,
+    and a named refusal is preferable to an unsupported number.
+    """
+
+    def __init__(self, points: Sequence[Any], metric: SignatureMetric):
+        count = len(points)
+        self.matrix = np.full((count, count), np.nan, dtype=float)
+        self.refused = 0
+        for i in range(count):
+            self.matrix[i, i] = 0.0
+            for j in range(i + 1, count):
+                try:
+                    value = float(metric.distance(points[i], points[j]))
+                except Exception:                     # the metric refuses, by name, in its own
+                    self.refused += 1                 # terms; it is not this cache's job to
+                    continue                          # invent a number in its place
+                self.matrix[i, j] = self.matrix[j, i] = value
+
+    def between(self, left: Sequence[int], right: Sequence[int]):
+        return self.matrix[np.ix_(list(left), list(right))]
+
+
+def _matching_from_matrix(assignment: Sequence[Sequence[int]], pooled: PooledDistances):
+    """The mutual nearest-neighbour partner map, read off the cached matrix.
+
+    Identical in meaning to `_partner_map`: for each ordered scene pair, a configuration's
+    partner is the one nearest it, kept only when the relation is mutual. Refused distances are
+    NaN and are never nearest, so a refusal removes a candidate rather than supplying one.
+    """
+    partners: Dict[Tuple[int, int], Dict[int, int]] = collections.defaultdict(dict)
+    for a, b in itertools.combinations(range(len(assignment)), 2):
+        block = pooled.between(assignment[a], assignment[b])
+        if not np.isfinite(block).any():
+            continue
+        forward = np.nanargmin(np.where(np.isfinite(block), block, np.inf), axis=1)
+        backward = np.nanargmin(np.where(np.isfinite(block), block, np.inf), axis=0)
+        for i, j in enumerate(forward):
+            if not np.isfinite(block[i, j]):
+                continue
+            if backward[j] == i:
+                partners[(a, i)][b] = int(j)
+                partners[(b, int(j))][a] = i
+    return partners
+
+
+def group_diameter(group, assignment, pooled: PooledDistances) -> Optional[float]:
+    """The largest distance between any two members: the group's weakest link.
+
+    A set is a correspondence only if every member matches every other, so the binding evidence
+    is the weakest link and not the average one. A mean would let a tight core carry a loose
+    member. Returns None when any member pair was refused, so the group is refused too rather
+    than scored on a partial diameter.
+    """
+    worst = 0.0
+    for (a, i), (b, j) in itertools.combinations(sorted(group), 2):
+        value = pooled.matrix[assignment[a][i], assignment[b][j]]
+        if not np.isfinite(value):
+            return None
+        worst = max(worst, float(value))
+    return worst
+
+
+def _tightest_by_size(assignment, pooled: PooledDistances):
+    """The tightest consistent set of each size present. The max statistic's raw material."""
+    partners = _matching_from_matrix(assignment, pooled)
+    tightest: Dict[int, float] = {}
+    for node in list(partners):
+        group = consistent_group(node, partners)
+        if len(group) < 2:
+            continue
+        diameter = group_diameter(group, assignment, pooled)
+        if diameter is None:
+            continue
+        size = len(group)
+        if size not in tightest or diameter < tightest[size]:
+            tightest[size] = diameter
+    return partners, tightest
+
+
+def surrogate_assignment(scene_sizes: Sequence[int], total: int, *, seed: int):
+    """One surrogate: the partition's own configurations, redistributed at random.
+
+    Destroys any genuine cross-scene correspondence -- a motif occupying one configuration per
+    scene is scattered, and may land twice in one scene where the one-per-scene rule cannot use
+    it -- while preserving the multiset of configurations exactly, and with it the signature
+    scale and spread that T4E.10 showed does not transfer between partitions. So the null cannot
+    be beaten by a rule that has merely learned this partition's scale.
+    """
+    order = np.random.default_rng(seed).permutation(total)
+    assignment, cursor = [], 0
+    for size in scene_sizes:
+        assignment.append([int(index) for index in order[cursor:cursor + size]])
+        cursor += size
+    return assignment
+
+
+def size_scaled_admitted_pairs(partition, metric: SignatureMetric, *,
+                               replicates: int = SURROGATE_REPLICATES,
+                               seed: int = 0):
+    """T4E.16 candidate 5: admit sets that beat the tightest surrogate set of their own size.
+
+    Returns `(admitted, diagnostics)`. `diagnostics` names every size admitted BY ABSENCE --
+    where no surrogate produced a set of that size at all, so the rate bound is p < 1/(N+1)
+    rather than a threshold beaten -- because that is a positive finding about the null and must
+    not be reported as though a bar had been cleared.
+    """
+    points, scene_sizes, offset = [], [], 0
+    for scene in partition:
+        points.extend(scene[0])
+        scene_sizes.append(len(scene[0]))
+    pooled = PooledDistances(points, metric)
+    real = []
+    cursor = 0
+    for size in scene_sizes:
+        real.append(list(range(cursor, cursor + size)))
+        cursor += size
+
+    partners, _ = _tightest_by_size(real, pooled)
+    surrogate_best: Dict[int, float] = {}
+    for replicate in range(replicates):
+        assignment = surrogate_assignment(
+            scene_sizes, len(points), seed=seed * 1000003 + replicate)
+        _, tightest = _tightest_by_size(assignment, pooled)
+        for size, diameter in tightest.items():
+            if size not in surrogate_best or diameter < surrogate_best[size]:
+                surrogate_best[size] = diameter
+
+    admitted, by_absence, refused_groups = set(), set(), 0
+    for node in list(partners):
+        group = consistent_group(node, partners)
+        if len(group) < 2:
+            continue
+        diameter = group_diameter(group, real, pooled)
+        if diameter is None:
+            refused_groups += 1
+            continue
+        size = len(group)
+        if size in surrogate_best:
+            if not diameter < surrogate_best[size]:
+                continue
+        else:
+            by_absence.add(size)
+        for (a, i), (b, j) in itertools.combinations(sorted(group), 2):
+            admitted.add((a, i, b, j))
+
+    diagnostics = {
+        "surrogate_replicates": int(replicates),
+        "tightest_surrogate_diameter_by_size": {
+            str(size): surrogate_best[size] for size in sorted(surrogate_best)},
+        "sizes_admitted_by_absence": sorted(by_absence),
+        "rate_bound_where_admitted_by_absence": (
+            None if not by_absence else 1.0 / (replicates + 1)),
+        "groups_refused_for_an_incomparable_member": refused_groups,
+        "distances_refused_by_the_metric": pooled.refused,
+        "what_admitted_by_absence_means": (
+            "No surrogate in %d replicates produced a consistent set of that size at all, so "
+            "every real set of it is admitted with p < 1/%d by absence. That is a positive "
+            "finding about the null and NOT a threshold beaten."
+            % (replicates, replicates + 1)),
+    }
+    return sorted(admitted), diagnostics
+
+
+# ---------------------------------------------------------------------------------------------
 # T4E.15 candidate 4: closure under the matching.
 #
 # Declared in `data/identity_calibration/t4e15-closure-declaration.json` and NOT MEASURED until

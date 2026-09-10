@@ -322,3 +322,142 @@ def test_a_diagnostic_for_an_unknown_target_is_refused_with_its_correction():
     with pytest.raises(UnknownNameError):
         declare_identity_target("spatial_persistence", "record_derived_proxy",
                                 role="diagnostic", diagnostic_for="kind_recurrance")
+
+
+# ------------- T4E.17: the external catalogue kind_recurrence has always required
+#
+# kind_recurrence admits external_reference evidence alone, and no such evidence has ever
+# existed in this programme, so the primary scientific target has been unevaluable from the
+# tool. These tests hold the catalogue design: that it is not yet signed, that the data is
+# bound by hash rather than committed, and above all why THIS catalogue is admissible when
+# most atmospheric catalogues are not.
+
+
+def _t4e17():
+    import json
+    from pathlib import Path
+
+    return json.loads(Path(
+        "data/identity_calibration/t4e17-external-catalogue-design.json"
+    ).read_text(encoding="utf-8"))
+
+
+def test_the_catalogue_design_is_not_signed_by_code():
+    """Code does not sign catalogues, events or scientific preregistrations for a person."""
+    body = _t4e17()
+
+    assert body["status"] == "declared_before_evaluation"
+    assert "NOT VALID until the maintainer has reviewed, adopted and SIGNED it" in (
+        body["declared_by"])
+    assert "Code does not sign catalogues for a person" in body["declared_by"]
+
+
+def test_the_catalogue_is_bound_by_content_identity_and_not_committed():
+    """35.5 MB of third-party data does not belong in the repository.
+
+    The same discipline the acquired record and the market records are held to: bind by digest,
+    do not commit, and treat a digest that fails to reproduce as invalidating the evaluation.
+    """
+    from pathlib import Path
+
+    catalogue = _t4e17()["the_catalogue"]
+    assert catalogue["sha256"] == (
+        "631f76b95c77a6a4e409233466a0d501bb4848324e421fc58e228efea2086c44")
+    assert catalogue["bytes"] == 35482417
+    assert "must reproduce that digest" in catalogue["the_file_is_NOT_committed"]
+    assert not list(Path("data").rglob("ibtracs*")), "the catalogue was committed"
+
+
+def test_a_reanalysis_derived_catalogue_would_be_circular_and_the_design_says_so():
+    """The crux of admissibility, and the thing most easily got wrong.
+
+    Blocking indices, IMILAST-style track intercomparisons and most atmospheric-river
+    catalogues are computed FROM reanalysis. Against an ERA5 record they are record-derived
+    proxies wearing a catalogue's name, and admitting one would reintroduce exactly the
+    circularity external_reference exists to exclude.
+    """
+    body = _t4e17()
+
+    why = body["why_this_catalogue_is_admissible_as_external_reference"]
+    assert "circular" in why["the_requirement"]
+    assert "computed FROM reanalysis" in why["why_most_atmospheric_catalogues_FAIL_that_test"]
+    assert "not a reanalysis product" in why["why_IBTrACS_passes"]
+    assert "not independent of numerical weather prediction in general" in (
+        why["the_residual_dependence_that_must_be_disclosed"])
+
+
+def test_the_unit_of_independence_is_the_storm_and_not_the_observation():
+    """20,241 pairs from 20 storms. The easiest way for a result here to be overclaimed."""
+    population = _t4e17()["the_population_and_the_unit_of_independence"]
+
+    assert "20,241 cross-storm pairs" in population["the_pairs_that_bear_on_kind_recurrence"]
+    unit = population["THE_UNIT_OF_INDEPENDENCE_IS_THE_STORM_NOT_THE_OBSERVATION"]
+    assert "only 20 storms" in unit
+    assert "storm-clustered interval" in unit
+    assert "nearer 20 than 20,241" in unit
+
+
+def test_within_storm_pairs_are_excluded_because_they_are_a_different_target():
+    """Pairs from one track bear on spatial_persistence, which has its own admissible evidence.
+
+    Counting them here would answer the easier question and report it as the harder one.
+    """
+    population = _t4e17()["the_population_and_the_unit_of_independence"]
+
+    assert "excluded by construction" in population["the_pairs_that_bear_on_kind_recurrence"]
+    assert "spatial_persistence" in population["the_pairs_that_bear_on_kind_recurrence"]
+
+
+def test_the_kind_label_is_fixed_before_any_signature_is_computed():
+    """NATURE adjudicates; USA_SSHS is characterisation. Both base rates were seen, so choosing
+    the more favourable one afterwards would be a horse race.
+    """
+    label = _t4e17()["the_kind_label"]
+
+    assert label["primary"].startswith("NATURE")
+    assert "intensity ordinal" in label["why_NATURE_and_not_intensity"]
+    assert "adjudicates_nothing" in "".join(label.keys())
+    assert "0.391" in label["base_rate_measured_before_declaring"]
+    assert "0.182" in label["base_rate_measured_before_declaring"]
+
+
+def test_disagreement_between_agencies_is_refused_and_not_treated_as_a_class():
+    """MX means agencies disagreed and NR means nature was not reported.
+
+    Treating either as a class would let the catalogue's own uncertainty enter as ground truth.
+    """
+    label = _t4e17()["the_kind_label"]
+
+    assert "REFUSED BY NAME" in label["MX_and_NR_are_refusals_not_classes"]
+    assert "neither rate" in label["MX_and_NR_are_refusals_not_classes"]
+
+
+def test_the_forecast_test_period_is_not_opened_by_the_catalogue_design():
+    """2022-2023 stays closed. The counts quoted for it come from the CATALOGUE, not the record."""
+    body = _t4e17()
+
+    domain = body["the_matching_domain"]
+    assert domain["the_development_window_is_2018_2021_ONLY"].startswith("2022-2023")
+    disclosure = domain["what_was_counted_in_the_reserved_period_and_why_that_is_disclosed"]
+    assert "computed from the CATALOGUE, not from the record" in disclosure
+    assert "no ERA5 frame of the forecast-test period was opened" in disclosure
+    assert "No frame of the 2022-2023 forecast-test period is opened" in body["claim_boundary"]
+
+
+def test_the_design_evaluates_no_criterion_and_says_so():
+    """A catalogue is evidence, not a rule. The criterion for it needs its own declaration."""
+    settles = _t4e17()["what_this_design_does_and_does_not_settle"]
+
+    assert "It evaluates no criterion" in settles["what_it_does_NOT_do"][0]
+    assert "seven synthetic candidates" in settles["what_it_does_NOT_do"][1]
+    assert "Twenty storms" in settles["the_honest_ceiling"]
+
+
+def test_the_publisher_s_citation_requirement_is_recorded_with_the_data():
+    """An open-access catalogue's binding obligation is its citation, and it travels with it."""
+    catalogue = _t4e17()["the_catalogue"]
+
+    assert catalogue["doi"] == "10.25921/82ty-9e16"
+    citations = " ".join(catalogue["citation_required_by_the_publisher"])
+    assert "Gahtan" in citations and "Knapp" in citations
+    assert "non-commercial" in catalogue["licence_position"]

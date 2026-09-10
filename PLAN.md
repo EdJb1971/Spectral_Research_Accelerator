@@ -497,7 +497,96 @@ touching a scene that holds nothing -- is bounded and reported as a condition of
 because a rule that claims recurrence in an empty window is worse for mining than one that
 misses a real occurrence, and a pooled admission rate hides which is happening.
 
-**Adopted, measured, and falsified on five of six conditions.**
+**T4E.17 (2026-09-10): the catalogue exists, and the primary target is evaluable for the first
+time.** Network access was granted and used for this alone. IBTrACS v04r01 South Pacific subset,
+DOI 10.25921/82ty-9e16, bound by sha256 `631f76b9...` and not committed.
+
+```
+T4E.17 -- IBTrACS v04r01, South Pacific subset, sha256 631f76b9..., 35,482,417 bytes
+matching domain: the record's own crop, lat -60..-20, lon 140..180, 850 hPa
+development window: 2018-01-01 .. 2021-12-31   (2022-2023 stays closed)
+
+in-box observations at synoptic hours   210     from 20 distinct storms
+cross-storm pairs (kind_recurrence)  20,241     within-storm pairs excluded
+same kind by NATURE                   7,907     base rate 0.391
+same kind by USA_SSHS                 3,679     base rate 0.182
+storms per season 2018-2021           8, 4, 2, 6
+```
+
+**Why this is the primary target and why it has never been evaluable.** `kind_recurrence`
+admits `external_reference` evidence *alone* -- "a signed, frozen catalogue matched at its own
+declared radius" -- and no such catalogue has existed in this programme. Every measurement to
+date has been on record-derived proxies or synthetic scenes. Seven criteria were declared and
+measured on synthetic partitions and an eighth withdrawn; none of it touched this.
+
+**The admissibility question is the whole difficulty, and most candidates fail it.** Blocking
+indices, IMILAST-style track intercomparisons and most atmospheric-river catalogues are computed
+**from reanalysis**. Against an ERA5 record they are record-derived proxies wearing a
+catalogue's name, and admitting one would reintroduce precisely the circularity
+`external_reference` exists to exclude. IBTrACS passes because it merges operational best-track
+data from the meteorological agencies -- BoM, JMA, NHC, the Shanghai Typhoon Institute and
+others -- assigned by forecasters and post-season review, not by any algorithm run over ERA5.
+
+**The residual dependence is disclosed rather than assumed.** Best-track analysts use whatever
+guidance was operationally available, which can include model fields. The labels are independent
+of *this* record and of ERA5 as reprocessed here; they are not independent of numerical weather
+prediction in general. That is weaker than a purely observational catalogue would give.
+
+**The unit of independence is the storm, not the observation.** There are 20,241 pairs but only
+**20 storms**, and successive six-hourly positions of one cyclone are strongly correlated. Any
+interval computed as though the pairs were independent would be wrong by roughly the square root
+of the clustering factor. Every rate must carry a storm-clustered interval, and the effective
+sample size is nearer 20 than 20,241. This is stated first because it is the single easiest way
+for a result here to be overclaimed.
+
+**Within-storm pairs are excluded by construction.** They bear on `spatial_persistence`, a
+different declared target with different admissible evidence. Counting them here would answer
+the easier question and report it as the harder one.
+
+**The kind label is fixed before any signature is computed.** `NATURE` -- the catalogue's own
+storm-type classification -- adjudicates, because `kind_recurrence` asks what a system *is*;
+`USA_SSHS` is an intensity ordinal and is recorded as declared characterisation only. Both base
+rates were measured before declaring, so choosing the more favourable one afterwards would be a
+horse race. `MX` (agencies disagreed) and `NR` (not reported) are **refusals by name**, not
+classes: treating the catalogue's own uncertainty as ground truth would corrupt every rate built
+on it.
+
+**The prior odds here are nothing like the synthetic ones.** About 1:1.6 on `NATURE` and 1:4.5
+on `USA_SSHS`, against **1:399** in the synthetic partitions. The 36-fold specificity shortfall
+that dominated seven synthetic candidates is substantially a property of that design rather than
+of the identity question, and no rate measured here may be compared directly to the synthetic
+ones.
+
+**The data is bound by digest and is not committed.** 35.5 MB of third-party data does not
+belong in this repository -- the same discipline the acquired record and the market records are
+held to. A re-download that fails to reproduce `631f76b9...` invalidates the evaluation and must
+say so.
+
+**2022-2023 stays closed.** The catalogue lists 393 in-box observations from 13 storms there.
+That number comes from the **catalogue**, not the record: no ERA5 frame of the forecast-test
+period was opened, and none may be. It is disclosed because it was seen.
+
+**What this does NOT do.** It evaluates no criterion -- a rule for this evidence needs its own
+declaration, written before these numbers shape it. It says nothing about any of the seven
+synthetic candidates, none of which transfers here. It covers one basin, one 40-degree box, four
+years and 20 storms, with a coarse six-value kind label two of whose values are refusals. It
+approves no mining radius, discharges nothing of T4E.8's acceptance, and closes none of D96 to
+D100. And the catalogue supplies identity, not physics: a criterion agreeing with it has agreed
+with the contributing agencies' operational judgements, not with the atmosphere.
+
+**What it needs from you.** A signature, or a rejection. Code does not sign catalogues for a
+person, so this is a proposal until you say otherwise.
+
+**T4E.16 (2026-09-10): candidate 5 withdrawn before adoption, by derivation.** The size-scaled
+repair was declared, and the derivation that follows adoption discipline killed it before it
+cost anything: a within-partition permutation surrogate **reassembles the motif** with
+probability `S!/S^S` = 0.0154 per replicate, about 0.96 over 199, so it would have rejected the
+motif for a reason unrelated to the signature. A valid null must generate fresh scenes, which
+returns the cost to the measured 189 hours at richness 12 alone. **A feasible null is invalid
+here; a valid null is infeasible.** Nothing was measured, so nothing was added to the
+accumulated multiplicity: seven criteria measured, not eight.
+
+**T4E.15 candidate 4: adopted, measured, and falsified on five of six conditions.**
 
 ```
 CANDIDATE 4 -- partial presence, 36 partitions (totals by richness and j)
