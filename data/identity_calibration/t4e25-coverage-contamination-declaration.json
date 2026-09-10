@@ -1,0 +1,73 @@
+{
+  "schema": "t4e25-coverage-contamination/v1",
+  "status": "declared_before_measurement",
+  "task": "T4E.25",
+  "artefact": "the exchange rate between the detection cut's declared error control and the fraction of genuinely present structure that reaches a criterion at all",
+  "declared_by": "Edward Jonathan Bentley, maintainer (scientific choice); drafted by Claude Opus 5 at the maintainer's direction and NOT VALID until the maintainer has reviewed and adopted it",
+  "declared_on": "2026-09-11",
+
+  "why_this_exists": "T4E.24 measured a false absence rate of 0.3724 at the feature level and found the driver to be amplitude against the detection cut, not competition between features: recovery 0.144 at peak-to-background ratio 8-14 against 0.919 at 26-32, while a fivefold change in nearest-neighbour distance moved recovery only 0.535 to 0.677. Read at the level the identity path actually works on, the same receipt is far sharper: 50 of 60 planted configurations contain at least one feature recovered in NO scene, so only 16.7 per cent are recoverable in principle and 8.3 per cent survive intact across all six scenes -- on the most favourable geometry available. Coverage, not the tolerance, is what bounds a partial-recurrence criterion, and the coverage is set by the cut. No slice in this sequence has asked what that cut costs, because until T4E.24 there was no measured reason to look there.",
+
+  "the_thing_that_makes_this_a_question_and_not_a_defect_report": {
+    "the_cut_is_working_as_declared": "NullCalibration takes its statistic as the MAXIMUM over the frame, so alpha is the probability that a structureless field with this power spectrum yields ANY reported feature at all. That is a deliberate choice, documented in the class itself, made because a per-cell threshold at the same nominal level would report tens of features on pure noise while each carried p = 0.05 truthfully.",
+    "so_the_loss_is_a_price_and_not_a_bug": "A family-wise bar over 161 x 161 = 25,921 cells is severe by construction, and a faint feature failing it is the control operating exactly as specified. T4E.24's missing third is what that control costs. This slice measures the exchange rate; it does not allege a defect and must not be written up as though it had found one.",
+    "which_is_also_why_the_answer_could_be_that_nothing_is_available": "If coverage only rises once contamination is already unacceptable, the correct conclusion is that this extractor and this null cannot supply a partial-recurrence criterion with enough structure to work on, and that is a finding rather than a failure of the slice."
+  },
+
+  "the_design": {
+    "the_setting": "Identical to T4E.24 and deliberately so: 60 configurations, S = 6 scenes each, identical geometry across the scenes of a configuration, T4E.21's planting envelope and pairing rule unchanged.",
+    "the_scenes_are_the_same_scenes": "The run reuses T4E.24's root seed 20260911, so the same configurations are planted on the same phase-randomised backgrounds drawn from the same record frames. The ONLY thing that varies across the sweep is the cut. A fresh draw would confound the exchange rate with sampling, and a paired design costs nothing to arrange here.",
+    "what_is_swept": "The family-wise level alpha, over the declared values 0.05 (the current operating point, and T4E.24's), 0.10, 0.25 and 0.50. Four values, fixed here, chosen to span from the present cut to one admitting a reported feature on half of all structureless frames. No value outside this list is to be added after the numbers exist.",
+    "the_surrogate_count_rises_with_alpha_and_that_is_forced": "calibrate() refuses a level its ensemble cannot resolve. 999 surrogates resolve every value above, so 999 is used throughout and the refusal is never reached; this is stated so that a later reader does not read the constant as an oversight.",
+    "the_cut_is_taken_from_the_scene": "As in T4E.24, and for the reason recorded there: it is what the pipeline does on the real record, it reproduces T4E.21, and it is the less flattering of the two options that were measured before either was chosen."
+  },
+
+  "what_is_measured": {
+    "1_feature_coverage": "The marginal false absence rate and the full presence-count distribution over 0..6, at each alpha, as T4E.24 reported them.",
+    "2_configuration_coverage": "The fraction of configurations with every feature seen at least once, and the fraction wholly present in all six scenes, at each alpha. This is the quantity T4E.24's addendum showed to be the binding one, and it is the reason this slice exists.",
+    "3_contamination": "Extracted features matching no planting, per scene, at each alpha. Reported as an absolute count and as a fraction of all extracted features, because a rate alone hides whether a scene is being flooded.",
+    "4_what_is_bought_and_what_is_paid": "For each step of alpha, the change in configuration coverage against the change in contamination. Reported as the paired difference on the SAME scenes, which is what the shared seed exists to make possible.",
+    "5_who_is_recovered_by_relaxing": "The peak-to-background ratio distribution of features newly recovered at each step, to establish whether relaxation reaches the faint planted features or merely admits noise. A step that raises coverage without recovering low-ratio plantings would mean the extra admissions are not the missing features."
+  },
+
+  "the_prediction_declared_before_the_measurement": {
+    "what_I_predict": "Contamination rises faster than configuration coverage at every step, and no alpha in the declared list brings intact-configuration coverage above 0.50 while keeping spurious features below one per scene. The mechanism is that the family-wise cut is a frame-maximum statistic over 25,921 cells, so its tail is steep: the same relaxation that admits one faint planted feature admits many noise maxima across the frame.",
+    "what_would_falsify_it": "A step at which intact-configuration coverage rises materially -- 0.15 or more in absolute terms -- while spurious features stay below one per scene, and where the newly recovered features are predominantly low-ratio plantings rather than noise.",
+    "why_the_prediction_is_stated_although_it_is_close_to_derivable": "The steepness of an extreme-value tail is a property of the null and could be argued rather than measured. It is stated as a prediction anyway, because 'argued rather than measured' is precisely how the three derivable-and-underived lessons in this programme happened, and because the SIZE of the effect at these particular alphas is not derivable from the shape of the tail alone.",
+    "the_outcome_I_expect_to_be_most_useful": "That the curve is measured and is unfavourable, which converts 'the extractor loses a third of the features' from a property of one operating point into a property of this detection scheme across a declared range."
+  },
+
+  "what_this_slice_will_not_do": [
+    "It will not choose an alpha, recommend one, or change the default. Choosing an operating point against a measured trade-off is its own declaration with its own blindness claim, and R20 forbids the horse race.",
+    "It will not modify local_maximum_extractor, NullCalibration, or the frame-maximum statistic, and it will not propose a per-cell threshold or any other replacement.",
+    "It will not re-measure any identity criterion's error rates and does not supersede T4E.24 or T4E.13.",
+    "It will not add an alpha to the swept list after seeing any result.",
+    "It will not touch the reserved seeds 720-735 or 880-895.",
+    "It will not touch the 2022-2023 forecast-test period.",
+    "It will not quote its numbers for any domain other than the one they were measured on."
+  ],
+
+  "acceptance_for_this_slice": {
+    "condition_1": "The coded validity gate passes at every swept alpha, or the alphas at which it fails are reported as not representative and excluded by name rather than quietly dropped.",
+    "condition_2": "At alpha = 0.05 the run reproduces T4E.24's figures on the shared seed. If it does not, the discrepancy is the result and is reported before anything else, because a paired design that cannot reproduce its own baseline measures nothing.",
+    "condition_3": "Coverage and contamination are reported at every alpha, at both the feature and configuration levels, with the paired differences taken on the same scenes.",
+    "condition_4": "The prediction is adjudicated explicitly against the falsification condition stated above, in the direction the numbers actually fall.",
+    "condition_5": "If no step in the declared range separates coverage from contamination, that is the result and is reported as such."
+  },
+
+  "what_transfers_to_other_domains_and_what_does_not": {
+    "the_mechanism_is_domain_general": "A frame-maximum family-wise cut over a large grid is severe wherever it is applied, and NullCalibration runs identically on every domain this repository serves. Any domain whose features approach the cut inherits the same exchange rate for the same reason.",
+    "the_numbers_are_not": "The curve depends on the density, scale and amplitude distributions of the field it is measured on. These values belong to 850 hPa relative vorticity over this crop under this planting and are quoted for no other domain.",
+    "what_that_obliges": "A domain that adopts a partial-recurrence criterion owes its own coverage measurement, and now also its own trade-off curve if it intends to justify its operating point."
+  },
+
+  "governing_rules": [
+    "Declare the prediction, and the design's strongest objection to itself, before the measurement.",
+    "A named refusal is preferable to an unsupported number.",
+    "Evaluate the candidate alone; no horse race (R20). A swept diagnostic is not a selection procedure and must not become one.",
+    "Already inspected data do not become untouched by renaming them. T4E.24's scenes are inspected development evidence and remain so.",
+    "Code does not sign a scientific declaration for a person; this file is not adopted until the maintainer says so."
+  ],
+
+  "claim_boundary": "This measures a property of one detection scheme on synthetic evidence with known truth, across four declared levels. It settles nothing about the atmosphere, nothing about any real cyclone, and nothing about whether any identity criterion is correct. It licenses no operating point. It bears on the partial-recurrence criterion only by establishing whether the coverage T4E.24 measured is specific to alpha = 0.05 or is a property of the scheme across a declared range."
+}
