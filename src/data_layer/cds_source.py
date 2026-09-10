@@ -48,6 +48,17 @@ CDS_VARIABLES: Mapping[str, str] = {
     "u": "u_component_of_wind",
     "v": "v_component_of_wind",
     "z": "geopotential",
+    # T4E.18. Relative vorticity, not `potential_vorticity`, which is a different CDS variable.
+    # Added because the identity path cannot join an external cyclone catalogue to a record of
+    # 850 hPa temperature: features there sit a median 153.9 km from a catalogue centre against
+    # a catalogue radius of 15.2 km. A cyclone IS a compact extremum in relative vorticity.
+    #
+    # In the southern hemisphere cyclonic rotation is NEGATIVE vorticity, and the registered
+    # extractor finds maxima, so a consumer of this variable in a southern crop must negate the
+    # field before extraction or it will locate anticyclones. That convention is declared in
+    # `data/identity_calibration/t4e18-vorticity-acquisition-design.json`; this map records
+    # what may be requested, not what is done with it afterwards.
+    "vo": "vorticity",
 }
 PRESSURE_LEVELS = (
     1, 2, 3, 5, 7, 10, 20, 30, 50, 70, 100, 125, 150, 175, 200, 225, 250,

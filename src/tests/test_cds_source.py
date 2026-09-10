@@ -662,3 +662,96 @@ def test_the_lattice_search_survives_the_magnitudes_the_other_variables_live_at(
                             (1.0e-3, 2.0 ** -24)):     # specific humidity
         packed = np.round(np.linspace(magnitude, magnitude * 1.02, 4096) / step) * step
         assert encoding_step(packed) == step, magnitude
+
+
+# ---------------- T4E.18: relative vorticity, and the sign it must be read with
+#
+# The identity path cannot join an external cyclone catalogue to a record of 850 hPa
+# temperature: features there sit a median 153.9 km from a catalogue centre against a catalogue
+# radius of 15.2 km. A cyclone IS a compact extremum in relative vorticity, which is why the
+# variable was added. What it is NOT is a maximum, in this hemisphere.
+
+
+def test_relative_vorticity_can_be_requested_and_is_not_potential_vorticity():
+    """`vorticity` and `potential_vorticity` are different CDS variables, and only one is meant."""
+    from src.data_layer.cds_source import CDS_VARIABLES
+
+    assert CDS_VARIABLES["vo"] == "vorticity"
+    assert "potential_vorticity" not in CDS_VARIABLES.values()
+
+
+def test_the_southern_hemisphere_sign_convention_is_recorded_where_a_reader_will_meet_it():
+    """A maximum-finder on raw vorticity in a southern crop locates ANTICYCLONES.
+
+    The convention that repairs it -- negate before extraction -- is a transformation this
+    programme chose, not a property of the data. It is declared before the record exists so it
+    cannot become a knob turned after a disappointing result, and it is written beside the
+    variable so that whoever requests it next cannot miss it.
+    """
+    import json
+    from pathlib import Path
+
+    import src.data_layer.cds_source as cds
+
+    source = Path("src/data_layer/cds_source.py").read_text(encoding="utf-8")
+    marker = source[source.index('"z": "geopotential"'):source.index('"vo": "vorticity"')]
+    assert "NEGATIVE vorticity" in marker
+    assert "negate the" in marker
+
+    design = json.loads(Path(
+        "data/identity_calibration/t4e18-vorticity-acquisition-design.json"
+    ).read_text(encoding="utf-8"))
+    convention = design["the_sign_convention_is_declared_before_the_data_exists"]
+    assert "locate ANTICYCLONES" in convention["the_problem"]
+    assert "negated before extraction" in convention["the_convention"]
+    assert "not a property of the data" in convention["why_this_is_declared_and_not_slipped_in"]
+    assert cds.CDS_VARIABLES["vo"] == "vorticity"
+
+
+def test_the_acquisition_window_stops_before_the_forecast_test_period():
+    """Not acquiring 2022-2023 makes the reservation physical rather than a matter of policy."""
+    import json
+    from pathlib import Path
+
+    design = json.loads(Path(
+        "data/identity_calibration/t4e18-vorticity-acquisition-design.json"
+    ).read_text(encoding="utf-8"))
+
+    assert design["the_request"]["date_end"] == "2021-12-31"
+    why = design["why_the_window_stops_at_2021"]
+    assert "cannot be opened by accident" in why["the_reason"]
+    assert "second request with its own queue time" in why["what_that_costs"]
+
+
+def test_the_acquisition_declares_what_would_make_the_record_adequate():
+    """The question T4E.17 never asked, asked in advance this time."""
+    import json
+    from pathlib import Path
+
+    design = json.loads(Path(
+        "data/identity_calibration/t4e18-vorticity-acquisition-design.json"
+    ).read_text(encoding="utf-8"))
+    acceptance = design["acceptance_for_the_acquired_record"]
+
+    assert "was never checked for whether the record's variable could SEE" in (
+        acceptance["why_acceptance_is_declared_before_the_data_arrives"])
+    assert "153.9 km" in acceptance["condition_1_the_join_must_close"]
+    assert "cardinality 3" in acceptance["condition_2_a_configuration_must_exist"]
+    assert "as unusable as one yielding none" in (
+        acceptance["condition_3_the_extractor_must_not_be_swamped"])
+    assert "MSLP" in acceptance["what_failure_would_mean"]
+
+
+def test_credentials_are_the_maintainers_and_are_never_recorded():
+    """The layer builds a standard client; the key belongs to the maintainer and to no file here."""
+    import json
+    from pathlib import Path
+
+    design = json.loads(Path(
+        "data/identity_calibration/t4e18-vorticity-acquisition-design.json"
+    ).read_text(encoding="utf-8"))
+    prerequisites = design["operational_prerequisites_the_maintainer_must_supply"]
+
+    assert "never to be pasted into this conversation" in prerequisites["credentials"]
+    assert "allow_network" in prerequisites["network_consent"]
+    assert not list(Path("data/identity_calibration").glob("*cdsapirc*"))

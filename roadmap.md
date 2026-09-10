@@ -2803,6 +2803,50 @@ configuration absent from one scene outright; nothing about recurrence *across* 
 which the mining machinery needs; no mining radius, no discharge of T4E.8's acceptance, no
 closure of D96 to D100; and nothing about `kind_recurrence`, which still has no catalogue.
 
+**T4E.18 declared: acquire a variable in which a cyclone centre is an extractable feature.**
+`data/identity_calibration/t4e18-vorticity-acquisition-design.json`, declared before any request
+and **not yet acquired** -- the maintainer authorised the acquisition on 2026-09-10 and the
+credentials it needs are not on this machine.
+
+**The variable is `vorticity`** -- ERA5 relative vorticity, distinct from `potential_vorticity`
+-- at 850 hPa, the same level, crop and grid as the existing record. A cyclone is a compact
+near-isotropic extremum in it, an order of magnitude above a background of ~1e-5 s^-1, which is
+the shape the registered extractor declares it assumes.
+
+**Mean sea level pressure would be more commensurate and is not chosen, for a reason that is a
+constraint rather than a preference.** IBTrACS records minimum central pressure directly, so
+MSLP is the variable closest to the catalogue's own definition of a centre. But `cds_source.py`
+refuses any dataset except `reanalysis-era5-pressure-levels` by design, and MSLP is single-level.
+The chosen variable is the best available *within the machinery as it stands*, not the best in
+principle, and if vorticity fails its acceptance then MSLP is the next candidate and the
+acquisition layer has to be extended to reach it.
+
+**The sign convention is declared before the data exists.** `local_maximum_extractor` finds
+maxima; in the southern hemisphere cyclonic rotation is **negative** relative vorticity. A
+maximum-finder on raw vorticity in this crop would locate anticyclones and miss every catalogue
+storm. The field is therefore negated before extraction. Negation is a transformation this
+programme chose, not a property of the data, and declaring it now is what stops it becoming a
+knob turned after a disappointing result. The crop lies wholly south of the equator, so one sign
+applies throughout; a crop spanning the equator is not covered.
+
+**The window stops at 2021-12-31, deliberately.** Not acquiring 2022-2023 makes the
+forecast-test reservation **physical** rather than a matter of policy: a frame that does not
+exist cannot be opened by accident, by a refactor, or by someone who has not read the
+constraint. The cost is a second request later, accepted knowingly -- this session has repeatedly
+found that reservations enforced in code outlast reservations recorded in prose.
+
+**Acceptance is declared before the data arrives**, which is the correction to what went wrong in
+T4E.17. That catalogue was checked for independence, for the source of its radius and for the
+adequacy of its population, and never for whether the record's variable could *see* what the
+catalogue labels. The conditions now: the join must close by an order of magnitude, at least half
+the storms must have three features inside their own catalogue radius, the extractor must be
+neither starved nor swamped, and refusals are counted by name.
+
+**What it still needs from the maintainer**: CDS credentials (`~/.cdsapirc` or CDSAPI_URL /
+CDSAPI_KEY -- never pasted into a conversation and never recorded in this repository), a
+one-time ERA5 licence acceptance on the CDS account, and the explicit network consent the layer
+requires as a separate act.
+
 **The join cannot be made, and the blocker has moved.** With the catalogue signed and the
 extractor fixed, the remaining question was geometric: is there a constellation for a storm to
 be the identity *of*? Measured in `measurements/t4e17_join_feasibility.json`.
