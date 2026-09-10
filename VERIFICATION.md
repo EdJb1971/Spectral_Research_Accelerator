@@ -12385,6 +12385,35 @@ release decision, but it does mean two gates that read PASS now read NOT_RUN and
 were not isolated to a cause; the run predates no clean baseline for this suite size, so they
 are reported as measured rather than attributed.
 
+**A diverged scale is now refused by name rather than acted on (`core/extraction.py`).** Found
+while probing whether the signed catalogue could be joined to the record at all. `_localise`
+corrects the integral estimator for the fraction of a Gaussian its window captures, and that
+correction is a **fixed point that diverges**: a larger sigma captures less of itself, dividing
+by the smaller capture returns a larger sigma. The upstream finite check does not catch it,
+because a runaway here is a large *finite* number rather than an infinity.
+
+On a real ERA5 SWT `level_1/HH` plane it produced **sigma 72,404 cells on a 161-cell frame**,
+then asked `_disc_amplitude` for a **42.5 TiB** index array and killed the pass. **Every frame of
+the acquired record was unextractable because of it**, which silently blocked the identity path
+on real data -- not just the `kind_recurrence` join that exposed it.
+
+The refusal category `unmeasurable_scale` already existed and was simply unreachable. A feature
+wider than the frame was not measured by the frame, so a scale past the frame's own extent is
+refused and counted. The bound is generous by construction: a Gaussian whose width equals the
+frame is already unmeasurable from it, and real features on these planes are single-digit cells.
+
+With the guard in place that frame yields **55 features** across the SWT planes, 9 of them
+refused by name. Three regression tests pin it -- the guard firing on the path that actually
+diverged (a collapsing refined amplitude), the refusal being counted rather than ending the
+pass, and a clean Gaussian still extracting with zero `unmeasurable_scale` rejections, so the
+bound cannot be trimming real features.
+
+**Full suite after the change: 4,736 passed, 6 failed, all six checked.** Five are pre-existing
+and were confirmed by re-running with the change stashed: `t4e_identity_certified` fails
+identically at split 0.4667 (the documented T4E.9 FAIL), `test_imports` is that same benchmark
+through the API, and three `test_browser_evidence` failures are the unrecorded browser evidence
+PLAN already lists as owed. The sixth was the test inventory, and is corrected here.
+
 **T4E.17 external catalogue (2026-09-10): SIGNED. The primary target is evaluable.**
 
 **SIGNED by the maintainer on 2026-09-10**, at design sha256 `c692ea19...` -- the amended
