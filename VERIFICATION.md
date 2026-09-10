@@ -12385,6 +12385,43 @@ release decision, but it does mean two gates that read PASS now read NOT_RUN and
 were not isolated to a cause; the run predates no clean baseline for this suite size, so they
 are reported as measured rather than attributed.
 
+**The join cannot be made, and the blocker has moved.** With the catalogue signed and the
+extractor fixed, the remaining question was geometric: is there a constellation for a storm to
+be the identity *of*? Measured in `measurements/t4e17_join_feasibility.json`.
+
+```
+nearest feature to the storm:  min 12.3 km   median 153.9 km   max 949.1 km
+catalogue radius:              median 15.2 km
+features per frame:            42 to 86 across the ten SWT planes
+
+storms with >=3 features within the neighbourhood (any plane / same plane)
+   25 km :  0 / 0      100 km :  1 / 0      400 km : 15 / 10
+   50 km :  0 / 0      200 km :  7 / 3              of 18 storms
+```
+
+**At the catalogue's own declared radius there is usually no feature at all** -- the nearest is a
+median ten times that radius away. Only 2 of 18 storms have any feature within 25 km and **none
+has three**, which cardinality 3 requires. It is not a shortage of features; they are simply not
+where the storms are. Widening the neighbourhood to 200-400 km until a triple appears would
+substitute a radius *we* chose for the one the catalogue supplies, and "matched at its own
+declared radius" is exactly what `external_reference` evidence means.
+
+**The cause is the record's variable.** Features here come from **850 hPa temperature** -- thermal
+structure. IBTrACS positions are cyclone centres, defined operationally by wind and pressure. A
+warm core and a circulation centre need not coincide, and under shear or extratropical
+transition they can be hundreds of kilometres apart. This is derivable in hindsight and was not
+derived in advance; it is a property of the variable the record holds.
+
+**What this does not show.** Not that the catalogue is inadequate -- it is signed, independent
+and correctly specified, and nothing here bears on its labels. Not that the signature or any
+criterion fails; none was run. Not that `kind_recurrence` is unevaluable in principle -- only
+that it is unevaluable **against this record**, whose single variable is 850 hPa temperature.
+
+**What would unblock it** is a record variable in which a cyclone centre is an extractable
+feature: relative vorticity, mean sea level pressure, or 10 m wind. That is a new CDS
+acquisition and a new record, and it is the maintainer's decision rather than a consequence of
+this measurement.
+
 **A diverged scale is now refused by name rather than acted on (`core/extraction.py`).** Found
 while probing whether the signed catalogue could be joined to the record at all. `_localise`
 corrects the integral estimator for the fraction of a Gaussian its window captures, and that

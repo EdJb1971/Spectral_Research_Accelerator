@@ -1,0 +1,338 @@
+{
+  "measurement": "t4e17_join_feasibility",
+  "question": "Can a signed catalogue observation be joined to a constellation in the acquired record at the catalogue's own declared radius?",
+  "answer": "NO, by a factor of about ten.",
+  "record": "data/era5_cache/a07c23ec89f953c1.zarr, 850 hPa temperature, db2 SWT level 3",
+  "catalogue": "IBTrACS v04r01 SP, sha256 631f76b9...",
+  "window": "2018-01-01 to 2021-12-31; the 2022-2023 forecast-test period was not opened",
+  "storms_probed": 18,
+  "observations_available": 176,
+  "nearest_feature_km": {
+    "min": 12.283485342277379,
+    "median": 153.85117986338244,
+    "max": 949.1182483231299
+  },
+  "catalogue_radius_km_median": 15.2,
+  "storms_with_three_features_within": {
+    "25": {
+      "any_plane": 0,
+      "same_plane": 0
+    },
+    "50": {
+      "any_plane": 0,
+      "same_plane": 0
+    },
+    "100": {
+      "any_plane": 1,
+      "same_plane": 0
+    },
+    "200": {
+      "any_plane": 7,
+      "same_plane": 3
+    },
+    "400": {
+      "any_plane": 15,
+      "same_plane": 10
+    }
+  },
+  "per_storm": [
+    {
+      "storm": "FEHI",
+      "sid": "2018027S11156",
+      "time": "2018-01-29 06:00:00",
+      "nature": "TS",
+      "catalogue_radius_km": 15.251687721639115,
+      "features_in_frame": 69,
+      "nearest_feature_km": 233.9129086779275,
+      "features_within": {
+        "25": 0,
+        "50": 0,
+        "100": 0,
+        "200": 0,
+        "400": 3
+      }
+    },
+    {
+      "storm": "GITA",
+      "sid": "2018038S15172",
+      "time": "2018-02-13 12:00:00",
+      "nature": "TS",
+      "catalogue_radius_km": 15.209692158670686,
+      "features_in_frame": 55,
+      "nearest_feature_km": 949.1182483231299,
+      "features_within": {
+        "25": 0,
+        "50": 0,
+        "100": 0,
+        "200": 0,
+        "400": 0
+      }
+    },
+    {
+      "storm": "HOLA",
+      "sid": "2018064S16172",
+      "time": "2018-03-09 18:00:00",
+      "nature": "TS",
+      "catalogue_radius_km": 10.422100045955904,
+      "features_in_frame": 64,
+      "nearest_feature_km": 129.74648492177997,
+      "features_within": {
+        "25": 0,
+        "50": 0,
+        "100": 0,
+        "200": 2,
+        "400": 12
+      }
+    },
+    {
+      "storm": "LINDA",
+      "sid": "2018070S10160",
+      "time": "2018-03-13 12:00:00",
+      "nature": "TS",
+      "catalogue_radius_km": 15.237869692450898,
+      "features_in_frame": 86,
+      "nearest_feature_km": 142.97511040038725,
+      "features_within": {
+        "25": 0,
+        "50": 0,
+        "100": 0,
+        "200": 3,
+        "400": 12
+      }
+    },
+    {
+      "storm": "IRIS",
+      "sid": "2018082S12164",
+      "time": "2018-03-27 06:00:00",
+      "nature": "TS",
+      "catalogue_radius_km": 15.251687721639115,
+      "features_in_frame": 59,
+      "nearest_feature_km": 192.72991623192019,
+      "features_within": {
+        "25": 0,
+        "50": 0,
+        "100": 0,
+        "200": 1,
+        "400": 3
+      }
+    },
+    {
+      "storm": "JOSIE",
+      "sid": "2018089S18172",
+      "time": "2018-04-01 12:00:00",
+      "nature": "TS",
+      "catalogue_radius_km": 39.36727352802874,
+      "features_in_frame": 51,
+      "nearest_feature_km": 150.30721023222887,
+      "features_within": {
+        "25": 0,
+        "50": 0,
+        "100": 0,
+        "200": 2,
+        "400": 3
+      }
+    },
+    {
+      "storm": "OWEN",
+      "sid": "2018334S09156",
+      "time": "2018-12-16 18:00:00",
+      "nature": "MX",
+      "catalogue_radius_km": 0.0,
+      "features_in_frame": 58,
+      "nearest_feature_km": 182.57196371471323,
+      "features_within": {
+        "25": 0,
+        "50": 0,
+        "100": 0,
+        "200": 1,
+        "400": 3
+      }
+    },
+    {
+      "storm": "PENNY",
+      "sid": "2018363S12145",
+      "time": "2019-01-08 18:00:00",
+      "nature": "TS",
+      "catalogue_radius_km": 11.119492664455889,
+      "features_in_frame": 45,
+      "nearest_feature_km": 238.7903762100331,
+      "features_within": {
+        "25": 0,
+        "50": 0,
+        "100": 0,
+        "200": 0,
+        "400": 1
+      }
+    },
+    {
+      "storm": "OMA",
+      "sid": "2019042S17162",
+      "time": "2019-02-19 06:00:00",
+      "nature": "TS",
+      "catalogue_radius_km": 15.260798770234047,
+      "features_in_frame": 68,
+      "nearest_feature_km": 187.38130462921518,
+      "features_within": {
+        "25": 0,
+        "50": 0,
+        "100": 0,
+        "200": 1,
+        "400": 2
+      }
+    },
+    {
+      "storm": "SARAI",
+      "sid": "2019359S08175",
+      "time": "2019-12-28 12:00:00",
+      "nature": "TS",
+      "catalogue_radius_km": 33.251078631493606,
+      "features_in_frame": 69,
+      "nearest_feature_km": 95.68799002260624,
+      "features_within": {
+        "25": 0,
+        "50": 0,
+        "100": 1,
+        "200": 4,
+        "400": 5
+      }
+    },
+    {
+      "storm": "UESI",
+      "sid": "2020037S13163",
+      "time": "2020-02-11 12:00:00",
+      "nature": "TS",
+      "catalogue_radius_km": 15.233223445615186,
+      "features_in_frame": 62,
+      "nearest_feature_km": 106.08130646534684,
+      "features_within": {
+        "25": 0,
+        "50": 0,
+        "100": 0,
+        "200": 3,
+        "400": 8
+      }
+    },
+    {
+      "storm": "GRETEL",
+      "sid": "2020073S14149",
+      "time": "2020-03-15 00:00:00",
+      "nature": "TS",
+      "catalogue_radius_km": 33.23222279600333,
+      "features_in_frame": 76,
+      "nearest_feature_km": 194.96454494539952,
+      "features_within": {
+        "25": 0,
+        "50": 0,
+        "100": 0,
+        "200": 1,
+        "400": 4
+      }
+    },
+    {
+      "storm": "LUCAS",
+      "sid": "2021025S14138",
+      "time": "2021-02-02 18:00:00",
+      "nature": "TS",
+      "catalogue_radius_km": 56.56273351591886,
+      "features_in_frame": 71,
+      "nearest_feature_km": 90.98885557001536,
+      "features_within": {
+        "25": 0,
+        "50": 0,
+        "100": 1,
+        "200": 9,
+        "400": 13
+      }
+    },
+    {
+      "storm": "ANA",
+      "sid": "2021029S16171",
+      "time": "2021-01-31 18:00:00",
+      "nature": "TS",
+      "catalogue_radius_km": 11.119492664455889,
+      "features_in_frame": 54,
+      "nearest_feature_km": 47.83877777254052,
+      "features_within": {
+        "25": 0,
+        "50": 1,
+        "100": 1,
+        "200": 1,
+        "400": 4
+      }
+    },
+    {
+      "storm": "NIRAN",
+      "sid": "2021058S14149",
+      "time": "2021-03-06 00:00:00",
+      "nature": "TS",
+      "catalogue_radius_km": 38.21681303761803,
+      "features_in_frame": 76,
+      "nearest_feature_km": 12.283485342277379,
+      "features_within": {
+        "25": 2,
+        "50": 2,
+        "100": 4,
+        "200": 9,
+        "400": 20
+      }
+    },
+    {
+      "storm": "UNNAMED",
+      "sid": "2021099S15159",
+      "time": "2021-04-11 06:00:00",
+      "nature": "TS",
+      "catalogue_radius_km": 22.865549918536555,
+      "features_in_frame": 42,
+      "nearest_feature_km": 20.57985589509068,
+      "features_within": {
+        "25": 1,
+        "50": 1,
+        "100": 1,
+        "200": 3,
+        "400": 4
+      }
+    },
+    {
+      "storm": "RUBY",
+      "sid": "2021343S09155",
+      "time": "2021-12-13 18:00:00",
+      "nature": "TS",
+      "catalogue_radius_km": 15.256253368067354,
+      "features_in_frame": 71,
+      "nearest_feature_km": 153.85117986338244,
+      "features_within": {
+        "25": 0,
+        "50": 0,
+        "100": 0,
+        "200": 4,
+        "400": 8
+      }
+    },
+    {
+      "storm": "SETH",
+      "sid": "2021358S09130",
+      "time": "2021-12-31 06:00:00",
+      "nature": "TS",
+      "catalogue_radius_km": 31.346711422287058,
+      "features_in_frame": 66,
+      "nearest_feature_km": 176.70097755380866,
+      "features_within": {
+        "25": 0,
+        "50": 0,
+        "100": 0,
+        "200": 1,
+        "400": 4
+      }
+    }
+  ],
+  "what_this_shows": "Features are plentiful -- 42 to 86 per frame across the SWT planes -- and are not where the storms are. The nearest feature to a storm is a median 153.9 km away against a catalogue radius whose median is 15.2 km, and no storm of the 18 has three features within 50 km. The join required by external_reference evidence, 'matched at its own declared radius', cannot be made on this record.",
+  "why": "Features here are extracted from 850 hPa TEMPERATURE. IBTrACS positions are cyclone centres defined operationally by wind and pressure. A warm core and a circulation centre need not coincide, and in a sheared or extratropically transitioning system they can be hundreds of kilometres apart. This is a property of the variable the record holds, not of the catalogue and not of the signature.",
+  "what_it_does_not_show": [
+    "Not that the catalogue is inadequate. It is signed, independent and correctly specified; nothing measured here bears on its labels.",
+    "Not that the signature or any identity criterion fails. None was run.",
+    "Not that kind_recurrence is unevaluable in principle -- only that it is unevaluable against THIS record, whose single variable is 850 hPa temperature.",
+    "Nothing about D96 to D100, a mining radius, or T4E.8's acceptance."
+  ],
+  "what_would_unblock_it": "A record variable in which a cyclone centre is an extractable feature -- relative vorticity, mean sea level pressure, or 10 m wind speed. That is a new CDS acquisition and a new record, and it is the maintainer's decision, not a consequence of this measurement.",
+  "claim_boundary": "Synthetic and acquired evidence settle properties of the instrument, not of the atmosphere. No frame of the 2022-2023 forecast-test period was opened."
+}

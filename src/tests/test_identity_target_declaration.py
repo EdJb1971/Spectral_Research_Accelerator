@@ -625,3 +625,71 @@ def test_the_target_that_was_unevaluable_throughout_is_now_evaluable():
     signature = _t4e17_signature()
     assert "unevaluable throughout" in signature["what_the_signature_makes_true"]
     assert "Eighteen storms" in signature["the_ceiling_the_maintainer_signed_with_open_eyes"]
+
+
+# ------------- The join cannot be made: the features are not where the storms are
+#
+# The catalogue is signed and the extractor now completes. What blocks kind_recurrence is
+# neither of those: it is that features extracted from 850 hPa TEMPERATURE do not sit at
+# cyclone centres, which are defined operationally by wind and pressure.
+
+
+def _t4e17_join():
+    import json
+    from pathlib import Path
+
+    return json.loads(Path(
+        "measurements/t4e17_join_feasibility.json").read_text(encoding="utf-8"))
+
+
+def test_the_join_fails_at_the_catalogues_own_radius_by_about_ten_fold():
+    """external_reference evidence is 'matched at its own declared radius', and it cannot be.
+
+    Nearest feature a median 153.9 km from the storm, against a catalogue radius whose median
+    is 15.2 km. Widening the neighbourhood to reach a feature would substitute a number we
+    chose for the one the catalogue supplies, which is the whole point of the requirement.
+    """
+    join = _t4e17_join()
+
+    assert join["answer"].startswith("NO")
+    assert join["nearest_feature_km"]["median"] > 150.0
+    assert join["catalogue_radius_km_median"] == 15.2
+    assert join["nearest_feature_km"]["median"] > 9 * join["catalogue_radius_km_median"]
+
+
+def test_no_storm_has_a_configuration_within_the_radius_and_a_triple_needs_three():
+    """Cardinality is 3, and no storm has three features within 50 km -- or even one within 25
+    km, but for two of eighteen. It is not a shortage of features: frames hold 42 to 86.
+    """
+    join = _t4e17_join()
+
+    within = join["storms_with_three_features_within"]
+    assert within["25"]["any_plane"] == 0
+    assert within["50"]["any_plane"] == 0
+    assert within["100"]["same_plane"] == 0
+    assert min(row["features_in_frame"] for row in join["per_storm"]) >= 40
+
+
+def test_the_cause_is_the_records_variable_and_not_the_catalogue_or_the_signature():
+    """A warm core and a circulation centre need not coincide, and under shear or extratropical
+    transition they can be hundreds of kilometres apart.
+    """
+    join = _t4e17_join()
+
+    assert "850 hPa TEMPERATURE" in join["why"]
+    assert "circulation centre" in join["why"]
+    refused = " ".join(join["what_it_does_not_show"])
+    assert "Not that the catalogue is inadequate" in refused
+    assert "Not that the signature or any identity criterion fails" in refused
+    assert "unevaluable against THIS record" in refused
+
+
+def test_what_would_unblock_it_is_named_and_is_not_authorised_here():
+    """A record variable in which a cyclone centre is extractable. That is an acquisition."""
+    join = _t4e17_join()
+
+    unblock = join["what_would_unblock_it"]
+    assert "vorticity" in unblock and "pressure" in unblock
+    assert "maintainer's decision" in unblock
+    assert "No frame of the 2022-2023 forecast-test period was opened" in (
+        join["claim_boundary"])

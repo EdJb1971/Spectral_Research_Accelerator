@@ -8714,6 +8714,45 @@ D97, isolated from the real record: the calibration's failure is not only the at
 messiness. D101 is closed by the benchmark existing and reporting; D97 gains this evidence and
 stays open. No mining radius is approved and T4E.8's acquired-record acceptance is untouched.
 
+### 3E.29 The join cannot be made: the features are not where the storms are (T4E.17)
+
+**The join cannot be made, and the blocker has moved.** With the catalogue signed and the
+extractor fixed, the remaining question was geometric: is there a constellation for a storm to
+be the identity *of*? Measured in `measurements/t4e17_join_feasibility.json`.
+
+```
+nearest feature to the storm:  min 12.3 km   median 153.9 km   max 949.1 km
+catalogue radius:              median 15.2 km
+features per frame:            42 to 86 across the ten SWT planes
+
+storms with >=3 features within the neighbourhood (any plane / same plane)
+   25 km :  0 / 0      100 km :  1 / 0      400 km : 15 / 10
+   50 km :  0 / 0      200 km :  7 / 3              of 18 storms
+```
+
+**At the catalogue's own declared radius there is usually no feature at all** -- the nearest is a
+median ten times that radius away. Only 2 of 18 storms have any feature within 25 km and **none
+has three**, which cardinality 3 requires. It is not a shortage of features; they are simply not
+where the storms are. Widening the neighbourhood to 200-400 km until a triple appears would
+substitute a radius *we* chose for the one the catalogue supplies, and "matched at its own
+declared radius" is exactly what `external_reference` evidence means.
+
+**The cause is the record's variable.** Features here come from **850 hPa temperature** -- thermal
+structure. IBTrACS positions are cyclone centres, defined operationally by wind and pressure. A
+warm core and a circulation centre need not coincide, and under shear or extratropical
+transition they can be hundreds of kilometres apart. This is derivable in hindsight and was not
+derived in advance; it is a property of the variable the record holds.
+
+**What this does not show.** Not that the catalogue is inadequate -- it is signed, independent
+and correctly specified, and nothing here bears on its labels. Not that the signature or any
+criterion fails; none was run. Not that `kind_recurrence` is unevaluable in principle -- only
+that it is unevaluable **against this record**, whose single variable is 850 hPa temperature.
+
+**What would unblock it** is a record variable in which a cyclone centre is an extractable
+feature: relative vorticity, mean sea level pressure, or 10 m wind. That is a new CDS
+acquisition and a new record, and it is the maintainer's decision rather than a consequence of
+this measurement.
+
 ### 3E.28 A diverged scale, refused by name (`core/extraction.py`)
 
 **A diverged scale is now refused by name rather than acted on (`core/extraction.py`).** Found
@@ -11074,9 +11113,9 @@ able to sit three slices out of date.
   | `test_operating_point.py` | 15 | T4E.10 identity operating-point estimators: the closed-form required support checked against the order statistic it derives from, the tolerance bound refusing thin support and naming the 22 observations that would carry 90/90, that bound never narrower than the empirical quantile it replaces, an empty population refusing rather than returning zero, the empirical quantile publishing that it guarantees nothing and recording the confidence it was given and ignored, the bootstrap widening rather than refusing while naming its own weakness and staying deterministic per seed, every registered estimator publishing a guarantee, only the tolerance bound declaring that it refuses, and the refusals -- an unknown estimator corrected, a coverage or confidence outside (0,1), and a negative or non-finite distance |
   | `test_identity_api.py` | 16 | T4E.8 slice 4 the identity declaration surface: every target served with what it does not license, the circular `kind_recurrence` x `record_derived_proxy` pairing served as a refusal rather than omitted, an admitted pairing still carrying its tracker-agreement caveat, the matrix covering every target against every evidence class, receipts written before slice 3 listed and named undeclared rather than hidden, an unreadable receipt reported rather than skipped and a non-object JSON document distinguished from an empty store, a path refused where a file name was required, a missing receipt 404 naming what was asked for and an unparseable one 422 rather than 500, the surface read-only under POST/PUT/DELETE, and the refusals published rather than implied by an absence of buttons |
   | `test_identity_certification.py` | 131 | T4E.9 the T4E identity path against a motif known by construction: the benchmark registered and naming the path it certifies, three disjoint partitions so a radius is never evaluated on what calibrated it, exactly one motif configuration in a planted scene and none in a null one, construction labels taken from the generator and refused rather than guessed when a planted position has no feature near it or two positions claim one, only cross-scene pairs formed, the definition's separation asserted as a floor, nothing admitted where nothing recurs with the absent positive population left unmeasured rather than zero, the frozen-radius failure pinned as a relationship to the feasible radius rather than as two numbers, an empty calibration returning INVALID rather than a permissive radius, every result stating what it does not license, and T4E.13's criterion fixed in code while asserted to be measured nowhere -- `k` derived as a function of the partition size, unequal partitions refused rather than pooled, monotonicity in `k` checked on a toy rather than assumed, and, once candidate 3 was adopted and falsified, that guard replaced by the reading of the result -- which conditions failed and by how much, that the null held at 0 of 1486 proposed, that the 0.0000 recall is recorded as arithmetic rather than a finding, that no lower k can rescue what this one failed, that the falsification licenses none of the conclusions nearest to it, that partitions 720-735 stay refused in code, and T4E.14's partial-presence test bed -- seeds that collide with no existing evidence, a reservation refused with no flag to open it, planting patterns that are deterministic and not contiguous, the recoverable population C(j,2) rather than C(S,2), the design's own record of what this evidence cannot repair, and T4E.15's criterion fixed in code while asserted to be measured nowhere -- closure broken by a single loose end, closure admitting only a subset of what consistency admits, the criterion carrying no tunable parameter at all, the span-ranking design recorded as discarded by derivation, the declaration's own worst case and refusal to predict, and -- once measured and falsified -- the reading of that result: the conditions that failed with their counts, the mechanism executed rather than described (a pair with no other partners is closed and is therefore admitted, while one loose end rejects a group spanning five scenes), the cross-check showing closure admits more than candidate 2 on the evidence candidate 2 passed, the missed derivation recorded rather than quietly repaired, the constraint the falsification fixes on any successor, and T4E.16's withdrawal held as a derivation rather than a note -- the surrogate reassembly rate computed analytically and by simulation, the record of why the design cannot simply be repaired, the fact that a withdrawn declaration adds nothing to the accumulated multiplicity, and PooledDistances keeping a refused distance as NaN so it can never leak in as a number |
-  | `test_identity_target_declaration.py` | 48 | T4E.8 slice 3 the declared identity target: an absent target or evidence class refused by name, a misspelling refused with its correction, `kind_recurrence` against record-derived proxy labels refused as circular, `track_continuity` admitted with its tracker-agreement caveat, every target round-tripping what it recognises and does not license, the published proxy wording pinned verbatim so naming a target cannot reword a cited receipt, and the external-reference path recovering two planted identities from a reviewed catalogue while refusing a mismatched family, a single identity, a non-catalogue and a negative population the patterns cannot supply |
+  | `test_identity_target_declaration.py` | 52 | T4E.8 slice 3 the declared identity target: an absent target or evidence class refused by name, a misspelling refused with its correction, `kind_recurrence` against record-derived proxy labels refused as circular, `track_continuity` admitted with its tracker-agreement caveat, every target round-tripping what it recognises and does not license, the published proxy wording pinned verbatim so naming a target cannot reword a cited receipt, and the external-reference path recovering two planted identities from a reviewed catalogue while refusing a mismatched family, a single identity, a non-catalogue and a negative population the patterns cannot supply |
   | `test_spectral_spatial_identity.py` | 24 | T4E.8 spatial geometry, detector-band/magnitude independence, source/scope refusal, analytic distances, old-radius refusal, scalar/accelerated agreement and two-sided proxy-label diagnostics |
-| **total** | **4270** | |
+| **total** | **4274** | |
 
 ### 7.4a Browser suite inventory
 
