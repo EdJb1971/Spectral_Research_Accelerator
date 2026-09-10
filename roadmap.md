@@ -2803,6 +2803,52 @@ configuration absent from one scene outright; nothing about recurrence *across* 
 which the mining machinery needs; no mining radius, no discharge of T4E.8's acceptance, no
 closure of D96 to D100; and nothing about `kind_recurrence`, which still has no catalogue.
 
+**T4E.19: the offset decomposed, and none of the three declared causes survives.** Predictions
+were fixed before the measurement precisely because three causes that all produce "about 35 km"
+are indistinguishable by magnitude. 176 interior observations, 162 paired within 200 km, 154
+core after separating the dateline group. `measurements/t4e19_positional_error.json`.
+
+```
+core offset: median 33.8 km  q75 54.7  q90 92.2   against a catalogue radius of 15.2
+             inside their own radius: 37 of 154        ratio 2.22
+
+prediction tests (Pearson, leave-one-storm-out range; n=154 from 16 STORMS)
+  A estimator bias   r(offset, feature sigma) = +0.143   [+0.025, +0.186]
+  B catalogue uncert r(offset, radius)        = +0.020   [-0.033, +0.096]
+  C physical         r(offset, wind)          = -0.136   [-0.241, +0.066]
+  C physical         r(offset, latitude)      = +0.089   [+0.033, +0.114]  wrong sign
+  C physical         by storm type: ET 36.2  MX 35.9  SS 32.7  TS 34.0 km
+```
+
+**Cause B is ruled out.** The offset does not track the agencies' own disagreement about where
+the centre is, so this is *not* a case of comparing at the wrong tolerance -- which had been the
+outcome that would have required no code at all.
+
+**Cause C is not supported**, and the sharpest test is storm type: a transitioning or subtropical
+system shows the same offset as a tropical one to within 3.5 km. The latitude term runs the
+*opposite* way to the prediction and the intensity term straddles zero.
+
+**Cause A survives in sign only** -- the one correlation that stays on one side of zero across
+every leave-one-storm-out fit, explaining about 2% of the variance. Far too weak to carry the
+explanation.
+
+**So the declared answer is that the three causes are not separated at this sample size**, which
+condition 3 anticipated and required to be reported rather than resolved by picking the most
+plausible.
+
+**What it does settle**: the offset is about 34 km, roughly 1.6 grid cells, and is largely
+indifferent to storm scale, intensity, type and latitude. Whatever produces it is a property of
+the extraction rather than of the catalogue or the storms.
+
+**Fenced off as post-hoc and not adjudicated**: in grid cells the feature sits on average 0.598
+south and 0.463 west of the catalogue position -- a systematic displacement of about 0.76 cells
+with a mean absolute displacement of 1.634, so roughly half the offset is systematic and half is
+scatter. It is *not* a fixed coordinate shift (the coefficient of variation is 0.755 in km
+against 0.737 in cells; an indexing error would cluster tightly and does not). This pattern was
+not among the declared three and was noticed in the data that would have to test it, so it is a
+hypothesis for its own declaration -- testable on synthetic cyclone-like fields where the true
+centre is known by construction.
+
 **CORRECTION (2026-09-10): the diagnosis above was wrong, and is superseded rather than edited
 away.** It claimed the extractor does not find the cyclone and named the phase-randomised
 frame-maximum calibration as the cause. Both claims fail on measurement. The temperature case

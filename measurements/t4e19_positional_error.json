@@ -1,0 +1,68 @@
+{
+  "measurement": "t4e19_positional_error",
+  "declared_in": "data/identity_calibration/t4e19-positional-error-declaration.json",
+  "population": {
+    "interior_observations_with_a_radius": 176,
+    "storms": 18,
+    "refused_single_agency": 34,
+    "paired_within_200km": 162,
+    "unpaired": 14,
+    "frames_refused": 0,
+    "core_excluding_dateline": 154,
+    "core_storms": 16,
+    "dateline_observations": 8,
+    "dateline_storms": 5
+  },
+  "the_offset": {
+    "core_median_km": 33.8,
+    "core_q75_km": 54.7,
+    "core_q90_km": 92.2,
+    "core_mean_km": 43.6,
+    "core_sd_km": 32.9,
+    "dateline_median_km": 43.0,
+    "dateline_q90_km": 187.2,
+    "catalogue_radius_median_km": 15.2,
+    "ratio_offset_to_radius": 2.22,
+    "inside_own_radius": "37 of 154"
+  },
+  "VERDICT": "NONE OF THE THREE DECLARED CAUSES IS ESTABLISHED. Condition 3 of the declaration anticipated this and requires it to be reported as the result rather than resolved by picking the most plausible.",
+  "prediction_tests": {
+    "note": "Pearson correlation on the 154 core observations, with the leave-one-storm-out range as the storm-clustered interval. The unit of independence is the storm: 16, not 154.",
+    "cause_A_estimator_bias": {
+      "predicted": "offset grows with the feature's own scale sigma",
+      "measured": "r = +0.143, leave-one-storm-out [+0.025, +0.186]",
+      "reading": "The only correlation that stays on one side of zero across every leave-one-storm-out fit, and the sign matches the prediction. It also explains about 2 per cent of the variance, which is nowhere near enough to call it the cause."
+    },
+    "cause_B_catalogue_uncertainty": {
+      "predicted": "offset grows with the per-observation inter-agency spread",
+      "measured": "r = +0.020, leave-one-storm-out [-0.033, +0.096]",
+      "reading": "RULED OUT as a material contributor. The offset does not track the agencies' own disagreement about where the centre is, so this is not a case of comparing at the wrong tolerance."
+    },
+    "cause_C_a_real_physical_offset": {
+      "predicted": "offset shrinks with intensity, grows toward the pole, and is larger for extratropical and subtropical systems",
+      "measured_intensity": "r(offset, WMO_WIND) = -0.136, leave-one-storm-out [-0.241, +0.066] -- straddles zero",
+      "measured_latitude": "r(offset, latitude) = +0.089, leave-one-storm-out [+0.033, +0.114] -- the OPPOSITE SIGN to the prediction, since latitude is negative here and a poleward increase would be a negative correlation",
+      "measured_by_storm_type": "ET 36.2 km (5 obs), MX 35.9 (22), SS 32.7 (34), TS 34.0 (93) -- indistinguishable",
+      "reading": "NOT SUPPORTED. The sharpest test is storm type, and a transitioning or subtropical system shows the same offset as a tropical one to within 3.5 km. The latitude term runs the wrong way and the intensity term straddles zero."
+    }
+  },
+  "direction": {
+    "relative_to_storm_motion": "mean 59 degrees, resultant R = 0.341",
+    "absolute": "mean bearing 237 degrees, resultant R = 0.292",
+    "reading": "A modest but real preferred direction, southwest in absolute terms. R near 0 would be isotropic and R near 1 strongly directional; 0.3 is neither."
+  },
+  "post_hoc_and_NOT_adjudicated": {
+    "why_this_is_fenced_off": "This pattern was not among the three declared causes. It was noticed in the same data that would have to test it, so it cannot be claimed from this measurement and is recorded as a hypothesis for a declaration of its own.",
+    "what_was_seen": "Expressed as a displacement in grid cells, the feature sits on average 0.598 cells south and 0.463 cells west of the catalogue position -- a systematic displacement of about 0.76 cells, roughly 20 km -- with a mean absolute displacement of 1.634 cells. The ratio of the mean vector to the mean magnitude is 0.463, so on the order of half the offset is systematic and half is scatter.",
+    "what_it_is_not": "Not a fixed coordinate shift: the coefficient of variation is 0.755 in kilometres against 0.737 in cells, so the offset is not markedly more constant in cell units than in physical ones. A pure indexing error would show a tight cluster and does not.",
+    "what_would_test_it": "A declaration naming the systematic component, predicting it from the estimator's windowed centroid on an asymmetric field, and testing it on synthetic cyclone-like fields where the true centre is known by construction. That is work with its own acceptance and none of it is authorised here."
+  },
+  "what_this_slice_settles": "That the offset is not the catalogue's uncertainty and not, on this evidence, a property of the storms. It is about 34 km, roughly 1.6 grid cells, and it is largely indifferent to storm scale, intensity, type and latitude. Whatever produces it is a property of the extraction, and the single declared prediction that survived -- offset growing with feature scale -- is far too weak to carry the explanation on its own.",
+  "what_this_slice_does_not_settle": [
+    "Which mechanism inside the extraction produces the offset. Cause A survived in sign but not in strength.",
+    "Whether a synthetic test with a known true centre would separate the systematic and scattered components. That is the obvious next measurement and it is not authorised here.",
+    "Anything about the dateline group, which is a separate and already-diagnosed failure mode: 8 observations from 5 storms whose windows overrun the crop boundary.",
+    "Nothing is changed in the extractor, no criterion is declared, and no acceptance is restated."
+  ],
+  "claim_boundary": "A positional decomposition settles a property of an instrument and a catalogue in relation to each other, not a property of the atmosphere. No frame of the 2022-2023 forecast-test period was opened."
+}

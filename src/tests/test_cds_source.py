@@ -909,3 +909,72 @@ def test_raw_extraction_beats_the_swt_planes_for_this_purpose():
     assert shows["swt_plane_extraction"]["nearest_km_median"] == 127.1
     assert "markedly BETTER" in shows["reading"]
     assert "Acceptance still fails either way" in shows["reading"]
+
+
+# ---------------- T4E.19: the offset decomposed, with the declared negative result intact
+
+
+def _t4e19():
+    import json
+    from pathlib import Path
+
+    return json.loads(
+        Path("measurements/t4e19_positional_error.json").read_text(encoding="utf-8"))
+
+
+def test_the_declared_answer_is_that_the_causes_are_not_separated():
+    """Condition 3 anticipated this and required it to be reported rather than resolved."""
+    record = _t4e19()
+
+    assert record["VERDICT"].startswith("NONE OF THE THREE DECLARED CAUSES IS ESTABLISHED")
+    assert "rather than resolved by picking the most plausible" in record["VERDICT"]
+
+
+def test_the_catalogue_uncertainty_cause_is_ruled_out_by_its_own_prediction():
+    """It predicted the offset would track the agencies' disagreement. It does not.
+
+    That was the outcome that would have needed no code at all, so ruling it out costs
+    something and is worth stating precisely.
+    """
+    cause = _t4e19()["prediction_tests"]["cause_B_catalogue_uncertainty"]
+
+    assert "+0.020" in cause["measured"]
+    assert "RULED OUT" in cause["reading"]
+    assert "not a case of comparing at the wrong tolerance" in cause["reading"]
+
+
+def test_the_physical_cause_fails_its_sharpest_test():
+    """Storm type. A transitioning system offsets like a tropical one to within 3.5 km."""
+    cause = _t4e19()["prediction_tests"]["cause_C_a_real_physical_offset"]
+
+    assert "ET 36.2 km" in cause["measured_by_storm_type"]
+    assert "OPPOSITE SIGN to the prediction" in cause["measured_latitude"]
+    assert cause["reading"].startswith("NOT SUPPORTED")
+
+
+def test_the_surviving_cause_is_reported_as_too_weak_to_carry_the_explanation():
+    """Sign only. About 2 per cent of the variance is not a cause."""
+    cause = _t4e19()["prediction_tests"]["cause_A_estimator_bias"]
+
+    assert "+0.143" in cause["measured"]
+    assert "nowhere near enough to call it the cause" in cause["reading"]
+
+
+def test_the_post_hoc_pattern_is_fenced_off_from_the_declared_result():
+    """It was noticed in the data that would have to test it, so it is a hypothesis, not a finding."""
+    post = _t4e19()["post_hoc_and_NOT_adjudicated"]
+
+    assert "cannot be claimed from this measurement" in post["why_this_is_fenced_off"]
+    assert "0.76 cells" in post["what_was_seen"]
+    assert "Not a fixed coordinate shift" in post["what_it_is_not"]
+    assert "none of it is authorised here" in post["what_would_test_it"]
+
+
+def test_the_unit_of_independence_is_the_storm_not_the_observation():
+    """154 observations, 16 storms, and every interval is leave-one-storm-out."""
+    record = _t4e19()
+
+    assert record["population"]["core_excluding_dateline"] == 154
+    assert record["population"]["core_storms"] == 16
+    assert "The unit of independence is the storm: 16, not 154" in (
+        record["prediction_tests"]["note"])
