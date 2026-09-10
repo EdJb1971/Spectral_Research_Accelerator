@@ -2803,6 +2803,72 @@ configuration absent from one scene outright; nothing about recurrence *across* 
 which the mining machinery needs; no mining radius, no discharge of T4E.8's acceptance, no
 closure of D96 to D100; and nothing about `kind_recurrence`, which still has no catalogue.
 
+### T4E.24 - the false absence rate, and what it permits a tolerance to assume
+
+**Why this task existed.** T4E.13 fixed `ABSENCES_TOLERATED = 1` as the minimal relaxation of
+candidate 2 -- the only `k` below `S` nameable without choosing a free fraction -- and said in
+its own declaration that the choice was **not** calibrated against any absence mechanism,
+because none had been measured. T4E.21 then produced evidence of one from an unexpected
+direction: at a feature density below the record's own, 80 of 247 planted features were never
+recovered at all. The criterion consumes recovered features, so *absent from this scene* and
+*present but suppressed* are the same observation to it, and the tolerance had been set without
+knowing how often that happens.
+
+**The quantity is not the one T4E.21 measured.** T4E.21 planted independently in every frame, so
+it measured a marginal recovery rate over unrelated features and could not ask whether absences
+fall on the same features repeatedly. The criterion does not consume marginal rates; it consumes
+the number of scenes a *particular* feature is seen in. That count had never been measured.
+
+**The design.** 60 configurations of 3-10 vortices, each planted with **identical geometry** into
+6 independent phase-randomised backgrounds drawn from distinct frames of the acquired record --
+360 scenes, 414 features, 2,484 trials, T4E.21's planting envelope and pairing rule unchanged so
+the result speaks to the same regime. Geometry is held identical because it is the most
+favourable case for recovery available: real recurrence carries jitter, drift and evolution, all
+of which can only make recovery harder. So recall here is an **upper** bound and the false
+absence rate a **lower** one -- the bound runs against the programme's own argument, which is why
+it was accepted.
+
+**Adopted 2026-09-11**, recorded in `data/identity_calibration/t4e24-false-absence-adoption.json`
+and binding the declaration by content hash rather than revision, because it was untracked when
+adopted.
+
+**What was measured.** The gate passed at median 4 features per frame. Marginal false absence
+**0.3724**, reproducing T4E.21's loss on a different design. The presence distribution is
+bimodal: **121 of 414 features recovered in no scene at all**, 228 in all six, only 65 in
+between. So the admission rate at `k = S - a` moves from **0.5507** at `a = 0` to **0.6304** at
+`a = 3` -- eight percentage points for a threefold relaxation. `ABSENCES_TOLERATED = 1` sits at
+**0.5870**.
+
+**The finding is that the tolerance is not the constraint.** No value of `a` reaches a feature
+that was never extracted anywhere, and 29% of genuinely recurrent features are in that class.
+The declaration named this arm in advance as the worse one, because it is silent: a criterion
+cannot fail on evidence that never reaches it.
+
+**The mechanism was predicted, confirmed, and its stated cause corrected.** Presence counts are
+heavily over-dispersed (variance 7.35 against a binomial 1.40, band [1.24, 1.58]), so the
+predicted feature-intrinsic concentration holds. It was close to built in and the declaration
+said so before measuring. But the declaration attributed it to suppression relative to
+neighbours, and the breakdown says the driver is **amplitude against the detection cut**, nearly
+alone: recovery 0.144 at peak-to-background ratio 8-14 against 0.919 at 26-32, while a fivefold
+change in nearest-neighbour distance moves it only 0.535 to 0.677. The features that vanish are
+the faint ones, not the crowded ones.
+
+**Two things this slice did that its predecessors did not.** The generating code is committed --
+`src/benchmarks/false_absence.py` and `tools/measure_false_absence.py` -- where T4E.20 and T4E.21
+wrote receipts from scripts that cannot be re-run from this repository. And the detection cut's
+source, which the declaration did not fix, is recorded as a choice with both options measured
+before either was taken: calibrating on the bare background gives higher recall (0.940 against
+0.774) but admits 63 noise peaks across 48 scenes against 0, so calibrating on the scene -- what
+the pipeline does on the real record -- was chosen as the faithful and less flattering option.
+
+**What it licenses.** Only that the extractor's coverage, not the tolerance, bounds a
+partial-recurrence criterion on this evidence at `S = 6`. It chooses no tolerance and proposes no
+proportion of `S` (R20), changes nothing in the extractor, does not supersede T4E.13, and says
+nothing about the atmosphere. No reserved seed block and no frame of the 2022-2023 forecast-test
+period was read. The rate belongs to 850 hPa relative vorticity over this crop under this
+planting and is quoted for no other domain -- though the obligation to measure it transfers to
+every domain that adopts the criterion.
+
 **T4E.23: the study trail is on screen, with rendered evidence.** `StudyTrailView.tsx`, a new
 "Study trail" tab, and `frontend/e2e/study-trail.spec.ts` -- **six tests passing in Chromium
 against the real API and the real frontend**, with three screenshots captured under

@@ -19,7 +19,7 @@ says what to do next and deliberately does not restate status; `roadmap.md` and
 current state is; `VERIFICATION.md` holds the captured output behind each figure. Sections 3
 and 7 below describe the implementations and the defect ledger in full.
 
-Last revised 2026-09-08.
+Last revised 2026-09-11.
 
 | Task | State | Gate on it | Detail |
 |---|---|---|---|
@@ -31,6 +31,7 @@ Last revised 2026-09-08.
 | T4E.7 null calibration | **Done** | — | Needs no replicates; recovers a planted identity on synthetic data. Returns *no radius* on the acquired record. |
 | T4E.8 defensible identity | **In progress** — slices 1–5 implemented, **acceptance unmet**; target decided 2026-09-09 | D97–D100; blocks T4F.9 | Slice 2's spatial mode fails the declared 10%/10% criterion (split 25.6–29.4%, admission 9.4–10.9%); no radius meets both bounds in any window. Slice 3 makes the identity target a declared field and refuses circular evidence. **Target decided 2026-09-09: `kind_recurrence` primary, the other two diagnostic.** That needs `external_reference` evidence, so a reviewed catalogue and a serialisation for it are now on the critical path and the primary target is unevaluable from the tool until they exist. §3E.8, §3E.9, §3E.11 |
 | T4E.8 slice 4 identity declaration on screen | **Implemented** | Closes PLAN §5 gap 1 | `/api/v1/identity/*` and `IdentityDeclarationView` render the admissibility matrix with the circular pairing refused at the weight of an admission, receipts with their claim boundaries, and the surface's own refusals. Read-only; choosing remains a person's act. 8 rendered browser tests. §3E.11 |
+| T4E.24 the false absence rate | **Adopted 2026-09-11 and MEASURED; all four acceptance conditions met** | 60 configurations planted with identical geometry into 6 independent phase-randomised backgrounds: 360 scenes, 414 features, 2,484 trials, gate PASS at median 4. Marginal false absence **0.3724**, reproducing T4E.21's loss on a different design. The presence distribution is bimodal -- **121 of 414 features recovered in no scene at all**, 228 in all six, only 65 in between -- so relaxing the tolerance from `k = 6` to `k = 3` moves admission only **0.5507 to 0.6304**. `ABSENCES_TOLERATED = 1` sits at **0.5870**. **Coverage, not the tolerance, is what bounds a partial-recurrence criterion here.** The predicted concentration is confirmed (variance 7.35 against a binomial 1.40) and was close to built in, as declared beforehand. The declaration's stated *mechanism* is **corrected**: absence tracks amplitude against the cut (recovery 0.144 at ratio 8-14, 0.919 at 26-32), not neighbour competition (0.535 to 0.677 across a fivefold separation range). §3E.39 | Licenses only that the extractor's coverage bounds the criterion on this evidence at `S = 6`. Chooses **no** tolerance and no proportion of `S` (R20); changes nothing in the extractor; says nothing about the atmosphere. Identical geometry is the most favourable case, so recall is an **upper** bound and the absence rate a **lower** one. The number is not quoted for any other domain, though the obligation to measure it transfers |
 | T4E.17 the external catalogue `kind_recurrence` requires | **SIGNED 2026-09-10 on amended terms; the primary target is evaluable for the first time** | IBTrACS v04r01 South Pacific subset (DOI 10.25921/82ty-9e16), bound by sha256 `631f76b9...` and **not committed**. Admissible because it is agency best-track data, not reanalysis — most atmospheric catalogues are reanalysis-derived and would be **circular** against an ERA5 record. Matched in the record's own crop over 2018–2021: **210 observations, 20 storms, 20,241 cross-storm pairs**, base rate 0.391 on `NATURE` (adjudicating) and 0.182 on `USA_SSHS` (characterisation only). Within-storm pairs excluded — that is `spatial_persistence`. `MX`/`NR` refused by name. **The unit of independence is the storm, not the observation**: effective *n* nearer 20 than 20,241. Prior odds ~1:1.6 here against 1:399 synthetic. 2022–2023 forecast-test period **not opened**. §3E.27 | Makes `kind_recurrence` evaluable against labels not derived from the record. Evaluates **no criterion**; one basin, one box, four years, 20 storms; supplies identity, not physics |
 | T4E.16 evidence that scales with group size | **Declared and WITHDRAWN before adoption, by derivation; never measured** | A within-partition permutation surrogate setting the bar per group size, compared as a max statistic so family-wise error is controlled without dividing alpha — the direct repair for the constraint the four measured results fix. Withdrawn because **the surrogate can reassemble the motif**: it redistributes the actual configurations, so when the `S` copies land in `S` distinct scenes they form the same set with the same diameter and the strictly-tighter rule rejects the motif. Rate `S!/S^S` = 0.0154 at `S` = 6, hence **0.95–0.97 over 199 replicates** — it would have failed for a reason unrelated to the signature. Not repairable: a valid null must generate fresh scenes, which returns the cost to the measured 189 hours. **Adds nothing to the accumulated multiplicity — seven criteria measured, not eight.** §3E.26 | Nothing measured, so nothing licensed. Kept: the cost finding (enumeration free, matching is the whole expense) and `PooledDistances`, which keeps the metric's refusals as refusals |
 | T4E.15 a criterion for partial recurrence | **Adopted and FALSIFIED on five of six conditions** | Closure under the matching: a consistent set is admitted when no member has a mutual nearest neighbour outside it, **whatever its span**. No `k`, no threshold, no fitted model, no parameter of any kind — so the declaration forbids adding one. It keeps what candidate 2 actually exploited (a conjunction with no loose ends) and discards the size. The direct reading of the maintainer's phrasing — admit the widest group — was **discarded by derivation**: coincidences reach 5, so at `j = 3` the widest group is a coincidence and recall would be 1.0000 wrong before the rule ran. Derivably non-inert on total-recurrence evidence; **recall on partial presence is genuinely at risk and is the informative half**, counted against C(j,2). Hallucinated presence bounded as its own condition. No prediction offered, because there was no basis for one. **Measured and falsified**: false split 1.0000 on 32 of 36 partial-presence partitions, admission outside the bound on every one, hallucinated presence to 0.9118, and both nulls admitting where the answer is zero. The mechanism is backwards — closure rewards isolation, since a node with one partner forms a closed group of **two** and is admitted trivially, while a single loose end into an absent scene rejects the motif. The cross-check shows closure admits 20–84 per block against candidate 2's 15, so it is a **weaker** filter than `k = S`, not a differently-shaped one. That pairs are admitted trivially **was derivable and was not derived** — the third time this programme has met that lesson. §3E.24, §3E.25 | Licenses only that closure as defined fails here. Not that the signature is inadequate, not that partial recurrence is undetectable — but it does fix what a successor must not do: treat a group of two as evidence on the same terms as a group of six |
@@ -8717,6 +8718,110 @@ D97, isolated from the real record: the calibration's failure is not only the at
 messiness. D101 is closed by the benchmark existing and reporting; D97 gains this evidence and
 stays open. No mining radius is approved and T4E.8's acquired-record acceptance is untouched.
 
+### 3E.39 The tolerance is nearly inert, because a third of the features are never seen at all (T4E.24)
+
+**T4E.24: the false absence rate, and what it permits the partial-recurrence criterion to
+assume.** 60 configurations of 3-10 vortices, each planted with **identical geometry** into 6
+independent phase-randomised backgrounds drawn from distinct frames of the acquired record: 360
+scenes, 414 features, 2,484 (feature, scene) trials, every centre known by construction.
+`src/benchmarks/false_absence.py` and `tools/measure_false_absence.py`.
+`measurements/t4e24_false_absence.json`.
+
+**The code that produced the numbers is committed this time.** T4E.20 and T4E.21 landed their
+receipts from scripts that were never committed, so neither result can be re-run from this
+repository. That gap is not repeated here.
+
+```
+gate PASSED: median 4 features/frame (declared band [4,10]), max 8, over 360 scenes
+
+marginal false absence 0.3724   (recovery 0.6276; T4E.21 measured 0.32 on a different design)
+extracted matching no planting  15 over 360 scenes
+median offset over recovered    0.406 cells
+
+presence counts over 414 features, seen in 0..6 of 6 scenes
+   0 -> 121      1 -> 12      2 -> 20      3 -> 8      4 -> 10      5 -> 15      6 -> 228
+
+admission at k = S - a, as counts over the observed features
+   a=0  k=6   228/414 = 0.5507
+   a=1  k=5   243/414 = 0.5870      <- ABSENCES_TOLERATED = 1, as T4E.13 fixed it
+   a=2  k=4   253/414 = 0.6111
+   a=3  k=3   261/414 = 0.6304
+```
+
+**The strong half: the tolerance buys almost nothing, and the reason is not the tolerance.**
+Relaxing from "present in every scene" all the way to "present in three of six" moves admission
+from **0.5507 to 0.6304** -- eight percentage points for a threefold relaxation. It cannot do
+better, because **121 of 414 features (29.2%) are recovered in *no* scene at all**, and no value
+of `a` reaches a feature that was never extracted anywhere. The distribution is bimodal to a
+degree that leaves almost nothing for a tolerance to act on: 228 features seen in all six scenes,
+121 seen in none, and only **65 of 414 (15.7%)** anywhere in between.
+
+This is the arm the declaration named in advance as the worse one: *"a subpopulation of features
+is invisible in EVERY scene and no tolerance recovers them. That is not a criterion problem, it
+is a coverage problem, and it is worse, because it is silent. A criterion cannot fail on evidence
+that never reaches it."* That is what was measured.
+
+**The weak half, and it is weak exactly where the declaration said it would be.** Presence counts
+are massively over-dispersed against per-scene independence -- observed variance **7.35** against
+a binomial **1.40** and a bootstrap band of **[1.24, 1.58]**. The prediction of feature-intrinsic
+concentration is confirmed. It was also close to built in: the design holds scale, amplitude and
+neighbours fixed across the six scenes, which is the very thing that would produce concentration.
+The declaration conceded that *before* measuring rather than after, and the concession stands.
+
+**A correction to the declaration's own stated mechanism.** It attributed the predicted
+concentration to *"suppression [depending] on a feature's scale and amplitude relative to its
+neighbours."* The breakdown says otherwise: what predicts an absence is **amplitude against the
+detection threshold**, very nearly alone.
+
+```
+recovery by peak-to-background ratio    8-14: 0.144   14-20: 0.595   20-26: 0.873   26-32: 0.919
+recovery by scale (cells)              <2.5: 0.675    2.5-4: 0.689    4-6: 0.560     6-12: 0.532
+recovery by nearest neighbour (cells)  8-15: 0.535   15-25: 0.649   25-40: 0.625    40+: 0.677
+```
+
+Neighbour distance moves recovery by 0.14 across a fivefold range of separations; amplitude moves
+it by **0.78**. The features that vanish are the faint ones, not the crowded ones. Median ratio
+among the never-seen is 12.3 against 24.8 among the always-seen, while their median nearest
+neighbour is 27.3 cells against 30.5 -- indistinguishable. So the loss is the **cut**, not
+competition, which is a different mechanism from the one T4E.21's framing suggested and is
+recorded as a correction rather than absorbed.
+
+It does not soften the built-in caveat; it sharpens it. Amplitude is precisely one of the
+quantities this design holds constant across the six scenes, so a feature faint enough to sit
+under the cut is faint in all six by construction. The concentration is largely a consequence of
+the design choice, exactly as declared.
+
+**Where the cut is taken from, recorded as a choice because the declaration did not fix it.**
+Calibrating on the **scene** -- what the pipeline does on the real record -- was chosen over
+calibrating on the bare **background**. Both were measured before either was chosen: background
+calibration gives recovery 0.940 against 0.774 on the same probe, but **63 extracted features
+matching no planting across 48 scenes against 0**, a cut admitting more than one noise peak per
+scene while claiming family-wise control. Scene calibration also reproduces T4E.21, the slice
+whose loss is the reason this one exists. It is the faithful option and the less flattering one.
+
+**Disclosed: the gate passed at the bottom of its band again.** Median 4 against the record's 7,
+the same disclosure T4E.21 carried. Competition is therefore under-represented -- which matters
+less here than it did there, because competition turned out not to be the mechanism, but it
+still forbids claiming the rate has been measured at the record's own density.
+
+**What this licenses.** That on this evidence, at `S = 6`, the extractor's coverage and not the
+tolerance is what bounds a partial-recurrence criterion, and that `ABSENCES_TOLERATED = 1`
+admits 0.5870 of genuinely recurrent features where perfect tolerance would admit 0.6304 and
+perfect extraction would admit 1.0. It licenses **no** tolerance, no proportion of `S`, no
+change to the extractor and no claim about the atmosphere. Choosing a tolerance against this
+number is a separate declaration owing its own blindness claim (R20). The rate belongs to 850
+hPa relative vorticity over this crop under this planting and is quoted for no other domain,
+though the obligation to measure it transfers to every domain that adopts the criterion.
+
+**Bounds, and which way they run.** Identical geometry is the most favourable case for recovery
+available -- real recurrence carries jitter, drift and evolution, each of which can only reduce
+it. So 0.6276 is an **upper** bound on recall and 0.3724 a **lower** bound on false absence. The
+real figure is worse than this one, not better.
+
+All four acceptance conditions are met: the coded gate passed, the full distribution is reported
+rather than a mean, the mechanism and consequence claims are reported separately with the
+mechanism claim carrying its declared caveat, and the two named outcomes did separate.
+
 ### 3E.38 The study trail on screen, with rendered evidence (T4E.23)
 
 **T4E.23: the study trail is on screen, with rendered evidence.** `StudyTrailView.tsx`, a new
@@ -11409,6 +11514,7 @@ able to sit three slices out of date.
 | `test_cross_domain.py` | 47 | TG4.3 planted cross-domain precedence (50 pytest cases): two native clocks at one and three hours aligned only at exact shared timestamps, with interpolation, offset clocks, irregular clocks and an irregular intersection refused; original units, semantics, licences, dataset identities and lag bases carried into the sealed receipt; the joint physical floor computed before frame conversion and raised by aggregation windows; eight cross-boundary directions crossed with four physical lags and no within-domain pair; the Kelvin-to-megawatt relationship recovered at six hours without being named, its reverse and distractors present in the family, the same-builder null selecting candidates on train and confirming none, unit tampering breaking the partition identity, a within-domain member refused as laundering, and the held-out partition spent once |
 | `test_invariance.py` | 56 | TG3.4 invariant matching: the `4E.invariance` gate moving off `NOT_YET_RUNNABLE` to PASS, with the position-memorising control audited beside it and surviving nothing; the shape identical under exact rotation, translation and rescaling and TG3.3's `distance` exactly invariant too when the scale is exact, which is what places the benchmark's 4.8% drift in the extractor's scale estimate rather than in the relation; a scalene configuration refused a match so scale-invariance is not permission to match anything; a pair refused by the shape matcher because one edge over its own mean is 1 for every configuration in the world; deviations minimised over correspondences, the defect that had put the position matcher's noise floor at 0.27; a tolerance refused without a stated basis and `match` refusing a tolerance that is merely a number; a vacuous test conferring no invariance; overclaiming and understating both caught on matchers registered from the test module; the scale ratio recovered from the separations, refused across a unit boundary, structurally unable to precede the decision, and judged against its own noise floor rather than the shape's |
 | `test_constellation.py` | 65 | TG3.3 constellations as attributed graphs: the planted triangle built twice, in cells as a dimensionless amplitude and in metres as a temperature, matching as the same attributed graph, with a relation registered from the test module *without* the dimensionless division making the same two graphs disagree; all eight relations registered with their requirements declared; `direction` and `convergence` refusing against TG2.2's own `reports_orientation: False` capability; `convergence` refused on an undirected axis; a bearing refused across a periodic seam and from a point to itself; the geometric-mean reference that does not follow the larger scale; the relation axis a TG3.1 family may be priced over, 3 against 28; matching exhaustive to 8 nodes and refused above it; and the non-strict graph that did not match itself, found by running it |
+| `test_false_absence.py` | 27 | T4E.24 the false absence rate: the planting envelope pinned to T4E.21's so the result speaks to the same regime; a configuration drawn once and reused across every scene, dropped short rather than crowded when a frame has no room; the pairing rule's claiming, so one extraction can never answer for two plantings and hide a genuine absence, and its independence of planting order; admission monotone in the tolerance, which is arithmetic and so a bug if it fails; both arms of the declared prediction exercised on data built to show each; and the dispersion report refusing to travel without the caveat that its mechanism claim is close to built in |
 | `test_feature_extraction.py` | 47 | a diverged capture-correction scale refused by name rather than acted on, the refusal counted without ending the pass, and a clean Gaussian still extracted so the bound cannot be trimming real features; TG2.2 extraction as a registry: the three planted features recovered across a six-fold range of scales and under rotation, translation and rescaling; both null benchmarks silent across three seeds with the loosened-alpha control that makes the silence mean something; the strict-comparison off-by-one; an unresolvable alpha refused before the ensemble; a second extractor registered from the test module; the periodic-axis seam and the self-scaling R13 refusal; and the one-feature-per-frame handoff to TG2.3 |
 | `test_feature_record.py` | 37 | TG2.1 canonical feature record: features measured off the advected-vortex benchmark recovering its known velocity and scale doubling, the R19 refusals (magnitude, separation, elapsed time, mixed sets), the periodic-axis refusal, orientation conventions and the surrogate resolution floor, a fourth convention and a fourth significance basis registered from the test module, and defect D59 |
 | `test_level_axis.py` | 19 | TG1.5 vertical coordinates: the registry and its sense of up, a height bank labelling its offsets the opposite way to pressure, a fourth coordinate registered from the test module, the declaration travelling from reader to signature, `level_hpa` refusing a non-pressure axis, and the pressure arithmetic unchanged |
@@ -11523,7 +11629,7 @@ able to sit three slices out of date.
   | `test_identity_certification.py` | 131 | T4E.9 the T4E identity path against a motif known by construction: the benchmark registered and naming the path it certifies, three disjoint partitions so a radius is never evaluated on what calibrated it, exactly one motif configuration in a planted scene and none in a null one, construction labels taken from the generator and refused rather than guessed when a planted position has no feature near it or two positions claim one, only cross-scene pairs formed, the definition's separation asserted as a floor, nothing admitted where nothing recurs with the absent positive population left unmeasured rather than zero, the frozen-radius failure pinned as a relationship to the feasible radius rather than as two numbers, an empty calibration returning INVALID rather than a permissive radius, every result stating what it does not license, and T4E.13's criterion fixed in code while asserted to be measured nowhere -- `k` derived as a function of the partition size, unequal partitions refused rather than pooled, monotonicity in `k` checked on a toy rather than assumed, and, once candidate 3 was adopted and falsified, that guard replaced by the reading of the result -- which conditions failed and by how much, that the null held at 0 of 1486 proposed, that the 0.0000 recall is recorded as arithmetic rather than a finding, that no lower k can rescue what this one failed, that the falsification licenses none of the conclusions nearest to it, that partitions 720-735 stay refused in code, and T4E.14's partial-presence test bed -- seeds that collide with no existing evidence, a reservation refused with no flag to open it, planting patterns that are deterministic and not contiguous, the recoverable population C(j,2) rather than C(S,2), the design's own record of what this evidence cannot repair, and T4E.15's criterion fixed in code while asserted to be measured nowhere -- closure broken by a single loose end, closure admitting only a subset of what consistency admits, the criterion carrying no tunable parameter at all, the span-ranking design recorded as discarded by derivation, the declaration's own worst case and refusal to predict, and -- once measured and falsified -- the reading of that result: the conditions that failed with their counts, the mechanism executed rather than described (a pair with no other partners is closed and is therefore admitted, while one loose end rejects a group spanning five scenes), the cross-check showing closure admits more than candidate 2 on the evidence candidate 2 passed, the missed derivation recorded rather than quietly repaired, the constraint the falsification fixes on any successor, and T4E.16's withdrawal held as a derivation rather than a note -- the surrogate reassembly rate computed analytically and by simulation, the record of why the design cannot simply be repaired, the fact that a withdrawn declaration adds nothing to the accumulated multiplicity, and PooledDistances keeping a refused distance as NaN so it can never leak in as a number |
   | `test_identity_target_declaration.py` | 53 | T4E.8 slice 3 the declared identity target: an absent target or evidence class refused by name, a misspelling refused with its correction, `kind_recurrence` against record-derived proxy labels refused as circular, `track_continuity` admitted with its tracker-agreement caveat, every target round-tripping what it recognises and does not license, the published proxy wording pinned verbatim so naming a target cannot reword a cited receipt, and the external-reference path recovering two planted identities from a reviewed catalogue while refusing a mismatched family, a single identity, a non-catalogue and a negative population the patterns cannot supply |
   | `test_spectral_spatial_identity.py` | 24 | T4E.8 spatial geometry, detector-band/magnitude independence, source/scope refusal, analytic distances, old-radius refusal, scalar/accelerated agreement and two-sided proxy-label diagnostics |
-| **total** | **4315** | |
+| **total** | **4342** | |
 
 ### 7.4a Browser suite inventory
 

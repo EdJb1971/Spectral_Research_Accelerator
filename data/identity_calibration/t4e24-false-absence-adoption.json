@@ -1,0 +1,35 @@
+{
+  "schema": "t4e24-measurement-adoption/v1",
+  "adopts": "data/identity_calibration/t4e24-false-absence-declaration.json",
+  "adopts_sha256": "ae0e179273dc5c039ee15811249b982dfbde8ec13b3710e2e9b2c6d31187c3d9",
+  "the_declaration_was_uncommitted_when_adopted": "It was untracked at revision c4dfb76 and is bound here by content hash rather than by revision. The hash is the authority: if the declaration is edited after this date, this adoption ceases to apply to it and a fresh one is required. It must be committed as adopted, unchanged.",
+  "adopted_by": "Edward Jonathan Bentley, maintainer",
+  "adopted_on": "2026-09-11",
+  "adopted_as": "EXTRACTOR_MEASUREMENT_ON_SYNTHETIC_EVIDENCE_ONLY",
+
+  "what_was_adopted": "The design as declared, in full and unamended: 60 independent configurations of N features (N drawn 3 to 10), each planted with identical geometry into 6 independent phase-randomised backgrounds, paired by T4E.21's rule -- nearest unclaimed extracted feature within 8 cells -- and gated by the coded feature_density_gate in src/benchmarks/synthetic_backgrounds.py. The five reported quantities, the declared prediction of feature-intrinsic concentration, and the four acceptance conditions are adopted exactly as written.",
+
+  "what_this_adoption_does_not_do": "It chooses no tolerance. ABSENCES_TOLERATED = 1 stands as T4E.13 fixed it, and selecting any a, or any proportion of S, against the number this slice produces is a separate declaration owing its own blindness claim -- R20 forbids the horse race, and a tolerance chosen against a measured absence rate is exactly the fitted parameter the sequence has repeatedly refused. It adopts no change to local_maximum_extractor and proposes no replacement for it. It re-measures no identity criterion and does not supersede T4E.13's falsification.",
+
+  "the_two_claims_are_adopted_as_two": "The declaration separates a weak mechanism claim from a strong consequence claim and that separation is adopted as binding, not as a caution. The design holds neighbours, scales and amplitudes fixed across the 6 scenes, which is the very thing that would produce concentration, so a concentrated result is close to built in and must be reported carrying that caveat. The consequence claim -- the observed admission rate at a = 0, 1, 2, 3 as a count over the evidence the criterion would actually be handed -- is what this slice may be cited for. Reporting the two as one finding would breach acceptance condition 3.",
+
+  "the_bound_runs_against_this_programme_and_that_is_why_it_was_accepted": "Identical geometry is the most favourable case for recovery that exists. Real recurrence carries jitter, drift and evolution, each of which can only reduce recall. So the recall measured here is an upper bound and the false absence rate a lower bound, and both err in the direction that weakens the criterion's prospects rather than flattering them. A result no worse than this one is not available to the criterion on real evidence.",
+
+  "the_gate_governs_the_slice": "If feature_density_gate fails on these frames -- median outside [4, 10], any frame above 40, or a median of zero -- the slice reports that its evidence is not representative and stops. The background is not to be tuned until it passes. This is the condition T4E.20 declared and did not implement, and T4E.21 implemented in code after that omission; adopting it again here is deliberate repetition, not redundancy.",
+
+  "what_is_not_opened_by_this": "Reserved seeds 720-735 and 880-895 stay closed, and the 2022-2023 forecast-test period stays unopened. This slice draws its own scenes and needs none of them.",
+
+  "cross_domain": "R19 applies. The suppression mechanism is code and runs identically in every domain this repository serves, so the obligation transfers: any domain adopting the partial-recurrence criterion owes its own false absence measurement before its tolerance means anything. The number does not transfer. The value found here belongs to 850 hPa relative vorticity over this region under this planting, and quoting it for order_book or any other domain is refused.",
+
+  "scope_adopted": "Atmospheric identity path only, on synthetic evidence with known truth.",
+
+  "governing": [
+    "Declare the prediction, and the design's strongest objection to itself, before the measurement. Both are in the adopted declaration and neither may be revised after the numbers exist.",
+    "A named refusal is preferable to an unsupported number.",
+    "Evaluate the candidate alone; no horse race (R20).",
+    "If the result does not separate the two named outcomes, that is the result and is reported as such -- acceptance condition 4 is a permission to return nothing, not a failure state.",
+    "Nothing here approves a mining radius, discharges T4E.8's acquired-record acceptance, or closes D96, D97, D98, D99 or D100. The primary scientific target remains kind_recurrence."
+  ],
+
+  "claim_boundary": "Carried unchanged from the declaration: this measures a property of the extractor on synthetic evidence with known truth. It settles nothing about the atmosphere, nothing about any real cyclone, and nothing about whether any identity criterion is correct. It bears on the partial-recurrence criterion only by bounding what fraction of genuinely recurrent features can reach it at all."
+}

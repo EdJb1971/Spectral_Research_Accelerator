@@ -9,7 +9,9 @@ authority. `roadmap.md` and `roadmap_cross_domain.md` hold task history -- what 
 why -- and `VERIFICATION.md` holds the captured output behind every figure. When any of them
 disagrees with this document, **they are right and this is stale.**
 
-Last revised 2026-09-09, after T4E.11 candidate D and the diagnostic that redirects to T4E.12.
+Last revised 2026-09-11, after T4E.24 was adopted and measured. **Sections 1 and 2 below still
+describe the decision point as it stood on 2026-09-09 and have not been reworked for T4E.13
+through T4E.23; `architecture.md` section 0 is the authority where they disagree.**
 
 ## 0. The question this sequence serves
 
@@ -1251,6 +1253,39 @@ about the definition and would cost no catalogue.
 
 Needs its own task, design and acceptance before it runs, declared first. Adopting an external
 project's ceilings is a scientific choice and must not be made silently by software.
+
+### T4E.24 ? The false absence rate ? measured 2026-09-11; it constrains what comes next
+
+**Measured, and it moves where the effort belongs.** At `S = 6`, on the most favourable geometry
+available, **121 of 414 genuinely recurrent features are recovered in no scene at all**. Relaxing
+the tolerance from `k = 6` to `k = 3` moves admission only from 0.5507 to 0.6304, because no
+value of `a` reaches a feature that was never extracted anywhere. `ABSENCES_TOLERATED = 1` sits
+at 0.5870. **Coverage, not the tolerance, is the binding constraint on a partial-recurrence
+criterion.** See `architecture.md` section 3E.39.
+
+**What this forbids.** Choosing a tolerance against this number, here, silently. R20 forbids the
+horse race, and a tolerance calibrated against a measured absence rate is its own declaration
+with its own blindness claim. Nothing in this result licenses one.
+
+**What it puts on the table, without choosing between them.** These are options for the
+maintainer, not a plan already adopted:
+
+1. **Accept the ceiling and state it.** A criterion at `S = 6` cannot admit more than ~0.63 of
+   truly recurrent features on this extractor, whatever its rule. Any future acceptance bound
+   stated above that number is unreachable by construction, and declaring the ceiling before the
+   next criterion is declared would stop that happening a fourth time.
+2. **Attack coverage rather than the criterion.** The loss tracks amplitude against the detection
+   cut, not competition: recovery is 0.144 at peak-to-background ratio 8-14 and 0.919 at 26-32.
+   That is a property of the cut and of `local_maximum_extractor`'s isotropic-peak model, and it
+   is the first time this sequence has had a measured reason to look there. Changing the
+   extractor is a declared task with its own acceptance, not an adjustment.
+3. **Measure what the bound costs on real geometry.** This rate is a *lower* bound: identical
+   geometry is the most favourable case, and real recurrence carries jitter, drift and evolution.
+   How much worse it gets under realistic motion is unmeasured.
+
+**What it does not touch.** T4E.8's acquired-record acceptance, the `kind_recurrence` target,
+D96-D100, and the reserved blocks 720-735 and 880-895. It supersedes no earlier result,
+including T4E.13's.
 
 ### T4E.11 ? An identity criterion that survives a change of partition ? not specified
 

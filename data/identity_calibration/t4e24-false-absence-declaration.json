@@ -1,0 +1,71 @@
+{
+  "schema": "t4e24-false-absence-rate/v1",
+  "status": "declared_before_measurement",
+  "task": "T4E.24",
+  "artefact": "the rate at which the extractor fails to recover a feature that is genuinely present, and what that rate permits the partial-recurrence criterion to assume",
+  "declared_by": "Edward Jonathan Bentley, maintainer (scientific choice); drafted by Claude Opus 5 at the maintainer's direction and NOT VALID until the maintainer has reviewed and adopted it",
+  "declared_on": "2026-09-11",
+
+  "why_this_exists": "T4E.13 fixed ABSENCES_TOLERATED = 1 and stated its own justification exactly: the minimal relaxation of candidate 2, the only k below S that can be named without choosing a free fraction. That is a principled choice and it is explicitly NOT calibrated against any absence mechanism, because none had been measured. The same declaration names the debt it leaves: a criterion that transfers to an acquired record will need a k that is a proportion of S, and the proportion will need its own evidence. T4E.21 produced the first evidence of that kind from an unexpected direction. At a feature density BELOW the record's own, 80 of 247 planted features -- 32 per cent -- were never recovered at all, against 8.8 per cent on a quiet background. The criterion consumes recovered features. If the extractor drops a third of what is present, then absent-from-this-scene and present-but-suppressed are the same observation, and the tolerance was set without knowing how often that happens.",
+
+  "the_quantity": {
+    "name": "false absence rate",
+    "definition": "For a feature that IS present in a scene by construction, the probability that extraction returns nothing paired to it in that scene.",
+    "why_it_is_not_what_T4E21_measured": "T4E.21 planted independently in every frame, so it measured a marginal recovery rate over unrelated features and could not ask whether absences fall on the same features repeatedly. The criterion does not consume marginal rates -- it consumes the number of scenes a PARTICULAR feature is seen in. That count is the quantity here, and it has never been measured."
+  },
+
+  "the_design": {
+    "the_setting": "S = 6 scenes, the partition size at which candidate 3 is measured, so the result speaks to the criterion as it actually stands rather than to a size it has never run at.",
+    "the_construction": "60 independent configurations. Each is a set of N features -- N drawn 3 to 10 as in T4E.21, with positions, scales, amplitude ratios, stretch factors and axes all drawn once per configuration -- and each configuration is planted into 6 INDEPENDENT phase-randomised backgrounds with identical geometry. The background is the only thing that varies between the 6 scenes of a configuration.",
+    "why_geometry_is_held_identical": "It is the most favourable case for recovery available. Real recurrence carries positional jitter, drift and evolution, every one of which can only make recovery harder. A recall measured here is therefore an UPPER bound on recall, and the false absence rate measured here is a LOWER bound. A bound in the direction that weakens my own argument is worth more than a point estimate in the direction that flatters it.",
+    "the_pairing_rule": "Identical to T4E.21: a planted feature pairs with the nearest unclaimed extracted feature within 8 cells, which is the declared minimum planting separation, so a feature cannot be paired with its neighbour's. Anything unpaired is an absence.",
+    "the_validity_gate": "The same coded gate as T4E.21 -- feature_density_gate in src/benchmarks/synthetic_backgrounds.py -- must pass on these frames: median feature count in [4, 10], no frame above 40, median strictly above zero. If it fails, the slice reports that its evidence is not representative and stops, without tuning the background."
+  },
+
+  "what_is_measured": {
+    "1_marginal": "p, the fraction of all (feature, scene) trials in which the feature was not recovered.",
+    "2_the_distribution_that_matters": "For every planted feature, the number of the 6 scenes it was recovered in. The full distribution over 0 to 6 is reported, never only its mean.",
+    "3_the_admission_rate": "The observed fraction of truly-recurrent features whose presence count reaches k = S - a, for a = 0, 1, 2 and 3. This is a COUNT, not a derivation from any model, and it is the number the criterion's behaviour actually depends on.",
+    "4_dispersion": "The variance of the observed presence counts against the variance of Binomial(6, p_hat) that per-scene independence predicts, with a null band from 999 parametric bootstrap draws at the observed p_hat and feature count.",
+    "5_what_predicts_an_absence": "Recovery rate broken down by the planted feature's scale, amplitude ratio, and distance to its nearest planted neighbour -- reported as a description of the mechanism, adjudicating nothing."
+  },
+
+  "the_prediction_declared_before_the_measurement": {
+    "the_question": "Do absences fall independently across scenes, or do they concentrate on particular features?",
+    "what_I_predict": "Feature-intrinsic concentration. Over-dispersion beyond the bootstrap band, with mass piling at 6 and at 0: some features are recovered in every scene and others in almost none. The mechanism is that suppression depends on a feature's scale and amplitude relative to its neighbours, and this design holds those fixed across the 6 scenes.",
+    "if_independent_instead": "The observed variance sits inside the bootstrap band. Then at p near 0.32 a truly-recurrent feature reaches k = 5 only about 38 per cent of the time, and ABSENCES_TOLERATED = 1 rejects most real recurrence outright -- a false-absence problem of the criterion.",
+    "if_concentrated_as_predicted": "The tolerance is close to harmless for the features it can see, because those are seen nearly always -- but a subpopulation of features is invisible in EVERY scene and no tolerance recovers them. That is not a criterion problem, it is a coverage problem, and it is worse, because it is silent. A criterion cannot fail on evidence that never reaches it.",
+    "why_this_prediction_is_weak_evidence_even_if_it_is_right": "The design fixes exactly the thing that would cause concentration -- identical neighbours, scales and amplitudes across the 6 scenes. A concentrated result is therefore close to built in, and I am declaring that BEFORE measuring rather than conceding it afterwards. What the design can still establish honestly is the CONSEQUENCE: the observed admission rate at each a is a count over the evidence the criterion would actually be handed. The mechanism claim is the weak half of this slice and the consequence claim is the strong half, and they are not to be reported as though they were one."
+  },
+
+  "what_transfers_to_other_domains_and_what_does_not": {
+    "the_mechanism_is_domain_general": "local_maximum_extractor suppresses a maximum inside a stronger feature's own scale. That is code, not atmosphere, and it runs identically on reanalysis, order_book and every other domain this repository serves. Any domain whose fields carry features at comparable density inherits a false absence rate for the same reason.",
+    "the_number_is_not": "p depends on the density, the scale distribution and the amplitude distribution of the field it is measured on. The value found here belongs to 850 hPa relative vorticity over this region under this planting, and quoting it for order_book would be exactly the kind of unsupported number this programme refuses. What transfers is the method and the obligation to run it.",
+    "what_that_obliges": "Every domain that adopts the partial-recurrence criterion owes its own false absence measurement before its tolerance means anything. That obligation is stated here so it is on the record before any domain claims the criterion transfers."
+  },
+
+  "what_this_slice_will_not_do": [
+    "It will not choose a new tolerance, propose a proportion of S, or rank a and a-prime against each other. R20 forbids the horse race, and choosing a tolerance against a measured absence rate is its own declaration with its own blindness claim.",
+    "It will not modify the extractor or propose a replacement.",
+    "It will not re-measure any identity criterion's error rates, and it does not supersede T4E.13's result.",
+    "It will not touch the reserved seeds 720-735 or 880-895.",
+    "It will not touch the 2022-2023 forecast-test period.",
+    "It will not quote its number for any domain other than the one it was measured on."
+  ],
+
+  "acceptance_for_this_slice": {
+    "condition_1": "The coded validity gate passes, or the slice stops and says so.",
+    "condition_2": "The full presence-count distribution is reported, not a mean; and the admission rates at a = 0, 1, 2, 3 are reported as counts over the observed features.",
+    "condition_3": "The mechanism claim and the consequence claim are reported separately, with the mechanism claim carrying the built-in caveat declared above.",
+    "condition_4": "If the result does not separate the two named outcomes, that is the result and is reported as such."
+  },
+
+  "governing_rules": [
+    "Declare the prediction, and the design's strongest objection to itself, before the measurement.",
+    "A named refusal is preferable to an unsupported number.",
+    "Evaluate the candidate alone; no horse race (R20).",
+    "Code does not sign a scientific declaration for a person; this file is not adopted until the maintainer says so."
+  ],
+
+  "claim_boundary": "This measures a property of the extractor on synthetic evidence with known truth. It settles nothing about the atmosphere, nothing about any real cyclone, and nothing about whether any identity criterion is correct. It bears on the partial-recurrence criterion only by bounding what fraction of genuinely recurrent features can reach it at all."
+}

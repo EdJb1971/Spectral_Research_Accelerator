@@ -12385,6 +12385,136 @@ release decision, but it does mean two gates that read PASS now read NOT_RUN and
 were not isolated to a cause; the run predates no clean baseline for this suite size, so they
 are reported as measured rather than attributed.
 
+**T4E.24 (2026-09-11): adopted, measured, and the tolerance turns out not to be the constraint.**
+
+The declaration was adopted by the maintainer on 2026-09-11 and recorded in
+`data/identity_calibration/t4e24-false-absence-adoption.json`, binding the declaration by
+content hash `ae0e1792...` rather than by revision, because it was untracked when adopted. The
+declaration itself is unchanged -- adopted declarations in this store are never mutated, and
+editing one would break the binding that makes the adoption checkable.
+
+**The generating code is committed.** T4E.20 and T4E.21 wrote their receipts from scripts that
+were never committed, so neither can be re-run from this repository.
+`src/benchmarks/false_absence.py` and `tools/measure_false_absence.py` close that gap for this
+slice.
+
+```
+$ .venv/Scripts/python.exe -m tools.measure_false_absence
+      --output measurements/t4e24_false_absence.json
+
+gate PASSED   median 4 features/frame (declared band [4,10]), max 8, over 360 scenes
+60 configurations x 6 scenes | 414 features | 2,484 trials | 1,493 s
+
+marginal false absence rate      0.3724     (recovery 0.6276)
+extracted matching no planting   15 over 360 scenes
+median offset over recovered     0.406 cells
+
+presence counts (features seen in 0..6 of 6 scenes)
+   0 -> 121     1 -> 12     2 -> 20     3 -> 8     4 -> 10     5 -> 15     6 -> 228
+
+admission at k = S - a, counts over the observed features
+   a=0  k=6   228/414 = 0.5507
+   a=1  k=5   243/414 = 0.5870      ABSENCES_TOLERATED = 1, as T4E.13 fixed it
+   a=2  k=4   253/414 = 0.6111
+   a=3  k=3   261/414 = 0.6304
+
+dispersion   observed variance 7.352   binomial 1.402   bootstrap band [1.241, 1.584]
+             OVER-DISPERSED
+```
+
+**The consequence claim, which is the half this slice may be cited for.** A threefold relaxation
+of the tolerance -- from "present in every scene" to "present in three of six" -- moves admission
+by **eight percentage points**. It cannot do more, because **121 of 414 features are recovered in
+no scene at all**. The distribution leaves a tolerance almost nothing to act on: 228 features at
+6 of 6, 121 at 0 of 6, and only **65 of 414 (15.7%)** in between. Coverage is the binding
+constraint, not `a`.
+
+The declaration named this arm in advance and named it as the worse one: *"a subpopulation of
+features is invisible in EVERY scene and no tolerance recovers them. That is not a criterion
+problem, it is a coverage problem, and it is worse, because it is silent. A criterion cannot fail
+on evidence that never reaches it."*
+
+**The mechanism claim, which is the weak half and was declared weak before measuring.** The
+over-dispersion is large and the predicted concentration is confirmed. It was also close to built
+in: the design holds scale, amplitude and neighbours fixed across the six scenes, which is
+exactly what produces concentration. That caveat was written into the declaration before the
+numbers existed and is not softened now.
+
+**The declaration's stated mechanism is corrected.** It attributed concentration to *"suppression
+[depending] on a feature's scale and amplitude relative to its neighbours."* The breakdown says
+the driver is amplitude against the detection cut, very nearly alone:
+
+```
+recovery by peak-to-background ratio   8-14: 0.144   14-20: 0.595   20-26: 0.873   26-32: 0.919
+recovery by scale (cells)             <2.5: 0.675    2.5-4: 0.689    4-6: 0.560     6-12: 0.532
+recovery by nearest neighbour (cells) 8-15: 0.535   15-25: 0.649   25-40: 0.625     40+: 0.677
+
+never seen (0/6), n=121   median ratio 12.3   median sigma 4.18   median neighbour 27.3 cells
+always seen (6/6), n=228  median ratio 24.8   median sigma 3.38   median neighbour 30.5 cells
+```
+
+Amplitude moves recovery by 0.78 across its range; neighbour separation moves it by 0.14 across
+a fivefold range. The features that vanish are the **faint** ones, not the crowded ones. This
+sharpens the built-in caveat rather than softening it: amplitude is precisely one of the
+quantities held constant across the six scenes, so a feature under the cut is under it in all six
+by construction.
+
+**A choice the declaration did not fix, recorded as a choice.** Where the detection cut comes
+from. Both options were measured on the same probe before either was adopted:
+
+```
+calibrated on   gate median   recovery   extracted matching no planting (48 scenes)
+background          5          0.940                    63
+scene               4          0.774                     0
+```
+
+Calibrating on the bare background is the cleaner null -- the plantings do not enter the
+surrogates that set their own threshold -- but it admits more than one noise peak per scene while
+claiming family-wise control, and it does not reproduce T4E.21. Calibrating on the **scene** is
+what the pipeline does on the real record, reproduces T4E.21's loss, and is the less flattering
+of the two. It was chosen for the first two reasons; that it is also the harsher one is stated so
+the choice cannot later read as a convenience.
+
+**Disclosed: the gate passed at the bottom of its band again.** Median 4 against the record's 7,
+the same disclosure T4E.21 carried. It forbids claiming the rate has been measured at the
+record's own density. It bites less here than there, because competition turned out not to be
+the mechanism -- but that is an argument, and it is labelled as one.
+
+**Which way the bound runs.** Identical geometry is the most favourable case for recovery that
+exists; real recurrence carries jitter, drift and evolution, each of which can only reduce it. So
+0.6276 is an **upper** bound on recall and 0.3724 a **lower** bound on false absence. The real
+figure is worse.
+
+**Acceptance.** All four conditions met: the coded gate passed (1); the full presence
+distribution and the admission counts at `a = 0, 1, 2, 3` are reported rather than a mean (2);
+the mechanism and consequence claims are reported separately, the mechanism claim carrying its
+declared caveat (3); and the two named outcomes did separate, so condition 4's permission to
+return nothing was not needed.
+
+**What is not licensed.** No tolerance is chosen and no proportion of `S` is proposed -- R20
+forbids the horse race, and choosing a tolerance against this number is a separate declaration
+owing its own blindness claim. Nothing in the extractor changed. T4E.13 is not superseded. No
+reserved seed block (720-735, 880-895) and no frame of the 2022-2023 forecast-test period was
+read. D96, D97, D98, D99 and D100 remain open and T4E.8's acquired-record acceptance is
+untouched. The rate belongs to 850 hPa relative vorticity over this crop under this planting and
+is quoted for no other domain, though the obligation to measure it transfers to every domain that
+adopts the criterion.
+
+```
+$ .venv/Scripts/python.exe -m pytest src/tests/test_false_absence.py -q
+27 passed
+
+$ .venv/Scripts/python.exe -m pytest src/tests/test_false_absence.py
+      src/tests/test_feature_extraction.py src/tests/test_documentation.py -q
+1 failed, 120 passed in 344.45s
+```
+
+The one failure was `test_documented_test_counts_match_the_source`: the inventory total still
+read 4315 against an actual 4342. It was corrected to 4342 rather than the test weakened.
+**`tools/audit_docs.py` reported `RESULT: ok` on the same tree**, because it checks per-file
+inventory rows and undocumented modules but never the table's own total. The audit is the weaker
+of the two checks and the test caught what it missed.
+
 **T4E.23: the study trail is on screen, with rendered evidence.** `StudyTrailView.tsx`, a new
 "Study trail" tab, and `frontend/e2e/study-trail.spec.ts` -- **six tests passing in Chromium
 against the real API and the real frontend**, with three screenshots captured under
