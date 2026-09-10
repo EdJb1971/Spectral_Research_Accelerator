@@ -12515,6 +12515,46 @@ read 4315 against an actual 4342. It was corrected to 4342 rather than the test 
 inventory rows and undocumented modules but never the table's own total. The audit is the weaker
 of the two checks and the test caught what it missed.
 
+**T4E.24 addendum (2026-09-11): the same receipt, read at the level the criterion works on.**
+
+This is **exact arithmetic on the committed receipt**, not a new measurement. It has no separate
+blindness claim, declares no prediction, and adjudicates nothing. It is recorded because the
+consequence was derivable from evidence already in hand, and this programme has three times met
+the lesson that a derivable fact left underived is a fact nobody has.
+
+The headline figure of T4E.24 is a rate over **features**. The identity path does not consume
+features in isolation -- it consumes **configurations**, and a constellation missing two of its
+seven members is a different constellation. Read per configuration, the same 414 features say:
+
+```
+60 configurations, 3 to 10 features each (median 7)
+
+configurations with every feature seen at least once, anywhere    10/60 = 0.167
+configurations with every feature seen in all six scenes           5/60 = 0.083
+
+never-seen features per configuration
+   0 -> 10 configurations      1 -> 18      2 -> 12      3 -> 9
+   4 ->  4 configurations      5 ->  6      6 ->  1
+
+fraction of a configuration that is present in all six scenes:  mean 0.572, median 0.528
+```
+
+**50 of 60 planted configurations contain at least one feature the extractor recovered in no
+scene at all.** For those, no tolerance over scenes helps and no criterion over scenes can see
+the planted configuration, because the object it would have to match was never assembled in any
+of the six. The feature-level ceiling of 0.63 is therefore not the ceiling that binds: at the
+level the criterion operates, on the most favourable geometry available, **8.3%** of planted
+configurations survive intact across all six scenes and **16.7%** are even recoverable in
+principle.
+
+**What this does not say.** It does not say any particular criterion requires whole
+configurations -- candidate 2 matched cliques across scenes, and a partial-recurrence criterion
+tolerates absence by construction, so the requirement differs per criterion and none is
+adjudicated here. It does not supersede the feature-level rate, which remains the quantity the
+declaration asked for. It adds no evidence: every number above is a different reading of rows
+already in `measurements/t4e24_false_absence.json`, and the bound still runs the same way --
+identical geometry is the favourable case, so the real figures are worse.
+
 **T4E.23: the study trail is on screen, with rendered evidence.** `StudyTrailView.tsx`, a new
 "Study trail" tab, and `frontend/e2e/study-trail.spec.ts` -- **six tests passing in Chromium
 against the real API and the real frontend**, with three screenshots captured under
