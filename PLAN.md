@@ -497,6 +497,46 @@ touching a scene that holds nothing -- is bounded and reported as a condition of
 because a rule that claims recurrence in an empty window is worse for mining than one that
 misses a real occurrence, and a pooled admission rate hides which is happening.
 
+**CORRECTION (2026-09-10): the diagnosis above was wrong, and is superseded rather than edited
+away.** It claimed the extractor does not find the cyclone and named the phase-randomised
+frame-maximum calibration as the cause. Both claims fail on measurement. The temperature case
+was measured -- threshold 306.74 K against a field maximum of 302.5 K -- and generalised to
+vorticity without ever being checked there.
+
+**The calibration clears comfortably.** On the GITA frame the observed maximum is 1.5175e-3
+against phase-randomised surrogate maxima of 1.76e-4 to 2.55e-4 -- a factor of six. Measured per
+storm at the catalogue cell +/- three cells, **11 of 18 are accepted**: above threshold, a local
+maximum, localised, and not off-frame.
+
+**A second thing that was missed.** Of the five registered surrogate methods, `aaft`, `iaaft`,
+`circular_shift` and `block_bootstrap` all preserve the marginal distribution, so the surrogate
+frame maximum *equals* the observed maximum and the test has **no power whatever**. Only
+`phase_randomise` can reject at all. That is a property of a frame-maximum statistic and is
+worth knowing before any of them is proposed as a replacement.
+
+**And raw-field extraction is better than the SWT planes, not worse** -- the reverse of what the
+earlier four-storm comparison suggested.
+
+```
+                     nearest km (median)   inside radius   features/frame
+raw field                        52.1          3 of 18       0-13, med 7
+SWT planes                      127.1          2 of 18      73-153, med 123
+```
+
+**The two real failure modes.** Four storms sit at longitude **179.0 to 179.8** and are refused by
+the R13 off-frame rule, because their own window at 2 sigma overruns the crop's eastern boundary
+at 180.0; their nearest features are 1207, 2028, 2465 and 3685 km away. The crop stops at the
+dateline because the request layer refuses dateline-crossing requests by design -- and Fiji,
+Tonga and Samoa sit exactly there. For every storm *not* at the dateline the nearest feature is
+16.6 to 99.3 km, median about 35, against a catalogue radius of 15.3: **one to two grid cells, a
+factor of two to three, not an order of magnitude**.
+
+**The verdict is unchanged -- acceptance still fails, 3 of 18 against a bar of 9 -- but the
+diagnosis is what a next step would be built on**, and building a replacement calibration on the
+wrong cause would have failed for a reason nobody had measured. What stands from the original
+record: the variable carries the signal, the latitude band is not the cause, and the acquisition
+is sound at 48 shards and 5,844 frames.
+
 **T4E.18 acquired and FAILED its acceptance. The variable carries the signal; the extractor does
 not find it.** 48 shards, **5,844 frames matching the expected calendar exactly**, 336.9 MB, 60
 minutes of CDS queue, lat -58..-18, each shard carrying its own digest.

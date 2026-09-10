@@ -203,7 +203,7 @@
     "median": 123,
     "max": 153
   },
-  "verdict": "FAILED. Conditions 1 and 2 are not met, and the cause is the extractor, not the variable.",
+  "verdict": "FAILED. Conditions 1 and 2 are not met on either extraction path -- 3 of 18 on the raw field, 2 of 18 through the SWT planes, against a declared bar of 9. See CORRECTION_2026_09_10: the first diagnosis in this record was wrong and the real causes are the dateline edge and a one-to-two-cell positional offset.",
   "conditions_as_declared_before_the_data_existed": {
     "condition_1": "at least half the storms with the nearest feature inside the catalogue radius -- MET BY 2 OF 18, needed 9",
     "condition_2": "at least half with three features inside the radius -- MET BY 1 OF 18, needed 9",
@@ -228,5 +228,31 @@
     "Nothing about kind_recurrence itself, which remains unevaluable -- now for a reason one layer further in than it was this morning."
   ],
   "what_would_be_needed_next": "A registered extractor whose calibration suits a smooth field with a dominant compact extremum, or a calibration for the existing one whose null is not phase randomisation. Both are declared work with their own acceptance, and neither is authorised by this measurement.",
-  "claim_boundary": "An acceptance measurement settles what an instrument does, not what the atmosphere does. No frame of the 2022-2023 forecast-test period was acquired or opened."
+  "claim_boundary": "An acceptance measurement settles what an instrument does, not what the atmosphere does. No frame of the 2022-2023 forecast-test period was acquired or opened.",
+  "CORRECTION_2026_09_10": {
+    "what_was_wrong": "This record first stated that the extractor does not find the cyclone, and named the phase-randomised frame-maximum calibration as the diagnosis. BOTH CLAIMS ARE WRONG and are corrected here rather than edited away.",
+    "how_the_error_was_made": "The temperature case was measured -- threshold 306.74 K against a field maximum of 302.5 K, where nothing could clear -- and generalised to vorticity without measuring it. The generalisation was never checked.",
+    "the_calibration_actually_clears_comfortably": "On the GITA frame the observed maximum is 1.5175e-3 against phase-randomised surrogate maxima of 1.76e-4 to 2.55e-4. The cyclone clears by a factor of six. Measured per storm at the catalogue cell plus or minus three cells: 11 of 18 are ACCEPTED -- above threshold, a local maximum, localised, and not off-frame.",
+    "a_second_thing_that_was_missed": "Of the five registered surrogate methods, aaft, iaaft, circular_shift and block_bootstrap all preserve the marginal distribution, so the surrogate frame maximum EQUALS the observed maximum and the test has no power whatever. Only phase_randomise can reject at all. That is a property of a frame-maximum statistic and is worth knowing before any of them is proposed as an alternative.",
+    "what_the_measurement_actually_shows": {
+      "raw_field_extraction": {
+        "nearest_km_min": 16.6,
+        "nearest_km_median": 52.1,
+        "inside_catalogue_radius": "3 of 18",
+        "features_per_frame": "0 to 13, median 7"
+      },
+      "swt_plane_extraction": {
+        "nearest_km_median": 127.1,
+        "inside_catalogue_radius": "2 of 18",
+        "features_per_frame": "73 to 153, median 123"
+      },
+      "reading": "Raw-field extraction is markedly BETTER for this purpose than the SWT planes -- median 52.1 km against 127.1 -- which is the reverse of what the earlier four-storm comparison suggested. Acceptance still fails either way."
+    },
+    "the_two_real_failure_modes": {
+      "the_dateline_edge": "Four storms sit at longitude 179.0 to 179.8 and are refused by the R13 off-frame rule, because their own window at two sigma overruns the crop's eastern boundary at 180.0. Their nearest features are 1207, 2028, 2465 and 3685 km away -- that is, nothing near them at all. The crop stops at the dateline because `CDSRegionalRequest` refuses dateline-crossing requests by design, and Fiji, Tonga and Samoa sit exactly there.",
+      "a_systematic_positional_offset": "For every storm not at the dateline the nearest feature is 16.6 to 99.3 km away, median about 35, against a catalogue radius whose median is 15.3. That is one to two grid cells: a factor of two to three, not the order of magnitude the first reading claimed. Candidate sources, none yet measured: the windowed-centroid sub-cell estimator biasing toward the broader side of an asymmetric vorticity field, the catalogue's own positional uncertainty, and the fact that an 850 hPa vorticity maximum need not sit exactly at the surface centre an agency reports."
+    },
+    "what_this_changes_about_the_verdict": "The acceptance still FAILS -- 3 of 18 inside the radius on raw extraction against a declared bar of 9 -- so the conclusion is unchanged. What changes is the diagnosis, and the diagnosis is what any next step would be built on. Building a replacement calibration on the wrong cause would have been expensive and would have failed for a reason nobody had measured.",
+    "what_is_still_true_from_the_original_record": "The variable carries the signal. The crop's latitude band is not the cause. The acquisition is sound at 48 shards and 5,844 frames. Those were measured rather than inferred and they stand."
+  }
 }

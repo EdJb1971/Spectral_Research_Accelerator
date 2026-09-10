@@ -857,3 +857,55 @@ def test_the_failure_does_not_condemn_the_variable_or_authorise_a_rewrite():
     assert "Not that the acquisition was wasted" in refused
     assert "Not that a second extractor would succeed" in refused
     assert "neither is authorised by this measurement" in record["what_would_be_needed_next"]
+
+
+# ---------------- The diagnosis was wrong, and the correction is part of the record
+
+
+def test_the_first_diagnosis_was_wrong_and_is_superseded_not_edited_away():
+    """It claimed the calibration rejects the cyclone. Measurement says it clears by six-fold."""
+    correction = _t4e18_acceptance()["CORRECTION_2026_09_10"]
+
+    assert "BOTH CLAIMS ARE WRONG" in correction["what_was_wrong"]
+    assert "generalised to vorticity without measuring it" in correction["how_the_error_was_made"]
+    assert "11 of 18 are ACCEPTED" in correction["the_calibration_actually_clears_comfortably"]
+
+
+def test_four_of_five_surrogate_methods_have_no_power_against_a_frame_maximum():
+    """They preserve the marginal, so the surrogate maximum equals the observation's.
+
+    Worth pinning before any of them is proposed as a replacement null.
+    """
+    import numpy as np
+
+    from src.statistics import surrogates
+
+    rng = np.random.default_rng(3)
+    field = rng.normal(0.0, 1.0, (48, 48))
+    field[24, 24] += 30.0
+    for method in ("aaft", "iaaft", "circular_shift"):
+        member = np.asarray(surrogates.generate(field, method=method, n=1, seed=5)["members"][0])
+        assert abs(float(member.max()) - float(field.max())) < 1e-9, method
+    spectral = np.asarray(
+        surrogates.generate(field, method="phase_randomise", n=1, seed=5)["members"][0])
+    assert float(spectral.max()) != float(field.max())
+
+
+def test_the_two_real_failure_modes_are_named_with_their_numbers():
+    """The dateline edge, and a one-to-two-cell offset. Neither is the calibration."""
+    modes = _t4e18_acceptance()["CORRECTION_2026_09_10"]["the_two_real_failure_modes"]
+
+    assert "179.0 to 179.8" in modes["the_dateline_edge"]
+    assert "refuses dateline-crossing requests by design" in modes["the_dateline_edge"]
+    assert "factor of two to three, not the order of magnitude" in (
+        modes["a_systematic_positional_offset"])
+
+
+def test_raw_extraction_beats_the_swt_planes_for_this_purpose():
+    """The reverse of what a four-storm comparison suggested, and measured across eighteen."""
+    shows = _t4e18_acceptance()["CORRECTION_2026_09_10"]["what_the_measurement_actually_shows"]
+
+    assert shows["raw_field_extraction"]["nearest_km_median"] == 52.1
+    assert shows["swt_plane_extraction"]["nearest_km_median"] == 127.1
+    assert "markedly BETTER" in shows["reading"]
+    assert "Acceptance still fails either way" in shows["reading"]
