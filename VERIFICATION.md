@@ -12461,6 +12461,44 @@ approves no mining radius, discharges nothing of T4E.8's acceptance, and closes 
 D100. And the catalogue supplies identity, not physics: a criterion agreeing with it has agreed
 with the contributing agencies' operational judgements, not with the atmosphere.
 
+**Amended before signature, and the check was worth doing.** Two requirements in the design as
+first written do not survive contact with the catalogue.
+
+**The radius had no source.** The design said to take the matching tolerance from "the
+catalogue's own reported uncertainty for the contributing agency". IBTrACS has **174 columns and
+none of them reports position uncertainty**, so that requirement could not have been implemented
+and signing it would have committed the maintainer to a matching parameter with no legitimate
+source. What replaces it is supplied by the catalogue and chosen by nobody: independent agencies
+report their own position for the same observation, and the radius is the greatest distance from
+the catalogue's position to any contributing agency's. In this basin and window the agencies are
+USA (186 observations), BOM (102), WELLINGTON (83) and NADI (67).
+
+```
+radius = max distance from catalogue position to any contributing agency
+  median 15.2 km   q90 47.2   q95 89.4   max 145.2
+  record grid cell at 40S: 21.3 km longitude, 27.8 km latitude
+coverage: 176 of 210 observations have two or more agencies; 34 have one
+```
+
+The median radius is **below one grid cell**, so matching is tight at grid scale for half the
+observations; q95 is about four cells, so the radius varies and must travel per observation
+rather than be summarised -- which is what "matched at its own declared radius" requires anyway.
+The **34 single-agency observations are refused by name**: the catalogue supplies no radius for
+them and they are not given a default.
+
+**The adjudicating base rate was wrong, in the flattering direction.** Applying that refusal and
+the design's own MX/NR refusal leaves **176 observations from 18 storms**, and the `NATURE` base
+rate is **0.571, not 0.391** -- same-kind pairs are the *majority*. A rule answering "same kind"
+to everything would be right 57.1% of the time, so accuracy is a meaningless summary here and
+only the two-sided error rates may be reported. `USA_SSHS` sits at 0.227 and would make any
+criterion look better; **switching to it now, having seen both, is exactly the horse race the
+design forbids**, and `NATURE` stays adjudicating on the principle that `kind_recurrence` asks
+what a system *is* rather than how strong it is.
+
+The original figures are superseded in place, not edited out. The check cost one verification
+pass and saved a signature on an unimplementable design plus a base rate wrong by 0.18 in the
+direction that would have made any later result look better than it was.
+
 **Ten tests hold the design**: that it is not signed by code, that the data is bound by digest
 and absent from the repository, that a reanalysis-derived catalogue would be circular and is
 refused for that reason, that the unit of independence is the storm, that within-storm pairs

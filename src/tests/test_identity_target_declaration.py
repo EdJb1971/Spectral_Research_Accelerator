@@ -346,7 +346,8 @@ def test_the_catalogue_design_is_not_signed_by_code():
     """Code does not sign catalogues, events or scientific preregistrations for a person."""
     body = _t4e17()
 
-    assert body["status"] == "declared_before_evaluation"
+    assert body["status"] in ("declared_before_evaluation", "AMENDED_BEFORE_SIGNATURE")
+    assert "SIGNED" in body["declared_by"]
     assert "NOT VALID until the maintainer has reviewed, adopted and SIGNED it" in (
         body["declared_by"])
     assert "Code does not sign catalogues for a person" in body["declared_by"]
@@ -461,3 +462,81 @@ def test_the_publisher_s_citation_requirement_is_recorded_with_the_data():
     citations = " ".join(catalogue["citation_required_by_the_publisher"])
     assert "Gahtan" in citations and "Knapp" in citations
     assert "non-commercial" in catalogue["licence_position"]
+
+
+# ------- T4E.17 amended before signature: the radius had no source, and the base rate was wrong
+#
+# Checked before asking the maintainer to sign. IBTrACS has 174 columns and none reports
+# position uncertainty, so the design's stated radius source did not exist. What replaced it is
+# the catalogue's own inter-agency disagreement. Applying that refusal, and the design's own
+# MX/NR refusal, moved the adjudicating base rate from 0.391 to 0.571.
+
+
+def test_the_radius_requirement_had_no_source_and_the_amendment_says_so():
+    """The design named a column that does not exist. Signing it would have committed the
+    maintainer to a matching parameter with no legitimate source.
+    """
+    amendment = _t4e17()["amendment_2026_09_10_the_radius_had_no_source"]
+
+    assert "174 columns and none of them reports position uncertainty" in (
+        amendment["why_this_amendment_exists"])
+    assert "could not have been implemented" in amendment["why_this_amendment_exists"]
+    assert "chosen by nobody" in amendment["what_replaces_it"]
+
+
+def test_the_replacement_radius_is_supplied_by_the_catalogue_and_varies_per_observation():
+    """Independent agencies disagree, and their disagreement is the catalogue's own statement."""
+    measured = _t4e17()["amendment_2026_09_10_the_radius_had_no_source"]["the_measured_radius"]
+
+    assert measured["median_km"] == 15.2
+    assert measured["q95_km"] == 89.4
+    assert "BELOW one grid cell" in measured["reading"]
+    assert "carried per observation rather than summarised" in measured["reading"]
+
+
+def test_a_single_agency_observation_is_refused_because_the_catalogue_supplies_no_radius():
+    """34 of 210. Refused and counted, never given a default."""
+    amendment = _t4e17()["amendment_2026_09_10_the_radius_had_no_source"]
+
+    assert "176 have two or more agencies reporting and 34 have only one" in (
+        amendment["coverage"])
+    assert "not given a default" in amendment["the_34_are_REFUSED_BY_NAME"]
+
+
+def test_the_adjudicating_base_rate_was_wrong_in_the_flattering_direction():
+    """0.571, not 0.391, once MX and NR are refused as the design already required.
+
+    Same-kind pairs are the majority, so a rule answering 'same kind' to everything would be
+    right 57.1% of the time. Accuracy is therefore meaningless here and only the two-sided
+    error rates may be reported.
+    """
+    revised = _t4e17()["amendment_2026_09_10_the_population_and_base_rates_are_revised"]
+
+    assert revised["superseded_figures"]["nature_base_rate"] == 0.391
+    assert revised["revised_figures"]["nature_base_rate"] == 0.571
+    assert revised["revised_figures"]["storms"] == 18
+    change = revised["THE_CHANGE_THAT_MATTERS"]
+    assert "accuracy is a meaningless summary" in change
+    assert "false split and false admission" in change
+
+
+def test_the_more_favourable_label_was_not_adopted_after_seeing_both_base_rates():
+    """USA_SSHS at 0.227 would make any criterion look better. Switching now is the horse race
+    the design forbids, and NATURE was chosen on a principle the numbers do not touch.
+    """
+    revised = _t4e17()["amendment_2026_09_10_the_population_and_base_rates_are_revised"]
+
+    assert revised["revised_figures"]["usa_sshs_base_rate"] == 0.227
+    kept = revised["NATURE_REMAINS_THE_ADJUDICATING_LABEL"]
+    assert "horse race the design forbids" in kept
+    assert "what a system IS rather than how strong it is" in kept
+
+
+def test_the_check_is_recorded_as_having_happened_before_signature():
+    """The point of doing it first: the design is amended, not the result."""
+    body = _t4e17()
+
+    assert body["status"] == "AMENDED_BEFORE_SIGNATURE"
+    assert "before signature" in body["what_this_check_cost_and_saved"]
+    assert "wrong by 0.18 in the direction that would have made any later result look better" in (
+        body["what_this_check_cost_and_saved"])

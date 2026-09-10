@@ -1,6 +1,6 @@
 {
   "schema": "t4e17-external-catalogue-design/v1",
-  "status": "declared_before_evaluation",
+  "status": "AMENDED_BEFORE_SIGNATURE",
   "task": "T4E.17",
   "artefact": "the external reference catalogue kind_recurrence has always required",
   "declared_by": "Edward Jonathan Bentley, maintainer (scientific choice); drafted by Claude Opus 5 at the maintainer's direction and NOT VALID until the maintainer has reviewed, adopted and SIGNED it. Code does not sign catalogues for a person.",
@@ -71,5 +71,51 @@
     "Already inspected data do not become untouched by renaming them. The 2018-2021 catalogue window has now been inspected and is development evidence.",
     "R19: this evidence is atmospheric. Cross-domain use of anything built on it requires its own declared experiment."
   ],
-  "claim_boundary": "The catalogue supplies identity; it does not supply physics. Labels are the contributing agencies' operational judgements, reviewed post-season, and a criterion agreeing with them has agreed with those judgements and not with the atmosphere. No frame of the 2022-2023 forecast-test period is opened by any part of this."
+  "claim_boundary": "The catalogue supplies identity; it does not supply physics. Labels are the contributing agencies' operational judgements, reviewed post-season, and a criterion agreeing with them has agreed with those judgements and not with the atmosphere. No frame of the 2022-2023 forecast-test period is opened by any part of this.",
+  "amendment_2026_09_10_the_radius_had_no_source": {
+    "why_this_amendment_exists": "The design said the matching radius must be taken from 'the catalogue's own reported uncertainty for the contributing agency'. That was checked before asking the maintainer to sign, and it is WRONG: IBTrACS has 174 columns and none of them reports position uncertainty. The requirement as written could not have been implemented, and signing it would have committed the maintainer to a design whose central matching parameter had no legitimate source.",
+    "what_replaces_it": "Independent agencies report their own position for the same observation, and their disagreement is the catalogue's own per-observation statement of positional confidence. The radius for an observation is the greatest distance from the catalogue's reported position to any contributing agency's position. It is supplied by the catalogue and chosen by nobody.",
+    "the_agencies_present_in_this_basin_and_window": {
+      "USA": 186,
+      "BOM": 102,
+      "WELLINGTON": 83,
+      "NADI": 67
+    },
+    "coverage": "Of 210 in-box synoptic observations, 176 have two or more agencies reporting and 34 have only one.",
+    "the_34_are_REFUSED_BY_NAME": "A single-agency observation has no inter-agency spread, so the catalogue supplies no radius for it. It is refused and counted, not given a default. This follows the rule the design already stated for the case where no uncertainty is reported, and it is the reason that rule was written.",
+    "the_measured_radius": {
+      "definition": "max distance from the IBTrACS position to any contributing agency position, per observation",
+      "median_km": 15.2,
+      "q90_km": 47.2,
+      "q95_km": 89.4,
+      "max_km": 145.2,
+      "mean_km": 24.7,
+      "the_record_grid_cell_for_comparison": "0.25 degrees is 21.3 km in longitude and 27.8 km in latitude at 40 degrees south",
+      "reading": "The median radius is BELOW one grid cell of the record, so matching is tight at grid scale for half the observations. The upper tail is not: q95 is about four cells and the largest is about six. The radius therefore varies per observation and must be carried per observation rather than summarised, which is what 'matched at its own declared radius' requires anyway."
+    }
+  },
+  "amendment_2026_09_10_the_population_and_base_rates_are_revised": {
+    "why": "Refusing the 34 single-agency observations changes the population, and applying the design's own MX/NR refusal changes the NATURE base rate. The original figures were computed before either refusal was applied and are superseded here rather than edited out.",
+    "superseded_figures": {
+      "observations": 210,
+      "storms": 20,
+      "cross_storm_pairs": 20241,
+      "nature_base_rate": 0.391,
+      "usa_sshs_base_rate": 0.182
+    },
+    "revised_figures": {
+      "observations": 176,
+      "storms": 18,
+      "nature_cross_storm_pairs": 10721,
+      "nature_same_kind": 6119,
+      "nature_base_rate": 0.571,
+      "usa_sshs_cross_storm_pairs": 14081,
+      "usa_sshs_same_kind": 3203,
+      "usa_sshs_base_rate": 0.227
+    },
+    "THE_CHANGE_THAT_MATTERS": "The NATURE base rate is 0.571, not 0.391. Once MX and NR are refused as the design requires, same-kind pairs are the MAJORITY. A rule that answered 'same kind' to everything would be right 57.1% of the time, so accuracy is a meaningless summary here and only the two-sided error rates -- false split and false admission -- may be reported. That was already this programme's practice and is now also a necessity.",
+    "NATURE_REMAINS_THE_ADJUDICATING_LABEL": "USA_SSHS has the more favourable base rate of 0.227 and would make a criterion look better. Switching to it now, having seen both, would be exactly the horse race the design forbids. NATURE was chosen on the principle that kind_recurrence asks what a system IS rather than how strong it is, and that principle is unchanged by the revised numbers.",
+    "the_effective_sample_size_is_now_18": "Eighteen storms, not twenty, and still not 10,721. The unit of independence is unchanged and the clustering requirement stands."
+  },
+  "what_this_check_cost_and_saved": "It cost one verification pass before signature. It saved the maintainer from signing a design whose matching radius had no source, and it corrected a base rate that was wrong by 0.18 in the direction that would have made any later result look better than it was."
 }
