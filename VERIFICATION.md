@@ -12385,6 +12385,75 @@ release decision, but it does mean two gates that read PASS now read NOT_RUN and
 were not isolated to a cause; the run predates no clean baseline for this suite size, so they
 are reported as measured rather than attributed.
 
+**T4E.15 candidate 4 (2026-09-10): adopted and FALSIFIED.**
+
+Adopted at sha256 `b1c3546795fb7ed68e4a758ca32fe7d6534b4bb7ec8f2bf4c09e5df1d92815f0`.
+
+```
+CANDIDATE 4 -- partial presence, 36 partitions (totals by richness and j)
+false split 1.0000 on 32 of 36; recovered anything on 4
+false admission 1.0000 on those 32; 0.5385 to 0.9143 on the other four
+hallucinated presence 0.0000 to 0.9118, above the 0.10 bound on all but one
+null admitted 3, 29, 87 of 122, 553, 1450 proposed   (required: zero)
+
+CROSS-CHECK -- total recurrence, where candidate 2 admits exactly 15
+rich  block      admitted   true  recovered   split    admit
+6     100-105          20     15         15  0.0000   0.2500
+6     200-205          33     15         15  0.0000   0.5455
+9     200-205          44     15         15  0.0000   0.6591
+12    300-305          84     15         15  0.0000   0.8214
+null admitted 6, 8, 52 of 116, 595, 1486 proposed     (required: zero)
+```
+
+**FALSIFIED on five of six conditions, on both evidences.** Recall fails outright: false split
+1.0000 on 32 of 36 partial-presence partitions, with the motif recovered on only four. Admission
+fails everywhere -- there is no partition at any presence level or richness inside the 0.10
+bound. Hallucinated presence reaches 0.9118, so the rule claims recurrence in scenes holding
+nothing at up to 91% of its admissions. Both nulls admit where the answer is zero. Only the
+refusal condition holds.
+
+**The mechanism, and it is precisely backwards.** Closure rewards isolation. The consistent
+group of a node is the maximal agreeing set, so a node whose only partner is one other node
+forms a closed group of **two** and is admitted trivially -- the rule is most permissive exactly
+where the evidence for an identity is weakest. Meanwhile a motif configuration in a present
+scene usually *is* the mutual nearest neighbour of something unrelated in an absent scene, and
+that single loose end breaks closure, so the motif group is rejected. It discards the strongest
+evidence and admits the weakest.
+
+**The cross-check settles what the derivation could not.** On total-recurrence evidence closure
+recovers the motif -- which is arithmetic, derived before the run -- but admits 20 to 84 pairs
+per block against candidate 2's 15, and breaks the null there too. So closure is not a
+differently-shaped filter than `k = S`; it is a **weaker** one. It fails even where candidate 2
+succeeds.
+
+**A derivation that should have been made and was not.** That closure admits pairs trivially was
+derivable before adoption. The declaration's feasibility section derived only that the criterion
+*can* admit the answer -- that it is not inert the way candidate 1 was -- and never asked what
+the rule does at the extremes of its own domain, where a group of two makes closure vacuous.
+This is the third time this programme has met that lesson from a different direction: candidate
+1's tail model was too conservative at its extreme, candidate 4's closure too permissive at its
+own, and both were derivable in advance. **A feasibility check must ask what a rule does at the
+smallest and largest cases it admits, not only whether it can reach the right answer.**
+
+**What the blindness claim still bought.** It was honoured: nothing moved after the numbers
+appeared, and no parameter was added to rescue anything -- there was none to add. So this is a
+real falsification of closure as declared, not a rule that failed to survive its own tuning.
+
+**What this does NOT license.** Not that the signature is inadequate -- it is unchanged from
+candidate 2, which passes at `k = S`. Not that partition structure is the wrong resource. Not
+that partial recurrence is undetectable: one rule was tested, and its failure mechanism is now
+understood well enough to state what a successor must not do -- **it must not treat a group of
+two as evidence on the same terms as a group of six**. Not that a parameterised closure rule
+would fail; it might not, and it is a different candidate needing its own declaration, one that
+could no longer claim blindness because this result has been seen. No mining radius, no
+discharge of T4E.8's acceptance, no closure of D96 to D100, nothing about `kind_recurrence`, and
+nothing about recurrence across genuinely separated epochs.
+
+**The declaration below is retained unedited.** It is superseded by this outcome, not corrected
+by it: its refusal to predict was right, its derivation of the cross-check's recall was right,
+and its ceiling on what a failure licenses was written before the failure happened. What it
+missed is recorded above rather than quietly repaired.
+
 **T4E.15 candidate 4 (2026-09-10): declared, fixed in code, and measured nowhere.**
 
 `data/identity_calibration/t4e15-closure-declaration.json`, status

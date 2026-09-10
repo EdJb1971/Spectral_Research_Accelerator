@@ -1908,19 +1908,20 @@ def test_hallucinated_presence_is_a_condition_of_its_own():
     assert "reported separately" in body["acceptance"]["condition_3_no_hallucinated_presence"]
 
 
-def test_candidate_4_is_measured_nowhere_before_its_declaration_is_adopted():
-    """The blindness claim is a property of the repository, not a sentence in a file.
-
-    This candidate's structure was fixed before the k profile's rungs at k = 4 and k = 3 were
-    seen, and before anything was measured on the T4E.14 evidence. A committed measurement would
-    spend that silently, so its absence is asserted rather than intended. When candidate 4 is
-    adopted this test is what should be deleted, and replaced by the reading of the result.
+def test_the_candidate_4_guard_was_removed_by_adoption_and_not_by_convenience():
+    """Its predecessor asserted that nothing had been measured and named its own successor:
+    an adoption record is what should delete it. That record now exists.
     """
+    import json
     from pathlib import Path
 
-    assert not list(Path("measurements").glob("t4e15*")), "a candidate 4 measurement exists"
-    assert not list(Path("data/identity_calibration").glob("t4e15*adoption*")), (
-        "an adoption record exists, so this test is the one that should have been deleted")
+    adoption = json.loads(Path(
+        "data/identity_calibration/t4e15-closure-adoption.json"
+    ).read_text(encoding="utf-8"))
+    assert adoption["adopted_as"] == "DEVELOPMENT_EXPERIMENT_ONLY"
+    assert adoption["adopts_sha256"] == (
+        "b1c3546795fb7ed68e4a758ca32fe7d6534b4bb7ec8f2bf4c09e5df1d92815f0")
+    assert "nothing to adjust" in adoption["what_is_not_adjustable_by_this_adoption"]
 
 
 def test_the_reserved_partial_presence_blocks_are_not_opened_by_this_declaration():
@@ -1941,3 +1942,132 @@ def test_the_reserved_partial_presence_blocks_are_not_opened_by_this_declaration
             build_partial_presence_partition(tuple(range(start, start + 6)), 3)
     assert not list(Path("measurements").glob("*88*presence*"))
     assert len(RESERVED_PARTIAL_PRESENCE_SEEDS) == 12
+
+
+# ------------------------- T4E.15 candidate 4 measured: closure rewards isolation
+#
+# Falsified on five of six conditions. These tests hold the reading of it, and in particular the
+# mechanism -- because the derivation that would have caught this before adoption is one this
+# programme has now missed three times from three different directions, and a mechanism recorded
+# only in prose is one the next candidate can repeat.
+
+
+def _t4e15_outcome():
+    import json
+    from pathlib import Path
+
+    return json.loads(Path(
+        "data/identity_calibration/t4e15-closure-adoption.json"
+    ).read_text(encoding="utf-8"))["development_outcome"]
+
+
+def test_candidate_4_is_recorded_as_falsified_on_the_conditions_that_failed():
+    """Named conditions and counts, not a verdict word. Five failed and one held."""
+    outcome = _t4e15_outcome()
+
+    assert outcome["status"].startswith("FALSIFIED")
+    assert "32 of 36" in outcome["condition_1_recall_FAILED"]["false_split_1_0000_on"]
+    assert outcome["condition_2_admission_FAILED"]["bound"] == 0.10
+    assert outcome["condition_4_null_FAILED"]["partial_presence_null"]["richness_12"] == 87
+    assert outcome["condition_4_null_FAILED"]["total_recurrence_null"]["richness_12"] == 52
+    assert outcome["condition_6_refusals_MET"]["labelling_refusals"] == 0
+
+
+def test_closure_admits_a_group_of_two_trivially_which_is_the_whole_failure():
+    """The mechanism, executed rather than described.
+
+    A node whose only partner is one other node forms a closed group of TWO, so the rule is most
+    permissive exactly where the evidence for an identity is weakest. This is what should have
+    been derived before adoption, and a test is what stops the next candidate repeating it.
+    """
+    import collections
+
+    from src.benchmarks.identity_certification import consistent_group, is_closed
+
+    partners = collections.defaultdict(dict)
+    partners[(0, 0)][1] = 0
+    partners[(1, 0)][0] = 0
+    group = consistent_group((0, 0), partners)
+    assert len(group) == 2, group
+    assert is_closed(group, partners), (
+        "a pair with no other partners is closed, and closure therefore admits it")
+
+
+def test_a_single_loose_end_rejects_an_otherwise_perfect_group():
+    """The other half of the inversion: the strongest evidence is the easiest to break.
+
+    A group spanning many scenes has many members, so it has many chances to acquire one partner
+    outside itself, and one is enough to reject it.
+    """
+    import collections
+
+    from src.benchmarks.identity_certification import is_closed
+
+    def graph(*edges):
+        partners = collections.defaultdict(dict)
+        for left, right in edges:
+            partners[left][right[0]] = right[1]
+            partners[right][left[0]] = left[1]
+        return partners
+
+    wide = [(scene, 0) for scene in range(5)]
+    edges = [(a, b) for index, a in enumerate(wide) for b in wide[index + 1:]]
+    assert is_closed(wide, graph(*edges))
+    assert not is_closed(wide, graph(*(edges + [((4, 0), (5, 3))])))
+
+
+def test_the_cross_check_shows_closure_is_weaker_than_k_equals_S_not_differently_shaped():
+    """It admits more than candidate 2 on the very evidence candidate 2 passed on.
+
+    Recall there is arithmetic and was derived before the run; what the cross-check adds is that
+    closure keeps far more, and breaks a null candidate 2 held.
+    """
+    import json
+    from pathlib import Path
+
+    cross = json.loads(Path(
+        "measurements/t4e15_closure_cross_check.json").read_text(encoding="utf-8"))
+    assert all(row["false_split_rate"] == 0.0 for row in cross["planted_blocks"])
+    assert all(row["admitted"] > 15 for row in cross["planted_blocks"]), (
+        "candidate 2 admitted exactly 15 per block; closure admitting no more would not be "
+        "the weaker filter the record says it is")
+    assert any(row["admitted"] > 0 for row in cross["null_blocks"])
+    assert "WEAKER filter" in _t4e15_outcome()["condition_5_cross_check_FAILED"]["reading"]
+
+
+def test_the_missed_derivation_is_recorded_rather_than_quietly_repaired():
+    """Three times now, from three directions. The lesson is written where the next one will read it."""
+    outcome = _t4e15_outcome()
+
+    missed = outcome["the_derivation_that_should_have_been_made_and_was_not"]
+    assert "derivable before adoption" in missed
+    assert "third time" in missed
+    assert "SMALLEST and LARGEST" in missed
+
+
+def test_the_falsification_fixes_a_constraint_on_the_successor():
+    """More than the previous four failures gave: not just what fails, but what must not be done."""
+    outcome = _t4e15_outcome()
+
+    refused = " ".join(outcome["what_it_does_NOT_license"])
+    assert "Not that the signature is inadequate" in refused
+    assert "must not treat a group of two as evidence on the same terms as a group of six" in (
+        refused)
+    assert "could not claim blindness" in refused
+
+
+def test_the_reserved_partial_presence_blocks_were_not_spent_on_a_falsified_candidate():
+    """Conditional on passing, recorded before the numbers existed, and enforced in code."""
+    from pathlib import Path
+
+    import pytest
+    from src.benchmarks.identity_certification import (
+        ReservedPartialPresenceScene, build_partial_presence_partition)
+
+    outcome = _t4e15_outcome()
+    assert "never been built" in (
+        outcome["the_reserved_blocks_were_not_spent_and_now_will_not_be"])
+    for start in (880, 890):
+        with pytest.raises(ReservedPartialPresenceScene):
+            build_partial_presence_partition(tuple(range(start, start + 6)), 4)
+    assert not list(Path("measurements").glob("*confirmatory*presence*"))

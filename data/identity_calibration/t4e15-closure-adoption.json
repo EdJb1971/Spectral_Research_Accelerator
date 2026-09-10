@@ -1,0 +1,86 @@
+{
+  "schema": "t4e12-adoption/v1",
+  "adopts": "data/identity_calibration/t4e15-closure-declaration.json",
+  "adopts_sha256": "b1c3546795fb7ed68e4a758ca32fe7d6534b4bb7ec8f2bf4c09e5df1d92815f0",
+  "adopted_by": "Edward Jonathan Bentley, maintainer",
+  "adopted_on": "2026-09-10",
+  "adopted_as": "DEVELOPMENT_EXPERIMENT_ONLY",
+  "what_was_adopted": "The preregistration is in force and candidate 4 may be measured on the T4E.14 partial-presence partitions 800-835 and the partial-presence null 850-855, at presence levels j in {3, 4, 5} and the three declared richness levels; and the declared cross-check may be run on the total-recurrence blocks 100-405 and the null 500-505. Nothing else.",
+  "the_confirmatory_blocks_are_not_opened_by_this": "Partial-presence blocks 880-895 stay reserved and have never been built. They are refused unconditionally in code by ReservedPartialPresenceScene, with no confirmatory flag, and this adoption does not override that. Blocks 720-735 are separately reserved TOTAL-recurrence partitions and could confirm nothing about partial recurrence however clean they are, because the property under test is absent from them.",
+  "what_adoption_does_not_mean": "It is not a prediction that candidate 4 will work, and the declaration deliberately offers none: unlike candidate 3, whose failure direction was predicted correctly in advance, nothing measured in this programme bears on whether a consistent group has partners outside itself. Adoption says only that the experiment is worth running and that the conditions for reading it were fixed before it ran.",
+  "what_is_not_adjustable_by_this_adoption": "Nothing, because the criterion has nothing to adjust. There is no k, no span threshold, no radius, no ratio, no fitted model and no estimated normaliser. Adding any of them to rescue a result is specifically forbidden by the declaration and is not licensed here: a parameterised closure rule is a different candidate, needs its own declaration, and could not claim blindness. The proposer, the signature, the weights, the cardinality, the presence levels, the richness levels and the scenes are all unchanged.",
+  "the_blindness_claim_this_adoption_preserves_and_its_limit": "The criterion, its acceptance conditions and every structural choice were fixed at sha256 b1c35467... before anything was measured on the T4E.14 evidence and before the k profile's rungs at k = 4 and k = 3 were seen. Nothing known concerns closure: no measurement in this programme has looked at whether a consistent group has partners outside itself. The limit, recorded rather than left to be inferred: the declaration was authored before rung k = 4 landed but committed after it, so the git history does not prove that interval. The claim rests on the recorded ordering, not on cryptographic evidence. It is spent the moment a closure result is read, which is why it is written here while intact.",
+  "what_must_be_reported_as_arithmetic_rather_than_evidence": "That candidate 4 admits at least the motif on the TOTAL-recurrence blocks. A group spanning every scene uses a partner in every other scene and the matching gives at most one per scene, so those are all of each member's partners and the motif group is closed by construction there. The cross-check's recall is therefore derivable and is not a finding; what the cross-check can show is whether closure ADMITS MORE than candidate 2 did, which is not derivable.",
+  "which_half_is_informative_this_time": "The recall half, for the first time in this sequence. On total-recurrence evidence every candidate's recall was near-guaranteed by construction, and candidate 3's was arithmetic outright. On partial-presence evidence a motif configuration in a present scene may be the mutual nearest neighbour of something unrelated in an absent scene, and closure would then reject the motif. That risk is the substance of this candidate and no measurement bears on it.",
+  "the_worst_case_is_accepted_in_advance": "Candidate 4 may admit nothing at all on partial-presence evidence. That is a complete result and is to be recorded as one, not tuned away. It is NOT candidate 1's failure, which was inert everywhere including where the answer was easy; candidate 4 is derivably non-inert on total-recurrence evidence, so an empty partial-presence result locates the failure at partial presence rather than in the rule's arithmetic.",
+  "scope_adopted": "Atmospheric identity path only. Cross-domain use of the same mechanism requires its own declared experiment and its own qualification, per R19.",
+  "governing": [
+    "R20: candidate 4 is evaluated alone against its six declared conditions. Candidates C, D, 2 and 3 appear only as the proposer of pairs, as derivations, and in a declared cross-check, which is not adjudication.",
+    "Development results on already-inspected blocks are development evidence and may not be reported as confirmation. The T4E.14 partitions were built and audited on 2026-09-10 and are inspected data permanently; a blind declaration does not make them fresh.",
+    "A named refusal is preferable to an unsupported number.",
+    "Recall is counted against C(j,2) and not C(S,2). An error rate divided by the wrong population is the quietest way to report a wrong number.",
+    "Nothing here approves a mining radius, discharges T4E.8's acquired-record acceptance, or closes D96, D97, D98, D99 or D100. The primary scientific target remains kind_recurrence, which still has no catalogue.",
+    "Nothing here concerns recurrence across genuinely separated epochs, which this generator cannot produce and the acquired-record path still owes."
+  ],
+  "development_outcome": {
+    "status": "FALSIFIED. Five of the six conditions fail, on both evidences.",
+    "measured_on": "2026-09-10",
+    "measurements": [
+      "measurements/t4e15_candidate_4.json",
+      "measurements/t4e15_closure_cross_check.json"
+    ],
+    "condition_1_recall_FAILED": {
+      "bound": 0.1,
+      "false_split_1_0000_on": "32 of 36 partial-presence partitions",
+      "recovered_anything_on": "4 of 36 -- block 800-805 at j = 4 at all three richness levels, and block 830-835 at j = 5 richness 9",
+      "reading": "Closure rejects the motif almost everywhere on partial-presence evidence. The declaration named this as the substance of the candidate and the risk it could not derive, and the risk was real."
+    },
+    "condition_2_admission_FAILED": {
+      "bound": 0.1,
+      "false_admission": "1.0000 on the 32 partitions that recovered nothing; 0.5385, 0.7674, 0.8421 and 0.9143 on the four that recovered something",
+      "reading": "There is no partition at any presence level or richness where admission is within the bound."
+    },
+    "condition_3_hallucinated_presence_FAILED": {
+      "bound": 0.1,
+      "range": "0.0000 to 0.9118 across the 36 partitions, above 0.10 on all but one",
+      "reading": "The criterion claims recurrence in scenes that hold nothing, at up to 91% of its admissions. This is the failure that matters most for mining and it is reported separately for exactly that reason."
+    },
+    "condition_4_null_FAILED": {
+      "partial_presence_null": {
+        "richness_6": 3,
+        "richness_9": 29,
+        "richness_12": 87
+      },
+      "total_recurrence_null": {
+        "richness_6": 6,
+        "richness_9": 8,
+        "richness_12": 52
+      },
+      "reading": "Both nulls admit, where the required answer is zero. Candidates 2 and 3 both held their nulls at every richness; candidate 4 does not hold either."
+    },
+    "condition_5_cross_check_FAILED": {
+      "recall": "0.0000 false split on every total-recurrence block, which is ARITHMETIC and was derived before the run -- the motif group spans every scene, so its members' partners are all inside it and it is closed by construction.",
+      "false_admission": "0.2500 to 0.8214 against a 0.10 bound",
+      "admitted_per_block": "20 to 84, against candidate 2's 15",
+      "reading": "Closure does not discard what candidate 2 kept -- it keeps far more. It admits every closed group including groups of two, so it is a WEAKER filter than k = S rather than a differently-shaped one. It fails even where candidate 2 succeeds."
+    },
+    "condition_6_refusals_MET": {
+      "labelling_refusals": 0,
+      "configurations_refused_as_incomparable": "0 on most partitions; 1 or 2 on ten of them at richness 9 and 12",
+      "reading": "The only condition that holds. Refusals were counted and surfaced by name."
+    },
+    "the_mechanism": "Closure rewards isolation. `consistent_group` returns the maximal agreeing set, so a node whose only partner is one other node forms a closed group of TWO and is admitted trivially. The rule is therefore most permissive exactly where the evidence for an identity is weakest. Meanwhile a motif configuration in a present scene usually IS the mutual nearest neighbour of something unrelated in an absent scene, and that loose end breaks closure -- so the motif group is rejected. The rule is precisely backwards: it discards the strongest evidence and admits the weakest.",
+    "the_derivation_that_should_have_been_made_and_was_not": "That closure admits pairs trivially was derivable before adoption. The declaration's feasibility section derived only that the criterion CAN admit the answer -- that it is not inert the way candidate 1 was -- and did not examine how the rule behaves at the extremes of its domain, where a group of two makes closure vacuous. This is the third time this programme has met the same lesson from a different direction: candidate 1's tail model was too conservative at its extreme, candidate 4's closure is too permissive at its extreme, and both were derivable. A feasibility check must ask what the rule does at the SMALLEST and LARGEST cases it admits, not only whether it can reach the right answer.",
+    "what_the_blindness_claim_still_bought": "The claim was honoured: nothing was changed after the numbers appeared, and no parameter was added to rescue anything -- there was none to add. So this is a real falsification of closure as declared, not a rule that failed to survive its own tuning. It is spent, and it cannot be made again for these scenes.",
+    "what_this_falsification_licenses": "Only this: closure under the mutual nearest-neighbour matching, as defined here, does not separate partial recurrence from coincidence in these scenes, and admits more than consistency across the partition does even where recurrence is total.",
+    "what_it_does_NOT_license": [
+      "Not that the signature is inadequate. It is unchanged from candidate 2, which passes at k = S on total-recurrence evidence.",
+      "Not that partition structure is the wrong resource.",
+      "Not that partial recurrence is undetectable. One rule was tested, and its failure mechanism is now understood well enough to say what a successor must not do: it must not treat a group of two as evidence on the same terms as a group of six.",
+      "Not that a parameterised closure rule would fail. It might not, and it is a different candidate needing its own declaration -- one that could not claim blindness, because this result has now been seen.",
+      "No mining radius, no discharge of T4E.8's acquired-record acceptance, no closure of D96 to D100, and nothing about kind_recurrence, which still has no catalogue.",
+      "Nothing about recurrence across genuinely separated epochs, which this generator cannot produce."
+    ],
+    "the_reserved_blocks_were_not_spent_and_now_will_not_be": "880-895 have never been built. The adoption made spending them conditional on candidate 4 meeting its acceptance here, and it did not, so the condition is unmet and they stay closed. That conditionality was recorded before the numbers existed."
+  }
+}
