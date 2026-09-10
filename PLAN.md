@@ -1254,6 +1254,44 @@ about the definition and would cost no catalogue.
 Needs its own task, design and acceptance before it runs, declared first. Adopting an external
 project's ceilings is a scientific choice and must not be made silently by software.
 
+### T4E.27 ? The T4E.18 acceptance restated ? measured 2026-09-11; the bar was not the problem
+
+**Measured, and it closes the question T4E.21 left open by answering it in the negative.** A
+tolerance built from the two components this repository can justify -- the agency's reported
+radius and the extractor's own measured localisation error -- admits **2 of 17 judged storms**,
+exactly as many as the original bar did, against a declared 9. See `architecture.md` section
+3E.42.
+
+**What that settles.** The original bar was wrong for three stated reasons and **replacing it
+changes nothing**, so the tolerance was never what was carrying the failure. The separations
+themselves are: a median nearest feature of **127 km**, with three storms at 1241, 1581 and 2056
+km that no defensible bar will admit.
+
+**And it separates two things that were being treated as one.** T4E.19's diagnostic population --
+154 interior observations paired within 200 km, dateline group removed -- has a median offset of
+33.8 km. T4E.18's acceptance population -- the deepest observation per storm, unfiltered -- has a
+median nearest feature of 127 km and a median unexplained residual of 93.2 km. **These are not
+the same problem**, and T4E.21's ~34 km quantity-difference hypothesis cannot account for the
+larger one. Any successor that quotes 33.8 km against the acceptance is quoting the wrong
+population.
+
+**What is now open.** The 93.2 km residual is unexplained and is not the quantity difference.
+T4E.18's own correction already named two candidates -- the dateline edge and a one-to-two-cell
+positional offset -- and T4E.19 separated a dateline group out of its core population without
+ever characterising it. Nothing has measured what those three far storms are doing, and that is
+the first thing a successor should ask, because it governs whether the record can support
+`kind_recurrence` at all.
+
+**A shortfall to carry forward.** Condition 2 could not be evaluated: the third-nearest distance
+is not in the committed receipt, and the IBTrACS CSV that T4E.17 bound by sha256 was never
+committed and is not on this machine. Any future work on this join needs that file, and needs the
+join re-run so it records the full per-storm distance list rather than only the nearest.
+
+**What is still forbidden.** Adopting a tolerance into any pipeline, selecting a point from the
+reported acceptance curve, or reading the two admitted storms as successes -- both pass because
+their catalogue radii are 103 and 62 km, which is the join closing because the reference is
+vague.
+
 ### T4E.26 ? A null estimable from real data ? measured 2026-09-11; it works, and it costs something that is not a number
 
 **Measured.** One round of peeled-null calibration closes a median **0.637** of the gap to the

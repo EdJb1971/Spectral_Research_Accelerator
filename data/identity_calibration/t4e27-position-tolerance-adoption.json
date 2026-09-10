@@ -1,0 +1,40 @@
+{
+  "schema": "t4e27-restatement-adoption/v1",
+  "adopts": "data/identity_calibration/t4e27-position-tolerance-declaration.json",
+  "adopts_sha256": "f4ef59f66e28b0fa8903de4ef1b2528860402b57a0daf424be3504f5196b1ff2",
+  "adopted_by": "Edward Jonathan Bentley, maintainer",
+  "adopted_on": "2026-09-11",
+  "adopted_as": "ACCEPTANCE_RESTATEMENT_AND_INSTRUMENT_SURFACE",
+
+  "what_was_adopted": "The design as declared, in full and unamended: the tolerance computed as the quadrature sum of the agency-reported per-observation radius and the extractor's own localisation error as T4E.21 measured it, with observations carrying no reported radius refused by name and excluded from the denominator; the T4E.18 acceptance re-run against that bar on an unchanged population with unchanged conditions; the acceptance reported additionally as a curve over tolerance; and the six acceptance conditions exactly as written.",
+
+  "why_the_maintainer_adopted_a_restatement_of_a_failure": "Because the three reasons the original bar was wrong were each established before this task existed and none of them consults whether a wider bar would pass. A category error in what the radius bounds; a radius of exactly 0.00 on one of eighteen storms, which no measurement can satisfy; and T4E.19's measured finding that the offset does not track the radius at all. A bar that is wrong for stated reasons is worth restating whether or not the restatement passes, and the declaration predicts in writing that it will not.",
+
+  "the_component_that_is_excluded_is_the_substance_of_the_adoption": "The difference between an 850 hPa relative-vorticity maximum and a surface centre is not a component and must not become one. No defensible number for it exists in this repository, and adding one sized to make the acceptance pass is the fitting this task exists to prevent. Whatever separation the two justified components fail to explain IS the measure of that difference, and reporting it is the point rather than a consolation.",
+
+  "only_the_bar_changes_and_this_is_binding": "The population stays at the same eighteen storms at the same deepest-interior observation per storm; conditions 1 and 2 keep their declared form; the extractor, the null and alpha are untouched, and nothing is adopted from T4E.26. T4E.19's 154-observation core population, its 200 km pairing and its dateline separation are deliberately NOT adopted, because moving the population and the bar together would leave no one able to say which moved the verdict.",
+
+  "the_declaration_is_not_blind_and_the_adoption_does_not_pretend_otherwise": "The 33.8 km core offset and the earlier failure were both known when the declaration was written. What answers that is that the tolerance is computed rather than chosen, from two values fixed elsewhere and earlier -- an agency's reported radius, and a localisation error measured on synthetic ground truth for a different purpose -- with the formula fixed before the re-run. The prediction of continued failure is adopted with the rest, and a pass would have to survive the fact that it was predicted against.",
+
+  "the_instrument_deliverable_is_adopted_as_the_point_and_not_as_a_by_product": "A tolerance that appears as a constant can only be accepted or rejected. One that publishes its components, their provenance and its own refusals can be disagreed with specifically, which is what allows a question other than this programme's to be asked with the same instrument. The acceptance curve is adopted for inspection only: the declared bar decides the verdict, and selecting a point off the curve afterwards would be the horse race R20 forbids.",
+
+  "what_this_adoption_does_not_do": "It approves no mining radius, adopts no tolerance into any pipeline, discharges no part of T4E.8's acquired-record acceptance, and settles nothing about whether the record supports kind_recurrence. It does not supersede measurements/t4e18_acceptance.json, which stands as measured with its own correction beside it; a restated verdict is recorded alongside the original, never in place of it.",
+
+  "what_is_not_opened_by_this": "Reserved seeds 720-735 and 880-895 stay closed and the 2022-2023 forecast-test period stays unopened.",
+
+  "cross_domain": "R19 applies. The category error, the missing uncertainty recorded as zero, and an error scale that does not track the reported one are failure modes any domain joining an instrument to an external catalogue can meet, and the tolerance object and its refusals transfer. The numbers do not: 8.2 km belongs to this extractor on this grid at this planting density, and the radii belong to IBTrACS in this basin. A domain joining to a catalogue owes its own component list and a statement of which components it cannot justify.",
+
+  "scope_adopted": "Atmospheric identity path only.",
+
+  "governing": [
+    "Declare the prediction, and the design's strongest objection to itself, before the measurement.",
+    "A named refusal is preferable to an unsupported number, and that rule applies to inputs as well as outputs.",
+    "Do not redefine the target or weaken an acceptance criterion to make a candidate pass.",
+    "Evaluate the candidate alone; no horse race (R20). The acceptance curve is for inspection, not selection.",
+    "Corrections are recorded in the open; T4E.18's record is amended beside its original, never edited away.",
+    "If any declared condition cannot be evaluated on the evidence available, it is refused by name and the shortfall reported, rather than approximated.",
+    "Nothing here approves a mining radius, discharges T4E.8's acquired-record acceptance, or closes D96, D97, D98, D99 or D100."
+  ],
+
+  "claim_boundary": "Carried unchanged from the declaration: this restates a bar and re-runs one acceptance measurement against an unchanged population with unchanged conditions. An acceptance measurement settles what an instrument does, not what the atmosphere does. If it passes it establishes only that the earlier bar was carrying the failure; if it fails it establishes only that a tolerance built from the components this repository can justify does not close the join."
+}

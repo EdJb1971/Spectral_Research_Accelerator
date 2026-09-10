@@ -12515,6 +12515,139 @@ read 4315 against an actual 4342. It was corrected to 4342 rather than the test 
 inventory rows and undocumented modules but never the table's own total. The audit is the weaker
 of the two checks and the test caught what it missed.
 
+**T4E.27 (2026-09-11): the bar was wrong, and the bar was not what was carrying the failure.**
+
+Adopted 2026-09-11 (`t4e27-position-tolerance-adoption.json`, binding the declaration by sha256
+`f4ef59f6...`) and measured the same day. `measurements/t4e27_restated_acceptance.json`,
+`src/analysis_engine/position_tolerance.py`, `tools/restate_position_acceptance.py`.
+
+T4E.21 named this work and deferred it in writing. T4E.18's acceptance had failed at 2 of 18 and
+1 of 18 against a bar of 9, and had stood as a failure ever since against a tolerance nobody had
+argued for.
+
+**Three reasons the original bar was wrong, none of which is that it failed.** A **category
+error**: the bar was the catalogue's per-observation radius, an agency's bound on its own
+uncertainty about its own quantity, never a bound on the separation between two different
+quantities. An **unsatisfiable region**: the radii run 0.00 to 145.23 km and LINDA's is exactly
+0.00, so one of eighteen storms could not have passed however good the extraction was -- a
+missing agency report written down as a number, in a programme whose named-refusal rule had been
+applied to its outputs and not to this input. And an **empirical miss**: T4E.19 measured the
+correlation between offset and radius at +0.020, range straddling zero.
+
+**The restated bar is computed, not chosen** -- the quadrature sum of the agency's reported
+radius and the extractor's own localisation error, 0.295 cells or 8.19 km, as T4E.21 measured it
+on known ground truth for a different purpose. The vorticity-versus-surface-centre separation is
+deliberately **not** a component, so the residual measures it.
+
+```
+storm        lat   nearest   radius  tolerance  residual  admitted
+FEHI       -36.8     69.74     8.90      12.10      57.6   no
+GITA       -38.6    113.72    89.38      89.76      24.0   no
+HOLA       -31.5    252.29    21.99      23.46     228.8   no
+LINDA      -23.8     74.91     0.00    REFUSED         -   could not say
+IRIS       -22.7    152.69    15.13      17.20     135.5   no
+JOSIE      -21.5    189.65   145.23     145.46      44.2   no
+OWEN       -20.8     99.98    11.12      13.81      86.2   no
+PENNY      -20.0     51.20    11.12      13.81      37.4   no
+OMA        -28.2    162.24    14.82      16.93     145.3   no
+SARAI      -20.3   2055.91    24.57      25.89    2030.0   no
+UESI       -37.5     60.81   103.47     103.80     -43.0   YES
+GRETEL     -31.2    127.10   106.85     107.17      19.9   no
+ANA        -22.3   1581.20    34.91      35.86    1545.3   no
+LUCAS      -22.7     29.93    61.55      62.09     -32.2   YES
+NIRAN      -28.4   1241.04   112.31     112.61    1128.4   no
+UNNAMED    -30.1    159.45    22.24      23.70     135.7   no
+RUBY       -30.7    107.00    11.12      13.81      93.2   no
+SETH       -21.0    111.72    10.38      13.22      98.5   no
+
+condition 1 restated: 2 admitted of 17 judged, 1 refused, needed 9 -- NOT MET
+condition 2 restated: REFUSED BY NAME, not evaluable on the available evidence
+median unexplained residual: 93.19 km
+```
+
+**The prediction was half right, and the half that was wrong was derivable.** The declaration
+predicted the acceptance would still fail while *improving* on 2 of 18. It still fails. It did
+not improve at all -- the same two storms pass, and no others. The reason is arithmetic that
+should have been done in advance: adding 8.19 km in quadrature to radii of 11 to 145 km is very
+nearly inert. It moves a bar of 11.12 to 13.81 and a bar of 89.38 to 89.76, against separations
+of 50 to 250 km. **The estimator component could never have changed a verdict here, and saying so
+required no measurement.** That is the fifth time in this programme a derivable fact has been
+left underived, and it is recorded rather than smoothed over.
+
+**So the finding is sharper than either outcome the declaration anticipated.** The bar was wrong
+for three good reasons *and* replacing it with a defensible one changes nothing. What was
+carrying the failure is not the tolerance. It is the separations themselves: a median nearest
+feature of 127 km, with three storms -- SARAI at 2056 km, ANA at 1581, NIRAN at 1241 -- that no
+tolerance worth the name will ever admit.
+
+**The two storms that do pass, pass for the wrong reason.** UESI and LUCAS are admitted because
+their *catalogue radii* are 103 and 62 km -- the agency was highly uncertain about where those
+centres were. A join that closes because the reference is vague is not evidence that the
+instrument found the cyclone, and counting it as one would be the same category error in the
+opposite direction.
+
+**The residual localises what remains, and it does not fit T4E.21's hypothesis.** The median
+unexplained separation is **93.2 km**. T4E.21's leading candidate -- that an 850 hPa vorticity
+maximum and a surface centre are different quantities, worth about 34 km -- cannot account for
+that. So on this population the quantity difference is **not** the dominant term, and the honest
+conclusion is that T4E.18's acceptance population and T4E.19's diagnostic population are not the
+same problem. T4E.19 worked on 154 interior observations paired within 200 km with a dateline
+group separated out, and got a median of 33.8 km. T4E.18's acceptance takes the deepest
+observation per storm with no such filtering, and gets 127 km. Restating the bar exposed that
+rather than repairing it.
+
+**The acceptance curve, reported for inspection and not for selection.**
+
+```
+tolerance km     5    10    15    20    25    30    35    40    50    65
+admitted /17     0     0     0     0     0     1     1     1     1     3
+
+tolerance km    80   100   125   150   200   300   500
+admitted /17     4     5     8     9    13    14    14
+```
+
+Nine of seventeen -- the declared majority -- first arrives at **150 km**, roughly an order of
+magnitude beyond anything the two justified components support, and the curve then saturates at
+14 of 17 no matter how far it is pushed. The declared bar decides the verdict; this is here so
+the bar can be argued with specifically rather than merely accepted, and choosing a point from it
+now would be the horse race R20 forbids.
+
+**Condition 2 is refused by name, and this slice therefore meets its own acceptance only in
+part.** Condition 2 asks for three or more features inside tolerance. The committed receipt
+carries each storm's nearest distance and a count of features inside the *original* radius, but
+not the distance to the third-nearest, so the count at any other bar is not recoverable from it.
+Recomputing it needs the IBTrACS CSV, which T4E.17 bound by sha256, did not commit, and which is
+not present on this machine. Approximating it was available and was refused. **The shortfall is
+reported rather than absorbed:** this task's own acceptance condition 3 asked for both
+conditions, and one of them was not delivered.
+
+**The instrument, which was the point of the task.** `PositionTolerance` publishes each
+component with its provenance, names what it deliberately excludes, and refuses an unusable input
+by name -- returning `None` from `admits`, never `False`, because *we could not say* and *no* are
+different answers and conflating them counts a missing agency report as a failed detection. A
+refused observation leaves the denominator rather than scoring against the instrument. A bar
+built this way can be disagreed with in parts, which is what lets a question this programme did
+not think of be asked with the same instrument.
+
+**What is not licensed.** No mining radius, no tolerance adopted into any pipeline, no part of
+T4E.8's acquired-record acceptance discharged, and nothing settled about whether the record
+supports `kind_recurrence`. `measurements/t4e18_acceptance.json` stands as measured with its own
+correction beside it; this restatement is recorded alongside it, never in place of it. The
+population, conditions, extractor, null and alpha are all unchanged, and nothing was adopted from
+T4E.26. D96 through D100 remain open. No reserved seed block and no frame of the 2022-2023
+forecast-test period was read.
+
+```
+$ .venv/Scripts/python.exe -m pytest src/tests/test_position_tolerance.py -q
+17 passed
+```
+
+One test failed while writing this and was itself the error: it asserted that an infinite reported
+radius should be accepted as a value rather than refused. An infinite bar admits every
+separation, which is worse than having no bar at all, so the module was right and the test was
+wrong. The test was corrected and the module's refusal wording was tightened to say why a
+non-finite radius is refused as well as a zero one.
+
 **T4E.26 (2026-09-11): peeling the null works, manufactures most of its own contamination, and
 changes what a detection claims.**
 
