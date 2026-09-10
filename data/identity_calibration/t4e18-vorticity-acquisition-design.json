@@ -1,6 +1,6 @@
 {
   "schema": "t4e18-record-acquisition-design/v1",
-  "status": "declared_before_acquisition",
+  "status": "AMENDED_BEFORE_ACQUISITION",
   "task": "T4E.18",
   "artefact": "a record variable in which a cyclone centre is an extractable feature",
   "declared_by": "Edward Jonathan Bentley, maintainer (scientific choice); drafted by Claude Opus 5 at the maintainer's direction and NOT VALID until the maintainer has reviewed and adopted it",
@@ -18,21 +18,41 @@
     "the_problem": "`local_maximum_extractor` finds local MAXIMA. In the SOUTHERN HEMISPHERE cyclonic rotation is NEGATIVE relative vorticity. A maximum-finder run on raw vorticity in this crop would therefore locate ANTICYCLONES and miss every tropical cyclone in the catalogue.",
     "the_convention": "The field is negated before extraction, so that cyclonic rotation is a positive peak. Every feature extracted under this convention is a cyclonic centre by construction.",
     "why_this_is_declared_and_not_slipped_in": "Negation is a transformation this programme chose, not a property of the data. Declaring it before the record exists is what stops it becoming a knob turned after a disappointing result, and it is recorded here for the same reason the radius and the kind label were.",
-    "it_applies_to_this_crop_because_of_where_the_crop_is": "The crop is entirely south of the equator, latitude -60 to -20, so a single sign applies throughout and no hemisphere test is needed. A crop spanning the equator would need one, and this design does not cover that case."
+    "it_applies_to_this_crop_because_of_where_the_crop_is": "The crop is entirely south of the equator, latitude -58 to -18 after the crop amendment, and -60 to -20 before it, so a single sign applies throughout and no hemisphere test is needed. A crop spanning the equator would need one, and this design does not cover that case."
   },
   "the_request": {
     "dataset": "reanalysis-era5-pressure-levels",
     "product_type": "reanalysis",
-    "variables": ["vorticity"],
-    "pressure_levels": [850],
-    "area_north_west_south_east": [-20.0, 140.0, -60.0, 180.0],
+    "variables": [
+      "vorticity"
+    ],
+    "pressure_levels": [
+      850
+    ],
+    "area_north_west_south_east": [
+      -18.0,
+      140.0,
+      -58.0,
+      180.0
+    ],
     "grid_degrees": 0.25,
     "expected_shape": "161 x 161, identical to the existing record",
-    "hours_utc": [0, 6, 12, 18],
+    "hours_utc": [
+      0,
+      6,
+      12,
+      18
+    ],
     "date_start": "2018-01-01",
     "date_end": "2021-12-31",
     "expected_frames": 5844,
-    "expected_size": "of order 230 MB, scaled from the existing record's 338.905 MB over six years for one pressure-level variable of the same shape"
+    "expected_size": "of order 230 MB, scaled from the existing record's 338.905 MB over six years for one pressure-level variable of the same shape  [SUPERSEDED: the actual transfer was 336.9 MB over 48 shards. The estimate scaled the temperature record by four sixths of its span and assumed comparable compression; vorticity is a noisier field and compresses less well. The preflight's 2x safety factor absorbed it, but the figure was wrong and is corrected rather than left standing.]",
+    "superseded_area": [
+      -20.0,
+      140.0,
+      -60.0,
+      180.0
+    ]
   },
   "why_the_window_stops_at_2021": {
     "the_reason": "2022-2023 is the forecast-test period. It is closed by standing constraint, and NOT ACQUIRING IT makes the reservation physical rather than a matter of policy: a frame that does not exist on this machine cannot be opened by accident, by a future refactor, or by someone who has not read the constraint.",
@@ -67,5 +87,55 @@
     "Code does not sign catalogues, events or scientific preregistrations for a person; this design is not adopted until the maintainer says so.",
     "Already inspected data do not become untouched by renaming them."
   ],
-  "claim_boundary": "An acquired record is evidence, not a result. Nothing here settles anything about the atmosphere, and no frame of the 2022-2023 forecast-test period is acquired or opened by any part of this."
+  "claim_boundary": "An acquired record is evidence, not a result. Nothing here settles anything about the atmosphere, and no frame of the 2022-2023 forecast-test period is acquired or opened by any part of this.",
+  "amendment_2026_09_10_the_crop_was_wrong_and_the_probe_found_it": {
+    "why": "The design copied the existing record's crop, latitude -60 to -20. A two-month probe showed that crop cannot support the evaluation whatever the variable: 707 of 917 South Pacific cyclone observations in this longitude band lie NORTH of -20 and are excluded, and the 210 that remain have median latitude -23.3 with 74 within two degrees of the northern edge, where the extractor refuses features by design. The variable was confirmed in the same probe -- a cyclone sits at the 0.02nd percentile of its frame, one grid cell from the catalogue position -- so the crop was the only thing left to change.",
+    "the_rule_that_chose_the_new_crop": "Extend north only while the INFORMATIVE MINORITY of the kind label keeps growing, and stop where it saturates. This is stated from the label distribution alone, before any criterion runs, so it cannot be a choice of whichever box flatters a result.",
+    "why_that_rule_lands_on_minus_18": "The non-TS population saturates exactly there. Interior SS counts run 37, 38, 39 as the northern edge moves -20, -19, -18, and then stay at 39 for every edge from -18 to -10. ET stays at 5 and the non-TS storm count at 9 throughout. Every observation gained north of -18 is TS, which dilutes the label and adds nothing informative.",
+    "what_was_rejected_and_why": "The -45..-5 box gives 30 storms and 683 interior observations, but its NATURE base rate is 0.872: a rule answering 'same kind' to everything would be right 87 per cent of the time. It buys TS-only data at the cost of the label. There is no sweet spot on this curve -- the trade-off is smooth and monotone from 0.464 to 0.872 -- so the choice had to come from a rule rather than from an inflection.",
+    "the_new_crop": {
+      "lat_min": -58.0,
+      "lat_max": -18.0,
+      "lon_min": 140.0,
+      "lon_max": 180.0,
+      "shape": "161 x 161 at 0.25 degrees, the shape the crop planner assessed, shifted 2 degrees north"
+    },
+    "the_population_it_yields": {
+      "in_box": 293,
+      "refused_single_agency": 41,
+      "with_a_catalogue_radius": 252,
+      "storms": 21,
+      "radius_km": {
+        "median": 15.3,
+        "q90": 42.1,
+        "q95": 74.4,
+        "max": 145.2
+      },
+      "interior_observations": 176,
+      "interior_storms": 18,
+      "interior_cross_storm_pairs": 10721,
+      "interior_nature_base_rate": 0.571,
+      "whole_box_nature_base_rate": 0.668,
+      "non_ts": {
+        "SS": 39,
+        "ET": 5,
+        "storms": 9,
+        "note": "the complete available non-TS population"
+      }
+    },
+    "against_the_old_crop": "Interior observations rise from 113 to 176 and interior storms from 13 to 18, the whole non-TS population is captured rather than 42 of 44, and the interior base rate moves from 0.464 to 0.571 -- a real cost, disclosed, and far short of the 0.872 the tropical box would have imposed.",
+    "what_this_does_to_the_signed_catalogue": "T4E.17 was signed on terms naming the OLD crop and its population. This is a different evidence base, so the signature is re-given on the new terms rather than carried over, and the old figures are superseded in place rather than edited out."
+  },
+  "acquisition_outcome": {
+    "status": "ACQUIRED, and the acceptance FAILED on conditions 1 and 2.",
+    "acquired_on": "2026-09-10",
+    "shards": 48,
+    "frames": 5844,
+    "frames_match_expected_calendar": true,
+    "bytes": 336922000,
+    "elapsed_seconds": 3579.9,
+    "measurement": "measurements/t4e18_acceptance.json",
+    "verdict": "The variable carries the signal and the extractor does not find it. Conditions 1 and 2 were met by 2 of 18 and 1 of 18 storms against a declared bar of 9. The crop and the representation were both cleared by further measurement; the diagnosis is the extractor's phase-randomised frame-maximum calibration.",
+    "what_the_acquisition_bought": "The diagnosis. Without the record the failure would still have been attributed to the variable, which the measurement shows to be wrong."
+  }
 }

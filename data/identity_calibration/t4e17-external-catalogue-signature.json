@@ -1,20 +1,22 @@
 {
   "schema": "t4e17-external-catalogue-signature/v1",
   "signs": "data/identity_calibration/t4e17-external-catalogue-design.json",
-  "signs_sha256": "c692ea195f0928ac3f0d9a3a4be0b964a713d5a0349f06e23f83783481b38e59",
-  "signs_design_status_at_signature": "AMENDED_BEFORE_SIGNATURE",
+  "signs_sha256": "89e50fd6d870c46e854288d5ab8ff63014fcff96072ab0205e94f73aa7734d7b",
+  "signs_design_status_at_signature": "AMENDED_FOR_THE_T4E18_CROP_AND_RE_SIGNED",
   "signed_by": "Edward Jonathan Bentley, maintainer",
-  "signed_on": "2026-09-10",
-  "how_this_signature_was_given": "The maintainer instructed it in their own words after being shown the amended terms -- 18 storms, a NATURE base rate of 0.571, a per-observation radius from inter-agency spread, and 34 refusals. Code did not sign this catalogue; it recorded a signature the maintainer gave, and it is bound to the sha256 above so that the thing signed cannot drift from the thing recorded.",
+  "signed_on": "2026-09-10 (re-given on the amended domain)",
+  "how_this_signature_was_given": "The maintainer was shown the trade-off between three candidate crops, told that moving the domain would void the signature already given, and chose the middle option in their own words. This records that act on the amended terms. Code did not sign this catalogue; it recorded a signature the maintainer gave, bound to the amended design's digest so the terms signed cannot drift from the terms recorded.",
   "what_is_signed": "That IBTrACS v04r01, South Pacific subset, at sha256 631f76b95c77a6a4e409233466a0d501bb4848324e421fc58e228efea2086c44, is admitted as external_reference evidence for the identity target kind_recurrence, on exactly the terms the amended design states and no others.",
   "what_the_signature_makes_true": "kind_recurrence becomes evaluable from the tool for the first time. Its admissible evidence is external_reference alone, no such evidence has existed in this programme, and the primary scientific target has therefore been unevaluable throughout -- through T4E.7 to T4E.16, seven measured criteria and one withdrawn.",
   "the_terms_signed_are_the_AMENDED_terms": {
-    "population": "176 in-box synoptic observations from 18 distinct storms, 2018-01-01 to 2021-12-31",
-    "adjudicating_label": "NATURE, base rate 0.571 after MX and NR are refused",
-    "characterisation_only": "USA_SSHS, base rate 0.227, which adjudicates nothing and was not substituted after both rates were seen",
-    "radius": "per observation, the greatest distance from the catalogue position to any contributing agency position; median 15.2 km against a record grid cell of 21.3 by 27.8 km",
-    "refusals": "34 single-agency observations refused by name, because the catalogue supplies no radius for them and a default would be a number nobody is entitled to",
-    "the_superseded_figures_stay_visible": "210 observations, 20 storms and a NATURE base rate of 0.391 were the pre-amendment figures. They are retained in the design, superseded rather than deleted, because the correction went in the direction that would have flattered a later result."
+    "domain": "latitude -58 to -18, longitude 140 to 180",
+    "population_whole_box": "252 observations with a catalogue radius, from 21 storms, NATURE base rate 0.668",
+    "population_interior": "176 observations from 18 storms, NATURE base rate 0.571 -- the population an identity criterion can actually use",
+    "adjudicating_label": "NATURE, unchanged",
+    "characterisation_only": "USA_SSHS at 0.225 over the whole box, which adjudicates nothing",
+    "radius": "per observation, median 15.3 km, unchanged in rule",
+    "refusals": "41 single-agency observations refused by name",
+    "the_superseded_figures_stay_visible": "The pre-amendment population -- 176 observations, 18 storms, base rate 0.571 over the OLD crop -- is retained in the design. It coincides numerically with the new INTERIOR population and is a different population; the match is a coincidence and not continuity between them."
   },
   "what_this_signature_does_NOT_do": [
     "It evaluates no criterion. No identity rule is declared, adopted or measured by signing a catalogue, and a criterion for this evidence needs its own declaration written before these base rates shape it.",
@@ -36,5 +38,10 @@
     "Already inspected data do not become untouched by renaming them. The 2018-2021 catalogue window is development evidence from 2026-09-10.",
     "R19: this evidence is atmospheric, and cross-domain use of anything built on it needs its own declared experiment."
   ],
-  "claim_boundary": "A signed catalogue is evidence, not a result. No frame of the 2022-2023 forecast-test period is opened by this signature."
+  "claim_boundary": "A signed catalogue is evidence, not a result. No frame of the 2022-2023 forecast-test period is opened by this signature.",
+  "superseded_signature": {
+    "signs_sha256": "c692ea195f0928ac3f0d9a3a4be0b964a713d5a0349f06e23f83783481b38e59",
+    "signed_on": "2026-09-10",
+    "why_superseded": "It was given on terms naming the crop latitude -60 to -20. T4E.18's probe showed that crop cannot support the evaluation, the maintainer chose to move it, and a different domain is a different evidence base. The signature is RE-GIVEN rather than carried over."
+  }
 }

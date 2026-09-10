@@ -809,3 +809,51 @@ def test_changing_the_crop_would_void_the_signature_already_given():
     refused = " ".join(probe["what_was_NOT_done"])
     assert "full 2018-2021 acquisition was not run" in refused
     assert "No frame of the 2022-2023 forecast-test period" in refused
+
+
+# ---------------- The acquired record, and the acceptance it failed
+
+
+def _t4e18_acceptance():
+    import json
+    from pathlib import Path
+
+    return json.loads(Path("measurements/t4e18_acceptance.json").read_text(encoding="utf-8"))
+
+
+def test_the_acceptance_failed_on_conditions_declared_before_the_data_existed():
+    """2 of 18 and 1 of 18 against a bar of 9. Declared in advance, so it is a result."""
+    conditions = _t4e18_acceptance()["conditions_as_declared_before_the_data_existed"]
+
+    assert "MET BY 2 OF 18" in conditions["condition_1"]
+    assert "MET BY 1 OF 18" in conditions["condition_2"]
+    assert conditions["condition_3"].startswith("features per frame usable -- MET")
+
+
+def test_the_variable_is_cleared_and_so_are_the_crop_and_the_representation():
+    """The signal is present, correctly signed, and nothing extracted it."""
+    established = _t4e18_acceptance()["what_is_established_and_is_not_in_doubt"]
+
+    assert "0.02nd percentile" in established["the_variable_carries_the_signal"]
+    assert "sampling artefact" in established["the_crop_is_no_longer_the_problem"]
+    assert "3 to 7 features per frame" in established["the_representation_is_not_the_problem_either"]
+
+
+def test_the_diagnosis_names_the_extractors_calibration():
+    """Phase randomisation preserves the spectrum, so the surrogate maxima match the field's."""
+    points_at = _t4e18_acceptance()["what_this_points_at"]
+
+    assert "306.74 K against a field maximum of 302.5 K" in points_at["the_extractor_s_calibration"]
+    assert "second registered extractor" in points_at["the_extractor_s_declared_assumption"]
+    assert "property of the instrument" in points_at["the_finding"]
+
+
+def test_the_failure_does_not_condemn_the_variable_or_authorise_a_rewrite():
+    """A second extractor is untested and would be its own declared work."""
+    record = _t4e18_acceptance()
+
+    refused = " ".join(record["what_this_does_NOT_establish"])
+    assert "Not that relative vorticity is the wrong variable" in refused
+    assert "Not that the acquisition was wasted" in refused
+    assert "Not that a second extractor would succeed" in refused
+    assert "neither is authorised by this measurement" in record["what_would_be_needed_next"]

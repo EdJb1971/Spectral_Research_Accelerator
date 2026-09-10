@@ -2803,6 +2803,49 @@ configuration absent from one scene outright; nothing about recurrence *across* 
 which the mining machinery needs; no mining radius, no discharge of T4E.8's acceptance, no
 closure of D96 to D100; and nothing about `kind_recurrence`, which still has no catalogue.
 
+**T4E.18 acquired and FAILED its acceptance. The variable carries the signal; the extractor does
+not find it.** 48 shards, **5,844 frames matching the expected calendar exactly**, 336.9 MB, 60
+minutes of CDS queue, lat -58..-18, each shard carrying its own digest.
+`measurements/t4e18_acceptance.json`.
+
+```
+condition 1  nearest feature inside the catalogue radius   2 of 18   (needed 9)  FAILED
+condition 2  three features inside the radius              1 of 18   (needed 9)  FAILED
+condition 3  features per frame 73-153, median 123                               MET
+condition 4  refusals by name                                                    MET
+nearest feature km: min 29.9  median 127.1  max 2055.9
+```
+
+**Three things are established and are not in doubt.** The variable carries the signal: measured
+on the field before any extraction, GITA sits at the **0.02nd percentile** of its frame with the
+single most cyclonic cell **one grid cell** from the catalogue position, and the declared sign
+convention is correct. The crop is no longer the problem: the first probe sampled each storm's
+*first* in-box observation, which is always where it entered the box and therefore always at the
+boundary the extractor refuses features at -- **a sampling artefact, corrected**; re-sampled at
+each storm's deepest interior observation, latitudes -20.0 to -38.6, it still fails. And the
+representation is not the problem: raw extraction yields **3 to 7** features per frame against
+73 to 153 through the SWT planes, and lands *further* from the storm in three of four cases.
+
+**What it points at is the extractor's calibration.** `local_maximum_extractor` admits a maximum
+only if it clears a threshold calibrated from the frame maxima of **phase-randomised
+surrogates**, which preserve the power spectrum -- and for smooth geophysical fields those
+surrogates routinely produce maxima as large as the observation's. On 850 hPa temperature the
+threshold came out at **306.74 K against a field maximum of 302.5 K**, so nothing could clear it
+at all. On vorticity, GITA -- the most cyclonic cell in its frame by a wide margin -- yields four
+raw features, none within 2,900 km. The extractor's own docstring says it assumes an isotropic
+peak on a flat baseline and that the honest response to a field it does not suit is **a second
+registered extractor, not a special case inside this one**.
+
+**The finding: the identity path's front end does not detect the phenomenon the signed catalogue
+labels, in a field where that phenomenon is unambiguous and dominant.** That is a property of the
+instrument -- not of the atmosphere, the catalogue, the crop or the variable.
+
+**What it does not establish.** Not that vorticity is the wrong variable; the signal is
+measurably present and correctly signed, and nothing extracted it. Not that the acquisition was
+wasted -- it is what made the diagnosis possible. Not that a second extractor would succeed,
+which is untested and would be its own declared work. `kind_recurrence` remains unevaluable, now
+for a reason one layer further in than it was this morning.
+
 **The variable works. The crop does not.** Two months of 850 hPa relative vorticity were
 acquired as a probe before the declared full request -- 14 MB and about 100 seconds against
 230 MB and 1.6 hours -- and tested against acceptance condition 1.

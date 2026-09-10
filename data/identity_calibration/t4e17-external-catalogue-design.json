@@ -1,6 +1,6 @@
 {
   "schema": "t4e17-external-catalogue-design/v1",
-  "status": "AMENDED_BEFORE_SIGNATURE",
+  "status": "AMENDED_FOR_THE_T4E18_CROP_AND_RE_SIGNED",
   "task": "T4E.17",
   "artefact": "the external reference catalogue kind_recurrence has always required",
   "declared_by": "Edward Jonathan Bentley, maintainer (scientific choice); drafted by Claude Opus 5 at the maintainer's direction and NOT VALID until the maintainer has reviewed, adopted and SIGNED it. Code does not sign catalogues for a person.",
@@ -117,5 +117,43 @@
     "NATURE_REMAINS_THE_ADJUDICATING_LABEL": "USA_SSHS has the more favourable base rate of 0.227 and would make a criterion look better. Switching to it now, having seen both, would be exactly the horse race the design forbids. NATURE was chosen on the principle that kind_recurrence asks what a system IS rather than how strong it is, and that principle is unchanged by the revised numbers.",
     "the_effective_sample_size_is_now_18": "Eighteen storms, not twenty, and still not 10,721. The unit of independence is unchanged and the clustering requirement stands."
   },
-  "what_this_check_cost_and_saved": "It cost one verification pass before signature. It saved the maintainer from signing a design whose matching radius had no source, and it corrected a base rate that was wrong by 0.18 in the direction that would have made any later result look better than it was."
+  "what_this_check_cost_and_saved": "It cost one verification pass before signature. It saved the maintainer from signing a design whose matching radius had no source, and it corrected a base rate that was wrong by 0.18 in the direction that would have made any later result look better than it was.",
+  "amendment_2026_09_10_the_domain_moved": {
+    "why": "This design named the record's own crop, latitude -60 to -20. T4E.18's probe showed that crop cannot support the evaluation: 707 of 917 South Pacific cyclone observations in the longitude band lie north of it, and the remainder cluster against its northern edge where the extractor refuses features. The maintainer chose to move the crop, so the evidence base changes and this design changes with it.",
+    "the_new_domain": "latitude -58 to -18, longitude 140 to 180, 161 x 161 at 0.25 degrees -- the assessed shape, shifted two degrees north.",
+    "why_exactly_minus_18": "A rule stated from the label distribution before any criterion runs: extend north only while the informative minority of the kind label keeps growing, and stop where it saturates. Interior SS counts run 37, 38, 39 as the edge moves -20, -19, -18 and then never move again out to -10; ET stays at 5 and the non-TS storm count at 9. Everything north of -18 is TS, which dilutes the label and adds nothing informative.",
+    "superseded_population": {
+      "observations": 176,
+      "storms": 18,
+      "cross_storm_pairs": 10721,
+      "nature_base_rate": 0.571,
+      "domain": "lat -60..-20"
+    },
+    "revised_population": {
+      "domain": "lat -58..-18",
+      "in_box": 293,
+      "refused_single_agency": 41,
+      "with_a_catalogue_radius": 252,
+      "storms": 21,
+      "radius_km": {
+        "median": 15.3,
+        "q90": 42.1,
+        "q95": 74.4,
+        "max": 145.2
+      },
+      "whole_box_nature_base_rate": 0.668,
+      "interior_observations": 176,
+      "interior_storms": 18,
+      "interior_cross_storm_pairs": 10721,
+      "interior_nature_base_rate": 0.571,
+      "non_ts": {
+        "SS": 39,
+        "ET": 5,
+        "storms": 9
+      }
+    },
+    "the_two_populations_must_not_be_confused": "The whole box holds 252 observations with a radius at a NATURE base rate of 0.668. The INTERIOR -- at least two degrees from the northern and southern edges, which is where a feature can be extracted at all -- holds 176 from 18 storms at 0.571. Every rate reported against this evidence must say which population it is over, and the interior is the one an identity criterion can actually use.",
+    "a_coincidence_that_could_mislead": "The new interior population is 176 observations from 18 storms at base rate 0.571, which are the same three numbers the OLD whole-box population carried. They are different populations that happen to coincide, not a quantity that stayed put, and anyone reading the two designs together should not take the match as continuity.",
+    "what_did_not_change": "The catalogue itself, its digest, its independence, its citation obligation, the per-observation radius rule, the adjudicating label NATURE, the MX/NR refusals, and the exclusion of the 2022-2023 forecast-test period."
+  }
 }

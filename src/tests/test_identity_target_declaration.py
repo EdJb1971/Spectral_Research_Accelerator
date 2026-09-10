@@ -346,7 +346,7 @@ def test_the_catalogue_design_is_not_signed_by_code():
     """Code does not sign catalogues, events or scientific preregistrations for a person."""
     body = _t4e17()
 
-    assert body["status"] in ("declared_before_evaluation", "AMENDED_BEFORE_SIGNATURE")
+    assert body["status"].startswith(("declared_before_evaluation", "AMENDED"))
     assert "SIGNED" in body["declared_by"]
     assert "NOT VALID until the maintainer has reviewed, adopted and SIGNED it" in (
         body["declared_by"])
@@ -503,6 +503,24 @@ def test_a_single_agency_observation_is_refused_because_the_catalogue_supplies_n
     assert "not given a default" in amendment["the_34_are_REFUSED_BY_NAME"]
 
 
+def test_the_domain_moved_and_both_supersessions_stay_visible():
+    """The crop was moved after the probe, so the evidence base changed and the signature was
+    re-given rather than carried over. Two supersessions now stand in the record: the radius and
+    base-rate correction, and the domain move. Neither is edited out.
+    """
+    body = _t4e17()
+
+    moved = body["amendment_2026_09_10_the_domain_moved"]
+    assert moved["superseded_population"]["domain"] == "lat -60..-20"
+    assert moved["revised_population"]["domain"] == "lat -58..-18"
+    assert "saturates" in moved["why_exactly_minus_18"]
+    assert "should not take the match as continuity" in (
+        moved["a_coincidence_that_could_mislead"])
+    assert "the_two_populations_must_not_be_confused" in moved
+    assert "the interior is the one an identity criterion can actually use" in (
+        moved["the_two_populations_must_not_be_confused"])
+
+
 def test_the_adjudicating_base_rate_was_wrong_in_the_flattering_direction():
     """0.571, not 0.391, once MX and NR are refused as the design already required.
 
@@ -536,7 +554,7 @@ def test_the_check_is_recorded_as_having_happened_before_signature():
     """The point of doing it first: the design is amended, not the result."""
     body = _t4e17()
 
-    assert body["status"] == "AMENDED_BEFORE_SIGNATURE"
+    assert body["status"].startswith("AMENDED")
     assert "before signature" in body["what_this_check_cost_and_saved"]
     assert "wrong by 0.18 in the direction that would have made any later result look better" in (
         body["what_this_check_cost_and_saved"])
@@ -578,19 +596,30 @@ def test_the_signature_is_bound_to_the_amended_design_by_hash():
     design = Path("data/identity_calibration/t4e17-external-catalogue-design.json").read_bytes()
     assert signature["signs_sha256"] == hashlib.sha256(design).hexdigest(), (
         "the design changed after signature; the signature must be re-given, not re-pointed")
-    assert signature["signs_design_status_at_signature"] == "AMENDED_BEFORE_SIGNATURE"
+    assert signature["signs_design_status_at_signature"] == (
+        "AMENDED_FOR_THE_T4E18_CROP_AND_RE_SIGNED")
+    assert signature["superseded_signature"]["signs_sha256"] != signature["signs_sha256"], (
+        "a re-given signature must point at a different design than the one it supersedes")
 
 
 def test_the_terms_signed_are_the_amended_terms_not_the_flattering_ones():
-    """18 storms and a 0.571 base rate, with the superseded figures still visible."""
+    """The signature was re-given on the moved domain, and names both populations.
+
+    The whole box and the interior are different populations with different base rates, and the
+    interior is the one an identity criterion can use. Quoting one where the other applies is
+    the quietest way to report a wrong number.
+    """
     terms = _t4e17_signature()["the_terms_signed_are_the_AMENDED_terms"]
 
-    assert "18 distinct storms" in terms["population"]
-    assert "0.571" in terms["adjudicating_label"]
+    assert terms["domain"] == "latitude -58 to -18, longitude 140 to 180"
+    assert "21 storms" in terms["population_whole_box"]
+    assert "0.668" in terms["population_whole_box"]
+    assert "18 storms" in terms["population_interior"]
+    assert "0.571" in terms["population_interior"]
+    assert "can actually use" in terms["population_interior"]
     assert "adjudicates nothing" in terms["characterisation_only"]
-    assert "34 single-agency observations refused by name" in terms["refusals"]
-    assert "0.391" in terms["the_superseded_figures_stay_visible"]
-    assert "flattered a later result" in terms["the_superseded_figures_stay_visible"]
+    assert "41 single-agency observations refused" in terms["refusals"]
+    assert "coincidence and not continuity" in terms["the_superseded_figures_stay_visible"]
 
 
 def test_signing_a_catalogue_evaluates_no_criterion():
