@@ -612,7 +612,32 @@ The original figures are superseded in place, not edited out. The check cost one
 pass and saved a signature on an unimplementable design plus a base rate wrong by 0.18 in the
 direction that would have made any later result look better than it was.
 
-**What it needs from you.** A signature, or a rejection. Code does not sign catalogues for a
+**SIGNED by the maintainer on 2026-09-10**, at design sha256 `c692ea19...` -- the amended
+design, not the original. `data/identity_calibration/t4e17-external-catalogue-signature.json`
+records the act; it does not perform it, and the binding to a content hash means the terms
+signed cannot drift from the terms recorded.
+
+**What the signature makes true: `kind_recurrence` is evaluable from the tool for the first
+time.** Its admissible evidence is `external_reference` alone; none has existed in this
+programme through T4E.7 to T4E.16, seven measured criteria and one withdrawn. The primary
+scientific target has been unevaluable throughout, and is not any more.
+
+The terms signed are the amended ones -- 176 observations from **18 storms**, `NATURE`
+adjudicating at a base rate of **0.571**, a per-observation radius from inter-agency spread with
+a median of 15.2 km, and 34 single-agency observations refused by name. The superseded figures
+(210 observations, 20 storms, 0.391) stay visible in the design, because the correction ran in
+the direction that would have flattered a later result.
+
+**Four obligations come with it**: the publisher's citation (Gahtan et al. 2024, DOI
+10.25921/82ty-9e16, with Knapp et al. 2010); the catalogue is never committed and a digest that
+fails to reproduce invalidates any evaluation built on it; every rate carries a storm-clustered
+interval, because the unit of independence is the storm and not the pair; and **only the
+two-sided error rates may be reported**, since accuracy is meaningless at a base rate of 0.571.
+
+**Signing evaluates no criterion.** A rule for this evidence needs its own declaration, written
+before these base rates shape it, and it can borrow nothing from the synthetic sequence.
+
+**What it needed from you was a signature, and it has one.** Code does not sign catalogues for a
 person, so this is a proposal until you say otherwise.
 
 **T4E.16 (2026-09-10): candidate 5 withdrawn before adoption, by derivation.** The size-scaled

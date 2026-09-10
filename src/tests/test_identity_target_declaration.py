@@ -540,3 +540,88 @@ def test_the_check_is_recorded_as_having_happened_before_signature():
     assert "before signature" in body["what_this_check_cost_and_saved"]
     assert "wrong by 0.18 in the direction that would have made any later result look better" in (
         body["what_this_check_cost_and_saved"])
+
+
+# ---------------- T4E.17 signed: kind_recurrence becomes evaluable for the first time
+#
+# The signature is the maintainer's act, recorded rather than performed. It is bound to the
+# AMENDED design by content hash, so the terms signed cannot drift from the terms recorded.
+
+
+def _t4e17_signature():
+    import json
+    from pathlib import Path
+
+    return json.loads(Path(
+        "data/identity_calibration/t4e17-external-catalogue-signature.json"
+    ).read_text(encoding="utf-8"))
+
+
+def test_the_signature_records_the_maintainers_act_and_does_not_perform_it():
+    """Code does not sign catalogues for a person, and the record says which happened."""
+    signature = _t4e17_signature()
+
+    assert signature["signed_by"] == "Edward Jonathan Bentley, maintainer"
+    assert "Code did not sign this catalogue" in signature["how_this_signature_was_given"]
+    assert "recorded a signature the maintainer gave" in (
+        signature["how_this_signature_was_given"])
+    assert "records the maintainer's act; it does not perform it" in (
+        " ".join(signature["governing"]))
+
+
+def test_the_signature_is_bound_to_the_amended_design_by_hash():
+    """What was signed is pinned, so it cannot drift from what was recorded."""
+    import hashlib
+    from pathlib import Path
+
+    signature = _t4e17_signature()
+    design = Path("data/identity_calibration/t4e17-external-catalogue-design.json").read_bytes()
+    assert signature["signs_sha256"] == hashlib.sha256(design).hexdigest(), (
+        "the design changed after signature; the signature must be re-given, not re-pointed")
+    assert signature["signs_design_status_at_signature"] == "AMENDED_BEFORE_SIGNATURE"
+
+
+def test_the_terms_signed_are_the_amended_terms_not_the_flattering_ones():
+    """18 storms and a 0.571 base rate, with the superseded figures still visible."""
+    terms = _t4e17_signature()["the_terms_signed_are_the_AMENDED_terms"]
+
+    assert "18 distinct storms" in terms["population"]
+    assert "0.571" in terms["adjudicating_label"]
+    assert "adjudicates nothing" in terms["characterisation_only"]
+    assert "34 single-agency observations refused by name" in terms["refusals"]
+    assert "0.391" in terms["the_superseded_figures_stay_visible"]
+    assert "flattered a later result" in terms["the_superseded_figures_stay_visible"]
+
+
+def test_signing_a_catalogue_evaluates_no_criterion():
+    """Evidence is not a result, and the signature says so before any rule exists."""
+    signature = _t4e17_signature()
+
+    refused = " ".join(signature["what_this_signature_does_NOT_do"])
+    assert "It evaluates no criterion" in refused
+    assert "transfers nothing from the synthetic sequence" in refused
+    assert "does not open the 2022-2023 forecast-test period" in refused
+    assert "A signed catalogue is evidence, not a result" in signature["claim_boundary"]
+
+
+def test_the_signature_carries_its_own_obligations():
+    """Citation, non-commitment of the data, clustered intervals, and no accuracy figure."""
+    obligations = " ".join(_t4e17_signature()["obligations_this_signature_creates"])
+
+    assert "10.25921/82ty-9e16" in obligations
+    assert "never committed" in obligations
+    assert "storm-clustered interval" in obligations
+    assert "Accuracy is meaningless at a base rate of 0.571" in obligations
+
+
+def test_the_target_that_was_unevaluable_throughout_is_now_evaluable():
+    """The whole point: kind_recurrence admits external_reference alone, and now has some."""
+    from src.analysis_engine.spectral_identity_audit import (
+        EVIDENCE_CLASSES, IDENTITY_TARGETS)
+
+    target = IDENTITY_TARGETS.get("kind_recurrence")
+    assert tuple(target.admissible_evidence) == ("external_reference",)
+    assert EVIDENCE_CLASSES.get("external_reference").independent_of_record is True
+    signature = _t4e17_signature()
+    assert "unevaluable throughout" in signature["what_the_signature_makes_true"]
+    assert "Eighteen storms" in signature["the_ceiling_the_maintainer_signed_with_open_eyes"]

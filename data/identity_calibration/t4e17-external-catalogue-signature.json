@@ -1,0 +1,40 @@
+{
+  "schema": "t4e17-external-catalogue-signature/v1",
+  "signs": "data/identity_calibration/t4e17-external-catalogue-design.json",
+  "signs_sha256": "c692ea195f0928ac3f0d9a3a4be0b964a713d5a0349f06e23f83783481b38e59",
+  "signs_design_status_at_signature": "AMENDED_BEFORE_SIGNATURE",
+  "signed_by": "Edward Jonathan Bentley, maintainer",
+  "signed_on": "2026-09-10",
+  "how_this_signature_was_given": "The maintainer instructed it in their own words after being shown the amended terms -- 18 storms, a NATURE base rate of 0.571, a per-observation radius from inter-agency spread, and 34 refusals. Code did not sign this catalogue; it recorded a signature the maintainer gave, and it is bound to the sha256 above so that the thing signed cannot drift from the thing recorded.",
+  "what_is_signed": "That IBTrACS v04r01, South Pacific subset, at sha256 631f76b95c77a6a4e409233466a0d501bb4848324e421fc58e228efea2086c44, is admitted as external_reference evidence for the identity target kind_recurrence, on exactly the terms the amended design states and no others.",
+  "what_the_signature_makes_true": "kind_recurrence becomes evaluable from the tool for the first time. Its admissible evidence is external_reference alone, no such evidence has existed in this programme, and the primary scientific target has therefore been unevaluable throughout -- through T4E.7 to T4E.16, seven measured criteria and one withdrawn.",
+  "the_terms_signed_are_the_AMENDED_terms": {
+    "population": "176 in-box synoptic observations from 18 distinct storms, 2018-01-01 to 2021-12-31",
+    "adjudicating_label": "NATURE, base rate 0.571 after MX and NR are refused",
+    "characterisation_only": "USA_SSHS, base rate 0.227, which adjudicates nothing and was not substituted after both rates were seen",
+    "radius": "per observation, the greatest distance from the catalogue position to any contributing agency position; median 15.2 km against a record grid cell of 21.3 by 27.8 km",
+    "refusals": "34 single-agency observations refused by name, because the catalogue supplies no radius for them and a default would be a number nobody is entitled to",
+    "the_superseded_figures_stay_visible": "210 observations, 20 storms and a NATURE base rate of 0.391 were the pre-amendment figures. They are retained in the design, superseded rather than deleted, because the correction went in the direction that would have flattered a later result."
+  },
+  "what_this_signature_does_NOT_do": [
+    "It evaluates no criterion. No identity rule is declared, adopted or measured by signing a catalogue, and a criterion for this evidence needs its own declaration written before these base rates shape it.",
+    "It transfers nothing from the synthetic sequence. Candidate 2's k = S is meaningless on storm observations, and the specificity problem that shaped seven candidates is largely absent here.",
+    "It does not open the 2022-2023 forecast-test period. The catalogue's 13 in-box storms there were counted from the catalogue and remain unmatched against any frame.",
+    "It approves no mining radius, discharges no part of T4E.8's acquired-record acceptance, and closes none of D96, D97, D98, D99 or D100.",
+    "It does not make the catalogue physics. The labels are the contributing agencies' operational judgements, reviewed post-season; a criterion agreeing with them has agreed with those judgements."
+  ],
+  "the_ceiling_the_maintainer_signed_with_open_eyes": "Eighteen storms, one basin, one 40-degree box, four years, and a kind label of six values two of which are refusals. That is the honest ceiling and no amount of pair-counting changes it: there are 10,721 cross-storm pairs but the unit of independence is the storm. A criterion that succeeds here succeeds on a small, real, externally-labelled population -- categorically better evidence than the synthetic sequence produced, and still small.",
+  "obligations_this_signature_creates": [
+    "The publisher's citation requirement is binding: Gahtan et al. (2024), DOI 10.25921/82ty-9e16, together with Knapp et al. (2010), BAMS 91, 363-376.",
+    "The catalogue file is never committed. It is bound by its digest, and a re-download that fails to reproduce 631f76b9... invalidates any evaluation built on it, which must then say so.",
+    "Every rate reported against this evidence carries a storm-clustered interval. An interval computed as though the pairs were independent is wrong and may not be published.",
+    "Only the two-sided error rates may be reported. Accuracy is meaningless at a base rate of 0.571."
+  ],
+  "governing": [
+    "Code does not sign catalogues, events or scientific preregistrations for a person. This file records the maintainer's act; it does not perform it.",
+    "Never commit the catalogue; bind it by its content identity.",
+    "Already inspected data do not become untouched by renaming them. The 2018-2021 catalogue window is development evidence from 2026-09-10.",
+    "R19: this evidence is atmospheric, and cross-domain use of anything built on it needs its own declared experiment."
+  ],
+  "claim_boundary": "A signed catalogue is evidence, not a result. No frame of the 2022-2023 forecast-test period is opened by this signature."
+}

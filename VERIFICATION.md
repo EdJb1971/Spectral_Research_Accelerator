@@ -12385,8 +12385,32 @@ release decision, but it does mean two gates that read PASS now read NOT_RUN and
 were not isolated to a cause; the run predates no clean baseline for this suite size, so they
 are reported as measured rather than attributed.
 
-**T4E.17 external catalogue (2026-09-10): proposed and UNSIGNED. The primary target becomes
-evaluable.**
+**T4E.17 external catalogue (2026-09-10): SIGNED. The primary target is evaluable.**
+
+**SIGNED by the maintainer on 2026-09-10**, at design sha256 `c692ea19...` -- the amended
+design, not the original. `data/identity_calibration/t4e17-external-catalogue-signature.json`
+records the act; it does not perform it, and the binding to a content hash means the terms
+signed cannot drift from the terms recorded.
+
+**What the signature makes true: `kind_recurrence` is evaluable from the tool for the first
+time.** Its admissible evidence is `external_reference` alone; none has existed in this
+programme through T4E.7 to T4E.16, seven measured criteria and one withdrawn. The primary
+scientific target has been unevaluable throughout, and is not any more.
+
+The terms signed are the amended ones -- 176 observations from **18 storms**, `NATURE`
+adjudicating at a base rate of **0.571**, a per-observation radius from inter-agency spread with
+a median of 15.2 km, and 34 single-agency observations refused by name. The superseded figures
+(210 observations, 20 storms, 0.391) stay visible in the design, because the correction ran in
+the direction that would have flattered a later result.
+
+**Four obligations come with it**: the publisher's citation (Gahtan et al. 2024, DOI
+10.25921/82ty-9e16, with Knapp et al. 2010); the catalogue is never committed and a digest that
+fails to reproduce invalidates any evaluation built on it; every rate carries a storm-clustered
+interval, because the unit of independence is the storm and not the pair; and **only the
+two-sided error rates may be reported**, since accuracy is meaningless at a base rate of 0.571.
+
+**Signing evaluates no criterion.** A rule for this evidence needs its own declaration, written
+before these base rates shape it, and it can borrow nothing from the synthetic sequence.
 
 ```
 T4E.17 -- IBTrACS v04r01, South Pacific subset, sha256 631f76b9..., 35,482,417 bytes
