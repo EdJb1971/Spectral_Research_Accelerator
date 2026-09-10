@@ -1,0 +1,1750 @@
+{
+  "measurement": "t4e21_faithful_background",
+  "gate": {
+    "passed": true,
+    "reasons": [],
+    "median": 4,
+    "maximum": 9,
+    "n_frames": 39
+  },
+  "synthetic_feature_counts": [
+    3,
+    6,
+    6,
+    7,
+    5,
+    1,
+    5,
+    5,
+    4,
+    3,
+    6,
+    9,
+    3,
+    5,
+    3,
+    6,
+    6,
+    4,
+    5,
+    5,
+    4,
+    6,
+    4,
+    6,
+    3,
+    6,
+    3,
+    2,
+    3,
+    1,
+    5,
+    4,
+    3,
+    6,
+    5,
+    4,
+    4,
+    3,
+    1
+  ],
+  "planted": 247,
+  "recovered": 167,
+  "never_recovered": 80,
+  "extracted_matching_no_planting": 3,
+  "rows": [
+    {
+      "offset_cells": 0.16942627177125213,
+      "sigma": 2.6734098120310548,
+      "ratio": 25.467996175270503,
+      "stretch": 1.5,
+      "recovered_sigma": 3.175828392927666,
+      "axis_angle": 82.97166471956871,
+      "planted_in_frame": 3,
+      "found_in_frame": 3
+    },
+    {
+      "offset_cells": 1.3560712088313687,
+      "sigma": 4.916475536964965,
+      "ratio": 9.480554432470667,
+      "stretch": 1.5,
+      "recovered_sigma": 6.64110815959013,
+      "axis_angle": 3.3229014093912923,
+      "planted_in_frame": 3,
+      "found_in_frame": 3
+    },
+    {
+      "offset_cells": 0.6327811336898613,
+      "sigma": 1.73,
+      "ratio": 16.54414326403124,
+      "stretch": 2.5,
+      "recovered_sigma": 2.641224466731845,
+      "axis_angle": 34.79443382350141,
+      "planted_in_frame": 3,
+      "found_in_frame": 3
+    },
+    {
+      "offset_cells": 0.2004104682215078,
+      "sigma": 3.97159294881474,
+      "ratio": 27.082677187470285,
+      "stretch": 2.5,
+      "recovered_sigma": 5.99765181685083,
+      "axis_angle": 10.351474708137772,
+      "planted_in_frame": 9,
+      "found_in_frame": 6
+    },
+    {
+      "offset_cells": 4.529634080828142,
+      "sigma": 7.020202034387728,
+      "ratio": 20.75118092936502,
+      "stretch": 1.5,
+      "recovered_sigma": 9.422430687825006,
+      "axis_angle": 14.720252211825994,
+      "planted_in_frame": 9,
+      "found_in_frame": 6
+    },
+    {
+      "offset_cells": 0.40989389152570355,
+      "sigma": 3.3318544457372763,
+      "ratio": 31.580731677932505,
+      "stretch": 2.5,
+      "recovered_sigma": 5.077277169150995,
+      "axis_angle": 19.235526010633833,
+      "planted_in_frame": 9,
+      "found_in_frame": 6
+    },
+    {
+      "offset_cells": 0.18604434750797982,
+      "sigma": 3.4512938468840555,
+      "ratio": 31.512465841144234,
+      "stretch": 2.5,
+      "recovered_sigma": 5.318108023861019,
+      "axis_angle": 53.57479726154034,
+      "planted_in_frame": 9,
+      "found_in_frame": 6
+    },
+    {
+      "offset_cells": 0.11403154096231784,
+      "sigma": 5.468999589401585,
+      "ratio": 21.526859274682746,
+      "stretch": 1.5,
+      "recovered_sigma": 6.528258132625986,
+      "axis_angle": 56.10150867383743,
+      "planted_in_frame": 9,
+      "found_in_frame": 6
+    },
+    {
+      "offset_cells": 0.3881626539751695,
+      "sigma": 7.012943627285349,
+      "ratio": 19.988921370856712,
+      "stretch": 1.0,
+      "recovered_sigma": 6.590935468070937,
+      "axis_angle": 68.62690210820955,
+      "planted_in_frame": 9,
+      "found_in_frame": 6
+    },
+    {
+      "offset_cells": 0.09269873419714915,
+      "sigma": 2.747906686425162,
+      "ratio": 20.01501257825821,
+      "stretch": 1.5,
+      "recovered_sigma": 3.4796404820868325,
+      "axis_angle": 43.10646037623522,
+      "planted_in_frame": 7,
+      "found_in_frame": 6
+    },
+    {
+      "offset_cells": 0.38673002720092764,
+      "sigma": 2.8160441328751897,
+      "ratio": 22.72915697926298,
+      "stretch": 2.5,
+      "recovered_sigma": 4.023148112595273,
+      "axis_angle": 17.94081848990288,
+      "planted_in_frame": 7,
+      "found_in_frame": 6
+    },
+    {
+      "offset_cells": 0.6710023627492885,
+      "sigma": 2.3775714526363587,
+      "ratio": 12.617252629962975,
+      "stretch": 1.0,
+      "recovered_sigma": 2.3537812362218675,
+      "axis_angle": 46.78491291431686,
+      "planted_in_frame": 7,
+      "found_in_frame": 6
+    },
+    {
+      "offset_cells": 0.15364813956943893,
+      "sigma": 2.2019488822045665,
+      "ratio": 25.831309326904922,
+      "stretch": 1.0,
+      "recovered_sigma": 2.2716198958636307,
+      "axis_angle": 73.57996323602376,
+      "planted_in_frame": 7,
+      "found_in_frame": 6
+    },
+    {
+      "offset_cells": 0.25639691197602804,
+      "sigma": 2.3339756840305745,
+      "ratio": 31.996987373390823,
+      "stretch": 1.5,
+      "recovered_sigma": 2.891234025471897,
+      "axis_angle": 5.857288782102856,
+      "planted_in_frame": 7,
+      "found_in_frame": 6
+    },
+    {
+      "offset_cells": 0.15962316905823262,
+      "sigma": 3.9281612259984815,
+      "ratio": 16.705612086835448,
+      "stretch": 1.5,
+      "recovered_sigma": 4.7636810524895274,
+      "axis_angle": 72.52473154738243,
+      "planted_in_frame": 7,
+      "found_in_frame": 6
+    },
+    {
+      "offset_cells": 0.21170511920368545,
+      "sigma": 1.8829448168095921,
+      "ratio": 22.63053725535727,
+      "stretch": 1.5,
+      "recovered_sigma": 2.3175375177018247,
+      "axis_angle": 67.6592909952563,
+      "planted_in_frame": 9,
+      "found_in_frame": 7
+    },
+    {
+      "offset_cells": 0.3493740936681411,
+      "sigma": 3.6953854401615884,
+      "ratio": 19.28835918222255,
+      "stretch": 1.0,
+      "recovered_sigma": 3.8319636037043683,
+      "axis_angle": 73.72369164893755,
+      "planted_in_frame": 9,
+      "found_in_frame": 7
+    },
+    {
+      "offset_cells": 0.44348977196206457,
+      "sigma": 5.427642373074019,
+      "ratio": 14.698017868548305,
+      "stretch": 1.0,
+      "recovered_sigma": 5.464368158697034,
+      "axis_angle": 50.41853196709846,
+      "planted_in_frame": 9,
+      "found_in_frame": 7
+    },
+    {
+      "offset_cells": 0.08664289455290893,
+      "sigma": 2.7070392648363026,
+      "ratio": 20.67298126093855,
+      "stretch": 1.5,
+      "recovered_sigma": 3.3077581469098,
+      "axis_angle": 4.181092060425954,
+      "planted_in_frame": 9,
+      "found_in_frame": 7
+    },
+    {
+      "offset_cells": 0.04154080857163083,
+      "sigma": 3.4530974658614246,
+      "ratio": 21.696713231006576,
+      "stretch": 1.0,
+      "recovered_sigma": 3.2862390495210585,
+      "axis_angle": 85.58709079941133,
+      "planted_in_frame": 9,
+      "found_in_frame": 7
+    },
+    {
+      "offset_cells": 0.22524822262496025,
+      "sigma": 5.470298659536848,
+      "ratio": 27.45326709879784,
+      "stretch": 1.0,
+      "recovered_sigma": 5.363679396109297,
+      "axis_angle": 69.60034236885137,
+      "planted_in_frame": 9,
+      "found_in_frame": 7
+    },
+    {
+      "offset_cells": 0.2130297747810339,
+      "sigma": 3.5875945593334992,
+      "ratio": 22.55055046161788,
+      "stretch": 1.0,
+      "recovered_sigma": 3.207839688978049,
+      "axis_angle": 64.29482345158274,
+      "planted_in_frame": 9,
+      "found_in_frame": 7
+    },
+    {
+      "offset_cells": 1.000272716776268,
+      "sigma": 1.8062478685372332,
+      "ratio": 21.57378045681791,
+      "stretch": 1.5,
+      "recovered_sigma": 2.5162603862713158,
+      "axis_angle": 52.25694635148747,
+      "planted_in_frame": 7,
+      "found_in_frame": 5
+    },
+    {
+      "offset_cells": 1.1735240438150756,
+      "sigma": 5.218872322794342,
+      "ratio": 15.631223396269519,
+      "stretch": 1.0,
+      "recovered_sigma": 6.355331371010352,
+      "axis_angle": 82.93890487436033,
+      "planted_in_frame": 7,
+      "found_in_frame": 5
+    },
+    {
+      "offset_cells": 0.1644472445725416,
+      "sigma": 3.559591861528558,
+      "ratio": 26.76726918202745,
+      "stretch": 1.0,
+      "recovered_sigma": 3.409780084112375,
+      "axis_angle": 64.14975597892715,
+      "planted_in_frame": 7,
+      "found_in_frame": 5
+    },
+    {
+      "offset_cells": 0.2724813001649817,
+      "sigma": 2.9248002867355876,
+      "ratio": 12.875272309733647,
+      "stretch": 1.0,
+      "recovered_sigma": 3.0678161559992243,
+      "axis_angle": 51.422715809821824,
+      "planted_in_frame": 7,
+      "found_in_frame": 5
+    },
+    {
+      "offset_cells": 1.4284399174216265,
+      "sigma": 4.888665976706571,
+      "ratio": 22.480742263054744,
+      "stretch": 2.5,
+      "recovered_sigma": 7.351638401366174,
+      "axis_angle": 3.078659907950197,
+      "planted_in_frame": 7,
+      "found_in_frame": 5
+    },
+    {
+      "offset_cells": 0.2948594871286379,
+      "sigma": 4.733126678446963,
+      "ratio": 29.40445336691535,
+      "stretch": 1.0,
+      "recovered_sigma": 4.743780659296322,
+      "axis_angle": 3.0981232778279377,
+      "planted_in_frame": 9,
+      "found_in_frame": 1
+    },
+    {
+      "offset_cells": 0.22068775440199082,
+      "sigma": 2.762660138135696,
+      "ratio": 18.596614689323687,
+      "stretch": 1.0,
+      "recovered_sigma": 2.6817668283548732,
+      "axis_angle": 73.97036978531321,
+      "planted_in_frame": 5,
+      "found_in_frame": 5
+    },
+    {
+      "offset_cells": 0.2776744962552771,
+      "sigma": 7.405967657387872,
+      "ratio": 26.315690719273135,
+      "stretch": 1.0,
+      "recovered_sigma": 7.313582964447371,
+      "axis_angle": 39.084308418639324,
+      "planted_in_frame": 5,
+      "found_in_frame": 5
+    },
+    {
+      "offset_cells": 1.131851646386979,
+      "sigma": 5.881242013863271,
+      "ratio": 19.731580747355874,
+      "stretch": 2.5,
+      "recovered_sigma": 8.66251462751357,
+      "axis_angle": 4.183489553530734,
+      "planted_in_frame": 5,
+      "found_in_frame": 5
+    },
+    {
+      "offset_cells": 0.3375498995727669,
+      "sigma": 4.027491222188354,
+      "ratio": 24.908924925136034,
+      "stretch": 1.5,
+      "recovered_sigma": 4.8863918849375345,
+      "axis_angle": 87.38900419599258,
+      "planted_in_frame": 5,
+      "found_in_frame": 5
+    },
+    {
+      "offset_cells": 1.0289238375052756,
+      "sigma": 4.0305545722568725,
+      "ratio": 22.294329633855423,
+      "stretch": 1.5,
+      "recovered_sigma": 5.390145800034268,
+      "axis_angle": 23.238113316841236,
+      "planted_in_frame": 5,
+      "found_in_frame": 5
+    },
+    {
+      "offset_cells": 0.48839330429621874,
+      "sigma": 4.261830587471275,
+      "ratio": 30.141679872201678,
+      "stretch": 1.0,
+      "recovered_sigma": 4.511969111130006,
+      "axis_angle": 87.73378440155486,
+      "planted_in_frame": 6,
+      "found_in_frame": 5
+    },
+    {
+      "offset_cells": 0.5148893826797303,
+      "sigma": 3.525680815189524,
+      "ratio": 14.345708362811097,
+      "stretch": 1.5,
+      "recovered_sigma": 4.059358741550808,
+      "axis_angle": 2.0884209252626817,
+      "planted_in_frame": 6,
+      "found_in_frame": 5
+    },
+    {
+      "offset_cells": 0.4211701512485844,
+      "sigma": 9.178912509318021,
+      "ratio": 14.855704033606578,
+      "stretch": 1.5,
+      "recovered_sigma": 10.96247530954137,
+      "axis_angle": 27.731801223032335,
+      "planted_in_frame": 6,
+      "found_in_frame": 5
+    },
+    {
+      "offset_cells": 0.12652540433052242,
+      "sigma": 2.239195240075248,
+      "ratio": 31.519145956827366,
+      "stretch": 1.5,
+      "recovered_sigma": 2.7159524169957594,
+      "axis_angle": 62.64776323440245,
+      "planted_in_frame": 6,
+      "found_in_frame": 5
+    },
+    {
+      "offset_cells": 6.232432238155799,
+      "sigma": 6.692450799812404,
+      "ratio": 13.234175573840156,
+      "stretch": 2.5,
+      "recovered_sigma": 14.677277215181345,
+      "axis_angle": 60.76117073157755,
+      "planted_in_frame": 6,
+      "found_in_frame": 5
+    },
+    {
+      "offset_cells": 0.2162324581288867,
+      "sigma": 5.362181014899136,
+      "ratio": 28.646377021381042,
+      "stretch": 1.0,
+      "recovered_sigma": 5.603756025605416,
+      "axis_angle": 28.50197763121004,
+      "planted_in_frame": 5,
+      "found_in_frame": 4
+    },
+    {
+      "offset_cells": 0.09503635859999701,
+      "sigma": 3.468182713779965,
+      "ratio": 27.991279641721434,
+      "stretch": 1.0,
+      "recovered_sigma": 3.5696984482392597,
+      "axis_angle": 48.61215122027801,
+      "planted_in_frame": 5,
+      "found_in_frame": 4
+    },
+    {
+      "offset_cells": 0.912436031626666,
+      "sigma": 5.195251177809448,
+      "ratio": 30.649105830472223,
+      "stretch": 2.5,
+      "recovered_sigma": 7.8988335081664784,
+      "axis_angle": 13.293367375835118,
+      "planted_in_frame": 5,
+      "found_in_frame": 4
+    },
+    {
+      "offset_cells": 0.1807499546269253,
+      "sigma": 4.945404469881743,
+      "ratio": 19.237711642094705,
+      "stretch": 1.0,
+      "recovered_sigma": 4.9135752843953435,
+      "axis_angle": 69.50734483116912,
+      "planted_in_frame": 5,
+      "found_in_frame": 4
+    },
+    {
+      "offset_cells": 6.472205556613437,
+      "sigma": 3.837735005161375,
+      "ratio": 16.50544433315429,
+      "stretch": 1.5,
+      "recovered_sigma": 8.53514743413612,
+      "axis_angle": 1.0087515862083336,
+      "planted_in_frame": 4,
+      "found_in_frame": 3
+    },
+    {
+      "offset_cells": 1.319871604330518,
+      "sigma": 4.105933909146111,
+      "ratio": 20.84570746131164,
+      "stretch": 2.5,
+      "recovered_sigma": 6.402099233505557,
+      "axis_angle": 18.106534907891543,
+      "planted_in_frame": 4,
+      "found_in_frame": 3
+    },
+    {
+      "offset_cells": 0.17782862799986346,
+      "sigma": 2.1664529688990406,
+      "ratio": 29.726988235317517,
+      "stretch": 1.5,
+      "recovered_sigma": 2.6334059106726553,
+      "axis_angle": 14.417055619227767,
+      "planted_in_frame": 4,
+      "found_in_frame": 3
+    },
+    {
+      "offset_cells": 0.19096283613124826,
+      "sigma": 3.132788933782736,
+      "ratio": 28.790358874620935,
+      "stretch": 1.5,
+      "recovered_sigma": 3.7678737908315028,
+      "axis_angle": 83.28731219412094,
+      "planted_in_frame": 7,
+      "found_in_frame": 6
+    },
+    {
+      "offset_cells": 0.03764836208279273,
+      "sigma": 1.73,
+      "ratio": 22.966296815020947,
+      "stretch": 1.5,
+      "recovered_sigma": 2.1271584920407434,
+      "axis_angle": 59.984385657849856,
+      "planted_in_frame": 7,
+      "found_in_frame": 6
+    },
+    {
+      "offset_cells": 0.30843722034609566,
+      "sigma": 1.73,
+      "ratio": 19.005433769172747,
+      "stretch": 1.5,
+      "recovered_sigma": 2.092210523906507,
+      "axis_angle": 28.29961230195532,
+      "planted_in_frame": 7,
+      "found_in_frame": 6
+    },
+    {
+      "offset_cells": 0.5257113258141609,
+      "sigma": 6.58938661762807,
+      "ratio": 21.576207188700124,
+      "stretch": 1.0,
+      "recovered_sigma": 6.68509575603268,
+      "axis_angle": 1.5150962724881083,
+      "planted_in_frame": 7,
+      "found_in_frame": 6
+    },
+    {
+      "offset_cells": 1.3090765190199622,
+      "sigma": 3.481685456567259,
+      "ratio": 14.960231483243309,
+      "stretch": 1.0,
+      "recovered_sigma": 4.185690671189432,
+      "axis_angle": 25.29587520440721,
+      "planted_in_frame": 7,
+      "found_in_frame": 6
+    },
+    {
+      "offset_cells": 0.22195573948983893,
+      "sigma": 5.654311521332464,
+      "ratio": 30.79699078884572,
+      "stretch": 2.5,
+      "recovered_sigma": 8.513240913171243,
+      "axis_angle": 19.989292171679978,
+      "planted_in_frame": 7,
+      "found_in_frame": 6
+    },
+    {
+      "offset_cells": 0.08193076074272461,
+      "sigma": 2.570677922120868,
+      "ratio": 31.027400147503336,
+      "stretch": 1.0,
+      "recovered_sigma": 2.5381683609179055,
+      "axis_angle": 6.028824678028656,
+      "planted_in_frame": 9,
+      "found_in_frame": 9
+    },
+    {
+      "offset_cells": 0.449155014957412,
+      "sigma": 1.73,
+      "ratio": 15.18365006316785,
+      "stretch": 1.0,
+      "recovered_sigma": 1.9623003605857046,
+      "axis_angle": 44.32141340263871,
+      "planted_in_frame": 9,
+      "found_in_frame": 9
+    },
+    {
+      "offset_cells": 0.42605038922241445,
+      "sigma": 4.6330971253117434,
+      "ratio": 20.843222983787562,
+      "stretch": 1.0,
+      "recovered_sigma": 4.717896894560494,
+      "axis_angle": 34.54921010845662,
+      "planted_in_frame": 9,
+      "found_in_frame": 9
+    },
+    {
+      "offset_cells": 0.3690182308384031,
+      "sigma": 3.1224857026428845,
+      "ratio": 25.97771368757971,
+      "stretch": 1.5,
+      "recovered_sigma": 3.8397316380571875,
+      "axis_angle": 12.65618164341437,
+      "planted_in_frame": 9,
+      "found_in_frame": 9
+    },
+    {
+      "offset_cells": 1.1001752679050691,
+      "sigma": 6.609922570300451,
+      "ratio": 19.606049763690027,
+      "stretch": 1.5,
+      "recovered_sigma": 7.8318390575830374,
+      "axis_angle": 4.725746339675823,
+      "planted_in_frame": 9,
+      "found_in_frame": 9
+    },
+    {
+      "offset_cells": 0.33866854305077987,
+      "sigma": 3.086365532336623,
+      "ratio": 12.657969262980547,
+      "stretch": 2.5,
+      "recovered_sigma": 4.660415580785059,
+      "axis_angle": 3.0747061835309637,
+      "planted_in_frame": 9,
+      "found_in_frame": 9
+    },
+    {
+      "offset_cells": 0.10964731535810959,
+      "sigma": 3.170868722909514,
+      "ratio": 28.709278755489287,
+      "stretch": 1.0,
+      "recovered_sigma": 3.282642025947415,
+      "axis_angle": 83.04592070583917,
+      "planted_in_frame": 9,
+      "found_in_frame": 9
+    },
+    {
+      "offset_cells": 0.03978523915581819,
+      "sigma": 2.1396155212836145,
+      "ratio": 26.0172882232036,
+      "stretch": 1.0,
+      "recovered_sigma": 2.1612464304654435,
+      "axis_angle": 2.8341788172913027,
+      "planted_in_frame": 9,
+      "found_in_frame": 9
+    },
+    {
+      "offset_cells": 0.10992264371457379,
+      "sigma": 2.6411511190950008,
+      "ratio": 14.290588513049638,
+      "stretch": 1.0,
+      "recovered_sigma": 2.80706642231053,
+      "axis_angle": 87.92053857406304,
+      "planted_in_frame": 9,
+      "found_in_frame": 9
+    },
+    {
+      "offset_cells": 0.25452209062779124,
+      "sigma": 2.9410164070338247,
+      "ratio": 28.922696269172203,
+      "stretch": 1.0,
+      "recovered_sigma": 3.035553218832578,
+      "axis_angle": 77.91927578282463,
+      "planted_in_frame": 3,
+      "found_in_frame": 3
+    },
+    {
+      "offset_cells": 0.26265775198567415,
+      "sigma": 4.275168811679836,
+      "ratio": 22.804098671705134,
+      "stretch": 1.5,
+      "recovered_sigma": 5.257660377635976,
+      "axis_angle": 29.99204869837976,
+      "planted_in_frame": 3,
+      "found_in_frame": 3
+    },
+    {
+      "offset_cells": 0.5019556584042415,
+      "sigma": 4.083620006948479,
+      "ratio": 28.04964070140523,
+      "stretch": 2.5,
+      "recovered_sigma": 6.022960141678487,
+      "axis_angle": 49.898204592836635,
+      "planted_in_frame": 3,
+      "found_in_frame": 3
+    },
+    {
+      "offset_cells": 2.5022396837981367,
+      "sigma": 3.3645056675566636,
+      "ratio": 15.027782008481719,
+      "stretch": 1.5,
+      "recovered_sigma": 4.731429326703148,
+      "axis_angle": 45.21021350679612,
+      "planted_in_frame": 9,
+      "found_in_frame": 5
+    },
+    {
+      "offset_cells": 2.1853707262821973,
+      "sigma": 3.7514538411148872,
+      "ratio": 15.284115250267153,
+      "stretch": 1.5,
+      "recovered_sigma": 5.413089283273048,
+      "axis_angle": 8.207411679208917,
+      "planted_in_frame": 9,
+      "found_in_frame": 5
+    },
+    {
+      "offset_cells": 0.35863650319658663,
+      "sigma": 1.73,
+      "ratio": 17.42843902386921,
+      "stretch": 1.5,
+      "recovered_sigma": 2.329411503794441,
+      "axis_angle": 34.53499589275313,
+      "planted_in_frame": 9,
+      "found_in_frame": 5
+    },
+    {
+      "offset_cells": 0.12957780743947367,
+      "sigma": 2.5197205752936167,
+      "ratio": 24.031827445603355,
+      "stretch": 1.5,
+      "recovered_sigma": 3.0269755349282725,
+      "axis_angle": 62.34934259160738,
+      "planted_in_frame": 9,
+      "found_in_frame": 5
+    },
+    {
+      "offset_cells": 6.509567713030357,
+      "sigma": 3.9039822495176786,
+      "ratio": 12.838816454928937,
+      "stretch": 1.5,
+      "recovered_sigma": 13.15568711958875,
+      "axis_angle": 79.01924730425156,
+      "planted_in_frame": 9,
+      "found_in_frame": 5
+    },
+    {
+      "offset_cells": 1.046118220807895,
+      "sigma": 3.062594518014324,
+      "ratio": 31.723433978247137,
+      "stretch": 1.5,
+      "recovered_sigma": 5.026789742093412,
+      "axis_angle": 64.80620859115373,
+      "planted_in_frame": 8,
+      "found_in_frame": 3
+    },
+    {
+      "offset_cells": 0.209403006836936,
+      "sigma": 3.0714353960115384,
+      "ratio": 31.787765271531264,
+      "stretch": 2.5,
+      "recovered_sigma": 4.594500619915255,
+      "axis_angle": 37.95962817307989,
+      "planted_in_frame": 8,
+      "found_in_frame": 3
+    },
+    {
+      "offset_cells": 0.07223841587138055,
+      "sigma": 4.174108726527654,
+      "ratio": 29.63510654035194,
+      "stretch": 1.0,
+      "recovered_sigma": 4.273657307679779,
+      "axis_angle": 82.85026038404777,
+      "planted_in_frame": 6,
+      "found_in_frame": 6
+    },
+    {
+      "offset_cells": 0.12067698065139919,
+      "sigma": 2.0760235406982637,
+      "ratio": 28.370964063437874,
+      "stretch": 2.5,
+      "recovered_sigma": 3.3673418234417594,
+      "axis_angle": 35.89102839030639,
+      "planted_in_frame": 6,
+      "found_in_frame": 6
+    },
+    {
+      "offset_cells": 0.4402443990004728,
+      "sigma": 4.284577479820361,
+      "ratio": 14.992497482261957,
+      "stretch": 1.0,
+      "recovered_sigma": 4.404308332084073,
+      "axis_angle": 56.30998164419702,
+      "planted_in_frame": 6,
+      "found_in_frame": 6
+    },
+    {
+      "offset_cells": 0.24102931587104082,
+      "sigma": 5.587719536785716,
+      "ratio": 25.198143268209666,
+      "stretch": 1.0,
+      "recovered_sigma": 5.409178176322374,
+      "axis_angle": 75.45977862654385,
+      "planted_in_frame": 6,
+      "found_in_frame": 6
+    },
+    {
+      "offset_cells": 0.3228345906456046,
+      "sigma": 2.958115021783722,
+      "ratio": 12.83313444136866,
+      "stretch": 2.5,
+      "recovered_sigma": 4.05454597966321,
+      "axis_angle": 23.494584764419585,
+      "planted_in_frame": 6,
+      "found_in_frame": 6
+    },
+    {
+      "offset_cells": 0.37567697278079154,
+      "sigma": 1.9974691811161513,
+      "ratio": 17.36103356950375,
+      "stretch": 1.0,
+      "recovered_sigma": 1.9723764239139983,
+      "axis_angle": 5.067265212776903,
+      "planted_in_frame": 6,
+      "found_in_frame": 6
+    },
+    {
+      "offset_cells": 0.08723609117459123,
+      "sigma": 1.73,
+      "ratio": 27.05895899554463,
+      "stretch": 1.0,
+      "recovered_sigma": 1.7377979876516667,
+      "axis_angle": 38.50311947976293,
+      "planted_in_frame": 7,
+      "found_in_frame": 6
+    },
+    {
+      "offset_cells": 0.29937464668597125,
+      "sigma": 3.271665414555371,
+      "ratio": 31.14603842447336,
+      "stretch": 1.5,
+      "recovered_sigma": 4.156826123786039,
+      "axis_angle": 28.5362868910523,
+      "planted_in_frame": 7,
+      "found_in_frame": 6
+    },
+    {
+      "offset_cells": 0.6705836167493151,
+      "sigma": 4.004384573390743,
+      "ratio": 25.817203519054416,
+      "stretch": 2.5,
+      "recovered_sigma": 6.0632167105284775,
+      "axis_angle": 16.842943774712467,
+      "planted_in_frame": 7,
+      "found_in_frame": 6
+    },
+    {
+      "offset_cells": 0.43121820626821594,
+      "sigma": 2.5839829859167285,
+      "ratio": 26.7830813022088,
+      "stretch": 2.5,
+      "recovered_sigma": 3.933048730920167,
+      "axis_angle": 14.417294023501597,
+      "planted_in_frame": 7,
+      "found_in_frame": 6
+    },
+    {
+      "offset_cells": 0.41568714303854404,
+      "sigma": 2.950841210423992,
+      "ratio": 19.57532321283016,
+      "stretch": 2.5,
+      "recovered_sigma": 4.131057637244418,
+      "axis_angle": 6.792623361536712,
+      "planted_in_frame": 7,
+      "found_in_frame": 6
+    },
+    {
+      "offset_cells": 0.24039640450238273,
+      "sigma": 2.5911014020937335,
+      "ratio": 31.951000278235824,
+      "stretch": 2.5,
+      "recovered_sigma": 3.8590794358467395,
+      "axis_angle": 65.4170843175456,
+      "planted_in_frame": 7,
+      "found_in_frame": 6
+    },
+    {
+      "offset_cells": 1.096844489958497,
+      "sigma": 5.742214231575023,
+      "ratio": 11.424833511768753,
+      "stretch": 1.5,
+      "recovered_sigma": 7.330129347576885,
+      "axis_angle": 2.1714803403948792,
+      "planted_in_frame": 6,
+      "found_in_frame": 4
+    },
+    {
+      "offset_cells": 0.1558876602588165,
+      "sigma": 4.8591314787161,
+      "ratio": 30.133319551415386,
+      "stretch": 1.0,
+      "recovered_sigma": 4.863247182622519,
+      "axis_angle": 53.52396399904262,
+      "planted_in_frame": 6,
+      "found_in_frame": 4
+    },
+    {
+      "offset_cells": 0.26316628617606047,
+      "sigma": 4.484762603728673,
+      "ratio": 16.27932125102639,
+      "stretch": 1.0,
+      "recovered_sigma": 4.560331180753429,
+      "axis_angle": 14.412119452352414,
+      "planted_in_frame": 6,
+      "found_in_frame": 4
+    },
+    {
+      "offset_cells": 0.30217954402885333,
+      "sigma": 2.989502315744536,
+      "ratio": 31.818737899453456,
+      "stretch": 1.0,
+      "recovered_sigma": 3.2669442025279256,
+      "axis_angle": 22.707371930722047,
+      "planted_in_frame": 6,
+      "found_in_frame": 4
+    },
+    {
+      "offset_cells": 0.5167874014255082,
+      "sigma": 3.238359534328865,
+      "ratio": 15.622148642649503,
+      "stretch": 1.5,
+      "recovered_sigma": 3.7847992199773905,
+      "axis_angle": 65.3152429389039,
+      "planted_in_frame": 6,
+      "found_in_frame": 5
+    },
+    {
+      "offset_cells": 0.5357811857510784,
+      "sigma": 5.302226255250099,
+      "ratio": 30.285955861541392,
+      "stretch": 2.5,
+      "recovered_sigma": 7.600840696548545,
+      "axis_angle": 5.373896773941098,
+      "planted_in_frame": 6,
+      "found_in_frame": 5
+    },
+    {
+      "offset_cells": 0.2363054237526313,
+      "sigma": 4.32646766620613,
+      "ratio": 27.026123747303636,
+      "stretch": 1.0,
+      "recovered_sigma": 4.3354799462011435,
+      "axis_angle": 60.679498367018795,
+      "planted_in_frame": 6,
+      "found_in_frame": 5
+    },
+    {
+      "offset_cells": 0.18413189169444596,
+      "sigma": 3.807554881433504,
+      "ratio": 20.848577096762885,
+      "stretch": 1.0,
+      "recovered_sigma": 3.624792671401962,
+      "axis_angle": 35.16825848111995,
+      "planted_in_frame": 6,
+      "found_in_frame": 5
+    },
+    {
+      "offset_cells": 0.167260671211374,
+      "sigma": 6.146127044914814,
+      "ratio": 24.816788240873034,
+      "stretch": 1.5,
+      "recovered_sigma": 7.511517508399357,
+      "axis_angle": 15.08865888969305,
+      "planted_in_frame": 6,
+      "found_in_frame": 5
+    },
+    {
+      "offset_cells": 0.9794682534084269,
+      "sigma": 2.365114616433917,
+      "ratio": 11.761428696662055,
+      "stretch": 2.5,
+      "recovered_sigma": 3.8488854578752143,
+      "axis_angle": 89.60156208284184,
+      "planted_in_frame": 5,
+      "found_in_frame": 5
+    },
+    {
+      "offset_cells": 0.3391791343606437,
+      "sigma": 4.147387527500308,
+      "ratio": 31.50998181214476,
+      "stretch": 1.0,
+      "recovered_sigma": 4.294717841582474,
+      "axis_angle": 0.5786038245910703,
+      "planted_in_frame": 5,
+      "found_in_frame": 5
+    },
+    {
+      "offset_cells": 0.2995869599320358,
+      "sigma": 1.73,
+      "ratio": 10.796808056163226,
+      "stretch": 2.5,
+      "recovered_sigma": 2.4301090311617535,
+      "axis_angle": 72.76015137198947,
+      "planted_in_frame": 5,
+      "found_in_frame": 5
+    },
+    {
+      "offset_cells": 0.28099329281811986,
+      "sigma": 3.0390407807687314,
+      "ratio": 27.839386529044628,
+      "stretch": 1.0,
+      "recovered_sigma": 2.9319329386049366,
+      "axis_angle": 30.252006678154743,
+      "planted_in_frame": 5,
+      "found_in_frame": 5
+    },
+    {
+      "offset_cells": 0.031784466552417685,
+      "sigma": 2.8523272767153665,
+      "ratio": 20.24365293390781,
+      "stretch": 1.5,
+      "recovered_sigma": 3.349734571026025,
+      "axis_angle": 52.09676530683839,
+      "planted_in_frame": 4,
+      "found_in_frame": 4
+    },
+    {
+      "offset_cells": 0.44827700450387176,
+      "sigma": 6.2016319698753355,
+      "ratio": 21.33096726093391,
+      "stretch": 1.5,
+      "recovered_sigma": 7.418650992698367,
+      "axis_angle": 22.01994080933531,
+      "planted_in_frame": 4,
+      "found_in_frame": 4
+    },
+    {
+      "offset_cells": 2.221855741720992,
+      "sigma": 3.482456823590851,
+      "ratio": 22.475262369190112,
+      "stretch": 1.0,
+      "recovered_sigma": 5.159004403033608,
+      "axis_angle": 16.49137009311991,
+      "planted_in_frame": 4,
+      "found_in_frame": 4
+    },
+    {
+      "offset_cells": 3.2590777867721177,
+      "sigma": 11.32,
+      "ratio": 16.516345210459633,
+      "stretch": 1.5,
+      "recovered_sigma": 14.923370871006092,
+      "axis_angle": 33.89836175976866,
+      "planted_in_frame": 4,
+      "found_in_frame": 4
+    },
+    {
+      "offset_cells": 3.100934225144739,
+      "sigma": 3.4533943535074147,
+      "ratio": 19.54135016575365,
+      "stretch": 1.0,
+      "recovered_sigma": 4.336727964031687,
+      "axis_angle": 45.87666827070265,
+      "planted_in_frame": 10,
+      "found_in_frame": 6
+    },
+    {
+      "offset_cells": 0.11146247750277265,
+      "sigma": 3.083933858497812,
+      "ratio": 30.673750705414307,
+      "stretch": 1.0,
+      "recovered_sigma": 3.1720073360382273,
+      "axis_angle": 17.660668244526065,
+      "planted_in_frame": 10,
+      "found_in_frame": 6
+    },
+    {
+      "offset_cells": 0.4212235668687323,
+      "sigma": 4.311538729188249,
+      "ratio": 29.7766015267884,
+      "stretch": 1.5,
+      "recovered_sigma": 5.36897031390246,
+      "axis_angle": 49.28192817301215,
+      "planted_in_frame": 10,
+      "found_in_frame": 6
+    },
+    {
+      "offset_cells": 0.3178876927530155,
+      "sigma": 6.8049735762331105,
+      "ratio": 18.446666833783212,
+      "stretch": 1.0,
+      "recovered_sigma": 6.812974913708886,
+      "axis_angle": 53.04908575843472,
+      "planted_in_frame": 10,
+      "found_in_frame": 6
+    },
+    {
+      "offset_cells": 5.578107771513166,
+      "sigma": 5.564585269058351,
+      "ratio": 13.897571030454944,
+      "stretch": 1.0,
+      "recovered_sigma": 7.411822141519773,
+      "axis_angle": 54.10677164552091,
+      "planted_in_frame": 10,
+      "found_in_frame": 6
+    },
+    {
+      "offset_cells": 1.1871529261066693,
+      "sigma": 3.6258549933196287,
+      "ratio": 23.354765587418946,
+      "stretch": 2.5,
+      "recovered_sigma": 5.805828077279427,
+      "axis_angle": 45.32788190914229,
+      "planted_in_frame": 10,
+      "found_in_frame": 6
+    },
+    {
+      "offset_cells": 0.08434791556448892,
+      "sigma": 2.9044846694810746,
+      "ratio": 23.105088889817676,
+      "stretch": 1.0,
+      "recovered_sigma": 2.9679344387708295,
+      "axis_angle": 53.363891313654335,
+      "planted_in_frame": 4,
+      "found_in_frame": 4
+    },
+    {
+      "offset_cells": 0.1249458835371213,
+      "sigma": 2.597804876903322,
+      "ratio": 30.592153511013453,
+      "stretch": 1.0,
+      "recovered_sigma": 2.6035983935453135,
+      "axis_angle": 58.306769046120046,
+      "planted_in_frame": 4,
+      "found_in_frame": 4
+    },
+    {
+      "offset_cells": 0.2812384462202122,
+      "sigma": 4.090381343663584,
+      "ratio": 27.947601719990526,
+      "stretch": 1.5,
+      "recovered_sigma": 4.95712139437563,
+      "axis_angle": 75.91485867687953,
+      "planted_in_frame": 4,
+      "found_in_frame": 4
+    },
+    {
+      "offset_cells": 0.4523918668124084,
+      "sigma": 3.150503354061377,
+      "ratio": 19.113632314074472,
+      "stretch": 1.0,
+      "recovered_sigma": 3.2293643568839236,
+      "axis_angle": 81.06821125888976,
+      "planted_in_frame": 4,
+      "found_in_frame": 4
+    },
+    {
+      "offset_cells": 0.443638453025765,
+      "sigma": 4.049318183356265,
+      "ratio": 27.298115791258752,
+      "stretch": 1.0,
+      "recovered_sigma": 3.992652068455345,
+      "axis_angle": 21.74589783260133,
+      "planted_in_frame": 10,
+      "found_in_frame": 6
+    },
+    {
+      "offset_cells": 0.19089711024646197,
+      "sigma": 2.4629569101397526,
+      "ratio": 21.120545093865243,
+      "stretch": 1.0,
+      "recovered_sigma": 2.278190060534088,
+      "axis_angle": 53.91063774942411,
+      "planted_in_frame": 10,
+      "found_in_frame": 6
+    },
+    {
+      "offset_cells": 0.26656642783858164,
+      "sigma": 5.579021823818005,
+      "ratio": 21.2077172154751,
+      "stretch": 1.5,
+      "recovered_sigma": 7.106577161135983,
+      "axis_angle": 81.90176118044616,
+      "planted_in_frame": 10,
+      "found_in_frame": 6
+    },
+    {
+      "offset_cells": 0.04093226605263584,
+      "sigma": 3.118041655016048,
+      "ratio": 22.268457133165715,
+      "stretch": 1.5,
+      "recovered_sigma": 3.6593073263755653,
+      "axis_angle": 17.775110436525438,
+      "planted_in_frame": 10,
+      "found_in_frame": 6
+    },
+    {
+      "offset_cells": 4.547210855652901,
+      "sigma": 4.167964319797987,
+      "ratio": 15.721098868500574,
+      "stretch": 1.5,
+      "recovered_sigma": 11.054840068510824,
+      "axis_angle": 22.62148778522375,
+      "planted_in_frame": 10,
+      "found_in_frame": 6
+    },
+    {
+      "offset_cells": 2.2347414912929935,
+      "sigma": 7.0319163793906405,
+      "ratio": 29.193113029944534,
+      "stretch": 1.0,
+      "recovered_sigma": 7.002286792689629,
+      "axis_angle": 43.285096370942995,
+      "planted_in_frame": 10,
+      "found_in_frame": 6
+    },
+    {
+      "offset_cells": 0.03209045588159281,
+      "sigma": 2.2290047640512656,
+      "ratio": 28.06947648824588,
+      "stretch": 1.0,
+      "recovered_sigma": 2.2633405052718727,
+      "axis_angle": 16.664551843995852,
+      "planted_in_frame": 4,
+      "found_in_frame": 3
+    },
+    {
+      "offset_cells": 1.2562776272923823,
+      "sigma": 6.54570458340559,
+      "ratio": 18.908640946914055,
+      "stretch": 2.5,
+      "recovered_sigma": 10.833901117547518,
+      "axis_angle": 40.18299923993632,
+      "planted_in_frame": 4,
+      "found_in_frame": 3
+    },
+    {
+      "offset_cells": 5.81665557565524,
+      "sigma": 5.552401139377773,
+      "ratio": 19.394194965335476,
+      "stretch": 1.0,
+      "recovered_sigma": 8.390026519158257,
+      "axis_angle": 10.530448291251787,
+      "planted_in_frame": 4,
+      "found_in_frame": 3
+    },
+    {
+      "offset_cells": 0.4168814761452824,
+      "sigma": 5.969954866146429,
+      "ratio": 24.045402732889247,
+      "stretch": 1.0,
+      "recovered_sigma": 6.322528872084711,
+      "axis_angle": 1.084961277478385,
+      "planted_in_frame": 7,
+      "found_in_frame": 6
+    },
+    {
+      "offset_cells": 0.6374076249575511,
+      "sigma": 3.5976512304393045,
+      "ratio": 31.307497375745648,
+      "stretch": 2.5,
+      "recovered_sigma": 5.331884323485959,
+      "axis_angle": 40.773553299425004,
+      "planted_in_frame": 7,
+      "found_in_frame": 6
+    },
+    {
+      "offset_cells": 0.42387327322768437,
+      "sigma": 2.470789576494469,
+      "ratio": 22.883226563145552,
+      "stretch": 2.5,
+      "recovered_sigma": 3.9361587899092023,
+      "axis_angle": 12.555355333153642,
+      "planted_in_frame": 7,
+      "found_in_frame": 6
+    },
+    {
+      "offset_cells": 0.1626240584852637,
+      "sigma": 2.239478678710676,
+      "ratio": 25.85003246589977,
+      "stretch": 1.0,
+      "recovered_sigma": 2.2586455865281625,
+      "axis_angle": 74.09185006621757,
+      "planted_in_frame": 7,
+      "found_in_frame": 6
+    },
+    {
+      "offset_cells": 0.07390618455654419,
+      "sigma": 1.73,
+      "ratio": 31.625836957231883,
+      "stretch": 1.0,
+      "recovered_sigma": 1.6988249172394598,
+      "axis_angle": 18.142081846197215,
+      "planted_in_frame": 7,
+      "found_in_frame": 6
+    },
+    {
+      "offset_cells": 0.5381676088987477,
+      "sigma": 4.2741760960415025,
+      "ratio": 14.73515694655234,
+      "stretch": 1.5,
+      "recovered_sigma": 5.57440427435871,
+      "axis_angle": 53.32168867829202,
+      "planted_in_frame": 7,
+      "found_in_frame": 6
+    },
+    {
+      "offset_cells": 1.6249582227199497,
+      "sigma": 7.30749312786377,
+      "ratio": 24.53870542142481,
+      "stretch": 2.5,
+      "recovered_sigma": 12.243345838644998,
+      "axis_angle": 67.38136132021913,
+      "planted_in_frame": 7,
+      "found_in_frame": 3
+    },
+    {
+      "offset_cells": 0.07076416919567505,
+      "sigma": 2.002969161503179,
+      "ratio": 23.473611445820737,
+      "stretch": 1.0,
+      "recovered_sigma": 2.149121595000265,
+      "axis_angle": 59.70232572389341,
+      "planted_in_frame": 7,
+      "found_in_frame": 3
+    },
+    {
+      "offset_cells": 1.2471112734957917,
+      "sigma": 6.227133748616309,
+      "ratio": 25.63848258618562,
+      "stretch": 2.5,
+      "recovered_sigma": 9.75177398796303,
+      "axis_angle": 33.27252906032007,
+      "planted_in_frame": 4,
+      "found_in_frame": 2
+    },
+    {
+      "offset_cells": 0.574843650297893,
+      "sigma": 3.8086648821791522,
+      "ratio": 17.464721245061156,
+      "stretch": 1.0,
+      "recovered_sigma": 3.5356349476885947,
+      "axis_angle": 65.28439772318364,
+      "planted_in_frame": 4,
+      "found_in_frame": 2
+    },
+    {
+      "offset_cells": 0.35424898559876167,
+      "sigma": 2.2695825237412794,
+      "ratio": 20.460234903343267,
+      "stretch": 1.0,
+      "recovered_sigma": 2.297548060462699,
+      "axis_angle": 60.371940670485316,
+      "planted_in_frame": 3,
+      "found_in_frame": 3
+    },
+    {
+      "offset_cells": 0.6304432524022424,
+      "sigma": 3.796331462119348,
+      "ratio": 10.536177853081828,
+      "stretch": 2.5,
+      "recovered_sigma": 5.752279556058105,
+      "axis_angle": 60.33987717834245,
+      "planted_in_frame": 3,
+      "found_in_frame": 3
+    },
+    {
+      "offset_cells": 0.24512866046238427,
+      "sigma": 3.978422109802315,
+      "ratio": 29.202180506469205,
+      "stretch": 1.5,
+      "recovered_sigma": 5.0850013815111295,
+      "axis_angle": 25.830462277801317,
+      "planted_in_frame": 3,
+      "found_in_frame": 3
+    },
+    {
+      "offset_cells": 1.6912663475236172,
+      "sigma": 11.32,
+      "ratio": 29.362885043511213,
+      "stretch": 2.5,
+      "recovered_sigma": 15.200099023436325,
+      "axis_angle": 22.67759860356543,
+      "planted_in_frame": 3,
+      "found_in_frame": 1
+    },
+    {
+      "offset_cells": 4.629287330046831,
+      "sigma": 6.095465510811157,
+      "ratio": 24.887644478307948,
+      "stretch": 1.0,
+      "recovered_sigma": 7.728330756125692,
+      "axis_angle": 36.27134638943029,
+      "planted_in_frame": 7,
+      "found_in_frame": 5
+    },
+    {
+      "offset_cells": 1.8199491832444783,
+      "sigma": 4.053758613049024,
+      "ratio": 16.63770346839761,
+      "stretch": 2.5,
+      "recovered_sigma": 5.625010631294063,
+      "axis_angle": 3.296150322751629,
+      "planted_in_frame": 7,
+      "found_in_frame": 5
+    },
+    {
+      "offset_cells": 0.8139613144542127,
+      "sigma": 5.533639419244591,
+      "ratio": 27.882838275226796,
+      "stretch": 1.0,
+      "recovered_sigma": 5.973687170941571,
+      "axis_angle": 84.466253194644,
+      "planted_in_frame": 7,
+      "found_in_frame": 5
+    },
+    {
+      "offset_cells": 0.08696250455855511,
+      "sigma": 6.388671987419074,
+      "ratio": 27.124999988702328,
+      "stretch": 1.0,
+      "recovered_sigma": 6.399725911273806,
+      "axis_angle": 75.78456102226818,
+      "planted_in_frame": 7,
+      "found_in_frame": 5
+    },
+    {
+      "offset_cells": 0.19071153531329815,
+      "sigma": 1.8475649180617888,
+      "ratio": 16.183489940082165,
+      "stretch": 1.0,
+      "recovered_sigma": 1.801037616995846,
+      "axis_angle": 10.418579619648455,
+      "planted_in_frame": 7,
+      "found_in_frame": 5
+    },
+    {
+      "offset_cells": 0.4030667893099249,
+      "sigma": 4.044502688284245,
+      "ratio": 20.143895313743215,
+      "stretch": 1.0,
+      "recovered_sigma": 4.071070250111137,
+      "axis_angle": 65.64809577126613,
+      "planted_in_frame": 6,
+      "found_in_frame": 4
+    },
+    {
+      "offset_cells": 0.06352081920503756,
+      "sigma": 1.73,
+      "ratio": 19.440902544944024,
+      "stretch": 1.0,
+      "recovered_sigma": 1.6763830916205065,
+      "axis_angle": 30.70420782992062,
+      "planted_in_frame": 6,
+      "found_in_frame": 4
+    },
+    {
+      "offset_cells": 0.16350946549131345,
+      "sigma": 4.776319020337035,
+      "ratio": 17.296690280765898,
+      "stretch": 1.5,
+      "recovered_sigma": 6.024981521728364,
+      "axis_angle": 70.44767832873839,
+      "planted_in_frame": 6,
+      "found_in_frame": 4
+    },
+    {
+      "offset_cells": 0.5013061101976299,
+      "sigma": 5.832525004726109,
+      "ratio": 27.7174708523511,
+      "stretch": 1.0,
+      "recovered_sigma": 6.326996385500664,
+      "axis_angle": 76.57424965398462,
+      "planted_in_frame": 6,
+      "found_in_frame": 4
+    },
+    {
+      "offset_cells": 0.21953551047631872,
+      "sigma": 5.709901172439482,
+      "ratio": 25.732288197936338,
+      "stretch": 1.0,
+      "recovered_sigma": 5.582311258395806,
+      "axis_angle": 2.690321793826584,
+      "planted_in_frame": 5,
+      "found_in_frame": 3
+    },
+    {
+      "offset_cells": 0.2235719727651097,
+      "sigma": 4.101072386357613,
+      "ratio": 31.73591326017623,
+      "stretch": 1.0,
+      "recovered_sigma": 4.225248717450684,
+      "axis_angle": 86.52416624161162,
+      "planted_in_frame": 5,
+      "found_in_frame": 3
+    },
+    {
+      "offset_cells": 0.2255210672728159,
+      "sigma": 2.4211936322105263,
+      "ratio": 18.669385125204784,
+      "stretch": 2.5,
+      "recovered_sigma": 3.852903315003685,
+      "axis_angle": 39.53704253161402,
+      "planted_in_frame": 5,
+      "found_in_frame": 3
+    },
+    {
+      "offset_cells": 1.795926877531178,
+      "sigma": 3.194515593626957,
+      "ratio": 27.188551640580844,
+      "stretch": 2.5,
+      "recovered_sigma": 5.796197535196274,
+      "axis_angle": 71.94366871024022,
+      "planted_in_frame": 8,
+      "found_in_frame": 6
+    },
+    {
+      "offset_cells": 0.36584030385853183,
+      "sigma": 3.374015834620649,
+      "ratio": 24.092578064224902,
+      "stretch": 1.5,
+      "recovered_sigma": 4.430317798847379,
+      "axis_angle": 77.65372459691133,
+      "planted_in_frame": 8,
+      "found_in_frame": 6
+    },
+    {
+      "offset_cells": 1.441947525778926,
+      "sigma": 4.551623315256586,
+      "ratio": 13.656047883869338,
+      "stretch": 2.5,
+      "recovered_sigma": 6.850316781142057,
+      "axis_angle": 0.7625233121691224,
+      "planted_in_frame": 8,
+      "found_in_frame": 6
+    },
+    {
+      "offset_cells": 0.5710183863629416,
+      "sigma": 2.125429723588865,
+      "ratio": 29.14141716618681,
+      "stretch": 1.5,
+      "recovered_sigma": 2.798019513163415,
+      "axis_angle": 81.68365168271512,
+      "planted_in_frame": 8,
+      "found_in_frame": 6
+    },
+    {
+      "offset_cells": 5.0042933485153736,
+      "sigma": 3.500743562188415,
+      "ratio": 15.901852758725516,
+      "stretch": 1.0,
+      "recovered_sigma": 7.533491442401801,
+      "axis_angle": 31.00102725440729,
+      "planted_in_frame": 8,
+      "found_in_frame": 6
+    },
+    {
+      "offset_cells": 0.9562386712937225,
+      "sigma": 3.514690445737561,
+      "ratio": 27.457211506037268,
+      "stretch": 1.0,
+      "recovered_sigma": 4.109366595332768,
+      "axis_angle": 1.9142246682420705,
+      "planted_in_frame": 8,
+      "found_in_frame": 6
+    },
+    {
+      "offset_cells": 0.24143119386559966,
+      "sigma": 1.73,
+      "ratio": 31.29854565279254,
+      "stretch": 1.5,
+      "recovered_sigma": 2.237825782624526,
+      "axis_angle": 84.04136815003733,
+      "planted_in_frame": 6,
+      "found_in_frame": 5
+    },
+    {
+      "offset_cells": 0.136465986497926,
+      "sigma": 2.6026267771026212,
+      "ratio": 22.56842637091516,
+      "stretch": 2.5,
+      "recovered_sigma": 4.363996980203665,
+      "axis_angle": 72.29821088112368,
+      "planted_in_frame": 6,
+      "found_in_frame": 5
+    },
+    {
+      "offset_cells": 0.14531476246901534,
+      "sigma": 4.2889838913889005,
+      "ratio": 28.5638455110328,
+      "stretch": 2.5,
+      "recovered_sigma": 6.925058457918223,
+      "axis_angle": 71.28059786807418,
+      "planted_in_frame": 6,
+      "found_in_frame": 5
+    },
+    {
+      "offset_cells": 1.1782077138468836,
+      "sigma": 2.2397083675274647,
+      "ratio": 31.06006062816613,
+      "stretch": 1.0,
+      "recovered_sigma": 2.825681254635939,
+      "axis_angle": 59.19811805928552,
+      "planted_in_frame": 6,
+      "found_in_frame": 5
+    },
+    {
+      "offset_cells": 2.2235267325481507,
+      "sigma": 3.090735161005531,
+      "ratio": 24.25358456110557,
+      "stretch": 1.5,
+      "recovered_sigma": 4.901461170184949,
+      "axis_angle": 1.2953051929353308,
+      "planted_in_frame": 6,
+      "found_in_frame": 5
+    },
+    {
+      "offset_cells": 0.7522686706314236,
+      "sigma": 7.943920916369903,
+      "ratio": 15.787917717682266,
+      "stretch": 1.0,
+      "recovered_sigma": 7.860100064487866,
+      "axis_angle": 15.758262961464936,
+      "planted_in_frame": 4,
+      "found_in_frame": 4
+    },
+    {
+      "offset_cells": 0.43258686028870413,
+      "sigma": 2.7232353986222604,
+      "ratio": 28.82809336656874,
+      "stretch": 1.5,
+      "recovered_sigma": 3.515622516406384,
+      "axis_angle": 32.326653223992814,
+      "planted_in_frame": 4,
+      "found_in_frame": 4
+    },
+    {
+      "offset_cells": 0.5313938947129592,
+      "sigma": 4.67873425696226,
+      "ratio": 11.861625895500646,
+      "stretch": 1.0,
+      "recovered_sigma": 4.366401786211413,
+      "axis_angle": 2.1855152983498556,
+      "planted_in_frame": 4,
+      "found_in_frame": 4
+    },
+    {
+      "offset_cells": 0.4024572568137714,
+      "sigma": 3.494995452022703,
+      "ratio": 30.786738478219366,
+      "stretch": 1.0,
+      "recovered_sigma": 3.5885669479796656,
+      "axis_angle": 56.546669612748616,
+      "planted_in_frame": 4,
+      "found_in_frame": 4
+    },
+    {
+      "offset_cells": 1.0513442502318293,
+      "sigma": 4.7926985393105115,
+      "ratio": 28.366936574580812,
+      "stretch": 2.5,
+      "recovered_sigma": 7.815270896740145,
+      "axis_angle": 38.30509437065933,
+      "planted_in_frame": 10,
+      "found_in_frame": 4
+    },
+    {
+      "offset_cells": 0.8512706902795015,
+      "sigma": 2.850712872316528,
+      "ratio": 22.698526891295895,
+      "stretch": 2.5,
+      "recovered_sigma": 4.137969592112425,
+      "axis_angle": 5.250643523851835,
+      "planted_in_frame": 10,
+      "found_in_frame": 4
+    },
+    {
+      "offset_cells": 0.28894544212862544,
+      "sigma": 3.0925725930928976,
+      "ratio": 29.559648970083853,
+      "stretch": 1.5,
+      "recovered_sigma": 3.9208520877168085,
+      "axis_angle": 58.258125575254155,
+      "planted_in_frame": 10,
+      "found_in_frame": 4
+    },
+    {
+      "offset_cells": 0.2821881557559916,
+      "sigma": 1.73,
+      "ratio": 21.01421368606205,
+      "stretch": 1.5,
+      "recovered_sigma": 2.1385674830913532,
+      "axis_angle": 85.03996047406142,
+      "planted_in_frame": 10,
+      "found_in_frame": 4
+    },
+    {
+      "offset_cells": 0.9869149056015567,
+      "sigma": 5.232604250024029,
+      "ratio": 31.873265928247793,
+      "stretch": 2.5,
+      "recovered_sigma": 7.85675121589893,
+      "axis_angle": 13.870252895336876,
+      "planted_in_frame": 9,
+      "found_in_frame": 3
+    },
+    {
+      "offset_cells": 1.1197494925641167,
+      "sigma": 8.240760504495405,
+      "ratio": 17.055508073029653,
+      "stretch": 1.5,
+      "recovered_sigma": 9.550403321066938,
+      "axis_angle": 6.681718365832523,
+      "planted_in_frame": 9,
+      "found_in_frame": 3
+    },
+    {
+      "offset_cells": 0.6823262782215448,
+      "sigma": 3.9364312842613303,
+      "ratio": 28.89041732097509,
+      "stretch": 1.0,
+      "recovered_sigma": 4.344356053931097,
+      "axis_angle": 53.35197771111008,
+      "planted_in_frame": 9,
+      "found_in_frame": 3
+    },
+    {
+      "offset_cells": 0.3288241089687929,
+      "sigma": 3.4058423386110315,
+      "ratio": 26.475923270894253,
+      "stretch": 1.5,
+      "recovered_sigma": 4.265623224212628,
+      "axis_angle": 38.29418295800423,
+      "planted_in_frame": 6,
+      "found_in_frame": 1
+    }
+  ],
+  "VERDICT": "The declared prediction is FALSIFIED. Competition between features does not explain the gap between synthetic and real offsets: at real density the symmetric offset is 0.295 cells, slightly BELOW the quiet background's 0.370, against the record's 1.630.",
+  "what_the_prediction_said_and_what_happened": {
+    "predicted_if_competition_explained_it": "the symmetric offset rises toward the real 1.63 cells at density 7",
+    "measured": "0.295 cells at the achieved density, against 0.370 on the quiet background -- it fell",
+    "the_declaration_named_this_outcome": "Neither asymmetry alone nor competition explains the real offset. The remaining candidates it listed are the shape of real incoherent structure, the non-Gaussian profile of a real cyclone, and a genuine physical difference between an 850 hPa vorticity maximum and an agency's surface centre."
+  },
+  "what_density_DOES_cost": {
+    "recovery": "167 of 247 plantings recovered. 80 were never recovered at all -- 32 per cent, against 8.8 per cent on the quiet background of T4E.20.",
+    "spurious": "3 extracted features matched no planting across 39 frames.",
+    "reading": "Competition costs RECALL, not ACCURACY. Suppression removes the maximum that would have marked a centre; it does not displace the ones that survive. That separation was not predicted and is the substantive finding of this slice."
+  },
+  "the_gate_passed_at_the_bottom_of_its_band": {
+    "achieved": "median 4 features per frame against a declared band of [4, 10] and a record median of 7",
+    "why_it_is_disclosed": "The synthetic density is at the band's lower edge, so competition is under-represented relative to the record even though the gate passed. The band was declared before the measurement and is not moved now.",
+    "what_that_permits_and_forbids": "It forbids the claim that density has been tested at the record's own level. It permits the observation that going from 0 to 4 features per frame did not raise the offset at all -- it lowered it slightly -- which makes it implausible that 4 to 7 would triple it. That is an argument, not a proof, and is labelled as one."
+  },
+  "what_remains_unexplained": "About 1.3 cells, or 25 km, of the real 33.8 km offset. Neither the estimator's asymmetry bias at realistic parameters nor competition between features accounts for it. On this evidence the leading remaining candidate is that an 850 hPa relative-vorticity maximum and an agency's reported surface centre are not the same quantity -- which would make about 34 km an intrinsic cost of this comparison rather than an error to be fixed, and would make restating the T4E.18 acceptance against a defensible tolerance the correct response. That restatement is its own declaration and is not made here.",
+  "what_this_does_not_settle": [
+    "That the offset is physical. T4E.19's storm-type test found no dependence on NATURE, which is evidence against a transition-driven separation, and this slice adds nothing to it.",
+    "That the extractor is sound. It is sound in this regime, on Gaussian vortices at the record's scales and amplitudes, at densities up to 4 per frame.",
+    "That N Gaussians on a randomised spectrum are a real vorticity field. They match on spectrum, density, scale and amplitude and not on the shape of incoherent structure.",
+    "Anything about cyclones, the catalogue, or any identity criterion."
+  ]
+}

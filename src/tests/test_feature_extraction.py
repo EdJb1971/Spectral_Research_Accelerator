@@ -717,3 +717,64 @@ def test_the_bound_is_generous_enough_not_to_trim_a_real_feature():
     measured = float(features[0].spatial_scale.value)
     assert measured < _MAX_MEASURABLE_SCALE_CELLS * size
     assert 1.0 < measured < 12.0, measured
+
+
+# ------------- The validity gate T4E.20 declared and did not implement
+#
+# A gate expressed only in prose is not a gate. T4E.20 disqualified a synthetic background
+# yielding "hundreds, or none" of features and its code tested only the upper bound, so a
+# background yielding none passed and the slice ran on a field where a planted feature faced no
+# competition. These tests pin the case that slipped through.
+
+
+def test_the_gate_rejects_a_background_that_yields_no_features():
+    """The exact case T4E.20 declared, did not implement, and was let through."""
+    from src.benchmarks.synthetic_backgrounds import feature_density_gate
+
+    verdict = feature_density_gate([0] * 12)
+
+    assert verdict["passed"] is False
+    assert any("no features at all" in reason for reason in verdict["reasons"])
+    assert any("T4E.20" in reason for reason in verdict["reasons"]), (
+        "the refusal should name the failure it was written for")
+
+
+def test_the_gate_rejects_a_swarming_background_too():
+    """An empty background and a swarming one are both unrepresentative."""
+    from src.benchmarks.synthetic_backgrounds import feature_density_gate
+
+    verdict = feature_density_gate([6, 7, 8, 900])
+
+    assert verdict["passed"] is False
+    assert any("ceiling" in reason for reason in verdict["reasons"])
+
+
+def test_the_gate_admits_a_background_at_the_records_density():
+    """The record yields a median of 7 with a range of 3 to 10 under identical extraction."""
+    from src.benchmarks.synthetic_backgrounds import feature_density_gate
+
+    verdict = feature_density_gate([3, 5, 7, 7, 8, 10])
+
+    assert verdict["passed"] is True
+    assert verdict["reasons"] == []
+    assert verdict["median"] == 7
+
+
+def test_the_gate_refuses_when_nothing_was_measured():
+    """An empty measurement is not a pass; it is a check that never ran."""
+    from src.benchmarks.synthetic_backgrounds import feature_density_gate
+
+    verdict = feature_density_gate([])
+
+    assert verdict["passed"] is False
+    assert verdict["n_frames"] == 0
+    assert any("nothing was checked" in reason for reason in verdict["reasons"])
+
+
+def test_the_declared_band_is_the_one_the_measurement_used():
+    """The band was declared before the measurement and is not moved afterwards."""
+    from src.benchmarks.synthetic_backgrounds import (
+        DECLARED_FRAME_CEILING, DECLARED_MEDIAN_BAND)
+
+    assert DECLARED_MEDIAN_BAND == (4, 10)
+    assert DECLARED_FRAME_CEILING == 40

@@ -497,6 +497,52 @@ touching a scene that holds nothing -- is bounded and reported as a condition of
 because a rule that claims recurrence in an empty window is worse for mining than one that
 misses a real occurrence, and a pooled admission rate hides which is happening.
 
+**T4E.21: competition does not explain the gap, and the declared prediction is falsified.** 247
+vortices planted across 39 frames at the record's own feature density, every centre known by
+construction. `measurements/t4e21_faithful_background.json`.
+
+**The gate is code this time, not prose.** `src/benchmarks/synthetic_backgrounds.py` implements
+all three declared conditions -- median inside the band, no frame above the ceiling, and a median
+strictly above zero -- and five tests pin it, including the exact case T4E.20 let through. The
+redundant zero check is kept deliberately: a redundant condition that names the failure it was
+written for is worth more than a tidy one that does not.
+
+```
+gate PASSED: median 4 features/frame (declared band [4,10], record median 7), max 9
+
+planted 247 | recovered 167 | NEVER RECOVERED 80 (32%) | spurious 3
+
+symmetric at real density   0.295 cells (8.2 km)
+T4E.20 quiet background     0.370 cells (10.3 km)
+real record                 1.630 cells (33.8 km)
+by stretch: 1.0 -> 0.295    1.5 -> 0.338    2.5 -> 0.633
+```
+
+**The prediction said the offset would rise toward 1.63 cells at real density. It fell.** The
+declaration named this outcome in advance: neither asymmetry alone nor competition explains the
+real offset.
+
+**What density does cost is recall, not accuracy.** Recovery collapses from 91% on the quiet
+background to **68%** here -- 80 of 247 plantings never found at all -- while the features that
+do survive are placed no worse. Suppression removes the maximum that would have marked a centre;
+it does not displace the ones that remain. That separation was not predicted and is the
+substantive finding.
+
+**Disclosed: the gate passed at the bottom of its band.** Median 4 against the record's 7, so
+competition is under-represented even though the declared band was met. That forbids claiming
+density has been tested at the record's own level. It permits the observation that going from 0
+to 4 features per frame did not raise the offset at all, which makes it implausible that 4 to 7
+would triple it -- an argument, and labelled as one.
+
+**About 25 km of the real 33.8 km remains unexplained.** Neither the estimator's asymmetry bias
+at realistic parameters nor competition accounts for it. On this evidence the leading remaining
+candidate is that **an 850 hPa relative-vorticity maximum and an agency's reported surface centre
+are not the same quantity** -- which would make about 34 km an intrinsic cost of this comparison
+rather than an error to be fixed, and would make restating the T4E.18 acceptance against a
+defensible tolerance the correct response. That restatement is its own declaration and is not
+made here. T4E.19's storm-type test found no dependence on `NATURE`, which is evidence *against*
+a transition-driven separation, so this candidate is not yet comfortable either.
+
 **T4E.20: the centroid is pulled toward the broader side, and now it is demonstrated rather than
 hinted at.** 397 vortices planted at known centres on phase-randomised real frames, sweeping
 scale, amplitude and asymmetry. `measurements/t4e20_synthetic_centre.json`.
