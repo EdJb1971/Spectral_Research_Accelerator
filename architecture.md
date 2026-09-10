@@ -6607,7 +6607,7 @@ existing file.
 
 ## 3.12 HTTP API Surface
 
-156 routes. Listed here because an undocumented endpoint is an untested contract. The count and this table were both wrong until TG17.3 (defect D75): the guard enumerated a hand-maintained list of ten source files and could not see four mounted routers.
+159 routes. Listed here because an undocumented endpoint is an untested contract. The count and this table were both wrong until TG17.3 (defect D75): the guard enumerated a hand-maintained list of ten source files and could not see four mounted routers.
 
 | Method | Route | Notes |
 |---|---|---|
@@ -6766,6 +6766,9 @@ existing file.
 | GET | `/api/v1/identity/targets` | T4E.8 slice 4: the whole target x evidence admissibility matrix, built by asking `declare_identity_target` so it cannot drift from the rule the audit enforces. The inadmissible cell is served with its refusal in full, not omitted |
 | GET | `/api/v1/identity/audits` | identity-calibration receipts with their declarations, claim boundaries and approved radius; receipts written before slice 3 are listed and named undeclared, and what could not be parsed is reported rather than skipped |
 | GET | `/api/v1/identity/audits/{name}` | one receipt whole, never in fragments; the name is a file name in the store and a path is refused |
+| GET | `/api/v1/identity/measurements` | every measurement record with its verdict, and with what it may not be used for attached rather than beside it; fifteen key spellings of that clause are collected rather than normalised, records corrected or superseded in the open are marked in the summary, and records predating the boundary convention are listed by name rather than passed over |
+| GET | `/api/v1/identity/measurements/{name}` | one measurement whole; the name is a file name in the store and a path is refused |
+| GET | `/api/v1/identity/studies` | each task as the chain the work runs — declaration, adoption or signature, measurement, outcome — so which result answered which question is not left to be reconstructed from filenames; a declaration with no measurement is shown rather than filtered, because a question deliberately left unanswered is a legitimate state here |
 | GET | `/api/v1/gate/receipts` | published runs; an empty store reports NOT_YET_MEASURED as an absence of runs, not of findings |
 | GET | `/api/v1/gate/receipts/{receipt_id}` | one hash-verified receipt with the gate verdict, the scientific verdict and the rule that moved it |
 
@@ -8713,6 +8716,84 @@ perfect labels, total separation and no atmospheric confound. That is direct evi
 D97, isolated from the real record: the calibration's failure is not only the atmosphere's
 messiness. D101 is closed by the benchmark existing and reporting; D97 gains this evidence and
 stays open. No mining radius is approved and T4E.8's acquired-record acceptance is untouched.
+
+### 3E.38 The study trail on screen, with rendered evidence (T4E.23)
+
+**T4E.23: the study trail is on screen, with rendered evidence.** `StudyTrailView.tsx`, a new
+"Study trail" tab, and `frontend/e2e/study-trail.spec.ts` -- **six tests passing in Chromium
+against the real API and the real frontend**, with three screenshots captured under
+`frontend/e2e/artifacts/`. PLAN section 5's acceptance for an interface slice is rendered
+evidence with refusals demonstrated on screen rather than described, and this is that evidence
+rather than a claim about it.
+
+What the panel draws, and why each rule exists because of something this programme did:
+
+* **A study is the chain it ran** -- declared, adopted or signed, measured -- so which result
+  answered which question is not reconstructed from filenames. Thirteen studies render.
+* **A verdict never appears without what it may not be used for.** The boundary renders inside
+  the result, not beneath it.
+* **A correction is a badge on the study.** T4E.17's three amendments and superseded signature,
+  T4E.18's `CORRECTION_2026_09_10`, T4E.20's `GATE_CORRECTION` are all visible without opening
+  anything, because a corrected record that reads as current is the dangerous case.
+* **A question with no answer is shown, not filtered.** T4E.16 renders as *declared, not
+  measured* with its withdrawal mark, and T4E.7 likewise. A view that hid T4E.16 would hide the
+  cheapest result the programme produced.
+* **The surface states what it will not do**, from the server's own refusal list, rather than
+  implying it by an absence of buttons.
+
+**A defect the rendering caught that the API tests could not.** The first `BOUNDARY_KEYS` list
+omitted `boundary` and `acceptance_boundary` -- the plainest names of all -- so seven older
+measurements rendered as *"no stated boundary; this record predates the convention"* when the
+clause was right there in the record. **A viewer that under-reports a boundary is worse than one
+that omits the field: it makes a false statement about the evidence, on screen.** Every
+measurement now reports its boundary; the count of false "predates the convention" claims went
+from seven to zero.
+
+Two test defects were also caught by running rather than by reading: a substring selector that
+matched `declared_before_measurement` instead of the *Declared* column heading, and -- after the
+boundary fix put more text on the buttons -- a `close` control that matched four elements
+because several boundaries contain "no closure of D96".
+
+### 3E.37 The results become reviewable: measurements, studies and boundaries on the wire (T4E.22)
+
+**T4E.22: the results become reviewable.** Until this slice `/api/v1/identity` served
+`data/identity_calibration` and nothing else, so a reader could see that a study had been
+*declared* and never what it *measured*. Every offset, falsified prediction and corrected
+diagnosis lived in `measurements/` and in git, where no interface could reach them. **A
+declaration without its result is a promise; a result without its declaration is an assertion;
+only the pair is evidence.**
+
+Three additions, all read-only and all in the router's existing idiom:
+
+* **`GET /measurements` and `/measurements/{name}`** serve the measurement store with each
+  record's verdict attached, and with **what it may not be used for attached rather than
+  beside it**. Fifteen different key names have been used for that clause across this
+  programme's records; all fifteen are collected rather than normalised, because renaming keys
+  in committed evidence to suit a viewer would be rewriting evidence to fit its display.
+* **`GET /studies`** joins each task into the chain the work actually runs -- declaration,
+  adoption or signature, measurement, outcome -- so a reader is not left reconstructing from
+  filenames which result answered which question, or whether the question was fixed before the
+  answer was known.
+* **Summaries now carry a verdict and its corrections.** A record corrected or superseded in
+  the open is marked in the *summary*, because the summary is what a reader sees first and **a
+  corrected record that reads as current is the dangerous case**.
+
+Two states are shown rather than filtered, and both are load-bearing. A **declaration with no
+measurement** is a question fixed and deliberately unanswered -- T4E.16 was withdrawn before
+adoption by derivation, and a view that hid it would hide the cheapest result the programme
+produced. A **measurement with no stated boundary** predates the convention and is listed by
+name rather than passed over.
+
+**A defect caught in verification, not in review.** The first study key split on the leading
+separator, which made `t4e19_positional_error.json` a study of its own and left every
+declaration reading as unanswered -- a view worse than none. It now takes the leading `t4eNN`
+token under either convention, and a test pins both spellings.
+
+**What this slice is not.** It is the API half. `IdentityDeclarationView.tsx` renders the
+admissibility matrix and does not yet render studies or measurements, and PLAN section 5's
+acceptance for an interface slice requires **rendered evidence captured in VERIFICATION.md,
+with refusals demonstrated on screen rather than described**. That evidence does not exist for
+this surface, so no interface claim is made here beyond what a client can now fetch.
 
 ### 3E.36 Competition costs recall, not accuracy (T4E.21)
 
@@ -11438,11 +11519,11 @@ able to sit three slices out of date.
 | `test_spectral_regions.py` | 54 | T4F.7 cross-region generalisation: one 260-frame five-box record built to give four answers at once -- the rule holding in two held-out regions at lift 4.47 and 3.72 after correction over four declared ones, not holding in a third that carries both patterns in the wrong order at support 0 of 24, and not assessable in a fourth that carries nothing -- with the verdict `regional` on that design and `general` on one declaring three held-out boxes; a region carrying the antecedent but never the consequent shown to be unassessable rather than failing, because a base rate of zero is not a lift of zero; membership decided on footprints with every placed configuration's whole box asserted inside its region and the three ways of not being placed counted apart at 364, 397 and 21 of 1,063; the identity matcher shown to hold every centroid and radius fixed and to admit only what the radius contains while a fitted member outside it is left alone, an empty catalogue refused as clustering under another name, leakage measured on the fitted members alone and shown to refuse `general`, and T4E.2's rotation invariance measured as the reason a band-orientation catalogue cannot be matched into -- 0.447 to its own centroid against 0.585 to the other, inside a radius of 0.959; the gaps published in cells and kilometres with a pixel grid refused kilometres by name, independence unestablished without a declared decorrelation length and the too-close regions named with one; `general` refused separately for leakage, for unestablished independence, for an undeclared physiography and for a single declared class, and refused for one assessable region against a floor of two; a reversed or negative box, an unknown role, two discovery regions, none, no held-out region, overlapping boxes and duplicate names each refused by name, and the partition digest shown to move with the declared design; and the claim boundary naming the six refused words, saying that `general` is not a claim about anywhere untested and that `unassessable` licenses nothing |
   | `test_representation_alignment.py` | 19 | Mutual k-NN alignment between two kernels, the metric arXiv:2405.07987 reports as 0.16 out of 1 without a reference: self-alignment exactly 1, rotation invariance of the inner-product kernel, alignment falling monotonically as two views are driven apart, deterministic tie-breaking; the closed-form chance floor k/(n-1) checked against random neighbour sets and shown to survive strongly clustered and nine-fold duplicated kernels to under one percent -- a first version of that test asserted the opposite and is corrected in place; a paired view clearing its permuted pairing while two unrelated representations come back unresolved; and the refusals -- a non-square kernel, two kernels over different point sets, a non-finite similarity, a neighbour count outside [1, n-1], a null with no permutations, and an exceedance never reported as exactly zero |
   | `test_operating_point.py` | 15 | T4E.10 identity operating-point estimators: the closed-form required support checked against the order statistic it derives from, the tolerance bound refusing thin support and naming the 22 observations that would carry 90/90, that bound never narrower than the empirical quantile it replaces, an empty population refusing rather than returning zero, the empirical quantile publishing that it guarantees nothing and recording the confidence it was given and ignored, the bootstrap widening rather than refusing while naming its own weakness and staying deterministic per seed, every registered estimator publishing a guarantee, only the tolerance bound declaring that it refuses, and the refusals -- an unknown estimator corrected, a coverage or confidence outside (0,1), and a negative or non-finite distance |
-  | `test_identity_api.py` | 16 | T4E.8 slice 4 the identity declaration surface: every target served with what it does not license, the circular `kind_recurrence` x `record_derived_proxy` pairing served as a refusal rather than omitted, an admitted pairing still carrying its tracker-agreement caveat, the matrix covering every target against every evidence class, receipts written before slice 3 listed and named undeclared rather than hidden, an unreadable receipt reported rather than skipped and a non-object JSON document distinguished from an empty store, a path refused where a file name was required, a missing receipt 404 naming what was asked for and an unparseable one 422 rather than 500, the surface read-only under POST/PUT/DELETE, and the refusals published rather than implied by an absence of buttons |
+  | `test_identity_api.py` | 24 | T4E.8 slice 4 the identity declaration surface: every target served with what it does not license, the circular `kind_recurrence` x `record_derived_proxy` pairing served as a refusal rather than omitted, an admitted pairing still carrying its tracker-agreement caveat, the matrix covering every target against every evidence class, receipts written before slice 3 listed and named undeclared rather than hidden, an unreadable receipt reported rather than skipped and a non-object JSON document distinguished from an empty store, a path refused where a file name was required, a missing receipt 404 naming what was asked for and an unparseable one 422 rather than 500, the surface read-only under POST/PUT/DELETE, and the refusals published rather than implied by an absence of buttons |
   | `test_identity_certification.py` | 131 | T4E.9 the T4E identity path against a motif known by construction: the benchmark registered and naming the path it certifies, three disjoint partitions so a radius is never evaluated on what calibrated it, exactly one motif configuration in a planted scene and none in a null one, construction labels taken from the generator and refused rather than guessed when a planted position has no feature near it or two positions claim one, only cross-scene pairs formed, the definition's separation asserted as a floor, nothing admitted where nothing recurs with the absent positive population left unmeasured rather than zero, the frozen-radius failure pinned as a relationship to the feasible radius rather than as two numbers, an empty calibration returning INVALID rather than a permissive radius, every result stating what it does not license, and T4E.13's criterion fixed in code while asserted to be measured nowhere -- `k` derived as a function of the partition size, unequal partitions refused rather than pooled, monotonicity in `k` checked on a toy rather than assumed, and, once candidate 3 was adopted and falsified, that guard replaced by the reading of the result -- which conditions failed and by how much, that the null held at 0 of 1486 proposed, that the 0.0000 recall is recorded as arithmetic rather than a finding, that no lower k can rescue what this one failed, that the falsification licenses none of the conclusions nearest to it, that partitions 720-735 stay refused in code, and T4E.14's partial-presence test bed -- seeds that collide with no existing evidence, a reservation refused with no flag to open it, planting patterns that are deterministic and not contiguous, the recoverable population C(j,2) rather than C(S,2), the design's own record of what this evidence cannot repair, and T4E.15's criterion fixed in code while asserted to be measured nowhere -- closure broken by a single loose end, closure admitting only a subset of what consistency admits, the criterion carrying no tunable parameter at all, the span-ranking design recorded as discarded by derivation, the declaration's own worst case and refusal to predict, and -- once measured and falsified -- the reading of that result: the conditions that failed with their counts, the mechanism executed rather than described (a pair with no other partners is closed and is therefore admitted, while one loose end rejects a group spanning five scenes), the cross-check showing closure admits more than candidate 2 on the evidence candidate 2 passed, the missed derivation recorded rather than quietly repaired, the constraint the falsification fixes on any successor, and T4E.16's withdrawal held as a derivation rather than a note -- the surrogate reassembly rate computed analytically and by simulation, the record of why the design cannot simply be repaired, the fact that a withdrawn declaration adds nothing to the accumulated multiplicity, and PooledDistances keeping a refused distance as NaN so it can never leak in as a number |
   | `test_identity_target_declaration.py` | 53 | T4E.8 slice 3 the declared identity target: an absent target or evidence class refused by name, a misspelling refused with its correction, `kind_recurrence` against record-derived proxy labels refused as circular, `track_continuity` admitted with its tracker-agreement caveat, every target round-tripping what it recognises and does not license, the published proxy wording pinned verbatim so naming a target cannot reword a cited receipt, and the external-reference path recovering two planted identities from a reviewed catalogue while refusing a mismatched family, a single identity, a non-catalogue and a negative population the patterns cannot supply |
   | `test_spectral_spatial_identity.py` | 24 | T4E.8 spatial geometry, detector-band/magnitude independence, source/scope refusal, analytic distances, old-radius refusal, scalar/accelerated agreement and two-sided proxy-label diagnostics |
-| **total** | **4307** | |
+| **total** | **4315** | |
 
 ### 7.4a Browser suite inventory
 
@@ -11471,11 +11552,13 @@ not bound to the scratch state.
 | `publication-export.spec.ts` | 4 | TG18.2 downloaded vector reading sheets, including evaluated missingness, producer qualifications and live-figure immutability |
 | `research-journey.spec.ts` | 5 | TG18.3 all seven global stages, one remediation per context blocker, Composer/ladder separation and reachable distinguished legacy tools |
 | `assistive-acceptance.spec.ts` | 11 | TG18.4 keyboard order and focus at three layouts, zoom-equivalent reflow, rendered contrast, reduced motion, non-colour and semantic acceptance |
-| `identity-declaration.spec.ts` | 8 | T4E.8 slice 4 the identity declaration rendered: every target with what it does not license, the circular pairing on screen as a refusal with its reason, that refusal drawn at the weight of an admission (bounding boxes required to agree within four pixels, because equal weight is a claim about a picture), an admitted pairing still carrying its caveat, receipts showing no approved mining radius, a pre-slice-3 receipt labelled rather than hidden, a receipt opened whole, and no control that chooses |
+| `identity-declaration.spec.ts` | 8 | T4E.8 slice 4 the identity declaration rendered: every target with what it does not license, the circular pairing on screen as a refusal with its reason, that refusal drawn at the weight of an admission (bounding boxes required to agree within four pixels, because equal weight is a claim about a picture), an admitted pairing still carrying its caveat, receipts showing no approved mining radius, a pre-slice-3 receipt labelled rather than hidden, a receipt opened whole, and no control that chooses |
+
 | `ui-qualification.spec.ts` | 4 | TG18.5 served-workspace inventory, reachability with self-naming, journey destinations and unexplained disablement |
 | `scientist-actions.spec.ts` | 2 | TG18.5 the two numbers `scientist_actions` refuses to invent: the visible actions a researcher takes from a clean browser to a completed run of the frozen plan, and the actions between meeting the preflight refusal and clearing it, both asserted, with the wall-clock durations written into the measurement and asserted by nothing |
 | `product-modes.spec.ts` | 5 | TG18.5 one representative path through each of TG18.0's four product modes at two desktop viewports, with a named artefact at the state each path reaches, and the signature-uniqueness assertion that holds the modes apart (the file declares five and Playwright collects ten, once per viewport) |
-| **suite** | **136** | from a cleaned `.e2e-state`, Chromium, 2026-09-04 |
+| `study-trail.spec.ts` | 6 | T4E.23 the study trail rendered: a study drawn as the chain it ran rather than a list of files, every verdict on screen carrying what it may not be used for, a question declared and never measured shown rather than filtered, a corrected record marked where a reader looks first, the surface stating its own refusals instead of implying them by absent buttons, and a measurement opened whole and closed again |
+| **suite** | **136 + 6** | 136 from a cleaned `.e2e-state`, Chromium, 2026-09-04; the six `study-trail` tests measured separately on 2026-09-10 and not folded into a re-run of the whole suite, so the total is two dated measurements rather than one |
 
 The counts are guarded by `test_documentation.py`, but only as far as a static reader honestly can:
 the file set must match `frontend/e2e/` exactly in both directions, and each stated count must be at

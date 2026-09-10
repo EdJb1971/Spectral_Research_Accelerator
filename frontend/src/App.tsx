@@ -23,6 +23,7 @@ import CrossDomainRecordView from './components/CrossDomainRecordView';
 import ReviewView from './components/ReviewView';
 import GateRecordView from './components/GateRecordView';
 import IdentityDeclarationView from './components/IdentityDeclarationView';
+import StudyTrailView from './components/StudyTrailView';
 import DatasetCapabilityProfile from './components/DatasetCapabilityProfile';
 import ExperimentComposer from './components/ExperimentComposer';
 import ResearchArchive from './components/ResearchArchive';
@@ -67,6 +68,7 @@ import {
   Target,
   MessageSquare,
   Menu,
+  FlaskConical,
   X
 } from 'lucide-react';
 
@@ -98,6 +100,7 @@ const WORKFLOW_NAV = [
     { id: 'review', name: 'Recorded review', icon: MessageSquare },
     { id: 'gate', name: 'Atmospheric gate record', icon: Landmark, context: 'Gridded field line' },
     { id: 'identity', name: 'Identity declaration', icon: Target, context: 'Gridded field line' },
+    { id: 'studies', name: 'Study trail', icon: FlaskConical, context: 'Gridded field line' },
   ] },
   { section: 'Read', items: [
     { id: 'researchArchive', name: 'Research archive', icon: Archive },
@@ -2809,6 +2812,13 @@ export default function App() {
               kind judged against labels drawn from the same pipeline -- renders at the same
               weight as the admissible ones, because that refusal is the cell a researcher most
               needs to read. The panel offers no way to choose: choosing is a scientific act. */}
+          {activeTab === 'studies' && (
+            /* T4E.22. A declaration without its result is a promise and a result without its
+               declaration is an assertion; until this tab a reader could see only the first
+               half. Every verdict here carries what it may not be used for, and a study that
+               was declared and deliberately never measured is shown rather than filtered. */
+            <StudyTrailView onError={(message) => setError(message)} />
+          )}
           {activeTab === 'identity' && (
             <IdentityDeclarationView onError={(message) => setError(message)} />
           )}

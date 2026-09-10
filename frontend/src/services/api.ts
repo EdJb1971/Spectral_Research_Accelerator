@@ -1294,6 +1294,20 @@ export const apiService = {
     return handleResponse<types.IdentityAuditIndex>(await fetch(`${BASE_URL}/identity/audits`));
   },
 
+  async identityStudies(): Promise<types.IdentityStudies> {
+    return handleResponse<types.IdentityStudies>(await fetch(`${BASE_URL}/identity/studies`));
+  },
+
+  async listIdentityMeasurements(): Promise<types.IdentityMeasurementIndex> {
+    return handleResponse<types.IdentityMeasurementIndex>(
+      await fetch(`${BASE_URL}/identity/measurements`));
+  },
+
+  async identityMeasurement(name: string): Promise<types.IdentityMeasurementView> {
+    return handleResponse<types.IdentityMeasurementView>(
+      await fetch(`${BASE_URL}/identity/measurements/${encodeURIComponent(name)}`));
+  },
+
   async identityAudit(name: string): Promise<types.IdentityAuditView> {
     return handleResponse<types.IdentityAuditView>(
       await fetch(`${BASE_URL}/identity/audits/${encodeURIComponent(name)}`));

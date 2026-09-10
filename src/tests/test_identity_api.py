@@ -160,3 +160,143 @@ def test_the_refusals_are_published_rather_than_implied(client):
     body = client.get("/api/v1/identity/audits").json()
     assert any("approves a mining radius" in refusal for refusal in body["refusals"])
     assert any("can reach a network" in refusal for refusal in body["refusals"])
+
+
+# ------------- T4E.22: the measurements, and the chain that joins a question to its answer
+#
+# Until this slice the router served declarations and nothing else, so a reader could see that a
+# study had been DECLARED and never what it MEASURED. A declaration without its result is a
+# promise; a result without its declaration is an assertion; only the pair is evidence.
+#
+# These tests build their own store rather than reading the repository's. A test that asserts
+# against live evidence files is an assertion about today's contents, not about the code, and it
+# passes for the wrong reason the moment somebody adds a record.
+
+
+@pytest.fixture()
+def study_store(tmp_path):
+    """A declaration store and a measurement store, both isolated and both populated."""
+    audits = tmp_path / "audits"
+    measurements = tmp_path / "measurements"
+    audits.mkdir()
+    measurements.mkdir()
+
+    _write(audits, "t4e30-example-declaration.json", {
+        "schema": "example/v1", "status": "declared_before_measurement",
+        "claim_boundary": "Synthetic scenes settle a property of the criterion."})
+    _write(audits, "t4e30-example-adoption.json", {
+        "schema": "example-adoption/v1", "status": "adopted"})
+    _write(measurements, "t4e30_example.json", {
+        "VERDICT": "FALSIFIED on condition 2.",
+        "what_this_does_not_settle": ["Not that the signature is inadequate."],
+        "claim_boundary": "A measurement settles an instrument, not the atmosphere."})
+
+    # a question fixed and deliberately left unanswered, with its withdrawal recorded
+    _write(audits, "t4e31-withdrawn-declaration.json", {
+        "schema": "example/v1", "status": "WITHDRAWN_BEFORE_ADOPTION_BY_DERIVATION",
+        "withdrawal": {"why": "the null could reassemble the signal"}})
+
+    # a measurement predating the boundary convention, and a file belonging to no study
+    _write(measurements, "t4e32_unbounded.json", {"result": 41})
+    _write(measurements, "extension_conformance.json", {"schema": "extension-evidence/v1"})
+
+    app.state.identity_audit_dir = str(audits)
+    app.state.measurement_dir = str(measurements)
+    with TestClient(app) as test_client:
+        yield test_client
+    app.state.identity_audit_dir = None
+    app.state.measurement_dir = None
+
+
+def test_a_measurement_is_served_with_what_it_may_not_be_used_for(study_store):
+    """PLAN section 5: no view states a number without its boundary."""
+    body = study_store.get("/api/v1/identity/measurements").json()
+
+    assert body["network_used"] is False
+    served = {m["file"]: m for m in body["measurements"]}
+    example = served["t4e30_example.json"]
+    assert example["verdict"].startswith("FALSIFIED")
+    keys = {clause["key"] for clause in example["boundaries"]}
+    assert {"claim_boundary", "what_this_does_not_settle"} <= keys
+
+
+def test_a_measurement_without_a_boundary_is_listed_rather_than_passed_over(study_store):
+    """Some records predate the convention. Hiding them would make the store look uniform."""
+    body = study_store.get("/api/v1/identity/measurements").json()
+
+    assert "t4e32_unbounded.json" in body["measurements_without_a_stated_boundary"]
+    assert "none are hidden" in body["boundary_note"]
+
+
+def test_a_corrected_record_carries_the_mark_in_its_summary(study_store, tmp_path):
+    """A corrected record that reads as current is the dangerous case."""
+    _write(tmp_path / "measurements", "t4e33_corrected.json",
+           {"VERDICT": "superseded", "GATE_CORRECTION": {"what_happened": "the gate was wrong"},
+            "claim_boundary": "settles an instrument"})
+
+    body = study_store.get("/api/v1/identity/measurements").json()
+
+    assert "t4e33_corrected.json" in body["corrected_or_superseded"]
+    served = {m["file"]: m for m in body["measurements"]}
+    assert "GATE_CORRECTION" in served["t4e33_corrected.json"]["corrected_or_superseded"]
+    assert "corrected or superseded in the open" in body["correction_note"]
+
+
+def test_the_studies_view_joins_a_declaration_to_the_measurement_that_answered_it(study_store):
+    """The chain the work itself runs: declaration, adoption, measurement, outcome."""
+    body = study_store.get("/api/v1/identity/studies").json()
+
+    studies = {study["task"]: study for study in body["studies"]}
+    assert "T4E30" in studies
+    joined = studies["T4E30"]
+    assert len(joined["declarations"]) == 1
+    assert len(joined["adoptions"]) == 1
+    assert len(joined["measurements"]) == 1
+    assert joined["has_a_result"] is True
+    assert joined["declared_before_measured"] is True
+
+
+def test_a_declaration_with_no_result_is_shown_and_not_filtered(study_store):
+    """A question fixed and deliberately left unanswered is a legitimate state here.
+
+    T4E.16 was withdrawn before adoption by derivation. A view that filtered such a study would
+    hide the cheapest result the programme produced.
+    """
+    body = study_store.get("/api/v1/identity/studies").json()
+
+    assert "t4e31" in body["declared_but_not_measured"]
+    assert "shown rather than filtered" in body["declared_but_not_measured_note"]
+    studies = {study["task"]: study for study in body["studies"]}
+    assert studies["T4E31"]["has_a_result"] is False
+    assert "withdrawal" in studies["T4E31"]["corrected_or_superseded"]
+
+
+def test_a_file_belonging_to_no_study_is_reported_not_dropped(study_store):
+    """`extension_conformance.json` is evidence about something else, and is named as such."""
+    body = study_store.get("/api/v1/identity/studies").json()
+
+    assert "extension_conformance.json" in body["files_outside_any_study"]
+
+
+def test_the_study_key_takes_the_task_and_not_the_first_token():
+    """`t4e19_positional_error.json` belongs to t4e19, not to a study of its own.
+
+    Splitting on the first separator made every measurement its own study and every declaration
+    read as unanswered, which is a view worse than none.
+    """
+    from src.api.identity import _study_key
+
+    assert _study_key("t4e19-positional-error-declaration.json") == "t4e19"
+    assert _study_key("t4e19_positional_error.json") == "t4e19"
+    assert _study_key("t4e12-consistency-adoption.json") == "t4e12"
+    assert _study_key("extension_conformance.json") is None
+
+
+def test_one_measurement_can_be_read_in_full_and_a_path_is_refused(study_store):
+    """The name is a file name in the store and never a path."""
+    full = study_store.get("/api/v1/identity/measurements/t4e30_example.json")
+
+    assert full.status_code == 200
+    assert full.json()["measurement"]["VERDICT"].startswith("FALSIFIED")
+    assert full.json()["summary"]["file"] == "t4e30_example.json"
+    assert study_store.get("/api/v1/identity/measurements/nothing-here.json").status_code == 404

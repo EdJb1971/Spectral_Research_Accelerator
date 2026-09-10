@@ -2803,6 +2803,80 @@ configuration absent from one scene outright; nothing about recurrence *across* 
 which the mining machinery needs; no mining radius, no discharge of T4E.8's acceptance, no
 closure of D96 to D100; and nothing about `kind_recurrence`, which still has no catalogue.
 
+**T4E.23: the study trail is on screen, with rendered evidence.** `StudyTrailView.tsx`, a new
+"Study trail" tab, and `frontend/e2e/study-trail.spec.ts` -- **six tests passing in Chromium
+against the real API and the real frontend**, with three screenshots captured under
+`frontend/e2e/artifacts/`. PLAN section 5's acceptance for an interface slice is rendered
+evidence with refusals demonstrated on screen rather than described, and this is that evidence
+rather than a claim about it.
+
+What the panel draws, and why each rule exists because of something this programme did:
+
+* **A study is the chain it ran** -- declared, adopted or signed, measured -- so which result
+  answered which question is not reconstructed from filenames. Thirteen studies render.
+* **A verdict never appears without what it may not be used for.** The boundary renders inside
+  the result, not beneath it.
+* **A correction is a badge on the study.** T4E.17's three amendments and superseded signature,
+  T4E.18's `CORRECTION_2026_09_10`, T4E.20's `GATE_CORRECTION` are all visible without opening
+  anything, because a corrected record that reads as current is the dangerous case.
+* **A question with no answer is shown, not filtered.** T4E.16 renders as *declared, not
+  measured* with its withdrawal mark, and T4E.7 likewise. A view that hid T4E.16 would hide the
+  cheapest result the programme produced.
+* **The surface states what it will not do**, from the server's own refusal list, rather than
+  implying it by an absence of buttons.
+
+**A defect the rendering caught that the API tests could not.** The first `BOUNDARY_KEYS` list
+omitted `boundary` and `acceptance_boundary` -- the plainest names of all -- so seven older
+measurements rendered as *"no stated boundary; this record predates the convention"* when the
+clause was right there in the record. **A viewer that under-reports a boundary is worse than one
+that omits the field: it makes a false statement about the evidence, on screen.** Every
+measurement now reports its boundary; the count of false "predates the convention" claims went
+from seven to zero.
+
+Two test defects were also caught by running rather than by reading: a substring selector that
+matched `declared_before_measurement` instead of the *Declared* column heading, and -- after the
+boundary fix put more text on the buttons -- a `close` control that matched four elements
+because several boundaries contain "no closure of D96".
+
+**T4E.22: the results become reviewable.** Until this slice `/api/v1/identity` served
+`data/identity_calibration` and nothing else, so a reader could see that a study had been
+*declared* and never what it *measured*. Every offset, falsified prediction and corrected
+diagnosis lived in `measurements/` and in git, where no interface could reach them. **A
+declaration without its result is a promise; a result without its declaration is an assertion;
+only the pair is evidence.**
+
+Three additions, all read-only and all in the router's existing idiom:
+
+* **`GET /measurements` and `/measurements/{name}`** serve the measurement store with each
+  record's verdict attached, and with **what it may not be used for attached rather than
+  beside it**. Fifteen different key names have been used for that clause across this
+  programme's records; all fifteen are collected rather than normalised, because renaming keys
+  in committed evidence to suit a viewer would be rewriting evidence to fit its display.
+* **`GET /studies`** joins each task into the chain the work actually runs -- declaration,
+  adoption or signature, measurement, outcome -- so a reader is not left reconstructing from
+  filenames which result answered which question, or whether the question was fixed before the
+  answer was known.
+* **Summaries now carry a verdict and its corrections.** A record corrected or superseded in
+  the open is marked in the *summary*, because the summary is what a reader sees first and **a
+  corrected record that reads as current is the dangerous case**.
+
+Two states are shown rather than filtered, and both are load-bearing. A **declaration with no
+measurement** is a question fixed and deliberately unanswered -- T4E.16 was withdrawn before
+adoption by derivation, and a view that hid it would hide the cheapest result the programme
+produced. A **measurement with no stated boundary** predates the convention and is listed by
+name rather than passed over.
+
+**A defect caught in verification, not in review.** The first study key split on the leading
+separator, which made `t4e19_positional_error.json` a study of its own and left every
+declaration reading as unanswered -- a view worse than none. It now takes the leading `t4eNN`
+token under either convention, and a test pins both spellings.
+
+**What this slice is not.** It is the API half. `IdentityDeclarationView.tsx` renders the
+admissibility matrix and does not yet render studies or measurements, and PLAN section 5's
+acceptance for an interface slice requires **rendered evidence captured in VERIFICATION.md,
+with refusals demonstrated on screen rather than described**. That evidence does not exist for
+this surface, so no interface claim is made here beyond what a client can now fetch.
+
 **T4E.21: competition does not explain the gap, and the declared prediction is falsified.** 247
 vortices planted across 39 frames at the record's own feature density, every centre known by
 construction. `measurements/t4e21_faithful_background.json`.

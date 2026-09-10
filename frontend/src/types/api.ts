@@ -3252,6 +3252,53 @@ export interface IdentityAuditSummary {
   design_sha256: string | null;
   windows: number;
   claim_boundary: string | null;
+  /** T4E.22. A summary that could not hold a verdict showed nulls where the finding was. */
+  verdict: unknown;
+  /** Every "what this may not be used for" clause the record carries, under whichever of the
+   *  fifteen names this programme has used. Collected rather than normalised: renaming keys in
+   *  committed evidence to suit a viewer would be rewriting evidence to fit its display. */
+  boundaries: { key: string; text: unknown }[];
+  /** Marks left when a record was corrected or superseded in the open. A corrected record that
+   *  reads as current is the dangerous case, so the mark travels in the summary. */
+  corrected_or_superseded: string[];
+}
+
+export interface IdentityMeasurementIndex {
+  measurements: IdentityAuditSummary[];
+  unreadable: Record<string, string>[];
+  corrected_or_superseded: string[];
+  correction_note: string;
+  measurements_without_a_stated_boundary: string[];
+  boundary_note: string;
+  refusals: string[];
+  network_used: boolean;
+}
+
+export interface IdentityMeasurementView {
+  measurement: Record<string, any>;
+  summary: IdentityAuditSummary;
+  refusals: string[];
+  network_used: boolean;
+}
+
+export interface IdentityStudy {
+  task: string;
+  declarations: IdentityAuditSummary[];
+  adoptions?: IdentityAuditSummary[];
+  measurements: IdentityAuditSummary[];
+  has_a_result: boolean;
+  declared_before_measured: boolean;
+  corrected_or_superseded: string[];
+}
+
+export interface IdentityStudies {
+  studies: IdentityStudy[];
+  declared_but_not_measured: string[];
+  declared_but_not_measured_note: string;
+  files_outside_any_study: string[];
+  unreadable: Record<string, string>[];
+  refusals: string[];
+  network_used: boolean;
 }
 
 export interface IdentityAuditIndex {

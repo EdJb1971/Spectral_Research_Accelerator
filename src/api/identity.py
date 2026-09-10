@@ -31,6 +31,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -57,6 +58,74 @@ def _audit_dir(request: Request) -> Path:
     value = getattr(request.app.state, "identity_audit_dir", None)
     return Path(value if value is not None else
                 os.getenv("IDENTITY_AUDIT_DIR", "data/identity_calibration"))
+
+
+def _measurement_dir(request: Request) -> Path:
+    value = getattr(request.app.state, "measurement_dir", None)
+    return Path(value if value is not None else
+                os.getenv("MEASUREMENT_DIR", "measurements"))
+
+
+#: The several names this programme has used for "what this result may not be used for". A
+#: reader must never be shown a number without it, and a surface that recognised only one
+#: spelling would silently drop the boundary from most records. Collected rather than
+#: normalised, because renaming the keys in forty committed records to suit a viewer would
+#: rewrite evidence to fit its display.
+BOUNDARY_KEYS = (
+    "claim_boundary",
+    # `boundary` and `acceptance_boundary` were missed on the first pass, and the panel told a
+    # reader that seven records "predate the convention" when the clause was right there under
+    # the plainest name of all. A viewer that under-reports a boundary is worse than one that
+    # omits the field: it makes a false statement about the evidence, on screen.
+    "boundary",
+    "acceptance_boundary",
+    "is_a_diagnostic_not_a_criterion",
+    "what_this_does_not_settle",
+    "what_this_slice_does_not_settle",
+    "what_it_does_NOT_license",
+    "what_this_does_NOT_license",
+    "what_this_does_NOT_do",
+    "what_this_signature_does_NOT_do",
+    "what_this_slice_will_not_do",
+    "what_this_acquisition_does_NOT_authorise",
+    "what_a_failure_would_and_would_not_license",
+    "what_a_success_would_and_would_not_license",
+    "what_this_still_does_not_establish",
+    "what_was_NOT_done",
+    "what_this_evidence_does_not_supply",
+    "what_this_evidence_still_does_not_supply",
+)
+
+#: A record that has been corrected or superseded and does not say so in its summary is the
+#: dangerous case: it reads as current. These are the marks this programme leaves when it
+#: supersedes something in the open rather than editing it away.
+CORRECTION_KEYS = ("CORRECTION_2026_09_10", "GATE_CORRECTION", "withdrawal",
+                   "superseded_signature", "superseded_figures", "amendment",
+                   "the_first_diagnosis_was_wrong")
+
+
+def _boundaries(body: Dict[str, Any]) -> List[Dict[str, Any]]:
+    """Every "does not license" clause a record carries, under whichever name it uses."""
+    found: List[Dict[str, Any]] = []
+    for key in BOUNDARY_KEYS:
+        if key in body and body[key]:
+            found.append({"key": key, "text": body[key]})
+    return found
+
+
+def _corrections(body: Dict[str, Any]) -> List[str]:
+    """Marks that this record was corrected or superseded in the open."""
+    marks = [key for key in CORRECTION_KEYS if key in body and body[key]]
+    marks += [key for key in body
+              if key.startswith("amendment_") or key.startswith("CORRECTION")]
+    return sorted(set(marks))
+
+
+def _verdict(body: Dict[str, Any]) -> Optional[Any]:
+    for key in ("VERDICT", "verdict", "status", "outcome"):
+        if key in body and body[key]:
+            return body[key]
+    return None
 
 
 def _admissibility() -> List[Dict[str, Any]]:
@@ -130,6 +199,13 @@ def _summarise(path: Path, body: Dict[str, Any]) -> Dict[str, Any]:
         "design_sha256": body.get("design_sha256"),
         "windows": len(windows),
         "claim_boundary": body.get("claim_boundary"),
+        # T4E.22. A summary that could not hold a verdict showed a schema and a status for
+        # records whose entire content was a result, and a reader saw nulls where the finding
+        # was. PLAN section 5 asks for the opposite: no view states a number without what it
+        # may not be used for.
+        "verdict": _verdict(body),
+        "boundaries": _boundaries(body),
+        "corrected_or_superseded": _corrections(body),
     }
 
 
@@ -185,3 +261,120 @@ def read_audit(request: Request, name: str) -> Dict[str, Any]:
                             detail="identity audit %r could not be read: %s" % (name, exc))
     return {"audit": body, "summary": _summarise(path, body),
             "refusals": list(REFUSALS), "network_used": False}
+
+
+# ---------------------------------------------------------------------------------------------
+# T4E.22: the measurements, and the chain that joins a question to its answer.
+#
+# Until now this router served `data/identity_calibration` and nothing else, so a reader could
+# see that a study had been DECLARED and never what it MEASURED: the offsets, the falsified
+# predictions, the corrected diagnosis all lived in `measurements/` and in git. For a research
+# tool that is the wrong half. A declaration without its result is a promise; a result without
+# its declaration is an assertion; only the pair is evidence.
+
+
+def _study_key(name: str) -> Optional[str]:
+    """The task a file belongs to -- `t4e19` from either naming convention, or None.
+
+    Declarations are named `t4e19-positional-error-declaration.json` and measurements
+    `t4e19_positional_error.json`, so the key is the leading token under either separator.
+    """
+    stem = (name[:-5] if name.lower().endswith(".json") else name).lower()
+    match = re.match(r"^(t4[a-z]\d+)", stem)
+    return match.group(1) if match else None
+
+
+@router.get("/measurements")
+def read_measurements(request: Request) -> Dict[str, Any]:
+    """Every measurement record, with its verdict and what it may not be used for.
+
+    A measurement is served with its boundaries attached rather than beside them, because the
+    boundary is the part a reader is most likely to skip and the part this programme most often
+    found itself needing.
+    """
+    readable, unreadable = _load(_measurement_dir(request))
+    corrected = [item["file"] for item in readable if item.get("corrected_or_superseded")]
+    unbounded = [item["file"] for item in readable if not item.get("boundaries")]
+    return {
+        "measurements": readable,
+        "unreadable": unreadable,
+        "corrected_or_superseded": corrected,
+        "correction_note": (
+            "These records were corrected or superseded in the open rather than edited away. "
+            "A corrected record that reads as current is the dangerous case, so the mark is "
+            "carried in the summary and not only in the body."),
+        "measurements_without_a_stated_boundary": unbounded,
+        "boundary_note": (
+            "A measurement with no clause saying what it may not be used for is listed here "
+            "rather than passed over. Some predate the convention; none are hidden."),
+        "refusals": list(REFUSALS),
+        "network_used": False,
+    }
+
+
+@router.get("/measurements/{name}")
+def read_measurement(request: Request, name: str) -> Dict[str, Any]:
+    """One measurement in full. The name is a file name in the store and never a path."""
+    if "/" in name or "\\" in name or name.startswith("."):
+        raise HTTPException(status_code=400,
+                            detail="measurement name must be a file name, not a path")
+    path = _measurement_dir(request) / name
+    if not path.is_file():
+        raise HTTPException(status_code=404, detail="no measurement named %r" % name)
+    try:
+        body = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        raise HTTPException(status_code=422,
+                            detail="measurement %r could not be read: %s" % (name, exc))
+    return {"measurement": body, "summary": _summarise(path, body),
+            "refusals": list(REFUSALS), "network_used": False}
+
+
+@router.get("/studies")
+def read_studies(request: Request) -> Dict[str, Any]:
+    """Each task as a chain: what was declared, what was signed or adopted, what was measured.
+
+    This is the view the work itself asks for. Every study in this programme runs
+    declaration -> adoption -> measurement -> outcome, and a surface that showed the three
+    separately would leave a reader to reconstruct by filename which result answered which
+    question, and whether the question was fixed before the answer was known.
+    """
+    audits, audit_unreadable = _load(_audit_dir(request))
+    measurements, measurement_unreadable = _load(_measurement_dir(request))
+    studies: Dict[str, Dict[str, Any]] = {}
+    unfiled: List[str] = []
+    for item, role in ([(a, "declaration") for a in audits]
+                       + [(m, "measurement") for m in measurements]):
+        key = _study_key(item["file"])
+        if key is None:
+            unfiled.append(item["file"])
+            continue
+        study = studies.setdefault(key, {"task": key.upper(), "declarations": [],
+                                         "measurements": []})
+        name = item["file"].lower()
+        if role == "declaration" and ("adoption" in name or "signature" in name
+                                      or "amendment" in name):
+            study.setdefault("adoptions", []).append(item)
+        elif role == "declaration":
+            study["declarations"].append(item)
+        else:
+            study["measurements"].append(item)
+    for study in studies.values():
+        study["has_a_result"] = bool(study["measurements"])
+        study["declared_before_measured"] = bool(study["declarations"]) and study["has_a_result"]
+        study["corrected_or_superseded"] = sorted({
+            mark for group in ("declarations", "adoptions", "measurements")
+            for item in study.get(group, []) for mark in item.get("corrected_or_superseded", [])})
+    declared_only = sorted(k for k, v in studies.items() if not v["has_a_result"])
+    return {
+        "studies": [studies[key] for key in sorted(studies)],
+        "declared_but_not_measured": declared_only,
+        "declared_but_not_measured_note": (
+            "A declaration with no measurement is a question that has been fixed and not yet "
+            "answered. That is a legitimate state in this programme -- several were declared "
+            "and deliberately left unmeasured -- and it is shown rather than filtered."),
+        "files_outside_any_study": sorted(unfiled),
+        "unreadable": audit_unreadable + measurement_unreadable,
+        "refusals": list(REFUSALS),
+        "network_used": False,
+    }
