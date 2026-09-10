@@ -8714,6 +8714,57 @@ D97, isolated from the real record: the calibration's failure is not only the at
 messiness. D101 is closed by the benchmark existing and reporting; D97 gains this evidence and
 stays open. No mining radius is approved and T4E.8's acquired-record acceptance is untouched.
 
+### 3E.31 The vorticity probe: the variable works, the crop does not (T4E.18)
+
+**The variable works. The crop does not.** Two months of 850 hPa relative vorticity were
+acquired as a probe before the declared full request -- 14 MB and about 100 seconds against
+230 MB and 1.6 hours -- and tested against acceptance condition 1.
+`measurements/t4e18_vorticity_probe.json`.
+
+**Confirmed: a cyclone is a strong, correctly-signed, localised signal in this variable.** GITA
+sits at the **0.02nd percentile** of its frame and the frame's single most cyclonic cell is
+**one grid cell** from the catalogue position; HOLA at the 0.16th, LINDA 2.32nd, IRIS 1.20th.
+The sign convention declared before acquisition is right.
+
+**Failed anyway, and not because of the variable.** No storm of four had a feature inside its
+catalogue radius. These storms sit at latitude -20.2 to -21.1 and the crop's northern edge is
+**-20.0**, so they are one to four cells from the boundary, where the extractor refuses features
+by design -- 34 rejected as `outside_valid_interior` on the GITA frame alone.
+
+```
+SP cyclone observations, lon 140-180, 2018-2021:   917
+  inside the crop's lat band [-60,-20]:            210
+  NORTH of the crop, excluded entirely:            707   (77%)
+  in-crop median latitude -23.3; 74 within 2 deg of the edge
+```
+
+**The record was built for a New Zealand forecast experiment, not for cyclone identity**, and the
+two purposes want different domains.
+
+**Moving the box north fixes the geometry and costs the kind label.**
+
+```
+box (lat)      obs  w/radius  storms  interior   pairs     NATURE base rate
+-60..-20       210      176      18       113    10,721          0.571
+-45..-5        908      684      30       683   164,450          0.872
+-40..0         900      680      30       678   163,880          0.875
+```
+
+At the same 161-pixel shape and 40-degree span the crop planner already assessed, the population
+goes from 18 storms to 30 and from 113 interior observations to 683. But the `NATURE` base rate
+rises to **0.872**, because at tropical latitudes almost every system is `TS`: a rule answering
+"same kind" to everything would be right 87% of the time. **The label that discriminates usefully
+in the southern box is close to degenerate in the northern one.**
+
+**This is a decision, not an optimisation.** Choosing whichever box flatters a later result is the
+horse race every declaration in this sequence forbids, so the trade-off is recorded and put to
+the maintainer rather than resolved. And it is not free: the T4E.17 catalogue was **signed** on
+terms naming this crop and a base rate of 0.571, so a different crop is a different evidence base
+and the signature would have to be re-given rather than carried over.
+
+**The full acquisition was not run.** Acquiring 230 MB onto a crop that cannot support the
+evaluation is the mistake the probe exists to prevent.
+
 ### 3E.30 Acquiring a variable a cyclone is visible in (T4E.18)
 
 **T4E.18 declared: acquire a variable in which a cyclone centre is an extractable feature.**
@@ -11025,7 +11076,7 @@ able to sit three slices out of date.
 | `test_api_infrastructure.py` | 16 | health, listing, pagination, CORS, data-source transparency, benchmark endpoints |
 | `test_benchmarks.py` | 50 | Ground-Truth Benchmark Suite, seed discipline, eager/streamed climatology agreement, D30 determinism, TG16.0 paired-family completeness, TG16.1-TG16.5 gate registration, and TG17.0 four-domain contract completeness/determinism/refusals |
 | `test_boundary_synthetic.py` | 8 | boundary treatments, windowing, synthetic generators and independent Euclidean-ring oracle |
-| `test_cds_source.py` | 29 | T5.2c monthly CDS planning/CLI, grid-alignment/server-snap refusals, network consent, atomic resume, shard integrity, conservative storage refusal, bounded Zarr publication, plus PASS/FAIL independent-route receipt publication, replay and tamper refusal; and T4C.5k's encoding-relative agreement criterion -- a packed frame revealing its binary step and an unpacked one refusing to invent one, D86 itself reproduced as the same pair of fields failing an absolute tolerance finer than the route can express while passing at 0.4 of a packing step, a real 1.4-step disagreement still failing so the criterion is not decoration, and the two criteria kept apart with both receipts surviving because the earlier verdict is why the successor exists, and the lattice search exercised at temperature, geopotential and specific-humidity magnitudes because a residual tolerance that does not scale would refuse a packed geopotential field as though it were unpacked; plus T4C.5m's D87 -- a record admitted only under the criterion that actually judged it, refused under the one that never ran on it, refused for a criterion that does not exist, and a receipt whose declared name has been relabelled refused rather than trusted to the manifest field it sits under; plus T4C.5n's labelled audit window -- an audit binding beside the authorising receipt rather than over it, unreadable to the gate because the criterion argument rejects any name carrying a label, and a label that could pass for a criterion refused outright |
+| `test_cds_source.py` | 33 | T5.2c monthly CDS planning/CLI, grid-alignment/server-snap refusals, network consent, atomic resume, shard integrity, conservative storage refusal, bounded Zarr publication, plus PASS/FAIL independent-route receipt publication, replay and tamper refusal; and T4C.5k's encoding-relative agreement criterion -- a packed frame revealing its binary step and an unpacked one refusing to invent one, D86 itself reproduced as the same pair of fields failing an absolute tolerance finer than the route can express while passing at 0.4 of a packing step, a real 1.4-step disagreement still failing so the criterion is not decoration, and the two criteria kept apart with both receipts surviving because the earlier verdict is why the successor exists, and the lattice search exercised at temperature, geopotential and specific-humidity magnitudes because a residual tolerance that does not scale would refuse a packed geopotential field as though it were unpacked; plus T4C.5m's D87 -- a record admitted only under the criterion that actually judged it, refused under the one that never ran on it, refused for a criterion that does not exist, and a receipt whose declared name has been relabelled refused rather than trusted to the manifest field it sits under; plus T4C.5n's labelled audit window -- an audit binding beside the authorising receipt rather than over it, unreadable to the gate because the criterion argument rejects any name carrying a label, and a label that could pass for a criterion refused outright |
 | `test_correspondence_estimand.py` | 21 | TG17.15 slices 1 and 3 the declared estimand: the derangement counts pinned against the partner counts they diverge from, and the miscounted reference set shown anticonservative by more than a thousandfold in the direction that eases rejection; resolution refused above the size the null itself will enumerate; the declared family unable to reach its own resolvable size; zero of 105 rejecting when one member leaves the floor, against 105 of 106 one size up; the pool size derived against the real correction and falsified one smaller; margin bought from the pool at an identical test count; an undeclared or unregistered estimand refused rather than defaulted; the inadmissible estimand registered so it is refused by name; and the correction's dependence reason and the slice's claim boundary both carried; and, added by slice 3, `minimum_pool_size` shown to be `minimum_pool_size_for_detected_fraction` at fraction one, a sparser family shown to need a much larger pool, a fraction rounding to no planted member refused, and `sparsest_detectable_count` measured from real floors -- six pools of 58 needing five genuine members of six, pools too small to ever reject returning None rather than a number, and the sparse case published in the estimand report beside the favourable one |
 | `test_partner_pool.py` | 20 | TG17.15 slice 2 the partner pool: the profile field set asserted exactly so no joint quantity can be added, and every banded marginal readable from one record alone; `native_seconds` refused a band by name with the admitted pool spanning an order of magnitude; an observed partner failing its own contract, sharing the left member's provenance, or equal to the left member each refused; every refusal carried with its check and its measured numbers, and admitted plus refused equal to what was offered; a record offered twice refused rather than counted twice; a pool below the resolvable size refused naming the required size, which tracks the declared number of tested correspondences; the estimand required and the inadmissible one refused; contracts with no band or a band below one refused; an effective sample size above the nominal count refused; the pool sealed by digest and the digest moving when a member does; the spread reporting where the observation sits inside its own pool; and the claim boundary stating admission is necessary and not sufficient |
 | `test_pool_substitution_null.py` | 35 | TG17.15 slice 3 the exact pool-substitution null: orientation refused when undeclared and the two tails shown to invert the same numbers; the p-value the exact rank with the observation in its own reference set, attaining `1/(N+1)` and never zero; ties counted toward the numerator and an all-tied statistic reported as degenerate rather than as a pass; the observed statistic not an accepted argument and shown to travel the same path as its alternatives, with a non-deterministic statistic refused; a missing payload, a non-finite value, an empty pool and an observed partner inside its own pool each refused; the Monte Carlo variant refused by name with its measurement; a family corrected once at the size sealed in its pools, with narrowing, enlarging, mixed declared sizes and a duplicated correspondence each refused; resolution re-measured against the real correction so a directly constructed starved pool is still named; the sparsest detectable count reported beside the all-genuine case, three genuine of six shown to reject nothing, and a family that can never reject saying so rather than returning a number; results bound to the pool and contract digests; and the claim boundary refusing to call this a calibration |
@@ -11161,7 +11212,7 @@ able to sit three slices out of date.
   | `test_identity_certification.py` | 131 | T4E.9 the T4E identity path against a motif known by construction: the benchmark registered and naming the path it certifies, three disjoint partitions so a radius is never evaluated on what calibrated it, exactly one motif configuration in a planted scene and none in a null one, construction labels taken from the generator and refused rather than guessed when a planted position has no feature near it or two positions claim one, only cross-scene pairs formed, the definition's separation asserted as a floor, nothing admitted where nothing recurs with the absent positive population left unmeasured rather than zero, the frozen-radius failure pinned as a relationship to the feasible radius rather than as two numbers, an empty calibration returning INVALID rather than a permissive radius, every result stating what it does not license, and T4E.13's criterion fixed in code while asserted to be measured nowhere -- `k` derived as a function of the partition size, unequal partitions refused rather than pooled, monotonicity in `k` checked on a toy rather than assumed, and, once candidate 3 was adopted and falsified, that guard replaced by the reading of the result -- which conditions failed and by how much, that the null held at 0 of 1486 proposed, that the 0.0000 recall is recorded as arithmetic rather than a finding, that no lower k can rescue what this one failed, that the falsification licenses none of the conclusions nearest to it, that partitions 720-735 stay refused in code, and T4E.14's partial-presence test bed -- seeds that collide with no existing evidence, a reservation refused with no flag to open it, planting patterns that are deterministic and not contiguous, the recoverable population C(j,2) rather than C(S,2), the design's own record of what this evidence cannot repair, and T4E.15's criterion fixed in code while asserted to be measured nowhere -- closure broken by a single loose end, closure admitting only a subset of what consistency admits, the criterion carrying no tunable parameter at all, the span-ranking design recorded as discarded by derivation, the declaration's own worst case and refusal to predict, and -- once measured and falsified -- the reading of that result: the conditions that failed with their counts, the mechanism executed rather than described (a pair with no other partners is closed and is therefore admitted, while one loose end rejects a group spanning five scenes), the cross-check showing closure admits more than candidate 2 on the evidence candidate 2 passed, the missed derivation recorded rather than quietly repaired, the constraint the falsification fixes on any successor, and T4E.16's withdrawal held as a derivation rather than a note -- the surrogate reassembly rate computed analytically and by simulation, the record of why the design cannot simply be repaired, the fact that a withdrawn declaration adds nothing to the accumulated multiplicity, and PooledDistances keeping a refused distance as NaN so it can never leak in as a number |
   | `test_identity_target_declaration.py` | 52 | T4E.8 slice 3 the declared identity target: an absent target or evidence class refused by name, a misspelling refused with its correction, `kind_recurrence` against record-derived proxy labels refused as circular, `track_continuity` admitted with its tracker-agreement caveat, every target round-tripping what it recognises and does not license, the published proxy wording pinned verbatim so naming a target cannot reword a cited receipt, and the external-reference path recovering two planted identities from a reviewed catalogue while refusing a mismatched family, a single identity, a non-catalogue and a negative population the patterns cannot supply |
   | `test_spectral_spatial_identity.py` | 24 | T4E.8 spatial geometry, detector-band/magnitude independence, source/scope refusal, analytic distances, old-radius refusal, scalar/accelerated agreement and two-sided proxy-label diagnostics |
-| **total** | **4279** | |
+| **total** | **4283** | |
 
 ### 7.4a Browser suite inventory
 

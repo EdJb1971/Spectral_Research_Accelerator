@@ -12385,6 +12385,55 @@ release decision, but it does mean two gates that read PASS now read NOT_RUN and
 were not isolated to a cause; the run predates no clean baseline for this suite size, so they
 are reported as measured rather than attributed.
 
+**The variable works. The crop does not.** Two months of 850 hPa relative vorticity were
+acquired as a probe before the declared full request -- 14 MB and about 100 seconds against
+230 MB and 1.6 hours -- and tested against acceptance condition 1.
+`measurements/t4e18_vorticity_probe.json`.
+
+**Confirmed: a cyclone is a strong, correctly-signed, localised signal in this variable.** GITA
+sits at the **0.02nd percentile** of its frame and the frame's single most cyclonic cell is
+**one grid cell** from the catalogue position; HOLA at the 0.16th, LINDA 2.32nd, IRIS 1.20th.
+The sign convention declared before acquisition is right.
+
+**Failed anyway, and not because of the variable.** No storm of four had a feature inside its
+catalogue radius. These storms sit at latitude -20.2 to -21.1 and the crop's northern edge is
+**-20.0**, so they are one to four cells from the boundary, where the extractor refuses features
+by design -- 34 rejected as `outside_valid_interior` on the GITA frame alone.
+
+```
+SP cyclone observations, lon 140-180, 2018-2021:   917
+  inside the crop's lat band [-60,-20]:            210
+  NORTH of the crop, excluded entirely:            707   (77%)
+  in-crop median latitude -23.3; 74 within 2 deg of the edge
+```
+
+**The record was built for a New Zealand forecast experiment, not for cyclone identity**, and the
+two purposes want different domains.
+
+**Moving the box north fixes the geometry and costs the kind label.**
+
+```
+box (lat)      obs  w/radius  storms  interior   pairs     NATURE base rate
+-60..-20       210      176      18       113    10,721          0.571
+-45..-5        908      684      30       683   164,450          0.872
+-40..0         900      680      30       678   163,880          0.875
+```
+
+At the same 161-pixel shape and 40-degree span the crop planner already assessed, the population
+goes from 18 storms to 30 and from 113 interior observations to 683. But the `NATURE` base rate
+rises to **0.872**, because at tropical latitudes almost every system is `TS`: a rule answering
+"same kind" to everything would be right 87% of the time. **The label that discriminates usefully
+in the southern box is close to degenerate in the northern one.**
+
+**This is a decision, not an optimisation.** Choosing whichever box flatters a later result is the
+horse race every declaration in this sequence forbids, so the trade-off is recorded and put to
+the maintainer rather than resolved. And it is not free: the T4E.17 catalogue was **signed** on
+terms naming this crop and a base rate of 0.571, so a different crop is a different evidence base
+and the signature would have to be re-given rather than carried over.
+
+**The full acquisition was not run.** Acquiring 230 MB onto a crop that cannot support the
+evaluation is the mistake the probe exists to prevent.
+
 **T4E.18 declared: acquire a variable in which a cyclone centre is an extractable feature.**
 `data/identity_calibration/t4e18-vorticity-acquisition-design.json`, declared before any request
 and **not yet acquired** -- the maintainer authorised the acquisition on 2026-09-10 and the

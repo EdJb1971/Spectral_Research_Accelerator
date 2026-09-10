@@ -60,6 +60,14 @@ CDS_VARIABLES: Mapping[str, str] = {
     # what may be requested, not what is done with it afterwards.
     "vo": "vorticity",
 }
+#: What this layer may REQUEST, which is deliberately wider than what the forecast laboratory
+#: consumes. `CANONICAL_VARIABLES` is the five-channel forecast set and is the default for
+#: `RegionalForecastConfig.variables`, so adding an acquisition variable to it would silently
+#: change every forecast configuration. Acquiring a field and forecasting on it are different
+#: acts, and T4E.18 needs the first without the second: relative vorticity is requested so that
+#: a cyclone centre is an extractable feature, and nothing forecasts on it.
+ACQUIRABLE_VARIABLES: Tuple[str, ...] = CANONICAL_VARIABLES + ("vo",)
+
 PRESSURE_LEVELS = (
     1, 2, 3, 5, 7, 10, 20, 30, 50, 70, 100, 125, 150, 175, 200, 225, 250,
     300, 350, 400, 450, 500, 550, 600, 650, 700, 750, 775, 800, 825, 850, 875,
@@ -136,10 +144,12 @@ class CDSRegionalRequest:
         if not self.variables or len(set(self.variables)) != len(self.variables):
             raise InvalidParameterError("variables", self.variables,
                                         "a non-empty sequence of unique canonical variables")
-        unknown = sorted(set(self.variables) - set(CANONICAL_VARIABLES))
+        unknown = sorted(set(self.variables) - set(ACQUIRABLE_VARIABLES))
         if unknown:
             raise InvalidParameterError(
-                "variables", unknown, "canonical ERA5 pressure variables t/q/u/v/z")
+                "variables", unknown,
+                "an acquirable ERA5 pressure variable: %s"
+                % "/".join(ACQUIRABLE_VARIABLES))
         if not self.hours_utc or len(set(self.hours_utc)) != len(self.hours_utc):
             raise InvalidParameterError("hours_utc", self.hours_utc,
                                         "one or more unique UTC hours")

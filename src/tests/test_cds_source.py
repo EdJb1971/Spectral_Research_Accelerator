@@ -755,3 +755,57 @@ def test_credentials_are_the_maintainers_and_are_never_recorded():
     assert "never to be pasted into this conversation" in prerequisites["credentials"]
     assert "allow_network" in prerequisites["network_consent"]
     assert not list(Path("data/identity_calibration").glob("*cdsapirc*"))
+
+
+# ---------------- The vorticity probe: the variable works, the crop does not
+
+
+def _t4e18_probe():
+    import json
+    from pathlib import Path
+
+    return json.loads(Path(
+        "measurements/t4e18_vorticity_probe.json").read_text(encoding="utf-8"))
+
+
+def test_the_variable_was_confirmed_before_the_full_request_was_spent():
+    """A cyclone is the most cyclonic 0.02 per cent of its frame, one cell from the catalogue."""
+    works = _t4e18_probe()["the_variable_works"]
+
+    assert works["verdict"].startswith("CONFIRMED")
+    assert works["gita_2018_02_13_12"]["percentile_of_frame"] == 0.02
+    assert works["gita_2018_02_13_12"]["distance_from_storm_to_frame_minimum_cells"] == 1
+    assert "sign convention declared before acquisition is correct" in works["reading"]
+
+
+def test_the_probe_failed_for_the_crop_and_the_record_says_which():
+    """77 per cent of the cyclone population is north of the crop, and the rest is at its edge."""
+    failure = _t4e18_probe()["but_the_join_still_fails_and_the_reason_is_the_crop"]
+
+    assert failure["storms_with_a_feature_inside_their_catalogue_radius"] == "0 of 4"
+    assert "707 lie NORTH of -20" in failure["the_crop_is_wrong_for_this_purpose"]
+    assert "outside_valid_interior" in failure["the_cause"]
+
+
+def test_the_trade_off_is_recorded_and_not_resolved():
+    """Moving north buys 30 storms and costs the kind label. Picking the flattering box is the
+    horse race every declaration in this sequence forbids.
+    """
+    alternative = _t4e18_probe()["the_alternative_and_its_cost"]
+
+    boxes = {b["lat"]: b for b in alternative["candidate_boxes"]}
+    assert boxes["-60..-20 (current)"]["nature_base_rate"] == 0.571
+    assert boxes["-45..-5"]["nature_base_rate"] == 0.872
+    assert boxes["-45..-5"]["storms"] == 30
+    assert "close to degenerate" in alternative["THE_KIND_LABEL_DEGRADES"]
+    assert "horse race" in alternative["this_is_a_decision_and_not_an_optimisation"]
+
+
+def test_changing_the_crop_would_void_the_signature_already_given():
+    """T4E.17 was signed on terms naming this crop and a base rate of 0.571."""
+    probe = _t4e18_probe()
+
+    assert "would have to be re-given" in probe["what_this_costs_the_signed_catalogue"]
+    refused = " ".join(probe["what_was_NOT_done"])
+    assert "full 2018-2021 acquisition was not run" in refused
+    assert "No frame of the 2022-2023 forecast-test period" in refused
