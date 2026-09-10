@@ -12724,6 +12724,46 @@ $ .venv/Scripts/python.exe -m pytest src/tests/test_coverage_contamination.py -q
 12 passed
 ```
 
+**T4E.24 second addendum (2026-09-11): the pipeline builds pairs and triples, so those are the
+numbers that bind.**
+
+Exact arithmetic on the committed T4E.24 receipt. No new measurement, no prediction, nothing
+adjudicated -- and a correction to the first addendum's framing rather than to its figures.
+
+The first addendum read the receipt per **configuration** and found that 50 of 60 hold a feature
+recovered in no scene at all. That is true and its arithmetic stands, but it measures something
+the pipeline never asks for. `ALLOWED_CARDINALITIES` in `spectral_constellation.py` is `(2, 3)`:
+constellations are **pairs and triples**, and a fourth node is refused by name as the beginning
+of frequent-subgraph mining. So the quantity a criterion actually consumes is not whether a
+7-feature configuration survives whole. It is how many of its pairs and triples do.
+
+```
+                       intact in all 6 scenes      assemblable in at least one scene
+pairs   (k = 2)          394 / 1362 = 0.2893            649 / 1362 = 0.4765
+triples (k = 3)          418 / 2805 = 0.1490            856 / 2805 = 0.3052
+```
+
+A pair or triple is counted intact when every one of its members was recovered in all six scenes,
+and assemblable when every member was recovered in at least one. Both are exact counts over
+`C(n, k)` per configuration, summed.
+
+**This is less severe than the configuration reading and still severe.** **85% of planted triples
+never survive all six scenes, and 70% cannot be assembled in even one** -- on identical geometry,
+which is the most favourable case available. The first addendum's 8.3% was the right arithmetic
+for the wrong unit, and reporting it without this figure beside it would overstate the problem in
+one direction while leaving the load-bearing number underived.
+
+**That the unit was wrong was derivable from the code the whole time.** `ALLOWED_CARDINALITIES`
+is a module constant with a comment explaining itself. This is the fourth time in this programme
+that a derivable fact was left underived, and the first addendum was written specifically to
+avoid that failure -- which is worth recording rather than quietly fixing.
+
+**What it does not say.** It does not adjudicate any criterion. Candidate 2 matched cliques
+across scenes and a partial-recurrence criterion tolerates absence by construction, so what any
+given rule needs from a triple is its own question. It supersedes nothing: the feature-level rate
+and the configuration-level reading are both still what they were. And the bound runs the same
+way -- identical geometry is the favourable case, so the real figures are worse.
+
 **T4E.24 addendum (2026-09-11): the same receipt, read at the level the criterion works on.**
 
 This is **exact arithmetic on the committed receipt**, not a new measurement. It has no separate
