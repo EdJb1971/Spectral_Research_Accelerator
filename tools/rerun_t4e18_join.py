@@ -49,6 +49,11 @@ RECORDED = Path("measurements/t4e18_acceptance.json")
 DECLARATION = Path("data/identity_calibration/t4e28-join-rerun-declaration.json")
 OUTPUT = Path("measurements/t4e28_join_rerun.json")
 
+#: Read from the declaration rather than restated here, so the boundary the run is reported under
+#: cannot drift from the boundary it was declared under.
+BOUNDARY = json.loads(DECLARATION.read_text(encoding="utf-8"))["the_claim_boundary"] \
+    if DECLARATION.exists() else None
+
 SELECTION = Selection(start_date="2018-01-01", end_date="2021-12-31",
                       south=-58.0, north=-18.0, west=140.0, east=180.0)
 
@@ -234,6 +239,13 @@ def main() -> int:
     for disagreement in recovery["disagreements"][:10]:
         print("   %s" % disagreement, flush=True)
 
+    gates = [results[name]["gate"]["verdict"] for name, _, _ in PATHS]
+    recovered = results["swt_planes"]["parameter_recovery"]["verdict"]
+    verdict = ("%s. raw_field %s, swt_planes %s; the recovered SWT extraction parameters are %s "
+               "against all 18 recorded rows. The T4E.18 acceptance is untouched and still "
+               "FAILS -- a reproduction of a failing measurement is still a failing measurement."
+               % ("REPRODUCED" if set(gates) == {"REPRODUCED"} else "NOT REPRODUCED",
+                  gates[0], gates[1], recovered))
     OUTPUT.write_text(json.dumps({
         "measurement": "t4e28_join_rerun",
         "declaration": str(DECLARATION),
@@ -246,6 +258,12 @@ def main() -> int:
                        "raw_field": "representation 'identity'",
                        "swt_planes": SWT_CONFIG},
         "paths": results,
+        # T4E.22's rule, which this tool broke on its first run: no view states a number
+        # without what it may not be used for. The panel showed a null verdict and an empty
+        # boundary list for this record, which is the shape a reader is entitled to read as
+        # "nothing was concluded" -- on a record whose whole content is a conclusion.
+        "VERDICT": verdict,
+        "claim_boundary": BOUNDARY,
     }, indent=2), encoding="utf-8")
     print("\nwrote %s" % OUTPUT, flush=True)
     return 0

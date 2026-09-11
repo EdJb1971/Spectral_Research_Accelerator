@@ -300,3 +300,40 @@ def test_one_measurement_can_be_read_in_full_and_a_path_is_refused(study_store):
     assert full.json()["measurement"]["VERDICT"].startswith("FALSIFIED")
     assert full.json()["summary"]["file"] == "t4e30_example.json"
     assert study_store.get("/api/v1/identity/measurements/nothing-here.json").status_code == 404
+
+
+def test_a_refusal_lifted_by_new_evidence_is_reported_as_an_amendment():
+    """T4E.28 lifted T4E.27's condition 2, and the panel called that record never amended.
+
+    The key did not begin with `CORRECTION`, so a prefix test missed it -- the same shape of bug
+    as the under-reported boundary this module already documents. A reader must not be told a
+    record is unamended on the day its refusal was lifted.
+    """
+    from src.api.identity import _corrections
+
+    assert _corrections({"CONDITION_2_LIFTED_2026_09_11_BY_T4E_28": {"met": 1}}) == \
+        ["CONDITION_2_LIFTED_2026_09_11_BY_T4E_28"]
+    assert _corrections({"a_claim_WITHDRAWN_on_review": "x"}) == ["a_claim_WITHDRAWN_on_review"]
+    assert _corrections({"the_range_was_FALSIFIED": "x"}) == ["the_range_was_FALSIFIED"]
+
+
+def test_a_clause_describing_a_refusal_that_still_stands_is_not_an_amendment():
+    """`what_would_lift_the_refusal` describes a refusal in force. Reporting a record as
+    corrected when nothing about it changed is the opposite error, not a safe one."""
+    from src.api.identity import _corrections
+
+    assert _corrections({"what_would_lift_the_refusal": "run the join"}) == []
+    assert _corrections({"condition_2_restated": {"met": 1}}) == []
+    assert _corrections({"CORRECTION_2026_09_10": None}) == []
+
+
+def test_the_join_rerun_record_states_a_verdict_and_a_boundary_through_the_api(client):
+    """It first served a null verdict and an empty boundary list -- the shape a reader reads as
+    'nothing was concluded', on a record whose whole content is a conclusion."""
+    body = client.get("/api/v1/identity/measurements").json()
+    served = {row["file"]: row for row in body["measurements"]}
+    row = served["t4e28_join_rerun.json"]
+
+    assert row["verdict"].startswith("REPRODUCED")
+    assert [b["key"] for b in row["boundaries"]] == ["claim_boundary"]
+    assert body["measurements_without_a_stated_boundary"] == []

@@ -2927,5 +2927,8 @@
         }
       }
     }
-  }
+  },
+  "VERDICT": "REPRODUCED. raw_field REPRODUCED, swt_planes REPRODUCED; the recovered SWT extraction parameters are CONFIRMED against all 18 recorded rows. The T4E.18 acceptance is untouched and still FAILS -- a reproduction of a failing measurement is still a failing measurement.",
+  "claim_boundary": "This settles what this repository can regenerate. It says nothing about whether either extraction path is the right one, whether the acceptance bar of 9 was well chosen, or what the atmosphere does. The T4E.18 acceptance FAILED and this cannot change that; a reproduction of a failing measurement is still a failing measurement.",
+  "AMENDMENT_2026_09_11_added_after_the_run": "The VERDICT and claim_boundary fields were absent from the first write of this record and are added here. No measured value is changed, and none could be: both are read from figures already in the file and from the declaration's own boundary clause. They are recorded as an amendment rather than regenerated silently because the file had already been committed. The omission was found by asking what this record looks like THROUGH THE API -- it served a null verdict and an empty boundary list, which a reader is entitled to read as 'nothing was concluded' on a record whose whole content is a conclusion. That is the failure T4E.22 exists to prevent, reintroduced by a new tool that nothing checked."
 }

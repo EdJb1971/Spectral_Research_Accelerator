@@ -116,11 +116,35 @@ def _boundaries(body: Dict[str, Any]) -> List[Dict[str, Any]]:
     return found
 
 
+#: An amendment is recognised by what its key SAYS, not by a prefix. T4E.28 appended
+#: `CONDITION_2_LIFTED_2026_09_11_BY_T4E_28` to the T4E.27 receipt -- a refusal lifted by new
+#: evidence, which is exactly the kind of change a reader must not miss -- and the panel reported
+#: that record as never amended, because the key did not begin with `CORRECTION`. That is the
+#: same failure as the under-reported boundary above, and the same principle applies: a viewer
+#: that under-reports an amendment makes a false statement about the evidence, on screen.
+#:
+#: Matched as whole words against the key's tokens, so `what_would_lift_the_refusal` -- a clause
+#: describing a refusal that still STANDS -- is not mistaken for one that has been lifted.
+AMENDMENT_WORDS = frozenset((
+    "correction", "corrections", "corrected", "amendment", "amended", "amend",
+    "withdrawn", "withdrawal", "superseded", "supersedes", "falsified", "lifted",
+    "retracted",
+))
+#: `restated` is deliberately ABSENT. T4E.27's own `condition_1_restated` and
+#: `condition_2_restated` are the measurement's results, not marks that it was amended, and
+#: listing them as amendments would be the opposite error: a record that reports itself corrected
+#: when nothing about it has changed.
+
+
 def _corrections(body: Dict[str, Any]) -> List[str]:
-    """Marks that this record was corrected or superseded in the open."""
+    """Marks that this record was corrected, lifted or superseded in the open."""
     marks = [key for key in CORRECTION_KEYS if key in body and body[key]]
-    marks += [key for key in body
-              if key.startswith("amendment_") or key.startswith("CORRECTION")]
+    for key in body:
+        if not body[key]:
+            continue
+        tokens = {token for token in re.split(r"[^A-Za-z]+", key.lower()) if token}
+        if tokens & AMENDMENT_WORDS:
+            marks.append(key)
     return sorted(set(marks))
 
 
