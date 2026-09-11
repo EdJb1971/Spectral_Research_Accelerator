@@ -8827,6 +8827,79 @@ All four acceptance conditions are met: the coded gate passed, the full distribu
 rather than a mean, the mechanism and consequence claims are reported separately with the
 mechanism claim carrying its declared caveat, and the two named outcomes did separate.
 
+### 3E.43 The join re-run: a gate declared before the run that is measured against it (T4E.28)
+
+**T4E.28 is declared and NOT YET RUN.** This section is committed before the measurement exists,
+so that the gate below can be checked against the git history rather than taken on trust.
+`data/identity_calibration/t4e28-join-rerun-declaration.json`,
+`src/benchmarks/catalogue_join.py`, `tools/rerun_t4e18_join.py`.
+
+**Two gaps, both in an adopted record.** T4E.18's acceptance carries per-storm rows for the SWT
+path only. The raw-field path -- which that record's own `CORRECTION_2026_09_10` calls *markedly
+better*, median 52.1 km against 127.1 -- exists as four rounded aggregates and nothing else. That
+is why T4E.27 restated a position bar against the worse path, and had to be corrected for it.
+
+The second gap is larger. **Neither path's extraction parameters were written down anywhere in
+this repository.** Both runs came from ad-hoc scripts in a session scratchpad under `%TEMP%` --
+not version-controlled, not backed up, cleared by the operating system without notice. Figures in
+an adopted acceptance record were reproducible only from a directory nobody would think to
+preserve. The parameters were recovered on 2026-09-11 from those scripts, while they still
+existed, and `tools/rerun_t4e18_join.py` is where they now live: the negation convention,
+`n_surrogates=99`, `seed=1234`, and for the SWT path wavelet `db2` at level 3 over every
+extractable plane.
+
+**The recovery is not assumed to be correct.** A set of parameters recovered from outside the
+repository is a reconstruction until something tests it, and prediction 2 is that test: the SWT
+re-run must regenerate **all 18 recorded rows** -- feature count exactly, `nearest_km` to 0.1 km,
+`inside_radius` exactly. A reconstruction that reproduces an 18-row distribution it was not
+fitted to is the reconstruction; one that reproduces only the median is a guess that happens to
+land nearby, and would have to be labelled as such. If it fails, the SWT path stays refused by
+name, T4E.27's condition 2 is not lifted, and the record is annotated to say its own numbers are
+not reproducible here.
+
+**The gate, declared before the run.**
+
+```
+raw field    nearest km  min 16.6   median 52.1   max 3685.3   1 inside radius: 3 of 18
+                                                  features/frame: min 0, median 7, max 13
+SWT planes   nearest km  min 29.9   median 127.1  max 2055.9   1 inside radius: 2 of 18
+                                                  features/frame: min 73, median 123, max 153
+tolerance    0.1 km, the precision at which the record states them; counts exactly
+```
+
+**No prediction is offered for condition 2 on the raw path.** The count of storms with three or
+more features inside the catalogue radius was never computed there -- the original script printed
+a per-storm column and totalled only the `>= 1` case. There is no prior figure to reproduce, and
+declaring one now would be declaring a guess as a prediction. It is measured and reported as new.
+
+**Whether the prediction was ever falsifiable, checked rather than assumed.** This is TG19.5's
+question applied to this declaration before it was adopted. It clears: `cds_source.py` changed at
+T4E.18 (`d283285`) and the extraction and calibration layers were touched by T4E.19 through
+T4E.27, so drift in any of them falsifies predictions 1 and 2. Reproduction here is a risk, not a
+formality.
+
+**What the inputs are bound to.** The catalogue resolves through TG19.3's signed reference --
+sha256 `631f76b9...`, 35,482,417 bytes. The scratchpad copy that fed the original runs was hashed
+on 2026-09-11 and is **byte-identical** to the committed one, so a difference in result cannot be
+blamed on a revised catalogue. If either the catalogue or the 48-shard record is absent the run
+refuses by name and records nothing; nothing here reaches a network.
+
+**What it records that the original did not.** The full sorted distance list from each catalogue
+centre to **every** extracted feature, on both paths. T4E.27 needed that distribution and found a
+single minimum. Both conditions are computed on both paths. A storm whose frame yielded no
+feature -- GRETEL, in the original run -- is a row with no distance and stays in the denominator
+of every condition, because dropping it would improve every aggregate by removing the worst case.
+
+**Claim boundary.** This settles what this repository can regenerate. It says nothing about
+whether either extraction path is the right one, whether the acceptance bar of 9 was well chosen,
+or what the atmosphere does. The T4E.18 acceptance FAILED and this cannot change that: a
+reproduction of a failing measurement is still a failing measurement.
+
+```
+$ .venv/Scripts/python.exe -m pytest src/tests/test_catalogue_join.py -q
+24 passed
+```
+
 ### 3G.5 Can the change you are about to make move the answer at all? (TG19.5)
 
 **TG19.5 (2026-09-11): can the change you are about to make move the answer at all?**
@@ -12399,6 +12472,7 @@ able to sit three slices out of date.
 | `test_coverage_contamination.py` | 12 | T4E.25 the coverage/contamination sweep: the swept alpha list pinned to the declaration and closed, so a fifth value cannot be added once the curve is visible; a shared surrogate ensemble reproducing `calibrate` exactly at the same alpha, which is what makes the sweep four cuts through one measurement rather than four runs; the threshold monotone in alpha, which is what makes "newly recovered" a set difference rather than an estimate; configuration coverage refusing a configuration holding a never-seen feature, the two coverage measures ordered by construction, and the T4E.24 addendum figures reproduced through the same function that reports them at every alpha |
 | `test_peeled_null.py` | 17 | T4E.26 peeled-null calibration: the subtracted shape rebuilt only from what the extractor published, a feature with no usable width left in place and counted rather than guessed at, the amplitude removed above the baseline rather than the magnitude carrying the baseline with it; and the contamination split that is the whole safeguard -- an artefact radius that scales with the feature it came from, no spurious features reporting no fraction rather than a clean zero, and a gap refusing to be computed where round zero already sits at the oracle |
 | `test_position_tolerance.py` | 17 | T4E.27 the position tolerance as an inspectable object: every component carrying its provenance and the excluded component named in the description; a zero or non-finite catalogue radius refused by name rather than defaulted, because a zero demands a separation nothing can supply and an infinity admits everything; a refused tolerance answering None and never False, so a missing agency report is not counted as a failed detection; refused observations leaving the denominator; a negative residual returned rather than clipped; and the acceptance curve monotone in the bar |
+| `test_catalogue_join.py` | 24 | T4E.28 the catalogue join whose parameters lived in a temp directory: the declared window, box and synoptic hours all applied with a census of what each refused; a single agency fix refused rather than given the zero radius T4E.27 named; the radius as the furthest fix and not the nearest; the deepest observation taken rather than the first, which is always where the storm entered the box; every distance kept rather than the minimum; a frame yielding nothing recorded as a row that stays in every denominator; both conditions reported rather than only the first; an empty population refused instead of reported as zeroes; and a row-by-row check that a matching median cannot hide a row that disagrees |
 | `test_coverage_report.py` | 17 | TG19.1 the generic coverage check: pair and triple survival counted as the units `ALLOWED_CARDINALITIES` actually admits, with a group holding a never-seen feature counted as unassemblable because the object was never built in any scene; an unrepresentative density returning a refusal and no coverage number at all; an unregistered extractor, an unknown calibration source, a constant background, a three-dimensional background and zero configurations each refused by name; and every passing report carrying its claim boundary, its extractor capabilities, the upper-bound caveat and the field declaration R19 needs |
 | `test_signed_reference.py` | 16 | TG19.3 signed external references: the whole chain checked -- signature against design, design against data, byte count first so a truncated download is named before 35 MB are hashed; an absent file naming its path, source URL and required digest, and saying that replacing it is a declaration rather than a copy; a digest mismatch refused as a DIFFERENT reference whose signed population and claim boundary do not extend to it, never as a damaged one; a design edited after signature refused with both digests; an unsigned design allowed and reported unverified rather than failed; and require() raising by name instead of returning an unverified path |
 | `test_declared_population.py` | 17 | TG19.4 a record holding two answers read by name or not at all: an unnamed read refused with both names offered and the mistake it prevents named in the refusal; a population the record only SUMMARISES refused rather than substituted with the other pass's rows, saying what is there and what would produce the rest; an unknown name and an unmapped record both refused; the stated identification checked against the rows it describes, so the map is checkable rather than believed; and the committed record verified unedited |
@@ -12517,7 +12591,7 @@ able to sit three slices out of date.
   | `test_identity_certification.py` | 131 | T4E.9 the T4E identity path against a motif known by construction: the benchmark registered and naming the path it certifies, three disjoint partitions so a radius is never evaluated on what calibrated it, exactly one motif configuration in a planted scene and none in a null one, construction labels taken from the generator and refused rather than guessed when a planted position has no feature near it or two positions claim one, only cross-scene pairs formed, the definition's separation asserted as a floor, nothing admitted where nothing recurs with the absent positive population left unmeasured rather than zero, the frozen-radius failure pinned as a relationship to the feasible radius rather than as two numbers, an empty calibration returning INVALID rather than a permissive radius, every result stating what it does not license, and T4E.13's criterion fixed in code while asserted to be measured nowhere -- `k` derived as a function of the partition size, unequal partitions refused rather than pooled, monotonicity in `k` checked on a toy rather than assumed, and, once candidate 3 was adopted and falsified, that guard replaced by the reading of the result -- which conditions failed and by how much, that the null held at 0 of 1486 proposed, that the 0.0000 recall is recorded as arithmetic rather than a finding, that no lower k can rescue what this one failed, that the falsification licenses none of the conclusions nearest to it, that partitions 720-735 stay refused in code, and T4E.14's partial-presence test bed -- seeds that collide with no existing evidence, a reservation refused with no flag to open it, planting patterns that are deterministic and not contiguous, the recoverable population C(j,2) rather than C(S,2), the design's own record of what this evidence cannot repair, and T4E.15's criterion fixed in code while asserted to be measured nowhere -- closure broken by a single loose end, closure admitting only a subset of what consistency admits, the criterion carrying no tunable parameter at all, the span-ranking design recorded as discarded by derivation, the declaration's own worst case and refusal to predict, and -- once measured and falsified -- the reading of that result: the conditions that failed with their counts, the mechanism executed rather than described (a pair with no other partners is closed and is therefore admitted, while one loose end rejects a group spanning five scenes), the cross-check showing closure admits more than candidate 2 on the evidence candidate 2 passed, the missed derivation recorded rather than quietly repaired, the constraint the falsification fixes on any successor, and T4E.16's withdrawal held as a derivation rather than a note -- the surrogate reassembly rate computed analytically and by simulation, the record of why the design cannot simply be repaired, the fact that a withdrawn declaration adds nothing to the accumulated multiplicity, and PooledDistances keeping a refused distance as NaN so it can never leak in as a number |
   | `test_identity_target_declaration.py` | 53 | T4E.8 slice 3 the declared identity target: an absent target or evidence class refused by name, a misspelling refused with its correction, `kind_recurrence` against record-derived proxy labels refused as circular, `track_continuity` admitted with its tracker-agreement caveat, every target round-tripping what it recognises and does not license, the published proxy wording pinned verbatim so naming a target cannot reword a cited receipt, and the external-reference path recovering two planted identities from a reviewed catalogue while refusing a mismatched family, a single identity, a non-catalogue and a negative population the patterns cannot supply |
   | `test_spectral_spatial_identity.py` | 24 | T4E.8 spatial geometry, detector-band/magnitude independence, source/scope refusal, analytic distances, old-radius refusal, scalar/accelerated agreement and two-sided proxy-label diagnostics |
-| **total** | **4453** | |
+| **total** | **4477** | |
 
 ### 7.4a Browser suite inventory
 

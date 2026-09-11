@@ -1,0 +1,67 @@
+{
+  "schema": "t4e28-join-rerun-declaration/v1",
+  "status": "DRAFTED_NOT_ADOPTED",
+  "task": "T4E.28",
+  "artefact": "the T4E.18 join, re-run from the repository against a gate declared before it runs",
+  "declared_by": "Edward Jonathan Bentley, maintainer (scientific choice); drafted by Claude Opus 5 at the maintainer's direction and NOT VALID until the maintainer has reviewed and adopted it",
+  "drafted_on": "2026-09-11",
+
+  "why_this_exists": {
+    "the_gap": "T4E.18's record carries per-storm rows for the SWT-plane path only. The raw-field path -- which its own CORRECTION_2026_09_10 calls 'markedly BETTER', median 52.1 km against 127.1 -- exists in the record as four rounded aggregates and nothing else. T4E.27 then restated a position bar against the SWT rows, because those were the only rows there, and named neither path. The correction to T4E.27 recorded that; this closes it.",
+    "the_second_gap": "Neither path's extraction parameters appear anywhere in the repository. Both runs were made by ad-hoc scripts in a session scratchpad under %TEMP%, which is not version-controlled, is not backed up, and is cleared by the operating system without notice. The numbers in an adopted acceptance record are currently reproducible only from a directory nobody would think to preserve.",
+    "what_this_is_not": "Not a new claim about cyclones, vorticity, or the atmosphere. Not a re-adjudication of the T4E.18 acceptance, which FAILED and continues to fail on both paths. This is a reproduction with a declared gate, and the only thing it can discover is whether the repository can regenerate figures an adopted record already asserts."
+  },
+
+  "the_inputs_bound_before_the_run": {
+    "catalogue": "ibtracs_sp_v04r01, resolved through src/data_layer/signed_reference.py, sha256 631f76b95c77a6a4e409233466a0d501bb4848324e421fc58e228efea2086c44, 35482417 bytes. The scratchpad copy that fed the original runs was hashed on 2026-09-11 and is byte-identical to the committed copy, so a difference in result cannot be attributed to a revised catalogue.",
+    "record": "data/cds_downloads/t4e18_vorticity, 48 shards, 5844 frames, latitude -58..-18, longitude 140..180",
+    "if_either_is_absent": "The run REFUSES BY NAME and records no numbers. A reproduction that silently skipped its inputs would be worse than no reproduction."
+  },
+
+  "the_population_declared_before_the_run": {
+    "selection": "IBTrACS South Pacific, ISO_TIME within 2018-01-01..2021-12-31 at synoptic hours 00/06/12/18, longitude 140..180 and latitude -58..-18, at least two agency fixes present.",
+    "radius": "max great-circle distance from the reported centre to any agency fix, over the agencies USA, TOKYO, CMA, HKO, KMA, NEWDELHI, REUNION, BOM, NADI, WELLINGTON. Great-circle on a sphere of radius 6371.0 km.",
+    "interior_margin": "2.0 degrees inside the crop's latitude band, to exclude observations that are at the boundary by construction.",
+    "one_observation_per_storm": "the DEEPEST interior observation, that is the one furthest from either latitude edge -- not the first, because the first is always where the storm entered the box.",
+    "expected_size": "18 storms"
+  },
+
+  "the_two_paths_declared_before_the_run": {
+    "shared": "The field is negated before extraction, per the T4E.18 sign convention, so that southern-hemisphere cyclonic rotation is a positive peak. Extraction is src.core.extraction.extract with n_surrogates=99 and seed=1234 on both paths.",
+    "raw_field": "representation 'identity' -- the negated field itself, extracted once.",
+    "swt_planes": "representation_planes('swt', ...) with wavelet 'db2' and level 3, every plane reporting extractable, features pooled across planes.",
+    "provenance_of_these_parameters": "Recovered on 2026-09-11 from the scratchpad scripts that produced the original runs. THEY ARE NOT INDEPENDENTLY AUTHORITATIVE -- they are a reconstruction, and prediction 2 below is what tests whether the reconstruction is the real one."
+  },
+
+  "the_gate_declared_before_the_run": {
+    "prediction_1_the_raw_path_reproduces_its_aggregates": {
+      "nearest_km_min": 16.6,
+      "nearest_km_median": 52.1,
+      "nearest_km_max": 3685.3,
+      "inside_catalogue_radius": "3 of 18",
+      "features_per_frame": "min 0, median 7, max 13",
+      "tolerance": "agreement to 0.1 km, the precision at which the record states them; counts exactly.",
+      "why_this_is_a_risk_and_not_a_formality": "src/data_layer/cds_source.py changed at T4E.18 (d283285) and the extraction and calibration layers have been touched by T4E.19 through T4E.27. If any of that moved a number, this is where it shows, and the reproduction failing IS the finding."
+    },
+    "prediction_2_the_swt_path_reproduces_all_18_recorded_rows": {
+      "claim": "Every one of the 18 rows in measurements/t4e18_acceptance.json per_storm -- features count exactly, nearest_km to within 0.1 km, inside_radius exactly -- is regenerated by the recovered parameters.",
+      "what_it_tests": "Not the cyclones. Whether the recovered wavelet, level and plane selection are the ones that produced the adopted record. A reconstruction that reproduces 18 rows of a distribution it was not fitted to is the reconstruction; one that does not is a guess, and would have to be labelled as such.",
+      "if_it_fails": "The SWT path stays REFUSED BY NAME, T4E.27's condition 2 is NOT lifted, and the record is annotated to say that its own SWT numbers are not reproducible from this repository."
+    },
+    "prediction_3_condition_2_on_the_raw_path": {
+      "claim": "NONE. No prediction is offered.",
+      "why": "The count of storms with three or more features inside the catalogue radius was never computed on the raw path -- the original script printed a per-storm in_rad column and totalled only the >=1 case. There is no prior figure to reproduce, so declaring one now would be declaring a guess as a prediction. It will be measured and reported as new."
+    },
+    "was_this_prediction_ever_falsifiable": "Yes, and checked rather than assumed. Predictions 1 and 2 each compare regenerated figures against fixed recorded ones; any drift in the extraction, calibration or acquisition layers since 2026-09-10 falsifies them. This is the check TG19.5 exists to force, applied to this declaration before it was adopted."
+    },
+
+  "what_the_run_records": {
+    "per_storm_rows_for_BOTH_paths": "storm, time, latitude, longitude, nature, catalogue radius, feature count, the FULL sorted list of distances from the catalogue centre to every extracted feature, the nearest, and the count inside the radius. The full list is recorded because T4E.27 needed the distribution and the record held only a minimum.",
+    "both_conditions_on_both_paths": "condition 1 (>=1 inside radius) and condition 2 (>=3 inside radius), for the raw path as well as the SWT path.",
+    "the_gate_verdict": "each prediction adjudicated REPRODUCED or NOT REPRODUCED, with the observed figure printed beside the declared one either way."
+  },
+
+  "the_claim_boundary": "This settles what this repository can regenerate. It says nothing about whether either extraction path is the right one, whether the acceptance bar of 9 was well chosen, or what the atmosphere does. The T4E.18 acceptance FAILED and this cannot change that; a reproduction of a failing measurement is still a failing measurement.",
+
+  "what_would_make_this_worthless": "Adjusting the tolerance after seeing the result, or adopting this declaration after the run. Both are recorded here so that a reader can check the git history for either."
+}
