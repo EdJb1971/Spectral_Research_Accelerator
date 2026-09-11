@@ -2803,6 +2803,84 @@ configuration absent from one scene outright; nothing about recurrence *across* 
 which the mining machinery needs; no mining radius, no discharge of T4E.8's acceptance, no
 closure of D96 to D100; and nothing about `kind_recurrence`, which still has no catalogue.
 
+### TG19.3 - a signed reference resolves by digest, or refuses by name
+
+**TG19.3 (2026-09-11): a signed reference resolves by digest, or refuses by name.**
+
+An engineering slice. It makes no claim about any world, so it carries no declaration, no
+adoption and no prediction. `src/data_layer/signed_reference.py`, wired into
+`tools/restate_position_acceptance.py`.
+
+**The gap, and it was not hypothetical.** T4E.17 signed the IBTrACS catalogue on terms naming a
+specific population, bound it by sha256, and deliberately did not commit 35.5 MB of third-party
+data. What the design records is the URL, the digest and the byte count. What it records **no**
+path. So nothing in this repository knew where to look, nothing failed loudly when the file was
+missing, and the file spent a day in a session scratchpad under `%TEMP%` where it survived by
+luck. Losing it would have **voided the signature**, not merely cost a download: IBTrACS v04r01 is
+a living archive, so a fresh copy is a different catalogue on which T4E.17's terms do not hold.
+
+That is the lesson T4E.27 drew about a catalogue radius of `0.00`, applied to a file instead of a
+field: **a missing input should be refused by name, not discovered later.**
+
+**Three bindings, checked in order, because a chain is only as strong as the link nobody checks.**
+
+1. **Signature against design.** `signs_sha256` in the signature file, against the design's own
+   digest. If the design was edited after it was signed, the terms recorded are not the terms
+   signed and everything downstream inherits the drift. Nothing had ever checked this.
+2. **Design against data.** The digest the file must reproduce.
+3. **Byte count first**, as a cheap pre-check, so a truncated download is named before 35 MB are
+   hashed to reach the same conclusion.
+
+```
+$ python -c "from src.data_layer.signed_reference import resolve; ..."
+name                 ibtracs_sp_v04r01
+path                 data/catalogues/ibtracs.SP.list.v04r01.csv
+available            True
+signature_verified   True
+bytes                35,482,417 expected, 35,482,417 observed
+digest               matches the signed 631f76b9...
+citations            2, carried with the resolution
+```
+
+**A refusal is a result, not an exception by default.** `resolve()` returns a record saying what
+failed and what would lift it; `require()` raises for a caller that cannot proceed. Both carry the
+source URL and the expected digest, so a reader who has lost the file learns where to get it and
+what it must hash to in the same breath as learning it is gone.
+
+**A digest mismatch is reported as a *different* reference, never a damaged one.** The refusal
+says so in terms: the signed population, base rates and claim boundary do not extend to it, and
+using it would evaluate against an unsigned catalogue. There is no fallback path to an unverified
+copy, and nothing here reaches a network -- acquiring the file is the maintainer's act.
+
+**A refusal that could not tell "missing" from "present" was itself the defect.** The first
+version of `restate_position_acceptance.py` stated in prose that the catalogue was absent. It had
+no way to check, and it was wrong: the file existed. That clause is now resolved rather than
+asserted, and the tool's receipt carries the resolution beside the refusal. **The committed
+T4E.27 receipt still says the file was not present on this machine. It was accurate when it was
+written and is superseded rather than edited**, which is how this programme records corrections.
+
+What the refusal now says is the part that was always true and is the only part that still is:
+condition 2 needs the distance to the third-nearest feature, the committed receipt carries only
+the nearest, and recovering it takes a re-run of the join. That re-run is its own work and is not
+done here -- but it is no longer blocked on a missing file.
+
+```
+$ .venv/Scripts/python.exe -m pytest src/tests/test_signed_reference.py -q
+16 passed
+```
+
+The tests pin each way silence could return: an absent file naming path, URL and digest; a
+truncated one named by size without hashing; a different edition refused as different; a design
+edited after signature; a signature carrying no digest; a design carrying no digest; an unsigned
+design allowed and reported as unverified rather than failed; and `require()` raising by name
+instead of returning an unverified path.
+
+**What this does not do.** It downloads nothing, adopts nothing, and changes no default. It does
+not lift T4E.27's condition 2, which needs the join re-run. It does not edit the signed design to
+record the path -- that would break the sha256 the signature rests on, so the path lives in the
+registry beside it. And it verifies bindings, not contents: that the file is the one that was
+signed says nothing about whether the terms signed were the right ones.
+
 ### TG19.2 - the join's bar, on the wire and on screen
 
 **TG19.2 (2026-09-11): the join's bar, on the wire and on screen, in parts.**

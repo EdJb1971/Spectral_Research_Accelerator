@@ -11,10 +11,16 @@ record is the bar. Nothing is re-extracted and no catalogue is read.
 **One declared condition cannot be evaluated and is refused by name.** Condition 2 asks for three
 or more features inside tolerance. The committed receipt carries each storm's *nearest* distance
 and a count of features inside the *original* radius, but not the distance to the third-nearest
-feature, so the count at any other bar is not recoverable from it. Recomputing it needs the
-IBTrACS CSV, which T4E.17 bound by hash and did not commit and which is not present. The
+feature, so the count at any other bar is not recoverable from it. Recomputing it needs a re-run
+of the join against the IBTrACS CSV that records the full per-storm distance list. The
 declaration's own governing rule applies: refused by name, with the shortfall reported, rather
 than approximated.
+
+Whether that catalogue is present, and whether it is still the one T4E.17 signed, is now
+**resolved rather than asserted** (TG19.3). The first version of this tool stated in prose that
+the file was absent; it had no way to check, and the file had in fact been sitting in a session
+scratchpad for a day. A refusal that cannot tell "missing" from "present" is a guess with a firm
+voice.
 """
 from __future__ import annotations
 
@@ -32,6 +38,7 @@ from src.analysis_engine.position_tolerance import (
     localisation_km,
     tolerance_for,
 )
+from src.data_layer.signed_reference import IBTRACS_SP
 from tools.measure_false_absence import digest_file, revision
 
 DECLARATION = "data/identity_calibration/t4e27-position-tolerance-declaration.json"
@@ -58,6 +65,10 @@ def main() -> int:
         raise SystemExit("%s exists; a receipt is written once and never overwritten" % output)
 
     started = time.time()
+    # Resolved rather than assumed. Until TG19.3 this tool stated in prose that the catalogue was
+    # absent; it had no way to know, and by then the file had been sitting in a session scratchpad
+    # for a day. A refusal that cannot tell "missing" from "present" is a guess with a firm voice.
+    catalogue = IBTRACS_SP.resolve()
     source = json.loads(Path(SOURCE).read_text(encoding="utf-8"))
     storms = source["per_storm"]
 
@@ -134,18 +145,23 @@ def main() -> int:
         },
         "condition_2_restated": {
             "met": None,
+            "the_catalogue": catalogue.describe(),
             "REFUSED": (
                 "not evaluable on the available evidence. Condition 2 asks for three or more "
                 "features inside tolerance. The committed receipt carries each storm's nearest "
                 "distance and a count of features inside the ORIGINAL radius, but not the "
                 "distance to the third-nearest feature, so the count at any other bar cannot "
-                "be recovered from it. Recomputing it requires the IBTrACS CSV, which T4E.17 "
-                "bound by sha256 and did not commit, and which is not present on this machine. "
+                "be recovered from it. Recomputing it requires a re-run of the join against "
+                "the IBTrACS CSV that records the full per-storm distance list. Whether that "
+                "catalogue is present, and whether it is still the one T4E.17 signed, is "
+                "resolved rather than asserted -- see `the_catalogue` beside this clause. "
                 "Refused by name rather than approximated."),
             "what_would_lift_the_refusal": (
-                "the IBTrACS v04r01 South Pacific subset at sha256 631f76b9..., plus a re-run "
-                "of the join that records the full per-storm distance list rather than only "
-                "the nearest. That is its own work and is not done here."),
+                ("the catalogue is PRESENT and verified at %s, so what remains is a re-run of "
+                 "the join recording the full per-storm distance list rather than only the "
+                 "nearest. That is its own work and is not done here."
+                 % catalogue.path) if catalogue.available else
+                ("the catalogue itself is still unavailable. %s" % catalogue.refusal)),
         },
         "acceptance_is_partial_and_says_so": (
             "Acceptance condition 3 of this task asked for conditions 1 and 2 both. Condition 1 "

@@ -6611,7 +6611,7 @@ existing file.
 
 ## 3.12 HTTP API Surface
 
-159 routes. Listed here because an undocumented endpoint is an untested contract. The count and this table were both wrong until TG17.3 (defect D75): the guard enumerated a hand-maintained list of ten source files and could not see four mounted routers.
+161 routes. Listed here because an undocumented endpoint is an untested contract. The count and this table were both wrong until TG17.3 (defect D75): the guard enumerated a hand-maintained list of ten source files and could not see four mounted routers.
 
 | Method | Route | Notes |
 |---|---|---|
@@ -6772,6 +6772,8 @@ existing file.
 | GET | `/api/v1/identity/audits/{name}` | one receipt whole, never in fragments; the name is a file name in the store and a path is refused |
 | GET | `/api/v1/identity/measurements` | every measurement record with its verdict, and with what it may not be used for attached rather than beside it; fifteen key spellings of that clause are collected rather than normalised, records corrected or superseded in the open are marked in the summary, and records predating the boundary convention are listed by name rather than passed over |
 | GET | `/api/v1/identity/measurements/{name}` | one measurement whole; the name is a file name in the store and a path is refused |
+| GET | `/api/v1/identity/tolerance/components` | TG19.2: what a position tolerance is made of, before any observation is supplied — each component with its provenance and who supplies it, how they combine, and the component deliberately EXCLUDED, because what a bar leaves out decides what its residual means |
+| GET | `/api/v1/identity/tolerance` | TG19.2: one observation's bar, computed and never decided. With a separation it also reports admission and the unexplained residual; a missing catalogue uncertainty returns `admitted: null` and never `false`, because "we could not say" and "no" are different answers and conflating them counts a missing agency report as a failed detection |
 | GET | `/api/v1/identity/studies` | each task as the chain the work runs — declaration, adoption or signature, measurement, outcome — so which result answered which question is not left to be reconstructed from filenames; a declaration with no measurement is shown rather than filtered, because a question deliberately left unanswered is a legitimate state here |
 | GET | `/api/v1/gate/receipts` | published runs; an empty store reports NOT_YET_MEASURED as an absence of runs, not of findings |
 | GET | `/api/v1/gate/receipts/{receipt_id}` | one hash-verified receipt with the gate verdict, the scientific verdict and the rule that moved it |
@@ -8824,6 +8826,84 @@ real figure is worse than this one, not better.
 All four acceptance conditions are met: the coded gate passed, the full distribution is reported
 rather than a mean, the mechanism and consequence claims are reported separately with the
 mechanism claim carrying its declared caveat, and the two named outcomes did separate.
+
+### 3G.3 A signed reference resolves by digest, or refuses by name (TG19.3)
+
+**TG19.3 (2026-09-11): a signed reference resolves by digest, or refuses by name.**
+
+An engineering slice. It makes no claim about any world, so it carries no declaration, no
+adoption and no prediction. `src/data_layer/signed_reference.py`, wired into
+`tools/restate_position_acceptance.py`.
+
+**The gap, and it was not hypothetical.** T4E.17 signed the IBTrACS catalogue on terms naming a
+specific population, bound it by sha256, and deliberately did not commit 35.5 MB of third-party
+data. What the design records is the URL, the digest and the byte count. What it records **no**
+path. So nothing in this repository knew where to look, nothing failed loudly when the file was
+missing, and the file spent a day in a session scratchpad under `%TEMP%` where it survived by
+luck. Losing it would have **voided the signature**, not merely cost a download: IBTrACS v04r01 is
+a living archive, so a fresh copy is a different catalogue on which T4E.17's terms do not hold.
+
+That is the lesson T4E.27 drew about a catalogue radius of `0.00`, applied to a file instead of a
+field: **a missing input should be refused by name, not discovered later.**
+
+**Three bindings, checked in order, because a chain is only as strong as the link nobody checks.**
+
+1. **Signature against design.** `signs_sha256` in the signature file, against the design's own
+   digest. If the design was edited after it was signed, the terms recorded are not the terms
+   signed and everything downstream inherits the drift. Nothing had ever checked this.
+2. **Design against data.** The digest the file must reproduce.
+3. **Byte count first**, as a cheap pre-check, so a truncated download is named before 35 MB are
+   hashed to reach the same conclusion.
+
+```
+$ python -c "from src.data_layer.signed_reference import resolve; ..."
+name                 ibtracs_sp_v04r01
+path                 data/catalogues/ibtracs.SP.list.v04r01.csv
+available            True
+signature_verified   True
+bytes                35,482,417 expected, 35,482,417 observed
+digest               matches the signed 631f76b9...
+citations            2, carried with the resolution
+```
+
+**A refusal is a result, not an exception by default.** `resolve()` returns a record saying what
+failed and what would lift it; `require()` raises for a caller that cannot proceed. Both carry the
+source URL and the expected digest, so a reader who has lost the file learns where to get it and
+what it must hash to in the same breath as learning it is gone.
+
+**A digest mismatch is reported as a *different* reference, never a damaged one.** The refusal
+says so in terms: the signed population, base rates and claim boundary do not extend to it, and
+using it would evaluate against an unsigned catalogue. There is no fallback path to an unverified
+copy, and nothing here reaches a network -- acquiring the file is the maintainer's act.
+
+**A refusal that could not tell "missing" from "present" was itself the defect.** The first
+version of `restate_position_acceptance.py` stated in prose that the catalogue was absent. It had
+no way to check, and it was wrong: the file existed. That clause is now resolved rather than
+asserted, and the tool's receipt carries the resolution beside the refusal. **The committed
+T4E.27 receipt still says the file was not present on this machine. It was accurate when it was
+written and is superseded rather than edited**, which is how this programme records corrections.
+
+What the refusal now says is the part that was always true and is the only part that still is:
+condition 2 needs the distance to the third-nearest feature, the committed receipt carries only
+the nearest, and recovering it takes a re-run of the join. That re-run is its own work and is not
+done here -- but it is no longer blocked on a missing file.
+
+```
+$ .venv/Scripts/python.exe -m pytest src/tests/test_signed_reference.py -q
+16 passed
+```
+
+The tests pin each way silence could return: an absent file naming path, URL and digest; a
+truncated one named by size without hashing; a different edition refused as different; a design
+edited after signature; a signature carrying no digest; a design carrying no digest; an unsigned
+design allowed and reported as unverified rather than failed; and `require()` raising by name
+instead of returning an unverified path.
+
+**What this does not do.** It downloads nothing, adopts nothing, and changes no default. It does
+not lift T4E.27's condition 2, which needs the join re-run. It does not edit the signed design to
+record the path -- that would break the sha256 the signature rests on, so the path lives in the
+registry beside it. And it verifies bindings, not contents: that the file is the one that was
+signed says nothing about whether the terms signed were the right ones.
 
 ### 3G.2 The join's bar, on the wire and on screen, in parts (TG19.2)
 
@@ -12119,6 +12199,7 @@ able to sit three slices out of date.
 | `test_peeled_null.py` | 17 | T4E.26 peeled-null calibration: the subtracted shape rebuilt only from what the extractor published, a feature with no usable width left in place and counted rather than guessed at, the amplitude removed above the baseline rather than the magnitude carrying the baseline with it; and the contamination split that is the whole safeguard -- an artefact radius that scales with the feature it came from, no spurious features reporting no fraction rather than a clean zero, and a gap refusing to be computed where round zero already sits at the oracle |
 | `test_position_tolerance.py` | 17 | T4E.27 the position tolerance as an inspectable object: every component carrying its provenance and the excluded component named in the description; a zero or non-finite catalogue radius refused by name rather than defaulted, because a zero demands a separation nothing can supply and an infinity admits everything; a refused tolerance answering None and never False, so a missing agency report is not counted as a failed detection; refused observations leaving the denominator; a negative residual returned rather than clipped; and the acceptance curve monotone in the bar |
 | `test_coverage_report.py` | 17 | TG19.1 the generic coverage check: pair and triple survival counted as the units `ALLOWED_CARDINALITIES` actually admits, with a group holding a never-seen feature counted as unassemblable because the object was never built in any scene; an unrepresentative density returning a refusal and no coverage number at all; an unregistered extractor, an unknown calibration source, a constant background, a three-dimensional background and zero configurations each refused by name; and every passing report carrying its claim boundary, its extractor capabilities, the upper-bound caveat and the field declaration R19 needs |
+| `test_signed_reference.py` | 16 | TG19.3 signed external references: the whole chain checked -- signature against design, design against data, byte count first so a truncated download is named before 35 MB are hashed; an absent file naming its path, source URL and required digest, and saying that replacing it is a declaration rather than a copy; a digest mismatch refused as a DIFFERENT reference whose signed population and claim boundary do not extend to it, never as a damaged one; a design edited after signature refused with both digests; an unsigned design allowed and reported unverified rather than failed; and require() raising by name instead of returning an unverified path |
 | `test_feature_extraction.py` | 47 | a diverged capture-correction scale refused by name rather than acted on, the refusal counted without ending the pass, and a clean Gaussian still extracted so the bound cannot be trimming real features; TG2.2 extraction as a registry: the three planted features recovered across a six-fold range of scales and under rotation, translation and rescaling; both null benchmarks silent across three seeds with the loosened-alpha control that makes the silence mean something; the strict-comparison off-by-one; an unresolvable alpha refused before the ensemble; a second extractor registered from the test module; the periodic-axis seam and the self-scaling R13 refusal; and the one-feature-per-frame handoff to TG2.3 |
 | `test_feature_record.py` | 37 | TG2.1 canonical feature record: features measured off the advected-vortex benchmark recovering its known velocity and scale doubling, the R19 refusals (magnitude, separation, elapsed time, mixed sets), the periodic-axis refusal, orientation conventions and the surrogate resolution floor, a fourth convention and a fourth significance basis registered from the test module, and defect D59 |
 | `test_level_axis.py` | 19 | TG1.5 vertical coordinates: the registry and its sense of up, a height bank labelling its offsets the opposite way to pressure, a fourth coordinate registered from the test module, the declaration travelling from reader to signature, `level_hpa` refusing a non-pressure axis, and the pressure arithmetic unchanged |
@@ -12233,7 +12314,7 @@ able to sit three slices out of date.
   | `test_identity_certification.py` | 131 | T4E.9 the T4E identity path against a motif known by construction: the benchmark registered and naming the path it certifies, three disjoint partitions so a radius is never evaluated on what calibrated it, exactly one motif configuration in a planted scene and none in a null one, construction labels taken from the generator and refused rather than guessed when a planted position has no feature near it or two positions claim one, only cross-scene pairs formed, the definition's separation asserted as a floor, nothing admitted where nothing recurs with the absent positive population left unmeasured rather than zero, the frozen-radius failure pinned as a relationship to the feasible radius rather than as two numbers, an empty calibration returning INVALID rather than a permissive radius, every result stating what it does not license, and T4E.13's criterion fixed in code while asserted to be measured nowhere -- `k` derived as a function of the partition size, unequal partitions refused rather than pooled, monotonicity in `k` checked on a toy rather than assumed, and, once candidate 3 was adopted and falsified, that guard replaced by the reading of the result -- which conditions failed and by how much, that the null held at 0 of 1486 proposed, that the 0.0000 recall is recorded as arithmetic rather than a finding, that no lower k can rescue what this one failed, that the falsification licenses none of the conclusions nearest to it, that partitions 720-735 stay refused in code, and T4E.14's partial-presence test bed -- seeds that collide with no existing evidence, a reservation refused with no flag to open it, planting patterns that are deterministic and not contiguous, the recoverable population C(j,2) rather than C(S,2), the design's own record of what this evidence cannot repair, and T4E.15's criterion fixed in code while asserted to be measured nowhere -- closure broken by a single loose end, closure admitting only a subset of what consistency admits, the criterion carrying no tunable parameter at all, the span-ranking design recorded as discarded by derivation, the declaration's own worst case and refusal to predict, and -- once measured and falsified -- the reading of that result: the conditions that failed with their counts, the mechanism executed rather than described (a pair with no other partners is closed and is therefore admitted, while one loose end rejects a group spanning five scenes), the cross-check showing closure admits more than candidate 2 on the evidence candidate 2 passed, the missed derivation recorded rather than quietly repaired, the constraint the falsification fixes on any successor, and T4E.16's withdrawal held as a derivation rather than a note -- the surrogate reassembly rate computed analytically and by simulation, the record of why the design cannot simply be repaired, the fact that a withdrawn declaration adds nothing to the accumulated multiplicity, and PooledDistances keeping a refused distance as NaN so it can never leak in as a number |
   | `test_identity_target_declaration.py` | 53 | T4E.8 slice 3 the declared identity target: an absent target or evidence class refused by name, a misspelling refused with its correction, `kind_recurrence` against record-derived proxy labels refused as circular, `track_continuity` admitted with its tracker-agreement caveat, every target round-tripping what it recognises and does not license, the published proxy wording pinned verbatim so naming a target cannot reword a cited receipt, and the external-reference path recovering two planted identities from a reviewed catalogue while refusing a mismatched family, a single identity, a non-catalogue and a negative population the patterns cannot supply |
   | `test_spectral_spatial_identity.py` | 24 | T4E.8 spatial geometry, detector-band/magnitude independence, source/scope refusal, analytic distances, old-radius refusal, scalar/accelerated agreement and two-sided proxy-label diagnostics |
-| **total** | **4405** | |
+| **total** | **4421** | |
 
 ### 7.4a Browser suite inventory
 
@@ -12267,6 +12348,7 @@ not bound to the scratch state.
 | `ui-qualification.spec.ts` | 4 | TG18.5 served-workspace inventory, reachability with self-naming, journey destinations and unexplained disablement |
 | `scientist-actions.spec.ts` | 2 | TG18.5 the two numbers `scientist_actions` refuses to invent: the visible actions a researcher takes from a clean browser to a completed run of the frozen plan, and the actions between meeting the preflight refusal and clearing it, both asserted, with the wall-clock durations written into the measurement and asserted by nothing |
 | `product-modes.spec.ts` | 5 | TG18.5 one representative path through each of TG18.0's four product modes at two desktop viewports, with a named artefact at the state each path reaches, and the signature-uniqueness assertion that holds the modes apart (the file declares five and Playwright collects ten, once per viewport) |
+| `position-tolerance.spec.ts` | 6 | TG19.2 the join's bar rendered in parts: each component with where it came from, what the bar deliberately excludes shown at the weight of what it includes, a catalogue radius of 0.00 refused by name with the verdict element absent rather than showing a miss, that refusal rendering as a result with no error banner, the total and the residual it does not explain, and no control matching accept/approve/save/record/apply |
 | `study-trail.spec.ts` | 6 | T4E.23 the study trail rendered: a study drawn as the chain it ran rather than a list of files, every verdict on screen carrying what it may not be used for, a question declared and never measured shown rather than filtered, a corrected record marked where a reader looks first, the surface stating its own refusals instead of implying them by absent buttons, and a measurement opened whole and closed again |
 | **suite** | **136 + 6** | 136 from a cleaned `.e2e-state`, Chromium, 2026-09-04; the six `study-trail` tests measured separately on 2026-09-10 and not folded into a re-run of the whole suite, so the total is two dated measurements rather than one |
 
