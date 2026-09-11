@@ -12515,6 +12515,71 @@ read 4315 against an actual 4342. It was corrected to 4342 rather than the test 
 inventory rows and undocumented modules but never the table's own total. The audit is the weaker
 of the two checks and the test caught what it missed.
 
+**TG19.4 (2026-09-11): a record holding two answers is read by name, or not at all.**
+
+An engineering slice. It makes no claim about any world, so it carries no declaration, no adoption
+and no prediction. `src/data_layer/declared_population.py`, wired into
+`tools/restate_position_acceptance.py`.
+
+**The failure it prevents had already happened, twice over.**
+`measurements/t4e18_acceptance.json` holds two extraction passes with different distances,
+different feature counts and different verdicts. Its `per_storm` table is the SWT one, and nothing
+in that table says so -- the fields are `storm, lat, nature, time, radius_km, nearest_km,
+inside_radius, features`, and the only way to tell is to match feature counts against a prose
+block elsewhere in the same file. T4E.27 read that table, restated a bar against it, named no
+path, and had its sharpest conclusion withdrawn the next day.
+
+**This repository already had the fix, pointed the other way.** `declare_identity_target` refuses
+to run an audit without a declared target and evidence class, because labels drawn from the
+pipeline under test validate a definition against itself. That discipline governs the *inputs* of
+a measurement and nothing that *reads one back*. `/api/v1/identity/measurements` will serve an
+unlabelled table to anyone. This is the same rule applied to consumption.
+
+**Four refusals, and the third is the one that matters.**
+
+```
+read_population(record)                 -> REFUSED: holds more than one population and was read
+                                           without naming which. It holds: swt_planes, raw_field
+read_population(record, "nonsense")     -> REFUSED: holds no population named 'nonsense'
+read_population(record, "raw_field")    -> REFUSED: recorded as a summary only, not as rows
+read_population(record, "swt_planes")   -> 18 rows, with how they were identified
+```
+
+The third is the dangerous one. The raw-field pass is *better* for this purpose by T4E.18's own
+correction -- 52.1 km median against 127.1 -- and it exists in that record as **four aggregate
+numbers and no rows at all**. A reader asking for it must not receive the SWT rows under its name,
+which is exactly the substitution that went wrong. The refusal says what is present, and says that
+producing the rest needs the join re-run.
+
+**The map is declared beside the record and never edited into it**, for the same reason T4E.17's
+signed design was left alone and its local path recorded elsewhere: committed evidence is not
+rewritten to suit a later reader. A test asserts the record still carries no `populations` key and
+no per-row `extraction_pass`.
+
+**The identification is checkable, not assertable.** Each population states how it is
+distinguished -- the SWT rows carry 73 to 153 features where the raw pass yields 0 to 13 -- and a
+test verifies that claim against the rows it describes. The two ranges do not overlap, which is
+what makes the mapping decidable rather than a label somebody chose.
+
+**The tool that made the mistake now cannot repeat it.**
+`restate_position_acceptance.py` declares `SOURCE_POPULATION = "swt_planes"` because
+`read_population` refuses without one, and its receipt carries `extraction_pass`, the evidence for
+that identification, and a note naming the other pass and why it cannot be substituted. Every
+figure is unchanged -- 2 admitted of 17 judged, 1 refused -- which is the point: naming what was
+already being read moved no measurement.
+
+```
+$ .venv/Scripts/python.exe -m pytest src/tests/test_declared_population.py -q
+17 passed
+```
+
+**What this does not do.** It maps one record. Every other measurement in the store is still read
+whole and at the reader's risk, and a record absent from the registry is refused for a *named*
+read rather than being validated -- the module says what it does not know. It does not re-run any
+join, does not lift T4E.27's condition 2, and changes no verdict anywhere. And it catches only the
+class of error where a record holds two answers: the framing error in T4E.24's first addendum, and
+the arithmetic one in T4E.27's prediction, are different failures and are untouched by this.
+
 **TG19.3 (2026-09-11): a signed reference resolves by digest, or refuses by name.**
 
 An engineering slice. It makes no claim about any world, so it carries no declaration, no

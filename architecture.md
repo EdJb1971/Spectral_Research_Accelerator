@@ -8827,6 +8827,73 @@ All four acceptance conditions are met: the coded gate passed, the full distribu
 rather than a mean, the mechanism and consequence claims are reported separately with the
 mechanism claim carrying its declared caveat, and the two named outcomes did separate.
 
+### 3G.4 A record holding two answers is read by name, or not at all (TG19.4)
+
+**TG19.4 (2026-09-11): a record holding two answers is read by name, or not at all.**
+
+An engineering slice. It makes no claim about any world, so it carries no declaration, no adoption
+and no prediction. `src/data_layer/declared_population.py`, wired into
+`tools/restate_position_acceptance.py`.
+
+**The failure it prevents had already happened, twice over.**
+`measurements/t4e18_acceptance.json` holds two extraction passes with different distances,
+different feature counts and different verdicts. Its `per_storm` table is the SWT one, and nothing
+in that table says so -- the fields are `storm, lat, nature, time, radius_km, nearest_km,
+inside_radius, features`, and the only way to tell is to match feature counts against a prose
+block elsewhere in the same file. T4E.27 read that table, restated a bar against it, named no
+path, and had its sharpest conclusion withdrawn the next day.
+
+**This repository already had the fix, pointed the other way.** `declare_identity_target` refuses
+to run an audit without a declared target and evidence class, because labels drawn from the
+pipeline under test validate a definition against itself. That discipline governs the *inputs* of
+a measurement and nothing that *reads one back*. `/api/v1/identity/measurements` will serve an
+unlabelled table to anyone. This is the same rule applied to consumption.
+
+**Four refusals, and the third is the one that matters.**
+
+```
+read_population(record)                 -> REFUSED: holds more than one population and was read
+                                           without naming which. It holds: swt_planes, raw_field
+read_population(record, "nonsense")     -> REFUSED: holds no population named 'nonsense'
+read_population(record, "raw_field")    -> REFUSED: recorded as a summary only, not as rows
+read_population(record, "swt_planes")   -> 18 rows, with how they were identified
+```
+
+The third is the dangerous one. The raw-field pass is *better* for this purpose by T4E.18's own
+correction -- 52.1 km median against 127.1 -- and it exists in that record as **four aggregate
+numbers and no rows at all**. A reader asking for it must not receive the SWT rows under its name,
+which is exactly the substitution that went wrong. The refusal says what is present, and says that
+producing the rest needs the join re-run.
+
+**The map is declared beside the record and never edited into it**, for the same reason T4E.17's
+signed design was left alone and its local path recorded elsewhere: committed evidence is not
+rewritten to suit a later reader. A test asserts the record still carries no `populations` key and
+no per-row `extraction_pass`.
+
+**The identification is checkable, not assertable.** Each population states how it is
+distinguished -- the SWT rows carry 73 to 153 features where the raw pass yields 0 to 13 -- and a
+test verifies that claim against the rows it describes. The two ranges do not overlap, which is
+what makes the mapping decidable rather than a label somebody chose.
+
+**The tool that made the mistake now cannot repeat it.**
+`restate_position_acceptance.py` declares `SOURCE_POPULATION = "swt_planes"` because
+`read_population` refuses without one, and its receipt carries `extraction_pass`, the evidence for
+that identification, and a note naming the other pass and why it cannot be substituted. Every
+figure is unchanged -- 2 admitted of 17 judged, 1 refused -- which is the point: naming what was
+already being read moved no measurement.
+
+```
+$ .venv/Scripts/python.exe -m pytest src/tests/test_declared_population.py -q
+17 passed
+```
+
+**What this does not do.** It maps one record. Every other measurement in the store is still read
+whole and at the reader's risk, and a record absent from the registry is refused for a *named*
+read rather than being validated -- the module says what it does not know. It does not re-run any
+join, does not lift T4E.27's condition 2, and changes no verdict anywhere. And it catches only the
+class of error where a record holds two answers: the framing error in T4E.24's first addendum, and
+the arithmetic one in T4E.27's prediction, are different failures and are untouched by this.
+
 ### 3G.3 A signed reference resolves by digest, or refuses by name (TG19.3)
 
 **TG19.3 (2026-09-11): a signed reference resolves by digest, or refuses by name.**
@@ -12260,6 +12327,7 @@ able to sit three slices out of date.
 | `test_position_tolerance.py` | 17 | T4E.27 the position tolerance as an inspectable object: every component carrying its provenance and the excluded component named in the description; a zero or non-finite catalogue radius refused by name rather than defaulted, because a zero demands a separation nothing can supply and an infinity admits everything; a refused tolerance answering None and never False, so a missing agency report is not counted as a failed detection; refused observations leaving the denominator; a negative residual returned rather than clipped; and the acceptance curve monotone in the bar |
 | `test_coverage_report.py` | 17 | TG19.1 the generic coverage check: pair and triple survival counted as the units `ALLOWED_CARDINALITIES` actually admits, with a group holding a never-seen feature counted as unassemblable because the object was never built in any scene; an unrepresentative density returning a refusal and no coverage number at all; an unregistered extractor, an unknown calibration source, a constant background, a three-dimensional background and zero configurations each refused by name; and every passing report carrying its claim boundary, its extractor capabilities, the upper-bound caveat and the field declaration R19 needs |
 | `test_signed_reference.py` | 16 | TG19.3 signed external references: the whole chain checked -- signature against design, design against data, byte count first so a truncated download is named before 35 MB are hashed; an absent file naming its path, source URL and required digest, and saying that replacing it is a declaration rather than a copy; a digest mismatch refused as a DIFFERENT reference whose signed population and claim boundary do not extend to it, never as a damaged one; a design edited after signature refused with both digests; an unsigned design allowed and reported unverified rather than failed; and require() raising by name instead of returning an unverified path |
+| `test_declared_population.py` | 17 | TG19.4 a record holding two answers read by name or not at all: an unnamed read refused with both names offered and the mistake it prevents named in the refusal; a population the record only SUMMARISES refused rather than substituted with the other pass's rows, saying what is there and what would produce the rest; an unknown name and an unmapped record both refused; the stated identification checked against the rows it describes, so the map is checkable rather than believed; and the committed record verified unedited |
 | `test_feature_extraction.py` | 47 | a diverged capture-correction scale refused by name rather than acted on, the refusal counted without ending the pass, and a clean Gaussian still extracted so the bound cannot be trimming real features; TG2.2 extraction as a registry: the three planted features recovered across a six-fold range of scales and under rotation, translation and rescaling; both null benchmarks silent across three seeds with the loosened-alpha control that makes the silence mean something; the strict-comparison off-by-one; an unresolvable alpha refused before the ensemble; a second extractor registered from the test module; the periodic-axis seam and the self-scaling R13 refusal; and the one-feature-per-frame handoff to TG2.3 |
 | `test_feature_record.py` | 37 | TG2.1 canonical feature record: features measured off the advected-vortex benchmark recovering its known velocity and scale doubling, the R19 refusals (magnitude, separation, elapsed time, mixed sets), the periodic-axis refusal, orientation conventions and the surrogate resolution floor, a fourth convention and a fourth significance basis registered from the test module, and defect D59 |
 | `test_level_axis.py` | 19 | TG1.5 vertical coordinates: the registry and its sense of up, a height bank labelling its offsets the opposite way to pressure, a fourth coordinate registered from the test module, the declaration travelling from reader to signature, `level_hpa` refusing a non-pressure axis, and the pressure arithmetic unchanged |
@@ -12374,7 +12442,7 @@ able to sit three slices out of date.
   | `test_identity_certification.py` | 131 | T4E.9 the T4E identity path against a motif known by construction: the benchmark registered and naming the path it certifies, three disjoint partitions so a radius is never evaluated on what calibrated it, exactly one motif configuration in a planted scene and none in a null one, construction labels taken from the generator and refused rather than guessed when a planted position has no feature near it or two positions claim one, only cross-scene pairs formed, the definition's separation asserted as a floor, nothing admitted where nothing recurs with the absent positive population left unmeasured rather than zero, the frozen-radius failure pinned as a relationship to the feasible radius rather than as two numbers, an empty calibration returning INVALID rather than a permissive radius, every result stating what it does not license, and T4E.13's criterion fixed in code while asserted to be measured nowhere -- `k` derived as a function of the partition size, unequal partitions refused rather than pooled, monotonicity in `k` checked on a toy rather than assumed, and, once candidate 3 was adopted and falsified, that guard replaced by the reading of the result -- which conditions failed and by how much, that the null held at 0 of 1486 proposed, that the 0.0000 recall is recorded as arithmetic rather than a finding, that no lower k can rescue what this one failed, that the falsification licenses none of the conclusions nearest to it, that partitions 720-735 stay refused in code, and T4E.14's partial-presence test bed -- seeds that collide with no existing evidence, a reservation refused with no flag to open it, planting patterns that are deterministic and not contiguous, the recoverable population C(j,2) rather than C(S,2), the design's own record of what this evidence cannot repair, and T4E.15's criterion fixed in code while asserted to be measured nowhere -- closure broken by a single loose end, closure admitting only a subset of what consistency admits, the criterion carrying no tunable parameter at all, the span-ranking design recorded as discarded by derivation, the declaration's own worst case and refusal to predict, and -- once measured and falsified -- the reading of that result: the conditions that failed with their counts, the mechanism executed rather than described (a pair with no other partners is closed and is therefore admitted, while one loose end rejects a group spanning five scenes), the cross-check showing closure admits more than candidate 2 on the evidence candidate 2 passed, the missed derivation recorded rather than quietly repaired, the constraint the falsification fixes on any successor, and T4E.16's withdrawal held as a derivation rather than a note -- the surrogate reassembly rate computed analytically and by simulation, the record of why the design cannot simply be repaired, the fact that a withdrawn declaration adds nothing to the accumulated multiplicity, and PooledDistances keeping a refused distance as NaN so it can never leak in as a number |
   | `test_identity_target_declaration.py` | 53 | T4E.8 slice 3 the declared identity target: an absent target or evidence class refused by name, a misspelling refused with its correction, `kind_recurrence` against record-derived proxy labels refused as circular, `track_continuity` admitted with its tracker-agreement caveat, every target round-tripping what it recognises and does not license, the published proxy wording pinned verbatim so naming a target cannot reword a cited receipt, and the external-reference path recovering two planted identities from a reviewed catalogue while refusing a mismatched family, a single identity, a non-catalogue and a negative population the patterns cannot supply |
   | `test_spectral_spatial_identity.py` | 24 | T4E.8 spatial geometry, detector-band/magnitude independence, source/scope refusal, analytic distances, old-radius refusal, scalar/accelerated agreement and two-sided proxy-label diagnostics |
-| **total** | **4421** | |
+| **total** | **4438** | |
 
 ### 7.4a Browser suite inventory
 

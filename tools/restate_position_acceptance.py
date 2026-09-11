@@ -38,12 +38,19 @@ from src.analysis_engine.position_tolerance import (
     localisation_km,
     tolerance_for,
 )
+from src.data_layer.declared_population import read_population
 from src.data_layer.signed_reference import IBTRACS_SP
 from tools.measure_false_absence import digest_file, revision
 
 DECLARATION = "data/identity_calibration/t4e27-position-tolerance-declaration.json"
 ADOPTION = "data/identity_calibration/t4e27-position-tolerance-adoption.json"
 SOURCE = "measurements/t4e18_acceptance.json"
+
+#: Which of the two extraction passes in that record this restatement reads. Named rather than
+#: taken: T4E.27 read the SWT rows and reported them as though the record held one answer, and
+#: the correction that followed withdrew its sharpest conclusion. `read_population` now refuses
+#: an unnamed read, so this constant is the declaration that refusal demands.
+SOURCE_POPULATION = "swt_planes"
 
 #: T4E.18's declared bar, unchanged: at least half of the eighteen storms.
 DECLARED_MAJORITY_OF = 18
@@ -70,7 +77,10 @@ def main() -> int:
     # for a day. A refusal that cannot tell "missing" from "present" is a guess with a firm voice.
     catalogue = IBTRACS_SP.resolve()
     source = json.loads(Path(SOURCE).read_text(encoding="utf-8"))
-    storms = source["per_storm"]
+    # Named, and refused if not. The raw-field pass is the better one for this purpose by
+    # T4E.18's own correction, and it exists in that record as four aggregates with no rows --
+    # so it cannot be substituted here, and asking for it returns a refusal saying exactly that.
+    storms, population = read_population(SOURCE, SOURCE_POPULATION, payload=source)
 
     tolerances = [tolerance_for(row["storm"], row["radius_km"]) for row in storms]
     distances = [float(row["nearest_km"]) for row in storms]
@@ -125,6 +135,14 @@ def main() -> int:
         },
         "population": {
             "source": SOURCE,
+            "extraction_pass": population.name,
+            "which_pass_and_why_it_is_named": population.describe(),
+            "the_other_pass_in_this_record": (
+                "raw_field: nearest 16.6 km minimum and 52.1 km median, 3 of 18 inside the "
+                "catalogue radius. T4E.18's correction calls it markedly better for this "
+                "purpose than the SWT planes. It is recorded there as four aggregates with no "
+                "per-storm rows, so it cannot be restated here; the join re-run that would "
+                "produce its rows is separate work."),
             "storms": len(storms),
             "unchanged": (
                 "the same eighteen storms at the same deepest-interior observation per storm. "
