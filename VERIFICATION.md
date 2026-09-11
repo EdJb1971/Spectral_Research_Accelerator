@@ -12756,6 +12756,66 @@ $ .venv/Scripts/python.exe -m pytest src/tests/test_coverage_report.py -q
 17 passed
 ```
 
+**T4E.27 CORRECTION_2026_09_11: the restatement ran against the worse of two measured extraction
+paths, and did not say so.**
+
+Recorded beside the original rather than edited into it. The verdict does not change; the reading
+does, and one of the original's conclusions is materially weakened.
+
+**What was wrong.** `measurements/t4e18_acceptance.json` holds a `per_storm` table and, in its own
+`CORRECTION_2026_09_10` block, the aggregates for **two** extraction paths:
+
+```
+raw field   nearest min 16.6   median  52.1 km   inside radius 3 of 18   features/frame 0-13, median 7
+SWT planes                     median 127.1 km   inside radius 2 of 18   features/frame 73-153, median 123
+```
+
+The `per_storm` table is the **SWT** path -- its feature counts are 73 to 153 -- and T4E.27 read
+that table. So the restatement was computed against the path T4E.18's correction describes as
+*"markedly BETTER for this purpose"* in the other direction: *"Raw-field extraction is markedly
+BETTER for this purpose than the SWT planes -- median 52.1 km against 127.1."* T4E.27 never named
+which path it used, and its write-up refers to "a median nearest feature of 127 km" as though the
+record held one population.
+
+**What does not change.** The three reasons the original bar was wrong stand untouched: the
+category error, the radius of exactly 0.00 that no measurement could satisfy, and T4E.19's
+measured finding that the offset does not track the radius. The verdict stands too -- the raw path
+puts 3 of 18 inside the catalogue radius against a declared bar of 9, so the acceptance fails on
+either path, and the estimator component remains nearly inert against radii of 11 to 145 km
+whichever distances it is applied to.
+
+**What changes, and it is the substantive half.** The **93.2 km median unexplained residual is a
+property of the SWT path**, not of the record. On the raw path the non-dateline storms sit at
+16.6 to 99.3 km with a median near 35, which is what T4E.18's correction reports.
+
+That overturns the original's sharpest claim. T4E.27 concluded that T4E.21's hypothesis -- an 850
+hPa vorticity maximum and a surface centre being different quantities, worth about 34 km -- *"cannot
+account for"* the residual, and that T4E.18's and T4E.19's populations are therefore *"not the same
+problem"*. On the raw path the non-dateline median is about 35 km against T4E.19's 33.8 km. **They
+agree almost exactly.** The discrepancy attributed to a difference of population is substantially
+a difference of extraction path that went unnoticed.
+
+**What remains true about the separation of populations.** The dateline group is real and is not a
+path artefact: four storms at longitude 179.0 to 179.8 are refused by the R13 off-frame rule
+because their own window overruns the crop's eastern boundary at 180.0, and their nearest features
+are 1207, 2028, 2465 and 3685 km away on the raw path. T4E.19 separated that group out; T4E.18's
+acceptance does not. So the two populations do differ -- but by the dateline group, which is
+explicable, and not by an unexplained 93 km.
+
+**How the error was made, and it is the sixth of its kind.** The correction block naming both
+paths is in the same file as the `per_storm` table, and was read while writing T4E.27 -- the three
+reasons the bar was wrong were drawn from that same record. The path distinction was in view and
+was not carried into the reading. *Derivable, and not derived*: T4E.24's first addendum met this,
+its second addendum met it again while trying to avoid it, T4E.27's own prediction met it over the
+inertness of an 8.19 km component in quadrature, and this is the next.
+
+**What this obliges.** `measurements/t4e27_restated_acceptance.json` stands as measured and is not
+edited; it reports what it computed, on a population it names by file rather than by path. Any
+future citation of the 93.2 km residual must say SWT, and any comparison with T4E.19's 33.8 km
+must use the raw path or say why not. The join re-run that T4E.27's condition 2 needs should record
+**both** paths and the full per-storm distance list, so no successor has to infer which one a
+number came from.
+
 **T4E.27 (2026-09-11): the bar was wrong, and the bar was not what was carrying the failure.**
 
 Adopted 2026-09-11 (`t4e27-position-tolerance-adoption.json`, binding the declaration by sha256

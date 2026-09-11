@@ -1267,6 +1267,13 @@ changes nothing**, so the tolerance was never what was carrying the failure. The
 themselves are: a median nearest feature of **127 km**, with three storms at 1241, 1581 and 2056
 km that no defensible bar will admit.
 
+**CORRECTED 2026-09-11.** The restatement ran against the SWT-plane extraction path, the worse of
+the two the record holds, and did not say so. The verdict stands -- the raw path puts 3 of 18
+inside the catalogue radius against a bar of 9 -- but the 93.2 km residual belongs to that path,
+and the claim below that the two populations are not the same problem is **withdrawn in its
+strong form**: on the raw path the non-dateline median is about 35 km against T4E.19's 33.8, which
+agree. What remains real is the dateline group, which T4E.19 separated and T4E.18 does not.
+
 **And it separates two things that were being treated as one.** T4E.19's diagnostic population --
 154 interior observations paired within 200 km, dateline group removed -- has a median offset of
 33.8 km. T4E.18's acceptance population -- the deepest observation per storm, unfiltered -- has a
