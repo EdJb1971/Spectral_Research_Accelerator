@@ -2803,6 +2803,42 @@ configuration absent from one scene outright; nothing about recurrence *across* 
 which the mining machinery needs; no mining radius, no discharge of T4E.8's acceptance, no
 closure of D96 to D100; and nothing about `kind_recurrence`, which still has no catalogue.
 
+### T4E.31 - the round-robin, wired to a bundle and still unrun
+
+**T4E.31 (2026-09-11): the runner.** `tools/review_join_rerun.py`,
+`src/tests/test_review_runner.py`.
+
+**Almost none of this is new code.** The eight-seat protocol, the dissent register, the R22
+independence check and a Gemini batch transport were built and tested at TG7.1 and TG7.2. What
+was missing was a bundle to review -- T4E.30 supplied the first -- and a runner. The runner is a
+short loop and a long list of refusals.
+
+**Nothing reaches the network unless the maintainer says so, in the command.**
+`--send-to-the-network` is required and a key must be present in the environment, never in an
+argument where it would land in the shell history and the process table. `--dry-run` prints the
+whole plan and sends nothing. There is deliberately no stub transport in the tool: a review
+record asserts that a panel said something, and a fabricated one in `data/reviews/` beside real
+ones would be the worst artefact this programme could produce.
+
+**Driving the protocol over the real bundle corrected two assumptions.** An exchange with no
+dissent takes SEVEN turns, not eight -- `response_and_revision` is skipped, because a response to
+no dissent is a rebuttal of nothing. And a dissent must be answered by name, oldest first; a
+response naming the wrong one is refused, and the refusal carries the paid call (R23).
+
+**One asymmetry found and pinned rather than quietly fixed.** A protocol violation comes back
+carrying its call; a response that does not match its declared schema is refused before the call
+is recorded, so that one is lost. Both were paid for. A test pins the behaviour so changing it is
+deliberate.
+
+**NO PANEL HAS RUN.** The apparatus is wired and exercised end to end with fabricated answers,
+and has never been pointed at a model. `data/reviews/` does not exist. An outcome in this
+repository would be evidence that a discussion happened; there is none.
+
+```
+$ .venv/Scripts/python.exe -m pytest src/tests/test_review_runner.py -q
+12 passed
+```
+
 ### T4E.30 - the measurement store and the evidence store, joined where git can prove the ordering
 
 **T4E.30 (2026-09-11): a measurement carried into an evidence bundle, or refused by name.**

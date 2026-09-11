@@ -8828,6 +8828,70 @@ All four acceptance conditions are met: the coded gate passed, the full distribu
 rather than a mean, the mechanism and consequence claims are reported separately with the
 mechanism claim carrying its declared caveat, and the two named outcomes did separate.
 
+### 3E.46 The round-robin, wired to a bundle and still unrun (T4E.31)
+
+**T4E.31 (2026-09-11): the runner.** `tools/review_join_rerun.py`,
+`src/tests/test_review_runner.py`.
+
+**Almost none of this is new code, and that is the point.** The eight-seat protocol, the dissent
+register, the R22 independence check and a Gemini batch transport were all built and tested at
+TG7.1 and TG7.2. What was missing was a bundle to review -- T4E.30 supplied the first one -- and
+a runner to take the turns. The runner is fifty lines of loop and two hundred lines of refusal.
+
+**Nothing reaches the network unless the maintainer says so, in the command.**
+`--send-to-the-network` is required, a key must be present in `GEMINI_API_KEY` or
+`GOOGLE_API_KEY`, and without both the run refuses by name and sends nothing. A key is read from
+the environment and never from an argument, which would land it in the shell history and the
+process table. `--dry-run` prints the whole plan and sends nothing.
+
+**There is deliberately no stub transport in the tool.** The tests fabricate answers, which a
+test must in order to drive eight turns without paying for them. A review record asserts that a
+panel said something; a fabricated one sitting in `data/reviews/` beside real ones would be the
+worst artefact this programme could produce. If the network is refused, the run stops with
+nothing written.
+
+**Driving the protocol over the real bundle corrected two things this document would otherwise
+have asserted.**
+
+*An exchange with no dissent takes SEVEN turns, not eight.* `response_and_revision` is skipped
+entirely, because a response to no dissent is a rebuttal of nothing and the protocol declines to
+spend a call on it. Eight roles exist; eight turns are not always taken, and the test now reads
+the protocol rather than asserting a number.
+
+*A dissent must be answered by name, oldest first.* A response naming `statistical_challenge`
+while `provenance_challenge` is the outstanding dissent is refused -- *"the oldest dissent still
+unanswered. Dissents are answered in the order they were raised."* -- and the refusal **carries
+the call**, because it was paid for and cannot be regenerated (R23).
+
+**One asymmetry found and pinned rather than quietly fixed.** A *protocol* violation comes back
+as `RecordedTurnRefused` with the call attached. A response whose fields are not the declared
+schema is refused inside `record_call`, before the call is recorded, so that one is lost. Both
+were paid for. The behaviour is a property of the machinery as it stands; it is pinned by a test
+so that changing it is a deliberate act, and it is named here rather than presented as uniform
+R23 compliance.
+
+```
+$ .venv/Scripts/python.exe -m tools.review_join_rerun --bundle data/studies/t4e28-join-rerun.r7.json --dry-run
+study       t4e28-join-rerun  revision 7
+claim state is independent of this review: 699e67f643ebeb07
+1. candidate_synthesis            expects basis, claim, known_weaknesses
+2. statistical_challenge          expects alternatives, argument, dissent, verdict
+...
+8. final_synthesis                expects bounded_by, dissent_remains, finding, retained_dissent
+
+NOTHING WAS SENT.
+```
+
+**NO PANEL HAS RUN.** This is the honest state and it is recorded as such: the apparatus is
+wired, exercised end to end against the real bundle with fabricated answers, and has never been
+pointed at a model. `data/reviews/` does not exist. A round-robin outcome in this repository
+would be evidence that a discussion happened; there is none, and nothing here implies otherwise.
+
+```
+$ .venv/Scripts/python.exe -m pytest src/tests/test_review_runner.py -q
+12 passed
+```
+
 ### 3E.45 Two stores that had never touched, joined where git can prove the ordering (T4E.30)
 
 **T4E.30 (2026-09-11): a measurement carried into an evidence bundle, or refused by name.**
@@ -12722,6 +12786,7 @@ able to sit three slices out of date.
 | `test_false_absence.py` | 27 | T4E.24 the false absence rate: the planting envelope pinned to T4E.21's so the result speaks to the same regime; a configuration drawn once and reused across every scene, dropped short rather than crowded when a frame has no room; the pairing rule's claiming, so one extraction can never answer for two plantings and hide a genuine absence, and its independence of planting order; admission monotone in the tolerance, which is arithmetic and so a bug if it fails; both arms of the declared prediction exercised on data built to show each; and the dispersion report refusing to travel without the caveat that its mechanism claim is close to built in |
 | `test_coverage_contamination.py` | 12 | T4E.25 the coverage/contamination sweep: the swept alpha list pinned to the declaration and closed, so a fifth value cannot be added once the curve is visible; a shared surrogate ensemble reproducing `calibrate` exactly at the same alpha, which is what makes the sweep four cuts through one measurement rather than four runs; the threshold monotone in alpha, which is what makes "newly recovered" a set difference rather than an estimate; configuration coverage refusing a configuration holding a never-seen feature, the two coverage measures ordered by construction, and the T4E.24 addendum figures reproduced through the same function that reports them at every alpha |
 | `test_measurement_evidence.py` | 21 | T4E.30 the bridge between the measurement store and the evidence store: the T4E.28 ordering proved from git, an untracked declaration refused with what would lift it, the real pair REVERSED and refused as a manufactured preregistration, the adding commit taken rather than the latest so a later amendment is not read as back-dating, a claim-level key in a payload refused by name under R22, an entry without a summary and a bundle without claims both refused, the published bundle verifying at seven entries with the falsified range present as a standing contradiction, the ladder capped at observation naming both blocking gates, and a panel seated over it opening at candidate_synthesis |
+| `test_review_runner.py` | 12 | T4E.31 the round-robin driven over the real published bundle: an exchange with no dissent taking seven turns rather than eight because a response to no dissent is skipped, one dissent adding the response turn and having to be answered by name, a response naming the wrong dissent refused with the paid call kept, a response not matching its schema refused before the call is recorded (the asymmetry pinned rather than assumed), the review moving no claim level, an outcome copying the rung from the bundle and never setting one, closing an unfinished exchange refused; and the runner refusing to send without explicit authorisation, refusing without a key while saying nothing was sent, and reading a key from the environment and never an argument |
 | `test_peeled_null.py` | 17 | T4E.26 peeled-null calibration: the subtracted shape rebuilt only from what the extractor published, a feature with no usable width left in place and counted rather than guessed at, the amplitude removed above the baseline rather than the magnitude carrying the baseline with it; and the contamination split that is the whole safeguard -- an artefact radius that scales with the feature it came from, no spurious features reporting no fraction rather than a clean zero, and a gap refusing to be computed where round zero already sits at the oracle |
 | `test_position_tolerance.py` | 17 | T4E.27 the position tolerance as an inspectable object: every component carrying its provenance and the excluded component named in the description; a zero or non-finite catalogue radius refused by name rather than defaulted, because a zero demands a separation nothing can supply and an infinity admits everything; a refused tolerance answering None and never False, so a missing agency report is not counted as a failed detection; refused observations leaving the denominator; a negative residual returned rather than clipped; and the acceptance curve monotone in the bar |
 | `test_catalogue_join.py` | 28 | T4E.28 the catalogue join whose parameters lived in a temp directory: the declared window, box and synoptic hours all applied with a census of what each refused; a single agency fix refused rather than given the zero radius T4E.27 named; the radius as the furthest fix and not the nearest; the deepest observation taken rather than the first, which is always where the storm entered the box; every distance kept rather than the minimum; a frame yielding nothing recorded as a row that stays in every denominator; both conditions reported rather than only the first; an empty population refused instead of reported as zeroes; and a row-by-row check that a matching median cannot hide a row that disagrees |
@@ -12843,7 +12908,7 @@ able to sit three slices out of date.
   | `test_identity_certification.py` | 131 | T4E.9 the T4E identity path against a motif known by construction: the benchmark registered and naming the path it certifies, three disjoint partitions so a radius is never evaluated on what calibrated it, exactly one motif configuration in a planted scene and none in a null one, construction labels taken from the generator and refused rather than guessed when a planted position has no feature near it or two positions claim one, only cross-scene pairs formed, the definition's separation asserted as a floor, nothing admitted where nothing recurs with the absent positive population left unmeasured rather than zero, the frozen-radius failure pinned as a relationship to the feasible radius rather than as two numbers, an empty calibration returning INVALID rather than a permissive radius, every result stating what it does not license, and T4E.13's criterion fixed in code while asserted to be measured nowhere -- `k` derived as a function of the partition size, unequal partitions refused rather than pooled, monotonicity in `k` checked on a toy rather than assumed, and, once candidate 3 was adopted and falsified, that guard replaced by the reading of the result -- which conditions failed and by how much, that the null held at 0 of 1486 proposed, that the 0.0000 recall is recorded as arithmetic rather than a finding, that no lower k can rescue what this one failed, that the falsification licenses none of the conclusions nearest to it, that partitions 720-735 stay refused in code, and T4E.14's partial-presence test bed -- seeds that collide with no existing evidence, a reservation refused with no flag to open it, planting patterns that are deterministic and not contiguous, the recoverable population C(j,2) rather than C(S,2), the design's own record of what this evidence cannot repair, and T4E.15's criterion fixed in code while asserted to be measured nowhere -- closure broken by a single loose end, closure admitting only a subset of what consistency admits, the criterion carrying no tunable parameter at all, the span-ranking design recorded as discarded by derivation, the declaration's own worst case and refusal to predict, and -- once measured and falsified -- the reading of that result: the conditions that failed with their counts, the mechanism executed rather than described (a pair with no other partners is closed and is therefore admitted, while one loose end rejects a group spanning five scenes), the cross-check showing closure admits more than candidate 2 on the evidence candidate 2 passed, the missed derivation recorded rather than quietly repaired, the constraint the falsification fixes on any successor, and T4E.16's withdrawal held as a derivation rather than a note -- the surrogate reassembly rate computed analytically and by simulation, the record of why the design cannot simply be repaired, the fact that a withdrawn declaration adds nothing to the accumulated multiplicity, and PooledDistances keeping a refused distance as NaN so it can never leak in as a number |
   | `test_identity_target_declaration.py` | 53 | T4E.8 slice 3 the declared identity target: an absent target or evidence class refused by name, a misspelling refused with its correction, `kind_recurrence` against record-derived proxy labels refused as circular, `track_continuity` admitted with its tracker-agreement caveat, every target round-tripping what it recognises and does not license, the published proxy wording pinned verbatim so naming a target cannot reword a cited receipt, and the external-reference path recovering two planted identities from a reviewed catalogue while refusing a mismatched family, a single identity, a non-catalogue and a negative population the patterns cannot supply |
   | `test_spectral_spatial_identity.py` | 24 | T4E.8 spatial geometry, detector-band/magnitude independence, source/scope refusal, analytic distances, old-radius refusal, scalar/accelerated agreement and two-sided proxy-label diagnostics |
-| **total** | **4512** | |
+| **total** | **4524** | |
 
 ### 7.4a Browser suite inventory
 
