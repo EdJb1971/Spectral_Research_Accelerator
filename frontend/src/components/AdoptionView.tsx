@@ -23,6 +23,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { AlertTriangle, Ban, CheckCircle2, FileSignature, PenLine } from 'lucide-react';
 import { apiService } from '../services/api';
 import type { DeclarationIndex, DeclarationRow } from '../types/api';
+import DeclarationComposer from './DeclarationComposer';
 
 interface Props {
   onError?: (message: string) => void;
@@ -124,6 +125,11 @@ export default function AdoptionView({ onError }: Props) {
         </p>
       </header>
 
+      {/* T4E.34. Signing a declaration was a button before writing one was; the composer closes
+          the larger half, and its commit-alone control is what makes a later evidence bundle
+          possible at all. */}
+      <DeclarationComposer onComposed={() => void load()} />
+
       <section className="space-y-2">
         <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
           Awaiting adoption ({unsigned.length})
@@ -202,7 +208,7 @@ export default function AdoptionView({ onError }: Props) {
           </button>
 
           {refusal && (
-            <p data-testid="sign-refusal" role="alert"
+            <p data-testid="sign-refusal" role="status"
                className="flex items-start gap-1 rounded border border-amber-400 bg-amber-50 p-2
                           text-xs text-amber-900 dark:border-amber-700 dark:bg-amber-950/40
                           dark:text-amber-100">

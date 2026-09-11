@@ -47,6 +47,9 @@ from src.analysis_engine.position_tolerance import (
 from src.core.adoption import (
     REQUIRED_AFFIRMATION, AdoptionRefused, adoption_state, sign_declaration,
 )
+from src.core.declaration_composer import (
+    CompositionRefused, GateEntry, Prediction, commit_alone, compose,
+)
 from src.core.errors import SpectralEarthError
 from src.data_layer.declared_population import (
     UndeclaredPopulationError, read_population,
@@ -438,6 +441,73 @@ class SignRequest(BaseModel):
     what_was_adopted: str
     affirmation: str
     why: Optional[str] = None
+
+
+
+def _fields(model: BaseModel) -> Dict[str, Any]:
+    """Pydantic v1 and v2 disagree on the name of this; the surface should not care."""
+    dump = getattr(model, "model_dump", None) or model.dict
+    return dump()
+
+class GateEntryBody(BaseModel):
+    quantity: str
+    declared_value: str
+    tolerance: Optional[str] = None
+
+
+class PredictionBody(BaseModel):
+    name: str
+    statement: str
+    what_would_falsify_it: str
+
+
+class ComposeRequest(BaseModel):
+    """Every field is the declarer's. Nothing here has a default the server supplies."""
+
+    task: str
+    artefact: str
+    declared_by: str
+    why_this_exists: str
+    what_this_is_not: str
+    the_inputs: str
+    claim_boundary: str
+    gate: List[GateEntryBody] = []
+    predictions: List[PredictionBody] = []
+    commit_it_alone: bool = False
+
+
+@router.post("/declarations/compose")
+def compose_declaration(request: Request, body: ComposeRequest) -> Dict[str, Any]:
+    """Write one declaration, and optionally commit it by itself before anything is measured."""
+    try:
+        written = compose(
+            _audit_dir(request), task=body.task, artefact=body.artefact,
+            declared_by=body.declared_by, why_this_exists=body.why_this_exists,
+            what_this_is_not=body.what_this_is_not, the_inputs=body.the_inputs,
+            claim_boundary=body.claim_boundary,
+            gate=[GateEntry(**_fields(entry)) for entry in body.gate],
+            predictions=[Prediction(**_fields(entry)) for entry in body.predictions])
+    except CompositionRefused as refusal:
+        raise HTTPException(status_code=400, detail=str(refusal))
+
+    result: Dict[str, Any] = {
+        "written": written.name,
+        "path": str(written).replace("\\", "/"),
+        "status": "DRAFTED_NOT_ADOPTED",
+        "composing_is_not_adopting": (
+            "This declaration is drafted and unsigned. Adopting it is a separate act by a named "
+            "person, and a surface that did both at once would be signing at the moment of "
+            "drafting."),
+        "network_used": False,
+    }
+    if body.commit_it_alone:
+        result["commit"] = commit_alone(written).describe()
+    else:
+        result["not_committed"] = (
+            "The declaration is on disk and not committed. Until it is committed BY ITSELF, "
+            "before the run, nothing can prove it predates the measurement -- six of this "
+            "repository's sixteen studies are refused an evidence bundle for exactly that.")
+    return result
 
 
 @router.get("/declarations")

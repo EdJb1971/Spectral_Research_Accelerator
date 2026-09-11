@@ -3473,3 +3473,26 @@ export interface RoundRobinRun {
   claim_boundary: string;
   network_used: boolean;
 }
+
+/** T4E.34: composing a declaration, and committing it alone before anything is measured. */
+export interface ComposeGateEntry { quantity: string; declared_value: string; tolerance?: string }
+export interface ComposePrediction {
+  name: string; statement: string; what_would_falsify_it: string;
+}
+
+export interface ComposeResult {
+  written: string;
+  path: string;
+  status: string;
+  composing_is_not_adopting: string;
+  not_committed?: string;
+  commit?: {
+    committed: boolean;
+    commit: string | null;
+    committed_at: string | null;
+    refusal: string | null;
+    files_in_commit: string[];
+    why_alone: string;
+  };
+  network_used: boolean;
+}

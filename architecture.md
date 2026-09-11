@@ -6611,7 +6611,7 @@ existing file.
 
 ## 3.12 HTTP API Surface
 
-166 routes. Listed here because an undocumented endpoint is an untested contract. The count and this table were both wrong until TG17.3 (defect D75): the guard enumerated a hand-maintained list of ten source files and could not see four mounted routers.
+167 routes. Listed here because an undocumented endpoint is an untested contract. The count and this table were both wrong until TG17.3 (defect D75): the guard enumerated a hand-maintained list of ten source files and could not see four mounted routers.
 
 | Method | Route | Notes |
 |---|---|---|
@@ -6772,6 +6772,7 @@ existing file.
 | GET | `/api/v1/identity/audits/{name}` | one receipt whole, never in fragments; the name is a file name in the store and a path is refused |
 | GET | `/api/v1/identity/measurements` | every measurement record with its verdict, and with what it may not be used for attached rather than beside it; fifteen key spellings of that clause are collected rather than normalised, records corrected or superseded in the open are marked in the summary, and records predating the boundary convention are listed by name rather than passed over |
 | GET | `/api/v1/identity/measurements/{name}` | one measurement whole; the name is a file name in the store and a path is refused |
+| POST | `/api/v1/identity/declarations/compose` | T4E.34: write one declaration, and optionally commit it BY ITSELF before anything is measured — the act that makes a later evidence bundle possible, since six of this repository's sixteen studies are refused one for having landed their declaration and their measurement in the same commit. Refuses a prediction with no stated falsifier, a declaration with no gate or no prediction, a placeholder declarer, a task with no identifier, and any field left empty. Supplies no content: no template, no suggested prediction, no example boundary |
 | GET | `/api/v1/identity/declarations` | T4E.32: every declaration in the calibration store with whether a maintainer has signed it, the digest a signature would bind, and whether an existing signature still reaches the current text. Publishes what the surface refuses to supply — the name, the reason and the affirmation — because a plausible default for any of those would be signing on the maintainer's behalf while appearing to ask |
 | POST | `/api/v1/identity/declarations/sign` | T4E.32: adopt one declaration. Binds its sha256, is written once and never overwritten, and refuses a placeholder name, an empty statement of what was adopted, or anything but the affirmation typed in full — a signature producible by one click is one producible by accident |
 | GET | `/api/v1/reviews/panel-plan` | T4E.33: the eight seats, what each must return, and what convening would cost — 8 calls if every turn is taken, 7 if nothing is dissented from, because a response to no dissent is a rebuttal of nothing. Reports whether a key is present on the server without ever accepting one. Sends nothing |
@@ -8831,6 +8832,67 @@ real figure is worse than this one, not better.
 All four acceptance conditions are met: the coded gate passed, the full distribution is reported
 rather than a mean, the mechanism and consequence claims are reported separately with the
 mechanism claim carrying its declared caveat, and the two named outcomes did separate.
+
+### 3E.48 Composing a declaration, and committing it alone (T4E.34)
+
+**T4E.34 (2026-09-11): the other half of "do the experiments without editing a JSON file".**
+`src/core/declaration_composer.py`, `frontend/src/components/DeclarationComposer.tsx`, route
+`/identity/declarations/compose`.
+
+**The reason this is not a form over a text editor.** T4E.30 surveyed every study here: ten can
+be carried into an evidence bundle, six cannot, and **not one of the six was refused for being
+declared after the fact.** In every case the declaration and the measurement entered git in the
+*same commit* -- T4E.12, T4E.14, T4E.19, T4E.20, T4E.21, T4E.24. Those declarations were almost
+certainly written first; git cannot separate them, so nothing downstream can check it.
+
+That is not a discipline failure. It is what happens when writing a declaration means opening an
+editor mid-session: it gets saved with everything else. **So the composer commits the declaration
+by itself**, and that control is part of the form rather than an afterthought, because it is the
+act that makes a later bundle possible at all. `git commit -- <path>` takes only that path,
+whatever else is in the index; a test stages an unrelated file first and checks it is still
+staged and uncommitted afterwards.
+
+**What the composer supplies is structure and refusals, never content.** There is no template
+text, no suggested prediction, no example claim boundary, and no placeholder that could be
+mistaken for a starting point. Every word of the science is the declarer's, and the record says
+so in its own `composed_through` field.
+
+```
+prediction 'p1' does not say what would falsify it. A prediction that cannot fail is not a
+prediction: T4E.27 declared an improvement that was arithmetically impossible before the run,
+and it read as a risk that had been taken. Say what result would show this wrong.
+
+a declaration with no prediction fixes nothing before the run, and the run can then be read as
+having confirmed whatever it produced.
+
+a declaration with no gate has nothing to judge the run against.
+
+'maintainer' is not a person. A declaration records whose scientific choice this is.
+
+'my study' is not a task identifier ... orphaned from the study trail the moment it is written.
+```
+
+**The falsifiability check is forced rather than computed.** TG19.5 can prove a prediction was
+impossible when it has the bars and the values; that form cannot be automated at declaration
+time, because the values do not exist yet. What *can* be required is the question: every
+prediction must carry what would falsify it, in the declarer's own words. A field that would be
+left blank is the one T4E.27 needed.
+
+**Composing is not adopting.** The status written is always `DRAFTED_NOT_ADOPTED`, and signing
+remains the separate act T4E.32 built. A form that did both at once would be signing at the
+moment of drafting, which makes the signature worth nothing.
+
+**Written once.** A declaration cannot be composed over an existing one: *"editing one after a
+run is how a gate becomes whatever the result was."*
+
+```
+$ .venv/Scripts/python.exe -m pytest src/tests/test_declaration_composer.py -q
+23 passed (19 functions; the empty-field check is parametrised over five)
+```
+
+**The chain is now complete on the surface**: compose a declaration and commit it alone, run the
+measurement, sign the declaration, build the bundle, convene the panel, read the exchange. Every
+step is a control, and every step still refuses the thing it was built to refuse.
 
 ### 3E.47 Signing and convening, moved into the instrument (T4E.32, T4E.33)
 
@@ -12868,6 +12930,7 @@ able to sit three slices out of date.
 | `test_measurement_evidence.py` | 21 | T4E.30 the bridge between the measurement store and the evidence store: the T4E.28 ordering proved from git, an untracked declaration refused with what would lift it, the real pair REVERSED and refused as a manufactured preregistration, the adding commit taken rather than the latest so a later amendment is not read as back-dating, a claim-level key in a payload refused by name under R22, an entry without a summary and a bundle without claims both refused, the published bundle verifying at seven entries with the falsified range present as a standing contradiction, the ladder capped at observation naming both blocking gates, and a panel seated over it opening at candidate_synthesis |
 | `test_review_runner.py` | 12 | T4E.31 the round-robin driven over the real published bundle: an exchange with no dissent taking seven turns rather than eight because a response to no dissent is skipped, one dissent adding the response turn and having to be answered by name, a response naming the wrong dissent refused with the paid call kept, a response not matching its schema refused before the call is recorded (the asymmetry pinned rather than assumed), the review moving no claim level, an outcome copying the rung from the bundle and never setting one, closing an unfinished exchange refused; and the runner refusing to send without explicit authorisation, refusing without a key while saying nothing was sent, and reading a key from the environment and never an argument |
 | `test_adoption.py` | 19 | T4E.32/T4E.33 signing and convening through a surface: an adoption bound to the declaration's digest and written once, a second adoption refused as two different scientific acts, one click unable to sign anything, an approximate affirmation refused while a trailing full stop is tolerated, six placeholder names refused as not being a person, an adoption that does not say what was adopted refused, a path refused rather than sanitised, a declaration amended after signing reported as no longer carrying its signature; and the convening routes refusing without authorisation and without a key while stating that nothing was sent and that a key is never taken from the request |
+| `test_declaration_composer.py` | 19 | T4E.34 composing a declaration and committing it alone: the task pattern accepting this repository's own identifiers, a prediction with no falsifier refused with T4E.27 named as the reason, a declaration with no prediction or no gate refused, all five narrative fields refused when empty, a placeholder declarer refused, a declaration written once so a gate cannot become whatever the result was; and a commit that takes the declaration and nothing else while an unrelated staged file is left staged, carries a message explaining why it is alone, and reports nothing-to-commit rather than claiming success |
 | `test_peeled_null.py` | 17 | T4E.26 peeled-null calibration: the subtracted shape rebuilt only from what the extractor published, a feature with no usable width left in place and counted rather than guessed at, the amplitude removed above the baseline rather than the magnitude carrying the baseline with it; and the contamination split that is the whole safeguard -- an artefact radius that scales with the feature it came from, no spurious features reporting no fraction rather than a clean zero, and a gap refusing to be computed where round zero already sits at the oracle |
 | `test_position_tolerance.py` | 17 | T4E.27 the position tolerance as an inspectable object: every component carrying its provenance and the excluded component named in the description; a zero or non-finite catalogue radius refused by name rather than defaulted, because a zero demands a separation nothing can supply and an infinity admits everything; a refused tolerance answering None and never False, so a missing agency report is not counted as a failed detection; refused observations leaving the denominator; a negative residual returned rather than clipped; and the acceptance curve monotone in the bar |
 | `test_catalogue_join.py` | 28 | T4E.28 the catalogue join whose parameters lived in a temp directory: the declared window, box and synoptic hours all applied with a census of what each refused; a single agency fix refused rather than given the zero radius T4E.27 named; the radius as the furthest fix and not the nearest; the deepest observation taken rather than the first, which is always where the storm entered the box; every distance kept rather than the minimum; a frame yielding nothing recorded as a row that stays in every denominator; both conditions reported rather than only the first; an empty population refused instead of reported as zeroes; and a row-by-row check that a matching median cannot hide a row that disagrees |
@@ -12989,7 +13052,7 @@ able to sit three slices out of date.
   | `test_identity_certification.py` | 131 | T4E.9 the T4E identity path against a motif known by construction: the benchmark registered and naming the path it certifies, three disjoint partitions so a radius is never evaluated on what calibrated it, exactly one motif configuration in a planted scene and none in a null one, construction labels taken from the generator and refused rather than guessed when a planted position has no feature near it or two positions claim one, only cross-scene pairs formed, the definition's separation asserted as a floor, nothing admitted where nothing recurs with the absent positive population left unmeasured rather than zero, the frozen-radius failure pinned as a relationship to the feasible radius rather than as two numbers, an empty calibration returning INVALID rather than a permissive radius, every result stating what it does not license, and T4E.13's criterion fixed in code while asserted to be measured nowhere -- `k` derived as a function of the partition size, unequal partitions refused rather than pooled, monotonicity in `k` checked on a toy rather than assumed, and, once candidate 3 was adopted and falsified, that guard replaced by the reading of the result -- which conditions failed and by how much, that the null held at 0 of 1486 proposed, that the 0.0000 recall is recorded as arithmetic rather than a finding, that no lower k can rescue what this one failed, that the falsification licenses none of the conclusions nearest to it, that partitions 720-735 stay refused in code, and T4E.14's partial-presence test bed -- seeds that collide with no existing evidence, a reservation refused with no flag to open it, planting patterns that are deterministic and not contiguous, the recoverable population C(j,2) rather than C(S,2), the design's own record of what this evidence cannot repair, and T4E.15's criterion fixed in code while asserted to be measured nowhere -- closure broken by a single loose end, closure admitting only a subset of what consistency admits, the criterion carrying no tunable parameter at all, the span-ranking design recorded as discarded by derivation, the declaration's own worst case and refusal to predict, and -- once measured and falsified -- the reading of that result: the conditions that failed with their counts, the mechanism executed rather than described (a pair with no other partners is closed and is therefore admitted, while one loose end rejects a group spanning five scenes), the cross-check showing closure admits more than candidate 2 on the evidence candidate 2 passed, the missed derivation recorded rather than quietly repaired, the constraint the falsification fixes on any successor, and T4E.16's withdrawal held as a derivation rather than a note -- the surrogate reassembly rate computed analytically and by simulation, the record of why the design cannot simply be repaired, the fact that a withdrawn declaration adds nothing to the accumulated multiplicity, and PooledDistances keeping a refused distance as NaN so it can never leak in as a number |
   | `test_identity_target_declaration.py` | 53 | T4E.8 slice 3 the declared identity target: an absent target or evidence class refused by name, a misspelling refused with its correction, `kind_recurrence` against record-derived proxy labels refused as circular, `track_continuity` admitted with its tracker-agreement caveat, every target round-tripping what it recognises and does not license, the published proxy wording pinned verbatim so naming a target cannot reword a cited receipt, and the external-reference path recovering two planted identities from a reviewed catalogue while refusing a mismatched family, a single identity, a non-catalogue and a negative population the patterns cannot supply |
   | `test_spectral_spatial_identity.py` | 24 | T4E.8 spatial geometry, detector-band/magnitude independence, source/scope refusal, analytic distances, old-radius refusal, scalar/accelerated agreement and two-sided proxy-label diagnostics |
-| **total** | **4545** | |
+| **total** | **4564** | |
 
 ### 7.4a Browser suite inventory
 
@@ -13024,10 +13087,10 @@ not bound to the scratch state.
 | `scientist-actions.spec.ts` | 2 | TG18.5 the two numbers `scientist_actions` refuses to invent: the visible actions a researcher takes from a clean browser to a completed run of the frozen plan, and the actions between meeting the preflight refusal and clearing it, both asserted, with the wall-clock durations written into the measurement and asserted by nothing |
 | `product-modes.spec.ts` | 5 | TG18.5 one representative path through each of TG18.0's four product modes at two desktop viewports, with a named artefact at the state each path reaches, and the signature-uniqueness assertion that holds the modes apart (the file declares five and Playwright collects ten, once per viewport) |
 | `position-tolerance.spec.ts` | 6 | TG19.2 the join's bar rendered in parts: each component with where it came from, what the bar deliberately excludes shown at the weight of what it includes, a catalogue radius of 0.00 refused by name with the verdict element absent rather than showing a miss, that refusal rendering as a result with no error banner, the total and the residual it does not explain, and no control matching accept/approve/save/record/apply |
-| `adoption.spec.ts` | 7 | T4E.32/T4E.33 signing as an act performed on screen: an unsigned declaration offering to be adopted and a signed one naming who signed it, the digest being signed shown beside the form, no default supplied for the name, the reason or the affirmation, a wrong affirmation and a placeholder name each refused with nothing written, the convening control stating 8 paid calls before anything can be spent with the authorisation a separate control from the run button, and convening without a server key refusing with 'Nothing was sent'. Every test drives the form to a REFUSAL: a passing test that wrote an adoption would be a test that forged a signature |
+| `adoption.spec.ts` | 9 | T4E.32/T4E.33 signing as an act performed on screen: an unsigned declaration offering to be adopted and a signed one naming who signed it, the digest being signed shown beside the form, no default supplied for the name, the reason or the affirmation, a wrong affirmation and a placeholder name each refused with nothing written, the convening control stating 8 paid calls before anything can be spent with the authorisation a separate control from the run button, and convening without a server key refusing with 'Nothing was sent'. Every test drives the form to a REFUSAL: a passing test that wrote an adoption would be a test that forged a signature; and T4E.34 the composer supplying no content -- task, claim boundary and falsifier all empty on arrival -- refusing a prediction with no stated falsifier with nothing written, and the commit-alone control checked by default with the same-commit reason on screen |
 | `join-distribution.spec.ts` | 6 | T4E.29 every distance on screen: all eighteen storms as rows including the one that yielded no feature, labelled and still in every denominator; the two outliers T4E.18's published range excluded without saying so, visible at 315.1 and 247.7 km; an exclusion that keeps its rows on screen and computes both aggregates, where the kept maximum is the figure that refutes the published range; the extraction pass named and switching it changing the counts; the measurement's own claim boundary carried beside the chart; and no control matching accept/approve/save/record/apply/adopt |
 | `study-trail.spec.ts` | 6 | T4E.23 the study trail rendered: a study drawn as the chain it ran rather than a list of files, every verdict on screen carrying what it may not be used for, a question declared and never measured shown rather than filtered, a corrected record marked where a reader looks first, the surface stating its own refusals instead of implying them by absent buttons, and a measurement opened whole and closed again |
-| **suite** | **136 + 6 + 6 + 11** | 136 from a cleaned `.e2e-state`, Chromium, 2026-09-04; `study-trail` measured 2026-09-10, `join-distribution` 2026-09-11 (48.6 s), and `adoption` with `ui-qualification` together 2026-09-11 (1.0 min, 11 passed). Four dated measurements rather than one, which is cheaper than implying a whole-suite run that never happened |
+| **suite** | **136 + 6 + 6 + 11 + 9** | 136 from a cleaned `.e2e-state`, Chromium, 2026-09-04; `study-trail` measured 2026-09-10, `join-distribution` 2026-09-11 (48.6 s), and `adoption` with `ui-qualification` together 2026-09-11 (1.0 min, 11 passed), and `adoption` again after T4E.34 (39.1 s, 9 passed). Five dated measurements rather than one, which is cheaper than implying a whole-suite run that never happened |
 
 The counts are guarded by `test_documentation.py`, but only as far as a static reader honestly can:
 the file set must match `frontend/e2e/` exactly in both directions, and each stated count must be at

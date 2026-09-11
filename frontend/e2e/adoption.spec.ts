@@ -96,3 +96,41 @@ test('convening without a key on the server refuses and says nothing was sent',
 
     await expect(page.getByTestId('convene-refusal')).toContainText('Nothing was sent');
   });
+
+test('the composer supplies no content and refuses a prediction that cannot fail',
+  async ({ page }) => {
+    await openAdoption(page);
+    await expect(page.getByTestId('declaration-composer')).toBeVisible();
+
+    // No template text, no suggested prediction, no example boundary.
+    await expect(page.getByTestId('task')).toHaveValue('');
+    await expect(page.getByTestId('field-claim_boundary')).toHaveValue('');
+    await expect(page.getByTestId('prediction-falsifier-0')).toHaveValue('');
+
+    await page.getByTestId('task').fill('T4E.97');
+    await page.getByTestId('declared-by').fill('A Real Person');
+    await page.getByTestId('field-artefact').fill('a browser trial');
+    await page.getByTestId('field-why_this_exists').fill('to check the composer');
+    await page.getByTestId('field-what_this_is_not').fill('not a measurement');
+    await page.getByTestId('field-the_inputs').fill('none');
+    await page.getByTestId('field-claim_boundary').fill('settles nothing');
+    await page.getByTestId('gate-quantity-0').fill('x');
+    await page.getByTestId('gate-value-0').fill('1');
+    await page.getByTestId('prediction-name-0').fill('p');
+    await page.getByTestId('prediction-statement-0').fill('x will be 1');
+    // Deliberately no falsifier.
+    await page.getByTestId('compose-submit').click();
+
+    await expect(page.getByTestId('compose-refusal'))
+      .toContainText('cannot fail is not a prediction');
+    await expect(page.getByTestId('compose-result')).toHaveCount(0);
+  });
+
+test('the commit-alone control is on by default and explains why it matters',
+  async ({ page }) => {
+    await openAdoption(page);
+
+    await expect(page.getByTestId('commit-alone')).toBeChecked();
+    await expect(page.getByTestId('declaration-composer'))
+      .toContainText('landed in the same commit');
+  });

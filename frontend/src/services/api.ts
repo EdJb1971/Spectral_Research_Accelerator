@@ -1282,6 +1282,19 @@ export const apiService = {
         body: JSON.stringify({ mode, reading }) }));
   },
 
+  async composeDeclaration(body: {
+    task: string; artefact: string; declared_by: string; why_this_exists: string;
+    what_this_is_not: string; the_inputs: string; claim_boundary: string;
+    gate: types.ComposeGateEntry[]; predictions: types.ComposePrediction[];
+    commit_it_alone: boolean;
+  }): Promise<types.ComposeResult> {
+    return handleResponse<types.ComposeResult>(
+      await fetch(`${BASE_URL}/identity/declarations/compose`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      }));
+  },
+
   async listDeclarations(): Promise<types.DeclarationIndex> {
     return handleResponse<types.DeclarationIndex>(
       await fetch(`${BASE_URL}/identity/declarations`));

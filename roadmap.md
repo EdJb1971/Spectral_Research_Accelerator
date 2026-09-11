@@ -2803,6 +2803,41 @@ configuration absent from one scene outright; nothing about recurrence *across* 
 which the mining machinery needs; no mining radius, no discharge of T4E.8's acceptance, no
 closure of D96 to D100; and nothing about `kind_recurrence`, which still has no catalogue.
 
+### T4E.34 - composing a declaration, and committing it alone
+
+**T4E.34 (2026-09-11): the other half of "do the experiments without editing a JSON file".**
+`src/core/declaration_composer.py`, `DeclarationComposer.tsx`,
+`/identity/declarations/compose`.
+
+**Why this is not a form over a text editor.** T4E.30 surveyed every study here: ten can be
+carried into an evidence bundle, six cannot, and NOT ONE of the six was refused for being declared
+after the fact. In every case the declaration and the measurement entered git in the same commit.
+Those declarations were almost certainly written first; git cannot separate them, so nothing
+downstream can check it. That is what happens when writing a declaration means opening an editor
+mid-session: it gets saved with everything else.
+
+So the composer commits the declaration **by itself**, and that control is part of the form
+rather than an afterthought. A test stages an unrelated file first and checks it is still staged
+and uncommitted afterwards.
+
+**Structure and refusals, never content.** No template text, no suggested prediction, no example
+claim boundary. Every prediction must carry what would falsify it -- TG19.5 can prove a
+prediction impossible when it has the bars and the values, and at declaration time those do not
+exist, so what can be required is the question. A declaration with no gate, no prediction, a
+placeholder declarer or any empty field is refused with the reason.
+
+**Composing is not adopting.** The status written is always `DRAFTED_NOT_ADOPTED`; signing stays
+the separate act T4E.32 built. And a declaration is written once: *"editing one after a run is how
+a gate becomes whatever the result was."*
+
+```
+$ .venv/Scripts/python.exe -m pytest src/tests/test_declaration_composer.py -q   23 passed
+$ npx playwright test adoption.spec.ts                                            9 passed
+```
+
+**The chain is now complete on the surface**: compose a declaration and commit it alone, run the
+measurement, sign the declaration, build the bundle, convene the panel, read the exchange.
+
 ### T4E.32 / T4E.33 - signing and convening, moved into the instrument
 
 **A single-maintainer research instrument whose experiments can only be run by editing JSON and
