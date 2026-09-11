@@ -58,10 +58,10 @@
   ],
   "installation_required_framework_edits": 0,
   "reasons": [],
-  "recorded_utc": "2026-09-03T23:05:44.476679Z",
+  "recorded_utc": "2026-09-11T03:09:00.584637Z",
   "schema": "extension-evidence/v1",
   "source_sha256": {
-    "frontend/src/App.tsx": "7a113e00a33d712d4089a6513d0425fc3490f04ec633fc5292a6e8845e1c480d",
+    "frontend/src/App.tsx": "ee5105318eb72f18467ce4c268940ddd7829af14a422c75dea90e6eaad119e9e",
     "frontend/src/components/AcquisitionView.tsx": "f4598ed84ebd994f09a659602496107c3afdce1d7cc85bba50f1f5e09445f7a9",
     "frontend/src/components/AdapterControls.tsx": "143e80c7ffe4d5a17b958486abdef00bcfca9ea9c9d855e403ec74ab88a65f6f",
     "frontend/src/components/ChannelRecords.tsx": "f0ea32933a2ebaf8ebf55c9854dee244eb0fd51141164e19e582d3128e50c927",

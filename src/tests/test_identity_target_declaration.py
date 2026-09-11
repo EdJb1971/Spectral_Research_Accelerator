@@ -359,6 +359,7 @@ def test_the_catalogue_is_bound_by_content_identity_and_not_committed():
     The same discipline the acquired record and the market records are held to: bind by digest,
     do not commit, and treat a digest that fails to reproduce as invalidating the evaluation.
     """
+    import subprocess
     from pathlib import Path
 
     catalogue = _t4e17()["the_catalogue"]
@@ -366,7 +367,22 @@ def test_the_catalogue_is_bound_by_content_identity_and_not_committed():
         "631f76b95c77a6a4e409233466a0d501bb4848324e421fc58e228efea2086c44")
     assert catalogue["bytes"] == 35482417
     assert "must reproduce that digest" in catalogue["the_file_is_NOT_committed"]
-    assert not list(Path("data").rglob("ibtracs*")), "the catalogue was committed"
+
+    # The check is on what git TRACKS, not on what is on disk. It was `rglob("ibtracs*")` until
+    # TG19.5, which could not tell a committed file from a local working copy and said "the
+    # catalogue was committed" either way -- a false statement about the repository whenever the
+    # file was merely present. The discipline this docstring names is the one the market records
+    # are held to, and `data/market_records/*.csv` sits on disk and is ignored. So presence is
+    # allowed and tracking is not, and the file must be ignored whenever it is there.
+    tracked = subprocess.check_output(
+        ["git", "ls-files", "--", "data/"], text=True).splitlines()
+    assert not [p for p in tracked if "ibtracs" in p.lower()], (
+        "the catalogue is tracked by git; it is bound by digest and must not be committed")
+
+    for path in Path("data").rglob("ibtracs*"):
+        ignored = subprocess.run(["git", "check-ignore", "-q", str(path)]).returncode
+        assert ignored == 0, (
+            "%s is present and NOT ignored, so the next `git add -A` would commit it" % path)
 
 
 def test_a_reanalysis_derived_catalogue_would_be_circular_and_the_design_says_so():

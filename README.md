@@ -210,7 +210,7 @@ supersedes the other.
   vector publication sheets that preserve the figure's reading contract. Under
   G18 none of this may recompute, summarize, promote or reinterpret a scientific value, so each
   addition transcribes what the analysis layer produced or states that it produced nothing.
-* Last measured full backend run: **4441 passed, 4 skipped, 1 xfailed**, exit 0 (2026-09-08, 1:04:59; the same day's earlier run of 4348 took 0:42:20 and the difference in duration is unexplained).
+* Last measured full backend run: **4917 passed, 1 xfailed, 4 skipped — and 8 FAILED** (2026-09-11, 0:59:00). Six of the eight are pre-existing and documented: the T4E.9 benchmark FAIL at split 0.4667 plus its API route, three owed browser-evidence recordings, and a `live_sources` gate left `NOT_RUN` since `cds_source.py` changed at T4E.18. The other two were introduced and fixed in the same session. The previous dated figure was 4441 passed with nothing failing (2026-09-08, 1:04:59).
 * Last measured browser suite: **136/136** in Chromium from a cleaned `.e2e-state` (2026-09-04).
   It is inventoried in `architecture.md` section 7.4a; it is the only check here that proves a
   page renders.

@@ -38,6 +38,7 @@ from src.analysis_engine.position_tolerance import (
     localisation_km,
     tolerance_for,
 )
+from src.analysis_engine.prediction_sensitivity import check_prediction, verdict_travel
 from src.data_layer.declared_population import read_population
 from src.data_layer.signed_reference import IBTRACS_SP
 from tools.measure_false_absence import digest_file, revision
@@ -103,6 +104,15 @@ def main() -> int:
             "unexplained_residual_km": tolerance.unexplained_residual(distance),
             "refusal": tolerance.refusal,
         })
+
+    # TG19.5. Before adjudicating the prediction, ask whether it was ever falsifiable. T4E.27
+    # declared improvement from a bar change that could not produce it: no observation has its
+    # separation between the old bar and the new one, so the swing set is empty and the
+    # improvement half was settled by arithmetic before any data was read.
+    travel = verdict_travel(distances, [row["radius_km"] for row in storms],
+                            [t.total_km for t in tolerances],
+                            [row["storm"] for row in storms])
+    prediction_was_falsifiable = check_prediction(travel, "improve")
 
     original_condition_1 = source["condition_1_at_least_one_inside_radius"]
     # The declaration predicted, in writing and before this ran, that the restated acceptance
@@ -198,6 +208,17 @@ def main() -> int:
             "The declared bar decides the verdict. Choosing a point from this curve after "
             "seeing it would be the horse race R20 forbids. It is reported so the bar can be "
             "argued with specifically rather than merely accepted or rejected."),
+        "was_the_prediction_ever_falsifiable": {
+            "the_improvement_half": prediction_was_falsifiable,
+            "travel": travel.describe(),
+            "why_this_is_reported_beside_the_verdict": (
+                "A prediction declared before a measurement is this programme's main guard "
+                "against reading a result into the answer already believed. The guard is worth "
+                "nothing where the arithmetic settles the prediction in advance, and a "
+                "declaration that reads as though a risk was taken is worse than one that "
+                "predicts nothing. Recorded here so the guard can be audited rather than "
+                "assumed."),
+        },
         "PREDICTION": (
             "The restated acceptance STILL FAILS, improving on 2 of 18 but not reaching 9."),
         "VERDICT": ("PREDICTION_HELD" if (still_fails and improved) else

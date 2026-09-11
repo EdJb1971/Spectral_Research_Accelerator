@@ -103,7 +103,7 @@ coastline. It has been exercised on a synthetic record only. **T4F.8 is DONE:** 
 | **Phase chronology correction (2026-09-03)** | The pre-run sentences embedded in the long phase-progress history are superseded by the later evidence in that same row: campaign v3 acquired the complete 8,764-frame record and T4C.6 returned PASS. A PASS does not exercise the FAIL/INVALID absence adjudication, so D84/D85 remain relevant only to a future negative result; they did not block or invalidate the recorded PASS. The v3 receipt is present and served by the read-only gate record. |
 | Ownership / licence | **Declared in `LICENSE.md`.** Edward Jonathan Bentley retains the proprietary SpectralEarth core. A designated Named Licensee may be granted a perpetual, worldwide, royalty-free right of lawful personal, academic, research and commercial use/modification, without public redistribution or sublicensing of the core; no designation is recorded in this repository. Independent extensions and upstream contributions remain separately governed. This bespoke text has not been professionally reviewed. |
 | **Accessibility** | **Workflow-wide source contract, TG11.6 DONE.** Skip and route focus, globally visible focus, bound legacy labels, reduced motion, announced asynchronous state, keyboard SVG lineage and figure text equivalents now cover both platform lines. Rendered assistive-technology inspection remains NOT RUN, so no WCAG conformance level is claimed (see `roadmap_cross_domain.md`). |
-| Backend test suite | **4441 passed, 1 xfailed** Plus four explicit skips: the opt-in live GCS read, opt-in live store probe, opt-in live Argo acceptance, and opt-in live TESS/MAST acceptance. Measured 2026-09-08 in 3,899.66 s (1:04:59), exit 0, on the tree carrying T4E.7. Nothing failed in this run. The duration is 53% above the same day's earlier 0:42:20 for reasons this slice did not introduce; see `architecture.md` section 7.1. |
+| Backend test suite | **4917 passed, 1 xfailed** and **8 FAILED** (plus 4 skipped). Measured 2026-09-11 in 3,540.14 s (0:59:00) on the tree carrying TG19.5. Six of the eight are pre-existing -- the documented T4E.9 benchmark FAIL and its API route, three owed browser-evidence runs, and a `live_sources` gate left `NOT_RUN` since `cds_source.py` changed at T4E.18. The other two were this session's and are fixed. See `architecture.md` section 7.1. |
 | Ground-Truth Benchmark Suite | **29 PASS, 0 FAIL, 0 NOT_YET_RUNNABLE.** Twenty datasets with declared known answers, twelve of them nulls. CI-ready via `python -m src.benchmarks` (exit 0). |
 | Backend compute modules | **Written, executed and tested.** `physical_core` carries `GridSpec` + metric-aware operators; `analysis_engine` gained `spectra.py` and `climatology.py`; `transform_engine` gained the undecimated `stationary.py` and a real `dtcwt.py`; `statistics/` and `core/` are new packages. |
 | Physical units and wavenumbers | **Correct as of T3.5.13.** Gradients metric-aware, spectra on a physical `k` axis, domain statistics area-weighted, and every quantity carries its units. Previously all of it was pixel-space and unlabelled (D13). |
@@ -2802,6 +2802,80 @@ asked. **No confirmatory evidence for this candidate exists or will exist under 
 configuration absent from one scene outright; nothing about recurrence *across* partitions,
 which the mining machinery needs; no mining radius, no discharge of T4E.8's acceptance, no
 closure of D96 to D100; and nothing about `kind_recurrence`, which still has no catalogue.
+
+### TG19.5 - can the change you are about to make move the answer at all?
+
+**TG19.5 (2026-09-11): can the change you are about to make move the answer at all?**
+
+An engineering slice. It makes no claim about any world, so it carries no declaration, no adoption
+and no prediction. `src/analysis_engine/prediction_sensitivity.py`, wired into
+`tools/restate_position_acceptance.py`.
+
+**The failure it prevents, computed on the case that produced it.** T4E.27 declared before
+measuring that restating a bar would leave the acceptance failing, *"improving on 2 of 18 but not
+reaching 9"*. The failure half held. The improvement half was not a risky prediction that came out
+wrong -- it was **impossible**, and the impossibility is three columns of arithmetic:
+
+```
+storm      old bar   new bar   separation   could flip
+FEHI          8.90     12.10        69.74   no
+GITA         89.38     89.76       113.72   no
+HOLA         21.99     23.46       252.29   no
+LINDA         0.00   refused        74.91   not judged
+JOSIE       145.23    145.46       189.65   no
+...
+swing set: 0 of 17 judged      admitted before 2 -> after 2      INERT
+```
+
+No observation has its separation between the old bar and the new one. The bar moves 11.12 to
+13.81 at its most generous and 89.38 to 89.76 at its least, against separations of 30 to 2056 km.
+**Nothing could change, however the bar was justified.**
+
+**What the module reports.** `verdict_travel` classifies every observation as gained, lost,
+admitted either way, rejected either way, or not judged, and exposes the swing set.
+`check_prediction` then adjudicates a declared direction against what the arithmetic permits:
+`POSSIBLE` when the measurement decides it, `IMPOSSIBLE` when it is settled in advance, and
+`TRIVIALLY_TRUE` for "unchanged" on an inert change -- because predicting no change where nothing
+can change is true before the run and carries no evidential weight.
+
+Applied to T4E.27's own numbers, `improve` returns **IMPOSSIBLE** and `unchanged` returns
+**TRIVIALLY_TRUE**.
+
+**Why this belongs in the instrument rather than in a habit.** A prediction declared before a
+measurement is this programme's main guard against reading a result into the answer already
+believed. Seven criteria have been adjudicated that way. The guard is worth nothing where the
+arithmetic settles the prediction in advance, and **a declaration that reads as though a risk was
+taken is worse than one that predicts nothing** -- it buys credibility it has not earned. The
+check makes that auditable instead of assumed.
+
+**A refused bar is not movement and not immovability.** An observation whose tolerance was refused
+leaves the judged population entirely rather than counting as a verdict that could not change.
+LINDA's `0.00` radius is `not_judged`, 17 are judged, and the swing set is computed over those --
+the same discipline `PositionTolerance` applies, carried through so the two agree. The inclusive
+boundary matches `admits` for the same reason: a different convention here would disagree with the
+thing it checks.
+
+**What it does not do, stated in the module itself.** It sees one kind of error -- a threshold test
+whose threshold moves. It says nothing about whether the right quantity is being thresholded,
+whether the population is the right one, or whether the bar is defensible. Those three are what
+actually decided T4E.27, and none is visible here. **A clean report is not a sound design**, and a
+module implying otherwise would sell the same false comfort it was written to remove. A test pins
+that the report says so.
+
+```
+$ .venv/Scripts/python.exe -m pytest src/tests/test_prediction_sensitivity.py -q
+15 passed
+```
+
+`restate_position_acceptance.py` now carries `was_the_prediction_ever_falsifiable` beside its
+verdict, reporting `IMPOSSIBLE` for its own improvement half. Every measured figure is unchanged
+-- 2 admitted of 17 judged -- because auditing a prediction moves no measurement.
+
+**Where this leaves the sequence.** Three of the six underived facts are now structurally harder to
+repeat: the wrong unit (TG19.1's `survival_by_cardinality` reads `ALLOWED_CARDINALITIES` rather
+than relying on memory), the unlabelled population (TG19.4), and the unfalsifiable prediction
+(this). The remaining ones -- choosing the wrong unit to think in, and reading a correction block
+without carrying its distinction forward -- are attention, and no checker catches them.
 
 ### TG19.4 - a record holding two answers is read by name, or not at all
 

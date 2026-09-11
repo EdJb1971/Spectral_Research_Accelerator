@@ -12515,6 +12515,78 @@ read 4315 against an actual 4342. It was corrected to 4342 rather than the test 
 inventory rows and undocumented modules but never the table's own total. The audit is the weaker
 of the two checks and the test caught what it missed.
 
+**TG19.5 (2026-09-11): can the change you are about to make move the answer at all?**
+
+An engineering slice. It makes no claim about any world, so it carries no declaration, no adoption
+and no prediction. `src/analysis_engine/prediction_sensitivity.py`, wired into
+`tools/restate_position_acceptance.py`.
+
+**The failure it prevents, computed on the case that produced it.** T4E.27 declared before
+measuring that restating a bar would leave the acceptance failing, *"improving on 2 of 18 but not
+reaching 9"*. The failure half held. The improvement half was not a risky prediction that came out
+wrong -- it was **impossible**, and the impossibility is three columns of arithmetic:
+
+```
+storm      old bar   new bar   separation   could flip
+FEHI          8.90     12.10        69.74   no
+GITA         89.38     89.76       113.72   no
+HOLA         21.99     23.46       252.29   no
+LINDA         0.00   refused        74.91   not judged
+JOSIE       145.23    145.46       189.65   no
+...
+swing set: 0 of 17 judged      admitted before 2 -> after 2      INERT
+```
+
+No observation has its separation between the old bar and the new one. The bar moves 11.12 to
+13.81 at its most generous and 89.38 to 89.76 at its least, against separations of 30 to 2056 km.
+**Nothing could change, however the bar was justified.**
+
+**What the module reports.** `verdict_travel` classifies every observation as gained, lost,
+admitted either way, rejected either way, or not judged, and exposes the swing set.
+`check_prediction` then adjudicates a declared direction against what the arithmetic permits:
+`POSSIBLE` when the measurement decides it, `IMPOSSIBLE` when it is settled in advance, and
+`TRIVIALLY_TRUE` for "unchanged" on an inert change -- because predicting no change where nothing
+can change is true before the run and carries no evidential weight.
+
+Applied to T4E.27's own numbers, `improve` returns **IMPOSSIBLE** and `unchanged` returns
+**TRIVIALLY_TRUE**.
+
+**Why this belongs in the instrument rather than in a habit.** A prediction declared before a
+measurement is this programme's main guard against reading a result into the answer already
+believed. Seven criteria have been adjudicated that way. The guard is worth nothing where the
+arithmetic settles the prediction in advance, and **a declaration that reads as though a risk was
+taken is worse than one that predicts nothing** -- it buys credibility it has not earned. The
+check makes that auditable instead of assumed.
+
+**A refused bar is not movement and not immovability.** An observation whose tolerance was refused
+leaves the judged population entirely rather than counting as a verdict that could not change.
+LINDA's `0.00` radius is `not_judged`, 17 are judged, and the swing set is computed over those --
+the same discipline `PositionTolerance` applies, carried through so the two agree. The inclusive
+boundary matches `admits` for the same reason: a different convention here would disagree with the
+thing it checks.
+
+**What it does not do, stated in the module itself.** It sees one kind of error -- a threshold test
+whose threshold moves. It says nothing about whether the right quantity is being thresholded,
+whether the population is the right one, or whether the bar is defensible. Those three are what
+actually decided T4E.27, and none is visible here. **A clean report is not a sound design**, and a
+module implying otherwise would sell the same false comfort it was written to remove. A test pins
+that the report says so.
+
+```
+$ .venv/Scripts/python.exe -m pytest src/tests/test_prediction_sensitivity.py -q
+15 passed
+```
+
+`restate_position_acceptance.py` now carries `was_the_prediction_ever_falsifiable` beside its
+verdict, reporting `IMPOSSIBLE` for its own improvement half. Every measured figure is unchanged
+-- 2 admitted of 17 judged -- because auditing a prediction moves no measurement.
+
+**Where this leaves the sequence.** Three of the six underived facts are now structurally harder to
+repeat: the wrong unit (TG19.1's `survival_by_cardinality` reads `ALLOWED_CARDINALITIES` rather
+than relying on memory), the unlabelled population (TG19.4), and the unfalsifiable prediction
+(this). The remaining ones -- choosing the wrong unit to think in, and reading a correction block
+without carrying its distinction forward -- are attention, and no checker catches them.
+
 **TG19.4 (2026-09-11): a record holding two answers is read by name, or not at all.**
 
 An engineering slice. It makes no claim about any world, so it carries no declaration, no adoption

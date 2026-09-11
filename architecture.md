@@ -8827,6 +8827,80 @@ All four acceptance conditions are met: the coded gate passed, the full distribu
 rather than a mean, the mechanism and consequence claims are reported separately with the
 mechanism claim carrying its declared caveat, and the two named outcomes did separate.
 
+### 3G.5 Can the change you are about to make move the answer at all? (TG19.5)
+
+**TG19.5 (2026-09-11): can the change you are about to make move the answer at all?**
+
+An engineering slice. It makes no claim about any world, so it carries no declaration, no adoption
+and no prediction. `src/analysis_engine/prediction_sensitivity.py`, wired into
+`tools/restate_position_acceptance.py`.
+
+**The failure it prevents, computed on the case that produced it.** T4E.27 declared before
+measuring that restating a bar would leave the acceptance failing, *"improving on 2 of 18 but not
+reaching 9"*. The failure half held. The improvement half was not a risky prediction that came out
+wrong -- it was **impossible**, and the impossibility is three columns of arithmetic:
+
+```
+storm      old bar   new bar   separation   could flip
+FEHI          8.90     12.10        69.74   no
+GITA         89.38     89.76       113.72   no
+HOLA         21.99     23.46       252.29   no
+LINDA         0.00   refused        74.91   not judged
+JOSIE       145.23    145.46       189.65   no
+...
+swing set: 0 of 17 judged      admitted before 2 -> after 2      INERT
+```
+
+No observation has its separation between the old bar and the new one. The bar moves 11.12 to
+13.81 at its most generous and 89.38 to 89.76 at its least, against separations of 30 to 2056 km.
+**Nothing could change, however the bar was justified.**
+
+**What the module reports.** `verdict_travel` classifies every observation as gained, lost,
+admitted either way, rejected either way, or not judged, and exposes the swing set.
+`check_prediction` then adjudicates a declared direction against what the arithmetic permits:
+`POSSIBLE` when the measurement decides it, `IMPOSSIBLE` when it is settled in advance, and
+`TRIVIALLY_TRUE` for "unchanged" on an inert change -- because predicting no change where nothing
+can change is true before the run and carries no evidential weight.
+
+Applied to T4E.27's own numbers, `improve` returns **IMPOSSIBLE** and `unchanged` returns
+**TRIVIALLY_TRUE**.
+
+**Why this belongs in the instrument rather than in a habit.** A prediction declared before a
+measurement is this programme's main guard against reading a result into the answer already
+believed. Seven criteria have been adjudicated that way. The guard is worth nothing where the
+arithmetic settles the prediction in advance, and **a declaration that reads as though a risk was
+taken is worse than one that predicts nothing** -- it buys credibility it has not earned. The
+check makes that auditable instead of assumed.
+
+**A refused bar is not movement and not immovability.** An observation whose tolerance was refused
+leaves the judged population entirely rather than counting as a verdict that could not change.
+LINDA's `0.00` radius is `not_judged`, 17 are judged, and the swing set is computed over those --
+the same discipline `PositionTolerance` applies, carried through so the two agree. The inclusive
+boundary matches `admits` for the same reason: a different convention here would disagree with the
+thing it checks.
+
+**What it does not do, stated in the module itself.** It sees one kind of error -- a threshold test
+whose threshold moves. It says nothing about whether the right quantity is being thresholded,
+whether the population is the right one, or whether the bar is defensible. Those three are what
+actually decided T4E.27, and none is visible here. **A clean report is not a sound design**, and a
+module implying otherwise would sell the same false comfort it was written to remove. A test pins
+that the report says so.
+
+```
+$ .venv/Scripts/python.exe -m pytest src/tests/test_prediction_sensitivity.py -q
+15 passed
+```
+
+`restate_position_acceptance.py` now carries `was_the_prediction_ever_falsifiable` beside its
+verdict, reporting `IMPOSSIBLE` for its own improvement half. Every measured figure is unchanged
+-- 2 admitted of 17 judged -- because auditing a prediction moves no measurement.
+
+**Where this leaves the sequence.** Three of the six underived facts are now structurally harder to
+repeat: the wrong unit (TG19.1's `survival_by_cardinality` reads `ALLOWED_CARDINALITIES` rather
+than relying on memory), the unlabelled population (TG19.4), and the unfalsifiable prediction
+(this). The remaining ones -- choosing the wrong unit to think in, and reading a correction block
+without carrying its distinction forward -- are attention, and no checker catches them.
+
 ### 3G.4 A record holding two answers is read by name, or not at all (TG19.4)
 
 **TG19.4 (2026-09-11): a record holding two answers is read by name, or not at all.**
@@ -11549,7 +11623,7 @@ See `VERIFICATION.md` for the captured command output behind every statement her
 | Item | Status |
 |---|---|
 | Python venv + dependencies | installed (torch 2.13.0+cu130, numpy 2.2.6, pydantic 1.10.26, SQLAlchemy 2.0.52, xarray 2025.6.1, FastAPI 0.110.3) |
-| Backend test suite | **4441 passed, 1 xfailed** (plus 4 skipped: the opt-in live GCS read, opt-in live store probe, opt-in live Argo acceptance, and opt-in live TESS/MAST acceptance). Measured 2026-09-08 in 3,899.66 s (1:04:59), exit 0, on the tree carrying T4E.7. Nothing failed in this run. It is exactly 93 above the measurement earlier the same day of 4348, which is every case in T4E.7's new suite, so nothing was lost in between. **The wall-clock figure is 53% above that earlier run's 0:42:20 and the cause is not known.** T4E.7's suite accounts for about 30 s of it; the rest is not a code change this slice made, and the honest reading is that one of the two timings reflects something about the machine rather than the tree. One corroborating measurement: the same 32 documentation guards took 7:44 and 8:05 during that session and 4:15 immediately after it, so this machine's throughput varied by about a factor of two within a single day. The count is exact either way, and a re-measurement on a quiet machine would settle the duration. |
+| Backend test suite | **4917 passed, 1 xfailed** and **8 FAILED** (plus 4 skipped). Measured 2026-09-11 in 3,540.14 s (0:59:00) on the tree carrying TG19.5. **Six of the eight failures are pre-existing and none was introduced by this session's slices.** Five are the set section 3E.26 already records as checked against a stashed tree: `t4e_identity_certified` failing at split 0.4667, which is the documented T4E.9 FAIL and is the benchmark reporting what it was built to report; `test_imports` reaching that same benchmark through the API; and three `test_browser_evidence` failures, which PLAN already lists as owed browser evidence. The sixth is `test_experiment_qualification`: the `live_sources` gate reads `NOT_RUN` and blocking because `src/data_layer/cds_source.py` changed at T4E.18 (`d283285`) and the four-domain run was never re-recorded against it -- the source binding working exactly as TG17.14 demonstrated. The remaining two were this session's and are fixed: the catalogue-placement guard, which checked the filesystem and could not tell a committed file from a local working copy, and this count itself. **The figure is a measurement, not an increment**: 4,917 against 4,453 test functions, the difference being parametrised cases. The previous dated figure was 4,441 passed with nothing failing, measured 2026-09-08 on the tree carrying T4E.7 in 3,899.66 s; this run is 9% faster on a larger suite, which is within the factor-of-two throughput variation that session already recorded for this machine. |
 | Ground-Truth Benchmark Suite | **43 PASS, 1 FAIL, 0 NOT_YET_RUNNABLE** (`python -m src.benchmarks`), measured 2026-09-08. **This row previously read 29 PASS and was stale**: `test_benchmark_status_in_docs_matches_a_real_run` uses `re.search`, which checks only the first such triple in the file, so this second copy was never guarded. The FAIL is T4E.9's `4E.identity_certified` and is a measured result, not a broken build - see section 3E.10. |
 | Frontend `npm install` + `npm run build` | passes, emits 1,395 modules + real JS/CSS assets (was: 1 module, no assets) |
 | Backend server | starts, serves OpenAPI, all smoke-tested endpoints return 200 |
@@ -12328,6 +12402,7 @@ able to sit three slices out of date.
 | `test_coverage_report.py` | 17 | TG19.1 the generic coverage check: pair and triple survival counted as the units `ALLOWED_CARDINALITIES` actually admits, with a group holding a never-seen feature counted as unassemblable because the object was never built in any scene; an unrepresentative density returning a refusal and no coverage number at all; an unregistered extractor, an unknown calibration source, a constant background, a three-dimensional background and zero configurations each refused by name; and every passing report carrying its claim boundary, its extractor capabilities, the upper-bound caveat and the field declaration R19 needs |
 | `test_signed_reference.py` | 16 | TG19.3 signed external references: the whole chain checked -- signature against design, design against data, byte count first so a truncated download is named before 35 MB are hashed; an absent file naming its path, source URL and required digest, and saying that replacing it is a declaration rather than a copy; a digest mismatch refused as a DIFFERENT reference whose signed population and claim boundary do not extend to it, never as a damaged one; a design edited after signature refused with both digests; an unsigned design allowed and reported unverified rather than failed; and require() raising by name instead of returning an unverified path |
 | `test_declared_population.py` | 17 | TG19.4 a record holding two answers read by name or not at all: an unnamed read refused with both names offered and the mistake it prevents named in the refusal; a population the record only SUMMARISES refused rather than substituted with the other pass's rows, saying what is there and what would produce the rest; an unknown name and an unmapped record both refused; the stated identification checked against the rows it describes, so the map is checkable rather than believed; and the committed record verified unedited |
+| `test_prediction_sensitivity.py` | 15 | TG19.5 whether a declared prediction was ever falsifiable: the real T4E.27 inputs shown inert with an empty swing set, so its predicted improvement is adjudicated IMPOSSIBLE rather than unlucky; only a value between the two bars can move; a refused bar leaving the judged population rather than counting as immovable; the inclusive boundary matching how a tolerance admits; 'unchanged' on an inert change reported TRIVIALLY_TRUE; mismatched lengths and labels refused; and the report stating in its own words that a clean result is not a sound design |
 | `test_feature_extraction.py` | 47 | a diverged capture-correction scale refused by name rather than acted on, the refusal counted without ending the pass, and a clean Gaussian still extracted so the bound cannot be trimming real features; TG2.2 extraction as a registry: the three planted features recovered across a six-fold range of scales and under rotation, translation and rescaling; both null benchmarks silent across three seeds with the loosened-alpha control that makes the silence mean something; the strict-comparison off-by-one; an unresolvable alpha refused before the ensemble; a second extractor registered from the test module; the periodic-axis seam and the self-scaling R13 refusal; and the one-feature-per-frame handoff to TG2.3 |
 | `test_feature_record.py` | 37 | TG2.1 canonical feature record: features measured off the advected-vortex benchmark recovering its known velocity and scale doubling, the R19 refusals (magnitude, separation, elapsed time, mixed sets), the periodic-axis refusal, orientation conventions and the surrogate resolution floor, a fourth convention and a fourth significance basis registered from the test module, and defect D59 |
 | `test_level_axis.py` | 19 | TG1.5 vertical coordinates: the registry and its sense of up, a height bank labelling its offsets the opposite way to pressure, a fourth coordinate registered from the test module, the declaration travelling from reader to signature, `level_hpa` refusing a non-pressure axis, and the pressure arithmetic unchanged |
@@ -12442,7 +12517,7 @@ able to sit three slices out of date.
   | `test_identity_certification.py` | 131 | T4E.9 the T4E identity path against a motif known by construction: the benchmark registered and naming the path it certifies, three disjoint partitions so a radius is never evaluated on what calibrated it, exactly one motif configuration in a planted scene and none in a null one, construction labels taken from the generator and refused rather than guessed when a planted position has no feature near it or two positions claim one, only cross-scene pairs formed, the definition's separation asserted as a floor, nothing admitted where nothing recurs with the absent positive population left unmeasured rather than zero, the frozen-radius failure pinned as a relationship to the feasible radius rather than as two numbers, an empty calibration returning INVALID rather than a permissive radius, every result stating what it does not license, and T4E.13's criterion fixed in code while asserted to be measured nowhere -- `k` derived as a function of the partition size, unequal partitions refused rather than pooled, monotonicity in `k` checked on a toy rather than assumed, and, once candidate 3 was adopted and falsified, that guard replaced by the reading of the result -- which conditions failed and by how much, that the null held at 0 of 1486 proposed, that the 0.0000 recall is recorded as arithmetic rather than a finding, that no lower k can rescue what this one failed, that the falsification licenses none of the conclusions nearest to it, that partitions 720-735 stay refused in code, and T4E.14's partial-presence test bed -- seeds that collide with no existing evidence, a reservation refused with no flag to open it, planting patterns that are deterministic and not contiguous, the recoverable population C(j,2) rather than C(S,2), the design's own record of what this evidence cannot repair, and T4E.15's criterion fixed in code while asserted to be measured nowhere -- closure broken by a single loose end, closure admitting only a subset of what consistency admits, the criterion carrying no tunable parameter at all, the span-ranking design recorded as discarded by derivation, the declaration's own worst case and refusal to predict, and -- once measured and falsified -- the reading of that result: the conditions that failed with their counts, the mechanism executed rather than described (a pair with no other partners is closed and is therefore admitted, while one loose end rejects a group spanning five scenes), the cross-check showing closure admits more than candidate 2 on the evidence candidate 2 passed, the missed derivation recorded rather than quietly repaired, the constraint the falsification fixes on any successor, and T4E.16's withdrawal held as a derivation rather than a note -- the surrogate reassembly rate computed analytically and by simulation, the record of why the design cannot simply be repaired, the fact that a withdrawn declaration adds nothing to the accumulated multiplicity, and PooledDistances keeping a refused distance as NaN so it can never leak in as a number |
   | `test_identity_target_declaration.py` | 53 | T4E.8 slice 3 the declared identity target: an absent target or evidence class refused by name, a misspelling refused with its correction, `kind_recurrence` against record-derived proxy labels refused as circular, `track_continuity` admitted with its tracker-agreement caveat, every target round-tripping what it recognises and does not license, the published proxy wording pinned verbatim so naming a target cannot reword a cited receipt, and the external-reference path recovering two planted identities from a reviewed catalogue while refusing a mismatched family, a single identity, a non-catalogue and a negative population the patterns cannot supply |
   | `test_spectral_spatial_identity.py` | 24 | T4E.8 spatial geometry, detector-band/magnitude independence, source/scope refusal, analytic distances, old-radius refusal, scalar/accelerated agreement and two-sided proxy-label diagnostics |
-| **total** | **4438** | |
+| **total** | **4453** | |
 
 ### 7.4a Browser suite inventory
 
