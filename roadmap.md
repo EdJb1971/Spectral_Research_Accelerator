@@ -2803,6 +2803,58 @@ configuration absent from one scene outright; nothing about recurrence *across* 
 which the mining machinery needs; no mining radius, no discharge of T4E.8's acceptance, no
 closure of D96 to D100; and nothing about `kind_recurrence`, which still has no catalogue.
 
+### T4E.30 - the measurement store and the evidence store, joined where git can prove the ordering
+
+**T4E.30 (2026-09-11): a measurement carried into an evidence bundle, or refused by name.**
+`src/core/measurement_evidence.py`, `tools/bundle_join_rerun.py`,
+`data/studies/t4e28-join-rerun.r7.json`.
+
+**The gap, counted.** The round-robin, the recorded discussion and the claim ladder all read an
+`EvidenceBundle`, and `summarise_evidence` is *"a pure function of the bundle: no clock, no I/O,
+no other input"* -- so a panel sees only what was appended as evidence entries. On 2026-09-11
+this repository held **28 measurement records, 43 declarations and zero bundles**. Every finding
+the programme had produced was invisible to the stage built to argue about it.
+
+**Registration is proved from git, not asserted.** A bundle refuses a hypothesis registered after
+its evidence, and it is right to: back-dating one manufactures a preregistration, and the panel
+would be arguing about a risk nobody took. The commit that first added the declaration must
+precede the commit that first added the measurement, both files must be tracked, and both working
+copies must match what was committed. T4E.28 qualifies because its gate landed in `70640b4`,
+carrying no measurement, seventeen minutes before the run.
+
+```
+entries: 7
+  replication_results      PASS   both declared gates reproduced
+  provenance               PASS   the recovered extraction parameters are the ones that produced the record
+  provenance               PASS   the catalogue is the signed one, resolved by digest
+  contradictory_evidence   PASS   T4E.18's published non-dateline range is false
+  null_results             FAIL   condition 2 on the raw path, measured for the first time
+  failure_states           PASS   the acceptance this reproduces still fails
+  uncertainty              PASS   what the catalogue's own positional uncertainty is
+
+claim ladder: observation   (standing contradiction, and a FAIL -- both cap it, correctly)
+```
+
+**What the module will not do.** It does not decide what a measurement means. Which entries a
+record yields, in which category and at which status, is supplied by the caller as
+`EvidenceClaim`s, written down in the tool where they can be disagreed with. A module that
+inferred them would be authoring the evidence it claims to transport.
+
+**Surveying every study found something worth naming.** Of sixteen declaration-and-measurement
+pairs, ten can be bundled and six are refused -- **not one for being declared afterwards**. In
+every refused case the declaration and the measurement entered the repository in the *same
+commit*: T4E.12, T4E.14, T4E.19, T4E.20, T4E.21 and T4E.24. Those declarations were almost
+certainly written first, and git cannot separate them. The refusal says so and names the practice
+that lifts it for future work: commit the declaration on its own, before the run, as T4E.28 did.
+
+**What this does not establish.** No claim rung, no adoption, and no panel has run. A bundle
+existing means a discussion is now possible, which is not the same as one having happened.
+
+```
+$ .venv/Scripts/python.exe -m pytest src/tests/test_measurement_evidence.py -q
+21 passed
+```
+
 ### T4E.29 - every distance, and what an exclusion does to the answer
 
 **T4E.29 (2026-09-11): the distribution, rather than its extremes.** An engineering slice -- it
