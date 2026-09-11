@@ -2803,6 +2803,87 @@ configuration absent from one scene outright; nothing about recurrence *across* 
 which the mining machinery needs; no mining radius, no discharge of T4E.8's acceptance, no
 closure of D96 to D100; and nothing about `kind_recurrence`, which still has no catalogue.
 
+### TG19.1 - the coverage question, made runnable by someone else
+
+**TG19.1 (2026-09-11): the coverage question, made runnable by someone else.**
+
+An engineering slice, not a scientific one: it makes no claim about any world, so it carries no
+declaration, no adoption and no prediction. `src/benchmarks/coverage_report.py`,
+`tools/coverage_report.py`, `survival_by_cardinality` in `src/benchmarks/false_absence.py`.
+
+**Why it exists.** T4E.24 through T4E.27 measured what this extractor loses -- 37% of features
+present never extracted, 85% of triples never surviving six scenes, a cut that cannot be relaxed
+to fix it. Those numbers became *readable* through T4E.22's measurement API and T4E.23's study
+trail. They were not *runnable*. A researcher arriving with their own field and their own
+extractor could read what this programme measured about its own instrument and could not ask the
+same question of theirs. That is the difference between a lab notebook and an instrument.
+
+**What was generalised, and what stayed put.** The T4E.24 measurement was bound to ERA5 shards,
+a vorticity sign convention and one extractor. The mechanism was never atmospheric: plant known
+structure, extract, count what came back. `coverage_report` now takes a `background_for(i)`
+callable, any **registered** extractor by name, and the caller's own declaration of what the
+field is -- domain, dataset, variable, units, which R19 refuses a comparison without. The
+atmospheric run is unchanged and its receipts are untouched.
+
+**`survival_by_cardinality` turns a derivation into a capability.** T4E.24's second addendum
+computed pair and triple survival by hand in a one-off script, because
+`ALLOWED_CARDINALITIES` is `(2, 3)` and whole-configuration survival measures something nothing
+downstream consumes. That arithmetic is now a function, tested, and reported by every coverage
+run. Checked against the committed receipt, it reproduces the addendum exactly: pairs 394/1362
+intact and 649/1362 assemblable, triples 418/2805 and 856/2805.
+
+```
+$ python -m tools.coverage_report --list-extractors
+local_maximum    Local maxima above a surrogate-calibrated frame-maximum threshold, ...
+
+$ python -m tools.coverage_report --output r.json --source fbm --configurations 3 --surrogates 199
+VERDICT: EVIDENCE_NOT_REPRESENTATIVE
+  median 3 features per frame is outside the declared band [4, 10] taken from the record
+```
+
+**The first run refused, and that is the instrument working.** The default band is the one the
+atmospheric work declared, and it is wrong for a fractional-Brownian field -- which the tool's own
+help says before it is run: *"the default is the one the atmospheric work declared and is
+probably wrong for you"*. A caller who states a band their field warrants gets a measurement; a
+caller who does not gets a refusal naming the reason. What is deliberately absent is any path
+where the background is adjusted until the number improves.
+
+```
+$ python -m tools.coverage_report --output r.json --source fbm --configurations 3 \
+      --surrogates 199 --median-band 2 10
+VERDICT MEASURED   gate median 3   pairs intact 0.181   triples intact 0.079
+
+$ python -m tools.coverage_report --output r.json --source netcdf \
+      --path data/cds_downloads/t4e18_vorticity --variable vo --negate \
+      --domain atmosphere --configurations 10 --surrogates 199
+VERDICT MEASURED   gate median 4   pairs intact 0.257   triples intact 0.107   52.6 s
+```
+
+The second runs with **no atmospheric data at all** -- a synthetic field with a declared Hurst
+exponent, for a caller who has no record of their own. The third runs the same question over the
+acquired record through the generic path and lands near T4E.24's triple figure of 0.149, at a
+tenth the configurations and a fifth the surrogates, which is the agreement a smaller sample
+should give and not an independent confirmation of it.
+
+**What every report carries.** The extractor's registered capabilities, including its declared
+`shape_model`, because a coverage number means something different for an instrument that assumes
+isotropy. Which field the cut was taken from, with T4E.25's measured 3.53x attached, so a caller
+choosing `background` sees what the choice is worth. That identical geometry across scenes makes
+recall an **upper** bound. And a claim boundary saying the report is a property of an instrument
+and never of a world -- it plants what it then looks for, so it can say nothing about whether
+such structure exists in any real field.
+
+**What this does not do.** It adopts nothing, changes no default, and alters no extractor. It
+does not make the atmospheric numbers transferable: a coverage figure belongs to the field and
+the planting it was measured on, and the module refuses to imply otherwise. And it is not yet on
+the wire or on screen -- reports land in the measurement store and are served by T4E.22's
+existing routes, which is reach, not a user interface.
+
+```
+$ .venv/Scripts/python.exe -m pytest src/tests/test_coverage_report.py -q
+17 passed
+```
+
 ### T4E.27 - a tolerance built from its components, and the T4E.18 acceptance restated
 
 **T4E.27 (2026-09-11): the bar was wrong, and the bar was not what was carrying the failure.**

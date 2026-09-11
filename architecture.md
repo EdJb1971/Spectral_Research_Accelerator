@@ -8825,6 +8825,87 @@ All four acceptance conditions are met: the coded gate passed, the full distribu
 rather than a mean, the mechanism and consequence claims are reported separately with the
 mechanism claim carrying its declared caveat, and the two named outcomes did separate.
 
+### 3G.1 The coverage question, made runnable by someone else (TG19.1)
+
+**TG19.1 (2026-09-11): the coverage question, made runnable by someone else.**
+
+An engineering slice, not a scientific one: it makes no claim about any world, so it carries no
+declaration, no adoption and no prediction. `src/benchmarks/coverage_report.py`,
+`tools/coverage_report.py`, `survival_by_cardinality` in `src/benchmarks/false_absence.py`.
+
+**Why it exists.** T4E.24 through T4E.27 measured what this extractor loses -- 37% of features
+present never extracted, 85% of triples never surviving six scenes, a cut that cannot be relaxed
+to fix it. Those numbers became *readable* through T4E.22's measurement API and T4E.23's study
+trail. They were not *runnable*. A researcher arriving with their own field and their own
+extractor could read what this programme measured about its own instrument and could not ask the
+same question of theirs. That is the difference between a lab notebook and an instrument.
+
+**What was generalised, and what stayed put.** The T4E.24 measurement was bound to ERA5 shards,
+a vorticity sign convention and one extractor. The mechanism was never atmospheric: plant known
+structure, extract, count what came back. `coverage_report` now takes a `background_for(i)`
+callable, any **registered** extractor by name, and the caller's own declaration of what the
+field is -- domain, dataset, variable, units, which R19 refuses a comparison without. The
+atmospheric run is unchanged and its receipts are untouched.
+
+**`survival_by_cardinality` turns a derivation into a capability.** T4E.24's second addendum
+computed pair and triple survival by hand in a one-off script, because
+`ALLOWED_CARDINALITIES` is `(2, 3)` and whole-configuration survival measures something nothing
+downstream consumes. That arithmetic is now a function, tested, and reported by every coverage
+run. Checked against the committed receipt, it reproduces the addendum exactly: pairs 394/1362
+intact and 649/1362 assemblable, triples 418/2805 and 856/2805.
+
+```
+$ python -m tools.coverage_report --list-extractors
+local_maximum    Local maxima above a surrogate-calibrated frame-maximum threshold, ...
+
+$ python -m tools.coverage_report --output r.json --source fbm --configurations 3 --surrogates 199
+VERDICT: EVIDENCE_NOT_REPRESENTATIVE
+  median 3 features per frame is outside the declared band [4, 10] taken from the record
+```
+
+**The first run refused, and that is the instrument working.** The default band is the one the
+atmospheric work declared, and it is wrong for a fractional-Brownian field -- which the tool's own
+help says before it is run: *"the default is the one the atmospheric work declared and is
+probably wrong for you"*. A caller who states a band their field warrants gets a measurement; a
+caller who does not gets a refusal naming the reason. What is deliberately absent is any path
+where the background is adjusted until the number improves.
+
+```
+$ python -m tools.coverage_report --output r.json --source fbm --configurations 3 \
+      --surrogates 199 --median-band 2 10
+VERDICT MEASURED   gate median 3   pairs intact 0.181   triples intact 0.079
+
+$ python -m tools.coverage_report --output r.json --source netcdf \
+      --path data/cds_downloads/t4e18_vorticity --variable vo --negate \
+      --domain atmosphere --configurations 10 --surrogates 199
+VERDICT MEASURED   gate median 4   pairs intact 0.257   triples intact 0.107   52.6 s
+```
+
+The second runs with **no atmospheric data at all** -- a synthetic field with a declared Hurst
+exponent, for a caller who has no record of their own. The third runs the same question over the
+acquired record through the generic path and lands near T4E.24's triple figure of 0.149, at a
+tenth the configurations and a fifth the surrogates, which is the agreement a smaller sample
+should give and not an independent confirmation of it.
+
+**What every report carries.** The extractor's registered capabilities, including its declared
+`shape_model`, because a coverage number means something different for an instrument that assumes
+isotropy. Which field the cut was taken from, with T4E.25's measured 3.53x attached, so a caller
+choosing `background` sees what the choice is worth. That identical geometry across scenes makes
+recall an **upper** bound. And a claim boundary saying the report is a property of an instrument
+and never of a world -- it plants what it then looks for, so it can say nothing about whether
+such structure exists in any real field.
+
+**What this does not do.** It adopts nothing, changes no default, and alters no extractor. It
+does not make the atmospheric numbers transferable: a coverage figure belongs to the field and
+the planting it was measured on, and the module refuses to imply otherwise. And it is not yet on
+the wire or on screen -- reports land in the measurement store and are served by T4E.22's
+existing routes, which is reach, not a user interface.
+
+```
+$ .venv/Scripts/python.exe -m pytest src/tests/test_coverage_report.py -q
+17 passed
+```
+
 ### 3E.42 The bar was wrong, and the bar was not carrying the failure (T4E.27)
 
 **T4E.27 (2026-09-11): the bar was wrong, and the bar was not what was carrying the failure.**
@@ -11949,6 +12030,7 @@ able to sit three slices out of date.
 | `test_coverage_contamination.py` | 12 | T4E.25 the coverage/contamination sweep: the swept alpha list pinned to the declaration and closed, so a fifth value cannot be added once the curve is visible; a shared surrogate ensemble reproducing `calibrate` exactly at the same alpha, which is what makes the sweep four cuts through one measurement rather than four runs; the threshold monotone in alpha, which is what makes "newly recovered" a set difference rather than an estimate; configuration coverage refusing a configuration holding a never-seen feature, the two coverage measures ordered by construction, and the T4E.24 addendum figures reproduced through the same function that reports them at every alpha |
 | `test_peeled_null.py` | 17 | T4E.26 peeled-null calibration: the subtracted shape rebuilt only from what the extractor published, a feature with no usable width left in place and counted rather than guessed at, the amplitude removed above the baseline rather than the magnitude carrying the baseline with it; and the contamination split that is the whole safeguard -- an artefact radius that scales with the feature it came from, no spurious features reporting no fraction rather than a clean zero, and a gap refusing to be computed where round zero already sits at the oracle |
 | `test_position_tolerance.py` | 17 | T4E.27 the position tolerance as an inspectable object: every component carrying its provenance and the excluded component named in the description; a zero or non-finite catalogue radius refused by name rather than defaulted, because a zero demands a separation nothing can supply and an infinity admits everything; a refused tolerance answering None and never False, so a missing agency report is not counted as a failed detection; refused observations leaving the denominator; a negative residual returned rather than clipped; and the acceptance curve monotone in the bar |
+| `test_coverage_report.py` | 17 | TG19.1 the generic coverage check: pair and triple survival counted as the units `ALLOWED_CARDINALITIES` actually admits, with a group holding a never-seen feature counted as unassemblable because the object was never built in any scene; an unrepresentative density returning a refusal and no coverage number at all; an unregistered extractor, an unknown calibration source, a constant background, a three-dimensional background and zero configurations each refused by name; and every passing report carrying its claim boundary, its extractor capabilities, the upper-bound caveat and the field declaration R19 needs |
 | `test_feature_extraction.py` | 47 | a diverged capture-correction scale refused by name rather than acted on, the refusal counted without ending the pass, and a clean Gaussian still extracted so the bound cannot be trimming real features; TG2.2 extraction as a registry: the three planted features recovered across a six-fold range of scales and under rotation, translation and rescaling; both null benchmarks silent across three seeds with the loosened-alpha control that makes the silence mean something; the strict-comparison off-by-one; an unresolvable alpha refused before the ensemble; a second extractor registered from the test module; the periodic-axis seam and the self-scaling R13 refusal; and the one-feature-per-frame handoff to TG2.3 |
 | `test_feature_record.py` | 37 | TG2.1 canonical feature record: features measured off the advected-vortex benchmark recovering its known velocity and scale doubling, the R19 refusals (magnitude, separation, elapsed time, mixed sets), the periodic-axis refusal, orientation conventions and the surrogate resolution floor, a fourth convention and a fourth significance basis registered from the test module, and defect D59 |
 | `test_level_axis.py` | 19 | TG1.5 vertical coordinates: the registry and its sense of up, a height bank labelling its offsets the opposite way to pressure, a fourth coordinate registered from the test module, the declaration travelling from reader to signature, `level_hpa` refusing a non-pressure axis, and the pressure arithmetic unchanged |
@@ -12063,7 +12145,7 @@ able to sit three slices out of date.
   | `test_identity_certification.py` | 131 | T4E.9 the T4E identity path against a motif known by construction: the benchmark registered and naming the path it certifies, three disjoint partitions so a radius is never evaluated on what calibrated it, exactly one motif configuration in a planted scene and none in a null one, construction labels taken from the generator and refused rather than guessed when a planted position has no feature near it or two positions claim one, only cross-scene pairs formed, the definition's separation asserted as a floor, nothing admitted where nothing recurs with the absent positive population left unmeasured rather than zero, the frozen-radius failure pinned as a relationship to the feasible radius rather than as two numbers, an empty calibration returning INVALID rather than a permissive radius, every result stating what it does not license, and T4E.13's criterion fixed in code while asserted to be measured nowhere -- `k` derived as a function of the partition size, unequal partitions refused rather than pooled, monotonicity in `k` checked on a toy rather than assumed, and, once candidate 3 was adopted and falsified, that guard replaced by the reading of the result -- which conditions failed and by how much, that the null held at 0 of 1486 proposed, that the 0.0000 recall is recorded as arithmetic rather than a finding, that no lower k can rescue what this one failed, that the falsification licenses none of the conclusions nearest to it, that partitions 720-735 stay refused in code, and T4E.14's partial-presence test bed -- seeds that collide with no existing evidence, a reservation refused with no flag to open it, planting patterns that are deterministic and not contiguous, the recoverable population C(j,2) rather than C(S,2), the design's own record of what this evidence cannot repair, and T4E.15's criterion fixed in code while asserted to be measured nowhere -- closure broken by a single loose end, closure admitting only a subset of what consistency admits, the criterion carrying no tunable parameter at all, the span-ranking design recorded as discarded by derivation, the declaration's own worst case and refusal to predict, and -- once measured and falsified -- the reading of that result: the conditions that failed with their counts, the mechanism executed rather than described (a pair with no other partners is closed and is therefore admitted, while one loose end rejects a group spanning five scenes), the cross-check showing closure admits more than candidate 2 on the evidence candidate 2 passed, the missed derivation recorded rather than quietly repaired, the constraint the falsification fixes on any successor, and T4E.16's withdrawal held as a derivation rather than a note -- the surrogate reassembly rate computed analytically and by simulation, the record of why the design cannot simply be repaired, the fact that a withdrawn declaration adds nothing to the accumulated multiplicity, and PooledDistances keeping a refused distance as NaN so it can never leak in as a number |
   | `test_identity_target_declaration.py` | 53 | T4E.8 slice 3 the declared identity target: an absent target or evidence class refused by name, a misspelling refused with its correction, `kind_recurrence` against record-derived proxy labels refused as circular, `track_continuity` admitted with its tracker-agreement caveat, every target round-tripping what it recognises and does not license, the published proxy wording pinned verbatim so naming a target cannot reword a cited receipt, and the external-reference path recovering two planted identities from a reviewed catalogue while refusing a mismatched family, a single identity, a non-catalogue and a negative population the patterns cannot supply |
   | `test_spectral_spatial_identity.py` | 24 | T4E.8 spatial geometry, detector-band/magnitude independence, source/scope refusal, analytic distances, old-radius refusal, scalar/accelerated agreement and two-sided proxy-label diagnostics |
-| **total** | **4388** | |
+| **total** | **4405** | |
 
 ### 7.4a Browser suite inventory
 

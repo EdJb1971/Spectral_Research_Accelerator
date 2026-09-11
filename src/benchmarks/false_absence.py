@@ -258,3 +258,43 @@ def dispersion(counts: Sequence[int], scenes: int, *, draws: int = 999,
             "which is what would cause concentration, so a concentrated result is close to "
             "built in and is declared as the weak half of this slice."),
     }
+
+
+def survival_by_cardinality(seen_by_configuration: Sequence[Sequence[int]], scenes: int,
+                            cardinalities: Sequence[int] = (2, 3)) -> Dict[str, object]:
+    """How many of a configuration's pairs and triples survive, which is what the pipeline uses.
+
+    `ALLOWED_CARDINALITIES` in `spectral_constellation.py` is `(2, 3)`: constellations are pairs
+    and triples, and a fourth node is refused by name. So asking whether a whole configuration
+    survives measures something nothing downstream consumes, and this reports the unit that is
+    actually consumed instead.
+
+    A group is **intact** when every member was recovered in all `scenes` scenes, and
+    **assemblable** when every member was recovered at least once -- a group containing a feature
+    the extractor never recovered anywhere cannot be matched by any criterion, whatever tolerance
+    it applies over scenes, because the object it would have to match was never built.
+    """
+    out: Dict[str, object] = {}
+    for k in cardinalities:
+        k = int(k)
+        total = intact = assemblable = 0
+        for counts in seen_by_configuration:
+            values = [int(v) for v in counts]
+            n = len(values)
+            total += math.comb(n, k) if n >= k else 0
+            always = sum(1 for v in values if v >= int(scenes))
+            ever = sum(1 for v in values if v > 0)
+            intact += math.comb(always, k) if always >= k else 0
+            assemblable += math.comb(ever, k) if ever >= k else 0
+        out["k=%d" % k] = {
+            "groups": total,
+            "intact_in_every_scene": intact,
+            "assemblable_in_at_least_one": assemblable,
+            "intact_rate": (intact / total) if total else None,
+            "assemblable_rate": (assemblable / total) if total else None,
+        }
+    out["why_these_sizes"] = (
+        "spectral_constellation.ALLOWED_CARDINALITIES is (2, 3); a fourth node is refused by "
+        "name as the beginning of frequent-subgraph mining. These are the units a criterion "
+        "actually consumes.")
+    return out
