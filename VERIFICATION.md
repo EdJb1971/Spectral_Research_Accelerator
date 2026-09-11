@@ -12385,6 +12385,299 @@ release decision, but it does mean two gates that read PASS now read NOT_RUN and
 were not isolated to a cause; the run predates no clean baseline for this suite size, so they
 are reported as measured rather than attributed.
 
+**NAMING COLLISION, recorded 2026-09-12.** The slices called **TG19.1 to TG19.5** in this
+document, in `architecture.md` and in `roadmap.md` are engineering slices on the atmospheric
+line. They are **NOT** phase G19 of the cross-domain programme. `TGxx.y` is the cross-domain
+phase-slice convention (TG17.x, TG18.x), so the name was taken in error. **Phase G19 -- "the
+researcher's conversation with the record", slices G19.1 to G19.5 -- remains SPECIFIED AND NOT
+STARTED**, exactly as `roadmap_cross_domain.md` says. Nothing in TG19.1-TG19.5 discharges any
+part of it. The name is not rewritten here because five commits already carry it and the
+documents would then disagree with the history; the collision is recorded instead.
+
+---
+
+**T4E.34 (2026-09-11): composing a declaration, and committing it alone.**
+
+```
+$ .venv/Scripts/python.exe -m pytest src/tests/test_declaration_composer.py -q
+23 passed
+
+$ npx playwright test adoption.spec.ts --reporter=line
+9 passed (39.1s)
+```
+
+The refusals, captured from the route:
+
+```
+prediction 'p1' does not say what would falsify it. A prediction that cannot fail is not a
+  prediction: T4E.27 declared an improvement that was arithmetically impossible before the run,
+  and it read as a risk that had been taken.
+a declaration with no prediction fixes nothing before the run, and the run can then be read as
+  having confirmed whatever it produced.
+a declaration with no gate has nothing to judge the run against.
+'maintainer' is not a person.
+'my study' is not a task identifier ... orphaned from the study trail the moment it is written.
+```
+
+A test wrote `t4e98-a-surface-trial-declaration.json` into the real calibration store because it
+set `SPECTRAL_IDENTITY_AUDIT_DIR` rather than `IDENTITY_AUDIT_DIR`, and the route fell back to
+its default. The file was committed with T4E.34 and removed in `0540bce`; the test now asserts
+the write landed under `tmp_path`. Recorded rather than quietly fixed, because the artefact read
+exactly like a real declaration and would have appeared on the adoption surface as a study
+awaiting signature.
+
+---
+
+**T4E.32 / T4E.33 (2026-09-11): signing and convening, moved into the instrument.**
+
+```
+$ .venv/Scripts/python.exe -m pytest src/tests/test_adoption.py -q
+24 passed
+
+$ npx playwright test adoption.spec.ts ui-qualification.spec.ts --reporter=line
+11 passed (1.0m)
+```
+
+The two refusals that carry the authorisation, captured from the running API:
+
+```
+POST /api/v1/reviews/studies/t4e28-join-rerun/round-robin  {}
+  400  this would make up to 8 calls to an external service on your own account, which costs
+       money and puts the bundle in front of a third party ... Nothing was sent.
+
+POST ... {"i_authorise_paid_calls": true}
+  400  no API key is present in GEMINI_API_KEY or GOOGLE_API_KEY on the server. Nothing was
+       sent. The key is read from the environment and never from the request, so it is never in
+       a browser, a log or this payload.
+
+GET /api/v1/reviews/panel-plan
+  calls_if_every_turn_is_taken 8   calls_if_nothing_is_dissented_from 7   key_present False
+```
+
+---
+
+**T4E.31 (2026-09-11): the round-robin runner, wired and still unrun.**
+
+```
+$ .venv/Scripts/python.exe -m pytest src/tests/test_review_runner.py -q
+12 passed
+
+$ .venv/Scripts/python.exe -m tools.review_join_rerun \
+      --bundle data/studies/t4e28-join-rerun.r7.json --dry-run
+study       t4e28-join-rerun  revision 7
+claim state is independent of this review: 699e67f643ebeb07
+1. candidate_synthesis            expects basis, claim, known_weaknesses
+2. statistical_challenge          expects alternatives, argument, dissent, verdict
+3. confounder_challenge           expects alternatives, argument, dissent, verdict
+4. domain_plausibility_challenge  expects alternatives, argument, dissent, verdict
+5. provenance_challenge           expects alternatives, argument, dissent, verdict
+6. response_and_revision          expects answers_challenge, outcome, revision
+7. independent_reassessment       expects argument, standing_dissent, verdict
+8. final_synthesis                expects bounded_by, dissent_remains, finding, retained_dissent
+
+NOTHING WAS SENT.
+```
+
+**NO PANEL HAS RUN.** `data/reviews/` does not exist. Driving the protocol with fabricated
+answers established two properties that had been assumed: an exchange with **no dissent takes
+seven turns, not eight** (`response_and_revision` is skipped, because a response to no dissent is
+a rebuttal of nothing), and a dissent must be answered by name, oldest first --
+
+```
+Parameter 'response.answers_challenge' = 'statistical_challenge' is invalid: expected
+'provenance_challenge', the oldest dissent still unanswered.
+```
+
+One asymmetry, pinned rather than fixed: a **protocol** violation returns `RecordedTurnRefused`
+carrying the paid call, while a response not matching its declared schema is refused inside
+`record_call` before the call is recorded, so that one is lost. Both were paid for.
+
+---
+
+**T4E.30 (2026-09-11): the measurement store and the evidence store, joined where git can prove
+the ordering.**
+
+The gap, counted before anything was built:
+
+```
+evidence bundles (round-robin input)   data/studies   (absent)    0
+review records / round-robin outcomes  data/reviews   (absent)    0
+measurement records                    measurements              28
+declarations and adoptions             data/identity_calibration 43
+```
+
+```
+$ .venv/Scripts/python.exe -m tools.bundle_join_rerun \
+      --output data/studies/t4e28-join-rerun.r7.json
+registration established from git
+  declaration 70640b4  2026-09-11T17:09:46+12:00
+  measurement 8290c8b  2026-09-11T17:27:15+12:00
+
+entries: 7
+  replication_results      PASS   both declared gates reproduced
+  provenance               PASS   the recovered extraction parameters are the ones that produced the record
+  provenance               PASS   the catalogue is the signed one, resolved by digest
+  contradictory_evidence   PASS   T4E.18's published non-dateline range is false
+  null_results             FAIL   condition 2 on the raw path, measured for the first time
+  failure_states           PASS   the acceptance this reproduces still fails
+  uncertainty              PASS   what the catalogue's own positional uncertainty is
+
+claim ladder: observation
+  unmet  observation.no_failed_or_invalid_evidence
+  unmet  observation.no_standing_contradiction
+
+published data/studies/t4e28-join-rerun.r7.json
+bundle_sha256 b1e809d69a71db35b8b409946bbc5a07ca1d627dc3b89e70621ea5c9c5c630b2
+```
+
+The ladder caps the bundle at `observation`, which is the correct answer: it carries a standing
+contradiction and a FAIL on purpose.
+
+**The survey of every study, which is the finding.** Sixteen declaration-and-measurement pairs
+exist; ten can be bundled and six are refused, and **not one of the six for being declared after
+the fact** -- in every case the declaration and the measurement entered git in the *same commit*:
+
+```
+t4e12  t4e14  t4e19  t4e20  t4e21  t4e24
+```
+
+```
+$ .venv/Scripts/python.exe -m pytest src/tests/test_measurement_evidence.py -q
+21 passed
+```
+
+---
+
+**T4E.29 (2026-09-11): every distance on screen, and what an exclusion does to the answer.**
+
+```
+$ curl '/api/v1/identity/join-distribution?population=raw_field'
+everything   storms 18   nearest 16.6 - 52.1 - 3685.3   >=1 inside radius 3 of 18
+
+$ curl '/api/v1/identity/join-distribution?population=raw_field&exclude_longitude_at_or_above=178'
+kept         storms 12   nearest 16.6 - 35.9 - 315.1    >=1 inside radius 3 of 12
+excluded     storms  6   nearest 67.6 - 2028.0 - 3685.3  (1 with no feature at all)
+```
+
+**The kept maximum is 315.1 km**, against the 99.3 km T4E.18's correction published for the
+same population.
+
+```
+$ .venv/Scripts/python.exe -m pytest src/tests/test_frontend_contract.py -q
+185 passed
+
+$ npx playwright test join-distribution.spec.ts --reporter=line
+6 passed (48.6s)
+
+$ npx playwright test ui-qualification.spec.ts --reporter=line
+4 passed (41.0s)
+```
+
+---
+
+**T4E.28 (2026-09-11): the join re-run. Both gates REPRODUCED; a claim in the record FALSIFIED.**
+
+The gate was committed in `70640b4`, which carries no measurement. The run followed in `8290c8b`.
+
+```
+$ .venv/Scripts/python.exe -u tools/rerun_t4e18_join.py
+declaration t4e28-join-rerun-declaration.json  status DRAFTED_NOT_ADOPTED
+catalogue resolved: data/catalogues/ibtracs.SP.list.v04r01.csv  signature_verified=True
+record: 48 shards
+catalogue rows 76784 | in the declared population 252 | storms sampled 18
+
+---- raw_field
+storm         lon  radius   feats   nearest  in_rad     >=3
+FEHI        165.9     8.9      11      30.0       0      no
+GITA        169.6    89.4       8      28.4       1      no
+HOLA        175.8    22.0       1     247.7       0      no
+LINDA       156.3     0.0       9      40.9       0      no
+IRIS        159.2    15.1       4      34.3       0      no
+JOSIE       179.0   145.2      13    2028.0       0      no
+OWEN        150.4    11.1      11      35.9       0      no
+PENNY       149.0    11.1       5      34.2       0      no
+OMA         161.3    14.8       8      99.3       0      no
+SARAI       179.7    24.6       5    2464.8       0      no
+UESI        159.7   103.5       3      16.6       1      no
+GRETEL      178.1   106.9       0      none       0      no
+ANA         179.7    34.9       3    3685.3       0      no
+LUCAS       166.6    61.5       7      33.4       1      no
+NIRAN       179.8   112.3       6    1207.4       0      no
+UNNAMED     174.5    22.2       5      52.1       0      no
+RUBY        179.0    11.1       7      67.6       0      no
+SETH        155.9    10.4       9     315.1       0      no
+
+raw_field: nearest min 16.6  median 52.1  max 3685.3 | condition 1: 3 of 18 | condition 2: 0 of 18
+GATE REPRODUCED
+
+swt_planes: nearest min 29.9  median 127.1  max 2055.9 | condition 1: 2 of 18 | condition 2: 1 of 18
+GATE REPRODUCED
+
+recovered SWT parameters against the 18 recorded rows: CONFIRMED
+
+wrote measurements/t4e28_join_rerun.json
+```
+
+**Condition 2 on the raw path was measured for the first time: 0 of 18.** No prediction had been
+offered for it and none is claimed retrospectively.
+
+**T4E.27's condition 2 is LIFTED**: 1 of 17 judged on the SWT path, 0 of 17 on the raw path,
+against a bar of 9. The verdict does not move -- FAILED, now on both conditions rather than one
+with the other refused.
+
+**A claim in T4E.18's own correction is falsified.** It published *"16.6 to 99.3 km"* for the
+storms away from the dateline. Every such storm, from the re-run:
+
+```
+UESI 16.6  GITA 28.4  FEHI 30.0  LUCAS 33.4  PENNY 34.2  IRIS 34.3  OWEN 35.9
+LINDA 40.9  UNNAMED 52.1  RUBY 67.6  OMA 99.3  >>> HOLA 247.7  SETH 315.1  GRETEL none
+```
+
+SETH (longitude 155.9) and HOLA (175.8) are nowhere near a boundary and sit an order of magnitude
+above the 22.1 km radius median. RUBY sits at longitude 179.0, inside the band named as refused
+by the off-frame rule, and is fine at 67.6 km -- so dateline longitude is not sufficient for the
+failure.
+
+```
+$ .venv/Scripts/python.exe -m pytest src/tests/test_catalogue_join.py -q
+28 passed
+```
+
+---
+
+**Full backend suite, measured 2026-09-11 on the tree carrying TG19.5.**
+
+```
+$ .venv/Scripts/python.exe -m pytest src/tests -q
+8 failed, 4917 passed, 4 skipped, 1 xfailed, 6 warnings in 3540.14s (0:59:00)
+
+FAILED src/tests/test_benchmarks.py::test_the_whole_suite_passes
+FAILED src/tests/test_browser_evidence.py::test_a_complete_recorded_run_beside_the_specs_it_ran_reads_pass
+FAILED src/tests/test_browser_evidence.py::test_a_partial_run_cannot_qualify_the_gate_however_green_it_is
+FAILED src/tests/test_browser_evidence.py::test_a_run_that_happened_and_failed_reads_fail_rather_than_not_run
+FAILED src/tests/test_documentation.py::test_claimed_test_count_is_at_least_the_function_count
+FAILED src/tests/test_experiment_qualification.py::test_green_offline_rehearsal_cannot_make_the_release_verdict_green
+FAILED src/tests/test_identity_target_declaration.py::test_the_catalogue_is_bound_by_content_identity_and_not_committed
+FAILED src/tests/test_imports.py::test_benchmarks_can_be_run_from_the_api
+```
+
+Six were pre-existing: the documented T4E.9 benchmark FAIL and its API route, three owed
+browser-evidence runs, and a `live_sources` gate left `NOT_RUN` since `cds_source.py` changed at
+T4E.18. The other two were that session's and were fixed. **No full-suite run has been made since
+T4E.28 opened**; the figure above is the last dated whole-suite measurement and is not an
+arithmetic increment.
+
+```
+$ .venv/Scripts/python.exe tools/audit_docs.py          (2026-09-12, tree carrying T4E.34)
+defects              : 101 defined, 93 fixed, partial ['D18'], open ['D84', 'D85', 'D96', 'D97', 'D98', 'D99', 'D100']
+test functions       : 4564
+stale inventory rows : none
+claimed suite totals : architecture (4917, 1) / roadmap (4917, 1)
+RESULT               : ok
+```
+
+---
+
 **T4E.24 (2026-09-11): adopted, measured, and the tolerance turns out not to be the constraint.**
 
 The declaration was adopted by the maintainer on 2026-09-11 and recorded in

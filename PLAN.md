@@ -1254,6 +1254,70 @@ about the definition and would cost no catalogue.
 Needs its own task, design and acceptance before it runs, declared first. Adopting an external
 project's ceilings is a scientific choice and must not be made silently by software.
 
+### T4E.34 ? The declaration composer ? built 2026-09-11; the commit-alone control is the point
+
+**Built.** A declaration can be written from the surface and committed **by itself**, which is
+the act that makes a later evidence bundle possible. T4E.30's survey is the reason: of sixteen
+declaration-and-measurement pairs, six cannot be bundled and **not one for being declared after
+the fact** -- in every case both files entered git in the same commit, so nothing can prove the
+ordering. The composer supplies structure and refusals and never content: no template, no
+suggested prediction, no example claim boundary. A prediction with no stated falsifier is
+refused, and composing writes `DRAFTED_NOT_ADOPTED` because composing is not adopting.
+
+**Still open.** Running a *measurement* is not on the surface. Tools like
+`tools/rerun_t4e18_join.py` remain terminal commands, which is a different shape of problem: the
+runs are long and want progress reporting rather than a request and a response.
+See `architecture.md` section 3E.48.
+
+### T4E.32 / T4E.33 ? Signing and convening from the surface ? built 2026-09-11
+
+**Built.** Adoption is a button that binds the declaration's sha256, is written once, refuses a
+placeholder name, and requires the affirmation typed in full -- a signature producible by one
+click is producible by accident. The rule is unchanged: *code does not sign a scientific
+declaration for a person*. What changed is that the rule is no longer enforced by the
+awkwardness of a text editor.
+
+One route now runs a model, and `src/api/reviews.py` says so instead of claiming otherwise. The
+authorisation moved into the request rather than out of the system: `i_authorise_paid_calls` is
+required, the key is read from the server's environment and never from the wire, and the call
+count is stated before anything is spent. See `architecture.md` section 3E.47.
+
+### T4E.31 ? The round-robin runner ? built 2026-09-11; NO PANEL HAS RUN
+
+**Built and unrun.** The protocol, the eight seats, the dissent register and the transport were
+built at TG7.1/TG7.2; what was missing was a bundle and a runner. `data/reviews/` does not exist
+and no exchange has been made against a model. Driving the protocol with fabricated answers
+established two properties that had been assumed: an exchange with no dissent takes **seven**
+turns, not eight, and a dissent must be answered by name, oldest first.
+
+**Known asymmetry, pinned not fixed.** A protocol violation returns the paid call; a response
+that does not match its declared schema is refused before the call is recorded, so that one is
+lost. Both were paid for. Changing it is a deliberate decision about where validation sits.
+See `architecture.md` section 3E.46.
+
+### T4E.30 ? Measurement store to evidence store ? built 2026-09-11; the first bundle exists
+
+**Built.** On 2026-09-11 this repository held 28 measurement records, 43 declarations and **zero
+evidence bundles**, so nothing the programme had measured was visible to the review layer.
+Registration is proved from git rather than asserted: the commit that first added the
+declaration must precede the commit that first added the measurement.
+
+**The survey is the finding.** Ten of sixteen studies can be bundled; six cannot, and not one
+for being declared late -- T4E.12, T4E.14, T4E.19, T4E.20, T4E.21 and T4E.24 each landed their
+declaration in the same commit as their measurement. Nothing lifts that retrospectively.
+`data/studies/t4e28-join-rerun.r7.json` carries seven entries and the ladder caps it at
+`observation`, correctly, because it holds a standing contradiction and a FAIL.
+See `architecture.md` section 3E.45.
+
+### T4E.29 ? The join distribution on screen ? built 2026-09-11
+
+**Built.** Every distance from each catalogue centre to every extracted feature, per storm, with
+an exclusion applied in the open: excluded rows stay in the table and their aggregate is computed
+at equal weight beside the kept one. Excluding longitude >= 178 gives a kept maximum of **315.1
+km** against the 99.3 km T4E.18's correction published for that population -- the claim is
+refuted by performing the exclusion it implied. A storm yielding no feature is drawn as a row and
+stays in every denominator. See `architecture.md` section 3E.44.
+
 ### T4E.28 ? The join re-run ? measured 2026-09-11; reproduced, and it falsified a claim in the record
 
 **Measured.** Both declared gates REPRODUCED and the SWT extraction parameters -- which existed

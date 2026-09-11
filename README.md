@@ -37,7 +37,47 @@ fork of that line, not a successor, and its results may **not** be cited as Spec
 atmospheric evidence. Both are live on `ed-dev` and work alternates between them; neither
 supersedes the other.
 
-**Current frontier (`ed-dev`).**
+**Current frontier (`ed-dev`), as of 2026-09-12.**
+
+This paragraph is orientation only. `architecture.md` section 0 is the status of record, and
+`VERIFICATION.md` carries the captured output behind every figure below.
+
+* **The atmospheric identity line reached T4E.34.** T4E.18 acquired a relative-vorticity record
+  and its acceptance **FAILED**: the extracted features do not land on catalogue cyclone centres,
+  3 of 18 inside the catalogue radius against a declared bar of 9. That verdict has survived a
+  restatement of the bar (T4E.27), a re-run from a gate committed before it (T4E.28), and two
+  corrections to its own diagnosis. **No mining radius is approved and no claim about the
+  atmosphere is made anywhere.**
+
+* **T4E.28 re-ran the join against a gate committed in a separate commit beforehand.** Both
+  extraction paths reproduce every figure the record asserts, and the extraction parameters --
+  which existed only in a session scratchpad under `%TEMP%` -- are confirmed against all 18
+  recorded rows. The re-run also **falsified a claim in T4E.18's own correction**: away from the
+  dateline the nearest feature reaches 315.1 km, not the 99.3 km published, and one storm at a
+  dateline longitude is unaffected. Corrections are appended to the records, never edited away.
+
+* **T4E.29 to T4E.34 moved the experiment onto the interface.** Every distance in the join is on
+  screen with exclusions applied in the open; a measurement can be carried into an evidence
+  bundle only where git proves the declaration predates it (T4E.30); the adversarial round-robin
+  has a runner (T4E.31); and declarations can be composed, committed alone, and signed from the
+  surface (T4E.32-T4E.34). **The rule that code does not sign a scientific declaration for a
+  person is unchanged** -- signing requires a named person and an affirmation typed in full.
+
+* **What has NOT happened, stated here so it is not inferred.** **No review panel has ever run**:
+  `data/reviews/` does not exist, and the round-robin apparatus has never been pointed at a model.
+  Only one evidence bundle exists. Six of sixteen studies **cannot** be carried into a bundle,
+  because their declaration and their measurement entered git in the same commit and nothing can
+  prove which came first -- that is recorded, not fixable retrospectively. Running a *measurement*
+  is still a terminal command, not a surface action.
+
+* Cross-domain line: **Phase G17 is IN PROGRESS, G18 is DONE, and G19 is SPECIFIED AND NOT
+  STARTED.** Note that five atmospheric engineering slices were named `TG19.1`-`TG19.5`, which
+  collides with the `TGxx.y` cross-domain convention; they are **not** phase G19. The collision is
+  recorded in `roadmap_cross_domain.md` section 0.
+
+The paragraphs below were written at T4E.8/TG17.11 and describe that frontier. They are kept
+because the defects they name (D96, D97) are still open, but they are **not** the current
+position.
 
 * Atmospheric line: **Phase 4E is DONE**. T4E.1-3 build, sign and approximately cluster
   constellations; T4E.4 now applies a configurable minimum support over distinct constellation

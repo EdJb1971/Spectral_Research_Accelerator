@@ -9357,6 +9357,12 @@ $ .venv/Scripts/python.exe -m pytest src/tests/test_identity_api.py -q
 32 passed
 ```
 
+**Naming note, recorded 2026-09-12.** The slices called `TG19.1`-`TG19.5` in this document are
+engineering slices on the atmospheric line. They are **not** phase G19 of the cross-domain
+programme, which is specified and not started in `roadmap_cross_domain.md` with its own slices
+G19.1-G19.5. `TGxx.y` is that document's phase-slice convention, so the name was taken in error
+and is recorded here rather than rewritten, because five commits already carry it.
+
 ### 3G.5 Can the change you are about to make move the answer at all? (TG19.5)
 
 **TG19.5 (2026-09-11): can the change you are about to make move the answer at all?**

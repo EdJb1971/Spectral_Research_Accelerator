@@ -24,6 +24,18 @@ the cost of a refactor, not for the cost of a platform.
 
 ## 0. Current position (2026-09-04, `ed-dev`)
 
+**NAMING COLLISION, recorded 2026-09-12. `TG19.1`-`TG19.5` are NOT phase G19.** Five engineering
+slices on the **atmospheric** line were named TG19.1 to TG19.5 on 2026-09-11 and appear under
+those names in `architecture.md`, `roadmap.md` and `VERIFICATION.md`. Because `TGxx.y` is this
+document's own phase-slice convention -- TG17.x, TG18.x -- those names read as "phase G19, slice
+x", and they are not. **Phase G19 below remains SPECIFIED AND NOT STARTED**; nothing in
+TG19.1-TG19.5 discharges G19.1-G19.5 or any part of them. What those five slices actually did:
+`coverage_report` made the coverage question runnable by a caller with their own field and
+extractor; a position-tolerance panel; a signed reference resolved by digest; a record holding
+two populations read by name; and a check of whether a declared prediction was ever falsifiable.
+The names are not rewritten because five commits already carry them and the documents would then
+disagree with the history.
+
 **Status note.** The atmospheric sequence and this cross-domain programme share one status
 table: `architecture.md` section 0. Nothing in the atmospheric work discharges G17's separate
 scale/shape declarations or its real-record curation requirements, and G19 remains specified
@@ -6051,6 +6063,8 @@ testable mode, which is worth knowing and worth stating plainly.
 
 
 ### Phase G19 - The researcher's conversation with the record - **NOT STARTED**
+
+**This phase has not been started. The atmospheric slices named `TG19.1`-`TG19.5` are unrelated to it; see the naming collision recorded in section 0.**
 
 G7 gives the platform an adversarial review layer that argues with a finding. G19 asks the
 adjacent question: a researcher meeting a `REFUSED` gate or a corrected q-value wants to
