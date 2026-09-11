@@ -1282,6 +1282,37 @@ export const apiService = {
         body: JSON.stringify({ mode, reading }) }));
   },
 
+  async listDeclarations(): Promise<types.DeclarationIndex> {
+    return handleResponse<types.DeclarationIndex>(
+      await fetch(`${BASE_URL}/identity/declarations`));
+  },
+
+  async signDeclaration(body: {
+    declaration: string; adopted_by: string; adopted_as: string;
+    what_was_adopted: string; affirmation: string; why?: string;
+  }): Promise<types.SignResult> {
+    return handleResponse<types.SignResult>(
+      await fetch(`${BASE_URL}/identity/declarations/sign`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      }));
+  },
+
+  async panelPlan(): Promise<types.PanelPlan> {
+    return handleResponse<types.PanelPlan>(await fetch(`${BASE_URL}/reviews/panel-plan`));
+  },
+
+  async conveneRoundRobin(studyId: string, body: {
+    i_authorise_paid_calls: boolean; model_id?: string; effort?: string;
+    seats?: Record<string, string>;
+  }): Promise<types.RoundRobinRun> {
+    return handleResponse<types.RoundRobinRun>(
+      await fetch(`${BASE_URL}/reviews/studies/${encodeURIComponent(studyId)}/round-robin`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      }));
+  },
+
   // T4C.5j: the atmospheric gate record. Every method below is a GET and there is no other
   // kind, which is the contract rather than an unfinished section. The two write-shaped things
   // a reader might look for - preflight and acquisition - are deliberately absent: the first

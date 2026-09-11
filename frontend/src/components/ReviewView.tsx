@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { AlertTriangle, MessageSquare, Receipt, RefreshCw } from 'lucide-react';
 import { apiService } from '../services/api';
+import ConvenePanel from './ConvenePanel';
 import * as types from '../types/api';
 
 interface Props {
@@ -76,6 +77,12 @@ export default function ReviewView({ selectedStudyId, onStudyId, onError }: Prop
 
       {surface && (
         <>
+          {/* T4E.33. The workspace described an exchange that could only be run from a terminal.
+              For a single-maintainer instrument that is a barrier, not a safeguard: the
+              authorisation moves into a deliberate control beside the button rather than out of
+              the system, and the key stays in the server's environment. */}
+          <ConvenePanel studyId={surface.study_id} onError={onError} onRan={() => void load()} />
+
           <section aria-label="Recorded-not-reproducible boundary"
             className="rounded border-2 border-amber-700/70 bg-amber-950/30 p-4">
             <h4 className="text-sm font-semibold text-amber-200">Recorded, not reproducible</h4>

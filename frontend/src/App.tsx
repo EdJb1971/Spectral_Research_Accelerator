@@ -26,6 +26,7 @@ import IdentityDeclarationView from './components/IdentityDeclarationView';
 import StudyTrailView from './components/StudyTrailView';
 import PositionToleranceView from './components/PositionToleranceView';
 import JoinDistributionView from './components/JoinDistributionView';
+import AdoptionView from './components/AdoptionView';
 import DatasetCapabilityProfile from './components/DatasetCapabilityProfile';
 import ExperimentComposer from './components/ExperimentComposer';
 import ResearchArchive from './components/ResearchArchive';
@@ -72,8 +73,7 @@ import {
   MessageSquare,
   Menu,
   FlaskConical,
-  X
-} from 'lucide-react';
+  X, FileSignature} from 'lucide-react';
 
 const WORKFLOW_NAV = [
   { section: 'Acquire', items: [{ id: 'acquire', name: 'Acquire data', icon: Cloud }] },
@@ -106,6 +106,7 @@ const WORKFLOW_NAV = [
     { id: 'studies', name: 'Study trail', icon: FlaskConical, context: 'Gridded field line' },
     { id: 'tolerance', name: 'Position tolerance', icon: Ruler, context: 'Gridded field line' },
     { id: 'joinDistribution', name: 'Join distribution', icon: Ruler, context: 'Gridded field line' },
+    { id: 'adoption', name: 'Adopt declarations', icon: FileSignature },
   ] },
   { section: 'Read', items: [
     { id: 'researchArchive', name: 'Research archive', icon: Archive },
@@ -2843,6 +2844,14 @@ export default function App() {
                every distance, keeps a storm with no feature on screen, and computes the excluded
                group's aggregate at equal weight beside the kept one. */
             <JoinDistributionView onError={(message) => setError(message)} />
+          )}
+          {activeTab === 'adoption' && (
+            /* T4E.32. Every adoption here was a hand-written JSON file. The rule stands -- code
+               does not sign for a person -- but it was being enforced by the awkwardness of a
+               text editor, which is a poor place to keep a principle. The maintainer signs here
+               by reading the declaration, typing their name and typing the affirmation; the
+               surface supplies no default for any of those. */
+            <AdoptionView onError={(message) => setError(message)} />
           )}
 
         </main>

@@ -3405,3 +3405,71 @@ export interface JoinDistribution {
   refusals: string[];
   network_used: boolean;
 }
+
+/** T4E.32: a declaration and whether a maintainer has signed it. */
+export interface DeclarationRow {
+  declaration: string;
+  declaration_exists: boolean;
+  adoption_file: string;
+  adopted: boolean;
+  required_affirmation: string;
+  declaration_sha256?: string;
+  adopted_by?: string;
+  adopted_on?: string;
+  adopts_sha256?: string;
+  signature_still_reaches_the_declaration?: boolean;
+  drift?: string;
+  unreadable?: string;
+  schema?: string | null;
+  status?: string | null;
+  task?: string | null;
+  artefact?: string | null;
+}
+
+export interface DeclarationIndex {
+  declarations: DeclarationRow[];
+  required_affirmation: string;
+  what_signing_means: string;
+  what_this_surface_will_not_supply: string;
+  refusals: string[];
+  network_used: boolean;
+}
+
+export interface SignResult {
+  adopted: {
+    file: string; adopts: string; adopts_sha256: string;
+    adopted_by: string; adopted_on: string;
+  };
+  adoption: Record<string, unknown>;
+  network_used: boolean;
+}
+
+/** T4E.33: what convening a panel would involve, and what it did. */
+export interface PanelPlan {
+  roles: Array<{ role: string; expects: string[]; rubric: string }>;
+  calls_if_every_turn_is_taken: number;
+  calls_if_nothing_is_dissented_from: number;
+  why_that_differs: string;
+  default_model: string;
+  key_variables: string[];
+  key_present: boolean;
+  cost_is_the_caller_s: string;
+  one_model_in_every_seat_is_recorded_not_refused: string;
+  claim_boundary: string;
+  network_used: boolean;
+}
+
+export interface RoundRobinRun {
+  study_id: string;
+  bundle_sha256: string;
+  bundle_revision: number;
+  turns_taken: string[];
+  outcome: Record<string, unknown>;
+  review_file: string;
+  outcome_file: string;
+  usage: Array<Record<string, unknown>>;
+  total_tokens: number;
+  the_rung_was_copied_not_set: string;
+  claim_boundary: string;
+  network_used: boolean;
+}

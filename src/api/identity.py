@@ -36,12 +36,16 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, HTTPException, Request
+from pydantic import BaseModel
 
 from src.analysis_engine.spectral_identity_audit import (
     EVIDENCE_CLASSES, IDENTITY_TARGETS, declare_identity_target,
 )
 from src.analysis_engine.position_tolerance import (
     DECLARED_GRID_KM_PER_CELL, DECLARED_LOCALISATION_CELLS, localisation_km, tolerance_for,
+)
+from src.core.adoption import (
+    REQUIRED_AFFIRMATION, AdoptionRefused, adoption_state, sign_declaration,
 )
 from src.core.errors import SpectralEarthError
 from src.data_layer.declared_population import (
@@ -410,6 +414,79 @@ def read_studies(request: Request) -> Dict[str, Any]:
     }
 
 
+
+
+# --------------------------------------------------- T4E.32: adoption, performed through a surface
+#
+# Every adoption here was a hand-written JSON file until now. The rule that produced them stands
+# and is not relaxed -- code does not sign a scientific declaration for a person -- but that rule
+# was being enforced by the awkwardness of a text editor, which is a poor place to keep a
+# principle. A maintainer who reads a declaration, types their name and types the affirmation has
+# signed it. Editing a file by hand is not more deliberate; it is only slower.
+#
+# These routes WRITE, which nothing else in this router does. What they write is bound to the
+# declaration's digest, written once, and never supplied by the server: no default name, no
+# suggested reason, no pre-filled affirmation.
+
+
+class SignRequest(BaseModel):
+    """What a person must provide for an adoption to exist. None of it has a default."""
+
+    declaration: str
+    adopted_by: str
+    adopted_as: str
+    what_was_adopted: str
+    affirmation: str
+    why: Optional[str] = None
+
+
+@router.get("/declarations")
+def read_declarations(request: Request) -> Dict[str, Any]:
+    """Every declaration in the calibration store, with whether it is adopted and still bound."""
+    directory = _audit_dir(request)
+    rows: List[Dict[str, Any]] = []
+    if directory.is_dir():
+        for path in sorted(directory.glob("*.json")):
+            if "adoption" in path.name or "signature" in path.name:
+                continue
+            state = adoption_state(directory, path.name)
+            try:
+                body = json.loads(path.read_text(encoding="utf-8"))
+            except (OSError, ValueError):
+                body = {}
+            state["schema"] = body.get("schema")
+            state["status"] = body.get("status")
+            state["task"] = body.get("task")
+            state["artefact"] = body.get("artefact")
+            rows.append(state)
+    return {
+        "declarations": rows,
+        "required_affirmation": REQUIRED_AFFIRMATION,
+        "what_signing_means": (
+            "An adoption binds the declaration's sha256, names who made the scientific choice "
+            "and when, and is written once. It does not make the declaration correct and "
+            "permits no claim."),
+        "what_this_surface_will_not_supply": (
+            "The maintainer's name, the reason, or the affirmation. A surface that offered a "
+            "plausible default for any of those would be signing on the maintainer's behalf "
+            "while appearing to ask."),
+        "refusals": list(REFUSALS),
+        "network_used": False,
+    }
+
+
+@router.post("/declarations/sign")
+def sign(request: Request, body: SignRequest) -> Dict[str, Any]:
+    """Adopt one declaration. Refuses by name and writes nothing when anything is missing."""
+    try:
+        adoption = sign_declaration(
+            _audit_dir(request), body.declaration, adopted_by=body.adopted_by,
+            adopted_as=body.adopted_as, what_was_adopted=body.what_was_adopted,
+            affirmation=body.affirmation, why=body.why)
+    except AdoptionRefused as refusal:
+        raise HTTPException(status_code=400, detail=str(refusal))
+    return {"adopted": adoption.describe(), "adoption": adoption.body,
+            "network_used": False}
 
 # ------------------------------------------- T4E.29: the distribution, rather than its extremes
 #

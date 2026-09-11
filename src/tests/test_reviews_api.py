@@ -142,11 +142,41 @@ def test_an_unknown_study_is_404_even_when_review_artifacts_exist(client, stores
     assert "no published study" in response.json()["detail"]
 
 
-def test_the_review_router_is_read_only():
-    routes = [route for route in app.routes if getattr(route, "path", "").startswith(
-        "/api/v1/reviews")]
-    assert [(route.path, route.methods) for route in routes] == [
-        ("/api/v1/reviews/studies/{study_id}", {"GET"})]
+def test_exactly_one_review_route_writes_and_it_is_the_one_that_convenes_a_panel():
+    """This guard asserted the router was read-only until T4E.33, and that was true.
+
+    It is not weakened, it is narrowed to the property that now holds: every route is a GET
+    except `POST .../round-robin`, which is the only route in this repository that runs a model.
+    A new writing route added to this surface must change this test deliberately rather than
+    slip past a guard that had been deleted for being inconvenient.
+    """
+    served = {(route.path, frozenset(route.methods)) for route in app.routes
+              if getattr(route, "path", "").startswith("/api/v1/reviews")}
+    writing = {path for path, methods in served if methods - {"GET", "HEAD"}}
+
+    assert writing == {"/api/v1/reviews/studies/{study_id}/round-robin"}
+    assert ("/api/v1/reviews/studies/{study_id}", frozenset({"GET"})) in served
+    assert ("/api/v1/reviews/panel-plan", frozenset({"GET"})) in served
+
+
+def test_the_only_writing_route_refuses_before_it_spends_anything(client):
+    """The authorisation moved into the request; it was not removed from the system."""
+    response = client.post("/api/v1/reviews/studies/anything/round-robin", json={})
+
+    assert response.status_code == 400
+    assert "Nothing was sent" in response.json()["detail"]
+
+
+def test_the_module_no_longer_claims_it_never_runs_a_model():
+    """A docstring that outlived its truth is worse than none: it is a false assurance.
+
+    T4E.33 replaced the sentence rather than deleting it, and this pins that the replacement
+    says what the module now does.
+    """
+    import src.api.reviews as reviews
+
+    assert "never runs a model" not in reviews.__doc__
+    assert "One route runs a model, and it is the only one" in reviews.__doc__
 
 
 def test_reading_a_review_does_not_change_the_published_bundle(client, stores):

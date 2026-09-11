@@ -2803,6 +2803,40 @@ configuration absent from one scene outright; nothing about recurrence *across* 
 which the mining machinery needs; no mining radius, no discharge of T4E.8's acceptance, no
 closure of D96 to D100; and nothing about `kind_recurrence`, which still has no catalogue.
 
+### T4E.32 / T4E.33 - signing and convening, moved into the instrument
+
+**A single-maintainer research instrument whose experiments can only be run by editing JSON and
+typing shell commands is not finished.** `src/core/adoption.py`, `AdoptionView.tsx`,
+`ConvenePanel.tsx`, and four routes.
+
+**The rule did not change; where it is enforced did.** *Code does not sign a scientific
+declaration for a person* stands. Until now it was enforced by the awkwardness of a text editor,
+and awkwardness is a poor place to keep a principle. A maintainer who reads a declaration, types
+their own name and types the affirmation has signed it -- that is what a signature is.
+
+The substance is kept exactly: the adoption binds the declaration's sha256; it is written once
+and never overwritten; it requires *"I have read this declaration and I adopt it"* typed in full,
+because a signature producible by one click is producible by accident; a placeholder name is
+refused because the artefact IS an attribution; and the surface supplies no default for the name,
+the reason or the affirmation. Drift is reported as loudly as adoption -- a declaration amended
+after signing reads *"what was signed is not what is on disk"*.
+
+**One route now runs a model, and the module says so instead of claiming otherwise.**
+`reviews.py` opened with *"It never runs a model..."*. That is now false in its first clause, so
+it was replaced rather than quietly deleted. The authorisation moved into the request rather than
+out of the system: `i_authorise_paid_calls` is required, the key is read from the server
+environment and never from the wire, the call count is stated before anything is spent, and the
+authorisation checkbox is a separate control from the run button.
+
+```
+$ .venv/Scripts/python.exe -m pytest src/tests/test_adoption.py -q     24 passed (19 functions)
+$ npx playwright test adoption.spec.ts ui-qualification.spec.ts        11 passed (1.0m)
+```
+
+**Still to do, named rather than implied: declaring an experiment from the surface.** Signing a
+declaration is now a button; writing one is still a hand-edited JSON file. That is the larger
+half of "do the experiments without editing a JSON file" and it is not done here.
+
 ### T4E.31 - the round-robin, wired to a bundle and still unrun
 
 **T4E.31 (2026-09-11): the runner.** `tools/review_join_rerun.py`,
