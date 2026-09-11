@@ -244,6 +244,10 @@ def test_the_compose_route_does_not_adopt_what_it_composes(client, tmp_path, mon
 
     body = response.json()
     assert response.status_code == 200
+    # The write must land in the temporary store. An earlier version of this test set the wrong
+    # environment variable, fell back to the real calibration directory, and left a stray
+    # declaration in it -- a test that pollutes the store it is testing is worse than no test.
+    assert str(tmp_path).replace("\\", "/") in body["path"]
     assert body["status"] == "DRAFTED_NOT_ADOPTED"
     assert "signing at the moment of drafting" in body["composing_is_not_adopting"]
     assert "before the run, nothing can prove it predates the measurement" in body[
