@@ -1522,7 +1522,10 @@ Three known gaps, in the order they bite:
 2. **Refusals still read as absence.** Wherever a figure is unavailable because a gate refused,
    the reason, its named defect and its claim boundary must travel with the empty space. An
    unexplained blank is indistinguishable from a bug and teaches a researcher to distrust the
-   instrument.
+   instrument. **Narrowed by TG19.2 for the tolerance surface**: a refused bar renders as a
+   result carrying its reason, the verdict element is absent rather than showing a miss, and a
+   browser test requires the result section to render with no error banner. Six Chromium tests
+   hold it. Still open everywhere else, and the other panels remain unaudited against it.
 3. ~~**No view states what a number may not be used for.**~~ **Closed by T4E.23 for the identity
    path.** `StudyTrailView` renders every verdict with its boundary attached, across the
    eighteen key names this programme has used for that clause, and six Chromium tests hold it

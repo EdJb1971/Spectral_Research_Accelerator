@@ -24,6 +24,7 @@ import ReviewView from './components/ReviewView';
 import GateRecordView from './components/GateRecordView';
 import IdentityDeclarationView from './components/IdentityDeclarationView';
 import StudyTrailView from './components/StudyTrailView';
+import PositionToleranceView from './components/PositionToleranceView';
 import DatasetCapabilityProfile from './components/DatasetCapabilityProfile';
 import ExperimentComposer from './components/ExperimentComposer';
 import ResearchArchive from './components/ResearchArchive';
@@ -43,6 +44,7 @@ import {
   Lightbulb,
   Globe,
   Database,
+  Ruler,
   Play,
   RotateCcw,
   Plus,
@@ -101,6 +103,7 @@ const WORKFLOW_NAV = [
     { id: 'gate', name: 'Atmospheric gate record', icon: Landmark, context: 'Gridded field line' },
     { id: 'identity', name: 'Identity declaration', icon: Target, context: 'Gridded field line' },
     { id: 'studies', name: 'Study trail', icon: FlaskConical, context: 'Gridded field line' },
+    { id: 'tolerance', name: 'Position tolerance', icon: Ruler, context: 'Gridded field line' },
   ] },
   { section: 'Read', items: [
     { id: 'researchArchive', name: 'Research archive', icon: Archive },
@@ -2821,6 +2824,14 @@ export default function App() {
           )}
           {activeTab === 'identity' && (
             <IdentityDeclarationView onError={(message) => setError(message)} />
+          )}
+          {activeTab === 'tolerance' && (
+            /* TG19.2. T4E.27 showed the join's bar was wrong for three reasons and that
+               replacing it changed nothing. Both halves matter and neither was visible: a bar
+               that arrives as one number can only be accepted or rejected. This panel shows its
+               components, their provenance, what it deliberately leaves out, and refuses a
+               missing catalogue uncertainty by name rather than counting it as a miss. */
+            <PositionToleranceView onError={(message) => setError(message)} />
           )}
 
         </main>

@@ -40,6 +40,9 @@ from fastapi import APIRouter, HTTPException, Request
 from src.analysis_engine.spectral_identity_audit import (
     EVIDENCE_CLASSES, IDENTITY_TARGETS, declare_identity_target,
 )
+from src.analysis_engine.position_tolerance import (
+    DECLARED_GRID_KM_PER_CELL, DECLARED_LOCALISATION_CELLS, localisation_km, tolerance_for,
+)
 from src.core.errors import SpectralEarthError
 
 router = APIRouter(prefix="/api/v1/identity", tags=["identity"])
@@ -378,3 +381,84 @@ def read_studies(request: Request) -> Dict[str, Any]:
         "refusals": list(REFUSALS),
         "network_used": False,
     }
+
+
+# ---------------------------------------------------------------- TG19.2: the join's own bar
+#
+# T4E.27 built a tolerance that publishes its parts. It was reachable only by importing a Python
+# module, which means a researcher could read what bar this programme used and could not see what
+# theirs would be. A bar that can only be accepted or rejected is not an instrument; one whose
+# components, provenance and refusals are on the wire can be disagreed with specifically, and
+# disagreeing specifically is how somebody else's question gets asked with the same tool.
+#
+# These routes COMPUTE a tolerance. They do not decide an acceptance, and there is no route that
+# writes one, stores one, or approves a join.
+
+
+@router.get("/tolerance/components")
+def read_tolerance_components() -> Dict[str, Any]:
+    """What a position tolerance is made of, before any observation is supplied.
+
+    Served without parameters so the contract can be read first and applied second. The excluded
+    component is published beside the included ones, because what a bar leaves out determines
+    what its residual means.
+    """
+    example = tolerance_for("<none supplied>", 1.0)
+    return {
+        "components": [
+            {"name": name, "source": source,
+             "supplied_by": ("the caller, per observation" if name == "catalogue_uncertainty"
+                             else "this instrument, measured")}
+            for name, _value, source in example.components],
+        "combined_by": (
+            "quadrature. These are independent contributions to a separation; a plain sum would "
+            "double-count and a maximum would discard the others entirely."),
+        "estimator_localisation_km": localisation_km(),
+        "estimator_localisation_cells": DECLARED_LOCALISATION_CELLS,
+        "grid_km_per_cell": DECLARED_GRID_KM_PER_CELL,
+        "excluded": example.describe()["what_is_not_included"],
+        "why_a_missing_uncertainty_is_refused": (
+            "A catalogue that reports no uncertainty arrives as 0.0. Used as a bar it demands a "
+            "separation of exactly zero, which no measurement can supply, so an observation "
+            "carrying it could never pass however good the instrument was. It is refused by "
+            "name and leaves the denominator instead of scoring as a failed detection."),
+        "refusals": list(REFUSALS),
+        "network_used": False,
+    }
+
+
+@router.get("/tolerance")
+def compute_tolerance(catalogue_radius_km: Optional[float] = None,
+                      separation_km: Optional[float] = None,
+                      observation: str = "unnamed") -> Dict[str, Any]:
+    """One observation's tolerance, with every part of it shown.
+
+    `separation_km` is optional. Supplied, the response also says whether the separation is
+    admitted and what the justified components fail to explain -- which is the measure of the
+    component this bar deliberately omits. Omitted, only the bar is returned, so a caller can
+    see what they would be judged against before judging anything.
+    """
+    tolerance = tolerance_for(observation, catalogue_radius_km)
+    payload: Dict[str, Any] = dict(tolerance.describe())
+    payload["network_used"] = False
+    payload["refusals"] = list(REFUSALS)
+    if separation_km is None:
+        payload["separation_km"] = None
+        payload["admitted"] = None
+        payload["unexplained_residual_km"] = None
+        payload["no_separation_supplied"] = (
+            "The bar is returned without a verdict, because none was asked for.")
+        return payload
+
+    admitted = tolerance.admits(float(separation_km))
+    payload.update({
+        "separation_km": float(separation_km),
+        "admitted": admitted,
+        "unexplained_residual_km": tolerance.unexplained_residual(float(separation_km)),
+    })
+    if admitted is None:
+        payload["why_no_verdict"] = (
+            "The tolerance was refused, so this separation is not judged. That is not a "
+            "failure: `we could not say` and `no` are different answers, and reporting this as "
+            "a miss would count a missing catalogue uncertainty against the instrument.")
+    return payload

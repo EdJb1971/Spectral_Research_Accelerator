@@ -2803,6 +2803,94 @@ configuration absent from one scene outright; nothing about recurrence *across* 
 which the mining machinery needs; no mining radius, no discharge of T4E.8's acceptance, no
 closure of D96 to D100; and nothing about `kind_recurrence`, which still has no catalogue.
 
+### TG19.2 - the join's bar, on the wire and on screen
+
+**TG19.2 (2026-09-11): the join's bar, on the wire and on screen, in parts.**
+
+An engineering slice. It makes no claim about any world, so it carries no declaration, no
+adoption and no prediction. `src/api/identity.py` (two routes),
+`frontend/src/components/PositionToleranceView.tsx`, `frontend/e2e/position-tolerance.spec.ts`.
+
+**Why it exists.** T4E.27 built a tolerance that publishes its parts, and it was reachable only by
+importing a Python module. A researcher could read what bar this programme used and could not see
+what theirs would be. T4E.27 also found two things a researcher needs and neither was visible:
+the bar was wrong for three reasons, *and* replacing it changed nothing. A bar that arrives as a
+single number can only be accepted or rejected; one whose components, provenance, exclusions and
+refusals are on screen can be disagreed with specifically.
+
+**Two routes, both GET, both computing rather than deciding.** `/identity/tolerance/components`
+serves the contract before any observation is supplied -- what the parts are, who supplies each,
+how they combine, what is excluded, and why a missing uncertainty is refused.
+`/identity/tolerance` computes one bar, and with an optional separation also reports whether it
+is admitted and what the justified components fail to explain. No route stores a tolerance,
+approves a join, or records an acceptance, and none was added.
+
+**`null` is a third answer and the wire carries it as one.** A refused tolerance returns
+`admitted: null`, never `false`, because *we could not say* and *no* are different answers and a
+client that conflated them would count a missing catalogue uncertainty as a failed detection --
+the exact error T4E.27 exists to correct.
+
+```
+$ curl '/api/v1/identity/tolerance?catalogue_radius_km=11.12&separation_km=99.98&observation=OWEN'
+total_km 13.81   admitted false   unexplained_residual_km 86.17
+
+$ curl '/api/v1/identity/tolerance?catalogue_radius_km=0.0&separation_km=74.91&observation=LINDA'
+total_km null    admitted null    unexplained_residual_km null
+```
+
+**Rendered evidence, because PLAN section 5's acceptance is a claim about what a researcher can
+see.** Six Chromium tests against the real API and the real frontend:
+
+```
+$ cd frontend && ./node_modules/.bin/playwright test e2e/position-tolerance.spec.ts
+  ok 1 the bar arrives in parts, each with where it came from (17.2s)
+  ok 2 what the bar leaves out is on screen at the weight of what it includes (2.7s)
+  ok 3 a missing catalogue uncertainty is refused by name, not scored as a miss (3.0s)
+  ok 4 a refusal renders as a result, not as an error state (2.8s)
+  ok 5 a computed bar shows its total and the residual it does not explain (2.9s)
+  ok 6 the panel states what it will not do, from the server own list (2.7s)
+  6 passed (57.3s)
+```
+
+Test 3 is the one the panel was written for: LINDA's reported radius in the acquired record is
+exactly 0.00, the case that made one storm of eighteen unpassable however good the extraction
+was. On screen it renders as a refusal naming its reason, the verdict element is absent
+entirely rather than showing a miss, and test 4 requires the surrounding result section to still
+render with no error banner -- a bar that could not be built is an answer the instrument is
+entitled to give. Test 6 asserts no control matches `accept|approve|save|record|apply`, because
+the panel's only control is arithmetic.
+
+**A pre-existing defect this slice found, and it is not this slice's.** Adding a workspace made
+`test_the_qualification_gate_inventories_every_served_workspace` fail -- and the drift it
+reported was **`Study trail`**, not the new panel. T4E.23 added that workspace on 2026-09-10 and
+never added it to `e2e/ui-qualification.spec.ts`; the spec's last commit is T4E.8 slice 4's. So a
+served workspace has been outside the qualification gate since then, and the guard that catches
+exactly this was not run when it shipped. Both entries are now listed, in shell order. **A
+workspace outside the qualification inventory is an unqualified surface that reads as a qualified
+one**, which is the failure mode the guard exists for.
+
+```
+$ .venv/Scripts/python.exe -m pytest src/tests/test_frontend_contract.py src/tests/test_identity_api.py -q
+214 passed
+
+$ cd frontend && ./node_modules/.bin/tsc --noEmit -p tsconfig.json
+(clean)
+```
+
+**What this costs, recorded rather than absorbed.** This slice edits `frontend/src/App.tsx` and
+`e2e/ui-qualification.spec.ts`, and recorded evidence in this programme is bound to the source it
+was measured against. The G17 release plan will therefore return `browser_no_glue` and
+`synthetic_fifth_adapter` to `NOT_RUN`, as it did for T4E.8 slice 4 and as TG17.14 demonstrated
+when editing an acquisition module invalidated a passing record. The G17 verdict was already
+`NOT_RELEASEABLE` on `scale_shape_calibration`, so no release decision changes. Restoring those
+two gates needs a fresh full browser run and its recording, and that has not been done.
+
+**What is not claimed.** No WCAG level: this is a rendered functional inspection, not an
+assistive-technology audit. Nothing is adopted, no default changed, and no tolerance approved for
+any pipeline. The panel computes a bar for whatever numbers a reader types; it says nothing about
+whether that bar is right for their catalogue, and the excluded component is on screen precisely
+so they can see what it does not cover.
+
 ### TG19.1 - the coverage question, made runnable by someone else
 
 **TG19.1 (2026-09-11): the coverage question, made runnable by someone else.**

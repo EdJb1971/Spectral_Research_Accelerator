@@ -1313,6 +1313,26 @@ export const apiService = {
       await fetch(`${BASE_URL}/identity/audits/${encodeURIComponent(name)}`));
   },
 
+  // TG19.2. Both are GETs that COMPUTE rather than decide: no route stores a tolerance,
+  // approves a join, or records an acceptance.
+  async toleranceComponents(): Promise<types.ToleranceComponents> {
+    return handleResponse<types.ToleranceComponents>(
+      await fetch(`${BASE_URL}/identity/tolerance/components`));
+  },
+
+  async positionTolerance(params: { catalogueRadiusKm?: number | null; separationKm?: number | null; observation?: string }): Promise<types.PositionToleranceView> {
+    const query = new URLSearchParams();
+    if (params.catalogueRadiusKm !== undefined && params.catalogueRadiusKm !== null) {
+      query.set('catalogue_radius_km', String(params.catalogueRadiusKm));
+    }
+    if (params.separationKm !== undefined && params.separationKm !== null) {
+      query.set('separation_km', String(params.separationKm));
+    }
+    if (params.observation) query.set('observation', params.observation);
+    return handleResponse<types.PositionToleranceView>(
+      await fetch(`${BASE_URL}/identity/tolerance?${query.toString()}`));
+  },
+
   async gateSurface(): Promise<types.GateSurface> {
     return handleResponse<types.GateSurface>(await fetch(`${BASE_URL}/gate`));
   },

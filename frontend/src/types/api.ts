@@ -3316,3 +3316,40 @@ export interface IdentityAuditView {
   refusals: string[];
   network_used: boolean;
 }
+
+// TG19.2: the join's bar, in parts. A tolerance that arrives as one number can only be accepted
+// or rejected; these fields exist so it can be disagreed with specifically.
+export interface ToleranceComponent {
+  name: string;
+  km: number | null;
+  source: string;
+}
+
+export interface ToleranceComponents {
+  components: Array<{ name: string; source: string; supplied_by: string }>;
+  combined_by: string;
+  estimator_localisation_km: number;
+  estimator_localisation_cells: number;
+  grid_km_per_cell: number;
+  excluded: string;
+  why_a_missing_uncertainty_is_refused: string;
+  refusals: string[];
+  network_used: boolean;
+}
+
+export interface PositionToleranceView {
+  observation: string;
+  total_km: number | null;
+  refused: boolean;
+  refusal: string | null;
+  components: ToleranceComponent[];
+  what_is_not_included: string;
+  separation_km: number | null;
+  // `null` is a third answer and not a `false`: the bar was refused, so nothing was judged.
+  admitted: boolean | null;
+  unexplained_residual_km: number | null;
+  why_no_verdict?: string;
+  no_separation_supplied?: string;
+  refusals: string[];
+  network_used: boolean;
+}

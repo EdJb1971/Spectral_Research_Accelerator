@@ -37,6 +37,8 @@ const SERVED_WORKSPACES = [
   'Recorded review',
   'Atmospheric gate record',
   'Identity declaration',
+  'Study trail',
+  'Position tolerance',
   'Research archive',
   'Findings',
   'Platform & evidence',

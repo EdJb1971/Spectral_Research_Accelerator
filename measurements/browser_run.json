@@ -1,10 +1,10 @@
 {
   "schema": "browser-run/v1",
-  "recorded_utc": "2026-09-03T20:34:54.533Z",
-  "finished_utc": "2026-09-03T20:42:39.556Z",
+  "recorded_utc": "2026-09-11T00:41:41.234Z",
+  "finished_utc": "2026-09-11T00:42:15.628Z",
   "status": "passed",
   "totals": {
-    "passed": 136,
+    "passed": 6,
     "failed": 0,
     "skipped": 0
   },
@@ -16,120 +16,25 @@
     "experiment-receipt.spec.ts",
     "figure-data.spec.ts",
     "flagship-qualification.spec.ts",
+    "identity-declaration.spec.ts",
     "narrow-width.spec.ts",
+    "position-tolerance.spec.ts",
     "product-modes.spec.ts",
     "publication-export.spec.ts",
     "research-journey.spec.ts",
     "resizable-panes.spec.ts",
     "scientist-actions.spec.ts",
+    "study-trail.spec.ts",
     "ui-qualification.spec.ts",
     "validity-uncertainty.spec.ts"
   ],
   "specs_that_ran": [
-    "assistive-acceptance.spec.ts",
-    "comparison-contract.spec.ts",
-    "comparison-views.spec.ts",
-    "composer-path.spec.ts",
-    "experiment-receipt.spec.ts",
-    "figure-data.spec.ts",
-    "flagship-qualification.spec.ts",
-    "narrow-width.spec.ts",
-    "product-modes.spec.ts",
-    "publication-export.spec.ts",
-    "research-journey.spec.ts",
-    "resizable-panes.spec.ts",
-    "scientist-actions.spec.ts",
-    "ui-qualification.spec.ts",
-    "validity-uncertainty.spec.ts"
+    "position-tolerance.spec.ts"
   ],
   "outcomes": [
     {
-      "spec": "assistive-acceptance.spec.ts",
-      "passed": 11,
-      "failed": 0,
-      "skipped": 0
-    },
-    {
-      "spec": "comparison-contract.spec.ts",
-      "passed": 12,
-      "failed": 0,
-      "skipped": 0
-    },
-    {
-      "spec": "comparison-views.spec.ts",
-      "passed": 19,
-      "failed": 0,
-      "skipped": 0
-    },
-    {
-      "spec": "composer-path.spec.ts",
-      "passed": 11,
-      "failed": 0,
-      "skipped": 0
-    },
-    {
-      "spec": "experiment-receipt.spec.ts",
-      "passed": 3,
-      "failed": 0,
-      "skipped": 0
-    },
-    {
-      "spec": "figure-data.spec.ts",
-      "passed": 9,
-      "failed": 0,
-      "skipped": 0
-    },
-    {
-      "spec": "flagship-qualification.spec.ts",
-      "passed": 2,
-      "failed": 0,
-      "skipped": 0
-    },
-    {
-      "spec": "narrow-width.spec.ts",
-      "passed": 19,
-      "failed": 0,
-      "skipped": 0
-    },
-    {
-      "spec": "product-modes.spec.ts",
-      "passed": 10,
-      "failed": 0,
-      "skipped": 0
-    },
-    {
-      "spec": "publication-export.spec.ts",
-      "passed": 4,
-      "failed": 0,
-      "skipped": 0
-    },
-    {
-      "spec": "research-journey.spec.ts",
-      "passed": 5,
-      "failed": 0,
-      "skipped": 0
-    },
-    {
-      "spec": "resizable-panes.spec.ts",
+      "spec": "position-tolerance.spec.ts",
       "passed": 6,
-      "failed": 0,
-      "skipped": 0
-    },
-    {
-      "spec": "scientist-actions.spec.ts",
-      "passed": 2,
-      "failed": 0,
-      "skipped": 0
-    },
-    {
-      "spec": "ui-qualification.spec.ts",
-      "passed": 4,
-      "failed": 0,
-      "skipped": 0
-    },
-    {
-      "spec": "validity-uncertainty.spec.ts",
-      "passed": 19,
       "failed": 0,
       "skipped": 0
     }
@@ -142,13 +47,16 @@
     "experiment-receipt.spec.ts": "4c775b8e87204ed760fafeb34900e0b01790c117a9e56adf8a862da02d540901",
     "figure-data.spec.ts": "f421ccf8d2c22ef0aabe88090511604249ce7445ec1b8a34bc137b2a82b1ae81",
     "flagship-qualification.spec.ts": "c269677b39e113f196faa83dce3c291765c0f81ea9c0172397cc54e29f35cfbe",
+    "identity-declaration.spec.ts": "c98bb1f727914dd3a626e18971a42a0a2724654d5ecbd71081f493856ffc19c3",
     "narrow-width.spec.ts": "606fddd2755fef8694d924b467034c03cd1a6e20017e542bb991440659e6e696",
+    "position-tolerance.spec.ts": "ea6288bf59187ac1c46a808f1ef399e6db5991745aee5b9b874f90c8a5d24a85",
     "product-modes.spec.ts": "26937a31b4c024cf0ad2b42b2aaa0e4b977a7abb991f576b2d7050cbdd006de7",
     "publication-export.spec.ts": "97cb50c9c0a648fda0e2583cabcc4069f4a8e6485e18a75cf7fd5396357fe7e2",
     "research-journey.spec.ts": "b6663c05680aa1b3c0a79a2cfc7732c477791f229b221f6d023b728e71ef9192",
     "resizable-panes.spec.ts": "3b37a1b7b68b2c1e5cbe524cb06ffbc1cad442933eceb99e71e25699924f2705",
     "scientist-actions.spec.ts": "8aba1d5dc737f48b6b489eb36ce4fb3e6d81bc99bc4a5845e566886747f2d915",
-    "ui-qualification.spec.ts": "884fb8f21dda0c6b8af3d00839434f9e88aee906af6919710c34dfef3ae137b9",
+    "study-trail.spec.ts": "91ceda1391515736be91dc64a70cff309eeb914ba78913eb2a46d31decf4102c",
+    "ui-qualification.spec.ts": "ae0c8292351cbc63cfff28c178bf6d3cfaa6d3e018f38c2b05aebd09de375a87",
     "validity-uncertainty.spec.ts": "f04280278ef1bbc90369d79f83d1a08a30fa59dd782a61fbd2da6810f67e57f4"
   },
   "artefacts": [
@@ -174,8 +82,8 @@
     },
     {
       "name": "320-floor-platform-evidence.png",
-      "bytes": 53179,
-      "sha256": "56af3a94593b371013749ec6c1beed17b78fbfac0294146dfc9ec5942eaa8022"
+      "bytes": 57165,
+      "sha256": "5f61d2ac3fce45e9dfc38069c0b27886691cbe3aa090feba4c1e4f211d7ab3cb"
     },
     {
       "name": "320-floor-spectral-transforms.png",
@@ -204,8 +112,8 @@
     },
     {
       "name": "375-phone-platform-evidence.png",
-      "bytes": 59181,
-      "sha256": "6c1af664ed947e03f4c8cf0139def64f81dc83ce7e314be6697bb7d3132fdad9"
+      "bytes": 62763,
+      "sha256": "f28677988d24f4604067e4b90095dd3d43b0473e8f453d4da4b928ce2e6ed1e7"
     },
     {
       "name": "375-phone-spectral-transforms.png",
@@ -229,8 +137,8 @@
     },
     {
       "name": "414-phone-large-platform-evidence.png",
-      "bytes": 85648,
-      "sha256": "119b21fa25cc4402d87bbde9fcd8583d8bac43e65b4cfd5c0d90a46ad608a598"
+      "bytes": 89478,
+      "sha256": "0700f611ce0816a8693edfd3546e0bf216a409d3171b943d816a78421fb598fd"
     },
     {
       "name": "414-phone-large-spectral-transforms.png",
@@ -254,8 +162,8 @@
     },
     {
       "name": "768-tablet-platform-evidence.png",
-      "bytes": 137460,
-      "sha256": "d307bdd2e9c3d0fa311f71cbf3214a87d8380dfc4ab2fa9e1b2b321e1052dad5"
+      "bytes": 162157,
+      "sha256": "82396c547c96f4371939e0638d10d0627ad2f6c52e60f25bd911818b88edede9"
     },
     {
       "name": "768-tablet-spectral-transforms.png",
@@ -269,13 +177,13 @@
     },
     {
       "name": "desktop-1440-mode-claim.png",
-      "bytes": 203991,
-      "sha256": "ec4d829f1136bd4064ec60e02e7a7901a794b7d101e39a6c24bb83779c7ab0dc"
+      "bytes": 203509,
+      "sha256": "1bf058f6600708f927e767da91722785fb435f3fe9e18ceb141c731deb0e2039"
     },
     {
       "name": "desktop-1440-mode-commitment.png",
-      "bytes": 219478,
-      "sha256": "3b2212deff6c95871f9bd731861a9851e8b88deec0e0b35e85d822d1c860c033"
+      "bytes": 218020,
+      "sha256": "f3d566ca9d47017b52f2a46d8e195dba4617b472c5b95757f7247a76abd78946"
     },
     {
       "name": "desktop-1440-mode-instrument.png",
@@ -284,8 +192,8 @@
     },
     {
       "name": "desktop-1440-mode-qualification.png",
-      "bytes": 198921,
-      "sha256": "219e15185243c1a07f603bbdf3cb7d918ac6d7a60dfa6ba8ec058a246692fd55"
+      "bytes": 204891,
+      "sha256": "e2c3ad4359c1990f6c7dd0f04495c95057c2e054f0e5f65b616ceb2404a1daaa"
     },
     {
       "name": "figure-data-heatmap.png",
@@ -293,24 +201,39 @@
       "sha256": "2ee918e73fb8306a108bf483abce94332196c9e73fe33c091a343531f953b510"
     },
     {
+      "name": "study-trail-chain.png",
+      "bytes": 544466,
+      "sha256": "770fb3adff122fc636d96e57bce904b049d3da8030015a809f9d150dd3c1e59d"
+    },
+    {
+      "name": "study-trail-correction.png",
+      "bytes": 1814,
+      "sha256": "174de9f4a12bf2df25ff1780bb4a24fee99acd63a669f3cc99d77d6d90fe9800"
+    },
+    {
+      "name": "study-trail-refusal.png",
+      "bytes": 3701,
+      "sha256": "2558562f7a01e6a39ff7bd4b7bb228ebc749f0f3d832572cb42f6c05a33d67d6"
+    },
+    {
       "name": "wide-1920-mode-claim.png",
-      "bytes": 203109,
-      "sha256": "fa11000cbc6b01c7419a29d817273d68d835351d686cadde0c8632338d9c9d28"
+      "bytes": 202989,
+      "sha256": "ed4c2329e6546d0ee4d8d751d453644e7cb9bbd1fe9e59bdef125c06285cb14f"
     },
     {
       "name": "wide-1920-mode-commitment.png",
-      "bytes": 240306,
-      "sha256": "2e344343f4cf18d220439ba85977cc1b7f0684cc7d62f385164068855b710688"
+      "bytes": 240013,
+      "sha256": "1b8802cbefe74cfccdc5697f0fe77ef8e9e65f64e2825a1b6d216f43f7cfb275"
     },
     {
       "name": "wide-1920-mode-instrument.png",
-      "bytes": 228689,
-      "sha256": "04afbd0007fb15e6cf2ac98bb5b58c0e11073e429c73214ac2341d5e3579ed7e"
+      "bytes": 228847,
+      "sha256": "d77584201a0824c6baa02af83f396d70a9be3fdf6c4ca2bb5d2d0bb60b2f8f6b"
     },
     {
       "name": "wide-1920-mode-qualification.png",
-      "bytes": 248339,
-      "sha256": "117a7632a57c89a80ab7190f37244a2099e0e83167e6e37861719ff5c2049cdb"
+      "bytes": 256696,
+      "sha256": "04c2c439a3295ccb8222477bda3ee7ee28dcf7d6f1d78135887df1dbb296de94"
     }
   ],
   "claim_boundary": "A record of what a rendered browser run did. Artefact digests attest that a file of those bytes existed when the run finished, never that a human read it and never that what it shows is correct. Nothing here is evidence about any scientific result."
