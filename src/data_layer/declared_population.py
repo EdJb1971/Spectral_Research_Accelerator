@@ -104,6 +104,46 @@ def _dig(payload: Any, dotted: str) -> Any:
 #: The maps this repository knows. A record absent from here is read whole and at the reader's
 #: risk; a record present here cannot be read unnamed.
 MAPS: Dict[str, PopulationMap] = {
+    "measurements/t4e28_join_rerun.json": PopulationMap(
+        record="measurements/t4e28_join_rerun.json",
+        why_this_map_exists=(
+            "The re-run holds the same two extraction passes as T4E.18 and now holds ROWS for "
+            "both, including the full sorted distance from each catalogue centre to every "
+            "extracted feature. A record that holds two answers must still be asked which one, "
+            "and having rows for both makes the unnamed read easier to get away with, not "
+            "harder."),
+        populations=(
+            Population(
+                name="raw_field",
+                description=(
+                    "Extraction on the raw negated field, representation 'identity'. Nearest "
+                    "feature 16.6 km at minimum and 52.1 at median, 3 of 18 inside the "
+                    "catalogue radius and 0 of 18 with three inside it, 0 to 13 features per "
+                    "frame. Better than the SWT planes on nearest distance and WORSE on the "
+                    "count inside the radius; 'markedly better' was a statement about one of "
+                    "those and does not carry to the other."),
+                rows_at="paths.raw_field.rows",
+                identified_by=(
+                    "`extraction.raw_field` in the record reads \"representation 'identity'\", "
+                    "and these rows' `features` field runs 0 to 13 against the SWT pass's 73 "
+                    "to 153"),
+            ),
+            Population(
+                name="swt_planes",
+                description=(
+                    "Extraction through the stationary wavelet planes, wavelet db2 at level 3 "
+                    "over every extractable plane. Median nearest feature 127.1 km, 2 of 18 "
+                    "inside the catalogue radius and 1 of 18 with three inside it, 73 to 153 "
+                    "features per frame. This is the population T4E.27 restated against, and "
+                    "these rows regenerate T4E.18's recorded table exactly."),
+                rows_at="paths.swt_planes.rows",
+                identified_by=(
+                    "`extraction.swt_planes` in the record reads {'wavelet': 'db2', 'level': "
+                    "3}, and `paths.swt_planes.parameter_recovery.verdict` is CONFIRMED "
+                    "against all 18 rows T4E.18 recorded"),
+            ),
+        ),
+    ),
     "measurements/t4e18_acceptance.json": PopulationMap(
         record="measurements/t4e18_acceptance.json",
         why_this_map_exists=(
@@ -137,7 +177,11 @@ MAPS: Dict[str, PopulationMap] = {
                     "CORRECTION_2026_09_10.what_the_measurement_actually_shows."
                     "raw_field_extraction, which is a summary of four numbers"),
                 summary_only=(
-                    "Only aggregates are recorded: nearest_km_min, nearest_km_median, "
+                    "SUPERSEDED 2026-09-11: T4E.28 re-ran this pass against a gate declared "
+                    "beforehand, reproduced every aggregate below, and recorded the per-storm "
+                    "rows this record never held. Read "
+                    "measurements/t4e28_join_rerun.json population 'raw_field' for them. "
+                    "In THIS record: only aggregates are recorded -- nearest_km_min, nearest_km_median, "
                     "inside_catalogue_radius and features_per_frame. There are no per-storm "
                     "rows for this pass anywhere in the record. Producing them needs a re-run "
                     "of the join that records the full per-storm distance list, which is "

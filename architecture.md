@@ -6611,7 +6611,7 @@ existing file.
 
 ## 3.12 HTTP API Surface
 
-161 routes. Listed here because an undocumented endpoint is an untested contract. The count and this table were both wrong until TG17.3 (defect D75): the guard enumerated a hand-maintained list of ten source files and could not see four mounted routers.
+162 routes. Listed here because an undocumented endpoint is an untested contract. The count and this table were both wrong until TG17.3 (defect D75): the guard enumerated a hand-maintained list of ten source files and could not see four mounted routers.
 
 | Method | Route | Notes |
 |---|---|---|
@@ -6772,6 +6772,7 @@ existing file.
 | GET | `/api/v1/identity/audits/{name}` | one receipt whole, never in fragments; the name is a file name in the store and a path is refused |
 | GET | `/api/v1/identity/measurements` | every measurement record with its verdict, and with what it may not be used for attached rather than beside it; fifteen key spellings of that clause are collected rather than normalised, records corrected or superseded in the open are marked in the summary, and records predating the boundary convention are listed by name rather than passed over |
 | GET | `/api/v1/identity/measurements/{name}` | one measurement whole; the name is a file name in the store and a path is refused |
+| GET | `/api/v1/identity/join-distribution` | T4E.29: every distance in one join, per storm, with the full sorted list from each catalogue centre to every extracted feature. The population must be NAMED -- the record holds two extraction passes and reading whichever is stored first is the error T4E.27 made. An optional longitude exclusion is applied in the open: excluded rows stay in the table and their aggregate is computed at equal weight beside the kept one, because an aggregate over a filtered population is a statement about that population and nothing else |
 | GET | `/api/v1/identity/tolerance/components` | TG19.2: what a position tolerance is made of, before any observation is supplied — each component with its provenance and who supplies it, how they combine, and the component deliberately EXCLUDED, because what a bar leaves out decides what its residual means |
 | GET | `/api/v1/identity/tolerance` | TG19.2: one observation's bar, computed and never decided. With a separation it also reports admission and the unexplained residual; a missing catalogue uncertainty returns `admitted: null` and never `false`, because "we could not say" and "no" are different answers and conflating them counts a missing agency report as a failed detection |
 | GET | `/api/v1/identity/studies` | each task as the chain the work runs — declaration, adoption or signature, measurement, outcome — so which result answered which question is not left to be reconstructed from filenames; a declaration with no measurement is shown rather than filtered, because a question deliberately left unanswered is a legitimate state here |
@@ -8826,6 +8827,64 @@ real figure is worse than this one, not better.
 All four acceptance conditions are met: the coded gate passed, the full distribution is reported
 rather than a mean, the mechanism and consequence claims are reported separately with the
 mechanism claim carrying its declared caveat, and the two named outcomes did separate.
+
+### 3E.44 Every distance, and what an exclusion does to the answer (T4E.29)
+
+**T4E.29 (2026-09-11): the distribution, rather than its extremes.** An engineering slice -- it
+makes no claim about any world, so it carries no declaration, no adoption and no prediction.
+`src/api/identity.py` route `/join-distribution`,
+`frontend/src/components/JoinDistributionView.tsx`, a population map for the re-run in
+`src/data_layer/declared_population.py`.
+
+**Why it exists, in one measured failure.** T4E.18's correction stated that away from the
+dateline the nearest extracted feature is *"16.6 to 99.3 km"*, and read that as *"a factor of two
+to three, not an order of magnitude"*. The median was right. The range was not -- SETH sits 315.1
+km out and HOLA 247.7, neither anywhere near a boundary, and GRETEL yields no feature at all. The
+claim was written, reviewed, committed and read back for a day, and T4E.28 falsified it in one
+run. **Two things let it stand.** The record held one number per storm, so nothing in the
+repository could contradict it. And the aggregate was taken over a subset that was never named,
+so nothing could check the subset either.
+
+Both are surfaces, not habits. A researcher reading the study trail could open that record and
+get a raw JSON dump; there was nowhere to see the eighteen distributions the sentence was about.
+
+```
+$ curl '/api/v1/identity/join-distribution?population=raw_field'
+everything   storms 18   nearest 16.6 - 52.1 - 3685.3   >=1 inside radius 3 of 18
+
+$ curl '/api/v1/identity/join-distribution?population=raw_field&exclude_longitude_at_or_above=178'
+kept         storms 12   nearest 16.6 - 35.9 - 315.1    >=1 inside radius 3 of 12
+excluded     storms  6   nearest 67.6 - 2028.0 - 3685.3  (1 with no feature at all)
+```
+
+**The kept maximum is 315.1 km.** The claim that made it past review is refuted by running the
+exclusion it implied and reading the answer -- which now takes one request and one glance.
+
+**Four rules, each from something that went wrong.** *No exclusion hides a row*: excluded storms
+stay in the table, marked with why, and their aggregate is computed at equal weight beside the
+kept one rather than beneath it. *A storm with no feature is drawn, not skipped* -- it has no
+distance so it cannot appear on a distance axis, which is exactly why it would vanish; it gets a
+row saying so and stays in every denominator, because dropping it improves every aggregate by
+removing the worst case. *Every distance is plotted, not the nearest* -- a reader looking at 140
+ticks spread across a frame is looking at the thing that makes "the extractor found the storm"
+false, and no summary statistic shows it. *The population must be named*, so the server refuses
+an unnamed read with both names rather than serving whichever is stored first.
+
+**The distance axis is logarithmic and says so.** Distances run from 16 km to 3,685 km; on a
+linear axis every storm that matters is one pixel against the dateline outliers. Each row also
+carries a text transcript and an `aria-label` naming its counts and range, so the shape is
+available without the chart.
+
+**What it does not do.** It computes no verdict, adopts nothing, stores nothing, and no route
+behind it writes. It does not decide which extraction pass is right -- it renders whichever is
+named, and names the other. And a chart is not a finding: what a reader sees here is the
+distribution a measurement recorded, under the claim boundary that measurement was recorded with,
+which renders beside it.
+
+```
+$ .venv/Scripts/python.exe -m pytest src/tests/test_frontend_contract.py -q
+185 passed
+```
 
 ### 3E.43 The join re-run: a gate declared before the run that is measured against it (T4E.28)
 
@@ -12680,11 +12739,11 @@ able to sit three slices out of date.
 | `test_spectral_regions.py` | 54 | T4F.7 cross-region generalisation: one 260-frame five-box record built to give four answers at once -- the rule holding in two held-out regions at lift 4.47 and 3.72 after correction over four declared ones, not holding in a third that carries both patterns in the wrong order at support 0 of 24, and not assessable in a fourth that carries nothing -- with the verdict `regional` on that design and `general` on one declaring three held-out boxes; a region carrying the antecedent but never the consequent shown to be unassessable rather than failing, because a base rate of zero is not a lift of zero; membership decided on footprints with every placed configuration's whole box asserted inside its region and the three ways of not being placed counted apart at 364, 397 and 21 of 1,063; the identity matcher shown to hold every centroid and radius fixed and to admit only what the radius contains while a fitted member outside it is left alone, an empty catalogue refused as clustering under another name, leakage measured on the fitted members alone and shown to refuse `general`, and T4E.2's rotation invariance measured as the reason a band-orientation catalogue cannot be matched into -- 0.447 to its own centroid against 0.585 to the other, inside a radius of 0.959; the gaps published in cells and kilometres with a pixel grid refused kilometres by name, independence unestablished without a declared decorrelation length and the too-close regions named with one; `general` refused separately for leakage, for unestablished independence, for an undeclared physiography and for a single declared class, and refused for one assessable region against a floor of two; a reversed or negative box, an unknown role, two discovery regions, none, no held-out region, overlapping boxes and duplicate names each refused by name, and the partition digest shown to move with the declared design; and the claim boundary naming the six refused words, saying that `general` is not a claim about anywhere untested and that `unassessable` licenses nothing |
   | `test_representation_alignment.py` | 19 | Mutual k-NN alignment between two kernels, the metric arXiv:2405.07987 reports as 0.16 out of 1 without a reference: self-alignment exactly 1, rotation invariance of the inner-product kernel, alignment falling monotonically as two views are driven apart, deterministic tie-breaking; the closed-form chance floor k/(n-1) checked against random neighbour sets and shown to survive strongly clustered and nine-fold duplicated kernels to under one percent -- a first version of that test asserted the opposite and is corrected in place; a paired view clearing its permuted pairing while two unrelated representations come back unresolved; and the refusals -- a non-square kernel, two kernels over different point sets, a non-finite similarity, a neighbour count outside [1, n-1], a null with no permutations, and an exceedance never reported as exactly zero |
   | `test_operating_point.py` | 15 | T4E.10 identity operating-point estimators: the closed-form required support checked against the order statistic it derives from, the tolerance bound refusing thin support and naming the 22 observations that would carry 90/90, that bound never narrower than the empirical quantile it replaces, an empty population refusing rather than returning zero, the empirical quantile publishing that it guarantees nothing and recording the confidence it was given and ignored, the bootstrap widening rather than refusing while naming its own weakness and staying deterministic per seed, every registered estimator publishing a guarantee, only the tolerance bound declaring that it refuses, and the refusals -- an unknown estimator corrected, a coverage or confidence outside (0,1), and a negative or non-finite distance |
-  | `test_identity_api.py` | 27 | T4E.8 slice 4 the identity declaration surface: every target served with what it does not license, the circular `kind_recurrence` x `record_derived_proxy` pairing served as a refusal rather than omitted, an admitted pairing still carrying its tracker-agreement caveat, the matrix covering every target against every evidence class, receipts written before slice 3 listed and named undeclared rather than hidden, an unreadable receipt reported rather than skipped and a non-object JSON document distinguished from an empty store, a path refused where a file name was required, a missing receipt 404 naming what was asked for and an unparseable one 422 rather than 500, the surface read-only under POST/PUT/DELETE, and the refusals published rather than implied by an absence of buttons ; and T4E.28 what the panel was getting wrong -- a refusal lifted by new evidence reported as an amendment rather than missed for want of a key prefix, a clause describing a refusal that still stands NOT reported as one, and the join re-run stating a verdict and a boundary instead of the nulls a reader would read as 'nothing was concluded' |
+  | `test_identity_api.py` | 34 | T4E.8 slice 4 the identity declaration surface: every target served with what it does not license, the circular `kind_recurrence` x `record_derived_proxy` pairing served as a refusal rather than omitted, an admitted pairing still carrying its tracker-agreement caveat, the matrix covering every target against every evidence class, receipts written before slice 3 listed and named undeclared rather than hidden, an unreadable receipt reported rather than skipped and a non-object JSON document distinguished from an empty store, a path refused where a file name was required, a missing receipt 404 naming what was asked for and an unparseable one 422 rather than 500, the surface read-only under POST/PUT/DELETE, and the refusals published rather than implied by an absence of buttons ; and T4E.28 what the panel was getting wrong -- a refusal lifted by new evidence reported as an amendment rather than missed for want of a key prefix, a clause describing a refusal that still stands NOT reported as one, and the join re-run stating a verdict and a boundary instead of the nulls a reader would read as 'nothing was concluded' |
   | `test_identity_certification.py` | 131 | T4E.9 the T4E identity path against a motif known by construction: the benchmark registered and naming the path it certifies, three disjoint partitions so a radius is never evaluated on what calibrated it, exactly one motif configuration in a planted scene and none in a null one, construction labels taken from the generator and refused rather than guessed when a planted position has no feature near it or two positions claim one, only cross-scene pairs formed, the definition's separation asserted as a floor, nothing admitted where nothing recurs with the absent positive population left unmeasured rather than zero, the frozen-radius failure pinned as a relationship to the feasible radius rather than as two numbers, an empty calibration returning INVALID rather than a permissive radius, every result stating what it does not license, and T4E.13's criterion fixed in code while asserted to be measured nowhere -- `k` derived as a function of the partition size, unequal partitions refused rather than pooled, monotonicity in `k` checked on a toy rather than assumed, and, once candidate 3 was adopted and falsified, that guard replaced by the reading of the result -- which conditions failed and by how much, that the null held at 0 of 1486 proposed, that the 0.0000 recall is recorded as arithmetic rather than a finding, that no lower k can rescue what this one failed, that the falsification licenses none of the conclusions nearest to it, that partitions 720-735 stay refused in code, and T4E.14's partial-presence test bed -- seeds that collide with no existing evidence, a reservation refused with no flag to open it, planting patterns that are deterministic and not contiguous, the recoverable population C(j,2) rather than C(S,2), the design's own record of what this evidence cannot repair, and T4E.15's criterion fixed in code while asserted to be measured nowhere -- closure broken by a single loose end, closure admitting only a subset of what consistency admits, the criterion carrying no tunable parameter at all, the span-ranking design recorded as discarded by derivation, the declaration's own worst case and refusal to predict, and -- once measured and falsified -- the reading of that result: the conditions that failed with their counts, the mechanism executed rather than described (a pair with no other partners is closed and is therefore admitted, while one loose end rejects a group spanning five scenes), the cross-check showing closure admits more than candidate 2 on the evidence candidate 2 passed, the missed derivation recorded rather than quietly repaired, the constraint the falsification fixes on any successor, and T4E.16's withdrawal held as a derivation rather than a note -- the surrogate reassembly rate computed analytically and by simulation, the record of why the design cannot simply be repaired, the fact that a withdrawn declaration adds nothing to the accumulated multiplicity, and PooledDistances keeping a refused distance as NaN so it can never leak in as a number |
   | `test_identity_target_declaration.py` | 53 | T4E.8 slice 3 the declared identity target: an absent target or evidence class refused by name, a misspelling refused with its correction, `kind_recurrence` against record-derived proxy labels refused as circular, `track_continuity` admitted with its tracker-agreement caveat, every target round-tripping what it recognises and does not license, the published proxy wording pinned verbatim so naming a target cannot reword a cited receipt, and the external-reference path recovering two planted identities from a reviewed catalogue while refusing a mismatched family, a single identity, a non-catalogue and a negative population the patterns cannot supply |
   | `test_spectral_spatial_identity.py` | 24 | T4E.8 spatial geometry, detector-band/magnitude independence, source/scope refusal, analytic distances, old-radius refusal, scalar/accelerated agreement and two-sided proxy-label diagnostics |
-| **total** | **4484** | |
+| **total** | **4491** | |
 
 ### 7.4a Browser suite inventory
 
@@ -12719,8 +12778,9 @@ not bound to the scratch state.
 | `scientist-actions.spec.ts` | 2 | TG18.5 the two numbers `scientist_actions` refuses to invent: the visible actions a researcher takes from a clean browser to a completed run of the frozen plan, and the actions between meeting the preflight refusal and clearing it, both asserted, with the wall-clock durations written into the measurement and asserted by nothing |
 | `product-modes.spec.ts` | 5 | TG18.5 one representative path through each of TG18.0's four product modes at two desktop viewports, with a named artefact at the state each path reaches, and the signature-uniqueness assertion that holds the modes apart (the file declares five and Playwright collects ten, once per viewport) |
 | `position-tolerance.spec.ts` | 6 | TG19.2 the join's bar rendered in parts: each component with where it came from, what the bar deliberately excludes shown at the weight of what it includes, a catalogue radius of 0.00 refused by name with the verdict element absent rather than showing a miss, that refusal rendering as a result with no error banner, the total and the residual it does not explain, and no control matching accept/approve/save/record/apply |
+| `join-distribution.spec.ts` | 6 | T4E.29 every distance on screen: all eighteen storms as rows including the one that yielded no feature, labelled and still in every denominator; the two outliers T4E.18's published range excluded without saying so, visible at 315.1 and 247.7 km; an exclusion that keeps its rows on screen and computes both aggregates, where the kept maximum is the figure that refutes the published range; the extraction pass named and switching it changing the counts; the measurement's own claim boundary carried beside the chart; and no control matching accept/approve/save/record/apply/adopt |
 | `study-trail.spec.ts` | 6 | T4E.23 the study trail rendered: a study drawn as the chain it ran rather than a list of files, every verdict on screen carrying what it may not be used for, a question declared and never measured shown rather than filtered, a corrected record marked where a reader looks first, the surface stating its own refusals instead of implying them by absent buttons, and a measurement opened whole and closed again |
-| **suite** | **136 + 6** | 136 from a cleaned `.e2e-state`, Chromium, 2026-09-04; the six `study-trail` tests measured separately on 2026-09-10 and not folded into a re-run of the whole suite, so the total is two dated measurements rather than one |
+| **suite** | **136 + 6 + 6** | 136 from a cleaned `.e2e-state`, Chromium, 2026-09-04; the six `study-trail` tests measured separately on 2026-09-10 and the six `join-distribution` tests on 2026-09-11 (48.6 s, Chromium, one worker), neither folded into a re-run of the whole suite. The total is three dated measurements rather than one, and saying so is cheaper than implying a single run that never happened |
 
 The counts are guarded by `test_documentation.py`, but only as far as a static reader honestly can:
 the file set must match `frontend/e2e/` exactly in both directions, and each stated count must be at

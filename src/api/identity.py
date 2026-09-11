@@ -44,6 +44,9 @@ from src.analysis_engine.position_tolerance import (
     DECLARED_GRID_KM_PER_CELL, DECLARED_LOCALISATION_CELLS, localisation_km, tolerance_for,
 )
 from src.core.errors import SpectralEarthError
+from src.data_layer.declared_population import (
+    UndeclaredPopulationError, read_population,
+)
 
 router = APIRouter(prefix="/api/v1/identity", tags=["identity"])
 
@@ -406,6 +409,128 @@ def read_studies(request: Request) -> Dict[str, Any]:
         "network_used": False,
     }
 
+
+
+# ------------------------------------------- T4E.29: the distribution, rather than its extremes
+#
+# T4E.18's correction stated that away from the dateline the nearest feature is "16.6 to 99.3
+# km", "a factor of two to three, not an order of magnitude". The median was right and the range
+# was not: two storms nowhere near a boundary sit at 247.7 and 315.1 km, and one yields no
+# feature at all. The claim survived because the record held one number per storm, so nothing
+# could contradict it, and because the aggregate was computed over a subset that was never named.
+#
+# T4E.28 recorded the distributions. This serves them, and it serves the one operation whose
+# SILENT version produced that error: excluding a group and reporting what is left. The excluded
+# rows stay on screen and their aggregate is computed at equal weight beside the kept one,
+# because an aggregate over a filtered population is a statement about that population and about
+# nothing else.
+
+#: A storm with no extracted feature has no distance, and is counted in every denominator. It is
+#: named here because it is the row most easily lost: it cannot appear in a distance chart, and
+#: dropping it would improve every aggregate by removing the worst case.
+NO_FEATURE = "no feature was extracted from this frame"
+
+
+def _distribution_aggregate(rows: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """Aggregates over exactly the rows given, stating how many carry no distance at all."""
+    nearest = sorted(row["nearest_km"] for row in rows if row["nearest_km"] is not None)
+    total = len(rows)
+    return {
+        "storms": total,
+        "storms_with_no_feature": sum(1 for row in rows if row["nearest_km"] is None),
+        "nearest_km": ({"min": nearest[0], "median": nearest[len(nearest) // 2],
+                        "max": nearest[-1]} if nearest else None),
+        "at_least_one_inside_radius": sum(1 for row in rows if row["inside_radius"] >= 1),
+        "three_inside_radius": sum(1 for row in rows if row["inside_radius"] >= 3),
+        "of": total,
+    }
+
+
+@router.get("/join-distribution")
+def read_join_distribution(request: Request,
+                           record: str = "t4e28_join_rerun.json",
+                           population: Optional[str] = None,
+                           exclude_longitude_at_or_above: Optional[float] = None
+                           ) -> Dict[str, Any]:
+    """Every distance in a join, per storm, with any exclusion shown rather than applied quietly.
+
+    `population` is required, because the record holds two extraction passes and reading
+    whichever is stored first is the error T4E.27 made. The refusal names both.
+    """
+    if "/" in record or "\\" in record or record.startswith("."):
+        raise HTTPException(status_code=400,
+                            detail="record must be a file name in the store, not a path")
+    path = _measurement_dir(request) / record
+    if not path.is_file():
+        raise HTTPException(status_code=404, detail="no measurement named %r" % record)
+    try:
+        body = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        raise HTTPException(status_code=422,
+                            detail="measurement %r could not be read: %s" % (record, exc))
+
+    try:
+        rows, declared = read_population("measurements/" + record, population, payload=body)
+    except UndeclaredPopulationError as refusal:
+        raise HTTPException(status_code=400, detail=str(refusal))
+
+    served: List[Dict[str, Any]] = []
+    for row in rows:
+        excluded = (exclude_longitude_at_or_above is not None
+                    and row.get("lon") is not None
+                    and row["lon"] >= exclude_longitude_at_or_above)
+        served.append({
+            "storm": row["storm"],
+            "time": row.get("time"),
+            "lat": row.get("lat"),
+            "lon": row.get("lon"),
+            "radius_km": row["radius_km"],
+            "features": row["features"],
+            "nearest_km": row["nearest_km"],
+            "inside_radius": row["inside_radius"],
+            "distances_km": row["distances_km"],
+            "no_feature": None if row["nearest_km"] is not None else NO_FEATURE,
+            "excluded": excluded,
+            "excluded_because": (
+                "longitude %.1f is at or above the %.1f the caller excluded"
+                % (row["lon"], exclude_longitude_at_or_above) if excluded else None),
+        })
+
+    kept = [row for row in served if not row["excluded"]]
+    dropped = [row for row in served if row["excluded"]]
+    return {
+        "record": record,
+        "population": declared.describe(),
+        "rows": served,
+        "everything": _distribution_aggregate(served),
+        "kept": _distribution_aggregate(kept) if kept else None,
+        "excluded": _distribution_aggregate(dropped) if dropped else None,
+        "exclusion": {
+            "longitude_at_or_above": exclude_longitude_at_or_above,
+            "storms_excluded": [row["storm"] for row in dropped],
+            "why_they_are_still_listed": (
+                "An aggregate over a filtered population is a statement about that population "
+                "and about nothing else. T4E.18's correction reported a range of 16.6 to 99.3 "
+                "km for the storms away from the dateline; the two storms that break it are "
+                "SETH at longitude 155.9 and HOLA at 175.8, which no dateline rule excludes. "
+                "The exclusion was never named, so nothing could check it. Here both "
+                "aggregates are computed and both sets of rows stay on screen."),
+            "what_this_will_not_do": (
+                "There is no exclusion that hides a row. Rows leave the kept aggregate and "
+                "stay in the table, and their own aggregate is computed at equal weight beside "
+                "the kept one rather than beneath it."),
+        },
+        "how_to_read_a_distance": (
+            "Each storm's distances are sorted, from the catalogue's reported centre to every "
+            "feature the extractor published for that frame. `radius_km` is the catalogue's own "
+            "positional uncertainty for that observation -- the furthest of its agency fixes -- "
+            "so a distance inside it is a feature the catalogue could not distinguish from the "
+            "centre. A storm with no feature has no distance and is in every denominator."),
+        "claim_boundary": body.get("claim_boundary"),
+        "verdict": _verdict(body),
+        "refusals": list(REFUSALS),
+        "network_used": False,
+    }
 
 # ---------------------------------------------------------------- TG19.2: the join's own bar
 #

@@ -39,6 +39,7 @@ const SERVED_WORKSPACES = [
   'Identity declaration',
   'Study trail',
   'Position tolerance',
+  'Join distribution',
   'Research archive',
   'Findings',
   'Platform & evidence',

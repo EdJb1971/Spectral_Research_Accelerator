@@ -3353,3 +3353,55 @@ export interface PositionToleranceView {
   refusals: string[];
   network_used: boolean;
 }
+
+/** T4E.29: one join's distances, per storm, with any exclusion shown rather than applied. */
+export interface JoinDistributionRow {
+  storm: string;
+  time: string | null;
+  lat: number | null;
+  lon: number | null;
+  radius_km: number;
+  features: number;
+  nearest_km: number | null;
+  inside_radius: number;
+  distances_km: number[];
+  no_feature: string | null;
+  excluded: boolean;
+  excluded_because: string | null;
+}
+
+export interface JoinDistributionAggregate {
+  storms: number;
+  storms_with_no_feature: number;
+  nearest_km: { min: number; median: number; max: number } | null;
+  at_least_one_inside_radius: number;
+  three_inside_radius: number;
+  of: number;
+}
+
+export interface JoinDistribution {
+  record: string;
+  population: {
+    name: string;
+    description: string;
+    has_rows: boolean;
+    rows_at: string | null;
+    identified_by: string;
+    summary_only: string | null;
+  };
+  rows: JoinDistributionRow[];
+  everything: JoinDistributionAggregate;
+  kept: JoinDistributionAggregate | null;
+  excluded: JoinDistributionAggregate | null;
+  exclusion: {
+    longitude_at_or_above: number | null;
+    storms_excluded: string[];
+    why_they_are_still_listed: string;
+    what_this_will_not_do: string;
+  };
+  how_to_read_a_distance: string;
+  claim_boundary: string | null;
+  verdict: string | null;
+  refusals: string[];
+  network_used: boolean;
+}

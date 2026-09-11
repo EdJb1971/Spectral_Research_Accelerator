@@ -1315,6 +1315,17 @@ export const apiService = {
 
   // TG19.2. Both are GETs that COMPUTE rather than decide: no route stores a tolerance,
   // approves a join, or records an acceptance.
+  async joinDistribution(params: { record?: string; population: string; excludeLongitudeAtOrAbove?: number | null }): Promise<types.JoinDistribution> {
+    const query = new URLSearchParams();
+    if (params.record) query.set('record', params.record);
+    query.set('population', params.population);
+    if (params.excludeLongitudeAtOrAbove !== undefined && params.excludeLongitudeAtOrAbove !== null) {
+      query.set('exclude_longitude_at_or_above', String(params.excludeLongitudeAtOrAbove));
+    }
+    return handleResponse<types.JoinDistribution>(
+      await fetch(`${BASE_URL}/identity/join-distribution?${query.toString()}`));
+  },
+
   async toleranceComponents(): Promise<types.ToleranceComponents> {
     return handleResponse<types.ToleranceComponents>(
       await fetch(`${BASE_URL}/identity/tolerance/components`));

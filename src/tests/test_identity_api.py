@@ -337,3 +337,78 @@ def test_the_join_rerun_record_states_a_verdict_and_a_boundary_through_the_api(c
     assert row["verdict"].startswith("REPRODUCED")
     assert [b["key"] for b in row["boundaries"]] == ["claim_boundary"]
     assert body["measurements_without_a_stated_boundary"] == []
+
+
+# ---------------- T4E.29: the distribution, rather than its extremes
+
+
+def test_the_join_distribution_refuses_an_unnamed_population_with_both_names(client):
+    """Reading whichever pass is stored first is the error T4E.27 made."""
+    response = client.get("/api/v1/identity/join-distribution")
+
+    assert response.status_code == 400
+    detail = response.json()["detail"]
+    assert "raw_field" in detail and "swt_planes" in detail
+
+
+def test_the_join_distribution_serves_every_distance_not_the_nearest(client):
+    body = client.get(
+        "/api/v1/identity/join-distribution?population=raw_field").json()
+    rows = {row["storm"]: row for row in body["rows"]}
+
+    assert len(rows) == 18
+    assert len(rows["FEHI"]["distances_km"]) == rows["FEHI"]["features"] == 11
+    assert rows["FEHI"]["distances_km"] == sorted(rows["FEHI"]["distances_km"])
+
+
+def test_a_storm_with_no_feature_is_a_row_and_stays_in_every_denominator(client):
+    """It has no distance, so it cannot appear on a distance axis -- which is why it would
+    vanish, and why dropping it would improve every aggregate by removing the worst case."""
+    body = client.get(
+        "/api/v1/identity/join-distribution?population=raw_field").json()
+    gretel = next(row for row in body["rows"] if row["storm"] == "GRETEL")
+
+    assert gretel["nearest_km"] is None
+    assert gretel["no_feature"]
+    assert body["everything"]["storms"] == 18
+    assert body["everything"]["storms_with_no_feature"] == 1
+
+
+def test_an_exclusion_keeps_its_rows_and_reports_both_aggregates_at_equal_weight(client):
+    """T4E.18 published a range over a subset it never named. Here the subset is named, the
+    excluded rows stay, and the kept maximum is the figure that refutes the published range."""
+    body = client.get("/api/v1/identity/join-distribution"
+                      "?population=raw_field&exclude_longitude_at_or_above=178").json()
+
+    assert body["kept"]["nearest_km"]["max"] == pytest.approx(315.1, abs=0.1)
+    assert body["kept"]["nearest_km"]["median"] == pytest.approx(35.9, abs=0.1)
+    assert body["excluded"]["storms"] == 6
+    assert body["excluded"]["storms_with_no_feature"] == 1
+    # Every excluded storm is still a served row.
+    served = {row["storm"] for row in body["rows"]}
+    assert set(body["exclusion"]["storms_excluded"]) <= served
+    assert len(body["rows"]) == 18
+
+
+def test_the_two_passes_are_different_populations_and_say_which(client):
+    raw = client.get("/api/v1/identity/join-distribution?population=raw_field").json()
+    swt = client.get("/api/v1/identity/join-distribution?population=swt_planes").json()
+
+    assert raw["population"]["name"] == "raw_field"
+    assert swt["population"]["name"] == "swt_planes"
+    raw_fehi = next(r for r in raw["rows"] if r["storm"] == "FEHI")
+    swt_fehi = next(r for r in swt["rows"] if r["storm"] == "FEHI")
+    assert raw_fehi["features"] == 11 and swt_fehi["features"] == 140
+
+
+def test_the_join_distribution_carries_the_boundary_the_measurement_was_recorded_under(client):
+    body = client.get("/api/v1/identity/join-distribution?population=raw_field").json()
+
+    assert body["claim_boundary"]
+    assert body["verdict"].startswith("REPRODUCED")
+    assert body["network_used"] is False
+
+
+def test_a_path_is_refused_as_a_record_name(client):
+    assert client.get("/api/v1/identity/join-distribution"
+                      "?record=../secrets.json&population=raw_field").status_code == 400

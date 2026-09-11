@@ -25,6 +25,7 @@ import GateRecordView from './components/GateRecordView';
 import IdentityDeclarationView from './components/IdentityDeclarationView';
 import StudyTrailView from './components/StudyTrailView';
 import PositionToleranceView from './components/PositionToleranceView';
+import JoinDistributionView from './components/JoinDistributionView';
 import DatasetCapabilityProfile from './components/DatasetCapabilityProfile';
 import ExperimentComposer from './components/ExperimentComposer';
 import ResearchArchive from './components/ResearchArchive';
@@ -104,6 +105,7 @@ const WORKFLOW_NAV = [
     { id: 'identity', name: 'Identity declaration', icon: Target, context: 'Gridded field line' },
     { id: 'studies', name: 'Study trail', icon: FlaskConical, context: 'Gridded field line' },
     { id: 'tolerance', name: 'Position tolerance', icon: Ruler, context: 'Gridded field line' },
+    { id: 'joinDistribution', name: 'Join distribution', icon: Ruler, context: 'Gridded field line' },
   ] },
   { section: 'Read', items: [
     { id: 'researchArchive', name: 'Research archive', icon: Archive },
@@ -2832,6 +2834,15 @@ export default function App() {
                components, their provenance, what it deliberately leaves out, and refuses a
                missing catalogue uncertainty by name rather than counting it as a miss. */
             <PositionToleranceView onError={(message) => setError(message)} />
+          )}
+          {activeTab === 'joinDistribution' && (
+            /* T4E.29. T4E.18's correction claimed the nearest feature is "16.6 to 99.3 km" away
+               from the dateline; two storms nowhere near a boundary sit at 247.7 and 315.1, and
+               one yields no feature at all. It survived because the record held one number per
+               storm and the aggregate was taken over a subset nobody named. This panel plots
+               every distance, keeps a storm with no feature on screen, and computes the excluded
+               group's aggregate at equal weight beside the kept one. */
+            <JoinDistributionView onError={(message) => setError(message)} />
           )}
 
         </main>

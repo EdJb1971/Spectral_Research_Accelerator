@@ -2803,6 +2803,58 @@ configuration absent from one scene outright; nothing about recurrence *across* 
 which the mining machinery needs; no mining radius, no discharge of T4E.8's acceptance, no
 closure of D96 to D100; and nothing about `kind_recurrence`, which still has no catalogue.
 
+### T4E.29 - every distance, and what an exclusion does to the answer
+
+**T4E.29 (2026-09-11): the distribution, rather than its extremes.** An engineering slice -- it
+makes no claim about any world, so it carries no declaration, no adoption and no prediction.
+`src/api/identity.py` route `/join-distribution`,
+`frontend/src/components/JoinDistributionView.tsx`, `frontend/e2e/join-distribution.spec.ts`, a
+population map for the re-run in `src/data_layer/declared_population.py`.
+
+**Why it exists, in one measured failure.** T4E.18's correction stated that away from the
+dateline the nearest extracted feature is *"16.6 to 99.3 km"*, *"a factor of two to three, not an
+order of magnitude"*. The median was right; the range was not. SETH sits 315.1 km out and HOLA
+247.7, neither near a boundary, and GRETEL yields no feature at all. That claim was written,
+reviewed, committed and read back for a day. Two things let it stand: the record held **one
+number per storm**, so nothing in the repository could contradict it, and the aggregate was taken
+over a **subset nobody named**, so nothing could check the subset either.
+
+Neither is a lapse of care. Both are missing surfaces.
+
+```
+$ curl '/api/v1/identity/join-distribution?population=raw_field'
+everything   storms 18   nearest 16.6 - 52.1 - 3685.3   >=1 inside radius 3 of 18
+
+$ curl '/api/v1/identity/join-distribution?population=raw_field&exclude_longitude_at_or_above=178'
+kept         storms 12   nearest 16.6 - 35.9 - 315.1
+excluded     storms  6   nearest 67.6 - 2028.0 - 3685.3  (1 with no feature at all)
+```
+
+**The kept maximum is 315.1 km.** The claim that survived review is refuted by running the
+exclusion it implied and reading the answer.
+
+**Four rules, each from something that went wrong.** No exclusion hides a row -- excluded storms
+stay in the table with their reason, and their aggregate is computed at equal weight beside the
+kept one rather than beneath it. A storm with no feature is drawn, not skipped: it has no
+distance so it cannot appear on a distance axis, which is exactly why it would vanish, and
+dropping it would improve every aggregate by removing the worst case. Every distance is plotted
+rather than the nearest. And the population must be named, so an unnamed read is refused with
+both names instead of served whichever is stored first -- the error T4E.27 made.
+
+**Measured in a real browser**, because "a scientist can see it" is a claim about a screen:
+
+```
+$ npx playwright test join-distribution.spec.ts
+6 passed (48.6s)
+$ npx playwright test ui-qualification.spec.ts
+4 passed (41.0s)
+```
+
+**What it does not do.** It computes no verdict, adopts nothing, stores nothing, and no route
+behind it writes. It does not decide which extraction pass is right. And a chart is not a
+finding: what a reader sees is the distribution a measurement recorded, under that measurement's
+own claim boundary, which renders beside it.
+
 ### T4E.28 - the join re-run: both gates reproduced, and a claim in the record falsified
 
 **T4E.28 (2026-09-11): the join re-run, with its gate committed before the run.** The gate landed
