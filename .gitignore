@@ -76,3 +76,10 @@ frontend/playwright-report/
 # sha256 rather than by storing it, so the CSV is deliberately absent and its README
 # carries the URL and the transformation needed to rebuild it byte-for-byte.
 data/market_records/*.csv
+
+
+# T4E.17: the signed external catalogue. 35.5 MB of third-party data does not belong in this
+# repository -- the design says so in terms -- and it is bound by sha256 rather than stored,
+# exactly as the market record and the CDS shards are. The README stays and carries the source
+# URL, the digest a re-download must reproduce, and the citation the publisher requires.
+data/catalogues/*.csv
