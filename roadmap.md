@@ -103,7 +103,7 @@ coastline. It has been exercised on a synthetic record only. **T4F.8 is DONE:** 
 | **Phase chronology correction (2026-09-03)** | The pre-run sentences embedded in the long phase-progress history are superseded by the later evidence in that same row: campaign v3 acquired the complete 8,764-frame record and T4C.6 returned PASS. A PASS does not exercise the FAIL/INVALID absence adjudication, so D84/D85 remain relevant only to a future negative result; they did not block or invalidate the recorded PASS. The v3 receipt is present and served by the read-only gate record. |
 | Ownership / licence | **Declared in `LICENSE.md`.** Edward Jonathan Bentley retains the proprietary SpectralEarth core. A designated Named Licensee may be granted a perpetual, worldwide, royalty-free right of lawful personal, academic, research and commercial use/modification, without public redistribution or sublicensing of the core; no designation is recorded in this repository. Independent extensions and upstream contributions remain separately governed. This bespoke text has not been professionally reviewed. |
 | **Accessibility** | **Workflow-wide source contract, TG11.6 DONE.** Skip and route focus, globally visible focus, bound legacy labels, reduced motion, announced asynchronous state, keyboard SVG lineage and figure text equivalents now cover both platform lines. Rendered assistive-technology inspection remains NOT RUN, so no WCAG conformance level is claimed (see `roadmap_cross_domain.md`). |
-| Backend test suite | **4917 passed, 1 xfailed** and **8 FAILED** (plus 4 skipped). Measured 2026-09-11 in 3,540.14 s (0:59:00) on the tree carrying TG19.5. Six of the eight are pre-existing -- the documented T4E.9 benchmark FAIL and its API route, three owed browser-evidence runs, and a `live_sources` gate left `NOT_RUN` since `cds_source.py` changed at T4E.18. The other two were this session's and are fixed. See `architecture.md` section 7.1. |
+| Backend test suite | **5038 passed, 1 xfailed** and **7 FAILED** (plus 4 skipped). Measured 2026-09-12 in 4,233.33 s (1:10:33) on the tree carrying T4E.34 and the section-0 truth-up. Six are the documented benchmark/API, browser-evidence and `live_sources` gate failures. The seventh was a Windows `os.replace` permission failure while publishing a temporary Zarr directory; the exact test passed alone immediately afterwards in 38.05 s, so it is recorded as non-reproduced. See `architecture.md` section 7.1. |
 | Ground-Truth Benchmark Suite | **29 PASS, 0 FAIL, 0 NOT_YET_RUNNABLE.** Twenty datasets with declared known answers, twelve of them nulls. CI-ready via `python -m src.benchmarks` (exit 0). |
 | Backend compute modules | **Written, executed and tested.** `physical_core` carries `GridSpec` + metric-aware operators; `analysis_engine` gained `spectra.py` and `climatology.py`; `transform_engine` gained the undecimated `stationary.py` and a real `dtcwt.py`; `statistics/` and `core/` are new packages. |
 | Physical units and wavenumbers | **Correct as of T3.5.13.** Gradients metric-aware, spectra on a physical `k` axis, domain statistics area-weighted, and every quantity carries its units. Previously all of it was pixel-space and unlabelled (D13). |
@@ -2872,7 +2872,7 @@ $ npx playwright test adoption.spec.ts ui-qualification.spec.ts        11 passed
 declaration is now a button; writing one is still a hand-edited JSON file. That is the larger
 half of "do the experiments without editing a JSON file" and it is not done here.
 
-### T4E.31 - the round-robin, wired to a bundle and still unrun
+### T4E.31 - the round-robin, wired to a bundle; two real attempts remain partial
 
 **T4E.31 (2026-09-11): the runner.** `tools/review_join_rerun.py`,
 `src/tests/test_review_runner.py`.
@@ -2899,13 +2899,16 @@ carrying its call; a response that does not match its declared schema is refused
 is recorded, so that one is lost. Both were paid for. A test pins the behaviour so changing it is
 deliberate.
 
-**NO PANEL HAS RUN.** The apparatus is wired and exercised end to end with fabricated answers,
-and has never been pointed at a model. `data/reviews/` does not exist. An outcome in this
-repository would be evidence that a discussion happened; there is none.
+**Two paid attempts ran on 2026-09-12; no valid panel completed and no outcome exists.** The first
+was refused at independent reassessment after six calls for originating dissents no challenger
+raised. The second reached 11 calls, but its reassessment reopened four dissents the candidate
+had conceded and its final synthesis retained them. Both calls chains are preserved unchanged as
+partial records. The mismatch is repaired by allowing reassessment to reopen only rebutted
+dissents; concessions remain final. A third paid attempt requires fresh explicit authorisation.
 
 ```
-$ .venv/Scripts/python.exe -m pytest src/tests/test_review_runner.py -q
-12 passed
+$ .venv/Scripts/python.exe -m pytest src/tests/test_round_robin.py src/tests/test_review_runner.py -q
+64 passed
 ```
 
 ### T4E.30 - the measurement store and the evidence store, joined where git can prove the ordering
@@ -2952,8 +2955,9 @@ commit*: T4E.12, T4E.14, T4E.19, T4E.20, T4E.21 and T4E.24. Those declarations w
 certainly written first, and git cannot separate them. The refusal says so and names the practice
 that lifts it for future work: commit the declaration on its own, before the run, as T4E.28 did.
 
-**What this does not establish.** No claim rung, no adoption, and no panel has run. A bundle
-existing means a discussion is now possible, which is not the same as one having happened.
+**What this does not establish.** No claim rung or adoption. A bundle existing made discussion
+possible; the two later partial attempts establish that calls happened, not that a valid panel
+completed or that an outcome exists.
 
 ```
 $ .venv/Scripts/python.exe -m pytest src/tests/test_measurement_evidence.py -q

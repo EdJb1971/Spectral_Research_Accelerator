@@ -9,9 +9,10 @@ authority. `roadmap.md` and `roadmap_cross_domain.md` hold task history -- what 
 why -- and `VERIFICATION.md` holds the captured output behind every figure. When any of them
 disagrees with this document, **they are right and this is stale.**
 
-Last revised 2026-09-11, after T4E.24 was adopted and measured. **Sections 1 and 2 below still
-describe the decision point as it stood on 2026-09-09 and have not been reworked for T4E.13
-through T4E.23; `architecture.md` section 0 is the authority where they disagree.**
+Last revised 2026-09-12, after T4E.28--T4E.34 were recorded. **Section 1 retains the sequential
+decision record that led to the current position and must not be read as a current-status
+summary; `architecture.md` section 0 is the authority wherever a historical next step below has
+since been completed or superseded.**
 
 ## 0. The question this sequence serves
 
@@ -1282,13 +1283,21 @@ authorisation moved into the request rather than out of the system: `i_authorise
 required, the key is read from the server's environment and never from the wire, and the call
 count is stated before anything is spent. See `architecture.md` section 3E.47.
 
-### T4E.31 ? The round-robin runner ? built 2026-09-11; NO PANEL HAS RUN
+### T4E.31 ? The round-robin runner ? built 2026-09-11; TWO ATTEMPTS PARTIAL
 
-**Built and unrun.** The protocol, the eight seats, the dissent register and the transport were
-built at TG7.1/TG7.2; what was missing was a bundle and a runner. `data/reviews/` does not exist
-and no exchange has been made against a model. Driving the protocol with fabricated answers
-established two properties that had been assumed: an exchange with no dissent takes **seven**
-turns, not eight, and a dissent must be answered by name, oldest first.
+**Built; two paid attempts ran on 2026-09-12 and neither completed validly.** Attempt 1 stopped at
+the independent reassessment after six calls because it originated dissents no challenger had
+raised. Attempt 2 reached 11 calls, but all four candidate responses had conceded their dissent
+and the reassessment nevertheless reopened all four; the final synthesis retained them and was
+refused. Both non-regenerable exchanges are preserved as partial records in `data/reviews/`.
+
+The second refusal exposed a protocol mismatch rather than licensing another call: the closure
+rule has always said a concession retires dissent on its own, while the reassessment prompt and
+validator allowed every raised dissent to be reopened. They now permit only **rebutted** dissent
+role identifiers, with the four-concession attempt shape pinned by a regression test.
+
+**Next:** commit and review this correction before deciding whether a third paid attempt is worth
+authorising. Do not infer a completed review or a round-robin outcome from either partial record.
 
 **Known asymmetry, pinned not fixed.** A protocol violation returns the paid call; a response
 that does not match its declared schema is refused before the call is recorded, so that one is

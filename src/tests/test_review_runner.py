@@ -19,7 +19,8 @@ import pytest
 from src.core.evidence import load_evidence_bundle
 from src.core.recorded_call import REVIEW_ROLES, verify_claim_independence
 from src.core.round_robin import (
-    CHALLENGE_ROLES, RecordedTurnRefused, advance, close_round_robin, open_round_robin,
+    CHALLENGE_ROLES, MAX_ROUND_ROBIN_CALLS, RecordedTurnRefused, advance,
+    close_round_robin, open_round_robin,
 )
 from tools.review_join_rerun import panel_from, resolve_key
 
@@ -63,11 +64,11 @@ def _transport(dissent_on=()):
 
 def _run(transport):
     exchange = open_round_robin(load_evidence_bundle(BUNDLE), panel_from("a-model", "high"))
-    for index in range(len(REVIEW_ROLES)):
+    for index in range(MAX_ROUND_ROBIN_CALLS):
         if exchange.next_turn is None:
             break
         exchange = advance(exchange, transport=transport,
-                           requested_at="2026-09-11T12:00:0%d+00:00" % index)
+                           requested_at="2026-09-11T12:00:%02d+00:00" % index)
     return exchange
 
 
@@ -131,6 +132,32 @@ def test_one_dissent_adds_the_response_turn_and_must_be_answered_by_name():
     assert outcome.retained_dissent == ()
 
 
+def test_four_dissents_take_eleven_calls_and_each_response_answers_the_current_target():
+    def answering(request):
+        role = request["role"]
+        if role != "response_and_revision":
+            return _transport(dissent_on=CHALLENGE_ROLES)(request)
+        target = request["context"]["answering"]
+        structured = {"answers_challenge": target, "outcome": "conceded",
+                      "revision": "The %s objection is accepted." % target}
+        return {"raw": json.dumps(structured), "structured": structured,
+                "model_id": request["model_id"], "api_request_id": "response-%s" % target,
+                "responded_at": "2026-09-11T12:30:00+00:00",
+                "usage": {"provider": "test", "service_mode": "test", "input_tokens": 1,
+                          "output_tokens": 1, "cached_input_tokens": 0, "total_tokens": 2,
+                          "batch_name": "batches/test"}}
+
+    exchange = _run(answering)
+    spoken = [call.request.role for call in exchange.reviewed.review.calls]
+    answered = [call.response.structured["answers_challenge"]
+                for call in exchange.reviewed.review.calls
+                if call.request.role == "response_and_revision"]
+
+    assert exchange.complete is True
+    assert len(spoken) == MAX_ROUND_ROBIN_CALLS == 11
+    assert answered == list(CHALLENGE_ROLES)
+
+
 def test_closing_an_unfinished_exchange_is_refused():
     from src.core.errors import InvalidParameterError
 
@@ -162,7 +189,7 @@ def test_a_dissent_must_be_answered_by_name_and_oldest_first():
 
     exchange = open_round_robin(load_evidence_bundle(BUNDLE), panel_from("a-model", "high"))
     with pytest.raises(RecordedTurnRefused) as caught:
-        for index in range(len(REVIEW_ROLES)):
+        for index in range(MAX_ROUND_ROBIN_CALLS):
             if exchange.next_turn is None:
                 break
             exchange = advance(exchange, transport=answers_the_wrong_one,

@@ -12456,7 +12456,7 @@ GET /api/v1/reviews/panel-plan
 
 ---
 
-**T4E.31 (2026-09-11): the round-robin runner, wired and still unrun.**
+**T4E.31 (2026-09-11): the round-robin runner; two paid attempts partial on 2026-09-12.**
 
 ```
 $ .venv/Scripts/python.exe -m pytest src/tests/test_review_runner.py -q
@@ -12478,10 +12478,10 @@ claim state is independent of this review: 699e67f643ebeb07
 NOTHING WAS SENT.
 ```
 
-**NO PANEL HAS RUN.** `data/reviews/` does not exist. Driving the protocol with fabricated
-answers established two properties that had been assumed: an exchange with **no dissent takes
-seven turns, not eight** (`response_and_revision` is skipped, because a response to no dissent is
-a rebuttal of nothing), and a dissent must be answered by name, oldest first --
+Driving the protocol with fabricated answers first established two properties that had been
+assumed: an exchange with **no dissent takes seven turns, not eight**
+(`response_and_revision` is skipped, because a response to no dissent is a rebuttal of nothing),
+and a dissent must be answered by name, oldest first --
 
 ```
 Parameter 'response.answers_challenge' = 'statistical_challenge' is invalid: expected
@@ -12491,6 +12491,38 @@ Parameter 'response.answers_challenge' = 'statistical_challenge' is invalid: exp
 One asymmetry, pinned rather than fixed: a **protocol** violation returns `RecordedTurnRefused`
 carrying the paid call, while a response not matching its declared schema is refused inside
 `record_call` before the call is recorded, so that one is lost. Both were paid for.
+
+Two explicitly authorised real attempts were then made against bundle revision 7 with
+`gemini-3.5-flash`; neither produced a valid outcome and both call chains are retained unchanged:
+
+```
+data/reviews/t4e28-join-rerun.review.partial.json
+  calls 1-5  candidate plus four challenges, none recording dissent
+  call 6     independent reassessment returned ten prose alternatives as standing dissents
+  result     REFUSED: reassessment cannot originate dissent
+
+data/reviews/t4e28-join-rerun.review.attempt-2.partial.json
+  calls 1-5  candidate plus four challenges, all four recording dissent
+  calls 6-9  candidate conceded each dissent in order
+  call 10    independent reassessment reopened all four conceded dissents
+  call 11    final synthesis retained those four roles
+  result     REFUSED: concessions were already closed, so none could be retained
+```
+
+Attempt 2 exposed that the closure rule and reassessment boundary disagreed. The rule already
+made a concession final, but the prompt, context and validator allowed reassessment to name any
+raised dissent. They now expose and accept only rebutted role identifiers; an unresolved response
+already remains open without reassessment, and a concession cannot be reopened. The exact
+four-concession attempt shape is a regression test.
+
+```
+$ .venv/Scripts/python.exe -m pytest \
+    src/tests/test_round_robin.py src/tests/test_review_runner.py -q
+64 passed, 1 warning in 8.94s
+```
+
+No third call was made. These records prove that paid discussions were attempted; they are not a
+completed panel and produce no round-robin outcome or change in claim level.
 
 ---
 
@@ -12675,6 +12707,37 @@ stale inventory rows : none
 claimed suite totals : architecture (4917, 1) / roadmap (4917, 1)
 RESULT               : ok
 ```
+
+**Full backend checkpoint after T4E.34 and the section-0 truth-up (2026-09-12).**
+
+```
+$ .venv/Scripts/python.exe -m pytest src/tests -q
+7 failed, 5038 passed, 4 skipped, 1 xfailed, 6 warnings in 4233.33s (1:10:33)
+```
+
+Six failures are the standing, already interpreted state: T4E.9's deliberately red certified
+identity benchmark and the API test that reaches it; three browser-evidence tests because the
+source-bound browser record no longer describes this tree; and the G17 qualification assertion
+because `live_sources` is `NOT_RUN` and therefore blocking. The seventh was:
+
+```
+FAILED src/tests/test_cds_source.py::test_the_encoding_criterion_still_fails_a_pair_that_actually_disagrees
+PermissionError: [WinError 5] Access is denied
+  os.replace(temporary_store, path)
+```
+
+It did not reproduce when run alone immediately after the suite:
+
+```
+$ .venv/Scripts/python.exe -m pytest \
+    src/tests/test_cds_source.py::test_the_encoding_criterion_still_fails_a_pair_that_actually_disagrees -q
+1 passed, 1 warning in 38.05s
+```
+
+That is evidence of a transient Windows directory-handle race, not evidence that the publishing
+path is sound under contention and not a licence to omit the failure from the full-run total. No
+code change was made against a single non-reproduced event. The full-run count above is the new
+baseline; the isolated rerun is recorded beside it rather than substituted for it.
 
 ---
 

@@ -90,6 +90,7 @@ _CALL_FIELDS = ("schema", "sequence", "request", "response", "requested_at", "de
 _RECORD_FIELDS = ("schema", "study_id", "bundle_sha256", "bundle_revision", "calls", "revision",
                   "head_sha256", "record_sha256")
 _SHA256 = re.compile(r"^[0-9a-f]{64}$")
+_SUBMICROSECOND = re.compile(r"(\.\d{6})\d+(?=Z$|[+-]\d{2}:\d{2}$)")
 
 
 def _thaw(value: Any) -> Any:
@@ -125,7 +126,11 @@ def _moment(name: str, value: str) -> datetime:
     if not isinstance(value, str):
         raise InvalidParameterError(name, value, "a timezone-bearing ISO-8601 timestamp")
     try:
-        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        # Provider RFC 3339 timestamps may carry nanoseconds while Python 3.10's parser accepts
+        # at most microseconds. Keep the provider's original bytes in the record and truncate only
+        # the temporary value used for ordering and timezone validation.
+        comparable = _SUBMICROSECOND.sub(r"\1", value)
+        parsed = datetime.fromisoformat(comparable.replace("Z", "+00:00"))
     except ValueError:
         raise InvalidParameterError(name, value,
                                     "a timezone-bearing ISO-8601 timestamp") from None

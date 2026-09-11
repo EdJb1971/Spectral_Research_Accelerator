@@ -201,7 +201,7 @@ def test_convening_refuses_without_a_key_and_never_takes_one_from_the_request(cl
 def test_the_panel_plan_states_the_call_count_before_anything_is_sent(client):
     body = client.get("/api/v1/reviews/panel-plan").json()
 
-    assert body["calls_if_every_turn_is_taken"] == 8
+    assert body["calls_if_every_turn_is_taken"] == 11
     assert body["calls_if_nothing_is_dissented_from"] == 7
     assert "rebuttal of nothing" in body["why_that_differs"]
     assert body["network_used"] is False

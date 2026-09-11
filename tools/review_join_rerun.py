@@ -3,7 +3,7 @@
     # see exactly what would be sent, and send nothing
     .venv/Scripts/python.exe -m tools.review_join_rerun --bundle data/studies/t4e28-join-rerun.r7.json --dry-run
 
-    # actually run it: eight paid calls to an external service
+    # actually run it: seven to eleven paid calls to an external service
     GEMINI_API_KEY=... .venv/Scripts/python.exe -m tools.review_join_rerun \
         --bundle data/studies/t4e28-join-rerun.r7.json --output-dir data/reviews \
         --send-to-the-network
@@ -15,8 +15,9 @@ a runner. This is the runner and nothing more.
 
 **Nothing reaches the network unless the maintainer says so, in the command.** `--send-to-the-network`
 is required, a key must be present, and without both the run refuses by name and sends nothing.
-A round-robin is eight calls to an external service: it costs money, it puts the bundle's contents
-in front of a third party, and it is not reversible. That decision belongs to a person.
+A round-robin is seven calls with no dissent and up to eleven when every challenge dissents: it
+costs money, it puts the bundle's contents in front of a third party, and it is not reversible.
+That decision belongs to a person.
 
 **There is deliberately no stub transport here.** Tests fabricate responses to exercise the
 protocol, which is correct in a test and would be a forgery in this directory: a review record is
@@ -45,10 +46,10 @@ from src.core.evidence import load_evidence_bundle                          # no
 from src.core.recorded_call import (                                        # noqa: E402
     REVIEW_ROLES, save_review_record, verify_claim_independence,
 )
-from src.core.review_cost import GeminiBatchTransport                       # noqa: E402
+from src.core.review_cost import GEMINI_35_FLASH, GeminiBatchTransport      # noqa: E402
 from src.core.round_robin import (                                          # noqa: E402
-    SCHEMA_FOR_ROLE, PanelSeat, RecordedTurnRefused, ReviewPanel, RoundRobin, advance,
-    close_round_robin, open_round_robin,
+    MAX_ROUND_ROBIN_CALLS, SCHEMA_FOR_ROLE, PanelSeat, RecordedTurnRefused, ReviewPanel,
+    RoundRobin, advance, close_round_robin, open_round_robin,
 )
 
 #: Environment variables a key may arrive in. Never a command-line argument: an argument lands in
@@ -59,7 +60,7 @@ KEY_VARIABLES = ("GEMINI_API_KEY", "GOOGLE_API_KEY")
 #: refused -- an independent reassessment by the model that wrote the candidate synthesis is not
 #: independent in the sense the word usually carries. `ReviewPanel` computes the overlap and
 #: carries it in the panel digest, so a reader sees what kind of panel answered.
-DEFAULT_MODEL = "gemini-2.5-pro"
+DEFAULT_MODEL = GEMINI_35_FLASH
 DEFAULT_EFFORT = "high"
 
 
@@ -91,6 +92,17 @@ def describe_turn(exchange: RoundRobin) -> Dict[str, Any]:
             "expects": sorted(turn.schema.fields), "turn": described}
 
 
+def _unused_partial_path(output_dir: Path, study_id: str) -> Path:
+    first = output_dir / ("%s.review.partial.json" % study_id)
+    if not first.exists():
+        return first
+    for attempt in range(2, 10_000):
+        candidate = output_dir / ("%s.review.attempt-%d.partial.json" % (study_id, attempt))
+        if not candidate.exists():
+            return candidate
+    raise FileExistsError("no unused partial-review filename remains for %s" % study_id)
+
+
 def run(bundle_path: Path, *, panel: ReviewPanel, output_dir: Optional[Path],
         transport: Optional[Any]) -> int:
     bundle = load_evidence_bundle(bundle_path)
@@ -105,7 +117,7 @@ def run(bundle_path: Path, *, panel: ReviewPanel, output_dir: Optional[Path],
           % verify_claim_independence(exchange.reviewed)[:16])
 
     if transport is None:
-        print("\n-- dry run: the eight turns that would be taken, in order --")
+        print("\n-- dry run: the eight seats, in protocol order --")
         # Reported from the protocol's own role order and schema table. The later turns cannot
         # be walked without answers, and pretending the exchange advanced would be showing a
         # plan that had not been checked against anything.
@@ -117,21 +129,23 @@ def run(bundle_path: Path, *, panel: ReviewPanel, output_dir: Optional[Path],
               "actually convene the panel." % " or ".join(KEY_VARIABLES))
         return 0
 
-    for index in range(len(REVIEW_ROLES)):
+    for index in range(MAX_ROUND_ROBIN_CALLS):
         turn = exchange.next_turn
         if turn is None:
             break
-        print("\n[%d/%d] %s" % (index + 1, len(REVIEW_ROLES), turn.role), flush=True)
+        print("\n[%d/%d max] %s" % (index + 1, MAX_ROUND_ROBIN_CALLS, turn.role), flush=True)
         try:
             exchange = advance(exchange, transport=transport, requested_at=_now())
         except RecordedTurnRefused as refusal:
             print("  REFUSED: %s" % refusal)
             if output_dir is not None:
-                partial = output_dir / ("%s.review.partial.json" % bundle.study_id)
+                partial = _unused_partial_path(output_dir, bundle.study_id)
                 save_review_record(partial, refusal.reviewed.review, bundle_path=bundle_path)
                 print("  the call was made and is kept (R23): %s" % partial)
             return 3
-        answer = exchange.answer(turn.role) or {}
+        # The response seat may speak once for every dissent. Read the call just made, not the
+        # first historical call made from that seat.
+        answer = dict(exchange.reviewed.review.calls[-1].response.structured)
         for key in sorted(answer):
             value = answer[key]
             text = value if isinstance(value, str) else json.dumps(value)
@@ -165,7 +179,7 @@ def main() -> int:
     parser.add_argument("--dry-run", action="store_true",
                         help="report the turns that would be taken and send nothing")
     parser.add_argument("--send-to-the-network", action="store_true",
-                        help="required to make any call; eight paid calls to an external service")
+                        help="required to make any call; seven to eleven paid external calls")
     arguments = parser.parse_args()
 
     panel = panel_from(arguments.model, arguments.effort)
@@ -178,10 +192,10 @@ def main() -> int:
     transport = None
     if not arguments.dry_run:
         if not arguments.send_to_the_network:
-            print("REFUSED: this would make %d calls to an external service, which costs money "
+            print("REFUSED: this would make up to %d calls to an external service, which costs money "
                   "and puts the bundle in front of a third party. Pass --send-to-the-network to "
                   "authorise it, or --dry-run to see exactly what would be sent."
-                  % len(REVIEW_ROLES))
+                  % MAX_ROUND_ROBIN_CALLS)
             return 2
         key = resolve_key()
         if key is None:

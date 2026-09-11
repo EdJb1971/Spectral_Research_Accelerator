@@ -168,6 +168,15 @@ def test_a_recorded_call_captures_everything_that_cannot_be_regenerated():
     assert call.response.usage["cache_read_input_tokens"] == 3900
 
 
+def test_a_provider_nanosecond_timestamp_is_validated_without_rewriting_the_record():
+    responded_at = "2026-04-01T09:00:12.055923188Z"
+    reviewed = _record(
+        attach_review(_climbed("association")),
+        transport=_transport(responded_at=responded_at),
+    )
+    assert reviewed.review.calls[0].response.responded_at == responded_at
+
+
 def test_the_transport_receives_exactly_the_recorded_request():
     transport = _transport()
     reviewed = _record(attach_review(_climbed("association")), transport=transport)

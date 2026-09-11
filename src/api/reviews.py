@@ -7,7 +7,7 @@ content digest through the core types, and binds them to the latest published ev
 **One route runs a model, and it is the only one.**  Until T4E.33 this module stated that it
 never did, and that was true because there was no bundle to review and no way to convene a panel
 except a terminal.  The statement is replaced rather than quietly deleted: `POST
-/studies/{study_id}/round-robin` takes eight turns against an external service.  It costs money,
+/studies/{study_id}/round-robin` takes seven to eleven turns against an external service. It costs money,
 it puts the bundle's contents in front of a third party, and it cannot be undone.
 
 So the authorisation is moved into the request rather than removed from the system.  The caller
@@ -40,11 +40,13 @@ from src.core.recorded_call import (
     save_review_record,
 )
 from src.core.review_cost import (
-    COST_RECEIPT_SCHEMA, GeminiBatchTransport, ReviewCostReceipt, load_cost_receipt,
+    COST_RECEIPT_SCHEMA, GEMINI_35_FLASH, GeminiBatchTransport, ReviewCostReceipt,
+    load_cost_receipt,
 )
 from src.core.round_robin import (
-    ROUND_ROBIN_SCHEMA, RUBRICS, SCHEMA_FOR_ROLE, PanelSeat, RecordedTurnRefused,
-    ReviewPanel, RoundRobinOutcome, advance, close_round_robin, open_round_robin,
+    MAX_ROUND_ROBIN_CALLS, ROUND_ROBIN_SCHEMA, RUBRICS, SCHEMA_FOR_ROLE, PanelSeat,
+    RecordedTurnRefused, ReviewPanel, RoundRobinOutcome, advance, close_round_robin,
+    open_round_robin,
 )
 
 
@@ -60,7 +62,7 @@ CLAIM_BOUNDARY = (
 #: Read from the server's environment and never from a request body, so a key is never in a
 #: browser, a log, or a payload that crosses the wire.
 KEY_VARIABLES = ("GEMINI_API_KEY", "GOOGLE_API_KEY")
-DEFAULT_REVIEW_MODEL = "gemini-2.5-pro"
+DEFAULT_REVIEW_MODEL = GEMINI_35_FLASH
 
 
 def _key() -> Optional[str]:
@@ -74,6 +76,17 @@ def _key() -> Optional[str]:
 def review_root() -> Path:
     """The dedicated artifact directory, resolved at request time for tests and deployments."""
     return Path(os.environ.get(REVIEW_ROOT_ENV) or DEFAULT_REVIEW_ROOT)
+
+
+def _unused_partial_path(root: Path, study_id: str) -> Path:
+    first = root / ("%s.review.partial.json" % study_id)
+    if not first.exists():
+        return first
+    for attempt in range(2, 10_000):
+        candidate = root / ("%s.review.attempt-%d.partial.json" % (study_id, attempt))
+        if not candidate.exists():
+            return candidate
+    raise FileExistsError("no unused partial-review filename remains for %s" % study_id)
 
 
 class ReviewStore:
@@ -170,12 +183,11 @@ def read_panel_plan() -> Dict[str, Any]:
     return {
         "roles": [{"role": role, "expects": sorted(SCHEMA_FOR_ROLE[role].fields),
                    "rubric": RUBRICS[role]} for role in REVIEW_ROLES],
-        "calls_if_every_turn_is_taken": len(REVIEW_ROLES),
+        "calls_if_every_turn_is_taken": MAX_ROUND_ROBIN_CALLS,
         "calls_if_nothing_is_dissented_from": len(REVIEW_ROLES) - 1,
         "why_that_differs": (
-            "`response_and_revision` is skipped when no challenger dissented, because a response "
-            "to no dissent is a rebuttal of nothing and the protocol declines to spend a call "
-            "on it."),
+            "`response_and_revision` is skipped when no challenger dissented and repeats once "
+            "for each dissent otherwise. A response to no dissent is a rebuttal of nothing."),
         "default_model": DEFAULT_REVIEW_MODEL,
         "key_variables": list(KEY_VARIABLES),
         "key_present": _key() is not None,
@@ -202,7 +214,7 @@ async def convene_round_robin(study_id: str, body: RoundRobinRequest) -> Dict[st
             detail=("this would make up to %d calls to an external service on your own account, "
                     "which costs money and puts the bundle in front of a third party. Set "
                     "i_authorise_paid_calls to convene the panel. Nothing was sent."
-                    % len(REVIEW_ROLES)))
+                    % MAX_ROUND_ROBIN_CALLS))
     key = _key()
     if key is None:
         raise HTTPException(
@@ -220,7 +232,7 @@ async def convene_round_robin(study_id: str, body: RoundRobinRequest) -> Dict[st
     transport = GeminiBatchTransport(key)
     taken: List[str] = []
     try:
-        for _ in range(len(REVIEW_ROLES)):
+        for _ in range(MAX_ROUND_ROBIN_CALLS):
             turn = exchange.next_turn
             if turn is None:
                 break
@@ -229,7 +241,7 @@ async def convene_round_robin(study_id: str, body: RoundRobinRequest) -> Dict[st
                                requested_at=datetime.now(timezone.utc).isoformat())
     except RecordedTurnRefused as refusal:
         # The calls were made and cannot be regenerated (R23), so the partial record is written.
-        partial = review_root() / ("%s.review.partial.json" % study_id)
+        partial = _unused_partial_path(review_root(), study_id)
         save_review_record(partial, refusal.reviewed.review, bundle_path=bundle_path)
         raise HTTPException(
             status_code=422,

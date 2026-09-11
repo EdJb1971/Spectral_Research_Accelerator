@@ -77,7 +77,7 @@ test('the convening control states the cost before anything can be spent', async
   await page.getByLabel('Published study ID').fill('t4e28-join-rerun');
   await page.getByRole('button', { name: 'Reload exact revision' }).click();
 
-  await expect(page.getByTestId('call-count')).toContainText('8 paid calls');
+  await expect(page.getByTestId('call-count')).toContainText('11 paid calls');
   await expect(page.getByTestId('seat-candidate_synthesis')).toBeVisible();
   // The authorisation is a separate control, so the run button alone cannot spend anything.
   await expect(page.getByTestId('convene')).toBeDisabled();
