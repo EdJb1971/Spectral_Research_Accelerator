@@ -63,6 +63,71 @@ CURVE_GRID_KM = (5.0, 10.0, 15.0, 20.0, 25.0, 30.0, 35.0, 40.0, 50.0, 65.0, 80.0
                  125.0, 150.0, 200.0, 300.0, 500.0)
 
 
+#: Written by T4E.28, which records the full sorted distance from each catalogue centre to every
+#: extracted feature. Until it existed, the count at any bar other than the original radius was
+#: unrecoverable and condition 2 was refused by name.
+JOIN_RERUN = Path("measurements/t4e28_join_rerun.json")
+
+#: T4E.28 measured both extraction paths. T4E.27 restated its bar against the SWT rows because
+#: those were the only rows the record held; both are reported so the choice stays visible.
+CONDITION_2_PATHS = ("swt_planes", "raw_field")
+
+
+def condition_2(catalogue, per_storm):
+    """Three or more features inside the restated tolerance, or a refusal naming what is missing.
+
+    The refusal this replaces was correct when it was written. It is lifted by evidence, not by
+    a lowered standard: the distance list T4E.27 said it needed now exists, so the count is
+    arithmetic rather than an approximation.
+    """
+    if not JOIN_RERUN.exists():
+        return {
+            "met": None,
+            "the_catalogue": catalogue.describe(),
+            "REFUSED": (
+                "not evaluable on the available evidence. Condition 2 asks for three or more "
+                "features inside tolerance, and that count needs the distance to each storm's "
+                "THIRD-nearest feature. %s is absent, so only the nearest distance is on hand "
+                "and the count at any bar other than the original radius cannot be recovered. "
+                "Refused by name rather than approximated." % JOIN_RERUN),
+            "what_would_lift_the_refusal": (
+                "a run of tools/rerun_t4e18_join.py, which records the full per-storm distance "
+                "list on both extraction paths. The catalogue it needs is %s."
+                % ("PRESENT and verified at %s" % catalogue.path if catalogue.available
+                   else "still unavailable: %s" % catalogue.refusal)),
+        }
+
+    rerun = json.loads(JOIN_RERUN.read_text(encoding="utf-8"))
+    tolerances = {row["storm"]: row.get("tolerance_km") for row in per_storm}
+    result = {
+        "met": None,
+        "the_catalogue": catalogue.describe(),
+        "lifted_by": str(JOIN_RERUN),
+        "needed": DECLARED_NEEDED,
+        "of_declared": DECLARED_MAJORITY_OF,
+    }
+    for name in CONDITION_2_PATHS:
+        distances = {row["storm"]: row["distances_km"]
+                     for row in rerun["paths"][name]["rows"]}
+        met = judged = 0
+        refused = []
+        for storm, tolerance in tolerances.items():
+            if tolerance is None or storm not in distances:
+                refused.append(storm)
+                continue
+            judged += 1
+            met += sum(1 for d in distances[storm] if d <= tolerance) >= 3
+        result[name] = {"met": met, "judged": judged, "refused_observations": refused,
+                        "meets_the_bar": met >= DECLARED_NEEDED}
+    result["met"] = result["swt_planes"]["met"]
+    result["which_path_the_headline_figure_is"] = (
+        "swt_planes, the path T4E.27 restated its bar against. The raw_field figure is beside "
+        "it because T4E.18's correction calls that path markedly better on nearest distance, "
+        "and it is WORSE here -- with far fewer features per frame, three of them inside a "
+        "22 km radius is a harder thing to do.")
+    return result
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", required=True)
@@ -171,26 +236,7 @@ def main() -> int:
             "original_was": "%s of %s" % (original_condition_1["met"],
                                           original_condition_1["of"]),
         },
-        "condition_2_restated": {
-            "met": None,
-            "the_catalogue": catalogue.describe(),
-            "REFUSED": (
-                "not evaluable on the available evidence. Condition 2 asks for three or more "
-                "features inside tolerance. The committed receipt carries each storm's nearest "
-                "distance and a count of features inside the ORIGINAL radius, but not the "
-                "distance to the third-nearest feature, so the count at any other bar cannot "
-                "be recovered from it. Recomputing it requires a re-run of the join against "
-                "the IBTrACS CSV that records the full per-storm distance list. Whether that "
-                "catalogue is present, and whether it is still the one T4E.17 signed, is "
-                "resolved rather than asserted -- see `the_catalogue` beside this clause. "
-                "Refused by name rather than approximated."),
-            "what_would_lift_the_refusal": (
-                ("the catalogue is PRESENT and verified at %s, so what remains is a re-run of "
-                 "the join recording the full per-storm distance list rather than only the "
-                 "nearest. That is its own work and is not done here."
-                 % catalogue.path) if catalogue.available else
-                ("the catalogue itself is still unavailable. %s" % catalogue.refusal)),
-        },
+        "condition_2_restated": condition_2(catalogue, per_storm),
         "acceptance_is_partial_and_says_so": (
             "Acceptance condition 3 of this task asked for conditions 1 and 2 both. Condition 1 "
             "is restated exactly; condition 2 is refused by name. This slice therefore meets "
@@ -239,7 +285,8 @@ def main() -> int:
     output.write_text(json.dumps(receipt, indent=2), encoding="utf-8")
     print(json.dumps({
         "condition_1_restated": receipt["condition_1_restated"],
-        "condition_2_restated": {"met": None, "refused": True},
+        "condition_2_restated": {k: v for k, v in receipt["condition_2_restated"].items()
+                                 if k in ("met", "swt_planes", "raw_field", "REFUSED")},
         "median_unexplained_residual_km": restated["median_unexplained_residual_km"],
         "VERDICT": receipt["VERDICT"]}, indent=2, default=str))
     return 0

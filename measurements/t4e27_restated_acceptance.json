@@ -369,5 +369,136 @@
   "claim_boundary": "This restates a bar and re-runs one acceptance measurement against an unchanged population with unchanged conditions. An acceptance measurement settles what an instrument does, not what the atmosphere does. It approves no mining radius, adopts no tolerance into any pipeline, discharges no part of T4E.8's acquired-record acceptance, and settles nothing about whether the record supports kind_recurrence. It does not supersede measurements/t4e18_acceptance.json, which stands as measured.",
   "elapsed_seconds": 0.001,
   "source_revision": "546097537d1e89a41af736945f042e1b776df8bf",
-  "source_code_dirty": true
+  "source_code_dirty": true,
+  "CONDITION_2_LIFTED_2026_09_11_BY_T4E_28": {
+    "what_this_settles": "T4E.27 refused condition 2 by name because the committed receipt carried each storm's NEAREST distance and no more, so the count at any other bar was unrecoverable. T4E.28 records the full sorted distance list from every catalogue centre to every extracted feature, on both paths, so the count at any bar is now arithmetic. THE REFUSAL IS LIFTED.",
+    "condition_2_three_features_inside_the_restated_tolerance": {
+      "swt_planes": {
+        "met": 1,
+        "judged": 17,
+        "needed": 9
+      },
+      "raw_field": {
+        "met": 0,
+        "judged": 17,
+        "needed": 9
+      },
+      "refused": [
+        "LINDA"
+      ]
+    },
+    "the_verdict_does_not_move": "FAILED, and now failed on both conditions rather than on one with the other refused. A lifted refusal that changed a verdict would be worth more attention than one that does not; this one does not, and saying so is the whole of it.",
+    "measured_on_both_paths_because_T4E_27_used_only_one": "T4E.27's correction records that it restated the bar against the SWT rows because those were the only rows in the record. Both are reported here so that the choice is visible rather than inherited.",
+    "per_storm": [
+      {
+        "storm": "FEHI",
+        "tolerance_km": 12.09508285652532,
+        "features_inside_tolerance_swt": 0,
+        "features_inside_tolerance_raw": 0
+      },
+      {
+        "storm": "GITA",
+        "tolerance_km": 89.75816978022152,
+        "features_inside_tolerance_swt": 0,
+        "features_inside_tolerance_raw": 1
+      },
+      {
+        "storm": "HOLA",
+        "tolerance_km": 23.464733785965542,
+        "features_inside_tolerance_swt": 0,
+        "features_inside_tolerance_raw": 0
+      },
+      {
+        "storm": "LINDA",
+        "tolerance_km": null,
+        "refused": true
+      },
+      {
+        "storm": "IRIS",
+        "tolerance_km": 17.203612320766954,
+        "features_inside_tolerance_swt": 0,
+        "features_inside_tolerance_raw": 0
+      },
+      {
+        "storm": "JOSIE",
+        "tolerance_km": 145.46429848974591,
+        "features_inside_tolerance_swt": 0,
+        "features_inside_tolerance_raw": 0
+      },
+      {
+        "storm": "OWEN",
+        "tolerance_km": 13.807889273070968,
+        "features_inside_tolerance_swt": 0,
+        "features_inside_tolerance_raw": 0
+      },
+      {
+        "storm": "PENNY",
+        "tolerance_km": 13.807889273070968,
+        "features_inside_tolerance_swt": 0,
+        "features_inside_tolerance_raw": 0
+      },
+      {
+        "storm": "OMA",
+        "tolerance_km": 16.934599528984702,
+        "features_inside_tolerance_swt": 0,
+        "features_inside_tolerance_raw": 0
+      },
+      {
+        "storm": "SARAI",
+        "tolerance_km": 25.8937838558294,
+        "features_inside_tolerance_swt": 0,
+        "features_inside_tolerance_raw": 0
+      },
+      {
+        "storm": "UESI",
+        "tolerance_km": 103.79791112497031,
+        "features_inside_tolerance_swt": 2,
+        "features_inside_tolerance_raw": 1
+      },
+      {
+        "storm": "GRETEL",
+        "tolerance_km": 107.16512594247598,
+        "features_inside_tolerance_swt": 0,
+        "features_inside_tolerance_raw": 0
+      },
+      {
+        "storm": "ANA",
+        "tolerance_km": 35.85901804682152,
+        "features_inside_tolerance_swt": 0,
+        "features_inside_tolerance_raw": 0
+      },
+      {
+        "storm": "LUCAS",
+        "tolerance_km": 62.09090674508118,
+        "features_inside_tolerance_swt": 3,
+        "features_inside_tolerance_raw": 1
+      },
+      {
+        "storm": "NIRAN",
+        "tolerance_km": 112.60518737609986,
+        "features_inside_tolerance_swt": 0,
+        "features_inside_tolerance_raw": 0
+      },
+      {
+        "storm": "UNNAMED",
+        "tolerance_km": 23.697830228145822,
+        "features_inside_tolerance_swt": 0,
+        "features_inside_tolerance_raw": 0
+      },
+      {
+        "storm": "RUBY",
+        "tolerance_km": 13.807889273070398,
+        "features_inside_tolerance_swt": 0,
+        "features_inside_tolerance_raw": 0
+      },
+      {
+        "storm": "SETH",
+        "tolerance_km": 13.220386357880164,
+        "features_inside_tolerance_swt": 0,
+        "features_inside_tolerance_raw": 0
+      }
+    ],
+    "source": "measurements/t4e28_join_rerun.json",
+    "recorded_on": "2026-09-11"
+  }
 }

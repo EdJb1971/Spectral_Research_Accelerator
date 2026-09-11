@@ -254,5 +254,92 @@
     },
     "what_this_changes_about_the_verdict": "The acceptance still FAILS -- 3 of 18 inside the radius on raw extraction against a declared bar of 9 -- so the conclusion is unchanged. What changes is the diagnosis, and the diagnosis is what any next step would be built on. Building a replacement calibration on the wrong cause would have been expensive and would have failed for a reason nobody had measured.",
     "what_is_still_true_from_the_original_record": "The variable carries the signal. The crop's latitude band is not the cause. The acquisition is sound at 48 shards and 5,844 frames. Those were measured rather than inferred and they stand."
+  },
+  "CORRECTION_2026_09_11_FROM_THE_T4E28_RERUN": {
+    "what_is_confirmed": "Every aggregate in CORRECTION_2026_09_10 is REPRODUCED from this repository against a gate declared before the run -- raw field min 16.6, median 52.1, max 3685.3, 3 of 18, features 0 to 13 median 7; SWT planes min 29.9, median 127.1, max 2055.9, 2 of 18, features 73 to 153 median 123. All 18 recorded SWT rows regenerate exactly, which CONFIRMS that the extraction parameters recovered from a session scratchpad are the ones that produced this record.",
+    "what_is_WRONG_in_the_previous_correction": {
+      "the_claim": "'For every storm not at the dateline the nearest feature is 16.6 to 99.3 km, median about 35' -- stated in a_systematic_positional_offset and repeated as 'one to two grid cells, a factor of two to three, not an order of magnitude'.",
+      "why_it_is_wrong": "The median is right. The RANGE is not. Two storms away from the dateline are far outside it: SETH at longitude 155.9 with its nearest feature 315.1 km away, and HOLA at 175.8 at 247.7 km. Both are an order of magnitude above the catalogue radius median of 22.1 km, which is precisely what the previous correction said did not happen away from the dateline. A third storm, GRETEL at 178.1, yields NO feature at all on the raw path and so appears in neither half of that sentence.",
+      "how_the_error_was_made": "The upper bound was quoted from the storms that fit the story. The record held only a minimum per storm, so nothing in the repository could contradict it -- which is the same gap that made T4E.27 refuse condition 2, appearing here as a false statement rather than an absent one.",
+      "the_other_half_of_the_same_sentence": "RUBY sits at longitude 179.0 -- inside the band the correction names as refused by the R13 off-frame rule -- and its nearest feature is 67.6 km away, in line with the storms away from the dateline. Dateline longitude is therefore NOT sufficient for the failure, and the four storms that fail badly there were treated as though it were.",
+      "the_corrected_statement": "Away from the dateline the nearest feature is 16.6 to 315.1 km with a median of 35.9 over the 13 storms that yield one, against a catalogue radius median of 22.1 km. The median offset remains one to two grid cells and continues to agree with T4E.19's 33.8 km. The distribution has a tail that the previous correction excluded without saying so.",
+      "what_this_does_and_does_not_change": "The acceptance verdict is untouched: FAILED, 3 of 18 on the raw path against a bar of 9, and now also 0 of 18 on condition 2. The DIAGNOSIS changes. 'Two real failure modes' was too few -- there is a third population of storms, away from any boundary, whose nearest feature is hundreds of kilometres off or absent entirely, and it was hidden by reporting a range that excluded it."
+    },
+    "condition_2_on_the_raw_path_measured_for_the_first_time": {
+      "met": 0,
+      "of": 18,
+      "needed": 9,
+      "note": "Never computed on the raw path before: the original script printed a per-storm column and totalled only the '>= 1' case. No prediction was offered for it in the T4E.28 declaration, because there was no prior figure to reproduce and declaring a guess as a prediction is the failure TG19.5 exists to catch.",
+      "what_it_shows": "The raw path is better on distance and WORSE here -- 0 of 18 against the SWT path's 1 of 18. With 0 to 13 features per frame against 73 to 153, having three of them inside a 22 km radius is a far harder thing to do. 'Markedly better' was a statement about the nearest feature and does not carry to the count inside the radius."
+    },
+    "non_dateline_nearest_km_raw_path_every_storm": [
+      {
+        "storm": "UESI",
+        "lon": 159.7,
+        "nearest_km": 16.6
+      },
+      {
+        "storm": "GITA",
+        "lon": 169.6,
+        "nearest_km": 28.4
+      },
+      {
+        "storm": "FEHI",
+        "lon": 165.9,
+        "nearest_km": 30.0
+      },
+      {
+        "storm": "LUCAS",
+        "lon": 166.6,
+        "nearest_km": 33.4
+      },
+      {
+        "storm": "PENNY",
+        "lon": 149.0,
+        "nearest_km": 34.2
+      },
+      {
+        "storm": "IRIS",
+        "lon": 159.2,
+        "nearest_km": 34.3
+      },
+      {
+        "storm": "OWEN",
+        "lon": 150.4,
+        "nearest_km": 35.9
+      },
+      {
+        "storm": "LINDA",
+        "lon": 156.3,
+        "nearest_km": 40.9
+      },
+      {
+        "storm": "UNNAMED",
+        "lon": 174.5,
+        "nearest_km": 52.1
+      },
+      {
+        "storm": "RUBY",
+        "lon": 179.0,
+        "nearest_km": 67.6
+      },
+      {
+        "storm": "OMA",
+        "lon": 161.3,
+        "nearest_km": 99.3
+      },
+      {
+        "storm": "HOLA",
+        "lon": 175.8,
+        "nearest_km": 247.7
+      },
+      {
+        "storm": "SETH",
+        "lon": 155.9,
+        "nearest_km": 315.1
+      }
+    ],
+    "source": "measurements/t4e28_join_rerun.json",
+    "recorded_on": "2026-09-11"
   }
 }

@@ -2803,6 +2803,55 @@ configuration absent from one scene outright; nothing about recurrence *across* 
 which the mining machinery needs; no mining radius, no discharge of T4E.8's acceptance, no
 closure of D96 to D100; and nothing about `kind_recurrence`, which still has no catalogue.
 
+### T4E.28 - the join re-run: both gates reproduced, and a claim in the record falsified
+
+**T4E.28 (2026-09-11): the join re-run, with its gate committed before the run.** The gate landed
+in `70640b4`, which carries no measurement; the numbers came afterwards.
+`data/identity_calibration/t4e28-join-rerun-declaration.json`,
+`src/benchmarks/catalogue_join.py`, `tools/rerun_t4e18_join.py`,
+`measurements/t4e28_join_rerun.json`.
+
+**Two gaps in an adopted record.** T4E.18's acceptance carried per-storm rows for the SWT path
+only; the raw-field path its own correction calls *markedly better* existed as four rounded
+aggregates. And neither path's extraction parameters were written down anywhere in this
+repository -- both runs came from scripts in a session scratchpad under `%TEMP%`, so figures in an
+adopted record were reproducible only from a directory nobody would think to preserve. The
+parameters were recovered while those scripts still existed and now live in the tool.
+
+```
+raw_field    nearest min 16.6  median 52.1  max 3685.3 | condition 1: 3 of 18   GATE REPRODUCED
+swt_planes   nearest min 29.9  median 127.1 max 2055.9 | condition 1: 2 of 18   GATE REPRODUCED
+recovered SWT parameters against the 18 recorded rows: CONFIRMED
+```
+
+**Every aggregate reproduces to 0.1 km and all 18 SWT rows regenerate exactly**, which confirms
+the recovered parameters are the ones that produced the record rather than a plausible guess.
+
+**T4E.27's condition 2 is LIFTED**: 1 of 17 judged on the SWT path, 0 of 17 on the raw path,
+against a bar of 9. The verdict does not move -- FAILED, now on both conditions rather than one
+with the other refused. `tools/restate_position_acceptance.py` computes it from the T4E.28 record
+and still refuses by name when that record is absent.
+
+**Condition 2 on the raw path, measured for the first time: 0 of 18**, against the SWT path's 1.
+No prediction was offered for it, because there was no prior figure to reproduce. It qualifies the
+previous reading: the raw path is better on nearest distance and worse on the count inside the
+radius, which with 0-13 features per frame against 73-153 is what should be expected.
+
+**A claim in T4E.18's own correction is falsified.** It stated that away from the dateline the
+nearest feature is *"16.6 to 99.3 km"*, a *"factor of two to three, not an order of magnitude"*.
+The median is right; the range is not. SETH at longitude 155.9 sits 315.1 km out and HOLA at
+175.8 sits 247.7 km out, both far from any boundary and an order of magnitude above the 22.1 km
+radius median; GRETEL yields no feature at all. RUBY, at longitude 179.0 inside the band named as
+off-frame, is fine at 67.6 km -- so dateline longitude is not sufficient for the failure. The
+upper bound had been quoted from the storms that fit the story, and the record held only a
+minimum per storm, so nothing in the repository could contradict it. *Two real failure modes* was
+too few.
+
+**What it does not do.** It adopts nothing, approves no radius, and does not change the T4E.18
+verdict, which remains FAILED. A reproduction of a failing measurement is still a failing
+measurement. It says nothing about which extraction path is right, whether the bar of 9 was well
+chosen, or what the atmosphere does.
+
 ### TG19.5 - can the change you are about to make move the answer at all?
 
 **TG19.5 (2026-09-11): can the change you are about to make move the answer at all?**

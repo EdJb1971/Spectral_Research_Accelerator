@@ -263,3 +263,59 @@ def test_a_found_feature_where_none_was_recorded_is_a_disagreement():
 
     assert compare_rows(observed, recorded)["disagreements"][0]["why"] == \
         "one path found no feature"
+
+
+# ---------------- the committed T4E.28 run
+
+
+def _rerun():
+    import json
+    return json.loads(open("measurements/t4e28_join_rerun.json", encoding="utf-8").read())
+
+
+def test_both_declared_gates_read_reproduced_on_the_committed_run():
+    record = _rerun()
+    assert record["paths"]["raw_field"]["gate"]["verdict"] == "REPRODUCED"
+    assert record["paths"]["swt_planes"]["gate"]["verdict"] == "REPRODUCED"
+
+
+def test_the_recovered_swt_parameters_are_confirmed_against_all_eighteen_recorded_rows():
+    """The parameters existed only in a %TEMP% directory; this is what makes them the real ones."""
+    recovery = _rerun()["paths"]["swt_planes"]["parameter_recovery"]
+
+    assert recovery["verdict"] == "CONFIRMED"
+    assert recovery["detail"]["rows_recorded"] == recovery["detail"]["rows_observed"] == 18
+    assert recovery["detail"]["disagreements"] == []
+
+
+def test_the_raw_path_is_better_on_distance_and_worse_on_the_count_inside_the_radius():
+    """'Markedly better' was a statement about one quantity and does not carry to the other."""
+    paths = _rerun()["paths"]
+    raw = paths["raw_field"]["aggregates"]
+    swt = paths["swt_planes"]["aggregates"]
+
+    assert raw["nearest_km"]["median"] < swt["nearest_km"]["median"]
+    assert raw["condition_2_three_inside_radius"]["met"] == 0
+    assert swt["condition_2_three_inside_radius"]["met"] == 1
+
+
+def test_t4e27_condition_2_agrees_with_recomputing_it_from_the_distance_lists():
+    """The refusal was lifted by evidence; this pins that the evidence still says so."""
+    import json
+    restated = json.loads(
+        open("measurements/t4e27_restated_acceptance.json", encoding="utf-8").read())
+    lift = restated["CONDITION_2_LIFTED_2026_09_11_BY_T4E_28"]
+    distances = {row["storm"]: row["distances_km"]
+                 for row in _rerun()["paths"]["swt_planes"]["rows"]}
+
+    met = judged = 0
+    for row in restated["per_storm"]:
+        tolerance = row.get("tolerance_km")
+        if tolerance is None:
+            continue
+        judged += 1
+        met += sum(1 for d in distances[row["storm"]] if d <= tolerance) >= 3
+
+    recorded = lift["condition_2_three_features_inside_the_restated_tolerance"]["swt_planes"]
+    assert (recorded["met"], recorded["judged"]) == (met, judged)
+    assert met < recorded["needed"]

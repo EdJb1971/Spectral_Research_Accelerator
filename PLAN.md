@@ -1254,6 +1254,18 @@ about the definition and would cost no catalogue.
 Needs its own task, design and acceptance before it runs, declared first. Adopting an external
 project's ceilings is a scientific choice and must not be made silently by software.
 
+### T4E.28 ? The join re-run ? measured 2026-09-11; reproduced, and it falsified a claim in the record
+
+**Measured.** Both declared gates REPRODUCED and the SWT extraction parameters -- which existed
+only in a `%TEMP%` scratchpad -- CONFIRMED against all 18 recorded rows. T4E.27's condition 2 is
+lifted: 1 of 17 on the SWT path, 0 of 17 on the raw path, against a bar of 9, so the acceptance
+now fails on both conditions rather than on one with the other refused. Condition 2 on the raw
+path was measured for the first time at 0 of 18.
+
+The re-run also falsified a claim in T4E.18's own correction block: away from the dateline the
+nearest feature ranges to 315.1 km, not to 99.3 as stated, and one storm at a dateline longitude
+does fine. See `architecture.md` section 3E.43.
+
 ### T4E.27 ? The T4E.18 acceptance restated ? measured 2026-09-11; the bar was not the problem
 
 **Measured, and it closes the question T4E.21 left open by answering it in the negative.** A
