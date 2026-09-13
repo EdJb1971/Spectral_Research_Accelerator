@@ -13592,6 +13592,61 @@ finding -- a pair expected by the hundreds, so groups of two refused by arithmet
 No partition, signature or distance was opened, no reserve spent, no candidate declared, and
 candidate 2 is explicitly not revived: its own limitation at `k = S` stands.
 
+## T4E.47 -- the ninth criterion candidate (2026-09-14, `ed-dev`)
+
+Drafted, validated, and measured on nothing.
+
+```text
+> .venv\Scripts\python.exe -c "from src.core.partial_recurrence_criterion import candidate_state..."
+candidate              9_rank_diameter_against_a_motif_free_null
+declaration_status     DRAFTED_NOT_ADOPTED
+adopted                False
+has_been_measured      False
+feasibility_measured   False
+reserves_open          False
+digest                 9e01dd5bd6fec1d857b75d4a98586d2980250bf721d09e94ecb090e95b674001
+authorises on adoption the feasibility measurement on motif-free blocks, and then one
+                       development pass. Not a reserve, not a claim, and not C6.
+```
+
+The design was settled by two derivations rather than by preference, and both are recorded in the
+declaration with the result that forced them:
+
+```text
+statistic must be a RANK, not a distance
+  K4, from T4E.10's 1.88x between-block drift against candidate B's 1.084x normaliser
+
+null reference must be the tightest one-per-scene SUBSET, not the tightest consistent set
+  the motif-free nulls hold 0 consistent sets at m = 5 and m = 6, so a bar over chance
+  consistent sets is undefined where it is needed, and candidate 5's absence rule would
+  have admitted every real five-set including the impostors this candidate exists to stop
+```
+
+The extremes, derived before adoption:
+
+```text
+m = 2   bar severe   116 / 595 / 1486 chance consistent pairs, and far more one-per-scene
+                     pairs, so the tightest is very tight -- candidate 4's defect excluded
+                     by construction rather than by a special case
+m = S   bar weak     intended: candidate 2 measured zero false admission at m = S
+attachment           NOT DERIVABLE -- the comparison the result turns on
+non-inertness        NOT DERIVABLE -- this candidate may admit nothing, and that is a result
+```
+
+```text
+> .venv\Scripts\python.exe -m pytest src/tests/test_t4e47_partial_recurrence_criterion.py -q
+9 passed, 1 warning in 0.34s
+```
+
+Most of those tests are refusals. A declaration that drops a K1-K6 answer, an acceptance
+condition, its extremes derivation or its feasibility refusal is rejected by the loader, because
+the failure mode this sequence keeps meeting is reasoning edited out after the numbers appear. One
+test requires the reserved families to be named exactly and recorded unopened, and refuses a
+declaration that marks them open.
+
+Nothing was measured, no reserve was opened, and no adoption was written by code. The feasibility
+run is the next permitted act and it touches motif-free blocks only.
+
 ---
 
 **Full backend suite, measured 2026-09-11 on the tree carrying TG19.5.**

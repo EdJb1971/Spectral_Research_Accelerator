@@ -2912,6 +2912,46 @@ not identify a cyclone centre or rescue T4E.36, and changes no extractor, radius
 acceptance gate. A further atmospheric slice requires an independently declared holdout design
 before opening 2022–2023.
 
+### T4E.47 - the ninth criterion candidate, drafted and not adopted
+
+**T4E.47 (2026-09-14): a criterion for partial recurrence declared against K1-K6, calibrated on
+the motif-free null blocks, aimed at candidate 3's attachment failure rather than at the null.
+`DRAFTED_NOT_ADOPTED`, measured on nothing, both reserves shut.**
+
+T4E.46 established what candidate 3's failure was: false admissions are motif-dependent, absent
+from the motif-free nulls at every richness, and appear only where a genuine set exists for a
+near-miss to attach to. This candidate targets that, and uses the calibration surface T4E.46
+showed to be valid.
+
+A set of size m is scored by its rank diameter -- its largest pairwise distance expressed as a
+quantile of the partition's own cross-scene distance distribution -- and admitted only if that
+rank falls below a size-specific bar taken from the motif-free blocks. There is no k, no radius
+and no threshold to choose; every size from 2 to S is tested by the same rule, and the bar relaxes
+with size on its own because the tightest chance m-subset gets looser as m grows.
+
+Two features are forced rather than preferred. The statistic is a rank because K4 forbids carrying
+an absolute bar across a partition boundary, where T4E.10 measured 1.88x drift and candidate B's
+normaliser varies only 1.084x. And the null reference is the tightest one-per-scene subset rather
+than the tightest chance consistent set, because the nulls hold zero consistent sets at m = 5 and
+m = 6 -- so a bar over chance consistent sets is undefined exactly where it is needed, and the
+absence rule candidate 5 declared would have admitted every real five-set including the impostors.
+
+The extremes are derived before adoption. At m = 2 the bar is severe and candidate 4's defect is
+excluded by construction. At m = S it is weak, which is the intended direction, since candidate 2
+measured zero false admission there. And two things are declared NOT derivable: whether a genuine
+set's tightness beats the tightest chance subset while an attached set's does not -- the comparison
+the result turns on -- and whether the candidate admits anything at all.
+
+Feasibility is an open requirement with a declared refusal. The minimum-rank-diameter subset
+cannot be enumerated at 1.1e14 candidates, so it must come from binary search over thresholds with
+the exact clique enumeration T4E.16 measured at 0.0 seconds; the calibration must finish within an
+hour on motif-free blocks alone, and the candidate is withdrawn on feasibility if it does not.
+
+Nine tests, most of them refusals, including that a declaration losing a constraint, an acceptance
+condition, its extremes derivation or its feasibility refusal is rejected -- the editing-out this
+sequence keeps meeting. Nothing is measured, and adoption would authorise the feasibility run and
+one development pass, not a reserve and not C6.
+
 ### T4E.46 - the conditional settled, and T4E.45 corrected
 
 **T4E.46 (2026-09-14): the motif does not have to set its own bar. T4E.45's refutation of the

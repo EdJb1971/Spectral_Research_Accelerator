@@ -1,0 +1,95 @@
+{
+  "schema": "t4e47-partial-recurrence-criterion-declaration/v1",
+  "status": "DRAFTED_NOT_ADOPTED",
+  "task": "T4E.47",
+  "candidate": "9_rank_diameter_against_a_motif_free_null",
+  "declared_by": "Edward Jonathan Bentley, maintainer (scientific choice); drafted by Claude Opus 5 at the maintainer's direction and NOT VALID until the maintainer has reviewed and adopted it",
+  "drafted_on": "2026-09-14",
+
+  "why_this_candidate": {
+    "the_problem_it_addresses": "Candidate 2 admits nothing false at k = S and does not transfer, because a real record does not hold every configuration in every scene. Candidate 3 relaxed to k = S - 1 and admitted impostors. T4E.46 established what those impostors are: the false admissions are motif-dependent, absent from the motif-free null blocks at every richness, and appear only where a genuine set exists for a near-miss to attach to. The problem is attachment under relaxation, not a broken null.",
+    "what_changed_to_make_this_possible": "T4E.46 showed the motif-free null blocks are a valid calibration surface: they share the generator, richness and configurations per scene, they contain no motif to set a bar with, and their matching density sits among the planted blocks rather than below them -- at richness 9 above all four of them. A bar calibrated there cannot be set by the signal it judges.",
+    "why_not_simply_keep_k_equal_to_S": "Requiring every scene is requiring total recurrence, which is the assumption the T4E.14 partial-presence evidence was built to remove. A criterion that only works when the motif is everywhere cannot be used on a record where it is not."
+  },
+
+  "criterion": {
+    "name": "rank_diameter_against_a_motif_free_null",
+    "statement": "Form the matching and enumerate maximal consistent sets exactly as candidate 2 does, one configuration per scene. For a consistent set of size m, its statistic is the RANK DIAMETER: the largest pairwise distance among its members, expressed as its quantile within that partition's own distribution of cross-scene pairwise distances. Admit a set of size m if and only if its rank diameter is strictly below the bar for size m, where the bar is calibrated on the motif-free null blocks as described below. Sets of every size from 2 to S are tested by the same rule with a size-specific bar; k is not a parameter of this criterion.",
+    "the_statistic_is_the_diameter_and_why": "A consistent set is a correspondence only if every member matches every other, so the binding evidence is the weakest link. A mean would let a tight core carry a loose member, which is precisely how an impostor attaches. This reasoning is taken unchanged from T4E.16 and is not original to this candidate.",
+    "why_rank_and_not_distance": "K4 forbids applying a bar calibrated on one partition to another, because T4E.10 measured 1.88x drift in mean same-configuration distance between blocks of one generator, and T4E.11 candidate B's label-free normaliser varies only 1.084x. A distance calibrated on a null block and applied to a planted one would be exactly that forbidden transfer. A rank within the partition's own distance distribution is dimensionless and carries no scale across the boundary. This is not a convenience: the matching itself is already rank-based, which is why its densities are comparable across blocks -- 116 against 121 to 152 at richness 6 -- while distances are not.",
+    "what_does_not_change": "The signature mode, the attribute weights, the cardinality, the construction labels, the mutual nearest-neighbour rule that proposes pairs, the exact rather than greedy enumeration, the one-configuration-per-scene rule, and the frozen partition size S = 6."
+  },
+
+  "the_null_and_how_the_bar_is_set": {
+    "calibration_surface": "The motif-free null blocks: 500-505 for total recurrence and 850-855 for partial presence, at each declared richness.",
+    "the_reference_is_the_tightest_one_per_scene_subset": "For size m, the bar is the minimum rank diameter over one-configuration-per-scene subsets of size m in the null blocks -- NOT the minimum over chance CONSISTENT sets of size m.",
+    "why_that_distinction_is_forced_and_not_a_choice": "The null blocks contain zero consistent sets at m = 5 and m = 6 at every richness. A bar defined over chance consistent sets is therefore undefined at exactly the sizes this candidate exists to judge, and an absence rule -- admit everything when the null produced nothing -- would admit every real five-set including the impostor sets that are the whole problem. Candidate 5 declared such an absence rule and would have inherited this defect. The tightest one-per-scene subset always exists, so the bar is always defined.",
+    "what_the_bar_means": "The tightest arrangement of m configurations, one per scene, that a partition with no recurrence in it can produce. A real set must be tighter than the best that chance managed on the same kind of data at the same size.",
+    "the_bound_it_carries": "With the null blocks enumerated exhaustively at a given size, the bar is a minimum rather than a quantile, and the rate it licenses is stated as at most one in the number of subsets examined. No alpha is divided by anything.",
+    "how_it_scales_with_size_without_a_parameter": "The tightest chance m-subset gets looser as m grows, because every additional member must be close to all the others. The bar therefore relaxes with size on its own, and the criterion has no k, no radius and no threshold to choose."
+  },
+
+  "what_is_derivable_before_measuring": {
+    "at_m_equal_2_the_bar_is_severe": "The null blocks contain 116, 595 and 1486 consistent pairs at richness 6, 9 and 12, and vastly more one-per-scene pairs than that. The tightest of them is very tight indeed, so a real pair must beat the best of thousands of chance draws. Candidate 4's defect -- a group of two admitted on the same terms as a group of six -- is excluded by the construction rather than by a special case. This is the extremes check candidate 4's declaration failed to make.",
+    "at_m_equal_S_the_bar_is_weak_and_that_is_the_intended_direction": "Chance struggles to place six configurations mutually close, so the tightest chance six-subset is loose and the bar is easy. That is correct: candidate 2 measured zero false admission at m = S across every richness, so a permissive bar at the largest size costs nothing that has been observed to matter.",
+    "the_attachment_case_is_what_this_must_actually_decide": "A four-true-plus-one-impostor set of size five contains six motif pairs at motif tightness and four impostor pairs at chance tightness, so its diameter is a chance-tightness distance. A genuine five-set contains ten motif pairs and its diameter is a motif-tightness distance. The candidate admits the first only if a chance-tightness pair beats the tightest chance five-subset, which is the comparison the bar is built to make. Whether it does is NOT derivable here and is the substance of the measurement.",
+    "non_inertness_is_not_derivable": "This candidate may admit nothing at any size, and that would be a complete result. Candidate 1 was inert and therefore never tested; this one cannot be shown in advance to admit even the motif, because whether motif tightness beats the tightest chance subset is exactly what is unknown.",
+    "what_the_arithmetic_does_not_settle": "Nothing here establishes that the bar separates genuine sets from attached ones. The derivation fixes the shape, the statistic and the calibration surface, and identifies the one comparison the measurement turns on."
+  },
+
+  "feasibility_requirement_to_be_measured_before_adoption": {
+    "the_requirement": "Finding the minimum-rank-diameter one-per-scene m-subset is a minimisation over C(S, m) * c**m subsets, which is 1.1e14 at m = 6 and c = 220 and cannot be enumerated. It must instead be computed by binary search on the distance threshold with the exact clique enumeration already in use: at a candidate threshold, keep only pairs within it and ask whether a one-per-scene m-clique exists.",
+    "why_that_is_expected_to_be_affordable": "T4E.16 measured the clique enumeration at 0.0 seconds at every richness, with all the cost in the matching. A binary search needs on the order of thirty enumerations per block and size, and the pairwise distance matrix is computed once per block and reused because no distance changes.",
+    "the_budget": "The feasibility measurement must complete the full null calibration -- every richness, every size 2 to S, both null block families -- within one hour on the development machine, and must report its actual cost.",
+    "the_refusal": "If it exceeds that budget, this candidate is withdrawn on feasibility before adoption exactly as candidate 5 was, and the withdrawal is recorded rather than the budget being raised.",
+    "why_this_is_not_a_measurement_of_the_criterion": "It runs on motif-free blocks only and produces a cost and a bar, not a verdict on any real set. It spends no signal evidence and opens no reserve."
+  },
+
+  "constraints_this_candidate_is_declared_against": {
+    "K1_a_surrogate_must_not_reconstruct_the_set_it_tests": "Satisfied by construction. There is no surrogate and no redistribution: the bar comes from separate blocks that contain no motif, so the set under test cannot appear in its own reference.",
+    "K2_a_null_that_changes_distances_per_replicate_is_not_runnable": "Satisfied in form -- no replicates and no redistribution, so every distance is computed once -- and subject to the feasibility measurement above, which is the part not yet established.",
+    "K3_only_two_shapes_remain": "This is the second shape: no per-size surrogate. The bar is an order statistic of the null blocks, not a resampled distribution.",
+    "K4_no_cross_partition_calibration_of_an_absolute_bar": "Satisfied by the rank statistic. What crosses the partition boundary is a quantile, not a distance.",
+    "K5_the_partition_size_stays_at_six": "Satisfied. S = 6 throughout and no result may be rescued by changing it.",
+    "K6_multiplicity": "This is the ninth criterion declared in this sequence. Eight have been falsified or withdrawn, and reporting a first success as though it were a single test would be eight tests reported as one. Both reserves stay closed: 720-735 has never been generated and 880-895 is refused in code, and adopting this declaration opens neither."
+  },
+
+  "development_evidence": {
+    "primary": "The T4E.14 partial-presence partitions 800-835 at presence levels j in {3, 4, 5}, at richness 6, 9 and 12, with the partial-presence null 850-855.",
+    "secondary": "The total-recurrence blocks 100-405 with the null 500-505, as a declared cross-check that this candidate keeps what candidate 2 kept.",
+    "status": "All already inspected. These are development evidence and no result measured on them is confirmatory."
+  },
+
+  "confirmatory": {
+    "blocks": [[720, 721, 722, 723, 724, 725], [730, 731, 732, 733, 734, 735], [880, 881, 882, 883, 884, 885], [890, 891, 892, 893, 894, 895]],
+    "status": "RESERVED AND UNOPENED. 720-735 has never been generated and 880-895 is refused unconditionally in code. This declaration does not open them, adopting it does not open them, and a development pass does not license opening them without its own amendment."
+  },
+
+  "acceptance": {
+    "condition_1_recall_on_partial_presence": "False split at most 0.10 at every presence level j and every richness individually, counted against C(j, 2) and not C(S, 2).",
+    "condition_2_admission_on_partial_presence": "False admission at most 0.10 at every j and every richness individually. This is the condition candidate 3 failed at 0.40 to 0.80, and it is the reason this candidate exists.",
+    "condition_3_no_hallucinated_presence": "Admitted sets containing a member from a scene where the motif is absent at most 0.10 of admissions, reported separately at every j and richness.",
+    "condition_4_null": "On the partial-presence null 850-855 and the total-recurrence null 500-505, admissions must be zero at every richness. Not near zero.",
+    "condition_5_the_pair_extreme": "No set of size 2 is admitted at any richness in any block, planted or null. If one is, the bar at the smallest size is not doing what the derivation says it does.",
+    "all_five_required": "Every condition holds or the candidate is falsified. Conditions do not trade against one another and a strong result on one does not offset a failure on another."
+  },
+
+  "what_would_falsify_this_candidate": [
+    "Any acceptance condition unmet on the development evidence.",
+    "The feasibility measurement exceeding its declared budget.",
+    "Admitting a set of size two anywhere.",
+    "Admitting nothing anywhere, which is a complete result and a falsification of this candidate rather than of the approach."
+  ],
+
+  "what_a_success_would_and_would_not_license": {
+    "would": "A development result worth taking to one reserved confirmatory family under its own amendment, and nothing before that amendment exists.",
+    "would_not": "T4E.8's acceptance, which is the T4E.41 bar and needs all of C1 to C8; any mining radius; any claim about the acquired record or the atmosphere; the closure of D96 to D100; or the promotion of a development pass into a finding."
+  },
+
+  "what_a_failure_would_and_would_not_license": {
+    "would": "A recorded falsification, and the information that the attachment problem is not solved by a size-scaled tightness bar calibrated on motif-free blocks.",
+    "would_not": "The conclusion that discovery is impossible, that the signature is inadequate, or that the catalogue alternative is forced. Nine falsifications would say that nine specific rules do not work."
+  },
+
+  "claim_boundary": "This is a drafted criterion awaiting a maintainer's review and adoption. It has been measured on nothing. Adopting it authorises the feasibility measurement on motif-free blocks and then one development pass; it establishes no result, opens no reserve, licenses no claim about any record, and does not meet C6 of the T4E.41 acceptance, which asks for a criterion that has been shown to work rather than one that has been declared."
+}

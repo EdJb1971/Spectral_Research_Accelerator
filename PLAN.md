@@ -9,7 +9,7 @@ authority. `roadmap.md` and `roadmap_cross_domain.md` hold task history -- what 
 why -- and `VERIFICATION.md` holds the captured output behind every figure. When any of them
 disagrees with this document, **they are right and this is stale.**
 
-Last revised 2026-09-14, after correcting T4E.45 and settling the conditional. **Section 1 retains the sequential
+Last revised 2026-09-14, after drafting the ninth criterion candidate. **Section 1 retains the sequential
 decision record that led to the current position and must not be read as a current-status
 summary; `architecture.md` section 0 is the authority wherever a historical next step below has
 since been completed or superseded.**
@@ -128,10 +128,20 @@ and section 3's catalogue alternative stays the alternative.**
 What is actually left is a different problem. Candidate 3's false admissions are
 motif-dependent -- zero in the null blocks, present only where a genuine set exists for a
 near-miss to attach to -- which is the `k < S` relaxation the T4E.13 record already called a
-margin one scene wide, not a defect in the null. **The next atmospheric acts are, in order: a
-named person reads the holdout result and adopts that review; and a ninth candidate is
-designed against K1-K6 with its null calibrated on the motif-free blocks, addressing the
-k < S attachment problem rather than the null, and declared before it is measured.**
+margin one scene wide, not a defect in the null. T4E.47 has now drafted that ninth candidate. It scores a set by its rank diameter -- largest
+pairwise distance as a quantile of the partition's own distance distribution -- against a
+size-specific bar taken from the motif-free blocks, with no k, no radius and no threshold to
+choose. Two features are forced rather than preferred: a rank because K4 forbids carrying an
+absolute bar across partitions, and a tightest-subset reference because the nulls hold zero
+consistent sets at m = 5 and 6, where candidate 5's absence rule would have admitted every
+impostor. The extremes are derived, including two that are declared NOT derivable -- the
+attachment comparison the result turns on, and whether it admits anything at all.
+**The next atmospheric acts are, in order: a named person reads the holdout result and adopts
+that review; a named person reviews and adopts or refuses the T4E.47 declaration, which is
+the ninth in a sequence of eight falsifications and carries that multiplicity; then the
+feasibility measurement on motif-free blocks alone, which spends no signal evidence and which
+withdraws the candidate if it exceeds its declared one-hour budget; and only then one
+development pass. Neither reserve is opened by any of that.**
 Do not widen the crop or tune the extractor first. The G17
 successor declaration is now frozen
 against the calibrated exact-pool-substitution contract; curate and justify its real partner pools
