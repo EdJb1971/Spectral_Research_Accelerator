@@ -9,7 +9,7 @@ authority. `roadmap.md` and `roadmap_cross_domain.md` hold task history -- what 
 why -- and `VERIFICATION.md` holds the captured output behind every figure. When any of them
 disagrees with this document, **they are right and this is stale.**
 
-Last revised 2026-09-13, after deriving the constraints on a size-scaled criterion. **Section 1 retains the sequential
+Last revised 2026-09-14, after the extremes test refuted the recommended shape. **Section 1 retains the sequential
 decision record that led to the current position and must not be read as a current-status
 summary; `architecture.md` section 0 is the authority wherever a historical next step below has
 since been completed or superseded.**
@@ -108,11 +108,21 @@ obvious construction is already dead: T4E.16's surrogate reassembles the set it 
 a feasible null is invalid here while a valid null is infeasible. Six constraints K1-K6 are
 published, each bound to the result that established it, with the two temptations -- widening
 the partition, and excluding the set under test -- stated beside their costs.
+T4E.45 then ran the extremes test on the second of those shapes before anything was declared,
+and it refuted the simple form of it. The small end works: a pair is expected by the hundreds,
+so a clique-rarity bar refuses groups of two by arithmetic rather than by the special case
+candidate 4 needed, and the expectation collapses from 121 to 2.4e-18 between m = 2 and m = 6
+with no free parameter. The large end does not: independence predicts coincidental five-cliques
+at 1e-13 while candidate 3 measured them in six of twelve blocks, understating by more than
+1e12 in the direction that admits coincidences. A nearest-neighbour matching is transitive by
+construction.
 **The next atmospheric acts are, in order: a named person reads the holdout result and adopts
-that review; and a ninth criterion candidate is designed against K1-K6 and declared before it
-is measured. The constraint set says the space is narrow -- a candidate that needs a per-size
-surrogate must either exclude the set under test and quantify the resulting bias toward false
-admission, or do without a surrogate altogether.**
+that review; and the narrowed question is settled before any ninth candidate is written --
+whether the matching graph's transitivity can be estimated from a partition that contains the
+motif whose clique is under test, without the estimate being set by the signal. That is K1 in
+another form, so the two shapes T4E.44 left may share one obstacle rather than being
+alternatives. If they do, this family of criteria is exhausted and section 3's declared
+catalogue alternative becomes the live question rather than the fallback.**
 Do not widen the crop or tune the extractor first. The G17
 successor declaration is now frozen
 against the calibrated exact-pool-substitution contract; curate and justify its real partner pools

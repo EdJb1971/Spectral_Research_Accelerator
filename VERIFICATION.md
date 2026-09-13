@@ -13478,6 +13478,61 @@ like this has.
 No partition, signature or distance was touched, no reserve was opened, and no candidate was
 declared or adopted.
 
+## T4E.45 -- the clique-rarity extremes test (2026-09-14, `ed-dev`)
+
+The derivation T4E.44 recommended, and the result went against the recommendation.
+
+```text
+scenes S = 6, one configuration per scene, E_m = C(S,m) * c**m * p**C(m,2)
+densities from candidate 2 and candidate 3's published matchings
+
+rich  cfg  edges  p        m=2     m=3    m=4       m=5       m=6
+6     20    121   0.02017  121     1.31   1.61e-04  2.14e-10  2.38e-18
+9     84    568   0.00537  568     1.83   1.78e-05  4.97e-13  3.10e-23
+12    220  1446   0.00199  1.45e3  1.68   2.19e-06  3.04e-15  3.49e-27
+```
+
+At `m = 2` the expectation is the edge count itself, which is the check that the arithmetic is
+anchored to a published number rather than to an assumption.
+
+**Small end: the shape works.** A pair is expected 121, 152 and 136 times by chance at richness 6
+alone, so no pair can clear any bar worth stating. Candidate 4 needed a special case for a group
+of two after closure turned out to be vacuous there; this shape refuses pairs by arithmetic. The
+collapse from 121 to 2.4e-18 across `m = 2` to `m = 6` is the size scaling, and it has no free
+parameter.
+
+**Large end: the null is refuted by evidence already on disk.**
+
+```text
+rich  predicted 5-cliques   observed                     understates by at least
+6     2.09e-09              0 of 4 blocks                --
+9     6.68e-13              2 of 4 blocks                7.5e+11
+12    7.85e-15              4 of 4 blocks                1.3e+14
+```
+
+The observation is candidate 3's recorded false admission at `k = S - 1 = 5` -- 0.4 at richness 9
+and up to 0.8 at richness 12 -- not a new claim. Independence is not a conservative approximation
+here; it fails in the direction that admits a coincidence as a recurrence, because a
+nearest-neighbour matching is transitive by construction and cliques are therefore far commoner
+than independent edges of the same density give.
+
+```text
+> .venv\Scripts\python.exe -m pytest src/tests/test_t4e45_clique_rarity.py -q
+9 passed, 1 warning in 0.08s
+
+measurements/t4e45_clique_rarity.json
+receipt 2cdeb88c69b76e61..., status DERIVATION_ONLY_NO_CANDIDATE_DECLARED
+```
+
+One test exists because the temptation here is obvious: the derivation produced an encouraging
+half and a refuting half, and publishing only the first would have been worse than not deriving at
+all. It requires `what_does_not_survive` to name the independence null *and* the recommendation
+that prompted the derivation.
+
+No partition, signature or distance was touched, no reserve opened, and no candidate declared or
+adopted. What the slice cost is arithmetic; what it saved is a declaration, an adoption and a
+measurement spent on a bar whose null was already refuted by the record.
+
 ---
 
 **Full backend suite, measured 2026-09-11 on the tree carrying TG19.5.**

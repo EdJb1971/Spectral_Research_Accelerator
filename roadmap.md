@@ -2912,6 +2912,43 @@ not identify a cyclone centre or rescue T4E.36, and changes no extractor, radius
 acceptance gate. A further atmospheric slice requires an independently declared holdout design
 before opening 2022–2023.
 
+### T4E.45 - the extremes test that refuted the shape it was written to support
+
+**T4E.45 (2026-09-14): T4E.44's recommended derivation, performed. The small end works; the large
+end is refuted by measurements already on disk, and with it the simple form of the
+recommendation.**
+
+T4E.44 left two shapes for a size-scaled criterion and recommended Shape B -- take the scaling
+from the matching graph's own combinatorics rather than from a surrogate null -- explicitly
+because its behaviour at the extremes could be derived on paper before adoption rather than
+measured after. That was the whole argument for it, so the derivation had to come before the
+candidate.
+
+Under independent edges of the observed density,
+`E_m = C(S, m) * c**m * p**C(m, 2)` for a one-per-scene set of size `m`. The density is candidate
+2's own published count -- 121 pairs proposed of 6,000 candidate pairs at richness 6 -- and at
+`m = 2` the expression returns that edge count, which is how the arithmetic is anchored rather
+than assumed.
+
+The small end works. A pair is expected by the hundreds at every recorded density, so no pair can
+be evidence, and candidate 4's defect -- a group of two admitted on the same terms as a group of
+six -- is excluded by arithmetic instead of a special case. The expectation then collapses from
+121 at `m = 2` to 2.4e-18 at `m = 6`, because the count grows as `c**m` while the probability
+falls as `p**(m(m-1)/2)`. Size scaling with no free parameter.
+
+The large end refutes the null that makes that tractable. Independence predicts coincidental
+five-cliques at 6.7e-13 and 7.9e-15 at richness 9 and 12. Candidate 3 measured them in six of
+twelve development blocks, at false admission 0.4 rising to 0.8. Independence understates by at
+least 7.5e11 and 1.3e14, anti-conservatively. A nearest-neighbour matching is transitive by
+construction, so cliques are far more common than independent edges of the same density allow.
+
+The cost was arithmetic over counts already published, and it refuted a recommendation before
+anything was declared, adopted or measured. The open question narrows: not whether the graph has
+an estimable chance structure, but whether its transitivity can be estimated from a partition
+containing the motif whose clique is under test without the estimate being set by the signal --
+which is K1 in another form, and suggests the two shapes may share one obstacle. Nine tests,
+including one requiring the refuting half to be reported rather than the flattering half.
+
 ### T4E.44 - what a size-scaled criterion must survive
 
 **T4E.44 (2026-09-13): the derivation C6 needs before a ninth candidate. Six constraints, no
