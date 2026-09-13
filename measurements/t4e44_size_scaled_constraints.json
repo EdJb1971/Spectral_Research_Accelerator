@@ -1,0 +1,119 @@
+{
+  "addresses": "C6 of the T4E.41 acceptance -- evidence that scales with the group",
+  "claim_boundary": "This is arithmetic over scene counts, bound to results already in the record. It states what any size-scaled criterion must survive; it does not propose one, and satisfying every constraint here would not make a candidate correct.",
+  "constraints": [
+    {
+      "constraint": "A surrogate must not be able to reconstruct the set it is testing.",
+      "established_by": "T4E.16's withdrawal, recomputed here",
+      "forbids": "any null built by redistributing the partition's own configurations",
+      "id": "K1",
+      "measured": "a redistribution surrogate reassembles the motif at 0.015432 per replicate and 0.9547 over 199 replicates at S = 6"
+    },
+    {
+      "constraint": "A null that changes pairwise distances per replicate is not runnable.",
+      "established_by": "T4E.16's cost derivation",
+      "forbids": "a per-replicate generative null at the declared richness levels",
+      "id": "K2",
+      "measured": "matching costs 0.8 s, 13.5 s and 95.3 s per partition at richness 6, 9 and 12; a generative null invalidates the cached matrix and returns the cost to the measured 189 hours at richness 12 alone"
+    },
+    {
+      "constraint": "K1 and K2 together admit only two shapes: a surrogate pool that excludes the set under test, or no per-size surrogate at all.",
+      "established_by": "the conjunction of K1 and K2",
+      "forbids": "presenting either shape as unconstrained; each carries a stated cost",
+      "id": "K3",
+      "measured": "the exclusion repair has a reassembly rate of exactly zero by construction and keeps the cached matrix, at a bias toward false admission that a candidate must quantify before adoption"
+    },
+    {
+      "constraint": "A bar calibrated on one partition may not be applied to another.",
+      "established_by": "T4E.10 and T4E.11 candidate B",
+      "forbids": "cross-partition calibration of an absolute diameter, and repair by that normaliser",
+      "id": "K4",
+      "measured": "four blocks from one generator differ 1.88x in mean same-configuration distance, while the label-free close-pair normaliser varies only 1.084x and measures the nearest unrelated distance rather than the same-configuration one"
+    },
+    {
+      "constraint": "The partition size stays at 6.",
+      "established_by": "T4E.16's withdrawal",
+      "forbids": "widening S to rescue a criterion",
+      "id": "K5",
+      "measured": "the reassembly rate falls quickly with S, which is exactly why moving it is forbidden: a partition size chosen to make a rule pass is evidence tuned to the rule"
+    },
+    {
+      "constraint": "A ninth candidate inherits eight declared attempts' multiplicity.",
+      "established_by": "T4E.16's own multiplicity section",
+      "forbids": "reporting a first success as though it were a single test, and opening 720-735 or 880-895 without an amendment",
+      "id": "K6",
+      "measured": "eight criteria declared and falsified; two reserves remain unspent and unspendable without their own amendments"
+    }
+  ],
+  "exclusion_variant": {
+    "bias_direction": "TOWARD_FALSE_ADMISSION",
+    "bias_mechanism": "the excluded members are the tightest group in the partition, so the surrogate pool loses its closest configurations and the tightest surrogate set of the same size is looser than it would otherwise be",
+    "cached_matrix_survives": true,
+    "distances_unchanged": true,
+    "not_measured_because": "a set cannot be drawn from a pool it is not in; simulating this would report zero by construction and look like a measurement",
+    "reassembly_is_zero_by_construction": true,
+    "reassembly_rate": 0.0,
+    "scenes": 6,
+    "what_a_candidate_using_this_owes": "a quantification of that bias, derived before adoption, not a pass reported after it",
+    "why": "the members of the set under test are not in the pool the surrogate draws from, so no redistribution of that pool can produce them"
+  },
+  "frozen_partition": {
+    "formula": "S! / S**S per replicate; 1 - (1 - p)**R over R replicates",
+    "over_replicates": 0.9547218267124061,
+    "per_replicate": 0.015432098765432098,
+    "replicates": 199,
+    "scenes": 6
+  },
+  "network_used": false,
+  "receipt_sha256": "7a1ee4636ce19dc81fd64cb25391a906b96b9180e174656cc85599ff2b65993b",
+  "scene_count_sensitivity": [
+    {
+      "formula": "S! / S**S per replicate; 1 - (1 - p)**R over R replicates",
+      "over_replicates": 0.9999999968928952,
+      "per_replicate": 0.09375,
+      "replicates": 199,
+      "scenes": 4
+    },
+    {
+      "formula": "S! / S**S per replicate; 1 - (1 - p)**R over R replicates",
+      "over_replicates": 0.9547218267124061,
+      "per_replicate": 0.015432098765432098,
+      "replicates": 199,
+      "scenes": 6
+    },
+    {
+      "formula": "S! / S**S per replicate; 1 - (1 - p)**R over R replicates",
+      "over_replicates": 0.3804886124706359,
+      "per_replicate": 0.00240325927734375,
+      "replicates": 199,
+      "scenes": 8
+    },
+    {
+      "formula": "S! / S**S per replicate; 1 - (1 - p)**R over R replicates",
+      "over_replicates": 0.06967959021415393,
+      "per_replicate": 0.00036288,
+      "replicates": 199,
+      "scenes": 10
+    },
+    {
+      "formula": "S! / S**S per replicate; 1 - (1 - p)**R over R replicates",
+      "over_replicates": 0.010634259557017467,
+      "per_replicate": 5.372321709247828e-05,
+      "replicates": 199,
+      "scenes": 12
+    }
+  ],
+  "schema": "t4e44-size-scaled-constraints/v1",
+  "status": "DERIVATION_ONLY_NO_CANDIDATE_DECLARED",
+  "t4e16_declaration": "data/identity_calibration/t4e16-size-scaled-evidence-declaration.json",
+  "t4e16_declaration_sha256": "305419d287b3202cfe3ff0a8b93abe653d0d5e5efd3725d7ac3c03b997938e90",
+  "t4e16_status": "WITHDRAWN_BEFORE_ADOPTION_BY_DERIVATION",
+  "t4e16_withdrawal_reason": "The surrogate can reassemble the very structure it exists to destroy. It redistributes the partition's ACTUAL configurations, so when the S motif copies happen to land in S distinct scenes they form the same consistent set with exactly the same diameter. The rule admits only a set strictly tighter than the tightest surrogate set of its size, so a single such replicate sets the bar at the motif's own diameter and the motif is rejected.",
+  "task": "T4E.44",
+  "what_this_is_not": [
+    "It is not a criterion, a candidate, or a design for one.",
+    "It adjudicates nothing and measures no signature, partition or distance.",
+    "It does not meet C6, and registering it against C6 would be a category error: C6 asks for a criterion, and this is the set of limits one would have to satisfy.",
+    "It opens no reserve and spends no evidence."
+  ]
+}

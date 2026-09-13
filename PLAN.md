@@ -9,7 +9,7 @@ authority. `roadmap.md` and `roadmap_cross_domain.md` hold task history -- what 
 why -- and `VERIFICATION.md` holds the captured output behind every figure. When any of them
 disagrees with this document, **they are right and this is stale.**
 
-Last revised 2026-09-13, after generalising the run machinery for long measurements. **Section 1 retains the sequential
+Last revised 2026-09-13, after deriving the constraints on a size-scaled criterion. **Section 1 retains the sequential
 decision record that led to the current position and must not be read as a current-status
 summary; `architecture.md` section 0 is the authority wherever a historical next step below has
 since been completed or superseded.**
@@ -100,11 +100,19 @@ carrying what it requires, what would license it, and what is explicitly not suf
 third clause naming this programme's own near misses, the T4E.38/T4E.39 deterministic
 majorities among them. Its state is computable per condition and is `INSUFFICIENT_EVIDENCE`
 at 0 of 8; evidence reaches a condition only through an adopted register entry, and no input
-lets code emit `T4E8_ACCEPTED`. **The next atmospheric acts are, in order: a named person reads
-the holdout result and adopts that review; a named person adopts the T4E.41 bar, which fixes
-the standard without accepting anything; and only then is a ninth criterion candidate declared
-against it, addressing C6 first, since that is the condition the whole falsified sequence
-converged on and the one T4E.16 withdrew before testing.**
+lets code emit `T4E8_ACCEPTED`. Ed Bentley adopted the T4E.41 bar on 2026-09-13, binding `bfb3c500...`; the verdict stayed
+`INSUFFICIENT_EVIDENCE` at 0 of 8, which is what adopting a standard is supposed to do.
+T4E.44 then derived what C6 actually requires before a ninth candidate is written, because the
+obvious construction is already dead: T4E.16's surrogate reassembles the set it tests at
+0.9547 over 199 replicates, recomputed from first principles, and its own conclusion was that
+a feasible null is invalid here while a valid null is infeasible. Six constraints K1-K6 are
+published, each bound to the result that established it, with the two temptations -- widening
+the partition, and excluding the set under test -- stated beside their costs.
+**The next atmospheric acts are, in order: a named person reads the holdout result and adopts
+that review; and a ninth criterion candidate is designed against K1-K6 and declared before it
+is measured. The constraint set says the space is narrow -- a candidate that needs a per-size
+surrogate must either exclude the set under test and quantify the resulting bias toward false
+admission, or do without a surrogate altogether.**
 Do not widen the crop or tune the extractor first. The G17
 successor declaration is now frozen
 against the calibrated exact-pool-substitution contract; curate and justify its real partner pools

@@ -13425,6 +13425,59 @@ served while the threadpool is occupied by a blocking call. No long run was exec
 verify this: the property is that the loop observes the journal, which is settled by the two tests
 above rather than by waiting hours to watch it.
 
+## T4E.44 -- the constraints on a size-scaled criterion (2026-09-13, `ed-dev`)
+
+T4E.16's withdrawal figure was recomputed from first principles before anything was built on it:
+
+```text
+> .venv\Scripts\python.exe tools\run_t4e44_size_scaled_constraints.py check
+closed form  : 0.015432
+simulated    : 0.015600  (40000 trials, seed 0)
+difference   : 0.000168
+```
+
+T4E.16 recorded 0.0154 per replicate and simulated 0.0153, 0.0166 and 0.0168 at m = 20, 84 and
+220; over 199 replicates it recorded 0.9535 to 0.9657 against 0.9547 here. The record survives
+being recomputed.
+
+```text
+> .venv\Scripts\python.exe tools\run_t4e44_size_scaled_constraints.py derive
+STATUS                   : DERIVATION_ONLY_NO_CANDIDATE_DECLARED
+redistribution surrogate : 0.015432 per replicate, 0.9547 over 199, at S = 6
+scene-count sensitivity  :
+    S = 4   0.093750 per replicate, 1.0000 over 199
+    S = 6   0.015432 per replicate, 0.9547 over 199
+    S = 8   0.002403 per replicate, 0.3805 over 199
+    S = 10  0.000363 per replicate, 0.0697 over 199
+    S = 12  0.000054 per replicate, 0.0106 over 199
+constraints              : K1 K2 K3 K4 K5 K6
+receipt sha256           : 7a1ee4636ce19dc81fd64cb25391a906b96b9180e174656cc85599ff2b65993b
+```
+
+The sensitivity table is published because it is the argument against the repair a reader would
+reach for first. At S = 12 the defect is essentially gone, so "use a bigger partition" looks like
+a fix; K5 refuses it in the same breath, since a partition size chosen to make a rule pass is
+evidence tuned to the rule rather than a rule tested against evidence.
+
+```text
+> .venv\Scripts\python.exe tools\run_t4e44_size_scaled_constraints.py publish
+measurements/t4e44_size_scaled_constraints.json
+receipt 7a1ee4636ce19dc8..., status DERIVATION_ONLY_NO_CANDIDATE_DECLARED
+
+> .venv\Scripts\python.exe -m pytest src/tests/test_t4e44_size_scaled_constraints.py -q
+8 passed, 1 warning in 0.16s
+```
+
+One test exists to stop this slice being mistaken for what it is not: it asserts the status is
+`DERIVATION_ONLY_NO_CANDIDATE_DECLARED`, that the response says registering it against C6 would be
+a category error, and that the words a reader would search for -- a candidate number, an adoption
+-- do not appear anywhere in it. A derivation registered as evidence for the condition it only
+constrains would meet C6 on paper while establishing nothing, which is the failure mode a slice
+like this has.
+
+No partition, signature or distance was touched, no reserve was opened, and no candidate was
+declared or adopted.
+
 ---
 
 **Full backend suite, measured 2026-09-11 on the tree carrying TG19.5.**

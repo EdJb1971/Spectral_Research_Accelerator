@@ -2912,6 +2912,40 @@ not identify a cyclone centre or rescue T4E.36, and changes no extractor, radius
 acceptance gate. A further atmospheric slice requires an independently declared holdout design
 before opening 2022–2023.
 
+### T4E.44 - what a size-scaled criterion must survive
+
+**T4E.44 (2026-09-13): the derivation C6 needs before a ninth candidate. Six constraints, no
+candidate, no reserve opened, nothing measured on any partition.**
+
+Ed Bentley adopted the T4E.41 acceptance bar, which unblocks declaring a criterion against it, and
+C6 -- evidence that scales with the group -- is where the eight falsifications converged. The
+obvious construction has already been tried and killed by derivation: T4E.16's candidate 5 set the
+bar per size with a within-partition permutation surrogate, and that surrogate can reassemble the
+very set it is testing. Its own conclusion was that a feasible null is invalid here and a valid
+null is infeasible. A ninth candidate written before that bind is mapped walks into the same wall.
+
+The recorded figure is recomputed rather than restated. A redistribution surrogate rebuilds the
+motif whenever its S copies land in S distinct scenes -- `S!/S**S`, 720/46656 = 0.015432 at S = 6,
+0.9547 over the declared 199 replicates -- against T4E.16's recorded 0.0154 and its simulations of
+0.0153 to 0.0168. The closed form is checked against a 40,000-trial simulation, difference
+0.000168.
+
+Six constraints are published, each bound to what established it: a surrogate must not be able to
+reconstruct the set it tests; a null that changes pairwise distances per replicate is not runnable;
+those two together admit only a pool excluding the set under test or no per-size surrogate at all;
+a bar calibrated on one partition may not be applied to another; the partition size stays at six;
+and a ninth candidate inherits eight attempts' multiplicity and opens neither reserve.
+
+Two things are published with their costs rather than left to be discovered. The defect falls away
+fast with partition size -- 0.9547 at S = 6, 0.0106 at 12 -- so the incentive to widen S is real,
+and the prohibition is printed beside the numbers that make it tempting. And the one repair that
+keeps the design runnable, excluding the set under test from the surrogate pool, drives reassembly
+to zero by construction while biasing the bar toward false admission, because the excluded members
+are the partition's tightest group. A candidate using it owes that bias quantified before adoption.
+
+This is a derivation and is not evidence for C6. Registering it there would be a category error:
+C6 asks for a criterion, and this is the set of limits one would have to satisfy. Eight tests.
+
 ### T4E.43 - a long measurement you can watch and stop
 
 **T4E.43 (2026-09-13): the durable-run machinery generalised for long measurements.** V1
