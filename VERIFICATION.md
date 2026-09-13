@@ -13386,6 +13386,45 @@ t4e28-join-rerun.review.json        171,144 bytes, the full exchange
 It is not in `data/reviews/`, so `t4e28-join-rerun` still reads as a study with two preserved
 paid attempts and no completed panel, which is what its maintainer actually authorised.
 
+## T4E.43 -- long-measurement run control (2026-09-13, `ed-dev`)
+
+```text
+> .venv\Scripts\python.exe -m pytest src/tests/test_t4e43_long_run_control.py -q
+6 passed, 2 warnings in 6.84s
+
+> .venv\Scripts\python.exe -m pytest src/tests/test_experiment_run.py -q
+80 passed, 2 warnings in 64.84s
+```
+
+The cancellation test is written the way the defect actually occurs: a worker completes its
+component and then cancels the run **through a second `ExperimentRun` instance**, sharing nothing
+with the executing one but the journal on disk. That is how the HTTP cancel route reaches a run
+another request is executing, and it is the path that previously had no effect at all.
+
+Measured behaviour, on the flagship manifest minus `order_book`:
+
+```text
+cancel raised during component 1 of ACQUIRING
+  components executed        : 1        (the second was never started)
+  state                      : CANCELLED
+  receipt returned           : yes
+
+cancel raised during component 2
+  components executed        : 2
+  steps recorded             : 2, both COMPLETE, both carrying a step_sha256
+  state                      : CANCELLED
+
+re-executing the cancelled run
+  further components executed: 0
+  state                      : CANCELLED
+```
+
+Both execution routes are asserted not to be coroutines, with the reason kept in their
+docstrings so the change is not reverted as a tidy-up, and an unrelated request is required to be
+served while the threadpool is occupied by a blocking call. No long run was executed for real to
+verify this: the property is that the loop observes the journal, which is settled by the two tests
+above rather than by waiting hours to watch it.
+
 ---
 
 **Full backend suite, measured 2026-09-11 on the tree carrying TG19.5.**

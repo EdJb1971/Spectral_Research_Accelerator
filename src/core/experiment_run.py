@@ -706,13 +706,23 @@ class ExperimentRun:
                 "this run is FAILED; call retry(), which re-executes only the components that "
                 "failed operationally and refuses to author a new plan")
         for stage in WORK_STAGES:
+            if self._cancelled_elsewhere():
+                return self.receipt()
             if not self._stage_is_pending(stage):
                 continue
             self._enter(stage)
             if stage == "CONFIRMING":
                 self._open_held_out()
             for component in stage_components(self.spec, stage):
+                #: Checked before each component rather than only between stages: a stage whose
+                #: components each take an hour is exactly the run someone needs to stop, and
+                #: waiting for the stage boundary would make the control useless where it counts.
+                #: Work already completed stays recorded, so what was paid for is not discarded.
+                if self._cancelled_elsewhere():
+                    return self.receipt()
                 self._execute_component(stage, component, workers)
+            if self._cancelled_elsewhere():
+                return self.receipt()
             decision = self._decide_stage(stage)
             self._emit("stage_decision", **decision)
             if decision["verdict"] == "REFUSED":
@@ -723,6 +733,17 @@ class ExperimentRun:
                 return self.receipt()
         self._transition("COMPLETE", reason="every declared stage completed")
         return self.receipt()
+
+    def _cancelled_elsewhere(self) -> bool:
+        """Has another caller cancelled this run since the loop below started?
+
+        `state` is folded from the journal on every read, so a cancel written by a different
+        instance -- the HTTP cancel route, another process -- is visible here without any shared
+        memory between them. What was missing was a look: the execution loop ran to completion
+        whatever the journal said, so a run could only be cancelled while it was not running,
+        which is the opposite of the case cancellation exists for.
+        """
+        return self.state == "CANCELLED"
 
     def _stage_is_pending(self, stage: str) -> bool:
         """Has this stage already been decided? Folded from the journal, not tracked separately."""
@@ -767,7 +788,11 @@ class ExperimentRun:
         self._transition(stage, reason="retrying %s in %s" % (", ".join(components), stage))
         self._emit("retry", stage=stage, components=components)
         for component in components:
+            if self._cancelled_elsewhere():
+                return self.receipt()
             self._execute_component(stage, component, workers, force=True)
+        if self._cancelled_elsewhere():
+            return self.receipt()
         decision = self._decide_stage(stage)
         self._emit("stage_decision", **decision)
         if decision["verdict"] == "REFUSED":

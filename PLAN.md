@@ -9,7 +9,7 @@ authority. `roadmap.md` and `roadmap_cross_domain.md` hold task history -- what 
 why -- and `VERIFICATION.md` holds the captured output behind every figure. When any of them
 disagrees with this document, **they are right and this is stale.**
 
-Last revised 2026-09-13, after repairing convening safety. **Section 1 retains the sequential
+Last revised 2026-09-13, after generalising the run machinery for long measurements. **Section 1 retains the sequential
 decision record that led to the current position and must not be read as a current-status
 summary; `architecture.md` section 0 is the authority wherever a historical next step below has
 since been completed or superseded.**
@@ -33,6 +33,9 @@ It is relatively complete when all of the following are true:
 1. A researcher can compose, adopt, run, cancel or resume, inspect and review a long scientific
   measurement through the shared durable-run machinery; every terminal outcome preserves an
   immutable receipt and renders `PASS`, `FAIL`, `INVALID` or `REFUSED` without collapsing them.
+  **T4E.43 closed the outstanding piece of this**: execution is off the event loop, so the
+  instrument keeps answering while a measurement runs, and a cancel raised mid-run is observed
+  at the next component boundary instead of only reaching a run that was not running.
 2. The atmospheric lane has one bounded end-to-end pilot over real acquired data, including an
   independently sourced identity catalogue, a declared criterion, physical adjudication and the
   claim boundary that survives whether the result passes or fails.
@@ -115,7 +118,7 @@ not a source of records. Once 48 profiles exist, a curation review can bind a na
 `ESTABLISHED` or `NOT_ESTABLISHED` decision to the exact live inventory and its unmeasured
 properties; at 0 profiles no such review can load. Populate that inventory before scientific
 curation; do not optimise D96 first. Then close the atmospheric identity
-criterion, generalise the existing durable run machinery for long measurements, and run T4F.9
+criterion and run T4F.9
 before the full T4F.6 gate. Converge the atmospheric and G17 lanes at the V1 release gate above.
 
 TESS is now the bounded candidate source, but archive availability alone is not a G17 record.

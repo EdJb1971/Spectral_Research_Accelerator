@@ -2912,6 +2912,31 @@ not identify a cyclone centre or rescue T4E.36, and changes no extractor, radius
 acceptance gate. A further atmospheric slice requires an independently declared holdout design
 before opening 2022–2023.
 
+### T4E.43 - a long measurement you can watch and stop
+
+**T4E.43 (2026-09-13): the durable-run machinery generalised for long measurements.** V1
+criterion 1 asks that a researcher can compose, adopt, run, cancel or resume, inspect and review
+a *long* scientific measurement. The machinery already did the hard parts -- content-addressed
+steps, a journal the state is folded from, completed work replayed rather than repeated, a
+transition table no code path can leave. It could not be interrupted.
+
+`execute` ran every declared stage to completion whatever the journal said, so `cancel` only ever
+reached a run that was not running. And the route was `async def` around that synchronous work, so
+a long run sat on the event loop and the API stopped answering -- `/progress` and `/cancel`
+included, the two routes that exist for precisely this case. The same shape T4E.42 measured on the
+convening route, here in the machinery meant to carry every long measurement.
+
+The repair is small because the design was right: state is folded from the journal on every read,
+so a cancel written by another instance is already visible to an executing run. It only needed to
+be looked at. Both routes are now plain `def`, threadpooled by FastAPI, and both check for a
+cancellation before each component and at each stage boundary -- per component rather than per
+stage, because a stage whose components each take an hour is exactly the run someone needs to
+stop. Completed components keep their outcome and digest, so paid work survives a stop.
+`CANCELLED` remains terminal: re-executing does no work and returns the receipt, because a stop
+is a decision rather than a pause.
+
+Six tests hold it and the existing eighty run tests are unchanged.
+
 ### T4E.42 - a convening nobody asked for
 
 **T4E.42 (2026-09-13): a browser test convened a real paid panel, and the handler that ran it

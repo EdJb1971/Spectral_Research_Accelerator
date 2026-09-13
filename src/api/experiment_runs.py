@@ -111,7 +111,15 @@ async def progress(run_id: str, request: Request) -> Dict[str, Any]:
 
 
 @router.post("/{run_id}/execute")
-async def execute(run_id: str, body: ExecuteRequest, request: Request) -> Dict[str, Any]:
+def execute(run_id: str, body: ExecuteRequest, request: Request) -> Dict[str, Any]:
+    """Drive the run. Deliberately synchronous so FastAPI runs it in a threadpool.
+
+    A scientific measurement is long -- acquisition alone can take hours -- and as `async def`
+    this sat on the event loop, so the whole API stopped answering for the duration. The two
+    routes that exist for a long run, `/progress` and `/cancel`, were therefore unreachable for
+    exactly as long as the run they were built to watch and stop. Measured in T4E.42 on the
+    convening route, where the same shape froze `/health` until the process was killed.
+    """
     run = _load(request, run_id)
     try:
         return run.execute(build_suite(body.worker_suite, run=run))
@@ -120,7 +128,8 @@ async def execute(run_id: str, body: ExecuteRequest, request: Request) -> Dict[s
 
 
 @router.post("/{run_id}/retry")
-async def retry(run_id: str, body: ExecuteRequest, request: Request) -> Dict[str, Any]:
+def retry(run_id: str, body: ExecuteRequest, request: Request) -> Dict[str, Any]:
+    """Re-execute what failed operationally. Synchronous for the same reason as `execute`."""
     run = _load(request, run_id)
     try:
         return run.retry(build_suite(body.worker_suite, run=run))
