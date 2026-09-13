@@ -13480,6 +13480,9 @@ declared or adopted.
 
 ## T4E.45 -- the clique-rarity extremes test (2026-09-14, `ed-dev`)
 
+**Superseded in part by T4E.46 below: the large-end refutation is withdrawn. The small-end
+result and the measurement receipt stand.**
+
 The derivation T4E.44 recommended, and the result went against the recommendation.
 
 ```text
@@ -13532,6 +13535,62 @@ that prompted the derivation.
 No partition, signature or distance was touched, no reserve opened, and no candidate declared or
 adopted. What the slice cost is arithmetic; what it saved is a declaration, an adoption and a
 measurement spent on a bar whose null was already refuted by the record.
+
+## T4E.46 -- the conditional settled, and T4E.45 corrected (2026-09-14, `ed-dev`)
+
+**The correction.** T4E.45 judged a chance model against observations from blocks that contain the
+signal. The evidence that isolates chance was already recorded, and it says the opposite:
+
+```text
+motif-free null blocks (500-505, 850-855) -- same generator, richness and configuration counts
+
+rich  cfg  edges  predicted m=5  predicted m=6  admitted m=5  admitted m=6
+6      20    116   1.40e-10       1.26e-18       0             0
+9      84    595   7.91e-13       6.22e-23       0             0
+12    220   1486   3.99e-15       5.26e-27       0             0
+```
+
+Independence predicts effectively nothing at either size and nothing was admitted, at every
+richness. It is consistent with the only evidence that tests it.
+
+**Why a motif-free block is the same kind of object.**
+
+```text
+rich  motif edges  planted blocks   spread  null edges  null inside planted range
+6     15           121-152          31      116         below by 5
+9     15           485-585          100     595         ABOVE every planted block
+12    15           1440-1590        150     1486        inside
+```
+
+The motif's 15 edges are smaller than the block-to-block variation at every richness, and at
+richness 9 the motif-free block is denser than all four planted blocks. Whatever sets the matching
+density here, it is not the signal.
+
+```text
+> .venv\Scripts\python.exe -m pytest src/tests/test_t4e46_motif_free_calibration.py -q
+9 passed, 1 warning in 0.07s
+
+measurements/t4e46_motif_free_calibration.json
+receipt 05b6c8397757dad9..., status DERIVATION_ONLY_NO_CANDIDATE_DECLARED
+```
+
+**The conditional, answered.** A bar needing the matching graph's clique structure does not have
+to be calibrated on a partition containing the motif under test. It can be calibrated on the
+motif-free blocks, where a signal that is absent cannot set it. The two shapes T4E.44 left are not
+demonstrably one obstacle, the discovery family is not shown to be exhausted, and PLAN section 3's
+catalogue alternative is not forced.
+
+**What the real remaining problem turned out to be.** Candidate 3's false admissions are
+motif-dependent: zero in null blocks, present only where a motif exists, because tolerating one
+absence lets a near-miss attach to a genuine set. That is the `k < S` relaxation, which the T4E.13
+record already described as a margin one scene wide -- not a defect in the null.
+
+T4E.45's published measurement is left unedited; its receipt `2cdeb88c69b76e61…` still reproduces
+and a test requires it to, because a corrected record keeps the thing it corrected. Its small-end
+finding -- a pair expected by the hundreds, so groups of two refused by arithmetic -- is untouched.
+
+No partition, signature or distance was opened, no reserve spent, no candidate declared, and
+candidate 2 is explicitly not revived: its own limitation at `k = S` stands.
 
 ---
 

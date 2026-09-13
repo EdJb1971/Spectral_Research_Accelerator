@@ -9,7 +9,7 @@ authority. `roadmap.md` and `roadmap_cross_domain.md` hold task history -- what 
 why -- and `VERIFICATION.md` holds the captured output behind every figure. When any of them
 disagrees with this document, **they are right and this is stale.**
 
-Last revised 2026-09-14, after the extremes test refuted the recommended shape. **Section 1 retains the sequential
+Last revised 2026-09-14, after correcting T4E.45 and settling the conditional. **Section 1 retains the sequential
 decision record that led to the current position and must not be read as a current-status
 summary; `architecture.md` section 0 is the authority wherever a historical next step below has
 since been completed or superseded.**
@@ -116,13 +116,22 @@ with no free parameter. The large end does not: independence predicts coincident
 at 1e-13 while candidate 3 measured them in six of twelve blocks, understating by more than
 1e12 in the direction that admits coincidences. A nearest-neighbour matching is transitive by
 construction.
-**The next atmospheric acts are, in order: a named person reads the holdout result and adopts
-that review; and the narrowed question is settled before any ninth candidate is written --
-whether the matching graph's transitivity can be estimated from a partition that contains the
-motif whose clique is under test, without the estimate being set by the signal. That is K1 in
-another form, so the two shapes T4E.44 left may share one obstacle rather than being
-alternatives. If they do, this family of criteria is exhausted and section 3's declared
-catalogue alternative becomes the live question rather than the fallback.**
+T4E.46 settled that question and corrected T4E.45 in doing so. The refutation was a chance
+model judged against planted blocks, where a motif exists by construction; against the
+motif-free null blocks -- which admit zero at m = 5 and m = 6 at every richness against
+predictions of 1e-10 to 1e-15 -- independence is consistent. The motif contributes 15 edges
+while planted blocks of one richness differ by 31 to 150, and at richness 9 the motif-free
+block is denser than all four planted ones, so a motif-free block is not a different object.
+**The conditional is answered NO: a bar can be calibrated where the motif is not, the two
+shapes are not demonstrably one obstacle, the discovery family is not shown to be exhausted,
+and section 3's catalogue alternative stays the alternative.**
+What is actually left is a different problem. Candidate 3's false admissions are
+motif-dependent -- zero in the null blocks, present only where a genuine set exists for a
+near-miss to attach to -- which is the `k < S` relaxation the T4E.13 record already called a
+margin one scene wide, not a defect in the null. **The next atmospheric acts are, in order: a
+named person reads the holdout result and adopts that review; and a ninth candidate is
+designed against K1-K6 with its null calibrated on the motif-free blocks, addressing the
+k < S attachment problem rather than the null, and declared before it is measured.**
 Do not widen the crop or tune the extractor first. The G17
 successor declaration is now frozen
 against the calibrated exact-pool-substitution contract; curate and justify its real partner pools

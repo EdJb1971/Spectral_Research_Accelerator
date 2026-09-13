@@ -2912,7 +2912,46 @@ not identify a cyclone centre or rescue T4E.36, and changes no extractor, radius
 acceptance gate. A further atmospheric slice requires an independently declared holdout design
 before opening 2022–2023.
 
+### T4E.46 - the conditional settled, and T4E.45 corrected
+
+**T4E.46 (2026-09-14): the motif does not have to set its own bar. T4E.45's refutation of the
+independence null is withdrawn, and the catalogue pivot is not forced.**
+
+T4E.45 reported that independence understated coincidental five-cliques by 1e12 and raised, on
+that basis, the possibility that both shapes T4E.44 left share one obstacle -- which would have
+exhausted the discovery family and made PLAN section 3's catalogue alternative the live question.
+The comparison was between the wrong two things. Independence predicts what chance alone does; the
+false-admission rates it was judged against were measured in planted blocks, where a motif is
+present by construction.
+
+The controlled comparison was already in the record. The motif-free null blocks -- same generator,
+same richness, same configurations per scene -- admit zero sets at m = 5 and m = 6 at every
+richness, against predictions of 1.4e-10, 7.9e-13 and 4.0e-15. Where chance is the only mechanism,
+independence is consistent with the evidence.
+
+And a motif-free block is not a different object: the motif contributes 15 edges while planted
+blocks of the same richness differ from each other by 31, 100 and 150, with the null block's
+density sitting among them -- above every planted block at richness 9, which is the opposite of a
+density set by the signal.
+
+So the conditional is answered NO. A bar needing the graph's clique structure can be calibrated
+where the motif is not, and cannot be set by a signal that is absent. The two shapes are not
+demonstrably one obstacle, the discovery family is not shown to be exhausted, and the catalogue
+alternative stays the alternative.
+
+What is actually left is a different problem from the one T4E.45 named. Candidate 3's false
+admissions are motif-dependent -- they occur only where a motif exists, because tolerating one
+absence lets a near-miss attach to a genuine set. The T4E.13 entry said exactly this in its own
+words: the margin between recurrence and coincidence in these scenes is one scene wide. It is a
+problem about relaxing k below S, and candidate 2 measured zero false admission at k = S.
+
+T4E.45's small-end result stands, its measurement is left unedited and superseded rather than
+rewritten, and a test requires its receipt to still reproduce. Nine tests, one of which requires
+the correction to name the withdrawn claim rather than quietly shipping a better answer.
+
 ### T4E.45 - the extremes test that refuted the shape it was written to support
+
+**CORRECTED BY T4E.46: the large-end refutation below is withdrawn; see the T4E.46 entry above.**
 
 **T4E.45 (2026-09-14): T4E.44's recommended derivation, performed. The small end works; the large
 end is refuted by measurements already on disk, and with it the simple form of the

@@ -1,0 +1,111 @@
+{
+  "addresses": "the conditional T4E.45 left open: whether the motif must set its own bar",
+  "claim_boundary": "Arithmetic over counts already published, plus a correction to a conclusion I drew from them. It settles one conditional and withdraws one conjecture; it declares no criterion, opens no reserve, and establishes nothing about whether discovery can ultimately be made to work.",
+  "corrects": {
+    "task": "T4E.45",
+    "the_claim_withdrawn": "that the independence null is refuted by a factor of 1e12, and the conjecture built on it that both shapes T4E.44 left share one obstacle",
+    "what_survives_from_t4e45": "the small-end result is unaffected: a pair is expected by the hundreds, so a clique-rarity bar refuses groups of two by arithmetic. The published T4E.45 measurement is left unedited and superseded, not rewritten.",
+    "what_the_record_already_held": "the motif-free null blocks, which admit zero sets at m = 5 and m = 6 at every richness -- the controlled comparison, and consistent with independence rather than a refutation of it",
+    "why_it_was_wrong": "independence predicts how often a clique arises by chance, and it was compared against false-admission rates measured in planted blocks, where a motif is present by construction. That is a chance model judged against a signal-present observation."
+  },
+  "independence_against_chance_only_evidence": {
+    "independence_is_refuted_by_chance_evidence": false,
+    "reading": "Where nothing recurs by construction, independence predicts effectively no cliques at m = 5 or m = 6 and none were admitted, at every richness. The chance model is consistent with the only evidence that isolates chance.",
+    "rows": [
+      {
+        "configurations_per_scene": 20,
+        "consistent": true,
+        "edges": 116,
+        "observed_admissions_at_five": 0,
+        "observed_admissions_at_six": 0,
+        "predicted_five_cliques": 1.4007757578398612e-10,
+        "predicted_six_cliques": 1.2611915625631305e-18,
+        "richness": 6
+      },
+      {
+        "configurations_per_scene": 84,
+        "consistent": true,
+        "edges": 595,
+        "observed_admissions_at_five": 0,
+        "observed_admissions_at_six": 0,
+        "predicted_five_cliques": 7.910774886963256e-13,
+        "predicted_six_cliques": 6.218458418044136e-23,
+        "richness": 9
+      },
+      {
+        "configurations_per_scene": 220,
+        "consistent": true,
+        "edges": 1486,
+        "observed_admissions_at_five": 0,
+        "observed_admissions_at_six": 0,
+        "predicted_five_cliques": 3.9910442386509645e-15,
+        "predicted_six_cliques": 5.257374517696974e-27,
+        "richness": 12
+      }
+    ]
+  },
+  "motif_footprint": {
+    "motif_is_below_block_to_block_variation": true,
+    "reading": "The motif contributes 15 edges. Planted blocks of the same richness differ from one another by 31, 100 and 150, and the null block's density sits among them rather than below them. The signal is not what sets the graph's density, so a motif-free block is not a different object.",
+    "rows": [
+      {
+        "motif_edges": 15,
+        "motif_share_of_spread": 0.4838709677419355,
+        "null_density_is_comparable": true,
+        "null_edges": 116,
+        "planted_block_spread": 31,
+        "planted_edge_range": [
+          121,
+          152
+        ],
+        "richness": 6
+      },
+      {
+        "motif_edges": 15,
+        "motif_share_of_spread": 0.15,
+        "null_density_is_comparable": true,
+        "null_edges": 595,
+        "planted_block_spread": 100,
+        "planted_edge_range": [
+          485,
+          585
+        ],
+        "richness": 9
+      },
+      {
+        "motif_edges": 15,
+        "motif_share_of_spread": 0.1,
+        "null_density_is_comparable": true,
+        "null_edges": 1486,
+        "planted_block_spread": 150,
+        "planted_edge_range": [
+          1440,
+          1590
+        ],
+        "richness": 12
+      }
+    ]
+  },
+  "network_used": false,
+  "receipt_sha256": "05b6c8397757dad9595d8dcd8daab7d2d7f7b3283891e9915a741ad768a157a8",
+  "schema": "t4e46-motif-free-calibration/v1",
+  "status": "DERIVATION_ONLY_NO_CANDIDATE_DECLARED",
+  "task": "T4E.46",
+  "the_conditional": {
+    "answer": "NO",
+    "because": "the null blocks are motif-free by construction, share the generator, richness and configuration counts, and already carry the measurement a bar would need. Calibrating there cannot be set by a signal that is not present, and the motif's 15 edges are below the block-to-block variation in density, so a motif-free block is not a different object.",
+    "consequence": "the two shapes T4E.44 left are not demonstrably one obstacle, the discovery family is not shown to be exhausted, and PLAN section 3's catalogue alternative is NOT forced.",
+    "question": "must a bar that needs the matching graph's clique structure be calibrated on a partition containing the motif under test, so that the signal sets its own bar?"
+  },
+  "what_the_real_remaining_problem_is": {
+    "already_in_the_record": "the T4E.13 entry says it in its own words -- the margin between recurrence and coincidence in these scenes is exactly one scene wide",
+    "mechanism": "tolerating one absence lets a near-miss configuration attach to a genuine set, which requires a genuine set to attach to",
+    "statement": "candidate 3's false admissions are motif-dependent: they appear only in blocks where a motif exists, and not at all in the null blocks of the same richness.",
+    "why_this_matters": "it is a problem about relaxing k below S, not about the null. A criterion that keeps k = S does not meet it, and candidate 2 already measured zero false admission there at every richness."
+  },
+  "what_this_does_not_establish": [
+    "That any size-scaled criterion works. No candidate is declared, and the null being consistent with chance evidence is not the same as a bar being correct.",
+    "That candidate 2 should be revived. Its own limitation stands: k = S does not transfer, which is why the sequence moved past it.",
+    "Anything about the atmosphere, the signature, or the acquired record."
+  ]
+}
