@@ -2,17 +2,21 @@ import { useCallback, useEffect, useState } from 'react';
 import { AlertTriangle, CheckCircle2, Database, FileSignature, RefreshCw } from 'lucide-react';
 import { apiService } from '../services/api';
 import type { G17PoolSurface } from '../types/api';
+import { rememberSignerLabel, useSignerIdentity } from './useSignerIdentity';
 
 export default function G17PoolReview() {
   const [state, setState] = useState<G17PoolSurface | null>(null);
   const [message, setMessage] = useState('Loading corrected pool evidence...');
+  // A refusal is a result and must outlive the next reload. `message` is cleared by every
+  // successful load, so a refusal parked there can be wiped by a refresh that lands after
+  // it. Refusals get their own state, which nothing else clears.
+  const [refusal, setRefusal] = useState('');
   const [decision, setDecision] = useState<'' | 'ESTABLISHED' | 'NOT_ESTABLISHED'>('');
   const [basis, setBasis] = useState('');
   const [unknowns, setUnknowns] = useState('');
   const [limitations, setLimitations] = useState('');
   const [boundary, setBoundary] = useState('');
-  const [name, setName] = useState('');
-  const [role, setRole] = useState('');
+  const { name, setName, role, setRole, remember, setRemember, persist } = useSignerIdentity();
   const [what, setWhat] = useState('');
   const [why, setWhy] = useState('');
   const [affirmation, setAffirmation] = useState('');
@@ -41,16 +45,19 @@ export default function G17PoolReview() {
 
   const adopt = async () => {
     setBusy(true);
+    setRefusal('');
     try {
       await apiService.adoptG17PoolReview({
         adopted_by: name, adopted_as: role, what_was_adopted: what,
         affirmation, why: why || undefined,
       });
+      persist();
       setMessage('Review adopted and verified against the live packet.');
       setAffirmation('');
       await load();
-    } catch (error) { setMessage(error instanceof Error ? error.message : String(error)); }
-    finally { setBusy(false); }
+    } catch (error) {
+      setRefusal(error instanceof Error ? error.message : String(error));
+    } finally { setBusy(false); }
   };
 
   if (!state) return <p role="status" className="text-xs text-slate-500">{message}</p>;
@@ -175,6 +182,12 @@ export default function G17PoolReview() {
           <textarea aria-label="Why adopted" value={why} onChange={(event) => setWhy(event.target.value)}
                     placeholder="Why you adopted it (optional)" rows={2}
                     className="w-full border border-slate-700 bg-slate-950 p-2 text-xs" />
+          <label className="flex items-start gap-2 text-[11px] text-slate-500">
+            <input type="checkbox" aria-label="Remember signer identity" checked={remember}
+                   onChange={(event) => setRemember(event.target.checked)}
+                   className="mt-0.5" data-testid="remember-signer" />
+            <span>{rememberSignerLabel()}</span>
+          </label>
           <label className="block text-xs text-slate-400">Type: {request.human_inputs_required.affirmation}
             <input aria-label="Adoption affirmation" value={affirmation}
                    onChange={(event) => setAffirmation(event.target.value)}
@@ -184,6 +197,13 @@ export default function G17PoolReview() {
                   className="px-3 py-2 text-xs font-semibold bg-slate-100 text-slate-950 disabled:opacity-40">
             Sign and verify review
           </button>
+          {refusal && (
+            <p role="alert" data-testid="g17-adopt-refusal"
+               className="border border-amber-500/40 bg-amber-500/5 p-2 text-[11px]
+                          text-amber-100">
+              {refusal}
+            </p>
+          )}
         </div>
       )}
 

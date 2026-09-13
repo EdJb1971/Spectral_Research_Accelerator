@@ -206,8 +206,16 @@ def read_panel_plan() -> Dict[str, Any]:
 
 
 @router.post("/studies/{study_id}/round-robin")
-async def convene_round_robin(study_id: str, body: RoundRobinRequest) -> Dict[str, Any]:
-    """Take the exchange against the study's latest published bundle, and record it."""
+def convene_round_robin(study_id: str, body: RoundRobinRequest) -> Dict[str, Any]:
+    """Take the exchange against the study's latest published bundle, and record it.
+
+    Deliberately a synchronous handler. The transport is blocking and a panel takes up to
+    eleven turns whose default batch timeout is twenty-four hours, so declaring this
+    ``async def`` put that wait directly on the event loop: one convening made the whole API
+    stop answering, including ``/health``, for as long as the panel ran. FastAPI runs a plain
+    ``def`` route in a threadpool, which keeps the instrument readable while a panel is out.
+    Measured: with ``async def``, every other request hung until the process was killed.
+    """
     if not body.i_authorise_paid_calls:
         raise HTTPException(
             status_code=400,

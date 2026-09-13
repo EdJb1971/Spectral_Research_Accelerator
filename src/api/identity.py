@@ -51,6 +51,9 @@ from src.core.declaration_composer import (
     CompositionRefused, GateEntry, Prediction, commit_alone, compose,
 )
 from src.core.errors import SpectralEarthError
+from src.core.identity_acceptance import (
+    DEFAULT_DECLARATION as ACCEPTANCE_DECLARATION,
+    DEFAULT_REGISTER_DIR as ACCEPTANCE_REGISTER_DIR, acceptance_state)
 from src.data_layer.declared_population import (
     UndeclaredPopulationError, read_population,
 )
@@ -758,3 +761,22 @@ def compute_tolerance(catalogue_radius_km: Optional[float] = None,
             "failure: `we could not say` and `no` are different answers, and reporting this as "
             "a miss would count a missing catalogue uncertainty against the instrument.")
     return payload
+
+
+@router.get("/acceptance")
+def read_identity_acceptance(request: Request) -> Dict[str, Any]:
+    """T4E.8's acceptance, per condition, with the evidence each one still lacks.
+
+    Served from this router rather than its own because the bar and the declarations it judges
+    are one contract: a reader who can see what was declared must be able to see what would
+    count as passing. The response is computed on every read and can never carry an accepted
+    verdict -- `src/core/identity_acceptance.py` has no path to one.
+    """
+    declaration = Path(getattr(request.app.state, "identity_acceptance_declaration",
+                               ACCEPTANCE_DECLARATION))
+    register = Path(getattr(request.app.state, "identity_acceptance_register",
+                            ACCEPTANCE_REGISTER_DIR))
+    try:
+        return acceptance_state(declaration, register)
+    except SpectralEarthError as error:
+        raise HTTPException(status_code=409, detail=str(error))

@@ -39,6 +39,14 @@ export default defineConfig({
       env: {
         EXPERIMENT_RUN_DIR: '.e2e-state/experiment_runs',
         EXPERIMENT_MANIFEST_DIR: '.e2e-state/experiment_manifests',
+        // A browser suite must not be able to spend money. The convening route makes up to
+        // eleven paid calls on the maintainer's account and puts a review bundle in front of a
+        // third party; the spec that drives it asserted a refusal that only occurs when no key
+        // is present. Cleared here so that condition is a fact rather than an assumption.
+        // `reuseExistingServer` means this cannot be relied on alone -- an already-running
+        // server keeps its own environment -- so the spec checks `key_present` before clicking.
+        GEMINI_API_KEY: '',
+        GOOGLE_API_KEY: '',
       },
     },
     {

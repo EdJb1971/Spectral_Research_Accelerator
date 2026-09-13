@@ -22,6 +22,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { AlertTriangle, Ban, CheckCircle2, FileSignature, PenLine } from 'lucide-react';
 import { apiService } from '../services/api';
+import { rememberSignerLabel, useSignerIdentity } from './useSignerIdentity';
 import type { DeclarationIndex, DeclarationRow } from '../types/api';
 import DeclarationComposer from './DeclarationComposer';
 
@@ -32,8 +33,8 @@ interface Props {
 export default function AdoptionView({ onError }: Props) {
   const [index, setIndex] = useState<DeclarationIndex | null>(null);
   const [open, setOpen] = useState<string>('');
-  const [name, setName] = useState('');
-  const [adoptedAs, setAdoptedAs] = useState('');
+  const { name, setName, role: adoptedAs, setRole: setAdoptedAs, remember, setRemember,
+          persist } = useSignerIdentity();
   const [what, setWhat] = useState('');
   const [why, setWhy] = useState('');
   const [affirmation, setAffirmation] = useState('');
@@ -60,6 +61,7 @@ export default function AdoptionView({ onError }: Props) {
         declaration: open, adopted_by: name, adopted_as: adoptedAs,
         what_was_adopted: what, affirmation, why: why || undefined,
       });
+      persist();
       setSigned(`${result.adopted.file} — bound to ${result.adopted.adopts_sha256.slice(0, 16)}…`);
       setAffirmation('');
       await load();
@@ -68,7 +70,7 @@ export default function AdoptionView({ onError }: Props) {
     } finally {
       setBusy(false);
     }
-  }, [open, name, adoptedAs, what, why, affirmation, load]);
+  }, [open, name, adoptedAs, what, why, affirmation, persist, load]);
 
   if (!index) return <div className="p-4 text-sm text-slate-400">Loading declarations…</div>;
 
@@ -165,6 +167,13 @@ export default function AdoptionView({ onError }: Props) {
                    placeholder="e.g. REPRODUCTION_GATE"
                    className="w-full rounded border border-slate-300 px-2 py-1
                               dark:border-slate-600 dark:bg-slate-900" />
+          </label>
+
+          <label className="flex items-start gap-2 text-xs text-slate-500">
+            <input type="checkbox" data-testid="remember-signer" checked={remember}
+                   aria-label="Remember signer identity" className="mt-0.5"
+                   onChange={(event) => setRemember(event.target.checked)} />
+            <span>{rememberSignerLabel()}</span>
           </label>
 
           <label className="block space-y-1 text-sm">

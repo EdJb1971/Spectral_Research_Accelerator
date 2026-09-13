@@ -9,7 +9,7 @@ authority. `roadmap.md` and `roadmap_cross_domain.md` hold task history -- what 
 why -- and `VERIFICATION.md` holds the captured output behind every figure. When any of them
 disagrees with this document, **they are right and this is stale.**
 
-Last revised 2026-09-13, after rendering the completed T4E.39 holdout and its result review. **Section 1 retains the sequential
+Last revised 2026-09-13, after repairing convening safety. **Section 1 retains the sequential
 decision record that led to the current position and must not be read as a current-status
 summary; `architecture.md` section 0 is the authority wherever a historical next step below has
 since been completed or superseded.**
@@ -92,10 +92,16 @@ in Platform & evidence, with ties, refusals and the one-row fragility at the wei
 counts, and with acquisition and re-running refused in the UI by name. It ends in a result
 review that is structurally incapable of expressing an acceptance; that review is written and
 adopted by a named person in the UI as two separate acts, and remains `NOT_WRITTEN`.
-**The next atmospheric acts are, in order: a named person reads the holdout result and adopts
-that review; then close the identity criterion itself rather than run another variant of this
-comparison -- state what a passing identity criterion would have to establish that a finite
-deterministic majority cannot, and what evidence would license it.**
+T4E.41 has now done the second of those: T4E.8's acceptance is eight declared conditions, each
+carrying what it requires, what would license it, and what is explicitly not sufficient -- the
+third clause naming this programme's own near misses, the T4E.38/T4E.39 deterministic
+majorities among them. Its state is computable per condition and is `INSUFFICIENT_EVIDENCE`
+at 0 of 8; evidence reaches a condition only through an adopted register entry, and no input
+lets code emit `T4E8_ACCEPTED`. **The next atmospheric acts are, in order: a named person reads
+the holdout result and adopts that review; a named person adopts the T4E.41 bar, which fixes
+the standard without accepting anything; and only then is a ninth criterion candidate declared
+against it, addressing C6 first, since that is the condition the whole falsified sequence
+converged on and the one T4E.16 withdrew before testing.**
 Do not widen the crop or tune the extractor first. The G17
 successor declaration is now frozen
 against the calibrated exact-pool-substitution contract; curate and justify its real partner pools
@@ -1741,7 +1747,11 @@ Three known gaps, in the order they bite:
    instrument. **Narrowed by TG19.2 for the tolerance surface**: a refused bar renders as a
    result carrying its reason, the verdict element is absent rather than showing a miss, and a
    browser test requires the result section to render with no error banner. Six Chromium tests
-   hold it. Still open everywhere else, and the other panels remain unaudited against it.
+   hold it. **Narrowed again by T4E.41 for every adoption surface**: a refusal was found to
+   reach the DOM for two renders and vanish, because it shared the state a successful reload
+   clears. Refusals now hold their own state and render as `role="alert"` in the acceptance,
+   holdout-review and G17-review forms, with browser tests driving each to a refusal. Still
+   open elsewhere, and the remaining panels are still unaudited against it.
 3. ~~**No view states what a number may not be used for.**~~ **Closed by T4E.23 for the identity
    path.** `StudyTrailView` renders every verdict with its boundary attached, across the
    eighteen key names this programme has used for that clause, and six Chromium tests hold it
@@ -1765,6 +1775,10 @@ over an existing endpoint does not meet this section.
 - Phase 4H learned encoder: optional ceiling estimator, not the immediate deliverable.
 - Phase 5 real forecast comparison: interfaces exist; the external model and experiment
   remain to be supplied and bound.
+- **Convening the T4E.28 panel again.** T4E.42 found that one ran unintentionally from a
+  browser test and recorded a complete finding; it is archived, not adopted. A real attempt
+  still requires explicit paid-call authorisation from the maintainer, and the archived
+  record must not be promoted into the study to avoid making one.
 - D84 and D85: unresolved negative-result detectability questions; they do not undo the
   already acquired record or T4C.6 PASS.
 - D18: cross-device agreement outside the measured CPU/CUDA configurations.

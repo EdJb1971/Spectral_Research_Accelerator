@@ -2912,6 +2912,87 @@ not identify a cyclone centre or rescue T4E.36, and changes no extractor, radius
 acceptance gate. A further atmospheric slice requires an independently declared holdout design
 before opening 2022–2023.
 
+### T4E.42 - a convening nobody asked for
+
+**T4E.42 (2026-09-13): a browser test convened a real paid panel, and the handler that ran it
+froze the API while doing so. Both defects fixed; the paid record preserved outside the study.**
+
+`adoption.spec.ts` held a test called *"convening without a key on the server refuses and says
+nothing was sent"*. It ticked authorisation and clicked convene, expecting the no-key refusal.
+That was an assumption about the machine rather than a fact the test established: `.env.local`
+here supplies `GEMINI_API_KEY`, so the click convened eight seats, made paid calls on the
+maintainer's account, put the review bundle in front of a third party, and recorded a complete
+panel for a study whose history said no valid panel had ever completed.
+
+It survived several runs because `convene_round_robin` was `async def` over a blocking transport
+with an 86,400 second default timeout. The call sat on the event loop, the whole API stopped
+answering including `/health`, and every panel in the browser suite rendered its loading line.
+The symptom looked like a broken frontend; three "pre-existing" browser failures were this, and
+they pass once the wedge is gone.
+
+The route is now a plain `def` that FastAPI runs in a threadpool, with the reason written beside
+it. The browser suite's backend clears both key variables, and because `reuseExistingServer`
+leaves an existing server's environment alone, the test also reads `key_present` from the panel
+plan and skips with a stated reason instead of clicking convene to find out. A companion test
+drives the authorisation refusal, decided before any key is read and safe on any machine.
+
+The paid record is archived byte-for-byte under
+`data/superseded/t4e42_unintended_panel_20260913/` with a README stating how it came to exist.
+Nothing paid for is discarded (R23), and it is kept out of `data/reviews/` because the provenance
+of that finding is a test harness rather than a person. Five backend tests hold the route's
+synchronicity, the pre-key refusal, key presence reported without the key, an unrelated request
+still being served during a blocking call, and the archive staying out of the study record.
+
+### T4E.41 - T4E.8's acceptance, made decidable
+
+**T4E.41 (2026-09-13): the bar written instead of a ninth candidate. Eight conditions, bound to
+the record they were set against, computable per condition, and unacceptable by software.
+`INSUFFICIENT_EVIDENCE` at 0 of 8; the declaration is `DRAFTED_NOT_ADOPTED`.**
+`data/identity_calibration/t4e41-identity-acceptance-declaration.json`,
+`src/core/identity_acceptance.py`, `tools/run_t4e41_identity_acceptance.py`,
+`frontend/src/components/IdentityAcceptance.tsx`, `frontend/e2e/identity-acceptance.spec.ts`.
+
+Eight criteria have been declared before measurement and falsified by it, and the catalogue
+thread ended at a deterministic majority carrying `NOT_AN_ACCEPTANCE`. Throughout, T4E.8's
+acceptance stayed one sentence of prose whose every term had since acquired a measured meaning.
+Writing a ninth candidate against that sentence would spend evidence that cannot be recovered
+without being able to say afterwards whether it had passed.
+
+Each condition states what it requires, what would license it, and what is explicitly not
+sufficient. The third clause is where this programme's own results go, by name: the false
+rejection rate alone (D97), a rate that is arithmetic rather than evidential, a deterministic
+majority over a finite census (T4E.38 and T4E.39), the phase surrogate that produces a quarter
+of the record's signatures (D98), `strengths` at AUC 0.5053 (D100) and detector band in the
+comparable vector at a 60.8% change rate (D99), the admission fraction the T4E.12 amendment
+replaced, the fixed radius T4E.10 measured cannot transfer, closure with no size term (T4E.15),
+and R20's forbidden move of measuring several candidates and keeping the winner.
+
+Evidence reaches a condition through an adopted register entry that names the measurement and
+binds both digests. Code recomputes the digest and reads the signature; it does not judge the
+science. An unadopted claim counts as none, adopted evidence stops counting when its measurement
+changes, and a registered `NOT_MET` decides its condition rather than being dropped for a passing
+sibling. There is no path to `T4E8_ACCEPTED`: the furthest state code reaches is
+`ALL_CONDITIONS_MET_AWAITING_HUMAN_ACCEPTANCE`, and a test registers adopted evidence for all
+eight conditions and adopts the bar itself to prove it.
+
+The panel renders every condition with `NO_EVIDENCE` at the weight of a met one, the seven bound
+artefacts with their verification state, and the six results that do not discharge the
+acceptance. The bar is signed where it is read, through the existing declaration-signing
+endpoint rather than a second adoption path, with the whole declaration on the panel so that
+`I have read this declaration` is honourable at the point it is typed.
+
+Two things the signing path settled. A refusal was found reaching the DOM for two renders and
+then vanishing, because the panel kept it in the state a successful reload clears; refusals now
+hold their own state and render as `role="alert"`, and the same repair was made to the holdout
+review and the G17 review. That is PLAN section 5's second gap, found in a panel written to
+close it. And a single-maintainer instrument no longer asks for the same name and role at every
+adoption: `useSignerIdentity` remembers those two strings per browser, written only after an
+adoption succeeds. The affirmation is excluded by construction, and so is the reason, which
+belongs to one decision.
+
+Eleven backend tests and six browser tests hold both halves. Nothing was adopted by code, and
+the bar awaits a named person.
+
 ### T4E.40 - the holdout, rendered and reviewable
 
 **T4E.40 (2026-09-13): the complete T4E.39 flow renders in the platform UI, every stage artifact

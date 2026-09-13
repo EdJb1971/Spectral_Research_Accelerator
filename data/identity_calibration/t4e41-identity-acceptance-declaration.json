@@ -1,0 +1,137 @@
+{
+  "schema": "t4e41-identity-acceptance-declaration/v1",
+  "status": "DRAFTED_NOT_ADOPTED",
+  "task": "T4E.41",
+  "artefact": "the decidable acceptance for T4E.8 -- what a passing identity criterion must establish, and what evidence would license it",
+  "declared_by": "Edward Jonathan Bentley, maintainer (scientific choice); drafted by Claude at the maintainer's direction and not signed by it",
+  "drafted_on": "2026-09-13",
+
+  "why_this_exists": {
+    "the_gap": "T4E.8's acceptance has been prose since it was written: 'a scientifically justified identity target, both error rates within declared bounds on an appropriate evaluation population, and calibration support adequate for the precision claimed'. Every term in that sentence has since acquired a measured meaning, and none of them is in it.",
+    "what_the_sequence_established": "Eight criteria have been declared before measurement and falsified by it -- B, C, D, 1, 2, 3, 4 and T4E.15's closure rule. Candidate 2 passes at k = S and does not transfer, for the reason its own declaration gave. Candidate 3 shows one scene of slack destroys it. Candidate 4 shows that dropping the size requirement inverts the rule. Read together they say the evidence a group carries has to scale with the group, and no criterion in the sequence makes it do so.",
+    "what_the_catalogue_thread_established": "T4E.17 signed an external reference catalogue, making kind_recurrence evaluable for the first time. T4E.18 to T4E.39 then measured the record against it and ended at a deterministic finite-census majority of 7 of 12, carrying VERDICT NOT_AN_ACCEPTANCE. That thread is spent: the reserved 2022-2023 period has been opened once, as declared.",
+    "why_a_bar_rather_than_a_ninth_candidate": "Without a decidable acceptance the lane cannot distinguish a passing criterion from another near miss, and each further candidate spends evidence that cannot be recovered. This declaration sets the bar against the record of what has already failed, so that the next candidate is measured against a standard fixed before it exists rather than one assembled around its result."
+  },
+
+  "what_this_declaration_is_not": [
+    "It is not a criterion, a candidate, or a design for one.",
+    "It measures nothing, adjudicates no candidate, and approves no mining radius.",
+    "It cannot be satisfied by any evidence that already exists: every condition below names evidence that has not been produced.",
+    "It does not reopen, widen or re-select any spent population, and it does not unreserve 720-735 or 880-895.",
+    "Adopting it fixes the bar. It does not accept T4E.8, and no code may emit an accepted verdict."
+  ],
+
+  "bound_evidence": {
+    "purpose": "The record this bar was set against. Each digest is the exact artefact whose result shaped a condition below; if any drifts, the bar was set against something that no longer exists and must be re-read before it is adopted.",
+    "t4e8_spatial_audit_v3": "data/identity_calibration/t4e8-spatial-audit-v3.json",
+    "t4e8_spatial_audit_v3_sha256": "2b7fe1080e957e76236bcd0021e6dc8125a0abe2108d53bd4060cbac374f2980",
+    "t4e8_recorded_status": "DISCRIMINATION_CRITERIA_NOT_MET",
+    "t4e12_candidate_2_confirmatory": "measurements/t4e12_candidate_2_confirmatory.json",
+    "t4e12_candidate_2_confirmatory_sha256": "f87714116f1aa6b3306c3add13fdfa8a05f1193ed75eec3aab76adb04c2b124f",
+    "t4e13_candidate_3": "measurements/t4e13_candidate_3.json",
+    "t4e13_candidate_3_sha256": "fbde44f80d8e8d7d12ec3d13bee5b707ea5829f5e4565d5604873d30b9e43470",
+    "t4e15_candidate_4": "measurements/t4e15_candidate_4.json",
+    "t4e15_candidate_4_sha256": "8092fad4364d6f53a683b4958e96a60b6484036186fe5338433064d8cdf03b0c",
+    "t4e16_withdrawn_size_scaled_declaration": "data/identity_calibration/t4e16-size-scaled-evidence-declaration.json",
+    "t4e16_withdrawn_size_scaled_declaration_sha256": "305419d287b3202cfe3ff0a8b93abe653d0d5e5efd3725d7ac3c03b997938e90",
+    "t4e17_catalogue_signature": "data/identity_calibration/t4e17-external-catalogue-signature.json",
+    "t4e17_catalogue_signature_sha256": "7fbdada8b035a17761bb5f3c369fff759d49e6bebfa7e3b6c797663a743e702b",
+    "t4e39_measurement": "measurements/t4e39_reference_holdout_evaluation.json",
+    "t4e39_measurement_file_sha256": "fc6d9da9417b49f566b3e1b8ee506077b4e9f3289f891cfcba772270e8d96caa",
+    "t4e39_required_verdict": "NOT_AN_ACCEPTANCE"
+  },
+
+  "target_and_scope": {
+    "identity_target": "kind_recurrence",
+    "target_decided_on": "2026-09-09",
+    "diagnostics": ["track_continuity", "spatial_persistence"],
+    "diagnostic_rule": "A result under either diagnostic does not license the primary target, whatever its value. Labelling a circular evaluation 'diagnostic' does not admit it.",
+    "admissible_evidence_class": "external_reference",
+    "refused_evidence_class": "record_derived_proxy, for kind_recurrence, because labels drawn from the pipeline under test validate a definition against itself",
+    "unit_of_independence": "the storm, not the observation -- T4E.17 measured 210 observations over 20 storms, so an effective n nearer 20 than 20,241"
+  },
+
+  "acceptance_conditions": [
+    {
+      "id": "C1",
+      "name": "Declared target and independent labels",
+      "requires": "The criterion is evaluated for kind_recurrence against external_reference evidence, using a reviewed, cited catalogue bound by content digest, with the catalogue's independence class stated and its circularity against reanalysis addressed by name.",
+      "licensed_by": "An audit run whose declaration records identity_target kind_recurrence and evidence_class external_reference, against the signed catalogue, with the refusal path for record-derived proxy labels exercised and recorded.",
+      "insufficient": "Any result under track_continuity or spatial_persistence; any evaluation against labels computed by the pipeline under test."
+    },
+    {
+      "id": "C2",
+      "name": "Both error rates, declared in advance, on an evaluation population disjoint from the calibration population",
+      "requires": "Both the false-split and the false-admission rate are computed and reported, against bounds fixed before the measurement, on a population disjoint from the one that set any tolerance the criterion uses.",
+      "licensed_by": "A measurement reporting both rates with their denominators, the calibration population named separately from the evaluation population, and each rate either within its declared bound or refused by name.",
+      "insufficient": "A false-rejection rate alone, which is what calibrate_signature_tolerance has always returned and what D97 names. A rate whose value is arithmetic rather than evidential -- candidate 3's 0.0000 split was derivable by monotonicity before the run and declared in advance to carry no weight. A pass on the population the criterion was calibrated on."
+    },
+    {
+      "id": "C3",
+      "name": "Transfer across a partition the criterion did not see",
+      "requires": "The criterion holds on at least one partition reserved before the criterion existed and opened once under a pre-declared rule, with the outcome stated for that partition whatever it is.",
+      "licensed_by": "A pre-opening declaration naming the reserve, its selection, its decision rule and its verdict semantics; an adoption by a named person before the reserve is opened; and the measured result.",
+      "insufficient": "A deterministic majority over a finite census. T4E.38 and T4E.39 each returned one, and neither is an error rate, a null, or a statement about any storm outside the census. A majority of 7 of 12 that one row would overturn establishes a direction under one rule on one population, which is what its own claim boundary says. Four blocks from one generator differ 1.88x in mean same-configuration distance, so a criterion that has only been shown its calibration population has not been shown to transfer at all."
+    },
+    {
+      "id": "C4",
+      "name": "A null that preserves the feature population and destroys only its recurrence",
+      "requires": "The null against which any excess is measured leaves the feature population intact and removes only recurrence, and is declared as its own task with its own acceptance before it is used.",
+      "licensed_by": "A declared and adopted null construction -- for instance permuting which frames a tracked configuration's observations are drawn from, or reassigning signatures between tracks -- together with evidence that it reproduces the record's feature population within stated bounds.",
+      "insufficient": "The spatiotemporal_phase surrogate, which D98 measured producing a quarter of the record's signatures -- 16,090 against 69,580 -- so that the excess it reports is a difference between two feature populations and not evidence about recurrence. No excess measured against that null may be read as recurrence."
+    },
+    {
+      "id": "C5",
+      "name": "Every component of the comparable vector carries measured discrimination",
+      "requires": "Each block admitted to the comparable half is either shown to discriminate, or excluded, or carried with its measured contribution stated. The weights remain a declaration and are not fitted against labels.",
+      "licensed_by": "A per-block discrimination measurement on the evaluation population, with the accepted criterion's declaration naming what each block contributes and what was excluded.",
+      "insufficient": "Carrying strengths at its declared weight: D100 measured it separating same-configuration from unrelated pairs at AUC 0.5053 over 6,650 pairs, a coin flip contributing 4.3% of the squared distance within a configuration against 1.3% between unrelated ones. Carrying detector band in the scales block while D99's 60.8% band-change rate stands, which puts where the detector placed a feature into the vector that is supposed to say what it is. Tuning the weights against labels to repair either."
+    },
+    {
+      "id": "C6",
+      "name": "Evidence that scales with the group",
+      "requires": "The bar a group must clear changes with the group's size and richness, so that a group of two is not evidence on the same terms as a group of six.",
+      "licensed_by": "A criterion whose admission rule is a function of group size, measured as a per-pair rate at no fewer than three richness levels, with the rate's behaviour across those levels reported.",
+      "insufficient": "An admission fraction, which the T4E.12 amendment replaced in the open because multiplicity is a property of the procedure. A fixed absolute radius, which T4E.10 measured cannot transfer between partitions. A closure rule with no size term, which T4E.15 measured inverting at its own extreme where a group of two makes closure vacuous. T4E.16 declared a size-scaled surrogate and was withdrawn before adoption by derivation, so this condition has never been tested and its withdrawal is not evidence against it."
+    },
+    {
+      "id": "C7",
+      "name": "Support adequate for the precision claimed",
+      "requires": "The calibration population's support is stated and is sufficient for the rates claimed; where it is not, the criterion refuses and names the support it needs.",
+      "licensed_by": "A stated support with the bound it licenses. T4E.10's tolerance bound is the pattern: 90/90 needs 22 observations, T4E.9 had 15, and it refused there and named 22 rather than reporting a rate it could not support.",
+      "insufficient": "A rate quoted without its denominator, or a bound claimed at a support that cannot carry it."
+    },
+    {
+      "id": "C8",
+      "name": "Declared before measured, and spent once",
+      "requires": "The candidate, its parameters and its acceptance are fixed in a declaration adopted by a named person before any measurement on any reserve; at most one reserve is opened; and the reserve's own amendment is recorded before it is opened.",
+      "licensed_by": "An adoption whose signature reaches the declaration bytes, dated before the measurement, with the measurement's own receipt binding that declaration digest.",
+      "insufficient": "A criterion selected by measuring several and keeping the winner, which R20 forbids. A parameter added after the numbers appeared. Re-opening 720-735 or 880-895 without its own amendment: 720-735 has never been generated and 880-895 is refused in code with no flag to open it, and four falsifications have not unreserved either."
+    }
+  ],
+
+  "what_does_not_discharge_this": [
+    "A finite deterministic majority, however large, on a census fixed in advance -- it supplies direction, not error rates.",
+    "A development-only pass: candidate 2 passes at k = S on development evidence and its own declaration states it does not transfer.",
+    "A pass on a condition that is arithmetic rather than evidential.",
+    "A diagnostic target's result standing in for the primary target.",
+    "An improvement in the atmospheric lane discharging the cross-domain lane's obligations, or the reverse.",
+    "Any post-hoc re-selection, reweighting or widening of a spent population."
+  ],
+
+  "verdict_semantics": {
+    "T4E8_ACCEPTED": "Every condition C1 to C8 is met on evidence that satisfies its licensed_by clause, and a named person has adopted that finding. Code may compute the per-condition state; it may never emit this verdict.",
+    "T4E8_NOT_ACCEPTED": "At least one condition is unmet on evidence that exists. This is a result, not an error.",
+    "INSUFFICIENT_EVIDENCE": "At least one condition has no evidence addressed to it. This is the current state and is distinct from failing.",
+    "ALL_CONDITIONS_MET_AWAITING_HUMAN_ACCEPTANCE": "Every condition is met on adopted evidence. This is the furthest state code may compute, and it is not T4E8_ACCEPTED: the acceptance itself is a person's act and requires its own named adoption.",
+    "how_evidence_reaches_a_condition": "A candidate addresses a condition by writing a t4e41-condition-evidence/v1 register entry naming the condition, the measurement and its digest, and binding this declaration's digest. A register entry is a claim. A condition becomes met only when a named person adopts that entry and the adoption signature still reaches it; an unadopted entry is EVIDENCE_CLAIMED_NOT_ADOPTED and counts as no evidence.",
+    "no_partial_credit": "Conditions do not average. Seven of eight met is INSUFFICIENT_EVIDENCE or T4E8_NOT_ACCEPTED, never a near pass."
+  },
+
+  "what_acceptance_would_and_would_not_license": {
+    "would": "T4F.9's identity prerequisite, and a mining radius stated with its population, source and grid scope, metric, provenance and limitations.",
+    "would_not": "D96's closure, cross-record transfer, any physical claim about cyclogenesis, or the full T4F.6 gate, which has its own acceptance and its own held-out binding."
+  },
+
+  "claim_boundary": "This declaration states a standard and binds the record it was set against. It measures nothing, adjudicates no candidate, approves no radius, closes no defect, and cannot be satisfied by evidence that already exists. Adopting it fixes the bar for the next candidate; it does not accept T4E.8, does not license kind_recurrence, and does not reopen any spent or reserved population."
+}

@@ -19,7 +19,7 @@ says what to do next and deliberately does not restate status; `roadmap.md` and
 current state is; `VERIFICATION.md` holds the captured output behind each figure. Sections 3
 and 7 below describe the implementations and the defect ledger in full.
 
-Last revised 2026-09-13, after rendering the complete T4E.39 holdout and its result review.
+Last revised 2026-09-13, after repairing convening safety.
 
 | Task | State | Gate on it | Detail |
 |---|---|---|---|
@@ -34,6 +34,8 @@ Last revised 2026-09-13, after rendering the complete T4E.39 holdout and its res
 | T4E.8 slice 4 identity declaration on screen | **Implemented** | Closes PLAN §5 gap 1 | `/api/v1/identity/*` and `IdentityDeclarationView` render the admissibility matrix with the circular pairing refused at the weight of an admission, receipts with their claim boundaries, and the surface's own refusals. Read-only; choosing remains a person's act. 8 rendered browser tests. §3E.11 |
 | T4E.36 eastward wrapped acquisition | **Acquired, materialised and MEASURED; FAIL** | Both frozen raw conditions required 9/18; observed 5/18 and 0/18 | After Ed Bentley's digest-bound adoption, explicit experiment network authorisation acquired all 48 complementary ERA5 shards (5,844 frames; 325,654,005 bytes). Every monthly seam matched exactly, the 180-degree column was retained once, the parent remained byte-identical, and the immutable 321-longitude record was published at SHA-256 `9e9b7e50…`. On exactly the 18 T4E.28 rows, raw condition 1 improved from 3/18 to 5/18 but condition 2 remained 0/18; SWT was diagnostic only. Added eastward support is therefore falsified as a sufficient repair under the adopted procedure. It may still be a contributor, and this result approves no extractor change, mining radius, identity criterion or atmospheric claim. §3E.50 |
 | T4E.37 failure attribution | **Adopted and MEASURED; `FIELD_REFERENCE_SEPARATION_DOMINANT` 12/13; NOT AN ACCEPTANCE** | Selects an independent reference-alignment design, not extractor tuning | The immutable receipt is `f8ff2f88…`. On the 13 fixed T4E.36 condition-1 failures, 12 had no native-grid 3x3 maximum inside the inherited agency radius before significance filtering; JOSIE alone had two, both above threshold, while the final extractor returned none inside. The positive-radius sensitivity is 11/12 and 1/12; this was not the declared decision and is reported only because LINDA's inherited 0 km radius is structurally uninformative. The result says the existing extractor threshold is not the dominant source of these fixed misses. It does not identify a sampled maximum as a cyclone, establish pressure-level/surface quantity separation, validate the extractor, approve a tolerance or radius, rescue T4E.36, or make an atmospheric claim. §3E.51 |
+| T4E.42 convening safety | **Two defects fixed; one unintended paid panel preserved outside the study record** | Convening stays a maintainer's act; the browser suite cannot reach it | A browser test that assumed the server had no review key convened a real eight-seat paid panel on 2026-09-13 and recorded it. The handler was `async def` over a blocking transport with an 86,400 s default timeout, so it froze the whole API -- `/health` included -- and made the browser suite look broken instead. The route is now synchronous and threadpooled, the suite's backend has both key variables cleared, and the test reads `key_present` and skips with a reason rather than clicking convene to find out. The paid record is archived byte-for-byte under `data/superseded/t4e42_unintended_panel_20260913/` because nothing paid for is discarded, and is kept out of `data/reviews/` because a test harness is not a study's reviewer. §3E.56 |
+| T4E.41 T4E.8 acceptance made decidable | **Eight conditions declared and computable; `INSUFFICIENT_EVIDENCE`, 0 of 8; declaration `DRAFTED_NOT_ADOPTED`** | Adopt the bar, then declare a candidate against it. Adopting fixes the standard; it does not accept T4E.8 | T4E.8's acceptance was one sentence of prose while eight criteria were falsified around it. It is now eight conditions, each carrying what it requires, what would license it and what is explicitly not sufficient -- the third clause naming this programme's own near misses, including the T4E.38/T4E.39 deterministic majorities, the false-rejection rate alone (D97), the phase surrogate (D98), band instability (D99) and `strengths` at AUC 0.5053 (D100). Evidence reaches a condition only through an adopted register entry whose measurement digest still matches; an unadopted claim counts as none and a registered `NOT_MET` decides against the bar. `acceptance_state` has no path to `T4E8_ACCEPTED`: its best reachable verdict is `ALL_CONDITIONS_MET_AWAITING_HUMAN_ACCEPTANCE`. All seven bound artefacts verify. §3E.55 |
 | T4E.40 holdout inspection and result review surface | **Rendered end to end; review `NOT_WRITTEN`; verdict structurally fixed at `NOT_AN_ACCEPTANCE`** | Read the flow and, when a named person is ready, write and adopt the result review in the UI | The complete T4E.39 flow -- declaration, adoption, census, field plan, acquisition, materialisation, measurement, review -- now renders in Platform & evidence with the party that performed each stage, its digest and its boundary. Nothing is believed: every receipt identity is recomputed, the field plan is re-planned offline on each read and refuses a mismatch, and a measurement that lost `NOT_AN_ACCEPTANCE` is refused even when its receipt is re-sealed around the change. Ties, refusals and the one-row fragility of the 7-of-12 majority are rendered at the weight of the counts. Acquiring fields and re-running the spent holdout are refused in the UI with reasons. The flow ends in `t4e39-holdout-result-review/v1`, whose permitted decisions are `BOUNDARY_SOUND` and `BOUNDARY_DISPUTED` and which is structurally incapable of expressing an acceptance. §3E.54 |
 | T4E.39 temporal reference holdout | **`HOLDOUT_SUPPORTS_VERTICAL_QUANTITY_CANDIDATE` at 7 of 12, with `VERDICT: NOT_AN_ACCEPTANCE`** | Nothing in this lane; the frozen design is spent. Do not re-select, reweight or widen the holdout after the fact | Ed Bentley adopted declaration SHA-256 `fc7ee60f…` on 2026-09-13 before any holdout identity was parsed, then supplied the separate T4E.39 network authorization. The guarded census admitted 12 storms from 76,784 catalogue rows (above the declared minimum of 10, so not `INSUFFICIENT_HOLDOUT_POPULATION`). Acquisition took 48 exact-time shards across four streams -- ERA5 `msl` and 850 hPa `vo`, parent and wrapped complement -- totalling 3,640,750 stored bytes; all 48 digests re-verify and reopen at the declared 161x161 geometry. Materialisation passed all 24 seams exactly and published the immutable 12x161x321 two-field record at `179aa8c6…`. The unchanged T4E.38 catalogue-seeded basin rule then returned 7 MSLP-closer rows, 5 vorticity-closer, no ties and no refusals against a strict majority of 7 -- the smallest majority the rule admits. It establishes no generalisation, independence from assimilation, cyclone identity, vertical tilt or pressure/surface separation, and changes no extractor or gate. §3E.53 |
 | T4E.38 MSLP reference alignment | **Adopted, materialised and MEASURED; `VERTICAL_QUANTITY_SEPARATION_DOMINANT` 10/18; NOT AN ACCEPTANCE** | Requires a separately declared independent holdout before opening 2022–2023; changes no extractor or gate | All 36 exact-time MSLP shard digests matched. The 18 seams matched exactly against a measured 0.0625 Pa encoding step, the shared meridian was retained once, and the immutable 18x161x321 MSLP record is `dc6f5365…`. From the same catalogue-seeded cell, deterministic MSLP descent was closer on 10 rows, negated-vorticity ascent on 7, with 1 exact tie and 0 refused paths. The frozen 10/18 rule therefore names the vertical-quantity-separation candidate dominant. Measurement receipt `9906ef4e…` is exactly reproducible, but this does not identify either centre as a cyclone, prove vertical separation, rescue T4E.36, approve a radius/tolerance, change the extractor or make an atmospheric claim. §3E.52 |
@@ -6656,7 +6658,7 @@ existing file.
 
 ## 3.12 HTTP API Surface
 
-176 routes. Listed here because an undocumented endpoint is an untested contract. The count and this table were both wrong until TG17.3 (defect D75): the guard enumerated a hand-maintained list of ten source files and could not see four mounted routers.
+177 routes. Listed here because an undocumented endpoint is an untested contract. The count and this table were both wrong until TG17.3 (defect D75): the guard enumerated a hand-maintained list of ten source files and could not see four mounted routers.
 
 | Method | Route | Notes |
 |---|---|---|
@@ -8878,6 +8880,116 @@ real figure is worse than this one, not better.
 All four acceptance conditions are met: the coded gate passed, the full distribution is reported
 rather than a mean, the mechanism and consequence claims are reported separately with the
 mechanism claim carrying its declared caveat, and the two named outcomes did separate.
+
+### 3E.56 A convening nobody asked for, and the two defects that allowed it (T4E.42)
+
+**T4E.42 (2026-09-13): a browser test convened a real eight-seat paid panel; the handler that ran
+it froze the entire API while doing so. Both defects fixed, the record preserved outside the
+study.** `src/api/reviews.py`, `frontend/e2e/adoption.spec.ts`, `frontend/playwright.config.ts`,
+`data/superseded/t4e42_unintended_panel_20260913/`.
+
+`adoption.spec.ts` carried a test named *"convening without a key on the server refuses and says
+nothing was sent"*. It ticked the authorisation control and clicked convene, expecting the refusal
+the API returns when no review key is present. That expectation was an assumption about the
+machine rather than a fact the test established. This machine's `.env.local` supplies
+`GEMINI_API_KEY`, so the click did not refuse: it convened eight seats of `gemini-3.5-flash`,
+made paid calls on the maintainer's account, sent the review bundle to a third party, and recorded
+a complete panel at 18:22 — `record_sha256 e285e117…`, rung `observation`, no retained dissent.
+The study's own history said two paid attempts were preserved and **no valid panel had completed**.
+
+It went unnoticed across several runs because of a second defect. `convene_round_robin` was
+declared `async def` over a blocking transport whose default batch timeout is 86,400 seconds, so
+the call sat directly on the event loop and the whole API stopped answering — `/health` included —
+until the process was killed. Every panel in the browser suite then rendered its loading line
+instead of its section, and `getByRole('region', …)` correctly found nothing. The symptom read as
+a broken frontend; the cause was a convening in progress.
+
+**The fixes.** The route is now a plain `def`, which FastAPI runs in a threadpool, and the reason
+is written beside it so it is not reverted as a tidy-up. The browser suite's backend has both key
+variables cleared in `playwright.config.ts`. Because `reuseExistingServer` means an already-running
+server keeps its own environment, that alone is not enough, so the test now reads `key_present`
+from `/api/v1/reviews/panel-plan` and skips with a stated reason rather than clicking convene to
+find out. A second test drives the authorisation refusal instead, which is decided before any key
+is read and is therefore safe on any machine. Five backend tests hold the route's synchronicity,
+the pre-key refusal, key presence reported without the key, an unrelated request still being
+served while a blocking call runs, and the archive staying out of the study record.
+
+**The record is kept and is not the study's.** The calls were made and cannot be regenerated, so
+R23's rule that nothing paid for is discarded applies; both files are archived byte-for-byte under
+`data/superseded/t4e42_unintended_panel_20260913/` with a README stating how they came to exist.
+They are not left in `data/reviews/`, because the provenance of that finding is a test harness
+rather than a person, and a study's completed panel must be something a maintainer convened. If it
+is ever to count, that is a deliberate decision and the files can be moved back.
+
+### 3E.55 T4E.8's acceptance, made decidable (T4E.41)
+
+**T4E.41 (2026-09-13): eight conditions declared, bound to the record they were set against,
+computable per condition, and unacceptable by software. Current state `INSUFFICIENT_EVIDENCE`,
+0 of 8; the declaration is `DRAFTED_NOT_ADOPTED`.**
+`data/identity_calibration/t4e41-identity-acceptance-declaration.json`,
+`src/core/identity_acceptance.py`, `tools/run_t4e41_identity_acceptance.py`,
+`GET /api/v1/identity/acceptance`, `frontend/src/components/IdentityAcceptance.tsx`.
+
+T4E.8's acceptance had been one sentence of prose while eight criteria were declared and
+falsified around it -- B, C, D, 1, 2, 3, 4 and T4E.15's closure rule -- and while T4E.18 to
+T4E.39 measured the record against a signed catalogue and ended at a deterministic majority
+carrying `NOT_AN_ACCEPTANCE`. Every term in that sentence had acquired a measured meaning and
+none of them was in it. This slice writes the bar instead of a ninth candidate, so that the next
+candidate is measured against a standard fixed before it exists.
+
+Each condition carries three clauses: what it requires, what evidence would license it, and what
+is explicitly not sufficient. The third clause is where the programme's own results go. C2 names
+the false-rejection rate alone, which is what `calibrate_signature_tolerance` has always returned
+(D97), and a rate that is arithmetic rather than evidential, which is what candidate 3's 0.0000
+split was. C3 names a deterministic majority over a finite census -- T4E.38's and T4E.39's own
+results -- and says why one is not an error rate, a null, or a statement about anything outside
+the census. C4 names the `spatiotemporal_phase` surrogate and D98's measurement of it producing
+16,090 signatures against the record's 69,580. C5 names `strengths` at AUC 0.5053 (D100) and the
+60.8% band-change rate (D99). C6 names the admission fraction the T4E.12 amendment replaced, the
+fixed radius T4E.10 measured cannot transfer, and T4E.15's closure rule inverting at its own
+extreme. C8 names R20's forbidden move and both unspent reserves.
+
+**Who may say a condition is met.** Evidence reaches a condition through a
+`t4e41-condition-evidence/v1` register entry naming the condition, the measurement and its digest
+and binding the acceptance digest. An entry is a claim. Code recomputes the measurement digest and
+reads whether a named person's adoption signature still reaches the entry; it does not judge
+whether the evidence is good. An unadopted entry is `EVIDENCE_CLAIMED_NOT_ADOPTED` and counts as
+none; an adopted entry whose measurement bytes have since changed stops counting; a registered
+`NOT_MET` outcome decides its condition against the bar rather than being dropped in favour of a
+passing sibling.
+
+**Signing, where the bar is read.** The panel carries the declaration in full -- why it exists, what it is not, its target and scope, what acceptance would and would not license, and its verdict semantics -- so that `I have read this declaration` is honourable at the point it is typed. The signing control posts to the existing `POST /api/v1/identity/declarations/sign`; no second adoption path was built, and nothing is pre-filled for the signer, because a pre-filled affirmation is the instrument affirming on a person's behalf. Adopting fixes the standard and meets no condition: a test signs the bar through that endpoint and asserts the verdict stays `INSUFFICIENT_EVIDENCE` at 0 of 8.
+
+**The verdict software cannot reach.** `acceptance_state` returns `INSUFFICIENT_EVIDENCE`,
+`T4E8_NOT_ACCEPTED` or, with every condition met on adopted evidence,
+`ALL_CONDITIONS_MET_AWAITING_HUMAN_ACCEPTANCE`. There is no path to `T4E8_ACCEPTED`, the loader
+refuses a declaration whose verdict semantics stop forbidding it, and a test registers adopted
+evidence for all eight conditions and adopts the bar itself to show the verdict still is not
+acceptance. Every falsification in this sequence was recorded because a declaration was fixed
+before the numbers appeared; an acceptance software could award itself would be the one place in
+the programme where that ordering is reversed.
+
+**Two things the signing path settled, one of them a defect in this slice's own panel.** The
+first: a refusal reached the DOM for two renders and then vanished, because the panel kept it
+in the same state a successful reload clears. A refusal is a result, so refusals now live in
+their own state, render in a `role="alert"` element and are cleared by nothing else. The
+same shape was repaired in the holdout review and the G17 review, which kept their refusals
+the same way. This is PLAN section 5's second gap -- a refusal reading as absence -- found in a
+panel written to close it, and a browser test now drives each adoption form to a refusal and
+requires it on screen.
+
+The second: a single-maintainer instrument asked for the same name and role at every adoption.
+`frontend/src/components/useSignerIdentity.ts` remembers those two strings per browser and
+nothing else. The affirmation is excluded by construction, because a remembered affirmation is
+the browser affirming once on behalf of every future adoption; the reason for adopting is
+excluded too, since a reason belongs to one decision. Storage is written only after an adoption
+succeeds, so a refused attempt seeds nothing, and every access is guarded for browsers that
+have no usable storage. All four adoption surfaces share it.
+
+The panel renders the eight conditions with `NO_EVIDENCE` drawn at the weight of `CONDITION_MET`,
+because a condition nothing has been addressed to is not a condition half-passed and the
+declaration says conditions do not average. It shows the seven bound artefacts with their
+verification state and the six results that do not discharge the acceptance. Eleven backend tests and six browser tests hold it.
 
 ### 3E.54 Holdout inspection and result review surface (T4E.40)
 
@@ -13539,6 +13651,8 @@ able to sit three slices out of date.
 | `test_t4e39_reference_holdout.py` | 5 | T4E.39 before holdout opening: exact T4E.38 result and signed-reference binding while the planner cannot parse catalogue rows; population and strict-majority drift refusals; current human adoption checked before catalogue access; an adopted synthetic census publishing only identities and geometry with ERA5/network false; and fewer than ten selected storms named `INSUFFICIENT_HOLDOUT_POPULATION` |
 | `test_t4e39_reference_holdout_fields.py` | 5 | T4E.39 field acquisition, materialisation and holdout decision: census-bound four-stream request geometry over 12 exact timestamps; wrong product, level, variable, timestamp and segment refusals; adoption plus experiment-specific and general network guards before any client call; seam disagreement beyond source-encoding tolerance refusing materialisation; and the frozen strict-majority decision retaining ties and refusals in the denominator |
 | `test_t4e39_holdout_review.py` | 8 | T4E.40 holdout surface and result review: every performed stage published in order with acquisition and re-running refused in the UI; the smallest admissible majority reported as fragile with ties and refusals kept; every stage artifact and measured row examinable against a recomputed digest; a review structurally incapable of expressing an acceptance and a review request that cannot load as a review; a re-sealed measurement that lost `NOT_AN_ACCEPTANCE` refused; writing without adopting, including the duplicate refusal; exact affirmation and live-result binding on adoption; and an adopted review that no longer binds the result shown as stale |
+| `test_t4e41_identity_acceptance.py` | 11 | T4E.41 the acceptance bar and who may clear it: a declaration whose every condition states what would license it and what would not, naming the deterministic majority and the calibration-population pass as insufficient; the seven bound artefacts verified; `INSUFFICIENT_EVIDENCE` distinguished from failure at 0 of 8; a claim counting as nothing until adopted and counting again once it is; adopted evidence ceasing to count when its measurement bytes change or vanish; a registered `NOT_MET` deciding its condition rather than being dropped for a passing sibling; register entries bound to another acceptance, another condition or another schema refused; and the central refusal -- adopted evidence for all eight conditions plus adoption of the bar itself still returning `ALL_CONDITIONS_MET_AWAITING_HUMAN_ACCEPTANCE` and never `T4E8_ACCEPTED` -- plus a declaration that drops, reorders or hollows a condition, or stops forbidding code from accepting, refused by the loader |
+| `test_t4e42_convening_safety.py` | 5 | T4E.42 convening safety: the route asserted not to be a coroutine, because a blocking transport on the event loop froze every other request including `/health`; the authorisation refusal decided before any key is read, so it is safe on a machine that has one; key presence reported to the browser suite without the key appearing in the response; an unrelated request still served while a blocking call occupies the threadpool; and the unintended paid panel preserved in its archive and absent from the live study record |
 | `test_coverage_report.py` | 17 | TG19.1 the generic coverage check: pair and triple survival counted as the units `ALLOWED_CARDINALITIES` actually admits, with a group holding a never-seen feature counted as unassemblable because the object was never built in any scene; an unrepresentative density returning a refusal and no coverage number at all; an unregistered extractor, an unknown calibration source, a constant background, a three-dimensional background and zero configurations each refused by name; and every passing report carrying its claim boundary, its extractor capabilities, the upper-bound caveat and the field declaration R19 needs |
 | `test_signed_reference.py` | 16 | TG19.3 signed external references: the whole chain checked -- signature against design, design against data, byte count first so a truncated download is named before 35 MB are hashed; an absent file naming its path, source URL and required digest, and saying that replacing it is a declaration rather than a copy; a digest mismatch refused as a DIFFERENT reference whose signed population and claim boundary do not extend to it, never as a damaged one; a design edited after signature refused with both digests; an unsigned design allowed and reported unverified rather than failed; and require() raising by name instead of returning an unverified path |
 | `test_declared_population.py` | 17 | TG19.4 a record holding two answers read by name or not at all: an unnamed read refused with both names offered and the mistake it prevents named in the refusal; a population the record only SUMMARISES refused rather than substituted with the other pass's rows, saying what is there and what would produce the rest; an unknown name and an unmapped record both refused; the stated identification checked against the rows it describes, so the map is checkable rather than believed; and the committed record verified unedited |
@@ -13663,7 +13777,7 @@ able to sit three slices out of date.
   | `test_identity_certification.py` | 131 | T4E.9 the T4E identity path against a motif known by construction: the benchmark registered and naming the path it certifies, three disjoint partitions so a radius is never evaluated on what calibrated it, exactly one motif configuration in a planted scene and none in a null one, construction labels taken from the generator and refused rather than guessed when a planted position has no feature near it or two positions claim one, only cross-scene pairs formed, the definition's separation asserted as a floor, nothing admitted where nothing recurs with the absent positive population left unmeasured rather than zero, the frozen-radius failure pinned as a relationship to the feasible radius rather than as two numbers, an empty calibration returning INVALID rather than a permissive radius, every result stating what it does not license, and T4E.13's criterion fixed in code while asserted to be measured nowhere -- `k` derived as a function of the partition size, unequal partitions refused rather than pooled, monotonicity in `k` checked on a toy rather than assumed, and, once candidate 3 was adopted and falsified, that guard replaced by the reading of the result -- which conditions failed and by how much, that the null held at 0 of 1486 proposed, that the 0.0000 recall is recorded as arithmetic rather than a finding, that no lower k can rescue what this one failed, that the falsification licenses none of the conclusions nearest to it, that partitions 720-735 stay refused in code, and T4E.14's partial-presence test bed -- seeds that collide with no existing evidence, a reservation refused with no flag to open it, planting patterns that are deterministic and not contiguous, the recoverable population C(j,2) rather than C(S,2), the design's own record of what this evidence cannot repair, and T4E.15's criterion fixed in code while asserted to be measured nowhere -- closure broken by a single loose end, closure admitting only a subset of what consistency admits, the criterion carrying no tunable parameter at all, the span-ranking design recorded as discarded by derivation, the declaration's own worst case and refusal to predict, and -- once measured and falsified -- the reading of that result: the conditions that failed with their counts, the mechanism executed rather than described (a pair with no other partners is closed and is therefore admitted, while one loose end rejects a group spanning five scenes), the cross-check showing closure admits more than candidate 2 on the evidence candidate 2 passed, the missed derivation recorded rather than quietly repaired, the constraint the falsification fixes on any successor, and T4E.16's withdrawal held as a derivation rather than a note -- the surrogate reassembly rate computed analytically and by simulation, the record of why the design cannot simply be repaired, the fact that a withdrawn declaration adds nothing to the accumulated multiplicity, and PooledDistances keeping a refused distance as NaN so it can never leak in as a number |
   | `test_identity_target_declaration.py` | 53 | T4E.8 slice 3 the declared identity target: an absent target or evidence class refused by name, a misspelling refused with its correction, `kind_recurrence` against record-derived proxy labels refused as circular, `track_continuity` admitted with its tracker-agreement caveat, every target round-tripping what it recognises and does not license, the published proxy wording pinned verbatim so naming a target cannot reword a cited receipt, and the external-reference path recovering two planted identities from a reviewed catalogue while refusing a mismatched family, a single identity, a non-catalogue and a negative population the patterns cannot supply |
   | `test_spectral_spatial_identity.py` | 24 | T4E.8 spatial geometry, detector-band/magnitude independence, source/scope refusal, analytic distances, old-radius refusal, scalar/accelerated agreement and two-sided proxy-label diagnostics |
-| **total** | **4659** | |
+| **total** | **4675** | |
 
 ### 7.4a Browser suite inventory
 
@@ -13698,11 +13812,12 @@ not bound to the scratch state.
 | `scientist-actions.spec.ts` | 2 | TG18.5 the two numbers `scientist_actions` refuses to invent: the visible actions a researcher takes from a clean browser to a completed run of the frozen plan, and the actions between meeting the preflight refusal and clearing it, both asserted, with the wall-clock durations written into the measurement and asserted by nothing |
 | `product-modes.spec.ts` | 5 | TG18.5 one representative path through each of TG18.0's four product modes at two desktop viewports, with a named artefact at the state each path reaches, and the signature-uniqueness assertion that holds the modes apart (the file declares five and Playwright collects ten, once per viewport) |
 | `position-tolerance.spec.ts` | 6 | TG19.2 the join's bar rendered in parts: each component with where it came from, what the bar deliberately excludes shown at the weight of what it includes, a catalogue radius of 0.00 refused by name with the verdict element absent rather than showing a miss, that refusal rendering as a result with no error banner, the total and the residual it does not explain, and no control matching accept/approve/save/record/apply |
-| `adoption.spec.ts` | 9 | T4E.32/T4E.33 signing as an act performed on screen: an unsigned declaration offering to be adopted and a signed one naming who signed it, the digest being signed shown beside the form, no default supplied for the name, the reason or the affirmation, a wrong affirmation and a placeholder name each refused with nothing written, the convening control stating up to 11 paid calls before anything can be spent with the authorisation a separate control from the run button, and convening without a server key refusing with 'Nothing was sent'. Every test drives the form to a REFUSAL: a passing test that wrote an adoption would be a test that forged a signature; and T4E.34 the composer supplying no content -- task, claim boundary and falsifier all empty on arrival -- refusing a prediction with no stated falsifier with nothing written, and the commit-alone control checked by default with the same-commit reason on screen |
+| `adoption.spec.ts` | 10 | T4E.32/T4E.33 signing as an act performed on screen: an unsigned declaration offering to be adopted and a signed one naming who signed it, the digest being signed shown beside the form, no default supplied for the name, the reason or the affirmation, a wrong affirmation and a placeholder name each refused with nothing written, the convening control stating up to 11 paid calls before anything can be spent with the authorisation a separate control from the run button, and convening without a server key refusing with 'Nothing was sent'. Every test drives the form to a REFUSAL: a passing test that wrote an adoption would be a test that forged a signature; and T4E.34 the composer supplying no content -- task, claim boundary and falsifier all empty on arrival -- refusing a prediction with no stated falsifier with nothing written, and the commit-alone control checked by default with the same-commit reason on screen. T4E.42 adds the test that must never spend: it reads `key_present` from the panel plan and skips with a stated reason rather than clicking convene on a machine that holds a key, after the original version convened a real paid panel; a companion test drives the authorisation refusal, which is decided before any key is read and is therefore safe anywhere |
 | `join-distribution.spec.ts` | 6 | T4E.29 every distance on screen: all eighteen storms as rows including the one that yielded no feature, labelled and still in every denominator; the two outliers T4E.18's published range excluded without saying so, visible at 315.1 and 247.7 km; an exclusion that keeps its rows on screen and computes both aggregates, where the kept maximum is the figure that refutes the published range; the extraction pass named and switching it changing the counts; the measurement's own claim boundary carried beside the chart; and no control matching accept/approve/save/record/apply/adopt |
 | `study-trail.spec.ts` | 6 | T4E.23 the study trail rendered: a study drawn as the chain it ran rather than a list of files, every verdict on screen carrying what it may not be used for, a question declared and never measured shown rather than filtered, a corrected record marked where a reader looks first, the surface stating its own refusals instead of implying them by absent buttons, and a measurement opened whole and closed again |
 | `reference-holdout.spec.ts` | 4 | T4E.40 the whole holdout rendered: all eight performed stages in order with who performed each, the `NOT_AN_ACCEPTANCE` verdict beside the outcome and the smallest-admissible-majority fragility stated on screen rather than left to be computed, exact ties and refusals drawn as tiles of the same weight as the two candidate counts, a stage opened and the bytes behind it reached with a recomputed digest, all twelve storms with both complete basin walks, and the two operations the surface refuses -- acquiring fields and re-running a spent holdout -- naming their reasons. The review form is driven only as far as its offered decisions, which are readings of the boundary and never an acceptance; a browser test that wrote a review would be forging a person's reading |
-| **suite** | **136 + 6 + 6 + 11 + 9 + 4** | 136 from a cleaned `.e2e-state`, Chromium, 2026-09-04; `study-trail` measured 2026-09-10, `join-distribution` 2026-09-11 (48.6 s), and `adoption` with `ui-qualification` together 2026-09-11 (1.0 min, 11 passed), and `adoption` again after T4E.34 (39.1 s, 9 passed), and `reference-holdout` 2026-09-13 (35.9 s, 4 passed). Six dated measurements rather than one, which is cheaper than implying a whole-suite run that never happened |
+| `identity-acceptance.spec.ts` | 6 | T4E.41 the bar on screen: all eight conditions rendered with `NO_EVIDENCE` at the weight of a met condition and `code may accept: false` beside the verdict, the six results that do not discharge the acceptance listed rather than implied, one condition opened to show its licensing clause beside its insufficiency clause -- naming the deterministic majority this programme has just produced -- and the seven bound artefacts verified on screen; the bar signed where it is read, with nothing pre-filled for the signer and a wrong affirmation driven to a refusal that writes nothing -- a browser test that signed this would forge a signature -- and the signing control stating that it fixes a standard rather than accepting anything |
+| **suite** | **136 + 6 + 6 + 11 + 9 + 4 + 6 + 10** | 136 from a cleaned `.e2e-state`, Chromium, 2026-09-04; `study-trail` measured 2026-09-10, `join-distribution` 2026-09-11 (48.6 s), and `adoption` with `ui-qualification` together 2026-09-11 (1.0 min, 11 passed), and `adoption` again after T4E.34 (39.1 s, 9 passed), and `reference-holdout` 2026-09-13 (35.9 s, 4 passed), and `identity-acceptance` with `reference-holdout` together 2026-09-13 (53.9 s, 10 passed). Seven dated measurements rather than one, which is cheaper than implying a whole-suite run that never happened |
 
 The counts are guarded by `test_documentation.py`, but only as far as a static reader honestly can:
 the file set must match `frontend/e2e/` exactly in both directions, and each stated count must be at

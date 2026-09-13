@@ -13203,6 +13203,189 @@ no type errors; built in 59.47s
 No review was written by code. `data/identity_calibration/` carries no
 `t4e39-holdout-result-review.json`, and the surface reports the review stage as `NOT_WRITTEN`.
 
+## T4E.41 -- T4E.8's acceptance, made decidable (2026-09-13, `ed-dev`)
+
+The declaration is drafted and unadopted. Its computed state:
+
+```text
+> .venv\Scripts\python.exe tools\run_t4e41_identity_acceptance.py state
+VERDICT                  : INSUFFICIENT_EVIDENCE
+declaration status       : DRAFTED_NOT_ADOPTED
+acceptance adopted       : False
+bound evidence           : 7 checked, all verified True
+conditions met           : 0 of 8
+  C1  NO_EVIDENCE   Declared target and independent labels
+  C2  NO_EVIDENCE   Both error rates, declared in advance, on an evaluation population
+                    disjoint from the calibration population
+  C3  NO_EVIDENCE   Transfer across a partition the criterion did not see
+  C4  NO_EVIDENCE   A null that preserves the feature population and destroys only its recurrence
+  C5  NO_EVIDENCE   Every component of the comparable vector carries measured discrimination
+  C6  NO_EVIDENCE   Evidence that scales with the group
+  C7  NO_EVIDENCE   Support adequate for the precision claimed
+  C8  NO_EVIDENCE   Declared before measured, and spent once
+code may emit accepted   : False
+receipt sha256           : cd6a57555f254a35e3e246cc1082c6c05107c170155ac008abed8c2f544322cb
+```
+
+`INSUFFICIENT_EVIDENCE` is not `T4E8_NOT_ACCEPTED`. Nothing has been addressed to any condition,
+which is a different statement from a condition that has been tested and failed, and the two are
+kept apart in the verdict rather than collapsed into a percentage.
+
+The seven artefacts the bar was set against all verify:
+
+```text
+VERIFIED measurements/t4e12_candidate_2_confirmatory.json
+VERIFIED measurements/t4e13_candidate_3.json
+VERIFIED measurements/t4e15_candidate_4.json
+VERIFIED data/identity_calibration/t4e16-size-scaled-evidence-declaration.json
+VERIFIED data/identity_calibration/t4e17-external-catalogue-signature.json
+VERIFIED measurements/t4e39_reference_holdout_evaluation.json
+VERIFIED data/identity_calibration/t4e8-spatial-audit-v3.json
+```
+
+```text
+> .venv\Scripts\python.exe -m pytest src/tests/test_t4e41_identity_acceptance.py -q
+11 passed, 2 warnings in 6.30s
+```
+
+The test that carries the slice registers adopted evidence for all eight conditions, adopts the
+acceptance declaration itself, and asserts the verdict is
+`ALL_CONDITIONS_MET_AWAITING_HUMAN_ACCEPTANCE` -- that `T4E8_ACCEPTED` appears nowhere in the
+response, and that `code_may_emit_accepted` is still false. Three further tests remove the ways
+evidence could be smuggled past a person: an unadopted claim, an adopted claim whose measurement
+bytes have since changed or vanished, and a registered `NOT_MET` that a passing sibling entry
+would otherwise mask. A fifth refuses a declaration that drops, reorders or hollows a condition,
+or that stops forbidding code from accepting.
+
+Rendered in the browser against the real API and frontend:
+
+```text
+> cd frontend && npx playwright test e2e/identity-acceptance.spec.ts \n    e2e/reference-holdout.spec.ts --reporter=list
+ok  1 the acceptance renders every condition and what would not discharge it (10.4s)
+ok  2 a condition states what would license it and what would not (3.4s)
+ok  3 the record the bar was set against is verified on screen (3.7s)
+ok  4 the bar can be signed where it is read, and refuses a signature it was not given (5.6s)
+ok  5 signing the bar is stated as fixing a standard, not as accepting anything (4.0s)
+ok  6 the signer is remembered between adoptions, and the affirmation never is (6.2s)
+ok  7 the whole holdout flow renders, and the verdict travels with the numbers (5.2s)
+ok  8 a reader can open a stage and reach the bytes behind it (5.1s)
+ok  9 all twelve measured storms and both basin walks are inspectable (4.3s)
+ok 10 the surface names what it will not do, and offers no acceptance (4.1s)
+10 passed (53.9s)
+```
+
+### A refusal that reached the screen and then vanished
+
+The signing test failed first, and the failure was real rather than a test artefact. The
+refusal was posted, caught and rendered -- and then cleared. Instrumenting the component
+showed the sequence exactly:
+
+```text
+RENDER msg= ""                                        (idle)
+DIAGCATCH Error: the affirmation must be typed exactly as ...
+RENDER msg= "the affirmation must be typed exactly as ..."   (rendered)
+RENDER msg= "the affirmation must be typed exactly as ..."   (rendered)
+RENDER msg= ""                                        (cleared)
+```
+
+The panel kept the refusal in the same state a successful reload sets to the empty string, so
+a reload landing after the refusal erased it. A user would have clicked sign, seen nothing,
+and had no way to tell a refusal from a silent failure. Refusals now hold their own state and
+render in a `role="alert"` element that nothing else clears, in this panel, the holdout
+review and the G17 review; each is driven to a refusal by a browser test that requires the
+text on screen.
+
+Two environment faults were diagnosed in the same pass and are recorded because they cost
+the most time. Whole-suite browser failures -- including specs untouched by this work -- were
+caused by a backend that was listening on port 8000 and never answering: a dead uvicorn's
+multiprocessing child still held the socket, so every panel rendered its loading line instead
+of its section, and `getByRole('region', ...)` correctly found nothing. Duplicate dev servers
+on both ports, accumulated across runs, made the state harder to read than it needed to be.
+Neither was a defect in the product, and no test was changed to accommodate either.
+
+The bar is signed from the panel that shows it, through the existing
+`POST /api/v1/identity/declarations/sign`; no second adoption path was built. Two tests hold
+the line that matters there. The backend one signs the bar with the exact affirmation and
+asserts the verdict stays `INSUFFICIENT_EVIDENCE` at 0 of 8 -- adopting fixes the standard
+and meets nothing -- while a wrong affirmation returns 400 and writes no adoption file. The
+browser one drives the form to that refusal deliberately and asserts every field arrives
+empty: a passing browser test that signed this declaration would be a test that forged a
+signature, and a pre-filled affirmation would be the instrument affirming for a person.
+
+Run with `--reporter=list` so no partial run was recorded to `measurements/browser_run.json`.
+The panel draws `NO_EVIDENCE` at the weight of `CONDITION_MET`, states `code may accept: false`
+beside the verdict, and carries the six results that do not discharge the acceptance as a list
+rather than leaving them implied by their absence.
+
+```text
+> cd frontend && npx tsc --noEmit && npm run build
+no type errors; built in 1m 7s
+```
+
+Nothing was adopted by code. The declaration remains `DRAFTED_NOT_ADOPTED`, no register entry
+exists, and no condition is met.
+
+## T4E.42 -- convening safety (2026-09-13, `ed-dev`)
+
+The defect was reproduced directly before it was fixed. With a key present in `.env.local`, one
+authorised convening never returned and took the API with it:
+
+```text
+> curl -m 25 -X POST .../api/v1/reviews/studies/t4e28-join-rerun/round-robin \
+    -d '{"i_authorise_paid_calls": true}'
+(no response; timed out)
+
+> curl -m 10 .../api/v1/health
+(no response; timed out)
+```
+
+The server log ends at the last completed request and never records the convening, because the
+handler never returned to log it. This is what made three browser specs fail in every run while
+appearing to be a frontend fault.
+
+```text
+> .venv\Scripts\python.exe -m pytest src/tests/test_t4e42_convening_safety.py -q
+5 passed, 2 warnings in 5.49s
+```
+
+The browser suite, with its backend's key variables cleared, now runs the convening refusal for
+real rather than assuming it:
+
+```text
+> cd frontend && npx playwright test e2e/adoption.spec.ts --reporter=list
+ok  7 convening without a key on the server refuses and says nothing was sent (2.9s)
+ok  8 the run button alone cannot spend, whatever the server holds (2.8s)
+10 passed (41.6s)
+
+> cd frontend && npx playwright test e2e/identity-acceptance.spec.ts \
+    e2e/reference-holdout.spec.ts --reporter=list
+10 passed (57.1s)
+```
+
+All three specs that had been failing now pass. They were never pre-existing failures: they were
+the wedge, and no test was altered to make them green.
+
+**No paid call was made to verify the fix.** The non-blocking property is held structurally -- the
+route is asserted not to be a coroutine -- and by a test that keeps the threadpool busy with an
+ordinary blocking call while requiring an unrelated request to be served. Convening for real to
+watch it behave would have cost money to confirm what the type of the function already settles.
+
+**What was spent, and what is kept.** One complete eight-seat panel ran at 18:22 on 2026-09-13
+from `adoption.spec.ts`, plus a partially spent attempt from the direct reproduction above, which
+was killed mid-call and wrote no record. The completed record is preserved byte-for-byte under
+`data/superseded/t4e42_unintended_panel_20260913/`:
+
+```text
+t4e28-join-rerun.round-robin.json   bundle_sha256 b1e809d6... revision 7
+                                    panel_sha256  9fcef030...
+                                    record_sha256 e285e117...
+                                    rung observation, retained_dissent []
+t4e28-join-rerun.review.json        171,144 bytes, the full exchange
+```
+
+It is not in `data/reviews/`, so `t4e28-join-rerun` still reads as a study with two preserved
+paid attempts and no completed panel, which is what its maintainer actually authorised.
+
 ---
 
 **Full backend suite, measured 2026-09-11 on the tree carrying TG19.5.**

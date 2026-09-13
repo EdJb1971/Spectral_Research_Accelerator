@@ -34,6 +34,7 @@ import { ExperimentReceiptPanel } from './components/ExperimentReceipt';
 import { ExperimentQualificationPanel } from './components/ExperimentQualification';
 import G17PoolReview from './components/G17PoolReview';
 import ReferenceHoldout from './components/ReferenceHoldout';
+import IdentityAcceptance from './components/IdentityAcceptance';
 import { apiService } from './services/api';
 import * as types from './types/api';
 import {
@@ -2463,6 +2464,7 @@ export default function App() {
               <ExperimentReceiptPanel trustOnly />
               <ExperimentQualificationPanel />
               <G17PoolReview />
+              <IdentityAcceptance />
               <ReferenceHoldout />
 
               {health && (

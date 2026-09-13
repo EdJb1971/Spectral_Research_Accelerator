@@ -1219,6 +1219,11 @@ export const apiService = {
       }));
   },
 
+  async identityAcceptance(): Promise<types.IdentityAcceptanceState> {
+    return handleResponse<types.IdentityAcceptanceState>(
+      await fetch(`${BASE_URL}/identity/acceptance`, { method: 'GET' }));
+  },
+
   // ------------------------------------- T4E.39 the temporal reference holdout
 
   async referenceHoldout(): Promise<types.HoldoutSurface> {

@@ -4,6 +4,7 @@ import {
 } from 'lucide-react';
 import { apiService } from '../services/api';
 import type { HoldoutArtifact, HoldoutRow, HoldoutRows, HoldoutSurface } from '../types/api';
+import { rememberSignerLabel, useSignerIdentity } from './useSignerIdentity';
 
 const CLASSIFICATION_LABEL: Record<string, string> = {
   VERTICAL_QUANTITY_SEPARATION_CANDIDATE: 'MSLP closer',
@@ -24,6 +25,10 @@ export default function ReferenceHoldout() {
   const [artifact, setArtifact] = useState<HoldoutArtifact | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [message, setMessage] = useState('Loading holdout evidence...');
+  // A refusal is a result and must outlive the next reload. `message` is cleared by every
+  // successful load, so a refusal parked there can be wiped by a refresh that lands after
+  // it. Refusals get their own state, which nothing else clears.
+  const [refusal, setRefusal] = useState('');
 
   const [assessment, setAssessment] = useState<'' | 'BOUNDARY_SOUND' | 'BOUNDARY_DISPUTED'>('');
   const [basis, setBasis] = useState('');
@@ -31,8 +36,7 @@ export default function ReferenceHoldout() {
   const [limitations, setLimitations] = useState('');
   const [next, setNext] = useState('');
   const [boundary, setBoundary] = useState('');
-  const [name, setName] = useState('');
-  const [role, setRole] = useState('');
+  const { name, setName, role, setRole, remember, setRemember, persist } = useSignerIdentity();
   const [what, setWhat] = useState('');
   const [why, setWhy] = useState('');
   const [affirmation, setAffirmation] = useState('');
@@ -72,16 +76,19 @@ export default function ReferenceHoldout() {
 
   const adopt = async () => {
     setBusy(true);
+    setRefusal('');
     try {
       await apiService.adoptHoldoutReview({
         adopted_by: name, adopted_as: role, what_was_adopted: what,
         affirmation, why: why || undefined,
       });
+      persist();
       setMessage('Review adopted and verified against the live result.');
       setAffirmation('');
       await load();
-    } catch (error) { setMessage(error instanceof Error ? error.message : String(error)); }
-    finally { setBusy(false); }
+    } catch (error) {
+      setRefusal(error instanceof Error ? error.message : String(error));
+    } finally { setBusy(false); }
   };
 
   if (!state) return <p role="status" className="text-xs text-slate-500">{message}</p>;
@@ -339,6 +346,12 @@ export default function ReferenceHoldout() {
                     onChange={(event) => setWhy(event.target.value)}
                     placeholder="Why you adopted it (optional)"
                     className="w-full border border-slate-700 bg-slate-950 p-2 text-xs" />
+          <label className="flex items-start gap-2 text-[11px] text-slate-500">
+            <input type="checkbox" aria-label="Remember signer identity" checked={remember}
+                   onChange={(event) => setRemember(event.target.checked)}
+                   className="mt-0.5" data-testid="remember-signer" />
+            <span>{rememberSignerLabel()}</span>
+          </label>
           <label className="block text-xs text-slate-400">
             Type: {request.human_inputs_required.affirmation}
             <input aria-label="Adoption affirmation" value={affirmation}
@@ -350,6 +363,13 @@ export default function ReferenceHoldout() {
                              disabled:opacity-40">
             Sign and verify review
           </button>
+          {refusal && (
+            <p role="alert" data-testid="holdout-adopt-refusal"
+               className="border border-amber-500/40 bg-amber-500/5 p-2 text-[11px]
+                          text-amber-100">
+              {refusal}
+            </p>
+          )}
         </div>
       )}
 

@@ -2808,6 +2808,53 @@ export interface G17PoolSurface {
   claim_boundary: string;
 }
 
+/** T4E.41: one condition of T4E.8's acceptance, with what would license it and what would not. */
+export interface IdentityAcceptanceCondition {
+  id: string;
+  name: string;
+  requires: string;
+  licensed_by: string;
+  insufficient: string;
+  status: 'NO_EVIDENCE' | 'EVIDENCE_CLAIMED_NOT_ADOPTED' | 'CONDITION_MET' | 'CONDITION_NOT_MET';
+  why: string | null;
+  evidence: Array<Record<string, any>>;
+}
+
+export interface IdentityAcceptanceState {
+  schema: string;
+  task: string;
+  declaration: string;
+  declaration_sha256: string;
+  declaration_status: string;
+  acceptance_adopted: boolean;
+  identity_target: string;
+  why_this_exists: Record<string, string>;
+  what_this_declaration_is_not: string[];
+  target_and_scope: Record<string, any>;
+  what_acceptance_would_and_would_not_license: Record<string, string>;
+  declaration_file: string;
+  verdict_semantics: Record<string, string>;
+  adoption: Record<string, any>;
+  bound_evidence: {
+    checked: number;
+    all_verified: boolean;
+    drifted: string[];
+    absent: string[];
+    checks: Array<{ artefact: string; status: string; expected_sha256: string;
+                    observed_sha256: string | null }>;
+  };
+  conditions: IdentityAcceptanceCondition[];
+  conditions_met: number;
+  conditions_total: number;
+  VERDICT: 'INSUFFICIENT_EVIDENCE' | 'T4E8_NOT_ACCEPTED'
+    | 'ALL_CONDITIONS_MET_AWAITING_HUMAN_ACCEPTANCE';
+  code_may_emit_accepted: false;
+  what_does_not_discharge_this: string[];
+  network_used: boolean;
+  claim_boundary: string;
+  receipt_sha256: string;
+}
+
 // ------------------------------------------- T4E.39 the temporal reference holdout
 
 /** One performed stage of the holdout. The browser renders the order the server reports and

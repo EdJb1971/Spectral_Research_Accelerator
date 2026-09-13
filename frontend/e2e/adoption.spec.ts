@@ -86,7 +86,22 @@ test('the convening control states the cost before anything can be spent', async
 });
 
 test('convening without a key on the server refuses and says nothing was sent',
-  async ({ page }) => {
+  async ({ page, request }) => {
+    // This test used to assume the server had no key, and clicking convene when one IS present
+    // does not refuse: it spends money on the maintainer's account and shows the bundle to a
+    // third party. That happened -- a full eight-seat panel ran from this test and recorded
+    // itself. The precondition is now checked against the server before anything is clicked,
+    // and the test refuses to proceed rather than paying to find out.
+    const plan = await (await request.get('/api/v1/reviews/panel-plan')).json();
+    // Skipped rather than failed when a key is present: a permanently red test on the
+    // maintainer's own machine teaches people to ignore red, and this condition is a property
+    // of the machine rather than of the product. It is never silently passed -- the reason is
+    // reported by the runner, and the test refuses to click convene to find out.
+    test.skip(plan.key_present === true,
+      'a review API key is present on this server, so convening here would make real paid calls '
+      + 'on the maintainer account; clear GEMINI_API_KEY / GOOGLE_API_KEY to run this test');
+    expect(plan.key_present).toBe(false);
+
     await page.goto('/');
     await page.getByRole('button', { name: /^Recorded review/ }).click();
     await page.getByLabel('Published study ID').fill('t4e28-join-rerun');
@@ -95,6 +110,18 @@ test('convening without a key on the server refuses and says nothing was sent',
     await page.getByTestId('convene').click();
 
     await expect(page.getByTestId('convene-refusal')).toContainText('Nothing was sent');
+  });
+
+test('the run button alone cannot spend, whatever the server holds', async ({ page }) => {
+    // Safe with or without a key, because it never authorises: the refusal it drives is the
+    // authorisation refusal, which is decided before any key is read and sends nothing.
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Recorded review/ }).click();
+    await page.getByLabel('Published study ID').fill('t4e28-join-rerun');
+    await page.getByRole('button', { name: 'Reload exact revision' }).click();
+
+    await expect(page.getByTestId('convene')).toBeDisabled();
+    await expect(page.getByTestId('call-count')).toContainText('11 paid calls');
   });
 
 test('the composer supplies no content and refuses a prediction that cannot fail',
