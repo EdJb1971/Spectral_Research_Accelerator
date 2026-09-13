@@ -12675,6 +12675,534 @@ $ .venv/Scripts/python.exe -m pytest src/tests/test_catalogue_join.py -q
 28 passed
 ```
 
+## T4E.35 -- crop-edge support diagnostic (2026-09-12, `ed-dev`)
+
+The source is the committed T4E.28 receipt (`sha256 4f2d10b2...`), not a fresh extraction. The
+diagnostic is explicitly post-hoc and changes no acceptance.
+
+```
+> .venv\Scripts\python.exe -m pytest src/tests/test_edge_support.py src/tests/test_catalogue_join.py -q
+31 passed, 1 warning
+
+> .venv\Scripts\python.exe tools\audit_join_edge_support.py
+status: POST_HOC_DIAGNOSTIC
+raw_field: near edge 7 rows, 1 no feature, median 1617.668 km;
+           interior 11 rows, 0 no feature, median 35.891 km
+swt_planes: near edge 7 rows, median 189.648 km;
+            interior 11 rows, median 111.721 km
+```
+
+The recorded rank correlations are rho = -0.736 over 17 finite raw rows and rho = -0.515 over
+18 SWT rows. The four largest finite raw errors and GRETEL's no-feature row are nearest the east
+edge. This selects a declared eastward wrapped-acquisition experiment; it does not establish
+that truncation caused the errors.
+
+## T4E.36 -- guarded wrapped-acquisition executor (2026-09-12, `ed-dev`)
+
+These initial checks used only synthetic NetCDF/Zarr and made no network request. The declaration
+was subsequently adopted and executed as recorded below.
+
+```
+> .venv\Scripts\python.exe -m pytest src/tests/test_t4e36_wrapped_acquisition.py -q
+6 passed, 1 warning in 10.25s
+```
+
+The production planner resolves the complementary `-180..-140` request to 48 monthly shards,
+5,844 frames and a 161x161 segment. The remaining tests prove that absent or drifted adoption and
+missing experiment-specific network consent stop before a CDS client call; `vo` normalizes from
+the long CDS variable name; the 180-degree seam is measured against each field's source encoding,
+deduplicated to a 321-point longitude axis, and refused on mismatch or an unmeasurable tolerance;
+materialisation publishes a content-addressed Zarr while parent NetCDF bytes remain unchanged;
+and evaluation holds the T4E.28 population to exactly 18 without a new census or SWT rescue.
+The warning is the existing SQLAlchemy `declarative_base()` deprecation.
+
+The shared CDS regression suite also passes after adding the missing vorticity output alias:
+
+```
+> .venv\Scripts\python.exe -m pytest src/tests/test_cds_source.py -q
+56 passed, 1 warning in 49.79s
+```
+
+Ed Bentley subsequently typed the required affirmation and adopted the declaration as
+`ADOPTED_FOR_GUARDED_EXECUTION_TEST`. The immutable adoption binds declaration SHA-256
+`5b96519ade6d33873c7411a9db2a66a76dd1668f6ebc6279987b7e33c1b9899c`. Re-entering the CLI
+without `--authorise-network` then returned:
+
+```text
+REFUSED: T4E.36 acquisition is network-refused: pass the experiment-specific explicit network
+authorisation after reviewing the adopted declaration
+```
+
+No CDS request was submitted by adoption or by that refusal check.
+
+### Authorised production execution (2026-09-12--13)
+
+After separate experiment-specific network authorisation, the guarded acquisition completed all
+48 monthly shards. One remote disconnect was recovered by the existing retry path.
+
+```text
+request sha256 : 2c68a35b21874778620cf18ff0445b285d30f6ca4030b30470de0449eb0fb0c9
+frames         : 5844
+bytes          : 325654005
+complete       : true
+downloaded     : 48
+```
+
+Offline materialisation then passed every monthly integrity and seam check. Each of the 48 seams
+had maximum absolute difference `0.0` against source-encoding tolerance
+`5.960464477539063e-08`; the original parent remained byte-for-byte unchanged.
+
+```text
+shape                 : time 5844, level 1, latitude 161, longitude 321
+wrapped record sha256 : 9e9b7e50c75579daa4a79cb459e5da91c2b65a23c260eab6ca37fee2c684736b
+record receipt sha256 : 509e42f7554c6357c67509af7d5c0504c4fafc8cc74f5a6ecf633f52f6afdd99
+parent preserved      : true
+```
+
+The evaluation read exactly the 18 T4E.28 rows, did not rerun the catalogue census, and produced
+measurement receipt SHA-256
+`5d84935047e4ea60b2f092ba093bf5992d2685f1b40813e76d7dcfb17a5dd408`.
+
+```text
+VERDICT                         : FAIL
+raw any feature inside radius  : 5/18 (needed 9; baseline 3/18)
+raw three inside radius        : 0/18 (needed 9; baseline 0/18)
+raw nearest km                 : min 6.09, median 40.83, max 315.09
+raw features/frame             : min 7, median 14, max 22
+raw frames with no feature     : 0
+diagnostic SWT gates           : 5/18 and 1/18
+SWT can rescue raw failure     : false
+catalogue census rerun         : false
+```
+
+The large east-edge errors contracted, including SARAI from 2,464.75 km to 6.09 km and GRETEL
+from no feature to 39.40 km. JOSIE contracted from 2,027.96 km to 151.29 km but remained outside
+its 145.23 km radius. The declared interpretation is therefore a bounded negative one: added
+eastward support helps some rows but is not sufficient to repair the fixed join.
+
+## T4E.37 -- guarded pre-threshold failure attribution (2026-09-13, `ed-dev`)
+
+The declaration and executor were implemented after T4E.36's result. The initial plan below was
+captured before adoption and the real diagnostic remained unrun.
+
+```text
+> .venv\Scripts\python.exe tools\run_t4e37_failure_attribution.py plan
+task            : T4E.37
+status          : DRAFTED_NOT_ADOPTED
+population_rows : 13
+adopted         : false
+record_opened   : false
+network_used    : false
+declaration sha : 2a0f0ce5e154b063afc1cafc86d8825d9066cd09f300e8c1dacc7ec6233dbef4
+```
+
+The focused synthetic and contract suite returned:
+
+```text
+> .venv\Scripts\python.exe -m pytest src/tests/test_t4e37_failure_attribution.py -q
+5 passed, 1 warning in 8.14s
+```
+
+The tests bind the 13 failed identities and T4E.36 source digest, exercise native-grid 3x3 maxima
+with boundary exclusion and tied maxima, refuse malformed/non-finite fields, cover both strict
+7-of-13 outcomes without calling either PASS, and prove absent or drifted adoption stops before
+the wrapped record is opened. The warning is the standing SQLAlchemy `declarative_base()`
+deprecation.
+
+Ed Bentley subsequently adopted the exact declaration as
+`ADOPTED_FOR_GUARDED_EXECUTION_TEST`, binding SHA-256
+`2a0f0ce5e154b063afc1cafc86d8825d9066cd09f300e8c1dacc7ec6233dbef4` with the required
+affirmation. The adoption opened no evidence or Zarr record, used no network access and wrote no
+T4E.37 measurement.
+
+The subsequently authorised offline execution completed in about 26 seconds. It verified both
+upstream receipts, reproduced all 13 T4E.36 failed rows, reopened no catalogue and touched no
+forecast-test data.
+
+```text
+OUTCOME                              : FIELD_REFERENCE_SEPARATION_DOMINANT
+VERDICT                              : NOT_AN_ACCEPTANCE
+field/reference separation candidate : 12/13
+extractor filtering candidate         : 1/13
+majority needed                       : 7
+nearest sampled maximum km            : min 26.12, median 44.44, max 177.98
+catalogue census rerun                 : false
+forecast test opened                  : false
+measurement receipt sha256            : f8ff2f88afd818acfc3b4975c173eb5d28192f359036bd90284d63b3a6d0f1d1
+```
+
+JOSIE was the sole extractor-filtering candidate. It had pre-threshold local maxima at 37.99 and
+114.14 km, both inside its 145.23 km agency radius and both above the calibrated threshold, while
+the nearest final feature was 151.29 km away. LINDA's inherited radius is 0 km; excluding that
+structurally uninformative row after the result leaves 11/12 versus 1/12 and does not change the
+majority. That sensitivity is descriptive and does not replace the declared 13-row decision.
+
+## T4E.38 -- exact-time ERA5 single-level MSLP acquisition (2026-09-13, `ed-dev`)
+
+The offline planner binds the exact T4E.36 and T4E.37 files and receipts and reports:
+
+```text
+dataset                  : reanalysis-era5-single-levels
+variable                 : mean_sea_level_pressure (canonical msl)
+fixed timestamps         : 18
+segments                 : 140..180 and -180..-140
+timestamp shards         : 18 + 18 = 36
+segment shape            : 161 x 161
+raw float32 bytes        : 3732624
+record opened            : false
+network used             : false
+declaration sha256       : 0ad4e5376359a46e5d44b2c6b09455574b0a7443361595560896a6b255ead477
+```
+
+The focused suite returned:
+
+```text
+> .venv\Scripts\python.exe -m pytest src/tests/test_t4e38_reference_alignment.py -q
+6 passed, 1 warning in 5.78s
+```
+
+The tests cover exact source binding and 36-shard geometry; one timestamp per request with no
+pressure-level field; wrong product, variable, time and dateline refusals; exact-frame storage
+accounting without compression credit; adoption and both network gates before a client call; and
+atomic, content-checked acquisition/resume using a synthetic NetCDF shard. The warning is the
+standing SQLAlchemy `declarative_base()` deprecation.
+
+Ed Bentley subsequently adopted the exact declaration as
+`ADOPTED_FOR_GUARDED_EXECUTION_TEST`, binding SHA-256
+`0ad4e5376359a46e5d44b2c6b09455574b0a7443361595560896a6b255ead477` with the required
+affirmation. The adoption created no download directory and submitted no CDS request. Ed Bentley
+subsequently supplied the distinct experiment-specific authorization while the general network
+gate was enabled. The guarded acquisition then completed without a retry:
+
+```text
+segment       shards   stored bytes   acquisition.json sha256
+parent        18/18       1,170,846   35b137ac3700cee5c5e1035316b835bee82e4e834868c74d3459040a3fbc98ef
+complement    18/18       1,155,367   0100831c3f700b76980653ac03c51f3993a0f6294608f05d25784fa1b895a59c
+total         36/36       2,326,213
+```
+
+An independent pass checked file existence, byte length and SHA-256 against all 36 receipt rows:
+zero failures. A second pass reopened every file with xarray and checked one `valid_time`, the
+recorded 161x161 dimensions and sole `msl` data variable: 36 opened, zero failures. The stored-byte
+total reflects CDS compression; the frozen raw float32 plan remains 3,732,624 bytes. Neither pass
+joined the dateline segments or ran the catalogue-seeded basin comparison. Therefore no T4E.38
+dominant-candidate or acceptance verdict has been produced.
+
+Post-acquisition repository checks returned:
+
+```text
+> .venv\Scripts\python.exe -m pytest src/tests/test_documentation.py -q
+32 passed, 2 warnings in 455.60s
+
+> .venv\Scripts\python.exe tools/audit_docs.py
+undocumented modules : none
+undocumented routes  : none
+test functions       : 4636
+stale inventory rows : none
+
+> git diff --check
+no whitespace errors; line-ending notices only
+```
+
+### T4E.38 offline materialisation and fixed comparison
+
+```text
+> .venv\Scripts\python.exe tools\run_t4e38_reference_alignment.py materialise
+network_used                    : false
+shape                           : time 18, latitude 161, longitude 321
+seams                           : 18/18 passed
+maximum seam difference         : 0 Pa at every timestamp
+source-encoding tolerance       : 0.0625 Pa at every timestamp
+record sha256                   : dc6f53652e4a995fa17ba7cc474322e7ad6552f5f97db5b13b8ff505fe456a7b
+coordinates sha256              : df0611384f11dff1ed9da3c5228c2c8e8d40088947ea95dccb11d05fe8aa677a
+record receipt sha256           : 4acba0aa5be5b174dfacbc0fc376d958e86466bbd70442e6394415113d99c5a8
+parent source bytes preserved   : true
+complement source bytes preserved: true
+
+> .venv\Scripts\python.exe tools\run_t4e38_reference_alignment.py evaluate \
+    --record-receipt data/wrapped_records/t4e38/4acba0aa5be5b174dfacbc0fc376d958e86466bbd70442e6394415113d99c5a8.json
+VERTICAL_QUANTITY_SEPARATION_CANDIDATE     : 10
+CATALOGUE_REANALYSIS_ALIGNMENT_CANDIDATE  : 7
+EXACT_TIE                                  : 1
+REFUSED                                    : 0
+OUTCOME                                    : VERTICAL_QUANTITY_SEPARATION_DOMINANT
+VERDICT                                    : NOT_AN_ACCEPTANCE
+measurement receipt sha256                 : 9906ef4ef6aee18974f0774cf3e823dd0135f997f63f154dbd416796abccd679
+measurement file sha256                    : f99d5f896b69ff9a9c994834d0f720568e98261eb8128eecaea0efdc3c84e425
+network_used                               : false
+```
+
+The evaluator was replayed independently to a temporary output. The complete JSON value and
+logical receipt were exactly equal to the published measurement. All 18 rows came from the fixed
+T4E.36 population, including its five passing controls; the catalogue census and 2022–2023 period
+were not opened. The result satisfies the declared 10-of-all-18 candidate threshold but remains
+`NOT_AN_ACCEPTANCE`: it does not establish either basin as a cyclone centre or prove vertical
+pressure/surface separation.
+
+```text
+> .venv\Scripts\python.exe -m pytest src/tests/test_t4e38_reference_alignment.py -q
+11 passed, 1 warning in 6.42s
+```
+
+## T4E.39 -- pre-opening temporal holdout boundary (2026-09-13, `ed-dev`)
+
+The offline plan returned:
+
+```text
+declaration sha256              : fc7ee60f688b404fbad8261c579740e4f828117ff6380ff883c7824756ee1594
+source outcome                  : VERTICAL_QUANTITY_SEPARATION_DOMINANT
+source verdict                  : NOT_AN_ACCEPTANCE
+signed reference available      : true
+signed reference sha256         : 631f76b95c77a6a4e409233466a0d501bb4848324e421fc58e228efea2086c44
+signed reference bytes          : 35,482,417
+catalogue rows read              : false
+holdout identities enumerated   : false
+ERA5 record opened              : false
+network used                    : false
+minimum selected storms         : 10
+strict majority                 : floor(n / 2) + 1
+status                          : DRAFTED_NOT_ADOPTED
+```
+
+The declaration was then adopted through the human adoption surface:
+
+```text
+adopted                         : true
+adopted_by                      : Ed Bentley
+adopted_on                      : 2026-09-13
+adopted_as                      : ADOPTED_FOR_GUARDED_HOLDOUT_CENSUS
+adopts_sha256                   : fc7ee60f688b404fbad8261c579740e4f828117ff6380ff883c7824756ee1594
+affirmation                     : I have read this declaration and I adopt it
+signature_still_reaches         : true
+census artifact present         : false
+```
+
+`DRAFTED_NOT_ADOPTED` above is the immutable status embedded in the declaration at signing time,
+not the current adoption state. The separate digest-bound adoption record is authoritative; editing
+the declaration to rewrite that field would correctly break the signature.
+
+Hashing the signed catalogue establishes that the already-signed bytes remain available; the
+planner never gives the file to `read_observations`. The future census first checks that a human
+adoption still reaches the declaration, then and only then may parse the signed catalogue and
+publish the exact storm identities, positions and request timestamps. Census output explicitly
+records `era5_record_opened: false` and `network_used: false`. No real census was run in this slice.
+
+```text
+> .venv\Scripts\python.exe -m pytest src/tests/test_t4e39_reference_holdout.py -q
+5 passed, 1 warning in 3.91s
+```
+
+The tests make semantic non-opening executable, refuse population or majority drift, prove the
+adoption check precedes catalogue parsing, exercise a catalogue-only ready census, and preserve a
+named insufficient-population outcome below 10 selected storms.
+
+### T4E.39 adoption-guarded catalogue census
+
+The census ran only after the adoption check and returned:
+
+```text
+> .venv\Scripts\python.exe tools\run_t4e39_reference_holdout.py census
+status                          : READY_FOR_EXACT_ACQUISITION
+declaration sha256              : fc7ee60f688b404fbad8261c579740e4f828117ff6380ff883c7824756ee1594
+signature_still_reaches         : true
+signed reference sha256         : 631f76b95c77a6a4e409233466a0d501bb4848324e421fc58e228efea2086c44
+catalogue rows                  : 76,784
+outside window                  : 75,469
+outside box                     : 405
+off synoptic                    : 650
+in box before agency refusal    : 260
+too few agencies                : 109
+admitted before interior        : 151
+selected storms                 : 12
+minimum selected storms         : 10
+future majority needed          : 7
+ERA5 record opened              : false
+network used                    : false
+census receipt sha256           : f8734e65b2bbc49d5c087ccc5015b4988fcc0f95dc997ce328ee72fc1fb0bc7e
+```
+
+Twelve of the disclosed thirteen in-box storms survive the frozen agency and two-degree interior
+rules, which is above the declared minimum of ten, so `INSUFFICIENT_HOLDOUT_POPULATION` was not
+reached. The census published identities, exact synoptic timestamps, positions, agency counts and
+catalogue radii only; it opened no ERA5 value and used no network.
+
+### T4E.39 exact two-field acquisition
+
+The census-bound field plan froze four requests -- ERA5 single-level `msl` and pressure-level
+850 hPa `vo`, each over the 140..180 parent and wrapped -180..-140 complement segments -- at the
+12 selected timestamps, giving 48 single-timestamp shards on the same 0.25-degree 161x161 grids.
+Ed Bentley supplied the separate T4E.39 network authorization beside the general gate. The guarded
+acquisition then completed:
+
+```text
+stream            shards   stored bytes   acquisition.json sha256
+msl parent         12/12        776,636   a0ae4a871d2e8c003dbb283e52404f2c0ec3f87ce43366635861d4dfe278df76
+msl complement     12/12        759,781   b62db344e8436c917d1ec09876507507ffc4a15192edc620d9a913876bfea669
+vo  parent         12/12      1,068,537   8a5faf55f62b0a2b90cecc9ba8086d733e532d193254b1c3fed0d39e73f6262d
+vo  complement     12/12      1,035,796   4f2037b88c3dfde8be6a67591eee0f326bcf89412f7d34f26cb5dba35a7dec98
+total              48/48      3,640,750
+```
+
+An independent pass re-read all 48 recorded shards, checked byte-for-byte SHA-256 against the
+receipt and reopened each with xarray: 48 checked, 48 opened, zero failures, every file carrying
+exactly one declared data variable on the recorded 161x161 segment grid.
+
+### T4E.39 offline materialisation and the frozen holdout comparison
+
+```text
+> .venv\Scripts\python.exe tools\run_t4e39_reference_holdout.py materialise
+network_used                    : false
+shape                           : time 12, latitude 161, longitude 321
+seams                           : 24/24 passed (12 msl + 12 vo)
+maximum seam difference         : 0 at every timestamp in both fields
+source-encoding tolerance       : 0.0625 Pa (msl), 2.98e-08 s^-1 (vo)
+retained at 180E                : parent column; complement duplicate removed
+record sha256                   : 179aa8c69a3709e70d0b7b7ea577d2599eb6f55bfaa60db3457dd552f9f41dbf
+record receipt sha256           : 2d4b06ff849db00621ae5232504dd05f8e706fd0e78640ae5bc5f73cdb350238
+source bytes preserved          : true for all four streams
+```
+
+The frozen catalogue-seeded basin rule -- 3x3 neighbourhood, MSLP descent, negated-vorticity
+ascent, no search radius, great-circle-then-lower-row-then-lower-column tie-break -- then ran
+unchanged from T4E.38:
+
+```text
+> .venv\Scripts\python.exe tools\run_t4e39_reference_holdout.py evaluate \
+    --record-receipt data/wrapped_records/t4e39/2d4b06ff849db00621ae5232504dd05f8e706fd0e78640ae5bc5f73cdb350238.json
+VERTICAL_QUANTITY_SEPARATION_CANDIDATE     : 7
+CATALOGUE_REANALYSIS_ALIGNMENT_CANDIDATE   : 5
+EXACT_TIE                                  : 0
+REFUSED                                    : 0
+population denominator                     : 12
+strict majority needed                     : 7
+OUTCOME                                    : HOLDOUT_SUPPORTS_VERTICAL_QUANTITY_CANDIDATE
+VERDICT                                    : NOT_AN_ACCEPTANCE
+measurement receipt sha256                 : c91b58ccc2db4bf71f550be55bc447382a32851a7d51be01c975efee422c1851
+measurement file sha256                    : fc6d9da9417b49f566b3e1b8ee506077b4e9f3289f891cfcba772270e8d96caa
+network_used                               : false
+```
+
+The evaluator was replayed independently to a temporary output. The complete JSON value and the
+logical receipt were exactly equal to the published measurement. Every basin search terminated in
+`CENTRE_FOUND`; no row refused, and no row tied.
+
+The majority is the smallest one the declared rule admits: 7 of 12, with `floor(12 / 2) + 1 = 7`.
+A single row changing side would have returned `HOLDOUT_MIXED`. That fragility is part of the
+result and is not an argument for reweighting, re-selecting or widening the population after the
+fact. The outcome states only that the deterministic T4E.38 MSLP-closer majority recurred on the
+pre-declared 2022-2023 temporal holdout under the identical finite-census rule. It establishes no
+statistical generalisation, no independence from ERA5 assimilation, no cyclone identity, no
+vertical tilt and no pressure/surface separation; it validates neither IBTrACS nor either field,
+approves no radius or extractor change, and rescues neither T4E.36 nor T4E.8.
+
+```text
+> .venv\Scripts\python.exe -m pytest src/tests/test_t4e39_reference_holdout.py \
+    src/tests/test_t4e39_reference_holdout_fields.py -q
+11 passed, 1 warning in 4.42s
+```
+
+The eleven cases come from ten test functions; the seam test is parametrised over both fields. The
+five field tests cover census-bound request geometry and the four exact streams; one exact 850 hPa
+timestamp per pressure request; adoption and both network gates before any client call; seam
+disagreement beyond source-encoding tolerance refusing materialisation; and the frozen
+strict-majority decision including the retained tie and refusal denominator.
+
+Post-run repository checks returned:
+
+```text
+> .venv\Scripts\python.exe -m pytest src/tests/test_documentation.py -q
+32 passed, 2 warnings in 295.37s
+
+> .venv\Scripts\python.exe tools/audit_docs.py
+undocumented modules : none
+undocumented routes  : none
+test functions       : 4651
+stale inventory rows : none
+RESULT               : ok
+
+> git diff --check
+no whitespace errors; line-ending notices only
+```
+
+The inventory total was corrected from 4636 to 4651 in the same pass; it had been stale since the
+T4E.38 measurement. No frontend surface was added: this lane has never been rendered in the
+platform UI, and the holdout record and its receipt remain the only published evidence.
+
+## T4E.40 -- the holdout rendered and reviewable (2026-09-13, `ed-dev`)
+
+The surface re-verifies rather than reads back. Against the live artifacts it returns:
+
+```text
+> GET /api/v1/reference-holdout
+stages                          : declaration, adoption, census, field-plan,
+                                  acquisition, materialisation, measurement, review
+outcome                         : HOLDOUT_SUPPORTS_VERTICAL_QUANTITY_CANDIDATE
+verdict                         : NOT_AN_ACCEPTANCE
+margin over strict majority     : 0
+one row would change outcome    : true
+review                          : NOT_WRITTEN
+artifacts                       : adoption, census, declaration, field-record, measurement
+acquire ERA5 fields             : available_in_ui false
+re-run the holdout              : available_in_ui false
+network_used                    : false
+```
+
+Each artifact endpoint returns the stored bytes beside a recomputed file digest, and
+`/rows` returns all 12 measured storms with both complete basin walks. The focused suite:
+
+```text
+> .venv\Scripts\python.exe -m pytest src/tests/test_t4e39_holdout_review.py -q
+8 passed, 2 warnings in 18.44s
+```
+
+Two of those tests are the ones that matter for the boundary. The first re-seals a tampered
+measurement so that its receipt identity is internally valid and only the verdict has changed
+from `NOT_AN_ACCEPTANCE` to `ACCEPTED`; the verifier refuses it, which is the only guard that
+can catch a forgery that recomputes correctly. The second asserts that the review model rejects
+`reviewed_verdict: ACCEPTED`, an added `accepted` field and an `ACCEPTED` boundary assessment --
+the review cannot express an acceptance rather than being asked not to.
+
+The panel was then driven in a real browser against the real API and the real frontend:
+
+```text
+> cd frontend && npx playwright test e2e/reference-holdout.spec.ts --reporter=list
+ok 1 the whole holdout flow renders, and the verdict travels with the numbers (12.2s)
+ok 2 a reader can open a stage and reach the bytes behind it (4.8s)
+ok 3 all twelve measured storms and both basin walks are inspectable (4.3s)
+ok 4 the surface names what it will not do, and offers no acceptance (3.8s)
+4 passed (35.9s)
+```
+
+The spec was run with `--reporter=list` so it did not write `measurements/browser_run.json`; a
+single-spec run recorded there would be a partial run offered as evidence. The browser-evidence
+gates `browser_no_glue` and `synthetic_fifth_adapter` remain `NOT_RUN`, and adding this spec is a
+further reason they are: the recorded evidence is bound to the spec source it was measured
+against, and that source set has changed again.
+
+Rendering was confirmed visually at 1280x900: the outcome, the `NOT_AN_ACCEPTANCE` chip, the four
+count tiles including the zero tie and zero refusal tiles, and the fragility strip are all legible
+above the fold of the panel, and the sticky application header scrolls content beneath an opaque
+band rather than over it.
+
+```text
+> .venv\Scripts\python.exe tools/audit_docs.py
+undocumented modules : none
+undocumented routes  : none
+test functions       : 4659
+stale inventory rows : none
+RESULT               : ok
+
+> .venv\Scripts\python.exe -m pytest src/tests/test_frontend_contract.py \
+    src/tests/test_api_infrastructure.py -q
+204 passed, 5 warnings in 54.34s
+
+> cd frontend && npx tsc --noEmit && npm run build
+no type errors; built in 59.47s
+```
+
+No review was written by code. `data/identity_calibration/` carries no
+`t4e39-holdout-result-review.json`, and the surface reports the review stage as `NOT_WRITTEN`.
+
 ---
 
 **Full backend suite, measured 2026-09-11 on the tree carrying TG19.5.**
@@ -15551,3 +16079,299 @@ RESULT               : ok
 
 The full-suite count remains the dated T4E.7 measurement, not an arithmetic increment from
 focused tests. No frontend implementation changed and no fresh rendered acceptance is claimed.
+
+## TG17.15 slice 6 - Calibrated successor declaration frozen, real pool unresolved (2026-09-12, `ed-dev`)
+
+The separate `g17-scale-shape-successor/v1` declaration binds the calibrated
+`per_correspondence` exact-pool-substitution inference, six-member BY family, derived pool minimum
+of 48, orientation and marginal admission contract. The six historical qualification manifests
+remain unchanged. The release gate now removes `declared_inference` but remains `REFUSED` on
+`pool_exchangeability_on_real_records`: the declaration names no real records and states
+`UNRESOLVED` / `NOT_ESTABLISHED` rather than manufacturing curation evidence.
+
+```
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_scale_shape_successor.py src/tests/test_experiment_qualification.py -q
+39 passed, 2 warnings in 36.84s
+> .\.venv\Scripts\python.exe tools/audit_docs.py
+test functions: 4576 | undocumented modules: none | undocumented routes: none
+stale inventory rows: none | RESULT: ok
+```
+
+No acquisition, network use, real-record adoption or G17 release is claimed.
+
+Editing the qualification source also invalidates TG17.14's source-bound live recording. The
+`live_sources` gate therefore returns to `NOT_RUN`; this slice does not re-run external acquisition
+or weaken that binding to preserve a green status.
+
+## TG17.15 slice 7 - Real-pool readiness measured as NO_INVENTORY (2026-09-12, `ed-dev`)
+
+The repository-local audit found no explicit G17 partner-profile documents in
+`data/profile_collections` or `data/channels`. Its content-addressed record is
+`measurements/g17_real_pool_readiness.json`: `NO_INVENTORY`, 0 profiles, 48 required, shortfall 48,
+exchangeability `NOT_ASSESSED`. The qualification gate now reports that measured deficit while
+retaining `pool_exchangeability_on_real_records` as undecidable here.
+
+```
+> .\.venv\Scripts\python.exe tools/audit_g17_real_pool_readiness.py
+NO_INVENTORY: 0 profiles, shortfall 48
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_real_pool_readiness.py src/tests/test_scale_shape_successor.py src/tests/test_experiment_qualification.py -q
+46 passed, 2 warnings in 37.31s
+```
+
+No network use, acquisition, profile fabrication, exchangeability decision or G17 release is
+claimed. A sufficient profile count would open curation review only.
+
+## TG17.15 slice 8 - Source-bound real-profile ingress (2026-09-12, `ed-dev`)
+
+`src/core/real_pool_ingress.py` constructs `correspondence-record-profile/v2` from exact UTF-8
+delimited bytes and a declaration. It hashes the bytes, verifies declared columns and finite,
+strictly increasing observations, and derives sample count, median cadence and coverage. It does
+so against an explicit declared window, preventing a contiguous fragment from claiming complete
+coverage. It does not infer native scale, effective sample size or noise floor: those values and
+named methods must be supplied. `tools/build_g17_partner_profile.py` atomically creates one
+immutable profile and refuses an existing output. The readiness reader rejects legacy profiles,
+malformed source bindings and duplicate provenance identities.
+
+```text
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_real_pool_ingress.py src/tests/test_real_pool_readiness.py -q
+19 passed, 1 warning in 5.63s
+> .\.venv\Scripts\python.exe tools/audit_g17_real_pool_readiness.py
+NO_INVENTORY: 0 profiles, shortfall 48
+```
+
+The regenerated readiness measurement was byte-unchanged. No source record was supplied, no
+profile was added, and no inference about curation or exchangeability was made.
+
+## TG17.15 slice 9 - Adopted marginal-method review (2026-09-12, `ed-dev`)
+
+`src/core/real_pool_method_review.py` requires a named maintainer adoption that still binds the
+exact review declaration. Profile declarations must exactly match its native-scale basis,
+effective-sample-size method and noise-floor method. The v3 profile envelope carries exact
+declaration and adoption digests; changed reviews, unreviewed methods and malformed review
+bindings are refused. Review adoption does not approve a record or establish exchangeability.
+
+```text
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_real_pool_ingress.py src/tests/test_real_pool_readiness.py -q
+23 passed, 1 warning in 7.37s
+> .\.venv\Scripts\python.exe tools/audit_g17_real_pool_readiness.py
+NO_INVENTORY: 0 profiles, shortfall 48
+```
+
+No review declaration, adoption, source record or profile was added to the repository. The
+readiness measurement remains byte-unchanged and exchangeability remains `NOT_ASSESSED`.
+
+## TG17.15 slice 10 - Preflighted local profile batches (2026-09-12, `ed-dev`)
+
+`g17-profile-import-manifest/v1` pins each supplied local source by SHA-256 and names its
+declaration, delimiter and immutable output. The importer validates the adopted method review and
+the complete batch before creating output directories. Digest drift, absolute or escaping paths,
+duplicate sources or identities, malformed declarations and existing outputs refuse the batch.
+
+```text
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_real_pool_import.py src/tests/test_real_pool_ingress.py src/tests/test_real_pool_readiness.py -q
+26 passed, 1 warning in 7.01s
+```
+
+No network access occurred and no source record, review, adoption or profile was added. This slice
+does not establish admission or exchangeability; readiness remains `NO_INVENTORY`, 0 of 48.
+
+## TG17.15 slice 11 - Human curation bound to exact inventory (2026-09-12, `ed-dev`)
+
+`g17-pool-curation-review/v1` records a named human decision of either `ESTABLISHED` or
+`NOT_ESTABLISHED` and binds it to the successor, calibrated admission contract, complete record-ID
+list and current readiness assessment. It requires review-ready inventory, explicit unmeasured
+properties and a current named adoption. Profile drift and adoption drift both refuse the review.
+
+```text
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_real_pool_curation.py src/tests/test_real_pool_import.py src/tests/test_real_pool_ingress.py src/tests/test_real_pool_readiness.py src/tests/test_scale_shape_successor.py -q
+39 passed, 1 warning in 8.65s
+```
+
+No curation review or adoption was added. Even the test fixture's adopted `ESTABLISHED` decision
+does not mutate the successor declaration. The real inventory remains `NO_INVENTORY`, 0 of 48,
+with exchangeability `NOT_ASSESSED`.
+
+## TG17.15 slice 12 - Period-qualified TESS source preflight (2026-09-12, `ed-dev`)
+
+A bounded first-page MAST sector-1 discovery found 48 exact public SPOC light-curve products,
+one per TIC, at 97,873,920 predicted bytes. Acquisition exposed stale CHECKSUM headers on the
+LIGHTCURVE and APERTURE extensions while the primary HDU checksum remained valid; the parser now
+records each HDU's actual status instead of claiming the whole FITS file is checksum-valid.
+
+The 48 targets were not promoted. `native_seconds` is the declared cycle that defines the phase
+axis, and neither cadence nor sector span is that quantity. A bounded NASA Exoplanet Archive TOI
+query returned 200 rows satisfying non-FP, non-limit period <= 3.375 days. One TIC appeared with
+two periods and was refused, leaving 198 unique period candidates. Their intersection with the
+arbitrary 48 sector targets was zero, so that transfer was stopped and no profile was emitted.
+
+The catalogue-first MAST join selected 64 unique period-qualified targets with no G17 count
+shortfall and predicted 124,652,160 bytes. All 64 products were acquired under a 128 MiB cap.
+Every primary HDU checksum validated; every LIGHTCURVE and APERTURE extension carried a stale
+CHECKSUM and no DATASUM, now retained explicitly in the receipt rather than hidden behind a parser
+warning. Exact file SHA-256 binds every product.
+
+All 64 records had 11,599-19,475 finite quality-zero samples, about 120-second median cadence,
+0.600-0.976 regular-grid coverage, and 25.6-35.6 actual declared orbital cycles. The pre-adoption
+assessment produced pool sizes 0 / 37 / 43 (minimum / median / maximum): zero records reached the
+required 48 alternatives. Effective-sample-size mismatch caused 2,200 pair refusals and noise
+floor mismatch 440. At measurement time those methods were proposals and no profile was emitted.
+
+```text
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_photometry.py src/tests/test_exoplanet_period_source.py src/tests/test_real_pool_ingress.py src/tests/test_real_pool_import.py src/tests/test_real_pool_readiness.py src/tests/test_real_pool_curation.py src/tests/test_scale_shape_successor.py -q
+61 passed, 1 skipped, 2 warnings
+```
+
+Readiness remains `NO_INVENTORY`, 0 of 48. At measurement time no marginal method or curation
+review was adopted, and no profile validity, independence or exchangeability was claimed.
+
+### Marginal-method adoption
+
+Ed Bentley adopted `data/studies/g17_tess_marginal_method_review.json` as Creator on 2026-09-12,
+with the supplied reason "testing my creation". The adoption binds declaration SHA-256
+`3c963f41bc35503813c3a0ed61707ba83e73bb6d3abfdb5b08a1341375085cff`; the adoption record hashes
+to `e8af684504ee000040ddfa5a1af9fe0fa73bdbadd90e1043fcf26bf29cf21a9f`.
+
+The adoption approves only the declared single-record marginal methods and limitations. It does
+not repair the measured maximum pool size of 43, create profiles, establish exchangeability or
+release G17. The curation review remains absent and readiness remains `NO_INVENTORY`.
+
+## TG17.15 slice 13 - Expanded TESS inventory reaches curation review (2026-09-12, `ed-dev`)
+
+Incremental metadata discovery excluded the 64 already acquired TICs and selected 48 new unique
+period-qualified products with no refusals. Their predicted and acquired size was 93,680,640
+bytes. The merged acquisition contains 112 unique targets. The adopted-method assessment reports
+67 records reaching at least 48 alternatives, with pool sizes 0 / 60 / 73 (minimum / median /
+maximum); effective-sample-size mismatch remains the dominant refusal.
+
+All 112 quality-zero records were exported as canonical elapsed-seconds/PDCSAP-flux CSV and 112
+immutable `correspondence-record-profile/v3` documents. Each profile binds its source CSV,
+upstream raw FITS SHA-256 and Ed Bentley's adopted marginal-method review. The readiness audit now
+records `READY_FOR_CURATION_REVIEW`, 112 profiles, shortfall zero and exchangeability
+`NOT_ASSESSED`.
+
+```text
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_photometry.py src/tests/test_exoplanet_period_source.py src/tests/test_real_pool_ingress.py src/tests/test_real_pool_import.py src/tests/test_real_pool_readiness.py src/tests/test_real_pool_curation.py src/tests/test_scale_shape_successor.py src/tests/test_experiment_qualification.py -q
+95 passed, 1 skipped, 1 failed
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_experiment_qualification.py::test_the_gate_publishes_its_blockers_and_admits_which_one_it_cannot_decide -q
+1 passed, 2 warnings in 14.74s
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_photometry.py src/tests/test_exoplanet_period_source.py src/tests/test_real_pool_ingress.py src/tests/test_real_pool_import.py src/tests/test_real_pool_readiness.py src/tests/test_real_pool_curation.py src/tests/test_scale_shape_successor.py src/tests/test_experiment_qualification.py -q
+96 passed, 1 skipped, 2 warnings in 46.02s
+```
+
+The one first-run failure was the guard still requiring the superseded `NO_INVENTORY` text. It now
+requires the live 112/48 review-ready state while preserving the exchangeability blocker. No
+curation review or exchangeability decision was created.
+
+## TG17.15 slice 14 - Curation packet over a viable subset (2026-09-12, `ed-dev`)
+
+The 112-profile marginal-admission graph is symmetric. Its iterative 48-core contains 65 records.
+A deterministic degree-first search, seeded from every core record, found a 59-record all-pairs
+subset: every selected record has 58 admitted alternatives against the required 48. The packet
+digest is `6fffb7adc92091108b9245cbf82688e7959942047b954c1298deaaed8df1f23a` and binds readiness
+assessment `aea4544567430b89d3a84bb9472a75d1175edd099fb3e2e17966af3ce8ac9aae`.
+
+Curation review v2 now binds that packet and subset. A positive decision over fewer than 49
+pairwise-admissible records is refused, correcting the v1 contract that required all discovered
+profiles and could mistake inventory count for coherent admission. The packet itself remains
+`NOT_ASSESSED`; no review declaration or adoption was created.
+
+## TG17.15 slice 15 - Corrected per-TIC period lineage (2026-09-12, `ed-dev`)
+
+The repeated TOI 1654.01 audit exposed a stale loop variable in acquisition emission. Every target
+in a receipt received the final discovery target's TOI and orbital-period fields, although the
+frozen catalogue and product-discovery records were correct. A two-target regression now proves
+that acquisition retains each target's own metadata.
+
+The two receipts were rebuilt without network access from the frozen discoveries and exact cached
+FITS bytes, checking each cache file against its recorded SHA-256. The prior receipts, profiles,
+readiness assessment and packet remain under named `g17_tess_lineage_bug` archives. All 112
+corrected acquisition mappings match their discovery rows. Eight records fail the eight-cycle
+qualification with their correct periods, so an explicit qualification artifact admits 104 and
+records all eight refusals.
+
+The corrected assessment reports 64 records reaching 48 alternatives and pool sizes 0 / 58.5 /
+70. Readiness remains `READY_FOR_CURATION_REVIEW`, with 104 profiles and shortfall zero. The new
+packet has a 59-record core and a 57-record all-pairs subset, giving each selected record 56
+alternatives. Its digest is
+`8011d31cf536989940f171664b44266234e723d2a64eeba6d5d5b6c387db857c`; it binds readiness digest
+`f1e41a2c1801cf0cce03e964e39463358633e1261d9f1ee29c5aab0ca62c71fd`. Exchangeability remains
+`NOT_ASSESSED`; no curation review or adoption was created.
+
+## TG17.15 slice 16 - Packet-bound human review request (2026-09-12, `ed-dev`)
+
+The corrected packet now has an immutable review request containing its exact 57 record IDs,
+binding digests, verified marginal facts, both allowed exchangeability conclusions, required
+human-authored fields and exact adoption affirmation. The request remains
+`AWAITING_HUMAN_REVIEW`. Its schema differs from the review-v2 schema, and a regression proves the
+adopted-review loader rejects it. No exchangeability decision, reviewer attribution or adoption
+was generated when the human reviewer was unavailable.
+
+## TG17.15 slice 17 - Complete pool visibility and human curation surface (2026-09-12, `ed-dev`)
+
+`GET /api/v1/g17-pool` serves corrected readiness, qualification refusals, assessment, packet,
+pending request, review/adoption state, archived lineage-bug filenames and an explicit operation
+matrix. Platform Status renders the counts, exact recommended IDs, all eight refusals and archive
+names. It exposes separate review-writing and adoption forms with no default decision, basis,
+identity or affirmation. Both writes verify the current packet before publication.
+
+The surface is explicit that source discovery/acquisition and immutable evidence rebuilding are
+CLI-only. Their results are visible; the high-cost network and bulk-publication operations are not
+browser controls. This corrects the assumption that every completed operation was already
+available through the UI without weakening the audit boundary.
+
+Rendered inspection at desktop and 390 px mobile widths showed the complete panel without
+horizontal overflow. The first task launch also exposed that the VS Code backend task called the
+global `python`, where Uvicorn was absent; it now calls the workspace virtual environment directly.
+
+## TG15.3 - Object-to-planner handoff (2026-09-12, `ed-dev`)
+
+The capability registry now exposes existing planner destinations for representation audit,
+redundancy structure, conditional information and stable-subspace generation. The new handoff
+route binds exact sample-table bytes, canonical declaration, capability-profile digest, selected
+operation, destination route and expected plan schema. Browser code follows that route and refuses
+a returned plan whose schema or content digest disagrees. It adds no private workspace and the
+envelope records an empty `automatic_actions` list.
+
+```text
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_dataset_ingress.py src/tests/test_frontend_contract.py -q
+197 passed, 5 warnings in 9.55s
+> cd frontend; npm run build
+✓ 1425 modules transformed.
+✓ built in 50.37s
+> .\.venv\Scripts\python.exe tools\audit_docs.py
+test functions: 4618 | undocumented modules: none | undocumented routes: none
+stale inventory rows: none | RESULT: ok
+```
+
+The Vite build retains its pre-existing advisory that the production bundle contains chunks over
+500 kB. That warning is a performance/code-splitting concern, not a type or build failure.
+
+A broader fail-fast run was also attempted. It reached 178 passes before stopping on the
+repository's declared `t4e_identity_certified / 4E.identity_certified` scientific FAIL: measured
+split 0.4667 against the declared maximum 0.10, with admission and null admission both 0.0000.
+That is the current T4E.9 status recorded in `architecture.md`, not a handoff regression; this
+slice does not relabel a scientific FAIL as a passing software check.
+
+## D102 - Backend-local `.env.local` loading (2026-09-12, `ed-dev`)
+
+The observed live state was internally inconsistent: `.env.local` contained
+`SPECTRALEARTH_ALLOW_NETWORK=1`, while `GET /api/v1/data/zarr/catalogue` returned
+`network_enabled=false`. Process inspection showed Uvicorn had been launched directly by the VS
+Code task; only `start_platform.ps1` loaded the local file.
+
+The backend now loads `.env.local` before adapter imports. A direct isolated check returned
+`status=LOADED` and `network=1`, listing loaded variable names without values. Focused API,
+Zarr/network-gate and frontend-contract validation passed:
+
+```text
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_api_infrastructure.py src/tests/test_zarr_source.py src/tests/test_frontend_contract.py -q
+266 passed, 1 skipped, 5 warnings in 61.07s
+```
+
+After restarting only the directly launched Uvicorn process, the live endpoints returned
+`network_enabled=true` from `/api/v1/data/zarr/catalogue` and `status=ok`, `database=ok` from
+`/api/v1/health`. The existing Vite process remained running.
+
+The skip is the existing opt-in live GCS test: the test harness deliberately sets
+`SPECTRALEARTH_LOAD_LOCAL_ENV=0`, so a developer's local network consent and credentials cannot
+silently turn an offline suite into a live one.

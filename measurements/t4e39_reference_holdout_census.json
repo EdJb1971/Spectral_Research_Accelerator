@@ -1,0 +1,191 @@
+{
+  "adoption": {
+    "adopted": true,
+    "adopted_by": "Ed Bentley",
+    "adopted_on": "2026-09-13",
+    "adoption_file": "t4e39-reference-holdout-adoption.json",
+    "adopts_sha256": "fc7ee60f688b404fbad8261c579740e4f828117ff6380ff883c7824756ee1594",
+    "declaration": "t4e39-reference-holdout-declaration.json",
+    "declaration_exists": true,
+    "declaration_sha256": "fc7ee60f688b404fbad8261c579740e4f828117ff6380ff883c7824756ee1594",
+    "required_affirmation": "I have read this declaration and I adopt it",
+    "signature_still_reaches_the_declaration": true
+  },
+  "census": {
+    "admitted_before_interior_selection": 151,
+    "in_box_before_agency_refusal": 260,
+    "off_synoptic": 650,
+    "outside_box": 405,
+    "outside_window": 75469,
+    "rows": 76784,
+    "too_few_agencies": 109,
+    "unparseable_position": 0
+  },
+  "claim_boundary": "Catalogue-only census. It freezes holdout identities and exact request times; it measures no ERA5 field and supplies no comparison or scientific result.",
+  "declaration": "data/identity_calibration/t4e39-reference-holdout-declaration.json",
+  "declaration_sha256": "fc7ee60f688b404fbad8261c579740e4f828117ff6380ff883c7824756ee1594",
+  "disclosed_population_check": {
+    "catalogue_box": {
+      "lat_max": -20.0,
+      "lat_min": -60.0,
+      "lon_max": 180.0,
+      "lon_min": 140.0
+    },
+    "dates": [
+      "2022-01-01",
+      "2023-12-31"
+    ],
+    "distinct_storms": 13,
+    "in_box_observations": 393,
+    "source": "T4E.17 pre-amendment matching domain"
+  },
+  "era5_record_opened": false,
+  "future_majority_needed": 7,
+  "minimum_selected_storms": 10,
+  "network_used": false,
+  "receipt_sha256": "f8734e65b2bbc49d5c087ccc5015b4988fcc0f95dc997ce328ee72fc1fb0bc7e",
+  "schema": "t4e39-reference-holdout-census/v1",
+  "selected_rows": [
+    {
+      "agency_fixes": 2,
+      "catalogue_radius_km": 14.890100038050145,
+      "lat": -27.1,
+      "lon": 158.3,
+      "sid": "2021358S09130",
+      "storm": "SETH",
+      "time": "2022-01-02 12:00:00"
+    },
+    {
+      "agency_fixes": 2,
+      "catalogue_radius_km": 9.790461194270652,
+      "lat": -28.3,
+      "lon": 179.3,
+      "sid": "2022008S17173",
+      "storm": "CODY",
+      "time": "2022-01-14 18:00:00"
+    },
+    {
+      "agency_fixes": 3,
+      "catalogue_radius_km": 77.83644865119122,
+      "lat": -36.4,
+      "lon": 170.5,
+      "sid": "2022038S19164",
+      "storm": "DOVI",
+      "time": "2022-02-12 12:00:00"
+    },
+    {
+      "agency_fixes": 2,
+      "catalogue_radius_km": 51.13039007762011,
+      "lat": -26.1,
+      "lon": 174.8,
+      "sid": "2022058S17163",
+      "storm": "EVA",
+      "time": "2022-03-03 18:00:00"
+    },
+    {
+      "agency_fixes": 2,
+      "catalogue_radius_km": 9.994133560913886,
+      "lat": -26.0,
+      "lon": 167.1,
+      "sid": "2022094S15163",
+      "storm": "FILI",
+      "time": "2022-04-08 12:00:00"
+    },
+    {
+      "agency_fixes": 2,
+      "catalogue_radius_km": 23.618664215974714,
+      "lat": -20.4,
+      "lon": 169.9,
+      "sid": "2022137S13171",
+      "storm": "GINA",
+      "time": "2022-05-21 06:00:00"
+    },
+    {
+      "agency_fixes": 2,
+      "catalogue_radius_km": 91.1664136794315,
+      "lat": -26.6,
+      "lon": 175.9,
+      "sid": "2023005S18142",
+      "storm": "HALE",
+      "time": "2023-01-09 06:00:00"
+    },
+    {
+      "agency_fixes": 2,
+      "catalogue_radius_km": 80.55560719052784,
+      "lat": -25.1,
+      "lon": 176.7,
+      "sid": "2023016S15160",
+      "storm": "IRENE",
+      "time": "2023-01-19 18:00:00"
+    },
+    {
+      "agency_fixes": 2,
+      "catalogue_radius_km": 14.655152461617185,
+      "lat": -30.8,
+      "lon": 171.7,
+      "sid": "2023036S12163",
+      "storm": "GABRIELLE",
+      "time": "2023-02-12 00:00:00"
+    },
+    {
+      "agency_fixes": 2,
+      "catalogue_radius_km": 22.8506305674073,
+      "lat": -26.2,
+      "lon": 179.3,
+      "sid": "2023055S14184",
+      "storm": "JUDY",
+      "time": "2023-03-03 06:00:00"
+    },
+    {
+      "agency_fixes": 2,
+      "catalogue_radius_km": 61.11190671628517,
+      "lat": -25.8,
+      "lon": 179.9,
+      "sid": "2023059S15149",
+      "storm": "KEVIN",
+      "time": "2023-03-05 00:00:00"
+    },
+    {
+      "agency_fixes": 2,
+      "catalogue_radius_km": 45.20662011653487,
+      "lat": -23.7,
+      "lon": 179.1,
+      "sid": "2023316S08168",
+      "storm": "MAL",
+      "time": "2023-11-15 18:00:00"
+    }
+  ],
+  "selected_storms": 12,
+  "selection": {
+    "dates": "2022-01-01..2023-12-31",
+    "interior_margin_degrees": 2.0,
+    "latitude": "-58.0..-18.0",
+    "longitude": "140.0..180.0",
+    "minimum_agency_fixes": 2,
+    "one_observation_per_storm": "the deepest interior observation, furthest from either latitude edge -- not the first, which is always where the storm entered the box",
+    "radius_definition": "the furthest of the agency fixes from the reported centre, great-circle on a sphere of radius 6371.0 km",
+    "synoptic_hours": [
+      "00",
+      "06",
+      "12",
+      "18"
+    ]
+  },
+  "signed_reference": {
+    "available": true,
+    "citation_required": [
+      "Gahtan, Jennifer; Knapp, Kenneth R.; Schreck, Carl J.; Diamond, Howard J.; Kossin, James P.; Kruk, Michael C. (2024). International Best Track Archive for Climate Stewardship (IBTrACS) Project, Version 4.01. NOAA National Centers for Environmental Information. https://doi.org/10.25921/82ty-9e16",
+      "Knapp, K. R., M. C. Kruk, D. H. Levinson, H. J. Diamond, and C. J. Neumann (2010): The International Best Track Archive for Climate Stewardship (IBTrACS): Unifying tropical cyclone best track data. Bulletin of the American Meteorological Society, 91, 363-376."
+    ],
+    "expected_bytes": 35482417,
+    "expected_sha256": "631f76b95c77a6a4e409233466a0d501bb4848324e421fc58e228efea2086c44",
+    "name": "ibtracs_sp_v04r01",
+    "observed_bytes": 35482417,
+    "observed_sha256": "631f76b95c77a6a4e409233466a0d501bb4848324e421fc58e228efea2086c44",
+    "path": "data\\catalogues\\ibtracs.SP.list.v04r01.csv",
+    "refusal": null,
+    "signature_verified": true,
+    "source_url": "https://www.ncei.noaa.gov/data/international-best-track-archive-for-climate-stewardship-ibtracs/v04r01/access/csv/ibtracs.SP.list.v04r01.csv"
+  },
+  "status": "READY_FOR_EXACT_ACQUISITION"
+}

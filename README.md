@@ -31,6 +31,11 @@ as one. Four documents carry the tracked state, each with a different job:
 contradicts the source or the other documents. That guard exists because these files had gone
 stale before while nothing failed; it is the reason the status table cannot quietly drift.
 
+The backend loads the repository-root `.env.local` itself. Direct Uvicorn, VS Code tasks and the
+PowerShell launcher therefore share the same machine-local configuration; an environment variable
+already supplied by the process takes precedence. Set `SPECTRALEARTH_LOAD_LOCAL_ENV=0` when local
+file loading must be disabled explicitly.
+
 **Two roadmaps, one repository.** `roadmap.md` is the atmospheric line, frozen for `master` at
 `freeze-t4c.5h-preregistration` and still advancing on `ed-dev`. `roadmap_cross_domain.md` is a
 fork of that line, not a successor, and its results may **not** be cited as SpectralEarth
@@ -244,6 +249,12 @@ position.
   here: calendar buys its p-value floor with replications and has no enumeration ceiling
   (999 against 293 required, and the declared plan 200 against 166), while scale/shape buys its
   floor with domains and cannot.
+* The corrected G17 real-record pool is visible in **Platform Status**: 104 qualified profiles,
+  eight named cycle-coverage refusals, a 59-record core, the exact 57-record recommended subset,
+  pending human-review requirements and archived lineage-bug evidence. A reviewer can write an
+  exchangeability decision and adopt it through separate UI actions. Public TESS discovery and
+  acquisition, plus immutable offline reconstruction/export, remain explicit CLI jobs; the UI
+  displays their results but does not launch those network or bulk-publication operations.
 * What TG18.2 has delivered, all of it presentation only: every figure carries a text and table
   equivalent of what it draws, a declared statement of whether two panels may share a colour
   scale, the domain a fitted claim was taken over with the uncertainty attached to it, and
@@ -341,7 +352,15 @@ The engine screens run tables for numerical and categorical associations and can
 follow-up experiment configurations. Associations are hypotheses, not proof or causation;
 reported findings carry multiple-comparison information and statistical caveats.
 
-### 6. Relationship to regional AI weather forecasting
+### 6. Object-first capability routing
+An uploaded CSV/TSV sample table is probed without semantic inference, then receives explicit
+researcher-declared roles, units and row relationships. Its content-bound capability profile
+shows available, unavailable and not-established instruments with reasons. Selecting a plannable
+instrument creates a hashed handoff to the existing ingress planner, whose returned schema and
+file digest are verified before the existing audit controls continue. The handoff runs no
+analysis and creates no evidence or claim.
+
+### 7. Relationship to regional AI weather forecasting
 
 The project is scientifically aligned with comparing Fourier, cosine and wavelet
 representations on limited-area weather domains. Today it can inspect their boundary
@@ -770,6 +789,83 @@ afterwards. The storage decision is recorded in the acquisition/cache manifest.
 Those bounds and dates are an interface example, **not any real experiment specification**.
 Materialisation uses the same scientific arguments plus explicit `--download-dir`, `--cache-dir`
 and `--time-chunk`; it still refuses unless the network gate and standard CDS credentials are set.
+
+T4E.36 has a dedicated guarded executor because its dateline complement is a frozen experiment,
+not an ordinary crop. Its plan is safe and offline:
+
+```powershell
+.venv\Scripts\python.exe tools\run_t4e36_wrapped_acquisition.py plan
+```
+
+The `acquire` phase refuses unless the declaration has a current maintainer adoption and the
+caller supplies `--authorise-network`; the ordinary `SPECTRALEARTH_ALLOW_NETWORK=1` gate still
+applies independently. `materialise` then works offline, verifies all monthly shard receipts and
+the source-encoding seam, preserves the T4E.18 parent, and publishes a content-addressed wrapped
+Zarr receipt. `evaluate --record-receipt <receipt.json>` uses exactly the 18 T4E.28 rows and lets
+only the two frozen raw-field 9-of-18 conditions decide PASS or FAIL. Ed Bentley adopted the
+declaration for guarded execution testing on 2026-09-12; the separately authorised acquisition
+then completed all 48 shards and published the byte-preserving 321-longitude wrapped record. The
+fixed evaluation returned `FAIL`: raw condition 1 was 5/18 and condition 2 was 0/18, against 9/18
+required for each. Added eastward support is therefore not a sufficient repair under this
+procedure, although the improvement from the 3/18 baseline shows that it contributed to some
+edge-row errors.
+
+T4E.37 provides the next offline-plannable diagnostic without changing those failed gates:
+
+```powershell
+.venv\Scripts\python.exe tools\run_t4e37_failure_attribution.py plan
+```
+
+It freezes the 13 T4E.36 condition-1 failures and asks whether the unchanged sampled field has a
+native-grid 3x3 local maximum inside each existing agency radius before extractor thresholding.
+T4E.36's adoption does not reach this different declaration, so Ed Bentley separately adopted the
+exact T4E.37 digest for guarded execution testing on 2026-09-13. The adoption did not open the
+record or run the evaluation. The subsequent offline evaluation returned
+`FIELD_REFERENCE_SEPARATION_DOMINANT`, 12/13 versus one extractor-filtering candidate, with
+`VERDICT: NOT_AN_ACCEPTANCE`. Neither outcome is PASS or can rescue T4E.36.
+
+T4E.38 implements the separate ERA5 single-level path that the original vorticity design named as
+the next candidate. Its offline plan requests only MSLP at the 18 fixed timestamps, split into two
+dateline segments:
+
+```powershell
+.venv\Scripts\python.exe tools\run_t4e38_reference_alignment.py plan
+```
+
+The resulting 36-shard plan represents 3,732,624 raw float32 bytes and contains no invented
+pressure-level field. Ed Bentley adopted the exact declaration for guarded execution testing on
+2026-09-13 and subsequently supplied the separate experiment-specific authorization while the
+ordinary network gate was enabled. All 18 parent and 18 complement shards were acquired: the
+2,326,213 compressed stored bytes match every recorded content digest, and all 36 files reopen as
+one-time 161x161 `msl` NetCDFs. The adopted offline phases are:
+
+```powershell
+.venv\Scripts\python.exe tools\run_t4e38_reference_alignment.py materialise
+.venv\Scripts\python.exe tools\run_t4e38_reference_alignment.py evaluate --record-receipt data/wrapped_records/t4e38/4acba0aa5be5b174dfacbc0fc376d958e86466bbd70442e6394415113d99c5a8.json
+```
+
+All 18 seams matched exactly against a measured 0.0625 Pa encoding step; the shared meridian was
+retained once and the immutable 18x161x321 MSLP record hashes to `dc6f5365…`. The frozen comparison
+completed with 10 MSLP-closer rows, seven vorticity-closer rows, one exact tie and no refusals,
+returning `VERTICAL_QUANTITY_SEPARATION_DOMINANT` and `VERDICT: NOT_AN_ACCEPTANCE`. This supports
+only the declared development-population candidate under its deterministic basin rule. It neither
+proves vertical separation nor identifies either centre as a cyclone, and it changes no extractor,
+tolerance, radius or acceptance gate.
+
+T4E.39 now freezes the temporal holdout before opening its individual rows. Its offline planner:
+
+```powershell
+.venv\Scripts\python.exe tools\run_t4e39_reference_holdout.py plan
+```
+
+binds the exact T4E.38 result and signed IBTrACS bytes, then reports catalogue rows, holdout
+identities, ERA5 values and network use all false. The declaration retains 2022–2023, the existing
+catalogue selection and deepest-per-storm rule, requires at least 10 selected storms, and uses a
+strict majority of every selected storm with ties/refusals retained. Ed Bentley adopted the exact
+declaration digest `fc7ee60f…` on 2026-09-13 as `ADOPTED_FOR_GUARDED_HOLDOUT_CENSUS`; the signature
+still reaches the declaration. The census has not been run. It is now permitted to publish only
+the mechanically selected identities and exact request times; that census opens no ERA5 and
+authorizes no network acquisition.
 
 The T4C.6 execution boundary is available in `src.analysis_engine.gate_run`. A versioned
 `GateStudyPlan` freezes the crop, transform, climatology and complete statistical protocol;

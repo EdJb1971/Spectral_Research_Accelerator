@@ -4,7 +4,17 @@
     {
       "label": "Start Backend (FastAPI)",
       "type": "shell",
-      "command": "python -m uvicorn src.api.main:app --host 127.0.0.1 --port 8000 --reload",
+      "command": "${workspaceFolder}\\.venv\\Scripts\\python.exe",
+      "args": [
+        "-m",
+        "uvicorn",
+        "src.api.main:app",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "8000",
+        "--reload"
+      ],
       "isBackground": true,
       "problemMatcher": [],
       "presentation": {

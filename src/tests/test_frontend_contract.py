@@ -773,6 +773,21 @@ def test_capability_profile_shows_yes_no_unknown_and_operation_refusals():
     assert "not established" in view
     assert "decision.reason" in view
     assert "profile.profile_sha256" in view
+    assert "decision.planning_path" in view
+    assert "Prepare existing planner" in view
+
+
+def test_sample_table_planning_handoff_reaches_existing_planners_without_private_ui():
+    ingress = _read("components", "GenericIngress.tsx")
+    structure = _read("components", "RepresentationStructureProgramme.tsx")
+    assert "apiService.planSampleTableHandoff" in ingress
+    for method in ("planRepresentationAudit", "planRedundancyStructure",
+                   "planConditionalInformation", "planStableSubspace"):
+        assert "apiService.%s" % method in ingress
+    assert "destination.plan_schema" in ingress
+    assert "request.file_binding_sha256" in ingress
+    assert "The destination planner did not preserve the handoff binding" in ingress
+    assert "handoffPlan" in structure
 
 
 # ======================================================== payload shapes
@@ -2080,6 +2095,18 @@ def test_tg17_qualification_gate_is_reachable_and_never_hides_blockers():
     assert "record.verdict" in view
     assert "Run offline qualification" in view
     assert "live-source acceptance are different gates" in view
+    pool = _read("components", "G17PoolReview.tsx")
+    service = _read("services", "api.ts")
+    typescript = _read("types", "api.ts")
+    assert "<G17PoolReview" in app
+    assert "state.packet.recommended_record_ids" in pool
+    assert "state.qualification.refused_targets" in pool
+    assert "state.archived_lineage_bug_artifacts" in pool
+    assert "Write review without adopting" in pool
+    assert "Sign and verify review" in pool
+    assert "g17Pool" in service and "writeG17PoolReview" in service
+    assert "adoptG17PoolReview" in service
+    assert "interface G17PoolSurface" in typescript
 
 
 def test_mode_switch_changes_relationship_null_and_language_as_one_revision():

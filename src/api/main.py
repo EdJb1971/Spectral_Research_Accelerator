@@ -1,11 +1,18 @@
-import torch
-import numpy as np
 import json
 import logging
 import datetime
 import uuid
 from contextlib import asynccontextmanager
 import os
+
+from src.core.local_environment import load_local_environment
+
+# The API must behave the same under direct Uvicorn, VS Code and the convenience launcher.
+# Process variables win, so deployment configuration cannot be replaced by a local file.
+LOCAL_ENVIRONMENT = load_local_environment()
+
+import torch
+import numpy as np
 
 from fastapi import FastAPI, HTTPException, Depends, BackgroundTasks, Query, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
@@ -130,6 +137,8 @@ from src.api.experiment_qualification import router as experiment_qualification_
 from src.api.gate import router as gate_router  # noqa: E402
 from src.api.identity import router as identity_router  # noqa: E402
 from src.api.cds import router as cds_router  # noqa: E402
+from src.api.g17_pool import router as g17_pool_router  # noqa: E402
+from src.api.reference_holdout import router as reference_holdout_router  # noqa: E402
 
 app.include_router(findings_router)
 # TG8.4. Mounted here for the same reason the findings router is: registration must not depend
@@ -181,6 +190,12 @@ app.include_router(experiment_receipts_router)
 app.include_router(experiment_qualification_router)
 app.include_router(gate_router)
 app.include_router(identity_router)
+app.include_router(g17_pool_router)
+# T4E.39: the atmospheric holdout lane, read-only over immutable receipts plus the two
+# human acts it ends in. Mounted beside the G17 surface because it answers the same
+# question in the other lane - what was declared, what was measured, and what a named
+# person made of it - and because neither surface may acquire, re-run or accept.
+app.include_router(reference_holdout_router)
 # TG18.1: metadata-only CDS planning plus a separately confirmed, durable acquisition-job
 # surface. Planning cannot use network; execution writes only server-owned operational records.
 app.include_router(cds_router)

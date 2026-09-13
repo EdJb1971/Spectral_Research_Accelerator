@@ -146,6 +146,78 @@ it in and it is not a release. What would move it: a manifest that declares the 
 estimand, and an inventory of real records whose admission criterion is shown to hold rather than
 assumed.
 
+**TG17.15 slices 6-10 preserve that boundary while making the missing inventory actionable.** The
+successor declaration requests exact pool substitution; readiness measures 0 of 48 explicit
+profiles; source ingress binds exact local bytes to reviewed marginal methods; and slice 10 adds a
+portable batch-import manifest. Every source digest and every entry is preflighted before output,
+paths are confined to the manifest directory, duplicate sources and identities are refused, and a
+failed batch emits no profiles. It acquires nothing and awards neither admission nor
+exchangeability, so the inventory remains `NO_INVENTORY` until legitimate records are supplied.
+
+**Slice 11 adds the human curation boundary without crossing it.** A
+`g17-pool-curation-review/v1` declaration can record either `ESTABLISHED` or `NOT_ESTABLISHED`, but
+loads only after the live audit reaches `READY_FOR_CURATION_REVIEW` and only while a named adoption
+binds the declaration. The review pins the successor, admission contract, readiness assessment and
+complete record-ID list, and must name at least one unmeasured property. Editing one profile makes
+the review stale. No review or adoption is present, and loading one does not rewrite the frozen
+successor, so G17 remains withheld at 0 of 48.
+
+**Slice 12 reaches the external-data boundary and refuses the tempting shortcut.** A bounded MAST
+sector query found 48 exact public SPOC products at a predicted 97,873,920 bytes. Those targets
+were archive-available, not scientifically eligible: none overlapped the first 198 unique TOI
+hosts whose non-limit orbital periods, at or below 3.375 days, are declared independently by the
+NASA Exoplanet Archive and span at least eight cycles in a nominal 27-day sector. The arbitrary
+download was stopped. One TIC carrying two eligible TOI periods was refused rather than duplicated
+or assigned whichever phase was convenient. The next preflight joins those external periods to
+exact MAST products; no profile exists until that join, value quality, marginal methods and human
+adoption all clear separately. That join subsequently acquired 64 targets and 124,652,160 bytes.
+Every target cleared finite quality-zero flux and eight actual cycles, but the proposed AR(1)
+effective-sample-size and robust noise marginals admitted at most 43 alternatives under the frozen
+contract; zero records reached 48. The method remains `PROPOSED_NOT_ADOPTED`, so no profile was
+emitted. Ed Bentley subsequently adopted the exact method declaration as Creator on 2026-09-12;
+that adoption does not change the measured pool deficit or establish exchangeability.
+
+**Slice 13 closes the quantity deficit and stops at curation.** Incremental discovery excluded all
+64 previously acquired TICs and selected 48 new period-qualified SPOC products, predicting and
+acquiring 93,680,640 bytes. The two immutable receipts merge to 112 unique targets. Under the
+adopted methods, 67 records admit at least 48 alternatives; pool sizes are 0 / 60 / 73. Canonical
+quality-zero CSV records and 112 v3 profiles bind each exact transformed source, raw FITS digest
+and adopted review. Readiness is now `READY_FOR_CURATION_REVIEW`, shortfall zero, while
+exchangeability remains `NOT_ASSESSED`. No code path turns sufficient quantity into curation.
+
+**Slice 14 makes the curation choice coherent without making it.** The 112-profile admission graph
+is symmetric. Iterative pruning leaves a 65-record 48-core, and a deterministic dependency-free
+search finds a 59-record subset in which every pair clears the frozen marginal bands, so each
+record has 58 alternatives. The content-addressed packet binds the successor, readiness and
+admission contract and remains `NOT_ASSESSED`. Curation review v2 must bind this exact packet and
+subset; it cannot mark all 112 exchangeable merely because 112 profiles exist, and it cannot
+establish exchangeability from fewer than 49 pairwise-admissible records.
+
+**Slice 15 corrects the period lineage before human review.** The repeated TOI 1654.01 audit found
+that acquisition copied the final discovery target's period metadata onto every emitted target.
+The frozen catalogue and discovery rows were correct. Both receipts were rebuilt offline from
+those rows and SHA-256-verified cached FITS bytes; all 112 corrected mappings agree exactly. Eight
+records then fail the eight-native-cycle requirement, leaving 104 qualified profiles. The
+corrected assessment has 64 records with at least 48 alternatives and pool sizes 0 / 58.5 / 70.
+Iterative pruning leaves a 59-record core, and the deterministic search returns a 57-record
+all-pairs subset with 56 alternatives each. Contaminated evidence is retained under named
+`g17_tess_lineage_bug` archives. Exchangeability remains `NOT_ASSESSED`, and no review or adoption
+was created.
+
+**Slice 16 makes the human handoff exact without answering it.** A machine-prepared review request
+binds the corrected packet and all 57 recommended IDs, reports only verified marginal facts, and
+names both allowed conclusions plus the required basis, unknowns, limitations, attribution and
+typed affirmation. It has a distinct request schema, remains `AWAITING_HUMAN_REVIEW`, and is
+rejected by the adopted-review loader. No unavailable reviewer was impersonated.
+
+**Slice 17 makes the complete pool state visible and the human acts operable.** Platform Status
+now shows corrected readiness, all eight qualification refusals, the marginal assessment, exact
+57-record packet, pending request, adoption state and archived lineage-bug artifacts. The review
+and its adoption are separate forms with no supplied scientific defaults, and the server checks
+the live packet before writing either immutable record. Archive discovery/acquisition and offline
+evidence reconstruction remain CLI-only because they are bounded network/bulk-publication jobs;
+the UI states this limitation and displays their results.
+
 **Phase G19 is specified and not started.** A researcher meeting a refusal wants to interrogate it
 with a model of their choosing, over several turns. G7's recorded-call boundary already supplies
 most of what that needs; what it lacks is a conversation, and a conversation adds drift,
@@ -3715,9 +3787,10 @@ acquisition shape: per-target, sector-based.
 
 **Delivered.** An exact TIC and bounded sector family now enter a metadata-only preflight before
 any value transfer. Product and byte caps, archive URI, filename, sector and declared size are
-sealed into the plan. Acquisition reads checksum-valid calibrated SPOC LC FITS, validates TIC,
-BJD_TDB and ICRS position, retains quality flags, hashes every source byte and every admitted
-sample, and publishes canonical no-overwrite collection bytes. The `angular_sky` point geometry
+sealed into the plan. Acquisition reads calibrated SPOC LC FITS, records each HDU's checksum
+status, validates TIC, BJD_TDB and ICRS position, retains quality flags, hashes every source byte
+and every admitted sample, and publishes canonical no-overwrite collection bytes. The
+`angular_sky` point geometry
 records great-circle degrees without entering raster geometry recognition. API and Acquire UI
 surfaces expose the refusal boundary. Synthetic FITS acceptance and collision mutations pass;
 the live MAST metadata service exceeded its 45-second bound during this slice, so live acceptance
@@ -3774,6 +3847,22 @@ authoritative refusals rather than trusting browser state.
 and ordered declarations while using a row-random split. It now plans only independent samples.
 Grouped rows explicitly require group-held-out confirmation; ordered rows require blocked and
 embargoed confirmation. Neither dependency structure is silently broken to make the recipe run.
+
+**TG15.3 Object-to-planner handoff. DONE (2026-09-12, `ed-dev`).** The central operation registry
+now supplies machine-readable planning destinations for the four sample-table operations with
+implemented planners. A content-addressed `spectral.sample-table-planning-handoff.v1` envelope
+re-derives and binds the exact file identity, explicit declaration, capability-profile digest,
+selected operation, existing route and expected plan schema. Unavailable operations and operations
+without a registered planner are refused. The browser follows the destination through the
+existing planner and checks its returned schema and file digest before continuing in the existing
+audit/subspace controls. The handoff has no automatic actions, executes no analysis, moves no
+evidence rung and creates no project-specific workspace.
+
+**Startup consistency correction (D102, 2026-09-12).** The running VS Code backend reported
+network disabled although `.env.local` explicitly enabled it. Only `start_platform.ps1` loaded
+that file; direct Uvicorn and the VS Code task did not. The backend now loads the repository-local
+file itself before adapter imports, preserves every process-supplied variable, reports no secret
+values and provides an explicit opt-out for isolated tests and deployments.
 
 #### Phase G16 — Representation Structure — **COMPLETE**
 

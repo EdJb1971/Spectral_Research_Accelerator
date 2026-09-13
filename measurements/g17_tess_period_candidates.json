@@ -1,0 +1,1815 @@
+{
+  "schema": "spectral.tess-period-candidates/v1",
+  "source": "NASA Exoplanet Archive TOI table",
+  "source_url": "https://exoplanetarchive.ipac.caltech.edu/TAP/sync",
+  "query": "select top 200 tid,toi,tfopwg_disp,pl_orbper,pl_orbpererr1,pl_orbpererr2,pl_orbperlim from toi where pl_orbper is not null and pl_orbper>0 and pl_orbper<=3.375 and tfopwg_disp<>'FP' and (pl_orbperlim is null or pl_orbperlim=0) order by tid",
+  "response_sha256": "381e525ab9a624131fdff9f0ee201359442aecb1835979ecafe56f32fde719f8",
+  "candidate_limit": 200,
+  "candidate_count": 198,
+  "ambiguous_host_count": 1,
+  "refused_ambiguous_hosts": [
+    {
+      "tic_id": "153951307",
+      "reason": "multiple catalogue orbital periods for one stellar light curve",
+      "toi_periods": [
+        {
+          "toi": "1238.01",
+          "orbital_period_days": 3.2947689
+        },
+        {
+          "toi": "1238.02",
+          "orbital_period_days": 0.7645807
+        }
+      ]
+    }
+  ],
+  "nominal_sector_days": 27.0,
+  "minimum_cycles": 8.0,
+  "maximum_period_days": 3.375,
+  "candidates": [
+    {
+      "tic_id": "8400842",
+      "toi": "1676.01",
+      "disposition": "KP",
+      "orbital_period_days": 3.1915257,
+      "orbital_period_seconds": 275747.82048,
+      "period_error_upper_days": 2.4e-06,
+      "period_error_lower_days": -2.4e-06
+    },
+    {
+      "tic_id": "9006668",
+      "toi": "238.01",
+      "disposition": "CP",
+      "orbital_period_days": 1.2730965,
+      "orbital_period_seconds": 109995.53760000001,
+      "period_error_upper_days": 2.7e-06,
+      "period_error_lower_days": -2.7e-06
+    },
+    {
+      "tic_id": "12423815",
+      "toi": "234.01",
+      "disposition": "PC",
+      "orbital_period_days": 2.8392793,
+      "orbital_period_seconds": 245313.73151999997,
+      "period_error_upper_days": 2.9e-06,
+      "period_error_lower_days": -2.9e-06
+    },
+    {
+      "tic_id": "12862099",
+      "toi": "259.01",
+      "disposition": "KP",
+      "orbital_period_days": 2.4238226,
+      "orbital_period_seconds": 209418.27263999998,
+      "period_error_upper_days": 0.0001365,
+      "period_error_lower_days": -0.0001365
+    },
+    {
+      "tic_id": "15863518",
+      "toi": "1713.01",
+      "disposition": "PC",
+      "orbital_period_days": 0.5572565,
+      "orbital_period_seconds": 48146.9616,
+      "period_error_upper_days": 8.8e-06,
+      "period_error_lower_days": -8.8e-06
+    },
+    {
+      "tic_id": "21535395",
+      "toi": "1776.01",
+      "disposition": "CP",
+      "orbital_period_days": 2.8009915,
+      "orbital_period_seconds": 242005.66559999998,
+      "period_error_upper_days": 0.0005895,
+      "period_error_lower_days": -0.0005895
+    },
+    {
+      "tic_id": "25155310",
+      "toi": "114.01",
+      "disposition": "KP",
+      "orbital_period_days": 3.2887898,
+      "orbital_period_seconds": 284151.43872,
+      "period_error_upper_days": 3e-07,
+      "period_error_lower_days": -3e-07
+    },
+    {
+      "tic_id": "25375553",
+      "toi": "143.01",
+      "disposition": "KP",
+      "orbital_period_days": 2.3109689,
+      "orbital_period_seconds": 199667.71296,
+      "period_error_upper_days": 1e-06,
+      "period_error_lower_days": -1e-06
+    },
+    {
+      "tic_id": "26880783",
+      "toi": "1364.01",
+      "disposition": "PC",
+      "orbital_period_days": 1.7753644,
+      "orbital_period_seconds": 153391.48416,
+      "period_error_upper_days": 1.1e-06,
+      "period_error_lower_days": -1.1e-06
+    },
+    {
+      "tic_id": "28900646",
+      "toi": "1685.01",
+      "disposition": "CP",
+      "orbital_period_days": 0.6691449,
+      "orbital_period_seconds": 57814.119360000004,
+      "period_error_upper_days": 9.7e-06,
+      "period_error_lower_days": -9.7e-06
+    },
+    {
+      "tic_id": "29831208",
+      "toi": "124.01",
+      "disposition": "APC",
+      "orbital_period_days": 1.8428078,
+      "orbital_period_seconds": 159218.59392,
+      "period_error_upper_days": 1.4e-06,
+      "period_error_lower_days": -1.4e-06
+    },
+    {
+      "tic_id": "29960110",
+      "toi": "1201.01",
+      "disposition": "CP",
+      "orbital_period_days": 2.4919771,
+      "orbital_period_seconds": 215306.82144000003,
+      "period_error_upper_days": 7.1e-06,
+      "period_error_lower_days": -7.1e-06
+    },
+    {
+      "tic_id": "32090583",
+      "toi": "218.01",
+      "disposition": "PC",
+      "orbital_period_days": 0.4384814,
+      "orbital_period_seconds": 37884.79296,
+      "period_error_upper_days": 2.84e-05,
+      "period_error_lower_days": -2.84e-05
+    },
+    {
+      "tic_id": "33911302",
+      "toi": "341.01",
+      "disposition": "PC",
+      "orbital_period_days": 1.81383,
+      "orbital_period_seconds": 156714.912,
+      "period_error_upper_days": 0.00024,
+      "period_error_lower_days": -0.00024
+    },
+    {
+      "tic_id": "38846515",
+      "toi": "106.01",
+      "disposition": "KP",
+      "orbital_period_days": 2.8493827,
+      "orbital_period_seconds": 246186.66528000002,
+      "period_error_upper_days": 2e-07,
+      "period_error_lower_days": -2e-07
+    },
+    {
+      "tic_id": "47425697",
+      "toi": "364.01",
+      "disposition": "PC",
+      "orbital_period_days": 0.4941631,
+      "orbital_period_seconds": 42695.69184,
+      "period_error_upper_days": 6e-07,
+      "period_error_lower_days": -6e-07
+    },
+    {
+      "tic_id": "51912829",
+      "toi": "180.01",
+      "disposition": "APC",
+      "orbital_period_days": 0.8353899,
+      "orbital_period_seconds": 72177.68736,
+      "period_error_upper_days": 3.17e-05,
+      "period_error_lower_days": -3.17e-05
+    },
+    {
+      "tic_id": "55650590",
+      "toi": "206.01",
+      "disposition": "CP",
+      "orbital_period_days": 0.7363132,
+      "orbital_period_seconds": 63617.46048,
+      "period_error_upper_days": 4.8e-06,
+      "period_error_lower_days": -4.8e-06
+    },
+    {
+      "tic_id": "58542531",
+      "toi": "1683.01",
+      "disposition": "CP",
+      "orbital_period_days": 3.057524,
+      "orbital_period_seconds": 264170.0736,
+      "period_error_upper_days": 3.8e-06,
+      "period_error_lower_days": -3.8e-06
+    },
+    {
+      "tic_id": "63898957",
+      "toi": "261.01",
+      "disposition": "CP",
+      "orbital_period_days": 3.3639254,
+      "orbital_period_seconds": 290643.15456,
+      "period_error_upper_days": 1.56e-05,
+      "period_error_lower_days": -1.56e-05
+    },
+    {
+      "tic_id": "67418624",
+      "toi": "1598.01",
+      "disposition": "PC",
+      "orbital_period_days": 1.1020719,
+      "orbital_period_seconds": 95219.01216000001,
+      "period_error_upper_days": 2.6e-06,
+      "period_error_lower_days": -2.6e-06
+    },
+    {
+      "tic_id": "67646988",
+      "toi": "1779.01",
+      "disposition": "KP",
+      "orbital_period_days": 1.8817191,
+      "orbital_period_seconds": 162580.53024,
+      "period_error_upper_days": 9e-07,
+      "period_error_lower_days": -9e-07
+    },
+    {
+      "tic_id": "67666096",
+      "toi": "1766.01",
+      "disposition": "KP",
+      "orbital_period_days": 2.7033942,
+      "orbital_period_seconds": 233573.25888,
+      "period_error_upper_days": 5.1e-06,
+      "period_error_lower_days": -5.1e-06
+    },
+    {
+      "tic_id": "70440470",
+      "toi": "126.01",
+      "disposition": "KP",
+      "orbital_period_days": 3.0354017,
+      "orbital_period_seconds": 262258.70688,
+      "period_error_upper_days": 1.7e-06,
+      "period_error_lower_days": -1.7e-06
+    },
+    {
+      "tic_id": "76989773",
+      "toi": "182.01",
+      "disposition": "APC",
+      "orbital_period_days": 1.7691703,
+      "orbital_period_seconds": 152856.31392000002,
+      "period_error_upper_days": 5e-07,
+      "period_error_lower_days": -5e-07
+    },
+    {
+      "tic_id": "77031414",
+      "toi": "241.01",
+      "disposition": "KP",
+      "orbital_period_days": 1.3866519,
+      "orbital_period_seconds": 119806.72416,
+      "period_error_upper_days": 7e-07,
+      "period_error_lower_days": -7e-07
+    },
+    {
+      "tic_id": "77044471",
+      "toi": "228.01",
+      "disposition": "KP",
+      "orbital_period_days": 2.6865064,
+      "orbital_period_seconds": 232114.15295999998,
+      "period_error_upper_days": 3e-06,
+      "period_error_lower_days": -3e-06
+    },
+    {
+      "tic_id": "80166433",
+      "toi": "1125.01",
+      "disposition": "PC",
+      "orbital_period_days": 0.7724825,
+      "orbital_period_seconds": 66742.488,
+      "period_error_upper_days": 6.8e-06,
+      "period_error_lower_days": -6.8e-06
+    },
+    {
+      "tic_id": "81831095",
+      "toi": "1675.01",
+      "disposition": "PC",
+      "orbital_period_days": 3.133084,
+      "orbital_period_seconds": 270698.4576,
+      "period_error_upper_days": 4.9e-06,
+      "period_error_lower_days": -4.9e-06
+    },
+    {
+      "tic_id": "85031598",
+      "toi": "1684.01",
+      "disposition": "PC",
+      "orbital_period_days": 1.1549925,
+      "orbital_period_seconds": 99791.35200000001,
+      "period_error_upper_days": 1.2e-06,
+      "period_error_lower_days": -1.2e-06
+    },
+    {
+      "tic_id": "87090944",
+      "toi": "1677.01",
+      "disposition": "PC",
+      "orbital_period_days": 0.6435807,
+      "orbital_period_seconds": 55605.37248,
+      "period_error_upper_days": 3.88e-05,
+      "period_error_lower_days": -3.88e-05
+    },
+    {
+      "tic_id": "89020549",
+      "toi": "132.01",
+      "disposition": "CP",
+      "orbital_period_days": 2.1096805,
+      "orbital_period_seconds": 182276.3952,
+      "period_error_upper_days": 4e-06,
+      "period_error_lower_days": -4e-06
+    },
+    {
+      "tic_id": "89389197",
+      "toi": "1137.01",
+      "disposition": "PC",
+      "orbital_period_days": 1.3206356,
+      "orbital_period_seconds": 114102.91583999999,
+      "period_error_upper_days": 0.0001541,
+      "period_error_lower_days": -0.0001541
+    },
+    {
+      "tic_id": "97409519",
+      "toi": "113.01",
+      "disposition": "KP",
+      "orbital_period_days": 3.372877,
+      "orbital_period_seconds": 291416.57279999997,
+      "period_error_upper_days": 0.000147,
+      "period_error_lower_days": -0.000147
+    },
+    {
+      "tic_id": "99834717",
+      "toi": "1780.01",
+      "disposition": "KP",
+      "orbital_period_days": 1.7063264,
+      "orbital_period_seconds": 147426.60096,
+      "period_error_upper_days": 1.1e-06,
+      "period_error_lower_days": -1.1e-06
+    },
+    {
+      "tic_id": "100097716",
+      "toi": "354.01",
+      "disposition": "APC",
+      "orbital_period_days": 3.0002084,
+      "orbital_period_seconds": 259218.00576,
+      "period_error_upper_days": 2.2e-06,
+      "period_error_lower_days": -2.2e-06
+    },
+    {
+      "tic_id": "116483514",
+      "toi": "1411.01",
+      "disposition": "CP",
+      "orbital_period_days": 1.4520486,
+      "orbital_period_seconds": 125456.99904,
+      "period_error_upper_days": 2.2e-06,
+      "period_error_lower_days": -2.2e-06
+    },
+    {
+      "tic_id": "117789567",
+      "toi": "1149.01",
+      "disposition": "APC",
+      "orbital_period_days": 2.3202418,
+      "orbital_period_seconds": 200468.89151999998,
+      "period_error_upper_days": 6.14e-05,
+      "period_error_lower_days": -6.14e-05
+    },
+    {
+      "tic_id": "120610833",
+      "toi": "229.01",
+      "disposition": "KP",
+      "orbital_period_days": 3.1260751,
+      "orbital_period_seconds": 270092.88864,
+      "period_error_upper_days": 1.2e-06,
+      "period_error_lower_days": -1.2e-06
+    },
+    {
+      "tic_id": "120757718",
+      "toi": "1236.01",
+      "disposition": "KP",
+      "orbital_period_days": 3.0300715,
+      "orbital_period_seconds": 261798.1776,
+      "period_error_upper_days": 5e-07,
+      "period_error_lower_days": -5e-07
+    },
+    {
+      "tic_id": "120916706",
+      "toi": "263.01",
+      "disposition": "CP",
+      "orbital_period_days": 0.5568212,
+      "orbital_period_seconds": 48109.35168,
+      "period_error_upper_days": 1.16e-05,
+      "period_error_lower_days": -1.16e-05
+    },
+    {
+      "tic_id": "125442121",
+      "toi": "1414.01",
+      "disposition": "APC",
+      "orbital_period_days": 3.0197807,
+      "orbital_period_seconds": 260909.05248,
+      "period_error_upper_days": 0.0001355,
+      "period_error_lower_days": -0.0001355
+    },
+    {
+      "tic_id": "129979528",
+      "toi": "1599.01",
+      "disposition": "KP",
+      "orbital_period_days": 1.2198382,
+      "orbital_period_seconds": 105394.02048,
+      "period_error_upper_days": 1.67e-05,
+      "period_error_lower_days": -1.67e-05
+    },
+    {
+      "tic_id": "137881699",
+      "toi": "1781.01",
+      "disposition": "KP",
+      "orbital_period_days": 2.9720774,
+      "orbital_period_seconds": 256787.48736,
+      "period_error_upper_days": 8.9e-06,
+      "period_error_lower_days": -8.9e-06
+    },
+    {
+      "tic_id": "139285832",
+      "toi": "332.01",
+      "disposition": "CP",
+      "orbital_period_days": 0.77685,
+      "orbital_period_seconds": 67119.84,
+      "period_error_upper_days": 3e-05,
+      "period_error_lower_days": -3e-05
+    },
+    {
+      "tic_id": "140068425",
+      "toi": "140.01",
+      "disposition": "APC",
+      "orbital_period_days": 2.2813432,
+      "orbital_period_seconds": 197108.05247999998,
+      "period_error_upper_days": 6.3e-06,
+      "period_error_lower_days": -6.3e-06
+    },
+    {
+      "tic_id": "140691463",
+      "toi": "157.01",
+      "disposition": "CP",
+      "orbital_period_days": 2.0845434,
+      "orbital_period_seconds": 180104.54976,
+      "period_error_upper_days": 3e-07,
+      "period_error_lower_days": -3e-07
+    },
+    {
+      "tic_id": "144065872",
+      "toi": "105.01",
+      "disposition": "KP",
+      "orbital_period_days": 2.1846669,
+      "orbital_period_seconds": 188755.22016,
+      "period_error_upper_days": 1e-07,
+      "period_error_lower_days": -1e-07
+    },
+    {
+      "tic_id": "144276942",
+      "toi": "361.01",
+      "disposition": "APC",
+      "orbital_period_days": 1.5351652,
+      "orbital_period_seconds": 132638.27328,
+      "period_error_upper_days": 7.39e-05,
+      "period_error_lower_days": -7.39e-05
+    },
+    {
+      "tic_id": "144336525",
+      "toi": "326.01",
+      "disposition": "APC",
+      "orbital_period_days": 0.247325,
+      "orbital_period_seconds": 21368.879999999997,
+      "period_error_upper_days": 5.2e-06,
+      "period_error_lower_days": -5.2e-06
+    },
+    {
+      "tic_id": "147950620",
+      "toi": "1194.01",
+      "disposition": "CP",
+      "orbital_period_days": 2.3106428,
+      "orbital_period_seconds": 199639.53792,
+      "period_error_upper_days": 9e-07,
+      "period_error_lower_days": -9e-07
+    },
+    {
+      "tic_id": "148914726",
+      "toi": "1179.01",
+      "disposition": "APC",
+      "orbital_period_days": 1.2615323,
+      "orbital_period_seconds": 108996.39072000001,
+      "period_error_upper_days": 4e-07,
+      "period_error_lower_days": -4e-07
+    },
+    {
+      "tic_id": "153976959",
+      "toi": "1435.01",
+      "disposition": "CP",
+      "orbital_period_days": 0.6858178,
+      "orbital_period_seconds": 59254.657920000005,
+      "period_error_upper_days": 1.12e-05,
+      "period_error_lower_days": -1.12e-05
+    },
+    {
+      "tic_id": "154383539",
+      "toi": "1436.01",
+      "disposition": "PC",
+      "orbital_period_days": 0.8675883,
+      "orbital_period_seconds": 74959.62912,
+      "period_error_upper_days": 1.15e-05,
+      "period_error_lower_days": -1.15e-05
+    },
+    {
+      "tic_id": "157586003",
+      "toi": "1626.01",
+      "disposition": "KP",
+      "orbital_period_days": 3.3326189,
+      "orbital_period_seconds": 287938.27296,
+      "period_error_upper_days": 2.8e-06,
+      "period_error_lower_days": -2.8e-06
+    },
+    {
+      "tic_id": "158025009",
+      "toi": "1416.01",
+      "disposition": "CP",
+      "orbital_period_days": 1.0697621,
+      "orbital_period_seconds": 92427.44544,
+      "period_error_upper_days": 2e-06,
+      "period_error_lower_days": -2e-06
+    },
+    {
+      "tic_id": "158170594",
+      "toi": "1240.01",
+      "disposition": "KP",
+      "orbital_period_days": 1.7208555,
+      "orbital_period_seconds": 148681.91520000002,
+      "period_error_upper_days": 2.6e-06,
+      "period_error_lower_days": -2.6e-06
+    },
+    {
+      "tic_id": "158324245",
+      "toi": "1161.01",
+      "disposition": "KP",
+      "orbital_period_days": 1.7635881,
+      "orbital_period_seconds": 152374.01184,
+      "period_error_upper_days": 5e-07,
+      "period_error_lower_days": -5e-07
+    },
+    {
+      "tic_id": "160045097",
+      "toi": "1782.02",
+      "disposition": "CP",
+      "orbital_period_days": 1.8290294,
+      "orbital_period_seconds": 158028.14016,
+      "period_error_upper_days": 6.3e-06,
+      "period_error_lower_days": -6.3e-06
+    },
+    {
+      "tic_id": "160708862",
+      "toi": "1337.01",
+      "disposition": "KP",
+      "orbital_period_days": 3.3448312,
+      "orbital_period_seconds": 288993.41568,
+      "period_error_upper_days": 2.3e-06,
+      "period_error_lower_days": -2.3e-06
+    },
+    {
+      "tic_id": "164173105",
+      "toi": "1417.01",
+      "disposition": "CP",
+      "orbital_period_days": 3.0726434,
+      "orbital_period_seconds": 265476.38976,
+      "period_error_upper_days": 1.1e-06,
+      "period_error_lower_days": -1.1e-06
+    },
+    {
+      "tic_id": "183120439",
+      "toi": "169.01",
+      "disposition": "CP",
+      "orbital_period_days": 2.2554459,
+      "orbital_period_seconds": 194870.52576,
+      "period_error_upper_days": 4.5e-06,
+      "period_error_lower_days": -4.5e-06
+    },
+    {
+      "tic_id": "183593642",
+      "toi": "355.01",
+      "disposition": "APC",
+      "orbital_period_days": 1.0372587,
+      "orbital_period_seconds": 89619.15168,
+      "period_error_upper_days": 6.7e-06,
+      "period_error_lower_days": -6.7e-06
+    },
+    {
+      "tic_id": "183985250",
+      "toi": "193.01",
+      "disposition": "CP",
+      "orbital_period_days": 0.7920645,
+      "orbital_period_seconds": 68434.3728,
+      "period_error_upper_days": 1e-07,
+      "period_error_lower_days": -1e-07
+    },
+    {
+      "tic_id": "184240683",
+      "toi": "250.01",
+      "disposition": "KP",
+      "orbital_period_days": 1.6284288,
+      "orbital_period_seconds": 140696.24832,
+      "period_error_upper_days": 5e-07,
+      "period_error_lower_days": -5e-07
+    },
+    {
+      "tic_id": "188768068",
+      "toi": "1462.01",
+      "disposition": "CP",
+      "orbital_period_days": 2.1779407,
+      "orbital_period_seconds": 188174.07648000002,
+      "period_error_upper_days": 4e-06,
+      "period_error_lower_days": -4e-06
+    },
+    {
+      "tic_id": "191284318",
+      "toi": "1458.01",
+      "disposition": "KP",
+      "orbital_period_days": 2.7759678,
+      "orbital_period_seconds": 239843.61792000002,
+      "period_error_upper_days": 9e-07,
+      "period_error_lower_days": -9e-07
+    },
+    {
+      "tic_id": "194203348",
+      "toi": "1546.01",
+      "disposition": "PC",
+      "orbital_period_days": 1.13345,
+      "orbital_period_seconds": 97930.08,
+      "period_error_upper_days": 0.0006,
+      "period_error_lower_days": -0.0006
+    },
+    {
+      "tic_id": "198212955",
+      "toi": "1242.01",
+      "disposition": "PC",
+      "orbital_period_days": 0.3814849,
+      "orbital_period_seconds": 32960.295360000004,
+      "period_error_upper_days": 6e-07,
+      "period_error_lower_days": -6e-07
+    },
+    {
+      "tic_id": "198213332",
+      "toi": "1131.01",
+      "disposition": "PC",
+      "orbital_period_days": 0.5860366,
+      "orbital_period_seconds": 50633.56224,
+      "period_error_upper_days": 4.9e-06,
+      "period_error_lower_days": -4.9e-06
+    },
+    {
+      "tic_id": "198457103",
+      "toi": "1488.01",
+      "disposition": "FA",
+      "orbital_period_days": 0.4721054,
+      "orbital_period_seconds": 40789.90656,
+      "period_error_upper_days": 7.6e-06,
+      "period_error_lower_days": -7.6e-06
+    },
+    {
+      "tic_id": "199444169",
+      "toi": "1410.01",
+      "disposition": "CP",
+      "orbital_period_days": 1.2168732,
+      "orbital_period_seconds": 105137.84448,
+      "period_error_upper_days": 5.25e-05,
+      "period_error_lower_days": -5.25e-05
+    },
+    {
+      "tic_id": "199731190",
+      "toi": "350.01",
+      "disposition": "APC",
+      "orbital_period_days": 2.5130547,
+      "orbital_period_seconds": 217127.92608,
+      "period_error_upper_days": 6.2e-06,
+      "period_error_lower_days": -6.2e-06
+    },
+    {
+      "tic_id": "201186294",
+      "toi": "1634.01",
+      "disposition": "CP",
+      "orbital_period_days": 0.98933,
+      "orbital_period_seconds": 85478.11200000001,
+      "period_error_upper_days": 0.0001055,
+      "period_error_lower_days": -0.0001055
+    },
+    {
+      "tic_id": "201248411",
+      "toi": "129.01",
+      "disposition": "CP",
+      "orbital_period_days": 0.980972,
+      "orbital_period_seconds": 84755.98079999999,
+      "period_error_upper_days": 5e-07,
+      "period_error_lower_days": -5e-07
+    },
+    {
+      "tic_id": "202504234",
+      "toi": "1293.01",
+      "disposition": "PC",
+      "orbital_period_days": 1.6849938,
+      "orbital_period_seconds": 145583.46432,
+      "period_error_upper_days": 2.7e-06,
+      "period_error_lower_days": -2.7e-06
+    },
+    {
+      "tic_id": "204317710",
+      "toi": "255.01",
+      "disposition": "KP",
+      "orbital_period_days": 2.8126485,
+      "orbital_period_seconds": 243012.83039999998,
+      "period_error_upper_days": 6.9e-06,
+      "period_error_lower_days": -6.9e-06
+    },
+    {
+      "tic_id": "204376737",
+      "toi": "231.01",
+      "disposition": "KP",
+      "orbital_period_days": 3.3610013,
+      "orbital_period_seconds": 290390.51232,
+      "period_error_upper_days": 5e-07,
+      "period_error_lower_days": -5e-07
+    },
+    {
+      "tic_id": "206609630",
+      "toi": "212.01",
+      "disposition": "APC",
+      "orbital_period_days": 0.3352715,
+      "orbital_period_seconds": 28967.4576,
+      "period_error_upper_days": 8e-07,
+      "period_error_lower_days": -8e-07
+    },
+    {
+      "tic_id": "206686292",
+      "toi": "298.01",
+      "disposition": "APC",
+      "orbital_period_days": 1.3287182,
+      "orbital_period_seconds": 114801.25248,
+      "period_error_upper_days": 2.7e-06,
+      "period_error_lower_days": -2.7e-06
+    },
+    {
+      "tic_id": "219776325",
+      "toi": "1610.01",
+      "disposition": "PC",
+      "orbital_period_days": 2.5287981,
+      "orbital_period_seconds": 218488.15584,
+      "period_error_upper_days": 4.1e-06,
+      "period_error_lower_days": -4.1e-06
+    },
+    {
+      "tic_id": "219852584",
+      "toi": "1295.01",
+      "disposition": "CP",
+      "orbital_period_days": 3.1968838,
+      "orbital_period_seconds": 276210.76032,
+      "period_error_upper_days": 7e-07,
+      "period_error_lower_days": -7e-07
+    },
+    {
+      "tic_id": "219852882",
+      "toi": "1346.02",
+      "disposition": "CP",
+      "orbital_period_days": 1.7622537,
+      "orbital_period_seconds": 152258.71968,
+      "period_error_upper_days": 4.6e-06,
+      "period_error_lower_days": -4.6e-06
+    },
+    {
+      "tic_id": "224600500",
+      "toi": "1418.01",
+      "disposition": "FA",
+      "orbital_period_days": 0.6763235,
+      "orbital_period_seconds": 58434.350399999996,
+      "period_error_upper_days": 3.31e-05,
+      "period_error_lower_days": -3.31e-05
+    },
+    {
+      "tic_id": "229510866",
+      "toi": "1181.01",
+      "disposition": "CP",
+      "orbital_period_days": 2.1031647,
+      "orbital_period_seconds": 181713.43008000002,
+      "period_error_upper_days": 1.35e-05,
+      "period_error_lower_days": -1.35e-05
+    },
+    {
+      "tic_id": "229747848",
+      "toi": "1347.01",
+      "disposition": "CP",
+      "orbital_period_days": 0.8474218,
+      "orbital_period_seconds": 73217.24352,
+      "period_error_upper_days": 4.8e-06,
+      "period_error_lower_days": -4.8e-06
+    },
+    {
+      "tic_id": "230982885",
+      "toi": "195.01",
+      "disposition": "KP",
+      "orbital_period_days": 2.0727598,
+      "orbital_period_seconds": 179086.44672,
+      "period_error_upper_days": 4e-07,
+      "period_error_lower_days": -4e-07
+    },
+    {
+      "tic_id": "231663901",
+      "toi": "101.01",
+      "disposition": "KP",
+      "orbital_period_days": 1.4303699,
+      "orbital_period_seconds": 123583.95936000001,
+      "period_error_upper_days": 8e-07,
+      "period_error_lower_days": -8e-07
+    },
+    {
+      "tic_id": "232650365",
+      "toi": "1746.01",
+      "disposition": "PC",
+      "orbital_period_days": 2.5253323,
+      "orbital_period_seconds": 218188.71072,
+      "period_error_upper_days": 1.11e-05,
+      "period_error_lower_days": -1.11e-05
+    },
+    {
+      "tic_id": "233059608",
+      "toi": "1250.01",
+      "disposition": "FA",
+      "orbital_period_days": 1.4415044,
+      "orbital_period_seconds": 124545.98015999999,
+      "period_error_upper_days": 0.0001673,
+      "period_error_lower_days": -0.0001673
+    },
+    {
+      "tic_id": "233071822",
+      "toi": "1747.01",
+      "disposition": "PC",
+      "orbital_period_days": 2.7546548,
+      "orbital_period_seconds": 238002.17472,
+      "period_error_upper_days": 3.1e-06,
+      "period_error_lower_days": -3.1e-06
+    },
+    {
+      "tic_id": "233071926",
+      "toi": "1748.01",
+      "disposition": "PC",
+      "orbital_period_days": 1.8318623,
+      "orbital_period_seconds": 158272.90272,
+      "period_error_upper_days": 5.1e-06,
+      "period_error_lower_days": -5.1e-06
+    },
+    {
+      "tic_id": "233211762",
+      "toi": "1252.01",
+      "disposition": "PC",
+      "orbital_period_days": 1.1219715,
+      "orbital_period_seconds": 96938.33759999998,
+      "period_error_upper_days": 1.4e-06,
+      "period_error_lower_days": -1.4e-06
+    },
+    {
+      "tic_id": "234519192",
+      "toi": "196.01",
+      "disposition": "PC",
+      "orbital_period_days": 1.1630372,
+      "orbital_period_seconds": 100486.41408,
+      "period_error_upper_days": 3.1e-06,
+      "period_error_lower_days": -3.1e-06
+    },
+    {
+      "tic_id": "234994474",
+      "toi": "134.01",
+      "disposition": "CP",
+      "orbital_period_days": 1.4015183,
+      "orbital_period_seconds": 121091.18112,
+      "period_error_upper_days": 4.8e-06,
+      "period_error_lower_days": -4.8e-06
+    },
+    {
+      "tic_id": "235683377",
+      "toi": "1442.01",
+      "disposition": "CP",
+      "orbital_period_days": 0.4090681,
+      "orbital_period_seconds": 35343.48384,
+      "period_error_upper_days": 3.7e-06,
+      "period_error_lower_days": -3.7e-06
+    },
+    {
+      "tic_id": "236445129",
+      "toi": "1282.01",
+      "disposition": "KP",
+      "orbital_period_days": 0.9689927,
+      "orbital_period_seconds": 83720.96928,
+      "period_error_upper_days": 5e-07,
+      "period_error_lower_days": -5e-07
+    },
+    {
+      "tic_id": "236714379",
+      "toi": "1254.01",
+      "disposition": "APC",
+      "orbital_period_days": 1.0180114,
+      "orbital_period_seconds": 87956.18496,
+      "period_error_upper_days": 7e-07,
+      "period_error_lower_days": -7e-07
+    },
+    {
+      "tic_id": "236815160",
+      "toi": "1307.01",
+      "disposition": "APC",
+      "orbital_period_days": 2.534612,
+      "orbital_period_seconds": 218990.4768,
+      "period_error_upper_days": 9e-07,
+      "period_error_lower_days": -9e-07
+    },
+    {
+      "tic_id": "236887394",
+      "toi": "1465.01",
+      "disposition": "KP",
+      "orbital_period_days": 1.4200248,
+      "orbital_period_seconds": 122690.14272,
+      "period_error_upper_days": 3e-07,
+      "period_error_lower_days": -3e-07
+    },
+    {
+      "tic_id": "237086564",
+      "toi": "1466.01",
+      "disposition": "PC",
+      "orbital_period_days": 1.8718991,
+      "orbital_period_seconds": 161732.08224,
+      "period_error_upper_days": 8e-06,
+      "period_error_lower_days": -8e-06
+    },
+    {
+      "tic_id": "237924601",
+      "toi": "252.01",
+      "disposition": "APC",
+      "orbital_period_days": 1.0021853,
+      "orbital_period_seconds": 86588.80992,
+      "period_error_upper_days": 5.3e-06,
+      "period_error_lower_days": -5.3e-06
+    },
+    {
+      "tic_id": "238176110",
+      "toi": "116.01",
+      "disposition": "KP",
+      "orbital_period_days": 2.7985802,
+      "orbital_period_seconds": 241797.32928,
+      "period_error_upper_days": 3e-07,
+      "period_error_lower_days": -3e-07
+    },
+    {
+      "tic_id": "240681314",
+      "toi": "1477.01",
+      "disposition": "KP",
+      "orbital_period_days": 2.7324809,
+      "orbital_period_seconds": 236086.34976,
+      "period_error_upper_days": 9.53e-05,
+      "period_error_lower_days": -9.53e-05
+    },
+    {
+      "tic_id": "241076290",
+      "toi": "1560.01",
+      "disposition": "PC",
+      "orbital_period_days": 0.2580006,
+      "orbital_period_seconds": 22291.25184,
+      "period_error_upper_days": 8.7e-06,
+      "period_error_lower_days": -8.7e-06
+    },
+    {
+      "tic_id": "241225337",
+      "toi": "1727.01",
+      "disposition": "PC",
+      "orbital_period_days": 1.8308782,
+      "orbital_period_seconds": 158187.87647999998,
+      "period_error_upper_days": 1.28e-05,
+      "period_error_lower_days": -1.28e-05
+    },
+    {
+      "tic_id": "243185500",
+      "toi": "1468.02",
+      "disposition": "CP",
+      "orbital_period_days": 1.880531,
+      "orbital_period_seconds": 162477.8784,
+      "period_error_upper_days": 6.8e-06,
+      "period_error_lower_days": -6.8e-06
+    },
+    {
+      "tic_id": "244161191",
+      "toi": "278.01",
+      "disposition": "PC",
+      "orbital_period_days": 0.299039,
+      "orbital_period_seconds": 25836.9696,
+      "period_error_upper_days": 5.6e-06,
+      "period_error_lower_days": -5.6e-06
+    },
+    {
+      "tic_id": "250724252",
+      "toi": "1564.01",
+      "disposition": "APC",
+      "orbital_period_days": 0.5596691,
+      "orbital_period_seconds": 48355.410240000005,
+      "period_error_upper_days": 3e-07,
+      "period_error_lower_days": -3e-07
+    },
+    {
+      "tic_id": "251852984",
+      "toi": "323.01",
+      "disposition": "PC",
+      "orbital_period_days": 2.7723915,
+      "orbital_period_seconds": 239534.6256,
+      "period_error_upper_days": 0.0005797,
+      "period_error_lower_days": -0.0005797
+    },
+    {
+      "tic_id": "252479260",
+      "toi": "1771.01",
+      "disposition": "KP",
+      "orbital_period_days": 3.2122302,
+      "orbital_period_seconds": 277536.68928,
+      "period_error_upper_days": 3e-07,
+      "period_error_lower_days": -3e-07
+    },
+    {
+      "tic_id": "258514800",
+      "toi": "1444.01",
+      "disposition": "CP",
+      "orbital_period_days": 0.4702719,
+      "orbital_period_seconds": 40631.49216,
+      "period_error_upper_days": 4.7e-06,
+      "period_error_lower_days": -4.7e-06
+    },
+    {
+      "tic_id": "258829450",
+      "toi": "1654.01",
+      "disposition": "PC",
+      "orbital_period_days": 1.8347892,
+      "orbital_period_seconds": 158525.78688,
+      "period_error_upper_days": 3.8e-06,
+      "period_error_lower_days": -3.8e-06
+    },
+    {
+      "tic_id": "259377017",
+      "toi": "270.03",
+      "disposition": "CP",
+      "orbital_period_days": 3.3601671,
+      "orbital_period_seconds": 290318.43744,
+      "period_error_upper_days": 3.5e-06,
+      "period_error_lower_days": -3.5e-06
+    },
+    {
+      "tic_id": "259511357",
+      "toi": "271.01",
+      "disposition": "APC",
+      "orbital_period_days": 2.475987,
+      "orbital_period_seconds": 213925.2768,
+      "period_error_upper_days": 1.5e-06,
+      "period_error_lower_days": -1.5e-06
+    },
+    {
+      "tic_id": "260985861",
+      "toi": "149.01",
+      "disposition": "PC",
+      "orbital_period_days": 3.3399432,
+      "orbital_period_seconds": 288571.09248,
+      "period_error_upper_days": 1.3e-06,
+      "period_error_lower_days": -1.3e-06
+    },
+    {
+      "tic_id": "262530407",
+      "toi": "177.01",
+      "disposition": "CP",
+      "orbital_period_days": 2.8531016,
+      "orbital_period_seconds": 246507.97824,
+      "period_error_upper_days": 1.7e-06,
+      "period_error_lower_days": -1.7e-06
+    },
+    {
+      "tic_id": "266500992",
+      "toi": "1655.01",
+      "disposition": "PC",
+      "orbital_period_days": 3.2786617,
+      "orbital_period_seconds": 283276.37088,
+      "period_error_upper_days": 9.5e-06,
+      "period_error_lower_days": -9.5e-06
+    },
+    {
+      "tic_id": "267574918",
+      "toi": "1690.01",
+      "disposition": "CP",
+      "orbital_period_days": 1.4079369,
+      "orbital_period_seconds": 121645.74815999999,
+      "period_error_upper_days": 3.4e-06,
+      "period_error_lower_days": -3.4e-06
+    },
+    {
+      "tic_id": "268403451",
+      "toi": "1612.01",
+      "disposition": "KP",
+      "orbital_period_days": 2.8641388,
+      "orbital_period_seconds": 247461.59232,
+      "period_error_upper_days": 3.2e-06,
+      "period_error_lower_days": -3.2e-06
+    },
+    {
+      "tic_id": "268766053",
+      "toi": "272.01",
+      "disposition": "KP",
+      "orbital_period_days": 3.3098458,
+      "orbital_period_seconds": 285970.67712,
+      "period_error_upper_days": 1.5e-06,
+      "period_error_lower_days": -1.5e-06
+    },
+    {
+      "tic_id": "274215536",
+      "toi": "1701.01",
+      "disposition": "PC",
+      "orbital_period_days": 1.3341738,
+      "orbital_period_seconds": 115272.61632,
+      "period_error_upper_days": 4.9e-06,
+      "period_error_lower_days": -4.9e-06
+    },
+    {
+      "tic_id": "276360911",
+      "toi": "1382.01",
+      "disposition": "FA",
+      "orbital_period_days": 0.44482,
+      "orbital_period_seconds": 38432.448,
+      "period_error_upper_days": 5e-05,
+      "period_error_lower_days": -5e-05
+    },
+    {
+      "tic_id": "277447970",
+      "toi": "1361.01",
+      "disposition": "PC",
+      "orbital_period_days": 2.237462,
+      "orbital_period_seconds": 193316.7168,
+      "period_error_upper_days": 1.16e-05,
+      "period_error_lower_days": -1.16e-05
+    },
+    {
+      "tic_id": "277507814",
+      "toi": "1286.01",
+      "disposition": "APC",
+      "orbital_period_days": 0.6166953,
+      "orbital_period_seconds": 53282.47392,
+      "period_error_upper_days": 3e-07,
+      "period_error_lower_days": -3e-07
+    },
+    {
+      "tic_id": "281459670",
+      "toi": "110.01",
+      "disposition": "KP",
+      "orbital_period_days": 3.1743504,
+      "orbital_period_seconds": 274263.87455999997,
+      "period_error_upper_days": 1.7e-06,
+      "period_error_lower_days": -1.7e-06
+    },
+    {
+      "tic_id": "283722336",
+      "toi": "1469.01",
+      "disposition": "KP",
+      "orbital_period_days": 3.0929386,
+      "orbital_period_seconds": 267229.89504000003,
+      "period_error_upper_days": 1.3e-06,
+      "period_error_lower_days": -1.3e-06
+    },
+    {
+      "tic_id": "284441182",
+      "toi": "1470.01",
+      "disposition": "CP",
+      "orbital_period_days": 2.5272822,
+      "orbital_period_seconds": 218357.18208,
+      "period_error_upper_days": 0.0003859,
+      "period_error_lower_days": -0.0003859
+    },
+    {
+      "tic_id": "284475976",
+      "toi": "1628.01",
+      "disposition": "KP",
+      "orbital_period_days": 2.1436364,
+      "orbital_period_seconds": 185210.18496,
+      "period_error_upper_days": 7e-07,
+      "period_error_lower_days": -7e-07
+    },
+    {
+      "tic_id": "287139872",
+      "toi": "1752.01",
+      "disposition": "CP",
+      "orbital_period_days": 0.9351891,
+      "orbital_period_seconds": 80800.33824,
+      "period_error_upper_days": 5.8e-06,
+      "period_error_lower_days": -5.8e-06
+    },
+    {
+      "tic_id": "287225295",
+      "toi": "1769.01",
+      "disposition": "APC",
+      "orbital_period_days": 0.6097554,
+      "orbital_period_seconds": 52682.866559999995,
+      "period_error_upper_days": 4e-07,
+      "period_error_lower_days": -4e-07
+    },
+    {
+      "tic_id": "287776397",
+      "toi": "1205.01",
+      "disposition": "PC",
+      "orbital_period_days": 2.3922703,
+      "orbital_period_seconds": 206692.15391999998,
+      "period_error_upper_days": 2.56e-05,
+      "period_error_lower_days": -2.56e-05
+    },
+    {
+      "tic_id": "288348498",
+      "toi": "1551.01",
+      "disposition": "PC",
+      "orbital_period_days": 1.67546,
+      "orbital_period_seconds": 144759.744,
+      "period_error_upper_days": 0.00029,
+      "period_error_lower_days": -0.00029
+    },
+    {
+      "tic_id": "289793076",
+      "toi": "108.01",
+      "disposition": "KP",
+      "orbital_period_days": 3.0440495,
+      "orbital_period_seconds": 263005.87679999997,
+      "period_error_upper_days": 1.6e-06,
+      "period_error_lower_days": -1.6e-06
+    },
+    {
+      "tic_id": "290131778",
+      "toi": "123.01",
+      "disposition": "CP",
+      "orbital_period_days": 3.3088922,
+      "orbital_period_seconds": 285888.28608,
+      "period_error_upper_days": 7.1e-06,
+      "period_error_lower_days": -7.1e-06
+    },
+    {
+      "tic_id": "293617835",
+      "toi": "1719.01",
+      "disposition": "PC",
+      "orbital_period_days": 2.7552586,
+      "orbital_period_seconds": 238054.34303999998,
+      "period_error_upper_days": 4.7e-06,
+      "period_error_lower_days": -4.7e-06
+    },
+    {
+      "tic_id": "294179385",
+      "toi": "1454.01",
+      "disposition": "PC",
+      "orbital_period_days": 2.6794168,
+      "orbital_period_seconds": 231501.61151999998,
+      "period_error_upper_days": 2e-06,
+      "period_error_lower_days": -2e-06
+    },
+    {
+      "tic_id": "294981566",
+      "toi": "1219.01",
+      "disposition": "PC",
+      "orbital_period_days": 1.9142693,
+      "orbital_period_seconds": 165392.86752,
+      "period_error_upper_days": 6.2e-06,
+      "period_error_lower_days": -6.2e-06
+    },
+    {
+      "tic_id": "295541511",
+      "toi": "1117.01",
+      "disposition": "PC",
+      "orbital_period_days": 2.2281625,
+      "orbital_period_seconds": 192513.24,
+      "period_error_upper_days": 1.51e-05,
+      "period_error_lower_days": -1.51e-05
+    },
+    {
+      "tic_id": "298073824",
+      "toi": "1447.01",
+      "disposition": "FA",
+      "orbital_period_days": 1.2273079,
+      "orbital_period_seconds": 106039.40256,
+      "period_error_upper_days": 1.15e-05,
+      "period_error_lower_days": -1.15e-05
+    },
+    {
+      "tic_id": "307210830",
+      "toi": "175.03",
+      "disposition": "CP",
+      "orbital_period_days": 2.2531062,
+      "orbital_period_seconds": 194668.37568,
+      "period_error_upper_days": 2e-06,
+      "period_error_lower_days": -2e-06
+    },
+    {
+      "tic_id": "309257814",
+      "toi": "171.01",
+      "disposition": "PC",
+      "orbital_period_days": 1.238601,
+      "orbital_period_seconds": 107015.12640000001,
+      "period_error_upper_days": 1.4e-06,
+      "period_error_lower_days": -1.4e-06
+    },
+    {
+      "tic_id": "311035838",
+      "toi": "1419.01",
+      "disposition": "KP",
+      "orbital_period_days": 2.8997405,
+      "orbital_period_seconds": 250537.5792,
+      "period_error_upper_days": 9e-07,
+      "period_error_lower_days": -9e-07
+    },
+    {
+      "tic_id": "312678993",
+      "toi": "1531.01",
+      "disposition": "APC",
+      "orbital_period_days": 0.5175204,
+      "orbital_period_seconds": 44713.76256,
+      "period_error_upper_days": 1.04e-05,
+      "period_error_lower_days": -1.04e-05
+    },
+    {
+      "tic_id": "312862941",
+      "toi": "1638.01",
+      "disposition": "PC",
+      "orbital_period_days": 0.9150623,
+      "orbital_period_seconds": 79061.38272,
+      "period_error_upper_days": 8.9e-06,
+      "period_error_lower_days": -8.9e-06
+    },
+    {
+      "tic_id": "318022259",
+      "toi": "1730.02",
+      "disposition": "CP",
+      "orbital_period_days": 2.1555232,
+      "orbital_period_seconds": 186237.20448000001,
+      "period_error_upper_days": 9.2e-06,
+      "period_error_lower_days": -9.2e-06
+    },
+    {
+      "tic_id": "321041369",
+      "toi": "1681.01",
+      "disposition": "PC",
+      "orbital_period_days": 1.5379237,
+      "orbital_period_seconds": 132876.60768,
+      "period_error_upper_days": 2.4e-06,
+      "period_error_lower_days": -2.4e-06
+    },
+    {
+      "tic_id": "322054600",
+      "toi": "1616.01",
+      "disposition": "PC",
+      "orbital_period_days": 1.3433022,
+      "orbital_period_seconds": 116061.31008,
+      "period_error_upper_days": 1.4e-06,
+      "period_error_lower_days": -1.4e-06
+    },
+    {
+      "tic_id": "332064670",
+      "toi": "1773.01",
+      "disposition": "KP",
+      "orbital_period_days": 0.7365463,
+      "orbital_period_seconds": 63637.60032,
+      "period_error_upper_days": 9e-07,
+      "period_error_lower_days": -9e-07
+    },
+    {
+      "tic_id": "348770361",
+      "toi": "161.01",
+      "disposition": "PC",
+      "orbital_period_days": 2.7684331,
+      "orbital_period_seconds": 239192.61984000003,
+      "period_error_upper_days": 5.5e-06,
+      "period_error_lower_days": -5.5e-06
+    },
+    {
+      "tic_id": "350132371",
+      "toi": "1425.01",
+      "disposition": "APC",
+      "orbital_period_days": 1.0318213,
+      "orbital_period_seconds": 89149.36032,
+      "period_error_upper_days": 1.7e-06,
+      "period_error_lower_days": -1.7e-06
+    },
+    {
+      "tic_id": "353038705",
+      "toi": "1389.01",
+      "disposition": "PC",
+      "orbital_period_days": 3.062624,
+      "orbital_period_seconds": 264610.7136,
+      "period_error_upper_days": 8.1e-06,
+      "period_error_lower_days": -8.1e-06
+    },
+    {
+      "tic_id": "353475866",
+      "toi": "1693.01",
+      "disposition": "CP",
+      "orbital_period_days": 1.766692,
+      "orbital_period_seconds": 152642.1888,
+      "period_error_upper_days": 5.4e-06,
+      "period_error_lower_days": -5.4e-06
+    },
+    {
+      "tic_id": "355509914",
+      "toi": "202.01",
+      "disposition": "PC",
+      "orbital_period_days": 1.7386695,
+      "orbital_period_seconds": 150221.0448,
+      "period_error_upper_days": 5.2e-06,
+      "period_error_lower_days": -5.2e-06
+    },
+    {
+      "tic_id": "355637190",
+      "toi": "293.01",
+      "disposition": "APC",
+      "orbital_period_days": 0.8054361,
+      "orbital_period_seconds": 69589.67904,
+      "period_error_upper_days": 6e-07,
+      "period_error_lower_days": -6e-07
+    },
+    {
+      "tic_id": "355703913",
+      "toi": "111.01",
+      "disposition": "KP",
+      "orbital_period_days": 2.1061569,
+      "orbital_period_seconds": 181971.95616000003,
+      "period_error_upper_days": 2.6e-06,
+      "period_error_lower_days": -2.6e-06
+    },
+    {
+      "tic_id": "356158613",
+      "toi": "1449.02",
+      "disposition": "PC",
+      "orbital_period_days": 2.3691849,
+      "orbital_period_seconds": 204697.57536000002,
+      "period_error_upper_days": 8.6e-06,
+      "period_error_lower_days": -8.6e-06
+    },
+    {
+      "tic_id": "364074068",
+      "toi": "1756.01",
+      "disposition": "PC",
+      "orbital_period_days": 2.7830114,
+      "orbital_period_seconds": 240452.18495999998,
+      "period_error_upper_days": 8.9e-06,
+      "period_error_lower_days": -8.9e-06
+    },
+    {
+      "tic_id": "364393429",
+      "toi": "1207.01",
+      "disposition": "PC",
+      "orbital_period_days": 2.6282553,
+      "orbital_period_seconds": 227081.25792,
+      "period_error_upper_days": 1.11e-05,
+      "period_error_lower_days": -1.11e-05
+    },
+    {
+      "tic_id": "365733349",
+      "toi": "1288.01",
+      "disposition": "CP",
+      "orbital_period_days": 2.6998294,
+      "orbital_period_seconds": 233265.26016,
+      "period_error_upper_days": 3.6e-06,
+      "period_error_lower_days": -3.6e-06
+    },
+    {
+      "tic_id": "367366318",
+      "toi": "1682.01",
+      "disposition": "KP",
+      "orbital_period_days": 2.7347651,
+      "orbital_period_seconds": 236283.70464,
+      "period_error_upper_days": 2e-07,
+      "period_error_lower_days": -2e-07
+    },
+    {
+      "tic_id": "367753709",
+      "toi": "1757.01",
+      "disposition": "PC",
+      "orbital_period_days": 2.125687,
+      "orbital_period_seconds": 183659.3568,
+      "period_error_upper_days": 5.9e-06,
+      "period_error_lower_days": -5.9e-06
+    },
+    {
+      "tic_id": "369457671",
+      "toi": "168.01",
+      "disposition": "PC",
+      "orbital_period_days": 2.31446,
+      "orbital_period_seconds": 199969.34399999998,
+      "period_error_upper_days": 1e-05,
+      "period_error_lower_days": -1e-05
+    },
+    {
+      "tic_id": "372264750",
+      "toi": "1355.01",
+      "disposition": "CP",
+      "orbital_period_days": 2.1702725,
+      "orbital_period_seconds": 187511.544,
+      "period_error_upper_days": 1.44e-05,
+      "period_error_lower_days": -1.44e-05
+    },
+    {
+      "tic_id": "372757221",
+      "toi": "1187.01",
+      "disposition": "PC",
+      "orbital_period_days": 2.5941968,
+      "orbital_period_seconds": 224138.60352,
+      "period_error_upper_days": 3.6e-06,
+      "period_error_lower_days": -3.6e-06
+    },
+    {
+      "tic_id": "373844472",
+      "toi": "275.01",
+      "disposition": "APC",
+      "orbital_period_days": 0.9195617,
+      "orbital_period_seconds": 79450.13088,
+      "period_error_upper_days": 1e-07,
+      "period_error_lower_days": -1e-07
+    },
+    {
+      "tic_id": "375542276",
+      "toi": "1163.01",
+      "disposition": "PC",
+      "orbital_period_days": 3.0771612,
+      "orbital_period_seconds": 265866.72768,
+      "period_error_upper_days": 1.3e-06,
+      "period_error_lower_days": -1.3e-06
+    },
+    {
+      "tic_id": "376637093",
+      "toi": "1516.01",
+      "disposition": "CP",
+      "orbital_period_days": 2.0560153,
+      "orbital_period_seconds": 177639.72191999998,
+      "period_error_upper_days": 2e-07,
+      "period_error_lower_days": -2e-07
+    },
+    {
+      "tic_id": "377191482",
+      "toi": "1485.01",
+      "disposition": "FA",
+      "orbital_period_days": 2.9551881,
+      "orbital_period_seconds": 255328.25184,
+      "period_error_upper_days": 0.0003434,
+      "period_error_lower_days": -0.0003434
+    },
+    {
+      "tic_id": "377293776",
+      "toi": "1450.01",
+      "disposition": "CP",
+      "orbital_period_days": 2.0439268,
+      "orbital_period_seconds": 176595.27552,
+      "period_error_upper_days": 4.1e-06,
+      "period_error_lower_days": -4.1e-06
+    },
+    {
+      "tic_id": "378291076",
+      "toi": "1620.01",
+      "disposition": "PC",
+      "orbital_period_days": 1.5982014,
+      "orbital_period_seconds": 138084.60096,
+      "period_error_upper_days": 8.1e-06,
+      "period_error_lower_days": -8.1e-06
+    },
+    {
+      "tic_id": "388104525",
+      "toi": "112.01",
+      "disposition": "KP",
+      "orbital_period_days": 2.4997996,
+      "orbital_period_seconds": 215982.68543999997,
+      "period_error_upper_days": 4e-07,
+      "period_error_lower_days": -4e-07
+    },
+    {
+      "tic_id": "389753172",
+      "toi": "319.01",
+      "disposition": "APC",
+      "orbital_period_days": 0.7135373,
+      "orbital_period_seconds": 61649.62272000001,
+      "period_error_upper_days": 3e-07,
+      "period_error_lower_days": -3e-07
+    },
+    {
+      "tic_id": "395142888",
+      "toi": "1362.01",
+      "disposition": "PC",
+      "orbital_period_days": 1.9173816,
+      "orbital_period_seconds": 165661.77023999998,
+      "period_error_upper_days": 5e-06,
+      "period_error_lower_days": -5e-06
+    },
+    {
+      "tic_id": "396562848",
+      "toi": "1640.01",
+      "disposition": "CP",
+      "orbital_period_days": 1.9495403,
+      "orbital_period_seconds": 168440.28192,
+      "period_error_upper_days": 3.2e-06,
+      "period_error_lower_days": -3.2e-06
+    },
+    {
+      "tic_id": "402026209",
+      "toi": "232.01",
+      "disposition": "KP",
+      "orbital_period_days": 1.3382314,
+      "orbital_period_seconds": 115623.19296,
+      "period_error_upper_days": 3e-07,
+      "period_error_lower_days": -3e-07
+    },
+    {
+      "tic_id": "402319411",
+      "toi": "317.01",
+      "disposition": "PC",
+      "orbital_period_days": 3.3262977,
+      "orbital_period_seconds": 287392.12128,
+      "period_error_upper_days": 2e-06,
+      "period_error_lower_days": -2e-06
+    },
+    {
+      "tic_id": "406672232",
+      "toi": "1263.01",
+      "disposition": "PC",
+      "orbital_period_days": 1.0214555,
+      "orbital_period_seconds": 88253.7552,
+      "period_error_upper_days": 1.4e-06,
+      "period_error_lower_days": -1.4e-06
+    },
+    {
+      "tic_id": "409934330",
+      "toi": "1114.01",
+      "disposition": "APC",
+      "orbital_period_days": 2.4887717,
+      "orbital_period_seconds": 215029.87488,
+      "period_error_upper_days": 8e-07,
+      "period_error_lower_days": -8e-07
+    },
+    {
+      "tic_id": "410153553",
+      "toi": "136.01",
+      "disposition": "CP",
+      "orbital_period_days": 0.4629304,
+      "orbital_period_seconds": 39997.18656,
+      "period_error_upper_days": 2.2e-06,
+      "period_error_lower_days": -2.2e-06
+    },
+    {
+      "tic_id": "416195870",
+      "toi": "1264.01",
+      "disposition": "PC",
+      "orbital_period_days": 2.7441672,
+      "orbital_period_seconds": 237096.04608,
+      "period_error_upper_days": 1e-06,
+      "period_error_lower_days": -1e-06
+    },
+    {
+      "tic_id": "417948359",
+      "toi": "1272.01",
+      "disposition": "CP",
+      "orbital_period_days": 3.3159772,
+      "orbital_period_seconds": 286500.43007999996,
+      "period_error_upper_days": 7.4e-06,
+      "period_error_lower_days": -7.4e-06
+    },
+    {
+      "tic_id": "422756130",
+      "toi": "1695.01",
+      "disposition": "CP",
+      "orbital_period_days": 3.1342946,
+      "orbital_period_seconds": 270803.05344,
+      "period_error_upper_days": 5.9e-06,
+      "period_error_lower_days": -5.9e-06
+    },
+    {
+      "tic_id": "422923265",
+      "toi": "1641.01",
+      "disposition": "PC",
+      "orbital_period_days": 1.8646725,
+      "orbital_period_seconds": 161107.704,
+      "period_error_upper_days": 3.3e-06,
+      "period_error_lower_days": -3.3e-06
+    },
+    {
+      "tic_id": "424865156",
+      "toi": "1265.01",
+      "disposition": "KP",
+      "orbital_period_days": 2.2047452,
+      "orbital_period_seconds": 190489.98528,
+      "period_error_upper_days": 1.27e-05,
+      "period_error_lower_days": -1.27e-05
+    },
+    {
+      "tic_id": "425934411",
+      "toi": "142.01",
+      "disposition": "PC",
+      "orbital_period_days": 0.8533534,
+      "orbital_period_seconds": 73729.73376,
+      "period_error_upper_days": 2.8e-06,
+      "period_error_lower_days": -2.8e-06
+    },
+    {
+      "tic_id": "427761355",
+      "toi": "1518.01",
+      "disposition": "CP",
+      "orbital_period_days": 1.902606,
+      "orbital_period_seconds": 164385.15840000001,
+      "period_error_upper_days": 7.4e-06,
+      "period_error_lower_days": -7.4e-06
+    },
+    {
+      "tic_id": "428679607",
+      "toi": "1669.01",
+      "disposition": "CP",
+      "orbital_period_days": 2.6800536,
+      "orbital_period_seconds": 231556.63104,
+      "period_error_upper_days": 4.8e-06,
+      "period_error_lower_days": -4.8e-06
+    },
+    {
+      "tic_id": "432549364",
+      "toi": "1476.01",
+      "disposition": "KP",
+      "orbital_period_days": 1.2174936,
+      "orbital_period_seconds": 105191.44704,
+      "period_error_upper_days": 3e-07,
+      "period_error_lower_days": -3e-07
+    },
+    {
+      "tic_id": "434105231",
+      "toi": "311.01",
+      "disposition": "APC",
+      "orbital_period_days": 0.7963207,
+      "orbital_period_seconds": 68802.10848,
+      "period_error_upper_days": 1.4e-06,
+      "period_error_lower_days": -1.4e-06
+    },
+    {
+      "tic_id": "441075486",
+      "toi": "372.01",
+      "disposition": "APC",
+      "orbital_period_days": 1.1202752,
+      "orbital_period_seconds": 96791.77728000001,
+      "period_error_upper_days": 6e-07,
+      "period_error_lower_days": -6e-07
+    },
+    {
+      "tic_id": "445144327",
+      "toi": "1586.01",
+      "disposition": "PC",
+      "orbital_period_days": 1.80794,
+      "orbital_period_seconds": 156206.016,
+      "period_error_upper_days": 0.00062,
+      "period_error_lower_days": -0.00062
+    },
+    {
+      "tic_id": "453260209",
+      "toi": "1215.01",
+      "disposition": "PC",
+      "orbital_period_days": 1.2124446,
+      "orbital_period_seconds": 104755.21343999999,
+      "period_error_upper_days": 1.5e-06,
+      "period_error_lower_days": -1.5e-06
+    },
+    {
+      "tic_id": "453387619",
+      "toi": "1703.01",
+      "disposition": "PC",
+      "orbital_period_days": 1.2016105,
+      "orbital_period_seconds": 103819.14719999999,
+      "period_error_upper_days": 4.2e-06,
+      "period_error_lower_days": -4.2e-06
+    },
+    {
+      "tic_id": "455791689",
+      "toi": "1544.01",
+      "disposition": "PC",
+      "orbital_period_days": 1.2918334,
+      "orbital_period_seconds": 111614.40576000001,
+      "period_error_upper_days": 1.3e-06,
+      "period_error_lower_days": -1.3e-06
+    },
+    {
+      "tic_id": "467666275",
+      "toi": "1204.01",
+      "disposition": "PC",
+      "orbital_period_days": 1.3812115,
+      "orbital_period_seconds": 119336.67360000001,
+      "period_error_upper_days": 8e-06,
+      "period_error_lower_days": -8e-06
+    },
+    {
+      "tic_id": "469782185",
+      "toi": "1123.01",
+      "disposition": "APC",
+      "orbital_period_days": 1.20928,
+      "orbital_period_seconds": 104481.79199999999,
+      "period_error_upper_days": 2e-05,
+      "period_error_lower_days": -2e-05
+    },
+    {
+      "tic_id": "470381900",
+      "toi": "1696.01",
+      "disposition": "CP",
+      "orbital_period_days": 2.5005291,
+      "orbital_period_seconds": 216045.71424,
+      "period_error_upper_days": 0.0003706,
+      "period_error_lower_days": -0.0003706
+    }
+  ],
+  "native_seconds_basis": "NASA Exoplanet Archive TOI pl_orbper converted from days to seconds; not estimated from the SPOC flux used by the correspondence statistic",
+  "claim_boundary": "Catalogue candidates only. A TOI disposition and period do not establish that a usable SPOC light curve exists, that its flux traces the orbital shape, or that records are independent or exchangeable."
+}

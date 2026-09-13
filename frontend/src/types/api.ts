@@ -730,6 +730,7 @@ export interface DatasetOperationDecision {
   available: boolean;
   reason_code: string;
   reason: string;
+  planning_path: { api_path: string; plan_schema: string; workspace: string } | null;
   requirements: Array<{ fact: string; label: string; satisfied: boolean | null }>;
 }
 
@@ -744,6 +745,22 @@ export interface DatasetCapabilityProfile {
   capabilities: Array<{ name: string; label: string; value: boolean | null }>;
   operations: Record<string, DatasetOperationDecision>;
   basis: Record<string, unknown>;
+  claim_boundary: string;
+}
+
+export interface SampleTablePlanningHandoff {
+  schema: 'spectral.sample-table-planning-handoff.v1';
+  status: 'READY_FOR_PLANNING';
+  handoff_sha256: string;
+  object: { kind: string; identity: string; filename: string; phase: string };
+  declaration: SampleTableDeclaration;
+  capability_profile_sha256: string;
+  operation: { id: string; name: string; reason_code: string };
+  destination: { kind: 'existing_ingress_planner'; method: 'POST'; api_path: string;
+    plan_schema: string; workspace: string };
+  request: { transport: 'multipart/form-data'; file_binding_sha256: string; delimiter: string;
+    declaration: SampleTableDeclaration };
+  automatic_actions: [];
   claim_boundary: string;
 }
 
@@ -2753,6 +2770,141 @@ export interface ExperimentQualificationRecord {
     claim_boundary: string;
   };
   claim_boundary: string;
+}
+
+export interface G17PoolSurface {
+  schema: string;
+  readiness: {
+    status: string; profile_count: number; shortfall: number; exchangeability: string;
+    assessment_sha256: string;
+  };
+  qualification: {
+    target_count: number; refused_target_count: number;
+    refused_targets: Array<{ tic_id: string; reason: string }>;
+  };
+  assessment: {
+    candidate_count: number; records_reaching_minimum: number;
+    pool_size: { minimum: number; median: number; maximum: number };
+  };
+  packet: {
+    packet_sha256: string; core_size: number; recommended_size: number;
+    alternatives_per_recommended_record: number; recommended_record_ids: string[];
+    exchangeability: string; claim_boundary: string;
+  };
+  review_request: {
+    status: string; record_ids: string[];
+    human_inputs_required: { exchangeability: string[]; affirmation: string };
+    verified_facts: Record<string, string | number>;
+    claim_boundary: string;
+  };
+  review: {
+    status: 'NOT_WRITTEN' | 'WRITTEN_NOT_ADOPTED' | 'ADOPTED'; adopted: boolean;
+    declaration?: Record<string, any>; declaration_sha256?: string;
+    adoption?: Record<string, any>;
+  };
+  archived_lineage_bug_artifacts: string[];
+  operations: Array<{ operation: string; available_in_ui: boolean; reason?: string }>;
+  network_used: boolean;
+  claim_boundary: string;
+}
+
+// ------------------------------------------- T4E.39 the temporal reference holdout
+
+/** One performed stage of the holdout. The browser renders the order the server reports and
+ *  holds no copy of it: a second copy of a scientific order of operations is a second
+ *  experiment waiting to happen. */
+export interface HoldoutStage {
+  stage: string;
+  title: string;
+  status: string;
+  performed_by: string;
+  artifact: string | null;
+  digest: string | null;
+  facts: Record<string, any>;
+  boundary: string;
+}
+
+export interface HoldoutBasinWalk {
+  status: string;
+  steps: number;
+  seed_grid_index: [number, number];
+  centre: { lat: number; lon: number; field_value: number; grid_index: [number, number] };
+  path: Array<{ lat: number; lon: number; field_value: number; grid_index: [number, number] }>;
+}
+
+export interface HoldoutRow {
+  storm: string;
+  sid: string;
+  time: string;
+  classification: string;
+  catalogue_position: { lat: number; lon: number };
+  catalogue_radius_km: number;
+  catalogue_to_mslp_km: number | null;
+  catalogue_to_vorticity_km: number | null;
+  mslp_to_vorticity_km: number | null;
+  mslp_basin: HoldoutBasinWalk;
+  negated_vorticity_basin: HoldoutBasinWalk;
+}
+
+export interface HoldoutDecision {
+  counts: Record<string, number>;
+  population_denominator: number;
+  strict_majority_needed: number;
+  minimum_selected_storms: number;
+  outcome: string;
+  is_acceptance_verdict: boolean;
+}
+
+export interface HoldoutSurface {
+  schema: string;
+  task: string;
+  outcome: string;
+  verdict: string;
+  decision: HoldoutDecision;
+  margin_over_strict_majority: number;
+  one_row_would_change_the_outcome: boolean;
+  stages: HoldoutStage[];
+  review_request: {
+    status: string;
+    reviewed_outcome: string;
+    reviewed_verdict: string;
+    population_denominator: number;
+    strict_majority_needed: number;
+    verified_facts: Record<string, any>;
+    human_inputs_required: { boundary_assessment: string[]; affirmation: string } & Record<string, any>;
+    claim_boundary: string;
+  };
+  review: {
+    status: 'NOT_WRITTEN' | 'WRITTEN_NOT_ADOPTED' | 'ADOPTED';
+    adopted?: boolean;
+    declaration?: Record<string, any>;
+    declaration_sha256?: string;
+    adoption?: Record<string, any>;
+    binds_current_result?: boolean;
+  };
+  artifacts: string[];
+  operations: Array<{ operation: string; available_in_ui: boolean; reason?: string }>;
+  network_used: boolean;
+  claim_boundary: string;
+}
+
+export interface HoldoutRows {
+  schema: string;
+  measurement_receipt_sha256: string;
+  method: Record<string, any>;
+  decision: HoldoutDecision;
+  rows: HoldoutRow[];
+  network_used: boolean;
+  claim_boundary: string;
+}
+
+export interface HoldoutArtifact {
+  schema: string;
+  artifact: string;
+  path: string;
+  file_sha256: string;
+  body: Record<string, any>;
+  network_used: boolean;
 }
 
 // ------------------------------------------------------- TG17.7 the guided path

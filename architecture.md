@@ -19,11 +19,12 @@ says what to do next and deliberately does not restate status; `roadmap.md` and
 current state is; `VERIFICATION.md` holds the captured output behind each figure. Sections 3
 and 7 below describe the implementations and the defect ledger in full.
 
-Last revised 2026-09-12, after T4E.28--T4E.34 were implemented and recorded.
+Last revised 2026-09-13, after rendering the complete T4E.39 holdout and its result review.
 
 | Task | State | Gate on it | Detail |
 |---|---|---|---|
 | Phases 1–3.5 | **Complete**, D18 partial | — | Only the T5.1a–e slice has CPU/CUDA parity evidence; ROCm and MPS are unmeasured. The literal screenshot T3.5.0 asked for is still absent. |
+| Backend local environment | **Implemented** | — | Direct Uvicorn, VS Code tasks and the launcher share the repository `.env.local` contract. Process variables always win; `SPECTRALEARTH_LOAD_LOCAL_ENV=0` disables file loading. Reports contain names and line numbers only, never values. D102, §3.6cb |
 | Phase 4A–4C.6 | **Complete** through the recorded real-data PASS | — | A separate human review of that receipt remains outstanding. §3A–3C |
 | T4D.1–3, T4E.1–4 | **Complete** | — | §3D, §3E |
 | T4E.5 scalable identity | **In progress** | D96 | Exact on tested inputs but still uses dense component cross-distances; recorded mutation work incomplete. A different radius changes the workload, so old measurements cannot close D96. §3F.9 |
@@ -31,6 +32,12 @@ Last revised 2026-09-12, after T4E.28--T4E.34 were implemented and recorded.
 | T4E.7 null calibration | **Done** | — | Needs no replicates; recovers a planted identity on synthetic data. Returns *no radius* on the acquired record. |
 | T4E.8 defensible identity | **In progress** — slices 1–5 implemented, **acceptance unmet**; target decided 2026-09-09 | D97–D100; blocks T4F.9 | Slice 2's spatial mode fails the declared 10%/10% criterion (split 25.6–29.4%, admission 9.4–10.9%); no radius meets both bounds in any window. Slice 3 makes the identity target a declared field and refuses circular evidence. **Target decided 2026-09-09: `kind_recurrence` primary, the other two diagnostic.** T4E.17 subsequently supplied the signed external-reference catalogue and serialisation, so the target is evaluable; the acquired-record join nevertheless fails and no identity criterion or mining radius is approved. §3E.8, §3E.9, §3E.11, §3E.27 |
 | T4E.8 slice 4 identity declaration on screen | **Implemented** | Closes PLAN §5 gap 1 | `/api/v1/identity/*` and `IdentityDeclarationView` render the admissibility matrix with the circular pairing refused at the weight of an admission, receipts with their claim boundaries, and the surface's own refusals. Read-only; choosing remains a person's act. 8 rendered browser tests. §3E.11 |
+| T4E.36 eastward wrapped acquisition | **Acquired, materialised and MEASURED; FAIL** | Both frozen raw conditions required 9/18; observed 5/18 and 0/18 | After Ed Bentley's digest-bound adoption, explicit experiment network authorisation acquired all 48 complementary ERA5 shards (5,844 frames; 325,654,005 bytes). Every monthly seam matched exactly, the 180-degree column was retained once, the parent remained byte-identical, and the immutable 321-longitude record was published at SHA-256 `9e9b7e50…`. On exactly the 18 T4E.28 rows, raw condition 1 improved from 3/18 to 5/18 but condition 2 remained 0/18; SWT was diagnostic only. Added eastward support is therefore falsified as a sufficient repair under the adopted procedure. It may still be a contributor, and this result approves no extractor change, mining radius, identity criterion or atmospheric claim. §3E.50 |
+| T4E.37 failure attribution | **Adopted and MEASURED; `FIELD_REFERENCE_SEPARATION_DOMINANT` 12/13; NOT AN ACCEPTANCE** | Selects an independent reference-alignment design, not extractor tuning | The immutable receipt is `f8ff2f88…`. On the 13 fixed T4E.36 condition-1 failures, 12 had no native-grid 3x3 maximum inside the inherited agency radius before significance filtering; JOSIE alone had two, both above threshold, while the final extractor returned none inside. The positive-radius sensitivity is 11/12 and 1/12; this was not the declared decision and is reported only because LINDA's inherited 0 km radius is structurally uninformative. The result says the existing extractor threshold is not the dominant source of these fixed misses. It does not identify a sampled maximum as a cyclone, establish pressure-level/surface quantity separation, validate the extractor, approve a tolerance or radius, rescue T4E.36, or make an atmospheric claim. §3E.51 |
+| T4E.40 holdout inspection and result review surface | **Rendered end to end; review `NOT_WRITTEN`; verdict structurally fixed at `NOT_AN_ACCEPTANCE`** | Read the flow and, when a named person is ready, write and adopt the result review in the UI | The complete T4E.39 flow -- declaration, adoption, census, field plan, acquisition, materialisation, measurement, review -- now renders in Platform & evidence with the party that performed each stage, its digest and its boundary. Nothing is believed: every receipt identity is recomputed, the field plan is re-planned offline on each read and refuses a mismatch, and a measurement that lost `NOT_AN_ACCEPTANCE` is refused even when its receipt is re-sealed around the change. Ties, refusals and the one-row fragility of the 7-of-12 majority are rendered at the weight of the counts. Acquiring fields and re-running the spent holdout are refused in the UI with reasons. The flow ends in `t4e39-holdout-result-review/v1`, whose permitted decisions are `BOUNDARY_SOUND` and `BOUNDARY_DISPUTED` and which is structurally incapable of expressing an acceptance. §3E.54 |
+| T4E.39 temporal reference holdout | **`HOLDOUT_SUPPORTS_VERTICAL_QUANTITY_CANDIDATE` at 7 of 12, with `VERDICT: NOT_AN_ACCEPTANCE`** | Nothing in this lane; the frozen design is spent. Do not re-select, reweight or widen the holdout after the fact | Ed Bentley adopted declaration SHA-256 `fc7ee60f…` on 2026-09-13 before any holdout identity was parsed, then supplied the separate T4E.39 network authorization. The guarded census admitted 12 storms from 76,784 catalogue rows (above the declared minimum of 10, so not `INSUFFICIENT_HOLDOUT_POPULATION`). Acquisition took 48 exact-time shards across four streams -- ERA5 `msl` and 850 hPa `vo`, parent and wrapped complement -- totalling 3,640,750 stored bytes; all 48 digests re-verify and reopen at the declared 161x161 geometry. Materialisation passed all 24 seams exactly and published the immutable 12x161x321 two-field record at `179aa8c6…`. The unchanged T4E.38 catalogue-seeded basin rule then returned 7 MSLP-closer rows, 5 vorticity-closer, no ties and no refusals against a strict majority of 7 -- the smallest majority the rule admits. It establishes no generalisation, independence from assimilation, cyclone identity, vertical tilt or pressure/surface separation, and changes no extractor or gate. §3E.53 |
+| T4E.38 MSLP reference alignment | **Adopted, materialised and MEASURED; `VERTICAL_QUANTITY_SEPARATION_DOMINANT` 10/18; NOT AN ACCEPTANCE** | Requires a separately declared independent holdout before opening 2022–2023; changes no extractor or gate | All 36 exact-time MSLP shard digests matched. The 18 seams matched exactly against a measured 0.0625 Pa encoding step, the shared meridian was retained once, and the immutable 18x161x321 MSLP record is `dc6f5365…`. From the same catalogue-seeded cell, deterministic MSLP descent was closer on 10 rows, negated-vorticity ascent on 7, with 1 exact tie and 0 refused paths. The frozen 10/18 rule therefore names the vertical-quantity-separation candidate dominant. Measurement receipt `9906ef4e…` is exactly reproducible, but this does not identify either centre as a cyclone, prove vertical separation, rescue T4E.36, approve a radius/tolerance, change the extractor or make an atmospheric claim. §3E.52 |
+| T4E.35 crop-edge support diagnostic | **Implemented; post-hoc diagnostic, not an acceptance** | Selects an eastward acquisition experiment; changes no T4E.18 verdict | On the raw path, seven observations within 2 degrees of any crop edge have median nearest-feature error 1617.7 km, against 35.9 km for eleven interior observations; the four largest finite errors and the sole no-feature row are all nearest the east edge. Spearman rho between edge distance and error is -0.736 over 17 finite raw rows and -0.515 over 18 SWT rows. The inspected source rows prevent preregistration, so this licenses only a separately declared wrapped/eastward acquisition test. §3E.49 |
 | T4E.28–T4E.34 reproducible join, evidence and review workflow | **Implemented; first bundle published; two paid panel attempts preserved, no valid panel completed** | A further real attempt requires explicit paid-call authorisation; do not make one until the corrected concession rule is committed | T4E.28 reproduced both failed join gates from a declaration committed beforehand and falsified the published non-dateline range. T4E.29 renders every join distance and any exclusion. T4E.30 proves declaration-before-measurement from git and published the sole current bundle, `t4e28-join-rerun.r7.json`, capped at `observation`. T4E.31 supplies the round-robin runner; T4E.32–34 move adoption, convening and declaration composition onto the surface without letting code sign for a person. Two real attempts on 2026-09-12 are retained as partial records: the first reassessment originated dissents no challenger raised; the second reached 11 calls but reopened four concessions and was refused. Neither produced a round-robin outcome. §3E.43–3E.48 |
 | T4E.27 the position tolerance, and T4E.18 restated | **Adopted 2026-09-11 and MEASURED; the bar was wrong for three stated reasons and replacing it changed nothing. CORRECTED 2026-09-11: it ran against the SWT-plane path, the worse of the two the record holds, and did not say so — the verdict stands, the 93.2 km residual is a property of that path, and its claim that T4E.21's ~34 km hypothesis cannot account for the gap is WITHDRAWN, because the raw path's non-dateline median is ~35 km against T4E.19's 33.8** | The tolerance is computed, not chosen: quadrature of the agency-reported radius and the extractor's own localisation error (0.295 cells = 8.19 km, as T4E.21 measured it for another purpose), with the vorticity-versus-surface-centre separation deliberately **excluded** so the residual measures it. Condition 1 restated: **2 admitted of 17 judged, 1 refused, needed 9 — NOT MET**, and **no improvement whatever** on the original 2 of 18. The prediction's failure half held; its improvement half was **wrong and derivable** — 8.19 km in quadrature against radii of 11–145 km moves a bar from 11.12 to 13.81, and could never have changed a verdict. Median unexplained residual **93.2 km**, which T4E.21's ~34 km quantity-difference hypothesis cannot account for: T4E.18's acceptance population (deepest-per-storm, median nearest 127 km) and T4E.19's diagnostic population (154 filtered interior observations, median 33.8 km) **are not the same problem**. The two storms that pass do so because their catalogue radii are 103 and 62 km — the join closes because the reference is vague, which is the same category error in reverse. The curve first reaches 9/17 at **150 km** and saturates at 14/17. §3E.42 | Restates a bar on an unchanged population with unchanged conditions; an acceptance measurement settles what an instrument does, not what the atmosphere does. **Condition 2 REFUSED by name** — the third-nearest distance is not in the committed receipt and the IBTrACS CSV is bound by hash but uncommitted and absent, so this slice meets its own acceptance only in part and says so. Approves no mining radius, adopts no tolerance into any pipeline, discharges nothing of T4E.8, and does not supersede `measurements/t4e18_acceptance.json`. Delivers `PositionTolerance`, which publishes its components and their provenance, names what it excludes, and returns `None` rather than `False` for an unusable input |
 | T4E.26 a null estimable from real data | **Adopted 2026-09-11 and MEASURED; prediction held on all three limbs, and its declared failure mode is 84% of the contamination** | Single-round peeled-null calibration: extract, subtract each feature's own published isotropic fit, recalibrate on the residual, re-extract from the original scene. Round zero reproduces T4E.24/25 exactly. The cut falls **15.17 to 8.64** background sigma against a **4.37** oracle, closing a median **0.637** of the gap (deciles 0.000 to 1.041 — a tenth of scenes close nothing, and some overshoot the oracle). Feature recovery 0.6276 to **0.8237**, never-seen features **121 to 39**, intact-configuration coverage 0.0833 to **0.3000** (+0.2167 against a 0.15 bar T4E.25 fixed first), and the newly recovered are **half the brightness** of what round zero had (ratio 12.51 against 24.02), so it reaches the faint population; 0 trials lost. **But 83 of 99 spurious features are lobes the subtraction itself created**, concentrated at stretch 2.5 (54 of 83) exactly as declared, because the extractor's shape model is isotropic and the features are not. §3E.41 | **A peeled p-value answers a different question**: `NullCalibration`'s hypothesis names a field with *the same* power spectrum, and a peeled ensemble has the residual's — so coverage was gained partly by changing what a detection claims, and a successor adopting this must state the new hypothesis. Adopts nothing, changes no default (R20), runs one round, evaluates no other null. **70% of configurations remain incomplete.** The prediction was NOT blind — a one-scene probe preceded it — and these are T4E.24's scenes on their fourth inspection, so a pass is a failure to fail, not a validation |
@@ -51,8 +58,9 @@ Last revised 2026-09-12, after T4E.28--T4E.34 were implemented and recorded.
 | Phase 4G representation scoring | **Gated** | Requires a T4F.6 PASS | — |
 | Phase 4H learned encoder | **Not started, optional** | — | Ceiling estimator, not a deliverable. |
 | Phase 5 forecast comparison | **Interfaces only** | External model must be supplied and bound | §3, T5.3a |
-| G17 cross-domain | **In progress — release withheld** | `scale_shape_calibration` REFUSED | Three of seven PASS as of 2026-09-09: `browser_no_glue` and `synthetic_fifth_adapter` returned to NOT_RUN when T4E.8 slice 4 edited the sources their recorded evidence is bound to, and re-recording needs a full browser run. TG17.15's replacement inference is calibrated, but no declared manifest requests it and pool exchangeability on real records is not decidable here. §7.1a–7.1g |
+| G17 cross-domain | **In progress — release withheld** | `scale_shape_calibration` REFUSED | Three of seven PASS as of 2026-09-12: `browser_no_glue` and `synthetic_fifth_adapter` remain NOT_RUN pending a full browser re-recording. Corrected per-TIC period lineage supplies 104 adopted-method source-bound profiles; a packet identifies a 59-record 48-core and a 57-record pairwise-admissible subset. Inventory is `READY_FOR_CURATION_REVIEW`, but no curation decision exists and pool exchangeability remains unassessed. Complete pool evidence and human review/adoption controls are in Platform Status; network acquisition and immutable rebuild remain CLI jobs. §7.1a–7.1r |
 | G18 interface programme | **Done** per its recorded acceptance | — | §7.1a |
+| V1 object-first planning handoff | **Implemented** | — | Declared sample tables expose planner destinations from the central capability registry. `POST /api/v1/ingress/planning-handoff` binds exact file bytes, declaration and capability profile to the selected existing planner; the UI invokes that planner and verifies its returned schema and content digest. It creates no project-specific screen, executes no analysis and moves no evidence rung. §3.6zzc |
 | G19 conversation with evidence | **Specified, not started** | Schedule explicitly | `roadmap_cross_domain.md` |
 | `representation_alignment.py` | **Exploratory apparatus — not a phase task** | Gates nothing | Mutual k-NN alignment, closed-form chance floor `k/(n-1)`, permutation null. Synthetic acceptance only; no model downloaded or evaluated. §3.6zzf-alt |
 
@@ -808,6 +816,21 @@ processes against one target and observes exactly one complete winner and seven 
 pins existing-target byte identity, cleanup after an injected unsupported-filesystem failure and
 the exact primitive exercised. The ERA5 overlap, gate plan/run, campaign and external-evaluation
 run/job writers consume this one boundary; their domain-specific error types remain outside it.
+
+### 3.6cb Backend-local environment loading (`src/core/local_environment.py`, D102, TG15.4)
+
+`src.api.main` loads the repository-root `.env.local` before importing backend adapters, so direct
+Uvicorn, the VS Code backend task and `start_platform.ps1` observe the same machine-local network
+opt-in and credentials. The loader is dependency-free, accepts simple `KEY=VALUE` lines and one
+matched pair of quotes, ignores comments and blank lines, and reports malformed line numbers.
+Values already present in the process environment always win—even an explicit empty value—so a
+deployment or one-off shell override cannot be replaced by the file.
+
+The load report contains status, path, variable names and ignored line numbers only; secret values
+never enter logs or responses. `SPECTRALEARTH_LOAD_LOCAL_ENV=0` is the explicit opt-out used by
+the test harness, preventing a developer's ignored credentials or network consent from changing
+test behaviour. The parser and precedence rules are tested against a temporary mapping rather
+than the real process environment.
 
 ### 3.7b Dual-Tree Complex Wavelet Transform (`src/transform_engine/dtcwt.py`, `kingsbury_coeffs.py`)
 
@@ -4060,9 +4083,10 @@ pass.
 `LightCurveCollection` validates a finite, strictly increasing BJD_TDB clock and aligned flux,
 error, quality and sector arrays. Its digest includes every admitted sample, every product
 record and the SHA-256 of every downloaded FITS payload; equal-length light curves with one
-changed flux value therefore cannot collide. FITS checksums, TIC identity, time reference and
-target coordinates are checked before publication through the same atomic no-overwrite primitive
-as the other immutable collections. Quality flags are retained rather than silently dropped.
+changed flux value therefore cannot collide. FITS checksum state is recorded; TIC identity, time
+reference and target coordinates are checked before publication through the same atomic
+no-overwrite primitive as the other immutable collections. Quality flags are retained rather than
+silently dropped.
 
 The `tess_lightcurve` extension declares `no_natural_cycle`, `irregular_sampling` and
 `non_stationary_support`, plus `lag_policy=none`. Its `angular_sky` point geometry records a real
@@ -4121,6 +4145,22 @@ This is guidance rather than a security boundary. Every scientific endpoint reta
 authoritative refusal, so editing browser state cannot license an inadmissible computation. No
 column name is interpreted: generic-file profiles are derived only after the researcher supplies
 roles, units and the sample relationship.
+
+The operation registry now also names an optional `planning_path` for the four sample-table
+operations that have an implemented planner: representation audit, redundancy structure,
+conditional information and stable-subspace generation. `POST
+/api/v1/ingress/planning-handoff` accepts the same exact file and explicit declaration plus one
+selected operation. It re-derives the content-bound capability profile, refuses unavailable or
+unregistered destinations, and returns `spectral.sample-table-planning-handoff.v1`. That envelope
+binds the file SHA-256, canonical declaration, capability-profile SHA-256, operation, existing API
+route, expected plan schema and Acquire workspace, and is itself content-addressed.
+
+The handoff does not contain a private plan or execute an analysis. Its `automatic_actions` is
+empty. The browser follows the declared destination through the existing planner method, then
+checks that the returned plan schema and `content_sha256` match the handoff before exposing the
+existing audit or subspace controls. Unsupported operations retain their explained capability
+decision but receive no planning button. This supplies object-first routing without creating a
+second workflow or treating route availability as scientific readiness.
 
 ### 3.6zzd Representation-structure admission and benchmark contract (`src/benchmarks/representation_structure.py`, `dataset_ingress.py`, TG16.0, `ed-dev`)
 
@@ -4846,6 +4886,9 @@ could reject: there is **no inventory size at which the null as the qualificatio
 it - drawn, with a replication count - can produce a rejection.** What can is the exact partner
 test, which enumerates the same finite support instead of resampling it, and which the registered
 calibration is built on; no declared manifest requests it.
+
+That sentence records the TG17.11 state. TG17.15 slice 6 later freezes a separate successor
+declaration that requests the exact test without rewriting these historical manifests.
 
 G17's two candidate domain families never reach that argument. The quartet compared all-against-all
 gives six pairings admitting exactly one distinguishable reassignment, and the triple that remains
@@ -6613,7 +6656,7 @@ existing file.
 
 ## 3.12 HTTP API Surface
 
-167 routes. Listed here because an undocumented endpoint is an untested contract. The count and this table were both wrong until TG17.3 (defect D75): the guard enumerated a hand-maintained list of ten source files and could not see four mounted routers.
+176 routes. Listed here because an undocumented endpoint is an untested contract. The count and this table were both wrong until TG17.3 (defect D75): the guard enumerated a hand-maintained list of ten source files and could not see four mounted routers.
 
 | Method | Route | Notes |
 |---|---|---|
@@ -6710,6 +6753,7 @@ existing file.
 | POST | `/api/v1/ingress/probe` | what an uploaded record is, stated without deciding what any domain may do about it (TG16.0) |
 | POST | `/api/v1/ingress/plan` | the declared representation plan for a probed record (TG16.0) |
 | POST | `/api/v1/ingress/capabilities` | paths derived from explicit semantics and exact bytes; infers no column meaning (TG16.0) |
+| POST | `/api/v1/ingress/planning-handoff` | content-addressed binding from an exact declared table and selected available operation to its existing authoritative planner; executes no analysis (TG15.3) |
 | POST | `/api/v1/ingress/audit` | the record's declared plan re-derived and compared (TG16.0) |
 | POST | `/api/v1/ingress/structure/plan` | the frozen structure-mining plan before any outcome is opened (TG16.1) |
 | POST | `/api/v1/ingress/structure/audit` | that plan re-derived from its own declaration (TG16.1) |
@@ -8834,6 +8878,353 @@ real figure is worse than this one, not better.
 All four acceptance conditions are met: the coded gate passed, the full distribution is reported
 rather than a mean, the mechanism and consequence claims are reported separately with the
 mechanism claim carrying its declared caveat, and the two named outcomes did separate.
+
+### 3E.54 Holdout inspection and result review surface (T4E.40)
+
+**T4E.40 (2026-09-13): the complete T4E.39 flow is readable in the platform UI, every stage
+artifact is examinable, and the flow ends in a human review that cannot become an acceptance.**
+`src/core/holdout_review.py`, `src/api/reference_holdout.py`,
+`frontend/src/components/ReferenceHoldout.tsx`.
+
+Until this slice the atmospheric holdout lane existed only as files and captured terminal output.
+A result that can only be read by the person who ran it is not independently checkable, so the
+whole flow now renders: declaration, adoption, catalogue census, exact field plan, acquisition,
+materialisation, measurement and review, in the order they were performed, each with the party
+that performed it, its status, the digest that identifies it and the boundary that governs it.
+
+Nothing on the surface is believed. `verified_holdout_result` recomputes the declaration file
+digest, re-derives each artifact's receipt identity from its own content, and requires the census
+to bind the declaration, the field record to bind both, and the measurement to bind all three
+before anything is rendered. The field plan is re-planned offline on every read and the response
+is refused with `409` if the recomputed shard count no longer matches what was acquired. A
+measurement that has lost its mandatory `NOT_AN_ACCEPTANCE` verdict is refused outright, even
+when its receipt has been re-sealed around the change.
+
+`GET /api/v1/reference-holdout` returns the stages, the decision with ties and refusals kept
+beside the two candidate labels, and `one_row_would_change_the_outcome`, which is true here: the
+UI states the fragility of a 7-of-12 majority beside the majority itself rather than leaving a
+reader to compute it. `GET /api/v1/reference-holdout/rows` publishes all twelve measured storms
+with both complete basin walks, and `GET /api/v1/reference-holdout/artifacts/{name}` returns any
+stage artifact exactly as stored beside its recomputed file digest. The panel renders refusal
+counts as tiles of equal weight to the candidate counts.
+
+Two operations are deliberately absent and say so with reasons. Acquisition reached a network
+under a separate named authorization and remains an explicit CLI job. Re-running the holdout is
+refused because the reserved 2022–2023 period has been opened once, as declared; a button that
+re-ran it would manufacture a second holdout from a spent one.
+
+The flow ends in `t4e39-holdout-result-review/v1`: a named person's reading of this exact result.
+Its permitted decisions are `BOUNDARY_SOUND` and `BOUNDARY_DISPUTED`, and it is structurally
+incapable of expressing an acceptance -- the model forbids extra fields, pins `reviewed_verdict`
+to `NOT_AN_ACCEPTANCE`, and the loader refuses a review whose bound digests, outcome, denominator
+or majority differ from the live result. Writing and adopting are separate acts, as elsewhere: the
+POST writes without signing, and adoption requires the exact typed affirmation and re-verifies the
+review against the live result afterwards -- `POST /api/v1/reference-holdout/review` writes and
+`POST /api/v1/reference-holdout/review/adopt` signs. An adopted review that no longer binds the
+current result is rendered as stale rather than silently accepted. Eight tests cover stage publication and
+the two refused operations, fragility reporting, artifact and row examination, the structural
+impossibility of an acceptance, the re-sealed-verdict refusal, writing without adopting, affirmation
+and binding on adoption, and the stale-binding path.
+
+### 3E.53 Temporal reference holdout (T4E.39)
+
+**T4E.39 (2026-09-13): declared before opening, adopted, censused, acquired, materialised and
+measured; `HOLDOUT_SUPPORTS_VERTICAL_QUANTITY_CANDIDATE` at 7 of 12, with
+`VERDICT: NOT_AN_ACCEPTANCE`.**
+`src/benchmarks/reference_holdout.py`, `src/benchmarks/reference_holdout_fields.py`,
+`src/data_layer/cds_pressure_level_exact.py`, `tools/run_t4e39_reference_holdout.py`, and
+`data/identity_calibration/t4e39-reference-holdout-declaration.json`.
+
+T4E.38 reached its declared 10-of-18 development threshold by the smallest possible margin. That
+licenses a temporal holdout design, not opening the reserved period under an improvised rule. The
+declaration binds the exact T4E.38 measurement bytes and logical receipt, retains its mandatory
+`NOT_AN_ACCEPTANCE`, and reuses the T4E.17-signed IBTrACS v04r01 content identity. Planning hashes
+the catalogue to establish that the signed bytes are present but never passes them to a CSV reader:
+the captured plan reports `catalogue_rows_read: false`, `holdout_identities_enumerated: false`,
+`era5_record_opened: false`, and `network_used: false`.
+
+Selection was frozen before the row census: 2022-01-01 through 2023-12-31, exact synoptic hours,
+latitude −58..−18 and catalogue longitude 140..180, at least two agency fixes, the existing
+two-degree latitude interior, then `catalogue_join.deepest_per_storm`. An equal-depth tie keeps the
+earliest row in signed catalogue order and selected rows are published chronologically. NATURE,
+intensity, prior pass/fail state and eventual centre distances cannot select the population. The
+already-disclosed aggregate was 393 in-box observations from 13 storms; individual identities,
+times and positions were not inspected at declaration time. Fewer than 10 selected storms is
+declared `INSUFFICIENT_HOLDOUT_POPULATION`, allowing at most three losses to the unchanged
+agency/interior rules rather than reporting a tiny majority as confirmation.
+
+The field request was frozen with the same declaration: only the selected exact timestamps, both
+the 140..180 parent and wrapped −180..−140 complement segments, ERA5 single-level `msl` and
+pressure-level 850 hPa `vo`, on the same 0.25-degree 161x161 segment grids. Per-variable,
+per-time source-encoding seam checks retain 180E once. Acquisition required both a current
+adoption and a separate T4E.39-specific network authorization in addition to the general network
+gate; adoption of the census design alone authorized no request.
+
+Evaluation is the unchanged T4E.38 catalogue-seeded 3x3 rule. Ties and refused paths remain in the
+denominator. With at least 10 selected storms, strict majority is `floor(n/2)+1`: an MSLP majority
+returns `HOLDOUT_SUPPORTS_VERTICAL_QUANTITY_CANDIDATE`, a vorticity majority returns
+`HOLDOUT_FAVOURS_CATALOGUE_REANALYSIS_ALIGNMENT`, and neither returns `HOLDOUT_MIXED`. Every
+outcome is `NOT_AN_ACCEPTANCE`; a finite-census majority is not a statistical generalisation or an
+atmospheric claim.
+
+Ed Bentley adopted the exact declaration digest
+`fc7ee60f688b404fbad8261c579740e4f828117ff6380ff883c7824756ee1594` on 2026-09-13 with
+`I have read this declaration and I adopt it`; the adoption signature still reaches those bytes.
+The declaration's embedded `DRAFTED_NOT_ADOPTED` status is preserved because editing the signed
+declaration would invalidate that signature; the separate adoption record is the authoritative
+current state.
+
+**The census.** The guarded census function checks adoption before resolving or parsing the signed
+catalogue. It read 76,784 catalogue rows and refused 75,469 outside the window, 405 outside the
+box, 650 off synoptic hours and 109 with too few agency fixes, admitting 151 observations before
+interior selection and one deepest interior observation per storm. Twelve storms were selected, above
+the declared minimum of ten, so the named insufficient-population outcome was not reached; the
+future strict majority was fixed at 7 by the census itself. The census publishes only identities,
+exact times, positions, agency counts and catalogue radii plus every refusal count, and records
+`era5_record_opened: false` and `network_used: false`. Its receipt is `f8734e65…`.
+
+**The fields.** The census-bound plan froze four exact requests and 48 single-timestamp shards.
+`src/data_layer/cds_pressure_level_exact.py` adds the pressure-level counterpart of the T4E.38
+single-level path: one timestamp and one 850 hPa level per request, refusing any other product,
+level, variable, time or segment, storing atomically with content checks, and resuming without
+re-downloading a verified shard. Acquisition stored 3,640,750 bytes across `msl` parent (776,636),
+`msl` complement (759,781), `vo` parent (1,068,537) and `vo` complement (1,035,796). An independent
+pass re-verified all 48 digests and reopened every file at the declared 161x161 geometry with its
+single declared data variable: zero failures.
+
+**The record.** Offline materialisation joined the two segments per field, checked all 24 seams at
+180E against source-encoding tolerance (0.0625 Pa for `msl`, 2.98e-08 s⁻¹ for `vo`), found a
+maximum absolute difference of exactly 0 in every case, retained the parent 180E column once and
+published the immutable 12x161x321 two-field record at `179aa8c6…` with receipt `2d4b06ff…`. All
+four source streams are recorded as preserved byte-for-byte; no network was used.
+
+**The result.** The unchanged catalogue-seeded rule returned 7 `VERTICAL_QUANTITY_SEPARATION_CANDIDATE`
+rows, 5 `CATALOGUE_REANALYSIS_ALIGNMENT_CANDIDATE` rows, no exact ties and no refusals over a
+denominator of 12, against a strict majority of 7: `HOLDOUT_SUPPORTS_VERTICAL_QUANTITY_CANDIDATE`,
+`NOT_AN_ACCEPTANCE`. Independent replay reproduced the complete JSON value and logical receipt
+exactly. The majority is the smallest the declared rule admits — one row changing side would have
+returned `HOLDOUT_MIXED` — and that fragility is part of the result, not a reason to re-select or
+reweight after the fact. The outcome states only that the deterministic T4E.38 MSLP-closer majority
+recurred on the pre-declared holdout under the identical finite-census rule. It establishes no
+statistical generalisation, no independence from ERA5 assimilation, no cyclone identity, no
+vertical tilt and no pressure/surface separation; it validates neither IBTrACS nor either field,
+approves no radius or extractor change, rescues neither T4E.36 nor T4E.8, and demonstrates no
+recurrence beyond this one pre-declared period. Ten test functions cover both halves -- eleven cases, because the seam
+test is parametrised over both fields: five for the pre-opening boundary and five for the field
+request geometry, its refusals, both network gates, seam disagreement and the strict-majority
+decision.
+
+### 3E.52 Exact-time MSLP reference-alignment acquisition (T4E.38)
+
+**T4E.38 (2026-09-13): adopted, acquired, materialised and measured;
+`VERTICAL_QUANTITY_SEPARATION_DOMINANT` at 10 of 18, with `VERDICT: NOT_AN_ACCEPTANCE`.**
+`src/data_layer/cds_single_level.py`, `src/benchmarks/reference_alignment.py`,
+`tools/run_t4e38_reference_alignment.py`, and
+`data/identity_calibration/t4e38-reference-alignment-declaration.json`.
+
+This is not a mechanism invented after T4E.37. The T4E.18 acquisition design already says that
+MSLP is the field closest to IBTrACS' central-pressure reference and names it as the next candidate
+if 850 hPa vorticity fails; it was deferred because the acquisition layer then admitted only the
+ERA5 pressure-level product. The official CDS single-level product supplies hourly atmospheric
+fields on the same 0.25-degree regular grid (DOI `10.24381/cds.adbb2d47`), while NOAA's IBTrACS
+v04r01 documentation identifies LAT/LON as combined best-track positions and WMO_PRES as minimum
+central pressure from the responsible agency. These sources ground commensurability, not a claim
+that reanalysis MSLP is independent of all observations assimilated by ERA5.
+
+The new request type is deliberately separate from `CDSRegionalRequest`. It accepts only the
+reviewed `msl` canonical variable and `reanalysis-era5-single-levels`, has no pressure-level field
+or level axis, requires unique chronological whole-hour timestamps and refuses dateline-crossing
+bounds. Each shard contains exactly one year, month, day and hour, preventing the CDS request
+cross-product from exposing intervening frames. Requests are hashed with dataset identity, written
+through `.part` files and renamed only after readable-NetCDF validation; acquisition state binds
+the exact plan and verifies completed bytes before resume.
+
+The fixed 18 T4E.36 raw rows are controls as well as failures. Two 161x161 segments cover
+140..180 and -180..-140 at each exact timestamp: **36 shards and 3,732,624 raw float32 bytes**.
+The storage estimate gives no compression credit and includes the existing per-shard safety
+overhead. The planner validates the T4E.36 and T4E.37 file and receipt digests, derives all exact
+timestamps, reports `record_opened: false` and `network_used: false`, and does not inspect MSLP.
+
+The declaration also freezes the later analysis before acquisition. Starting from the native cell
+nearest each independent IBTrACS position, deterministic 3x3 steepest descent finds an MSLP basin
+minimum and deterministic ascent on negated vorticity finds the corresponding 850 hPa basin
+maximum. Boundary arrival or a repeated path is refused. Comparing their catalogue distances uses
+no agency radius or fitted tolerance: MSLP strictly closer is a vertical-quantity-separation
+candidate, vorticity strictly closer is a catalogue/reanalysis-alignment candidate, and exact ties
+belong to neither. Ten of all 18 names a dominant candidate; otherwise the result is `MIXED`.
+Every outcome is `NOT_AN_ACCEPTANCE` and cannot rescue T4E.36.
+
+Acquisition checks a current digest-bound human adoption first, then a distinct experiment flag,
+then the general `SPECTRALEARTH_ALLOW_NETWORK` gate. Ed Bentley supplied the experiment-specific
+authorization with the general gate enabled. CDS returned all 36 planned shards: the parent
+segment holds 18 files and 1,170,846 bytes and its `acquisition.json` hashes to
+`35b137ac3700cee5c5e1035316b835bee82e4e834868c74d3459040a3fbc98ef`; the complement holds 18
+files and 1,155,367 bytes and its receipt hashes to
+`0100831c3f700b76980653ac03c51f3993a0f6294608f05d25784fa1b895a59c`. The 2,326,213 stored bytes
+are compressed payload size, not a revision to the 3,732,624-byte raw-value plan. Independent
+reconciliation found no absent, byte-length-drifted or content-drifted file, and reopened all 36
+as one-`valid_time`, 161x161, `msl` NetCDFs.
+
+Offline materialisation rechecked every acquisition request and content digest before opening the
+pair. All 18 shared 180E/-180 samples matched exactly; each timestamp's independently measurable
+source-encoding step was 0.0625 Pa. The complement's duplicate meridian was removed and the parent
+180E sample retained once. The resulting 18x161x321 `msl` Zarr has content SHA-256
+`dc6f53652e4a995fa17ba7cc474322e7ad6552f5f97db5b13b8ff505fe456a7b`, coordinate SHA-256
+`df0611384f11dff1ed9da3c5228c2c8e8d40088947ea95dccb11d05fe8aa677a`, and immutable receipt
+`4acba0aa5be5b174dfacbc0fc376d958e86466bbd70442e6394415113d99c5a8`. Every source shard remained
+byte-identical and materialisation used no network.
+
+The frozen comparison then completed all 18 paths with no boundary or repeat refusal. MSLP was
+strictly closer to the catalogue position on 10 rows, negated 850 hPa vorticity on seven, and one
+row was an exact tie. The pre-acquisition 10-of-18 rule therefore returns
+`VERTICAL_QUANTITY_SEPARATION_DOMINANT`. The measurement is byte-published at
+`measurements/t4e38_reference_alignment.json`, file SHA-256
+`f99d5f896b69ff9a9c994834d0f720568e98261eb8128eecaea0efdc3c84e425`, with valid logical receipt
+`9906ef4ef6aee18974f0774cf3e823dd0135f997f63f154dbd416796abccd679`; an independent replay was
+exactly equal. This is evidence for the declared candidate under this deterministic association
+rule, not proof of vertical pressure/surface separation. It identifies neither basin centre as a
+cyclone and changes no acceptance, extractor, tolerance, radius or atmospheric conclusion.
+
+Eleven tests cover exact source binding and 36-shard geometry, one timestamp per request with no
+pressure level, product/variable/time/dateline refusals, conservative storage accounting, all
+three guards before a client call, atomic content-checked resume, seam deduplication and mismatch
+refusal, deterministic basin ties and boundary refusal, and the fixed 10-of-18 denominator.
+
+Ed Bentley's immutable adoption binds declaration SHA-256
+`0ad4e5376359a46e5d44b2c6b09455574b0a7443361595560896a6b255ead477` as
+`ADOPTED_FOR_GUARDED_EXECUTION_TEST`. Adoption itself performed no acquisition; later explicit
+authorization did. Materialisation and evaluation were offline. A next atmospheric act must be a
+separately declared independent holdout design before opening the still-unopened 2022–2023 period;
+this development-population result does not authorize that opening or further extractor tuning.
+
+### 3E.51 Pre-threshold failure attribution (T4E.37)
+
+**T4E.37 (2026-09-13): adopted and measured; `FIELD_REFERENCE_SEPARATION_DOMINANT` at 12 of 13,
+with `VERDICT: NOT_AN_ACCEPTANCE`.**
+`src/benchmarks/failure_attribution.py`, `tools/run_t4e37_failure_attribution.py`, and
+`data/identity_calibration/t4e37-failure-attribution-declaration.json`.
+
+T4E.36 left 13 of its fixed 18 rows without an extracted feature inside the unchanged agency
+radius. Those rows alone are frozen by identity, along with the exact T4E.36 measurement file,
+measurement receipt, wrapped-record receipt and record digest. Passing rows cannot be reclassified,
+the catalogue cannot be reopened, and 2022--2023 remains unopened.
+
+The distinction adds no fitted radius or alternative extractor. The existing local-maximum
+extractor already begins by enumerating native-grid samples equal to the maximum of their 3x3
+neighbourhood before applying its calibrated significance threshold, localisation, measured-scale
+suppression and valid-interior checks. T4E.37 exposes that exact pre-threshold candidate set,
+excludes the outermost row and column as the extractor does, preserves ties, uses native sample
+coordinates without fitting, and measures distance with the existing catalogue great-circle
+function. It also reruns the unchanged 99-surrogate, seed-1234 extraction and refuses unless every
+feature count and sorted distance reproduces T4E.36 to numerical precision.
+
+For a failed row, at least one sampled maximum inside its existing agency radius yields
+`EXTRACTOR_FILTERING_CANDIDATE`; none yields `FIELD_REFERENCE_SEPARATION_CANDIDATE`. Because there
+are 13 binary rows, seven names the strict-majority outcome. This is mechanism attribution, not a
+new acceptance: the output carries `VERDICT: NOT_AN_ACCEPTANCE`, neither outcome is PASS, and
+T4E.36 remains failed. A sampled maximum is not a significant feature or an identified cyclone;
+the second label therefore names field/reference separation as a candidate and does not establish
+pressure-level/surface quantity separation as its cause.
+
+The offline `plan` command validates the declaration at SHA-256 `2a0f0ce5…`, reports all 13 rows,
+and reports `record_opened: false` and `network_used: false`. Ed Bentley's immutable adoption
+binds that exact digest as `ADOPTED_FOR_GUARDED_EXECUTION_TEST`; adoption itself opened no record
+and wrote no measurement. The later offline execution opened the already verified wrapped record.
+The
+evaluator checks adoption before reading either evidence file or opening Zarr. Five tests cover
+the frozen population and source digest, exact tied/boundary candidate rule, malformed fields,
+both majority outcomes, wrong row counts, absent adoption and adoption drift.
+
+The measurement reproduced every T4E.36 feature count and sorted distance before attribution and
+published immutable receipt SHA-256
+`f8ff2f88afd818acfc3b4975c173eb5d28192f359036bd90284d63b3a6d0f1d1`. Twelve rows had no
+native-grid local maximum inside their existing agency radius before thresholding; JOSIE alone had
+two, at 37.99 km and 114.14 km inside its 145.23 km radius. Both JOSIE samples exceeded the
+calibrated threshold, so its loss lies in a later localisation/suppression/valid-interior stage,
+not in the significance cut. Across all 13, the nearest sampled maximum ranged 26.12--177.98 km
+with median 44.44 km.
+
+The declared strict-majority outcome is therefore `FIELD_REFERENCE_SEPARATION_DOMINANT`, 12/13
+against 1/13 `EXTRACTOR_FILTERING_CANDIDATE`. LINDA carries the inherited zero-kilometre radius,
+which makes its no-in-radius classification true by construction and physically uninformative.
+Excluding that row after the fact leaves 11/12 versus 1/12 and cannot change the majority, but that
+sensitivity is not substituted for the declared result. The bounded conclusion is only that the
+existing extractor's filtering is not the dominant source of these fixed misses. The measurement
+does not establish why the sampled pressure-level field and surface-centre reference are separated.
+
+### 3E.50 Guarded wrapped-record execution (T4E.36)
+
+**T4E.36 (2026-09-13): acquired, materialised and measured; verdict `FAIL`.**
+`src/data_layer/wrapped_record.py`, `src/benchmarks/wrapped_join.py`, and
+`tools/run_t4e36_wrapped_acquisition.py` turn the frozen declaration into four explicit phases:
+offline plan, guarded acquisition, offline materialisation, and fixed-population evaluation.
+
+Ed Bentley adopted the declaration as `ADOPTED_FOR_GUARDED_EXECUTION_TEST`; the adoption binds
+the current declaration digest `5b96519ade6d33873c7411a9db2a66a76dd1668f6ebc6279987b7e33c1b9899c`.
+Acquisition first requires that the maintainer adoption's digest still reaches the declaration.
+It then requires the experiment-specific `--authorise-network` flag; the CDS layer independently
+requires `SPECTRALEARTH_ALLOW_NETWORK=1`. Thus enabling the platform's ordinary network access
+cannot submit T4E.36 by itself. The adoption action itself submitted no CDS request. The later
+explicitly authorised execution acquired all 48 complementary monthly shards: 5,844 exact frames
+and 325,654,005 bytes, bound by request SHA-256
+`2c68a35b21874778620cf18ff0445b285d30f6ca4030b30470de0449eb0fb0c9`.
+
+Materialisation verifies the acquisition state and content hash of every parent and complement
+shard. Each monthly pair is normalised independently. Because GRIB packing selects a lattice per
+message, the seam tolerance is measured per time/level field rather than pooled across a month;
+an unmeasurable lattice or a difference over one source encoding step is refused. The complement
+longitudes are wrapped into 180..220, its duplicate 180-degree column is discarded, and the
+result must have a regular 321-point 140..220 axis. Bounded time blocks enter a temporary Zarr;
+only a complete 5,844-frame record is published under its logical content SHA-256. Parent shard
+digests are checked before and after the run, and the parent is never opened for writing. All 48
+monthly seam checks measured zero maximum absolute difference against a per-field source-encoding
+tolerance of `5.960464477539063e-08`. The parent was preserved byte-for-byte. The resulting record
+has shape 5,844 x 1 x 161 x 321 and logical content SHA-256
+`9e9b7e50c75579daa4a79cb459e5da91c2b65a23c260eab6ca37fee2c684736b`; its immutable receipt is
+SHA-256 `509e42f7554c6357c67509af7d5c0504c4fafc8cc74f5a6ecf633f52f6afdd99`.
+
+Evaluation reads the exact 18 raw rows published by T4E.28 as its population; it does not reopen
+the catalogue or census the wider box. It runs the frozen negated raw and SWT paths, publishes
+old and widened full distance lists together for every storm, marks the five stress rows and
+RUBY, and gives `PASS` only when both raw conditions reach 9 of 18. SWT remains diagnostic.
+Synthetic NetCDF/Zarr tests exercise adoption drift, the second network gate, alias normalisation,
+seam success/deduplication, seam mismatch, unmeasurable tolerance, immutable content-addressed
+publication, byte-preservation of the parent, fixed population, and the no-SWT-rescue rule.
+
+The fixed evaluation returned `FAIL`, receipt SHA-256
+`5d84935047e4ea60b2f092ba093bf5992d2685f1b40813e76d7dcfb17a5dd408`. On the primary raw path,
+condition 1 moved from 3/18 to **5/18** and condition 2 stayed **0/18**, both below the required
+9/18. Raw nearest-feature distance improved from median 52.15 km (maximum 3,685.34 km) to median
+40.83 km (maximum 315.09 km), and every frame now yielded features. SARAI and GRETEL newly placed
+one feature inside their catalogue radii; JOSIE contracted from 2,027.96 km to 151.29 km but stayed
+outside its 145.23 km radius. SWT reached 5/18 and 1/18 and cannot alter the raw verdict. This is a
+bounded negative result: eastward support helped particular edge cases but is not a sufficient
+repair under the frozen procedure. It licenses no post-hoc widening or threshold change.
+
+### 3E.49 Crop-edge support in the failed catalogue join (T4E.35)
+
+**T4E.35 (2026-09-12): a post-hoc diagnostic over the immutable T4E.28 rows.**
+`src/benchmarks/edge_support.py`, `tools/audit_join_edge_support.py`, and
+`measurements/t4e35_edge_support_audit.json`.
+
+The diagnostic measures exact great-circle distance to all four crop boundaries, retains a frame
+with no extracted feature as a censored failure, and reports near-edge and interior strata for
+both extraction paths. Seven of eighteen observations lie within the existing 2-degree support
+margin of some edge. On the raw path their median nearest-feature error is **1617.7 km**, against
+**35.9 km** for the eleven interior observations; none of the seven places a feature inside the
+catalogue radius, while all three raw-path admissions are interior. The four largest finite raw
+errors -- ANA, SARAI, JOSIE and NIRAN -- and the sole no-feature row, GRETEL, are all nearest the
+east edge. RUBY remains the important counterexample: it is one degree from that edge and has a
+67.6 km error, so longitude alone is not a sufficient explanation.
+
+Across finite rows, edge distance and nearest-feature error have Spearman rho **-0.736** on the
+raw path (17 rows, two-sided p = 0.00076) and **-0.515** on SWT (18 rows, p = 0.0287). These are
+descriptive figures, not confirmatory statistics: the rows and their worst cases were inspected
+before this diagnostic existed. They select the next experiment rather than settle it. The next
+atmospheric acquisition should extend eastward across the dateline under a declaration frozen
+before transfer, keep the current 140E--180E record unchanged, and compare the same storm-times
+and extraction parameters. No extractor change, tolerance change, identity criterion or T4E.18
+verdict is licensed here.
 
 ### 3E.48 Composing a declaration, and committing it alone (T4E.34)
 
@@ -12230,8 +12621,8 @@ flatten.
 | `browser_no_glue` | `NOT_RUN` | **NOT_RUN as of 2026-09-09**: T4E.8 slice 4 added `e2e/identity-declaration.spec.ts`, edited `e2e/ui-qualification.spec.ts` and edited `frontend/src/App.tsx`, and the recorded evidence is bound to the source it was measured against. The gate returned itself to NOT_RUN, which is the binding working. Re-recording needs a full suite run (the last took 10.3 h). `src/core/browser_evidence.py`, from a recorded Playwright run bound to every spec's source. |
 | `synthetic_fifth_adapter` | `NOT_RUN` | **NOT_RUN as of 2026-09-09**: T4E.8 slice 4 added `e2e/identity-declaration.spec.ts`, edited `e2e/ui-qualification.spec.ts` and edited `frontend/src/App.tsx`, and the recorded evidence is bound to the source it was measured against. The gate returned itself to NOT_RUN, which is the binding working. Re-recording needs a full suite run (the last took 10.3 h). `src/core/extension_evidence.py`: a live source-edit audit plus a recorded acceptance run. |
 | `calendar_calibration` | `PASS` | `src/core/calibration_record.py`, bound to the declared contract and the source that decides the measurement. |
-| `scale_shape_calibration` | `REFUSED` | Computed live, plus a recorded calibration read through `src/core/calibration_record.py`. TG17.11's refusal is **superseded, not deleted** (TG17.15 slice 5): the old claim is recomputed on every plan and still holds, the successor is calibrated and recorded, and what still blocks is that no declared manifest requests the calibrated inference and that pool exchangeability on real records is not decidable here. A declared scientific limit, blocking exactly as a failure is. |
-| `live_sources` | `PASS` | TG17.14. `src/core/live_source_evidence.py` reads a dated four-domain run: ERA5 via CDS, Argo GDAC and MAST SPOC each demonstrating network use, and the bespoke order-book record demonstrating **no** network use, which is what its own contract requires. |
+| `scale_shape_calibration` | `REFUSED` | Computed live, plus a recorded calibration read through `src/core/calibration_record.py`. TG17.11's refusal is **superseded, not deleted**: the old claim is recomputed and still holds, while TG17.15 slice 6's separately frozen successor requests the calibrated inference. Its real-record inventory remains unresolved and exchangeability is not established, so that curation obligation alone still blocks this gate. |
+| `live_sources` | `NOT_RUN` | TG17.14's dated four-domain run remains readable, but TG17.15 slice 6 changed qualification source included in its binding. The gate correctly returned to `NOT_RUN`; only a separate authorised live re-recording can restore `PASS`. |
 
 Verdict: `NOT_RELEASEABLE`. As of TG17.14 **every scientific gate has been measured** and five
 of the seven read `PASS`; what blocks release is `scale_shape_calibration`, and it is a declared
@@ -12640,8 +13031,8 @@ realisation), `planted_correspondence` ranking the true partner first for 1,189 
 with a lower bound of **0.9849** and none of those failing to reject, and `unresolvable_inventory`
 refusing **200 of 200**. The eight ladder rungs carry **one** inventory digest between them.
 
-**Why the gate still refuses, computed rather than asserted.** Two blockers, and the gate publishes
-both with what would discharge each and whether this module can decide it at all.
+**Why the gate still refused at slice 5, computed rather than asserted.** Two blockers, and the
+gate published both with what would discharge each and whether this module could decide it.
 
 *   **`declared_inference`, decidable here.** Every frozen scale/shape manifest declares
     `scale_partner_reassignment` at 200 replications. That is *read back from the six manifests*
@@ -12656,6 +13047,58 @@ both with what would discharge each and whether this module can decide it at all
     further measurement on built fixtures reaches. A guard asserts this blocker survives a passing
     recording, because a blocker nobody can discharge is the one most likely to be quietly dropped
     once everything else goes green.
+
+### 7.1h The calibrated successor is declared without inventing its pool (TG17.15 slice 6)
+
+`data/studies/g17_scale_shape_successor.json` is a separate versioned declaration rather than an
+edit to the six historical qualification manifests. It binds `per_correspondence`, exact pool
+substitution, the calibrated six-member family, its derived minimum pool size of 48, BY correction,
+orientation and the complete marginal admission contract. `src/core/scale_shape_successor.py`
+validates each deciding field against the calibration code and publishes a canonical declaration
+digest. Exact substitution has no replication count, so placing it in the legacy `NullDefinition`
+would misstate the method.
+
+The release ledger now reads both declaration generations. Historical joint reassignment remains
+visible as superseded evidence, while the valid successor removes `declared_inference` from the
+blocker list. It does not make G17 releaseable: `real_pool_inventory` is frozen as `UNRESOLVED`, has
+no record IDs and says exchangeability is `NOT_ESTABLISHED`. The model refuses an unresolved
+inventory carrying identities or claiming exchangeability, and refuses a curated inventory unless
+it names records and establishes the property. The sole scientific blocker from this transition is
+therefore `pool_exchangeability_on_real_records`, explicitly outside what fixture calibration can
+decide.
+
+### 7.1i The real-pool deficit is measured without judging exchangeability (TG17.15 slice 7)
+
+`src/core/real_pool_readiness.py` scans `data/profile_collections` and `data/channels` only for
+explicit `*.partner-profile.json` documents. Each must declare
+`correspondence-record-profile/v3`, parse as the existing single-record `RecordProfile`, bind exact
+source bytes by SHA-256, name every marginal derivation, bind an adopted marginal-method review,
+and carry unique record and provenance identities. `src/core/real_pool_ingress.py` derives only
+finite sample count, median cadence and coverage against an explicit declared window; native
+scale, effective sample size and noise floor remain declared scientific quantities. Malformed,
+legacy and ambiguous inputs are refused rather than skipped. The audit binds the successor
+declaration digest and derives the required count of 48 from that declaration.
+
+`measurements/g17_real_pool_readiness.json` records the current repository result:
+`NO_INVENTORY`, 0 profiles, shortfall 48, exchangeability `NOT_ASSESSED`. The qualification gate
+computes the same cheap local audit live and includes those numbers in its remaining blocker. A
+synthetic test with 48 valid profiles reaches only `READY_FOR_CURATION_REVIEW`, proving that profile
+quantity cannot make the code award exchangeability. This is a bounded inventory refusal and no
+claim about whether prospective real records are exchangeable.
+
+### 7.1j Scientific marginal methods require human adoption (TG17.15 slice 9)
+
+`src/core/real_pool_method_review.py` defines the separate
+`g17-marginal-method-review/v1` contract. It records the exact native-scale basis, effective-sample-
+size method and noise-floor method together with applicability, limitations and a claim boundary.
+Loading succeeds only when the adjacent maintainer adoption still hashes to the declaration's
+current bytes and carries reviewer attribution. Code supplies no reviewer, method or approval.
+
+The profile builder requires that adopted object and exact equality between its three methods and
+the per-record declaration. The v3 envelope binds the review declaration and adoption filenames
+and SHA-256 digests plus who adopted it and when. Readiness validates that evidence structurally;
+it still counts profiles only and never promotes method review into record admission or
+exchangeability. The committed inventory remains empty.
 
 A gate that turned green here would be reporting the measurement it can make in place of the one it
 cannot -- the substitution this module has refused to make since TG17.11, when it distinguished a
@@ -12673,6 +13116,144 @@ directly on a one-realisation outcome. Second pass caught **15 of 15**.
 This slice acquires nothing, runs no confirmatory statistic, writes no evidence and moves no claim
 rung. It records a calibration measured on built fixtures and states, in a form a machine
 recomputes, what that does and does not entitle the gate to say.
+
+### 7.1k Local profile batches are preflighted before emission (TG17.15 slice 10)
+
+`src/core/real_pool_import.py` defines `g17-profile-import-manifest/v1`: one adopted method review
+and a non-empty list of relative source, declaration and output paths, delimiters and expected
+source SHA-256 digests. All paths resolve inside the manifest directory. The importer reads and
+hashes every exact source, validates every declaration, builds every v3 profile and rejects
+duplicate bytes, paths, record IDs and provenance keys before creating an output directory.
+
+`tools/import_g17_partner_profiles.py` commits the fully preflighted batch through temporary files;
+an output that already exists refuses the whole batch, and a write failure removes newly committed
+outputs. Its receipt names the manifest digest, output paths and the boundary it cannot cross.
+This is local import, not acquisition: it supplies no record, review or adoption, and establishes
+neither admission nor exchangeability. Repository readiness therefore remains 0 of 48.
+
+### 7.1l Curation is a named decision bound to the live inventory (TG17.15 slice 11)
+
+`src/core/real_pool_curation.py` defines `g17-pool-curation-review/v1`. It accepts either
+`ESTABLISHED` or `NOT_ESTABLISHED`; code supplies neither answer. The declaration names its basis,
+limitations, claim boundary and at least one unmeasured property, and pins the successor digest,
+calibrated admission-contract digest, readiness-assessment digest and complete ordered record-ID
+list. It cannot load before readiness reaches `READY_FOR_CURATION_REVIEW`.
+
+Loading also requires a named maintainer adoption that still binds the exact declaration bytes.
+The loader recomputes readiness from the live profile roots, so changing any profile invalidates
+the review even while its signature remains valid for the old declaration. A loaded positive
+review does not mutate or supersede the successor declaration; that remains a separate explicit
+act. `tools/audit_g17_pool_curation.py` exposes that verification read-only and can target explicit
+profile roots; it cannot draft or sign a conclusion. No review is present, no human conclusion is
+implied, and repository readiness stays 0 of 48.
+
+### 7.1m External periods precede TESS value acquisition (TG17.15 slice 12)
+
+`src/data_layer/exoplanet_period_source.py` reads a bounded public NASA Exoplanet Archive TOI
+response. It keeps non-false-positive, non-limit orbital periods short enough to place at least
+eight declared cycles inside a nominal sector and converts the archive's days to seconds. A TIC
+with multiple eligible TOI periods is refused whole: one stellar flux record cannot enter twice,
+and choosing one period would choose the phase axis after seeing alternatives.
+
+`src/data_layer/tess_source.py` now has two metadata-only steps. Sector discovery proved that 48
+exact SPOC products are available for about 93.3 MiB, but none of those arbitrary targets matched
+the bounded unique-period catalogue, so their acquisition was stopped and no profile was emitted.
+The catalogue-first join instead carries each external period into the earliest exact MAST SPOC
+product it can find. It acquired 64 targets and 124,652,160 bytes under a 128 MiB cap. Raw
+acquisition is capped, content-addressed and records every FITS HDU's
+checksum state. This last field was forced by the live archive: sector-1 products had a valid
+primary CHECKSUM but stale LIGHTCURVE and APERTURE CHECKSUM headers and no DATASUM. Astropy warns
+rather than refuses, so the earlier documentation's blanket "checksum-valid" wording was false.
+Exact file SHA-256 remains the source identity; extension checksum failures remain visible.
+
+`src/core/tess_pool_assessment.py` measures the proposed quality-zero selection, clipped AR(1)
+effective sample size and median-error/MAD noise ratio without emitting profiles. All 64 records
+had finite admitted data and at least eight actual orbital cycles. Under the frozen admission
+bands their pool sizes were 0 / 37 / 43 (minimum / median / maximum), so none reached the required
+48 alternatives; effective sample size caused 2,200 pair refusals and noise floor 440. The methods
+were adopted by Ed Bentley as Creator on 2026-09-12 after this feasibility measurement. Adoption
+approves their use for profile construction; it does not change the 43-member maximum pool or
+establish exchangeability.
+
+### 7.1n Quantity is sufficient; curation remains human (TG17.15 slice 13)
+
+Incremental periodic-product discovery accepts an exclusion set and binds its digest, so the
+second acquisition cannot silently repeat one of the first 64 TIC hosts. Forty-eight additional
+products were selected and acquired for 93,680,640 bytes. The acquisition receipts merge only
+when every TIC identity is unique and retain both source-receipt digests.
+
+`src/core/tess_profile_export.py` reads each exact cached FITS product, applies the adopted
+quality-zero selection and marginal methods, emits a canonical elapsed-seconds/PDCSAP-flux CSV,
+and builds the existing v3 profile around those exact bytes. The profile provenance key also
+binds the raw FITS SHA-256. All 112 records and profiles publish immutably; a partial failure rolls
+back newly written outputs.
+
+The combined adopted-method assessment reports 67 records with at least 48 alternatives and pool
+sizes 0 / 60 / 73. The repository readiness audit therefore reports
+`READY_FOR_CURATION_REVIEW`, 112 profiles and shortfall zero, while retaining
+`exchangeability: NOT_ASSESSED`. The successor inventory remains `UNRESOLVED`; only a separately
+adopted curation review can change that scientific fact.
+
+### 7.1o Curation review binds a viable subset, not the inventory count (TG17.15 slice 14)
+
+`src/core/real_pool_curation_packet.py` derives the symmetric marginal-admission graph from the
+live readiness record. It iteratively removes records with fewer than 48 neighbors, then runs a
+deterministic degree-first clique search from every surviving seed. The recorded packet binds the
+successor, readiness and admission-contract digests. It finds a 65-record 48-core and a 59-record
+all-pairs-admissible subset, with 58 alternatives per selected record. It explicitly does not
+claim the heuristic found a globally maximum clique.
+
+The curation review advances to `g17-pool-curation-review/v2`. A review must bind the exact packet
+digest and its recommended record IDs. An `ESTABLISHED` decision is refused unless the packet
+contains at least 49 pairwise-admissible records. Profile or packet drift invalidates the review.
+No curation declaration or adoption has been created, so the packet remains evidence presented to
+a person rather than a decision made by code.
+
+### 7.1p Period-lineage correction supersedes the first packet (TG17.15 slice 15)
+
+An audit of repeated TOI 1654.01 values found that acquisition emitted every target's external
+period metadata from the final discovery-row loop variable. The frozen discoveries were correct;
+the acquisition receipts, profiles, readiness record and first curation packet were not. Those
+artifacts remain under named `g17_tess_lineage_bug` archives rather than being erased.
+
+Both acquisitions were rebuilt offline from their frozen discoveries and SHA-256-verified cached
+FITS bytes. All 112 target-to-discovery mappings now agree exactly. Eight targets fail the
+eight-native-cycle requirement with their correct periods, leaving 104 qualified profiles. The
+corrected assessment has 64 records reaching 48 alternatives and pool sizes 0 / 58.5 / 70. The
+new packet contains a 59-record 48-core and a 57-record all-pairs subset, giving each selected
+record 56 alternatives. Packet digest
+`8011d31cf536989940f171664b44266234e723d2a64eeba6d5d5b6c387db857c` binds readiness digest
+`f1e41a2c1801cf0cce03e964e39463358633e1261d9f1ee29c5aab0ca62c71fd`.
+
+This correction preserves the review-ready count while narrowing it honestly. Exchangeability
+remains `NOT_ASSESSED`; no curation declaration or adoption was created.
+
+### 7.1q Exact human-review handoff without automated judgment (TG17.15 slice 16)
+
+`g17_pool_curation_review_request.json` binds the corrected packet, readiness assessment,
+admission contract and exact 57 recommended record IDs. It records the verified marginal facts,
+both permitted human conclusions, every required authored field and the exact adoption
+affirmation. Its status is `AWAITING_HUMAN_REVIEW` and its schema is deliberately distinct from
+`g17-pool-curation-review/v2`; the adopted-review loader rejects it. No decision, attribution or
+signature was synthesized when the reviewer was unavailable.
+
+### 7.1r G17 pool evidence and curation in Platform Status (TG17.15 slice 17)
+
+`src/api/g17_pool.py` serves `GET /api/v1/g17-pool` for the corrected readiness, eight qualification refusals, marginal
+assessment, complete 57-record packet, pending review request, review/adoption state and names of
+the archived lineage-bug artifacts. Platform Status renders those facts and exact record IDs. It
+provides separate controls through `POST /api/v1/g17-pool/review` to write a reviewer-authored
+`ESTABLISHED` or `NOT_ESTABLISHED` decision and `POST /api/v1/g17-pool/review/adopt` to type the
+named adoption. Neither action has a scientific default, and adoption revalidates the exact live
+packet before writing the signature.
+
+This does not make every historical operation a browser operation. Public-archive discovery and
+bounded FITS acquisition remain explicit network-enabled CLI jobs; corrected reconstruction,
+qualification and immutable profile publication remain an offline CLI pipeline. Their results are
+visible in the UI, but rerunning those operational jobs is not. The surface states that boundary.
+The VS Code backend task invokes `.venv/Scripts/python.exe` directly, so the combined platform task
+uses the environment that actually carries FastAPI and Uvicorn rather than an unrelated global
+Python installation.
 
 ### 7.2 Confirmed defects
 
@@ -12917,7 +13498,7 @@ able to sit three slices out of date.
 |---|---|---|
 | `test_analysis_data.py` | 7 | diagnostics/data-layer endpoints and independent D17 boundary-ring oracle |
 | `test_artifact_store.py` | 33 | content addressing, checksum verification, handle budget, T4A.3 acceptance |
-| `test_api_infrastructure.py` | 16 | health, listing, pagination, CORS, data-source transparency, benchmark endpoints |
+| `test_api_infrastructure.py` | 18 | backend-local environment parsing, process precedence and explicit test/deployment opt-out; health, listing, pagination, CORS, data-source transparency and benchmark endpoints |
 | `test_benchmarks.py` | 50 | Ground-Truth Benchmark Suite, seed discipline, eager/streamed climatology agreement, D30 determinism, TG16.0 paired-family completeness, TG16.1-TG16.5 gate registration, and TG17.0 four-domain contract completeness/determinism/refusals |
 | `test_boundary_synthetic.py` | 8 | boundary treatments, windowing, synthetic generators and independent Euclidean-ring oracle |
 | `test_cds_source.py` | 51 | T5.2c monthly CDS planning/CLI, grid-alignment/server-snap refusals, network consent, atomic resume, shard integrity, conservative storage refusal, bounded Zarr publication, plus PASS/FAIL independent-route receipt publication, replay and tamper refusal; and T4C.5k's encoding-relative agreement criterion -- a packed frame revealing its binary step and an unpacked one refusing to invent one, D86 itself reproduced as the same pair of fields failing an absolute tolerance finer than the route can express while passing at 0.4 of a packing step, a real 1.4-step disagreement still failing so the criterion is not decoration, and the two criteria kept apart with both receipts surviving because the earlier verdict is why the successor exists, and the lattice search exercised at temperature, geopotential and specific-humidity magnitudes because a residual tolerance that does not scale would refuse a packed geopotential field as though it were unpacked; plus T4C.5m's D87 -- a record admitted only under the criterion that actually judged it, refused under the one that never ran on it, refused for a criterion that does not exist, and a receipt whose declared name has been relabelled refused rather than trusted to the manifest field it sits under; plus T4C.5n's labelled audit window -- an audit binding beside the authorising receipt rather than over it, unreadable to the gate because the criterion argument rejects any name carrying a label, and a label that could pass for a criterion refused outright |
@@ -12951,6 +13532,13 @@ able to sit three slices out of date.
 | `test_peeled_null.py` | 17 | T4E.26 peeled-null calibration: the subtracted shape rebuilt only from what the extractor published, a feature with no usable width left in place and counted rather than guessed at, the amplitude removed above the baseline rather than the magnitude carrying the baseline with it; and the contamination split that is the whole safeguard -- an artefact radius that scales with the feature it came from, no spurious features reporting no fraction rather than a clean zero, and a gap refusing to be computed where round zero already sits at the oracle |
 | `test_position_tolerance.py` | 17 | T4E.27 the position tolerance as an inspectable object: every component carrying its provenance and the excluded component named in the description; a zero or non-finite catalogue radius refused by name rather than defaulted, because a zero demands a separation nothing can supply and an infinity admits everything; a refused tolerance answering None and never False, so a missing agency report is not counted as a failed detection; refused observations leaving the denominator; a negative residual returned rather than clipped; and the acceptance curve monotone in the bar |
 | `test_catalogue_join.py` | 28 | T4E.28 the catalogue join whose parameters lived in a temp directory: the declared window, box and synoptic hours all applied with a census of what each refused; a single agency fix refused rather than given the zero radius T4E.27 named; the radius as the furthest fix and not the nearest; the deepest observation taken rather than the first, which is always where the storm entered the box; every distance kept rather than the minimum; a frame yielding nothing recorded as a row that stays in every denominator; both conditions reported rather than only the first; an empty population refused instead of reported as zeroes; and a row-by-row check that a matching median cannot hide a row that disagrees |
+| `test_edge_support.py` | 3 | T4E.35 post-hoc crop-edge support: exact nearest-boundary geometry over all four edges, no-feature rows retained as censored failures, out-of-crop positions refused, near-edge and interior strata exhaustive, and both committed T4E.28 extraction paths auditable without rerunning extraction |
+| `test_t4e36_wrapped_acquisition.py` | 6 | T4E.36's production path without a live request: exact 48-shard/5,844-frame planning; absent and digest-drifted adoption refusals; a distinct experiment-specific network gate that stops before the client; `vo`/`vorticity` normalization; per-field source-encoding seam measurement, mismatch and unmeasurable-tolerance refusals; single-column seam deduplication; immutable content-addressed Zarr publication while every parent shard remains byte-identical; and evaluation over exactly the 18 T4E.28 rows with no new census and no SWT rescue of a raw failure |
+| `test_t4e37_failure_attribution.py` | 5 | T4E.37 before real evaluation: exact 13-row failed population and source digest; native-grid pre-threshold 3x3 maxima with boundary exclusion and ties retained; non-finite and axis-shape refusals; exhaustive binary attribution and strict 7-of-13 majority with no PASS meaning; and absent or drifted adoption stopping before the wrapped record is opened |
+| `test_t4e38_reference_alignment.py` | 11 | T4E.38 acquisition, materialisation and evaluation contract: exact T4E.36/T4E.37 source binding and 36-shard geometry; one timestamp per single-level MSLP request with no invented pressure level; wrong product, variable, time and dateline refusals; conservative exact-frame storage accounting; adoption plus experiment/general network guards before client construction; atomic content-checked synthetic NetCDF acquisition/resume; seam deduplication and over-tolerance refusal; deterministic basin ties and boundary refusal; and the fixed 10-of-18 decision denominator |
+| `test_t4e39_reference_holdout.py` | 5 | T4E.39 before holdout opening: exact T4E.38 result and signed-reference binding while the planner cannot parse catalogue rows; population and strict-majority drift refusals; current human adoption checked before catalogue access; an adopted synthetic census publishing only identities and geometry with ERA5/network false; and fewer than ten selected storms named `INSUFFICIENT_HOLDOUT_POPULATION` |
+| `test_t4e39_reference_holdout_fields.py` | 5 | T4E.39 field acquisition, materialisation and holdout decision: census-bound four-stream request geometry over 12 exact timestamps; wrong product, level, variable, timestamp and segment refusals; adoption plus experiment-specific and general network guards before any client call; seam disagreement beyond source-encoding tolerance refusing materialisation; and the frozen strict-majority decision retaining ties and refusals in the denominator |
+| `test_t4e39_holdout_review.py` | 8 | T4E.40 holdout surface and result review: every performed stage published in order with acquisition and re-running refused in the UI; the smallest admissible majority reported as fragile with ties and refusals kept; every stage artifact and measured row examinable against a recomputed digest; a review structurally incapable of expressing an acceptance and a review request that cannot load as a review; a re-sealed measurement that lost `NOT_AN_ACCEPTANCE` refused; writing without adopting, including the duplicate refusal; exact affirmation and live-result binding on adoption; and an adopted review that no longer binds the result shown as stale |
 | `test_coverage_report.py` | 17 | TG19.1 the generic coverage check: pair and triple survival counted as the units `ALLOWED_CARDINALITIES` actually admits, with a group holding a never-seen feature counted as unassemblable because the object was never built in any scene; an unrepresentative density returning a refusal and no coverage number at all; an unregistered extractor, an unknown calibration source, a constant background, a three-dimensional background and zero configurations each refused by name; and every passing report carrying its claim boundary, its extractor capabilities, the upper-bound caveat and the field declaration R19 needs |
 | `test_signed_reference.py` | 16 | TG19.3 signed external references: the whole chain checked -- signature against design, design against data, byte count first so a truncated download is named before 35 MB are hashed; an absent file naming its path, source URL and required digest, and saying that replacing it is a declaration rather than a copy; a digest mismatch refused as a DIFFERENT reference whose signed population and claim boundary do not extend to it, never as a damaged one; a design edited after signature refused with both digests; an unsigned design allowed and reported unverified rather than failed; and require() raising by name instead of returning an unverified path |
 | `test_declared_population.py` | 17 | TG19.4 a record holding two answers read by name or not at all: an unnamed read refused with both names offered and the mistake it prevents named in the refusal; a population the record only SUMMARISES refused rather than substituted with the other pass's rows, saying what is there and what would produce the rest; an unknown name and an unmapped record both refused; the stated identification checked against the rows it describes, so the map is checkable rather than believed; and the committed record verified unedited |
@@ -12993,7 +13581,7 @@ able to sit three slices out of date.
 | `test_forecasting_artifact_evaluation.py` | 8 | T5.3b/T5.2d checkpoint/config integrity, artifact-bound lineage, persistence-relative metrics, physical-time reporting/refusals, undefined-skill handling and CPU/RTX vendor-neutral accelerator parity |
 | `test_forecasting_protocol.py` | 7 | T5.0a exact schema completeness, canonical identity, immutable nested configuration, evidence requirements, temporal/rollout consistency, persistence and tamper/drift refusal |
 | `test_forecasting_protocol_binding.py` | 4 | T5.0b exact dataset/protocol/checkpoint binding, recomputed coordinate/statistics identities, drift refusals and bound-evaluation cross-run isolation |
-| `test_frontend_contract.py` | 185 | the frontend/backend contract, including dataset-bound navigation gating with visible backend refusal reasons, capability profiles showing yes/no/not-established facts, transform/dataset/cadence readiness claim boundaries, domain-driven acquisition, workflow-grouped navigation, persistent record/study context, the TG11.1 analysis panel's three engine operations, R21 disablement, three-valued verdict and re-read identity check, the TG11.2 preregistration panel's declare-never-decide split, TG11.5's separate GET-only recorded-review workspace with its visible R23 fence, complete argument/cost display and honest empty states, TG17.1's manifest-driven save/reload/preflight Composer, TG17.2's known-answer structural-contract inspector and disabled premature runner, preservation of every ERA5 control, TG17.3's schema-driven adapter controls with no per-domain branch in the generic composer, every registrable control kind having a renderer, and the adapter/conformance payload shapes, plus TG17.7's guided path rendered entirely from the served contract with no order of operations held in a component, one next action, blocked steps that stay reachable with their reason, a tablist operable by keyboard, a place kept across navigation and refresh, presets applied as the instants the server resolved, and empty panels that read as unasked questions rather than clean results, TG17.8's comparison views with their structural visual refusals, TG17.9's generated trust surface mounted in Composer and Platform, read-only replay, evidence-category absences and explicit navigation-only handoff, TG18.1's class-preserving Research Archive, visible noninteractive acquisition routes, and refusal to treat run or receipt labels as published studies, TG18.2's figure-data contract - every figure family reaching the shared exact-value panel, a named disclosure, keyboard-addressable rather than hover-only value inspection, stated missingness, colour-range provenance, log-axis omission and truncation, and the refusal to author a summary statistic, and TG18.2's comparison contract - every declared pair stating whether a shared colour range is admissible and why, refusing on mismatched units, mismatched quantity, an undeclared relationship or a panel with no finite sample, deciding cell correspondence separately from scale, and reaching at least two panels per contract, TG18.2's validity and uncertainty overlay - a fitted claim stating the band it was taken over and the uncertainty attached to it, refusing to mark a degenerate band, one whose limits are not finite or one lying off the drawn extent, clamping a band that overruns the figure so the mark matches the prose, projecting into log coordinates on a logarithmic axis, flagging a value quoted with no uncertainty, carrying the analysis layer's assumption strings verbatim while leaving its interpretation where it already appears, giving the shading a text equivalent in the tabulated points, and refusing to draw the fitted model or an envelope around it, TG18.2's bounded pointer/keyboard pane resize preserving both children and collapsing to document order at narrow widths, TG18.3's global navigation-only journey, one remediation per shell blocker, Composer-owned scientific status and visibly separate legacy gridded tools, TG18.4's rendered acceptance inventory, StrictMode-safe initial focus and non-colour semantics, and TG18.5's qualification-gate inventory held against the shell's own navigation with every journey destination resolved to a served workspace, including the two blocked stages no clean-browser run can click, plus TG11.6's accessibility and the UI integrity guards |
+| `test_frontend_contract.py` | 186 | the frontend/backend contract, including dataset-bound navigation gating with visible backend refusal reasons, capability profiles showing yes/no/not-established facts, the object-to-existing-planner handoff and its schema/content binding, transform/dataset/cadence readiness claim boundaries, domain-driven acquisition, workflow-grouped navigation, persistent record/study context, the TG11.1 analysis panel's three engine operations, R21 disablement, three-valued verdict and re-read identity check, the TG11.2 preregistration panel's declare-never-decide split, TG11.5's separate GET-only recorded-review workspace with its visible R23 fence, complete argument/cost display and honest empty states, TG17.1's manifest-driven save/reload/preflight Composer, TG17.2's known-answer structural-contract inspector and disabled premature runner, preservation of every ERA5 control, TG17.3's schema-driven adapter controls with no per-domain branch in the generic composer, every registrable control kind having a renderer, and the adapter/conformance payload shapes, plus TG17.7's guided path rendered entirely from the served contract with no order of operations held in a component, one next action, blocked steps that stay reachable with their reason, a tablist operable by keyboard, a place kept across navigation and refresh, presets applied as the instants the server resolved, and empty panels that read as unasked questions rather than clean results, TG17.8's comparison views with their structural visual refusals, TG17.9's generated trust surface mounted in Composer and Platform, read-only replay, evidence-category absences and explicit navigation-only handoff, TG18.1's class-preserving Research Archive, visible noninteractive acquisition routes, and refusal to treat run or receipt labels as published studies, TG18.2's figure-data contract - every figure family reaching the shared exact-value panel, a named disclosure, keyboard-addressable rather than hover-only value inspection, stated missingness, colour-range provenance, log-axis omission and truncation, and the refusal to author a summary statistic, and TG18.2's comparison contract - every declared pair stating whether a shared colour range is admissible and why, refusing on mismatched units, mismatched quantity, an undeclared relationship or a panel with no finite sample, deciding cell correspondence separately from scale, and reaching at least two panels per contract, TG18.2's validity and uncertainty overlay - a fitted claim stating the band it was taken over and the uncertainty attached to it, refusing to mark a degenerate band, one whose limits are not finite or one lying off the drawn extent, clamping a band that overruns the figure so the mark matches the prose, projecting into log coordinates on a logarithmic axis, flagging a value quoted with no uncertainty, carrying the analysis layer's assumption strings verbatim while leaving its interpretation where it already appears, giving the shading a text equivalent in the tabulated points, and refusing to draw the fitted model or an envelope around it, TG18.2's bounded pointer/keyboard pane resize preserving both children and collapsing to document order at narrow widths, TG18.3's global navigation-only journey, one remediation per shell blocker, Composer-owned scientific status and visibly separate legacy gridded tools, TG18.4's rendered acceptance inventory, StrictMode-safe initial focus and non-colour semantics, and TG18.5's qualification-gate inventory held against the shell's own navigation with every journey destination resolved to a served workspace, including the two blocked stages no clean-browser run can click, plus TG11.6's accessibility and the UI integrity guards |
 | `test_gate_run.py` | 6 | T4C.5d frozen plan, local-only preflight, bounded train-only climatology/signatures, authenticated synthetic gate receipt, no-overwrite and tamper refusal; and for T4C.5i step 7 the derived power record in the receipt -- per-scale decorrelation and effective samples, the attenuation curve measured on the window both interiors supply, the sweep's own surrogate ensemble reproduced, the family's best case selected from train and non-finite rows excluded from it, and every branch of the FAIL/INVALID boundary including the PASS that is deliberately not downgraded, and a decimated family declaring that its matched window is a coefficient-count match rather than a shared area |
 | `test_gate_api.py` | 13 | T4C.5j read-only transport for the gate record: the surface publishing its own four refusals; the whole `/api/v1/gate` prefix asserted to serve `GET` and nothing else, so read-only is a property of the routing table; a retired campaign labelled RETIRED and still served in full with `resolvable: false` intact; retirement matched on fingerprint and therefore surviving a rename of all three files; an older campaign no supersession names left ACTIVE while its defect is still reported, because not being retired is not being sound; a tampered envelope listed as unreadable rather than silently dropped; the supersession review re-run against both campaigns with every reason failing for the retired design and passing for the successor and `deferred_to_run` carrying D84/D85/D43; an empty receipt store reported as an absence of runs rather than of findings; a receipt served with both verdicts and the rule that moved the second; an edited receipt refused with 409 and a store holding only it still NOT_YET_MEASURED; a receipt id that cannot escape its store; and the repository's own store served as a reviewer would open it (D43, D84, D85) |
 | `test_gate_campaign.py` | 25 | T4C.5f-h exact campaign identity, strict nested schema, canary/full/WeatherBench drift refusals, pre-transfer R13/physical-lag audit, aggregate storage/readiness, immutable freeze/load, pinned real preregistration and zero-network CLI; plus T4C.5i's surrogate resolution audit -- D85 pinned on the frozen campaign itself (2,912 distinct shifts against 3,005 required) and acquisition refused on it while review still reports it; plus step 8's checked supersession -- an inadmissible reason, an unrepaired successor, a dropped invariant, a rename, a swapped envelope and the acquisition refusal, from the library and the CLI (19 pytest cases); plus T4C.5m's `run_campaign_gate` -- the agreement rule reaching the gate from the frozen envelope rather than from the caller, and a verdict refused both for a campaign that declares no rule and for one a supplied supersession has retired, because a verdict carries forward as evidence in a way a review does not |
@@ -13033,8 +13621,9 @@ able to sit three slices out of date.
 | `test_cross_domain_api.py` | 35 | TG11.4b the cross-domain record: two native clocks intersected exactly, with what each side retained and discarded reported; clocks that share no observation refused rather than resampled, and the refusal naming interpolation as the thing it declines; an irregular native clock refusing precedence by name; a column whose semantics or units were not declared refused rather than defaulted (R19); an unknown reading setting refused rather than ignored; two records from one domain refused as not a cross-domain study; a family declared in seconds converted onto the common cadence; only pairs that cross the boundary counted as members; a duration below either domain’s physical floor refused rather than dropped and one the common clock cannot express refused rather than rounded; the price agreeing with the family the generate pass actually searches; the partition identity ignoring what the files were called (D65); generation reading nothing from the held-out partition and writing nothing; every run setting sealed inside the specification and the seal visible where the programme lists what it froze; the frozen members re-derived from the record rather than reconstructed from their labels; an edited seal refused at load and spending nothing; **the planted relationship confirmed on data it was not selected from and the same pipeline over an uncoupled pair confirming nothing**; both operands’ semantics and units restored to the receipt; the partition opened once; a wrong pair of records confirming nothing and costing nothing; a published digest that disagrees with the seal spending nothing; a seal frozen by another surface refused; the confirm route accepting the two records and nothing else; and no route on the surface accepting a lag in frames |
 | `test_reviews_api.py` | 10 | TG11.5's read-only recorded-review boundary: explicit absence without reassurance, complete verified record/outcome/cost serving, exact latest-bundle binding, record-digest linkage, malformed and unknown artifacts reported rather than skipped, unknown-study 404, GET-only routing, and a read leaving the evidence bundle byte-identical (R22, R23); and T4E.33 the guard that asserted this router was read-only, NARROWED rather than deleted to the property that now holds -- exactly one writing route, the one that convenes a panel, refusing before it spends anything -- with the module's docstring pinned to no longer claim it never runs a model |
 | `test_profiles.py` | 10 | TG12.2b-d immutable profiles, declared reductions, and bounded Argo seam: profile spec machine-independence and scatter preservation, preflight counts, observed-invalid distinction from absence, per-float reduction enforcing violations, depth-bin aggregation identity shifts, profile collection round trips, argo parent flat-channel refusal, profile reduction registry discoverability, and profile API contract refusal visibility (E15, R17) |
-| `test_photometry.py` | 13 | TG13.1 atomic TESS onboarding and precedence refusal, canonical bounded requests, metadata-only exact-product preflight, bounded transient-timeout retry, checksum-valid BJD_TDB parsing and value-bound identity, pre-download caps, immutable collection replay, source discovery, API claim boundaries, and an explicit opt-in bounded live MAST acceptance (E14, E15, R17, R21) |
-| `test_dataset_ingress.py` | 9 | G14/G15 file probing without semantic inference, explicit sample roles/relationships/units, content-bound routing with explained spatial refusals, grouped/ordered split-leakage refusal, TG16.0's shared independent-only admission contract, R18 family sealing and permutation-resolution refusal, planted generate/confirm recovery, changed-file and tampered-plan refusal, and the complete multipart HTTP workflow |
+| `test_photometry.py` | 25 | TG13.1 atomic TESS onboarding and precedence refusal, canonical bounded requests, metadata-only exact-product preflight, bounded transient-timeout retry, recorded FITS checksum state and value-bound identity, pre-download caps, immutable collection replay, source discovery, TG17.15 slices 12–15's bounded and incremental periodic-product joins, per-target metadata lineage, discovery-bound raw acquisition, explicit profile qualification, adopted marginal assessment, receipt merge and source-bound profile export, API claim boundaries, and an explicit opt-in bounded live MAST acceptance (E14, E15, R17, R21) |
+| `test_exoplanet_period_source.py` | 3 | TG17.15 slice 12's public TOI period catalogue: independently declared periods converted to seconds, calibrated eight-cycle floor, strict response parsing and multi-period stellar hosts refused rather than duplicated or assigned an arbitrary phase |
+| `test_dataset_ingress.py` | 11 | G14/G15 file probing without semantic inference, explicit sample roles/relationships/units, content-bound routing with explained spatial refusals, registered planning-path inventory, exact object/declaration/profile handoff binding, refusal of operations without a planner, grouped/ordered split-leakage refusal, TG16.0's shared independent-only admission contract, R18 family sealing and permutation-resolution refusal, planted generate/confirm recovery, changed-file and tampered-plan refusal, and the complete multipart HTTP workflow |
 | `test_representation_structure.py` | 6 | TG16.1 complete pair enumeration, joint redundancy/complementarity/XOR/null discrimination, sealed estimator/null/family and permutation-resolution refusal, content/tamper binding, non-removal claim boundary, earned capability registration, and multipart plan/run workflow |
 | `test_conditional_information.py` | 6 | TG16.2 conditional-signal/null/collider discrimination, overlap and effective-support admission, sealed conditional-randomisation family and permutation-resolution refusal, content/tamper binding, conditional-only claim boundary, earned nuisance capability, and multipart plan/run workflow |
 | `test_stable_subspace.py` | 13 | TG16.3 span/projector invariance, planted linear and null discrimination, optional nuisance-region stability boundary, sealed complete family/optimizer/partition and permutation-resolution refusal, content/tamper binding and multipart plan/generate; TG16.4 unchanged held-out application, complete-family correction, nuisance-overlap refusal, content-bound seal, publication check and durable one-opening ledger; TG16.5 published definitions, no-adaptation external contract, provenance/content binding, target spending, and multipart certification |
@@ -13045,6 +13634,11 @@ able to sit three slices out of date.
 | `test_calibration_record.py` | 28 | TG17.12 the channel from a calibration measured outside orchestration to the release gate that reports it: the recorded calendar calibration meeting every answer frozen with its fixture and each case inside its own declared bounds, a checkout with no recording reading `NOT_RUN` rather than inheriting this one, a recording copied beside the source it was made against still reading `PASS` as the control, a change to the statistic returning the gate to `NOT_RUN` and naming the file that moved while the recording stays readable, a relaxed frozen expectation unbinding the recording through the contract digest, a recording whose cases did not meet their answers reading `FAIL` rather than `NOT_RUN` because a calibration that ran and failed is a different fact from one that did not run, source digests agreeing across line endings so a Windows clone does not read its own recording as stale, the gate assembling in under a second and never executing the calibration, one passing gate leaving the verdict `NOT_RELEASEABLE`, the calendar null's floor asserted as `1/(1+replications)` and resolvable at both the calibration family and the declared plan, the two modes shown to buy their floor differently with only the calendar one able to reject, and the applicability section claiming nothing about acquired data; and (TG17.15 slice 5) the second recording and the supersession that carries it: the recorded pool calibration meeting its declared contract with every error rate clearing alpha on a bound that is shown to be above its own point estimate, the recorded witness recomputed case by case from the seed it names so a fifty-minute measurement is checkable in seconds, the recorded ladder shown to have run every rung against one inventory, a change to the null the calibration ranks against unbinding the recording while leaving it readable, a relaxed declared expectation unbinding it through the contract digest, a case that missed its expectation reading `FAIL` and a run too small to bound its own rate reading `FAIL` rather than passing, the supersession holding only while the predecessor's claim recomputes true, a predecessor whose claim stopped being true reading `VOID` rather than crediting this phase with a limit that removed itself, an absent successor leaving the old refusal standing, the supersession stating what it does *not* replace, the two estimands' inventories shown to differ by the two numbers rather than by an adjective, and the trimming that writes a recording exercised directly so a break in it cannot wait fifty minutes to surface |
 | `test_live_source_evidence.py` | 18 | TG17.14's network-dark evidence boundary and explicit runner: the flagship quartet derived rather than copied, three archive bindings kept distinct from the bespoke local binding, absence and partial coverage reading `NOT_RUN`, a public PASS without network use refused, the local record forbidden to invent network use, source drift unbinding a readable record, operational refusal kept distinct from executed failure, exact measurement times plus coverage and non-empty content identity required, a complete current four-domain recording reaching the release ledger without clearing its independent refusals, frozen bounded requests rendered without network, two permissions required before any probe, a reporter-shaped complete run read back as PASS, provider refusal kept distinct from implementation failure, the CLI demanding its exact acknowledgement, the local record digest binding exact bytes rather than normalising line endings as source code does, an edited evidence record failing its self-hash, and committed fabricated demo data forbidden from satisfying the live local binding |
 | `test_experiment_qualification.py` | 28 | TG17.10 the release gate itself: three durations by two modes with no cell missing, explicit dates and complete-family correction frozen before results, every matrix manifest preflighting without a refusal, the two modes carrying different relationship/null/language contracts, the order-book record bound by content rather than filename, every admissible cell executing/exporting/replaying with one manifest identity throughout, the scale/shape quartet refused before execution by the order book's own declaration with a refused cell opening no run and keeping its reason, the scale-partner null admitted per domain and never by framework default (D83), one timed-out acquisition retried alone across a process boundary, the single-failure suite registered as fixture-only, a fully green offline rehearsal still unable to make the verdict `RELEASEABLE`, scientist-action measurements reported as `NOT_MEASURED` rather than invented, the record self-hashed with tampering detected, a repeat qualification resuming identical runs, the HTTP plan and rehearsal keeping the unrun gates visible, and (TG17.11) the scale/shape gate refused rather than unimplemented or passed, stating applicability without claiming the calibration's result, the declared null unable to reject at any inventory size it will draw from, both declared domain families carrying the null's own refusal verbatim, and the whole determination made without acquiring or calibrating anything; and (TG17.15 slice 5) the gate still refusing after the supersession with the reason rather than the status being what moved, the superseded claim recomputed from the same primitives the applicability section uses so the two cannot disagree, the declared inference read back from the six frozen manifests rather than restated, the blockers published with what would discharge each and which one this module cannot decide, the exchangeability blocker shown to survive a passing recording, and the gate reading a tens-of-minutes recording without running it |
+| `test_scale_shape_successor.py` | 5 | TG17.15 slice 6's separate exact-pool-substitution declaration: calibrated family, derived pool minimum, alpha, correction, orientation and admission contract pinned to their owning code; canonical declaration digest; unresolved real inventory kept empty and unable to claim exchangeability; calibrated fields and marginal admission contract refused when altered; future curated inventory required to reach the derived pool minimum |
+| `test_real_pool_readiness.py` | 6 | TG17.15 slices 7–9's repository-local inventory audit: zero profiles reported as bounded absence with a 48-record shortfall; committed assessment reproduced exactly; 48 profiles reaching review readiness without establishing exchangeability; duplicate identities, malformed documents, legacy unbound envelopes, invalid source digests and malformed method-review evidence refused |
+| `test_real_pool_ingress.py` | 7 | TG17.15 slices 8–9's source-bound profile construction: exact-byte SHA-256, storage-only marginal derivation, adopted scientific-method review with exact matching and drift refusal, malformed record refusals and immutable CLI output |
+| `test_real_pool_import.py` | 3 | TG17.15 slice 10's digest-pinned batch import: complete preflight before emission, successful v3 profile batches, source-drift refusal with no partial output, confined relative paths and immutable reruns |
+| `test_real_pool_curation.py` | 8 | TG17.15 slices 11, 14, 16 and 17's adopted human curation boundary: both exchangeability conclusions accepted without inference, review-ready inventory and exact packet required, profile/adoption drift invalidation, 49-record pairwise viability, an exact pending-review handoff that cannot load as a decision, API visibility, separate review writing without adoption, and no automatic successor mutation |
 | `test_spectral_feature.py` | 15 | T4D.1 located maxima: a planted blob recovered sub-pixel at three positions including one exactly between samples, the refinement beating the integer peak it starts from, the R13 margin excluding a detection the detector demonstrably can see, the margin recorded even when not applied, a threshold fitted over the record rather than per frame so a quiet frame reports nothing beside a loud one, frozen thresholds inherited verbatim and a threshold above the peak yielding nothing, a threshold that would accept everything refused, truncation recorded with the strongest kept rather than silently dropped, a real family reporting no phase rather than inventing zero and a complex one reporting the phase it has, a flat top as one detection at its centroid carrying its own imprecision, a feature exactly between two samples found at the midpoint, a plateau on a slope refused as a maximum, the claim boundary travelling with the detection, and every band visited and labelled |
 | `test_spectral_tracking.py` | 19 | T4D.2 linking those maxima: the two level-4 bands running the whole 24-frame sequence unbroken (D1's aliasing, absent), the transverse coordinate of every band's track within a pixel of the recorded trajectory, the velocity equal to advection plus the structure's own growth along the axis its band high-passes -- a prediction with no free parameter, checked for every band -- the coarse band excited later and never earlier, no track spanning two levels because the octave gate refuses it; and for D88 the levels of a linear-phase bank agreeing on where a blob is while the unaligned view is marked not comparable, a db2 bank refused for cross-scale linking by name with one-level-at-a-time still allowed, and a decimated family unable to declare an alignment at all; plus a separable band label never becoming an angle and the orientation gate refused on it, a complex family passing its declared angle through, a threshold crossing never reported as a significance, the representation naming the filter and not only the family, a plateau carried as positional uncertainty, domain/dataset/variable required rather than defaulted, a grid that closes in longitude refused a flat declaration, two sets of detection settings refused, a search that found nothing returning no tracking result, and the clock being every frame that was searched |
 | `test_spectral_constellation.py` | 45 | T4E.1 the bridge to TG3.3's attributed graphs: every constellation carrying a real `AttributedGraph` whose declared relations are exactly what `measurable_relations` reports, three of the eight measurable and the other five refused by name with the field each one lacks; D90 pinned on the units themselves rather than on the symptom, with `distance` measured on every pair of the pass and a scale genuinely in metres still refused so the fix cannot be read as a weakening; `succession` asserted false for every ordered pair of every constellation, which is why the onsets are carried separately; the enumeration checked against the combinatorics of its own frame census frame by frame and 318 nodes checked against the tracks they came from; the flank separation of two bands following one vortex, `same_band` on every pair, and the claim boundary naming both; the raw and band-normalised strength ratios disagreeing about the sign of the comparison, with the band RMS recovered exactly from the threshold and its sigma, and a detection that recorded no threshold refused a normalised strength and saying so; left-censoring set from the tracker's own clock, the nine-frame offset carried as a bound, and an uncensored pair carrying no note; the plane angle checked against six hand-built displacements, declared not to be a compass in its own receipt, refused between two coincident nodes, and wrapped on a periodic axis with two tracks disagreeing about where it closes refused; rates local to the node so two frames of one track differ, a single sighting given no rate, velocity or scale velocity, a held level reporting exactly zero rather than a least-squares residue, and a signed radial velocity; and the refusals -- only pairs and triples, a frame over the node cap refused rather than sampled, a budget overrun refused whole rather than returned as a prefix, R19 left to TG3.3 rather than re-implemented, D88 registration required across scales but not within one, a missing registration receipt not treated as a failing one, a node with no scale refused, the carried half required to be the same size as the comparable half, and the absent self-loop check shown to be unreachable rather than added |
@@ -13069,7 +13663,7 @@ able to sit three slices out of date.
   | `test_identity_certification.py` | 131 | T4E.9 the T4E identity path against a motif known by construction: the benchmark registered and naming the path it certifies, three disjoint partitions so a radius is never evaluated on what calibrated it, exactly one motif configuration in a planted scene and none in a null one, construction labels taken from the generator and refused rather than guessed when a planted position has no feature near it or two positions claim one, only cross-scene pairs formed, the definition's separation asserted as a floor, nothing admitted where nothing recurs with the absent positive population left unmeasured rather than zero, the frozen-radius failure pinned as a relationship to the feasible radius rather than as two numbers, an empty calibration returning INVALID rather than a permissive radius, every result stating what it does not license, and T4E.13's criterion fixed in code while asserted to be measured nowhere -- `k` derived as a function of the partition size, unequal partitions refused rather than pooled, monotonicity in `k` checked on a toy rather than assumed, and, once candidate 3 was adopted and falsified, that guard replaced by the reading of the result -- which conditions failed and by how much, that the null held at 0 of 1486 proposed, that the 0.0000 recall is recorded as arithmetic rather than a finding, that no lower k can rescue what this one failed, that the falsification licenses none of the conclusions nearest to it, that partitions 720-735 stay refused in code, and T4E.14's partial-presence test bed -- seeds that collide with no existing evidence, a reservation refused with no flag to open it, planting patterns that are deterministic and not contiguous, the recoverable population C(j,2) rather than C(S,2), the design's own record of what this evidence cannot repair, and T4E.15's criterion fixed in code while asserted to be measured nowhere -- closure broken by a single loose end, closure admitting only a subset of what consistency admits, the criterion carrying no tunable parameter at all, the span-ranking design recorded as discarded by derivation, the declaration's own worst case and refusal to predict, and -- once measured and falsified -- the reading of that result: the conditions that failed with their counts, the mechanism executed rather than described (a pair with no other partners is closed and is therefore admitted, while one loose end rejects a group spanning five scenes), the cross-check showing closure admits more than candidate 2 on the evidence candidate 2 passed, the missed derivation recorded rather than quietly repaired, the constraint the falsification fixes on any successor, and T4E.16's withdrawal held as a derivation rather than a note -- the surrogate reassembly rate computed analytically and by simulation, the record of why the design cannot simply be repaired, the fact that a withdrawn declaration adds nothing to the accumulated multiplicity, and PooledDistances keeping a refused distance as NaN so it can never leak in as a number |
   | `test_identity_target_declaration.py` | 53 | T4E.8 slice 3 the declared identity target: an absent target or evidence class refused by name, a misspelling refused with its correction, `kind_recurrence` against record-derived proxy labels refused as circular, `track_continuity` admitted with its tracker-agreement caveat, every target round-tripping what it recognises and does not license, the published proxy wording pinned verbatim so naming a target cannot reword a cited receipt, and the external-reference path recovering two planted identities from a reviewed catalogue while refusing a mismatched family, a single identity, a non-catalogue and a negative population the patterns cannot supply |
   | `test_spectral_spatial_identity.py` | 24 | T4E.8 spatial geometry, detector-band/magnitude independence, source/scope refusal, analytic distances, old-radius refusal, scalar/accelerated agreement and two-sided proxy-label diagnostics |
-| **total** | **4567** | |
+| **total** | **4659** | |
 
 ### 7.4a Browser suite inventory
 
@@ -13107,7 +13701,8 @@ not bound to the scratch state.
 | `adoption.spec.ts` | 9 | T4E.32/T4E.33 signing as an act performed on screen: an unsigned declaration offering to be adopted and a signed one naming who signed it, the digest being signed shown beside the form, no default supplied for the name, the reason or the affirmation, a wrong affirmation and a placeholder name each refused with nothing written, the convening control stating up to 11 paid calls before anything can be spent with the authorisation a separate control from the run button, and convening without a server key refusing with 'Nothing was sent'. Every test drives the form to a REFUSAL: a passing test that wrote an adoption would be a test that forged a signature; and T4E.34 the composer supplying no content -- task, claim boundary and falsifier all empty on arrival -- refusing a prediction with no stated falsifier with nothing written, and the commit-alone control checked by default with the same-commit reason on screen |
 | `join-distribution.spec.ts` | 6 | T4E.29 every distance on screen: all eighteen storms as rows including the one that yielded no feature, labelled and still in every denominator; the two outliers T4E.18's published range excluded without saying so, visible at 315.1 and 247.7 km; an exclusion that keeps its rows on screen and computes both aggregates, where the kept maximum is the figure that refutes the published range; the extraction pass named and switching it changing the counts; the measurement's own claim boundary carried beside the chart; and no control matching accept/approve/save/record/apply/adopt |
 | `study-trail.spec.ts` | 6 | T4E.23 the study trail rendered: a study drawn as the chain it ran rather than a list of files, every verdict on screen carrying what it may not be used for, a question declared and never measured shown rather than filtered, a corrected record marked where a reader looks first, the surface stating its own refusals instead of implying them by absent buttons, and a measurement opened whole and closed again |
-| **suite** | **136 + 6 + 6 + 11 + 9** | 136 from a cleaned `.e2e-state`, Chromium, 2026-09-04; `study-trail` measured 2026-09-10, `join-distribution` 2026-09-11 (48.6 s), and `adoption` with `ui-qualification` together 2026-09-11 (1.0 min, 11 passed), and `adoption` again after T4E.34 (39.1 s, 9 passed). Five dated measurements rather than one, which is cheaper than implying a whole-suite run that never happened |
+| `reference-holdout.spec.ts` | 4 | T4E.40 the whole holdout rendered: all eight performed stages in order with who performed each, the `NOT_AN_ACCEPTANCE` verdict beside the outcome and the smallest-admissible-majority fragility stated on screen rather than left to be computed, exact ties and refusals drawn as tiles of the same weight as the two candidate counts, a stage opened and the bytes behind it reached with a recomputed digest, all twelve storms with both complete basin walks, and the two operations the surface refuses -- acquiring fields and re-running a spent holdout -- naming their reasons. The review form is driven only as far as its offered decisions, which are readings of the boundary and never an acceptance; a browser test that wrote a review would be forging a person's reading |
+| **suite** | **136 + 6 + 6 + 11 + 9 + 4** | 136 from a cleaned `.e2e-state`, Chromium, 2026-09-04; `study-trail` measured 2026-09-10, `join-distribution` 2026-09-11 (48.6 s), and `adoption` with `ui-qualification` together 2026-09-11 (1.0 min, 11 passed), and `adoption` again after T4E.34 (39.1 s, 9 passed), and `reference-holdout` 2026-09-13 (35.9 s, 4 passed). Six dated measurements rather than one, which is cheaper than implying a whole-suite run that never happened |
 
 The counts are guarded by `test_documentation.py`, but only as far as a static reader honestly can:
 the file set must match `frontend/e2e/` exactly in both directions, and each stated count must be at
@@ -13147,6 +13742,12 @@ Two further consequences worth recording:
 *   **Preserving a spectrum is necessary but not sufficient.** The lesson generalises: a
     surrogate must match the null's *distribution*, not only the summary statistic the method
     is named after.
+
+### 7.2d Startup defect found after D101
+
+| Defect | Location | Finding | Status |
+|---|---|---|---|
+| D102 | `start_platform.ps1`, `.vscode/tasks.json`, `src/api/main.py` | **Backend network consent depended on which valid launcher started it.** `.env.local` contained `SPECTRALEARTH_ALLOW_NETWORK=1`, and `start_platform.ps1` promoted it into child processes, but the VS Code task launched Uvicorn directly and never loaded the file. The live catalogue therefore returned `network_enabled=false` while the machine had network access and the local flag was set. `src.api.main` now loads the repository-local file before backend adapters are imported, without a third-party dependency. Existing process variables win, values are never reported, malformed lines are named only by number, and `SPECTRALEARTH_LOAD_LOCAL_ENV=0` provides explicit test/deployment isolation. | **FIXED** TG15.4 (2026-09-12, `ed-dev`) |
 
 ### 7.3 Precision caveats (not defects, but do not overstate them)
 

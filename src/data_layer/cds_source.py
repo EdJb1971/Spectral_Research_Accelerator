@@ -67,6 +67,10 @@ CDS_VARIABLES: Mapping[str, str] = {
 #: acts, and T4E.18 needs the first without the second: relative vorticity is requested so that
 #: a cyclone centre is an extractable feature, and nothing forecasts on it.
 ACQUIRABLE_VARIABLES: Tuple[str, ...] = CANONICAL_VARIABLES + ("vo",)
+CDS_OUTPUT_ALIASES: Mapping[str, Tuple[str, ...]] = {
+    **VARIABLE_ALIASES,
+    "vo": ("vo", "vorticity"),
+}
 
 PRESSURE_LEVELS = (
     1, 2, 3, 5, 7, 10, 20, 30, 50, 70, 100, 125, 150, 175, 200, 225, 250,
@@ -609,7 +613,7 @@ def _normalise_downloaded_dataset(
 
     renames: Dict[str, str] = {}
     for canonical in spec.variables:
-        aliases = VARIABLE_ALIASES[canonical]
+        aliases = CDS_OUTPUT_ALIASES[canonical]
         matches = [name for name in aliases if name in dataset.data_vars]
         if len(matches) != 1:
             raise DataSourceError(

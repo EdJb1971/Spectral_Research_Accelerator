@@ -56,7 +56,7 @@ skill, show the counterexamples, or report that no robust relationship survives.
 ## 1. Honest Technical Status
 
 Verified against the code on 2026-09-02. Every claim here is backed by captured output in
-`VERIFICATION.md`; `architecture.md` Section 7 holds the full defect ledger (D1-D101, of which **93 fixed, 1 partial (D18), 7 open (D84, D85, D96, D97, D98, D99, D100)**). **`PLAN.md` is where the remaining work is ordered**; this document is the task history and the evidence.
+`VERIFICATION.md`; `architecture.md` Section 7 holds the full defect ledger (D1-D102, of which **94 fixed, 1 partial (D18), 7 open (D84, D85, D96, D97, D98, D99, D100)**). **`PLAN.md` is where the remaining work is ordered**; this document is the task history and the evidence.
 
 The numbers in this table are checked by `src/tests/test_documentation.py`, which parses them
 out of this file and compares them against the source. That guard exists because this table
@@ -2802,6 +2802,284 @@ asked. **No confirmatory evidence for this candidate exists or will exist under 
 configuration absent from one scene outright; nothing about recurrence *across* partitions,
 which the mining machinery needs; no mining radius, no discharge of T4E.8's acceptance, no
 closure of D96 to D100; and nothing about `kind_recurrence`, which still has no catalogue.
+
+### T4E.36 - declare the eastward wrapped acquisition
+
+**T4E.36 (2026-09-13): acquired, materialised and measured after Ed Bentley's exact adoption;
+verdict `FAIL`.** The
+complementary ERA5 pressure-level request is fixed at relative vorticity, 850 hPa, 2018-2021,
+four synoptic hours, latitude -58..-18 and longitude -180..-140. The existing 140..180 record
+stays byte-for-byte unchanged; after wrapping, the two records span 140..220 with the shared
+180-degree meridian verified and retained once. The production planner resolves the complement
+to 48 monthly shards, 5,844 frames and a 161x161 grid without network access.
+
+The same 18 storm-times, catalogue radii, negation, extractor, 99 surrogates, seed 1234 and both
+representations are frozen. The reproducibly better raw-field path is primary and must meet both
+unchanged T4E.18 gates at 9 of 18; SWT is diagnostic and cannot rescue it. A failure therefore
+falsifies added eastward support as a sufficient repair under this procedure, not as a possible
+contributor. The declaration adoption is bound to SHA-256 `5b96519a…`; separate experiment and
+general network authorisation were subsequently supplied for this one execution.
+
+The four-phase CLI now makes that boundary executable. Planning remains offline. Acquisition
+requires a current digest-bound maintainer adoption, an experiment-specific
+`--authorise-network` flag, and the CDS layer's general network opt-in. Materialisation verifies
+all parent and complement shard receipts, measures the encoding lattice per GRIB field, refuses
+an unmeasurable or mismatched seam, retains 180 degrees once, streams a 321-longitude union into
+a content-addressed Zarr, and verifies that parent bytes did not change. Evaluation reads the
+published T4E.28 rows directly instead of reopening the catalogue, reports old and widened full
+distance lists, and lets only the two raw 9-of-18 conditions set the verdict. Six synthetic tests
+cover those contracts without reaching a network.
+
+The production execution acquired all 48 monthly complement shards: 5,844 frames and
+325,654,005 bytes. All 48 source-encoding seam checks had zero maximum absolute difference; the
+parent was preserved byte-for-byte and the 321-longitude wrapped Zarr was published at logical
+SHA-256 `9e9b7e50…`. Evaluation held the population at exactly 18. Raw condition 1 improved from
+3/18 to **5/18**, while condition 2 remained **0/18**; both required 9/18. Median raw nearest
+distance improved 52.15 to 40.83 km and the maximum improved 3,685.34 to 315.09 km. SARAI and
+GRETEL moved inside their radii; JOSIE improved to 151.29 km but remained just outside its
+145.23 km radius. The result is useful but negative: edge support contributed to several errors,
+yet did not repair the declared join. No further widening, extractor adjustment, tolerance,
+identity criterion or atmospheric claim follows from it without a new declaration.
+
+### T4E.37 - distinguish field/reference displacement from extractor filtering
+
+**T4E.37 (2026-09-13): adopted and measured; `FIELD_REFERENCE_SEPARATION_DOMINANT` 12/13;
+`VERDICT: NOT_AN_ACCEPTANCE`.** The exact 13 raw condition-1 failures from T4E.36
+are frozen by identity and by the hashes of the wrapped measurement and record receipts. Passing
+rows are excluded, the catalogue is not reopened, and no forecast-test data is touched.
+
+The diagnostic exposes the existing extractor's own pre-threshold candidate rule: finite native
+grid samples equal to the maximum of their 3x3 neighbourhood, with its one-cell boundary exclusion
+and tied maxima retained. It introduces no new distance tolerance, interpolation, fitted centre or
+alternative extractor. A sampled maximum inside the unchanged agency radius but no published
+feature is `EXTRACTOR_FILTERING_CANDIDATE`; no sampled maximum inside is
+`FIELD_REFERENCE_SEPARATION_CANDIDATE`. Seven of the 13 binary rows names the dominant candidate
+mechanism. The unchanged extraction must first reproduce every T4E.36 feature count and sorted
+distance or the diagnostic refuses.
+
+This majority is deliberately not an acceptance verdict. A raw sampled maximum is neither a
+significant feature nor an identified cyclone, and absence of one inside the radius does not prove
+that pressure-level/surface quantity separation caused the offset. The executor therefore reports
+`VERDICT: NOT_AN_ACCEPTANCE`, cannot rescue T4E.36, and changes no crop, extractor, tolerance,
+mining radius or identity criterion. The separate human adoption binds SHA-256 `2a0f0ce5…`.
+
+The offline execution reproduced every T4E.36 raw row before attribution and published receipt
+SHA-256 `f8ff2f88…`. Twelve failures had no native-grid local maximum inside their inherited agency
+radius before thresholding. JOSIE alone had two, at 37.99 km and 114.14 km inside its 145.23 km
+radius, and both cleared the calibrated threshold even though no final extracted feature was
+inside. Nearest sampled maxima across the 13 ranged from 26.12 to 177.98 km, median 44.44 km.
+
+LINDA's inherited radius is zero, so its classification is structurally true but physically
+uninformative. A post-result positive-radius sensitivity remains 11/12 field/reference candidates
+versus 1/12 extractor filtering and cannot change the declared majority; it is not a replacement
+gate. The result rules out extractor filtering as the dominant explanation on these rows, not as
+a contributor. It does not establish that vertical pressure/surface quantity separation caused
+the offsets. That causal question now requires an independently grounded reference-alignment
+design rather than tuning this extractor on inspected development rows.
+
+### T4E.38 - exact-time MSLP reference-alignment acquisition
+
+**T4E.38 (2026-09-13): adopted, acquired, materialised and measured;
+`VERTICAL_QUANTITY_SEPARATION_DOMINANT` at 10/18; `NOT_AN_ACCEPTANCE`.** This follows the T4E.18 design's
+pre-existing handoff: MSLP is more commensurate with IBTrACS central pressure than 850 hPa
+vorticity, but required extending CDS ingress beyond the pressure-level product.
+
+The new single-level request is product-specific and admits only `msl`; it cannot carry a pressure
+level. It binds the exact 18 T4E.36 timestamps and emits one request per timestamp in each of the
+140..180 and -180..-140 segments. The offline result is 36 shards, two 161x161 samples per row,
+and 3,732,624 raw float32 bytes. A one-time request avoids the day/hour cross-products that would
+silently expose undeclared frames. Every shard is dataset-hashed, downloaded through an atomic
+partial file, validated as NetCDF and byte-checked again on resume.
+
+The later analysis is frozen now: deterministic 3x3 descent from the catalogue-seeded cell to an
+MSLP basin minimum, and ascent from the same seed to a negated-vorticity basin maximum. Comparing
+catalogue distances introduces no search radius. Ten of 18 MSLP-closer rows names vertical quantity
+separation as the dominant candidate; ten vorticity-closer rows names catalogue/reanalysis
+alignment; otherwise the outcome is `MIXED`. It is never an acceptance and identifies neither
+centre as a cyclone. The adoption binds SHA-256 `0ad4e537…`; adoption itself made no request.
+Ed Bentley later supplied the separate experiment authorization with the ordinary network gate
+enabled. Acquisition completed 18/18 parent and 18/18 complement shards, totalling 2,326,213
+compressed bytes. Every file matches its receipt digest and reopens with one `valid_time`, a
+161x161 grid and only `msl`; the segment receipts hash to `35b137ac…` and `0100831c…`.
+
+Materialisation reverified every source byte, found zero seam difference on all 18 timestamps
+against a measured 0.0625 Pa source-encoding step, retained 180E once and published the
+18x161x321 record at `dc6f5365…` with receipt `4acba0aa…`. Every declared path completed. MSLP was
+closer to the catalogue position on 10 rows, negated vorticity on seven, with one exact tie and no
+refusals. The pre-acquisition threshold therefore names `VERTICAL_QUANTITY_SEPARATION_DOMINANT`;
+measurement receipt `9906ef4e…` replayed exactly. This is not proof of vertical separation, does
+not identify a cyclone centre or rescue T4E.36, and changes no extractor, radius, tolerance or
+acceptance gate. A further atmospheric slice requires an independently declared holdout design
+before opening 2022–2023.
+
+### T4E.40 - the holdout, rendered and reviewable
+
+**T4E.40 (2026-09-13): the complete T4E.39 flow renders in the platform UI, every stage artifact
+is examinable, and the flow ends in a human review that cannot become an acceptance.**
+`src/core/holdout_review.py`, `src/api/reference_holdout.py`,
+`frontend/src/components/ReferenceHoldout.tsx`, `frontend/e2e/reference-holdout.spec.ts`.
+
+Until this slice the atmospheric holdout existed only as files and captured terminal output. A
+result only its author can read is not independently checkable, whatever its receipts say. All
+eight performed stages now render in order -- declaration, adoption, census, field plan,
+acquisition, materialisation, measurement, review -- each naming the party that performed it, its
+status, its digest and the boundary that governs it.
+
+Nothing displayed is taken on trust. The surface recomputes the declaration file digest and every
+artifact's receipt identity from its own content, requires the census to bind the declaration, the
+field record to bind both and the measurement to bind all three, re-plans the four exact field
+requests offline on every read and refuses the response if the recomputed shard count no longer
+matches what was acquired. A measurement that has lost its mandatory `NOT_AN_ACCEPTANCE` verdict is
+refused even when its receipt has been re-sealed around the change.
+
+Refusals are rendered at the weight of values: exact ties and refused rows are tiles beside the two
+candidate counts, and the one-row fragility of the 7-of-12 majority is stated on screen rather than
+left for a reader to compute. Two operations are refused in the UI and say why -- acquisition
+reached a network under a separate named authorization and stays a CLI job, and re-running the
+holdout would manufacture a second one from a spent period.
+
+The flow ends in `t4e39-holdout-result-review/v1`. Its permitted decisions are `BOUNDARY_SOUND` and
+`BOUNDARY_DISPUTED`; it is structurally incapable of expressing an acceptance, and a review whose
+bound digests, outcome, denominator or majority drift from the live result is refused and rendered
+as stale. Writing and adopting remain separate acts, and adoption requires the exact typed
+affirmation. Eight backend tests and four browser tests hold both lines; no review was written by
+code, and the review remains `NOT_WRITTEN`.
+
+### T4E.39 - temporal reference holdout
+
+**T4E.39 (2026-09-13): declared before opening, adopted, censused, acquired, materialised and
+measured; `HOLDOUT_SUPPORTS_VERTICAL_QUANTITY_CANDIDATE` at 7 of 12, with `NOT_AN_ACCEPTANCE`.**
+Ed Bentley adopted the exact declaration digest `fc7ee60f…` as `ADOPTED_FOR_GUARDED_HOLDOUT_CENSUS`
+before any holdout identity was parsed. The declaration binds the exact T4E.38 result and signed
+IBTrACS identity; the offline plan verified those bytes and explicitly reported catalogue rows
+false, identities false, ERA5 false and network false.
+
+The selection was frozen first: 2022–2023, synoptic hours, −58..−18 latitude, 140..180 catalogue
+longitude, two agency fixes, a two-degree interior and the existing deepest-per-storm rule. NATURE,
+intensity, development pass/fail status and eventual centre distances cannot select rows. Fewer
+than 10 selected storms is `INSUFFICIENT_HOLDOUT_POPULATION`; otherwise all selected storms form
+the denominator and strict majority is `floor(n/2)+1`, with exact ties and refused paths retained.
+
+The adoption-guarded census then read the signed catalogue: 76,784 rows, refusing 75,469 outside
+the window, 405 outside the box, 650 off synoptic hours and 109 with too few agency fixes. Twelve
+storms were selected from the disclosed thirteen in-box storms — above the minimum — so the strict
+majority was fixed at 7 before any field was opened.
+
+Ed Bentley then supplied the separate T4E.39 network authorization. Guarded acquisition took 48
+exact-time shards across four streams — ERA5 single-level `msl` and pressure-level 850 hPa `vo`,
+each over the 140..180 parent and wrapped −180..−140 complement — totalling 3,640,750 stored bytes.
+A new exact pressure-level client mirrors the T4E.38 single-level guarantees: one timestamp and one
+level per request, atomic content-checked storage and resume without re-download. An independent
+pass re-verified all 48 digests and reopened every file at the declared 161x161 geometry.
+
+Offline materialisation passed all 24 seams at exactly 0 difference, retained 180E once and
+published the immutable 12x161x321 two-field record at `179aa8c6…`. The unchanged T4E.38
+catalogue-seeded basin rule returned 7 MSLP-closer rows, 5 vorticity-closer, no ties and no
+refusals; independent replay reproduced the value and receipt exactly.
+
+The majority is the smallest the rule admits: one row changing side would have returned
+`HOLDOUT_MIXED`. That is part of the result, not a licence to re-select or reweight. The outcome
+says only that the deterministic T4E.38 MSLP-closer majority recurred on the pre-declared holdout
+under the identical finite-census rule. It is not statistical generalisation, independence from
+assimilation, cyclone identity, vertical tilt or pressure/surface separation; it validates neither
+IBTrACS nor either field, approves no radius or extractor change, and rescues neither T4E.36 nor
+T4E.8. The frozen design is now spent: the reserved period has been opened once, as declared, and
+cannot be reopened as a fresh holdout.
+
+### TG17.15 slice 6 - freeze the calibrated successor declaration
+
+**TG17.15 slice 6 (2026-09-12): declaration frozen; release still refused.** The separately
+versioned `g17-scale-shape-successor/v1` declaration now binds the per-correspondence estimand,
+exact pool substitution, six-member Benjamini-Yekutieli family, derived pool minimum of 48,
+orientation and calibrated marginal admission contract. The release gate reads this declaration
+beside the unchanged historical joint-reassignment manifests, so `declared_inference` is no longer
+a blocker. Its real-record inventory remains empty and `UNRESOLVED`, with exchangeability
+`NOT_ESTABLISHED`; `pool_exchangeability_on_real_records` therefore remains blocking and G17 stays
+`NOT_RELEASEABLE`. No real record identity or curation conclusion was manufactured by this slice.
+
+### TG17.15 slice 7 - measure real-pool inventory readiness
+
+**TG17.15 slice 7 (2026-09-12): bounded refusal recorded.** A deterministic repository audit now
+searches the declared real-record roots for explicit partner-profile documents,
+validates every document as a single-record `RecordProfile`, rejects malformed files and duplicate
+record identities, and binds its result to the successor declaration. The current result is
+`NO_INVENTORY`: **0 profiles, 48 required, shortfall 48**. The release gate renders those figures
+inside `pool_exchangeability_on_real_records` instead of leaving “unresolved” unactionable.
+
+Even 48 profiles yield only `READY_FOR_CURATION_REVIEW`; the audit always reports exchangeability
+as `NOT_ASSESSED`. Marginal availability is necessary to begin admission and scientific review,
+not evidence that records are interchangeable. The empty result is likewise absence of evidence,
+not evidence of non-exchangeability. No source was acquired and no record identity was invented.
+
+### TG17.15 slice 8 - bind partner profiles to real source bytes
+
+**TG17.15 slice 8 (2026-09-12): ingress contract implemented; inventory remains empty.**
+`build_g17_partner_profile.py` accepts one local delimited record and an explicit declaration,
+binds the artifact to the exact source SHA-256, and derives only storage-level facts: finite sample
+count, median cadence and coverage against an explicit declared window. Native scale, effective sample size and noise
+floor remain explicit scientific marginals and each requires a named basis or method. The output
+is immutable `correspondence-record-profile/v2`; readiness now refuses legacy unbound profile JSON,
+duplicate provenance identities and malformed source metadata.
+
+This creates a legitimate path for actual records without choosing a source, acquiring data,
+inventing identities or blessing a marginal-estimation method. The regenerated repository audit
+is byte-unchanged at `NO_INVENTORY`, 0 of 48, with exchangeability `NOT_ASSESSED`. Reaching 48
+source-bound profiles opens human curation review only.
+
+### TG17.15 slice 9 - require adopted marginal methods before profile emission
+
+**TG17.15 slice 9 (2026-09-12): reviewed-method boundary enforced; inventory remains empty.**
+The profile CLI now requires a `g17-marginal-method-review/v1` declaration whose exact bytes are
+still reached by a named maintainer adoption. Native-scale basis, effective-sample-size method and
+noise-floor method must exactly match that adopted declaration. The emitted
+`correspondence-record-profile/v3` binds both declaration and adoption by SHA-256; readiness
+refuses envelopes without structurally valid review evidence. A changed declaration invalidates
+its prior adoption instead of silently carrying approval onto different methods.
+
+This mechanism does not review or choose a method, sign for a maintainer, approve a resulting
+profile, establish pool admission or assess exchangeability. No method review or source record was
+invented in the repository, so readiness remains `NO_INVENTORY`, 0 of 48, with exchangeability
+`NOT_ASSESSED`.
+
+### TG17.15 slices 10-17 - real TESS pool, corrected curation handoff and UI
+
+**TG17.15 slices 10-17 (2026-09-12): implemented through human-review handoff; decision still
+pending.** Source-bound batch import, bounded TOI-period discovery, exact SPOC acquisition,
+adopted marginal methods and incremental expansion produced 112 acquired targets. A lineage audit
+then found that acquisition had copied the final discovery row's period fields onto every target.
+The emitter is fixed and regression-tested; reconstruction from frozen discoveries and
+SHA-256-verified cached FITS bytes now records all target mappings exactly. Eight targets fail the
+eight-native-cycle requirement under their correct periods, leaving 104 qualified profiles.
+
+The corrected assessment has 64 records reaching 48 alternatives and pool sizes 0 / 58.5 / 70.
+The deterministic packet has a 59-record 48-core and a 57-record all-pairs-admissible subset, with
+56 alternatives per selected record. Contaminated receipts, profiles, readiness and packet remain
+under named `g17_tess_lineage_bug` archives. Readiness is `READY_FOR_CURATION_REVIEW`, while
+exchangeability remains `NOT_ASSESSED`.
+
+Platform Status now displays readiness, all eight refusals, assessment, packet IDs, pending review
+requirements, adoption state and archived evidence. A reviewer can write either permitted
+decision and adopt it through separate controls with no supplied scientific defaults. External
+TESS discovery/acquisition and immutable reconstruction/export remain explicit CLI jobs; their
+results are visible in the UI, but those network and bulk-publication operations are not launched
+there. **Still to do:** a named human must author and adopt the exchangeability decision. Only
+after that may a separate successor/inventory promotion consume it; no code has made either act.
+
+### T4E.35 - crop-edge support in the failed catalogue join
+
+**T4E.35 (2026-09-12): measured as a post-hoc diagnostic, not an acceptance.** The immutable
+T4E.28 per-storm rows were reused without rerunning extraction. Exact great-circle distance to
+all four crop boundaries puts seven of eighteen observations within the existing 2-degree
+support margin. Their raw-path median nearest-feature error is **1617.7 km**, against **35.9 km**
+for eleven interior observations; the four largest finite errors and the sole no-feature row are
+all nearest the east edge. The SWT split points the same way, less strongly. Rank correlation is
+-0.736 on the raw path and -0.515 on SWT.
+
+This cannot establish causation because the rows were inspected before the diagnostic existed,
+and RUBY remains a counterexample to any claim that east-edge longitude is sufficient. It does
+select the next experiment: freeze an eastward wrapped-acquisition declaration, acquire the
+complementary dateline segment without replacing the current record, and rerun the same storms
+and extraction parameters. Do not tune the extractor or the tolerance first.
 
 ### T4E.34 - composing a declaration, and committing it alone
 

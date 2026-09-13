@@ -1,0 +1,13 @@
+{
+  "schema": "maintainer-adoption/v1",
+  "adopts": "data/studies/g17_tess_marginal_method_review.json",
+  "adopts_sha256": "3c963f41bc35503813c3a0ed61707ba83e73bb6d3abfdb5b08a1341375085cff",
+  "adopted_by": "Ed Bentley",
+  "adopted_on": "2026-09-12",
+  "adopted_as": "Creator",
+  "what_was_adopted": "The declared TESS single-record marginal methods and their limitations.",
+  "affirmation": "I have read this declaration and I adopt it",
+  "signed_through": "the adoption surface, by a person who typed the affirmation above. Code does not sign a scientific declaration for anyone; this record exists because a named maintainer performed the act, and the surface refuses to supply any part of it.",
+  "what_this_adoption_does_not_do": "It does not make the declaration correct, does not permit any claim, and does not adopt any amendment made after the digest above. A declaration edited after this adoption is a different declaration and this signature does not reach it.",
+  "why_the_maintainer_adopted_it": "testing my creation"
+}

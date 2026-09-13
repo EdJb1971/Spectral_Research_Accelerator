@@ -1,13 +1,17 @@
-import { Ban, CheckCircle2, HelpCircle } from 'lucide-react';
+import { ArrowRight, Ban, CheckCircle2, HelpCircle, Loader2 } from 'lucide-react';
 
 import * as types from '../types/api';
 
 interface Props {
   profile: types.DatasetCapabilityProfile;
   compact?: boolean;
+  onSelectOperation?: (operation: string) => void;
+  planningOperation?: string | null;
 }
 
-const DatasetCapabilityProfile: React.FC<Props> = ({ profile, compact = false }) => (
+const DatasetCapabilityProfile: React.FC<Props> = ({
+  profile, compact = false, onSelectOperation, planningOperation = null,
+}) => (
   <section className="border border-slate-700 bg-slate-950/60 rounded-xl p-4 space-y-3"
     aria-label="Admissible scientific paths">
     <header className="flex flex-wrap justify-between gap-2">
@@ -40,6 +44,15 @@ const DatasetCapabilityProfile: React.FC<Props> = ({ profile, compact = false })
           <span className="ml-auto uppercase text-[9px] text-slate-600">{decision.status.replace('_', ' ')}</span>
         </div>
         <p className="text-[11px] text-slate-500 mt-1 ml-6">{decision.reason}</p>
+        {decision.available && decision.planning_path && onSelectOperation &&
+          <button type="button" onClick={() => onSelectOperation(key)}
+            disabled={planningOperation !== null}
+            className="mt-2 ml-6 rounded bg-indigo-600 px-3 py-1.5 text-[11px] font-semibold
+                       text-white hover:bg-indigo-500 disabled:opacity-40 flex items-center gap-1.5">
+            {planningOperation === key ? <Loader2 className="h-3 w-3 animate-spin" />
+              : <ArrowRight className="h-3 w-3" />}
+            Prepare existing planner
+          </button>}
       </div>)}
     </div>}
     <p className="text-[9px] text-slate-600">{profile.claim_boundary}</p>

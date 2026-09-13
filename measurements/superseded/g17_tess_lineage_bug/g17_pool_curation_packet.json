@@ -1,0 +1,412 @@
+{
+  "schema": "g17-pool-curation-packet/v1",
+  "study_id": "g17_scale_shape_successor_v1",
+  "successor_declaration_sha256": "1e768df44c19fe4bc74f2f6a92bd5cc970988bbb649d5396222e715600d290f2",
+  "readiness_assessment_sha256": "aea4544567430b89d3a84bb9472a75d1175edd099fb3e2e17966af3ce8ac9aae",
+  "admission_contract_sha256": "e1302a79bd21e89053a767a94867c37fd17f55a2e6fd35808af2b2e56b0d4afa",
+  "profile_count": 112,
+  "required_alternatives": 48,
+  "minimum_selected_records": 49,
+  "core_record_ids": [
+    "tic-116483514",
+    "tic-120610833",
+    "tic-120916706",
+    "tic-12423815",
+    "tic-137881699",
+    "tic-139285832",
+    "tic-140691463",
+    "tic-144276942",
+    "tic-144336525",
+    "tic-147950620",
+    "tic-153976959",
+    "tic-154383539",
+    "tic-157586003",
+    "tic-158025009",
+    "tic-158170594",
+    "tic-15863518",
+    "tic-183120439",
+    "tic-183593642",
+    "tic-183985250",
+    "tic-188768068",
+    "tic-198212955",
+    "tic-198213332",
+    "tic-198457103",
+    "tic-199444169",
+    "tic-199731190",
+    "tic-201186294",
+    "tic-202504234",
+    "tic-204317710",
+    "tic-206686292",
+    "tic-21535395",
+    "tic-224600500",
+    "tic-229747848",
+    "tic-232650365",
+    "tic-233071822",
+    "tic-234519192",
+    "tic-234994474",
+    "tic-235683377",
+    "tic-236714379",
+    "tic-236815160",
+    "tic-237086564",
+    "tic-241076290",
+    "tic-243185500",
+    "tic-251852984",
+    "tic-258514800",
+    "tic-258829450",
+    "tic-26880783",
+    "tic-28900646",
+    "tic-29831208",
+    "tic-29960110",
+    "tic-47425697",
+    "tic-51912829",
+    "tic-55650590",
+    "tic-63898957",
+    "tic-67418624",
+    "tic-70440470",
+    "tic-77044471",
+    "tic-80166433",
+    "tic-81831095",
+    "tic-85031598",
+    "tic-87090944",
+    "tic-89020549",
+    "tic-89389197",
+    "tic-9006668",
+    "tic-97409519",
+    "tic-99834717"
+  ],
+  "core_size": 65,
+  "recommended_record_ids": [
+    "tic-116483514",
+    "tic-120610833",
+    "tic-120916706",
+    "tic-12423815",
+    "tic-137881699",
+    "tic-139285832",
+    "tic-144276942",
+    "tic-144336525",
+    "tic-147950620",
+    "tic-153976959",
+    "tic-154383539",
+    "tic-157586003",
+    "tic-158025009",
+    "tic-158170594",
+    "tic-15863518",
+    "tic-183120439",
+    "tic-183593642",
+    "tic-183985250",
+    "tic-188768068",
+    "tic-198212955",
+    "tic-198213332",
+    "tic-198457103",
+    "tic-199444169",
+    "tic-199731190",
+    "tic-201186294",
+    "tic-202504234",
+    "tic-204317710",
+    "tic-21535395",
+    "tic-224600500",
+    "tic-229747848",
+    "tic-232650365",
+    "tic-233071822",
+    "tic-234519192",
+    "tic-234994474",
+    "tic-235683377",
+    "tic-236714379",
+    "tic-236815160",
+    "tic-237086564",
+    "tic-241076290",
+    "tic-243185500",
+    "tic-251852984",
+    "tic-258514800",
+    "tic-258829450",
+    "tic-26880783",
+    "tic-28900646",
+    "tic-29831208",
+    "tic-47425697",
+    "tic-55650590",
+    "tic-63898957",
+    "tic-67418624",
+    "tic-70440470",
+    "tic-77044471",
+    "tic-80166433",
+    "tic-81831095",
+    "tic-85031598",
+    "tic-87090944",
+    "tic-89020549",
+    "tic-9006668",
+    "tic-99834717"
+  ],
+  "recommended_size": 59,
+  "alternatives_per_recommended_record": 58,
+  "excluded_records": [
+    {
+      "record_id": "tic-100097716",
+      "admissible_neighbors": 28,
+      "reason": "not in the deterministic all-pairs-admissible recommended subset"
+    },
+    {
+      "record_id": "tic-117789567",
+      "admissible_neighbors": 0,
+      "reason": "not in the deterministic all-pairs-admissible recommended subset"
+    },
+    {
+      "record_id": "tic-120757718",
+      "admissible_neighbors": 18,
+      "reason": "not in the deterministic all-pairs-admissible recommended subset"
+    },
+    {
+      "record_id": "tic-125442121",
+      "admissible_neighbors": 19,
+      "reason": "not in the deterministic all-pairs-admissible recommended subset"
+    },
+    {
+      "record_id": "tic-12862099",
+      "admissible_neighbors": 52,
+      "reason": "not in the deterministic all-pairs-admissible recommended subset"
+    },
+    {
+      "record_id": "tic-129979528",
+      "admissible_neighbors": 1,
+      "reason": "not in the deterministic all-pairs-admissible recommended subset"
+    },
+    {
+      "record_id": "tic-140068425",
+      "admissible_neighbors": 22,
+      "reason": "not in the deterministic all-pairs-admissible recommended subset"
+    },
+    {
+      "record_id": "tic-140691463",
+      "admissible_neighbors": 63,
+      "reason": "not in the deterministic all-pairs-admissible recommended subset"
+    },
+    {
+      "record_id": "tic-144065872",
+      "admissible_neighbors": 13,
+      "reason": "not in the deterministic all-pairs-admissible recommended subset"
+    },
+    {
+      "record_id": "tic-148914726",
+      "admissible_neighbors": 23,
+      "reason": "not in the deterministic all-pairs-admissible recommended subset"
+    },
+    {
+      "record_id": "tic-158324245",
+      "admissible_neighbors": 31,
+      "reason": "not in the deterministic all-pairs-admissible recommended subset"
+    },
+    {
+      "record_id": "tic-160045097",
+      "admissible_neighbors": 42,
+      "reason": "not in the deterministic all-pairs-admissible recommended subset"
+    },
+    {
+      "record_id": "tic-160708862",
+      "admissible_neighbors": 15,
+      "reason": "not in the deterministic all-pairs-admissible recommended subset"
+    },
+    {
+      "record_id": "tic-164173105",
+      "admissible_neighbors": 0,
+      "reason": "not in the deterministic all-pairs-admissible recommended subset"
+    },
+    {
+      "record_id": "tic-184240683",
+      "admissible_neighbors": 31,
+      "reason": "not in the deterministic all-pairs-admissible recommended subset"
+    },
+    {
+      "record_id": "tic-191284318",
+      "admissible_neighbors": 23,
+      "reason": "not in the deterministic all-pairs-admissible recommended subset"
+    },
+    {
+      "record_id": "tic-201248411",
+      "admissible_neighbors": 16,
+      "reason": "not in the deterministic all-pairs-admissible recommended subset"
+    },
+    {
+      "record_id": "tic-204376737",
+      "admissible_neighbors": 29,
+      "reason": "not in the deterministic all-pairs-admissible recommended subset"
+    },
+    {
+      "record_id": "tic-206609630",
+      "admissible_neighbors": 28,
+      "reason": "not in the deterministic all-pairs-admissible recommended subset"
+    },
+    {
+      "record_id": "tic-206686292",
+      "admissible_neighbors": 72,
+      "reason": "not in the deterministic all-pairs-admissible recommended subset"
+    },
+    {
+      "record_id": "tic-219776325",
+      "admissible_neighbors": 29,
+      "reason": "not in the deterministic all-pairs-admissible recommended subset"
+    },
+    {
+      "record_id": "tic-219852584",
+      "admissible_neighbors": 33,
+      "reason": "not in the deterministic all-pairs-admissible recommended subset"
+    },
+    {
+      "record_id": "tic-219852882",
+      "admissible_neighbors": 37,
+      "reason": "not in the deterministic all-pairs-admissible recommended subset"
+    },
+    {
+      "record_id": "tic-229510866",
+      "admissible_neighbors": 28,
+      "reason": "not in the deterministic all-pairs-admissible recommended subset"
+    },
+    {
+      "record_id": "tic-230982885",
+      "admissible_neighbors": 13,
+      "reason": "not in the deterministic all-pairs-admissible recommended subset"
+    },
+    {
+      "record_id": "tic-231663901",
+      "admissible_neighbors": 63,
+      "reason": "not in the deterministic all-pairs-admissible recommended subset"
+    },
+    {
+      "record_id": "tic-233059608",
+      "admissible_neighbors": 0,
+      "reason": "not in the deterministic all-pairs-admissible recommended subset"
+    },
+    {
+      "record_id": "tic-233071926",
+      "admissible_neighbors": 14,
+      "reason": "not in the deterministic all-pairs-admissible recommended subset"
+    },
+    {
+      "record_id": "tic-233211762",
+      "admissible_neighbors": 0,
+      "reason": "not in the deterministic all-pairs-admissible recommended subset"
+    },
+    {
+      "record_id": "tic-236445129",
+      "admissible_neighbors": 25,
+      "reason": "not in the deterministic all-pairs-admissible recommended subset"
+    },
+    {
+      "record_id": "tic-236887394",
+      "admissible_neighbors": 24,
+      "reason": "not in the deterministic all-pairs-admissible recommended subset"
+    },
+    {
+      "record_id": "tic-237924601",
+      "admissible_neighbors": 30,
+      "reason": "not in the deterministic all-pairs-admissible recommended subset"
+    },
+    {
+      "record_id": "tic-238176110",
+      "admissible_neighbors": 28,
+      "reason": "not in the deterministic all-pairs-admissible recommended subset"
+    },
+    {
+      "record_id": "tic-240681314",
+      "admissible_neighbors": 36,
+      "reason": "not in the deterministic all-pairs-admissible recommended subset"
+    },
+    {
+      "record_id": "tic-241225337",
+      "admissible_neighbors": 1,
+      "reason": "not in the deterministic all-pairs-admissible recommended subset"
+    },
+    {
+      "record_id": "tic-244161191",
+      "admissible_neighbors": 28,
+      "reason": "not in the deterministic all-pairs-admissible recommended subset"
+    },
+    {
+      "record_id": "tic-250724252",
+      "admissible_neighbors": 37,
+      "reason": "not in the deterministic all-pairs-admissible recommended subset"
+    },
+    {
+      "record_id": "tic-25155310",
+      "admissible_neighbors": 43,
+      "reason": "not in the deterministic all-pairs-admissible recommended subset"
+    },
+    {
+      "record_id": "tic-252479260",
+      "admissible_neighbors": 11,
+      "reason": "not in the deterministic all-pairs-admissible recommended subset"
+    },
+    {
+      "record_id": "tic-25375553",
+      "admissible_neighbors": 26,
+      "reason": "not in the deterministic all-pairs-admissible recommended subset"
+    },
+    {
+      "record_id": "tic-29960110",
+      "admissible_neighbors": 65,
+      "reason": "not in the deterministic all-pairs-admissible recommended subset"
+    },
+    {
+      "record_id": "tic-32090583",
+      "admissible_neighbors": 29,
+      "reason": "not in the deterministic all-pairs-admissible recommended subset"
+    },
+    {
+      "record_id": "tic-33911302",
+      "admissible_neighbors": 14,
+      "reason": "not in the deterministic all-pairs-admissible recommended subset"
+    },
+    {
+      "record_id": "tic-38846515",
+      "admissible_neighbors": 28,
+      "reason": "not in the deterministic all-pairs-admissible recommended subset"
+    },
+    {
+      "record_id": "tic-51912829",
+      "admissible_neighbors": 64,
+      "reason": "not in the deterministic all-pairs-admissible recommended subset"
+    },
+    {
+      "record_id": "tic-58542531",
+      "admissible_neighbors": 42,
+      "reason": "not in the deterministic all-pairs-admissible recommended subset"
+    },
+    {
+      "record_id": "tic-67646988",
+      "admissible_neighbors": 13,
+      "reason": "not in the deterministic all-pairs-admissible recommended subset"
+    },
+    {
+      "record_id": "tic-67666096",
+      "admissible_neighbors": 21,
+      "reason": "not in the deterministic all-pairs-admissible recommended subset"
+    },
+    {
+      "record_id": "tic-76989773",
+      "admissible_neighbors": 27,
+      "reason": "not in the deterministic all-pairs-admissible recommended subset"
+    },
+    {
+      "record_id": "tic-77031414",
+      "admissible_neighbors": 9,
+      "reason": "not in the deterministic all-pairs-admissible recommended subset"
+    },
+    {
+      "record_id": "tic-8400842",
+      "admissible_neighbors": 30,
+      "reason": "not in the deterministic all-pairs-admissible recommended subset"
+    },
+    {
+      "record_id": "tic-89389197",
+      "admissible_neighbors": 70,
+      "reason": "not in the deterministic all-pairs-admissible recommended subset"
+    },
+    {
+      "record_id": "tic-97409519",
+      "admissible_neighbors": 66,
+      "reason": "not in the deterministic all-pairs-admissible recommended subset"
+    }
+  ],
+  "selection_method": "maximum over deterministic degree-first greedy cliques seeded by every record ID; this proves the returned subset is pairwise admissible, not globally maximum",
+  "exchangeability": "NOT_ASSESSED",
+  "claim_boundary": "This packet proves only that every recommended record satisfies the declared marginal bands against every other recommended record and that each has enough alternatives. Necessary marginal agreement is not sufficient for exchangeability; the final decision remains human.",
+  "packet_sha256": "6fffb7adc92091108b9245cbf82688e7959942047b954c1298deaaed8df1f23a"
+}

@@ -337,6 +337,17 @@ export const apiService = {
       await fetch(`${BASE_URL}/ingress/capabilities`, { method: 'POST', body: form }));
   },
 
+  async planSampleTableHandoff(file: File, declaration: types.SampleTableDeclaration,
+                               operation: string,
+                               delimiter = ','): Promise<types.SampleTablePlanningHandoff> {
+    const form = new FormData();
+    form.append('file', file); form.append('delimiter', delimiter);
+    form.append('declaration', JSON.stringify(declaration));
+    form.append('operation', operation);
+    return handleResponse<types.SampleTablePlanningHandoff>(
+      await fetch(`${BASE_URL}/ingress/planning-handoff`, { method: 'POST', body: form }));
+  },
+
   async runRepresentationAudit(file: File, plan: types.RepresentationAuditPlan,
                                delimiter = ','): Promise<types.RepresentationAuditResult> {
     const form = new FormData();
@@ -1179,6 +1190,74 @@ export const apiService = {
   async rehearseExperimentQualification(): Promise<types.ExperimentQualificationRecord> {
     return handleResponse<types.ExperimentQualificationRecord>(
       await fetch(`${BASE_URL}/experiment-qualification/rehearse`, { method: 'POST' }));
+  },
+
+  async g17Pool(): Promise<types.G17PoolSurface> {
+    return handleResponse<types.G17PoolSurface>(
+      await fetch(`${BASE_URL}/g17-pool`, { method: 'GET' }));
+  },
+
+  async writeG17PoolReview(body: {
+    exchangeability: 'ESTABLISHED' | 'NOT_ESTABLISHED'; basis: string;
+    unmeasured_properties: string[]; limitations: string; claim_boundary: string;
+  }): Promise<Record<string, any>> {
+    return handleResponse<Record<string, any>>(
+      await fetch(`${BASE_URL}/g17-pool/review`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      }));
+  },
+
+  async adoptG17PoolReview(body: {
+    adopted_by: string; adopted_as: string; what_was_adopted: string;
+    affirmation: string; why?: string;
+  }): Promise<Record<string, any>> {
+    return handleResponse<Record<string, any>>(
+      await fetch(`${BASE_URL}/g17-pool/review/adopt`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      }));
+  },
+
+  // ------------------------------------- T4E.39 the temporal reference holdout
+
+  async referenceHoldout(): Promise<types.HoldoutSurface> {
+    return handleResponse<types.HoldoutSurface>(
+      await fetch(`${BASE_URL}/reference-holdout`, { method: 'GET' }));
+  },
+
+  async referenceHoldoutRows(): Promise<types.HoldoutRows> {
+    return handleResponse<types.HoldoutRows>(
+      await fetch(`${BASE_URL}/reference-holdout/rows`, { method: 'GET' }));
+  },
+
+  async referenceHoldoutArtifact(name: string): Promise<types.HoldoutArtifact> {
+    return handleResponse<types.HoldoutArtifact>(
+      await fetch(`${BASE_URL}/reference-holdout/artifacts/${encodeURIComponent(name)}`,
+        { method: 'GET' }));
+  },
+
+  async writeHoldoutReview(body: {
+    boundary_assessment: 'BOUNDARY_SOUND' | 'BOUNDARY_DISPUTED'; basis: string;
+    what_this_does_not_establish: string[]; limitations: string; next_action: string;
+    claim_boundary: string;
+  }): Promise<Record<string, any>> {
+    return handleResponse<Record<string, any>>(
+      await fetch(`${BASE_URL}/reference-holdout/review`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      }));
+  },
+
+  async adoptHoldoutReview(body: {
+    adopted_by: string; adopted_as: string; what_was_adopted: string;
+    affirmation: string; why?: string;
+  }): Promise<Record<string, any>> {
+    return handleResponse<Record<string, any>>(
+      await fetch(`${BASE_URL}/reference-holdout/review/adopt`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      }));
   },
 
   // ---------------------------------------------------- TG17.7 the guided path

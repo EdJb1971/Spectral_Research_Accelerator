@@ -9,7 +9,7 @@ authority. `roadmap.md` and `roadmap_cross_domain.md` hold task history -- what 
 why -- and `VERIFICATION.md` holds the captured output behind every figure. When any of them
 disagrees with this document, **they are right and this is stale.**
 
-Last revised 2026-09-12, after T4E.28--T4E.34 were recorded. **Section 1 retains the sequential
+Last revised 2026-09-13, after rendering the completed T4E.39 holdout and its result review. **Section 1 retains the sequential
 decision record that led to the current position and must not be read as a current-status
 summary; `architecture.md` section 0 is the authority wherever a historical next step below has
 since been completed or superseded.**
@@ -17,11 +17,133 @@ since been completed or superseded.**
 ## 0. The question this sequence serves
 
 > What stands between here and the first trustworthy, independently checkable finding
-> this instrument produces about the atmosphere?
+> this shared instrument produces across materially different domains?
 
 A completed, interpretable negative or invalid result is useful progress. A passing
 software suite is evidence about the apparatus, not a finding about the atmosphere.
-The wider cross-domain programme remains active and has separate dependencies in section 4.
+Atmospheric and cross-domain science have different acceptance gates, but they use one engine:
+the registries, manifests, execution, provenance, evidence, claim ladder and review machinery are
+shared. Acquisition, geometry, support and scientific acceptance remain domain-specific.
+
+### V1 release boundary
+
+V1 is one shared research instrument with two parallel validation lanes and one release gate.
+It is relatively complete when all of the following are true:
+
+1. A researcher can compose, adopt, run, cancel or resume, inspect and review a long scientific
+  measurement through the shared durable-run machinery; every terminal outcome preserves an
+  immutable receipt and renders `PASS`, `FAIL`, `INVALID` or `REFUSED` without collapsing them.
+2. The atmospheric lane has one bounded end-to-end pilot over real acquired data, including an
+  independently sourced identity catalogue, a declared criterion, physical adjudication and the
+  claim boundary that survives whether the result passes or fails.
+3. The cross-domain lane has one frozen manifest using the successor scale/shape inference and
+  curated real-record partner pools whose exchangeability and admission argument is recorded;
+  G17 either releases or preserves a bounded refusal.
+4. The same provenance, evidence, claim-ladder and review contracts govern both lanes. No domain
+  receives a private runner, evidence store or weaker meaning of acceptance.
+5. A researcher can start from a research object rather than a named domain: V1 demonstrates one
+  declared independent sample table and one existing domain-native record passing through
+  structural inspection without semantic inference, explicit role/relationship declaration,
+  and one capability profile that shows available, unavailable and not-established instruments
+  with reasons. Selecting an available instrument hands the object and its declarations into the
+  appropriate existing planning or Composer path; it does not open a project-specific screen or
+  create a private execution path.
+6. Documentation audit, focused backend tests, production frontend build and rendered critical
+  workflows pass against the release candidate.
+
+**Ordered route.** T4E.36 has now tested T4E.35's eastward-support explanation on the fixed 18-row
+population. It failed both unchanged raw gates at 5/18 and 0/18 against 9/18 required, so eastward
+coverage is not a sufficient repair. T4E.37 now implements and freezes the next diagnostic: on
+the remaining 13 condition-1 failures it distinguishes an in-radius pre-threshold sampled maximum
+filtered by the existing extractor from a sampled field that offers no in-radius maximum at all.
+Ed Bentley adopted its exact declaration and the offline evaluation returned
+`FIELD_REFERENCE_SEPARATION_DOMINANT`: 12/13 failures had no native-grid local maximum inside the
+inherited agency radius before thresholding, while JOSIE alone exposed an extractor-stage miss.
+This is not an acceptance and does not prove the cause of field/reference separation. The next
+atmospheric design is now frozen as T4E.38: exact-time ERA5 MSLP triangulation on all 18 fixed rows,
+using deterministic catalogue-seeded pressure descent and vorticity ascent with no search radius.
+Its single-level planner and guarded resumable acquisition are implemented, and Ed Bentley has
+adopted the exact declaration for guarded execution testing. Explicit authorization then acquired
+all 36 exact-time MSLP shards (18 per dateline segment; 2,326,213 stored bytes); every recorded
+content digest matches and every shard reopens with its declared one-time 161x161 `msl` shape.
+Offline materialisation then passed all 18 seams exactly, retained 180E once and published the
+18x161x321 record at `dc6f5365…`. The frozen basin comparison returned 10 MSLP-closer rows, seven
+vorticity-closer rows, one exact tie and no refusals: `VERTICAL_QUANTITY_SEPARATION_DOMINANT`, with
+the mandatory `NOT_AN_ACCEPTANCE`. This supports that declared candidate only under the fixed
+development-population rule; it proves no vertical separation and changes no extractor or gate.
+That independent design was frozen as T4E.39 before opening 2022–2023, then run end to end. It
+retained the signed catalogue, dates, domain, synoptic hours, two-agency minimum, two-degree
+interior and deepest-per-storm selection; required at least 10 selected storms; and kept
+ties/refusals in a strict-majority denominator. Ed Bentley adopted declaration digest `fc7ee60f…`
+before any holdout identity was parsed, then authorized the separate network act. The census
+selected 12 storms from 76,784 catalogue rows, fixing the strict majority at 7. Acquisition took 48
+exact-time shards across ERA5 `msl` and 850 hPa `vo`, parent and wrapped complement (3,640,750
+stored bytes; all digests re-verify and reopen at the declared geometry). Materialisation passed all
+24 seams exactly and published the 12×161×321 two-field record at `179aa8c6…`. The unchanged basin
+rule returned 7 MSLP-closer, 5 vorticity-closer, no ties and no refusals:
+`HOLDOUT_SUPPORTS_VERTICAL_QUANTITY_CANDIDATE`, `NOT_AN_ACCEPTANCE`, reproduced exactly on replay.
+This is the smallest majority the rule admits — one row would have made it `HOLDOUT_MIXED` — and
+that fragility is part of the result. It establishes no generalisation, independence from
+assimilation, cyclone identity, vertical tilt or pressure/surface separation, and changes no
+extractor or gate. **The reserved period is now spent; it cannot be reopened as a fresh holdout,
+and no post-hoc re-selection or reweighting of it is admissible.** T4E.40 then made that whole
+flow readable: all eight stages, every artifact, all twelve rows and both basin walks now render
+in Platform & evidence, with ties, refusals and the one-row fragility at the weight of the
+counts, and with acquisition and re-running refused in the UI by name. It ends in a result
+review that is structurally incapable of expressing an acceptance; that review is written and
+adopted by a named person in the UI as two separate acts, and remains `NOT_WRITTEN`.
+**The next atmospheric acts are, in order: a named person reads the holdout result and adopts
+that review; then close the identity criterion itself rather than run another variant of this
+comparison -- state what a passing identity criterion would have to establish that a finite
+deterministic majority cannot, and what evidence would license it.**
+Do not widen the crop or tune the extractor first. The G17
+successor declaration is now frozen
+against the calibrated exact-pool-substitution contract; curate and justify its real partner pools
+in parallel, without inventing identities or exchangeability. The repository readiness audit now
+records `NO_INVENTORY`: zero explicit profiles against 48 required per correspondence. A
+source-bound local ingress emits profiles only from exact delimited record bytes and methods that
+exactly match a named maintainer's still-current adoption of a marginal-method review. Supply
+legitimate records and adopted methods before using it. A digest-pinned batch manifest now
+preflights a complete local import before writing any immutable profiles; it is an import path,
+not a source of records. Once 48 profiles exist, a curation review can bind a named person's
+`ESTABLISHED` or `NOT_ESTABLISHED` decision to the exact live inventory and its unmeasured
+properties; at 0 profiles no such review can load. Populate that inventory before scientific
+curation; do not optimise D96 first. Then close the atmospheric identity
+criterion, generalise the existing durable run machinery for long measurements, and run T4F.9
+before the full T4F.6 gate. Converge the atmospheric and G17 lanes at the V1 release gate above.
+
+TESS is now the bounded candidate source, but archive availability alone is not a G17 record.
+The statistic requires an independently declared native cycle. A first sector-1 metadata page
+found 48 arbitrary SPOC products (93.3 MiB predicted), but none intersected the bounded catalogue
+of unique non-false-positive TOI hosts with external periods resolving eight cycles; that download
+was stopped rather than turning cadence or sector span into a period. The catalogue-first path
+acquired 64 period-qualified targets (124,652,160 bytes), but its pre-adoption marginal assessment
+found no 48-alternative pool; the best admitted 43. Ed Bentley adopted the declared marginal
+methods on 2026-09-12. A lineage audit then found that acquisition had copied the final discovery
+row's period metadata onto every target. Corrected offline reconstruction from the frozen
+discoveries and SHA-256-verified cache retains 112 acquisitions but refuses eight records that no
+longer span eight true orbital cycles, leaving 104 source-bound profiles. Sixty-four records now
+support at least 48 alternatives under the frozen bands. Inventory is
+`READY_FOR_CURATION_REVIEW`; exchangeability remains `NOT_ASSESSED` pending a separate human
+curation decision. The corrected review packet identifies a 59-record 48-core and a 57-record
+all-pairs-admissible subset, giving each selected record 56 alternatives. The contaminated
+artifacts are preserved under named `g17_tess_lineage_bug` archives. This is necessary marginal
+evidence for review, not the review's conclusion.
+An immutable packet-bound request now presents the exact 57 IDs, both permitted decisions and all
+required human-authored fields. It remains `AWAITING_HUMAN_REVIEW`; its distinct schema cannot be
+loaded as an adopted review, and no decision or signature was supplied by code.
+Platform Status now displays the corrected readiness, eight refusals, assessment, exact packet,
+pending request, adoption state and archived lineage-bug evidence. A reviewer can write a decision
+and adopt it there as two separate acts. External discovery/acquisition and immutable evidence
+rebuild remain explicit CLI jobs; their outputs are visible in the browser, but those operational
+jobs are not launched from it. The next scientific action is still the maintainer's authored
+exchangeability decision, followed by separate successor/inventory promotion if adopted.
+The parallel object-first slice is complete: the capability registry declares existing
+sample-table planner destinations, a content-addressed handoff binds the exact object,
+declaration, profile and selected operation, and the browser verifies the destination planner's
+schema and content digest before continuing in the existing controls. Do not broaden V1 to every
+object format. G19 conversation, Phase 4G/4H and external learned-forecast comparison remain
+post-V1 unless a release criterion above proves they are required.
 
 ## 1. Current decision point
 
@@ -1560,12 +1682,14 @@ scientific declaration and its own acceptance, not a change that makes the old g
 The failed spatial audit does not prove discovery impossible. It shows what this
 candidate and these proxy labels cannot yet justify. Measure the intended target first.
 
-## 4. Independent cross-domain work ? retained, not covered by the atmospheric gate
+## 4. Cross-domain validation lane ? parallel science over the shared engine
 
 G17 release remains withheld. TG17.15's replacement scale/shape inference is implemented
-and calibrated, but release still requires a manifest that requests that inference and
-curated real-record partner pools with a justified exchangeability/admission argument.
-An atmospheric identity improvement does not discharge either obligation.
+and calibrated, and its separate successor declaration now requests that inference without
+rewriting the six historical manifests. Release still requires curated real-record partner pools
+with a justified exchangeability/admission argument; the frozen inventory is explicitly unresolved.
+An atmospheric identity improvement does not discharge either obligation, and neither lane waits
+for the other's scientific result. They converge only at the V1 release gate in section 0.
 
 **G7 and G19 must be able to reach the documents of record, and currently cannot.** G19's own
 rule is right and is not in question: *retrieve at the granularity of a complete record, never a

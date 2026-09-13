@@ -1,0 +1,1230 @@
+{
+  "schema": "spectral.tess-period-product-discovery/v1",
+  "period_catalogue_response_sha256": "381e525ab9a624131fdff9f0ee201359442aecb1835979ecafe56f32fde719f8",
+  "target_limit": 64,
+  "selected_targets": 64,
+  "shortfall_from_g17_minimum": 0,
+  "predicted_download_bytes": 124652160,
+  "targets": [
+    {
+      "tic_id": "8400842",
+      "toi": "1676.01",
+      "disposition": "KP",
+      "orbital_period_days": 3.1915257,
+      "orbital_period_seconds": 275747.82048,
+      "period_error_upper_days": 2.4e-06,
+      "period_error_lower_days": -2.4e-06,
+      "sector": 19,
+      "product": {
+        "observation_id": "tess2019331140908-s0019-0000000008400842-0164-s",
+        "data_uri": "mast:TESS/product/tess2019331140908-s0019-0000000008400842-0164-s_lc.fits",
+        "filename": "tess2019331140908-s0019-0000000008400842-0164-s_lc.fits",
+        "sector": 19,
+        "size_bytes": 1834560,
+        "provenance_name": "SPOC"
+      },
+      "predicted_download_bytes": 1834560
+    },
+    {
+      "tic_id": "9006668",
+      "toi": "238.01",
+      "disposition": "CP",
+      "orbital_period_days": 1.2730965,
+      "orbital_period_seconds": 109995.53760000001,
+      "period_error_upper_days": 2.7e-06,
+      "period_error_lower_days": -2.7e-06,
+      "sector": 2,
+      "product": {
+        "observation_id": "tess2018234235059-s0002-0000000009006668-0121-s",
+        "data_uri": "mast:TESS/product/tess2018234235059-s0002-0000000009006668-0121-s_lc.fits",
+        "filename": "tess2018234235059-s0002-0000000009006668-0121-s_lc.fits",
+        "sector": 2,
+        "size_bytes": 2004480,
+        "provenance_name": "SPOC"
+      },
+      "predicted_download_bytes": 2004480
+    },
+    {
+      "tic_id": "12423815",
+      "toi": "234.01",
+      "disposition": "PC",
+      "orbital_period_days": 2.8392793,
+      "orbital_period_seconds": 245313.73151999997,
+      "period_error_upper_days": 2.9e-06,
+      "period_error_lower_days": -2.9e-06,
+      "sector": 2,
+      "product": {
+        "observation_id": "tess2018234235059-s0002-0000000012423815-0121-s",
+        "data_uri": "mast:TESS/product/tess2018234235059-s0002-0000000012423815-0121-s_lc.fits",
+        "filename": "tess2018234235059-s0002-0000000012423815-0121-s_lc.fits",
+        "sector": 2,
+        "size_bytes": 2004480,
+        "provenance_name": "SPOC"
+      },
+      "predicted_download_bytes": 2004480
+    },
+    {
+      "tic_id": "12862099",
+      "toi": "259.01",
+      "disposition": "KP",
+      "orbital_period_days": 2.4238226,
+      "orbital_period_seconds": 209418.27263999998,
+      "period_error_upper_days": 0.0001365,
+      "period_error_lower_days": -0.0001365,
+      "sector": 3,
+      "product": {
+        "observation_id": "tess2018263035959-s0003-0000000012862099-0123-s",
+        "data_uri": "mast:TESS/product/tess2018263035959-s0003-0000000012862099-0123-s_lc.fits",
+        "filename": "tess2018263035959-s0003-0000000012862099-0123-s_lc.fits",
+        "sector": 3,
+        "size_bytes": 1998720,
+        "provenance_name": "SPOC"
+      },
+      "predicted_download_bytes": 1998720
+    },
+    {
+      "tic_id": "15863518",
+      "toi": "1713.01",
+      "disposition": "PC",
+      "orbital_period_days": 0.5572565,
+      "orbital_period_seconds": 48146.9616,
+      "period_error_upper_days": 8.8e-06,
+      "period_error_lower_days": -8.8e-06,
+      "sector": 20,
+      "product": {
+        "observation_id": "tess2019357164649-s0020-0000000015863518-0165-s",
+        "data_uri": "mast:TESS/product/tess2019357164649-s0020-0000000015863518-0165-s_lc.fits",
+        "filename": "tess2019357164649-s0020-0000000015863518-0165-s_lc.fits",
+        "sector": 20,
+        "size_bytes": 1926720,
+        "provenance_name": "SPOC"
+      },
+      "predicted_download_bytes": 1926720
+    },
+    {
+      "tic_id": "21535395",
+      "toi": "1776.01",
+      "disposition": "CP",
+      "orbital_period_days": 2.8009915,
+      "orbital_period_seconds": 242005.66559999998,
+      "period_error_upper_days": 0.0005895,
+      "period_error_lower_days": -0.0005895,
+      "sector": 21,
+      "product": {
+        "observation_id": "tess2020020091053-s0021-0000000021535395-0167-s",
+        "data_uri": "mast:TESS/product/tess2020020091053-s0021-0000000021535395-0167-s_lc.fits",
+        "filename": "tess2020020091053-s0021-0000000021535395-0167-s_lc.fits",
+        "sector": 21,
+        "size_bytes": 1998720,
+        "provenance_name": "SPOC"
+      },
+      "predicted_download_bytes": 1998720
+    },
+    {
+      "tic_id": "25155310",
+      "toi": "114.01",
+      "disposition": "KP",
+      "orbital_period_days": 3.2887898,
+      "orbital_period_seconds": 284151.43872,
+      "period_error_upper_days": 3e-07,
+      "period_error_lower_days": -3e-07,
+      "sector": 1,
+      "product": {
+        "observation_id": "tess2018206045859-s0001-0000000025155310-0120-s",
+        "data_uri": "mast:TESS/product/tess2018206045859-s0001-0000000025155310-0120-s_lc.fits",
+        "filename": "tess2018206045859-s0001-0000000025155310-0120-s_lc.fits",
+        "sector": 1,
+        "size_bytes": 2039040,
+        "provenance_name": "SPOC"
+      },
+      "predicted_download_bytes": 2039040
+    },
+    {
+      "tic_id": "25375553",
+      "toi": "143.01",
+      "disposition": "KP",
+      "orbital_period_days": 2.3109689,
+      "orbital_period_seconds": 199667.71296,
+      "period_error_upper_days": 1e-06,
+      "period_error_lower_days": -1e-06,
+      "sector": 1,
+      "product": {
+        "observation_id": "tess2018206045859-s0001-0000000025375553-0120-s",
+        "data_uri": "mast:TESS/product/tess2018206045859-s0001-0000000025375553-0120-s_lc.fits",
+        "filename": "tess2018206045859-s0001-0000000025375553-0120-s_lc.fits",
+        "sector": 1,
+        "size_bytes": 2039040,
+        "provenance_name": "SPOC"
+      },
+      "predicted_download_bytes": 2039040
+    },
+    {
+      "tic_id": "26880783",
+      "toi": "1364.01",
+      "disposition": "PC",
+      "orbital_period_days": 1.7753644,
+      "orbital_period_seconds": 153391.48416,
+      "period_error_upper_days": 1.1e-06,
+      "period_error_lower_days": -1.1e-06,
+      "sector": 40,
+      "product": {
+        "observation_id": "tess2021175071901-s0040-0000000026880783-0211-s",
+        "data_uri": "mast:TESS/product/tess2021175071901-s0040-0000000026880783-0211-s_lc.fits",
+        "filename": "tess2021175071901-s0040-0000000026880783-0211-s_lc.fits",
+        "sector": 40,
+        "size_bytes": 2062080,
+        "provenance_name": "SPOC"
+      },
+      "predicted_download_bytes": 2062080
+    },
+    {
+      "tic_id": "28900646",
+      "toi": "1685.01",
+      "disposition": "CP",
+      "orbital_period_days": 0.6691449,
+      "orbital_period_seconds": 57814.119360000004,
+      "period_error_upper_days": 9.7e-06,
+      "period_error_lower_days": -9.7e-06,
+      "sector": 19,
+      "product": {
+        "observation_id": "tess2019331140908-s0019-0000000028900646-0164-s",
+        "data_uri": "mast:TESS/product/tess2019331140908-s0019-0000000028900646-0164-s_lc.fits",
+        "filename": "tess2019331140908-s0019-0000000028900646-0164-s_lc.fits",
+        "sector": 19,
+        "size_bytes": 1834560,
+        "provenance_name": "SPOC"
+      },
+      "predicted_download_bytes": 1834560
+    },
+    {
+      "tic_id": "29831208",
+      "toi": "124.01",
+      "disposition": "APC",
+      "orbital_period_days": 1.8428078,
+      "orbital_period_seconds": 159218.59392,
+      "period_error_upper_days": 1.4e-06,
+      "period_error_lower_days": -1.4e-06,
+      "sector": 1,
+      "product": {
+        "observation_id": "tess2018206045859-s0001-0000000029831208-0120-s",
+        "data_uri": "mast:TESS/product/tess2018206045859-s0001-0000000029831208-0120-s_lc.fits",
+        "filename": "tess2018206045859-s0001-0000000029831208-0120-s_lc.fits",
+        "sector": 1,
+        "size_bytes": 2039040,
+        "provenance_name": "SPOC"
+      },
+      "predicted_download_bytes": 2039040
+    },
+    {
+      "tic_id": "29960110",
+      "toi": "1201.01",
+      "disposition": "CP",
+      "orbital_period_days": 2.4919771,
+      "orbital_period_seconds": 215306.82144000003,
+      "period_error_upper_days": 7.1e-06,
+      "period_error_lower_days": -7.1e-06,
+      "sector": 4,
+      "product": {
+        "observation_id": "tess2018292075959-s0004-0000000029960110-0124-s",
+        "data_uri": "mast:TESS/product/tess2018292075959-s0004-0000000029960110-0124-s_lc.fits",
+        "filename": "tess2018292075959-s0004-0000000029960110-0124-s_lc.fits",
+        "sector": 4,
+        "size_bytes": 1897920,
+        "provenance_name": "SPOC"
+      },
+      "predicted_download_bytes": 1897920
+    },
+    {
+      "tic_id": "32090583",
+      "toi": "218.01",
+      "disposition": "PC",
+      "orbital_period_days": 0.4384814,
+      "orbital_period_seconds": 37884.79296,
+      "period_error_upper_days": 2.84e-05,
+      "period_error_lower_days": -2.84e-05,
+      "sector": 1,
+      "product": {
+        "observation_id": "tess2018206045859-s0001-0000000032090583-0120-s",
+        "data_uri": "mast:TESS/product/tess2018206045859-s0001-0000000032090583-0120-s_lc.fits",
+        "filename": "tess2018206045859-s0001-0000000032090583-0120-s_lc.fits",
+        "sector": 1,
+        "size_bytes": 2039040,
+        "provenance_name": "SPOC"
+      },
+      "predicted_download_bytes": 2039040
+    },
+    {
+      "tic_id": "33911302",
+      "toi": "341.01",
+      "disposition": "PC",
+      "orbital_period_days": 1.81383,
+      "orbital_period_seconds": 156714.912,
+      "period_error_upper_days": 0.00024,
+      "period_error_lower_days": -0.00024,
+      "sector": 69,
+      "product": {
+        "observation_id": "tess2023237165326-s0069-0000000033911302-0264-s",
+        "data_uri": "mast:TESS/product/tess2023237165326-s0069-0000000033911302-0264-s_lc.fits",
+        "filename": "tess2023237165326-s0069-0000000033911302-0264-s_lc.fits",
+        "sector": 69,
+        "size_bytes": 1886400,
+        "provenance_name": "SPOC"
+      },
+      "predicted_download_bytes": 1886400
+    },
+    {
+      "tic_id": "38846515",
+      "toi": "106.01",
+      "disposition": "KP",
+      "orbital_period_days": 2.8493827,
+      "orbital_period_seconds": 246186.66528000002,
+      "period_error_upper_days": 2e-07,
+      "period_error_lower_days": -2e-07,
+      "sector": 1,
+      "product": {
+        "observation_id": "tess2018206045859-s0001-0000000038846515-0120-s",
+        "data_uri": "mast:TESS/product/tess2018206045859-s0001-0000000038846515-0120-s_lc.fits",
+        "filename": "tess2018206045859-s0001-0000000038846515-0120-s_lc.fits",
+        "sector": 1,
+        "size_bytes": 2039040,
+        "provenance_name": "SPOC"
+      },
+      "predicted_download_bytes": 2039040
+    },
+    {
+      "tic_id": "47425697",
+      "toi": "364.01",
+      "disposition": "PC",
+      "orbital_period_days": 0.4941631,
+      "orbital_period_seconds": 42695.69184,
+      "period_error_upper_days": 6e-07,
+      "period_error_lower_days": -6e-07,
+      "sector": 29,
+      "product": {
+        "observation_id": "tess2020238165205-s0029-0000000047425697-0193-s",
+        "data_uri": "mast:TESS/product/tess2020238165205-s0029-0000000047425697-0193-s_lc.fits",
+        "filename": "tess2020238165205-s0029-0000000047425697-0193-s_lc.fits",
+        "sector": 29,
+        "size_bytes": 1915200,
+        "provenance_name": "SPOC"
+      },
+      "predicted_download_bytes": 1915200
+    },
+    {
+      "tic_id": "51912829",
+      "toi": "180.01",
+      "disposition": "APC",
+      "orbital_period_days": 0.8353899,
+      "orbital_period_seconds": 72177.68736,
+      "period_error_upper_days": 3.17e-05,
+      "period_error_lower_days": -3.17e-05,
+      "sector": 1,
+      "product": {
+        "observation_id": "tess2018206045859-s0001-0000000051912829-0120-s",
+        "data_uri": "mast:TESS/product/tess2018206045859-s0001-0000000051912829-0120-s_lc.fits",
+        "filename": "tess2018206045859-s0001-0000000051912829-0120-s_lc.fits",
+        "sector": 1,
+        "size_bytes": 2039040,
+        "provenance_name": "SPOC"
+      },
+      "predicted_download_bytes": 2039040
+    },
+    {
+      "tic_id": "55650590",
+      "toi": "206.01",
+      "disposition": "CP",
+      "orbital_period_days": 0.7363132,
+      "orbital_period_seconds": 63617.46048,
+      "period_error_upper_days": 4.8e-06,
+      "period_error_lower_days": -4.8e-06,
+      "sector": 1,
+      "product": {
+        "observation_id": "tess2018206045859-s0001-0000000055650590-0120-s",
+        "data_uri": "mast:TESS/product/tess2018206045859-s0001-0000000055650590-0120-s_lc.fits",
+        "filename": "tess2018206045859-s0001-0000000055650590-0120-s_lc.fits",
+        "sector": 1,
+        "size_bytes": 2039040,
+        "provenance_name": "SPOC"
+      },
+      "predicted_download_bytes": 2039040
+    },
+    {
+      "tic_id": "58542531",
+      "toi": "1683.01",
+      "disposition": "CP",
+      "orbital_period_days": 3.057524,
+      "orbital_period_seconds": 264170.0736,
+      "period_error_upper_days": 3.8e-06,
+      "period_error_lower_days": -3.8e-06,
+      "sector": 19,
+      "product": {
+        "observation_id": "tess2019331140908-s0019-0000000058542531-0164-s",
+        "data_uri": "mast:TESS/product/tess2019331140908-s0019-0000000058542531-0164-s_lc.fits",
+        "filename": "tess2019331140908-s0019-0000000058542531-0164-s_lc.fits",
+        "sector": 19,
+        "size_bytes": 1834560,
+        "provenance_name": "SPOC"
+      },
+      "predicted_download_bytes": 1834560
+    },
+    {
+      "tic_id": "63898957",
+      "toi": "261.01",
+      "disposition": "CP",
+      "orbital_period_days": 3.3639254,
+      "orbital_period_seconds": 290643.15456,
+      "period_error_upper_days": 1.56e-05,
+      "period_error_lower_days": -1.56e-05,
+      "sector": 3,
+      "product": {
+        "observation_id": "tess2018263035959-s0003-0000000063898957-0123-s",
+        "data_uri": "mast:TESS/product/tess2018263035959-s0003-0000000063898957-0123-s_lc.fits",
+        "filename": "tess2018263035959-s0003-0000000063898957-0123-s_lc.fits",
+        "sector": 3,
+        "size_bytes": 1998720,
+        "provenance_name": "SPOC"
+      },
+      "predicted_download_bytes": 1998720
+    },
+    {
+      "tic_id": "67418624",
+      "toi": "1598.01",
+      "disposition": "PC",
+      "orbital_period_days": 1.1020719,
+      "orbital_period_seconds": 95219.01216000001,
+      "period_error_upper_days": 2.6e-06,
+      "period_error_lower_days": -2.6e-06,
+      "sector": 18,
+      "product": {
+        "observation_id": "tess2019306063752-s0018-0000000067418624-0162-s",
+        "data_uri": "mast:TESS/product/tess2019306063752-s0018-0000000067418624-0162-s_lc.fits",
+        "filename": "tess2019306063752-s0018-0000000067418624-0162-s_lc.fits",
+        "sector": 18,
+        "size_bytes": 1785600,
+        "provenance_name": "SPOC"
+      },
+      "predicted_download_bytes": 1785600
+    },
+    {
+      "tic_id": "67646988",
+      "toi": "1779.01",
+      "disposition": "KP",
+      "orbital_period_days": 1.8817191,
+      "orbital_period_seconds": 162580.53024,
+      "period_error_upper_days": 9e-07,
+      "period_error_lower_days": -9e-07,
+      "sector": 21,
+      "product": {
+        "observation_id": "tess2020020091053-s0021-0000000067646988-0167-s",
+        "data_uri": "mast:TESS/product/tess2020020091053-s0021-0000000067646988-0167-s_lc.fits",
+        "filename": "tess2020020091053-s0021-0000000067646988-0167-s_lc.fits",
+        "sector": 21,
+        "size_bytes": 1998720,
+        "provenance_name": "SPOC"
+      },
+      "predicted_download_bytes": 1998720
+    },
+    {
+      "tic_id": "67666096",
+      "toi": "1766.01",
+      "disposition": "KP",
+      "orbital_period_days": 2.7033942,
+      "orbital_period_seconds": 233573.25888,
+      "period_error_upper_days": 5.1e-06,
+      "period_error_lower_days": -5.1e-06,
+      "sector": 21,
+      "product": {
+        "observation_id": "tess2020020091053-s0021-0000000067666096-0167-s",
+        "data_uri": "mast:TESS/product/tess2020020091053-s0021-0000000067666096-0167-s_lc.fits",
+        "filename": "tess2020020091053-s0021-0000000067666096-0167-s_lc.fits",
+        "sector": 21,
+        "size_bytes": 1998720,
+        "provenance_name": "SPOC"
+      },
+      "predicted_download_bytes": 1998720
+    },
+    {
+      "tic_id": "70440470",
+      "toi": "126.01",
+      "disposition": "KP",
+      "orbital_period_days": 3.0354017,
+      "orbital_period_seconds": 262258.70688,
+      "period_error_upper_days": 1.7e-06,
+      "period_error_lower_days": -1.7e-06,
+      "sector": 1,
+      "product": {
+        "observation_id": "tess2018206045859-s0001-0000000070440470-0120-s",
+        "data_uri": "mast:TESS/product/tess2018206045859-s0001-0000000070440470-0120-s_lc.fits",
+        "filename": "tess2018206045859-s0001-0000000070440470-0120-s_lc.fits",
+        "sector": 1,
+        "size_bytes": 2039040,
+        "provenance_name": "SPOC"
+      },
+      "predicted_download_bytes": 2039040
+    },
+    {
+      "tic_id": "76989773",
+      "toi": "182.01",
+      "disposition": "APC",
+      "orbital_period_days": 1.7691703,
+      "orbital_period_seconds": 152856.31392000002,
+      "period_error_upper_days": 5e-07,
+      "period_error_lower_days": -5e-07,
+      "sector": 2,
+      "product": {
+        "observation_id": "tess2018234235059-s0002-0000000076989773-0121-s",
+        "data_uri": "mast:TESS/product/tess2018234235059-s0002-0000000076989773-0121-s_lc.fits",
+        "filename": "tess2018234235059-s0002-0000000076989773-0121-s_lc.fits",
+        "sector": 2,
+        "size_bytes": 2004480,
+        "provenance_name": "SPOC"
+      },
+      "predicted_download_bytes": 2004480
+    },
+    {
+      "tic_id": "77031414",
+      "toi": "241.01",
+      "disposition": "KP",
+      "orbital_period_days": 1.3866519,
+      "orbital_period_seconds": 119806.72416,
+      "period_error_upper_days": 7e-07,
+      "period_error_lower_days": -7e-07,
+      "sector": 2,
+      "product": {
+        "observation_id": "tess2018234235059-s0002-0000000077031414-0121-s",
+        "data_uri": "mast:TESS/product/tess2018234235059-s0002-0000000077031414-0121-s_lc.fits",
+        "filename": "tess2018234235059-s0002-0000000077031414-0121-s_lc.fits",
+        "sector": 2,
+        "size_bytes": 2004480,
+        "provenance_name": "SPOC"
+      },
+      "predicted_download_bytes": 2004480
+    },
+    {
+      "tic_id": "77044471",
+      "toi": "228.01",
+      "disposition": "KP",
+      "orbital_period_days": 2.6865064,
+      "orbital_period_seconds": 232114.15295999998,
+      "period_error_upper_days": 3e-06,
+      "period_error_lower_days": -3e-06,
+      "sector": 2,
+      "product": {
+        "observation_id": "tess2018234235059-s0002-0000000077044471-0121-s",
+        "data_uri": "mast:TESS/product/tess2018234235059-s0002-0000000077044471-0121-s_lc.fits",
+        "filename": "tess2018234235059-s0002-0000000077044471-0121-s_lc.fits",
+        "sector": 2,
+        "size_bytes": 2004480,
+        "provenance_name": "SPOC"
+      },
+      "predicted_download_bytes": 2004480
+    },
+    {
+      "tic_id": "80166433",
+      "toi": "1125.01",
+      "disposition": "PC",
+      "orbital_period_days": 0.7724825,
+      "orbital_period_seconds": 66742.488,
+      "period_error_upper_days": 6.8e-06,
+      "period_error_lower_days": -6.8e-06,
+      "sector": 27,
+      "product": {
+        "observation_id": "tess2020186164531-s0027-0000000080166433-0189-s",
+        "data_uri": "mast:TESS/product/tess2020186164531-s0027-0000000080166433-0189-s_lc.fits",
+        "filename": "tess2020186164531-s0027-0000000080166433-0189-s_lc.fits",
+        "sector": 27,
+        "size_bytes": 1785600,
+        "provenance_name": "SPOC"
+      },
+      "predicted_download_bytes": 1785600
+    },
+    {
+      "tic_id": "81831095",
+      "toi": "1675.01",
+      "disposition": "PC",
+      "orbital_period_days": 3.133084,
+      "orbital_period_seconds": 270698.4576,
+      "period_error_upper_days": 4.9e-06,
+      "period_error_lower_days": -4.9e-06,
+      "sector": 58,
+      "product": {
+        "observation_id": "tess2022302161335-s0058-0000000081831095-0247-s",
+        "data_uri": "mast:TESS/product/tess2022302161335-s0058-0000000081831095-0247-s_lc.fits",
+        "filename": "tess2022302161335-s0058-0000000081831095-0247-s_lc.fits",
+        "sector": 58,
+        "size_bytes": 2027520,
+        "provenance_name": "SPOC"
+      },
+      "predicted_download_bytes": 2027520
+    },
+    {
+      "tic_id": "85031598",
+      "toi": "1684.01",
+      "disposition": "PC",
+      "orbital_period_days": 1.1549925,
+      "orbital_period_seconds": 99791.35200000001,
+      "period_error_upper_days": 1.2e-06,
+      "period_error_lower_days": -1.2e-06,
+      "sector": 19,
+      "product": {
+        "observation_id": "tess2019331140908-s0019-0000000085031598-0164-s",
+        "data_uri": "mast:TESS/product/tess2019331140908-s0019-0000000085031598-0164-s_lc.fits",
+        "filename": "tess2019331140908-s0019-0000000085031598-0164-s_lc.fits",
+        "sector": 19,
+        "size_bytes": 1834560,
+        "provenance_name": "SPOC"
+      },
+      "predicted_download_bytes": 1834560
+    },
+    {
+      "tic_id": "87090944",
+      "toi": "1677.01",
+      "disposition": "PC",
+      "orbital_period_days": 0.6435807,
+      "orbital_period_seconds": 55605.37248,
+      "period_error_upper_days": 3.88e-05,
+      "period_error_lower_days": -3.88e-05,
+      "sector": 59,
+      "product": {
+        "observation_id": "tess2022330142927-s0059-0000000087090944-0248-s",
+        "data_uri": "mast:TESS/product/tess2022330142927-s0059-0000000087090944-0248-s_lc.fits",
+        "filename": "tess2022330142927-s0059-0000000087090944-0248-s_lc.fits",
+        "sector": 59,
+        "size_bytes": 1932480,
+        "provenance_name": "SPOC"
+      },
+      "predicted_download_bytes": 1932480
+    },
+    {
+      "tic_id": "89020549",
+      "toi": "132.01",
+      "disposition": "CP",
+      "orbital_period_days": 2.1096805,
+      "orbital_period_seconds": 182276.3952,
+      "period_error_upper_days": 4e-06,
+      "period_error_lower_days": -4e-06,
+      "sector": 1,
+      "product": {
+        "observation_id": "tess2018206045859-s0001-0000000089020549-0120-s",
+        "data_uri": "mast:TESS/product/tess2018206045859-s0001-0000000089020549-0120-s_lc.fits",
+        "filename": "tess2018206045859-s0001-0000000089020549-0120-s_lc.fits",
+        "sector": 1,
+        "size_bytes": 2039040,
+        "provenance_name": "SPOC"
+      },
+      "predicted_download_bytes": 2039040
+    },
+    {
+      "tic_id": "89389197",
+      "toi": "1137.01",
+      "disposition": "PC",
+      "orbital_period_days": 1.3206356,
+      "orbital_period_seconds": 114102.91583999999,
+      "period_error_upper_days": 0.0001541,
+      "period_error_lower_days": -0.0001541,
+      "sector": 54,
+      "product": {
+        "observation_id": "tess2022190063128-s0054-0000000089389197-0227-s",
+        "data_uri": "mast:TESS/product/tess2022190063128-s0054-0000000089389197-0227-s_lc.fits",
+        "filename": "tess2022190063128-s0054-0000000089389197-0227-s_lc.fits",
+        "sector": 54,
+        "size_bytes": 1918080,
+        "provenance_name": "SPOC"
+      },
+      "predicted_download_bytes": 1918080
+    },
+    {
+      "tic_id": "97409519",
+      "toi": "113.01",
+      "disposition": "KP",
+      "orbital_period_days": 3.372877,
+      "orbital_period_seconds": 291416.57279999997,
+      "period_error_upper_days": 0.000147,
+      "period_error_lower_days": -0.000147,
+      "sector": 1,
+      "product": {
+        "observation_id": "tess2018206045859-s0001-0000000097409519-0120-s",
+        "data_uri": "mast:TESS/product/tess2018206045859-s0001-0000000097409519-0120-s_lc.fits",
+        "filename": "tess2018206045859-s0001-0000000097409519-0120-s_lc.fits",
+        "sector": 1,
+        "size_bytes": 2039040,
+        "provenance_name": "SPOC"
+      },
+      "predicted_download_bytes": 2039040
+    },
+    {
+      "tic_id": "99834717",
+      "toi": "1780.01",
+      "disposition": "KP",
+      "orbital_period_days": 1.7063264,
+      "orbital_period_seconds": 147426.60096,
+      "period_error_upper_days": 1.1e-06,
+      "period_error_lower_days": -1.1e-06,
+      "sector": 21,
+      "product": {
+        "observation_id": "tess2020020091053-s0021-0000000099834717-0167-s",
+        "data_uri": "mast:TESS/product/tess2020020091053-s0021-0000000099834717-0167-s_lc.fits",
+        "filename": "tess2020020091053-s0021-0000000099834717-0167-s_lc.fits",
+        "sector": 21,
+        "size_bytes": 1998720,
+        "provenance_name": "SPOC"
+      },
+      "predicted_download_bytes": 1998720
+    },
+    {
+      "tic_id": "100097716",
+      "toi": "354.01",
+      "disposition": "APC",
+      "orbital_period_days": 3.0002084,
+      "orbital_period_seconds": 259218.00576,
+      "period_error_upper_days": 2.2e-06,
+      "period_error_lower_days": -2.2e-06,
+      "sector": 29,
+      "product": {
+        "observation_id": "tess2020238165205-s0029-0000000100097716-0193-s",
+        "data_uri": "mast:TESS/product/tess2020238165205-s0029-0000000100097716-0193-s_lc.fits",
+        "filename": "tess2020238165205-s0029-0000000100097716-0193-s_lc.fits",
+        "sector": 29,
+        "size_bytes": 1915200,
+        "provenance_name": "SPOC"
+      },
+      "predicted_download_bytes": 1915200
+    },
+    {
+      "tic_id": "116483514",
+      "toi": "1411.01",
+      "disposition": "CP",
+      "orbital_period_days": 1.4520486,
+      "orbital_period_seconds": 125456.99904,
+      "period_error_upper_days": 2.2e-06,
+      "period_error_lower_days": -2.2e-06,
+      "sector": 16,
+      "product": {
+        "observation_id": "tess2019253231442-s0016-0000000116483514-0152-s",
+        "data_uri": "mast:TESS/product/tess2019253231442-s0016-0000000116483514-0152-s_lc.fits",
+        "filename": "tess2019253231442-s0016-0000000116483514-0152-s_lc.fits",
+        "sector": 16,
+        "size_bytes": 1805760,
+        "provenance_name": "SPOC"
+      },
+      "predicted_download_bytes": 1805760
+    },
+    {
+      "tic_id": "117789567",
+      "toi": "1149.01",
+      "disposition": "APC",
+      "orbital_period_days": 2.3202418,
+      "orbital_period_seconds": 200468.89151999998,
+      "period_error_upper_days": 6.14e-05,
+      "period_error_lower_days": -6.14e-05,
+      "sector": 41,
+      "product": {
+        "observation_id": "tess2021204101404-s0041-0000000117789567-0212-s",
+        "data_uri": "mast:TESS/product/tess2021204101404-s0041-0000000117789567-0212-s_lc.fits",
+        "filename": "tess2021204101404-s0041-0000000117789567-0212-s_lc.fits",
+        "sector": 41,
+        "size_bytes": 1944000,
+        "provenance_name": "SPOC"
+      },
+      "predicted_download_bytes": 1944000
+    },
+    {
+      "tic_id": "120610833",
+      "toi": "229.01",
+      "disposition": "KP",
+      "orbital_period_days": 3.1260751,
+      "orbital_period_seconds": 270092.88864,
+      "period_error_upper_days": 1.2e-06,
+      "period_error_lower_days": -1.2e-06,
+      "sector": 2,
+      "product": {
+        "observation_id": "tess2018234235059-s0002-0000000120610833-0121-s",
+        "data_uri": "mast:TESS/product/tess2018234235059-s0002-0000000120610833-0121-s_lc.fits",
+        "filename": "tess2018234235059-s0002-0000000120610833-0121-s_lc.fits",
+        "sector": 2,
+        "size_bytes": 2004480,
+        "provenance_name": "SPOC"
+      },
+      "predicted_download_bytes": 2004480
+    },
+    {
+      "tic_id": "120757718",
+      "toi": "1236.01",
+      "disposition": "KP",
+      "orbital_period_days": 3.0300715,
+      "orbital_period_seconds": 261798.1776,
+      "period_error_upper_days": 5e-07,
+      "period_error_lower_days": -5e-07,
+      "sector": 14,
+      "product": {
+        "observation_id": "tess2019198215352-s0014-0000000120757718-0150-s",
+        "data_uri": "mast:TESS/product/tess2019198215352-s0014-0000000120757718-0150-s_lc.fits",
+        "filename": "tess2019198215352-s0014-0000000120757718-0150-s_lc.fits",
+        "sector": 14,
+        "size_bytes": 1964160,
+        "provenance_name": "SPOC"
+      },
+      "predicted_download_bytes": 1964160
+    },
+    {
+      "tic_id": "120916706",
+      "toi": "263.01",
+      "disposition": "CP",
+      "orbital_period_days": 0.5568212,
+      "orbital_period_seconds": 48109.35168,
+      "period_error_upper_days": 1.16e-05,
+      "period_error_lower_days": -1.16e-05,
+      "sector": 3,
+      "product": {
+        "observation_id": "tess2018263035959-s0003-0000000120916706-0123-s",
+        "data_uri": "mast:TESS/product/tess2018263035959-s0003-0000000120916706-0123-s_lc.fits",
+        "filename": "tess2018263035959-s0003-0000000120916706-0123-s_lc.fits",
+        "sector": 3,
+        "size_bytes": 1998720,
+        "provenance_name": "SPOC"
+      },
+      "predicted_download_bytes": 1998720
+    },
+    {
+      "tic_id": "125442121",
+      "toi": "1414.01",
+      "disposition": "APC",
+      "orbital_period_days": 3.0197807,
+      "orbital_period_seconds": 260909.05248,
+      "period_error_upper_days": 0.0001355,
+      "period_error_lower_days": -0.0001355,
+      "sector": 16,
+      "product": {
+        "observation_id": "tess2019253231442-s0016-0000000125442121-0152-s",
+        "data_uri": "mast:TESS/product/tess2019253231442-s0016-0000000125442121-0152-s_lc.fits",
+        "filename": "tess2019253231442-s0016-0000000125442121-0152-s_lc.fits",
+        "sector": 16,
+        "size_bytes": 1805760,
+        "provenance_name": "SPOC"
+      },
+      "predicted_download_bytes": 1805760
+    },
+    {
+      "tic_id": "129979528",
+      "toi": "1599.01",
+      "disposition": "KP",
+      "orbital_period_days": 1.2198382,
+      "orbital_period_seconds": 105394.02048,
+      "period_error_upper_days": 1.67e-05,
+      "period_error_lower_days": -1.67e-05,
+      "sector": 18,
+      "product": {
+        "observation_id": "tess2019306063752-s0018-0000000129979528-0162-s",
+        "data_uri": "mast:TESS/product/tess2019306063752-s0018-0000000129979528-0162-s_lc.fits",
+        "filename": "tess2019306063752-s0018-0000000129979528-0162-s_lc.fits",
+        "sector": 18,
+        "size_bytes": 1785600,
+        "provenance_name": "SPOC"
+      },
+      "predicted_download_bytes": 1785600
+    },
+    {
+      "tic_id": "137881699",
+      "toi": "1781.01",
+      "disposition": "KP",
+      "orbital_period_days": 2.9720774,
+      "orbital_period_seconds": 256787.48736,
+      "period_error_upper_days": 8.9e-06,
+      "period_error_lower_days": -8.9e-06,
+      "sector": 21,
+      "product": {
+        "observation_id": "tess2020020091053-s0021-0000000137881699-0167-s",
+        "data_uri": "mast:TESS/product/tess2020020091053-s0021-0000000137881699-0167-s_lc.fits",
+        "filename": "tess2020020091053-s0021-0000000137881699-0167-s_lc.fits",
+        "sector": 21,
+        "size_bytes": 1998720,
+        "provenance_name": "SPOC"
+      },
+      "predicted_download_bytes": 1998720
+    },
+    {
+      "tic_id": "139285832",
+      "toi": "332.01",
+      "disposition": "CP",
+      "orbital_period_days": 0.77685,
+      "orbital_period_seconds": 67119.84,
+      "period_error_upper_days": 3e-05,
+      "period_error_lower_days": -3e-05,
+      "sector": 28,
+      "product": {
+        "observation_id": "tess2020212050318-s0028-0000000139285832-0190-s",
+        "data_uri": "mast:TESS/product/tess2020212050318-s0028-0000000139285832-0190-s_lc.fits",
+        "filename": "tess2020212050318-s0028-0000000139285832-0190-s_lc.fits",
+        "sector": 28,
+        "size_bytes": 1848960,
+        "provenance_name": "SPOC"
+      },
+      "predicted_download_bytes": 1848960
+    },
+    {
+      "tic_id": "140068425",
+      "toi": "140.01",
+      "disposition": "APC",
+      "orbital_period_days": 2.2813432,
+      "orbital_period_seconds": 197108.05247999998,
+      "period_error_upper_days": 6.3e-06,
+      "period_error_lower_days": -6.3e-06,
+      "sector": 1,
+      "product": {
+        "observation_id": "tess2018206045859-s0001-0000000140068425-0120-s",
+        "data_uri": "mast:TESS/product/tess2018206045859-s0001-0000000140068425-0120-s_lc.fits",
+        "filename": "tess2018206045859-s0001-0000000140068425-0120-s_lc.fits",
+        "sector": 1,
+        "size_bytes": 2039040,
+        "provenance_name": "SPOC"
+      },
+      "predicted_download_bytes": 2039040
+    },
+    {
+      "tic_id": "140691463",
+      "toi": "157.01",
+      "disposition": "CP",
+      "orbital_period_days": 2.0845434,
+      "orbital_period_seconds": 180104.54976,
+      "period_error_upper_days": 3e-07,
+      "period_error_lower_days": -3e-07,
+      "sector": 9,
+      "product": {
+        "observation_id": "tess2019058134432-s0009-0000000140691463-0139-s",
+        "data_uri": "mast:TESS/product/tess2019058134432-s0009-0000000140691463-0139-s_lc.fits",
+        "filename": "tess2019058134432-s0009-0000000140691463-0139-s_lc.fits",
+        "sector": 9,
+        "size_bytes": 1848960,
+        "provenance_name": "SPOC"
+      },
+      "predicted_download_bytes": 1848960
+    },
+    {
+      "tic_id": "144065872",
+      "toi": "105.01",
+      "disposition": "KP",
+      "orbital_period_days": 2.1846669,
+      "orbital_period_seconds": 188755.22016,
+      "period_error_upper_days": 1e-07,
+      "period_error_lower_days": -1e-07,
+      "sector": 1,
+      "product": {
+        "observation_id": "tess2018206045859-s0001-0000000144065872-0120-s",
+        "data_uri": "mast:TESS/product/tess2018206045859-s0001-0000000144065872-0120-s_lc.fits",
+        "filename": "tess2018206045859-s0001-0000000144065872-0120-s_lc.fits",
+        "sector": 1,
+        "size_bytes": 2039040,
+        "provenance_name": "SPOC"
+      },
+      "predicted_download_bytes": 2039040
+    },
+    {
+      "tic_id": "144276942",
+      "toi": "361.01",
+      "disposition": "APC",
+      "orbital_period_days": 1.5351652,
+      "orbital_period_seconds": 132638.27328,
+      "period_error_upper_days": 7.39e-05,
+      "period_error_lower_days": -7.39e-05,
+      "sector": 28,
+      "product": {
+        "observation_id": "tess2020212050318-s0028-0000000144276942-0190-s",
+        "data_uri": "mast:TESS/product/tess2020212050318-s0028-0000000144276942-0190-s_lc.fits",
+        "filename": "tess2020212050318-s0028-0000000144276942-0190-s_lc.fits",
+        "sector": 28,
+        "size_bytes": 1848960,
+        "provenance_name": "SPOC"
+      },
+      "predicted_download_bytes": 1848960
+    },
+    {
+      "tic_id": "144336525",
+      "toi": "326.01",
+      "disposition": "APC",
+      "orbital_period_days": 0.247325,
+      "orbital_period_seconds": 21368.879999999997,
+      "period_error_upper_days": 5.2e-06,
+      "period_error_lower_days": -5.2e-06,
+      "sector": 28,
+      "product": {
+        "observation_id": "tess2020212050318-s0028-0000000144336525-0190-s",
+        "data_uri": "mast:TESS/product/tess2020212050318-s0028-0000000144336525-0190-s_lc.fits",
+        "filename": "tess2020212050318-s0028-0000000144336525-0190-s_lc.fits",
+        "sector": 28,
+        "size_bytes": 1848960,
+        "provenance_name": "SPOC"
+      },
+      "predicted_download_bytes": 1848960
+    },
+    {
+      "tic_id": "147950620",
+      "toi": "1194.01",
+      "disposition": "CP",
+      "orbital_period_days": 2.3106428,
+      "orbital_period_seconds": 199639.53792,
+      "period_error_upper_days": 9e-07,
+      "period_error_lower_days": -9e-07,
+      "sector": 14,
+      "product": {
+        "observation_id": "tess2019198215352-s0014-0000000147950620-0150-s",
+        "data_uri": "mast:TESS/product/tess2019198215352-s0014-0000000147950620-0150-s_lc.fits",
+        "filename": "tess2019198215352-s0014-0000000147950620-0150-s_lc.fits",
+        "sector": 14,
+        "size_bytes": 1964160,
+        "provenance_name": "SPOC"
+      },
+      "predicted_download_bytes": 1964160
+    },
+    {
+      "tic_id": "148914726",
+      "toi": "1179.01",
+      "disposition": "APC",
+      "orbital_period_days": 1.2615323,
+      "orbital_period_seconds": 108996.39072000001,
+      "period_error_upper_days": 4e-07,
+      "period_error_lower_days": -4e-07,
+      "sector": 14,
+      "product": {
+        "observation_id": "tess2019198215352-s0014-0000000148914726-0150-s",
+        "data_uri": "mast:TESS/product/tess2019198215352-s0014-0000000148914726-0150-s_lc.fits",
+        "filename": "tess2019198215352-s0014-0000000148914726-0150-s_lc.fits",
+        "sector": 14,
+        "size_bytes": 1964160,
+        "provenance_name": "SPOC"
+      },
+      "predicted_download_bytes": 1964160
+    },
+    {
+      "tic_id": "153976959",
+      "toi": "1435.01",
+      "disposition": "CP",
+      "orbital_period_days": 0.6858178,
+      "orbital_period_seconds": 59254.657920000005,
+      "period_error_upper_days": 1.12e-05,
+      "period_error_lower_days": -1.12e-05,
+      "sector": 14,
+      "product": {
+        "observation_id": "tess2019198215352-s0014-0000000153976959-0150-s",
+        "data_uri": "mast:TESS/product/tess2019198215352-s0014-0000000153976959-0150-s_lc.fits",
+        "filename": "tess2019198215352-s0014-0000000153976959-0150-s_lc.fits",
+        "sector": 14,
+        "size_bytes": 1964160,
+        "provenance_name": "SPOC"
+      },
+      "predicted_download_bytes": 1964160
+    },
+    {
+      "tic_id": "154383539",
+      "toi": "1436.01",
+      "disposition": "PC",
+      "orbital_period_days": 0.8675883,
+      "orbital_period_seconds": 74959.62912,
+      "period_error_upper_days": 1.15e-05,
+      "period_error_lower_days": -1.15e-05,
+      "sector": 15,
+      "product": {
+        "observation_id": "tess2019226182529-s0015-0000000154383539-0151-s",
+        "data_uri": "mast:TESS/product/tess2019226182529-s0015-0000000154383539-0151-s_lc.fits",
+        "filename": "tess2019226182529-s0015-0000000154383539-0151-s_lc.fits",
+        "sector": 15,
+        "size_bytes": 1906560,
+        "provenance_name": "SPOC"
+      },
+      "predicted_download_bytes": 1906560
+    },
+    {
+      "tic_id": "157586003",
+      "toi": "1626.01",
+      "disposition": "KP",
+      "orbital_period_days": 3.3326189,
+      "orbital_period_seconds": 287938.27296,
+      "period_error_upper_days": 2.8e-06,
+      "period_error_lower_days": -2.8e-06,
+      "sector": 26,
+      "product": {
+        "observation_id": "tess2020160202036-s0026-0000000157586003-0188-s",
+        "data_uri": "mast:TESS/product/tess2020160202036-s0026-0000000157586003-0188-s_lc.fits",
+        "filename": "tess2020160202036-s0026-0000000157586003-0188-s_lc.fits",
+        "sector": 26,
+        "size_bytes": 1820160,
+        "provenance_name": "SPOC"
+      },
+      "predicted_download_bytes": 1820160
+    },
+    {
+      "tic_id": "158025009",
+      "toi": "1416.01",
+      "disposition": "CP",
+      "orbital_period_days": 1.0697621,
+      "orbital_period_seconds": 92427.44544,
+      "period_error_upper_days": 2e-06,
+      "period_error_lower_days": -2e-06,
+      "sector": 16,
+      "product": {
+        "observation_id": "tess2019253231442-s0016-0000000158025009-0152-s",
+        "data_uri": "mast:TESS/product/tess2019253231442-s0016-0000000158025009-0152-s_lc.fits",
+        "filename": "tess2019253231442-s0016-0000000158025009-0152-s_lc.fits",
+        "sector": 16,
+        "size_bytes": 1805760,
+        "provenance_name": "SPOC"
+      },
+      "predicted_download_bytes": 1805760
+    },
+    {
+      "tic_id": "158170594",
+      "toi": "1240.01",
+      "disposition": "KP",
+      "orbital_period_days": 1.7208555,
+      "orbital_period_seconds": 148681.91520000002,
+      "period_error_upper_days": 2.6e-06,
+      "period_error_lower_days": -2.6e-06,
+      "sector": 14,
+      "product": {
+        "observation_id": "tess2019198215352-s0014-0000000158170594-0150-s",
+        "data_uri": "mast:TESS/product/tess2019198215352-s0014-0000000158170594-0150-s_lc.fits",
+        "filename": "tess2019198215352-s0014-0000000158170594-0150-s_lc.fits",
+        "sector": 14,
+        "size_bytes": 1964160,
+        "provenance_name": "SPOC"
+      },
+      "predicted_download_bytes": 1964160
+    },
+    {
+      "tic_id": "158324245",
+      "toi": "1161.01",
+      "disposition": "KP",
+      "orbital_period_days": 1.7635881,
+      "orbital_period_seconds": 152374.01184,
+      "period_error_upper_days": 5e-07,
+      "period_error_lower_days": -5e-07,
+      "sector": 14,
+      "product": {
+        "observation_id": "tess2019198215352-s0014-0000000158324245-0150-s",
+        "data_uri": "mast:TESS/product/tess2019198215352-s0014-0000000158324245-0150-s_lc.fits",
+        "filename": "tess2019198215352-s0014-0000000158324245-0150-s_lc.fits",
+        "sector": 14,
+        "size_bytes": 1964160,
+        "provenance_name": "SPOC"
+      },
+      "predicted_download_bytes": 1964160
+    },
+    {
+      "tic_id": "160045097",
+      "toi": "1782.02",
+      "disposition": "CP",
+      "orbital_period_days": 1.8290294,
+      "orbital_period_seconds": 158028.14016,
+      "period_error_upper_days": 6.3e-06,
+      "period_error_lower_days": -6.3e-06,
+      "sector": 14,
+      "product": {
+        "observation_id": "tess2019198215352-s0014-0000000160045097-0150-s",
+        "data_uri": "mast:TESS/product/tess2019198215352-s0014-0000000160045097-0150-s_lc.fits",
+        "filename": "tess2019198215352-s0014-0000000160045097-0150-s_lc.fits",
+        "sector": 14,
+        "size_bytes": 1964160,
+        "provenance_name": "SPOC"
+      },
+      "predicted_download_bytes": 1964160
+    },
+    {
+      "tic_id": "160708862",
+      "toi": "1337.01",
+      "disposition": "KP",
+      "orbital_period_days": 3.3448312,
+      "orbital_period_seconds": 288993.41568,
+      "period_error_upper_days": 2.3e-06,
+      "period_error_lower_days": -2.3e-06,
+      "sector": 38,
+      "product": {
+        "observation_id": "tess2021118034608-s0038-0000000160708862-0209-s",
+        "data_uri": "mast:TESS/product/tess2021118034608-s0038-0000000160708862-0209-s_lc.fits",
+        "filename": "tess2021118034608-s0038-0000000160708862-0209-s_lc.fits",
+        "sector": 38,
+        "size_bytes": 1952640,
+        "provenance_name": "SPOC"
+      },
+      "predicted_download_bytes": 1952640
+    },
+    {
+      "tic_id": "164173105",
+      "toi": "1417.01",
+      "disposition": "CP",
+      "orbital_period_days": 3.0726434,
+      "orbital_period_seconds": 265476.38976,
+      "period_error_upper_days": 1.1e-06,
+      "period_error_lower_days": -1.1e-06,
+      "sector": 16,
+      "product": {
+        "observation_id": "tess2019253231442-s0016-0000000164173105-0152-s",
+        "data_uri": "mast:TESS/product/tess2019253231442-s0016-0000000164173105-0152-s_lc.fits",
+        "filename": "tess2019253231442-s0016-0000000164173105-0152-s_lc.fits",
+        "sector": 16,
+        "size_bytes": 1805760,
+        "provenance_name": "SPOC"
+      },
+      "predicted_download_bytes": 1805760
+    },
+    {
+      "tic_id": "183120439",
+      "toi": "169.01",
+      "disposition": "CP",
+      "orbital_period_days": 2.2554459,
+      "orbital_period_seconds": 194870.52576,
+      "period_error_upper_days": 4.5e-06,
+      "period_error_lower_days": -4.5e-06,
+      "sector": 13,
+      "product": {
+        "observation_id": "tess2019169103026-s0013-0000000183120439-0146-s",
+        "data_uri": "mast:TESS/product/tess2019169103026-s0013-0000000183120439-0146-s_lc.fits",
+        "filename": "tess2019169103026-s0013-0000000183120439-0146-s_lc.fits",
+        "sector": 13,
+        "size_bytes": 2079360,
+        "provenance_name": "SPOC"
+      },
+      "predicted_download_bytes": 2079360
+    },
+    {
+      "tic_id": "183593642",
+      "toi": "355.01",
+      "disposition": "APC",
+      "orbital_period_days": 1.0372587,
+      "orbital_period_seconds": 89619.15168,
+      "period_error_upper_days": 6.7e-06,
+      "period_error_lower_days": -6.7e-06,
+      "sector": 29,
+      "product": {
+        "observation_id": "tess2020238165205-s0029-0000000183593642-0193-s",
+        "data_uri": "mast:TESS/product/tess2020238165205-s0029-0000000183593642-0193-s_lc.fits",
+        "filename": "tess2020238165205-s0029-0000000183593642-0193-s_lc.fits",
+        "sector": 29,
+        "size_bytes": 1915200,
+        "provenance_name": "SPOC"
+      },
+      "predicted_download_bytes": 1915200
+    },
+    {
+      "tic_id": "183985250",
+      "toi": "193.01",
+      "disposition": "CP",
+      "orbital_period_days": 0.7920645,
+      "orbital_period_seconds": 68434.3728,
+      "period_error_upper_days": 1e-07,
+      "period_error_lower_days": -1e-07,
+      "sector": 2,
+      "product": {
+        "observation_id": "tess2018234235059-s0002-0000000183985250-0121-s",
+        "data_uri": "mast:TESS/product/tess2018234235059-s0002-0000000183985250-0121-s_lc.fits",
+        "filename": "tess2018234235059-s0002-0000000183985250-0121-s_lc.fits",
+        "sector": 2,
+        "size_bytes": 2004480,
+        "provenance_name": "SPOC"
+      },
+      "predicted_download_bytes": 2004480
+    }
+  ],
+  "refused_targets": [],
+  "metadata_only": true,
+  "selection_basis": "unique-period TIC order from the frozen NASA Exoplanet Archive response, then the earliest sector with an exact public SPOC LC product",
+  "claim_boundary": "External period and archive-product availability only. No FITS values were opened; actual cycle coverage, profile validity, independence and exchangeability remain unassessed."
+}

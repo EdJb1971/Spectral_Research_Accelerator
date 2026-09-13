@@ -34,6 +34,9 @@ data/store_probes/*.json
 data/cds_downloads/
 data/era5_cache/
 data/wb_cache/
+data/tess_g17_raw/
+data/tess_g17_periodic_raw/
+data/tess_g17_records/
 !data/era5_cache/
 data/era5_cache/*
 !data/era5_cache/*.overlap.json
@@ -83,3 +86,25 @@ data/market_records/*.csv
 # exactly as the market record and the CDS shards are. The README stays and carries the source
 # URL, the digest a re-download must reproduce, and the citation the publisher requires.
 data/catalogues/*.csv
+
+# T4E.36/T4E.38/T4E.39: the joined immutable field records. The receipt JSON beside each record
+# carries its content digest, the acquisition digests of every shard behind it, and the seam
+# results -- that is what makes the record checkable, and it stays. The record itself is 871 MB
+# of ERA5 values bound by that digest, exactly as the catalogue and the CDS shards are. The
+# `data/*.zarr/` rule above matches only the top level and never reached these.
+data/wrapped_records/**/*.zarr/
+
+# Durable run state written by the runner while a measurement executes. Server-owned operational
+# records rather than evidence: a clone rebuilds them by running, and committing them would put
+# one machine's run identities in every other machine's tree.
+data/experiment_runs/
+
+# TG17.15: the archived lineage-bug evidence, split by what each part is. The contaminated
+# partner profiles and the eight measurement artifacts that record the bug are kept, because
+# they are what the readiness audit and the pool surface read. The 68 MB of raw third-party TESS
+# photometry underneath them is excluded for the same reason as `data/catalogues/*.csv`.
+data/superseded/g17_tess_lineage_bug/tess_g17_records/
+
+# T4E.39: the superseded relative-humidity misrequest. Its two acquisition receipts stay, because
+# what was wrongly asked for is part of the record; the NetCDF shards it downloaded are bulk data.
+data/superseded/**/*.nc

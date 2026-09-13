@@ -1,0 +1,81 @@
+{
+  "schema": "t4e39-reference-holdout-declaration/v1",
+  "status": "DRAFTED_NOT_ADOPTED",
+  "task": "T4E.39",
+  "artefact": "a temporally held-out replication design for the T4E.38 deterministic MSLP-versus-vorticity basin comparison",
+  "declared_by": "Edward Jonathan Bentley, maintainer (scientific choice); drafted by Codex at the maintainer's direction and NOT VALID until the maintainer has reviewed and adopted it",
+  "drafted_on": "2026-09-13",
+  "why_this_exists": {
+    "development_result": "T4E.38 returned VERTICAL_QUANTITY_SEPARATION_DOMINANT at the exact pre-acquisition boundary: MSLP closer on 10 of 18 fixed development storms, vorticity closer on 7, one exact tie and no refusal.",
+    "remaining_question": "Does the same catalogue-seeded centre rule give an MSLP-closer strict majority on the physically unopened 2022-2023 South Pacific storm-time holdout?",
+    "why_declaration_precedes_census": "The aggregate fact that the signed catalogue contains 393 in-box observations from 13 storms in 2022-2023 was disclosed in T4E.17. Individual holdout identities, selected times, positions and all ERA5 values remain unopened by this slice. Selection and adjudication are frozen before those rows are parsed."
+  },
+  "source_evidence": {
+    "t4e38_declaration": "data/identity_calibration/t4e38-reference-alignment-declaration.json",
+    "t4e38_declaration_sha256": "0ad4e5376359a46e5d44b2c6b09455574b0a7443361595560896a6b255ead477",
+    "t4e38_measurement": "measurements/t4e38_reference_alignment.json",
+    "t4e38_measurement_file_sha256": "f99d5f896b69ff9a9c994834d0f720568e98261eb8128eecaea0efdc3c84e425",
+    "t4e38_measurement_receipt_sha256": "9906ef4ef6aee18974f0774cf3e823dd0135f997f63f154dbd416796abccd679",
+    "required_t4e38_outcome": "VERTICAL_QUANTITY_SEPARATION_DOMINANT",
+    "required_t4e38_verdict": "NOT_AN_ACCEPTANCE",
+    "signed_reference": "ibtracs_sp_v04r01",
+    "signed_reference_sha256": "631f76b95c77a6a4e409233466a0d501bb4848324e421fc58e228efea2086c44",
+    "signed_reference_bytes": 35482417
+  },
+  "holdout_population": {
+    "dates": ["2022-01-01", "2023-12-31"],
+    "catalogue_inclusion_box": {"lat_min": -58.0, "lat_max": -18.0, "lon_min": 140.0, "lon_max": 180.0},
+    "synoptic_hours_utc": [0, 6, 12, 18],
+    "minimum_agency_fixes": 2,
+    "interior_margin_degrees": 2.0,
+    "one_row_per_storm": "Use catalogue_join.deepest_per_storm: among admitted interior observations choose the row furthest from either latitude edge; an equal-depth tie retains the earliest row in signed catalogue order; publish rows chronologically.",
+    "do_not_filter": "NATURE, intensity, T4E.36 pass/fail state and the eventual MSLP/vorticity comparison do not select this population.",
+    "disclosed_before_this_declaration": {"in_box_observations_before_exact_refusals": 393, "distinct_storms_before_exact_refusals": 13},
+    "minimum_selected_storms": 10,
+    "minimum_basis": "The disclosed source has 13 storms. Up to three may be lost to the already-existing agency and interior rules; fewer than 10 is reported as INSUFFICIENT_HOLDOUT_POPULATION rather than allowed to turn a very small majority into confirmation.",
+    "unit_of_independence": "storm, not observation"
+  },
+  "future_exact_acquisition": {
+    "timestamps": "Only the one mechanically selected holdout timestamp per storm may be requested; no intervening ERA5 frame.",
+    "grid_degrees": 0.25,
+    "field_segments": [
+      {"name": "parent", "lat_min": -58.0, "lat_max": -18.0, "lon_min": 140.0, "lon_max": 180.0},
+      {"name": "complement", "lat_min": -58.0, "lat_max": -18.0, "lon_min": -180.0, "lon_max": -140.0}
+    ],
+    "mslp": {"dataset": "reanalysis-era5-single-levels", "variable": "mean_sea_level_pressure", "canonical_variable": "msl"},
+    "vorticity": {"dataset": "reanalysis-era5-pressure-levels", "variable": "relative_vorticity", "canonical_variable": "vo", "pressure_level_hpa": 850, "negated": true},
+    "expected_segment_shape": [161, 161],
+    "expected_joined_longitude_points": 321,
+    "seam_rule": "For each variable and timestamp, measure the source-encoding step independently, require 180E/-180 equality within one step, retain the parent 180E column once, and refuse mismatch or an unmeasurable encoding.",
+    "network_boundary": "Acquisition is a later slice requiring this declaration's current human adoption, a T4E.39-specific explicit network authorization and the general SPECTRALEARTH_ALLOW_NETWORK gate. Census adoption alone authorizes no request."
+  },
+  "frozen_centre_rule": {
+    "implementation_identity": "The rule is textually identical to T4E.38 and must use its tested basin_walk semantics without parameter change.",
+    "catalogue_seed": "Choose the native grid sample nearest the IBTrACS latitude/longitude by absolute coordinate distance, with lower array index resolving an exact tie.",
+    "mslp_centre": "Repeatedly move to the lowest MSLP sample in the current 3x3 neighbourhood. Resolve equal values by shortest great-circle distance to the catalogue position, then lower row and column. Stop at a local minimum; refuse outer-boundary arrival or a repeated path.",
+    "vorticity_centre": "Negate southern-hemisphere 850 hPa relative vorticity and, independently from the same catalogue seed, repeatedly move to the highest sample under the identical 3x3, tie and boundary rules.",
+    "distances": "Use catalogue_join.great_circle_km. No agency radius, fitted tolerance or search radius decides the comparison."
+  },
+  "decision_declared_before_holdout_opening": {
+    "row_labels": {
+      "VERTICAL_QUANTITY_SEPARATION_CANDIDATE": "catalogue-to-MSLP distance is strictly less than catalogue-to-vorticity distance",
+      "CATALOGUE_REANALYSIS_ALIGNMENT_CANDIDATE": "catalogue-to-MSLP distance is strictly greater than catalogue-to-vorticity distance",
+      "EXACT_TIE": "the two distances are exactly equal and award neither side",
+      "REFUSED": "either declared basin path or required input cannot be measured; retain the storm in the denominator"
+    },
+    "denominator": "all mechanically selected storms; ties and refusals remain in it",
+    "majority": "floor(selected_storms / 2) + 1",
+    "HOLDOUT_SUPPORTS_VERTICAL_QUANTITY_CANDIDATE": "MSLP-closer rows reach the strict majority and at least 10 storms were selected",
+    "HOLDOUT_FAVOURS_CATALOGUE_REANALYSIS_ALIGNMENT": "vorticity-closer rows reach the strict majority and at least 10 storms were selected",
+    "HOLDOUT_MIXED": "neither side reaches the strict majority and at least 10 storms were selected",
+    "INSUFFICIENT_HOLDOUT_POPULATION": "fewer than 10 storms survive the selection fixed above",
+    "no_acceptance": "Every outcome carries VERDICT NOT_AN_ACCEPTANCE. No development or holdout outcome rescues T4E.36 or T4E.8."
+  },
+  "execution_boundary": {
+    "offline_plan": "May validate declaration/source digests and signed-reference availability. It must not parse catalogue rows, open an ERA5 record, enumerate holdout identities or use network.",
+    "census_after_adoption": "May parse only the signed catalogue and publish the mechanically selected storm identities, timestamps and positions plus every refusal count. It must not open or acquire ERA5 data.",
+    "acquisition_after_separate_authorization": "May request only the census-bound exact timestamps and both declared dateline segments for both declared variables.",
+    "materialisation_and_evaluation": "Remain later offline phases. They may not alter the population, basin rule or decision after values are seen."
+  },
+  "claim_boundary": "A future result can state whether the deterministic T4E.38 MSLP-closer majority recurs on the selected 2022-2023 temporal holdout under the same finite-census rule. It cannot establish statistical generalisation, independence from ERA5 assimilation, cyclone identity, vertical tilt or pressure/surface separation, validate IBTrACS or either field, approve a radius or extractor change, rescue T4E.36 or T4E.8, demonstrate recurrence, or make an atmospheric claim."
+}

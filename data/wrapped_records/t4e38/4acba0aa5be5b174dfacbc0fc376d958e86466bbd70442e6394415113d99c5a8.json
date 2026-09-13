@@ -1,0 +1,249 @@
+{
+  "adoption": {
+    "adopted": true,
+    "adopted_by": "Ed Bentley",
+    "adopted_on": "2026-09-13",
+    "adoption_file": "t4e38-reference-alignment-adoption.json",
+    "adopts_sha256": "0ad4e5376359a46e5d44b2c6b09455574b0a7443361595560896a6b255ead477",
+    "declaration": "t4e38-reference-alignment-declaration.json",
+    "declaration_exists": true,
+    "declaration_sha256": "0ad4e5376359a46e5d44b2c6b09455574b0a7443361595560896a6b255ead477",
+    "required_affirmation": "I have read this declaration and I adopt it",
+    "signature_still_reaches_the_declaration": true
+  },
+  "claim_boundary": "The future result can compare deterministic ERA5 MSLP-basin and 850 hPa vorticity-basin centres relative to the fixed independent IBTrACS positions. It cannot identify either basin centre as the cyclone, prove vertical tilt or pressure-level/surface separation, establish independence between ERA5 and assimilated observations, validate the catalogue or extractor, approve a tolerance or mining radius, rescue T4E.36, demonstrate recurrence, or make an atmospheric claim.",
+  "coordinates_sha256": "df0611384f11dff1ed9da3c5228c2c8e8d40088947ea95dccb11d05fe8aa677a",
+  "declaration": "data/identity_calibration/t4e38-reference-alignment-declaration.json",
+  "declaration_sha256": "0ad4e5376359a46e5d44b2c6b09455574b0a7443361595560896a6b255ead477",
+  "network_used": false,
+  "receipt_sha256": "4acba0aa5be5b174dfacbc0fc376d958e86466bbd70442e6394415113d99c5a8",
+  "record_path": "data/wrapped_records/t4e38/dc6f53652e4a995fa17ba7cc474322e7ad6552f5f97db5b13b8ff505fe456a7b.zarr",
+  "record_sha256": "dc6f53652e4a995fa17ba7cc474322e7ad6552f5f97db5b13b8ff505fe456a7b",
+  "schema": "t4e38-mslp-record/v1",
+  "seam": {
+    "all_passed": true,
+    "checks": [
+      {
+        "complement_duplicate_removed": true,
+        "coordinate": 180.0,
+        "maximum_absolute_difference": 0.0,
+        "passed": true,
+        "retained": "parent 180E column",
+        "source_encoding_tolerance": 0.0625,
+        "timestamp": "2018-01-31 12:00:00"
+      },
+      {
+        "complement_duplicate_removed": true,
+        "coordinate": 180.0,
+        "maximum_absolute_difference": 0.0,
+        "passed": true,
+        "retained": "parent 180E column",
+        "source_encoding_tolerance": 0.0625,
+        "timestamp": "2018-02-20 00:00:00"
+      },
+      {
+        "complement_duplicate_removed": true,
+        "coordinate": 180.0,
+        "maximum_absolute_difference": 0.0,
+        "passed": true,
+        "retained": "parent 180E column",
+        "source_encoding_tolerance": 0.0625,
+        "timestamp": "2018-03-12 00:00:00"
+      },
+      {
+        "complement_duplicate_removed": true,
+        "coordinate": 180.0,
+        "maximum_absolute_difference": 0.0,
+        "passed": true,
+        "retained": "parent 180E column",
+        "source_encoding_tolerance": 0.0625,
+        "timestamp": "2018-03-15 00:00:00"
+      },
+      {
+        "complement_duplicate_removed": true,
+        "coordinate": 180.0,
+        "maximum_absolute_difference": 0.0,
+        "passed": true,
+        "retained": "parent 180E column",
+        "source_encoding_tolerance": 0.0625,
+        "timestamp": "2018-03-28 06:00:00"
+      },
+      {
+        "complement_duplicate_removed": true,
+        "coordinate": 180.0,
+        "maximum_absolute_difference": 0.0,
+        "passed": true,
+        "retained": "parent 180E column",
+        "source_encoding_tolerance": 0.0625,
+        "timestamp": "2018-04-03 00:00:00"
+      },
+      {
+        "complement_duplicate_removed": true,
+        "coordinate": 180.0,
+        "maximum_absolute_difference": 0.0,
+        "passed": true,
+        "retained": "parent 180E column",
+        "source_encoding_tolerance": 0.0625,
+        "timestamp": "2018-12-17 00:00:00"
+      },
+      {
+        "complement_duplicate_removed": true,
+        "coordinate": 180.0,
+        "maximum_absolute_difference": 0.0,
+        "passed": true,
+        "retained": "parent 180E column",
+        "source_encoding_tolerance": 0.0625,
+        "timestamp": "2019-01-08 18:00:00"
+      },
+      {
+        "complement_duplicate_removed": true,
+        "coordinate": 180.0,
+        "maximum_absolute_difference": 0.0,
+        "passed": true,
+        "retained": "parent 180E column",
+        "source_encoding_tolerance": 0.0625,
+        "timestamp": "2019-02-23 00:00:00"
+      },
+      {
+        "complement_duplicate_removed": true,
+        "coordinate": 180.0,
+        "maximum_absolute_difference": 0.0,
+        "passed": true,
+        "retained": "parent 180E column",
+        "source_encoding_tolerance": 0.0625,
+        "timestamp": "2019-12-29 06:00:00"
+      },
+      {
+        "complement_duplicate_removed": true,
+        "coordinate": 180.0,
+        "maximum_absolute_difference": 0.0,
+        "passed": true,
+        "retained": "parent 180E column",
+        "source_encoding_tolerance": 0.0625,
+        "timestamp": "2020-02-15 00:00:00"
+      },
+      {
+        "complement_duplicate_removed": true,
+        "coordinate": 180.0,
+        "maximum_absolute_difference": 0.0,
+        "passed": true,
+        "retained": "parent 180E column",
+        "source_encoding_tolerance": 0.0625,
+        "timestamp": "2020-03-16 18:00:00"
+      },
+      {
+        "complement_duplicate_removed": true,
+        "coordinate": 180.0,
+        "maximum_absolute_difference": 0.0,
+        "passed": true,
+        "retained": "parent 180E column",
+        "source_encoding_tolerance": 0.0625,
+        "timestamp": "2021-02-01 06:00:00"
+      },
+      {
+        "complement_duplicate_removed": true,
+        "coordinate": 180.0,
+        "maximum_absolute_difference": 0.0,
+        "passed": true,
+        "retained": "parent 180E column",
+        "source_encoding_tolerance": 0.0625,
+        "timestamp": "2021-02-03 12:00:00"
+      },
+      {
+        "complement_duplicate_removed": true,
+        "coordinate": 180.0,
+        "maximum_absolute_difference": 0.0,
+        "passed": true,
+        "retained": "parent 180E column",
+        "source_encoding_tolerance": 0.0625,
+        "timestamp": "2021-03-07 06:00:00"
+      },
+      {
+        "complement_duplicate_removed": true,
+        "coordinate": 180.0,
+        "maximum_absolute_difference": 0.0,
+        "passed": true,
+        "retained": "parent 180E column",
+        "source_encoding_tolerance": 0.0625,
+        "timestamp": "2021-04-12 06:00:00"
+      },
+      {
+        "complement_duplicate_removed": true,
+        "coordinate": 180.0,
+        "maximum_absolute_difference": 0.0,
+        "passed": true,
+        "retained": "parent 180E column",
+        "source_encoding_tolerance": 0.0625,
+        "timestamp": "2021-12-15 18:00:00"
+      },
+      {
+        "complement_duplicate_removed": true,
+        "coordinate": 180.0,
+        "maximum_absolute_difference": 0.0,
+        "passed": true,
+        "retained": "parent 180E column",
+        "source_encoding_tolerance": 0.0625,
+        "timestamp": "2021-12-31 18:00:00"
+      }
+    ]
+  },
+  "shape": {
+    "latitude": 161,
+    "longitude": 321,
+    "time": 18
+  },
+  "sources": {
+    "complement": {
+      "acquisition_sha256": "0100831c3f700b76980653ac03c51f3993a0f6294608f05d25784fa1b895a59c",
+      "directory": "data/cds_downloads/t4e38_mslp/complement",
+      "preserved_byte_for_byte": true,
+      "request_sha256": "9897b170b84fe8f973f64df63f7ea13eb5e58f26dd1ffede4851b0289ef89d0c",
+      "shards": {
+        "20180131T1200-4edbf0f70b1a.nc": "8052477fb13974317eb796b506104495af94b192a3f77c9e62bf7a02d0143c0d",
+        "20180220T0000-ed712e0e4d67.nc": "f90d89e7ae0320d2fb9d8d178ab0bc51f91073e55adf5458cab8c75309937ba8",
+        "20180312T0000-d2957d09ad78.nc": "89ee65121c421e6aa0386c78e2bc47f4b541cb388bf9c30ece505271d4f6738a",
+        "20180315T0000-de828e911628.nc": "f2f62a7979fd9a56d59066a56cab9e86b526b51984f3bd3e63c3ea9728ec6265",
+        "20180328T0600-654f47b5ce46.nc": "c2493044e9425d4dc21fd05ed24ce0d7d6279a96cd337a9a388d50b9c61e26b5",
+        "20180403T0000-de225550dc32.nc": "d9fba404926acabf33e0854a5f5109c3205ed39de7486bb97cc3ce6b88661d80",
+        "20181217T0000-f030b616b380.nc": "ecb53a87140c002d0c16367f469963f1cf0d1306287233cbc7213ab490cb2c5f",
+        "20190108T1800-20c873037a2e.nc": "8836a3cb14638e9bb2e5501ccfde13200c225071a8078c8f971e546b7d037657",
+        "20190223T0000-8255eb697007.nc": "5eb979d93dcefe036a87763207bb9014d39b4583fd81a1a996fd535147ac48a2",
+        "20191229T0600-e8238095b0fa.nc": "5149a7ca8c4d734319f0bec09f699c1d9efb9f8de000c20b5984b012a2756bc9",
+        "20200215T0000-35e142bf571c.nc": "b25012f4391ff8fa45ee29336c3110827fad68f80ee6ffaa95103bdf77279f4e",
+        "20200316T1800-0520a3f8848a.nc": "92032faf0cf8d9710c88a319c09a15dc65347af07c32c644da24e163267fdfa2",
+        "20210201T0600-055ed3da9db1.nc": "a6186aa652c4ecd9b0213badd8d524965391bec555591d990c844c4b2f83347e",
+        "20210203T1200-9c0c13c5c9e1.nc": "382f87af6ae67f3f65859da226f6d7d8b4f1522b68d86b5923be8e00788c50eb",
+        "20210307T0600-b689a5f23d24.nc": "dadbaa2f893a5aca1811878128fd1fbc0b1b106995363828657d411ca275e21b",
+        "20210412T0600-bb3a37548209.nc": "fb1abd5ba244214d4021ff0301635f95f33806912367f9c5ba7cd9a6c02ee764",
+        "20211215T1800-8d7d29e32b72.nc": "8ec4f53391b80e20a362f4d9068e822d5245073e1108a04773303ec4cdeddf1b",
+        "20211231T1800-792fe2b96018.nc": "41da40fbc2f7749b249398bb4c81012e6a30b01bb762b6a2beea2e461ff67106"
+      }
+    },
+    "parent": {
+      "acquisition_sha256": "35b137ac3700cee5c5e1035316b835bee82e4e834868c74d3459040a3fbc98ef",
+      "directory": "data/cds_downloads/t4e38_mslp/parent",
+      "preserved_byte_for_byte": true,
+      "request_sha256": "9e74b7ad31f13834a553bcc4dd38072c9cddc5adcd3478300e3bb69c7ffa56d9",
+      "shards": {
+        "20180131T1200-4c1f9a512e70.nc": "76f0be581d10b10d747a37550bfb6ecbf15f88c01f4d2a7cd76eabf8a1c1807b",
+        "20180220T0000-4324e2e0960c.nc": "adab0762dbba9040538bfd6939c1fdaadf9d46af817acf4673e35b61565f8970",
+        "20180312T0000-9ac3676ae98b.nc": "536f75eeb67a7d2b0c45fbc7bf11441196a654f9db76afe75ffa981d16a95127",
+        "20180315T0000-180d11cf2a48.nc": "bb6ba89dcf1b1d9c44d97a7a5065f283b51dbb6b500fb18ebc54d2931b3ac642",
+        "20180328T0600-953c0368f856.nc": "0287246cb2384a9f95dac1f9bee53bd96106c04c3100f6fe77c1c2d01d70ea79",
+        "20180403T0000-1cf3b99d693f.nc": "b0749a24f891c78dc8bdb3b0edef9404504eb913a5952b0d153c5f05976b438b",
+        "20181217T0000-e2a54fde54a7.nc": "6e0e36eb212b88b977716fb22ad1f7f80ab028a44b4a81a015d46a5667bc5dda",
+        "20190108T1800-4fb44e3db1f6.nc": "2df888e3a015b0ddb598e0362c18e5713b741e79ec375d3afb8c0fae9574658d",
+        "20190223T0000-94a1c51844c4.nc": "11af8d6e216abe4f7b6c2bb9cb3788c97f6fd521862d3513dc4ab98c3951c2d2",
+        "20191229T0600-624ee0dc0957.nc": "c2e8923d3268c2c3ca7dde96a113241419fd773f2e263424cfdaba434c9fab50",
+        "20200215T0000-e43bf6ab179e.nc": "eb8d8077d3bac3117037e7cdfdfbd8d2439d1fb401f33258ce1f773d2df5bc52",
+        "20200316T1800-aa4fd0c34267.nc": "838d4f7a2f37f31d4a5c785ccd19f50e9caf33d79a6157576fd180ce74bf6f4b",
+        "20210201T0600-85e90d836e50.nc": "e2f12e394b48316b65385ced5bfc63a50cea7f9fd906eb1771b2445f1fc56a33",
+        "20210203T1200-f33acf29434a.nc": "571db45b9f84444838c2b76d76e6822f7acc7099222e61abe2c6b27d576ec942",
+        "20210307T0600-5d4cc26a0d7e.nc": "e901f11efbe3ed5f1259480adc2ac5ae11340cd7dd596bbc533e7a5c09591a80",
+        "20210412T0600-064f26658cde.nc": "ad462c32df6e5741d5fd561e4539388eaef10b6023925a8b3e676847b99a523c",
+        "20211215T1800-6674540ea7ad.nc": "ef714850af68851bbe27f1b91d2f276edcb50dbfe85b98eea06f17169fd558c1",
+        "20211231T1800-bc5c3cd9621e.nc": "2c98fa0f5df5e41c1e8796dc7d528dca7b75e04877efbc2e10d4aa2e0fe01d8b"
+      }
+    }
+  }
+}

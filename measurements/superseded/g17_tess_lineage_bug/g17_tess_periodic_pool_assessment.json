@@ -1,0 +1,286 @@
+{
+  "schema": "g17-tess-pool-assessment/v1",
+  "acquisition_file": "measurements/g17_tess_periodic_acquisition.json",
+  "acquisition_sha256": "3ed9320e5b3bd0292f30b8a6accc11f1f4a0e79db484c0079864760455148a04",
+  "profile_method_status": "PROPOSED_NOT_ADOPTED",
+  "candidate_count": 64,
+  "minimum_required": 48,
+  "records_reaching_minimum": 0,
+  "pool_size": {
+    "minimum": 0,
+    "median": 37.0,
+    "maximum": 43
+  },
+  "admission_by_record": [
+    {
+      "record_id": "tic-8400842",
+      "admitted_alternatives": 15
+    },
+    {
+      "record_id": "tic-9006668",
+      "admitted_alternatives": 43
+    },
+    {
+      "record_id": "tic-12423815",
+      "admitted_alternatives": 35
+    },
+    {
+      "record_id": "tic-12862099",
+      "admitted_alternatives": 27
+    },
+    {
+      "record_id": "tic-15863518",
+      "admitted_alternatives": 39
+    },
+    {
+      "record_id": "tic-21535395",
+      "admitted_alternatives": 34
+    },
+    {
+      "record_id": "tic-25155310",
+      "admitted_alternatives": 20
+    },
+    {
+      "record_id": "tic-25375553",
+      "admitted_alternatives": 11
+    },
+    {
+      "record_id": "tic-26880783",
+      "admitted_alternatives": 38
+    },
+    {
+      "record_id": "tic-28900646",
+      "admitted_alternatives": 37
+    },
+    {
+      "record_id": "tic-29831208",
+      "admitted_alternatives": 35
+    },
+    {
+      "record_id": "tic-29960110",
+      "admitted_alternatives": 39
+    },
+    {
+      "record_id": "tic-32090583",
+      "admitted_alternatives": 14
+    },
+    {
+      "record_id": "tic-33911302",
+      "admitted_alternatives": 9
+    },
+    {
+      "record_id": "tic-38846515",
+      "admitted_alternatives": 12
+    },
+    {
+      "record_id": "tic-47425697",
+      "admitted_alternatives": 39
+    },
+    {
+      "record_id": "tic-51912829",
+      "admitted_alternatives": 38
+    },
+    {
+      "record_id": "tic-55650590",
+      "admitted_alternatives": 39
+    },
+    {
+      "record_id": "tic-58542531",
+      "admitted_alternatives": 20
+    },
+    {
+      "record_id": "tic-63898957",
+      "admitted_alternatives": 43
+    },
+    {
+      "record_id": "tic-67418624",
+      "admitted_alternatives": 40
+    },
+    {
+      "record_id": "tic-67646988",
+      "admitted_alternatives": 8
+    },
+    {
+      "record_id": "tic-67666096",
+      "admitted_alternatives": 10
+    },
+    {
+      "record_id": "tic-70440470",
+      "admitted_alternatives": 40
+    },
+    {
+      "record_id": "tic-76989773",
+      "admitted_alternatives": 12
+    },
+    {
+      "record_id": "tic-77031414",
+      "admitted_alternatives": 6
+    },
+    {
+      "record_id": "tic-77044471",
+      "admitted_alternatives": 40
+    },
+    {
+      "record_id": "tic-80166433",
+      "admitted_alternatives": 40
+    },
+    {
+      "record_id": "tic-81831095",
+      "admitted_alternatives": 34
+    },
+    {
+      "record_id": "tic-85031598",
+      "admitted_alternatives": 39
+    },
+    {
+      "record_id": "tic-87090944",
+      "admitted_alternatives": 39
+    },
+    {
+      "record_id": "tic-89020549",
+      "admitted_alternatives": 35
+    },
+    {
+      "record_id": "tic-89389197",
+      "admitted_alternatives": 41
+    },
+    {
+      "record_id": "tic-97409519",
+      "admitted_alternatives": 39
+    },
+    {
+      "record_id": "tic-99834717",
+      "admitted_alternatives": 43
+    },
+    {
+      "record_id": "tic-100097716",
+      "admitted_alternatives": 13
+    },
+    {
+      "record_id": "tic-116483514",
+      "admitted_alternatives": 39
+    },
+    {
+      "record_id": "tic-117789567",
+      "admitted_alternatives": 0
+    },
+    {
+      "record_id": "tic-120610833",
+      "admitted_alternatives": 43
+    },
+    {
+      "record_id": "tic-120757718",
+      "admitted_alternatives": 11
+    },
+    {
+      "record_id": "tic-120916706",
+      "admitted_alternatives": 40
+    },
+    {
+      "record_id": "tic-125442121",
+      "admitted_alternatives": 11
+    },
+    {
+      "record_id": "tic-129979528",
+      "admitted_alternatives": 0
+    },
+    {
+      "record_id": "tic-137881699",
+      "admitted_alternatives": 39
+    },
+    {
+      "record_id": "tic-139285832",
+      "admitted_alternatives": 39
+    },
+    {
+      "record_id": "tic-140068425",
+      "admitted_alternatives": 11
+    },
+    {
+      "record_id": "tic-140691463",
+      "admitted_alternatives": 37
+    },
+    {
+      "record_id": "tic-144065872",
+      "admitted_alternatives": 8
+    },
+    {
+      "record_id": "tic-144276942",
+      "admitted_alternatives": 40
+    },
+    {
+      "record_id": "tic-144336525",
+      "admitted_alternatives": 40
+    },
+    {
+      "record_id": "tic-147950620",
+      "admitted_alternatives": 43
+    },
+    {
+      "record_id": "tic-148914726",
+      "admitted_alternatives": 12
+    },
+    {
+      "record_id": "tic-153976959",
+      "admitted_alternatives": 34
+    },
+    {
+      "record_id": "tic-154383539",
+      "admitted_alternatives": 39
+    },
+    {
+      "record_id": "tic-157586003",
+      "admitted_alternatives": 43
+    },
+    {
+      "record_id": "tic-158025009",
+      "admitted_alternatives": 39
+    },
+    {
+      "record_id": "tic-158170594",
+      "admitted_alternatives": 37
+    },
+    {
+      "record_id": "tic-158324245",
+      "admitted_alternatives": 15
+    },
+    {
+      "record_id": "tic-160045097",
+      "admitted_alternatives": 20
+    },
+    {
+      "record_id": "tic-160708862",
+      "admitted_alternatives": 9
+    },
+    {
+      "record_id": "tic-164173105",
+      "admitted_alternatives": 0
+    },
+    {
+      "record_id": "tic-183120439",
+      "admitted_alternatives": 39
+    },
+    {
+      "record_id": "tic-183593642",
+      "admitted_alternatives": 39
+    },
+    {
+      "record_id": "tic-183985250",
+      "admitted_alternatives": 39
+    }
+  ],
+  "refusal_counts": {
+    "n_samples": 0,
+    "effective_sample_size": 2200,
+    "noise_floor": 440,
+    "cadence_seconds": 0,
+    "minimum_coverage": 0
+  },
+  "proposed_methods": {
+    "sample_selection": "finite TIME, PDCSAP_FLUX and PDCSAP_FLUX_ERR with QUALITY == 0",
+    "native_seconds_basis": "NASA Exoplanet Archive TOI pl_orbper converted from days to seconds; not estimated from SPOC flux",
+    "effective_sample_size_method": "quality-zero finite PDCSAP flux; clipped AR(1) n * (1-rho1) / (1+rho1)",
+    "noise_floor_method": "median(PDCSAP_FLUX_ERR) / (1.4826 * MAD(PDCSAP_FLUX)) on quality-zero finite rows"
+  },
+  "claim_boundary": "A pre-adoption feasibility assessment. These methods are proposals, no G17 profile is emitted, and pool exchangeability is not assessed."
+}

@@ -1,0 +1,88 @@
+{
+  "schema": "t4e38-reference-alignment-declaration/v1",
+  "status": "DRAFTED_NOT_ADOPTED",
+  "task": "T4E.38",
+  "artefact": "an exact-time ERA5 mean-sea-level-pressure acquisition and triangulation design for the fixed T4E.36 population",
+  "declared_by": "Edward Jonathan Bentley, maintainer (scientific choice); drafted by Codex at the maintainer's direction and NOT VALID until the maintainer has reviewed and adopted it",
+  "drafted_on": "2026-09-13",
+  "why_this_exists": {
+    "prior_commitment": "The T4E.18 acquisition design states that mean sea level pressure is more commensurate with IBTrACS, and that MSLP is the next candidate if 850 hPa relative vorticity fails.",
+    "new_evidence": "T4E.36 failed after eastward support was added. T4E.37 then found that 12 of 13 condition-1 failures had no native-grid vorticity maximum inside the inherited agency radius before extractor thresholding, so tuning that threshold is not the dominant next explanation.",
+    "question": "Does a surface-pressure basin centre lie closer to the independent IBTrACS position than the corresponding 850 hPa vorticity-basin centre on a strict majority of the same 18 storm-times?"
+  },
+  "authoritative_grounding": {
+    "era5_single_levels": {
+      "source": "Copernicus Climate Data Store, ERA5 hourly data on single levels from 1940 to present",
+      "url": "https://cds.climate.copernicus.eu/datasets/reanalysis-era5-single-levels?tab=overview",
+      "doi": "10.24381/cds.adbb2d47",
+      "grounding": "The official product supplies hourly atmospheric single-level quantities on a regular 0.25 degree latitude-longitude grid."
+    },
+    "ibtracs": {
+      "source": "NOAA NCEI IBTrACS v04r01 Technical Details",
+      "url": "https://www.ncei.noaa.gov/sites/default/files/2025-04/IBTrACS_version4r01_Technical_Details.pdf",
+      "grounding": "IBTrACS LAT and LON are combined best-track positions and WMO_PRES is minimum central pressure assigned by the responsible WMO agency; MSLP is therefore closer in measured quantity to that surface reference than 850 hPa relative vorticity."
+    },
+    "retrieved_on": "2026-09-13"
+  },
+  "source_evidence": {
+    "t4e18_design": "data/identity_calibration/t4e18-vorticity-acquisition-design.json",
+    "t4e36_measurement": "measurements/t4e36_wrapped_join.json",
+    "t4e36_measurement_file_sha256": "c58f75786174508a27d974c8ea8c72e5919485ee9fdccbd36b48bd51fd0ac48c",
+    "t4e36_measurement_receipt_sha256": "5d84935047e4ea60b2f092ba093bf5992d2685f1b40813e76d7dcfb17a5dd408",
+    "t4e37_measurement": "measurements/t4e37_failure_attribution.json",
+    "t4e37_measurement_file_sha256": "0678667bebd0f399e6ef10a066fcf2991b091331a740159e616fb99fe65a862c",
+    "t4e37_measurement_receipt_sha256": "f8ff2f88afd818acfc3b4975c173eb5d28192f359036bd90284d63b3a6d0f1d1"
+  },
+  "frozen_population": {
+    "source": "Exactly the 18 T4E.36 raw-field rows, in their published order.",
+    "expected_rows": 18,
+    "selection": "Do not rerun the catalogue, select only failures or admit a wider storm population. Passing rows are controls for whether the comparison merely restates failure selection.",
+    "timestamps": "Read the exact 18 sid/time identities from the content-bound T4E.36 receipt. Request no intervening frames."
+  },
+  "single_level_request": {
+    "dataset": "reanalysis-era5-single-levels",
+    "variable": "mean_sea_level_pressure",
+    "canonical_variable": "msl",
+    "product_type": "reanalysis",
+    "grid_degrees": 0.25,
+    "data_format": "netcdf",
+    "segments": [
+      {"name": "parent", "lat_min": -58.0, "lat_max": -18.0, "lon_min": 140.0, "lon_max": 180.0},
+      {"name": "complement", "lat_min": -58.0, "lat_max": -18.0, "lon_min": -180.0, "lon_max": -140.0}
+    ],
+    "expected_timestamp_shards_per_segment": 18,
+    "expected_total_shards": 36,
+    "expected_frames_after_join": 18,
+    "expected_segment_shape": [161, 161],
+    "why_exact_timestamp_shards": "Only the fixed development rows are needed. Acquiring every synoptic frame from 2018-2021 would transfer 5844 frames to answer an 18-frame question and would expose data the declared diagnostic does not use."
+  },
+  "wrapped_geometry": {
+    "parent_longitude": [140.0, 180.0],
+    "complement_longitude_as_requested": [-180.0, -140.0],
+    "complement_longitude_after_wrapping": [180.0, 220.0],
+    "expected_joined_longitude_points": 321,
+    "seam_rule": "Verify the 180E/-180 MSLP samples within one measured source-encoding step per timestamp, retain the shared meridian once, and refuse mismatch or unmeasurable encoding."
+  },
+  "frozen_centre_rule": {
+    "catalogue_seed": "Choose the native grid sample nearest the IBTrACS latitude/longitude by absolute coordinate distance, with lower array index resolving an exact tie.",
+    "mslp_centre": "From the catalogue seed, repeatedly move to the lowest MSLP sample in the current 3x3 neighbourhood. Resolve equal values by shortest great-circle distance to the catalogue position, then lower row and column. Stop at a local minimum; refuse if the path reaches the outermost grid row or column or repeats.",
+    "vorticity_centre": "Apply the sign-declared T4E.36 negation and, independently from the same catalogue seed, repeatedly move to the highest sample under the identical 3x3, tie and boundary rules.",
+    "why_basin_paths": "A path seeded at the independent catalogue location associates one local centre without choosing a search radius, selecting the globally deepest system, or tuning against the observed offsets.",
+    "distances": "Use catalogue_join.great_circle_km for catalogue-to-MSLP, catalogue-to-vorticity and MSLP-to-vorticity distances. No agency radius or new tolerance decides this comparison."
+  },
+  "decision_declared_before_acquisition": {
+    "VERTICAL_QUANTITY_SEPARATION_CANDIDATE": "The catalogue-to-MSLP distance is strictly less than the catalogue-to-vorticity distance for that row.",
+    "CATALOGUE_REANALYSIS_ALIGNMENT_CANDIDATE": "The catalogue-to-MSLP distance is strictly greater than the catalogue-to-vorticity distance for that row.",
+    "EXACT_TIE": "The two distances are exactly equal; report separately and do not award either side.",
+    "VERTICAL_QUANTITY_SEPARATION_DOMINANT": "At least 10 of all 18 fixed rows are VERTICAL_QUANTITY_SEPARATION_CANDIDATE.",
+    "CATALOGUE_REANALYSIS_ALIGNMENT_DOMINANT": "At least 10 of all 18 fixed rows are CATALOGUE_REANALYSIS_ALIGNMENT_CANDIDATE.",
+    "MIXED": "Neither candidate reaches 10 of all 18 rows.",
+    "no_acceptance": "Every outcome carries VERDICT NOT_AN_ACCEPTANCE and cannot rescue T4E.36 or T4E.8."
+  },
+  "execution_boundary": {
+    "planning": "Offline validation may read only the two content-bound measurement receipts and must report network_used false.",
+    "acquisition": "Requires a current digest-bound human adoption, a T4E.38-specific explicit network authorisation, the general SPECTRALEARTH_ALLOW_NETWORK gate, and standard CDS credentials.",
+    "later_phases": "Materialisation and evaluation remain a successor implementation slice. This declaration freezes their geometry and decision before any MSLP value is acquired."
+  },
+  "claim_boundary": "The future result can compare deterministic ERA5 MSLP-basin and 850 hPa vorticity-basin centres relative to the fixed independent IBTrACS positions. It cannot identify either basin centre as the cyclone, prove vertical tilt or pressure-level/surface separation, establish independence between ERA5 and assimilated observations, validate the catalogue or extractor, approve a tolerance or mining radius, rescue T4E.36, demonstrate recurrence, or make an atmospheric claim."
+}

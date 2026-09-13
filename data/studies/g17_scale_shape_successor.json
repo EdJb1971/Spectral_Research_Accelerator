@@ -1,0 +1,34 @@
+{
+  "schema": "g17-scale-shape-successor/v1",
+  "study_id": "g17_scale_shape_successor_v1",
+  "mode": "scale_shape_aligned",
+  "estimand": "per_correspondence",
+  "inference": "exact_pool_substitution",
+  "statistic": "src.benchmarks.shape_calibration:shape_recurrence",
+  "orientation": "larger_is_more_similar",
+  "correction": "benjamini_yekutieli",
+  "alpha": 0.05,
+  "family_size": 6,
+  "minimum_pool_size_per_correspondence": 48,
+  "admission_contract": {
+    "ratio_bands": {
+      "cadence_seconds": 4.0,
+      "effective_sample_size": 2.0,
+      "n_samples": 2.0,
+      "noise_floor": 3.0
+    },
+    "minimum_coverage": 0.5,
+    "require_distinct_provenance": true,
+    "unbanded": [
+      "native_seconds"
+    ],
+    "unbanded_reason": "native duration is what scale/shape mode compares across; banding it would refuse the comparison the mode exists for",
+    "contract_sha256": "e1302a79bd21e89053a767a94867c37fd17f55a2e6fd35808af2b2e56b0d4afa"
+  },
+  "real_pool_inventory": {
+    "status": "UNRESOLVED",
+    "record_ids": [],
+    "exchangeability": "NOT_ESTABLISHED"
+  },
+  "claim_boundary": "This declaration requests the calibrated exact inference and fixes its marginal admission contract. It names no real pool members, establishes no real-record exchangeability and does not release G17."
+}

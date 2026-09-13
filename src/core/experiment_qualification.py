@@ -43,13 +43,13 @@ which a limit that was overcome and a limit that was edited away read identicall
 is kept, **recomputed** on every plan, and superseded only while it is still true on its own terms.
 See ``src.core.calibration_record.scale_shape_supersession``.
 
-What the supersession does not do is turn the gate green, and the reasons are computed rather than
-asserted.  The qualification manifests declare ``scale_partner_reassignment`` with a replication
-count, which is checked against the manifests this module builds; the calibrated method is not the
-one they request.  And the calibration's own claim boundary says it is evidence about built
+What the supersession does not do is turn the gate green. The qualification manifests retain their
+historical joint-reassignment declaration, while a separately versioned successor now requests the
+calibrated exact method without pretending it has a replication count. Its real inventory remains
+explicitly unresolved. The calibration's own claim boundary says it is evidence about built
 fixtures rather than about whether a pool of *real* records is exchangeable - a curation obligation
-that no amount of further measurement on fixtures discharges.  The gate therefore publishes its
-blockers, each with what would discharge it and whether this module can decide it at all.
+that no amount of further measurement on fixtures discharges. The gate therefore retains that
+blocker and states that this module cannot decide it.
 
 ``synthetic_fifth_adapter`` is the fifth, and it is the only gate here whose evidence is partly
 readable on the spot (TG17.13).  Its source-edit half is decidable from committed source in
@@ -81,7 +81,9 @@ from src.core.experiment_manifest import (
 )
 from src.core.experiment_receipt import publish_bundle, verify_bundle
 from src.core.experiment_run import RunStore
+from src.core.real_pool_readiness import audit_real_pool_readiness
 from src.core.run_workers import build_suite
+from src.core.scale_shape_successor import successor_scale_shape_manifest
 
 
 SCHEMA = "experiment-qualification/v1"
@@ -252,12 +254,11 @@ def scale_shape_applicability() -> Dict[str, Any]:
 
 
 def declared_scale_shape_null() -> Dict[str, Any]:
-    """Which inference the frozen scale/shape manifests actually request, read from the manifests.
+    """Which inference the frozen scale/shape declarations request, read from their bytes.
 
-    The load-bearing half of why a calibrated method still leaves the gate refused, and the half
-    most easily reduced to a sentence. It is not a sentence: the six frozen declarations are built
-    and their declared null is read back, so a manifest that later requested the calibrated
-    inference would change this without anybody remembering to change a paragraph.
+    The six qualification manifests remain historical declarations of joint reassignment. Exact
+    pool substitution has no replication count, so its successor is a separate declaration rather
+    than a false `NullDefinition`. Reading both preserves what was superseded and what is requested.
     """
     declarations = set()
     for duration in DURATIONS:
@@ -265,12 +266,18 @@ def declared_scale_shape_null() -> Dict[str, Any]:
             declarations.add((null.name, null.method, int(null.replications)))
     rows = sorted({"name": name, "method": method, "replications": replications}.items()
                   for name, method, replications in declarations)
+    successor_declaration = successor_scale_shape_manifest()
+    successor = successor_declaration.describe()
     return {
-        "declared": [dict(row) for row in rows],
-        "inference": "drawn surrogates with a replication count",
-        "estimand": "joint_structure",
-        "manifests_request_the_calibrated_inference": False,
-        "read_from": "the six frozen qualification manifests, not from a restated sentence",
+        "legacy_declared": [dict(row) for row in rows],
+        "successor": successor,
+        "real_pool_readiness": audit_real_pool_readiness(successor_declaration),
+        "inference": successor["inference"],
+        "estimand": successor["estimand"],
+        "manifests_request_the_calibrated_inference": True,
+        "read_from": (
+            "the six frozen qualification manifests and the separate content-addressed successor "
+            "declaration, not from a restated sentence"),
     }
 
 
@@ -305,20 +312,30 @@ def scale_shape_blockers(supersession: Mapping[str, Any],
                        "exact pool substitution over a declared partner pool, which no declared "
                        "manifest requests"
                        % ", ".join("%s at %d replications" % (row["method"], row["replications"])
-                                   for row in declared["declared"])),
+                                   for row in declared["legacy_declared"])),
             "discharged_by": ("a declared manifest that requests the calibrated inference, which "
                               "is a change to the experiment declaration and not to this gate"),
             "decidable_here": True})
-    blockers.append({
-        "blocker": "pool_exchangeability_on_real_records",
-        "detail": ("the recorded calibration is evidence that the arithmetic and the "
-                   "exchangeability hold together on records built with the property by "
-                   "construction. Whether an inventory of real records has it is the failure mode "
-                   "TG17.15 named in advance as the one that can be violated silently"),
-        "discharged_by": ("a declared admission criterion shown to hold on an inventory of real "
-                          "records. That is a curation obligation, and no further measurement on "
-                          "built fixtures discharges it"),
-        "decidable_here": False})
+    inventory = declared.get("successor", {}).get("real_pool_inventory", {})
+    readiness = declared.get("real_pool_readiness", {})
+    if inventory.get("status") != "CURATED" or inventory.get("exchangeability") != "ESTABLISHED":
+        blockers.append({
+            "blocker": "pool_exchangeability_on_real_records",
+                "detail": ("the successor declaration requests the calibrated inference but records "
+                              "its real pool inventory as %s with exchangeability %s. The repository "
+                              "readiness audit reports %s: %d explicit profiles against %d required, a "
+                              "shortfall of %d. The calibration is evidence about built fixtures, not an "
+                              "inventory of real records"
+                       % (inventory.get("status", "ABSENT"),
+                                  inventory.get("exchangeability", "NOT_ESTABLISHED"),
+                                  readiness.get("status", "NOT_MEASURED"),
+                                  readiness.get("profile_count", 0),
+                                  readiness.get("required_profiles_per_correspondence", 0),
+                                  readiness.get("shortfall", 0))),
+            "discharged_by": ("a declared admission criterion shown to hold on an inventory of real "
+                              "records. That is a curation obligation, and no further measurement "
+                              "on built fixtures discharges it"),
+            "decidable_here": False})
     return blockers
 
 

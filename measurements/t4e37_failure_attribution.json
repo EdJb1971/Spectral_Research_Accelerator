@@ -1,0 +1,353 @@
+{
+  "OUTCOME": "FIELD_REFERENCE_SEPARATION_DOMINANT",
+  "VERDICT": "NOT_AN_ACCEPTANCE",
+  "adoption": {
+    "adopted": true,
+    "adopted_by": "Ed Bentley",
+    "adopted_on": "2026-09-13",
+    "adoption_file": "t4e37-failure-attribution-adoption.json",
+    "adopts_sha256": "2a0f0ce5e154b063afc1cafc86d8825d9066cd09f300e8c1dacc7ec6233dbef4",
+    "declaration": "t4e37-failure-attribution-declaration.json",
+    "declaration_exists": true,
+    "declaration_sha256": "2a0f0ce5e154b063afc1cafc86d8825d9066cd09f300e8c1dacc7ec6233dbef4",
+    "required_affirmation": "I have read this declaration and I adopt it",
+    "signature_still_reaches_the_declaration": true
+  },
+  "claim_boundary": "The result can distinguish whether the unchanged sampled field offers any native-grid local maximum inside each existing agency radius before the existing extractor's significance, localisation and suppression stages. It cannot identify a maximum as the cyclone, establish that pressure-level/surface quantity separation caused an offset, validate or invalidate the extractor, approve a tolerance or mining radius, rescue T4E.36, demonstrate kind recurrence, or make a claim about the atmosphere.",
+  "decision": {
+    "counts": {
+      "EXTRACTOR_FILTERING_CANDIDATE": 1,
+      "FIELD_REFERENCE_SEPARATION_CANDIDATE": 12
+    },
+    "is_acceptance_verdict": false,
+    "majority_needed": 7,
+    "outcome": "FIELD_REFERENCE_SEPARATION_DOMINANT"
+  },
+  "declaration": "data/identity_calibration/t4e37-failure-attribution-declaration.json",
+  "declaration_sha256": "2a0f0ce5e154b063afc1cafc86d8825d9066cd09f300e8c1dacc7ec6233dbef4",
+  "diagnostic": {
+    "boundary_margin": 1,
+    "distance_function": "catalogue_join.great_circle_km",
+    "longitude_periodic": false,
+    "n_surrogates": 99,
+    "negated": true,
+    "neighbourhood": "3x3",
+    "position": "native_grid_sample",
+    "seed": 1234
+  },
+  "population": {
+    "catalogue_census_rerun": false,
+    "forecast_test_opened": false,
+    "passing_rows_reclassified": 0,
+    "rows": 13
+  },
+  "receipt_sha256": "f8ff2f88afd818acfc3b4975c173eb5d28192f359036bd90284d63b3a6d0f1d1",
+  "rows": [
+    {
+      "calibration_threshold": 0.0002532672891198335,
+      "catalogue_radius_km": 8.903726199952057,
+      "classification": "FIELD_REFERENCE_SEPARATION_CANDIDATE",
+      "extractor_rejected": {
+        "below_threshold": 1182,
+        "outside_valid_interior": 0,
+        "over_max_features": 0,
+        "suppressed_by_a_stronger_feature": 4,
+        "unmeasurable_scale": 0
+      },
+      "inside_radius_sampled_count": 0,
+      "inside_radius_sampled_local_maxima": [],
+      "nearest_sampled_local_maximum_km": 34.53077173786449,
+      "published_extractor_features": 19,
+      "published_extractor_nearest_km": 29.94831954324379,
+      "sampled_local_maxima": 1131,
+      "sid": "2018027S11156",
+      "storm": "FEHI",
+      "time": "2018-01-31 12:00:00"
+    },
+    {
+      "calibration_threshold": 0.0001987562138193553,
+      "catalogue_radius_km": 21.990430704825517,
+      "classification": "FIELD_REFERENCE_SEPARATION_CANDIDATE",
+      "extractor_rejected": {
+        "below_threshold": 1138,
+        "outside_valid_interior": 3,
+        "over_max_features": 0,
+        "suppressed_by_a_stronger_feature": 7,
+        "unmeasurable_scale": 0
+      },
+      "inside_radius_sampled_count": 0,
+      "inside_radius_sampled_local_maxima": [],
+      "nearest_sampled_local_maximum_km": 33.63565888235349,
+      "published_extractor_features": 7,
+      "published_extractor_nearest_km": 201.26395492261764,
+      "sampled_local_maxima": 1098,
+      "sid": "2018064S16172",
+      "storm": "HOLA",
+      "time": "2018-03-12 00:00:00"
+    },
+    {
+      "calibration_threshold": 0.0001945851492720955,
+      "catalogue_radius_km": 0.0,
+      "classification": "FIELD_REFERENCE_SEPARATION_CANDIDATE",
+      "extractor_rejected": {
+        "below_threshold": 972,
+        "outside_valid_interior": 1,
+        "over_max_features": 0,
+        "suppressed_by_a_stronger_feature": 5,
+        "unmeasurable_scale": 0
+      },
+      "inside_radius_sampled_count": 0,
+      "inside_radius_sampled_local_maxima": [],
+      "nearest_sampled_local_maximum_km": 30.132461262512805,
+      "published_extractor_features": 13,
+      "published_extractor_nearest_km": 40.83461628532186,
+      "sampled_local_maxima": 945,
+      "sid": "2018070S10160",
+      "storm": "LINDA",
+      "time": "2018-03-15 00:00:00"
+    },
+    {
+      "calibration_threshold": 0.00020159202763073736,
+      "catalogue_radius_km": 15.131080193454286,
+      "classification": "FIELD_REFERENCE_SEPARATION_CANDIDATE",
+      "extractor_rejected": {
+        "below_threshold": 1055,
+        "outside_valid_interior": 4,
+        "over_max_features": 0,
+        "suppressed_by_a_stronger_feature": 4,
+        "unmeasurable_scale": 0
+      },
+      "inside_radius_sampled_count": 0,
+      "inside_radius_sampled_local_maxima": [],
+      "nearest_sampled_local_maximum_km": 80.50814806606355,
+      "published_extractor_features": 13,
+      "published_extractor_nearest_km": 36.301251693233574,
+      "sampled_local_maxima": 1005,
+      "sid": "2018082S12164",
+      "storm": "IRIS",
+      "time": "2018-03-28 06:00:00"
+    },
+    {
+      "calibration_threshold": 0.00020277806013672782,
+      "catalogue_radius_km": 145.23376827050723,
+      "classification": "EXTRACTOR_FILTERING_CANDIDATE",
+      "extractor_rejected": {
+        "below_threshold": 1022,
+        "outside_valid_interior": 3,
+        "over_max_features": 0,
+        "suppressed_by_a_stronger_feature": 9,
+        "unmeasurable_scale": 0
+      },
+      "inside_radius_sampled_count": 2,
+      "inside_radius_sampled_local_maxima": [
+        {
+          "clears_calibrated_threshold": true,
+          "distance_km": 37.98530692991347,
+          "field_value": 0.00020438618957996368,
+          "grid_index": [
+            13,
+            155
+          ],
+          "lat": -21.25,
+          "lon": 178.75
+        },
+        {
+          "clears_calibrated_threshold": true,
+          "distance_km": 114.14295030579805,
+          "field_value": 0.00021994300186634064,
+          "grid_index": [
+            18,
+            157
+          ],
+          "lat": -22.5,
+          "lon": 179.25
+        }
+      ],
+      "nearest_sampled_local_maximum_km": 37.98530692991347,
+      "published_extractor_features": 22,
+      "published_extractor_nearest_km": 151.28528361341367,
+      "sampled_local_maxima": 997,
+      "sid": "2018089S18172",
+      "storm": "JOSIE",
+      "time": "2018-04-03 00:00:00"
+    },
+    {
+      "calibration_threshold": 0.00021728223127412757,
+      "catalogue_radius_km": 11.119492664455889,
+      "classification": "FIELD_REFERENCE_SEPARATION_CANDIDATE",
+      "extractor_rejected": {
+        "below_threshold": 1108,
+        "outside_valid_interior": 4,
+        "over_max_features": 0,
+        "suppressed_by_a_stronger_feature": 6,
+        "unmeasurable_scale": 0
+      },
+      "inside_radius_sampled_count": 0,
+      "inside_radius_sampled_local_maxima": [],
+      "nearest_sampled_local_maximum_km": 79.37561619848422,
+      "published_extractor_features": 17,
+      "published_extractor_nearest_km": 35.73340199724627,
+      "sampled_local_maxima": 1072,
+      "sid": "2018334S09156",
+      "storm": "OWEN",
+      "time": "2018-12-17 00:00:00"
+    },
+    {
+      "calibration_threshold": 0.0001984175898883682,
+      "catalogue_radius_km": 11.119492664455889,
+      "classification": "FIELD_REFERENCE_SEPARATION_CANDIDATE",
+      "extractor_rejected": {
+        "below_threshold": 1018,
+        "outside_valid_interior": 2,
+        "over_max_features": 0,
+        "suppressed_by_a_stronger_feature": 2,
+        "unmeasurable_scale": 0
+      },
+      "inside_radius_sampled_count": 0,
+      "inside_radius_sampled_local_maxima": [],
+      "nearest_sampled_local_maximum_km": 26.12226058514829,
+      "published_extractor_features": 7,
+      "published_extractor_nearest_km": 33.92823319762631,
+      "sampled_local_maxima": 966,
+      "sid": "2018363S12145",
+      "storm": "PENNY",
+      "time": "2019-01-08 18:00:00"
+    },
+    {
+      "calibration_threshold": 0.00021380544644426693,
+      "catalogue_radius_km": 14.824505797651028,
+      "classification": "FIELD_REFERENCE_SEPARATION_CANDIDATE",
+      "extractor_rejected": {
+        "below_threshold": 1043,
+        "outside_valid_interior": 0,
+        "over_max_features": 0,
+        "suppressed_by_a_stronger_feature": 10,
+        "unmeasurable_scale": 0
+      },
+      "inside_radius_sampled_count": 0,
+      "inside_radius_sampled_local_maxima": [],
+      "nearest_sampled_local_maximum_km": 44.43704496073717,
+      "published_extractor_features": 17,
+      "published_extractor_nearest_km": 100.66058196642506,
+      "sampled_local_maxima": 1022,
+      "sid": "2019042S17162",
+      "storm": "OMA",
+      "time": "2019-02-23 00:00:00"
+    },
+    {
+      "calibration_threshold": 0.00018888653046157192,
+      "catalogue_radius_km": 34.91209656007172,
+      "classification": "FIELD_REFERENCE_SEPARATION_CANDIDATE",
+      "extractor_rejected": {
+        "below_threshold": 1060,
+        "outside_valid_interior": 2,
+        "over_max_features": 0,
+        "suppressed_by_a_stronger_feature": 4,
+        "unmeasurable_scale": 0
+      },
+      "inside_radius_sampled_count": 0,
+      "inside_radius_sampled_local_maxima": [],
+      "nearest_sampled_local_maximum_km": 76.75830412091085,
+      "published_extractor_features": 9,
+      "published_extractor_nearest_km": 103.70475392783248,
+      "sampled_local_maxima": 1006,
+      "sid": "2021029S16171",
+      "storm": "ANA",
+      "time": "2021-02-01 06:00:00"
+    },
+    {
+      "calibration_threshold": 0.00022807474652844587,
+      "catalogue_radius_km": 112.30722832900854,
+      "classification": "FIELD_REFERENCE_SEPARATION_CANDIDATE",
+      "extractor_rejected": {
+        "below_threshold": 1135,
+        "outside_valid_interior": 1,
+        "over_max_features": 0,
+        "suppressed_by_a_stronger_feature": 7,
+        "unmeasurable_scale": 0
+      },
+      "inside_radius_sampled_count": 0,
+      "inside_radius_sampled_local_maxima": [],
+      "nearest_sampled_local_maximum_km": 177.9780571081662,
+      "published_extractor_features": 21,
+      "published_extractor_nearest_km": 131.36193010708283,
+      "sampled_local_maxima": 1095,
+      "sid": "2021058S14149",
+      "storm": "NIRAN",
+      "time": "2021-03-07 06:00:00"
+    },
+    {
+      "calibration_threshold": 0.00019005082833666167,
+      "catalogue_radius_km": 22.23898532891107,
+      "classification": "FIELD_REFERENCE_SEPARATION_CANDIDATE",
+      "extractor_rejected": {
+        "below_threshold": 981,
+        "outside_valid_interior": 0,
+        "over_max_features": 0,
+        "suppressed_by_a_stronger_feature": 5,
+        "unmeasurable_scale": 0
+      },
+      "inside_radius_sampled_count": 0,
+      "inside_radius_sampled_local_maxima": [],
+      "nearest_sampled_local_maximum_km": 29.252787321957765,
+      "published_extractor_features": 13,
+      "published_extractor_nearest_km": 51.65468663943553,
+      "sampled_local_maxima": 936,
+      "sid": "2021099S15159",
+      "storm": "UNNAMED",
+      "time": "2021-04-12 06:00:00"
+    },
+    {
+      "calibration_threshold": 0.00019778351833292212,
+      "catalogue_radius_km": 11.119492664455182,
+      "classification": "FIELD_REFERENCE_SEPARATION_CANDIDATE",
+      "extractor_rejected": {
+        "below_threshold": 1071,
+        "outside_valid_interior": 1,
+        "over_max_features": 0,
+        "suppressed_by_a_stronger_feature": 4,
+        "unmeasurable_scale": 0
+      },
+      "inside_radius_sampled_count": 0,
+      "inside_radius_sampled_local_maxima": [],
+      "nearest_sampled_local_maximum_km": 71.90494888017275,
+      "published_extractor_features": 15,
+      "published_extractor_nearest_km": 67.77358591286607,
+      "sampled_local_maxima": 1022,
+      "sid": "2021343S09155",
+      "storm": "RUBY",
+      "time": "2021-12-15 18:00:00"
+    },
+    {
+      "calibration_threshold": 0.00020923890086979133,
+      "catalogue_radius_km": 10.380940534899715,
+      "classification": "FIELD_REFERENCE_SEPARATION_CANDIDATE",
+      "extractor_rejected": {
+        "below_threshold": 1080,
+        "outside_valid_interior": 9,
+        "over_max_features": 0,
+        "suppressed_by_a_stronger_feature": 8,
+        "unmeasurable_scale": 0
+      },
+      "inside_radius_sampled_count": 0,
+      "inside_radius_sampled_local_maxima": [],
+      "nearest_sampled_local_maximum_km": 97.40096989754117,
+      "published_extractor_features": 14,
+      "published_extractor_nearest_km": 315.0854289410122,
+      "sampled_local_maxima": 1055,
+      "sid": "2021358S09130",
+      "storm": "SETH",
+      "time": "2021-12-31 18:00:00"
+    }
+  ],
+  "schema": "t4e37-failure-attribution/v1",
+  "sources": {
+    "wrapped_join": "measurements/t4e36_wrapped_join.json",
+    "wrapped_join_file_sha256": "c58f75786174508a27d974c8ea8c72e5919485ee9fdccbd36b48bd51fd0ac48c",
+    "wrapped_join_receipt_sha256": "5d84935047e4ea60b2f092ba093bf5992d2685f1b40813e76d7dcfb17a5dd408",
+    "wrapped_record_receipt": "data/wrapped_records/t4e36/509e42f7554c6357c67509af7d5c0504c4fafc8cc74f5a6ecf633f52f6afdd99.json",
+    "wrapped_record_receipt_file_sha256": "964a02973ea015c7e67c9fab5ec39d6b8ba7ceaec0e10e9197e6aae055c8554c",
+    "wrapped_record_receipt_sha256": "509e42f7554c6357c67509af7d5c0504c4fafc8cc74f5a6ecf633f52f6afdd99",
+    "wrapped_record_sha256": "9e9b7e50c75579daa4a79cb459e5da91c2b65a23c260eab6ca37fee2c684736b"
+  }
+}

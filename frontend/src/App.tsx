@@ -32,6 +32,8 @@ import ExperimentComposer from './components/ExperimentComposer';
 import ResearchArchive from './components/ResearchArchive';
 import { ExperimentReceiptPanel } from './components/ExperimentReceipt';
 import { ExperimentQualificationPanel } from './components/ExperimentQualification';
+import G17PoolReview from './components/G17PoolReview';
+import ReferenceHoldout from './components/ReferenceHoldout';
 import { apiService } from './services/api';
 import * as types from './types/api';
 import {
@@ -2460,6 +2462,8 @@ export default function App() {
 
               <ExperimentReceiptPanel trustOnly />
               <ExperimentQualificationPanel />
+              <G17PoolReview />
+              <ReferenceHoldout />
 
               {health && (
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

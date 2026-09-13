@@ -1406,10 +1406,68 @@ def run_representation_audit(payload: bytes, *, filename: str, delimiter: str,
                 "task-specific external validation remains required.")}
 
 
+def plan_sample_table_handoff(payload: bytes, *, filename: str, delimiter: str,
+                              declaration: SampleTableDeclaration,
+                              operation: str) -> Dict[str, Any]:
+    """Route one exact declared table into an existing planner.
+
+    The envelope is a routing receipt, not a new workflow.  Its destination names the dedicated
+    planner that remains authoritative, and it deliberately exposes no run, evidence or
+    claim-promotion action.
+    """
+    profile = sample_table_capability_profile(
+        payload, filename=filename, delimiter=delimiter, declaration=declaration)
+    decision = profile["operations"].get(operation)
+    path = decision.get("planning_path") if decision else None
+    if not path:
+        raise InvalidParameterError(
+            "operation", operation,
+            "a sample-table operation with an existing registered planning path")
+    if not decision["available"]:
+        raise InvalidParameterError(
+            "operation", operation,
+            "an available operation; %s: %s" % (decision["reason_code"], decision["reason"]))
+
+    body = {
+        "schema": "spectral.sample-table-planning-handoff.v1",
+        "status": "READY_FOR_PLANNING",
+        "object": {
+            "kind": profile["kind"], "identity": profile["identity"],
+            "filename": filename, "phase": profile["phase"],
+        },
+        "declaration": declaration.canonical(),
+        "capability_profile_sha256": profile["profile_sha256"],
+        "operation": {
+            "id": operation, "name": decision["name"],
+            "reason_code": decision["reason_code"],
+        },
+        "destination": {
+            "kind": "existing_ingress_planner", "method": "POST",
+            "api_path": path["api_path"], "plan_schema": path["plan_schema"],
+            "workspace": path["workspace"],
+        },
+        "request": {
+            "transport": "multipart/form-data",
+            "file_binding_sha256": profile["identity"],
+            "delimiter": delimiter,
+            "declaration": declaration.canonical(),
+        },
+        "automatic_actions": [],
+        "claim_boundary": (
+            "This handoff binds one exact object and declaration to an existing planner. It "
+            "does not execute an analysis, admit evidence, select a representation or move a "
+            "claim rung; the destination remains authoritative for its frozen plan."),
+    }
+    canonical = json.dumps(body, sort_keys=True, separators=(",", ":"), allow_nan=False)
+    body["handoff_sha256"] = hashlib.sha256(canonical.encode()).hexdigest()
+    return body
+
+
 __all__ = ["AUDIT_REPRESENTATIONS", "MAX_UPLOAD_BYTES", "SAMPLE_RELATIONSHIPS",
            "SAMPLE_ROLES", "SampleTableDeclaration", "freeze_external_subspace_transfer",
            "freeze_stable_subspace_confirmation",
            "plan_conditional_information_audit",
+           "plan_sample_table_handoff",
            "plan_redundancy_structure_audit", "plan_representation_audit",
            "plan_stable_subspace_generation",
            "probe_delimited", "publish_stable_subspace_candidate",

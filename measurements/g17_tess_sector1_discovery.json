@@ -1,0 +1,837 @@
+{
+  "schema": "spectral.tess-pool-discovery.v1",
+  "source": "MAST TESS-SPOC",
+  "sector": 1,
+  "target_limit": 48,
+  "metadata_rows": 200,
+  "metadata_row_cap": 200,
+  "metadata_page_full": true,
+  "unnamed_observations": 0,
+  "candidate_targets_in_page": 200,
+  "selected_targets": 48,
+  "shortfall": 0,
+  "predicted_download_bytes": 97873920,
+  "targets": [
+    {
+      "tic_id": "24703650",
+      "observation_ids": [
+        "60839176"
+      ],
+      "products": [
+        {
+          "observation_id": "tess2018206045859-s0001-0000000024703650-0120-s",
+          "data_uri": "mast:TESS/product/tess2018206045859-s0001-0000000024703650-0120-s_lc.fits",
+          "filename": "tess2018206045859-s0001-0000000024703650-0120-s_lc.fits",
+          "sector": 1,
+          "size_bytes": 2039040,
+          "provenance_name": "SPOC"
+        }
+      ],
+      "predicted_download_bytes": 2039040
+    },
+    {
+      "tic_id": "25065358",
+      "observation_ids": [
+        "60831075"
+      ],
+      "products": [
+        {
+          "observation_id": "tess2018206045859-s0001-0000000025065358-0120-s",
+          "data_uri": "mast:TESS/product/tess2018206045859-s0001-0000000025065358-0120-s_lc.fits",
+          "filename": "tess2018206045859-s0001-0000000025065358-0120-s_lc.fits",
+          "sector": 1,
+          "size_bytes": 2039040,
+          "provenance_name": "SPOC"
+        }
+      ],
+      "predicted_download_bytes": 2039040
+    },
+    {
+      "tic_id": "25300088",
+      "observation_ids": [
+        "60836102"
+      ],
+      "products": [
+        {
+          "observation_id": "tess2018206045859-s0001-0000000025300088-0120-s",
+          "data_uri": "mast:TESS/product/tess2018206045859-s0001-0000000025300088-0120-s_lc.fits",
+          "filename": "tess2018206045859-s0001-0000000025300088-0120-s_lc.fits",
+          "sector": 1,
+          "size_bytes": 2039040,
+          "provenance_name": "SPOC"
+        }
+      ],
+      "predicted_download_bytes": 2039040
+    },
+    {
+      "tic_id": "29344151",
+      "observation_ids": [
+        "60837598"
+      ],
+      "products": [
+        {
+          "observation_id": "tess2018206045859-s0001-0000000029344151-0120-s",
+          "data_uri": "mast:TESS/product/tess2018206045859-s0001-0000000029344151-0120-s_lc.fits",
+          "filename": "tess2018206045859-s0001-0000000029344151-0120-s_lc.fits",
+          "sector": 1,
+          "size_bytes": 2039040,
+          "provenance_name": "SPOC"
+        }
+      ],
+      "predicted_download_bytes": 2039040
+    },
+    {
+      "tic_id": "29670036",
+      "observation_ids": [
+        "60836393"
+      ],
+      "products": [
+        {
+          "observation_id": "tess2018206045859-s0001-0000000029670036-0120-s",
+          "data_uri": "mast:TESS/product/tess2018206045859-s0001-0000000029670036-0120-s_lc.fits",
+          "filename": "tess2018206045859-s0001-0000000029670036-0120-s_lc.fits",
+          "sector": 1,
+          "size_bytes": 2039040,
+          "provenance_name": "SPOC"
+        }
+      ],
+      "predicted_download_bytes": 2039040
+    },
+    {
+      "tic_id": "29760003",
+      "observation_ids": [
+        "60835882"
+      ],
+      "products": [
+        {
+          "observation_id": "tess2018206045859-s0001-0000000029760003-0120-s",
+          "data_uri": "mast:TESS/product/tess2018206045859-s0001-0000000029760003-0120-s_lc.fits",
+          "filename": "tess2018206045859-s0001-0000000029760003-0120-s_lc.fits",
+          "sector": 1,
+          "size_bytes": 2039040,
+          "provenance_name": "SPOC"
+        }
+      ],
+      "predicted_download_bytes": 2039040
+    },
+    {
+      "tic_id": "30189015",
+      "observation_ids": [
+        "60842385"
+      ],
+      "products": [
+        {
+          "observation_id": "tess2018206045859-s0001-0000000030189015-0120-s",
+          "data_uri": "mast:TESS/product/tess2018206045859-s0001-0000000030189015-0120-s_lc.fits",
+          "filename": "tess2018206045859-s0001-0000000030189015-0120-s_lc.fits",
+          "sector": 1,
+          "size_bytes": 2039040,
+          "provenance_name": "SPOC"
+        }
+      ],
+      "predicted_download_bytes": 2039040
+    },
+    {
+      "tic_id": "30194648",
+      "observation_ids": [
+        "60830847"
+      ],
+      "products": [
+        {
+          "observation_id": "tess2018206045859-s0001-0000000030194648-0120-s",
+          "data_uri": "mast:TESS/product/tess2018206045859-s0001-0000000030194648-0120-s_lc.fits",
+          "filename": "tess2018206045859-s0001-0000000030194648-0120-s_lc.fits",
+          "sector": 1,
+          "size_bytes": 2039040,
+          "provenance_name": "SPOC"
+        }
+      ],
+      "predicted_download_bytes": 2039040
+    },
+    {
+      "tic_id": "30469371",
+      "observation_ids": [
+        "60837007"
+      ],
+      "products": [
+        {
+          "observation_id": "tess2018206045859-s0001-0000000030469371-0120-s",
+          "data_uri": "mast:TESS/product/tess2018206045859-s0001-0000000030469371-0120-s_lc.fits",
+          "filename": "tess2018206045859-s0001-0000000030469371-0120-s_lc.fits",
+          "sector": 1,
+          "size_bytes": 2039040,
+          "provenance_name": "SPOC"
+        }
+      ],
+      "predicted_download_bytes": 2039040
+    },
+    {
+      "tic_id": "31315185",
+      "observation_ids": [
+        "60840509"
+      ],
+      "products": [
+        {
+          "observation_id": "tess2018206045859-s0001-0000000031315185-0120-s",
+          "data_uri": "mast:TESS/product/tess2018206045859-s0001-0000000031315185-0120-s_lc.fits",
+          "filename": "tess2018206045859-s0001-0000000031315185-0120-s_lc.fits",
+          "sector": 1,
+          "size_bytes": 2039040,
+          "provenance_name": "SPOC"
+        }
+      ],
+      "predicted_download_bytes": 2039040
+    },
+    {
+      "tic_id": "31852565",
+      "observation_ids": [
+        "60836666"
+      ],
+      "products": [
+        {
+          "observation_id": "tess2018206045859-s0001-0000000031852565-0120-s",
+          "data_uri": "mast:TESS/product/tess2018206045859-s0001-0000000031852565-0120-s_lc.fits",
+          "filename": "tess2018206045859-s0001-0000000031852565-0120-s_lc.fits",
+          "sector": 1,
+          "size_bytes": 2039040,
+          "provenance_name": "SPOC"
+        }
+      ],
+      "predicted_download_bytes": 2039040
+    },
+    {
+      "tic_id": "31852879",
+      "observation_ids": [
+        "60833858"
+      ],
+      "products": [
+        {
+          "observation_id": "tess2018206045859-s0001-0000000031852879-0120-s",
+          "data_uri": "mast:TESS/product/tess2018206045859-s0001-0000000031852879-0120-s_lc.fits",
+          "filename": "tess2018206045859-s0001-0000000031852879-0120-s_lc.fits",
+          "sector": 1,
+          "size_bytes": 2039040,
+          "provenance_name": "SPOC"
+        }
+      ],
+      "predicted_download_bytes": 2039040
+    },
+    {
+      "tic_id": "32068795",
+      "observation_ids": [
+        "60841361"
+      ],
+      "products": [
+        {
+          "observation_id": "tess2018206045859-s0001-0000000032068795-0120-s",
+          "data_uri": "mast:TESS/product/tess2018206045859-s0001-0000000032068795-0120-s_lc.fits",
+          "filename": "tess2018206045859-s0001-0000000032068795-0120-s_lc.fits",
+          "sector": 1,
+          "size_bytes": 2039040,
+          "provenance_name": "SPOC"
+        }
+      ],
+      "predicted_download_bytes": 2039040
+    },
+    {
+      "tic_id": "32153214",
+      "observation_ids": [
+        "60830115"
+      ],
+      "products": [
+        {
+          "observation_id": "tess2018206045859-s0001-0000000032153214-0120-s",
+          "data_uri": "mast:TESS/product/tess2018206045859-s0001-0000000032153214-0120-s_lc.fits",
+          "filename": "tess2018206045859-s0001-0000000032153214-0120-s_lc.fits",
+          "sector": 1,
+          "size_bytes": 2039040,
+          "provenance_name": "SPOC"
+        }
+      ],
+      "predicted_download_bytes": 2039040
+    },
+    {
+      "tic_id": "32198495",
+      "observation_ids": [
+        "60830461"
+      ],
+      "products": [
+        {
+          "observation_id": "tess2018206045859-s0001-0000000032198495-0120-s",
+          "data_uri": "mast:TESS/product/tess2018206045859-s0001-0000000032198495-0120-s_lc.fits",
+          "filename": "tess2018206045859-s0001-0000000032198495-0120-s_lc.fits",
+          "sector": 1,
+          "size_bytes": 2039040,
+          "provenance_name": "SPOC"
+        }
+      ],
+      "predicted_download_bytes": 2039040
+    },
+    {
+      "tic_id": "38610352",
+      "observation_ids": [
+        "60839331"
+      ],
+      "products": [
+        {
+          "observation_id": "tess2018206045859-s0001-0000000038610352-0120-s",
+          "data_uri": "mast:TESS/product/tess2018206045859-s0001-0000000038610352-0120-s_lc.fits",
+          "filename": "tess2018206045859-s0001-0000000038610352-0120-s_lc.fits",
+          "sector": 1,
+          "size_bytes": 2039040,
+          "provenance_name": "SPOC"
+        }
+      ],
+      "predicted_download_bytes": 2039040
+    },
+    {
+      "tic_id": "38697412",
+      "observation_ids": [
+        "60835802"
+      ],
+      "products": [
+        {
+          "observation_id": "tess2018206045859-s0001-0000000038697412-0120-s",
+          "data_uri": "mast:TESS/product/tess2018206045859-s0001-0000000038697412-0120-s_lc.fits",
+          "filename": "tess2018206045859-s0001-0000000038697412-0120-s_lc.fits",
+          "sector": 1,
+          "size_bytes": 2039040,
+          "provenance_name": "SPOC"
+        }
+      ],
+      "predicted_download_bytes": 2039040
+    },
+    {
+      "tic_id": "38909532",
+      "observation_ids": [
+        "60837207"
+      ],
+      "products": [
+        {
+          "observation_id": "tess2018206045859-s0001-0000000038909532-0120-s",
+          "data_uri": "mast:TESS/product/tess2018206045859-s0001-0000000038909532-0120-s_lc.fits",
+          "filename": "tess2018206045859-s0001-0000000038909532-0120-s_lc.fits",
+          "sector": 1,
+          "size_bytes": 2039040,
+          "provenance_name": "SPOC"
+        }
+      ],
+      "predicted_download_bytes": 2039040
+    },
+    {
+      "tic_id": "39080548",
+      "observation_ids": [
+        "60840201"
+      ],
+      "products": [
+        {
+          "observation_id": "tess2018206045859-s0001-0000000039080548-0120-s",
+          "data_uri": "mast:TESS/product/tess2018206045859-s0001-0000000039080548-0120-s_lc.fits",
+          "filename": "tess2018206045859-s0001-0000000039080548-0120-s_lc.fits",
+          "sector": 1,
+          "size_bytes": 2039040,
+          "provenance_name": "SPOC"
+        }
+      ],
+      "predicted_download_bytes": 2039040
+    },
+    {
+      "tic_id": "41259424",
+      "observation_ids": [
+        "60837112"
+      ],
+      "products": [
+        {
+          "observation_id": "tess2018206045859-s0001-0000000041259424-0120-s",
+          "data_uri": "mast:TESS/product/tess2018206045859-s0001-0000000041259424-0120-s_lc.fits",
+          "filename": "tess2018206045859-s0001-0000000041259424-0120-s_lc.fits",
+          "sector": 1,
+          "size_bytes": 2039040,
+          "provenance_name": "SPOC"
+        }
+      ],
+      "predicted_download_bytes": 2039040
+    },
+    {
+      "tic_id": "41464526",
+      "observation_ids": [
+        "60838217"
+      ],
+      "products": [
+        {
+          "observation_id": "tess2018206045859-s0001-0000000041464526-0120-s",
+          "data_uri": "mast:TESS/product/tess2018206045859-s0001-0000000041464526-0120-s_lc.fits",
+          "filename": "tess2018206045859-s0001-0000000041464526-0120-s_lc.fits",
+          "sector": 1,
+          "size_bytes": 2039040,
+          "provenance_name": "SPOC"
+        }
+      ],
+      "predicted_download_bytes": 2039040
+    },
+    {
+      "tic_id": "41482876",
+      "observation_ids": [
+        "60833891"
+      ],
+      "products": [
+        {
+          "observation_id": "tess2018206045859-s0001-0000000041482876-0120-s",
+          "data_uri": "mast:TESS/product/tess2018206045859-s0001-0000000041482876-0120-s_lc.fits",
+          "filename": "tess2018206045859-s0001-0000000041482876-0120-s_lc.fits",
+          "sector": 1,
+          "size_bytes": 2039040,
+          "provenance_name": "SPOC"
+        }
+      ],
+      "predicted_download_bytes": 2039040
+    },
+    {
+      "tic_id": "41533313",
+      "observation_ids": [
+        "60844722"
+      ],
+      "products": [
+        {
+          "observation_id": "tess2018206045859-s0001-0000000041533313-0120-s",
+          "data_uri": "mast:TESS/product/tess2018206045859-s0001-0000000041533313-0120-s_lc.fits",
+          "filename": "tess2018206045859-s0001-0000000041533313-0120-s_lc.fits",
+          "sector": 1,
+          "size_bytes": 2039040,
+          "provenance_name": "SPOC"
+        }
+      ],
+      "predicted_download_bytes": 2039040
+    },
+    {
+      "tic_id": "44578552",
+      "observation_ids": [
+        "60842012"
+      ],
+      "products": [
+        {
+          "observation_id": "tess2018206045859-s0001-0000000044578552-0120-s",
+          "data_uri": "mast:TESS/product/tess2018206045859-s0001-0000000044578552-0120-s_lc.fits",
+          "filename": "tess2018206045859-s0001-0000000044578552-0120-s_lc.fits",
+          "sector": 1,
+          "size_bytes": 2039040,
+          "provenance_name": "SPOC"
+        }
+      ],
+      "predicted_download_bytes": 2039040
+    },
+    {
+      "tic_id": "44627274",
+      "observation_ids": [
+        "60829850"
+      ],
+      "products": [
+        {
+          "observation_id": "tess2018206045859-s0001-0000000044627274-0120-s",
+          "data_uri": "mast:TESS/product/tess2018206045859-s0001-0000000044627274-0120-s_lc.fits",
+          "filename": "tess2018206045859-s0001-0000000044627274-0120-s_lc.fits",
+          "sector": 1,
+          "size_bytes": 2039040,
+          "provenance_name": "SPOC"
+        }
+      ],
+      "predicted_download_bytes": 2039040
+    },
+    {
+      "tic_id": "50309953",
+      "observation_ids": [
+        "60838157"
+      ],
+      "products": [
+        {
+          "observation_id": "tess2018206045859-s0001-0000000050309953-0120-s",
+          "data_uri": "mast:TESS/product/tess2018206045859-s0001-0000000050309953-0120-s_lc.fits",
+          "filename": "tess2018206045859-s0001-0000000050309953-0120-s_lc.fits",
+          "sector": 1,
+          "size_bytes": 2039040,
+          "provenance_name": "SPOC"
+        }
+      ],
+      "predicted_download_bytes": 2039040
+    },
+    {
+      "tic_id": "51913869",
+      "observation_ids": [
+        "60834296"
+      ],
+      "products": [
+        {
+          "observation_id": "tess2018206045859-s0001-0000000051913869-0120-s",
+          "data_uri": "mast:TESS/product/tess2018206045859-s0001-0000000051913869-0120-s_lc.fits",
+          "filename": "tess2018206045859-s0001-0000000051913869-0120-s_lc.fits",
+          "sector": 1,
+          "size_bytes": 2039040,
+          "provenance_name": "SPOC"
+        }
+      ],
+      "predicted_download_bytes": 2039040
+    },
+    {
+      "tic_id": "54001329",
+      "observation_ids": [
+        "60838630"
+      ],
+      "products": [
+        {
+          "observation_id": "tess2018206045859-s0001-0000000054001329-0120-s",
+          "data_uri": "mast:TESS/product/tess2018206045859-s0001-0000000054001329-0120-s_lc.fits",
+          "filename": "tess2018206045859-s0001-0000000054001329-0120-s_lc.fits",
+          "sector": 1,
+          "size_bytes": 2039040,
+          "provenance_name": "SPOC"
+        }
+      ],
+      "predicted_download_bytes": 2039040
+    },
+    {
+      "tic_id": "55559135",
+      "observation_ids": [
+        "60829777"
+      ],
+      "products": [
+        {
+          "observation_id": "tess2018206045859-s0001-0000000055559135-0120-s",
+          "data_uri": "mast:TESS/product/tess2018206045859-s0001-0000000055559135-0120-s_lc.fits",
+          "filename": "tess2018206045859-s0001-0000000055559135-0120-s_lc.fits",
+          "sector": 1,
+          "size_bytes": 2039040,
+          "provenance_name": "SPOC"
+        }
+      ],
+      "predicted_download_bytes": 2039040
+    },
+    {
+      "tic_id": "61178260",
+      "observation_ids": [
+        "60844422"
+      ],
+      "products": [
+        {
+          "observation_id": "tess2018206045859-s0001-0000000061178260-0120-s",
+          "data_uri": "mast:TESS/product/tess2018206045859-s0001-0000000061178260-0120-s_lc.fits",
+          "filename": "tess2018206045859-s0001-0000000061178260-0120-s_lc.fits",
+          "sector": 1,
+          "size_bytes": 2039040,
+          "provenance_name": "SPOC"
+        }
+      ],
+      "predicted_download_bytes": 2039040
+    },
+    {
+      "tic_id": "79055319",
+      "observation_ids": [
+        "60838257"
+      ],
+      "products": [
+        {
+          "observation_id": "tess2018206045859-s0001-0000000079055319-0120-s",
+          "data_uri": "mast:TESS/product/tess2018206045859-s0001-0000000079055319-0120-s_lc.fits",
+          "filename": "tess2018206045859-s0001-0000000079055319-0120-s_lc.fits",
+          "sector": 1,
+          "size_bytes": 2039040,
+          "provenance_name": "SPOC"
+        }
+      ],
+      "predicted_download_bytes": 2039040
+    },
+    {
+      "tic_id": "89039591",
+      "observation_ids": [
+        "60843703"
+      ],
+      "products": [
+        {
+          "observation_id": "tess2018206045859-s0001-0000000089039591-0120-s",
+          "data_uri": "mast:TESS/product/tess2018206045859-s0001-0000000089039591-0120-s_lc.fits",
+          "filename": "tess2018206045859-s0001-0000000089039591-0120-s_lc.fits",
+          "sector": 1,
+          "size_bytes": 2039040,
+          "provenance_name": "SPOC"
+        }
+      ],
+      "predicted_download_bytes": 2039040
+    },
+    {
+      "tic_id": "89424869",
+      "observation_ids": [
+        "60831042"
+      ],
+      "products": [
+        {
+          "observation_id": "tess2018206045859-s0001-0000000089424869-0120-s",
+          "data_uri": "mast:TESS/product/tess2018206045859-s0001-0000000089424869-0120-s_lc.fits",
+          "filename": "tess2018206045859-s0001-0000000089424869-0120-s_lc.fits",
+          "sector": 1,
+          "size_bytes": 2039040,
+          "provenance_name": "SPOC"
+        }
+      ],
+      "predicted_download_bytes": 2039040
+    },
+    {
+      "tic_id": "89428620",
+      "observation_ids": [
+        "60843630"
+      ],
+      "products": [
+        {
+          "observation_id": "tess2018206045859-s0001-0000000089428620-0120-s",
+          "data_uri": "mast:TESS/product/tess2018206045859-s0001-0000000089428620-0120-s_lc.fits",
+          "filename": "tess2018206045859-s0001-0000000089428620-0120-s_lc.fits",
+          "sector": 1,
+          "size_bytes": 2039040,
+          "provenance_name": "SPOC"
+        }
+      ],
+      "predicted_download_bytes": 2039040
+    },
+    {
+      "tic_id": "115106653",
+      "observation_ids": [
+        "60829304"
+      ],
+      "products": [
+        {
+          "observation_id": "tess2018206045859-s0001-0000000115106653-0120-s",
+          "data_uri": "mast:TESS/product/tess2018206045859-s0001-0000000115106653-0120-s_lc.fits",
+          "filename": "tess2018206045859-s0001-0000000115106653-0120-s_lc.fits",
+          "sector": 1,
+          "size_bytes": 2039040,
+          "provenance_name": "SPOC"
+        }
+      ],
+      "predicted_download_bytes": 2039040
+    },
+    {
+      "tic_id": "121422624",
+      "observation_ids": [
+        "60841193"
+      ],
+      "products": [
+        {
+          "observation_id": "tess2018206045859-s0001-0000000121422624-0120-s",
+          "data_uri": "mast:TESS/product/tess2018206045859-s0001-0000000121422624-0120-s_lc.fits",
+          "filename": "tess2018206045859-s0001-0000000121422624-0120-s_lc.fits",
+          "sector": 1,
+          "size_bytes": 2039040,
+          "provenance_name": "SPOC"
+        }
+      ],
+      "predicted_download_bytes": 2039040
+    },
+    {
+      "tic_id": "139112038",
+      "observation_ids": [
+        "60833377"
+      ],
+      "products": [
+        {
+          "observation_id": "tess2018206045859-s0001-0000000139112038-0120-s",
+          "data_uri": "mast:TESS/product/tess2018206045859-s0001-0000000139112038-0120-s_lc.fits",
+          "filename": "tess2018206045859-s0001-0000000139112038-0120-s_lc.fits",
+          "sector": 1,
+          "size_bytes": 2039040,
+          "provenance_name": "SPOC"
+        }
+      ],
+      "predicted_download_bytes": 2039040
+    },
+    {
+      "tic_id": "139126807",
+      "observation_ids": [
+        "60830942"
+      ],
+      "products": [
+        {
+          "observation_id": "tess2018206045859-s0001-0000000139126807-0120-s",
+          "data_uri": "mast:TESS/product/tess2018206045859-s0001-0000000139126807-0120-s_lc.fits",
+          "filename": "tess2018206045859-s0001-0000000139126807-0120-s_lc.fits",
+          "sector": 1,
+          "size_bytes": 2039040,
+          "provenance_name": "SPOC"
+        }
+      ],
+      "predicted_download_bytes": 2039040
+    },
+    {
+      "tic_id": "139187566",
+      "observation_ids": [
+        "60843345"
+      ],
+      "products": [
+        {
+          "observation_id": "tess2018206045859-s0001-0000000139187566-0120-s",
+          "data_uri": "mast:TESS/product/tess2018206045859-s0001-0000000139187566-0120-s_lc.fits",
+          "filename": "tess2018206045859-s0001-0000000139187566-0120-s_lc.fits",
+          "sector": 1,
+          "size_bytes": 2039040,
+          "provenance_name": "SPOC"
+        }
+      ],
+      "predicted_download_bytes": 2039040
+    },
+    {
+      "tic_id": "139250507",
+      "observation_ids": [
+        "60834569"
+      ],
+      "products": [
+        {
+          "observation_id": "tess2018206045859-s0001-0000000139250507-0120-s",
+          "data_uri": "mast:TESS/product/tess2018206045859-s0001-0000000139250507-0120-s_lc.fits",
+          "filename": "tess2018206045859-s0001-0000000139250507-0120-s_lc.fits",
+          "sector": 1,
+          "size_bytes": 2039040,
+          "provenance_name": "SPOC"
+        }
+      ],
+      "predicted_download_bytes": 2039040
+    },
+    {
+      "tic_id": "139984947",
+      "observation_ids": [
+        "60834850"
+      ],
+      "products": [
+        {
+          "observation_id": "tess2018206045859-s0001-0000000139984947-0120-s",
+          "data_uri": "mast:TESS/product/tess2018206045859-s0001-0000000139984947-0120-s_lc.fits",
+          "filename": "tess2018206045859-s0001-0000000139984947-0120-s_lc.fits",
+          "sector": 1,
+          "size_bytes": 2039040,
+          "provenance_name": "SPOC"
+        }
+      ],
+      "predicted_download_bytes": 2039040
+    },
+    {
+      "tic_id": "140596802",
+      "observation_ids": [
+        "60843390"
+      ],
+      "products": [
+        {
+          "observation_id": "tess2018206045859-s0001-0000000140596802-0120-s",
+          "data_uri": "mast:TESS/product/tess2018206045859-s0001-0000000140596802-0120-s_lc.fits",
+          "filename": "tess2018206045859-s0001-0000000140596802-0120-s_lc.fits",
+          "sector": 1,
+          "size_bytes": 2039040,
+          "provenance_name": "SPOC"
+        }
+      ],
+      "predicted_download_bytes": 2039040
+    },
+    {
+      "tic_id": "140659980",
+      "observation_ids": [
+        "60839537"
+      ],
+      "products": [
+        {
+          "observation_id": "tess2018206045859-s0001-0000000140659980-0120-s",
+          "data_uri": "mast:TESS/product/tess2018206045859-s0001-0000000140659980-0120-s_lc.fits",
+          "filename": "tess2018206045859-s0001-0000000140659980-0120-s_lc.fits",
+          "sector": 1,
+          "size_bytes": 2039040,
+          "provenance_name": "SPOC"
+        }
+      ],
+      "predicted_download_bytes": 2039040
+    },
+    {
+      "tic_id": "140797464",
+      "observation_ids": [
+        "60842511"
+      ],
+      "products": [
+        {
+          "observation_id": "tess2018206045859-s0001-0000000140797464-0120-s",
+          "data_uri": "mast:TESS/product/tess2018206045859-s0001-0000000140797464-0120-s_lc.fits",
+          "filename": "tess2018206045859-s0001-0000000140797464-0120-s_lc.fits",
+          "sector": 1,
+          "size_bytes": 2039040,
+          "provenance_name": "SPOC"
+        }
+      ],
+      "predicted_download_bytes": 2039040
+    },
+    {
+      "tic_id": "141154638",
+      "observation_ids": [
+        "60838923"
+      ],
+      "products": [
+        {
+          "observation_id": "tess2018206045859-s0001-0000000141154638-0120-s",
+          "data_uri": "mast:TESS/product/tess2018206045859-s0001-0000000141154638-0120-s_lc.fits",
+          "filename": "tess2018206045859-s0001-0000000141154638-0120-s_lc.fits",
+          "sector": 1,
+          "size_bytes": 2039040,
+          "provenance_name": "SPOC"
+        }
+      ],
+      "predicted_download_bytes": 2039040
+    },
+    {
+      "tic_id": "141811734",
+      "observation_ids": [
+        "60831315"
+      ],
+      "products": [
+        {
+          "observation_id": "tess2018206045859-s0001-0000000141811734-0120-s",
+          "data_uri": "mast:TESS/product/tess2018206045859-s0001-0000000141811734-0120-s_lc.fits",
+          "filename": "tess2018206045859-s0001-0000000141811734-0120-s_lc.fits",
+          "sector": 1,
+          "size_bytes": 2039040,
+          "provenance_name": "SPOC"
+        }
+      ],
+      "predicted_download_bytes": 2039040
+    },
+    {
+      "tic_id": "141868836",
+      "observation_ids": [
+        "60836648"
+      ],
+      "products": [
+        {
+          "observation_id": "tess2018206045859-s0001-0000000141868836-0120-s",
+          "data_uri": "mast:TESS/product/tess2018206045859-s0001-0000000141868836-0120-s_lc.fits",
+          "filename": "tess2018206045859-s0001-0000000141868836-0120-s_lc.fits",
+          "sector": 1,
+          "size_bytes": 2039040,
+          "provenance_name": "SPOC"
+        }
+      ],
+      "predicted_download_bytes": 2039040
+    },
+    {
+      "tic_id": "141944488",
+      "observation_ids": [
+        "60844517"
+      ],
+      "products": [
+        {
+          "observation_id": "tess2018206045859-s0001-0000000141944488-0120-s",
+          "data_uri": "mast:TESS/product/tess2018206045859-s0001-0000000141944488-0120-s_lc.fits",
+          "filename": "tess2018206045859-s0001-0000000141944488-0120-s_lc.fits",
+          "sector": 1,
+          "size_bytes": 2039040,
+          "provenance_name": "SPOC"
+        }
+      ],
+      "predicted_download_bytes": 2039040
+    }
+  ],
+  "refused_targets": [],
+  "metadata_sha256": "02d24b09f816bd9e482f7b6d7b06e548101d3d847968e0807cd1b3e5ac37c876",
+  "selection_basis": "numeric TIC order among exact SPOC light-curve products in the first bounded archive metadata page; no photometric values were opened",
+  "metadata_only": true,
+  "claim_boundary": "Catalogue and product availability only. Selection establishes neither target independence, profile validity, admission nor exchangeability."
+}

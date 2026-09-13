@@ -1,0 +1,10 @@
+{
+  "schema": "g17-marginal-method-review/v1",
+  "study_id": "g17_scale_shape_successor_v1",
+  "native_seconds_basis": "NASA Exoplanet Archive TOI pl_orbper converted from days to seconds; not estimated from SPOC flux",
+  "effective_sample_size_method": "quality-zero finite PDCSAP flux; clipped AR(1) n * (1-rho1) / (1+rho1)",
+  "noise_floor_method": "median(PDCSAP_FLUX_ERR) / (1.4826 * MAD(PDCSAP_FLUX)) on quality-zero finite rows",
+  "applicability": "TESS-SPOC PDCSAP light curves for unique non-false-positive TOI hosts with one non-limit external orbital period and at least eight observed orbital cycles.",
+  "limitations": "An orbital period defines phase but does not prove that stellar flux traces orbital shape. The AR(1) approximation does not model higher-order or non-stationary dependence. Error-over-MAD is a relative photometric noise proxy, not a complete instrument or astrophysical noise model. MAST extension CHECKSUM headers observed in this acquisition are stale; exact downloaded bytes are instead bound by SHA-256 and the checksum status remains recorded. The measured 64-record inventory produced no pool with 48 admitted alternatives under the frozen contract.",
+  "claim_boundary": "Adoption approves these single-record marginal calculations for profile construction only. It does not approve any target, establish independence or exchangeability, guarantee a resolvable pool, or license a correspondence result."
+}

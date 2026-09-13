@@ -1,0 +1,814 @@
+{
+  "adoption": {
+    "adopted": true,
+    "adopted_by": "Ed Bentley",
+    "adopted_on": "2026-09-12",
+    "adoption_file": "t4e36-wrapped-acquisition-adoption.json",
+    "adopts_sha256": "5b96519ade6d33873c7411a9db2a66a76dd1668f6ebc6279987b7e33c1b9899c",
+    "declaration": "t4e36-wrapped-acquisition-declaration.json",
+    "declaration_exists": true,
+    "declaration_sha256": "5b96519ade6d33873c7411a9db2a66a76dd1668f6ebc6279987b7e33c1b9899c",
+    "required_affirmation": "I have read this declaration and I adopt it",
+    "signature_still_reaches_the_declaration": true
+  },
+  "claim_boundary": "A PASS would establish only that added eastward support makes the fixed raw-field join usable under the inherited gate on these 18 development-period storms. It would not establish crop truncation as the cause, approve a mining radius, demonstrate kind recurrence, open forecast-test data or make a claim about the atmosphere.",
+  "complement": {
+    "directory": "data/cds_downloads/t4e36_eastward_vorticity",
+    "request_sha256": "2c68a35b21874778620cf18ff0445b285d30f6ca4030b30470de0449eb0fb0c9",
+    "shards": {
+      "2018-01-baa4d9674150.nc": "3ea75db77aaa9fdce64bd9d4984260082edac3528ea72f207deb5082031a5256",
+      "2018-02-83d973033306.nc": "e891558c23605e99e6531e6bb73ec4c6e4fadeecd0a8ede5b1d3ab07d293462f",
+      "2018-03-157e279eac01.nc": "d52eeee7f2f91497c381cac4796ff32a0fea4b2650ded91549c631ccf975b3bc",
+      "2018-04-79a559ec0350.nc": "dc145aaf080f3e3bd303e89cebdb24eb28c5b702d9757dff147a015175c71009",
+      "2018-05-169e2131fec2.nc": "8e0efe2b5a188ba45e85a69ed95a9842591fd85c003b22e7d00027204bab2f6e",
+      "2018-06-1f14c21ec5b7.nc": "3f91afc9d6cd4a57273b42cb862a43f71dc82e41386bb674464c11b45b4b3621",
+      "2018-07-6a558b9875d3.nc": "eb647c6e59d55449fea22a67aa5bcb9c8832c7aab017e97a49afb5e5bc8d59cb",
+      "2018-08-0288282d96f8.nc": "35279f1b194d43cce9c91868f3585d6f1f865b8fba9439e58396ceb931d89272",
+      "2018-09-e59a7ba936a6.nc": "39be894d6c18ce4c3470db06dd8d94215f217c5e6c202c7843ac429845b04e91",
+      "2018-10-fbdb093ebfe6.nc": "1367d1f5f6811566ee1af6c6e224e0b703fe248a6c1a6d880c7326158d632143",
+      "2018-11-3e87276e1287.nc": "5465c833d4e0ba4446e2355621d52382b42e039ea0c2dc3da31640067f33399d",
+      "2018-12-83b30b9e3c28.nc": "9ae5839c1567a214a2bb986e2bb74c725fb2e0693d629b0185b7d99388caa0cc",
+      "2019-01-ff696753551d.nc": "00693203c8616b95245560789daba3d50faaf60771f2f9d74008848baf454de9",
+      "2019-02-711282a313c7.nc": "26a2728c043c4e6edca3feff76822c6a689d14e3b85b61bf912c3a637ee69864",
+      "2019-03-d10088c2ca5c.nc": "0236db806b8fc1d0098ad7b33d2cea92a78aa3bb20513eeca46b495faab6ccfc",
+      "2019-04-b8db1d58437f.nc": "a9aa0aca77f5ca3d4f735810117c6882b92f57618613140c26f279d3c06df1de",
+      "2019-05-5ffea57716a4.nc": "41cf25d04a6fba61676d55844460cf02dcbddc2145c6629ae345bd631b611cb5",
+      "2019-06-9e34cc574af7.nc": "9e7939ae30971789610dd2cb81797201a0d099c1c6a2ea677e832be9c32ba9e3",
+      "2019-07-c80e2a80e7b9.nc": "2400b9ae15b4042b2cd9990c80c775fc0665f39f89757b8a2f37e6c5fc5c6471",
+      "2019-08-35fbb1300898.nc": "1d0d43254b72685cc4f67c24f0e76a2e6a1450dc3c66a90ba4da7e19a7cb9384",
+      "2019-09-8627e1f1ec4c.nc": "7c59c35d52ca4118b80b6622ba3b0a0c7769c49e5a7e1d5f9bc8e38e05b7cb25",
+      "2019-10-79c8127831a0.nc": "0650a949bf5f255825e91fd867979912e708d1a05266dd43c6b9c1946ccab718",
+      "2019-11-292fd2fefeba.nc": "7e041d22dc6eb12271d631f25328a64e4e0e875f74bbf366f6985303425271e2",
+      "2019-12-5c9af3c48572.nc": "878b38f70790c89e8c39945546271c9f9c7ad9d2fad3fd4b032a4643d77b9861",
+      "2020-01-f58ec244e7fb.nc": "9d7413e85536583f64ae64d91f20e8dfdea83a8387681e13ae19f0fb08042ffb",
+      "2020-02-c6b4f89fbc5c.nc": "bad8aecaabbecef6a121ff3a99a3f4fae869b16bd6cb3b4fd237860a75bdcd47",
+      "2020-03-f0c90213b6d7.nc": "26eceef103a3eb98cfdfb206820ed5512f0f45cf35f05e2b80209c8f720703ea",
+      "2020-04-624a53532ae2.nc": "44203f773eae09f4408417970b5693b181ec6e11d3178ed05918b4199154c674",
+      "2020-05-afde31d9811b.nc": "ed2304a079f43d027802ff171696a5baf85599586164ff0c85b37bffe910fa9c",
+      "2020-06-700298db9d91.nc": "066be585b0f3915285c6b63f6ccd01a5c5b49756cda3e303db65f811a0fb6c6b",
+      "2020-07-91bef06b3567.nc": "f728bbab9fdb81015231f6e09c3a3474ee4a2ce697f5d3b8dba15e0910d0aecf",
+      "2020-08-fbe478c0dba4.nc": "f34e5e19250f6b58125cbf6c3cd6432457da9068950b251c3002b3c08ed92574",
+      "2020-09-2efc588a3ea3.nc": "035438bd5ea20e2148428d69ff4e1def26395c7515eed3d333a2dcc4d9dff61c",
+      "2020-10-ef1252a77d84.nc": "9bd74b08e19a8db9a34e78824cad267e7dad0e878c84e7fd6b78d8432953d5d0",
+      "2020-11-21653526543f.nc": "7fbd460646df48ec431ed55ac2e9379e40d371f3c3c98bb3e66535413e126228",
+      "2020-12-c02ac184e593.nc": "e81cc85b8944a6281d28d85bbd29228e994087d0d494525d5ef669a1b58fd14f",
+      "2021-01-663c02c7eaad.nc": "10efe998b25cd07a2f3418e0053dbe6a55a620296e02335dd5c2661a002d0b25",
+      "2021-02-907c4b811cf0.nc": "1e54a94c8ee955b6da10becbfae90bd1d7f51bc5691fdf8e6ed216715ead143d",
+      "2021-03-db0967d19540.nc": "20c0f39a1348bfc612a5fc77910af838838bafd4d4744762f0dba3d30ec90ead",
+      "2021-04-ea89cca05b2e.nc": "876b996f458f9f0a1527bed178aac2d2218bba8810a16a8b32587b0852092004",
+      "2021-05-5fbce92b9867.nc": "4cfd31aeb1c8018d0bebae6cf7d9e7fd8e8128a2b602835d72b262135b93db8e",
+      "2021-06-47008019b593.nc": "c9b9efcdd44696189718197de2328541a49a83f61a8c4e5fe13e3da719e3f17f",
+      "2021-07-03fdc88db97b.nc": "c363995555c786a8ed2ad59eebbdbc82edf32e4a6e3cd94b1c9b0fed56052bad",
+      "2021-08-c7c716f80b15.nc": "14418e2bf386db847da429887fcf50f85c637a3b3b2947f6dc1adf5f038072f2",
+      "2021-09-5f78bef4b863.nc": "5612419db6c0f4bdbedd27475afca6f20506eb7ca32a50485edc4b1815016572",
+      "2021-10-ed9af6ed199a.nc": "0390cf9c661ff70d402a50d2d246993c00110c329628a173086f695ef9e8a588",
+      "2021-11-a524c2d68d7b.nc": "6e87cdd24ab26209c407154c917937392046cef3aaf6ea1bbde6d467de04e1e6",
+      "2021-12-13633b9d92f5.nc": "ad8a6645676fa49ea3b4b853c0a0eb41cbcffe9f143642f0faf48f074aa247f8"
+    }
+  },
+  "declaration": "data/identity_calibration/t4e36-wrapped-acquisition-declaration.json",
+  "declaration_sha256": "5b96519ade6d33873c7411a9db2a66a76dd1668f6ebc6279987b7e33c1b9899c",
+  "network_used": false,
+  "parent": {
+    "directory": "data/cds_downloads/t4e18_vorticity",
+    "preserved_byte_for_byte": true,
+    "request_sha256": "d6186e2895a787b2f23c8ff0fc1d75bbf7c8795f62f3b989df68f4251ed89e17",
+    "shards": {
+      "2018-01-5b0ab7b47a48.nc": "058729e79934a255a3749569f48b27b37fdb07fa700bf96a90bb2c4a9815f25d",
+      "2018-02-ca15d211076c.nc": "5478630c76224ddc377530213dcd175450b09bdb1e982021ccbe4eb16a31ebf1",
+      "2018-03-e0a78e684e07.nc": "037722756582fa9d3ffa51a064888e722910a9b658c591aaa1410fa1ebfc2d7a",
+      "2018-04-6ce6bdc14ed6.nc": "a80f28c7bfcb52e99c6aa47ac70afa4c39b4a333d9d1f28701e41f2913c5b5e4",
+      "2018-05-f235d6b5fce6.nc": "d8a4de2f1397047004c2d4e9fe28d13ea80a39c0fc30d1a8b5244c1723a73001",
+      "2018-06-c1d67d461195.nc": "1220f377e2ef8fd6efb1efb141ff24fd0a80519ca4cd94610cea330c784ba8ef",
+      "2018-07-6203e6af7b73.nc": "00ee96c466827fc1bd87e046a6d3b02fcf54b2c3fea06e10452c9895d86b3e93",
+      "2018-08-378c7f5f5ff0.nc": "4c5b452d4ced5b1a00de40ee88c9c0ed58681b7e54e0bbd1ec2ebc6050841757",
+      "2018-09-f2653dd65a74.nc": "73da6d5f5a8f092d9d2feb9ff1d2493b0727256184898e8061df4c0e24c9910a",
+      "2018-10-c20972190b4d.nc": "51639f5f95aa027c689783e98ca9f5ab5d203f10158fedf3ca7b1f22292d06cd",
+      "2018-11-c5e6d4544059.nc": "bc6a3110a4174d68fb9b1e62b077a4190efb508d9928761ebdae0f76349438d7",
+      "2018-12-2ac2ee9ee744.nc": "85f421de481143a1e123952cb04f063d2d888d0f1c5cacaad8319fcb7dc7a940",
+      "2019-01-ddc7a099d4ec.nc": "46482bd402d306a0b78161f34eab5b9dd18ddcc9bbd624d980f633a5e2418489",
+      "2019-02-ab56db4edb58.nc": "4278d6469856b3bb05751e8e0524888ea20bd0ecd1bc820579c261debc67af0b",
+      "2019-03-c60be8490ceb.nc": "14767ce398d697c7dc3b1845b268c7b9eb93221c802a4f5e68780481c870f517",
+      "2019-04-a324cb897170.nc": "8129f0d5f31a7210bb627f273e978c25fcdf2dae7dc8084cc915c72f0787ef6a",
+      "2019-05-258baec8e974.nc": "54fb10898dc8659b641cc9532f4ab717bdb2357b460855e8c98da29a32ae125b",
+      "2019-06-6c9387a3376d.nc": "7d9f8eb073d0c8b5e11e3bacef43b0ba9fc4fc564038153968a12e16e3bd917d",
+      "2019-07-ee7f09e788b7.nc": "29be06d181d869116794591d1d35fca61995c5fdd0d3ef7f9e804c364c806703",
+      "2019-08-2a8bf5784fb6.nc": "cc0a767b1502289fb2c04b90d20d4df718a0e934d9cd742fe4fc3eb4e17834fe",
+      "2019-09-57bac5c95cae.nc": "2ab558c7725f4000b65a25f463f662275a50641713485890661822ffb1348954",
+      "2019-10-fa9a3eeb212f.nc": "4356d41a36b3131850d5428b9cbd3f38c800ba5e21d91a84577ac82e2a55a20f",
+      "2019-11-aef1f5b7e66c.nc": "64ebec9ac4efa46d65fa773c8eba3011dbfb40651b0434406256a181205c6f6c",
+      "2019-12-1dc314cf033c.nc": "ff58f8e9db8a3a4c561c0ed4277dba44130a144ce9ae570cf8fb913e469e7668",
+      "2020-01-3f26043f25ea.nc": "a55c05d339220b3ad5fc6f52d756922d2edc16cd515744e9112cffbedb368b1b",
+      "2020-02-a75549a8bea0.nc": "397c3690f33f0872ce75ac743a7b4a3e75f9f4ba03dc6e97c2a72c6026a20194",
+      "2020-03-82c15c454038.nc": "4dacf69d87468430743962022c7bfe602883c8d54d969bf725517990a4d425c0",
+      "2020-04-99acc38aa9af.nc": "fa251e840a40a7790932e7776dba6c292d5dd9b73c1bc11e57eb806c35c692c1",
+      "2020-05-9c4cfb177828.nc": "d7c8bfc32ec3aba277e5885c0a5ceca5bb1a21ed6d0aac4e8d7ce15f7c81f02b",
+      "2020-06-c1ebd5fb0ca6.nc": "d2ecd3e86124e0955f8f5c77c7c34f37597bbf1ac443149ad864f135fe1503b5",
+      "2020-07-3e7b8b971309.nc": "5126ac02dc89d1cf64ac973cae18c2cfe842b85f6ce9163cf50b97785c9e84a2",
+      "2020-08-db0869e07970.nc": "d0abf4d1c1fa68daaf9a118c414143c3759b12e90f67a59a076df7168303f02b",
+      "2020-09-6a6a89fff77a.nc": "d93b9168a078b5a3bc554eefb4dc4e5ae40d5ed0ff5d500137b5891ec0d1009d",
+      "2020-10-3020cbe01fbf.nc": "adb71148f9e233e4a14cfc22a5e659753ffe5a99a1deb6fa41fcec226ae44f91",
+      "2020-11-1fbb83d251f7.nc": "aec75c49530cba7cb758161e13cb693ce6ee298f645bc2cccea5537d372d796a",
+      "2020-12-b0e3d10972e6.nc": "4cfde4543221c5449d7282385a2946daf7dddcfc322072032c60d87f2823ac95",
+      "2021-01-4c532df2e7eb.nc": "e7483d3cb6bf4d8c43b4e1e8571443f1fea3a3e17ef993e7d77403fdfd417e8c",
+      "2021-02-0b90f8444fed.nc": "766644c56cb0df9da95a0c6f70cb262359ef50a188c21d54e36ec38221587914",
+      "2021-03-cf2be6c33400.nc": "11c92da196987fd530927eb9a90c69793377e035d594d80bfd38a53362821739",
+      "2021-04-a8a3a3dd2184.nc": "ad212b466c67ec8679e2bf5553159dd5402b5dad1aedbf78403b14f4fdfa5033",
+      "2021-05-d80953984d61.nc": "abf711139f2ac099d6f46efc302f16fa2fd3d7491f2f616e3438d27ccfdc3a8e",
+      "2021-06-3f72840bf715.nc": "5bd9187c44a809031c68e437fbabe5c9780618ffc46690616068aa95c742abf5",
+      "2021-07-43194175ccee.nc": "7fa09cab105f4971bc335f52c6dba26eaffc3225575cc46041293d7236087ea4",
+      "2021-08-bc0ee182c647.nc": "92cfe70c90268b262d48d7bf37c8866ef92b1b9b98f845fb2d569d2f87434a65",
+      "2021-09-18af48b4d563.nc": "52d22ccb55e855377bb359b3d9574b8520fe9646c053ad12f12dbd1662236de7",
+      "2021-10-6106d111a4b4.nc": "6cec1c4e751cceaea821d80418cdd72338eb26d60cd4f0233f87f50c3af6250a",
+      "2021-11-9495ddb640bf.nc": "39c75f75c96a6fa4971f4b49077d3d062ee871ded73fa8305684b502ac249632",
+      "2021-12-07e14e3f10a9.nc": "e72d273b409ab73d02db4877fecf66d637fb8117a68d346898c9208ec47cefdd"
+    }
+  },
+  "receipt_sha256": "509e42f7554c6357c67509af7d5c0504c4fafc8cc74f5a6ecf633f52f6afdd99",
+  "record_path": "data/wrapped_records/t4e36/9e9b7e50c75579daa4a79cb459e5da91c2b65a23c260eab6ca37fee2c684736b.zarr",
+  "record_sha256": "9e9b7e50c75579daa4a79cb459e5da91c2b65a23c260eab6ca37fee2c684736b",
+  "schema": "t4e36-wrapped-record/v1",
+  "seam": {
+    "all_passed": true,
+    "monthly_checks": [
+      {
+        "complement_duplicate_removed": true,
+        "coordinate": 180.0,
+        "maximum_absolute_difference": {
+          "vo": 0.0
+        },
+        "month": 1,
+        "passed": true,
+        "retained": "parent 180E column",
+        "source_encoding_tolerance": {
+          "vo": 5.960464477539063e-08
+        },
+        "year": 2018
+      },
+      {
+        "complement_duplicate_removed": true,
+        "coordinate": 180.0,
+        "maximum_absolute_difference": {
+          "vo": 0.0
+        },
+        "month": 2,
+        "passed": true,
+        "retained": "parent 180E column",
+        "source_encoding_tolerance": {
+          "vo": 5.960464477539063e-08
+        },
+        "year": 2018
+      },
+      {
+        "complement_duplicate_removed": true,
+        "coordinate": 180.0,
+        "maximum_absolute_difference": {
+          "vo": 0.0
+        },
+        "month": 3,
+        "passed": true,
+        "retained": "parent 180E column",
+        "source_encoding_tolerance": {
+          "vo": 5.960464477539063e-08
+        },
+        "year": 2018
+      },
+      {
+        "complement_duplicate_removed": true,
+        "coordinate": 180.0,
+        "maximum_absolute_difference": {
+          "vo": 0.0
+        },
+        "month": 4,
+        "passed": true,
+        "retained": "parent 180E column",
+        "source_encoding_tolerance": {
+          "vo": 5.960464477539063e-08
+        },
+        "year": 2018
+      },
+      {
+        "complement_duplicate_removed": true,
+        "coordinate": 180.0,
+        "maximum_absolute_difference": {
+          "vo": 0.0
+        },
+        "month": 5,
+        "passed": true,
+        "retained": "parent 180E column",
+        "source_encoding_tolerance": {
+          "vo": 5.960464477539063e-08
+        },
+        "year": 2018
+      },
+      {
+        "complement_duplicate_removed": true,
+        "coordinate": 180.0,
+        "maximum_absolute_difference": {
+          "vo": 0.0
+        },
+        "month": 6,
+        "passed": true,
+        "retained": "parent 180E column",
+        "source_encoding_tolerance": {
+          "vo": 5.960464477539063e-08
+        },
+        "year": 2018
+      },
+      {
+        "complement_duplicate_removed": true,
+        "coordinate": 180.0,
+        "maximum_absolute_difference": {
+          "vo": 0.0
+        },
+        "month": 7,
+        "passed": true,
+        "retained": "parent 180E column",
+        "source_encoding_tolerance": {
+          "vo": 5.960464477539063e-08
+        },
+        "year": 2018
+      },
+      {
+        "complement_duplicate_removed": true,
+        "coordinate": 180.0,
+        "maximum_absolute_difference": {
+          "vo": 0.0
+        },
+        "month": 8,
+        "passed": true,
+        "retained": "parent 180E column",
+        "source_encoding_tolerance": {
+          "vo": 5.960464477539063e-08
+        },
+        "year": 2018
+      },
+      {
+        "complement_duplicate_removed": true,
+        "coordinate": 180.0,
+        "maximum_absolute_difference": {
+          "vo": 0.0
+        },
+        "month": 9,
+        "passed": true,
+        "retained": "parent 180E column",
+        "source_encoding_tolerance": {
+          "vo": 5.960464477539063e-08
+        },
+        "year": 2018
+      },
+      {
+        "complement_duplicate_removed": true,
+        "coordinate": 180.0,
+        "maximum_absolute_difference": {
+          "vo": 0.0
+        },
+        "month": 10,
+        "passed": true,
+        "retained": "parent 180E column",
+        "source_encoding_tolerance": {
+          "vo": 5.960464477539063e-08
+        },
+        "year": 2018
+      },
+      {
+        "complement_duplicate_removed": true,
+        "coordinate": 180.0,
+        "maximum_absolute_difference": {
+          "vo": 0.0
+        },
+        "month": 11,
+        "passed": true,
+        "retained": "parent 180E column",
+        "source_encoding_tolerance": {
+          "vo": 5.960464477539063e-08
+        },
+        "year": 2018
+      },
+      {
+        "complement_duplicate_removed": true,
+        "coordinate": 180.0,
+        "maximum_absolute_difference": {
+          "vo": 0.0
+        },
+        "month": 12,
+        "passed": true,
+        "retained": "parent 180E column",
+        "source_encoding_tolerance": {
+          "vo": 5.960464477539063e-08
+        },
+        "year": 2018
+      },
+      {
+        "complement_duplicate_removed": true,
+        "coordinate": 180.0,
+        "maximum_absolute_difference": {
+          "vo": 0.0
+        },
+        "month": 1,
+        "passed": true,
+        "retained": "parent 180E column",
+        "source_encoding_tolerance": {
+          "vo": 5.960464477539063e-08
+        },
+        "year": 2019
+      },
+      {
+        "complement_duplicate_removed": true,
+        "coordinate": 180.0,
+        "maximum_absolute_difference": {
+          "vo": 0.0
+        },
+        "month": 2,
+        "passed": true,
+        "retained": "parent 180E column",
+        "source_encoding_tolerance": {
+          "vo": 5.960464477539063e-08
+        },
+        "year": 2019
+      },
+      {
+        "complement_duplicate_removed": true,
+        "coordinate": 180.0,
+        "maximum_absolute_difference": {
+          "vo": 0.0
+        },
+        "month": 3,
+        "passed": true,
+        "retained": "parent 180E column",
+        "source_encoding_tolerance": {
+          "vo": 5.960464477539063e-08
+        },
+        "year": 2019
+      },
+      {
+        "complement_duplicate_removed": true,
+        "coordinate": 180.0,
+        "maximum_absolute_difference": {
+          "vo": 0.0
+        },
+        "month": 4,
+        "passed": true,
+        "retained": "parent 180E column",
+        "source_encoding_tolerance": {
+          "vo": 5.960464477539063e-08
+        },
+        "year": 2019
+      },
+      {
+        "complement_duplicate_removed": true,
+        "coordinate": 180.0,
+        "maximum_absolute_difference": {
+          "vo": 0.0
+        },
+        "month": 5,
+        "passed": true,
+        "retained": "parent 180E column",
+        "source_encoding_tolerance": {
+          "vo": 5.960464477539063e-08
+        },
+        "year": 2019
+      },
+      {
+        "complement_duplicate_removed": true,
+        "coordinate": 180.0,
+        "maximum_absolute_difference": {
+          "vo": 0.0
+        },
+        "month": 6,
+        "passed": true,
+        "retained": "parent 180E column",
+        "source_encoding_tolerance": {
+          "vo": 5.960464477539063e-08
+        },
+        "year": 2019
+      },
+      {
+        "complement_duplicate_removed": true,
+        "coordinate": 180.0,
+        "maximum_absolute_difference": {
+          "vo": 0.0
+        },
+        "month": 7,
+        "passed": true,
+        "retained": "parent 180E column",
+        "source_encoding_tolerance": {
+          "vo": 5.960464477539063e-08
+        },
+        "year": 2019
+      },
+      {
+        "complement_duplicate_removed": true,
+        "coordinate": 180.0,
+        "maximum_absolute_difference": {
+          "vo": 0.0
+        },
+        "month": 8,
+        "passed": true,
+        "retained": "parent 180E column",
+        "source_encoding_tolerance": {
+          "vo": 5.960464477539063e-08
+        },
+        "year": 2019
+      },
+      {
+        "complement_duplicate_removed": true,
+        "coordinate": 180.0,
+        "maximum_absolute_difference": {
+          "vo": 0.0
+        },
+        "month": 9,
+        "passed": true,
+        "retained": "parent 180E column",
+        "source_encoding_tolerance": {
+          "vo": 5.960464477539063e-08
+        },
+        "year": 2019
+      },
+      {
+        "complement_duplicate_removed": true,
+        "coordinate": 180.0,
+        "maximum_absolute_difference": {
+          "vo": 0.0
+        },
+        "month": 10,
+        "passed": true,
+        "retained": "parent 180E column",
+        "source_encoding_tolerance": {
+          "vo": 5.960464477539063e-08
+        },
+        "year": 2019
+      },
+      {
+        "complement_duplicate_removed": true,
+        "coordinate": 180.0,
+        "maximum_absolute_difference": {
+          "vo": 0.0
+        },
+        "month": 11,
+        "passed": true,
+        "retained": "parent 180E column",
+        "source_encoding_tolerance": {
+          "vo": 5.960464477539063e-08
+        },
+        "year": 2019
+      },
+      {
+        "complement_duplicate_removed": true,
+        "coordinate": 180.0,
+        "maximum_absolute_difference": {
+          "vo": 0.0
+        },
+        "month": 12,
+        "passed": true,
+        "retained": "parent 180E column",
+        "source_encoding_tolerance": {
+          "vo": 5.960464477539063e-08
+        },
+        "year": 2019
+      },
+      {
+        "complement_duplicate_removed": true,
+        "coordinate": 180.0,
+        "maximum_absolute_difference": {
+          "vo": 0.0
+        },
+        "month": 1,
+        "passed": true,
+        "retained": "parent 180E column",
+        "source_encoding_tolerance": {
+          "vo": 5.960464477539063e-08
+        },
+        "year": 2020
+      },
+      {
+        "complement_duplicate_removed": true,
+        "coordinate": 180.0,
+        "maximum_absolute_difference": {
+          "vo": 0.0
+        },
+        "month": 2,
+        "passed": true,
+        "retained": "parent 180E column",
+        "source_encoding_tolerance": {
+          "vo": 5.960464477539063e-08
+        },
+        "year": 2020
+      },
+      {
+        "complement_duplicate_removed": true,
+        "coordinate": 180.0,
+        "maximum_absolute_difference": {
+          "vo": 0.0
+        },
+        "month": 3,
+        "passed": true,
+        "retained": "parent 180E column",
+        "source_encoding_tolerance": {
+          "vo": 5.960464477539063e-08
+        },
+        "year": 2020
+      },
+      {
+        "complement_duplicate_removed": true,
+        "coordinate": 180.0,
+        "maximum_absolute_difference": {
+          "vo": 0.0
+        },
+        "month": 4,
+        "passed": true,
+        "retained": "parent 180E column",
+        "source_encoding_tolerance": {
+          "vo": 5.960464477539063e-08
+        },
+        "year": 2020
+      },
+      {
+        "complement_duplicate_removed": true,
+        "coordinate": 180.0,
+        "maximum_absolute_difference": {
+          "vo": 0.0
+        },
+        "month": 5,
+        "passed": true,
+        "retained": "parent 180E column",
+        "source_encoding_tolerance": {
+          "vo": 5.960464477539063e-08
+        },
+        "year": 2020
+      },
+      {
+        "complement_duplicate_removed": true,
+        "coordinate": 180.0,
+        "maximum_absolute_difference": {
+          "vo": 0.0
+        },
+        "month": 6,
+        "passed": true,
+        "retained": "parent 180E column",
+        "source_encoding_tolerance": {
+          "vo": 5.960464477539063e-08
+        },
+        "year": 2020
+      },
+      {
+        "complement_duplicate_removed": true,
+        "coordinate": 180.0,
+        "maximum_absolute_difference": {
+          "vo": 0.0
+        },
+        "month": 7,
+        "passed": true,
+        "retained": "parent 180E column",
+        "source_encoding_tolerance": {
+          "vo": 5.960464477539063e-08
+        },
+        "year": 2020
+      },
+      {
+        "complement_duplicate_removed": true,
+        "coordinate": 180.0,
+        "maximum_absolute_difference": {
+          "vo": 0.0
+        },
+        "month": 8,
+        "passed": true,
+        "retained": "parent 180E column",
+        "source_encoding_tolerance": {
+          "vo": 5.960464477539063e-08
+        },
+        "year": 2020
+      },
+      {
+        "complement_duplicate_removed": true,
+        "coordinate": 180.0,
+        "maximum_absolute_difference": {
+          "vo": 0.0
+        },
+        "month": 9,
+        "passed": true,
+        "retained": "parent 180E column",
+        "source_encoding_tolerance": {
+          "vo": 5.960464477539063e-08
+        },
+        "year": 2020
+      },
+      {
+        "complement_duplicate_removed": true,
+        "coordinate": 180.0,
+        "maximum_absolute_difference": {
+          "vo": 0.0
+        },
+        "month": 10,
+        "passed": true,
+        "retained": "parent 180E column",
+        "source_encoding_tolerance": {
+          "vo": 5.960464477539063e-08
+        },
+        "year": 2020
+      },
+      {
+        "complement_duplicate_removed": true,
+        "coordinate": 180.0,
+        "maximum_absolute_difference": {
+          "vo": 0.0
+        },
+        "month": 11,
+        "passed": true,
+        "retained": "parent 180E column",
+        "source_encoding_tolerance": {
+          "vo": 5.960464477539063e-08
+        },
+        "year": 2020
+      },
+      {
+        "complement_duplicate_removed": true,
+        "coordinate": 180.0,
+        "maximum_absolute_difference": {
+          "vo": 0.0
+        },
+        "month": 12,
+        "passed": true,
+        "retained": "parent 180E column",
+        "source_encoding_tolerance": {
+          "vo": 5.960464477539063e-08
+        },
+        "year": 2020
+      },
+      {
+        "complement_duplicate_removed": true,
+        "coordinate": 180.0,
+        "maximum_absolute_difference": {
+          "vo": 0.0
+        },
+        "month": 1,
+        "passed": true,
+        "retained": "parent 180E column",
+        "source_encoding_tolerance": {
+          "vo": 5.960464477539063e-08
+        },
+        "year": 2021
+      },
+      {
+        "complement_duplicate_removed": true,
+        "coordinate": 180.0,
+        "maximum_absolute_difference": {
+          "vo": 0.0
+        },
+        "month": 2,
+        "passed": true,
+        "retained": "parent 180E column",
+        "source_encoding_tolerance": {
+          "vo": 5.960464477539063e-08
+        },
+        "year": 2021
+      },
+      {
+        "complement_duplicate_removed": true,
+        "coordinate": 180.0,
+        "maximum_absolute_difference": {
+          "vo": 0.0
+        },
+        "month": 3,
+        "passed": true,
+        "retained": "parent 180E column",
+        "source_encoding_tolerance": {
+          "vo": 5.960464477539063e-08
+        },
+        "year": 2021
+      },
+      {
+        "complement_duplicate_removed": true,
+        "coordinate": 180.0,
+        "maximum_absolute_difference": {
+          "vo": 0.0
+        },
+        "month": 4,
+        "passed": true,
+        "retained": "parent 180E column",
+        "source_encoding_tolerance": {
+          "vo": 5.960464477539063e-08
+        },
+        "year": 2021
+      },
+      {
+        "complement_duplicate_removed": true,
+        "coordinate": 180.0,
+        "maximum_absolute_difference": {
+          "vo": 0.0
+        },
+        "month": 5,
+        "passed": true,
+        "retained": "parent 180E column",
+        "source_encoding_tolerance": {
+          "vo": 5.960464477539063e-08
+        },
+        "year": 2021
+      },
+      {
+        "complement_duplicate_removed": true,
+        "coordinate": 180.0,
+        "maximum_absolute_difference": {
+          "vo": 0.0
+        },
+        "month": 6,
+        "passed": true,
+        "retained": "parent 180E column",
+        "source_encoding_tolerance": {
+          "vo": 5.960464477539063e-08
+        },
+        "year": 2021
+      },
+      {
+        "complement_duplicate_removed": true,
+        "coordinate": 180.0,
+        "maximum_absolute_difference": {
+          "vo": 0.0
+        },
+        "month": 7,
+        "passed": true,
+        "retained": "parent 180E column",
+        "source_encoding_tolerance": {
+          "vo": 5.960464477539063e-08
+        },
+        "year": 2021
+      },
+      {
+        "complement_duplicate_removed": true,
+        "coordinate": 180.0,
+        "maximum_absolute_difference": {
+          "vo": 0.0
+        },
+        "month": 8,
+        "passed": true,
+        "retained": "parent 180E column",
+        "source_encoding_tolerance": {
+          "vo": 5.960464477539063e-08
+        },
+        "year": 2021
+      },
+      {
+        "complement_duplicate_removed": true,
+        "coordinate": 180.0,
+        "maximum_absolute_difference": {
+          "vo": 0.0
+        },
+        "month": 9,
+        "passed": true,
+        "retained": "parent 180E column",
+        "source_encoding_tolerance": {
+          "vo": 5.960464477539063e-08
+        },
+        "year": 2021
+      },
+      {
+        "complement_duplicate_removed": true,
+        "coordinate": 180.0,
+        "maximum_absolute_difference": {
+          "vo": 0.0
+        },
+        "month": 10,
+        "passed": true,
+        "retained": "parent 180E column",
+        "source_encoding_tolerance": {
+          "vo": 5.960464477539063e-08
+        },
+        "year": 2021
+      },
+      {
+        "complement_duplicate_removed": true,
+        "coordinate": 180.0,
+        "maximum_absolute_difference": {
+          "vo": 0.0
+        },
+        "month": 11,
+        "passed": true,
+        "retained": "parent 180E column",
+        "source_encoding_tolerance": {
+          "vo": 5.960464477539063e-08
+        },
+        "year": 2021
+      },
+      {
+        "complement_duplicate_removed": true,
+        "coordinate": 180.0,
+        "maximum_absolute_difference": {
+          "vo": 0.0
+        },
+        "month": 12,
+        "passed": true,
+        "retained": "parent 180E column",
+        "source_encoding_tolerance": {
+          "vo": 5.960464477539063e-08
+        },
+        "year": 2021
+      }
+    ]
+  },
+  "shape": {
+    "latitude": 161,
+    "level": 1,
+    "longitude": 321,
+    "time": 5844
+  }
+}
