@@ -160,7 +160,7 @@ export default function IdentityDeclarationView({ onError }: { onError?: (m: str
                   <p data-testid="undeclared"
                      className="flex gap-1 text-slate-700 dark:text-slate-300">
                     <FileQuestion className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-                    <span>No declared identity target. Written before slice 3 required one.</span>
+                    <span>No identity target was declared for this earlier study.</span>
                   </p>
                 )}
                 {audit.claim_boundary && (

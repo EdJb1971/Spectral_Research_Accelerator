@@ -103,7 +103,7 @@ export default function ReferenceHoldout() {
           <h3 id="holdout-title"
               className="flex items-center gap-2 text-sm font-semibold text-slate-200">
             <Wind className="h-4 w-4 text-teal-400" aria-hidden="true" />
-            T4E.39 temporal reference holdout
+            Independent temporal holdout
           </h3>
           <p className="mt-1 text-[11px] text-slate-500">
             The 2022-2023 period, declared before it was opened, run once, and read by a person.

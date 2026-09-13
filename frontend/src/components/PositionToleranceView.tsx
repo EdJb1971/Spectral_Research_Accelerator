@@ -61,7 +61,7 @@ export default function PositionToleranceView({ onError }: Props) {
       <header className="space-y-2">
         <h2 className="text-xl font-semibold flex items-center gap-2">
           <Ruler className="w-5 h-5" aria-hidden="true" />
-          Position tolerance
+          Position matching tolerance
         </h2>
         <p className="text-sm text-slate-600 dark:text-slate-300 max-w-3xl">
           How close a feature must land to a catalogue position to count as the same thing —

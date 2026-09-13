@@ -106,7 +106,7 @@ export default function DeclarationComposer({ onComposed }: Props) {
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="space-y-1">
           <span className="block text-xs font-semibold uppercase tracking-wide text-slate-500">
-            Task — e.g. T4E.34
+            Study decision ID
           </span>
           <input data-testid="task" value={task} onChange={(e) => setTask(e.target.value)}
                  className="w-full rounded border border-slate-300 px-2 py-1 text-sm
@@ -181,8 +181,8 @@ export default function DeclarationComposer({ onComposed }: Props) {
           The predictions — each with what would show it wrong
         </h4>
         <p className="text-xs text-slate-500 dark:text-slate-400">
-          A prediction that cannot fail is not a prediction. T4E.27 declared an improvement that
-          was arithmetically impossible before the run, and it read as a risk that had been taken.
+          A useful prediction must be able to fail. Check that the expected improvement is
+          mathematically possible before committing the study plan.
         </p>
         {predictions.map((entry, index) => (
           <div key={index} className="space-y-1 rounded border border-slate-200 p-2

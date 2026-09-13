@@ -79,43 +79,41 @@ import {
   X, FileSignature} from 'lucide-react';
 
 const WORKFLOW_NAV = [
-  { section: 'Acquire', items: [{ id: 'acquire', name: 'Acquire data', icon: Cloud }] },
-  {
-    section: 'Analyse', items: [
-      { id: 'domainWorkbench', name: 'Cross-domain analysis', icon: Globe, operation: 'cross_domain_analysis' },
-      { id: 'preregistration', name: 'Preregistration', icon: Lock },
-      { id: 'synthetic', name: 'Synthetic generator', icon: Layers, context: 'Gridded field line' },
-      { id: 'meteorological', name: 'Meteorological data', icon: Wind, context: 'Gridded field line' },
-      { id: 'boundary', name: 'Boundary-condition lab', icon: Sliders, context: 'Gridded field line', operation: 'boundary_lab' },
-      { id: 'spectral', name: 'Spectral transforms', icon: Activity, context: 'Gridded field line', operation: 'dtcwt_spatial' },
-      { id: 'analysis', name: 'Diagnostics', icon: BarChart2, context: 'Gridded field line', operation: 'gridded_diagnostics' },
-      { id: 'mining', name: 'Structure mining', icon: Boxes, operation: 'structure_mining' },
-      { id: 'crossDomainRecord', name: 'Cross-domain record', icon: Waypoints, operation: 'cross_domain_analysis' },
-      { id: 'hypothesis', name: 'Automated hypotheses', icon: Lightbulb },
-    ],
-  },
-  {
-    section: 'Evidence', items: [
-      { id: 'evidence', name: 'Evidence record', icon: FilePlus2 },
-      { id: 'experimentComposer', name: 'Experiment Composer', icon: FileLock2 },
-      { id: 'declarative', name: 'Legacy parameter sweeps', icon: FileCode, context: 'Gridded field line' },
-      { id: 'evaluation', name: 'Forecast evaluation', icon: FileCheck2, context: 'Gridded field line', operation: 'forecast_evaluation' },
-    ],
-  },
-  { section: 'Review', note: 'Recorded argument; never claim permission', items: [
-    { id: 'review', name: 'Recorded review', icon: MessageSquare },
-    { id: 'gate', name: 'Atmospheric gate record', icon: Landmark, context: 'Gridded field line' },
-    { id: 'identity', name: 'Identity declaration', icon: Target, context: 'Gridded field line' },
-    { id: 'studies', name: 'Study trail', icon: FlaskConical, context: 'Gridded field line' },
-    { id: 'tolerance', name: 'Position tolerance', icon: Ruler, context: 'Gridded field line' },
-    { id: 'joinDistribution', name: 'Join distribution', icon: Ruler, context: 'Gridded field line' },
-    { id: 'adoption', name: 'Adopt declarations', icon: FileSignature },
+  { section: 'Home', items: [
+    { id: 'researchArchive', name: 'Dashboard', icon: Archive },
+    { id: 'experimentComposer', name: 'New experiment', icon: FileLock2 },
   ] },
-  { section: 'Read', items: [
-    { id: 'researchArchive', name: 'Research archive', icon: Archive },
+  { section: 'Data', items: [{ id: 'acquire', name: 'Import & acquire data', icon: Cloud }] },
+  { section: 'Research', items: [
+    { id: 'domainWorkbench', name: 'Analyse selected data', icon: Globe, operation: 'cross_domain_analysis' },
+    { id: 'preregistration', name: 'Register a study plan', icon: Lock },
+    { id: 'mining', name: 'Structure mining', icon: Boxes, operation: 'structure_mining' },
+    { id: 'crossDomainRecord', name: 'Compare across domains', icon: Waypoints, operation: 'cross_domain_analysis' },
+    { id: 'hypothesis', name: 'Automated hypotheses', icon: Lightbulb },
+  ] },
+  { section: 'Results', items: [
     { id: 'findings', name: 'Findings', icon: BookOpen },
+    { id: 'review', name: 'Expert round table', icon: MessageSquare },
+    { id: 'evidence', name: 'Build evidence record', icon: FilePlus2 },
+    { id: 'evaluation', name: 'Forecast evaluation', icon: FileCheck2, context: 'Gridded field line', operation: 'forecast_evaluation' },
+    { id: 'studies', name: 'Study history', icon: FlaskConical, context: 'Gridded field line' },
   ] },
-  { section: 'Platform', items: [{ id: 'platform', name: 'Platform & evidence', icon: ShieldCheck }] },
+  { section: 'Advanced methods', items: [
+    { id: 'synthetic', name: 'Synthetic data', icon: Layers, context: 'Gridded field line' },
+    { id: 'meteorological', name: 'Meteorological explorer', icon: Wind, context: 'Gridded field line' },
+    { id: 'boundary', name: 'Boundary conditions', icon: Sliders, context: 'Gridded field line', operation: 'boundary_lab' },
+    { id: 'spectral', name: 'Spectral transforms', icon: Activity, context: 'Gridded field line', operation: 'dtcwt_spatial' },
+    { id: 'analysis', name: 'Diagnostics', icon: BarChart2, context: 'Gridded field line', operation: 'gridded_diagnostics' },
+    { id: 'declarative', name: 'Parameter sweeps', icon: FileCode, context: 'Gridded field line' },
+  ] },
+  { section: 'Scientific decisions', items: [
+    { id: 'gate', name: 'Atmospheric evidence decision', icon: Landmark, context: 'Gridded field line' },
+    { id: 'identity', name: 'Identity definition', icon: Target, context: 'Gridded field line' },
+    { id: 'tolerance', name: 'Position matching', icon: Ruler, context: 'Gridded field line' },
+    { id: 'joinDistribution', name: 'Match-distance results', icon: Ruler, context: 'Gridded field line' },
+    { id: 'adoption', name: 'Sign scientific decisions', icon: FileSignature },
+  ] },
+  { section: 'System', items: [{ id: 'platform', name: 'System health & validation', icon: ShieldCheck }] },
 ] as const;
 
 const JOURNEY_STAGE_BY_WORKSPACE: Partial<Record<string, JourneyStageId>> = {
@@ -127,8 +125,8 @@ const JOURNEY_STAGE_BY_WORKSPACE: Partial<Record<string, JourneyStageId>> = {
 };
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState('acquire');
-  const [activeJourneyStage, setActiveJourneyStage] = useState<JourneyStageId | null>('acquire');
+  const [activeTab, setActiveTab] = useState('researchArchive');
+  const [activeJourneyStage, setActiveJourneyStage] = useState<JourneyStageId | null>(null);
   const [requestedComposerStep, setRequestedComposerStep] = useState<string>();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const mobileNavTriggerRef = useRef<HTMLButtonElement>(null);
@@ -894,9 +892,6 @@ export default function App() {
                   className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
                   {group.section}
                 </h2>
-                {'note' in group && group.note && (
-                  <p className="text-[10px] text-slate-600 mt-0.5">{group.note}</p>
-                )}
               </div>
               <div className="space-y-1">
                 {group.items.map(tab => {
@@ -907,13 +902,12 @@ export default function App() {
                   const unavailable = decision ? !decision.available : false;
                   return (
                     <button key={tab.id} type="button" disabled={unavailable}
-                      data-workflow-line={'context' in tab ? 'legacy-gridded' : 'evidence'}
+                      data-workflow-line={'context' in tab ? 'gridded-field' : 'general'}
                       onClick={() => { navigateWorkspace(tab.id); setMobileNavOpen(false); }}
                       aria-current={isActive ? 'page' : undefined}
                       aria-describedby={unavailable ? `nav-reason-${tab.id}` : undefined}
                       className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all
-                        ${'context' in tab ? 'legacy-workspace-entry ' : ''}${
-                        isActive
+                        ${isActive
                           ? 'bg-teal-500/10 text-teal-400 border border-teal-500/20 shadow-sm shadow-teal-500/5'
                           : unavailable ? 'text-slate-600 cursor-not-allowed border border-slate-900'
                             : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
@@ -923,8 +917,8 @@ export default function App() {
                       <span className="min-w-0 text-left">
                         <span className="block">{tab.name}</span>
                         {'context' in tab && (
-                          <span className="legacy-workspace-entry__label block text-[10px] uppercase tracking-wide">
-                            Legacy · {tab.context}
+                          <span className="block text-[10px] tracking-wide text-slate-600">
+                            {tab.context}
                           </span>
                         )}
                         {unavailable && decision && <span id={`nav-reason-${tab.id}`}
@@ -2430,7 +2424,7 @@ export default function App() {
                     <div className="bg-slate-900 border border-slate-800 rounded-xl p-12 text-center text-slate-500 flex flex-col items-center justify-center h-full min-h-[300px]">
                       <Lightbulb className="w-12 h-12 text-slate-750 mb-3" />
                       <p className="text-sm font-semibold text-slate-400">No hypotheses discovered yet</p>
-                      <p className="text-xs text-slate-500 mt-1 max-w-sm">Deploy some experiment sweeps in Tab 6 first, then launch automated mining to run Pearson's r pattern discovery.</p>
+                      <p className="text-xs text-slate-500 mt-1 max-w-sm">Run a parameter sweep first, then return here to search its results for Pearson correlation patterns.</p>
                     </div>
                   )}
                 </div>
@@ -2443,12 +2437,12 @@ export default function App() {
             <div className="space-y-6 animate-fadeIn">
               <div className="flex flex-col gap-1">
                 <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                  <ShieldCheck className="text-teal-400 w-5 h-5" /> Platform Status &amp; Evidence
+                  <ShieldCheck className="text-teal-400 w-5 h-5" /> System health &amp; validation
                 </h2>
                 <p className="text-sm text-slate-400">
-                  What this deployment actually is, and what it has been proved to get right. A result
-                  is only interpretable alongside the device it ran on, the schema that stored it and
-                  the benchmarks the platform passes.
+                  Check the services, storage, compute environment, data connections, and known-answer
+                  tests that support this installation. These checks describe system reliability; they
+                  are not scientific findings.
                 </p>
               </div>
 

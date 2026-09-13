@@ -21,7 +21,7 @@ import { expect, test, Page } from '@playwright/test';
  * What it must not contain: any control that records, approves or accepts anything.
  */
 
-const WORKSPACE = 'Join distribution';
+const WORKSPACE = 'Match-distance results';
 
 async function openJoin(page: Page) {
   await page.goto('/');

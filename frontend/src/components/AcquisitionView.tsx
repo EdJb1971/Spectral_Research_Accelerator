@@ -232,7 +232,7 @@ export const AcquisitionView: React.FC<AcquisitionViewProps> = ({
               </div>
               <p className="mt-1 text-xs text-slate-400">{route.reason}</p>
               <p className="mt-2 text-[11px] text-slate-500">
-                Configurable in the implementation: {route.configuration.join(' · ')}
+                Available settings: {route.configuration.join(' · ')}
               </p>
             </div>
             <span className="shrink-0 rounded-md bg-slate-950 px-2 py-1 text-[10px] text-slate-400">
@@ -542,10 +542,9 @@ export const AcquisitionView: React.FC<AcquisitionViewProps> = ({
                   <p className="text-[11px] text-amber-300">
                     Materialising is where this store currently stops. The crop will be cached,
                     content-addressed and reproducible from the command above, and no analysis
-                    path reads a crop from it yet — the T5.2 regional-forecast route is
-                    atmospheric and asks for ERA5 variables on a pressure level. Registration and
-                    costing are what this store has so far; an analysis route for it is not
-                    built.
+                    workflow can analyse a crop from it yet. Regional forecasting currently uses
+                    atmospheric ERA5 variables on a pressure level. You can register and estimate
+                    this store now, but it is not yet available for analysis.
                   </p>
                 </div>}
               </> : <div className="min-h-[260px] bg-slate-900 border border-slate-800 rounded-xl flex flex-col items-center justify-center text-slate-500">
@@ -565,7 +564,7 @@ export const AcquisitionView: React.FC<AcquisitionViewProps> = ({
                     <p className={item.regional_forecast_readiness.structurally_eligible
                       ? 'text-emerald-400' : 'text-amber-400'}>
                       {item.regional_forecast_readiness.structurally_eligible
-                        ? 'T5.2 structure eligible' : 'T5.2 inputs incomplete'}
+                        ? 'Ready for regional forecasting' : 'Regional forecast inputs incomplete'}
                     </p>
                     <p className="text-amber-300 font-sans">Prepared dataset: NO · train-only normalisation verified: NO · independent ERA5 cross-check: NOT RUN</p>
                     <p className="text-amber-300 font-sans">
@@ -581,7 +580,7 @@ export const AcquisitionView: React.FC<AcquisitionViewProps> = ({
                     <p className="font-sans text-slate-600">{item.regional_forecast_readiness.claim_boundary}</p>
                   </> : <>
                     <p className="text-slate-400">
-                      T5.2 readiness: NOT APPLICABLE · vertical axis {item.regional_forecast_readiness.vertical_dim}
+                      Regional forecasting: NOT APPLICABLE · vertical axis {item.regional_forecast_readiness.vertical_dim}
                     </p>
                     <p className="font-sans text-slate-500">{item.regional_forecast_readiness.not_applicable_reason}</p>
                   </>}

@@ -24,7 +24,7 @@ import { expect, test, Page } from '@playwright/test';
  * accept one.
  */
 
-const WORKSPACE = 'Position tolerance';
+const WORKSPACE = 'Position matching';
 
 async function openTolerance(page: Page) {
   await page.goto('/');

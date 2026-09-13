@@ -13,7 +13,7 @@ function workflowNav(page: Page) {
 
 async function openSyntheticPair(page: Page) {
   await page.goto('/');
-  await workflowNav(page).getByRole('button', { name: /^Synthetic generator/ }).click();
+  await workflowNav(page).getByRole('button', { name: /^Synthetic data/ }).click();
   await page.getByRole('button', { name: 'Generate Analytical Field' }).click();
   await expect(page.locator('#fig-clean-field.js-plotly-plot')).toBeVisible({ timeout: 30_000 });
   return page.getByRole('separator', { name: 'Resize the clean and perturbed synthetic field panes' });
@@ -89,7 +89,7 @@ test('a narrow viewport restores one-column document order and removes the separ
   await page.setViewportSize({ width: 700, height: 900 });
   await page.goto('/');
   await page.getByRole('button', { name: 'Open workspace menu' }).click();
-  await workflowNav(page).getByRole('button', { name: /^Synthetic generator/ }).click();
+  await workflowNav(page).getByRole('button', { name: /^Synthetic data/ }).click();
   await page.getByRole('button', { name: 'Generate Analytical Field' }).click();
   await expect(page.locator('#fig-clean-field.js-plotly-plot')).toBeVisible({ timeout: 30_000 });
 

@@ -543,7 +543,7 @@ export default function FindingsView({
                                border-teal-400/30 bg-teal-500/10 px-4 py-2 text-sm font-semibold
                                text-teal-200 hover:bg-teal-500/20 focus:outline-none
                                focus:ring-2 focus:ring-teal-400">
-                    Open Experiment Composer
+                    Start a new experiment
                   </button>
                 )}
                 <p className="mt-3 text-xs text-slate-500">

@@ -9,7 +9,7 @@ import { expect, test } from '@playwright/test';
  */
 test('the acceptance renders every condition and what would not discharge it', async ({ page }) => {
   await page.goto('/');
-  await page.getByRole('button', { name: 'Platform & evidence', exact: true }).click();
+  await page.getByRole('button', { name: 'System health & validation', exact: true }).click();
   const panel = page.getByRole('region', { name: 'T4E.8 acceptance' });
   await expect(panel).toBeVisible();
 
@@ -29,7 +29,7 @@ test('the acceptance renders every condition and what would not discharge it', a
 
 test('a condition states what would license it and what would not', async ({ page }) => {
   await page.goto('/');
-  await page.getByRole('button', { name: 'Platform & evidence', exact: true }).click();
+  await page.getByRole('button', { name: 'System health & validation', exact: true }).click();
   const panel = page.getByRole('region', { name: 'T4E.8 acceptance' });
 
   await panel.getByRole('button', { name: /^C3/ }).click();
@@ -41,7 +41,7 @@ test('a condition states what would license it and what would not', async ({ pag
 
 test('the record the bar was set against is verified on screen', async ({ page }) => {
   await page.goto('/');
-  await page.getByRole('button', { name: 'Platform & evidence', exact: true }).click();
+  await page.getByRole('button', { name: 'System health & validation', exact: true }).click();
   const panel = page.getByRole('region', { name: 'T4E.8 acceptance' });
 
   await expect(panel).toContainText('7 artefacts, all verified: true');
@@ -51,7 +51,7 @@ test('the record the bar was set against is verified on screen', async ({ page }
 
 test('the bar can be signed where it is read, and refuses a signature it was not given', async ({ page }) => {
   await page.goto('/');
-  await page.getByRole('button', { name: 'Platform & evidence', exact: true }).click();
+  await page.getByRole('button', { name: 'System health & validation', exact: true }).click();
   const panel = page.getByRole('region', { name: 'T4E.8 acceptance' });
   const form = panel.getByTestId('acceptance-adopt-form');
   await expect(form).toBeVisible();
@@ -80,7 +80,7 @@ test('the bar can be signed where it is read, and refuses a signature it was not
 
 test('signing the bar is stated as fixing a standard, not as accepting anything', async ({ page }) => {
   await page.goto('/');
-  await page.getByRole('button', { name: 'Platform & evidence', exact: true }).click();
+  await page.getByRole('button', { name: 'System health & validation', exact: true }).click();
   const form = page.getByRole('region', { name: 'T4E.8 acceptance' })
     .getByTestId('acceptance-adopt-form');
 
@@ -94,7 +94,7 @@ test('the signer is remembered between adoptions, and the affirmation never is',
   await page.evaluate(() => localStorage.setItem(
     'spectralearth.signer.identity', JSON.stringify({ name: 'Ed Bentley', role: 'maintainer' })));
   await page.reload();
-  await page.getByRole('button', { name: 'Platform & evidence', exact: true }).click();
+  await page.getByRole('button', { name: 'System health & validation', exact: true }).click();
   const form = page.getByRole('region', { name: 'T4E.8 acceptance' })
     .getByTestId('acceptance-adopt-form');
 

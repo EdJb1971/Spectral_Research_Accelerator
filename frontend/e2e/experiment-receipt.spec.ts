@@ -26,15 +26,15 @@ async function exportedFixture(request: APIRequestContext) {
 
 async function openInterpret(page: Page) {
   await page.goto('/');
-  await page.getByRole('button', { name: 'Experiment Composer', exact: true }).click();
+  await page.getByRole('button', { name: 'New experiment', exact: true }).click();
   await page.getByRole('tab', { name: /7\. Interpret/ }).click();
   await expect(page.getByRole('heading', { name: 'Immutable receipt and evidence handoff' }))
     .toBeVisible();
 }
 
-test('Platform & evidence explains every registered receipt field and refusal', async ({ page }) => {
+test('System validation explains every registered receipt field and refusal', async ({ page }) => {
   await page.goto('/');
-  await page.getByRole('button', { name: 'Platform & evidence', exact: true }).click();
+  await page.getByRole('button', { name: 'System health & validation', exact: true }).click();
   const trust = page.getByRole('region', { name: 'G17 experiment lineage and receipts' });
   await expect(trust).toBeVisible();
   await expect(trust).toContainText('verify_and_replay_bundle');

@@ -14,7 +14,7 @@ import { expect, test, Page } from '@playwright/test';
  */
 async function openHoldout(page: Page) {
   await page.goto('/');
-  await page.getByRole('button', { name: 'Platform & evidence', exact: true }).click();
+  await page.getByRole('button', { name: 'System health & validation', exact: true }).click();
   const panel = page.getByRole('region', { name: 'T4E.39 temporal reference holdout' });
   await expect(panel).toBeVisible();
   return panel;

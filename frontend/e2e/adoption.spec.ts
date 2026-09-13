@@ -14,7 +14,7 @@ import { expect, test, Page } from '@playwright/test';
 
 async function openAdoption(page: Page) {
   await page.goto('/');
-  await page.getByRole('button', { name: /^Adopt declarations/ }).click();
+  await page.getByRole('button', { name: /^Sign scientific decisions/ }).click();
   await expect(page.getByTestId('adoption')).toBeVisible();
 }
 
@@ -73,7 +73,7 @@ test('a placeholder name is refused as not being a person', async ({ page }) => 
 
 test('the convening control states the cost before anything can be spent', async ({ page }) => {
   await page.goto('/');
-  await page.getByRole('button', { name: /^Recorded review/ }).click();
+  await page.getByRole('button', { name: /^Expert round table/ }).click();
   await page.getByLabel('Published study ID').fill('t4e28-join-rerun');
   await page.getByRole('button', { name: 'Reload exact revision' }).click();
 
@@ -103,7 +103,7 @@ test('convening without a key on the server refuses and says nothing was sent',
     expect(plan.key_present).toBe(false);
 
     await page.goto('/');
-    await page.getByRole('button', { name: /^Recorded review/ }).click();
+    await page.getByRole('button', { name: /^Expert round table/ }).click();
     await page.getByLabel('Published study ID').fill('t4e28-join-rerun');
     await page.getByRole('button', { name: 'Reload exact revision' }).click();
     await page.getByTestId('authorise').check();
@@ -116,7 +116,7 @@ test('the run button alone cannot spend, whatever the server holds', async ({ pa
     // Safe with or without a key, because it never authorises: the refusal it drives is the
     // authorisation refusal, which is decided before any key is read and sends nothing.
     await page.goto('/');
-    await page.getByRole('button', { name: /^Recorded review/ }).click();
+    await page.getByRole('button', { name: /^Expert round table/ }).click();
     await page.getByLabel('Published study ID').fill('t4e28-join-rerun');
     await page.getByRole('button', { name: 'Reload exact revision' }).click();
 

@@ -16819,3 +16819,27 @@ After restarting only the directly launched Uvicorn process, the live endpoints 
 The skip is the existing opt-in live GCS test: the test harness deliberately sets
 `SPECTRALEARTH_LOAD_LOCAL_ENV=0`, so a developer's local network consent and credentials cannot
 silently turn an offline suite into a live one.
+## User-facing dashboard and expert round table (2026-09-14)
+
+```text
+> cd frontend; npm run build
+✓ 1428 modules transformed.
+✓ built in 55.77s
+
+> cd frontend; npx playwright test e2e/research-journey.spec.ts
+7 passed (43.7s)
+
+> cd frontend; npx playwright test e2e/ui-qualification.spec.ts
+4 passed (40.6s)
+
+> cd frontend; npx playwright test e2e/ui-qualification.spec.ts
+4 passed (46.5s)
+
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_frontend_contract.py -q
+186 passed, 5 warnings
+```
+
+The rendered checks cover the plain-language seven-step journey, remediation links, dashboard
+landing state and quick actions, removal of the legacy label, and a mocked persisted study whose
+`Discuss` action carries its ID directly into the expert round table. The Playwright backend has
+review API keys cleared by configuration, so this verification cannot make paid panel calls.

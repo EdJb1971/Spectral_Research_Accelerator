@@ -14,7 +14,7 @@ import { expect, test, Page } from '@playwright/test';
  * told which domain and why, and resolves it with a visible control.
  */
 
-const COMPOSER = 'Experiment Composer';
+const COMPOSER = 'New experiment';
 
 async function openComposer(page: Page) {
   await page.goto('/');

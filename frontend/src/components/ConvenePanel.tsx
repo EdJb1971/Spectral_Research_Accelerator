@@ -61,15 +61,15 @@ export default function ConvenePanel({ studyId, onError, onRan }: Props) {
              className="space-y-3 rounded-lg border border-slate-300 p-3 dark:border-slate-600">
       <h4 className="flex items-center gap-2 text-sm font-semibold">
         <Users className="h-4 w-4" aria-hidden="true" />
-        Convene the panel over this bundle
+        Start a round-table review
       </h4>
 
       <ol className="space-y-1 text-xs text-slate-600 dark:text-slate-300">
         {plan.roles.map((seat, index) => (
           <li key={seat.role} data-testid={`seat-${seat.role}`} className="flex gap-2">
             <span className="w-4 text-right text-slate-400">{index + 1}</span>
-            <span className="w-52 font-mono">{seat.role}</span>
-            <span className="text-slate-500">must return {seat.expects.join(', ')}</span>
+            <span className="w-52 font-medium capitalize">{seat.role.split('_').join(' ')}</span>
+            <span className="text-slate-500">reviews {seat.expects.join(', ').split('_').join(' ')}</span>
           </li>
         ))}
       </ol>
@@ -85,7 +85,7 @@ export default function ConvenePanel({ studyId, onError, onRan }: Props) {
 
       <label className="block space-y-1 text-sm">
         <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-          Model in every seat
+          Review model
         </span>
         <input data-testid="panel-model" value={model}
                onChange={(event) => setModel(event.target.value)}
@@ -117,7 +117,7 @@ export default function ConvenePanel({ studyId, onError, onRan }: Props) {
                          text-white hover:bg-slate-700 disabled:opacity-50 dark:bg-slate-100
                          dark:text-slate-900">
         <Play className="h-3 w-3" aria-hidden="true" />
-        {busy ? 'The panel is sitting…' : 'Convene'}
+        {busy ? 'Round table in progress…' : 'Start round table'}
       </button>
 
       {refusal && (
@@ -133,8 +133,7 @@ export default function ConvenePanel({ studyId, onError, onRan }: Props) {
       {ran && (
         <div data-testid="convene-result" className="space-y-1 rounded bg-slate-50 p-2 text-xs
                                                      dark:bg-slate-900">
-          <p><strong>{ran.turns_taken.length} turns taken</strong> · {ran.total_tokens} tokens ·
-            wrote {ran.review_file} and {ran.outcome_file}</p>
+          <p><strong>Discussion saved</strong> · {ran.turns_taken.length} contributions · {ran.total_tokens} tokens</p>
           <p className="flex items-start gap-1 text-slate-600 dark:text-slate-300">
             <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" aria-hidden="true" />
             <span>{ran.the_rung_was_copied_not_set}</span>

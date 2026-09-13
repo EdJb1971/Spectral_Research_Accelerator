@@ -57,7 +57,7 @@ export default function IdentityAcceptance() {
         why: why || undefined,
       });
       persist();
-      setMessage('The bar is adopted. No condition is met and T4E.8 is not accepted.');
+      setMessage('The standard is adopted. No condition is met and the identity criterion is not accepted.');
       setAffirmation('');
       await load();
     } catch (error) {
@@ -76,7 +76,7 @@ export default function IdentityAcceptance() {
           <h3 id="acceptance-title"
               className="flex items-center gap-2 text-sm font-semibold text-slate-200">
             <Gavel className="h-4 w-4 text-teal-400" aria-hidden="true" />
-            T4E.8 acceptance
+            Identity acceptance standard
           </h3>
           <p className="mt-1 text-[11px] text-slate-500">
             What a passing identity criterion must establish for{' '}
@@ -243,7 +243,7 @@ export default function IdentityAcceptance() {
             <FileSignature className="h-4 w-4" aria-hidden="true" /> Adopt the bar
           </h4>
           <p className="text-[11px] text-slate-500">
-            Adopting fixes the standard for the next candidate. It does not accept T4E.8, license{' '}
+            Adopting fixes the standard for the next candidate. It does not accept the current criterion, license{' '}
             <span className="font-mono">{state.identity_target}</span>, meet a condition or reopen
             any spent population.
           </p>

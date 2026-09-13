@@ -70,13 +70,13 @@ export default function G17PoolReview() {
         <div>
           <h3 id="g17-pool-title" className="flex items-center gap-2 text-sm font-semibold text-slate-200">
             <Database className="h-4 w-4 text-teal-400" aria-hidden="true" />
-            G17 real-record pool
+            Real-record candidate pool
           </h3>
           <p className="mt-1 text-[11px] text-slate-500">
             Corrected per-TIC lineage, profile qualification, marginal admission, and human review.
           </p>
         </div>
-        <button type="button" onClick={() => void load()} title="Refresh G17 pool evidence"
+        <button type="button" onClick={() => void load()} title="Refresh candidate pool evidence"
                 className="p-2 text-slate-300 hover:text-white">
           <RefreshCw className="h-4 w-4" aria-hidden="true" />
         </button>

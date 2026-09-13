@@ -6461,3 +6461,20 @@ A phase is done when **all** of the following hold:
 7.  `architecture.md` is updated to describe what now exists, **including any new defects discovered while building it**. The Section 7 ledger only shrinks when something is genuinely fixed; it grew from 11 entries to 16 during planning, which is the process working as intended.
 8.  The UI surfaces the result *with* its provenance, its null comparison, its tier and its resolved data source - never a bare number.
 9.  The stage runs end-to-end at `laptop` tier (E9), with measured per-tier runtimes and a declared complexity recorded in `VERIFICATION.md` (E10).
+## User-facing dashboard and past-experiment discussion (2026-09-14)
+
+The application now opens on a research dashboard rather than an acquisition sub-tool. Its
+navigation is grouped by user goals — data, research, results, advanced methods, scientific
+decisions and system health — and no longer presents task-history labels or “legacy” badges as
+product concepts. Static references to internal T/TG steps were replaced with the rule or
+limitation a researcher actually needs to understand.
+
+The dashboard indexes saved studies, experiment runs, decisions, evaluations, acquisitions and
+system checks. It adds direct actions to start an experiment, add data and read findings. Every
+published-study card now has a `Discuss` action that preserves the study ID and opens the expert
+round table. That workspace explains its eight specialist seats, paid-call authorisation, stored
+transcript, panel summary and usage record in user-facing language. The scientific boundary is
+unchanged: discussion can challenge a result but cannot promote its evidence status.
+
+The source contract inventory and rendered journey tests were updated to test the user-facing
+information architecture rather than require the removed development vocabulary.

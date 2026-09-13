@@ -18,7 +18,7 @@ import { expect, test, Page } from '@playwright/test';
  * scientific act, and the server serves no route that would accept one.
  */
 
-const WORKSPACE = 'Identity declaration';
+const WORKSPACE = 'Identity definition';
 
 /**
  * The primary label only. This entry belongs to the gridded field line, so its accessible name

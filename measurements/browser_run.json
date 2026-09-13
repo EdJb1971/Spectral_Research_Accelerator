@@ -1,14 +1,15 @@
 {
   "schema": "browser-run/v1",
-  "recorded_utc": "2026-09-11T00:41:41.234Z",
-  "finished_utc": "2026-09-11T00:42:15.628Z",
+  "recorded_utc": "2026-09-13T20:59:50.814Z",
+  "finished_utc": "2026-09-13T21:00:24.154Z",
   "status": "passed",
   "totals": {
-    "passed": 6,
+    "passed": 4,
     "failed": 0,
     "skipped": 0
   },
   "spec_inventory": [
+    "adoption.spec.ts",
     "assistive-acceptance.spec.ts",
     "comparison-contract.spec.ts",
     "comparison-views.spec.ts",
@@ -16,11 +17,14 @@
     "experiment-receipt.spec.ts",
     "figure-data.spec.ts",
     "flagship-qualification.spec.ts",
+    "identity-acceptance.spec.ts",
     "identity-declaration.spec.ts",
+    "join-distribution.spec.ts",
     "narrow-width.spec.ts",
     "position-tolerance.spec.ts",
     "product-modes.spec.ts",
     "publication-export.spec.ts",
+    "reference-holdout.spec.ts",
     "research-journey.spec.ts",
     "resizable-panes.spec.ts",
     "scientist-actions.spec.ts",
@@ -29,35 +33,39 @@
     "validity-uncertainty.spec.ts"
   ],
   "specs_that_ran": [
-    "position-tolerance.spec.ts"
+    "ui-qualification.spec.ts"
   ],
   "outcomes": [
     {
-      "spec": "position-tolerance.spec.ts",
-      "passed": 6,
+      "spec": "ui-qualification.spec.ts",
+      "passed": 4,
       "failed": 0,
       "skipped": 0
     }
   ],
   "spec_sha256": {
+    "adoption.spec.ts": "a652649173b73cd9252c42ddc46096a1c37046e5c03a791f9df657e5a0a6179b",
     "assistive-acceptance.spec.ts": "380bff381bb1ff33a360e320924c7f91b70fac2c696c68f3dccfc65ad78dda6a",
-    "comparison-contract.spec.ts": "a421e341d27f138402b79e2e054f4860d2e5f4cf428f5a53ba97225431531496",
-    "comparison-views.spec.ts": "5f236564c9aa463e3c9d2d024358dd5b3be496acb7197e8e5858b5944f1cf0a0",
-    "composer-path.spec.ts": "5caf882af8894d0bade96a95dfea7fb0e23b56beff1df3fee2165b2562a94fb2",
-    "experiment-receipt.spec.ts": "4c775b8e87204ed760fafeb34900e0b01790c117a9e56adf8a862da02d540901",
-    "figure-data.spec.ts": "f421ccf8d2c22ef0aabe88090511604249ce7445ec1b8a34bc137b2a82b1ae81",
-    "flagship-qualification.spec.ts": "c269677b39e113f196faa83dce3c291765c0f81ea9c0172397cc54e29f35cfbe",
-    "identity-declaration.spec.ts": "c98bb1f727914dd3a626e18971a42a0a2724654d5ecbd71081f493856ffc19c3",
-    "narrow-width.spec.ts": "606fddd2755fef8694d924b467034c03cd1a6e20017e542bb991440659e6e696",
-    "position-tolerance.spec.ts": "ea6288bf59187ac1c46a808f1ef399e6db5991745aee5b9b874f90c8a5d24a85",
-    "product-modes.spec.ts": "26937a31b4c024cf0ad2b42b2aaa0e4b977a7abb991f576b2d7050cbdd006de7",
-    "publication-export.spec.ts": "97cb50c9c0a648fda0e2583cabcc4069f4a8e6485e18a75cf7fd5396357fe7e2",
-    "research-journey.spec.ts": "b6663c05680aa1b3c0a79a2cfc7732c477791f229b221f6d023b728e71ef9192",
-    "resizable-panes.spec.ts": "3b37a1b7b68b2c1e5cbe524cb06ffbc1cad442933eceb99e71e25699924f2705",
-    "scientist-actions.spec.ts": "8aba1d5dc737f48b6b489eb36ce4fb3e6d81bc99bc4a5845e566886747f2d915",
+    "comparison-contract.spec.ts": "885747cda924f5b8c13c83455ffdffd0b88fc2e10806ece09079a4c6a4258830",
+    "comparison-views.spec.ts": "0f027f99902827224cc9f9216bf260a08b987ebbe7d4886fe54c75cc78c3bf3b",
+    "composer-path.spec.ts": "542ab11056268fff509a87a55b48fb1cd80a02fe5cd39a034cdb7eafe7595e1b",
+    "experiment-receipt.spec.ts": "592e6978f4df476e0d3708d41580e4bc03de735e30b07c0f95378664ce7b9ce9",
+    "figure-data.spec.ts": "f3f3824f485af5fb4ae7ddbf30d6973e73e5066a6cf6f1b1c6654eda28bd6fec",
+    "flagship-qualification.spec.ts": "a25ef28f4ed6f900ff727ee6ba20089ea0e533add93fb491be16598a9b14f54c",
+    "identity-acceptance.spec.ts": "e592b5d91e30e0458a61c7bd0e33da8474b764e631c3b459d335d1a3b44eae81",
+    "identity-declaration.spec.ts": "8a434b009fa2c347e1df0a2f68309200270cfc878ac11b2ab6d94fb2db8fa264",
+    "join-distribution.spec.ts": "610c006867b2bd197736d5d888ee74d04d0a860d162925f2d165bc381358fd1e",
+    "narrow-width.spec.ts": "f4f5c1d8b34b16f1cbc163bee31e499c78d96e7eb51d827e45c54d240a1d4093",
+    "position-tolerance.spec.ts": "2716cb27c44a8a4daf1614a9e1c5ba09694f00228235a5731c5102c74903ee49",
+    "product-modes.spec.ts": "3f539cbffc6e20cd477e628feebbdd72ed6926c7b0b6905041e11d0adce82911",
+    "publication-export.spec.ts": "a7f21735ec91026bdbfd350785a1a68b990eba490473be56d29faf0eaae38015",
+    "reference-holdout.spec.ts": "be87e5da4781f4dd8eb873f73ebc1020d0cd0cdd4a459b70d31814fc74f9f434",
+    "research-journey.spec.ts": "33a0a00acfbb6e859939badc8817777ec5b97e4567333057c73d5eac6d0b1a79",
+    "resizable-panes.spec.ts": "b9a12261029e40aa987fd29e81deb4d71a323793eda45547ac2c0e66081b5000",
+    "scientist-actions.spec.ts": "b694e929c54d580fbbed2f56e7a1ccaacd1eb68cd1d1539215a03caec22e3a68",
     "study-trail.spec.ts": "91ceda1391515736be91dc64a70cff309eeb914ba78913eb2a46d31decf4102c",
-    "ui-qualification.spec.ts": "ae0c8292351cbc63cfff28c178bf6d3cfaa6d3e018f38c2b05aebd09de375a87",
-    "validity-uncertainty.spec.ts": "f04280278ef1bbc90369d79f83d1a08a30fa59dd782a61fbd2da6810f67e57f4"
+    "ui-qualification.spec.ts": "2672a2d5aee580e198eaae4033222ec4305fd3f6029902b144c649a69e5bde5e",
+    "validity-uncertainty.spec.ts": "735edfed1241ff0d6fe7b49a2ec390a1691aa2388d7fdc264b38ffa62f07f685"
   },
   "artefacts": [
     {

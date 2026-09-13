@@ -54,7 +54,7 @@ export function ExperimentQualificationPanel() {
         <div>
           <h3 id="qualification-title" className="text-sm font-semibold text-slate-200 flex gap-2 items-center">
             <ShieldCheck className="w-4 h-4 text-violet-400" aria-hidden="true" />
-            G17 flagship release qualification
+            Experiment workflow qualification
           </h3>
           <p className="text-[11px] text-slate-500 mt-1">
             Three frozen durations × two scientifically separate modes. Fixture rehearsal and

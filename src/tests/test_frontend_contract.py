@@ -149,11 +149,12 @@ def test_acquisition_navigation_is_domain_driven_and_does_not_grow_tabs(app_sour
 def test_navigation_follows_the_scientific_workflow_and_labels_the_grid_line(app_source):
     """TG11.0 replaces a numbered feature list with the workflow it supports."""
     assert "WORKFLOW_NAV" in app_source
-    for section in ("Acquire", "Analyse", "Evidence", "Review", "Read", "Platform"):
+    for section in ("Home", "Data", "Research", "Results", "Advanced methods",
+                    "Scientific decisions", "System"):
         assert "section: '%s'" % section in app_source
     assert "Gridded field line" in app_source
-    assert "name: 'Recorded review'" in app_source
-    assert "Recorded argument; never claim permission" in app_source
+    assert "name: 'Expert round table'" in app_source
+    assert "name: 'Dashboard'" in app_source
     assert 'aria-label="Scientific workflow"' in app_source
     assert 'id="scientific-workflow-nav"' in app_source
     assert 'aria-controls="scientific-workflow-nav"' in app_source
@@ -421,7 +422,7 @@ def test_g17_composer_is_visible_manifest_driven_and_honest_about_the_runner():
     app = _read("App.tsx")
     view = _read("components", "ExperimentComposer.tsx")
     service = _read("services", "api.ts")
-    assert "Experiment Composer" in app
+    assert "New experiment" in app
     assert "<ExperimentComposer onSelectStudy={setSelectedStudyId}" in app
     assert "getFlagshipRecipe" in view and "preflightExperimentManifest(manifest)" in view
     assert "saveExperimentDraft(manifest.study_id, manifest)" in view
@@ -446,7 +447,7 @@ def test_g17_composer_exposes_honest_structural_contract_preview():
 def test_domain_analysis_uses_the_persistent_full_record_and_cannot_write(app_source, api_service):
     """TG11.1 must never substitute TG8.4's capped preview for the retained source file."""
     view = _read("components", "DomainAnalysisView.tsx")
-    assert "name: 'Cross-domain analysis'" in app_source
+    assert "name: 'Analyse selected data'" in app_source
     assert "activeTab === 'domainWorkbench'" in app_source
     assert "selectedRecord={selectedRecord}" in app_source
     assert "form.append('file', selection.file)" in api_service
@@ -482,7 +483,7 @@ def test_preregistration_declares_a_family_and_never_a_digest_or_a_p_value(app_s
     Both would make the seal a formality.
     """
     view = _read("components", "PreregistrationView.tsx")
-    assert "name: 'Preregistration'" in app_source
+    assert "name: 'Register a study plan'" in app_source
     assert "activeTab === 'preregistration'" in app_source
     assert "sealFamily" in view and "describePartition" in view and "confirmSeal" in view
     assert "/preregistration/seal" in api_service
@@ -530,7 +531,7 @@ def test_preregistration_does_not_present_a_receipt_as_a_claim():
 def test_the_evidence_panel_reaches_the_write_path_and_nothing_else(app_source, api_service):
     """TG11.3. The only writing panel in the application, and the only one that could break R22."""
     view = _read("components", "EvidenceView.tsx")
-    assert "name: 'Evidence record'" in app_source
+    assert "name: 'Build evidence record'" in app_source
     assert "activeTab === 'evidence'" in app_source
     for call in ("openStudy", "getEvidenceHead", "appendEvidence", "appendPrecedence",
                  "getEvidenceCapabilities"):
@@ -636,7 +637,7 @@ def test_the_cross_domain_panel_reaches_every_route_the_surface_serves(app_sourc
                                                                       api_service):
     """TG11.4b. Seven routes; a panel that called only some would be a catalogue of them."""
     view = _read("components", "CrossDomainRecordView.tsx")
-    assert "name: 'Cross-domain record'" in app_source
+    assert "name: 'Compare across domains'" in app_source
     assert "activeTab === 'crossDomainRecord'" in app_source
     for call in ("getCrossDomainCapabilities", "alignDomains", "priceCrossDomainLags",
                  "describeCrossDomainPartition", "generateCrossDomain", "sealCrossDomain",
@@ -1157,7 +1158,7 @@ def test_imported_origin_is_reported_as_unknown_not_real(all_sources):
 
 def test_regional_dataset_readiness_keeps_three_claims_separate(all_sources):
     """A suitable manifest is not evidence that preparation or ERA5 agreement ran."""
-    assert "T5.2 structure eligible" in all_sources
+    assert "Ready for regional forecasting" in all_sources
     assert "Prepared dataset: NO" in all_sources
     assert "train-only normalisation verified: NO" in all_sources
     assert "independent ERA5 cross-check: NOT RUN" in all_sources
@@ -1315,7 +1316,7 @@ def _review_view() -> str:
 
 
 def test_the_review_workspace_is_routed_and_kept_separate_from_findings(app_source):
-    assert "name: 'Recorded review'" in app_source
+    assert "name: 'Expert round table'" in app_source
     assert "activeTab === 'review'" in app_source
     assert "<ReviewView" in app_source
     review_start = app_source.index("activeTab === 'review'")
@@ -1338,8 +1339,8 @@ def test_recorded_argument_is_visibly_fenced_from_any_claim_permission():
     assert 'aria-label="Recorded-not-reproducible boundary"' in view
     assert "surface.declaration" in view
     assert "surface.claim_boundary" in view
-    assert "argument, not evidence and not permission to make a claim" in view
-    assert "Recorded, not reproducible" in view
+    assert "not change the study's evidence status by itself" in view
+    assert "About this discussion" in view
 
 
 def test_the_complete_record_outcome_dissent_and_cost_audit_are_rendered():
@@ -1356,9 +1357,9 @@ def test_the_complete_record_outcome_dissent_and_cost_audit_are_rendered():
 def test_missing_review_artifacts_never_render_as_reassurance():
     view = _review_view()
     assert "surface.absence_note" in view
-    assert "not the same as no review existing" in view
-    assert "not evidence that no exchange occurred" in view
-    assert "not the same as the review costing nothing" in view
+    assert "Choose a published study from the dashboard" in view
+    assert "does not yet have a completed panel summary" in view
+    assert "No usage record was saved" in view
 
 
 def test_the_review_surface_preserves_the_workflow_accessibility_contract():
@@ -1381,7 +1382,7 @@ def _channel_view() -> str:
 def test_the_domain_records_tab_is_wired(app_source):
     """TG10.2 consolidates records into Acquire instead of adding an archive tab."""
     acquisition = _read("components", "AcquisitionView.tsx")
-    assert "name: 'Acquire data'" in app_source
+    assert "name: 'Import & acquire data'" in app_source
     assert "activeTab === 'acquire'" in app_source
     assert "12. Domain Records" not in app_source
     assert "<ChannelRecords" in acquisition
@@ -2158,7 +2159,7 @@ def test_the_gate_panel_reaches_every_route_the_surface_serves(app_source, api_s
         assert path in api_service, path
     assert "GateRecordView" in app_source
     assert "activeTab === 'gate'" in app_source
-    assert "id: 'gate', name: 'Atmospheric gate record'" in app_source
+    assert "id: 'gate', name: 'Atmospheric evidence decision'" in app_source
 
 
 def test_no_gate_request_this_client_can_send_changes_anything(api_service):
@@ -2226,7 +2227,7 @@ def test_the_gate_panel_shows_an_undeclared_agreement_rule_as_a_refusal():
 def test_research_archive_keeps_record_classes_distinct_and_reachable(app_source):
     archive = _read("components", "ResearchArchive.tsx")
 
-    assert "Research archive" in app_source
+    assert "Research dashboard" in archive
     assert "activeTab === 'researchArchive'" in app_source
     for classification in ("SCIENTIFIC EVIDENCE", "EXPERIMENT RUN", "GATE RECEIPT",
                            "EVALUATION RECEIPT", "ACQUISITION RECORD",
@@ -2236,7 +2237,7 @@ def test_research_archive_keeps_record_classes_distinct_and_reachable(app_source
                    "listEvaluationReports", "zarrProbes", "listCDSJobs", "listBenchmarks"):
         assert "apiService.%s(" % method in archive
     assert "job.state === 'COMPLETE' && job.acquisition_record" in archive
-    assert "a passing fixture is not a published study" in archive
+    assert "A completed run is work performed" in archive
 
 
 def test_acquire_surfaces_noninteractive_routes_and_human_source_identity():
@@ -2285,11 +2286,11 @@ def test_findings_refuses_to_treat_a_run_or_receipt_label_as_a_published_study()
 def test_the_global_journey_is_navigation_and_not_a_second_scientific_judge(app_source):
     journey = _read("components", "ResearchJourney.tsx")
     composer = _read("components", "ExperimentComposer.tsx")
-    for stage in ("Acquire", "Inspect", "Design", "Run", "Compare", "Admit", "Report"):
+    for stage in ("Acquire", "Inspect", "Design", "Run", "Compare", "Validate", "Share"):
         assert "label: '%s'" % stage in journey
     assert 'aria-label="Guided research journey"' in journey
-    assert "Navigation only" in journey
-    assert "does not advance or replace the claim ladder" in journey
+    assert "move from data to a traceable result" in journey
+    assert "does not by itself prove a scientific claim" in journey
     assert "requestedStep" in composer
     assert "composerPathState" in composer
     assert "setPathState" in composer
@@ -2299,15 +2300,13 @@ def test_the_global_journey_is_navigation_and_not_a_second_scientific_judge(app_
     assert "ResearchJourney" in app_source
 
 
-def test_every_global_blocker_names_one_remediation_and_legacy_tools_stay_distinct(app_source):
+def test_every_global_blocker_names_one_remediation_and_specialised_tools_show_scope(app_source):
     journey = _read("components", "ResearchJourney.tsx")
-    assert "Blocked:" in journey
-    assert "Next legitimate action:" in journey
-    assert "no record is selected for inspection" in journey
-    assert "no study is selected for evidence admission" in journey
-    assert "data-workflow-line={'context' in tab ? 'legacy-gridded' : 'evidence'}" in app_source
-    assert "legacy-workspace-entry" in app_source
-    assert "Legacy · {tab.context}" in app_source
+    assert "Select a data record before inspecting it" in journey
+    assert "Select or create a study before adding evidence" in journey
+    assert "data-workflow-line={'context' in tab ? 'gridded-field' : 'general'}" in app_source
+    assert "{tab.context}" in app_source
+    assert "Legacy · {tab.context}" not in app_source
 
 
 # --------------------------------------- TG18.4 rendered accessibility acceptance

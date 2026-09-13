@@ -14,7 +14,7 @@ import { expect, test, Page } from '@playwright/test';
  * the numbers the researcher reads, in the tables the page prints under each view.
  */
 
-const COMPOSER = 'Experiment Composer';
+const COMPOSER = 'New experiment';
 
 async function openViews(page: Page) {
   await page.goto('/');
