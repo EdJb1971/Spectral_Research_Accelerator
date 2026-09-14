@@ -48,8 +48,9 @@ This is a short orientation only; [`architecture.md`](architecture.md) section 0
   declared PASS. A separate atmospheric identity programme still has no approved identity
   criterion or mining radius; its latest candidate is drafted but not adopted.
 - The G17 cross-domain release remains withheld by its scientific qualification conditions. G18's
-  interface programme is complete. G19 is in progress: private, multi-turn discussion of one final
-  finding is usable; whole-corpus selection and transcript-wide independence proof remain open.
+  interface programme and G19's private conversation with the record are complete. A discussion
+  can select relevant complete studies across the corpus, re-ground every turn, enforce its own
+  provider/cost budget, and prove that deleting the transcript changes no touched claim.
 - The regional and external-ensemble forecasting contracts, representations, dataset builders,
   artifact verification, persistence comparison, and receipt viewer exist. No laboratory model or
   FCN3 forecast has been integrated and no learned forecast-skill claim has been established.
@@ -64,7 +65,6 @@ This is a short orientation only; [`architecture.md`](architecture.md) section 0
 - The full physical mining/adjudication gate has not been run on that record, so representation
   scoring remains gated.
 - G17 has not earned a release verdict.
-- Cross-domain whole-corpus conversational retrieval is not implemented.
 - No production learned weather model, FCN3 worker, real forecast artifact, or controlled
   representation-versus-forecast experiment has run through the platform.
 - ROCm and Apple MPS parity are not measured; broad CPU/CUDA parity applies only where
@@ -442,9 +442,10 @@ Consult [`data/README.md`](data/README.md) before adding local meteorological fi
 
 The complete defect ledger is in `architecture.md` section 7. The platform is under active
 scientific validation, not a validated operational forecasting system. The cross-domain release
-is withheld. Formal review and discussion currently use Gemini rather than the final
-provider-neutral G19 design. Saved discussions do not yet implement a multi-revision append-only
-conversation chain or per-conversation budget. Reproducibility depends on preserving the
+is withheld. Gemini is the currently registered conversation provider; another provider is
+refused unless it declares compatible structured-response and sampling behavior. Conversation
+turns form an append-only digest chain and the server enforces a declared call/token budget.
+Reproducibility depends on preserving the
 content-addressed source artifacts named by each record. Third-party datasets and models retain
 their own terms.
 

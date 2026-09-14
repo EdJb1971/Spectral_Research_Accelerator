@@ -12388,10 +12388,10 @@ are reported as measured rather than attributed.
 **NAMING COLLISION, recorded 2026-09-12.** The slices called **TG19.1 to TG19.5** in this
 document, in `architecture.md` and in `roadmap.md` are engineering slices on the atmospheric
 line. They are **NOT** phase G19 of the cross-domain programme. `TGxx.y` is the cross-domain
-phase-slice convention (TG17.x, TG18.x), so the name was taken in error. **Phase G19 -- "the
-researcher's conversation with the record", slices G19.1 to G19.5 -- remains SPECIFIED AND NOT
-STARTED**, exactly as `roadmap_cross_domain.md` says. Nothing in TG19.1-TG19.5 discharges any
-part of it. The name is not rewritten here because five commits already carry it and the
+phase-slice convention (TG17.x, TG18.x), so the name was taken in error. **At the time of this
+note, Phase G19 -- "the researcher's conversation with the record", slices G19.1 to G19.5 -- was
+SPECIFIED AND NOT STARTED. It was completed separately on 2026-09-14.** Nothing in
+TG19.1-TG19.5 discharged any part of it. The name is not rewritten here because five commits already carry it and the
 documents would then disagree with the history; the collision is recorded instead.
 
 ---
@@ -16882,6 +16882,38 @@ seven tests.
 undocumented modules : none
 undocumented routes  : none
 test functions       : 4721
+stale inventory rows : none
+RESULT               : ok
+```
+
+## G19 completion — whole-record conversation and transcript independence (2026-09-14)
+
+G19's bounded first delivery was extended to all five acceptance slices. The server now owns the
+ephemeral typed transcript and its append-only turn hashes; browser-supplied history is no longer
+trusted. Deterministic corpus selection chooses studies and then loads each record whole. Every
+turn returns an exact byte/digest grounding receipt whose scientific-context digest excludes
+dialogue. Oversized records refuse with the deterministic view required instead of substituting
+chunks. All touched bundle revisions remain pinned.
+
+Provider identity, structured-schema capability and sampling policy are explicit, while an
+immutable call/token budget refuses before transport. `verify_transcript_independence` rebuilds
+every touched evidence bundle, computationally removes the complete transcript, and asserts every
+claim digest is unchanged. The UI previews selected complete records and attaches the claim
+boundary to every displayed turn, together with budget and deletion-proof status. Saving remains
+the only transcript write and persists the authoritative chain as interpretation.
+
+```text
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_conversation_core.py src/tests/test_conversations_api.py src/tests/test_frontend_contract.py -q
+198 passed, 5 warnings in 36.58s
+
+> cd frontend; npm run build
+✓ 1429 modules transformed.
+✓ built in 1m 27s
+
+> .\.venv\Scripts\python.exe tools\audit_docs.py
+undocumented modules : none
+undocumented routes  : none
+test functions       : 4728
 stale inventory rows : none
 RESULT               : ok
 ```

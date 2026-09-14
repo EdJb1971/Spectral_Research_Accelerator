@@ -1114,10 +1114,14 @@ export const apiService = {
     studyId: string,
     body: {
       question: string;
-      history: types.ConversationTurn[];
       glossary: string;
       model_id: string;
+      provider_id: string;
       expected_bundle_sha256: string;
+      conversation_id?: string;
+      max_records?: number;
+      max_calls?: number;
+      max_total_tokens?: number;
       i_authorise_paid_call: boolean;
     },
   ): Promise<types.FindingConversationAnswer> {
@@ -1127,12 +1131,19 @@ export const apiService = {
       }));
   },
 
+  async selectConversationCorpus(body: {
+    primary_study_id: string; question: string; glossary: string; max_records?: number;
+  }): Promise<types.ConversationCorpusSelection> {
+    return handleResponse<types.ConversationCorpusSelection>(
+      await fetch(`${BASE_URL}/conversations/corpus/select`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+      }));
+  },
+
   async saveFindingDiscussion(
     studyId: string,
     body: {
-      turns: types.ConversationTurn[];
-      glossary: string;
-      expected_bundle_sha256: string;
+      conversation_id: string;
       title?: string;
     },
   ): Promise<types.SavedFindingDiscussion> {

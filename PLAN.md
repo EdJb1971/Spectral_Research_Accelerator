@@ -188,8 +188,9 @@ The parallel object-first slice is complete: the capability registry declares ex
 sample-table planner destinations, a content-addressed handoff binds the exact object,
 declaration, profile and selected operation, and the browser verifies the destination planner's
 schema and content digest before continuing in the existing controls. Do not broaden V1 to every
-object format. G19 conversation, Phase 4G/4H and external learned-forecast comparison remain
-post-V1 unless a release criterion above proves they are required.
+object format. G19 conversation has since been completed as a separate bounded capability.
+Phase 4G/4H and external learned-forecast comparison remain post-V1 unless a release criterion
+above proves they are required.
 
 ## 1. Current decision point
 
@@ -1761,10 +1762,11 @@ supplies the mutual k-NN metric, its closed-form chance floor k/(n-1) and a perm
 It gates nothing, no model has been downloaded or evaluated, and running it on real
 representations would open a second domain under R17. It is not next unless it is chosen.
 
-G18's interface programme is complete according to its recorded acceptance. G19's
-multi-turn conversation with the evidence is specified and not started. Schedule it
-explicitly after the current identity decision; it is not an implicit next task in the
-atmospheric sequence. `roadmap_cross_domain.md` remains the broader programme's task history.
+G18's interface programme and G19's multi-turn conversation with the evidence are complete
+according to their recorded acceptance. G19 is private by default, selects only complete records
+across the corpus, pins every touched revision, enforces a provider/cost contract and proves
+transcript deletion leaves every claim unchanged. `roadmap_cross_domain.md` remains the broader
+programme's task history; neither completion changes the atmospheric identity decision.
 
 ## 5. The interface, as an instrument rather than a control panel
 
