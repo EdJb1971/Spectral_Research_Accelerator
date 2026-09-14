@@ -2226,6 +2226,9 @@ def test_the_gate_panel_shows_an_undeclared_agreement_rule_as_a_refusal():
 
 def test_research_archive_keeps_record_classes_distinct_and_reachable(app_source):
     archive = _read("components", "ResearchArchive.tsx")
+    findings = _read("components", "FindingsView.tsx")
+    discussion = _read("components", "FindingDiscussion.tsx")
+    service = _read("services", "api.ts")
 
     assert "Research dashboard" in archive
     assert "activeTab === 'researchArchive'" in app_source
@@ -2238,6 +2241,22 @@ def test_research_archive_keeps_record_classes_distinct_and_reachable(app_source
         assert "apiService.%s(" % method in archive
     assert "job.state === 'COMPLETE' && job.acquisition_record" in archive
     assert "A completed run is work performed" in archive
+    assert "Discuss finding" in archive
+    discuss_action = archive[archive.index("Discuss finding") - 700:archive.index("Discuss finding")]
+    assert "onNavigate('findings', entry.studyId)" in discuss_action
+    assert "<FindingDiscussion" in findings
+    assert "Private for now" in discussion and "not recorded" in discussion
+    assert "The answer stays unsaved" in discussion
+    assert "saveFindingDiscussion" in discussion
+    assert "I want to add this transcript to the study record" in discussion
+    assert "disabled={!saveConfirmed" in discussion
+    assert "localStorage" not in discussion
+    assert "getFindingConversationContext(studyId, glossary)" in discussion
+    assert "expected_bundle_sha256: context.bundle_sha256" in discussion
+    assert "i_authorise_paid_call: true" in discussion
+    assert "/conversations/studies/${encodeURIComponent(studyId)}/context" in service
+    assert "/conversations/studies/${encodeURIComponent(studyId)}/ask" in service
+    assert "/conversations/studies/${encodeURIComponent(studyId)}/save" in service
 
 
 def test_acquire_surfaces_noninteractive_routes_and_human_source_identity():

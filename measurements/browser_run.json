@@ -1,10 +1,10 @@
 {
   "schema": "browser-run/v1",
-  "recorded_utc": "2026-09-13T20:59:50.814Z",
-  "finished_utc": "2026-09-13T21:00:24.154Z",
+  "recorded_utc": "2026-09-13T22:41:34.544Z",
+  "finished_utc": "2026-09-13T22:42:01.519Z",
   "status": "passed",
   "totals": {
-    "passed": 4,
+    "passed": 7,
     "failed": 0,
     "skipped": 0
   },
@@ -33,12 +33,12 @@
     "validity-uncertainty.spec.ts"
   ],
   "specs_that_ran": [
-    "ui-qualification.spec.ts"
+    "research-journey.spec.ts"
   ],
   "outcomes": [
     {
-      "spec": "ui-qualification.spec.ts",
-      "passed": 4,
+      "spec": "research-journey.spec.ts",
+      "passed": 7,
       "failed": 0,
       "skipped": 0
     }
@@ -60,7 +60,7 @@
     "product-modes.spec.ts": "3f539cbffc6e20cd477e628feebbdd72ed6926c7b0b6905041e11d0adce82911",
     "publication-export.spec.ts": "a7f21735ec91026bdbfd350785a1a68b990eba490473be56d29faf0eaae38015",
     "reference-holdout.spec.ts": "be87e5da4781f4dd8eb873f73ebc1020d0cd0cdd4a459b70d31814fc74f9f434",
-    "research-journey.spec.ts": "33a0a00acfbb6e859939badc8817777ec5b97e4567333057c73d5eac6d0b1a79",
+    "research-journey.spec.ts": "cec9d8327de586b998f6e52ec24711e3b53042da5cfa5de195f74ccfbd89dbd5",
     "resizable-panes.spec.ts": "b9a12261029e40aa987fd29e81deb4d71a323793eda45547ac2c0e66081b5000",
     "scientist-actions.spec.ts": "b694e929c54d580fbbed2f56e7a1ccaacd1eb68cd1d1539215a03caec22e3a68",
     "study-trail.spec.ts": "91ceda1391515736be91dc64a70cff309eeb914ba78913eb2a46d31decf4102c",

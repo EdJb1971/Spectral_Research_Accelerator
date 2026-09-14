@@ -16841,5 +16841,21 @@ silently turn an offline suite into a live one.
 
 The rendered checks cover the plain-language seven-step journey, remediation links, dashboard
 landing state and quick actions, removal of the legacy label, and a mocked persisted study whose
-`Discuss` action carries its ID directly into the expert round table. The Playwright backend has
-review API keys cleared by configuration, so this verification cannot make paid panel calls.
+`Discuss finding` action carries its ID directly into Findings. The Playwright backend has review
+API keys cleared by configuration, so this verification cannot make paid model calls.
+
+## G19 private finding discussion — bounded first delivery (2026-09-14)
+
+The new API tests exercise the boundary directly: context reads create no conversation directory;
+an unapproved call is refused before model invocation; an approved, stubbed answer receives the
+complete evidence/finding/run/review grounding but writes nothing; stale bundle identity refuses;
+and only the explicit save route creates an exact-revision-bound interpretation record.
+
+```text
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_conversations_api.py src/tests/test_reviews_api.py -q
+15 passed, 2 warnings in 24.25s
+```
+
+The production build also passed with 1,429 modules transformed in 56.70 seconds. The existing
+large-chunk advisory remains. A combined run of the two backend surfaces and the unchanged-size
+frontend contract inventory passed 201 tests with five warnings in 23.67 seconds.

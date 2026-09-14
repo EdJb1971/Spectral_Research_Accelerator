@@ -171,9 +171,8 @@ export default function ResearchArchive({ onNavigate, onError }: Props) {
             <Archive className="h-5 w-5 text-teal-400" aria-hidden="true" /> Research dashboard
           </h2>
           <p className="mt-1 max-w-4xl text-sm leading-relaxed text-slate-400">
-            Start a new investigation, return to earlier experiments, inspect results, or ask an
-            expert panel to challenge a published study. Everything saved by this installation is
-            searchable below.
+            Start a new investigation, return to earlier experiments, inspect results, or discuss
+            a published finding. Everything saved by this installation is searchable below.
           </p>
         </div>
         <button type="button" onClick={() => void load()} disabled={busy}
@@ -290,11 +289,11 @@ export default function ResearchArchive({ onNavigate, onError }: Props) {
                   <code className="truncate text-[10px] text-slate-600" title={entry.id}>{entry.id}</code>
                   <div className="flex shrink-0 gap-2">
                     {entry.kind === 'study' && entry.studyId && (
-                      <button type="button" onClick={() => onNavigate('review', entry.studyId)}
+                      <button type="button" onClick={() => onNavigate('findings', entry.studyId)}
                         className="inline-flex items-center gap-1.5 rounded-md border border-teal-500/30
                                    bg-teal-500/10 px-3 py-1.5 text-xs font-medium text-teal-200
                                    hover:bg-teal-500/20">
-                        <MessageSquare className="h-3.5 w-3.5" aria-hidden="true" /> Discuss
+                        <MessageSquare className="h-3.5 w-3.5" aria-hidden="true" /> Discuss finding
                       </button>
                     )}
                     <button type="button" onClick={() => onNavigate(entry.target, entry.studyId)}

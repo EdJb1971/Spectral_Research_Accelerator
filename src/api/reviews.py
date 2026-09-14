@@ -286,9 +286,8 @@ def convene_round_robin(study_id: str, body: RoundRobinRequest) -> Dict[str, Any
 
 
 
-@router.get("/studies/{study_id}")
-async def get_study_review(study_id: str) -> Dict[str, Any]:
-    """All verified commentary bound to the latest published revision of one study."""
+def study_review_payload(study_id: str) -> Dict[str, Any]:
+    """Build the verified formal-review context for one published study."""
     try:
         bundle, bundle_path = StudyStore().load(study_id)
     except KeyError:
@@ -342,7 +341,13 @@ async def get_study_review(study_id: str) -> Dict[str, Any]:
     return refuse_bare_confidence(payload, where="review surface")
 
 
+@router.get("/studies/{study_id}")
+async def get_study_review(study_id: str) -> Dict[str, Any]:
+    """All verified commentary bound to the latest published revision of one study."""
+    return study_review_payload(study_id)
+
+
 __all__ = [
     "REVIEW_ROOT_ENV", "DEFAULT_REVIEW_ROOT", "REVIEW_SURFACE_SCHEMA", "CLAIM_BOUNDARY",
-    "review_root", "ReviewStore", "router",
+    "review_root", "ReviewStore", "study_review_payload", "router",
 ]

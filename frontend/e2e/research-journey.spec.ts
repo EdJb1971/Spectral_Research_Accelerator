@@ -80,7 +80,7 @@ test('the landing dashboard exposes the main user actions', async ({ page }) => 
   await expect(page.getByText('Why pytest studies are not listed as studies')).toHaveCount(0);
 });
 
-test('a past study can be opened directly in the round table', async ({ page }) => {
+test('a past study can be opened directly for private finding discussion', async ({ page }) => {
   await page.route('**/api/v1/findings/studies', async (route) => route.fulfill({
     status: 200,
     contentType: 'application/json',
@@ -93,9 +93,9 @@ test('a past study can be opened directly in the round table', async ({ page }) 
 
   const study = page.getByRole('list', { name: 'Archive records' })
     .getByRole('listitem').filter({ hasText: 'demo-study' });
-  await expect(study.getByRole('button', { name: 'Discuss' })).toBeVisible();
-  await study.getByRole('button', { name: 'Discuss' }).click();
+  await expect(study.getByRole('button', { name: 'Discuss finding' })).toBeVisible();
+  await study.getByRole('button', { name: 'Discuss finding' }).click();
 
-  await expect(page.getByRole('heading', { name: 'Expert round table', exact: true })).toBeVisible();
-  await expect(page.getByLabel('Study to discuss')).toHaveValue('demo-study');
+  await expect(page.getByRole('heading', { name: 'Findings', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: /demo-study/ })).toHaveAttribute('aria-pressed', 'true');
 });

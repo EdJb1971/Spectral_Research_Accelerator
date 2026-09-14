@@ -1098,6 +1098,50 @@ export const apiService = {
       await fetch(`${BASE_URL}/reviews/studies/${encodeURIComponent(studyId)}`, { method: 'GET' }));
   },
 
+  // A discussion is ephemeral unless the researcher separately calls `save`. Scientific
+  // context is deliberately absent from the request: the server reloads the whole current
+  // record on every turn and rejects a conversation bound to an older bundle digest.
+  async getFindingConversationContext(
+    studyId: string, glossary: string,
+  ): Promise<types.FindingConversationContext> {
+    const query = new URLSearchParams({ glossary }).toString();
+    return handleResponse<types.FindingConversationContext>(
+      await fetch(`${BASE_URL}/conversations/studies/${encodeURIComponent(studyId)}/context?${query}`,
+        { method: 'GET' }));
+  },
+
+  async askAboutFinding(
+    studyId: string,
+    body: {
+      question: string;
+      history: types.ConversationTurn[];
+      glossary: string;
+      model_id: string;
+      expected_bundle_sha256: string;
+      i_authorise_paid_call: boolean;
+    },
+  ): Promise<types.FindingConversationAnswer> {
+    return handleResponse<types.FindingConversationAnswer>(
+      await fetch(`${BASE_URL}/conversations/studies/${encodeURIComponent(studyId)}/ask`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+      }));
+  },
+
+  async saveFindingDiscussion(
+    studyId: string,
+    body: {
+      turns: types.ConversationTurn[];
+      glossary: string;
+      expected_bundle_sha256: string;
+      title?: string;
+    },
+  ): Promise<types.SavedFindingDiscussion> {
+    return handleResponse<types.SavedFindingDiscussion>(
+      await fetch(`${BASE_URL}/conversations/studies/${encodeURIComponent(studyId)}/save`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+      }));
+  },
+
   // ------------------------------------------------ orchestrated runs (TG17.6)
   // Posting a manifest opens the run that manifest identifies. It is not `create`: the identity
   // is the content address of the plan, so a second post - a refreshed browser, a second tab, a

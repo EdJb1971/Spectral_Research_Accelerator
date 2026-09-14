@@ -1299,6 +1299,49 @@ export interface ReviewSurface {
   absence_note: string | null;
 }
 
+export interface FindingConversationContext {
+  schema: 'finding-conversation-context/v1';
+  study_id: string;
+  bundle_sha256: string;
+  bundle_revision: number;
+  glossary: string;
+  formal_review_count: number;
+  run_count: number;
+  model_id: string;
+  key_present: boolean;
+  key_variables: string[];
+  recording: 'OFF';
+  what_is_loaded: string[];
+  claim_boundary: string;
+  network_used: false;
+}
+
+export interface ConversationTurn {
+  role: 'user' | 'assistant';
+  text: string;
+}
+
+export interface FindingConversationAnswer {
+  schema: 'ephemeral-finding-answer/v1';
+  study_id: string;
+  bundle_sha256: string;
+  answer: string;
+  records_used: string[];
+  cautions: string[];
+  suggested_questions: string[];
+  usage: Record<string, unknown>;
+  recorded: false;
+  claim_boundary: string;
+}
+
+export interface SavedFindingDiscussion {
+  saved: true;
+  file: string;
+  discussion_sha256: string;
+  recorded: true;
+  claim_boundary: string;
+}
+
 /**
  * R9's six figures. They travel together or not at all: the API refuses to serve a
  * `confidence` without the other five, so this interface has no optional members.
